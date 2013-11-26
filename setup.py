@@ -40,11 +40,16 @@ except ImportError:
     ez_setup.use_setuptools()
 
 from setuptools import setup, find_packages, Extension
-major, minor = map(int, setuptools.__version__.split(".")[:2])
-if major < 1 or (major == 1 and minor < 1):
+
+from distutils.version import LooseVersion, StrictVersion
+if LooseVersion( setuptools.__version__ ) < LooseVersion( '1.1' ):
     raise ImportError("the CGAT code collection requires setuptools 1.1 higher")
 
 from Cython.Distutils import build_ext
+
+########################################################################
+########################################################################
+IS_OSX = sys.platform == 'darwin'
 
 ########################################################################
 ########################################################################
@@ -130,7 +135,6 @@ License :: OSI Approved
 Programming Language :: Python
 Topic :: Software Development
 Topic :: Scientific/Engineering
-Operating System :: Microsoft :: Windows
 Operating System :: POSIX
 Operating System :: Unix
 Operating System :: MacOS
@@ -174,13 +178,21 @@ pyx_files = glob.glob( "scripts/*.pyx" )
 script_extensions = []
 pysam_dirname = os.path.dirname( pysam.__file__ )
 include_dirs = [ numpy.get_include() ] + pysam.get_include()
+
+if IS_OSX:
+    # linking against bundles does no work (and apparently is not needed)
+    # within OS X
+    extra_link_args = []
+else:
+    extra_link_args = [ os.path.join( pysam_dirname, "csamtools.so")]
+
 for pyx_file in pyx_files:
     script_name = os.path.basename( pyx_file )
     script_prefix = script_name[:-4]
     script_extensions.append( 
         Extension( "CGAT.%s" % (script_prefix),
                    sources = [pyx_file],
-                   extra_link_args=[ os.path.join( pysam_dirname, "csamtools.so")],
+                   extra_link_args = extra_link_args,
                    include_dirs = include_dirs,
                    define_macros = pysam.get_defines() )
         )

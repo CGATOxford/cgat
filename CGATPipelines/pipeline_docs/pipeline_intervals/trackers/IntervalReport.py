@@ -2,7 +2,9 @@ import os, sys, re, types, itertools, glob
 
 from SphinxReport.Tracker import *
 from SphinxReport.Utils import PARAMS as P
-from SphinxReport.odict import OrderedDict as odict
+from collections import OrderedDict as odict
+
+import CGAT.IOTools as IOTools
 
 from SphinxReport.ResultBlock import ResultBlock, ResultBlocks
 from SphinxReport import Utils

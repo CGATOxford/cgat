@@ -2,12 +2,7 @@ import os, sys, re, types, itertools
 import matplotlib.pyplot as plt
 import numpy
 import numpy.ma
-import Stats
-import Histogram
-import ChipseqReport
-
-from SphinxReport.Tracker import *
-from SphinxReport.odict import OrderedDict as odict
+from ChipseqReport import *
 
 ##################################################################################
 ##################################################################################
@@ -23,7 +18,7 @@ class AnnotationSlicer:
 ##################################################################################
 ## 
 ##################################################################################
-class AnnotationsAssociated(ChipseqReport.DefaultTracker, AnnotationSlicer):
+class AnnotationsAssociated(DefaultTracker, AnnotationSlicer):
     """simple join between a data table and table defining slices.
 
     :attr:`mTable`
@@ -59,7 +54,7 @@ class AnnotationsAssociated(ChipseqReport.DefaultTracker, AnnotationSlicer):
 ##################################################################################
 ## 
 ##################################################################################
-class Annotations(ChipseqReport.DefaultTracker, AnnotationSlicer):
+class Annotations(DefaultTracker, AnnotationSlicer):
     """Base class for trackers getting info from the annotations tables.
 
     Derived Trackers should define the two attributes :attr:`mSelect` and 

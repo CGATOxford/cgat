@@ -31,7 +31,7 @@ Exons.py - A library to read/write/manage exons.
 """
 
 import re, sys, string
-try: import alignlib
+try: import alignlib_lite
 except ImportError: pass
 
 class Exon:
@@ -812,8 +812,8 @@ def CompareGeneStructures( xcmp_exons, ref_exons,
     """
 
     if ref_sequence and cmp_sequence:
-        cmp_seq = alignlib.makeSequence( cmp_sequence)
-        ref_seq = alignlib.makeSequence( ref_sequence)
+        cmp_seq = alignlib_lite.py_makeSequence( cmp_sequence)
+        ref_seq = alignlib_lite.py_makeSequence( ref_sequence)
     else:
         ref_seq, cmp_seq = None, None
         
@@ -929,17 +929,17 @@ def CompareGeneStructures( xcmp_exons, ref_exons,
             ## get percent identity
             if cmp_seq and ref_seq and map_ref2cmp:
                 
-                tmp_ali = alignlib.makeAlignmentVector()
+                tmp_ali = alignlib_lite.py_makeAlignmentVector()
 
                 xquery_from = max( exon2.mPeptideFrom / 3, exon1.mPeptideFrom / 3) 
                 xquery_to = min(1 + exon2.mPeptideTo / 3, 1 + exon1.mPeptideTo / 3)
 
-                alignlib.copyAlignment( tmp_ali, map_ref2cmp, xquery_from, xquery_to )
+                alignlib_lite.py_copyAlignment( tmp_ali, map_ref2cmp, xquery_from, xquery_to )
 
-                percent_identity = alignlib.calculatePercentIdentity( tmp_ali,
+                percent_identity = alignlib_lite.py_calculatePercentIdentity( tmp_ali,
                                                                       ref_seq,
                                                                       cmp_seq ) * 100
-                percent_similarity = alignlib.calculatePercentSimilarity( tmp_ali ) * 100
+                percent_similarity = alignlib_lite.py_calculatePercentSimilarity( tmp_ali ) * 100
 
                 if percent_identity <= threshold_min_pide:
                     is_good_exon = False
@@ -1028,12 +1028,12 @@ def MapExons( exons, map_a2b ):
     returns a list of mapped exons.
     """
 
-    long_map = alignlib.makeAlignmentVector()
+    long_map = alignlib_lite.py_makeAlignmentVector()
 
     for x in range(map_a2b.getRowFrom(), map_a2b.getRowTo() + 1):
         y = map_a2b.mapRowToCol(x)
         if y:
-            alignlib.addDiagonal2Alignment( long_map, 3 * (x - 1) + 1, 3 * x, 3 * (y - x) )
+            alignlib_lite.py_addDiagonal2Alignment( long_map, 3 * (x - 1) + 1, 3 * x, 3 * (y - x) )
 
     def MyMapLeft( a, x):
         while x >= a.getRowFrom():

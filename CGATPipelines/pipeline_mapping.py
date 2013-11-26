@@ -801,6 +801,48 @@ def mapReadsWithTophat( infiles, outfile ):
     statement = m.build( (infile,), outfile ) 
     P.run()
 
+@active_if( SPLICED_MAPPING )
+@follows( mkdir("tophat2.dir" ) )
+@transform( SEQUENCEFILES,
+            SEQUENCEFILES_REGEX,
+            add_inputs( buildJunctions, buildReferenceTranscriptome ), 
+            r"tophat2.dir/\1.tophat2.bam" )
+def mapReadsWithTophat2( infiles, outfile ):
+    '''map reads from .fastq or .sra files.
+
+    A list with known splice junctions is supplied.
+
+    If tophat fails with an error such as::
+
+       Error: segment-based junction search failed with err =-6
+       what():  std::bad_alloc
+ 
+    it means that it ran out of memory.
+
+    '''
+    job_options= "-pe dedicated %i -R y" % PARAMS["tophat_threads"]
+
+    if "--butterfly-search" in PARAMS["tophat_options"]:
+        # for butterfly search - require insane amount of
+        # RAM.
+        job_options += " -l mem_free=50G"
+    else:
+        job_options += " -l mem_free=%s" % PARAMS["tophat_memory"]
+
+    to_cluster = True
+    m = PipelineMapping.Tophat( executable = P.substituteParameters( **locals() )["tophat_executable"],
+                                strip_sequence = PARAMS["strip_sequence"] )
+    infile, reffile, transcriptfile = infiles
+    tophat_options = PARAMS["tophat_options"] + " --raw-juncs %(reffile)s " % locals()
+    
+    # Nick - added the option to map to the reference transcriptome first (built within the pipeline)
+    if PARAMS["tophat_include_reference_transcriptome"]:
+        prefix = os.path.abspath( P.snip( transcriptfile, ".fa" ) )
+        tophat_options = tophat_options + " --transcriptome-index=%s -n 2" % prefix
+
+    statement = m.build( (infile,), outfile ) 
+    P.run()
+
 ############################################################
 ############################################################
 ############################################################
@@ -1070,6 +1112,7 @@ def mapReadsWithStampy( infile, outfile ):
 
 MAPPINGTARGETS = []
 mapToMappingTargets = { 'tophat': (mapReadsWithTophat, loadTophatStats),
+                        'tophat2': (mapReadsWithTophat2, loadTophatStats),
                         'bowtie': (mapReadsWithBowtie,),
                         'bwa': (mapReadsWithBWA,),
                         'stampy': (mapReadsWithStampy,),

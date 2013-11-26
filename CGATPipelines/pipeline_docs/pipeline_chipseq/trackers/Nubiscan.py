@@ -1,7 +1,4 @@
-
-from SphinxReport.Tracker import *
-import ChipseqReport
-import Stats
+from  ChipseqReport import *
 import Motifs
 
 ##################################################################################

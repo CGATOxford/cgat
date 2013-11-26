@@ -55,7 +55,7 @@ variable width
    variable width tiles. Tiles are defined based on overlap.
    
 fixed width - no overlap
-   fixed width tiles, no overlap between adjacent tiles.
+    fixed width tiles, no overlap between adjacent tiles.
 
 fixed width - overlap
    fixed width tiles, adjacent tiles are overlapping.
@@ -247,7 +247,7 @@ def prepareTags( infile, outfile ):
     track = P.snip( outfile, ".bed.gz" )
 
     tmpdir = P.getTempFilename()
-    
+
     current_file = infile
 
     nfiles = 0
@@ -267,7 +267,7 @@ def prepareTags( infile, outfile ):
         next_file = "%(tmpdir)s/bam_%(nfiles)i.bam" % locals()
 
         dedup_method = PARAMS["filtering_dedup_method"]
-        
+
         if dedup_method == 'samtools':
             statement.append( '''samtools rmdup - - ''' )
 
@@ -319,7 +319,7 @@ def loadPicardDuplicateStats( infiles, outfile ):
 #########################################################################
 #########################################################################
 @follows( mkdir( "background.dir" ))
-@transform( "*input*.bw",
+@transform( "*[Ii]nput*.bw",
             regex("(.*).bw"),
             r"background.dir/\1.bed.gz" )
 def buildBackgroundWindows( infile, outfile ):
@@ -357,7 +357,7 @@ def mergeBackgroundWindows( infiles, outfile ):
     | bgzip
     > %(outfile)s
     '''
-    
+
     P.run()
 
 #########################################################################
@@ -371,7 +371,7 @@ def mergeBackgroundWindows( infiles, outfile ):
             "cpg_context.tsv.gz" )
 def buildCpGAnnotation( infiles, outfile ):
     '''annotate the location of CpGs within the genome.'''
-    
+
     cpg_bed, context_bed = infiles
 
     statement = '''
@@ -398,7 +398,7 @@ def buildCoverageBed( infile, outfile ):
 
     Intervals containing only few reads (tiling_min_reads) are removed.
     '''
-    
+
     to_cluster = True
 
     statement = '''
@@ -417,6 +417,54 @@ def buildCoverageBed( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
+@transform( buildCoverageBed, suffix(".bed.gz"), ".tsv.gz" )
+def buildCpGComposition( infile, outfile ):
+    '''compute CpG density across regions covered by reads.
+    '''
+
+    statement = '''
+    zcat %(infile)s 
+    | python %(scriptsdir)s/bed2table.py
+          --counter=composition-cpg
+          --genome-file=%(genome_dir)s/%(genome)s
+    | gzip
+    > %(outfile)s
+    '''
+    P.run()
+
+@merge( None, "tags.dir/genomic.covered.tsv.gz" )
+def buildReferenceCpGComposition( infile, outfile ):
+    '''compute CpG densities across reference windows across
+    the genome.
+    '''
+
+    # remove windows which are more than 50% N - column 17
+    statement = '''
+    python %(scriptsdir)s/genome_bed.py
+                      -g %(genome_dir)s/%(genome)s
+                      --window=%(tiling_reference_window_size)i
+                      --shift=%(tiling_reference_window_shift)i
+                      --log=%(outfile)s.log
+    | awk '$1 !~ /%(tiling_remove_contigs)s/'
+    | python %(scriptsdir)s/bed2table.py
+          --counter=composition-cpg
+          --genome-file=%(genome_dir)s/%(genome)s
+    | awk '$1 == "contig" || $17 < 0.5'
+    | gzip
+    > %(outfile)s
+    '''
+    P.run()
+
+@transform( (buildCpGComposition,buildReferenceCpGComposition), 
+            suffix(".tsv.gz"), 
+            ".composition.load" )
+def loadCpGComposition( infile, outfile ):
+    '''load CpG Composition data.'''
+    P.load( infile, outfile )
+
+#########################################################################
+#########################################################################
+#########################################################################
 @transform( prepareTags, 
             suffix(".bed.gz"), 
             add_inputs( os.path.join( PARAMS["annotations_dir"], 
@@ -427,7 +475,7 @@ def buildCpGCoverage( infiles, outfile ):
 
     Reads are processed in the same way as by buildCoverageBed.
     '''
-    
+
     # coverageBed is inefficient. If bedfile and cpgfile
     # were sorted correspondingly the overlap analysis
     # could be done in very little memory.
@@ -444,7 +492,7 @@ def buildCpGCoverage( infiles, outfile ):
     | python %(scriptsdir)s/data2histogram.py
     | gzip
     > %(outfile)s
-    '''
+     '''
     P.run()
 
 #########################################################################
@@ -466,17 +514,17 @@ def buildWindows( infiles, outfile ):
 
     Remove windows in background.
     '''
-    
+
     tiling_method = PARAMS["tiling_method"]
 
     coverage_bed, background_bed = infiles[:-1], infiles[-1]
 
     to_cluster = True
-    
+
     coverage_bed = " ".join( coverage_bed )
 
     if tiling_method == "varwidth":
-        
+
         infiles = " ".join( infiles )
 
         statement = '''
@@ -489,13 +537,13 @@ def buildWindows( infiles, outfile ):
         '''
 
     elif tiling_method == "fixwidth_nooverlap":
-        
+
         statement = '''python %(scriptsdir)s/genome_bed.py
                       -g %(genome_dir)s/%(genome)s
                       --window=%(tiling_nonoverlapping_window)i
                       --shift=%(tiling_window_size)i
                       --log=%(outfile)s.log'''
-        
+
     elif tiling_method == "fixwidth_overlap":
 
         assert PARAMS["tiling_window_size"] % 2 == 0
@@ -506,6 +554,10 @@ def buildWindows( infiles, outfile ):
                       --window=%(tiling_window_size)i
                       --shift=%(shift)i
                       --log=%(outfile)s.log'''
+
+    elif os.path.exists( tiling_method ):
+        # existing file
+        statement = '''mergeBed -i %(tiling_method)s'''
 
     else:
         raise ValueError("unknow tiling method '%s'" % tiling_method)
@@ -560,7 +612,7 @@ def loadWindowStats( infile, outfile ):
 def buildBigBed( infile, outfile ):
     '''bed file with intervals that are covered by reads in any of the experiments.
     '''
-    
+
     to_cluster = True
     to_cluster = False
 
@@ -615,8 +667,6 @@ def aggregateWindowsReadCounts( infiles, outfile ):
     For bed6: use column 7
     For bed12: use column 13
 
-    This method uses the maximum number of reads found in any interval as the tag count.
-
     Tiles with no counts will not be output.
     '''
     PipelineWindows.aggregateWindowsReadCounts( infiles, outfile )
@@ -629,8 +679,9 @@ def aggregateWindowsReadCounts( infiles, outfile ):
             "_stats.tsv" )
 def summarizeAllWindowsReadCounts( infile, outfile ):
     '''perform summarization of read counts'''
-    
+
     prefix = P.snip(outfile, ".tsv")
+    job_options = "-l mem_free=32G"
     statement = '''python %(scriptsdir)s/runExpression.py
               --method=summary
               --filename-tags=%(infile)s
@@ -647,7 +698,8 @@ def summarizeAllWindowsReadCounts( infile, outfile ):
             add_inputs( aggregateWindowsReadCounts ),
             r"counts.dir/\1_stats.tsv" )
 def summarizeWindowsReadCounts( infiles, outfile ):
-    '''perform summarization of read counts'''
+    '''perform summarization of read counts within experiments.
+    '''
 
     design_file, counts_file = infiles    
     prefix = P.snip(outfile, ".tsv")
@@ -670,7 +722,7 @@ def summarizeWindowsReadCounts( infiles, outfile ):
             r"dump.dir/\1.tsv.gz" )
 def dumpWindowsReadCounts( infiles, outfile ):
     '''output tag tables used for analysis.
-    
+
     This is for debugging purposes. The tables
     can be loaded into R for manual analysis.
     '''
@@ -700,14 +752,14 @@ def loadTagCountSummary( infile, outfile ):
 #########################################################################
 def loadMethylationData( infile, design_file ):
     '''load methylation data for deseq/edger analysis.
-    
+
     This method creates various R objects:
 
     countsTable : data frame with counts. 
     groups : vector with groups
 
     '''
-    
+
     E.info( "reading data")
     R( '''counts_table = read.delim( '%(infile)s', header = TRUE, 
                                                    row.names = 1, 
@@ -720,7 +772,7 @@ def loadMethylationData( infile, design_file ):
 
     # Make sample names R-like - substitute - for . and add the .prep suffix
     R('''pheno[,1] = gsub('-', '.', pheno[,1]) ''')
-    
+
     # Ensure pheno rows match count columns 
     R('''pheno2 = pheno[match(colnames(counts_table),pheno[,1]),,drop=FALSE]''' ) 
 
@@ -734,54 +786,15 @@ def loadMethylationData( infile, design_file ):
     R('''countsTable <- counts_table[ , includedSamples ]''')
     R('''groups <- factor(pheno2$group[ includedSamples ])''')
     R('''pairs = factor(pheno2$pair[ includedSamples ])''')
-    
+
     groups = R('''levels(groups)''')
     pairs = R('''levels(pairs)''')
 
     E.info( "filtered data: %i observations for %i samples" % tuple( R('''dim(countsTable)''') ) )
-    
+
     return groups, pairs
 
-#########################################################################
-#########################################################################
-#########################################################################
-def runDE( infiles, outfile, outdir, method ):
-    '''run DESeq or EdgeR.
-
-    The job is split into smaller sections. The order of the input 
-    data is randomized in order to avoid any biases due to chromosomes.
-    '''
-
-    to_cluster = True
-    
-    design_file, counts_file = infiles
-
-    statement = '''zcat %(counts_file)s 
-              | perl %(scriptsdir)s/randomize_lines.pl -h
-              | %(cmd-farm)s
-                  --input-header 
-                  --output-header 
-                  --split-at-lines=100000 
-                  --cluster-options="-l mem_free=8G"
-                  --log=%(outfile)s.log
-                  --output-pattern=%(outdir)s/%%s
-                  --subdirs
-              "python %(scriptsdir)s/runExpression.py
-              --method=%(method)s
-              --filename-tags=-
-              --filename-design=%(design_file)s
-              --output-filename-pattern=%%DIR%%/
-              --deseq-fit-type=%(deseq_fit_type)s
-              --deseq-dispersion-method=%(deseq_dispersion_method)s
-              --log=%(outfile)s.log
-              --fdr=%(edger_fdr)f"
-              | grep -v "warnings"
-              | gzip
-              > %(outfile)s '''
-
-    P.run()
-
-@follows( mkdir("deseq.dir") )
+@follows( mkdir("deseq.dir"), mkdir("deseq.dir/plots") )
 @transform( "design*.tsv",
             regex( "(.*).tsv" ),
             add_inputs( aggregateWindowsReadCounts ),
@@ -792,7 +805,33 @@ def runDESeq( infiles, outfile ):
     The final output is a table. It is slightly edited such that
     it contains a similar output and similar fdr compared to cuffdiff.
     '''
-    runDE( infiles, outfile, "deseq.dir", "deseq" )
+    PipelineWindows.runDE( infiles, outfile, "deseq.dir", method = "deseq" )
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( runDESeq, suffix(".tsv.gz"), ".load" )
+def loadDESeq( infile, outfile ):
+    '''load DESeq per-chunk summary stats.'''
+
+    prefix = P.snip( outfile, ".load" )
+
+    if os.path.exists( infile + "_size_factors.tsv" ):
+        P.load( infile + "_size_factors.tsv", 
+                prefix + "_deseq_size_factors.load", 
+                collapse = True,
+                transpose = "sample")
+
+    for fn in glob.glob( infile + "*_summary.tsv" ):
+        prefix = P.snip(fn[len(infile)+1:], "_summary.tsv")
+
+        P.load( fn, 
+                prefix + ".deseq_summary.load", 
+                collapse = 0,
+                transpose = "sample")
+
+    P.touch( outfile )
+
 
 #########################################################################
 #########################################################################
@@ -809,12 +848,47 @@ def runEdgeR( infiles, outfile ):
     the example in chapter 11 of the EdgeR manual.
     '''
 
-    runDE( infiles, outfile, "edger.dir", "edger" )
+    PipelineWindows.runDE( infiles, outfile, "edger.dir", method = "edger" )
 
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( runEdgeR, suffix(".tsv.gz"), ".load" )
+def loadEdgeR( infile, outfile ):
+    '''load EdgeR per-chunk summary stats.'''
+
+    prefix = P.snip( outfile, ".load" )
+
+    for fn in glob.glob( infile + "*_summary.tsv" ):
+        prefix = P.snip(fn[len(infile)+1:], "_summary.tsv")
+
+        P.load( fn, 
+                prefix + ".deseq_summary.load", 
+                collapse = 0,
+                transpose = "sample")
+
+    P.touch( outfile )
+
+
+#########################################################################
+#########################################################################
+#########################################################################
+@follows( mkdir("roi.dir"))
+@transform( "design*.tsv",
+            regex( "(.*).tsv" ),
+            add_inputs( aggregateWindowsReadCounts ),
+            r"roi.dir/\1.tsv.gz" )
+def runFilterAnalysis( infiles, outfile ):
+    '''output windows applying a filtering criterion.
+    
+    Does not apply a threshold.
+    '''
+    PipelineWindows.outputRegionsOfInterest( infiles, outfile )
 
 DIFFTARGETS = []
-mapToTargets = { 'deseq': (runDESeq,),
+mapToTargets = { 'deseq': (loadDESeq,runDESeq,),
                  'edger' : (runEdgeR,),
+                 'filter' : (runFilterAnalysis,)
                  }
 for x in METHODS:
     DIFFTARGETS.extend( mapToTargets[x] )
@@ -824,95 +898,107 @@ for x in METHODS:
           *DIFFTARGETS )
 def diff_windows(): pass
 
-# #########################################################################
-# @transform( (runDESeq, runEdgeR), suffix(".gz"), ".merged.gz" )
-# def mergeDMRWindows( infile, outfile ):
-#     '''merge overlapping windows.'''
+#########################################################################
+@transform( DIFFTARGETS, suffix(".gz"), ".merged.gz" )
+def mergeDMRWindows( infile, outfile ):
+    '''merge overlapping windows.
 
-#     to_cluster = True
+    Sample/control labels are by default inverted to reflect
+    that unmethylated windows are of principal interest.
+    '''
 
-#     statement = '''
-#     zcat %(infile)s
-#     | python %(scriptsdir)s/medip_merge_intervals.py
-#           --log=%(outfile)s.log
-#           --invert
-#           --output-filename-pattern=%(outfile)s.%%s.bed.gz
-#     | gzip
-#     > %(outfile)s
-#     '''
+    to_cluster = True
 
-#     P.run()
+    statement = '''
+    zcat %(infile)s
+    | python %(scriptsdir)s/medip_merge_intervals.py
+          --log=%(outfile)s.log
+          --invert
+          --output-filename-pattern=%(outfile)s.%%s.bed.gz
+    | gzip
+    > %(outfile)s
+    '''
 
-# #########################################################################
-# @jobs_limit(1)
-# @transform( mergeDMRWindows, suffix(".merged.gz"), ".load" )
-# def loadDMRWindows( infile, outfile ):
-#     '''merge overlapping windows.'''
-#     P.load( infile, outfile, options = "--quick" )
+    P.run()
 
-# #########################################################################
-# @collate( loadDMRWindows, regex( "(\S+)[.](\S+).load" ), r"\2_stats.tsv" )
-# def buildDMRStats( infiles, outfile ):
-#     '''compute differential methylation stats.'''
-#     tablenames = [P.toTable( x ) for x in infiles ] 
-#     method = P.snip( outfile, "_stats.tsv" )
-#     PipelineMedip.buildDMRStats( tablenames, method, outfile )
+#########################################################################
+@transform( mergeDMRWindows, suffix(".merged.gz"), ".stats" )
+def buildDMRStats( infile, outfile ):
+    '''compute differential methylation stats.'''
+    method = os.path.dirname(infile)
+    method = P.snip( method, ".dir")
+    PipelineWindows.buildDMRStats( infile, outfile, method=method )
 
-# #########################################################################
-# @transform( buildDMRStats, suffix(".tsv"), ".load" )
-# def loadDMRStats( infile, outfile ):
-#     '''load DMR stats into table.'''
-#     P.load( infile, outfile )
-
-# #########################################################################
-# #########################################################################
-# #########################################################################
-# @transform( mergeDMRWindows,
-#             suffix(".merged.gz"),
-#             ".stats")
-# def buildDMRWindowStats( infile, outfile ):
-#     '''compute tiling window size statistics from bed file.'''
-
-#     to_cluster = True
-
-#     statement = '''
-#     zcat %(infile)s
-#     | grep -v 'contig'
-#     | python %(scriptsdir)s/gff2histogram.py 
-#                    --force
-#                    --format=bed 
-#                    --data=size
-#                    --method=hist
-#                    --method=stats
-#                    --output-filename-pattern=%(outfile)s.%%s.tsv
-#     > %(outfile)s
-#     '''
-#     P.run()
+#########################################################################
+@transform( mergeDMRWindows, suffix(".merged.gz"), ".merged.gz.all.bed.gz" )
+def outputAllWindows( infile, outfile ):
+    '''output all bed windows.'''
+    PipelineWindows.outputAllWindows( infile, outfile )
 
 
-# #########################################################################
-# #########################################################################
-# #########################################################################
-# @transform( mergeDMRWindows, regex(  "(.*)\.(.*).merged.gz"), r"\1_\2.dmr.bed.gz" )
-# def buildDMRBed( infile, outfile ):
-#     '''output bed6 file with differentially methylated regions.
+#########################################################################
+@transform( outputAllWindows, suffix(".all.bed.gz"), 
+            (".top.bed.gz", ".bottom.bed.gz" ) )
+def outputTopWindows( infile, outfiles ):
+    '''output bed with largest/smallest l2fold changes.
+    '''
+    outfile = outfiles[0]
 
-#     Overlapping/book-ended entries are merged.
+    statement = '''zcat %(infile)s
+    | awk '$4 !~ /inf/'
+    | sort -k4,4n 
+    | tail -n %(bed_export)i 
+    | gzip > %(outfile)s || true
+    '''
+    P.run()
 
-#     The score is the average log fold change.
-#     '''
-    
-#     to_cluster = True
+    outfile = outfiles[1]
 
-#     statement = '''zcat %(infile)s
-#     | python %(scriptsdir)s/csv_cut.py contig start end l2fold significant
-#     | awk '$5 == "1" {printf("%%s\\t%%i\\t%%i\\t%%i\\t%%f\\n", $1,$2,$3,++a,$4)}'
-#     | gzip > %(outfile)s'''
+    statement = '''zcat %(infile)s
+    | awk '$4 !~ /inf/'
+    | sort -k4,4n 
+    | head -n %(bed_export)i 
+    | gzip 
+    > %(outfile)s || true
+    '''
+    P.run()
 
-# #    | mergeBed -i stdin -scores mean 
+#########################################################################
+@merge( buildDMRStats, "dmr_stats.load" )
+def loadDMRStats( infiles, outfile ):
+    '''load DMR stats into table.'''
+    P.concatenateAndLoad( infiles, outfile,
+                          missing_value = 0,
+                          regex_filename = ".*\/(.*).tsv.stats")
 
-#     P.run()
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( mergeDMRWindows,
+            suffix(".merged.gz"),
+            ".stats")
+def buildDMRWindowStats( infile, outfile ):
+    '''compute window size statistics of DMR from bed file.'''
 
+    to_cluster = True
+
+    statement = '''
+    zcat %(infile)s
+    | grep -v 'contig'
+    | python %(scriptsdir)s/gff2histogram.py 
+                   --force
+                   --format=bed 
+                   --data=size
+                   --method=hist
+                   --method=stats
+                   --output-filename-pattern=%(outfile)s.%%s.tsv
+    > %(outfile)s
+    '''
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
 # @merge( buildDMRBed, "dmr_overlap.tsv.gz" )
 # def computeDMROverlap( infiles, outfile ):
 #     '''compute overlap between bed sets.'''
@@ -941,49 +1027,37 @@ def diff_windows(): pass
 
 #     P.run()
 
-# #########################################################################
-# #########################################################################
-# #########################################################################
-# @transform( mergeDMRWindows, regex(  "(.*)\.(.*).merged.gz"), r"\1_\2.bed.gz" )
-# def buildMRBed( infile, outfile ):
-#     '''output bed6 file with methylated regions.
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( mergeDMRWindows, regex(  "(.*)\.(.*).merged.gz"), r"\1_\2.bed.gz" )
+def buildMRBed( infile, outfile ):
+    '''output bed6 file with methylated regions.
 
-#     All regions are output, even the insignificant ones.
+    All regions are output, even the insignificant ones.
 
-#     The score is the log fold change.
-#     '''
+    The score is the log fold change.
+    '''
     
-#     outf = IOTools.openFile( outfile, "w" )
-#     c = E.Counter()
-#     for row in csv.DictReader( IOTools.openFile( infile ),
-#                                dialect = "excel-tab" ):
-#         c.input += 1
+    outf = IOTools.openFile( outfile, "w" )
+    c = E.Counter()
+    for row in csv.DictReader( IOTools.openFile( infile ),
+                               dialect = "excel-tab" ):
+        c.input += 1
 
-#         contig, start, end = re.match("(.*):(\d+)-(\d+)", row["interval_id"] ).groups()
-#         c.output += 1
-#         outf.write( "\t".join( (contig, start, end, str(c.input), row["lfold"] ) ) + "\n" )
+        contig, start, end = re.match("(.*):(\d+)-(\d+)", row["interval_id"] ).groups()
+        c.output += 1
+        outf.write( "\t".join( (contig, start, end, str(c.input), row["lfold"] ) ) + "\n" )
         
-#     outf.close()
+    outf.close()
     
-#     E.info( "%s" % str(c) )
+    E.info( "%s" % str(c) )
 
-# #########################################################################
-# #########################################################################
-# #########################################################################
-# @follows( loadPicardDuplicateStats,
-#           loadPicardAlignmentStats,
-#           loadPicardGCStats,
-#           loadBAMStats )
-# def mapping(): pass
+@follows( loadDMRStats, outputAllWindows, outputTopWindows )
+def dmr(): pass
 
-# @follows( aggregateTiledReadCounts,
-#           loadDMRStats,
-#           buildDMRBed,
-#           computeDMROverlap)
-# def callDMRs(): pass
-
-# @follows( mapping, callDMRs) 
-# def full(): pass
+@follows( diff_windows, dmr) 
+def full(): pass
 
 ###################################################################
 ###################################################################
@@ -1014,44 +1088,14 @@ def update_report():
 def publish():
     '''publish files.'''
 
+    # directory : files
+    export_files = { "bamfiles": glob.glob("*.bam") + glob.glob("*.bam.bai"),
+                     "bigwigfiles": glob.glob("*.bw"),
+                     "bedfiles": glob.glob("deseq.dir/*.bed.gz") + glob.glob("edger.dir/*.bed.gz"),
+                     }
+
     # publish web pages
-    P.publish_report()
-
-    # publish additional data
-    web_dir = PARAMS["web_dir"]
-    project_id = P.getProjectId()
-
-    ucsc_urls = {
-        "bam": 
-        """track type=bam name="%(track)s" bigDataUrl=http://www.cgat.org/downloads/%(project_id)s/%(dirname)s/%(filename)s""" ,
-        "bigwig":
-        """track type=bigWig name="%(track)s" bigDataUrl=http://www.cgat.org/downloads/%(project_id)s/%(dirname)s/%(filename)s""" ,
-        }
-        
-    # directory, files
-    exportfiles = (
-        ( "bamfiles", glob.glob( "*/*.genome.bam" ) + glob.glob( "*/*.genome.bam.bai" ), "bam" ),
-        ( "bamfiles", glob.glob( "*/*.prep.bam" ) + glob.glob( "*/*.prep.bam.bai" ), "bam" ),
-        ( "medips", glob.glob( "*/*.bigwig" ), "bigwig"),
-        )
-    
-    ucsc_files = []
-
-    for targetdir, filenames, datatype in exportfiles:
-        for src in filenames:
-            filename = os.path.basename(src)
-            dest = "%s/%s/%s" % (web_dir, targetdir, filename)
-            suffix = os.path.splitext( src )
-            if suffix in ucsc_urls: ucsc_files.append( ( datatype, targetdir, filename ) )
-            dest = os.path.abspath( dest )
-            if not os.path.exists( dest ):
-                os.symlink( os.path.abspath(src), dest )
-
-    # output ucsc links
-    for ucsctype, dirname, filename in ucsc_files:
-        filename = os.path.basename( filename )
-        track = P.snip( filename, ucsctype )
-        print ucsc_urls[ucsctype] % locals()
+    P.publish_report( export_files = export_files )
 
 if __name__== "__main__":
     sys.exit( P.main(sys.argv) )

@@ -110,7 +110,14 @@ def checkIdentity( reference, translation, options ):
     return is_identical, 0
     
 
-if __name__ == "__main__":
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: gpipe/gff2predictions.py 2021 2008-07-10 16:00:48Z andreas $", usage = globals()["__doc__"])
 
@@ -489,3 +496,7 @@ if __name__ == "__main__":
                                  (nfound, nnotfound, nidentical, nmismatch, naligned, nunaligned))        
     E.Stop()
     
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

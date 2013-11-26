@@ -55,10 +55,6 @@ import _csv
 import hashlib
 import CGAT.CSV as CSV
 
-USAGE="""csv_cut.py [OPTIONS] col1 [col2 [...]] < stdin
-
-"""
-
 class UniqueBuffer:
     mKeys = {}
     def __init__(self, outfile):
@@ -87,9 +83,16 @@ class CommentStripper:
             if line[0] != "#":
                 return line
         
-if __name__ == "__main__":
+def main( argv = None ):
+    """script main.
 
-    parser = E.OptionParser( version = "%prog version: $Id: csv_cut.py 2782 2009-09-10 11:40:29Z andreas $")
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
+
+    parser = E.OptionParser( version = "%prog version: $Id: csv_cut.py 2782 2009-09-10 11:40:29Z andreas $",
+                             usage = globals()["__doc__"] )
 
     parser.add_option( "-r", "--remove", dest="remove", action="store_true",
                        help="remove specified columns, keep all others." )
@@ -189,7 +192,9 @@ if __name__ == "__main__":
         writer.writerow(row)
         noutput += 1
 
-    if options.loglevel >= 1:
-        options.stdlog.write( "# ninput=%i, noutput=%i, nerrors=%i\n" % (ninput, noutput, nerrors) )
+    E.info( "ninput=%i, noutput=%i, nerrors=%i" % (ninput, noutput, nerrors) )
 
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )

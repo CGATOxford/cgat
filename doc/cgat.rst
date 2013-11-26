@@ -11,7 +11,7 @@ genome projects (`Heger & Ponting, 2007`_, `Warren et al., 2008`_) and NGS proje
 as part of the `CGAT Training programme`_.
 
 The tools work from the command line, but can readily be installed
-within frameworks such as `galaxy`_.
+within frameworks such as `Galaxy`_.
 
 Please note that the tools are part of a larger code base also
 including genomics and NGS pipelines. More information about those
@@ -27,7 +27,9 @@ are below, followed by a :ref:`quickstart` guide.
    CGATUsage
    CGATRecipes
    CGATReference
+   CGATMissionStatement
    developing
+   CGATRelease
 
 .. _quickstart:
    

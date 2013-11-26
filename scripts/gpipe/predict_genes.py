@@ -1302,7 +1302,14 @@ def EvaluatePrediction( prediction, query_exons, query_sequence ):
     return is_ok
 
 ##-------------------------------------------------------------------------------
-if __name__ == "__main__":
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: gpipe/predict_genes.py 2462 2009-01-28 10:18:22Z andreas $", usage = globals()["__doc__"] )
 
@@ -1784,4 +1791,8 @@ if __name__ == "__main__":
 
 
 
+
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
 

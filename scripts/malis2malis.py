@@ -594,7 +594,14 @@ def selectComponents( component_ids,
 
 
 ##------------------------------------------------------------
-if __name__ == '__main__':
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: malis2malis.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
 
@@ -783,3 +790,7 @@ if __name__ == '__main__':
         
     E.Stop()
     
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

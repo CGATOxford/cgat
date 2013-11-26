@@ -117,7 +117,14 @@ def processSequence( key, description_rest, sequence, options, mask_regions = No
 
     return len(sequence), nmasked
 
-if __name__ == '__main__':
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
 
     parser = E.OptionParser( version = "%prog version: $Id: split_genomic_fasta_file.py 1225 2007-04-10 15:13:11Z andreas $")
@@ -219,3 +226,7 @@ if __name__ == '__main__':
         options.stdlog.write( "# nkeys=%i, nwritten=%i, nmasked=%i\n" % (total_keys, total_written, total_masked))
 
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

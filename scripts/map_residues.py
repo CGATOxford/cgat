@@ -42,7 +42,7 @@ import re
 import os
 import string
 import getopt
-import alignlib
+import alignlib_lite
 
 param_master = 0
 param_format = None
@@ -50,7 +50,14 @@ param_multiple_alignment = None
 
 GAPCHARS=(".", "-")
 
-if __name__ == '__main__':
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
      
     try:
         optlist, args = getopt.getopt(sys.argv[1:],
@@ -98,7 +105,7 @@ if __name__ == '__main__':
         sbjct_from, sbjct_ali, sbjct_to, sbjct_id = lines[index]
 
         print "#", sbjct_id
-        map_master2sbjct = alignlib.makeAlignataVector()
+        map_master2sbjct = alignlib_lite.py_makeAlignataVector()
 
         sbjct_index  = string.atoi(sbjct_from)
         master_index = string.atoi(master_from)
@@ -129,4 +136,8 @@ if __name__ == '__main__':
 
 
 
+
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
 

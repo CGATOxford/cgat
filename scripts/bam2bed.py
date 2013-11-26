@@ -50,15 +50,18 @@ For example::
 
 Options
 ^^^^^^^
-+-------------------+------------------------------------------------------------------+
-|--region, -r       |output read intervals that overlap a specified region             |
-+-------------------+------------------------------------------------------------------+
-|--merge-pairs, -m  |merge paired-end reads and output interval for entire fragment    |
-+-------------------+------------------------------------------------------------------+
-|--max-insert-size  |only merge if insert size is less than specified no. of bases     |
-+-------------------+------------------------------------------------------------------+
-|--min-insert-size  |only merge if insert size is greater than specified no. of bases  |
-+-------------------+------------------------------------------------------------------+
++-------------------+--------------------------------------------------------+
+|--region, -r       |output read intervals that overlap a specified region   |
++-------------------+--------------------------------------------------------+
+|--merge-pairs, -m  |merge paired-end reads and output interval for entire   |
+|                   |fragment                                                |
++-------------------+--------------------------------------------------------+
+|--max-insert-size  |only merge if insert size is less than specified no. of |
+|                   |bases                                                   |
++-------------------+--------------------------------------------------------+
+|--min-insert-size  |only merge if insert size is greater than specified     |
+|                   |no. of bases                                            |
++-------------------+--------------------------------------------------------+
 
 For example,
 
@@ -66,10 +69,10 @@ To output read intervals that overlap chromosome 1, coordinates 13000-13100::
 
    samtools view example.bam
 
-   READ1     163     1       13040   15      76M     =       13183   219     ...
-   READ2     99      1       13120   0       76M     =       13207   163     ...
-   READ1     83      1       13183   7       76M     =       13040   -219    ...
-   READ2     147     1       13207   0       76M     =       13120   -163    ...
+   READ1     163     1       13040   15      76M     =       13183   219 ...
+   READ2     99      1       13120   0       76M     =       13207   163 ...
+   READ1     83      1       13183   7       76M     =       13040   -219...
+   READ2     147     1       13207   0       76M     =       13120   -163...
 
    python bam2bed.py example.bam --region '1:13000:13100'
 
@@ -115,10 +118,10 @@ def main( argv = None ):
 
 
     parser.add_option("-r", "--region", dest="region", type="string",
-                      help = "samtools region string [default=%default]. " )
+                      help = "output read intervals that overlap samtools region string [default=%default]. " )
 
     parser.add_option("-m", "--merge-pairs", dest="merge_pairs", action="store_true",
-                      help = "merge paired-ended reads into a single bed interval [default=%default]. " )
+                      help = "merge paired-ended reads and output interval for entire fragment [default=%default]. " )
 
     parser.add_option( "--max-insert-size", dest="max_insert_size", type = "int",
                       help = "only merge paired-end reads if they are less than # bases apart. " 

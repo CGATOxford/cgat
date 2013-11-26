@@ -77,7 +77,7 @@ def main( argv = None ):
         
     options.stdout.write("contig\tcov_mean\tcov_sd\n")
     for contig, coverage in coverage_result.iteritems():
-        coverage = map(int, coverage)
+        coverage = map(float, coverage)
         options.stdout.write("%s\t%s\t%s\n" % (contig, str(np.mean(coverage)), str(np.std(coverage))))
 
     ## write footer and output benchmark information.

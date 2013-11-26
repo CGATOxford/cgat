@@ -67,7 +67,14 @@ import CGAT.Experiment as E
 import CGAT.Exons as Exons
 import CGAT.IndexedFasta as IndexedFasta
 
-if __name__ == "__main__":
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: gtf2exons.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
 
@@ -138,3 +145,7 @@ if __name__ == "__main__":
         options.stdlog.write("# ntranscripts=%i, nexons=%i, nerrors=%i\n" % (ntranscripts, nexons, nerrors))
     
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

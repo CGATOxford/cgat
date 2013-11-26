@@ -10,9 +10,7 @@ blast2fasta.py -
 Purpose
 -------
 
-.. todo::
-   
-   describe purpose of the script.
+Convert a blast graph into a pairwise alignment graph
 
 Usage
 -----
@@ -44,23 +42,18 @@ import math
 import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.BlastAlignments as BlastAlignments
-import alignlib
+import alignlib_lite
 
-USAGE="""python %s [OPTIONS] < graph.in > graph.out
+def main( argv = None ):
+    """script main.
 
-Version: $Id: blast2fasta.py 2782 2009-09-10 11:40:29Z andreas $
+    parses command line options in sys.argv, unless *argv* is given.
+    """
 
-Convert a blast graph into a pairwise alignment graph
+    if argv == None: argv = sys.argv
 
-Options:
--h, --help                      print this message.
--v, --verbose=                  loglevel.
--p, --peptides=                 filename with peptide sequences
-""" % sys.argv[0]
-
-if __name__ == "__main__":
-
-    parser = E.OptionParser( version = "%prog version: $Id: blast2fasta.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser( version = "%prog version: $Id: blast2fasta.py 2782 2009-09-10 11:40:29Z andreas $",
+                             usage = globals()["__doc__"] )
 
     parser.add_option("-s", "--sequences", dest="filename_sequences", type="string",
                       help="filename with sequences."  )
@@ -83,7 +76,7 @@ if __name__ == "__main__":
         print "# read %i sequences" % len(sequences)
         
     for k in sequences.keys():
-        sequences[k] = alignlib.makeSequence( sequences[k] )
+        sequences[k] = alignlib_lite.py_makeSequence( sequences[k] )
 
     if options.loglevel >= 2:
         print "# converted %i sequences" % len(sequences)
@@ -91,7 +84,7 @@ if __name__ == "__main__":
     ninput, noutput, nskipped, nfailed = 0, 0, 0, 0
     link = BlastAlignments.Link()
 
-    ali = alignlib.makeAlignataVector()
+    ali = alignlib_lite.py_makeAlignataVector()
     
     for line in sys.stdin:
         
@@ -105,10 +98,10 @@ if __name__ == "__main__":
             continue
         
         ali.Clear()
-        alignlib.fillAlignataCompressed( ali, link.mQueryFrom, link.mQueryAli, link.mSbjctFrom, link.mSbjctAli )
+        alignlib_lite.py_fillAlignataCompressed( ali, link.mQueryFrom, link.mQueryAli, link.mSbjctFrom, link.mSbjctAli )
 
 
-        result = alignlib.writePairAlignment( sequences[link.mQueryToken], sequences[link.mSbjctToken], ali ).split("\n")
+        result = alignlib_lite.py_writePairAlignment( sequences[link.mQueryToken], sequences[link.mSbjctToken], ali ).split("\n")
 
         if len(result) != 3:
             nfailed += 1
@@ -119,9 +112,12 @@ if __name__ == "__main__":
                    link.mSbjctToken, link.mSbjctFrom, link.mSbjctTo, result[1].split("\t")[1] )
             
         noutput += 1
-        
-    print "# ninput=%i, noutput=%i, nskipped=%i, nfailed=%i" % (ninput, noutput, nskipped, nfailed)
+     
+    E.info( "ninput=%i, noutput=%i, nskipped=%i, nfailed=%i" % (ninput, noutput, nskipped, nfailed) )
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
 
             
     

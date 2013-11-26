@@ -214,22 +214,12 @@ def build_scaffold_lengths(contigs_file, outfile, params):
     '''
     output the distribution of scaffold lengths
     '''
-    PARAMS = params
-
-    if PARAMS["filter"]:
-        f = PARAMS["filter"]
-    else:
-        f = 0
     inf = open(contigs_file)
     outf = open(outfile, "w")
     outf.write("scaffold_name\tlength\n")
     for record in FastaIterator.iterate(inf):
         scaffold_length = len(list(record.sequence))
-        if scaffold_length > f:
-            # sequences have to be renamed to be consisten with downstream
-            # coverage analysis
-            # replace spaces and underscores
-            outf.write("%s\t%i\n" % (record.title.replace(" ", "-"), scaffold_length))
+        outf.write("%s\t%i\n" % (record.title, scaffold_length))
     outf.close()
 
 ############################
@@ -255,19 +245,6 @@ class Metavelvet(Assembler):
     '''
     velvet single genome assembly software
     '''
-    
-    def postProcess(self, infile, outfile):
-        '''
-        post process read names
-        in contigs file
-        '''
-        for fasta in FastaIterator.iterate(IOTools.openFile(infile)):
-            title = fasta.title.split(" ")
-            title = "-".join([title[0]. title[1]])
-            outf.write(">%s\n%s\n" % (title, fasta.sequence))
-        outfile.close()
-        os.unlink(infile)
-
     def build(self, infile):
         '''
         run velveth and velvetg
@@ -294,7 +271,7 @@ class Metavelvet(Assembler):
         self.stats_file = track + ".stats.txt"
 
         # velveth and velvetg have to be run to build hash tables and initial de bruijn graphs
-        statement = '''%%(velveth_executable)s %(outdir)s %%(kmer)i -%(format)s -%(read_type)s %(pair)s %(files)s
+        statement = '''%%(velveth_executable)s %(outdir)s %%(kmer)i -%(format)s -%(read_type)s %(pair)s %(files)s >> %(metavelvet_dir)s/%(track)s_velveth.log
                       ; checkpoint
                       ; mv %(outdir)s/Log %(metavelvet_dir)s/%(track)s.velveth.log
                       ; cd %(outdir)s; %%(velvetg_executable)s %(outdir)s -exp_cov auto -ins_length %%(velvetg_insert_length)i
@@ -306,7 +283,7 @@ class Metavelvet(Assembler):
                       ; gzip %(metavelvet_dir)s/%(track)s.sequences
                       ; mv %(outdir)s/Graph2 %(metavelvet_dir)s/%(track)s.graph2
                       ; gzip %(metavelvet_dir)s/%(track)s.graph2
-                      ; cat %(outdir)s/meta-velvetg.contigs.fa | python %%(scriptsdir)s/rename_contigs.py -a metavelvet --log= %(metavelvet_dir)s/%(track)s.contigs.log
+                      ; cat %(outdir)s/meta-velvetg.contigs.fa | python %%(scriptsdir)s/rename_contigs.py -a metavelvet --log=%(metavelvet_dir)s/%(track)s.contigs.log
                         >  %(metavelvet_dir)s/%(track)s.contigs.fa
                       ; sed -i 's/in/_in/g' %(outdir)s/meta-velvetg.Graph2-stats.txt
                       ; mv  %(outdir)s/meta-velvetg.Graph2-stats.txt %(metavelvet_dir)s/%(track)s.stats.txt
@@ -372,18 +349,6 @@ class Idba(Metavelvet):
             statement = None
         return statement
 
-    def postProcess(self, infile, outfile):
-        '''
-        post process read names
-        in contigs file
-        '''
-        for fasta in FastaIterator.iterate(IOTools.openFile(infile)):
-            title = fasta.title.split("_")[0]
-            outf.write(">%s\n%s\n" % (title, fasta.sequence))
-        outfile.close()
-        os.unlink(infile)
-
-
     def build(self, infile):
         '''
         build statement for running idba
@@ -439,16 +404,6 @@ class Ray(Idba):
     '''
     ray contig assembler
     '''
-    def postProcess(self, infile, outfile):
-        '''
-        post process read names
-        in contigs file
-        '''
-        for fasta in FastaIterator.iterate(IOTools.openFile(infile)):
-            title = fasta.title.split("_")[0]
-            outf.write(">%s\n%s\n" % (title, fasta.sequence))
-        outfile.close()
-        os.unlink(infile)
 
     def build(self, infile):
         '''
@@ -460,6 +415,7 @@ class Ray(Idba):
         paired = self.checkPairs(infile)
 
         tempdir = P.getTempDir()
+
         # check whether the data are paired-end
         if not paired:
             pair = paired
@@ -494,10 +450,10 @@ class Ray(Idba):
         else:
             raise IOError, "do not support file of this type: %s" % infile
 
-        # note restrict use to 5 cores
+        # note restrict use to 10 cores
         
         statement = ''' %(gunzy)s
-                       ; mpiexec -n 5 %%(ray_executable)s %(common_options)s %(filetype)s %(files)s -o %(raydir)s
+                       ; mpiexec -n 10  %%(ray_executable)s %(common_options)s %(filetype)s %(files)s -o %(raydir)s >> %(raydir_orig)s/%(track)s.log
                        ; checkpoint; mv %(raydir)s/Scaffolds.fasta %(raydir_orig)s/%(track)s.scaffolds.fa
                        ; mv %(raydir)s/ScaffoldComponents.txt %(raydir_orig)s/%(track)s.scaffold_components.txt
                        ; mv %(raydir)s/ScaffoldLengths.txt %(raydir_orig)s/%(track)s.scaffold_lengths.txt

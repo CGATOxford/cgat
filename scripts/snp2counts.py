@@ -62,7 +62,7 @@ import CGAT.IndexedFasta as IndexedFasta
 import CGAT.IndexedGenome as IndexedGenome
 import CGAT.Genomics as Genomics
 import CGAT.GTF as GTF
-import alignlib
+import alignlib_lite
 
 CdsResult = collections.namedtuple( 'CdsResult',
                                     '''strand, start, end,
@@ -276,8 +276,8 @@ def countEffectsOnTranscript( var_seq, ref_seq,
     # start position for out-of-frame region
     var_pos = 0
 
-    map_ref2var = alignlib.makeAlignmentVector()
-    alignator = alignlib.makeAlignatorDPFull( alignlib.ALIGNMENT_GLOBAL,
+    map_ref2var = alignlib_lite.py_makeAlignmentVector()
+    alignator = alignlib_lite.py_makeAlignatorDPFull( alignlib_lite.py_ALIGNMENT_GLOBAL,
                                               -10.0,
                                               -2.0 )
 
@@ -347,20 +347,20 @@ def countEffectsOnTranscript( var_seq, ref_seq,
             ref_frag_aa = Genomics.translate( refseq )
 
             # count effect on protein coding sequence
-            var_s = alignlib.makeSequence(var_frag_aa)
-            ref_s = alignlib.makeSequence(ref_frag_aa)
+            var_s = alignlib_lite.py_makeSequence(var_frag_aa)
+            ref_s = alignlib_lite.py_makeSequence(ref_frag_aa)
 
             diff_length = abs(len(ref_frag_aa) - len(var_frag_aa))
             # very heuristic - might lead strange effects
             alignment_band = max(10, diff_length * 2)
-            iterator = alignlib.makeIterator2DBanded( -alignment_band, +alignment_band )
-            alignlib.setDefaultIterator2D( iterator )
+            iterator = alignlib_lite.py_makeIterator2DBanded( -alignment_band, +alignment_band )
+            alignlib_lite.py_setDefaultIterator2D( iterator )
 
             E.debug( "alignment: reference(%i) with variant(%i) (diff=%i) within diagonals %i and %i" % \
                      (len(ref_frag_aa), len(var_frag_aa), diff_length, -alignment_band, alignment_band ))
             
             alignator.align(  map_ref2var, ref_s, var_s )
-            # print alignlib.AlignmentFormatExplicit( map_ref2var, ref_s, var_s )
+            # print alignlib_lite.py_AlignmentFormatExplicit( map_ref2var, ref_s, var_s )
             for x, ref_aa in enumerate( ref_frag_aa ):
                 p = map_ref2var.mapRowToCol(x)
                 if p < 0: continue

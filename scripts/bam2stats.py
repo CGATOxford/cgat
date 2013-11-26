@@ -35,8 +35,8 @@ iterating over the file. The metrics output are:
 |                        |strand (bam flag)                         |
 +------------------------+------------------------------------------+
 |proper_pair             |alignments in which both pairs have been  |
-|                        |mapped properly ly (according to the      |
-|                        |mapper) (bam flag)                        |
+|                        |mapped properly (according to the mapper) |
+|                        |(bam flag)                                |
 +------------------------+------------------------------------------+
 |read1                   |alignments for 1st read of pair (bam flag)|
 +------------------------+------------------------------------------+
@@ -51,12 +51,12 @@ iterating over the file. The metrics output are:
 +------------------------+------------------------------------------+
 |secondary               |alignment is not primary alignment        |
 +------------------------+------------------------------------------+
-|alignments_rna          |alignments mapping to regions of          |
-|                        |repetitive RNA                            |
+|alignments_rna          |alignments mapping to regions specified in|
+|                        |a .gff file                               |
 +------------------------+------------------------------------------+
-|alignments_no_rna       |alignments mapping not to regions of      |
-|                        |repetitive RNA (if --remove -rna has been |
-|                        |set, otherwise equal to mapped)           |
+|alignments_no_rna       |alignments not mapping to regions in a    |
+|                        |.gff file (if --remove-rna has been set,  |
+|                        |otherwise equal to mapped)                |
 +------------------------+------------------------------------------+
 |alignments_duplicates   |number of alignments mapping to the same  |
 |                        |location                                  |
@@ -94,8 +94,7 @@ iterating over the file. The metrics output are:
 +------------------------+------------------------------------------+
 
 Additionally, the script outputs histograms for the following tags and
-scores. These histograms are only computed for alignments not within
-regions of repetitive RNA.
+scores.
 
 * NM: number of mismatches in alignments.
 * NH: number of hits of reads.
@@ -118,7 +117,7 @@ metrics output are:
 |pairs_proper_unique      |pairs which are proper and map uniquely.|
 +-------------------------+----------------------------------------+
 |pairs_incomplete         |pairs in which one of the reads maps    |
-|                         |uniquel, but the other does not map.    |
+|                         |uniquely, but the other does not map.   |
 +-------------------------+----------------------------------------+
 |pairs_proper_duplicate   |pairs which are proper and unique, but  |
 |                         |marked as duplicates.                   |
@@ -263,7 +262,9 @@ def main( argv = None ):
     parser.add_option( "-d", "--output-details", dest="output_details", action="store_true",
                        help = "output per-read details [%default]" )
     parser.add_option( "-q", "--filename-fastq", dest = "filename_fastq",
-                       help = "filename with fasta sequences [%default]" )
+                       help = "filename with sequences and quality scores. This file is only "
+                       "used to collect sequence identifiers. Thus, for paired end data a "
+                       "single file is sufficient [%default]" )
 
     parser.set_defaults(
         filename_rna = None,
@@ -288,6 +289,9 @@ def main( argv = None ):
         outfile_details = E.openOutputFile( "details", "w")
     else:
         outfile_details = None
+
+    if options.filename_fastq and not os.path.exists( options.filename_fastq ):
+        raise IOError("file %s does not exist" % options.filename_fastq)
 
     counter, flags_counts, nh_filtered, nh_all, nm_filtered, nm_all, mapq, mapq_all, max_hi = \
         _bam2stats.count( pysam_in, 

@@ -59,10 +59,11 @@ def Sparse2Matrix( outfile, matrix_id, lines, options, in_map_token2row = {}, in
     if len(lines) == 0: raise IOError("no input")
 
     # forget about titles
-    v = lines[0][:-1].split("\t")[2]
-    if v not in ("na", "NaN"):
+    titles = lines[0][:-1].split("\t")
+    if titles[2] not in ("na", "NaN"):
         try:
-            v = float(v)
+            v = float(titles[2])
+            titles = None
         except ValueError:
             del lines[0]
 
@@ -77,6 +78,7 @@ def Sparse2Matrix( outfile, matrix_id, lines, options, in_map_token2row = {}, in
         map_token2col = {}
 
     row_converter, col_converter = str, str
+
     if options.format == "string":
 
         has_row_names = len(map_token2row) > 0
@@ -181,6 +183,9 @@ def Sparse2Matrix( outfile, matrix_id, lines, options, in_map_token2row = {}, in
 
         if options.output_format == "square":
 
+            if titles:
+                outfile.write("%s" % titles[0] )
+
             for col_token, index in col_tokens:
                 outfile.write("\t%s" % col_token)
             outfile.write("\n")
@@ -254,7 +259,14 @@ def Sparse2Matrix( outfile, matrix_id, lines, options, in_map_token2row = {}, in
 
     return True
 
-if __name__ == '__main__':
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: sparse2full.py 2782 2009-09-10 11:40:29Z andreas $")
 
@@ -444,3 +456,7 @@ if __name__ == '__main__':
             outfile_map.close()
                 
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

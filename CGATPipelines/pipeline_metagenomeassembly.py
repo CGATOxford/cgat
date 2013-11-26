@@ -348,11 +348,12 @@ def preprocessReads(infile, outfile):
     elif infile.endswith(".1.gz"):
         read2 = P.snip(infile, ".1.gz") + ".2.gz"
         assert os.path.exists(read2), "file does not exist %s" % read2
-    
+        
+        log = infile.replace("fastq.","")
         statement = '''python %(scriptsdir)s/fastqs2fasta.py 
                    -a %(infile)s 
                    -b %(read2)s 
-                   --log=%(infile)s.log 
+                   --log=%(log)s.log 
                    > %(outfile)s'''
         P.run()
 
@@ -705,59 +706,6 @@ def runBlastOnRawSequences(infile, outfile):
                   | gzip > %(outfile)s'''
     P.run()
 
-###################################################################                                                                                                                                                                         
-###################################################################                                                                                                                                                                          
-###################################################################                                                                                                                                                                          
-@transform(runBlastOnRawSequences
-           , suffix(".result.gz")
-           , add_inputs(loadReadCounts)
-           , ".stats")
-def buildRpsblastAlignmentStats(infiles, outfile):
-    '''
-    count the proportion of reads that can be aligned 
-    to protein CDD sequences
-    '''
-    dbh = connect()
-    cc = dbh.cursor()
-    track = os.path.basename(P.snip(infiles[0], ".rpblast.result.gz"))
-
-    total = cc.execute("""SELECT total_reads FROM reads_summary WHERE track == '%s'""" % track).fetchone()[0]
-
-    # Note only dealing with one of the pair at the 
-    # moment
- #    total = float(total)/2
-    
-    total = float(total)
-    reads = set()
-
-    outf = open(outfile, "w")
-    # count unique alignments
-    for line in IOTools.openFile(infiles[0]).readlines():
-        if line.startswith("#"): continue
-        data = line[:-1].split("\t")
-        if data[0] not in reads:
-            reads.add(data[0])
-    prop = float(len(reads))/total
-    outf.write("%s\t%f\n" % (track, prop))
-    outf.close()
-
-###################################################################                                                                                                                                                                          
-###################################################################                                                                                                                                                                          
-###################################################################                                                                                                                                                                          
-@merge(buildRpsblastAlignmentStats, "function.dir/rpsblast_alignment_stats.load")
-def loadRpsblastAlignmentStats(infiles, outfile):
-    '''
-    load alignment statistics
-    '''
-    to_cluster = False
-    tmp = P.getTempFilename()
-    infs = " ".join(infiles)
-    statement = '''cat %(infs)s > %(tmp)s'''
-    P.run()
-    tablename = P.toTable(outfile)
-    statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s --header=track,proportion
-                   --log=%(outfile)s.log < %(tmp)s > %(outfile)s'''
-    P.run()
 
 ###################################################################                                                                                                                                                                          
 ###################################################################                                                                                                                                                                          
@@ -793,7 +741,7 @@ def countCOGAssignments(infiles, outfile):
     '''
     to_cluster = True
     job_options = " -l mem_free=30G"
-    countsfile = [x for x in infiles[1:3] if infiles[0].find(P.snip(x, ".nreads")) != -1]
+    countsfile = [x for x in infiles[1:len(infiles)] if infiles[0].find(P.snip(x, ".nreads")) != -1]
     countsfile = countsfile[0]
     
     # TODO: sort this out for single ended data
@@ -848,9 +796,53 @@ def loadCOGCounts(infile, outfile):
                    '''
     P.run()
 
+
+###################################################################                                                                                                                                                                         
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+@transform(loadCOGCounts
+           , suffix(".load")
+           , ".stats")
+def buildRpsblastAlignmentStats(infile, outfile):
+    '''
+    count the proportion of reads that can be aligned 
+    to protein CDD sequences - this is done by subtraction
+    from COG counts = Unassigned COG + Unaligned read
+    '''
+    dbh = connect()
+    cc = dbh.cursor()
+
+    tablename = P.toTable(infile)
+    total = 0 
+    for data in cc.execute("""SELECT proportion FROM %s""" % tablename).fetchall():
+        prop = data[0]
+        total += prop
+    
+    unmapped_in_some_way = 1 - total
+    outf = open(outfile, "w")
+    track = P.snip(infile, ".rpblast.result.cog.counts.load")
+    outf.write("%s\t%f\n" % (track, unmapped_in_some_way))
+
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+###################################################################                                                                                                                                                                          
+@merge(buildRpsblastAlignmentStats, "function.dir/rpsblast_alignment_stats.load")
+def loadRpsblastAlignmentStats(infiles, outfile):
+    '''
+    load alignment statistics
+    '''
+    to_cluster = False
+    tmp = P.getTempFilename()
+    infs = " ".join(infiles)
+    statement = '''cat %(infs)s > %(tmp)s'''
+    P.run()
+    tablename = P.toTable(outfile)
+    statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s --header=track,proportion
+                   --log=%(outfile)s.log < %(tmp)s > %(outfile)s'''
+    P.run()
+
 ##################################################################
-@follows(loadCOGCounts
-         , loadRpsblastAlignmentStats)
+@follows(loadCOGCounts)
 def functional_profile():
     pass
 
@@ -992,7 +984,8 @@ def runRay(infile, outfile):
     run Ray on each track
     '''
     to_cluster = False
-    job_options=" -l mem_free=30G -pe dedicated 5"
+#    job_options=" -l h=!cgatsmp1,h=!cgatgpu1,h=!andromeda,h=!gandalf,h=!saruman -pe mpi 10 -q all.q "
+    job_options = "-l mem_free=30G"
     statement = PipelineMetagenomeAssembly.Ray().build(infile)
     P.run()
 
@@ -1353,7 +1346,7 @@ def mapReadsAgainstMetavelvetContigs(infiles, outfile):
         bwa_aln_options = PARAMS["bwa_aln_options"]
         bwa_sampe_options=PARAMS["bwa_sampe_options"]
         bwa_threads=PARAMS["bwa_threads"]
-        m = PipelineMapping.BWA()
+        m = PipelineMapping.BWA(remove_non_unique = True)
     statement = m.build( (inf,), outfile ) 
     P.run()
 
@@ -1383,13 +1376,13 @@ def mapReadsAgainstIdbaContigs(infiles, outfile):
         m = PipelineMapping.Bowtie( executable = P.substituteParameters( **locals() )["bowtie_executable"] )
 
     elif infiles[1].endswith("bwt"):
-        genome = genome + ".fa"
+        genome = genome
         job_options= " -l mem_free=%s" % (PARAMS["bwa_memory"])
         bwa_index_dir = index_dir
         bwa_aln_options = PARAMS["bwa_aln_options"]
         bwa_sampe_options=PARAMS["bwa_sampe_options"]
         bwa_threads=PARAMS["bwa_threads"]
-        m = PipelineMapping.BWA()
+        m = PipelineMapping.BWA(remove_non_unique = True)
     statement = m.build( (inf,), outfile ) 
     P.run()
 
@@ -1419,13 +1412,13 @@ def mapReadsAgainstRayContigs(infiles, outfile):
         m = PipelineMapping.Bowtie( executable = P.substituteParameters( **locals() )["bowtie_executable"] )
 
     elif infiles[1].endswith("bwt"):
-        genome = genome + ".fa"
+        genome = genome
         job_options= " -l mem_free=%s" % (PARAMS["bwa_memory"])
         bwa_index_dir = index_dir
         bwa_aln_options = PARAMS["bwa_aln_options"]
         bwa_sampe_options=PARAMS["bwa_sampe_options"]
         bwa_threads=PARAMS["bwa_threads"]
-        m = PipelineMapping.BWA()
+        m = PipelineMapping.BWA(remove_non_unique = True)
     statement = m.build( (inf,), outfile ) 
     P.run()
 
@@ -1498,19 +1491,28 @@ def loadPicardStats( infiles, outfile ):
 @follows(*ALIGNMENT_TARGETS)
 @transform(ALIGNMENT_TARGETS,
            suffix(".bam"),
-           add_inputs(buildContigLengths),
+           add_inputs(loadPicardStats),
            ".coverage.gz")
 def buildCoverageOverContigs(infiles, outfile):
     '''
     build histograms of the coverage over each of the contigs
     '''
     to_cluster = True
+    
     bam = infiles[0]
-    if PARAMS["pool_reads"]:
-        genome = [inf for inf in infiles[1:len(infiles)] if inf.find(os.path.dirname(bam)) != -1][0]
-    else:
-        genome = infiles[0].replace(".bam", ".lengths.tsv")
-    statement = '''bedtools genomecov -ibam %(bam)s -g %(genome)s -d | gzip > %(outfile)s'''
+    track = os.path.dirname(bam)[:-len(".dir")]+"_"+ P.snip(os.path.basename(bam), ".bam")
+
+    # nnect to database
+    dbh = connect()
+    cc = dbh.cursor()
+
+    # get number of passed filter aligned reads from picard stats
+    scale_factor = cc.execute("""SELECT PF_READS_ALIGNED FROM picard_stats_alignment_summary_metrics
+                              WHERE track == '%s'""" % track).fetchone()[0]
+
+    scale_factor = 1/(float(scale_factor)/1000000)
+
+    statement = '''genomeCoverageBed -ibam %(bam)s -scale %(scale_factor)f -d | gzip > %(outfile)s'''
     P.run()
 
 ###################################################################                                                                                                                                                                          
@@ -1620,7 +1622,12 @@ def update_report():
 
 
 if __name__== "__main__":
-    sys.exit( P.main(sys.argv) )
+    if sys.argv[1] == "plot":
+        pipeline_printout_graph("test.pdf", "pdf",[full], no_key_legend=True,
+                                size = (4,4),
+                                user_colour_scheme = {"colour_scheme_index" :1})
+    else:
+        sys.exit( P.main(sys.argv) )
     
 
 

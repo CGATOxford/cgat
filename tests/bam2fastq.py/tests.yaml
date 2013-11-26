@@ -7,7 +7,7 @@ version:
 
 default_test:
     stdin: null
-    outputs: [example_human_g1k.1.fastq,example_human_g1k.2.fastq]
-    references: [example_human_g1k.1.fastq,example_human_g1k.2.fastq]
-    options: <DIR>/example_human_g1k.bam example_human_g1k.1.fastq example_human_g1k.2.fastq
+    outputs: [example.1.fastq.gz,example.2.fastq.gz]
+    references: [example.1.fastq.gz,example.2.fastq.gz]
+    options: <DIR>/example.bam example.1.fastq.gz example.2.fastq.gz
 

@@ -337,7 +337,10 @@ def main( argv = None ):
                       help="filename with genome."  )
 
     parser.add_option( "--complement-groups", dest="complement_groups", action="store_true",
-                       help="""complement groups. Will write introns from exons.""" )
+                       help="""complement groups. Will write introns from exons [%default].""" )
+
+    parser.add_option( "--group-field", dest="group_field", type="string",
+                       help="""gff field/attribute to group by such as gene_id, transrcipt_id, ... [%default].""" )
 
     parser.add_option( "--combine-groups", dest="combine_groups", action="store_true",
                        help="""combine groups.""" )
@@ -396,6 +399,7 @@ def main( argv = None ):
         skip_missing = False,
         remove_contigs = None,
         is_gtf = False,
+        group_field = None,
         )
 
     (options, args) = E.Start( parser, argv = argv )
@@ -418,17 +422,14 @@ def main( argv = None ):
     else:
         agp = None
         
-    if options.is_gtf:
-        gffs = GTF.iterator( options.stdin )
-    else:
-        gffs = GTF.iterator( options.stdin )
+    gffs = GTF.iterator( options.stdin )
 
     if options.add_up_flank or options.add_down_flank:
         
         if options.is_gtf:
             iterator = GTF.flat_gene_iterator( gffs )
         else:
-            iterator = GTF.joined_iterator( gffs )
+            iterator = GTF.joined_iterator( gffs, options.group_field )
         
         for chunk in iterator:
             is_positive = Genomics.IsPositiveStrand( chunk[0].strand )
@@ -483,8 +484,12 @@ def main( argv = None ):
 
     elif options.complement_groups:
         
-        iterator = GTF.joined_iterator( gffs )
+        iterator = GTF.joined_iterator( gffs, group_field = options.group_field )
+
         for chunk in iterator:
+            if options.is_gtf:
+                chunk = [ x for x in chunk if x.feature == "exon" ]
+                if len(chunk) == 0: continue
             chunk.sort()
             x = GTF.Entry()
             x.copy( chunk[0] )

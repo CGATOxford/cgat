@@ -51,7 +51,7 @@ import optparse
 
 import CGAT.Experiment as E
 import CGAT.Blat as Blat
-import alignlib
+import alignlib_lite
 
 def main( argv = None ):
     """script main.
@@ -115,7 +115,7 @@ def main( argv = None ):
            target_end,
            target_length) ]
 
-        map_query2target = alignlib.makeAlignmentBlocks()
+        map_query2target = alignlib_lite.py_makeAlignmentBlocks()
         
         qstart, tstart = psl.mQueryStart, psl.mSbjctStart
         

@@ -1,6 +1,5 @@
 from ChipseqReport import *
 
-import IOTools
 
 class FoldChangeTracker( TrackerSQL ):
     '''the fold change tracker ignores unstimulated tracks.'''

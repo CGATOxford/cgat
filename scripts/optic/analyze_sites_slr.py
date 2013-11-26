@@ -291,7 +291,14 @@ def ProcessResult( result, options, mali = None, prefix = None, p_value = None )
     
     return counts
 
-if __name__ == "__main__":
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
     
     parser = E.OptionParser( version = "%prog version: $Id: optic/analyze_sites_slr.py 2781 2009-09-10 11:33:14Z andreas $" )
 
@@ -560,3 +567,7 @@ if __name__ == "__main__":
                 options.stdlog.write("# ntotal=%i, npos=%i\n" % (len(results), len(new_results)))
 
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

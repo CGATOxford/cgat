@@ -1061,7 +1061,7 @@ def summarizeMACS2FDR( infiles, outfile ):
 ############################################################
 ############################################################
 ############################################################
-def bedGraphtoBigwig( infile, contigsfile, outfile, remove = True ):
+def bedGraphToBigwig( infile, contigsfile, outfile, remove = True ):
     '''convert a bedgraph file to a bigwig file.
 
     The bedgraph file is deleted on success.
@@ -1070,7 +1070,7 @@ def bedGraphtoBigwig( infile, contigsfile, outfile, remove = True ):
     if not os.path.exists( infile ):
         raise OSError( "bedgraph file %s does not exist" % infile )
 
-    if not os.path.exists( contigfile ):
+    if not os.path.exists( contigsfile ):
         raise OSError( "contig size file %s does not exist" % infile )
     
     statement = '''
@@ -1104,9 +1104,11 @@ def runMACS2( infile, outfile, controlfile = None ):
     # used to set the option --format=bampe
     # removed to let macs2 detect the format.
 
+    # format bam needs to be set explicitely, autodetection does not work.
     # -B --SPMR: ask macs to create a bed-graph file with fragment pileup per million reads
     statement = '''
                     macs2 callpeak 
+                    --format=BAM
                     -t %(infile)s 
                     -c %(control)s 
                     --verbose=10 
@@ -1129,10 +1131,10 @@ def runMACS2( infile, outfile, controlfile = None ):
     # convert normalized bed graph to bigwig
     # saves 75% of space
     # compressing only saves 60%   
-    bedGraphToBigwig( outfile + "_treat_pileup.bgd", 
+    bedGraphToBigwig( outfile + "_treat_pileup.bdg", 
                       os.path.join(PARAMS["annotations_dir"], "contigs.tsv"),
                       outfile + "_treat_pileup.bw" )
-    bedGraphToBigwig( outfile + "_control_lambda.bgd", 
+    bedGraphToBigwig( outfile + "_control_lambda.bdg", 
                       os.path.join(PARAMS["annotations_dir"], "contigs.tsv"),
                       outfile + "_control_lambda.bw" )
 
@@ -1155,7 +1157,9 @@ def runZinba( infile, outfile, controlfile, action = "full" ):
 
     to_cluster = True
 
-    job_options= "-l mem_free=16G -pe dedicated %i -R y" % PARAMS["zinba_threads"]
+    E.info( "zinba: running action %s" % (action ))
+
+    job_options= "-l mem_free=32G -pe dedicated %i -R y" % PARAMS["zinba_threads"]
 
     mappability_dir = os.path.join( PARAMS["zinba_mappability_dir"], 
                                     PARAMS["genome"],
@@ -1177,8 +1181,9 @@ def runZinba( infile, outfile, controlfile, action = "full" ):
 
     options = " ".join(options)
 
+    # python %(scriptsdir)s/WrapperZinba.py
     statement = '''
-    python %(scriptsdir)s/WrapperZinba.py
+    python %(scriptsdir)s/runZinba.py
            --input-format=bam
            --fdr-threshold=%(zinba_fdr_threshold)f
            --fragment-size=%(zinba_fragment_size)s
@@ -1422,8 +1427,13 @@ def loadMACS2( infile, outfile, bamfile, controlfile = None ):
         P.touch( outfile )
         return
 
+    # jethro os.mkdir can't create nested directories
+    # exportdir = os.path.join(PARAMS['exportdir'], 'macs2' )
     exportdir = os.path.join(PARAMS['exportdir'], 'macs2' )
-    if not os.path.exists( exportdir ):
+    if not os.path.exists( PARAMS[ 'exportdir' ] ):
+        os.mkdir( PARAMS[ 'exportdir' ] )
+        os.mkdir( exportdir )
+    elif not os.path.exists( exportdir ):
         os.mkdir( exportdir )
 
     ###############################################################
@@ -2719,3 +2729,85 @@ def makeReproducibility( infiles, outfile ):
     P.run()
 
     
+
+
+############################################################
+############################################################
+############################################################
+def runScripture( infile, outfile, 
+                  contig_sizes, 
+                  mode = "narrow" ):
+    '''run scripture on infile.'''
+    
+    job_options= "-l mem_free=8G"
+
+    samfile = pysam.Samfile( infile, "rb" )
+    contigs = samfile.references
+
+    s = '''scripture
+                   -task chip 
+                   -trim
+                   -minMappingQuality %%(scripture_min_mapping_quality)f
+                   -windows 200
+                   -fullScores
+                   -sizeFile %%(contig_sizes)s
+                   -alpha %%(scripture_fdr)f
+                   -alignment %%(infile)s
+                   -chr %(contig)s
+                   -out %%(outfile)s.data.%(contig)s
+                   >& %%(outfile)s.log.%(contig)s
+    '''
+
+    statements = [ s % { 'contig' : x } for x in contigs ]
+    P.run()
+
+    statements = None
+
+    # collect all results into a single bed file
+    statement = '''cat %(outfile)s.data.*.scores | gzip > %(outfile)s.bed.gz''' 
+    P.run()
+
+    statement = '''cat %(outfile)s.log.* > %(outfile)s''' 
+    P.run()
+
+    statement = '''rm -f %(outfile)s.data.*''' 
+    P.run()
+
+    statement = '''rm -f %(outfile)s.log.*''' 
+    P.run()
+
+def loadScripture( infile, outfile, bamfile, controlfile = None ):
+    '''load scripture peaks.'''
+
+    # Note: not sure if the following will work for
+    #       paired end data.
+
+    # no offset
+    #    offset = getPeakShift( infile ) * 2
+    offset = 0
+
+    if controlfile:
+        control = "--control-bam-file=%(controlfile)s --control-offset=%(offset)i" % locals()
+
+    bedfile = infile + ".bed.gz"
+
+    headers="contig,start,end,interval_id,score,pvalue,score2,score3,score4"
+    tablename = P.toTable( outfile ) + "_peaks"
+    statement = '''zcat %(bedfile)s 
+                | awk '{printf("%%s\\t%%i\\t%%i\\t%%s\\t%%f\\t%%f\\t%%f\\t%%f\\t%%f\\n", $1,$2,$3,++a,$5,$7,$8,$9,$10);}' 
+                | python %(scriptsdir)s/bed2table.py 
+                           --counter=peaks
+                           --bam-file=%(bamfile)s
+                           --offset=%(offset)i
+                           %(control)s
+                           --all-fields 
+                           --bed-header=%(headers)s
+                           --log=%(outfile)s
+                | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
+                       --index=contig,start
+                       --index=interval_id
+                       --table=%(tablename)s
+                       --allow-empty 
+                > %(outfile)s'''
+
+    P.run()

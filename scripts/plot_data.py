@@ -126,7 +126,14 @@ def readTable( file,
 
     return MA.masked_values( matrix, missing_value ), headers, colors
 
-if __name__ == "__main__":
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: plot_data.py 2782 2009-09-10 11:40:29Z andreas $")
 
@@ -372,7 +379,7 @@ if __name__ == "__main__":
     if options.function:
         xstart, xend = pylab.gca().get_xlim()
         increment = (xend - xstart) / 100.0
-        exec("f = lambda x: %s" % options.function )
+        exec "f = lambda x: %s" % options.function in locals()
         xvals, yvals = [], []
         for x in range(0,100):
             xvals.append( xstart )
@@ -389,3 +396,7 @@ if __name__ == "__main__":
         pylab.show()
 
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

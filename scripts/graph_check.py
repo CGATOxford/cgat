@@ -91,7 +91,14 @@ def writeInfo( outfile, vertices, nlinks, nlines, nerrors, ncomments, is_sorted 
 
     return missed_queries, missed_sbjcts, missed_self
     
-if __name__ == "__main__":
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: graph_check.py 2782 2009-09-10 11:40:29Z andreas $")
 
@@ -211,3 +218,7 @@ if __name__ == "__main__":
         writeSet( open( options.filename_output_pattern % "missed_self", "w" ), missed_self )
 
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

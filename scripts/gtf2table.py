@@ -122,6 +122,9 @@ read-coverage
 read-extension
 
 read-counts
+   count number of reads overlapping a gene or transcript. Counts
+   uniquely by read name and counts duplicate and non-duplicate (reads)
+   separately.
 
 splice
    output splicing summary of gene
@@ -181,7 +184,7 @@ import bx.intervals.io
 import bx.intervals.intersection
 
 try:
-    import alignlib
+    import alignlib_lite
 except ImportError:
     pass
 
@@ -732,7 +735,7 @@ class CounterCoverage(CounterOverlap):
         segments = self.getSegments()
         segments.sort()
 
-        map_genome2transcript = alignlib.makeAlignmentBlocks()
+        map_genome2transcript = alignlib_lite.py_makeAlignmentBlocks()
 
         x = 0
         for start, end in segments:

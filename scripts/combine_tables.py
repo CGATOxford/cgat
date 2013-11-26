@@ -44,12 +44,14 @@ import os
 import time
 import glob
 import optparse
+import collections
 
 import CGAT.IOTools as IOTools
 import CGAT.Experiment as E
 
-def readTable( filename, options ):
-    '''read table and filter.'''
+def readTable( filename, options):
+    '''read table and filter.
+    '''
 
     if os.path.exists(filename):
         lines = IOTools.openFile(filename, "r").readlines()
@@ -84,6 +86,8 @@ def concatenateTables( outfile, options, args ):
 
     first = True
 
+    missing_value = options.missing_value
+
     rx = re.compile( options.regex_filename )
 
     if options.headers == None or options.headers == "auto":
@@ -91,37 +95,51 @@ def concatenateTables( outfile, options, args ):
     else:
         row_headers = [options.headers]
 
-    for nindex, filename in enumerate(options.filenames):
+    tables = []
+    # read all tables
+    for filename in options.filenames:
+        tables.append( readTable( filename, options ) )
 
-        lines = readTable( filename, options )
-    
-        if len(lines) == 0: continue
+    if options.cat == None:
+        if len(row_headers)==1:
+            row_head_titles = [ "filename" ]
+        else:
+            row_head_titles = [ "pattern" + str(x) for x in range(len(row_headers)) ]
+    else:
+        row_head_titles = [ x.strip() for x in options.cat.split(",") ]
+
+    # collect titles
+    if options.input_has_titles:
+        titles = collections.OrderedDict()
+        for table in tables:
+            for key in table[0][:-1].split("\t"):
+                titles[key] = 1
+        outfile.write( "%s\t%s\n" % \
+                           ( "\t".join([x for x in row_head_titles ]),
+                             "\t".join( titles.keys() ) ) )
+        map_title2column = {}
+        for x,title in enumerate(titles.keys()):
+            map_title2column[title] = x
+
+        all_titles = set(titles.keys())
+
+    for nindex, table in enumerate( tables ):
         
-        # files have titles - use these
+        extra = ""
         if options.input_has_titles:
-            if first:
-                titles = lines[0]
-                if options.cat == None:
-                    if len(row_headers)==1:
-                        row_head_titles = [ "filename" ]
-                    else:
-                        row_head_titles = [ "patten" + str(x) for x in range(len(row_headers)) ]
-                else:
-                    row_head_titles = [ x.strip() for x in options.cat.split(",") ]
+            titles = table[0][:-1].split("\t")
+            map_old2new = [ map_title2column[t] for t in titles]
+            del table[0]
+            
+        else:
+            map_old2new = list(range(len(all_titles)))
 
-                if len(row_head_titles) != len(row_headers[0]):
-                    raise ValueError("Different number of row headers and titles specified")
+        for l in table:
+            data = [missing_value] * len( all_titles )
+            for x,d in enumerate(l[:-1].split("\t")):
+                data[map_old2new[x]] = d
 
-                header = "\t".join([x for x in row_head_titles ]) + "\t%s" % titles
-                outfile.write( header  )
-                first = False
-            else:
-                if titles != lines[0]:
-                    raise ValueError("incompatible headers: %s != %s" % (str(titles), lines[0]) )
-            del lines[0]
-
-        for l in lines:
-            row = "\t".join([str(x) for x in  row_headers[nindex]]) + "\t%s" % l
+            row = "\t".join([str(x) for x in  row_headers[nindex]] + data ) + "\n"
             outfile.write(row )
             
 def joinTables( outfile, options, args ):
@@ -402,7 +420,7 @@ def main( argv = sys.argv ):
     parser.add_option("-i", "--skip-titles", dest="skip_titles", action="store_true",
                       help="skip output of titles."  )
 
-    parser.add_option("-m", "--missing", dest="missing_value", type="string",
+    parser.add_option("-m", "--missing", "--missing-value", dest="missing_value", type="string",
                       help="entry to use for missing values."  )
 
     parser.add_option( "--headers", dest="headers", type="string",

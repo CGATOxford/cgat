@@ -724,7 +724,14 @@ class GoPlot:
         
         os.remove(tfile)
 
-if __name__ == "__main__":
+
+def main( argv = None ):
+    """script main.
+
+    parses command line options in sys.argv, unless *argv* is given.
+    """
+
+    if argv == None: argv = sys.argv
 
     parser = E.OptionParser( version = "%prog version: $Id: go2svg.py 2782 2009-09-10 11:40:29Z andreas $")
 
@@ -904,3 +911,7 @@ if __name__ == "__main__":
     plot.writeToFile(options.stdout)
     
     E.Stop()
+
+if __name__ == "__main__":
+    sys.exit( main( sys.argv) )
+

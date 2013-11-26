@@ -114,7 +114,7 @@ def main( argv = None ):
                       help="output filename [default=%default]."  )
 
     parser.add_option("-m", "--method", dest="method", type="choice",
-                      choices = ("deseq", "edger", "cuffdiff", "summary", "dump" ),
+                      choices = ("deseq", "edger", "cuffdiff", "mock", "summary", "dump" ),
                       help="differential expression method to apply [default=%default]."  )
 
     parser.add_option( "--deseq-dispersion-method", dest="deseq_dispersion_method", type="choice",
@@ -125,12 +125,31 @@ def main( argv = None ):
                       choices = ("parametric", "local"),
                       help="fit type for deseq [default=%default]."  )
 
+    parser.add_option( "--deseq-sharing-mode", dest="deseq_sharing_mode", type="choice",
+                      choices = ("maximum", "fit-only", "gene-est-only"),
+                      help="deseq sharing mode [default=%default]."  )
+
     parser.add_option("-f", "--fdr", dest="fdr", type="float",
                       help="fdr to apply [default=%default]."  )
+
+    parser.add_option("-p", "--pseudo-counts", dest="pseudo_counts", type="float",
+                      help="pseudocounts to add for mock analyis [default=%default]."  )
+
+    parser.add_option("-R", "--save-R", dest="save_r_environment", type="string",
+                      help="save R environment [default=%default]."  )
 
     parser.add_option("-r","--reference-group", dest="ref_group", type="string",
                       help="Group to use as reference to compute fold changes against [default=$default]")
 
+    parser.add_option( "--filter-min-counts-per-row", dest="filter_min_counts_per_row", type="int",
+                      help="remove rows with less than this number of counts in total [default=%default]."  )
+
+    parser.add_option( "--filter-min-counts-per-sample", dest="filter_min_counts_per_sample", type="int",
+                      help="remove samples with a maximum count per sample of "
+                       "less than this numer   [default=%default]."  )
+
+    parser.add_option( "--filter-percentile-rowsums", dest="filter_percentile_rowsums", type="int",
+                      help="remove percent of rows with lowest total counts [default=%default]."  )
 
     parser.set_defaults(
         input_filename_tags = "-",
@@ -139,8 +158,14 @@ def main( argv = None ):
         method = "deseq",
         fdr = 0.1,
         deseq_dispersion_method = "pooled",
-        deseq_fit_type = "local",
-        ref_group = None
+        deseq_fit_type = "parametric",
+        deseq_sharing_mode = "maximum",
+        ref_group = None,
+        save_r_environment = None,
+        filter_min_counts_per_row = 1,
+        filter_min_counts_per_sample = 10,
+        filter_percentile_rowsums = 0,
+        pseudo_counts = 0,
         )
 
     ## add common options (-h/--help, ...) and parse command line 
@@ -154,43 +179,78 @@ def main( argv = None ):
     else:
         fh = None
 
-    if options.method == "deseq":
+    # load tag data and filter
+    if options.method in ("deseq", "edger", "mock"):
         assert options.input_filename_tags and os.path.exists(options.input_filename_tags)
         assert options.input_filename_design and os.path.exists(options.input_filename_design)
-        Expression.runDESeq( options.input_filename_tags,
-                             options.input_filename_design,
-                             options.output_filename,
-                             options.output_filename_pattern,
-                             fdr = options.fdr,
-                             dispersion_method = options.deseq_dispersion_method,
-                             fit_type = options.deseq_fit_type,
-                             ref_group = options.ref_group)
 
-    elif options.method == "edger":
-        assert options.input_filename_tags and os.path.exists(options.input_filename_tags)
-        assert options.input_filename_design and os.path.exists(options.input_filename_design)
-        Expression.runEdgeR( options.input_filename_tags,
-                             options.input_filename_design,
-                             options.output_filename,
-                             options.output_filename_pattern,
-                             fdr = options.fdr,
-                             ref_group = options.ref_group)
+        Expression.loadTagData( options.input_filename_tags, 
+                                options.input_filename_design )
+            
+        nobservations, nsamples = Expression.filterTagData(                                  
+            filter_min_counts_per_row = options.filter_min_counts_per_row,
+            filter_min_counts_per_sample = options.filter_min_counts_per_sample,
+            filter_percentile_rowsums = options.filter_percentile_rowsums )
+        
+        if nobservations == 0:
+            E.warn( "no observations - no output" )
+            return
+        
+        if nsamples == 0:
+            E.warn( "no samples remain after filtering - no output" )
+            return
 
-    elif options.method == "summary":
-        assert options.input_filename_tags and os.path.exists(options.input_filename_tags)
-        Expression.outputTagSummary( options.input_filename_tags,
-                                     options.stdout,
-                                     options.output_filename_pattern,
-                                     filename_design = options.input_filename_design
-                                     )
+        sample_names = R('''colnames(countsTable)''')
+        E.info( "%i samples to test at %i observations: %s" % ( nsamples, nobservations,
+                                                                ",".join( sample_names)))
 
-    elif options.method == "dump":
-        assert options.input_filename_tags and os.path.exists(options.input_filename_tags)
-        Expression.dumpTagData( options.input_filename_tags,
-                                options.input_filename_design,
-                                outfile = options.stdout )
+    try:
+        if options.method == "deseq":
+            Expression.runDESeq( outfile = options.output_filename,
+                                 outfile_prefix = options.output_filename_pattern,
+                                 fdr = options.fdr,
+                                 dispersion_method = options.deseq_dispersion_method,
+                                 fit_type = options.deseq_fit_type,
+                                 sharing_mode = options.deseq_sharing_mode,
+                                 ref_group = options.ref_group,
+                                 )
+
+        elif options.method == "edger":
+            Expression.runEdgeR( outfile = options.output_filename,
+                                 outfile_prefix = options.output_filename_pattern,
+                                 fdr = options.fdr,
+                                 ref_group = options.ref_group)
+
+        elif options.method == "mock":
+            Expression.runMockAnalysis( outfile = options.output_filename,
+                                        outfile_prefix = options.output_filename_pattern,
+                                        ref_group = options.ref_group,
+                                        pseudo_counts = options.pseudo_counts,
+                                        )
+
+        elif options.method == "summary":
+            Expression.outputTagSummary( options.input_filename_tags,
+                                         options.stdout,
+                                         options.output_filename_pattern,
+                                         filename_design = options.input_filename_design
+                                         )
+
+        elif options.method == "dump":
+            assert options.input_filename_tags and os.path.exists(options.input_filename_tags)
+            Expression.dumpTagData( options.input_filename_tags,
+                                    options.input_filename_design,
+                                    outfile = options.stdout )
+
+    except rpy2.rinterface.RRuntimeError, msg:
+        if options.save_r_environment:
+            E.info("saving R image to %s" % options.save_r_environment)
+            R['save.image']( options.save_r_environment )
+        raise
 
     if fh and os.path.exists( fh.name): os.unlink( fh.name )
+
+    if options.save_r_environment:
+        R['save.image']( options.save_r_environment )
 
     E.Stop()
 

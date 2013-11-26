@@ -74,7 +74,7 @@ rst_epilog='''
 .. _pysam: http://code.google.com/p/pysam/
 .. _samtools: http://samtools.sourceforge.net/
 .. _tabix: http://samtools.sourceforge.net/tabix.shtml/
-.. _galaxy: https://main.g2.bx.psu.edu/
+.. _Galaxy: https://main.g2.bx.psu.edu/
 .. _cython: http://cython.org/
 .. _pyximport: http://www.prescod.net/pyximport/
 .. _sphinx: http://sphinx-doc.org/
@@ -82,7 +82,7 @@ rst_epilog='''
 .. _sphinxreport: http://code.google.com/p/sphinx-report/
 .. _sqlite: http://www.sqlite.org/
 .. _make: http://www.gnu.org/software/make
-.. _ucsc: http://genome.ucsc.edu
+.. _UCSC: http://genome.ucsc.edu
 .. _mysql: https://mariadb.org/
 .. _postgres: http://www.postgresql.org/
 .. _bedtools: http://bedtools.readthedocs.org/en/latest/

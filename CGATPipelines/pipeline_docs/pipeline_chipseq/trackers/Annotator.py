@@ -2,11 +2,8 @@ import os, sys, re, types, itertools
 import matplotlib.pyplot as plt
 import numpy
 import numpy.ma
-import Stats
-import Histogram
-import ChipseqReport
+from ChipseqReport import *
 import Annotations
-
 
 from SphinxReport.Tracker import *
 
@@ -71,7 +68,7 @@ class Annotator( AnnotatorSlicer, TrackerSQL ):
     def getTracks( self, subset = None ):
         if not self.tablename: raise NotImplementedError("table not specified")
         all_tracks = self.getValues( "SELECT DISTINCT track FROM %s" % self.tablename )
-        return ChipseqReport.selectTracks( all_tracks, subset )
+        return selectTracks( all_tracks, subset )
 
     def __call__(self, track, slice = None ):
 
@@ -218,7 +215,7 @@ class AnnotatorMatrix( TrackerSQL ):
         if not self.tablename: raise NotImplementedError("table not specified")
 
         if subset:
-            tracks = ChipseqReport.DefaultTracker().getTracks( subset )
+            tracks = DefaultTracker().getTracks( subset )
             return self.getValues( """SELECT DISTINCT track || ':' || slice || ':' || subset || ':' || workspace 
                                     FROM %s WHERE track IN ('%s') ORDER BY track,slice,subset,workspace""" % \
                                    (self.tablename, "','".join( tracks )) )

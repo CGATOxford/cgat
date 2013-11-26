@@ -44,7 +44,12 @@ import ConfigParser
 import Database
 
 # talking to a cluster
-import drmaa
+try:
+    import drmaa
+    HAS_DRMAA = True
+except RuntimeError:
+    HAS_DRMAA = False
+
 # talking to mercurial
 import hgapi
 
@@ -342,13 +347,16 @@ def isEmpty( filename ):
 
 def asList( param ):
     '''return a param as a list'''
-    if type(param) not in (types.ListType, types.TupleType):
+    if type(param) == str:
         try:
             params = [x.strip() for x in param.strip().split(",")]
         except AttributeError:
             params = [param.strip()]
         return [ x for x in params if x != ""]
-    else: return param
+    elif type(param) in (types.ListType, types.TupleType):
+        return param
+    else: 
+        return [param]
 
 def asTuple( param ):
     '''return a param as a list'''
@@ -403,6 +411,7 @@ def toTable( outfile ):
 def load( infile, 
           outfile = None, 
           options = "", 
+          collapse = None,
           transpose = None,
           tablename = None):
     '''straight import from tab separated table.
@@ -410,9 +419,12 @@ def load( infile,
     The table name is given by outfile without the
     ".load" suffix.
 
-    If *transpose* is set, the table will be transposed before loading.
-    The first column in the first row will be set to the string
-    within transpose.
+    If *collapse* is set, the table will be collapsed before loading.
+    The value of collapse is the value used for missing values.
+
+    If *transpose* is set, the table will be transposed before
+    loading.  The first column in the first row will be set to the
+    string within transpose.
     '''
 
     if not tablename:
@@ -422,7 +434,10 @@ def load( infile,
     if infile.endswith(".gz"): statement.append( "zcat %(infile)s" )
     else: statement.append( "cat %(infile)s" )
 
-    if transpose:
+    if collapse != None:
+        statement.append( "python %(scriptsdir)s/table2table.py --collapse=%(collapse)s" )
+
+    if transpose != None:
         statement.append( "python %(scriptsdir)s/table2table.py --transpose --set-transpose-field=%(transpose)s" )
 
     statement.append('''
@@ -441,13 +456,12 @@ def concatenateAndLoad( infiles,
                         regex_filename = None, 
                         header = None, 
                         cat = None, 
-                        titles = False, 
+                        has_titles = True, 
+                        missing_value = "na",
                         options = "" ):
     '''concatenate categorical tables and load into a database.
 
-    Concatenation assumes that the header is the same in all files.
-    The first file will be taken in completion, headers
-    in other files will be removed.
+    If *has_titles* is False, the tables are assumed to have no titles.
     '''
     
     infiles = " ".join(infiles)
@@ -466,14 +480,14 @@ def concatenateAndLoad( infiles,
     if not cat:
         cat = "track"
         
-    if titles == False:
-        no_titles = "--no-titles"
+    if has_titles == False: no_titles = "--no-titles"
     else: no_titles = ""
 
     options = " ".join(options)
     load_options = " ".join(load_options) + " " + passed_options
     statement = '''python %(scriptsdir)s/combine_tables.py
                      --cat=%(cat)s
+                     --missing-value=%(missing_value)s
                      %(no_titles)s
                      %(options)s
                    %(infiles)s
@@ -783,7 +797,7 @@ def joinStatements( statements, infile ):
     returns a single statement.
     '''
     
-    prefix = getTempFilename()
+    prefix = getTempFilename(".")
     pattern = "%s_%%i" % prefix
 
     result = []
@@ -981,7 +995,7 @@ def run( **kwargs ):
     #     run on cluster
     elif (options.get( "job_queue" ) or 
           ("to_cluster" not in options or options.get( "to_cluster" ))) \
-            and not GLOBAL_OPTIONS.without_cluster:
+          and (GLOBAL_OPTIONS and not GLOBAL_OPTIONS.without_cluster):
 
         statement = buildStatement( **options )
 

@@ -30,7 +30,7 @@ AlignedPairs.py -
 
 """
 import sys, os, string
-try: import alignlib
+try: import alignlib_lite
 except ImportError: pass
 
 import WrapperDialign
@@ -360,8 +360,8 @@ class AlignedPair( UnalignedPair ):
     def GetMap( self ):
         """return map between the two segments."""
         if self.mAlignmentFrom1 and self.mAlignmentFrom2:
-            map_a2b = alignlib.makeAlignmentVector()
-            alignlib.AlignmentFormatEmissions( 
+            map_a2b = alignlib_lite.py_makeAlignmentVector()
+            alignlib_lite.py_AlignmentFormatEmissions( 
                 self.mAlignmentFrom1, self.mAlignment1,
                 self.mAlignmentFrom2, self.mAlignment2 ).copy( map_a2b )
             return map_a2b
@@ -374,7 +374,7 @@ class AlignedPair( UnalignedPair ):
         get rid of this and use a method class instead in the future
         """
         
-        map_a2b = alignlib.makeAlignmentVector()
+        map_a2b = alignlib_lite.py_makeAlignmentVector()
         s1 = "A" * anchor + self.mSequence1 + "A" * anchor
         s2 = "A" * anchor + self.mSequence2 + "A" * anchor    
 
@@ -401,16 +401,16 @@ class AlignedPair( UnalignedPair ):
             clustal = WrapperClustal.Clustal()
             clustal.Align( s1, s2, map_a2b )
         elif method == "nw":
-            seq1 = alignlib.makeSequence( s1 )
-            seq2 = alignlib.makeSequence( s2 )
-            alignator = alignlib.makeAlignatorDPFull( alignlib.ALIGNMENT_GLOBAL,
+            seq1 = alignlib_lite.py_makeSequence( s1 )
+            seq2 = alignlib_lite.py_makeSequence( s2 )
+            alignator = alignlib_lite.py_makeAlignatorDPFull( alignlib_lite.py_ALIGNMENT_GLOBAL,
                                                       gop=-12.0,
                                                       gep=-2.0 )
             alignator.align( map_a2b, seq1, seq2 )
         elif method == "sw":                        
-            seq1 = alignlib.makeSequence( s1 )
-            seq2 = alignlib.makeSequence( s2 )
-            alignlib.performIterativeAlignment( map_a2b, seq1, seq2, alignator_sw, min_score_sw )
+            seq1 = alignlib_lite.py_makeSequence( s1 )
+            seq2 = alignlib_lite.py_makeSequence( s2 )
+            alignlib_lite.py_performIterativeAlignment( map_a2b, seq1, seq2, alignator_sw, min_score_sw )
         else:
             ## use callback function
             method(s1, s2, map_a2b)
@@ -425,14 +425,14 @@ class AlignedPair( UnalignedPair ):
             map_a2b.removeColRegion( 1, anchor)
             map_a2b.moveAlignment( -anchor, -anchor )
 
-        f = alignlib.AlignmentFormatExplicit( map_a2b, 
-                                              alignlib.makeSequence( self.mSequence1),
-                                              alignlib.makeSequence( self.mSequence2) )
+        f = alignlib_lite.py_AlignmentFormatExplicit( map_a2b, 
+                                              alignlib_lite.py_makeSequence( self.mSequence1),
+                                              alignlib_lite.py_makeSequence( self.mSequence2) )
 
         self.mMethod = method
         self.mAlignment = map_a2b
         self.mAlignedSequence1, self.mAlignedSequence2 = f.mRowAlignment, f.mColAlignment
-        f = alignlib.AlignmentFormatEmissions( map_a2b )
+        f = alignlib_lite.py_AlignmentFormatEmissions( map_a2b )
         self.mAlignment1, self.mAlignment2 = f.mRowAlignment, f.mColAlignment
         self.mAlignmentFrom1 = map_a2b.getRowFrom()
         self.mAlignmentTo1 = map_a2b.getRowTo()        
