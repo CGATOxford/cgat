@@ -6,7 +6,8 @@ Installation instructions
 
 The section below describes how to install the CGAT scripts. Please
 note that we can not test our code on all systems and configurations
-out there. If something does not work, please try a :ref:`CGATCleanInstall`. 
+out there. If something does not work, please try a :ref:`CGATCleanInstall`
+or download a copy of the :ref:`CGATInstallationVirtualBoxUbuntu` with all the software installed.
 
 Quick installation
 ==================
@@ -81,7 +82,8 @@ straight-forward::
     pip install cgat
 
 If you continue having problems with the installation please try the
-:ref:`CGATCleanInstall` guide.
+:ref:`CGATCleanInstall` guide or download a copy of the 
+:ref:`CGATInstallationVirtualBoxUbuntu` with all the software installed.
 
 Troubleshooting
 ---------------
