@@ -1,19 +1,15 @@
-.. _CleanInstall:
+.. _CGATInstallationUbuntu:
 
-============================
-CGAT Code Clean Installation
-============================
+=============================
+Ubuntu 12.04 LTS Installation
+=============================
 
-The section describes the steps to install the CGAT Code collection and its
-dependencies inside a newly created environment. The instructions below have
-been tested on a Red Hat Linux Enterprise 6.x-based operating system.
-For instructions for OS X, see :ref:`CGATInstallationOSX`.
-
-The :ref:`CleanQuickInstallation` uses CGAT supplied scripts for
-installation, while :ref:`CleanManualInstallation` lists all the 
+This installation steps have been tested in Ubuntu 12.04 LTS.The 
+:ref:`UbuntuQuickInstallation` uses CGAT supplied scripts for
+installation, while :ref:`UbuntuManualInstallation` lists all the 
 steps individually.
 
-.. _CleanQuickInstallation:
+.. _UbuntuQuickInstallation:
 
 Quick installation
 ==================
@@ -25,15 +21,15 @@ Download and place them into your home directory::
 
         cd
         wget https://raw.github.com/CGATOxford/cgat/master/requires.txt
-        wget https://raw.github.com/CGATOxford/cgat/master/setup-RPMs.sh
+        wget https://raw.github.com/CGATOxford/cgat/master/setup-DEBs.sh
         wget https://raw.github.com/CGATOxford/cgat/master/setup-CGAT.sh
 
-Install RPM dependencies
+Install DEB dependencies
 ------------------------
 
-Become root (or ask your system administrator to do it for you) and run ``setup-RPMs.sh``::
+Become root (or ask your system administrator to do it for you) and run ``setup-DEBs.sh``::
 
-        ./setup-RPMs.sh
+        ./setup-DEBs.sh
 
 Install a Python virtual environment with the CGAT code collection
 ------------------------------------------------------------------- 
@@ -61,37 +57,33 @@ When you are done, you may deactivate the CGAT virtual environment::
         deactivate
 
 
-.. _CleanManualInstallation:
+.. _UbuntuManualInstallation:
 
 Manual installation
 ===================
 
-Install RPM dependencies
+Install DEB dependencies
 ------------------------
 
-You can either install them one by one or all at the same time with yum::
+You can either install them one by one or all at the same time with ``apt-get``::
 
-        yum install gcc                 # required by python
-        yum install zlib-devel          # required by virtualenv
-        yum install openssl-devel       # required by pip
-        yum install bzip2-devel         # required by bx-python
-        yum install gcc-c++             # required by pybedtools
-        yum install freetype-devel      # required by matplotlib
-        yum install libpng-devel        # required by matplotlib
-        yum install blas atlas lapack   # required by scipy
-        yum install gcc-gfortran        # required by scipyi
-        yum install postgresql-devel    # required by PyGreSQL
-        yum install R-core-devel        # required by rpy2
-        yum install readline-devel      # required by rpy2
-        yum install mysql-devel         # required by MySQL-python
-        yum install boost-devel         # required by alignlib
-        yum install sqlite-devel        # requited by CGAT
-
-and perform the additional configuration for scipy::
-
-        ln -s /usr/lib64/libblas.so.3 /usr/lib64/libblas.so
-        ln -s /usr/lib64/libatlas.so.3 /usr/lib64/libatlas.so
-        ln -s /usr/lib64/liblapack.so.3 /usr/lib64/liblapack.so
+        apt-get install gcc                  # required by python
+        apt-get install zlib1g-dev           # required by virtualenv
+        apt-get install libssl-dev           # required by pip
+        apt-get install libbz2-dev           # required by bx-python
+        apt-get install c++                  # required by pybedtools
+        apt-get install libfreetype6-dev     # required by matplotlib
+        apt-get install libpng12-dev         # required by matplotlib
+        apt-get install libblas-dev          # required by scipy
+        apt-get install libatlas-dev         # required by scipy
+        apt-get install liblapack-dev        # required by scipy
+        apt-get install gfortran             # required by scipyi
+        apt-get install libpq-dev            # required by PyGreSQL
+        apt-get install r-base-dev           # required by rpy2
+        apt-get install libreadline-dev      # required by rpy2
+        apt-get install libmysqlclient-dev   # required by MySQL-python
+        apt-get install libboost-dev         # required by alignlib
+        apt-get install libsqlite3-dev       # required by CGAT
 
 Build Python 2.7.5
 ------------------
@@ -117,7 +109,7 @@ Create an isolated virtual environment where all your Python packages will be in
 
         cd
         cd CGAT
-        curl -O https://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.10.1.tar.gz
+        wget --no-check-certificate https://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.10.1.tar.gz
         tar xvfz virtualenv-1.10.1.tar.gz
         rm virtualenv-1.10.1.tar.gz
         cd virtualenv-1.10.1
