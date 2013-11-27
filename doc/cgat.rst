@@ -4,6 +4,8 @@
 CGAT - Computational Genomics Analysis Tools
 ============================================
 
+This is version |version|.
+
 CGAT is a collection of tools for the computational genomicist written
 in the python language. The tools have been developed and accumulated in various
 genome projects (`Heger & Ponting, 2007`_, `Warren et al., 2008`_) and NGS projects
