@@ -16,3 +16,4 @@ class CpGDistribution( ProjectTracker ):
     
     def __call__(self,track):
         return self.getValues( "SELECT pCpG FROM %(track)s_covered_composition" )
+

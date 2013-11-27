@@ -32,7 +32,6 @@ import CGAT.GTF as GTF
 import CGAT.Bed as Bed
 import CGAT.WrapperMACS as WrapperMACS
 import CGAT.WrapperZinba as WrapperZinba
-# import Stats
 
 import CGATPipelines.PipelineMapping as PipelineMapping
 import pysam
