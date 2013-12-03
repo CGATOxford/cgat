@@ -21,7 +21,7 @@ install:
   - "pip install CGAT"
 
 script: 
-  - nosetests tests/test_scripts.py
+  - cgat --help
 
 notifications:
   email:
