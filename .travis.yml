@@ -1,0 +1,29 @@
+
+language: python
+
+python:
+  - "2.7"
+
+before_install:
+  - sudo apt-get install -qq -y gcc g++ zlib1g-dev libssl-dev libbz2-dev libfreetype6-dev libpng12-dev libblas-dev libatlas-dev liblapack-dev gfortran libpq-dev r-base-dev libreadline-dev libmysqlclient-dev libboost-dev libsqlite3-dev
+  - sudo apt-get update -qq
+
+install:
+  - "pip install cython"
+  - "pip install numpy"
+  - "pip install pysam"
+  - "pip install https://bitbucket.org/james_taylor/bx-python/get/tip.tar.bz2"
+  - "pip install biopython"
+  - "pip install pybedtools"
+  - "pip install matplotlib"
+  - "pip install scipy"
+  - "pip install -r https://raw.github.com/CGATOxford/cgat/master/requires.txt --use-mirrors"
+  - "pip install CGAT"
+
+script: 
+  - cgat --help
+
+notifications:
+  email:
+    - sebastian.luna.valero@gmail.com
+
