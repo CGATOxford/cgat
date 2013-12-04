@@ -348,6 +348,10 @@ def buildBackgroundWindows( infile, outfile ):
 def mergeBackgroundWindows( infiles, outfile ):
     '''build a single bed file of regions with elevated background.'''
 
+    if len(infiles) == 0: 
+        P.touch( outfile )
+        return
+
     infiles = " ".join(infiles)
     genomefile = os.path.join( PARAMS["annotations_dir"], PARAMS_ANNOTATIONS['interface_contigs'])
     statement = '''

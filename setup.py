@@ -154,9 +154,6 @@ for requirement in (l.strip() for l in open('requires.txt') if not l.startswith(
 
     install_requires.append(requirement)
 
-print install_requires
-print dependency_links
-
 if major==2:
     install_requires.extend( [ 'web.py>=0.37',
                                'xlwt>=0.7.4', 
