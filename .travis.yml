@@ -9,16 +9,9 @@ before_install:
   - sudo ./setup-DEBs.sh
 
 install:
-  - "pip install cython"
-  - "pip install numpy"
-  - "pip install pysam"
-  - "pip install https://bitbucket.org/james_taylor/bx-python/get/tip.tar.bz2"
-  - "pip install biopython"
-  - "pip install pybedtools"
-  - "pip install matplotlib"
-  - "pip install scipy"
-  - "pip install -r https://raw.github.com/CGATOxford/cgat/master/requires.txt"
-  - "pip install CGAT"
+  - chmod +x setup-DEBs.sh
+  - sudo ./setup-CGAT.sh
+  - source $HOME/CGAT/virtualenv-1.10.1/cgat-venv/bin/activate
 
 script: 
   - cgat --help
