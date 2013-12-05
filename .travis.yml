@@ -14,7 +14,7 @@ install:
   - source $HOME/CGAT/virtualenv-1.10.1/cgat-venv/bin/activate
 
 script: 
-  - cgat --help
+  - nosetests -v tests/test_scripts.py
 
 notifications:
   email:
