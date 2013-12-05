@@ -6,7 +6,7 @@ python:
 
 before_install:
   - chmod +x setup-DEBs.sh
-  - ./setup-DEBs.sh
+  - sudo ./setup-DEBs.sh
 
 install:
   - "pip install cython"
