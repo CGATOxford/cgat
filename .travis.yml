@@ -11,10 +11,9 @@ before_install:
 install:
   - chmod +x setup-DEBs.sh
   - sudo ./setup-CGAT.sh
-  - source $HOME/CGAT/virtualenv-1.10.1/cgat-venv/bin/activate
 
 script: 
-  - nosetests -v tests/test_scripts.py
+  - cgat --help
 
 notifications:
   email:
