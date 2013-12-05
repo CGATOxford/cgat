@@ -5,8 +5,8 @@ python:
   - "2.7"
 
 before_install:
-  - sudo apt-get install -qq -y gcc g++ zlib1g-dev libssl-dev libbz2-dev libfreetype6-dev libpng12-dev libblas-dev libatlas-dev liblapack-dev gfortran libpq-dev r-base-dev libreadline-dev libmysqlclient-dev libboost-dev libsqlite3-dev
-  - sudo apt-get update -qq
+  - chmod +x setup-DEBs.sh
+  - ./setup-DEBs.sh
 
 install:
   - "pip install cython"
@@ -17,7 +17,7 @@ install:
   - "pip install pybedtools"
   - "pip install matplotlib"
   - "pip install scipy"
-  - "pip install -r https://raw.github.com/CGATOxford/cgat/master/requires.txt --use-mirrors"
+  - "pip install -r https://raw.github.com/CGATOxford/cgat/master/requires.txt"
   - "pip install CGAT"
 
 script: 

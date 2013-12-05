@@ -1,3 +1,4 @@
+pyparsing==1.5.7
 cython>=0.19
 MySQL-python>1.2.3
 PyGreSQL>=4.1.1
