@@ -1172,7 +1172,7 @@ def runZinba( infile, outfile, controlfile, action = "full" ):
 
     # python %(scriptsdir)s/WrapperZinba.py
     statement = '''
-    python /ifs/devel/andreas/cgat/CGAT/WrapperZinba.py
+    python %(scriptsdir)s/runZinba.py
            --input-format=bam
            --fdr-threshold=%(zinba_fdr_threshold)f
            --fragment-size=%(zinba_fragment_size)s

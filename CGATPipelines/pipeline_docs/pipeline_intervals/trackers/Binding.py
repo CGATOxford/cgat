@@ -1,7 +1,5 @@
 from IntervalReport import *
 
-import IOTools
-
 class BindingPatterns(IntervalTracker):
     '''output summary counts of binding patterns.
     
