@@ -10,4 +10,9 @@ gaps:
         outputs: [stdout]
         references: [gaps.bed]
         options:
-      
+
+cpg_windows:
+        stdin: hg19.chr19.fasta
+        outputs: [stdout]
+        references: [cpg_windows.bed.gz]
+        options: --method=windows-cpg --window-size=100 --min-cpg=10

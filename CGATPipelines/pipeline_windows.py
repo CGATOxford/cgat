@@ -52,14 +52,20 @@ Tiling strategies
 The pipeline implements different tiling strategies.
 
 variable width
-   variable width tiles. Tiles are defined based on overlap.
+   variable width tiles. Tiles are defined based on regions that contain
+   short reads and are present in a minimum number of samples.
    
-fixed width - no overlap
-    fixed width tiles, no overlap between adjacent tiles.
+fixwidth_nooverlap
+   tiles of size ``tiling_window_size`` with adjacent tiles not overlapping.
 
-fixed width - overlap
-   fixed width tiles, adjacent tiles are overlapping.
+fixwidth_overlap
+   tiles of size ``tiling_window_size`` with adjacent tiles overlapping by 
+   by 50%.
 
+cpg
+   windows of size ``tiling_window_size`` are defined around CpG sites.
+   Overlapping windows are merged and only windows with a minimum number
+   (``tiling_min_cpg``) of CpG sites are kept.
 
 Usage
 =====
@@ -436,28 +442,39 @@ def buildCpGComposition( infile, outfile ):
     '''
     P.run()
 
-@merge( None, "tags.dir/genomic.covered.tsv.gz" )
-def buildReferenceCpGComposition( infile, outfile ):
+@merge( buildCoverageBed, "tags.dir/genomic.covered.tsv.gz" )
+def buildReferenceCpGComposition( infiles, outfile ):
     '''compute CpG densities across reference windows across
-    the genome.
+    the genome. 
+
+    This will take the first file of the input and
+    shuffle the intervals, and then compute.
+
+    Using fixed size windows across the genome results in
+    a very discretized distribution compared to the other 
+    read coverage tracks which have intervals of different size.
     '''
 
+    infile = infiles[0]
+    contig_sizes = os.path.join( PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_contigs"] )
+    gaps_bed = os.path.join( PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_gaps_bed"] )
+
     # remove windows which are more than 50% N - column 17
-    statement = '''
-    python %(scriptsdir)s/genome_bed.py
-                      -g %(genome_dir)s/%(genome)s
-                      --window=%(tiling_reference_window_size)i
-                      --shift=%(tiling_reference_window_shift)i
-                      --log=%(outfile)s.log
-    | awk '$1 !~ /%(tiling_remove_contigs)s/'
+    statement = '''bedtools shuffle 
+                      -i %(infile)s
+                      -g %(contig_sizes)s
+                      -excl %(gaps_bed)s
+                      -chromFirst
     | python %(scriptsdir)s/bed2table.py
           --counter=composition-cpg
           --genome-file=%(genome_dir)s/%(genome)s
-    | awk '$1 == "contig" || $17 < 0.5'
     | gzip
     > %(outfile)s
     '''
     P.run()
+
+    # | awk '$1 !~ /%(tiling_remove_contigs)s/'
+    # | awk '$1 == "contig" || $17 < 0.5'
 
 @transform( (buildCpGComposition,buildReferenceCpGComposition), 
             suffix(".tsv.gz"), 
@@ -559,6 +576,15 @@ def buildWindows( infiles, outfile ):
                       --shift=%(shift)i
                       --log=%(outfile)s.log'''
 
+    elif tiling_method == "cpg":
+
+        statement = '''cat %(genome_dir)s/%(genome)s.fasta
+                       | python %(scriptsdir)s/fasta2bed.py
+                      --method=windows-cpg
+                      --window-size=%(tiling_window_size)i
+                      --min-cpg=%(tiling_min_cpg)i
+                      --log=%(outfile)s.log'''
+        
     elif os.path.exists( tiling_method ):
         # existing file
         statement = '''mergeBed -i %(tiling_method)s'''

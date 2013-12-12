@@ -60,6 +60,8 @@ import tempfile
 import subprocess
 import glob
 import shutil
+import collections
+import pybedtools
 
 import CGAT.Experiment as E
 
@@ -67,25 +69,20 @@ EXECUTABLE="GCProfile"
 
 import CGAT.FastaIterator as FastaIterator
 
-def segmentWithCpG( infile, options ):
+def segmentWithCpG( infile, with_contig_sizes = False ):
     '''segment a fasta file, output locations of CpG.'''
 
     ninput, nskipped, noutput = 0, 0, 0
     
     iterator = FastaIterator.FastaIterator( infile )
 
-    segments = []
-    
-    while 1:
-        try:
-            cur_record = iterator.next()
-        except StopIteration:
-            break
+    segments, contig_sizes = [], collections.OrderedDict()
 
-        if cur_record is None: break
+    for cur_record in iterator:
         ninput += 1
         contig = re.sub("\s.*", "", cur_record.title )
         last = None
+        contig_sizes[contig] = (0, len(cur_record.sequence))
         for pos, this in enumerate( cur_record.sequence.upper()):
             if last == "C" and this == "G":
                 segments.append( (contig, pos - 1, pos + 1, 1.0))
@@ -93,7 +90,36 @@ def segmentWithCpG( infile, options ):
 
     E.info( "ninput=%i, noutput=%i, nskipped=%i" % (ninput, noutput,nskipped) )
 
+    if with_contig_sizes:
+        return segments, contig_sizes
+
     return segments
+
+def segmentWindowsCpG( infile, window_size = 100, min_cpg = 1 ):
+    '''segment a fasta file based on the locations of CpG.
+
+    Locate all CpG in sequences and centre windows of size *window_size*
+    around them. Merge all windows and keep all with *min_cpg* CpG.
+    '''
+    
+    cpgs, contig_sizes = segmentWithCpG( infile, with_contig_sizes = True )
+
+    # save cpgs to temporary file
+    fh, fn = tempfile.mkstemp()
+    os.write( fh, "\n".join( ["%s\t%i\t%i\n" % (contig, start, end) for contig, start, end, gc in cpgs] ))
+    os.write( fh, "\n" )
+    os.close( fh )
+
+    cpgs = pybedtools.BedTool( fn )
+    cpgs.set_chromsizes( contig_sizes )
+    extended = cpgs.slop( b = window_size // 2 )
+    merged = extended.merge( n = True ) 
+    filtered = merged.filter( lambda x: int(x.name) >= min_cpg )
+
+    os.unlink( fn )
+
+    # return CpG content (not C+C content)
+    return [ (x.chrom, x.start, x.stop, float(x.name) / (x.stop - x.start) / 2) for x in filtered ]
 
 def segmentWithGCProfile( infile, options ):
     '''segment a fasta file with GCProfile.'''
@@ -170,13 +196,13 @@ def segmentWithGCProfile( infile, options ):
     
     return segments
 
-def segmentFixedWidthWindows( infile, window_size ):
+def segmentFixedWidthWindows( infile, window_size, window_shift ):
     """return a list of fixed contig sizes."""
 
     ninput, nskipped, noutput = 0, 0, 0
     
     iterator = FastaIterator.FastaIterator( infile )
-    window_increment = window_size
+    window_shift = window_size
     # at most 50% can be gap
     gap_cutoff = int( window_size // 2 )
     segments = []
@@ -193,7 +219,7 @@ def segmentFixedWidthWindows( infile, window_size ):
         seq = cur_record.sequence
         size = len(cur_record.sequence)
         
-        for x in range(0, size, window_increment):
+        for x in range(0, size, window_shift):
             s = seq[x:x+window_size].upper()
             gc, at = 0,0
             for c in s:
@@ -300,12 +326,20 @@ def main( argv = None ):
                       choices = ("GCProfile", 
                                  "fixed-width-windows-gc",
                                  "cpg",
+                                 "windows-cpg",
                                  "gaps",
-                                 "ungapped",),
+                                 "ungapped",
+                                 "windows"),
                       help="Method to use for segmentation [default=%default]" )
 
     parser.add_option( "-w", "--window-size=", dest="window_size", type="int",
                        help="window size for fixed-width windows [default=%default]." )
+
+    parser.add_option( "-s", "--window-shift=", dest="window_shift", type="int",
+                       help="shift size fixed-width windows [default=%default]." )
+
+    parser.add_option("--min-cpg", dest="min_cpg", type="int",
+                      help="minimum number of CpG for windows-cpg [default=%default]" )
     
     parser.add_option("--min-length", dest="min_length", type="int",
                       help="minimum length for ungapped regions [default=%default]" )
@@ -318,6 +352,8 @@ def main( argv = None ):
         method = "GCProfile",
         gap_char = "NnXx",
         min_length = 0,
+        window_shift = 10000,
+        min_cpg = 1,
         )
 
     ## add common options (-h/--help, ...) and parse command line 
@@ -328,11 +364,18 @@ def main( argv = None ):
     if options.method == "GCProfile":
         segments = segmentWithGCProfile( options.stdin, options )
     elif options.method == "cpg":
-        segments = segmentWithCpG( options.stdin, options )
+        segments = segmentWithCpG( options.stdin )
+    elif options.method == "windows-cpg":
+        segments = segmentWindowsCpG( options.stdin, 
+                                      options.window_size,
+                                      options.min_cpg )
     elif options.method == "Isoplotter":
         segments = segmentWithIsoplotter( options.stdin, options )
     elif options.method == "fixed-width-windows-gc":
-        segments = segmentFixedWidthWindows( options.stdin, options.window_size )
+        segments = segmentFixedWidthWindows( options.stdin, 
+                                             options.window_size,
+                                             options.window_shift,
+                                             )
     elif options.method == "gaps":
         segments = segmentGaps( options.stdin, options.gap_char )
     elif options.method == "ungapped":
