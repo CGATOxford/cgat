@@ -1,0 +1,65 @@
+##version
+version:
+    stdin: null
+    outputs: [stdout]
+    references: []
+    options: --version
+
+##convert by hierarchy
+# both these first two should run fine from the pipe
+# they should all produce the same output
+hierarchy:
+    stdin: simple_gff3.gff
+    outputs: [stdout]
+    references: [simple_gff3.gtf]
+    options: --method=hierarchy -L /dev/null
+
+#by chromosome
+hierarchy-chrom:
+    stdin: simple_gff3.gff
+    outputs: [stdout]
+    references: [simple_gff3.gtf]
+    options: --method=hierarchy -L /dev/null --by-chrom
+
+#read-twice
+# This requires a file name
+hierarchy-read-twice:
+    stdin: null
+    outputs: [stdout]
+    references: [simple_gff3.gtf]
+    options: --method=hierarchy -L /dev/null --read-twice -I %DIR%/simple_gff4.gff
+
+#read-twice-by-chrom
+hierarchy-read-twice:
+    stdin: null
+    outputs: [stdout]
+    references: [simple_gff3.gtf]
+    options: --method=hierarchy -L /dev/null --read-twice --by-chrom -I %DIR%/simple_gff4.gff
+
+#don't discard gene objects
+
+no-discard:
+    stdin: simple_gff3.gff
+    outputs: [stdout]
+    references: [simple_gff3_with_gene.gtf]
+    options: --method=hierarchy -L /dev/null --no-discard
+
+##convert by set
+
+set-field:
+    stdin: simple_gff3.gff
+    outputs: [stdout]
+    references: [simple_gff3_set_ID.gtf]
+    options: --method=set-field -L /dev/null
+
+set-pattern:
+    stdin: simple_gff3.gff
+    outputs: [stdout]
+    references: [simple_gff3_set_pattern.gtf]
+    options: --method=set-pattern --gene-id='%(ID)s_%(ID)s' -L /dev/null
+
+set-none:
+    stdin: simple_gff3.gff
+    outputs: [stdout]
+    references: [simple_gff3_set_none.gtf]
+    options: --method=set-none -L /dev/null
