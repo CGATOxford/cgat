@@ -929,6 +929,9 @@ class GeneCounterAbsoluteDistanceFromThreePrimeEnd( IntervalsCounter ):
 
         contig = gtf[0].contig 
         exons = GTF.asRanges( gtf, "exon" )
+        # skip genes without exons
+        if len(exons) == 0: return 0
+
         introns = Intervals.complement(exons) #Tim 31th Aug 2013
         
         if len(exons) == 0:
@@ -1056,9 +1059,11 @@ class UTRCounter( IntervalsCounter ):
 
         contig = gtf[0].contig 
         exons = GTF.asRanges( gtf, "exon" )
+        # skip genes without exons
+        if len(exons) == 0: return 0
         exon_start, exon_end = exons[0][0], exons[-1][1]
         self.cds = GTF.asRanges( gtf, "CDS" )
-
+        # skip genes without CDS
         if len(self.cds) == 0: return 0
 
         cds_start, cds_end = self.cds[0][0], self.cds[-1][1]
@@ -1177,6 +1182,8 @@ class MidpointCounter( GeneCounter ):
 
         contig = gtf[0].contig 
         exons = GTF.asRanges( gtf, "exon" )
+        # skip genes without exons
+        if len(exons) == 0: return 0
         exon_start, exon_end = exons[0][0], exons[-1][1]
         midpoint = (exon_end - exon_start) // 2 + exon_start
 
@@ -1232,6 +1239,9 @@ class TSSCounter( IntervalsCounter ):
 
         contig, strand = gtf[0].contig, gtf[0].strand
         exons = GTF.asRanges( gtf, "exon" )
+        # skip genes without exons
+        if len(exons) == 0: return 0
+
         self.tss, self.tts = exons[0][0], exons[-1][1]
 
         # no max(0, ...) here as these ranges need to have always the same length

@@ -21,11 +21,6 @@ Contents:
    pipeline/MappingComplexity.rst
    python/Trackers.rst
 
-.. ifconfig:: "bwa" in MAPPERS
-
-   .. toctree::
-      pipeline/MappingTophat.rst
-
 .. ifconfig:: "tophat" in MAPPERS
 
    .. toctree::

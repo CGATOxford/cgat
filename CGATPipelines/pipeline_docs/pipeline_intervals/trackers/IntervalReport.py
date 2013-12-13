@@ -5,6 +5,7 @@ from SphinxReport.Utils import PARAMS as P
 from collections import OrderedDict as odict
 
 import CGAT.IOTools as IOTools
+import CGAT.Stats as Stats
 
 from SphinxReport.ResultBlock import ResultBlock, ResultBlocks
 from SphinxReport import Utils

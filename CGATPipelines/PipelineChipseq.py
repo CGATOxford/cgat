@@ -32,7 +32,6 @@ import CGAT.GTF as GTF
 import CGAT.Bed as Bed
 import CGAT.WrapperMACS as WrapperMACS
 import CGAT.WrapperZinba as WrapperZinba
-# import Stats
 
 import CGATPipelines.PipelineMapping as PipelineMapping
 import pysam
@@ -1173,7 +1172,7 @@ def runZinba( infile, outfile, controlfile, action = "full" ):
 
     # python %(scriptsdir)s/WrapperZinba.py
     statement = '''
-    python /ifs/devel/andreas/cgat/CGAT/WrapperZinba.py
+    python %(scriptsdir)s/runZinba.py
            --input-format=bam
            --fdr-threshold=%(zinba_fdr_threshold)f
            --fragment-size=%(zinba_fragment_size)s

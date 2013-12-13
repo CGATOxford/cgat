@@ -31,10 +31,11 @@ data_dir = os.path.abspath('..')
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.todo', 'sphinx.ext.coverage', 'sphinx.ext.pngmath', 'sphinx.ext.ifconfig',
-              'SphinxReport.only_directives', 
-	      'SphinxReport.report_directive', 
-	      'SphinxReport.roles',
+extensions = ['sphinx.ext.autodoc', 
+              'sphinx.ext.todo', 
+              'sphinx.ext.coverage', 
+              'sphinx.ext.pngmath', 
+              'sphinx.ext.ifconfig',
 	      'sphinx.ext.inheritance_diagram',
 	      'sphinxcontrib.programoutput',
 	      'sphinx.ext.intersphinx' ]
@@ -61,7 +62,7 @@ source_suffix = '.rst'
 #source_encoding = 'utf-8'
 
 # The master toctree document.
-master_doc = 'contents'
+master_doc = 'index'
 
 # General information about the project.
 project = u'CGAT'

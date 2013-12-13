@@ -198,7 +198,7 @@ class SelfMap( Map ):
         return query_token, query_from, query_to
         
 def ReadMap( file, multiple = False ):
-    """read a map from a file.
+    """read a map from a blast alignment file.
 
     If multiple is true, return a list of mappings.
     """

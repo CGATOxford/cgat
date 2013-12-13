@@ -13,6 +13,7 @@ regions covered by reads in the individual data tracks.
 .. report:: CpGCoverage.CpGDistribution
    :render: line-plot
    :transform: histogram
+   :tf-aggregate: normalized-total
    :xrange: 0,0.2
    :as-lines:
    :split-at: 10

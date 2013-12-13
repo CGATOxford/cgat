@@ -1,18 +1,19 @@
 """
-==================================================
-Create a bed file tiling a genome from a fai file
-==================================================
+=================================================================
+genome_bed.py - Create a bed file tiling a genome from a fai file
+=================================================================
 
 :Author: David Sims
 :Release: $Id$
 :Date: |today|
 :Tags: Python
 
-This program takes one input file: a Samtools genome idex file.
+This program takes an indexed genome and creates windows of a certain
+size.
+
 It also takes two input parameters: the window/tile size (bases) and the shift size.
 By default the shift size is equal to the window size.
 The default window size is 1000.
-
 
 Usage
 =====
@@ -20,8 +21,8 @@ Usage
    python genome_bed -g <genome.fai> -o <output.bed> -w window size -s shift size
 
 
-Code
-====
+Command line options
+====================
 
 """
 

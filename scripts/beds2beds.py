@@ -78,6 +78,8 @@ def isContainedInAll( contig, start, end, bedfiles ):
         try:
             if len(list(bedfile.fetch( contig, start, end ))) == 0:
                 return False
+        except KeyError:
+            return False
         except ValueError:
             return False
 

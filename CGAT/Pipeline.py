@@ -1135,6 +1135,8 @@ def clonePipeline( srcdir ):
     
     destdir = os.path.curdir
 
+    E.info( "cloning pipeline from %s to %s" % (srcdir, destdir))
+
     copy_files = ("sphinxreport.ini", "conf.py", "pipeline.ini", "csvdb" )
     ignore_prefix = ("report", "_cache", "export", "tmp", "ctmp", "_static", "_templates" )
 
