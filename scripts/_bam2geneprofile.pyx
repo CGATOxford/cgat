@@ -350,13 +350,12 @@ class RangeCounterBed(RangeCounter):
             for start, end in ranges:
                 length = end - start
                 try:
-
                     for bed in bedfile.fetch( contig, max(0, start), end, parser = pysam.asBed() ):
                         # truncate to range of interest
                         rstart = max(0, bed.start - start) + current_offset
                         rend = min( length, bed.end - start) + current_offset
                         for i from rstart <= i < rend: counts[i] += 1
-                except ValueError:
+                except (ValueError, KeyError):
                     # contig not present
                     pass
 
