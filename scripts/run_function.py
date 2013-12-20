@@ -128,5 +128,6 @@ def main(argv = None):
     else:
         raise ValueError("Expecting infile+outfile+params or infile+outfile or params")
 
+    E.Stop()
 if __name__ == "__main__":
     sys.exit(main(sys.argv))

@@ -1,11 +1,11 @@
 from SphinxReport.Tracker import *
 
-import IOTools
-import GTF
+import CGAT.IOTools as IOTools
+import CGAT.GTF as GTF
 import numpy as np
 import scipy.stats
 import collections
-import PipelineLncRNA
+import CGATPipelines.PipelineLncRNA as PipelineLncRNA
 
 #################################################
 #################################################
