@@ -7,6 +7,7 @@ import CGAT.Experiment as E
 import CGAT.Pipeline as P
 import CGAT.IOTools as IOTools
 import CGAT.Expression as Expression
+import CGAT.Bed as Bed
 
 #########################################################################
 #########################################################################
@@ -62,7 +63,12 @@ def aggregateWindowsReadCounts( infiles, outfile ):
     
     to_cluster = True
 
-    src = " ".join( [ '''<( zcat %s | awk '{printf("%%s:%%i-%%i\\t%%i\\n", $1,$2,$3,$4 );}' ) ''' % x for x in infiles] )
+    # get bed format
+    bed_columns = Bed.getNumColumns( infiles[0] )
+    # +1 as awk is 1-based
+    column = bed_columns - 4 + 1
+
+    src = " ".join( [ '''<( zcat %s | awk '{printf("%%s:%%i-%%i\\t%%i\\n", $1,$2,$3,$%s );}' ) ''' % (x,column) for x in infiles] )
     tmpfile = P.getTempFilename( "." )
     statement = '''paste %(src)s > %(tmpfile)s'''
     P.run()

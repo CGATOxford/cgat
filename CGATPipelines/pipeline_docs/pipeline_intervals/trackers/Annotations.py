@@ -28,7 +28,7 @@ class AnnotationsAssociated(IntervalTracker, AnnotationSlicer):
     mTable = None
     mColumns = None
     mWhere = "1"
-    mSelectAll = "SELECT %(columns)s FROM %(track)s_%(table)s AS t WHERE %(where)s"
+    mSelectAll = "SELECT %(columns)s FROM %(track)s_%(table)s AS t WHRE %(where)s"
     mSelectSubset = "SELECT %(columns)s FROM %(track)s_%(table)s AS t, %(track)s_annotation AS a WHERE a.gene_id = t.gene_id AND a.is_%(slice)s AND %(where)s"
     mSelectSlice = "SELECT %(columns)s FROM %(track)s_%(table)s AS t, %(track)s_%(slice)s AS s WHERE s.gene_id = t.gene_id AND %(where)s"
     mSelectMixture = "SELECT %(columns)s FROM %(track)s_%(table)s AS t, %(subset)s AS s, %(track)s_annotation AS a WHERE a.gene_id = t.gene_id AND a.is_%(slice)s AND s.gene_id = t.gene_id AND %(where)s"
@@ -106,7 +106,7 @@ class AnnotationsBases(Annotations):
     """Annotations as bases."""
     columns = [ "total", "CDS", "UTRPromotor", "intronic", "intergenic" ]
     select = """SELECT 
-                 sum( exons_sum) AS total,
+                 sum( length ) AS total,
 		 sum( nover_CDS ) AS cds,
                  sum( nover_UTR + nover_UTR3 + nover_UTR5 + nover_flank + nover_5flank + nover_3flank) AS utr, 
                  sum( nover_intronic) AS intronic,
