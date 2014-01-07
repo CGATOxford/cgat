@@ -84,6 +84,7 @@ You can either install them one by one or all at the same time with ``apt-get``:
         apt-get install libmysqlclient-dev   # required by MySQL-python
         apt-get install libboost-dev         # required by alignlib
         apt-get install libsqlite3-dev       # required by CGAT
+        apt-get install mercurial            # required by bx-python
 
 Build Python 2.7.5
 ------------------
@@ -130,6 +131,7 @@ Use pip to install all the packages on which CGAT Code Collection depends on::
         pip install matplotlib
         pip install scipy
         pip install -r https://raw.github.com/CGATOxford/cgat/master/requires.txt
+        pip install --upgrade setuptools
         pip install CGAT
 
 Test CGAT Code Collection

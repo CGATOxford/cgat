@@ -19,4 +19,5 @@ script:
 notifications:
   email:
     - sebastian.luna.valero@gmail.com
+    - andreas.heger@gmail.com
 

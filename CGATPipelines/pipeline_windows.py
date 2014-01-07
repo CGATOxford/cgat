@@ -682,22 +682,6 @@ def countReadsWithinWindows(infiles, outfile ):
         r"counts.dir/counts.tsv.gz")
 def aggregateWindowsReadCounts( infiles, outfile ):
     '''aggregate tag counts for each window.
-
-    coverageBed outputs the following columns:
-    1) Contig
-    2) Start
-    3) Stop
-    4) Name
-    5) The number of features in A that overlapped (by at least one base pair) the B interval.
-    6) The number of bases in B that had non-zero coverage from features in A.
-    7) The length of the entry in B.
-    8) The fraction of bases in B that had non-zero coverage from features in A.
-
-    For bed: use column 5
-    For bed6: use column 7
-    For bed12: use column 13
-
-    Tiles with no counts will not be output.
     '''
     PipelineWindows.aggregateWindowsReadCounts( infiles, outfile )
 

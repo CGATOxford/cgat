@@ -85,6 +85,7 @@ You can either install them one by one or all at the same time with ``yum``::
         yum install mysql-devel         # required by MySQL-python
         yum install boost-devel         # required by alignlib
         yum install sqlite-devel        # required by CGAT
+        yum install mercurial           # required by bx-python
 
 Please note that you may also need the EPEL (Extra Packages for Enterprise Linux) repository to install R::
 
@@ -141,6 +142,7 @@ Use pip to install all the packages on which CGAT Code Collection depends on::
         pip install matplotlib
         pip install scipy
         pip install -r https://raw.github.com/CGATOxford/cgat/master/requires.txt
+        pip install --upgrade setuptools
         pip install CGAT
 
 Test CGAT Code Collection

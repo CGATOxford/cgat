@@ -33,6 +33,7 @@ pip install pybedtools
 pip install matplotlib
 pip install scipy
 pip install -r https://raw.github.com/CGATOxford/cgat/master/requires.txt
+pip install --upgrade setuptools
 pip install CGAT
 
 # Test CGAT Code Collection
