@@ -169,7 +169,9 @@ def main( argv = None ):
         E.warn( "no data in %s" % filename_bam )
         return
 
-    statement = """intersectBed %(format)s %(filename_bam)s -b %(filename_bed)s -bed -wo -f %(min_overlap)f > %(tmpfilename)s""" % locals()
+    #IMS: newer versions of intersectBed have a very high memory requirement unless
+    #     passed sorted bed files.
+    statement = """intersectBed %(format)s %(filename_bam)s -b <( zcat %(filename_bed)s | sort -k1,1 -k2,2n) -sorted -bed -wo -f %(min_overlap)f > %(tmpfilename)s""" % locals()
 
     E.info( "running %s" % statement )
     retcode = E.run( statement )

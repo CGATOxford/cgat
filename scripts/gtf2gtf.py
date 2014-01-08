@@ -78,7 +78,7 @@ appear consecutively within the file. This can be achevied using ``--sort``.
 ``--merge-genes``
     Merges genes that have overlapping exons, outputting a single gene_id and 
     transcript_id for all exons of overlapping genes. 
-    (Ignores strand information.)
+    (Does not merge intervals on different strands)
     
 ``--join-exons``
     Joins together all exons of a transcript, outputting a single interval that 
