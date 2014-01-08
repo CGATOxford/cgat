@@ -215,7 +215,8 @@ def count( Samfile samfile,
         f = f << 1
 
     # count based on fastq data
-    cdef int total_pairs = 0
+    cdef int total_paired = 0
+    cdef int total_unpaired = 0
     cdef int total_pair_is_unmapped = 0
     cdef int total_pair_is_proper_uniq = 0
     cdef int total_pair_is_proper_mmap = 0
@@ -231,7 +232,7 @@ def count( Samfile samfile,
 
             # paired read counting
             if fastq_count.is_paired : 
-                total_pairs += 1
+                total_paired += 1
 
                 if fastq_count.is_unmapped == 2:
                     # an unmapped read pair
@@ -256,8 +257,11 @@ def count( Samfile samfile,
                     total_pair_is_incomplete += 1
                 else:
                     total_pair_is_other += 1
+            else:
+                # reads without data
+                total_unpaired += 1
 
-        counter.total_pairs = total_pairs
+        counter.total_pairs = total_paired + total_unpaired
         counter.total_pair_is_unmapped = total_pair_is_unmapped
         counter.total_pair_is_proper_uniq = total_pair_is_proper_uniq
         counter.total_pair_is_incomplete = total_pair_is_incomplete
