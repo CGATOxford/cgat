@@ -413,7 +413,9 @@ def load( infile,
           options = "", 
           collapse = None,
           transpose = None,
-          tablename = None):
+          tablename = None,
+          limit = None,
+          shuffle = False):
     '''straight import from tab separated table.
 
     The table name is given by outfile without the
@@ -425,6 +427,10 @@ def load( infile,
     If *transpose* is set, the table will be transposed before
     loading.  The first column in the first row will be set to the
     string within transpose.
+
+    If *limit* is set, only load the first n lines.
+    If *shuffle* is set, randomize lines before loading. Together
+    with *limit* this permits loading a sample of rows.
     '''
 
     if not tablename:
@@ -439,6 +445,15 @@ def load( infile,
 
     if transpose != None:
         statement.append( "python %(scriptsdir)s/table2table.py --transpose --set-transpose-field=%(transpose)s" )
+        
+    if shuffle != None:
+        statement.append( "perl %(scriptsdir)s/randomize_lines.pl -h" )
+
+    if limit != None:
+        # use awk to filter in order to avoid a pipeline broken error from head
+        statement.append( "awk 'NR > %i {exit(0)} {print}'" % (limit + 1))
+        # ignore errors from cat or zcat due to broken pipe
+        ignore_pipe_errors = True
 
     statement.append('''
     python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
@@ -778,10 +793,13 @@ def buildStatement( **kwargs ):
 
     return statement
 
-def expandStatement( statement ):
+def expandStatement( statement, ignore_pipe_errors = False ):
     '''add exec_prefix and exec_suffix to statement.'''
     
-    return " ".join( (_exec_prefix, statement, _exec_suffix) )
+    if ignore_pipe_errors:
+        return statement
+    else:
+        return " ".join( (_exec_prefix, statement, _exec_suffix) )
 
 def joinStatements( statements, infile ):
     '''join a chain of statements into a single statement.
@@ -908,6 +926,8 @@ def run( **kwargs ):
     session = GLOBAL_SESSION
     L.debug( 'task: pid %i: sge session = %s' % (pid, str(session)))
 
+    ignore_pipe_errors = options.get( 'ignore_pipe_errors', False )
+
     def buildJobScript( statement ):
         '''build job script from statement.
 
@@ -922,7 +942,7 @@ def run( **kwargs ):
         tmpfile.write( "set &>> %s\n" % shellfile)
         tmpfile.write( "module list &>> %s\n" % shellfile )
         tmpfile.write( 'echo "END----------------------------------" >> %s \n' % shellfile )
-        tmpfile.write( expandStatement( statement ) + "\n" )
+        tmpfile.write( expandStatement( statement, ignore_pipe_errors = ignore_pipe_errors ) + "\n" )
         tmpfile.close()
 
         job_path = os.path.abspath( tmpfile.name )
@@ -1054,7 +1074,7 @@ def run( **kwargs ):
             if "'" in statement: raise ValueError( "advanced bash syntax combined with single quotes" )
             statement = """/bin/bash -c '%s'""" % statement
 
-        process = subprocess.Popen(  expandStatement( statement ),
+        process = subprocess.Popen(  expandStatement( statement, ignore_pipe_errors = ignore_pipe_errors ),
                                      cwd = os.getcwd(), 
                                      shell = True,
                                      stdin = subprocess.PIPE,
