@@ -17,10 +17,24 @@ regions covered by reads in the individual data tracks.
    :xrange: 0,0.2
    :as-lines:
    :split-at: 10
+   :split-always: genomic
    :xtitle: CpG content / %
    :layout: column-2
 
    Distribution of CpG in regions covered by reads
+
+.. report:: CpGCoverage.CpGDistribution
+   :render: line-plot
+   :transform: histogram
+   :tf-aggregate: normalized-total,cumulative
+   :xrange: 0,0.2
+   :as-lines:
+   :split-at: 10
+   :split-always: genomic
+   :xtitle: CpG content / %
+   :layout: column-2
+
+   Cumulative distribution of CpG in regions covered by reads
 
 .. _CpGCoverage:
 
