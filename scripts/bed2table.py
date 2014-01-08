@@ -470,6 +470,9 @@ def main( argv = None ):
     parser.add_option("-f", "--filename-gff", dest="filename_gff", type="string", action="append", metavar='bed',
                       help="filename with extra gff files. The order is important [default=%default]."  )
 
+    parser.add_option("--has-header", dest="has_header", action="store_true",
+                      help="bed file with headers. Headers and first columns are preserved [default=%default]" )
+
     parser.set_defaults(
         genome_file = None,
         counters = [],
@@ -481,6 +484,7 @@ def main( argv = None ):
         filename_format = None,
         bed_headers = None,
         filename_gff = [],
+        has_header = False,
         )
 
     (options, args) = E.Start( parser )
@@ -491,6 +495,16 @@ def main( argv = None ):
             raise ValueError( "a bed file needs at least three columns" )
     else:
         bed_headers = None
+
+    if options.has_header:
+        while 1:
+            line = options.stdin.readline()
+            if not line: 
+                E.warn( "empty bed file with no header")
+                E.Stop()
+                return
+            if not line.startswith("#"): break
+        bed_headers = line[:-1].split("\t")
 
     # get files
     if options.genome_file:
