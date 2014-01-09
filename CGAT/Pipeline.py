@@ -1508,11 +1508,26 @@ def main( args = sys.argv ):
                 os.unlink( filename )
 
         except ruffus_exceptions.RethrownJobError, value:
-            E.error("some tasks resulted in errors - error messages follow below" )
-            # print value
-            E.error( value )
-            E.error( "end of error messages" )
-            raise
+            
+            E.error( "%i tasks with errors, please see summary below:" % len(value.args))
+            for idx, e in enumerate(value.args):
+                task, job, error, msg, traceback = e
+                task = re.sub( "__main__.", "", task)
+                job = re.sub( "\s", "", job)
+                E.error( "%i: Task=%s Error=%s %s: %s" % (idx, task, error, job, msg ) )
+
+            E.error( "full traceback is in %s" % options.logfile )
+
+            # write full traceback to log file only by removing the stdout handler
+            lhStdout = logger.handlers[0]
+            logger.removeHandler(lhStdout)
+            logger.error( "start of error messages" )
+            logger.error( value )
+            logger.error( "end of error messages" )
+            logger.addHandler( lhStdout )
+
+            # raise error
+            raise ValueError( "pipeline failed with %i errors" % len(value.args))
 
     elif options.pipeline_action == "dump":
         # convert to normal dictionary (not defaultdict) for parsing purposes
