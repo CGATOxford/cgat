@@ -84,6 +84,8 @@ def count( Samfile samfile,
     cdef CountsType * fastq_count
     cdef char * read_name
     cdef int count_fastq = filename_fastq != None
+    cdef int fastq_notfound = 0
+    cdef int chop = 0
 
     if count_fastq:
         E.info( "reading fastq file" )
@@ -97,7 +99,17 @@ def count( Samfile samfile,
         fastqfile = Fastqfile( filename_fastq )
         fastq_nreads = 0
         for fq in fastqfile:
-            reads[fq.name] = fastq_nreads
+            if fastq_nreads == 0:
+                # chop off /1 or /2 as mappers usually remove these
+                # suffices. Test only the first.
+                name = fq.name
+                if name.endswith("/1") or name.endswith("/2"): chop = -2
+                
+            if chop != 0:
+                reads[fq.name[:chop]] = fastq_nreads
+            else:
+                reads[fq.name] = fastq_nreads
+
             fastq_nreads += 1
         
         E.info( "read %i reads" % fastq_nreads )
@@ -106,14 +118,17 @@ def count( Samfile samfile,
 
         fastq_counts = <CountsType *>calloc( fastq_nreads, sizeof( CountsType ) )
         if fastq_counts == NULL:
-            raise ValueError( "could not allocated memory: %i bytes" % (fastq_nreads * sizeof(CountsType) ))
+            raise ValueError( "could not allocate memory for %i bytes" % (fastq_nreads * sizeof(CountsType) ))
  
+
     for read in samfile:
 
         if count_fastq:
             try:
                 fastq_count = &fastq_counts[ reads[read.qname] ]
             except KeyError:
+                fastq_notfound += 1
+                raise 
                 continue
         
             if read.is_unmapped: fastq_count.is_unmapped += 1
@@ -198,6 +213,9 @@ def count( Samfile samfile,
         last_tid, last_pos = read.tid, read.pos
 
     E.info( "finished computing counts" )
+
+    if fastq_notfound:
+        E.warn( "could not match %i records in bam-file to fastq file" % fastq_notfound)
 
     counter = E.Counter()
     
