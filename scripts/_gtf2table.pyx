@@ -204,6 +204,10 @@ class CounterReadCoverage(Counter):
         # remove segments with excessive length
         segments = [ x for x in segments if (x[1] - x[0]) < self.max_length ]
 
+        if len(segments) == 0: 
+            self.length = 0
+            return
+
         cdef int length = sum( [x[1] - x[0] for x in segments ] )
         cdef numpy.ndarray[DTYPE_INT_t, ndim=1] counts_sense = numpy.zeros( length, dtype = numpy.int )
         cdef numpy.ndarray[DTYPE_INT_t, ndim=1] counts_antisense = numpy.zeros( length, dtype = numpy.int )
@@ -259,7 +263,10 @@ class CounterReadCoverage(Counter):
     def __str__(self):
 
         r = [ "%i" % self.length ]
-        
+        if self.length == 0:
+            # set to 1 to permit division below
+            self.length = 1
+
         for direction, counts, nreads in zip ( ("sense", "antisense", "anysense"),
                                                (self.counts_sense, self.counts_antisense, self.counts_anysense),
                                                (self.nreads_sense, self.nreads_antisense, self.nreads_anysense) ):
