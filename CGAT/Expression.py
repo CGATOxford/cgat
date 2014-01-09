@@ -117,7 +117,7 @@ def buildProbeset2Gene( infile,
 GeneExpressionResult = collections.namedtuple( "GeneExpressionResult", \
                                                    "test_id treatment_name treatment_mean treatment_std " \
                                                    " control_name control_mean control_std " \
-                                                   " pvalue qvalue l2fold fold significant status" )
+                                                   " pvalue qvalue l2fold fold transformed_l2fold significant status" )
 
 
 def writeExpressionResults( outfile, result ):
@@ -832,6 +832,7 @@ def runEdgeR( outfile,
                     padj,
                     d.lfold,
                     fold,
+                    d.lfold, # no transform of lfold
                     str(signif),
                     status) ) )
             
@@ -953,8 +954,14 @@ def deseqParseResults( control_name, treatment_name, fdr, vsd = False):
     padj: The adjusted p values (adjusted with 'p.adjust( pval,
           method="BH")')
 
+    vsd_log2FoldChange: The log2 fold change after variance stabilization.
+          This data field is not part of DESeq proper, but has been added
+          in this module in the runDESeq() method.
+
     Here, 'conditionA' is 'control' and 'conditionB' is 'treatment' such that
     a foldChange of 2 means that treatment is twice upregulated compared to control.
+
+
 
     Returns a list of results.
 
@@ -974,7 +981,7 @@ def deseqParseResults( control_name, treatment_name, fdr, vsd = False):
             baseMeanA = "value1", 
             baseMeanB = "value2",
             id = "interval_id", 
-            log2FoldChange = "lfold") )
+            log2FoldChange = "lfold" ))
     
     rtype = collections.namedtuple( "rtype", names )
     counts = E.Counter()
@@ -1029,6 +1036,7 @@ def deseqParseResults( control_name, treatment_name, fdr, vsd = False):
                     d.padj,
                     d.log2FoldChange,
                     d.foldChange,
+                    d.transformed_log2FoldChange,
                     str(signif),
                     status) ) )
                     
@@ -1146,8 +1154,9 @@ def runDESeq( outfile,
     # plot scatter plots of pairs
     deseqPlotPairs('%(outfile_prefix)spairs.png' % locals()) 
 
-    if dispersion_method not in ("blind", "pooled"): 
-        # also do a blind/pooled dispersion estimate
+    if dispersion_method not in ("blind",): 
+        # also do a blind dispersion estimate for 
+        # a variance stabilizing transform
         R('''cds_blind <- estimateDispersions( cds, 
                                          method='blind',
                                          fitType='%(fit_type)s',
@@ -1234,8 +1243,8 @@ def runDESeq( outfile,
         R('''abline( a=0,b=%(fdr)f/length(pvalues), col="red") ''' % locals() )
         R['dev.off']()
 
-        # Substitute log2 fold with variance stabilized l2fold value
-        R('''res$log2FoldChange = vsd_l2f''' )
+        # Add log2 fold with variance stabilized l2fold value
+        R('''res$transformed_log2FoldChange = vsd_l2f''' )
 
         # Parse results and parse to file
         results, counts = deseqParseResults( control, 
@@ -1409,6 +1418,7 @@ def parseCuffdiff( infile):
                     data.q_value,
                     data.l2fold,
                     fold,
+                    data.l2fold,
                     significant,
                     status ) ) )
                                             
@@ -1723,6 +1733,7 @@ def runMockAnalysis( outfile,
                         1,
                         log2fold,
                         foldchange,
+                        log2fold,
                         "0",
                         "OK") ) )
             
