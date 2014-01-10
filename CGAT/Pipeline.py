@@ -411,10 +411,10 @@ def toTable( outfile ):
 def load( infile, 
           outfile = None, 
           options = "", 
-          collapse = None,
-          transpose = None,
+          collapse = False,
+          transpose = False,
           tablename = None,
-          limit = None,
+          limit = 0,
           shuffle = False):
     '''straight import from tab separated table.
 
@@ -440,16 +440,16 @@ def load( infile,
     if infile.endswith(".gz"): statement.append( "zcat %(infile)s" )
     else: statement.append( "cat %(infile)s" )
 
-    if collapse != None:
+    if collapse:
         statement.append( "python %(scriptsdir)s/table2table.py --collapse=%(collapse)s" )
 
-    if transpose != None:
+    if transpose:
         statement.append( "python %(scriptsdir)s/table2table.py --transpose --set-transpose-field=%(transpose)s" )
         
-    if shuffle != None:
+    if shuffle:
         statement.append( "perl %(scriptsdir)s/randomize_lines.pl -h" )
 
-    if limit != None:
+    if limit > 0:
         # use awk to filter in order to avoid a pipeline broken error from head
         statement.append( "awk 'NR > %i {exit(0)} {print}'" % (limit + 1))
         # ignore errors from cat or zcat due to broken pipe
@@ -1514,6 +1514,10 @@ def main( args = sys.argv ):
                 task, job, error, msg, traceback = e
                 task = re.sub( "__main__.", "", task)
                 job = re.sub( "\s", "", job)
+                # display only single line messages
+                if len([ x for x in msg.split("\n") if x != ""]) > 1:
+                    msg = ""
+                    
                 E.error( "%i: Task=%s Error=%s %s: %s" % (idx, task, error, job, msg ) )
 
             E.error( "full traceback is in %s" % options.logfile )
