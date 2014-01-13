@@ -1345,6 +1345,9 @@ show <target>
 plot <target>
    plot image (using inkscape) of pipeline state for *target*
 
+debug <target> [args]
+   debug a method using the supplied arguments
+
 config
    write new configuration files pipeline.ini, sphinxreport.ini and conf.py
    with default values
@@ -1449,7 +1452,15 @@ def main( args = sys.argv ):
         if len(args) > 1:
             options.pipeline_targets.extend( args[1:] )
 
-    if options.pipeline_action in ("make", "show", "svg", "plot", "touch" ):
+    if options.pipeline_action == "debug":
+        method_name = options.pipeline_targets[0]
+        caller = getCaller()
+        print caller
+        method = getattr( caller, method_name )
+        method( *options.pipeline_targets[1:] )
+    
+
+    elif options.pipeline_action in ("make", "show", "svg", "plot", "touch" ):
 
         try:
             if options.pipeline_action == "make":
