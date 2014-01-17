@@ -179,6 +179,12 @@ def convert_hierarchy(first_gffs, second_gffs, options):
     for gff in first_gffs:
 
      
+        if not(options.parent == "Parent"):
+            if options.parent in gff.asDict():
+                gff['Parent'] = gff[options.parent].split(",")
+            else:
+                gff['Parent'] = []
+
         hierarchy[gff['ID']] = {"type": gff.feature,
                              "Parent": gff.asDict().get("Parent", []),
                              "gene_id": gff.attributes.get(options.gene_field_or_pattern, gff['ID']),
@@ -188,7 +194,7 @@ def convert_hierarchy(first_gffs, second_gffs, options):
 
    
 
-        if options.discard and ((options.missing_gene and not "Parent" in gff) or (
+        if options.discard and ((options.missing_gene and not options.parent in gff) or (
             gff.feature in (options.gene_type, options.transcript_type) )):
 
 
@@ -265,6 +271,10 @@ def main( argv = None ):
                       help = "Either field or pattern for the gene_id [%default]")
     parser.add_option("--transcript-id", dest="transcript_field_or_pattern", type = "string",
                       help = "Either field or pattern for the transcript_id [%default]")
+    parser.add_option("--parent-field", dest="parent", type = "string",
+                       help = "field that specifies the parent relationship. Currently only"
+                       "if left as Parent will features with multiple parents be parsed"
+                       "correctly""")
     parser.add_option("--read-twice", dest="read_twice", action="store_true",
                       help = "Instead of holding the whole file in memory, read once for parsing the "
                       "hierarchy, and then again for actaully doing the conversion. Means a real file "
