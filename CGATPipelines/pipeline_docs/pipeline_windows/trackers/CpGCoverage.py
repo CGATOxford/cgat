@@ -3,7 +3,6 @@ from MedipReport import *
 class CpGCoverage( ProjectTracker, SingleTableTrackerHistogram):
     table = "cpg_coverage"
     column = "bin"
-    
 
 class CpGContext( ProjectTracker, SingleTableTrackerRows ):
     table = "cpg_context"
@@ -17,3 +16,6 @@ class CpGDistribution( ProjectTracker ):
     def __call__(self,track):
         return self.getValues( "SELECT pCpG FROM %(track)s_covered_composition" )
 
+class CountsFoldChanges( ProjectTracker ):
+    '''return fold change values for each track.'''
+    

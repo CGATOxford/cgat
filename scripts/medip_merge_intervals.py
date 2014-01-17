@@ -98,7 +98,7 @@ def main( argv = None ):
                       help="regular expression to extract window coordinates from test id [%default]"  )
 
     parser.add_option("-i", "--invert", dest="invert", action = "store_true",
-                      help="invert treatment/control such that significant windows in control are reported as treatment [%default]"  )
+                      help="invert direction of fold change [%default]"  )
 
     parser.set_defaults( min_overlap = 10,
                          invert = False,

@@ -100,6 +100,9 @@ scores.
 * NH: number of hits of reads.
 * mapq: mapping quality of alignments.
 
+Supplying a fastq file
+++++++++++++++++++++++
+
 If a fastq file is supplied (``--filename-fastq``), the script will
 compute some additional summary statistics. However, as it builds a dictionary
 of all sequences, it will also require a good  amount of memory. The additional
@@ -130,6 +133,10 @@ metrics output are:
 +-------------------------+----------------------------------------+
 |pairs_other              |pairs not in any of the above categories|
 +-------------------------+----------------------------------------+
+
+Note that for paired-end data, any ``\1`` or ``/2`` suffixes will be
+removed from the read name in the assumption that these have been removed
+in the bam file as well.
 
 Usage
 -----

@@ -124,10 +124,6 @@ path:
 |picard              |>=1.38             |bam/sam files. The .jar files need to be in your|
 |                    |                   | CLASSPATH environment variable.                |
 +--------------------+-------------------+------------------------------------------------+
-|vcf-tools           |                   |                                                |
-+--------------------+-------------------+------------------------------------------------+
-|BAMStats            |                   |                                                |
-+--------------------+-------------------+------------------------------------------------+
 
 Pipeline output
 ===============
@@ -163,6 +159,7 @@ import random
 import csv
 import numpy
 import sqlite3
+import pandas
 
 import CGAT.Experiment as E
 import CGAT.Database as Database
@@ -200,7 +197,7 @@ PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],
 ## Helper functions mapping tracks to conditions, etc
 ###################################################################
 # load all tracks - exclude input/control tracks
-Sample = PipelineTracks.Sample3
+Sample = PipelineTracks.Sample4
 
 METHODS = P.asList( PARAMS["methods" ] )
 
@@ -625,6 +622,9 @@ def buildWindowStats( infile, outfile ):
     '''
     P.run()
 
+#########################################################################
+#########################################################################
+#########################################################################
 @transform( buildWindowStats,
             suffix(".stats"),
             "_stats.load")
@@ -678,12 +678,123 @@ def countReadsWithinWindows(infiles, outfile ):
                                              counting_method = PARAMS['tiling_counting_method'] )
 
 #########################################################################
+#########################################################################
+#########################################################################
 @merge( countReadsWithinWindows,
         r"counts.dir/counts.tsv.gz")
 def aggregateWindowsReadCounts( infiles, outfile ):
     '''aggregate tag counts for each window.
     '''
     PipelineWindows.aggregateWindowsReadCounts( infiles, outfile )
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( aggregateWindowsReadCounts, suffix(".tsv.gz"), ".load")
+def loadWindowsReadCounts( infile, outfile ):
+    '''load a sample of window composition data for QC purposes.'''
+    P.load( infile, outfile, limit=10000, shuffle = True)
+
+###################################################################
+###################################################################
+###################################################################
+# 
+###################################################################
+def getInput( track ):
+    '''return a list of input tracks associated with track.
+
+    Associations can be defined in the .ini file in the section
+    [input]. For example, the following snippet associates track
+    track1 with the bamfiles :file:`track1.bam` and :file:`track2.bam`::
+    
+       [input]
+       track1.bam=input1.bam,input2.bam
+
+    Glob expressions are permitted.
+
+    Default tracks can be specified using a placeholder ``%``. The
+    following will associate all tracks with the same bam file::
+
+        [bams]
+        %=all.bam
+
+
+    '''
+
+    input_files = []
+ 
+    # configparser by default converts option names to lower case
+    fn = track.asFile()
+    fn = fn.lower()
+
+    if "input_%s" % fn in PARAMS:
+        input_files.extend( P.asList( PARAMS["input_%s" % fn ] ) )
+    else:
+        for pattern, value in P.CONFIG.items( "input" ):
+            if "%" in pattern:
+                p = re.sub( "%", "\S+", pattern )
+                if re.search( p, fn ):
+                    input_files.extend( P.asList( value ) )
+
+    return input_files
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( loadWindowsReadCounts, suffix(".load"), "_foldchange.load")
+def loadWindowsFoldChanges( infile, outfile ):
+    '''Compute fold changes for each sample compared to appropriate input.
+
+    If no input is present, simply divide by average.
+    '''
+    
+    dbh = connect()
+
+    cc = dbh.cursor()
+    cc.execute("SELECT * FROM counts limit 100" )
+    
+    columns = [x[0] for x in cc.description]
+
+    # get all data and transpose
+    data = cc.fetchall()
+    data = zip( *data )
+
+    take, take_input = [], []
+    map_track2input = {}
+    for idx, track in enumerate(columns):
+        try: 
+            t =  Sample( tablename = track )
+        except ValueError:
+            take_input.append( idx )
+            continue
+
+        input_files = getInput( t )
+        
+        ## currently only implement one input file per track
+        assert len(input_files) == 1, "%s more than input: %s" % (track, input_files)
+        
+        map_track2input[track] = input_files[0]
+
+        take.append( idx )
+
+    # build data frame
+    dataframe = pandas.DataFrame( dict( [ (columns[x], data[x]) for x in take ] ) )
+    dataframe_input = pandas.DataFrame( dict( [ (columns[x], data[x]) for x in take_input ] ) )
+    
+    # normalize with input data
+    
+    print dataframe
+    print dataframe_input
+    pseudocount = 1
+
+    for column in dataframe.columns:
+        dataframe[column] += pseudocount
+        
+    for column in dataframe_input.columns:
+        dataframe_input[column] += pseudocount
+
+    for column in dataframe.columns:
+        dataframe[column] /= dataframe_input[map_track2input[column]]
 
 #########################################################################
 #########################################################################
@@ -909,8 +1020,36 @@ for x in METHODS:
         
 @follows( loadTagCountSummary, 
           loadWindowStats,
+          loadWindowsReadCounts,
           *DIFFTARGETS )
 def diff_windows(): pass
+
+#########################################################################
+@transform( DIFFTARGETS, suffix(".gz"), ".cpg.tsv.gz" )
+def computeWindowComposition( infile, outfile ):
+    '''for the windows returned from differential analysis, compute CpG content
+    for QC purposes.
+    '''
+
+    to_cluster = True
+
+    statement = '''
+    zcat %(infile)s
+    | perl -p -e "s/:/\\t/; s/-/\\t/; s/test_id/contig\\tstart\\tend/"
+    | python %(scriptsdir)s/bed2table.py
+          --counter=composition-cpg
+          --genome-file=%(genome_dir)s/%(genome)s
+          --has-header
+    | gzip
+    > %(outfile)s
+    '''
+
+    P.run()
+
+@transform( computeWindowComposition, suffix(".tsv.gz"), ".load")
+def loadWindowComposition( infile, outfile ):
+    '''load a sample of window composition data for QC purposes.'''
+    P.load( infile, outfile, limit=10000)
 
 #########################################################################
 @transform( DIFFTARGETS, suffix(".gz"), ".merged.gz" )
