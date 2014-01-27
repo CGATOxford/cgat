@@ -411,9 +411,11 @@ def toTable( outfile ):
 def load( infile, 
           outfile = None, 
           options = "", 
-          collapse = None,
-          transpose = None,
-          tablename = None):
+          collapse = False,
+          transpose = False,
+          tablename = None,
+          limit = 0,
+          shuffle = False):
     '''straight import from tab separated table.
 
     The table name is given by outfile without the
@@ -425,6 +427,10 @@ def load( infile,
     If *transpose* is set, the table will be transposed before
     loading.  The first column in the first row will be set to the
     string within transpose.
+
+    If *limit* is set, only load the first n lines.
+    If *shuffle* is set, randomize lines before loading. Together
+    with *limit* this permits loading a sample of rows.
     '''
 
     if not tablename:
@@ -434,11 +440,20 @@ def load( infile,
     if infile.endswith(".gz"): statement.append( "zcat %(infile)s" )
     else: statement.append( "cat %(infile)s" )
 
-    if collapse != None:
+    if collapse:
         statement.append( "python %(scriptsdir)s/table2table.py --collapse=%(collapse)s" )
 
-    if transpose != None:
+    if transpose:
         statement.append( "python %(scriptsdir)s/table2table.py --transpose --set-transpose-field=%(transpose)s" )
+        
+    if shuffle:
+        statement.append( "perl %(scriptsdir)s/randomize_lines.pl -h" )
+
+    if limit > 0:
+        # use awk to filter in order to avoid a pipeline broken error from head
+        statement.append( "awk 'NR > %i {exit(0)} {print}'" % (limit + 1))
+        # ignore errors from cat or zcat due to broken pipe
+        ignore_pipe_errors = True
 
     statement.append('''
     python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
@@ -778,10 +793,13 @@ def buildStatement( **kwargs ):
 
     return statement
 
-def expandStatement( statement ):
+def expandStatement( statement, ignore_pipe_errors = False ):
     '''add exec_prefix and exec_suffix to statement.'''
     
-    return " ".join( (_exec_prefix, statement, _exec_suffix) )
+    if ignore_pipe_errors:
+        return statement
+    else:
+        return " ".join( (_exec_prefix, statement, _exec_suffix) )
 
 def joinStatements( statements, infile ):
     '''join a chain of statements into a single statement.
@@ -908,6 +926,8 @@ def run( **kwargs ):
     session = GLOBAL_SESSION
     L.debug( 'task: pid %i: sge session = %s' % (pid, str(session)))
 
+    ignore_pipe_errors = options.get( 'ignore_pipe_errors', False )
+
     def buildJobScript( statement ):
         '''build job script from statement.
 
@@ -922,7 +942,7 @@ def run( **kwargs ):
         tmpfile.write( "set &>> %s\n" % shellfile)
         tmpfile.write( "module list &>> %s\n" % shellfile )
         tmpfile.write( 'echo "END----------------------------------" >> %s \n' % shellfile )
-        tmpfile.write( expandStatement( statement ) + "\n" )
+        tmpfile.write( expandStatement( statement, ignore_pipe_errors = ignore_pipe_errors ) + "\n" )
         tmpfile.close()
 
         job_path = os.path.abspath( tmpfile.name )
@@ -1054,7 +1074,7 @@ def run( **kwargs ):
             if "'" in statement: raise ValueError( "advanced bash syntax combined with single quotes" )
             statement = """/bin/bash -c '%s'""" % statement
 
-        process = subprocess.Popen(  expandStatement( statement ),
+        process = subprocess.Popen(  expandStatement( statement, ignore_pipe_errors = ignore_pipe_errors ),
                                      cwd = os.getcwd(), 
                                      shell = True,
                                      stdin = subprocess.PIPE,
@@ -1488,11 +1508,30 @@ def main( args = sys.argv ):
                 os.unlink( filename )
 
         except ruffus_exceptions.RethrownJobError, value:
-            E.error("some tasks resulted in errors - error messages follow below" )
-            # print value
-            E.error( value )
-            E.error( "end of error messages" )
-            raise
+            
+            E.error( "%i tasks with errors, please see summary below:" % len(value.args))
+            for idx, e in enumerate(value.args):
+                task, job, error, msg, traceback = e
+                task = re.sub( "__main__.", "", task)
+                job = re.sub( "\s", "", job)
+                # display only single line messages
+                if len([ x for x in msg.split("\n") if x != ""]) > 1:
+                    msg = ""
+                    
+                E.error( "%i: Task=%s Error=%s %s: %s" % (idx, task, error, job, msg ) )
+
+            E.error( "full traceback is in %s" % options.logfile )
+
+            # write full traceback to log file only by removing the stdout handler
+            lhStdout = logger.handlers[0]
+            logger.removeHandler(lhStdout)
+            logger.error( "start of error messages" )
+            logger.error( value )
+            logger.error( "end of error messages" )
+            logger.addHandler( lhStdout )
+
+            # raise error
+            raise ValueError( "pipeline failed with %i errors" % len(value.args))
 
     elif options.pipeline_action == "dump":
         # convert to normal dictionary (not defaultdict) for parsing purposes

@@ -250,15 +250,17 @@ class Sample(object):
     attributes = ( "experiment", )
     representation = "file"
 
-    def __init__(self, filename = None ):
+    def __init__(self, filename = None, tablename = None ):
         '''create a new Sample.
 
         If filename is given, the sample name will be derived from *filename*.
+        Similarly, from *tablename*.
         '''
         
         collections.namedtuple.__init__(self)
         self.data = collections.OrderedDict( zip( self.attributes, [None] * len(self.attributes) ) )
         if filename: self.fromFile( filename )
+        if tablename: self.fromTable( tablename )
 
     def clone( self ):
         '''return a copy of self.'''
@@ -351,6 +353,11 @@ class Sample3(Sample):
     '''a sample/track with three attributes: tissue, condition and replicate.
     '''
     attributes = ( "tissue", "condition", "replicate" )
+
+class Sample4(Sample):
+    '''a sample/track with four attributes: experiment, tissue, condition and replicate.
+    '''
+    attributes = ( "experiment", "tissue", "condition", "replicate" )
 
 class Aggregate:
     

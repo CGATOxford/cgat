@@ -186,9 +186,9 @@ class CounterReadCoverage(Counter):
         tuple( [ "%s_%s" % (x,y) for x,y in itertools.product( ("sense", "antisense", "anysense"),
                                                                ( ("pcovered", "nreads", ) + Stats.Summary().getHeaders() )) ] )
                
-    # discard segments with size > mMaxLength in order
+    # discard segments with size > max_length in order
     # to avoid out-of-memory
-    mMaxLength = 100000
+    max_length = 100000
 
     def __init__(self, bamfiles, *args, **kwargs ):
         Counter.__init__(self, *args, **kwargs )
@@ -200,6 +200,14 @@ class CounterReadCoverage(Counter):
         segments = self.getSegments()
 
         cdef AlignedRead read
+
+        # remove segments with excessive length
+        segments = [ x for x in segments if (x[1] - x[0]) < self.max_length ]
+
+        if len(segments) == 0: 
+            self.length = 0
+            return
+
         cdef int length = sum( [x[1] - x[0] for x in segments ] )
         cdef numpy.ndarray[DTYPE_INT_t, ndim=1] counts_sense = numpy.zeros( length, dtype = numpy.int )
         cdef numpy.ndarray[DTYPE_INT_t, ndim=1] counts_antisense = numpy.zeros( length, dtype = numpy.int )
@@ -212,10 +220,10 @@ class CounterReadCoverage(Counter):
             is_reverse = False
         else:
             is_reverse = True
- 
+
         l = 0
         for start, end in segments:
-            if end - start > self.mMaxLength: return []
+
             offset = start - l
             for samfile in self.mBamFiles:
                 for read in samfile.fetch( contig, start, end ):
@@ -255,7 +263,10 @@ class CounterReadCoverage(Counter):
     def __str__(self):
 
         r = [ "%i" % self.length ]
-        
+        if self.length == 0:
+            # set to 1 to permit division below
+            self.length = 1
+
         for direction, counts, nreads in zip ( ("sense", "antisense", "anysense"),
                                                (self.counts_sense, self.counts_antisense, self.counts_anysense),
                                                (self.nreads_sense, self.nreads_antisense, self.nreads_anysense) ):

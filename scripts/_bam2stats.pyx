@@ -84,6 +84,8 @@ def count( Samfile samfile,
     cdef CountsType * fastq_count
     cdef char * read_name
     cdef int count_fastq = filename_fastq != None
+    cdef int fastq_notfound = 0
+    cdef int chop = 0
 
     if count_fastq:
         E.info( "reading fastq file" )
@@ -97,7 +99,17 @@ def count( Samfile samfile,
         fastqfile = Fastqfile( filename_fastq )
         fastq_nreads = 0
         for fq in fastqfile:
-            reads[fq.name] = fastq_nreads
+            if fastq_nreads == 0:
+                # chop off /1 or /2 as mappers usually remove these
+                # suffices. Test only the first.
+                name = fq.name
+                if name.endswith("/1") or name.endswith("/2"): chop = -2
+                
+            if chop != 0:
+                reads[fq.name[:chop]] = fastq_nreads
+            else:
+                reads[fq.name] = fastq_nreads
+
             fastq_nreads += 1
         
         E.info( "read %i reads" % fastq_nreads )
@@ -106,14 +118,17 @@ def count( Samfile samfile,
 
         fastq_counts = <CountsType *>calloc( fastq_nreads, sizeof( CountsType ) )
         if fastq_counts == NULL:
-            raise ValueError( "could not allocated memory: %i bytes" % (fastq_nreads * sizeof(CountsType) ))
+            raise ValueError( "could not allocate memory for %i bytes" % (fastq_nreads * sizeof(CountsType) ))
  
+
     for read in samfile:
 
         if count_fastq:
             try:
                 fastq_count = &fastq_counts[ reads[read.qname] ]
             except KeyError:
+                fastq_notfound += 1
+                raise 
                 continue
         
             if read.is_unmapped: fastq_count.is_unmapped += 1
@@ -199,6 +214,9 @@ def count( Samfile samfile,
 
     E.info( "finished computing counts" )
 
+    if fastq_notfound:
+        E.warn( "could not match %i records in bam-file to fastq file" % fastq_notfound)
+
     counter = E.Counter()
     
     counter.input = ninput
@@ -215,7 +233,8 @@ def count( Samfile samfile,
         f = f << 1
 
     # count based on fastq data
-    cdef int total_pairs = 0
+    cdef int total_paired = 0
+    cdef int total_unpaired = 0
     cdef int total_pair_is_unmapped = 0
     cdef int total_pair_is_proper_uniq = 0
     cdef int total_pair_is_proper_mmap = 0
@@ -231,7 +250,7 @@ def count( Samfile samfile,
 
             # paired read counting
             if fastq_count.is_paired : 
-                total_pairs += 1
+                total_paired += 1
 
                 if fastq_count.is_unmapped == 2:
                     # an unmapped read pair
@@ -256,8 +275,11 @@ def count( Samfile samfile,
                     total_pair_is_incomplete += 1
                 else:
                     total_pair_is_other += 1
+            else:
+                # reads without data
+                total_unpaired += 1
 
-        counter.total_pairs = total_pairs
+        counter.total_pairs = total_paired + total_unpaired
         counter.total_pair_is_unmapped = total_pair_is_unmapped
         counter.total_pair_is_proper_uniq = total_pair_is_proper_uniq
         counter.total_pair_is_incomplete = total_pair_is_incomplete
