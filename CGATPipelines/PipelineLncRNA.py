@@ -12,6 +12,7 @@ import CGAT.IOTools as IOTools
 import gzip
 import collections
 import CGAT.IndexedGenome as IndexedGenome
+import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Pipeline as P
 import CGAT.Experiment as E
 import sqlite3
@@ -716,6 +717,822 @@ def classifyLncRNAGenes(lincRNA_gtf, reference, outfile, dist = 2):
 
                 
 
+#################################################################################
+#################################################################################
+#################################################################################
+## Extract pairwise MAF alignments
+#################################################################################
+# This section of the pipeline makes use of galaxy's maf_utilties (written by 
+# Dan Blankenberg - see galaxy-dist/lib/galaxy/tools/util) for indexing maf files
+# and for retrieving maf blocks that intersect gene models. 
+# Because maf_utilities.py is not available outside of galaxy, required functions
+# have been copied directly (below). These functions have not been altered in the 
+# hope that maf_utilities will one day be available as a stand-alone module. 
+
+# The following classes/functions have been lifted directly from maf_utilities: 
+# RegionAlignment()
+# GenomicRegionAlignment()
+# SplicedAlignment()
+# build_maf_index_species_chromosomes()
+# build_maf_index()
+# component_overlaps_region()
+# chop_block_by_region()
+# orient_block_by_region()
+# iter_blocks_split_by_species()
+# reduce_block_by_primary_genome()
+# fill_region_alignment()
+# get_spliced_region_alignment()
+# get_starts_ends_fields_from_gene_bed()
+# iter_components_by_src()
+
+import tempfile
+import string
+from copy import deepcopy
+import bx.intervals.io
+import bx.align.maf
+import bx.intervals
+import bx.interval_index_file
+
+GAP_CHARS = [ '-' ]
+SRC_SPLIT_CHAR = '.'
+
+def src_split( src ):
+    fields = src.split( SRC_SPLIT_CHAR, 1 )
+    spec = fields.pop( 0 )
+    if fields:
+        chrom = fields.pop( 0 )
+    else:
+        chrom = spec
+    return spec, chrom
+
+#an object corresponding to a reference layered alignment
+class RegionAlignment( object ):
+
+    DNA_COMPLEMENT = string.maketrans( "ACGTacgt", "TGCAtgca" )
+    MAX_SEQUENCE_SIZE = sys.maxint #Maximum length of sequence allowed
+
+    def __init__( self, size, species = [] ):
+        assert size <= self.MAX_SEQUENCE_SIZE, "Maximum length allowed for an individual sequence has been exceeded (%i > %i)." % ( size, self.MAX_SEQUENCE_SIZE )
+        self.size = size
+        self.sequences = {}
+        if not isinstance( species, list ):
+            species = [species]
+        for spec in species:
+            self.add_species( spec )
+
+    #add a species to the alignment
+    def add_species( self, species ):
+        #make temporary sequence files
+        self.sequences[species] = tempfile.TemporaryFile()
+        self.sequences[species].write( "-" * self.size )
+
+    #returns the names for species found in alignment, skipping names as requested
+    def get_species_names( self, skip = [] ):
+        if not isinstance( skip, list ): skip = [skip]
+        names = self.sequences.keys()
+        for name in skip:
+            try: names.remove( name )
+            except: pass
+        return names
+
+    #returns the sequence for a species
+    def get_sequence( self, species ):
+        self.sequences[species].seek( 0 )
+        return self.sequences[species].read()
+
+    #returns the reverse complement of the sequence for a species
+    def get_sequence_reverse_complement( self, species ):
+        complement = [base for base in self.get_sequence( species ).translate( self.DNA_COMPLEMENT )]
+        complement.reverse()
+        return "".join( complement )
+
+    #sets a position for a species
+    def set_position( self, index, species, base ):
+        if len( base ) != 1: raise Exception( "A genomic position can only have a length of 1." )
+        return self.set_range( index, species, base )
+    #sets a range for a species 
+    def set_range( self, index, species, bases ):
+        if index >= self.size or index < 0: raise Exception( "Your index (%i) is out of range (0 - %i)." % ( index, self.size - 1 ) )
+        if len( bases ) == 0: raise Exception( "A set of genomic positions can only have a positive length." )
+        if species not in self.sequences.keys(): self.add_species( species )
+        self.sequences[species].seek( index )
+        self.sequences[species].write( bases )
+
+    #Flush temp file of specified species, or all species
+    def flush( self, species = None ):
+        if species is None:
+            species = self.sequences.keys()
+        elif not isinstance( species, list ):
+            species = [species]
+        for spec in species:
+            self.sequences[spec].flush()
+
+class GenomicRegionAlignment( RegionAlignment ):
+    
+    def __init__( self, start, end, species = [] ):
+        RegionAlignment.__init__( self, end - start, species )
+        self.start = start
+        self.end = end
+
+class SplicedAlignment( object ):
+
+    DNA_COMPLEMENT = string.maketrans( "ACGTacgt", "TGCAtgca" )
+
+    def __init__( self, exon_starts, exon_ends, species = [] ):
+        if not isinstance( exon_starts, list ):
+            exon_starts = [exon_starts]
+        if not isinstance( exon_ends, list ):
+            exon_ends = [exon_ends]
+        assert len( exon_starts ) == len( exon_ends ), "The number of starts does not match the number of sizes."
+        self.exons = []
+        for i in range( len( exon_starts ) ):
+            self.exons.append( GenomicRegionAlignment( exon_starts[i], exon_ends[i], species ) )
+
+    #returns the names for species found in alignment, skipping names as requested
+    def get_species_names( self, skip = [] ):
+        if not isinstance( skip, list ): skip = [skip]
+        names = []
+        for exon in self.exons:
+            for name in exon.get_species_names( skip = skip ):
+                if name not in names:
+                    names.append( name )
+        return names
+
+    #returns the sequence for a species
+    def get_sequence( self, species ):
+        sequence = tempfile.TemporaryFile()
+        for exon in self.exons:
+            if species in exon.get_species_names():
+                sequence.write( exon.get_sequence( species ) )
+            else:
+                sequence.write( "-" * exon.size )
+        sequence.seek( 0 )
+        return sequence.read()
+
+    #returns the reverse complement of the sequence for a species
+    def get_sequence_reverse_complement( self, species ):
+        complement = [base for base in self.get_sequence( species ).translate( self.DNA_COMPLEMENT )]
+        complement.reverse()
+        return "".join( complement )
+
+    #Start and end of coding region
+    @property
+    def start( self ):
+        return self.exons[0].start
+    @property
+    def end( self ):
+        return self.exons[-1].end
+
+def build_maf_index_species_chromosomes( filename, index_species = None ):
+    species = []
+    species_chromosomes = {}
+    indexes = bx.interval_index_file.Indexes()
+    blocks = 0
+    try:
+        maf_reader = bx.align.maf.Reader( open( filename ) )
+        while True:
+            pos = maf_reader.file.tell()
+            block = maf_reader.next()
+            if block is None:
+                break
+            blocks += 1
+            for c in block.components:
+                spec = c.src
+                chrom = None
+                if "." in spec:
+                    spec, chrom = spec.split( ".", 1 )
+                if spec not in species:
+                    species.append( spec )
+                    species_chromosomes[spec] = []
+                if chrom and chrom not in species_chromosomes[spec]:
+                    species_chromosomes[spec].append( chrom )
+                if index_species is None or spec in index_species:
+                    forward_strand_start = c.forward_strand_start
+                    forward_strand_end = c.forward_strand_end
+                    try:
+                        forward_strand_start = int( forward_strand_start )
+                        forward_strand_end = int( forward_strand_end )
+                    except ValueError:
+                        continue #start and end are not integers, can't add component to index, goto next component          
+                        #this likely only occurs when parse_e_rows is True?                                                  
+                        #could a species exist as only e rows? should the                                                    
+                    if forward_strand_end > forward_strand_start:
+                        #require positive length; i.e. certain lines have start = end = 0 and cannot be indexed              
+                        indexes.add( c.src, forward_strand_start, forward_strand_end, pos, max=c.src_size )
+    except Exception, e:
+        #most likely a bad MAF                                                                                               
+        log.debug( 'Building MAF index on %s failed: %s' % ( filename, e ) )
+        return ( None, [], {}, 0 )
+    return ( indexes, species, species_chromosomes, blocks )
+
+#builds and returns ( index, index_filename ) for specified maf_file
+def build_maf_index( maf_file, species = None ):
+    indexes, found_species, species_chromosomes, blocks = build_maf_index_species_chromosomes( maf_file, species )
+    if indexes is not None:
+        fd, index_filename = tempfile.mkstemp()
+        out = os.fdopen( fd, 'w' )
+        indexes.write( out )
+        out.close()
+        return ( bx.align.maf.Indexed( maf_file, index_filename = index_filename, keep_open = True, parse_e_rows = False ), index_filename )
+    return ( None, None )
+
+def component_overlaps_region( c, region ):
+    if c is None: return False
+    start, end = c.get_forward_strand_start(), c.get_forward_strand_end()
+    if region.start >= end or region.end <= start:
+        return False
+    return True
+
+def chop_block_by_region( block, src, region, species = None, mincols = 0 ):
+    # This chopping method was designed to maintain consistency with how start/end padding gaps have been working in Galaxy thus far:                                                                                                                    
+    #   behavior as seen when forcing blocks to be '+' relative to src sequence (ref) and using block.slice_by_component( ref, slice_start, slice_end )                                                                                                  
+    #   whether-or-not this is the 'correct' behavior is questionable, but this will at least maintain consistency           
+    # comments welcome                                                                                                       
+    slice_start = block.text_size #max for the min()                                                                         
+    slice_end = 0 #min for the max()                                                                                         
+    old_score = block.score #save old score for later use                                                                    
+    # We no longer assume only one occurance of src per block, so we need to check them all                                  
+    for c in iter_components_by_src( block, src ):
+        if component_overlaps_region( c, region ):
+            if c.text is not None:
+                rev_strand = False
+                if c.strand == "-":
+                    #We want our coord_to_col coordinates to be returned from positive stranded component                    
+                    rev_strand = True
+                    c = c.reverse_complement()
+                start = max( region.start, c.start )
+                end = min( region.end, c.end )
+                start = c.coord_to_col( start )
+                end = c.coord_to_col( end )
+                if rev_strand:
+                    #need to orient slice coordinates to the original block direction                                        
+                    slice_len = end - start
+                    end = len( c.text ) - start
+                    start = end - slice_len
+                slice_start = min( start, slice_start )
+                slice_end = max( end, slice_end )
+
+    if slice_start < slice_end:
+        block = block.slice( slice_start, slice_end )
+        if block.text_size > mincols:
+            # restore old score, may not be accurate, but it is better than 0 for everything?                                
+            block.score = old_score
+            if species is not None:
+                block = block.limit_to_species( species )
+                block.remove_all_gap_columns()
+            return block
+    return None
+
+def orient_block_by_region( block, src, region, force_strand = None ):
+    #loop through components matching src,                                                                                   
+    #make sure each of these components overlap region                                                                       
+    #cache strand for each of overlaping regions                                                                             
+    #if force_strand / region.strand not in strand cache, reverse complement                                                 
+    ### we could have 2 sequences with same src, overlapping region, on different strands, this would cause no reverse_complementing                                                                                                                     
+    strands = [ c.strand for c in iter_components_by_src( block, src ) if component_overlaps_region( c, region ) ]
+    if strands and ( force_strand is None and region.strand not in strands ) or ( force_strand is not None and force_strand not in strands ):
+        block = block.reverse_complement()
+    return block
+
+#split a block into multiple blocks with all combinations of a species appearing only once per block                         
+def iter_blocks_split_by_species( block, species = None ):
+    def __split_components_by_species( components_by_species, new_block ):
+        if components_by_species:
+            #more species with components to add to this block                                                               
+            components_by_species = deepcopy( components_by_species )
+            spec_comps = components_by_species.pop( 0 )
+            for c in spec_comps:
+                newer_block = deepcopy( new_block )
+                newer_block.add_component( deepcopy( c ) )
+                for value in __split_components_by_species( components_by_species, newer_block ):
+                    yield value
+        else:
+            #no more components to add, yield this block                                                                     
+            yield new_block
+
+    #divide components by species                                                                                            
+    spec_dict = {}
+    if not species:
+        species = []
+        for c in block.components:
+            spec, chrom = src_split( c.src )
+            if spec not in spec_dict:
+                spec_dict[ spec ] = []
+                species.append( spec )
+            spec_dict[ spec ].append( c )
+    else:
+        for spec in species:
+            spec_dict[ spec ] = []
+            for c in iter_components_by_src_start( block, spec ):
+                spec_dict[ spec ].append( c )
+
+    empty_block = bx.align.Alignment( score=block.score, attributes=deepcopy( block.attributes ) ) #should we copy attributes?                                                                                                                           
+    empty_block.text_size = block.text_size
+    #call recursive function to split into each combo of spec/blocks                                                         
+    for value in __split_components_by_species( spec_dict.values(), empty_block ):
+        sort_block_components_by_block( value, block ) #restore original component order                                     
+        yield value
+
+#reduces a block to only positions exisiting in the src provided                                              
+def reduce_block_by_primary_genome( block, species, chromosome, region_start ):
+    #returns ( startIndex, {species:texts}                                      
+    #where texts' contents are reduced to only positions existing in the primary genome
+    src = "%s.%s" % ( species, chromosome )
+    ref = block.get_component_by_src( src )
+    start_offset = ref.start - region_start
+    species_texts = {}
+    for c in block.components:
+        species_texts[ c.src.split( '.' )[0] ] = list( c.text )
+    #remove locations which are gaps in the primary species, starting from the downstream end
+    for i in range( len( species_texts[ species ] ) - 1, -1, -1 ):
+        if species_texts[ species ][i] == '-':
+            for text in species_texts.values():
+                text.pop( i )
+    for spec, text in species_texts.items():
+        species_texts[spec] = ''.join( text )
+    return ( start_offset, species_texts )
+
+def fill_region_alignment( alignment, index, primary_species, chrom, start, end, strand = '+', species = None, mincols = 0, overwrite_with_gaps = True ):
+    region = bx.intervals.Interval( start, end )
+    region.chrom = chrom
+    region.strand = strand
+    primary_src = "%s.%s" % ( primary_species, chrom )
+
+    #Order blocks overlaping this position by score, lowest first
+    blocks = []
+    for block, idx, offset in index.get_as_iterator_with_index_and_offset( primary_src, start, end ):
+        score = float( block.score )
+        for i in range( 0, len( blocks ) ):
+            if score < blocks[i][0]:
+                blocks.insert( i, ( score, idx, offset ) )
+                break
+        else:
+            blocks.append( ( score, idx, offset ) )
+
+    #gap_chars_tuple = tuple( GAP_CHARS )                                                                          
+    gap_chars_str = ''.join( GAP_CHARS )
+    #Loop through ordered blocks and layer by increasing score
+    for block_dict in blocks:
+        for block in iter_blocks_split_by_species( block_dict[1].get_at_offset( block_dict[2] ) ): #need to handle each occurance of sequence in block seperately                                                         
+            if component_overlaps_region( block.get_component_by_src( primary_src ), region ):
+                block = chop_block_by_region( block, primary_src, region, species, mincols ) #chop block                     
+                block = orient_block_by_region( block, primary_src, region ) #orient block                                   
+                start_offset, species_texts = reduce_block_by_primary_genome( block, primary_species, chrom, start )
+                for spec, text in species_texts.items():
+                    #we should trim gaps from both sides, since these are not positions in this species genome (sequence)    
+                    text = text.rstrip( gap_chars_str )
+                    gap_offset = 0
+                    while True in [ text.startswith( gap_char ) for gap_char in GAP_CHARS ]: #python2.4 doesn't accept a tuple for .startswith()                                                                                                         
+                    #while text.startswith( gap_chars_tuple ):  
+                        gap_offset += 1
+                        text = text[1:]
+                        if not text:
+                            break
+                    if text:
+                        if overwrite_with_gaps:
+                            alignment.set_range( start_offset + gap_offset, spec, text )
+                        else:
+                            for i, char in enumerate( text ):
+                                if char not in GAP_CHARS:
+                                    alignment.set_position( start_offset + gap_offset + i, spec, char )
+    return alignment
+
+def get_spliced_region_alignment( index, 
+                                  primary_species, 
+                                  chrom, 
+                                  starts, 
+                                  ends, 
+                                  strand = '+', 
+                                  species = None, 
+                                  mincols = 0, 
+                                  overwrite_with_gaps = True ):
+    """
+    Returns a filled spliced region alignment for specified region with start
+    and end lists.
+    """
+    #create spliced alignment object
+    if species is not None: 
+        alignment = SplicedAlignment( starts, ends, species )
+    else: 
+        alignment = SplicedAlignment( starts, ends, [primary_species] )
+    for exon in alignment.exons:
+        fill_region_alignment( exon, 
+                               index, 
+                               primary_species, 
+                               chrom, 
+                               exon.start, 
+                               exon.end, 
+                               strand, 
+                               species, 
+                               mincols, 
+                               overwrite_with_gaps )
+    return alignment
+
+#read a GeneBed file, return list of starts, ends, raw fields
+def get_starts_ends_fields_from_gene_bed( line ):
+    #Starts and ends for exons                                                                            
+    starts = []
+    ends = []
+
+    fields = line.split()
+    #Requires atleast 12 BED columns
+    if len(fields) < 12:
+        raise Exception( "Not a proper 12 column BED line (%s)." % line )
+    chrom     = fields[0]
+    tx_start  = int( fields[1] )
+    tx_end    = int( fields[2] )
+    name      = fields[3]
+    strand    = fields[5]
+    if strand != '-': strand='+' #Default strand is +
+    cds_start = int( fields[6] )
+    cds_end   = int( fields[7] )
+
+    #Calculate and store starts and ends of coding exons
+    region_start, region_end = cds_start, cds_end
+    exon_starts = map( int, fields[11].rstrip( ',\n' ).split( ',' ) )
+    exon_starts = map( ( lambda x: x + tx_start ), exon_starts )
+    exon_ends = map( int, fields[10].rstrip( ',' ).split( ',' ) )
+    exon_ends = map( ( lambda x, y: x + y ), exon_starts, exon_ends );
+    for start, end in zip( exon_starts, exon_ends ):
+        start = max( start, region_start )
+        end = min( end, region_end )
+        if start < end:
+            starts.append( start )
+            ends.append( end )
+    return ( starts, ends, fields )
+
+def iter_components_by_src( block, src ):
+    for c in block.components:
+        if c.src == src:
+            yield c
+
+def sort_block_components_by_block( block1, block2 ):
+    #orders the components in block1 by the index of the component in block2
+    #block1 must be a subset of block2
+    #occurs in-place
+    return block1.components.sort( cmp = lambda x, y: block2.components.index( x ) - block2.components.index( y ) )
+
+
+#################################################################################
+## CGAT functions for extracting MAF alignments
+#################################################################################
+
+def gtfToBed12( infile, outfile, model ):
+    """
+    Convert a gtf file to bed12 format.
+    """
+    model = "gene"
+    outfile = IOTools.openFile( outfile, "w" )
+
+    for all_exons in GTF.transcript_iterator( GTF.iterator( IOTools.openFile ( infile, "r" ) ) ):
+        chrom = all_exons[0].contig
+        # GTF.iterator returns start co-ordinates as zero-based
+        start = str( all_exons[0].start ) 
+        end = str( all_exons[ len(all_exons) - 1 ].end )
+#        if model == "gene":
+#            name = all_exons[0].gene_id
+#        elif model == "transcript":
+#            name = all_exons[0].transcript_id
+        name = all_exons[0].gene_id + "__" + all_exons[0].transcript_id
+#        else:
+#            raise ValueError( "model must either be gene or transcript" )
+        score = "0"
+        strand = all_exons[0].strand
+        thickStart = start
+        thickEnd = end
+        colourRGB = "0"
+        blockCount = str( len(all_exons) )
+        
+        sizes = []
+        starts = []
+        for exon in all_exons:
+            blockSize = str( exon.end - ( exon.start ) )
+            sizes.append( blockSize )
+            # start + blockStart should return a zero-based co-ordinate for the exon start
+            blockStart = str( ( exon.start ) - int( start ) )
+            starts.append( str( blockStart ) )
+        blockSizes = ','.join( sizes )
+        blockStarts = ','.join( starts )
+            
+        outfile.write( chrom + "\t"
+                       + start + "\t"
+                       + end + "\t"
+                       + name + "\t"
+                       + score + "\t"
+                       + strand + "\t"
+                       + thickStart + "\t"
+                       + thickEnd + "\t"
+                       + colourRGB + "\t"
+                       + blockCount + "\t"
+                       + blockSizes + "\t"
+                       + blockStarts + "\n")
+            
+    outfile.close()
+    
+def filterMAF( infile, outfile, removed, filter_alignments=False ):
+    """
+    Iterates through the MAF file. If filter_alignments == int, then will remove MAF
+    blocks for which length < int.
+    """
+    inf = bx.align.maf.Reader( open( infile ) )
+    outf = bx.align.maf.Writer( open( outfile, "w" ) )
+    outf_rj = bx.align.maf.Writer( open( removed, "w" ) ) 
+
+    removed = 0
+    included = 0
+    if filter_alignments:
+        for block in inf:
+            if len( [ x for x in block.column_iter() if x[0] != "-" ] ) < int(filter_alignments): 
+                removed += 1
+                outf_rj.write( block )
+            else: 
+                included += 1
+                outf.write( block )
+    else: 
+        for block in inf: 
+            outf.write( block )
+    
+    outf.close()
+    outf_rj.close()
+    
+    return ( removed, included )
+                    
+def extractGeneBlocks( bedfile, 
+                       maf_file, 
+                       outfile, 
+                       primary_species, 
+                       secondary_species ):
+    """
+    Is based on Dan Blankenburg's interval_to_maf_merged_fasta.py 
+    Receives a bed12 containing intervals of interest, and maf containing 
+    pairwise genomic alignment. Iterates through bed intervals and outputs 
+    intervals in fasta format.
+    See comments in maf_utilities.py: maf blocks are always extracted in a 
+    positive strand orientation relative to the src alignment, reverse 
+    complementing is then done using method AlignedSequence method 
+    get_sequence_reverse_complement.
+    MAF file is indexed on the fly using bx.align.maf.MultiIndexed
+    """
+    index, index_filename = build_maf_index( maf_file )
+    output = IOTools.openFile( outfile, "w" )
+    regions_extracted = 0
+
+    # iterate through intervals
+    for line_count, line in enumerate( IOTools.openFile( bedfile ).readlines() ):
+        try:
+            # retrieve exon starts & ends, plus all gtf fields
+            starts, ends, fields = get_starts_ends_fields_from_gene_bed( line )
+
+            # create spliced alignment (N.B. strand always +ve)
+            alignment = get_spliced_region_alignment( index, 
+                                                      primary_species, 
+                                                      fields[0], 
+                                                      starts, 
+                                                      ends, 
+                                                      strand = '+',
+                                                      species = [ primary_species, 
+                                                                  secondary_species ], 
+                                                      mincols = 0, 
+                                                      overwrite_with_gaps = False )
+            primary_name = secondary_name = fields[3]
+            alignment_strand = fields[5]
+        except Exception, e:
+            print "Error loading exon positions from input line %i: %s" % ( line_count, e )
+            break 
+        
+        # write the stiched sequence to outfile in the correct orientation
+        output.write( ">%s.%s\n" %( primary_species, primary_name ) )
+        if alignment_strand == "-":
+            output.write( alignment.get_sequence_reverse_complement( primary_species ) )
+        else: 
+            output.write( alignment.get_sequence( primary_species ) )
+        output.write( "\n" )
+            
+        output.write( ">%s.%s\n" % ( secondary_species, secondary_name ) )
+        if alignment_strand == "-":
+            output.write( alignment.get_sequence_reverse_complement( secondary_species ) )
+        else:
+            output.write( alignment.get_sequence( secondary_species ) )
+        output.write( "\n" )
+        
+        regions_extracted += 1
+
+    output.close()
+
+    return regions_extracted
+
+#################################################################################
+#################################################################################
+
+def complement(template):
+    """ Generates the reverse complement of a template sequence """
+    # Turn the string around using slicing
+    backward_template = template[::-1]
+    # Create the complementary sequence from the backward template       
+    reverse_template = backward_template.translate(string.maketrans("ACTGactg", "TGACtgac"))
+
+    return reverse_template
+
+
+def extractMAFGeneBlocks( bedfile, 
+                          maf_file,
+                          genome_file,
+                          outfile, 
+                          primary_species, 
+                          secondary_species,
+                          keep_gaps = True ):
+    """
+    Is based on Dan Blankenburg's interval_to_maf_merged_fasta.py 
+    Receives a bed12 containing intervals of interest, and maf containing 
+    pairwise genomic alignment. Iterates through bed intervals and outputs 
+    intervals in fasta format.
+    See comments in maf_utilities.py: maf blocks are always extracted in a 
+    positive strand orientation relative to the src alignment, reverse 
+    complementing is then done using method AlignedSequence method 
+    get_sequence_reverse_complement.
+    MAF file is indexed on the fly using bx.align.maf.MultiIndexed
+    """
+    index, index_filename = build_maf_index( maf_file )
+    output = IOTools.openFile( outfile, "w" )
+    regions_extracted = 0
+
+    # iterate through intervals
+    for line_count, line in enumerate( IOTools.openFile( bedfile ).readlines() ):
+        try:
+            # retrieve exon starts & ends, plus all gtf fields
+            starts, ends, fields = get_starts_ends_fields_from_gene_bed( line )
+
+            # create spliced alignment (N.B. strand always +ve)
+            alignment = get_spliced_region_alignment( index, 
+                                                      primary_species, 
+                                                      fields[0], 
+                                                      starts, 
+                                                      ends, 
+                                                      strand = '+',
+                                                      species = [ primary_species, 
+                                                                  secondary_species ], 
+                                                      mincols = 0, 
+                                                      overwrite_with_gaps = False )
+            primary_name = secondary_name = fields[3]
+            alignment_strand = fields[5]
+        except Exception, e:
+            print "Error loading exon positions from input line %i: %s" % ( line_count, e )
+            break 
+        
+        if keep_gaps:
+            # write the stiched sequence to outfile in the correct orientation
+            output.write( ">%s.%s\n" %( primary_species, primary_name ) )
+            if alignment_strand == "-":
+                output.write( alignment.get_sequence_reverse_complement( primary_species ) )
+            else: 
+                output.write( alignment.get_sequence( primary_species ) )
+            output.write( "\n" )
+            
+            output.write( ">%s.%s\n" % ( secondary_species, secondary_name ) )
+            if alignment_strand == "-":
+                output.write( alignment.get_sequence_reverse_complement( secondary_species ) )
+            else:
+                output.write( alignment.get_sequence( secondary_species ) )
+            output.write( "\n" )
+
+        else:
+            # create indexed fasta 
+            fasta = IndexedFasta.IndexedFasta( genome_file )
+            # retrieve exon sequence
+            exon_list = []
+            for exon in alignment.exons:
+                exon_list.append( fasta.getSequence( fields[0], "+", exon.start, exon.end ) )
+
+            # write the stitched sequence to outfile in the correct orientation
+            output.write( ">%s.%s\n" %( primary_species, primary_name ) )
+            if alignment_strand == "-":
+                output.write( "".join( [ complement(x) for x in exon_list ] ) )
+            else:
+                output.write( "".join( [ x for x in exon_list ] ) )
+            output.write( "\n" )
+
+            output.write( ">%s.%s\n" % ( secondary_species, secondary_name ) )
+            if alignment_strand == "-":
+                output.write( alignment.get_sequence_reverse_complement( secondary_species ) )
+            else:
+                output.write( alignment.get_sequence( secondary_species ) )
+            output.write( "\n" )
+
+        
+        regions_extracted += 1
+
+    output.close()
+
+    return regions_extracted
+
+#################################################################################
+#################################################################################
+
+
+def splitAlignedFasta( infile, out_stub, name_dict ):
+    """
+    Receives a fasta file containing multiple sequence alignments. Splits into 
+    multiple outfiles, each containing sequence with the same interval_id.
+    Identifiers must be in format >species.interval_id
+    name_dict specifies the format for the outfile identifiers
+    """
+    infile = IOTools.openFile( infile ).readlines()
+    
+    current_id = ""
+    line_number = 0
+    for line in infile:
+        line = line.rstrip()
+        line_number += 1
+        if line_number == 1:
+            current_id = line.split(".")[1]
+            out = open( os.path.join( out_stub, current_id + ".fasta" ), "w" )
+        if line_number % 2 == 1:
+            gene_id = line.split(".")[1]
+            if gene_id == current_id:
+                species = line.split(".")[0]
+                out.write( name_dict[ species ] + "\n" )
+            else:
+                out.close()
+                current_id = gene_id
+                out = os.path.join( out_stub, current_id + ".fasta" )
+                if os.path.exists( out ):
+                    raise IOError( "There are two transcript with gene_id %s"
+                                   " and transcript_id %s" % current_id.split("__") )
+                else:
+                    out = open( out, "w" )
+                    out.write( name_dict[ line.split(".")[0] ] + "\n" )
+        else: 
+            out.write( line + "\n" )
+    out.close()
+
+
+def removeGapsFromAlignedFasta( in_dir, out_dir, min_length = 0 ):
+    """
+    Receives a fasta file containing two or more aligned sequences, removes gaps
+    from the reference (first) alignment in file and removes corresponding gaps
+    intervals from subsequence sequence.
+    Any region of sequence flanked by gaps that is smaller than a specified min
+    length may also be removed 
+    WARNING: using this function will likely cause frame shifts in resulting 
+    sequence.
+    """
+    if not out_dir.endswith( "/" ):
+        out_dir = out_dir + "/"
+
+    fasta_files = os.listdir( in_dir )
+    X = 0
+    for fasta in fasta_files:
+        X += 1
+        if X > 5:
+            break
+        print fasta
+        print os.path.abspath( fasta )
+        print os.path.join( in_dir, fasta )
+        file_name = P.snip( os.path.basename( fasta ),  ".fasta" )
+        lines = [ line.strip() for line in open( fasta ).readlines() ] 
+        # reference sequence name
+        name = lines[0]
+        # the reference sequence
+        seq = lines[1]
+
+        # return a list of start, end for ungapped alignment regions in reference
+        regex = re.compile( "\w+" )
+        intervals = [ ( x.start(), x.end() ) for x in regex.finditer( seq ) ] 
+
+        x = 1
+        for interval in intervals:
+            outfile = "".join( file_name, "__", str(x), ".fasta" )
+            # remove intervals below specified length
+            if interval[1] - interval[0] <= int( min_length ):
+                continue
+            else:
+                # remove gapped regions from reference and subsequent alignments
+                out = open( os.path.join( out_dir, outfile ), "w" ) 
+                out.write( name + "\n" )
+                out.write( seq[ interval[0]:interval[1] ] )
+                for line in enumerate( lines[ 2: ], 1 ):
+                    if line[0] % 2 == 1:
+                        out.write( line + "\n" )
+                    else:
+                        out.write( line[ interval[0]:interval[1] ] )
+                out.close()
+                x += 1
+
+
+def runPhyloCSF( in_fasta, tmp_dir, outfile ):
+    statement = ( "zcat %(in_fasta)s |"
+                  " %(scriptsdir)s/farm.py"
+                  "  --split-at-regex='\n(\s*)\n'"
+                  "  --chunksize=1"
+                  "  --output-header"
+                  "  --tmpdir=%(tmp_dir)s"
+                  "  --use-cluster"
+                  "  --log=%(outfile)s.log"
+                  " PhyloCSF 29mammals"
+                  "  --frames=3"
+                  "  --removeRefGaps"
+                  "  --species=%(species)s"
+                  " > %(outfile)s" )
 
 
 
