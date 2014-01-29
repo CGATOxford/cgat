@@ -1346,7 +1346,8 @@ plot <target>
    plot image (using inkscape) of pipeline state for *target*
 
 debug <target> [args]
-   debug a method using the supplied arguments
+   debug a method using the supplied arguments. The method <target>
+   in the pipeline is run without checking any dependencies.
 
 config
    write new configuration files pipeline.ini, sphinxreport.ini and conf.py
@@ -1453,12 +1454,14 @@ def main( args = sys.argv ):
             options.pipeline_targets.extend( args[1:] )
 
     if options.pipeline_action == "debug":
+        # create the session proxy
+        GLOBAL_SESSION = drmaa.Session()
+        GLOBAL_SESSION.initialize()
+        
         method_name = options.pipeline_targets[0]
         caller = getCaller()
-        print caller
         method = getattr( caller, method_name )
         method( *options.pipeline_targets[1:] )
-    
 
     elif options.pipeline_action in ("make", "show", "svg", "plot", "touch" ):
 
