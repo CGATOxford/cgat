@@ -715,6 +715,482 @@ def classifyLncRNAGenes(lincRNA_gtf, reference, outfile, dist = 2):
             outf.write("%s\n" % gtf)
     outf.close()
 
+
+
+################################################################################
+################################################################################
+################################################################################
+## An alternative method for classifying LncRNAs relative to supplied geneset
+################################################################################
+def write_to_temp( tempfile, interval_list, transcript, check_strand = True ):
+    if  check_strand:
+        for interval in interval_list:
+            if interval[2][6] == transcript[0].strand:
+                tempfile.write( transcript[0].gene_id + "\t" 
+                                + str( interval[0] ) + "\t" 
+                                + str( interval[1] ) + "\t" 
+                                + str( transcript[0] ) + "\t" 
+                                + "\t".join( interval[2] ) + "\n" )
+    else:
+        for interval in interval_list:
+            tempfile.write( transcript[0].gene_id + "\t" 
+                            + str( interval[0] ) + "\t" 
+                            + str( interval[1] ) + "\t" 
+                            + str( transcript[0] ) + "\t" 
+                            + "\t".join( interval[2] ) + "\n" )
+ 
+
+def reClassifyLncRNAGenes( lncRNA_gtf, 
+                           reference_gtf, 
+                           outfile, 
+                           upstr_dist = 5, 
+                           dstr_dist = 5, 
+                           wdir = "." ):
+    """
+    This re-write of classifyLncRNAGenes() does not throw out intronic loci, but 
+    labels them as either sense-intronic or sense-overlap.
+    It also fixes the bug that cause sense gene-models encompassing reference 
+    exons to be output as antisense. 
+    Because lncRNA boundaries intersect multiple intervals in indexes, rather
+    than classifying each lncRNA multiple times, lncRNA strand is instead 
+    compared to a list of interval strand values, if any of these are sense, 
+    then the lncRNA is classified as sense etc. 
+    
+    Sense-intronic: when lncRNA loci start and end are contained within a single
+    intron. 
+    Sense-overlap: when lncRNA loci start and end are in different introns. Note 
+    that different introns do not necessarily come from different gene-models. 
+    """
+
+
+    # index exons in the reference gene-set
+    ref_index = IndexedGenome.IndexedGenome()
+    for exon in GTF.iterator( IOTools.openFile( reference_gtf ) ):
+        ref_index.add( exon.contig, exon.start, exon.end, str(exon).split() )
+
+    # create index for all other intervals to be classified                                                                        
+    intron = IndexedGenome.IndexedGenome()
+    plus_up = IndexedGenome.IndexedGenome()
+    plus_down = IndexedGenome.IndexedGenome()
+    minus_up =  IndexedGenome.IndexedGenome()
+    minus_down = IndexedGenome.IndexedGenome()
+
+    # iterate over reference transcripts and create intervals in memory                                                      
+    ref_file = IOTools.openFile( reference_gtf )
+    for transcript in GTF.transcript_iterator( GTF.iterator( ref_file ) ):
+        start = transcript[0].end
+        for i in range( 1, len(transcript ) ):
+            intron.add( transcript[i].contig,
+                        start,
+                        transcript[i].start,
+                        str(transcript[i]).split() )
+            start = transcript[i].end
+
+        # create up and downstream intervals on plus strand                                                                  
+        if transcript[0].strand == "+":
+            plus_up.add( transcript[0].contig,
+                         transcript[0].start - ( upstr_dist*1000 ),
+                         transcript[0].start,
+                         str( transcript[0] ).split() )
+            plus_down.add( transcript[0].contig,
+                           transcript[ len(transcript) - 1 ].end,
+                           transcript[ len(transcript) - 1 ].end + ( dstr_dist*1000 ),
+                           str( transcript[ len(transcript) - 1] ).split() )
+
+        # create up and downstream intervals on minus strand                                                                 
+        elif transcript[0].strand == "-":
+            minus_up.add( transcript[0].contig,
+                          transcript[ len(transcript) - 1 ].end,
+                          transcript[ len(transcript) - 1 ].end + ( upstr_dist*1000 ),
+                          str( transcript[ len(transcript) - 1 ] ).split() )
+            minus_down.add( transcript[0].contig,
+                            transcript[0].start - ( dstr_dist*1000 ),
+                            transcript[0].start,
+                            str( transcript[0] ).split() )
+        else:
+            E.warn( "WARNING: no strand specified for %s" % transcript[0].transcript_id )
+
+    # create single representative transcript for each lncRNA gene_id
+    merged_lncRNA_gtf = P.getTempFilename( wdir )
+    to_cluster = False
+    statement = ( "zcat %(lncRNA_gtf)s |"
+                  " python %(scriptsdir)s/gtf2gtf.py"
+                  "  --sort=gene"
+                  "  --log=%(outfile)s.log |" 
+                  " python %(scriptsdir)s/gtf2gtf.py"
+                  "  --merge-exons"
+                  "  --log=%(outfile)s.log"
+                  " > %(merged_lncRNA_gtf)s" )
+    P.run()
+
+    # create a temp directory containing the indexed intervals used to classify 
+    # the lncRNA transcripts created (for debugging purposes)
+    # create a temporary count of # of gene_models in each category
+    tempdir = P.getTempDir( wdir )
+    E.info( "intersecting intervals are being written to %s" 
+            % os.path.abspath( tempdir ) )
+    temp_file_names = [ "sense", 
+                        "sense_intronic", 
+                        "sense_overlap", 
+                        "antisense", 
+                        "sense_downstream", 
+                        "sense_upstream", 
+                        "antisense_downstream", 
+                        "antisense_upstream", 
+                        "intergenic" ]
+    temp_files = {}
+    temp_count = {}
+    for handle in temp_file_names:
+        temp_count[ handle ] = 0
+        temp_files[ handle ] = IOTools.openFile( os.path.join( tempdir, 
+                                                               handle ), "w" )
+
+
+    # iterate through the representative (i.e. merged) lncRNA transcripts
+    # each lncRNA transcript is classified only once. 
+    # In situations where a lncRNA fits > 1 classification, priority is:
+    # (sense > antisense) 
+    # & (overlap_exons > overlap_introns > downstream > upstream > intergenic)
+    lnc_file = IOTools.openFile( merged_lncRNA_gtf )
+    gene_class = {} # dictionary of gene_id : classification 
+    input_transcripts = 0 # keep track of # transcripts in lncRNA_gtf
+    for transcript in GTF.transcript_iterator( GTF.iterator( lnc_file ) ):
+        input_transcripts += 1
+        gene_id = transcript[0].gene_id
+        strand = transcript[0].strand
+
+        # create lists of indexed intervals that intersect transcript exons
+        overlap_list = [] 
+        intron_list = []
+        plus_down_list = []
+        minus_down_list = []
+        plus_up_list = []
+        minus_up_list = []       
+        for exon in transcript:
+            overlap_list.extend( [ x for x in list( ref_index.get( exon.contig, 
+                                                                   exon.start, 
+                                                                   exon.end ) ) ] )
+            intron_list.extend( [ x for x in list ( intron.get( exon.contig, 
+                                                                exon.start, 
+                                                                exon.end ) ) ] )
+            plus_down_list.extend( [ x for x in list ( plus_down.get( exon.contig, 
+                                                                      exon.start, 
+                                                                      exon.end ) ) ] )
+            minus_down_list.extend( [ x for x in list ( minus_down.get( exon.contig, 
+                                                                        exon.start, 
+                                                                        exon.end ) ) ] )
+            plus_up_list.extend( [ x for x in list ( plus_up.get( exon.contig, 
+                                                                  exon.start, 
+                                                                  exon.end ) ) ] )
+            minus_up_list.extend( [ x for x in list ( minus_up.get( exon.contig, 
+                                                                    exon.start, 
+                                                                    exon.end ) ) ] )
+
+        # check if any exon in lncRNA intersects an reference exon
+        if overlap_list:
+            # if the intersecting exons are on the same strand, 
+            # classify lncRNA as sense. 
+            if strand in [ x[2][6] for x in overlap_list ]:  
+                gene_class[ gene_id ] = "sense"
+                write_to_temp( temp_files[ gene_class[ gene_id ] ], 
+                               overlap_list, 
+                               transcript )
+                temp_count[ gene_class[ gene_id ] ] += 1
+
+            # otherwise check if lncRNA has sense overlap with a reference intron
+            elif intron_list and strand in [ x[2][6] for x in intron_list ]:
+                last = len( transcript ) -1
+                start_list = [ ( x[0], x[1] ) for x in list( intron.get( transcript[0].contig, transcript[0].start, transcript[0].start + 1 ) ) if x[2][6] == strand ]
+                end_list = [ ( x[0], x[1] ) for x in list( intron.get( transcript[last].contig, transcript[last].end, transcript[last].end + 1 ) ) if x[2][6] == strand ]
+                # if start and end of transcript are within the same sense 
+                # introns, then lncRNA is classified as 'sense_intronic'
+                if set( start_list ) == set( end_list ):
+                    gene_class[ gene_id ] = "sense_intronic"
+                    write_to_temp( temp_files[ gene_class[ gene_id ] ], 
+                                   intron_list, 
+                                   transcript )
+                    temp_count[ gene_class[ gene_id ] ] += 1
+                    
+                # if start/end are within different sense introns, 
+                # then lncRNA is classified as 'sense overlap'
+                else:
+                    gene_class[ gene_id ] = "sense_overlap"
+                    write_to_temp( temp_files[ gene_class[ gene_id ] ], 
+                                   intron_list, 
+                                   transcript )
+                    temp_count[ gene_class[ gene_id ] ] += 1
+            
+            # ...check if lncRNA is sense downstream on the plus strand...
+            elif plus_down_list and strand in [ x[2][6] for x in plus_down_list ]:
+                gene_class[ gene_id ] = "sense_downstream"
+                write_to_temp( temp_files[ gene_class[ gene_id ] ], 
+                               plus_down_list, 
+                               transcript )
+                temp_count[ gene_class[ gene_id ] ] += 1
+
+            # ...check if lncRNA is sense downstream on the minus strand...
+            elif minus_down_list and strand in [ x[2][6] for x in minus_down_list ]:
+                gene_class[ gene_id ] = "sense_downstream"
+                write_to_temp( temp_files[ gene_class[ gene_id ] ], 
+                               minus_down_list, 
+                               transcript )
+                temp_count[ gene_class[ gene_id ] ] += 1
+
+            # ...check if lncRNA is sense upstream on the plus strand...
+            elif plus_up_list and strand in [ x[2][6] for x in plus_up_list ]:
+                gene_class[ gene_id ] = "sense_upstream"
+                write_to_temp( temp_files[ gene_class[ gene_id ] ], 
+                               plus_up_list, 
+                               transcript )
+                temp_count[ gene_class[ gene_id ] ] += 1
+
+            # ...check if lncRNA is sense upstream on the minus strand...
+            elif minus_up_list and strand in [ x[2][6] for x in minus_up_list ]:
+                gene_class[ gene_id ] = "sense_upstream"
+                write_to_temp( temp_files[ gene_class[ gene_id ] ], 
+                               minus_up_list, 
+                               transcript )
+                temp_count[ gene_class[ gene_id ] ] += 1
+
+            # ...if none of the above... classify as antisense
+            else:
+                gene_class[ gene_id ] = "antisense"
+                write_to_temp( temp_files[ gene_class[ gene_id ] ], 
+                               overlap_list, 
+                               transcript, 
+                               check_strand = False )
+                temp_count[ gene_class[ gene_id ] ] += 1
+        
+        # if lncRNA doesn't intersect a reference exon, 
+        # check if it overlaps a reference intron
+        elif intron_list:
+            if strand in [ x[2][6] for x in intron_list ]:
+                last = len( transcript ) -1
+                start_list = [ ( x[0], x[1] ) for x in list( intron.get( transcript[0].contig, transcript[0].start, transcript[0].start + 1 ) ) if x[2][6] == strand ]
+                end_list = [ ( x[0], x[1] ) for x in list( intron.get( transcript[last].contig, transcript[last].end, transcript[last].end + 1 ) ) if x[2][6] == strand ]
+                # if start and end of transcript are within the same sense 
+                # introns, then lncRNA is classified as 'sense_intronic'
+                if set( start_list ) == set( end_list ):
+                    gene_class[ gene_id ] = "sense_intronic"
+                    write_to_temp( temp_files[ gene_class[ gene_id ] ], 
+                                   intron_list, 
+                                   transcript )
+                    temp_count[ gene_class[ gene_id ] ] += 1
+                    
+                # if start/end are within different sense introns, 
+                # then lncRNA is classified as 'sense overlap'
+                else:
+                    gene_class[ gene_id ] = "sense_overlap"
+                    write_to_temp( temp_files[ gene_class[ gene_id ] ], 
+                                   intron_list, 
+                                   transcript )
+                    temp_count[ gene_class[ gene_id ] ] += 1
+            
+            # ...check if lncRNA is sense downstream on the plus strand...
+            elif plus_down_list and strand in [ x[2][6] for x in plus_down_list ]:
+                gene_class[ gene_id ] = "sense_downstream"
+                write_to_temp( temp_files[ gene_class[ gene_id ] ], 
+                               plus_down_list, 
+                               transcript )
+                temp_count[ gene_class[ gene_id ] ] += 1
+
+            # ...check if lncRNA is sense downstream on the minus strand...
+            elif minus_down_list and strand in [ x[2][6] for x in minus_down_list ]:
+                gene_class[ gene_id ] = "sense_downstream"
+                write_to_temp( temp_files[ gene_class[ gene_id ] ], 
+                               minus_down_list, 
+                               transcript )
+                temp_count[ gene_class[ gene_id ] ] += 1
+
+            # ...check if lncRNA is sense upstream on the plus strand...
+            elif plus_up_list and strand in [ x[2][6] for x in plus_up_list ]:
+                gene_class[ gene_id ] = "sense_upstream"
+                write_to_temp( temp_files[ gene_class[ gene_id ] ], 
+                               plus_up_list, 
+                               transcript )
+                temp_count[ gene_class[ gene_id ] ] += 1
+
+            # ...check if lncRNA is sense upstream in the minus strand...
+            elif minus_up_list and strand in [ x[2][6] for x in minus_up_list ]:
+                gene_class[ gene_id ] = "sense_upstream"
+                write_to_temp( temp_files[ gene_class[ gene_id ] ], 
+                               minus_up_list, 
+                               transcript )
+                temp_count[ gene_class[ gene_id ] ] += 1
+
+            # ...if none of the above, lncRNAs intersecting introns on 
+            # the opposite strand are classified as antisense
+            else:
+                gene_class[ gene_id ] = "antisense"
+                write_to_temp( temp_files[ gene_class[ gene_id ] ], 
+                               intron_list, 
+                               transcript, 
+                               check_strand = False )
+                temp_count[ gene_class[ gene_id ] ] += 1
+
+
+        # if lncRNA doesn't intersect reference introns or exons...
+        # check if it's downstream on the plus strand...
+        elif plus_down_list:
+            # ... check if lncRNA is sense downstream...
+            if strand in [ x[2][6] for x in plus_down_list ]:
+                gene_class[ gene_id ] = "sense_downstream"
+                write_to_temp( temp_files[ gene_class[ gene_id ] ], 
+                               plus_down_list, 
+                               transcript )
+                temp_count[ gene_class[ gene_id ] ] += 1
+            
+            # ...check if lncRNA is sense downstream on the minus strand...
+            elif minus_down_list and strand in [ x[2][6] for x in minus_down_list ]:
+                gene_class[ gene_id ] = "sense_downstream"
+                write_to_temp( temp_files[ gene_class[ gene_id ] ],
+                               minus_down_list, 
+                               transcript )
+                temp_count[ gene_class[ gene_id ] ] += 1
+
+            # ...check if lncRNA is sense usptream on the plus strand... 
+            elif plus_up_list and strand in [ x[2][6] for x in plus_up_list ]:
+                gene_class[ gene_id ] = "sense_upstream"
+                write_to_temp( temp_files[ gene_class[ gene_id ] ], 
+                               plus_up_list, 
+                               transcript )
+                temp_count[ gene_class[ gene_id ] ] += 1
+            
+            # ...check if lncRNA is sense upstream on the pluse strand...
+            elif minus_up_list and strand in [ x[2][6] for x in minus_up_list ]:
+                gene_class[ gene_id ] = "sense_upstream"
+                write_to_temp( temp_files[ gene_class[ gene_id ] ], 
+                               minus_up_list, 
+                               transcript )
+                temp_count[ gene_class[ gene_id ] ] += 1
+            
+            # if none of the above, lncRNA is classified as 
+            # antisense_downstream
+            else: 
+                gene_class[ gene_id ] = "antisense_downstream"
+                write_to_temp( temp_files[ gene_class[ gene_id ] ], 
+                               plus_down_list, 
+                               transcript, 
+                               check_strand = False )
+                temp_count[ gene_class[ gene_id ] ] += 1
+                    
+        # check if lncRNA is downstream on the minus strand... 
+        elif minus_down_list:
+            # check if lncRNA is sense downstream
+            if strand in [ x[2][6] for x in minus_down_list ]:
+                gene_class[ gene_id ] = "sense_downstream"
+                write_to_temp( temp_files[ gene_class[ gene_id ] ], 
+                               minus_down_list, 
+                               transcript )
+                temp_count[ gene_class[ gene_id ] ] += 1
+                
+            # ...check if lncRNA is sense upstream on the plus strand...
+            elif plus_up_list and strand in [ x[2][6] for x in plus_up_list ]:
+                gene_class[ gene_id ] = "sense_upstream"
+                write_to_temp( temp_files[ gene_class[ gene_id ] ], 
+                               plus_up_list, 
+                               transcript )
+                temp_count[ gene_class[ gene_id ] ] += 1
+
+            # ...check if lncRNA is sense upstream on the minus strand... 
+            elif minus_up_list and strand in [ x[2][6] for x in minus_up_list ]:
+                gene_class[ gene_id ] = "sense_upstream"
+                write_to_temp( temp_files[ gene_class[ gene_id ] ], 
+                               minus_up_list, 
+                               transcript )
+                temp_count[ gene_class[ gene_id ] ] += 1
+
+            # if none of the above, lncRNA is classified as
+            # antisense_downstream
+            else: 
+                gene_class[ gene_id ] = "antisense_downstream"
+                write_to_temp( temp_files[ gene_class[ gene_id ] ], 
+                               minus_down_list, 
+                               transcript, 
+                               check_strand = False )
+                temp_count[ gene_class[ gene_id ] ] += 1
+                
+        # check if lncRNA is upstream on the plus strand... 
+        elif plus_up_list:
+            # check if lncRNA is sense upstream...
+            if strand in [ x[2][6] for x in plus_up_list ]:
+                gene_class[ gene_id ] = "sense_upstream"
+                write_to_temp( temp_files[ gene_class[ gene_id ] ], 
+                               plus_up_list, 
+                               transcript )
+                temp_count[ gene_class[ gene_id ] ] += 1
+
+            # ...check if lncRNA is sense upstream on the plus strand...
+            elif minus_up_list and strand in [ x[2][6] for x in minus_up_list ]:
+                gene_class[ gene_id ] = "sense_upstream"
+                write_to_temp ( temp_files[ gene_class[ gene_id ] ], 
+                                minus_up_list, 
+                                transcript )
+                temp_count[ gene_class[ gene_id ] ] += 1
+
+            # if none of the above, lncRNA is classified as
+            # antisense upstream
+            else:
+                gene_class[ gene_id ] = "antisense_upstream"
+                write_to_temp( temp_files[ gene_class[ gene_id ] ], 
+                               plus_up_list, 
+                               transcript, 
+                               check_strand = False )
+                temp_count[ gene_class[ gene_id ] ] += 1
+
+        # check if lncRNA is upstream on the minus strand...
+        elif minus_up_list:
+            # check if lncRNA is sense upstream...
+            if strand in [ x[2][6] for x in minus_up_list ]:
+                gene_class[ gene_id ] = "sense_upstream"
+                write_to_temp( temp_files[ gene_class[ gene_id ] ], 
+                               minus_up_list, 
+                               transcript )
+                temp_count[ gene_class[ gene_id ] ] += 1
+            
+            # otherwise classify as antisense upstream
+            else:
+                gene_class[ gene_id ] = "antisense_upstream"
+                write_to_temp( temp_files[ gene_class[ gene_id ] ], 
+                               minus_up_list, 
+                               transcript )
+                temp_count[ gene_class[ gene_id ] ] += 1
+
+        # lncRNA that do not fall into any of the above categories 
+        # are classified as intergenic
+        else:
+            gene_class[ gene_id ] = "intergenic"
+            temp_files[ gene_class[ gene_id ] ].write( str( transcript[0] ) +"\n" )
+            temp_count[ gene_class[ gene_id ] ] += 1
+
+    # check that all the numbers add up
+    E.info( "Number of lncRNA loci falling into each category are as follows:" )
+    for key, value in temp_count.iteritems():
+        print( key + "\t" + str( value ) )
+    total_classified = sum( temp_count.values() )
+    E.info( "Total number of lncRNA loci classified: %i" % total_classified )
+    E.info( "Total number of lncRNA loci in input gtf: %i" % input_transcripts )
+
+    # sanity check:
+    assert total_classified == input_transcripts, "Not all lncRNAs in input gtf were successfully classified" 
+
+    # close the tempfiles
+    for handle in temp_file_names:
+        temp_files[ handle ].close()
+
+    # write the genes plus their classification to the outfile
+    outf = IOTools.openFile( outfile, "w" )
+    for gtf in GTF.iterator( IOTools.openFile( lncRNA_gtf ) ):
+        if gtf.gene_id in gene_class:
+            gtf.source = gene_class[ gtf.gene_id ]
+            outf.write( str( gtf ) + "\n" )
+        else: 
+            E.info( "Warning the gene_id %s is not classified" % gtf.gene_id )
+    outf.close()
+
+    os.unlink( merged_lncRNA_gtf )
+
+    return tempdir
                 
 
 #################################################################################
