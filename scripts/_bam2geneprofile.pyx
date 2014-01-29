@@ -14,12 +14,31 @@ CountResult = collections.namedtuple( "Counts", "upstream upstream_utr cds downs
 
 class RangeCounter:
     
-    def __init__(self, *args, **kwargs ):
-        pass
+    def __init__(self, countfiles, controlfiles = None, *args, **kwargs ):
+
+        self.countfiles = countfiles
+        self.controlfiles = controlfiles
+
+        if self.controlfiles != None:
+            # count number of tags in each file for normalization purposes
+            # self.norm_fg, self.norm_bg = [], []
+            # for f in self.countfiles:
+            #     E.debug( "computing read total for %s" % f )
+            #     self.norm_fg.append( self.getTotal( f ) )
+            # for f in self.controlfiles:
+            #     E.debug( "computing read total for %s" % f )
+            #     self.norm_bg.append( self.getTotal( f ) )
+            # fg = sum( self.norm_fg )
+            # bg = sum( self.norm_bg )
+            # self.factor = float( fg ) / float( bg )
+            #E.info( "normalization: fg=%i, bg=%f, factor=%f" % (fg, bg, self.factor) )
+            pass
 
     def setup( self, ranges ):
         self.counts = numpy.zeros( Intervals.getLength( ranges ) )
-        
+        if self.controlfiles:
+            self.counts_bg = numpy.zeros( Intervals.getLength( ranges ) )
+
     def getCounts( self, contig, ranges, length = 0 ):
         '''count from a set of ranges.
 
@@ -28,7 +47,22 @@ class RangeCounter:
         '''
 
         self.setup( ranges )
-        self.count( contig, ranges )
+        self.count( self.counts, self.countfiles, contig, ranges )
+        if self.controlfiles:
+            self.count( self.counts_bg, self.controlfiles, contig, ranges )
+            # scale background 
+            #self.counts_bg = numpy.array( self.counts_bg, dtype = float )
+            #s = sum(self.counts)
+            # if s > 0:
+            #     factor = float(sum(self.counts_bg )) / sum(self.counts) * self.factor 
+            #     self.counts_bg *= factor
+            #     self.counts -= self.counts_bg
+            #     # remove negative values
+            #     self.counts[self.counts < 0] = 0
+            self.counts += 1
+            self.counts_bg += 1
+            factor = float(self.counts_bg.sum()) / self.counts.sum()
+            self.counts = numpy.array( self.counts, dtype=float) * factor / self.counts_bg
 
         if length > 0:
             lnormed = float(length)
@@ -55,8 +89,7 @@ class RangeCounter:
 class RangeCounterBAM(RangeCounter):
     '''count densities using bam files.
     '''
-    def __init__(self, samfiles,
-                 *args, **kwargs ):
+    def __init__(self, *args, **kwargs ):
         '''
         :param samfiles: list of :term:`bam` formatted files
         :param shifts: list of read shifts
@@ -67,9 +100,8 @@ class RangeCounterBAM(RangeCounter):
         '''
 
         RangeCounter.__init__(self, *args, **kwargs )
-        self.samfiles = samfiles
 
-    def count(self, contig, ranges ):
+    def count(self, counts, files, contig, ranges ):
 
         if len(ranges) == 0: return
 
@@ -84,11 +116,9 @@ class RangeCounterBAM(RangeCounter):
         cdef int pos
         cdef int length
 
-        counts = self.counts
-
         cdef Samfile samfile
 
-        for samfile in self.samfiles:
+        for samfile in files:
 
             current_offset = 0
 
@@ -107,7 +137,8 @@ class RangeCounterBAMShift(RangeCounterBAM):
 
     Before counting, reads are shifted and extended by a fixed amount.
     '''
-    def __init__(self, samfiles, shifts, extends, 
+    def __init__(self, countfiles, shifts, extends, 
+                 controlfiles = None,
                  *args, **kwargs ):
         '''
         :param samfiles: list of :term:`bam` formatted files
@@ -115,11 +146,12 @@ class RangeCounterBAMShift(RangeCounterBAM):
         :param extends: list of read extensions
         '''
 
-        RangeCounterBAM.__init__(self, samfiles, *args, **kwargs )
+        RangeCounterBAM.__init__(self, countfiles,
+                                 controlfiles = controlfiles, *args, **kwargs)
 
         self.shifts, self.extends = [], []
 
-        for x in xrange(max( (len(shifts), len(extends), len(samfiles)) )):
+        for x in xrange(max( (len(shifts), len(extends), len(countfiles)) )):
             if x >= len(shifts):
                 shift = 0
             else:
@@ -136,7 +168,7 @@ class RangeCounterBAMShift(RangeCounterBAM):
             self.shifts.append( shift )
             self.extends.append( extend )
 
-    def count(self, contig, ranges ):
+    def count(self, counts, files, contig, ranges ):
 
         if len(ranges) == 0: return
 
@@ -150,8 +182,6 @@ class RangeCounterBAMShift(RangeCounterBAM):
         cdef int work_offset
         cdef int pos
         cdef int length
-
-        counts = self.counts
 
         # shifting:
         # forward strand reads:
@@ -173,7 +203,7 @@ class RangeCounterBAMShift(RangeCounterBAM):
         cdef int shift
         cdef Samfile samfile
 
-        for samfile, shift, extend in zip( self.samfiles, self.shifts, self.extends):
+        for samfile, shift, extend in zip( files, self.shifts, self.extends):
 
             current_offset = 0
             shift_extend = shift + extend
@@ -203,9 +233,10 @@ class RangeCounterBAMMerge(RangeCounterBAM):
 
     Reads are not shifted.
     '''
-    def __init__(self, samfiles,
+    def __init__(self, countfiles,
                  merge_pairs, 
                  min_insert_size, max_insert_size, 
+                 controlfiles = None,
                  *args, **kwargs ):
         '''
         :param samfiles: list of :term:`bam` formatted files
@@ -213,14 +244,14 @@ class RangeCounterBAMMerge(RangeCounterBAM):
         :param max_insert_size: remove paired reads with insert size above this threshold
         '''
 
-        RangeCounterBAM.__init__(self, samfiles,
+        RangeCounterBAM.__init__(self, countfiles,
+                                 controlfiles = controlfiles,
                                  *args, **kwargs )
-        self.samfiles = samfiles
         self.merge_pairs = merge_pairs
         self.min_insert_size = min_insert_size
         self.max_insert_size = max_insert_size
 
-    def count(self, contig, ranges ):
+    def count(self, counts, files, contig, ranges ):
 
         if len(ranges) == 0: return
 
@@ -234,13 +265,11 @@ class RangeCounterBAMMerge(RangeCounterBAM):
         cdef int pos
         cdef int length
 
-        counts = self.counts
-
         cdef Samfile samfile
         cdef int min_insert_size = self.min_insert_size
         cdef int max_insert_size = self.max_insert_size
 
-        for samfile in self.samfiles:
+        for samfile in files:
 
             current_offset = 0
 
@@ -284,7 +313,7 @@ class RangeCounterBAMBaseAccuracy(RangeCounterBAM):
 
         RangeCounterBAM.__init__(self, *args, **kwargs )
 
-    def count(self, contig, ranges ):
+    def count(self, counts, files, contig, ranges ):
 
         if len(ranges) == 0: return
 
@@ -298,11 +327,9 @@ class RangeCounterBAMBaseAccuracy(RangeCounterBAM):
         cdef int pos
         cdef int length
         
-        counts = self.counts
-
         cdef Samfile samfile
 
-        for samfile in self.samfiles:
+        for samfile in files:
 
             current_offset = 0
 
@@ -326,11 +353,16 @@ class RangeCounterBAMBaseAccuracy(RangeCounterBAM):
 
 class RangeCounterBed(RangeCounter):
 
-    def __init__(self, bedfiles, *args, **kwargs ):
+    def __init__(self, *args, **kwargs ):
         RangeCounter.__init__(self, *args, **kwargs )
-        self.bedfiles = bedfiles
-        
-    def count(self, contig, ranges ):
+                
+    def getTotal( self, bedfile ):
+        '''return total number of tags in bedfile.'''
+        cdef int total = 0
+        for x in bedfile.fetch(): total += 1
+        return total
+
+    def count(self, counts, files, contig, ranges ):
         
         # collect pileup profile in region bounded by start and end.
         cdef int i
@@ -338,13 +370,11 @@ class RangeCounterBed(RangeCounter):
 
         if len(ranges) == 0: return
 
-        counts = self.counts
-
         cdef int length
         cdef int current_offset
         cdef int interval_width
 
-        for bedfile in self.bedfiles:
+        for bedfile in files:
             current_offset = 0
 
             for start, end in ranges:
@@ -361,13 +391,14 @@ class RangeCounterBed(RangeCounter):
 
                 current_offset += length
 
+        
+
 class RangeCounterBigWig(RangeCounter):
 
-    def __init__(self, wigfiles, *args, **kwargs ):
+    def __init__(self, *args, **kwargs ):
         RangeCounter.__init__(self, *args, **kwargs )
-        self.wigfiles = wigfiles
         
-    def count(self, contig, ranges ):
+    def count(self, counts, files, contig, ranges ):
         
         # collect pileup profile in region bounded by start and end.
         cdef int i
@@ -375,11 +406,10 @@ class RangeCounterBigWig(RangeCounter):
 
         if len(ranges) == 0: return
 
-        counts = self.counts
         cdef int length
         cdef int current_offset
 
-        for wigfile in self.wigfiles:
+        for wigfile in files:
 
             current_offset = 0
             for start, end in ranges:
