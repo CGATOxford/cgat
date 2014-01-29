@@ -26,7 +26,7 @@ DATABASE=P['rnaseqdiffexpression_backend']
 ###################################################################
 import CGATPipelines.PipelineTracks as PipelineTracks
 
-TRACKS = PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
+TRACKS = PipelineTracks.Tracks( PipelineTracks.Sample ).loadFromDirectory( 
     glob.glob( "%s/*.bam" % DATADIR), "%s/(\S+).bam" % DATADIR)
 
 ALL = PipelineTracks.Aggregate( TRACKS )

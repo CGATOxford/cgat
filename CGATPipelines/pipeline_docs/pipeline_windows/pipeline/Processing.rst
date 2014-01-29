@@ -8,7 +8,10 @@ Sample clustering
 =================
 
 The following plots show how the various samples cluster according to
-the different experimental designs that have been submitted to the pipeline.
+the different experimental designs that have been submitted to the
+pipeline.
+
+The clustering is performed using a read-count correlation distance.
 
 Overall clustering
 ------------------

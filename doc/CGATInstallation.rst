@@ -71,10 +71,12 @@ To install the required basic packages::
 
     pip install -r requires.txt
 
-Also, bx-python needs to be installed. The current version on pypi is
-currently out of date, so to install, do::
-
-    pip install https://bitbucket.org/james_taylor/bx-python/get/tip.tar.bz2
+.. note::
+   The order in which packages are installed matters. The order	
+   in :file:`requires.txt` should work, but pip might ignore that. To
+   install requirements in order, try the following::
+      
+       while read line ; do echo $line > x ; pip install -r x; rm x; done < requires.txt
 
 If all of that works, installing the CGAT tools should now be
 straight-forward::
