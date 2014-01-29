@@ -84,7 +84,7 @@ import CGAT.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Exons as Exons
 import CGAT.Genomics as Genomics
-import alignlib
+import alignlib_lite
 
 param_loglevel = 1
 
@@ -162,18 +162,18 @@ def PrintCluster( cluster,
         l = 0
         if mem in lengths: l = lengths[mem]
         if peptide_sequences:
-            map_rep2mem = alignlib.makeAlignmentVector()            
+            map_rep2mem = alignlib_lite.makeAlignmentVector()            
             
             if rep == mem and rep in lengths:
-                alignlib.addDiagonal2Alignment( map_rep2mem, 1, lengths[rep], 0)
+                alignlib_lite.addDiagonal2Alignment( map_rep2mem, 1, lengths[rep], 0)
             elif mem in peptide_sequences and \
                      rep in peptide_sequences:
-                alignator = alignlib.makeAlignatorDPFull( alignlib.ALIGNMENT_LOCAL, -10.0, -1.0)
+                alignator = alignlib_lite.makeAlignatorDPFull( alignlib_lite.ALIGNMENT_LOCAL, -10.0, -1.0)
                 alignator.align( map_rep2mem,
-                                 alignlib.makeSequence( peptide_sequences[rep] ),
-                                 alignlib.makeSequence( peptide_sequences[mem] ) )
+                                 alignlib_lite.makeSequence( peptide_sequences[rep] ),
+                                 alignlib_lite.makeSequence( peptide_sequences[mem] ) )
                     
-            f = alignlib.AlignmentFormatEmissions( map_rep2mem )
+            f = alignlib_lite.AlignmentFormatEmissions( map_rep2mem )
             print string.join( map(str, (rep, mem, l, f)), "\t" ) 
 
         else:
@@ -268,15 +268,15 @@ def CheckAlignments( peptide_sequences, query_token, other_tokens ):
     if query_token not in peptide_sequences:
         return True
 
-    result = alignlib.makeAlignmentVector()
-    alignator = alignlib.makeAlignatorDPFull( alignlib.ALIGNMENT_LOCAL,
+    result = alignlib_lite.makeAlignmentVector()
+    alignator = alignlib_lite.makeAlignatorDPFull( alignlib_lite.ALIGNMENT_LOCAL,
                                               -10.0, -1.0 )
-    row_seq = alignlib.makeSequence(peptide_sequences[query_token])
+    row_seq = alignlib_lite.makeSequence(peptide_sequences[query_token])
 
     for x in other_tokens:
         if x not in peptide_sequences:
             continue
-        col_seq = alignlib.makeSequence( peptide_sequences[x] )
+        col_seq = alignlib_lite.makeSequence( peptide_sequences[x] )
         alignator.align( result, row_seq, col_seq )
         if param_loglevel >= 5:
             print "# %s - %s = %f" % (query_token, x, result.getScore())

@@ -83,7 +83,7 @@ import scipy
 import scipy.stats
 import numpy
 import CGAT.Histogram as Histogram
-import alignlib
+import alignlib_lite
 import CGAT.AlignedPairs as AlignedPairs
 import CGAT.TreeTools as TreeTools
 import CGAT.IOTools as IOTools
@@ -682,15 +682,15 @@ def GetAlignedPairs( genes, cds ):
 
     matrix, gop, gep = Genomics.makeSubstitutionMatrix( "emboss" )
 
-    alignator = alignlib.makeAlignatorDPFull( alignlib.ALIGNMENT_LOCAL, gop, gep, matrix )
+    alignator = alignlib_lite.makeAlignatorDPFull( alignlib_lite.ALIGNMENT_LOCAL, gop, gep, matrix )
 
     #-------------------------------------------
     def MyAlignFunction( s1, s2, map_a2b ):
-        alignator.align( map_a2b, alignlib.makeSequence(s1), alignlib.makeSequence(s2) )
+        alignator.align( map_a2b, alignlib_lite.makeSequence(s1), alignlib_lite.makeSequence(s2) )
         
     gg = genes.keys()
     
-    map_a2b = alignlib.makeAlignmentVector()
+    map_a2b = alignlib_lite.makeAlignmentVector()
 
     pairs = {}
     

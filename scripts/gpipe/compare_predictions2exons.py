@@ -72,7 +72,7 @@ Evaluate genewise alignments.
 Build a file with exon comparisions between genes.
 """ % sys.argv[0]
 
-import alignlib
+import alignlib_lite
 import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.IndexedFasta as IndexedFasta
@@ -224,8 +224,8 @@ def main( argv = None ):
         skip = False
         if peptide_sequences.has_key( entry.mQueryToken ):
             
-            query_sequence = alignlib.makeSequence(peptide_sequences[entry.mQueryToken])
-            sbjct_sequence = alignlib.makeSequence(entry.mTranslation)
+            query_sequence = alignlib_lite.makeSequence(peptide_sequences[entry.mQueryToken])
+            sbjct_sequence = alignlib_lite.makeSequence(entry.mTranslation)
             
             percent_similarity, percent_identity = 0, 0
             if query_sequence.getLength() < entry.mMapPeptide2Translation.getRowTo():
@@ -244,14 +244,14 @@ def main( argv = None ):
                 nmissed_length += 1
                 skip = True
             else:
-                alignlib.rescoreAlignment( entry.mMapPeptide2Translation, 
+                alignlib_lite.rescoreAlignment( entry.mMapPeptide2Translation, 
                                            query_sequence, 
                                            sbjct_sequence,
-                                           alignlib.makeScorer( query_sequence, sbjct_sequence ) )
-                percent_identity = alignlib.calculatePercentIdentity( entry.mMapPeptide2Translation,
+                                           alignlib_lite.makeScorer( query_sequence, sbjct_sequence ) )
+                percent_identity = alignlib_lite.calculatePercentIdentity( entry.mMapPeptide2Translation,
                                                                       query_sequence,
                                                                       sbjct_sequence ) * 100
-                percent_similarity = alignlib.calculatePercentSimilarity( entry.mMapPeptide2Translation ) * 100
+                percent_similarity = alignlib_lite.calculatePercentSimilarity( entry.mMapPeptide2Translation ) * 100
                 
             E.debug( "prediction %s: percent identity/similarity: before=%5.2f/%5.2f, realigned=%5.2f/%5.2f" % (
                     str(entry.mPredictionId), 
@@ -338,24 +338,24 @@ def main( argv = None ):
                 
                 if query_sequence and sbjct_sequence:
                     
-                    tmp_ali = alignlib.makeAlignmentVector()
+                    tmp_ali = alignlib_lite.makeAlignmentVector()
 
                     xquery_from = exon_from / 3
                     xquery_to = exon_to / 3
 
-                    alignlib.copyAlignment( tmp_ali, entry.mMapPeptide2Translation, xquery_from, xquery_to )
+                    alignlib_lite.copyAlignment( tmp_ali, entry.mMapPeptide2Translation, xquery_from, xquery_to )
 
                     if tmp_ali.getLength() == 0:
                         options.stdlog.write( "# WARNING: empty alignment %s\n" % str((ref_from, exon_from, ref_to, exon_to, xquery_from, xquery_to)))
                         nempty_alignments += 1
                     else:
                         if options.loglevel >= 5:
-                            options.stdlog.write( "# %s\n" % str( alignlib.AlignmentFormatExplicit( tmp_ali, query_sequence, sbjct_sequence ) ) )
+                            options.stdlog.write( "# %s\n" % str( alignlib_lite.AlignmentFormatExplicit( tmp_ali, query_sequence, sbjct_sequence ) ) )
 
-                        exon_percent_identity = alignlib.calculatePercentIdentity( tmp_ali,
+                        exon_percent_identity = alignlib_lite.calculatePercentIdentity( tmp_ali,
                                                                                    query_sequence,
                                                                                    sbjct_sequence ) * 100
-                        exon_percent_similarity = alignlib.calculatePercentSimilarity( tmp_ali ) * 100
+                        exon_percent_similarity = alignlib_lite.calculatePercentSimilarity( tmp_ali ) * 100
 
                 if exon_percent_identity >= min_pide:
                     is_good_exon = 1
@@ -423,12 +423,12 @@ def main( argv = None ):
                     ## get percent identity for overlapping fragment 
                     if query_sequence and sbjct_sequence:
                         ## this the problem
-                        tmp_ali = alignlib.makeAlignmentVector()
+                        tmp_ali = alignlib_lite.makeAlignmentVector()
                         
                         xquery_from = max( ref_from / 3, exon_from / 3)
                         xquery_to = min(ref_to / 3, exon_to / 3)
 
-                        alignlib.copyAlignment( tmp_ali, entry.mMapPeptide2Translation, xquery_from, xquery_to )
+                        alignlib_lite.copyAlignment( tmp_ali, entry.mMapPeptide2Translation, xquery_from, xquery_to )
 
                         if tmp_ali.getLength() == 0:
                             options.stdlog.write( "# warning: empty alignment %s\n" % str((ref_from, exon_from, ref_to, exon_to, xquery_from, xquery_to )))
@@ -436,12 +436,12 @@ def main( argv = None ):
                             percent_similarity = 0
                         else:
                             if options.loglevel >= 5:
-                                print str( alignlib.AlignmentFormatExplicit( tmp_ali, query_sequence, sbjct_sequence ) )
+                                print str( alignlib_lite.AlignmentFormatExplicit( tmp_ali, query_sequence, sbjct_sequence ) )
 
-                            percent_identity = alignlib.calculatePercentIdentity( tmp_ali,
+                            percent_identity = alignlib_lite.calculatePercentIdentity( tmp_ali,
                                                                                   query_sequence,
                                                                                   sbjct_sequence ) * 100
-                            percent_similarity = alignlib.calculatePercentSimilarity( tmp_ali ) * 100
+                            percent_similarity = alignlib_lite.calculatePercentSimilarity( tmp_ali ) * 100
                             
                     if percent_identity >= min_pide:
                         is_good_exon = 1
