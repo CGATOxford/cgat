@@ -107,6 +107,11 @@ def buildLncRNAGeneSet( abinitio_lincrna, reference, refnoncoding, pseudogenes_g
 
     E.info( "indexing geneset for filtering" )
 
+
+    # 17/11/2012 Jethro added Ig genes to list. (NB 31 entries in $2 of reference.gtf.gz) 
+    # 10/12/2012 Nick added CDS. This will then filter anything that overlaps with a CDS
+    # NB this is the annotation for RefSeq and so requires the user to have created a
+    # reference annotation that includes this annotation
     input_sections = ("protein_coding", 
                       "processed_pseudogene",
                       "unprocessed_pseudogene",
@@ -115,74 +120,81 @@ def buildLncRNAGeneSet( abinitio_lincrna, reference, refnoncoding, pseudogenes_g
                       "IG_V_gene",
                       "IG_J_gene",
                       "IG_C_gene",
-                      "IG_D_gene", # 17/11/2012 Jethro added Ig genes to list. (NB 31 entries in $2 of reference.gtf.gz) 
-                      "CDS")       # 10/12/2012 Nick added CDS. This will then filter anything that overlaps with a CDS
-                                   # NB this is the annotation for RefSeq and so requires the user to have created a
-                                   # reference annotation that includes this annotation
+                      "IG_D_gene",
+                      "IG_LV_gene"
+                      "TR_V_gene",
+                      "CDS")       
+                                   
+    # create a dictionary containing a separate index for each input section
     indices = {}
     for section in input_sections:
         indices[section] = GTF.readAndIndex( 
             GTF.iterator_filtered(  GTF.iterator( IOTools.openFile( reference_gtf ) ),
                                    source = section ),
             with_value = True )
-        
     E.info( "built indices for %i features" % len(indices))
 
+    # add psuedogenes and numts to dictionary of indices
     indices["numts"] = GTF.readAndIndex( GTF.iterator( IOTools.openFile( numts_gtf) ), with_value = True )
-
     E.info( "added index for numts" )
 
     indices["pseudogenes"] = GTF.readAndIndex( GTF.iterator( IOTools.openFile( pseudogenes_gtf) ), with_value = True )
-
     E.info( "added index for pseudogenes" )
 
-    noncoding = {}
-    noncoding["noncoding"] = GTF.readAndIndex(GTF.iterator(IOTools.openFile(refnoncoding_gtf)), with_value = False)
-
-    E.info("created index for known noncoding exons to avoid filtering")
-
-    sections = indices.keys()
-
-    total_transcripts, remove_transcripts = set(), collections.defaultdict( set )
-    transcript_length = collections.defaultdict( int )
-    inf = GTF.iterator( IOTools.openFile( infile_abinitio ) )
-
+    # iterate through assembled transcripts, identify those that intersect with indexed sections
+    total_transcripts = set() 
+    remove_transcripts = collections.defaultdict( set )
     E.info( "collecting genes to remove" )
-
-    min_length = min_length
-
-    for gtfs in GTF.transcript_iterator( inf ): 
-        l = sum([x.end-x.start for x in gtfs])
+    for gtf in GTF.transcript_iterator( GTF.iterator( IOTools.openFile( infile_abinitio ) ) ): 
+        # remove those transcripts too short to be classified as lncRNAs
+        l = sum([x.end-x.start for x in gtf])
         if l < min_length:
-            remove_transcripts[gtfs[0].transcript_id].add("length")
-
-        for section in sections:
-            for gtf in gtfs:
-                transcript_id = gtf.transcript_id   
+            remove_transcripts[gtf[0].transcript_id].add("length")
+        # remove transcripts where one or more exon intersects one or more sections
+        for section in indices.iterkeys():
+            for exon in gtf:
+                transcript_id = exon.transcript_id
                 total_transcripts.add( transcript_id )
-                if not noncoding["noncoding"].contains(gtf.contig, gtf.start, gtf.end):
-                    if indices[section].contains( gtf.contig, gtf.start, gtf.end):
-                        
-                        # retain antisense transcripts
-                        for gtf2 in indices[section].get(gtf.contig, gtf.start, gtf.end):
-                            if gtf.strand == gtf2[2].strand:
-                                remove_transcripts[transcript_id].add( section )
-                                                    
-                
+                if indices[ section ].contains( exon.contig, exon.start, exon.end ):
+                    # check if any of the intersected intervals are on same stand as query exon
+                    for interval in indices[ section ].get( exon.contig, exon.start, exon.end ):
+                        # only remove transcripts where an exon is on the same strand as the 
+                        # interval it intersects
+                        if exon.strand == interval[2].strand:
+                            remove_transcripts[ transcript_id ].add( section )
+                    
     E.info( "removing %i out of %i transcripts" % (len(remove_transcripts), len(total_transcripts)) )
-    
-    outf = open("lincrna_removed.tsv", "w")
+
+    # Jethro - removed the automatic retention of transcripts that intersect known non-coding 
+    # intervals regardless of strand. Instead, any removed transcript that also intersects a lncRNA
+    # on the same strand is now output to a separate gtf.
+    noncoding = GTF.readAndIndex(GTF.iterator(IOTools.openFile(refnoncoding_gtf)), with_value = True)
+    rej_gtf = IOTools.openFile( "lncrna_removed_nc_intersect.gtf.gz", "w" )
+    for gtf in GTF.transcript_iterator( GTF.iterator( IOTools.openFile( infile_abinitio ) ) ): 
+        if gtf[0].transcript_id in remove_transcripts.keys():
+            for exon in gtf:
+                if noncoding.contains( exon.contig, exon.start, exon.end ):
+                    if exon.strand in [ x[2].strand for x in list( noncoding.get( exon.contig, 
+                                                                                  exon.start, 
+                                                                                  exon.end ) ) ]:
+                        for exon2 in IOTools.flatten( gtf ):
+                            rej_gtf.write( str(exon2) + "\n" )
+                        break
+    rej_gtf.close()
+
+
+    outf = open("lncrna_removed.tsv", "w")
     outf.write("transcript_id" + "\t" + "removed" + "\n" )
     for x, y in remove_transcripts.iteritems():
         outf.write("%s\t%s\n" % (x, ",".join(y)))
+    outf.close()
 
     # write out transcripts that are not in removed set
-    temp = P.getTempFile(dir=".")
+    temp = P.getTempFile( "." )
     for entry in GTF.iterator(IOTools.openFile(infile_abinitio)):
         if entry.transcript_id in remove_transcripts: continue
         temp.write("%s\n" % str(entry))
     temp.close()
-    to_cluster = False
 
     filename = temp.name
     statement = '''cat %(filename)s | python %(scriptsdir)s/gtf2gtf.py
@@ -190,6 +202,10 @@ def buildLncRNAGeneSet( abinitio_lincrna, reference, refnoncoding, pseudogenes_g
                    --log=%(outfile)s.log
                    | gzip > %(outfile)s'''
     P.run()
+
+    os.unlink( temp.name )
+
+
 #-------------------------------------------------------------------------------
 def buildFilteredLncRNAGeneSet(flagged_gtf, outfile, genesets_previous):
     '''
