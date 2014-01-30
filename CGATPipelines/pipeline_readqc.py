@@ -232,6 +232,19 @@ def runFastqc(infiles, outfile):
 #########################################################################
 ## 
 #########################################################################
+def FastqcSectionIterator( infile ):
+    data = []
+    for line in infile:
+        if line.startswith( ">>END_MODULE" ): 
+            yield name, status, header, data
+        elif line.startswith(">>"):
+            name, status = line[2:-1].split("\t")
+            data = []
+        elif line.startswith("#"):
+            header = "\t".join([ x for x in line[1:-1].split("\t") if x != ""] )
+        else:
+            data.append( "\t".join([ x for x in line[:-1].split("\t") if x != ""] ) )
+
 @jobs_limit( 1, "db" )
 @transform( runFastqc, suffix(".fastqc"), "_fastqc.load" )
 def loadFastqc( infile, outfile ):
@@ -239,27 +252,15 @@ def loadFastqc( infile, outfile ):
     
     track = P.snip( infile, ".fastqc" )
 
-    def section_iterator( infile ):
-
-        data = []
-        for line in infile:
-            if line.startswith( ">>END_MODULE" ): 
-                yield name, status, header, data
-            elif line.startswith(">>"):
-                name, status = line[2:-1].split("\t")
-                data = []
-            elif line.startswith("#"):
-                header = "\t".join([ x for x in line[1:-1].split("\t") if x != ""] )
-            else:
-                data.append( "\t".join([ x for x in line[:-1].split("\t") if x != ""] ) )
-
     filename = os.path.join( PARAMS["exportdir"], "fastqc", track + "*_fastqc", "fastqc_data.txt" )
 
     for fn in glob.glob( filename ):
         prefix = os.path.basename( os.path.dirname( fn ) )
         results = []
         
-        for name, status, header, data in section_iterator(IOTools.openFile( fn )):
+        for name, status, header, data in FastqcSectionIterator(IOTools.openFile( fn )):
+            # do not collect basic stats, see loadFastQCSummary
+            if name == "Basic Statistics": continue
 
             parser = CSV2DB.buildParser()
             (options, args) = parser.parse_args([])
@@ -280,6 +281,72 @@ def loadFastqc( infile, outfile ):
         CSV2DB.run( inf, options )
 
     P.touch( outfile )
+
+def collectFastQCSections( infiles, section ):
+    '''iterate over all fastqc files and extract a particular section.'''
+    results = []
+    
+    for infile in infiles:
+
+        track = P.snip( infile, ".fastqc" )
+
+        filename = os.path.join( PARAMS["exportdir"], "fastqc", track + "*_fastqc", "fastqc_data.txt" )
+
+        for fn in glob.glob( filename ):
+            prefix = os.path.basename( os.path.dirname( fn ) )
+            for name, status, header, data in FastqcSectionIterator(IOTools.openFile( fn )):
+                if name == section:
+                    results.append( (track, status, header, data ) )
+                    
+    return results
+
+@merge( runFastqc, "status_summary.tsv.gz" )
+def buildFastQCSummaryStatus( infiles, outfile ):
+    '''load fastqc status summaries into a single table.'''
+
+    outf = IOTools.openFile( outfile, "w" )
+    first = True
+    for infile in infiles:
+        track = P.snip( infile, ".fastqc" )
+        filename = os.path.join( PARAMS["exportdir"], "fastqc", track + "*_fastqc", "fastqc_data.txt" )
+    
+        for fn in glob.glob( filename ):
+            prefix = os.path.basename( os.path.dirname( fn ) )
+            results = []
+        
+            names, stats = [], []
+            for name, status, header, data in FastqcSectionIterator(IOTools.openFile( fn )):
+                stats.append( status )
+                names.append( name )
+
+            if first:
+                outf.write("track\tfilename\t%s\n" % "\t".join(names))
+                first = False
+            
+            outf.write( "%s\t%s\t%s\n" % (track, os.path.dirname(fn), "\t".join(stats ) ) )
+    outf.close()
+
+@merge( runFastqc, "basic_statistics_summary.tsv.gz" )
+def buildFastQCSummaryBasicStatistics( infiles, outfile ):
+    '''load fastqc summaries into a single table.'''
+
+    data = collectFastQCSections( infiles, "Basic Statistics" )
+    
+    outf = IOTools.openFile(outfile, "w")
+    first = True
+    for track, status, header, rows in data:
+        rows = [ x.split("\t") for x in rows]
+        if first:
+            headers = [ row[0] for row in rows ]
+            outf.write( "track\t%s\n" % "\t".join(headers ))
+            first = False
+        outf.write( "%s\t%s\n" % (track, "\t".join( [ row[1] for row in rows ] ) ))
+    outf.close()
+
+@transform( (buildFastQCSummaryStatus, buildFastQCSummaryBasicStatistics), 
+            suffix(".tsv.gz"), ".load")
+def loadFastqcSummary( infile, outfile ):
+    P.load( infile, outfile, options="--index=track")
 
 #########################################################################
 #########################################################################
@@ -850,7 +917,7 @@ def process():
     pass
 
 #########################################################################
-@follows( loadFastqc )
+@follows( loadFastqc, loadFastqcSummary )
 def full(): pass
 
 #########################################################################

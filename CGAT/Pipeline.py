@@ -1328,6 +1328,8 @@ def run_report( clean = True):
 
     run()
 
+    L.info( 'the report is available at %s' % os.path.abspath( \
+            os.path.join( PARAMS['report_html'], "index.html")))
 
 USAGE = '''
 usage: %prog [OPTIONS] [CMD] [target]
