@@ -1328,6 +1328,8 @@ def run_report( clean = True):
 
     run()
 
+    L.info( 'the report is available at %s' % os.path.abspath( \
+            os.path.join( PARAMS['report_html'], "index.html")))
 
 USAGE = '''
 usage: %prog [OPTIONS] [CMD] [target]
@@ -1344,6 +1346,10 @@ show <target>
 
 plot <target>
    plot image (using inkscape) of pipeline state for *target*
+
+debug <target> [args]
+   debug a method using the supplied arguments. The method <target>
+   in the pipeline is run without checking any dependencies.
 
 config
    write new configuration files pipeline.ini, sphinxreport.ini and conf.py
@@ -1449,7 +1455,17 @@ def main( args = sys.argv ):
         if len(args) > 1:
             options.pipeline_targets.extend( args[1:] )
 
-    if options.pipeline_action in ("make", "show", "svg", "plot", "touch" ):
+    if options.pipeline_action == "debug":
+        # create the session proxy
+        GLOBAL_SESSION = drmaa.Session()
+        GLOBAL_SESSION.initialize()
+        
+        method_name = options.pipeline_targets[0]
+        caller = getCaller()
+        method = getattr( caller, method_name )
+        method( *options.pipeline_targets[1:] )
+
+    elif options.pipeline_action in ("make", "show", "svg", "plot", "touch" ):
 
         try:
             if options.pipeline_action == "make":

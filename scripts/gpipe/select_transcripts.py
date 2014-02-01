@@ -116,7 +116,7 @@ import CGAT.Genomics as Genomics
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Exons as Exons
 import CGAT.Intervals as Intervals
-import alignlib
+import alignlib_lite
 import CGAT.GTF as GTF
 
 ##---------------------------------------------------------------------------------------------
@@ -512,8 +512,8 @@ def EliminateRedundantEntries( rep,
     rep_id = rep.transcript_id
     rep_coverage, rep_pid = rep.mQueryCoverage, rep.mPid
 
-    alignator = alignlib.makeAlignatorDPFull( alignlib.ALIGNMENT_LOCAL, options.gop, options.gep )
-    result = alignlib.makeAlignmentVector()
+    alignator = alignlib_lite.makeAlignatorDPFull( alignlib_lite.ALIGNMENT_LOCAL, options.gop, options.gep )
+    result = alignlib_lite.makeAlignmentVector()
     
     rep_seq = peptides[rep_id]
     rep_extended_seq = extended_peptides[rep_id]
@@ -545,15 +545,15 @@ def EliminateRedundantEntries( rep,
             if mem_quality != this_quality or \
                    mem_quality in options.quality_exclude_same:
           
-                seq1 = alignlib.makeSequence( str(rep_seq) )
-                seq2 = alignlib.makeSequence( str(mem_seq) )            
+                seq1 = alignlib_lite.makeSequence( str(rep_seq) )
+                seq2 = alignlib_lite.makeSequence( str(mem_seq) )            
 
                 alignator.align( result, seq1, seq2 )
 
                 if options.loglevel >= 5:
-                    options.stdlog.write( "# ali\n%s\n" % alignlib.AlignmentFormatExplicit( result, seq1, seq2 ) )
+                    options.stdlog.write( "# ali\n%s\n" % alignlib_lite.AlignmentFormatExplicit( result, seq1, seq2 ) )
                 
-                pidentity = 100 * alignlib.calculatePercentIdentity( result, seq1, seq2 )
+                pidentity = 100 * alignlib_lite.calculatePercentIdentity( result, seq1, seq2 )
                 
                 num_gaps = result.getNumGaps()
 

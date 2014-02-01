@@ -82,7 +82,7 @@ class Files:
         
     def Write( self, identifier, sequence ):
 
-        filename = files.GetFilename( identifier )
+        filename = self.GetFilename( identifier )
         
         if filename not in self.mFiles:
             

@@ -81,7 +81,7 @@ Options:
 import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.Exons as Exons
-import alignlib
+import alignlib_lite
 import CGAT.BlastAlignments as BlastAlignments
 
 param_long_options=["verbose=", "help",
@@ -162,8 +162,8 @@ def main( argv = None ):
 
     ninput, npairs, nskipped = 0, 0, 0
 
-    map_row2col = alignlib.makeAlignmentVector()
-    tmp_map_row2col = alignlib.makeAlignmentVector()    
+    map_row2col = alignlib_lite.makeAlignmentVector()
+    tmp_map_row2col = alignlib_lite.makeAlignmentVector()    
     
     for line in sys.stdin:
         if line[0] == "#": continue
@@ -185,7 +185,7 @@ def main( argv = None ):
                 link.mSbjctAli = ScaleAlignment( link.mSbjctAli, 3 )            
 
             map_row2col.clear()
-            alignlib.AlignmentFormatExplicit( 
+            alignlib_lite.AlignmentFormatExplicit( 
                 link.mQueryFrom, link.mQueryAli,
                 link.mSbjctFrom, link.mSbjctAli ).copy( map_row2col )
 
@@ -195,12 +195,12 @@ def main( argv = None ):
                 for e2 in cds[link.mSbjctToken]:
                     tmp_map_row2col.clear()
                     if param_expand:
-                        alignlib.copyAlignment( tmp_map_row2col, map_row2col,
+                        alignlib_lite.copyAlignment( tmp_map_row2col, map_row2col,
                                                e1.mPeptideFrom + 1, e1.mPeptideTo,
                                                e2.mPeptideFrom + 1, e2.mPeptideTo,                                               
                                                )
                     else:
-                        alignlib.copyAlignment( tmp_map_row2col, map_row2col,
+                        alignlib_lite.copyAlignment( tmp_map_row2col, map_row2col,
                                                e1.mPeptideFrom / 3 + 1, e1.mPeptideTo / 3 + 1,
                                                e2.mPeptideFrom / 3 + 1, e2.mPeptideTo / 3 + 1)
 
@@ -210,7 +210,7 @@ def main( argv = None ):
                         print string.join( map(str, (link.mQueryToken, e1.mRank,
                                                      link.mSbjctToken, e2.mRank,
                                                      link.mEvalue,
-                                                     alignlib.AlignmentFormatEmissions( tmp_map_row2col ))), "\t" )
+                                                     alignlib_lite.AlignmentFormatEmissions( tmp_map_row2col ))), "\t" )
                         
                         npairs += 1
         else:

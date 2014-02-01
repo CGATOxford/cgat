@@ -58,7 +58,7 @@ class GatTableContext:
 
 class GatTableFunctions:
     pattern = "gat_functions_(.*)"
-    
+
 _gat_analysis = { "Results" : GatResults, 
                   "Fold" : GatLogFold,
                   "LogFold": GatLogFold }

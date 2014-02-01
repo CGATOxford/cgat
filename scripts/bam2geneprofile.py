@@ -129,6 +129,15 @@ Normalization a profile can help comparing the shapes of profiles between differ
 experiments independent of the number of reads or transcripts used in the construction
 of the meta-gene profile (``--normalize-profile``).
 
+Control
++++++++
+
+If control files (input tracks) are supplied, counts in the control files will be subtracted
+from the actual counts in the foreground data disallowing negative values.
+
+Counts in the control are scaled before subtraction in order to account for differences is sequencing
+depth between foreground and controls. 
+
 Bed and wiggle files
 ++++++++++++++++++++
 
@@ -221,6 +230,12 @@ def main( argv = None ):
                        type = "string", action = "append",
                        help = "BAM/bed/bigwig files to use. Do not mix different types"
                               "[%default]" )
+
+    parser.add_option( "-c", "--controlfile", dest="controlfiles",
+                       metavar = "BAM",
+                       type = "string", action = "append",
+                       help = "control/input to use. Should be of the same type as the bam/bed/bigwig file"
+                       " [%default]" )
 
     parser.add_option( "-g", "--gtffile", dest="gtffile", type = "string",
                        metavar = "GTF",
@@ -345,7 +360,6 @@ The options are:
     parser.set_defaults(
         remove_rna = False,
         ignore_pairs = False,
-        input_reads = 0,
         force_output = False,
         bin_size = 10,
         extends = [],
@@ -370,6 +384,7 @@ The options are:
         plot = True,
         methods = [],
         infiles = [],
+        controlfiles = [],
         gtffile = None,
         profile_normalizations = [],
         normalization = None,
@@ -414,6 +429,11 @@ The options are:
     if len(options.infiles) > 0:
         if options.infiles[0].endswith( ".bam" ):
             bamfiles = [ pysam.Samfile( x, "rb" ) for x in options.infiles ]
+
+            if options.controlfiles:
+                controlfiles = [ pysam.Samfile( x, "rb" ) for x in options.controlfiles ]
+            else: controlfiles = None
+                
             format = "bam"
             if options.merge_pairs:
                 range_counter = _bam2geneprofile.RangeCounterBAM( bamfiles, 
@@ -421,21 +441,31 @@ The options are:
                                                                   extends = options.extends,
                                                                   merge_pairs = options.merge_pairs,
                                                                   min_insert_size = options.min_insert_size,
-                                                                  max_insert_size = options.max_insert_size )
+                                                                  max_insert_size = options.max_insert_size,
+                                                                  controfiles = controlfiles )
             elif options.shifts or options.extends:
                 range_counter = _bam2geneprofile.RangeCounterBAM( bamfiles, 
                                                                   shifts = options.shifts, 
-                                                                  extends = options.extends )
+                                                                  extends = options.extends,
+                                                                  controlfiles = controlfiles )
             elif options.base_accuracy:
-                range_counter = _bam2geneprofile.RangeCounterBAMBaseAccuracy( bamfiles )
+                range_counter = _bam2geneprofile.RangeCounterBAMBaseAccuracy( bamfiles,
+                                                                              controlfiles = controlfiles)
             else:
-                range_counter = _bam2geneprofile.RangeCounterBAM( bamfiles )
+                range_counter = _bam2geneprofile.RangeCounterBAM( bamfiles,
+                                                                  controlfiles = controlfiles )
             
                                                               
         elif options.infiles[0].endswith( ".bed.gz" ):
             bedfiles = [ pysam.Tabixfile( x ) for x in options.infiles ]
+
+            if options.controlfiles:
+                controlfiles = [ pysam.Tabixfile( x ) for x in options.controlfiles ]
+            else: controlfiles = None
+
             format = "bed"
-            range_counter = _bam2geneprofile.RangeCounterBed( bedfiles )
+            range_counter = _bam2geneprofile.RangeCounterBed( bedfiles, 
+                                                              controlfiles = controlfiles )
 
         elif options.infiles[0].endswith( ".bw" ):
             wigfiles = [ BigWigFile(file=open(x)) for x in options.infiles ]

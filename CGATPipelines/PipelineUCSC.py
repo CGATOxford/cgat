@@ -52,12 +52,11 @@ import glob
 import os
 import shutil
 import collections
+import MySQLdb
 
 import CGAT.Experiment as E
 import CGAT.Pipeline as P
-from ruffus import *
-
-import MySQLdb
+import CGAT.IOTools as IOTools
 
 try:
     PARAMS = P.getParameters()
@@ -246,3 +245,59 @@ def importRefSeqFromUCSC( infile, outfile, remove_duplicates = True ):
     outf.close()
     
     E.info("%s" % str(counts))
+
+
+#############################################################
+#############################################################
+#############################################################
+## Methods for setting up a UCSC Track Hub
+#############################################################
+def readUCSCFile( infile ):
+    '''read data within a UCSC formatted file.
+    returns a list of key,value items
+    '''
+    result = []
+    for line in infile:
+        if line.startswith("#"): continue
+        if line.strip() == "": continue
+        data = line[:-1].split()
+        result.append( (data[0], " ".join(data[1:]) ) )
+    return result
+
+def writeUCSCFile( outfile, data ):
+    '''write a hubfile to outfile from data.'''
+    for key, value in data:
+        outfile.write( " ".join( (key,value)) + "\n" )
+    
+def readTrackFile( infile ):
+    '''read a track file.
+    
+    Returns a list of tracks, each being a dictionary of keywords.
+    '''
+
+    data = readUCSCFile( infile )
+
+    def _yielder( data ):
+        track, block = None, []
+        for key, value in data:
+            if key == "track":
+                if block: yield track, block
+                block = []
+                track = value
+                continue
+            block.append( (key,value))
+    result = []
+    return list( _yielder(data) )
+
+def writeTrackFile( outfile, tracks ):
+    '''write list of *tracks* to track file *outfile*.
+    
+    Returns a list of tracks, each being a dictionary of keywords.
+    '''
+
+    for track, trackdata in tracks:
+        outfile.write( " ".join( ("track", track)) + "\n" )
+        for key, value in trackdata:
+            outfile.write( " ".join( (key,value)) + "\n" )
+        outfile.write("\n")
+

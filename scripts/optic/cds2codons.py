@@ -68,7 +68,7 @@ import tempfile
 
 import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
-import alignlib
+import alignlib_lite
 
 class Map:
     def __init__(self):
@@ -84,8 +84,8 @@ class Map:
                         map(int, (self.mOldFrom, self.mOldTo, self.mNewFrom, self.mNewTo))
         self.mMapOld2New = None
     def Expand( self ):
-        self.mMapOld2New = alignlib.makeAlignmentVector()
-        alignlib.AlignmentFormatEmissions( 
+        self.mMapOld2New = alignlib_lite.makeAlignmentVector()
+        alignlib_lite.AlignmentFormatEmissions( 
             self.mOldFrom, self.mOldAli,
             self.mNewFrom, self.mNewAli).copy( self.mMapOld2New )
         
