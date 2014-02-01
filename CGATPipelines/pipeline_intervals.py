@@ -1558,6 +1558,54 @@ def runGATOnGeneAnnotations( infiles, outfile ):
 
     P.run()
 
+###################################################################
+###################################################################
+###################################################################
+@follows( mkdir( "gat_sets.dir" ) )
+@merge( TRACKS_BEDFILES,
+        "gat_sets.dir/gat_sets.tsv.gz" ,
+        os.path.join( PARAMS["annotations_dir"],
+                      PARAMS_ANNOTATIONS["interface_mapability_filtered_bed"] % PARAMS["gat_mapability"] ),
+        os.path.join( PARAMS["annotations_dir"],
+                      PARAMS_ANNOTATIONS["interface_gc_profile_bed"]) )
+def runGATOnSets( infiles, outfile, workspacefile, isochorefile ):
+    '''run gat on intervals against each other.'''
+
+    job_options = "-l mem_free=4G -pe dedicated 4 -R y"    
+
+    to_cluster = True
+                
+    segments = os.path.join( "gat_sets.dir", "segments.bed")
+    annotations = os.path.join( "gat_sets.dir", "annotations.bed")
+
+    infiles = " ".join(infiles)
+    statement = '''
+    for x in %(infiles)s; do printf "track name=%%s\\n" `basename $x` >> %(segments)s; zcat $x >> %(segments)s; done'''
+    
+    P.run()
+
+    shutil.copyfile( segments, annotations )
+
+    statement = '''gat-run.py
+         --num-threads=4
+         --segments=%(segments)s
+         --annotations=%(annotations)s
+         --workspace=%(workspacefile)s
+         --num-samples=%(gat_num_samples)i
+         --force
+         --output-filename-pattern=%(outfile)s.%%s
+         -v 5
+         --log=%(outfile)s.log
+         %(gat_sets_options)s
+         | gzip
+         > %(outfile)s'''
+
+    P.run()
+
+###################################################################
+###################################################################
+###################################################################
+
 @transform( (runGATOnGenomicContext,
               runGATOnGenomicAnnotations,
               runGATOnGeneAnnotations,

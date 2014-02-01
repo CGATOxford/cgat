@@ -101,7 +101,7 @@ import CGAT.Genomics as Genomics
 import CGAT.Intervalls as Intervalls
 import CGAT.PredictionParser as PredictionParser
 import CGAT.PredictionFile as PredictionFile
-import alignlib
+import alignlib_lite
 
 
 global_alignments = {}
@@ -393,8 +393,8 @@ def ProcessRegion( predictions, region_id, region,
     predictions.sort( lambda x,y: cmp(x.score, y.score))
     predictions.reverse()
         
-    alignator = alignlib.makeAlignatorDPFull( alignlib.ALIGNMENT_LOCAL, options.gop, options.gep )
-    result = alignlib.makeAlignmentVector()
+    alignator = alignlib_lite.makeAlignatorDPFull( alignlib_lite.ALIGNMENT_LOCAL, options.gop, options.gep )
+    result = alignlib_lite.makeAlignmentVector()
 
     cluster = []
 
@@ -443,8 +443,8 @@ def ProcessRegion( predictions, region_id, region,
                     seq1 = peptide_sequences[predictions[x].mQueryToken]
                     seq2 = peptide_sequences[predictions[y].mQueryToken]
                     result.clear()
-                    s1 = alignlib.makeSequence( seq1 )
-                    s2 = alignlib.makeSequence( seq2 )
+                    s1 = alignlib_lite.makeSequence( seq1 )
+                    s2 = alignlib_lite.makeSequence( seq2 )
                     alignator.align( result, s1, s2 )
 
                     c1 = 100 * (result.getRowTo() - result.getRowFrom()) / len(seq1)
@@ -452,7 +452,7 @@ def ProcessRegion( predictions, region_id, region,
                     min_cov = min(c1,c2)
                     max_cov = max(c1,c2)
 
-                    identity = alignlib.calculatePercentIdentity( result, s1, s2 ) * 100
+                    identity = alignlib_lite.calculatePercentIdentity( result, s1, s2 ) * 100
                     
                     # check if predictions overlap and they are homologous
                     if result.getScore() >= options.overlap_min_score and \

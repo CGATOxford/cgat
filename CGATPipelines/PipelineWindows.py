@@ -2,6 +2,8 @@ import os
 import re
 import sys
 import collections
+import numpy
+import pandas
 
 import CGAT.Experiment as E
 import CGAT.Pipeline as P
@@ -146,6 +148,31 @@ def buildDMRStats( infile, outfile, method ):
         outf.write( "\t".join( [str(r[x]) for x in header1 ] ) + "\t" )
         outf.write( "\t".join( [str(s[x]) for x in header2 ] ) + "\n" )
 
+#########################################################################
+#########################################################################
+#########################################################################
+def buildFDRStats( infile, outfile, method ):
+    '''compute number of windows called at different FDR.
+    '''
+
+    data = pandas.read_csv( IOTools.openFile(infile), sep="\t", index_col = 0 )
+
+    assert data['treatment_name'][0] == data['treatment_name'][-1]
+    assert data['control_name'][0] == data['control_name'][-1]
+
+    treatment_name, control_name = data['treatment_name'][0], data['control_name'][0]
+        
+    key = (treatment_name, control_name )
+    fdrs = (0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0 )
+
+    for fdr in fdrs:
+        print "fdr"
+        take = data['qvalue'] <= fdr
+
+        significant = sum(take)
+        print significant
+
+
 def outputAllWindows( infile, outfile ):
     '''output all Windows as a bed file with the l2fold change
     as a score.
@@ -240,7 +267,9 @@ def outputRegionsOfInterest( infiles, outfile, max_per_sample = 10, sum_per_grou
 #########################################################################
 #########################################################################
 #########################################################################
-def runDE( infiles, outfile, outdir, method ):
+def runDE( infiles, outfile, outdir, 
+           method = "deseq",
+           spike_file = None):
     '''run DESeq or EdgeR.
 
     The job is split into smaller sections. The order of the input 
@@ -254,13 +283,26 @@ def runDE( infiles, outfile, outdir, method ):
     
     design_file, counts_file = infiles
 
+    if spike_file == None:
+        statement = "zcat %(counts_file)s" 
+    else:
+        statement = '''python %(scriptsdir)s/combine_tables.py 
+                           --missing-value=0
+                           --cat=filename
+                           --log=%(outfile)s.log
+                           %(counts_file)s %(spike_file)s
+              | python %(scriptsdir)s/csv_cut.py 
+                           --remove filename
+                           --log=%(outfile)s.log
+        '''
+
     prefix = os.path.basename( outfile )
 
     # the post-processing strips away the warning,
     # renames the qvalue column to old_qvalue
     # and adds a new qvalue column after recomputing
     # over all windows.
-    statement = '''zcat %(counts_file)s 
+    statement += '''
               | perl %(scriptsdir)s/randomize_lines.pl -h
               | %(cmd-farm)s
                   --input-header 

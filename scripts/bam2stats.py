@@ -397,7 +397,7 @@ def main( argv = None ):
     # output paired end data 
     if flags_counts["read2"] > 0:
         if options.filename_fastq:
-            pairs_mapped = counter.total_pairs - counter.total_pair_is_unmapped
+            pairs_mapped = counter.total_pair_is_mapped
             outs.write( "pairs_total\t%i\t%5.2f\tpairs_total\n" % \
                             (counter.total_pairs, 100.0 * counter.total_pairs / counter.total_pairs ) )
             outs.write( "pairs_mapped\t%i\t%5.2f\tpairs_total\n" % \

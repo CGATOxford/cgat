@@ -34,7 +34,7 @@ ribosomal and repetitive RNA. Repetetive RNA annotation is taken from the UCSC r
 
 .. report:: Mapping.MappingContext
    :render: table
-   :slices: mapped,RNA,rRNA,scRNA,snRNA,srpRNA,tRNA,ribosomal_coding
+   :slices: total,RNA,rRNA,scRNA,snRNA,srpRNA,tRNA,ribosomal_coding
 
    Number of alignments that align to ribosomal and repetitive RNA annotations (from 
    the UCSC repeatmasker track)
@@ -43,7 +43,7 @@ ribosomal and repetitive RNA. Repetetive RNA annotation is taken from the UCSC r
    :render: pie-plot
    :pie-first-is-total: other_mapped
    :groupby: track
-   :slices: mapped,RNA,rRNA,scRNA,snRNA,srpRNA,tRNA,ribosomal_coding
+   :slices: total,RNA,rRNA,scRNA,snRNA,srpRNA,tRNA,ribosomal_coding
    :layout: column-3
    :width: 200
 
@@ -58,7 +58,7 @@ pseudogene exons. The annotations are taken from the ENSEMBL gene set.
 
 .. report:: Mapping.MappingContext
    :render: table
-   :slices: mapped,protein_coding,pseudogene
+   :slices: total,protein_coding,pseudogene
 
    Number of alignments that align to protein coding genes or pseudo genes.
 
@@ -66,7 +66,7 @@ pseudogene exons. The annotations are taken from the ENSEMBL gene set.
    :render: pie-plot
    :pie-first-is-total: genomic
    :groupby: track
-   :slices: mapped,protein_coding,pseudogene
+   :slices: total,protein_coding,pseudogene
    :layout: column-3
    :width: 200
 

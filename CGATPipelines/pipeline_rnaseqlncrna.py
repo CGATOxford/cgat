@@ -148,20 +148,13 @@ code
 ##########################################################
 ##########################################################
 
-# load modules                                                                                                                                                                                                                               
+# load modules 
 from ruffus import *
-import CGAT.Experiment as E
+
 import logging as L
-import CGAT.Database as Database
-import CGAT.CSV as CSV
 import numpy as np
-import fnmatch
 import sqlite3
-import CGATPipelines.PipelineMappingQC as PipelineMappingQC
-import CGAT.GTF as GTF
-import CGAT.IOTools as IOTools
 import gzip
-import CGATPipelines.PipelineRnaseq as PipelineRnaseq
 import sys
 import os
 import re
@@ -174,11 +167,19 @@ import gzip
 import collections
 import random
 from rpy2.robjects import r as R
+
+import CGAT.Experiment as E
+import CGAT.Pipeline as P
+
+import CGAT.Database as Database
+import CGAT.CSV as CSV
+import CGATPipelines.PipelineMappingQC as PipelineMappingQC
+import CGAT.GTF as GTF
+import CGAT.IOTools as IOTools
+import CGATPipelines.PipelineRnaseq as PipelineRnaseq
 import CGAT.Expression as Expression
 import CGAT.IndexedGenome as IndexedGenome
 import CGATPipelines.PipelineLncRNA as PipelineLncRNA
-
-import CGAT.Pipeline as P
 
 # get parameters
 P.getParameters( 
@@ -393,10 +394,11 @@ if PARAMS["genesets_previous"]:
         '''
         PipelineLncRNA.buildFilteredLncRNAGeneSet(infiles[0], outfile, infiles[1:len(infiles)])
 else:
-    E.info("no previous lncRNA set provided: Using refnoncoding set")
+    # Writing the following to log will cause all subsequent log messages
+    # to be empty.
+    # L.info("no previous lncRNA set provided: Using refnoncoding set")
     @transform(flagExonStatus, regex(r"(\S+)_flag.gtf.gz")
                , r"\1_filtered.gtf.gz")
-     
     def buildFilteredLncRNAGeneSet(infile, outfile):
         '''
         will just filter out single exon lncRNA
@@ -591,10 +593,173 @@ def buildFullGeneSet(infiles, outfile):
     '''
     # change the source to be in keeping with classification 
     # of transcripts - f coming from cufflinks assembly
-
     infs = " ".join(infiles)
     statement = '''zcat %(infs)s | sed "s/Cufflinks/protein_coding/g"
                    | python %(scriptsdir)s/gtf2gtf.py --sort=gene --log=%(outfile)s.log | gzip  > %(outfile)s''' 
+    P.run()
+
+##########################################################################
+##########################################################################
+##########################################################################
+
+
+@follows( mkdir( "./phyloCSF" ) )
+@transform( buildFinalLncRNAGeneSet, 
+            regex( "(.+)/(.+)_final.gtf.gz" ), 
+            r"./phyloCSF/\2.bed.gz" )
+def convertGTFToBed12( infile, outfile ):
+    """
+    Transform the lncrna_final.gtf.gz into lncrna_final.bed
+    """
+    PipelineLncRNA.gtfToBed12( infile, outfile, "transcript" )
+
+
+@follows( mkdir( "./phyloCSF" ) )
+@merge( os.path.join( PARAMS[ "phyloCSF_location_axt" ], "*.axt.gz" ), 
+        "./phyloCSF/filtered_alignment.maf.gz" )
+def createMAFAlignment( infiles, outfile ):
+    """
+    Takes all .axt files in the input directory, filters them to remove
+    files based on supplied regular expressions, converts to a single maf file
+    using axtToMaf, filters maf alignments under a specified length.
+    """
+    outfile = P.snip( outfile, ".gz" )
+    axt_dir = PARAMS[ "phyloCSF_location_axt" ] 
+    to_ignore = re.compile( PARAMS[ "phyloCSF_ignore" ] )
+
+    axt_files = []
+    for axt_file in os.listdir( axt_dir ):
+        if axt_file.endswith( "net.axt.gz" ) and not to_ignore.search( axt_file ):
+            axt_files.append( axt_dir + axt_file )
+    axt_files = (" ").join( sorted( axt_files ) )
+    
+    E.info( "axt files from which MAF alignment will be created: %s" % axt_files )
+
+    target_genome = PARAMS[ "phyloCSF_target_genome" ]
+    target_contigs = os.path.join( PARAMS[ "annotations_annotations_dir" ], 
+                                   PARAMS_ANNOTATIONS[ "interface_contigs" ] )
+    query_genome = PARAMS[ "phyloCSF_query_genome" ] 
+    query_contigs = os.path.join( PARAMS[ "phyloCSF_query_assembly" ],
+                                  PARAMS_ANNOTATIONS[ "interface_contigs" ] )
+
+    tmpf1 = P.getTempFilename( "./phyloCSF" )
+    tmpf2 = P.getTempFilename( "./phyloCSF" )
+    to_cluster = False
+    # concatenate axt files, then remove headers
+    statement = ( "zcat %(axt_files)s"
+                  " > %(tmpf1)s;"
+                  " axtToMaf "
+                  "  -tPrefix=%(target_genome)s."
+                  "  -qPrefix=%(query_genome)s."
+                  "  %(tmpf1)s"
+                  "  %(target_contigs)s"
+                  "  %(query_contigs)s"
+                  "  %(tmpf2)s" )
+    P.run()
+
+    E.info( "Temporary axt file created %s" % os.path.abspath( tmpf1 ) )
+    E.info( "Temporary maf file created %s" % os.path.abspath( tmpf2 ) )    
+
+    removed = P.snip( outfile, ".maf" ) + "_removed.maf"
+    to_cluster = False
+    filtered = PipelineLncRNA.filterMAF( tmpf2, 
+                                         outfile, 
+                                         removed,
+                                         PARAMS[ "phyloCSF_filter_alignments" ] )
+    E.info( "%s blocks were ignored in MAF alignment"
+            " because length of target alignment was too short" % filtered[0] )
+    E.info( "%s blocks were output to filtered MAF alignment" % filtered[1] )
+
+    os.unlink( tmpf1 )
+    os.unlink( tmpf2 )
+    to_cluster = False
+    statement = ( "gzip %(outfile)s;"
+                  " gzip %(removed)s" )
+    P.run()
+
+
+@merge( [ convertGTFToBed12, createMAFAlignment ], 
+        "./phyloCSF/lncrna_transcripts.fasta.gz" )
+def extractLncRNAFastaAlignments( infiles, outfile ):
+    """
+    Recieves a MAF file containing pairwise alignments and a gtf12 file
+    containing intervals. Outputs a single fasta file containing aligned
+    sequence for each interval.
+    """
+    bed_file, maf_file = infiles
+    maf_tmp = P.getTempFilename( "./phyloCSF" )
+    to_cluster = False
+    statement = ( "gunzip -c %(maf_file)s > %(maf_tmp)s" )
+    P.run()
+
+    target_genome = PARAMS[ "genome" ]
+    query_genome = PARAMS[ "phyloCSF_query_genome" ] 
+
+    genome_file = os.path.join( PARAMS[ "genomedir" ], PARAMS[ "genome" ] )
+
+    gene_models = PipelineLncRNA.extractMAFGeneBlocks( bed_file, 
+                                                       maf_tmp, 
+                                                       genome_file,
+                                                       outfile, 
+                                                       target_genome, 
+                                                       query_genome, 
+                                                       keep_gaps = False )
+    E.info( "%i gene_models extracted" % gene_models )
+    os.unlink( maf_tmp )
+
+
+@follows( mkdir( "./phyloCSF/lncrna_fasta" ) )
+@split( extractLncRNAFastaAlignments, "./phyloCSF/lncrna_fasta/*.fasta" )
+def splitLncRNAFasta( infile, outfiles ):
+    out_dir = "./phyloCSF/lncrna_fasta"
+
+    name_dict = {}
+    for mapping in PARAMS[ "phyloCSF_map_species_names" ].split(","):
+        pair = mapping.split( ":" )
+        key = ">" + pair[0]
+        value = ">" + pair[1]
+        name_dict[key] = value
+    E.info( "Name mapping: %s" % name_dict )
+
+    PipelineLncRNA.splitAlignedFasta( infile, out_dir, name_dict )
+
+
+@transform( splitLncRNAFasta, suffix( ".fasta" ), ".phyloCSF" )
+def runLncRNAPhyloCSF( infile, outfile ):
+    phylogeny = PARAMS[ "phyloCSF_phylogeny" ]
+    n_frames = int( PARAMS[ "phyloCSF_n_frames" ] )
+    if PARAMS[ "phyloCSF_options" ]:
+        options = PARAMS[ "phyloCSF_options" ]
+    else: 
+        options = ""
+
+    species = []
+    for mapping in PARAMS[ "phyloCSF_map_species_names" ].split(","):
+        species.append( mapping.split( ":" )[1] )
+    species = ",".join( species )
+
+    to_cluster=True
+    statement = ( "PhyloCSF %(phylogeny)s"
+                  "  %(infile)s"
+                  "  --frames=%(n_frames)s"
+                  "  --species=%(species)s"
+                  " %(options)s"
+                  " > %(outfile)s" )
+    P.run()
+
+
+@merge( runLncRNAPhyloCSF, "lncRNA_phyloCSF.tsv" )
+def mergeLncRNAPhyloCSF( infiles, outfile ):
+    file_name = " ".join( [ x for x in infiles ] ) 
+    statement = '''
+                python %(scriptsdir)s/combine_tables.py
+                 --no-titles
+                 --cat=CAT
+                 --missing=0
+                 --log=%(outfile)s.log
+                 %(file_names)s
+                > %(outfile)s
+                 '''
     P.run()
 
 ##########################################################################
@@ -611,6 +776,9 @@ def buildFullGeneSet(infiles, outfile):
 def GeneSets():
     pass
 
+@follows( mergeLncRNAPhyloCSF )
+def phyloCSF():
+    pass
 
 @follows(loadCPCResults)
 def CodingPotential():

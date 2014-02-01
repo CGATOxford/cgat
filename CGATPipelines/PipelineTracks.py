@@ -359,6 +359,16 @@ class Sample4(Sample):
     '''
     attributes = ( "experiment", "tissue", "condition", "replicate" )
 
+class AutoSample( Sample ):
+    '''a sample/track with unknown number of attributes'''
+    def __init__(self, filename=None, tablename=None):
+        if filename != None: nparts = len(filename.split( FILE_SEPARATOR))
+        elif tablename != None: nparts = len(tablename.split( TABLE_SEPARATOR))
+        else: 
+            raise ValueError( "for AutoSample please supply either filename or tablename")
+        self.attributes = tuple( ["attribute%i" % x for x in range(nparts) ] )
+        Sample.__init__(self, filename=filename, tablename=tablename)
+
 class Aggregate:
     
     def __init__(self, 
