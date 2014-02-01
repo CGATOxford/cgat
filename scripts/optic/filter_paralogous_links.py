@@ -93,7 +93,7 @@ Options:
 import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.Exons as Exons
-import alignlib
+import alignlib_lite
 import CGAT.BlastAlignments as BlastAlignments
 
 param_long_options=["verbose=", "help",
@@ -191,8 +191,8 @@ def IsParalogLink( link, cds1, cds2 ):
 
     """
 
-    map_a2b = alignlib.makeAlignmentVector()
-    alignlib.AlignmentFormatEmissions(
+    map_a2b = alignlib_lite.makeAlignmentVector()
+    alignlib_lite.AlignmentFormatEmissions(
         link.mQueryFrom, link.mQueryAli,
         link.mSbjctFrom, link.mSbjctAli ).copy( map_a2b )
 

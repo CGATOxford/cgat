@@ -41,6 +41,8 @@ class MappingStatus( Status ):
         '''
         value = self.getValue( "SELECT pairs_mapped/CAST( pairs_total AS FLOAT) from view_mapping WHERE track = '%(track)s'" )
 
+        if value == None: return "NA", 0
+
         if value >= 0.8: status= "PASS"
         elif value >= 0.4: status= "WARNING"
         else: status= "FAIL"

@@ -128,7 +128,6 @@ def count( Samfile samfile,
                 fastq_count = &fastq_counts[ reads[read.qname] ]
             except KeyError:
                 fastq_notfound += 1
-                raise 
                 continue
         
             if read.is_unmapped: fastq_count.is_unmapped += 1
@@ -234,7 +233,8 @@ def count( Samfile samfile,
 
     # count based on fastq data
     cdef int total_paired = 0
-    cdef int total_unpaired = 0
+    cdef int total_uncounted = 0
+    cdef int total_pair_is_mapped = 0
     cdef int total_pair_is_unmapped = 0
     cdef int total_pair_is_proper_uniq = 0
     cdef int total_pair_is_proper_mmap = 0
@@ -252,10 +252,14 @@ def count( Samfile samfile,
             if fastq_count.is_paired : 
                 total_paired += 1
 
-                if fastq_count.is_unmapped == 2:
+                if fastq_count.is_unmapped == fastq_count.is_paired:
                     # an unmapped read pair
                     total_pair_is_unmapped += 1
-                elif fastq_count.is_proper_pair == 2: 
+                    continue
+
+                total_pair_is_mapped += 1
+
+                if fastq_count.is_proper_pair == 2: 
                     # a unique proper pair
                     total_pair_is_proper_uniq +=1
                     # a duplicate unique proper pair
@@ -277,9 +281,10 @@ def count( Samfile samfile,
                     total_pair_is_other += 1
             else:
                 # reads without data
-                total_unpaired += 1
+                total_uncounted += 1
 
-        counter.total_pairs = total_paired + total_unpaired
+        counter.total_pairs = total_paired + total_uncounted
+        counter.total_pair_is_mapped = total_pair_is_mapped
         counter.total_pair_is_unmapped = total_pair_is_unmapped
         counter.total_pair_is_proper_uniq = total_pair_is_proper_uniq
         counter.total_pair_is_incomplete = total_pair_is_incomplete

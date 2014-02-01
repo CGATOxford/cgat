@@ -331,16 +331,16 @@ PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],
 ###################################################################
 import CGATPipelines.PipelineTracks as PipelineTracks
 
+Sample = PipelineTracks.AutoSample
+
 # collect sra nd fastq.gz tracks
-TRACKS = PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
+TRACKS = PipelineTracks.Tracks( Sample ).loadFromDirectory( 
     glob.glob( "*.bam" ), "(\S+).bam" )
 
-ALL = PipelineTracks.Sample3()
+# group by experiment (assume that last field is a replicate identifier)
 EXPERIMENTS = PipelineTracks.Aggregate( TRACKS, labels = ("condition", "tissue" ) )
-CONDITIONS = PipelineTracks.Aggregate( TRACKS, labels = ("condition", ) )
-TISSUES = PipelineTracks.Aggregate( TRACKS, labels = ("tissue", ) )
 
-GENESETS = PipelineTracks.Tracks( PipelineTracks.Sample ).loadFromDirectory( 
+GENESETS = PipelineTracks.Tracks( Sample ).loadFromDirectory( 
     glob.glob( "*.gtf.gz" ), "(\S+).gtf.gz" )
 
 ###################################################################

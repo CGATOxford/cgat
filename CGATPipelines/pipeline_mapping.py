@@ -211,6 +211,8 @@ import CGATPipelines.PipelineGeneset as PipelineGeneset
 import CGATPipelines.PipelineMapping as PipelineMapping
 import CGATPipelines.PipelineRnaseq as PipelineRnaseq
 import CGATPipelines.PipelineMappingQC as PipelineMappingQC
+import CGATPipelines.PipelinePublishing as PipelinePublishing
+
 import CGAT.Stats as Stats
 
 ###################################################
@@ -1415,15 +1417,15 @@ def loadContextStats( infiles, outfile ):
     P.run()
     
     dbhandle = sqlite3.connect( PARAMS["database"] )
-    
-    cc = Database.executewait( dbhandle, '''ALTER TABLE %(tablename)s ADD COLUMN mapped INTEGER''' % locals())
-    statement = '''UPDATE %(tablename)s SET mapped = 
-                                       (SELECT b.alignments_mapped FROM bam_stats AS b 
-                                            WHERE %(tablename)s.track = b.track)''' % locals()
-
-    cc = Database.executewait( dbhandle, statement )
-    dbhandle.commit()
-
+ 
+# The following is not necessary any more as context stats now also outputs a "total" column   
+#    cc = Database.executewait( dbhandle, '''ALTER TABLE %(tablename)s ADD COLUMN mapped INTEGER''' % locals())
+#    statement = '''UPDATE %(tablename)s SET mapped = 
+#                                       (SELECT b.alignments_mapped FROM bam_stats AS b 
+#                                            WHERE %(tablename)s.track = b.track)''' % locals()#
+#
+#    cc = Database.executewait( dbhandle, statement )
+#    dbhandle.commit()
 
 ###################################################################
 ###################################################################
@@ -1815,8 +1817,11 @@ def publish():
         }
 
     # publish web pages
+    E.info( "publishing report")
     P.publish_report( export_files = export_files)
 
+    E.info( "publishing UCSC data hub" )
+    PipelinePublishing.publish_tracks( export_files )
 
 if __name__== "__main__":
     sys.exit( P.main(sys.argv) )

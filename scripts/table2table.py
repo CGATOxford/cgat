@@ -658,6 +658,9 @@ def main( argv = None ):
         table = [ list(x) for x in table]
 
         ncols = len(fields)
+        if len(table) == 0:
+            raise ValueError( "table is empty" )
+            
         nrows = len(table[0])
 
         E.info( "processing table with %i rows and %i columns" % (nrows, ncols) )

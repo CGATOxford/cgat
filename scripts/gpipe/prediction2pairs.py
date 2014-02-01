@@ -76,7 +76,7 @@ import CGAT.Genomics as Genomics
 import CGAT.PredictionParser as PredictionParser
 import CGAT.IndexedFasta as IndexedFasta
 
-import alignlib
+import alignlib_lite
 
 ##------------------------------------------------------------
 
@@ -175,10 +175,10 @@ def main( argv = None ):
             nlength += 1
             continue
 
-        cds_seq = alignlib.makeSequence( cds_fragment )
-        genomic_seq = alignlib.makeSequence( genomic_fragment )
+        cds_seq = alignlib_lite.makeSequence( cds_fragment )
+        genomic_seq = alignlib_lite.makeSequence( genomic_fragment )
         
-        f = alignlib.AlignmentFormatExplicit( map_query2sbjct, cds_seq, genomic_seq )
+        f = alignlib_lite.AlignmentFormatExplicit( map_query2sbjct, cds_seq, genomic_seq )
         row_ali = f.mRowAlignment
         col_ali = f.mColAlignment
         

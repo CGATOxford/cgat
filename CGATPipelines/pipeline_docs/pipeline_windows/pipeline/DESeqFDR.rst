@@ -1,5 +1,9 @@
+====
 FDR
---------------------
+====
+
+QC Plot
+=======
 
 .. report:: Tracker.TrackerImages
    :render: gallery-plot
@@ -8,8 +12,6 @@ FDR
    :layout: column-5
 
    FDR QC plot
-
-
 
 
 

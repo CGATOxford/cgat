@@ -197,7 +197,7 @@ PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],
 ## Helper functions mapping tracks to conditions, etc
 ###################################################################
 # load all tracks - exclude input/control tracks
-Sample = PipelineTracks.Sample4
+Sample = PipelineTracks.AutoSample
 
 METHODS = P.asList( PARAMS["methods" ] )
 
@@ -352,7 +352,12 @@ def mergeBackgroundWindows( infiles, outfile ):
     '''build a single bed file of regions with elevated background.'''
 
     if len(infiles) == 0: 
-        P.touch( outfile )
+        # write a dummy file with a dummy chromosome
+        # an empty background file would otherwise cause
+        # errors downstream in bedtools intersect
+        outf = IOTools.openFile( outfile, "w" )
+        outf.write("chrXXXX\t1\t2\n" )
+        outf.close()
         return
 
     infiles = " ".join(infiles)
@@ -729,72 +734,146 @@ def getInput( track ):
 
     if "input_%s" % fn in PARAMS:
         input_files.extend( P.asList( PARAMS["input_%s" % fn ] ) )
-    else:
+    elif P.CONFIG.has_section("input"):
         for pattern, value in P.CONFIG.items( "input" ):
             if "%" in pattern:
-                p = re.sub( "%", "\S+", pattern )
-                if re.search( p, fn ):
-                    input_files.extend( P.asList( value ) )
+                pattern = re.sub( "%", "\S+", pattern )
+            if re.search( pattern, fn ):
+                input_files.extend( P.asList( value ) )
 
     return input_files
 
-#########################################################################
-#########################################################################
-#########################################################################
-@transform( loadWindowsReadCounts, suffix(".load"), "_foldchange.load")
-def loadWindowsFoldChanges( infile, outfile ):
-    '''Compute fold changes for each sample compared to appropriate input.
-
-    If no input is present, simply divide by average.
+def mapTrack2Input( tracks ):
+    '''given a list of tracks, return a dictionary mapping a track to its input
     '''
     
-    dbh = connect()
-
-    cc = dbh.cursor()
-    cc.execute("SELECT * FROM counts limit 100" )
-    
-    columns = [x[0] for x in cc.description]
-
-    # get all data and transpose
-    data = cc.fetchall()
-    data = zip( *data )
-
-    take, take_input = [], []
+    # select columns in foreground and background
     map_track2input = {}
-    for idx, track in enumerate(columns):
+    for idx, track in enumerate(tracks):
+
+        if track == "interval_id": continue
+
         try: 
-            t =  Sample( tablename = track )
-        except ValueError:
-            take_input.append( idx )
+            t = Sample( tablename = track )
+        except ValueError, msg:
+            print msg
             continue
 
         input_files = getInput( t )
-        
-        ## currently only implement one input file per track
-        assert len(input_files) == 1, "%s more than input: %s" % (track, input_files)
-        
-        map_track2input[track] = input_files[0]
 
-        take.append( idx )
+        ## currently only implement one input file per track
+        assert len(input_files) <= 1, "%s more than input: %s" % (track, input_files)
+
+        if len(input_files) == 0:
+            map_track2input[track] = None
+        else:
+            map_track2input[track] = Sample( filename = input_files[0] ).asTable()
+
+    return map_track2input
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( loadWindowsReadCounts, suffix(".load"), "_l2foldchange_input.tsv")
+def buildWindowsFoldChangesPerInput( infile, outfile ):
+    '''Compute fold changes for each sample compared to appropriate input.
+
+    If no input is present, simply divide by average.
+
+    '''
+    
+    # get all data
+    dbh = connect()
+    cc = dbh.cursor()
+    cc.execute("SELECT * FROM counts" )
+    data = cc.fetchall()
+
+    # transpose, remove interval_id column
+    data = zip( *data )
+    columns = [x[0] for x in cc.description]
+
+    map_track2input = mapTrack2Input( columns )
+    take_tracks = [ x for x,y in enumerate( columns ) if y in map_track2input ]
+    take_input = [ x for x,y in enumerate( columns ) if y in map_track2input.values() and y != None]
 
     # build data frame
-    dataframe = pandas.DataFrame( dict( [ (columns[x], data[x]) for x in take ] ) )
+    dataframe = pandas.DataFrame( dict( [ (columns[x], data[x]) for x in take_tracks ] ) )
+    dataframe = dataframe.astype('float64')
     dataframe_input = pandas.DataFrame( dict( [ (columns[x], data[x]) for x in take_input ] ) )
-    
-    # normalize with input data
-    
-    print dataframe
-    print dataframe_input
+
+
+    # add pseudocounts
     pseudocount = 1
+    for column in dataframe.columns: dataframe[column] += pseudocount
+    for column in dataframe_input.columns: dataframe_input[column] += pseudocount
+
+    # compute normalization ratios
+    # total_input / total_column
+    ratios = {}
+    for column in dataframe.columns:
+        i = map_track2input[column]
+        if i != None:
+            # ratios[column] = float(sum(dataframe_input[i])) / sum( dataframe[column] )
+            ratios[column] = dataframe_input[i].median() / dataframe[column].median()
+        else:
+            ratios[column] = None
 
     for column in dataframe.columns:
-        dataframe[column] += pseudocount
-        
-    for column in dataframe_input.columns:
-        dataframe_input[column] += pseudocount
+        if ratios[column] != None:
+            # normalize by input
+            dataframe[column] *= ratios[column] / dataframe_input[map_track2input[column]] 
+        else:
+            # normalize by median
+            dataframe[column] /= dataframe[column].median()
+
+    dataframe = numpy.log2( dataframe )
+
+    dataframe.to_csv( outfile, sep="\t", index=False)
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( loadWindowsReadCounts, suffix(".load"), "_l2foldchange_median.tsv")
+def buildWindowsFoldChangesPerMedian( infile, outfile ):
+    '''Compute l2fold changes for each sample compared to the median count
+    in sample.
+
+    '''
+    
+    # get all data
+    dbh = connect()
+    cc = dbh.cursor()
+    cc.execute("SELECT * FROM counts" )
+    data = cc.fetchall()
+
+    # transpose, remove interval_id column
+    data = zip( *data )
+    columns = [x[0] for x in cc.description]
+
+    take_tracks = [ x for x,y in enumerate( columns ) if y != "interval_id" ]
+    # build data frame
+    dataframe = pandas.DataFrame( dict( [ (columns[x], data[x]) for x in take_tracks ] ) )
+    dataframe = dataframe.astype('float64')
+
+    # add pseudocounts
+    pseudocount = 1
+    for column in dataframe.columns: dataframe[column] += pseudocount
 
     for column in dataframe.columns:
-        dataframe[column] /= dataframe_input[map_track2input[column]]
+        dataframe[column] /= dataframe[column].median()
+
+    dataframe = numpy.log2( dataframe )
+
+    dataframe.to_csv( outfile, sep="\t", index=False)
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform((buildWindowsFoldChangesPerMedian, buildWindowsFoldChangesPerInput),
+           suffix(".tsv"), ".load")
+def loadWindowsFoldChanges( infile,outfile ):
+    '''load fold change stats'''
+    P.load( infile, outfile )
 
 #########################################################################
 #########################################################################
@@ -930,7 +1009,21 @@ def runDESeq( infiles, outfile ):
     The final output is a table. It is slightly edited such that
     it contains a similar output and similar fdr compared to cuffdiff.
     '''
-    PipelineWindows.runDE( infiles, outfile, "deseq.dir", method = "deseq" )
+
+    spike_file = os.path.join("spike.dir", infiles[0]) + ".gz"
+    if os.path.exists( spike_file):
+        outfile_spike = P.snip(outfile, '.tsv.gz') + '.spike.gz'
+
+        PipelineWindows.runDE( infiles, 
+                               outfile_spike, 
+                               "deseq.dir", 
+                               method = "deseq",
+                               spike_file = spike_file )
+
+    PipelineWindows.runDE( infiles, 
+                           outfile, 
+                           "deseq.dir", 
+                           method = "deseq" )
 
 #########################################################################
 #########################################################################
@@ -961,6 +1054,34 @@ def loadDESeq( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
+@follows( mkdir("spike.dir"))
+@transform( "design*.tsv",
+            regex( "(.*).tsv" ),
+            add_inputs( aggregateWindowsReadCounts ),
+            r"spike.dir/\1.tsv.gz" )
+def buildSpikeIns( infiles, outfile ):
+    '''build a table with counts to spike into the original count
+    data sets.
+    '''
+
+    design_file, counts_file = infiles
+    design = P.snip( design_file, ".tsv")
+    statement = '''
+    zcat %(counts_file)s
+    | python %(scriptsdir)s/runExpression.py
+            --log=%(outfile)s.log          
+            --filename-design=%(design_file)s
+            --filename-tags=-
+            --method=spike
+            --output-filename-pattern=%(outfile)s_
+    | gzip 
+    > %(outfile)s
+    '''
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
 @follows( mkdir("edger.dir") )
 @transform( "design*.tsv",
             regex( "(.*).tsv" ),
@@ -973,7 +1094,20 @@ def runEdgeR( infiles, outfile ):
     the example in chapter 11 of the EdgeR manual.
     '''
 
-    PipelineWindows.runDE( infiles, outfile, "edger.dir", method = "edger" )
+    spike_file = os.path.join("spike.dir", infiles[0]) + ".gz"
+    if os.path.exists( spike_file):
+        outfile_spike = P.snip(outfile, '.tsv.gz') + '.spike.gz'
+    
+        PipelineWindows.runDE( infiles, 
+                               outfile_spike,
+                               "edger.dir", 
+                               method = "edger",
+                               spike_file = spike_file )
+
+    PipelineWindows.runDE( infiles, 
+                           outfile, 
+                           "edger.dir", 
+                           method = "edger" )
 
 #########################################################################
 #########################################################################
@@ -1021,6 +1155,7 @@ for x in METHODS:
 @follows( loadTagCountSummary, 
           loadWindowStats,
           loadWindowsReadCounts,
+          loadWindowsFoldChanges,
           *DIFFTARGETS )
 def diff_windows(): pass
 
@@ -1035,6 +1170,7 @@ def computeWindowComposition( infile, outfile ):
 
     statement = '''
     zcat %(infile)s
+    | grep -v "^spike"
     | perl -p -e "s/:/\\t/; s/-/\\t/; s/test_id/contig\\tstart\\tend/"
     | python %(scriptsdir)s/bed2table.py
           --counter=composition-cpg
@@ -1046,11 +1182,16 @@ def computeWindowComposition( infile, outfile ):
 
     P.run()
 
+#########################################################################
+#########################################################################
+#########################################################################
 @transform( computeWindowComposition, suffix(".tsv.gz"), ".load")
 def loadWindowComposition( infile, outfile ):
     '''load a sample of window composition data for QC purposes.'''
     P.load( infile, outfile, limit=10000)
 
+#########################################################################
+#########################################################################
 #########################################################################
 @transform( DIFFTARGETS, suffix(".gz"), ".merged.gz" )
 def mergeDMRWindows( infile, outfile ):
@@ -1064,6 +1205,7 @@ def mergeDMRWindows( infile, outfile ):
 
     statement = '''
     zcat %(infile)s
+    | grep -v "^spike"
     | python %(scriptsdir)s/medip_merge_intervals.py
           --log=%(outfile)s.log
           --invert
@@ -1075,6 +1217,166 @@ def mergeDMRWindows( infile, outfile ):
     P.run()
 
 #########################################################################
+#########################################################################
+#########################################################################
+def outputSpikeCounts( outfile, infile_name, max_expression, max_fold ):
+
+    df = pandas.read_csv( infile_name, 
+                          sep="\t", 
+                          index_col = 0 )
+    
+    E.debug( "read %i rows and %i columns of data" % df.shape)
+
+    if "edger" in outfile.lower():
+        # edger: treatment_mean and control_mean do not exist
+        # use supplied values directly.
+        l10average = numpy.log( df['treatment_mean'] )
+        l2fold = numpy.log2( df['fold'] )
+    else:
+        # use pseudocounts to compute fold changes
+        treatment_mean = df['treatment_mean'] + 1
+        control_mean = df['control_mean'] + 1
+        # build log2 average values
+        l10average = numpy.log( (treatment_mean + control_mean) / 2 )
+        l2fold = numpy.log2( treatment_mean / control_mean)
+
+    # compute expression bins
+    expression_bins = numpy.arange( 0, max_expression, 0.5 )
+    fold_change_bins = numpy.arange( -max_fold, max_fold, 0.5 )
+
+    d2hist_counts, xedges, yedges = numpy.histogram2d( l10average, l2fold, 
+                                                       bins = ( expression_bins, fold_change_bins ))
+    
+    dd = pandas.DataFrame( d2hist_counts )
+    dd.index = list(xedges[:-1]) 
+    dd.columns = list(yedges[:-1])
+    dd.to_csv( IOTools.openFile( outfile, "w"),
+               sep="\t")
+
+    return df, d2hist_counts, xedges, yedges, l10average, l2fold
+
+@transform( DIFFTARGETS, suffix(".gz"), ".power.gz" )
+def buildSpikeResults( infile, outfile ):
+    '''build matrices with results from spike-in and upload
+    into database.
+    '''
+
+    max_expression = 5.0
+    max_fold = 4.0
+    
+    ########################################
+    # output and load spiked results
+    tmpfile_name = P.getTempFilename( "." )
+
+    spikefile = P.snip( infile, '.tsv.gz') + '.spike.gz'
+
+    if not os.path.exists( spikefile ):
+        E.warn('no spike data: %s' % spikefile)
+        P.touch( outfile )
+        return
+
+    statement = '''zcat %(spikefile)s
+    | grep -e "^spike" -e "^test_id"
+    > %(tmpfile_name)s
+    '''
+    P.run()
+
+    spiked, spiked_d2hist_counts, xedges, yedges, spiked_l10average, spiked_l2fold = \
+        outputSpikeCounts( P.snip(outfile, ".power.gz") + ".spiked.gz", 
+                                  tmpfile_name,
+                                  max_expression,
+                                  max_fold )
+
+    ########################################
+    # output and load unspiked results
+    tmpfile_name = P.getTempFilename( "." )
+
+    statement = '''zcat %(infile)s
+    | grep -v -e "^spike" 
+    > %(tmpfile_name)s
+    '''
+    P.run()
+    
+    unspiked, unspiked_d2hist_counts, unspiked_xedges, unspiked_yedges, unspiked_l10average, unspiked_l2fold = \
+        outputSpikeCounts( P.snip(outfile, ".power.gz") + ".unspiked.gz", 
+                           tmpfile_name,
+                           max_expression,
+                           max_fold )
+
+    assert xedges.all() == unspiked_xedges.all()
+
+
+    tmpfile = IOTools.openFile( tmpfile_name, "w")
+    tmpfile.write( "expression\tfold\tfdr\tcounts\tpercent\n" )
+
+    fdr_thresholds = [0.01, 0.05 ] + list(numpy.arange(0.1, 1.0, 0.1))
+    power_thresholds = numpy.arange(0.1, 1.1, 0.1)
+
+    spiked_total = float(spiked_d2hist_counts.sum().sum())
+    unspiked_total = float(unspiked_d2hist_counts.sum().sum())
+
+    outf = IOTools.openFile( outfile, "w")
+    outf.write( "fdr\tpower\tintervals\tintervals_percent\n" )
+
+    # significant results
+    for fdr in fdr_thresholds:
+        take = spiked['qvalue'] < fdr
+        
+        spiked_d2hist_fdr, xedges, yedges = numpy.histogram2d( spiked_l10average[take], 
+                                                        spiked_l2fold[take], 
+                                                        bins = ( xedges, yedges ))
+        
+        spiked_d2hist_fdr_normed = spiked_d2hist_fdr / spiked_d2hist_counts
+        spiked_d2hist_fdr_normed = numpy.nan_to_num( spiked_d2hist_fdr_normed )
+
+        # set values without data to 0
+        spiked_d2hist_fdr_normed[ spiked_d2hist_counts == 0] = -1.0
+
+        for x,y in itertools.product(range( len(xedges)-1), range(len(yedges)-1)):
+            tmpfile.write( "\t".join( map(str, (xedges[x], yedges[y], 
+                                                fdr,
+                                                spiked_d2hist_fdr[x,y], 
+                                                100.0 * spiked_d2hist_fdr_normed[x,y])) ) + "\n")
+
+        
+        # take elements in spiked_hist_fdr above a certain threshold
+        for power in power_thresholds:
+            power_take = spiked_d2hist_fdr_normed >= power
+            power_counts = unspiked_d2hist_counts[power_take]
+
+            outf.write( "\t".join( map( str, (fdr, power,
+                                              power_counts.sum().sum(),
+                                              100.0 * power_counts.sum().sum() / unspiked_total) ) ) + "\n" )
+                                              
+
+    tmpfile.close()
+    outf.close()
+
+    # upload into table
+    method = P.snip(os.path.dirname( outfile ), ".dir")
+    tablename = P.toTable(P.snip( outfile, "power.gz" ) + method + ".spike.load" )
+
+    statement = '''cat %(tmpfile_name)s
+    | python %(scriptsdir)s/csv2db.py 
+           --table=%(tablename)s
+           --index=fdr
+    > %(outfile)s.log'''
+
+    P.run()
+    os.unlink(tmpfile_name)
+
+
+@transform( buildSpikeResults, suffix('.tsv.power.gz'), '.power.load')
+def loadSpikeResults( infile, outfile ):
+    '''load work results.'''
+    method = P.snip(os.path.dirname( outfile ), '.dir')
+    tablename = P.toTable( outfile )
+    tablename = '_'.join( (tablename, method) )
+
+    P.load( infile, outfile, options = '--index=fdr,power --allow-empty',
+            tablename=tablename)
+
+#########################################################################
 @transform( mergeDMRWindows, suffix(".merged.gz"), ".stats" )
 def buildDMRStats( infile, outfile ):
     '''compute differential methylation stats.'''
@@ -1083,11 +1385,18 @@ def buildDMRStats( infile, outfile ):
     PipelineWindows.buildDMRStats( infile, outfile, method=method )
 
 #########################################################################
+@transform( mergeDMRWindows, suffix(".merged.gz"), ".fdr" )
+def buildFDRStats( infile, outfile ):
+    '''compute differential methylation stats.'''
+    method = os.path.dirname(infile)
+    method = P.snip( method, ".dir")
+    PipelineWindows.buildFDRStats( infile, outfile, method=method )
+
+#########################################################################
 @transform( mergeDMRWindows, suffix(".merged.gz"), ".merged.gz.all.bed.gz" )
 def outputAllWindows( infile, outfile ):
     '''output all bed windows.'''
     PipelineWindows.outputAllWindows( infile, outfile )
-
 
 #########################################################################
 @transform( outputAllWindows, suffix(".all.bed.gz"), 
@@ -1096,6 +1405,8 @@ def outputTopWindows( infile, outfiles ):
     '''output bed with largest/smallest l2fold changes.
     '''
     outfile = outfiles[0]
+
+    ignore_pipe_errors = True
 
     statement = '''zcat %(infile)s
     | awk '$4 !~ /inf/'
@@ -1147,6 +1458,57 @@ def buildDMRWindowStats( infile, outfile ):
                    --output-filename-pattern=%(outfile)s.%%s.tsv
     > %(outfile)s
     '''
+    P.run()
+
+
+###################################################################
+###################################################################
+###################################################################
+@follows( mkdir( "transcriptprofiles.dir" ) )
+@transform( prepareTags,
+            regex(r".*/([^/].*)\.bed.gz"),
+            add_inputs( os.path.join( PARAMS["annotations_dir"],
+                                      PARAMS_ANNOTATIONS["interface_geneset_coding_exons_gtf"] )),
+            r"transcriptprofiles.dir/\1.transcriptprofile.tsv.gz" )
+def buildIntervalProfileOfTranscripts( infiles, outfile ):
+    '''build a table with the overlap profile
+    with protein coding exons.'''
+    
+    to_cluster = True
+
+    bedfile, gtffile = infiles
+    
+    track = P.snip( os.path.basename( outfile ), '.transcriptprofile.tsv.gz')
+    try: 
+        t = Sample( filename = track )
+    except ValueError, msg:
+        print msg
+        return
+
+    input_files = getInput( t )
+
+    ## currently only implement one input file per track
+    assert len(input_files) <= 1, "%s more than input: %s" % (track, input_files)
+    
+    options = ''
+    if len(input_files) == 1:
+        options = '--controlfile=%s' % \
+            (os.path.join( os.path.dirname( bedfile ),
+                           input_files[0] + '.bed.gz') )
+
+    statement = '''python %(scriptsdir)s/bam2geneprofile.py
+                      --output-filename-pattern="%(outfile)s.%%s"
+                      --force
+                      --reporter=transcript
+                      --method=geneprofile 
+                      --method=tssprofile 
+                      --normalize-profile=none
+                      --normalize-profile=area
+                      --normalize-profile=counts
+                      %(options)s
+                      %(bedfile)s %(gtffile)s
+                   > %(outfile)s
+                '''
     P.run()
 
 #########################################################################
@@ -1206,7 +1568,8 @@ def buildMRBed( infile, outfile ):
     
     E.info( "%s" % str(c) )
 
-@follows( loadDMRStats, outputAllWindows, outputTopWindows )
+@follows( loadDMRStats, loadSpikeResults,
+          outputAllWindows, outputTopWindows )
 def dmr(): pass
 
 @follows( diff_windows, dmr) 
@@ -1242,8 +1605,8 @@ def publish():
     '''publish files.'''
 
     # directory : files
-    export_files = { "bamfiles": glob.glob("*.bam") + glob.glob("*.bam.bai"),
-                     "bigwigfiles": glob.glob("*.bw"),
+    export_files = { #"bamfiles": glob.glob("*.bam") + glob.glob("*.bam.bai"),
+                     #"bigwigfiles": glob.glob("*.bw"),
                      "bedfiles": glob.glob("deseq.dir/*.bed.gz") + glob.glob("edger.dir/*.bed.gz"),
                      }
 

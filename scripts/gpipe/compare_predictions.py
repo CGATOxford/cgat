@@ -85,7 +85,7 @@ Options:
 param_long_options=["verbose=", "help", "table-reference=", "table-target=", "version"]
 param_short_options="v:hR:T:"
 
-import alignlib
+import alignlib_lite
 import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.PredictionParser as PredictionParser
@@ -208,8 +208,8 @@ def main( argv = None ):
     OVERLAP( %i, %i, p.sbjct_genome_from, sbjct_genome_to) > 0 
     """
 
-    alignator = alignlib.makeAlignatorDPFull( alignlib.ALIGNMENT_LOCAL, param_gop, param_gep )
-    map_reference2target = alignlib.makeAlignmentVector()    
+    alignator = alignlib_lite.makeAlignatorDPFull( alignlib_lite.ALIGNMENT_LOCAL, param_gop, param_gep )
+    map_reference2target = alignlib_lite.makeAlignmentVector()    
     assignment_id = 0
     
     for line in cr.fetchall():
@@ -255,14 +255,14 @@ def main( argv = None ):
                 continue
             
             map_reference2target.clear()
-            row = alignlib.makeSequence(reference.mTranslation)
-            col = alignlib.makeSequence(target.mTranslation)
+            row = alignlib_lite.makeSequence(reference.mTranslation)
+            col = alignlib_lite.makeSequence(target.mTranslation)
             alignator.align( map_reference2target, row, col )
 
-            f = alignlib.AlignmentFormatEmissions( map_reference2target )
+            f = alignlib_lite.AlignmentFormatEmissions( map_reference2target )
             row_ali, col_ali = f.mRowAlignment, f.mColAlignment
-            pidentity = 100.0 * alignlib.calculatePercentIdentity( map_reference2target, row, col )
-            psimilarity = 100.0 * alignlib.calculatePercentSimilarity( map_reference2target )        
+            pidentity = 100.0 * alignlib_lite.calculatePercentIdentity( map_reference2target, row, col )
+            psimilarity = 100.0 * alignlib_lite.calculatePercentSimilarity( map_reference2target )        
 
             union = max( reference.mSbjctGenomeTo, target.mSbjctGenomeTo) - \
                     min( reference.mSbjctGenomeFrom, target.mSbjctGenomeFrom )
