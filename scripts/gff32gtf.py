@@ -189,7 +189,7 @@ def convert_hierarchy(first_gffs, second_gffs, options):
                              "Parent": gff.asDict().get("Parent", []),
                              "gene_id": gff.attributes.get(options.gene_field_or_pattern, gff['ID']),
                              "transcript_id": gff.attributes.get(options.transcript_field_or_pattern, gff['ID'])}
-
+    
     for gff in second_gffs:
 
    
@@ -197,7 +197,7 @@ def convert_hierarchy(first_gffs, second_gffs, options):
         if options.discard and ((options.missing_gene and not options.parent in gff) or (
             gff.feature in (options.gene_type, options.transcript_type) )):
 
-
+            
             continue
 
         gene_ids, transcript_ids, poss_transcript_ids = search_hierarchy(gff['ID'], hierarchy, options)
@@ -214,6 +214,7 @@ def convert_hierarchy(first_gffs, second_gffs, options):
         elif None in transcript_id:
                 raise ValueError("failed to find transcript id for %s" % gff['ID'])
 
+        
         for gene_id,transcript_id in zip(gene_ids, transcript_ids):
 
             gff.gene_id = gene_id
@@ -224,6 +225,7 @@ def convert_hierarchy(first_gffs, second_gffs, options):
             if "Parent" in gtf_entry:
                 gtf_entry['Parent'] = ",".join(gtf_entry['Parent'])
 
+       
             options.stdout.write(str(gtf_entry)+"\n")
 
 def convert_set(gffs, gene_pattern, transcript_pattern, options):
@@ -298,6 +300,7 @@ def main( argv = None ):
         read_twice = False,
         by_chrom = False,
         missing_gene = True,
+        parent="Parent"
         )
 
     
@@ -334,6 +337,7 @@ def main( argv = None ):
             second_gff_chunk = chunk
 
         if options.method == "hierarchy":
+       
             convert_hierarchy(chunk, second_gff_chunk, options)
         elif options.method == "set-field":
             gene_id_pattern = "%%(%s)s" % options.gene_field_or_pattern
