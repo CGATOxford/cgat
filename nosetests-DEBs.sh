@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+INIT_DIR=`pwd`
+
 # GCProfile
 apt-get install libc6-i386
 apt-get install libstdc++5:i386
@@ -31,8 +33,8 @@ cp GCProfile_LINUX/GCProfile .
 cp GCProfile_LINUX/gnuplot .
 
 # Set up other environment variables
-cd $TRAVIS_BUILD_DIR
-export PYTHONPATH=$PYTHONPATH:$TRAVIS_BUILD_DIR
+cd $INIT_DIR
+export PYTHONPATH=$PYTHONPATH:$INIT_DIR
 source $HOME/CGAT/virtualenv-1.10.1/cgat-venv/bin/activate
 
 # setup.py develop
