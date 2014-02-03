@@ -21,9 +21,10 @@ of interest such as transcription start sites.
 The script can be used to visualize binding profiles of a chromatin mark in gene 
 bodies, binding of transcription factors in promotors or 3' bias in RNASeq data.
 
-This script is designed with a slight emphasis on RNA-Seq datasets. For example, it
-takes care of spliced reads, by using the CIGAR string in the BAM file to accurately
-define aligned bases (when the --base-accurate-off is not specified, currently it is not specified by default).
+This script is designed with a slight emphasis on RNA-Seq datasets. For 
+example, it takes care of spliced reads, by using the CIGAR string in the BAM
+file to accurately define aligned bases (if the --base-accurate is specified), 
+currently this feature is turned off by default).
 
 Alternatively, for the purpose of visualizing binding profiles of transcription factors
 ChIP-Seq without the need to use any genomic annotations (ENSEMBL, or refseq), you may
@@ -60,13 +61,14 @@ to 1000bp. Note that no scaling is required when counting reads towards the meta
 Options
 -------
 
-The behaviour of the script can be modified by several options.
+The script provides a variety of different meta-gene structures i.e. geneprofiles, selectable
+via using the option: (``--method``).
 
 Profiles
 ++++++++
 
-Different profiles are accessible through the ``--counter`` option. Multiple
-counters can be applied at the same time. While ``upstream`` and ``downstream``
+Different profiles are accessible through the ``--method`` option. Multiple
+methods can be applied at the same time. While ``upstream`` and ``downstream``
 typically have a fixed size, the other regions such as ``CDS``, ``UTR`` will be
 scaled to a common size.
 
@@ -109,11 +111,6 @@ might not be a biologically plausible transcript. It is usually better to provid
 with a set of representative transcripts per gene in order to avoid up-weighting genes with
 multiple transcripts.
 
-Meta-gene structures
-++++++++++++++++++++
-
-The script provides a variety of different meta-gene structures (``--methods``).
-
 Normalization
 +++++++++++++
 
@@ -153,25 +150,44 @@ If a :term:`bed` formatted file is supplied, it must be compressed with and inde
 Usage
 -----
 
-The following command will generate the gene profile from RNA-Seq data::
+The following command will generate the gene profile plot similar to Fig 1(a) 
+in the published CGAT paper, but using a test dataset that is much smaller 
+and simpler than the dataset used for publishing the CGAT paper. ::
 
-   python bam2geneprofile.py --bamfile=rnaseq.bam -g geneset.gtf.gz 
-                     --method=geneprofilewithintrons  --reporter=gene 
-                     --resolution-cds=1400 --resolution-introns=2000
+    python ./scripts/bam2geneprofile.py 
+        --bamfile=./tests/bam2geneprofile.py/multipleReadsSplicedOutAllIntronsAndSecondExon.bam
+        --gtffile=./tests/bam2geneprofile.py/onegeneWithoutAnyCDS.gtf.gz
+        --method=geneprofile
+        --reporter=gene
 
-The output will contain read coverage over genes, merging all transcripts within
+In the following, a slightly more involved example will use more features
+of this script. The following command generate the gene profile showing 
+base accuracy of upstream (500bp), exons, introns and downstream(500bp) of 
+a gene model from some user supplied RNA-Seq data and geneset. ::
+
+    python ./scripts/bam2geneprofile.py
+        --bamfile=./rnaseq.bam
+        --gtffile=./geneset.gtf.gz
+        --method=geneprofilewithintrons
+        --reporter=gene
+        --extension-upstream=500
+        --resolution-upstream=500
+        --extension-downstream=500
+        --resolution-downstream=500
+
+The output will contain read coverage over genes, merging all transcripts of
 a gene into a single chain of exons. The profile will contain four separate
 segments:
 
-1. the upstream region of a gene (default = 1000bp)
+1. the upstream region of a gene ( set to be 500bp ), (``--extension-upstream=500``).
 
-2. the transcribed region of a gene. The transcribed region of every gene will be 
-   scaled to 1400 bp (``--resolution-cds=1400``), 
-   shrinking longer transcripts and expanding shorter transcripts.
+2. the transcribed region of a gene. The transcribed region of every gene will
+   be scaled to 1000 bp ( default ), shrinking longer transcripts and 
+   expanding shorter transcripts.
 
-3. the intronic regions of a gene. These will be scaled to 2kb (``-resolution-introns=2000``).
+3. the intronic regions of a gene. These will be scaled to 1000b ( default ).
 
-4. the downstream region of a gene (default = 1000bp).
+4. the downstream region of a gene ( set to be 500bp ), (``--extension-downstream=500``).
 
 Type::
 

@@ -34,7 +34,7 @@ hierarchy-read-twice:
     stdin: null
     outputs: [stdout]
     references: [simple_gff3.gtf]
-    options: --method=hierarchy -L /dev/null --read-twice --by-chrom -I %DIR%/simple_gff4.gff
+    options: --method=hierarchy -L /dev/null --read-twice --by-chrom -I %DIR%/simple_gff3.gff
 
 #don't discard gene objects
 
@@ -56,7 +56,7 @@ set-pattern:
     stdin: simple_gff3.gff
     outputs: [stdout]
     references: [simple_gff3_set_pattern.gtf]
-    options: --method=set-pattern --gene-id='%(ID)s_%(ID)s' -L /dev/null
+    options: --method=set-pattern --gene-id='"'"'%(ID)s_%(ID)s'"'"' -L /dev/null
 
 set-none:
     stdin: simple_gff3.gff

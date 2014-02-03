@@ -13,8 +13,8 @@ install:
   - sudo ./setup-CGAT.sh
 
 script: 
-  - source $HOME/CGAT/virtualenv-1.10.1/cgat-venv/bin/activate
-  - nosetests -v tests/test_scripts.py
+  - chmod +x nosetests-DEBs.sh
+  - sudo ./nosetests-DEBs.sh
 
 notifications:
   email:
@@ -28,4 +28,4 @@ notifications:
     - katherine.fawcett@dpag.ox.ac.uk
     - thomas.smith2@dpag.ox.ac.uk
     - michael.morgan@dpag.ox.ac.uk
-
+    - xiaoming.hu@dpag.ox.ac.uk
