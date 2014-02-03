@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 
 # libpq
 wget http://yum.postgresql.org/9.3/redhat/rhel-6-x86_64/pgdg-sl93-9.3-1.noarch.rpm
@@ -35,8 +36,8 @@ cp GCProfile_LINUX/GCProfile .
 cp GCProfile_LINUX/gnuplot .
 
 # Set up other environment variables
-cd $HOME/cgat
-export PYTHONPATH=$PYTHONPATH:$HOME/cgat
+cd $HOME/CGATOxford/cgat
+export PYTHONPATH=$PYTHONPATH:$HOME/CGATOxford/cgat
 source $HOME/CGAT/virtualenv-1.10.1/cgat-venv/bin/activate
 
 # setup.py develop

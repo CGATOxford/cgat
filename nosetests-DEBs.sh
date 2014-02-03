@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 
 # GCProfile
 apt-get install libc6-i386
@@ -30,8 +31,8 @@ cp GCProfile_LINUX/GCProfile .
 cp GCProfile_LINUX/gnuplot .
 
 # Set up other environment variables
-cd $HOME/cgat
-export PYTHONPATH=$PYTHONPATH:$HOME/cgat
+cd $HOME/CGATOxford/cgat
+export PYTHONPATH=$PYTHONPATH:$HOME/CGATOxford/cgat
 source $HOME/CGAT/virtualenv-1.10.1/cgat-venv/bin/activate
 
 # setup.py develop
