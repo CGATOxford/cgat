@@ -31,8 +31,8 @@ cp GCProfile_LINUX/GCProfile .
 cp GCProfile_LINUX/gnuplot .
 
 # Set up other environment variables
-cd $HOME/CGATOxford/cgat
-export PYTHONPATH=$PYTHONPATH:$HOME/CGATOxford/cgat
+cd $TRAVIS_BUILD_DIR
+export PYTHONPATH=$PYTHONPATH:$TRAVIS_BUILD_DIR
 source $HOME/CGAT/virtualenv-1.10.1/cgat-venv/bin/activate
 
 # setup.py develop
