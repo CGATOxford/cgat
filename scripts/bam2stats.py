@@ -290,7 +290,10 @@ def main( argv = None ):
     else:
         rna = None
 
-    pysam_in = pysam.Samfile( "-", "rb" )
+    if options.stdin == sys.stdin:
+        pysam_in = pysam.Samfile( "-", "rb" )
+    else:
+        raise NotImplementedError("-I option not implemented")
 
     if options.output_details:
         outfile_details = E.openOutputFile( "details", "w")
