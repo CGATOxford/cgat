@@ -14,25 +14,25 @@ CountResult = collections.namedtuple( "Counts", "upstream upstream_utr cds downs
 
 class RangeCounter:
     
-    def __init__(self, countfiles, controlfiles = None, *args, **kwargs ):
+    def __init__(self, countfiles, controlfiles = None, control_factor = None, *args, **kwargs ):
 
         self.countfiles = countfiles
         self.controlfiles = controlfiles
-
-        if self.controlfiles != None:
-            # count number of tags in each file for normalization purposes
-            # self.norm_fg, self.norm_bg = [], []
-            # for f in self.countfiles:
-            #     E.debug( "computing read total for %s" % f )
-            #     self.norm_fg.append( self.getTotal( f ) )
-            # for f in self.controlfiles:
-            #     E.debug( "computing read total for %s" % f )
-            #     self.norm_bg.append( self.getTotal( f ) )
-            # fg = sum( self.norm_fg )
-            # bg = sum( self.norm_bg )
-            # self.factor = float( fg ) / float( bg )
-            #E.info( "normalization: fg=%i, bg=%f, factor=%f" % (fg, bg, self.factor) )
-            pass
+        self.control_factor = control_factor 
+        if self.control_factor == None:
+            if self.controlfiles != None:
+                # count number of tags in each file for normalization purposes
+                self.norm_fg, self.norm_bg = [], []
+                for f in self.countfiles:
+                    E.debug( "computing read total for %s" % f )
+                    self.norm_fg.append( self.getTotal( f ) )
+                for f in self.controlfiles:
+                    E.debug( "computing read total for %s" % f )
+                    self.norm_bg.append( self.getTotal( f ) )
+                fg = sum( self.norm_fg )
+                bg = sum( self.norm_bg )
+                self.control_factor = float( fg ) / float( bg )
+                E.info( "normalization: fg=%i, bg=%f, factor=%f" % (fg, bg, self.control_factor) )
 
     def setup( self, ranges ):
         self.counts = numpy.zeros( Intervals.getLength( ranges ) )
@@ -50,20 +50,8 @@ class RangeCounter:
         self.count( self.counts, self.countfiles, contig, ranges )
         if self.controlfiles:
             self.count( self.counts_bg, self.controlfiles, contig, ranges )
-            # scale background 
-            #self.counts_bg = numpy.array( self.counts_bg, dtype = float )
-            #s = sum(self.counts)
-            # if s > 0:
-            #     factor = float(sum(self.counts_bg )) / sum(self.counts) * self.factor 
-            #     self.counts_bg *= factor
-            #     self.counts -= self.counts_bg
-            #     # remove negative values
-            #     self.counts[self.counts < 0] = 0
-            self.counts += 1
-            self.counts_bg += 1
-            factor = float(self.counts_bg.sum()) / self.counts.sum()
-            self.counts = numpy.array( self.counts, dtype=float) * factor / self.counts_bg
 
+        # subsample for length
         if length > 0:
             lnormed = float(length)
             lunnormed = float(len(self.counts))
@@ -82,9 +70,19 @@ class RangeCounter:
                 
             assert len(take) == length, "size of arrays unequal: %i != %i from %i" % (len(take), length, lunnormed)
 
-            return self.counts[take]
-        else:
-            return self.counts
+            self.counts = self.counts[take]
+            if self.controlfiles:
+                self.counts_bg = self.counts_bg[take]
+
+        if self.controlfiles:
+            # scale background 
+            self.counts += 1
+            self.counts_bg += 1
+            self.counts = numpy.array( self.counts, dtype=float) * \
+                self.control_factor / self.counts_bg
+
+        return self.counts
+            
 
 class RangeCounterBAM(RangeCounter):
     '''count densities using bam files.
@@ -426,10 +424,32 @@ class RangeCounterBigWig(RangeCounter):
                 current_offset += length
 
 class IntervalsCounter:
+    '''aggregate reads/intervals within a certain arrangement of
+    intervals (sections). Sections are defined by a transcript-model 
+    and might be configurations such as upstream/exon/downstream, 
+    exon/intron, etc.
+
+    Derived class should provide a ``self.count()`` method that accepts
+    a list of intervals within a transcript and gene model,
+    collects counts within some configuration based on the
+    transcript structure and then calls ``self.aggregate()`` to
+    aggregate these counts.
     
+    The base class provides normalization and book keeping methods
+    for the aggregation process.
+    '''
+
     format = "%i"
 
-    def __init__(self, normalization = None, *args, **kwargs ):
+    def __init__(self, counter, 
+                 normalization = None, 
+                 outfile_profiles = None,
+                 *args, **kwargs ):
+        '''counter is an object to provide counts in a list of regions
+        scaled to a common size.
+        '''
+
+        self.counter = counter
 
         # normalization method to use before aggregation
         self.normalization = normalization        
@@ -446,7 +466,9 @@ class IntervalsCounter:
         # number of aggregates skipped due to shape mismatch
         # (happens if region extends beyound start/end of contig
         self.nskipped = 0
-        
+
+        # for keeping totals without aggregation
+        self.outfile_profiles = outfile_profiles
 
     def add( self, field, length ):
         self.counts.append( 0 )
@@ -459,6 +481,16 @@ class IntervalsCounter:
             self.dtype = numpy.int
 
         self.aggregate_counts.append( numpy.zeros( length, dtype = self.dtype ) )
+
+    def setOutputProfiles( self, outfile_profiles ):
+        if outfile_profiles:
+            self.outfile_profiles = outfile_profiles
+            sum_counts = sum( [len(x) for x in self.aggregate_counts] )
+            self.outfile_profiles.write("\t%s\n" % ("\t".join(map(str, range(sum_counts))) ) )
+
+    def closeOutputProfiles( self ):
+        if self.outfile_profiles:
+            self.outfile_profiles.close()
 
     def setNormalization( self, normalization ):
         self.normalization = normalization
@@ -473,6 +505,10 @@ class IntervalsCounter:
         for x,c in enumerate(self.aggregate_counts):
             self.aggregate_counts[x] = numpy.zeros( len(c), dtype = self.dtype ) 
 
+    def addName( self, name ):
+        '''record name currently being processed.'''
+        self.transcript_names.append( name )
+
     def addLengths( self, *lengths ):
         '''add interval lengths to this counter.'''
 
@@ -481,6 +517,10 @@ class IntervalsCounter:
 
     def aggregate( self, *counts ):
 
+        # save for outputting
+        self.last_counts = counts
+
+        # normalization across all regions
         if self.normalization == "total-max":
             norm = float(max( [max(c) for c in counts if len(c) > 0] ))
         elif self.normalization == "total-sum":
@@ -495,25 +535,29 @@ class IntervalsCounter:
             if len(c) == 0: continue
             
             if norm > 0:
+                # apply uniform normalization
                 cc = c / norm
             elif self.normalization == "max":
+                # normalize by max count per region
                 m = max(c)
                 if m == 0: continue
                 cc = c / m
             elif self.normalization == "sum":
+                # normalize by sum counts per region
                 m = sum(c)
                 if m == 0: continue
                 cc = c / m
             else:
+                # no normalization
                 cc = c
 
             try:
                 agg += cc
             except ValueError:
                 self.nskipped += 1
-            
+                
     def buildMatrix( self, normalize = None ):
-        '''build single matrix with all counts.
+        '''build single matrix with all counts across sections.
         
         cols = intervals counted (exons, introns) )
         rows = number of bins in intervals (every 10b / 10kb = 1000 bins)
@@ -561,6 +605,17 @@ class IntervalsCounter:
         for field,l in zip(self.fields, self.lengths):
             outfile.write( "%s\t%s\n" % (field, str(Stats.Summary( l))))
 
+    def update( self, gtf ):
+        
+        counted = self.count( gtf )
+
+        if counted and self.outfile_profiles:
+            name = gtf[0].transcript_id
+            self.outfile_profiles.write("%s\t%s\n" % (name,
+                                        "\t".join( [ "\t".join( map(str, x) ) for x in self.last_counts ] ) ) )
+        
+        return counted
+
     def __str__(self):
         return "%s=%s" % (self.name, ",".join( [str(sum(x)) for x in self.aggregate_counts]) )
 
@@ -582,9 +637,8 @@ class GeneCounter( IntervalsCounter ):
                  *args,
                  **kwargs ):
 
-        IntervalsCounter.__init__(self, *args, **kwargs )
+        IntervalsCounter.__init__(self, counter, *args, **kwargs )
 
-        self.counter = counter
         self.extension_upstream = extension_upstream
         self.extension_downstream = extension_downstream 
         self.resolution_exons = resolution_exons
@@ -659,7 +713,8 @@ class GeneCounterWithIntrons( IntervalsCounter ):
     
     name = "geneprofilewithintrons"
     
-    def __init__(self, counter, 
+    def __init__(self, 
+                 counter,
                  int resolution_upstream,
                  int resolution_exons,
                  int resolution_introns,  #Tim 16 May. 2013. for introns
@@ -670,9 +725,8 @@ class GeneCounterWithIntrons( IntervalsCounter ):
                  *args,
                  **kwargs ):
 
-        IntervalsCounter.__init__(self, *args, **kwargs )
+        IntervalsCounter.__init__(self, counter, *args, **kwargs )
 
-        self.counter = counter
         self.extension_upstream = extension_upstream
         self.extension_downstream = extension_downstream 
         self.resolution_exons = resolution_exons
@@ -797,7 +851,8 @@ class GeneCounterAbsoluteDistanceFromThreePrimeEnd( IntervalsCounter ):
     
     name = "geneprofileabsolutedistancefromthreeprimeend"   #Tim 31th Aug 2013
     
-    def __init__(self, counter, 
+    def __init__(self, 
+                 counter,
                  int resolution_upstream,
                  int resolution_downstream,
                  int resolution_exons_absolute_distance_topolya,
@@ -819,9 +874,8 @@ class GeneCounterAbsoluteDistanceFromThreePrimeEnd( IntervalsCounter ):
                  *args,
                  **kwargs ):
 
-        IntervalsCounter.__init__(self, *args, **kwargs )
+        IntervalsCounter.__init__(self, counter, *args, **kwargs )
 
-        self.counter = counter
         self.extension_upstream = extension_upstream
         self.extension_downstream = extension_downstream 
         self.resolution_upstream = resolution_upstream
@@ -1041,8 +1095,6 @@ class GeneCounterAbsoluteDistanceFromThreePrimeEnd( IntervalsCounter ):
 
         return 1
 
-
-
 class UTRCounter( IntervalsCounter ):
     '''counts reads in 3'UTR and 5'UTR in addition
     to the extension outside.'''
@@ -1060,9 +1112,8 @@ class UTRCounter( IntervalsCounter ):
                  *args,
                  **kwargs ):
 
-        IntervalsCounter.__init__(self, *args, **kwargs )
+        IntervalsCounter.__init__(self, counter, *args, **kwargs )
 
-        self.counter = counter
         self.extension_upstream = extension_upstream
         self.extension_downstream = extension_downstream 
         self.resolution_cds = resolution_cds
@@ -1083,7 +1134,8 @@ class UTRCounter( IntervalsCounter ):
     def count( self, gtf ):
         '''build ranges to be analyzed from a gene model.
 
-        Returns a tuple with ranges for cds, upstream_utr, downstream_utr, upstream, downstream.
+        Returns a tuple with ranges for cds, upstream_utr,
+        downstream_utr, upstream, downstream.
         '''
 
         contig = gtf[0].contig 
@@ -1189,9 +1241,8 @@ class MidpointCounter( GeneCounter ):
                  *args,
                  **kwargs ):
 
-        IntervalsCounter.__init__(self, *args, **kwargs )
+        IntervalsCounter.__init__(self, counter, *args, **kwargs )
 
-        self.counter = counter
         self.extension_upstream = extension_upstream
         self.extension_downstream = extension_downstream 
         self.resolution_upstream = resolution_upstream
@@ -1253,9 +1304,8 @@ class TSSCounter( IntervalsCounter ):
     name = "tssprofile"
     
     def __init__(self, counter, extension_out = 0, extension_in = 0, *args, **kwargs):
-        IntervalsCounter.__init__(self, *args, **kwargs )
+        IntervalsCounter.__init__(self, counter, *args, **kwargs )
 
-        self.counter = counter
         self.extension_out = extension_out
         self.extension_in = extension_in 
 
@@ -1310,14 +1360,15 @@ def count( counters,
     E.info("starting counting" )
 
     for iteration, gtf in enumerate(gtf_iterator):
-        E.debug( "processing %s" % (gtf[0].gene_id))
+        name = gtf[0].transcript_id
+        E.debug( "processing %s" % (name))
 
         gtf.sort( key = lambda x: x.start )
         c.input += 1
         for x, counter in enumerate(counters):
-            counter.count( gtf )
+            counter.update( gtf )
             counts[x] += 1
-            
+
         if iteration % 100 == 0:
             E.debug( "iteration %i: counts=%s" % (iteration, ",".join( map( str, counters) ) ))
 

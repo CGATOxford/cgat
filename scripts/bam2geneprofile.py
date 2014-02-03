@@ -124,6 +124,7 @@ transcript can be normalized. Without normalization, highly expressed genes
 will contribute more to the meta-gene profile than lowly expressed genes.
 With normalization, each gene contributes an equal amount (``-normalize``).
 
+
 When outputting the meta-gene profile, the meta-gene profile itself can be normalized.
 Normalization a profile can help comparing the shapes of profiles between different
 experiments independent of the number of reads or transcripts used in the construction
@@ -357,6 +358,15 @@ The options are:
                        help = "matrix output format, either 'multiple' files or a 'single' file "
                        "[%default]" )
 
+    parser.add_option("--control-factor", dest="control_factor", type = "float",
+                      help = "factor for normalizing control and fg data. Computed from data "
+                      "if not set. "
+                      "[%default]" )
+
+    parser.add_option( "--all-profiles", dest="all_profiles", action = "store_true",
+                       help = "keep individual profiles for each transcript and output. "
+                              "[%default]" )
+
     parser.set_defaults(
         remove_rna = False,
         ignore_pairs = False,
@@ -394,6 +404,8 @@ The options are:
         max_insert_size = 1000,
         base_accuracy = False,
         matrix_format = "single",
+        control_factor = None,
+        all_profiles = False,
         )
 
     ## add common options (-h/--help, ...) and parse command line 
@@ -408,6 +420,11 @@ The options are:
     if not options.gtffile:
         raise ValueError("no GTF file specified" )
 
+    if options.gtffile == "-":
+        options.gtffile = options.stdin
+    else:
+        options.gtffile = IOTools.openFile( options.gtffile )
+
     if len(options.infiles) == 0:
         raise ValueError("no bam/wig/bed files specified" )
     
@@ -421,9 +438,9 @@ The options are:
             options.base_accuracy=True
 
     if options.reporter == "gene":
-        gtf_iterator = GTF.flat_gene_iterator( GTF.iterator( IOTools.openFile( options.gtffile ) ) )
+        gtf_iterator = GTF.flat_gene_iterator( GTF.iterator( options.gtffile ) )
     elif options.reporter == "transcript":
-        gtf_iterator = GTF.transcript_iterator( GTF.iterator( IOTools.openFile( options.gtffile ) ) )
+        gtf_iterator = GTF.transcript_iterator( GTF.iterator( options.gtffile ) )
         
     # Select rangecounter based on file type
     if len(options.infiles) > 0:
@@ -442,18 +459,22 @@ The options are:
                                                                   merge_pairs = options.merge_pairs,
                                                                   min_insert_size = options.min_insert_size,
                                                                   max_insert_size = options.max_insert_size,
-                                                                  controfiles = controlfiles )
+                                                                  controfiles = controlfiles,
+                                                                  control_factor = options.control_factor )
             elif options.shifts or options.extends:
                 range_counter = _bam2geneprofile.RangeCounterBAM( bamfiles, 
                                                                   shifts = options.shifts, 
                                                                   extends = options.extends,
-                                                                  controlfiles = controlfiles )
+                                                                  controlfiles = controlfiles,
+                                                                  control_factor = options.control_factor )
             elif options.base_accuracy:
                 range_counter = _bam2geneprofile.RangeCounterBAMBaseAccuracy( bamfiles,
-                                                                              controlfiles = controlfiles)
+                                                                              controlfiles = controlfiles,
+                                                                              control_factor = options.control_factor )
             else:
                 range_counter = _bam2geneprofile.RangeCounterBAM( bamfiles,
-                                                                  controlfiles = controlfiles )
+                                                                  controlfiles = controlfiles,
+                                                                  control_factor = options.control_factor )
             
                                                               
         elif options.infiles[0].endswith( ".bed.gz" ):
@@ -465,7 +486,8 @@ The options are:
 
             format = "bed"
             range_counter = _bam2geneprofile.RangeCounterBed( bedfiles, 
-                                                              controlfiles = controlfiles )
+                                                              controlfiles = controlfiles,
+                                                              control_factor = options.control_factor )
 
         elif options.infiles[0].endswith( ".bw" ):
             wigfiles = [ BigWigFile(file=open(x)) for x in options.infiles ]
@@ -485,7 +507,9 @@ The options are:
                                                           options.resolution_downstream_utr,
                                                           options.resolution_downstream,
                                                           options.extension_upstream,
-                                                          options.extension_downstream ) )
+                                                          options.extension_downstream,
+                                                          ) )
+
         elif method == "geneprofile":
             counters.append( _bam2geneprofile.GeneCounter( range_counter, 
                                                            options.resolution_upstream,
@@ -494,16 +518,17 @@ The options are:
                                                            options.extension_upstream,
                                                            options.extension_downstream,
                                                            options.scale_flanks ) )
+
         elif method == "geneprofilewithintrons":
             counters.append( _bam2geneprofile.GeneCounterWithIntrons( range_counter, 
-                                                           options.resolution_upstream,
-                                                           options.resolution_cds,
-                                                           options.resolution_introns,
-                                                           options.resolution_downstream,
-                                                           options.extension_upstream,
-                                                           options.extension_downstream,
-                                                           options.scale_flanks ) )
-
+                                                                      options.resolution_upstream,
+                                                                      options.resolution_cds,
+                                                                      options.resolution_introns,
+                                                                      options.resolution_downstream,
+                                                                      options.extension_upstream,
+                                                                      options.extension_downstream,
+                                                                      options.scale_flanks ) )
+            
         elif method == "geneprofileabsolutedistancefromthreeprimeend":
             counters.append( _bam2geneprofile.GeneCounterAbsoluteDistanceFromThreePrimeEnd( range_counter, 
                                                            options.resolution_upstream,                                                           
@@ -550,6 +575,8 @@ The options are:
     # set normalization
     for c in counters:
         c.setNormalization( options.normalization )
+        if options.all_profiles:
+            c.setOutputProfiles( IOTools.openFile( E.getOutputFile( c.name ) + ".profiles.tsv.gz", "w"))
 
     E.info( "starting counting with %i counters" % len(counters) )
 
@@ -596,6 +623,9 @@ The options are:
 
         with IOTools.openFile( E.getOutputFile( counter.name ) + ".lengths.tsv.gz", "w") as outfile:
             counter.writeLengthStats( outfile )
+            
+        if options.all_profiles:
+            counter.closeOutputProfiles()
 
     if options.plot:
 
@@ -606,7 +636,9 @@ The options are:
         
         for method, counter in zip(options.methods, counters):
 
-            if method in ("geneprofile", "geneprofilewithintrons", "geneprofileabsolutedistancefromthreeprimeend", "utrprofile", "intervalprofile" ):
+            if method in ("geneprofile", "geneprofilewithintrons", 
+                          "geneprofileabsolutedistancefromthreeprimeend", 
+                          "utrprofile", "intervalprofile" ):
 
                 plt.figure()
                 plt.subplots_adjust( wspace = 0.05)
