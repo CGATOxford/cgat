@@ -58,6 +58,71 @@ The size of fixed-width regions can be set with ``--extension`` options. For exa
 the options ``--extension-upstream`` will set the size of the uptsream extension region
 to 1000bp. Note that no scaling is required when counting reads towards the meta-gene profile.
 
+Normalization
+-------------
+
+Normalization can be applied in two stages of the computation.
+
+Count Vector
+++++++++++++
+
+Before adding counts to the meta-gene profile, the profile for the
+individual transcript can be normalized. Without normalization, highly
+expressed genes will contribute more to the meta-gene profile than
+lowly expressed genes.  Normalization can assure that each gene
+contributes an equal amount.
+
+Normalization is applied to the vector of read counts that is computed
+for each transcript. Normalization can be applied for the whole
+transcript (``total``) or on a per segment basis depending on the
+counter. For example, in the gene counter, exons, upstream and
+downstream segments can be normalized independently.
+
+Counts can be normalized either by the maximum or the sum of all
+counts in a segment or across the whole transcript. Normalization is
+controlled with the command line option ``--normalization``. Its
+arguments are:
+
+* ``none``: no normalization
+* ``sum``: sum of counts within a region (exons,upstream, ...). 
+  The area under the curve will sum to 1 for each region.
+* ``max``: maximum count within a region (exons,upstream, ...). 
+* ``total-sum``: sum of counts across all regions. The area 
+  under the curve will sum to 1 for
+  the complete transcript.
+* ``total-max``: maximum count across all regions.
+
+The options above control the contribution of individual transcripts
+to a meta-gene profile and are thus suited for example for RNA-Seq data.
+
+The options above do not control for different read-depths or any
+local biases. To compare meta-gene profiles between samples,
+additional normalization is required.
+
+Meta-gene profile
++++++++++++++++++
+
+To enable comparison between experiments, the meta-gene profile itself
+can be normalized.  Normalization a profile can help comparing the
+shapes of profiles between different experiments independent of the
+number of reads or transcripts used in the construction of the
+meta-gene profile.
+
+Meta-gene profile normalization is controlled via the ``--normalize-profile`` 
+option. Possible normalization are:
+
+* none: no normalization
+* area: normalize such that the area under the meta-gene profile is 1.
+* counts: normalize by number of features (genes,tss) that have been counted.
+* background: normalize with background (see below).
+
+A special normalization is activated with the ``background`` option.
+Here, the counts at the left and right most regions are used to
+estimate a background level for each transcript. The counts are
+then divided by this background-level. The assumption is that the
+meta-gene model is computed over a large enough area to include
+genomic background. 
+
 Options
 -------
 
@@ -111,30 +176,11 @@ might not be a biologically plausible transcript. It is usually better to provid
 with a set of representative transcripts per gene in order to avoid up-weighting genes with
 multiple transcripts.
 
-Normalization
-+++++++++++++
-
-Normalization can be applied in two stages of the computation.
-
-Before adding counts to the meta-gene profile, the profile for the individual
-transcript can be normalized. Without normalization, highly expressed genes
-will contribute more to the meta-gene profile than lowly expressed genes.
-With normalization, each gene contributes an equal amount (``-normalize``).
-
-
-When outputting the meta-gene profile, the meta-gene profile itself can be normalized.
-Normalization a profile can help comparing the shapes of profiles between different
-experiments independent of the number of reads or transcripts used in the construction
-of the meta-gene profile (``--normalize-profile``).
-
 Control
 +++++++
 
-If control files (input tracks) are supplied, counts in the control files will be subtracted
-from the actual counts in the foreground data disallowing negative values.
-
-Counts in the control are scaled before subtraction in order to account for differences is sequencing
-depth between foreground and controls. 
+If control files (input tracks) are supplied, counts in the control file can be used
+to compute a fold-change.
 
 Bed and wiggle files
 ++++++++++++++++++++
@@ -210,6 +256,7 @@ import CGAT.IOTools as IOTools
 import pysam
 import CGAT.GTF as GTF
 import numpy
+import pandas
 
 try:
     import pyximport
@@ -261,26 +308,13 @@ def main( argv = None ):
 
     parser.add_option( "-n", "--normalization", dest="normalization", type = "choice",
                        choices = ("none", "max", "sum", "total-max", "total-sum"),
-                       help = """normalization to apply on each transcript profile before adding to meta-gene profile. 
-
-The options are:
-
-* none: no normalization
-* sum: sum of counts within a region
-* max: maximum count within a region
-* total-sum: sum of counts across all regions
-* total-max: maximum count in all regions
-[%default]""" )
+                       help = "normalization to apply on each transcript profile before adding to meta-gene profile. "
+                       "[%default]" )
 
     parser.add_option( "-p", "--normalize-profile", dest="profile_normalizations", type = "choice", action="append",
-                       choices = ("none", "area", "counts"),
-                       help = """normalization to apply on meta-gene profile normalization. 
-
-The options are:
-* none: no normalization
-* area: normalize such that the area under the meta-gene profile is 1.
-* counts: normalize by number of features (genes,tss) that have been counted
-[%default]""" )
+                       choices = ( "all", "none", "area", "counts", "background"),
+                       help = "normalization to apply on meta-gene profile normalization. "
+                       "[%default]" )
 
     parser.add_option( "-r", "--reporter", dest="reporter", type = "choice",
                        choices = ("gene", "transcript"  ),
@@ -379,9 +413,20 @@ The options are:
                       "if not set. "
                       "[%default]" )
 
-    parser.add_option( "--all-profiles", dest="all_profiles", action = "store_true",
+    parser.add_option( "--output-all-profiles", dest="output_all_profiles", action = "store_true",
                        help = "keep individual profiles for each transcript and output. "
                               "[%default]" )
+
+    parser.add_option( "--input-filename-counts", dest="input_filename_counts", type="string",
+                       help = "filename with count data for each transcript. Use this instead "
+                       "of recomputing the profile. Useful for plotting the meta-gene profile "
+                       "from previously computed counts "
+                       "[%default]" )
+
+    parser.add_option("--background-region", dest="background-region", type = "int",
+                       help = "number of bins on either side of the profile to be considered "
+                      "for background meta-gene normalizatian "
+                      "[%default]" )
 
     parser.set_defaults(
         remove_rna = False,
@@ -421,7 +466,9 @@ The options are:
         base_accuracy = False,
         matrix_format = "single",
         control_factor = None,
-        all_profiles = False,
+        output_all_profiles = False,
+        background_region = 10,
+        input_filename_counts = None,
         )
 
     ## add common options (-h/--help, ...) and parse command line 
@@ -457,7 +504,7 @@ The options are:
         gtf_iterator = GTF.flat_gene_iterator( GTF.iterator( options.gtffile ) )
     elif options.reporter == "transcript":
         gtf_iterator = GTF.transcript_iterator( GTF.iterator( options.gtffile ) )
-        
+
     # Select rangecounter based on file type
     if len(options.infiles) > 0:
         if options.infiles[0].endswith( ".bam" ):
@@ -483,6 +530,7 @@ The options are:
                                                                   extends = options.extends,
                                                                   controlfiles = controlfiles,
                                                                   control_factor = options.control_factor )
+
             elif options.base_accuracy:
                 range_counter = _bam2geneprofile.RangeCounterBAMBaseAccuracy( bamfiles,
                                                                               controlfiles = controlfiles,
@@ -591,30 +639,47 @@ The options are:
     # set normalization
     for c in counters:
         c.setNormalization( options.normalization )
-        if options.all_profiles:
+        if options.output_all_profiles:
             c.setOutputProfiles( IOTools.openFile( E.getOutputFile( c.name ) + ".profiles.tsv.gz", "w"))
 
-    E.info( "starting counting with %i counters" % len(counters) )
-
-    _bam2geneprofile.count( counters, gtf_iterator )
+    if options.input_filename_counts:
+        # read counts from file
+        E.info( "reading counts from %s" % options.input_filename_counts )
+        all_counts = pandas.read_csv( IOTools.openFile(options.input_filename_counts), 
+                                      sep='\t', header=0, index_col=0 )
+        
+        if len(counters) != 1:
+            raise NotImplementedError('counting from matrix only implemented for 1 counter.')
+        # build counter based on reference counter
+        counter = _bam2geneprofile.UnsegmentedCounter( counters[0] )
+        counters = [counter]
+        _bam2geneprofile.countFromCounts( counters, all_counts )
+        
+    else:
+        E.info( "starting counting with %i counters" % len(counters) )
+        _bam2geneprofile.countFromGTF( counters, gtf_iterator )
 
     # output matrices
     if not options.profile_normalizations:
         options.profile_normalizations.append( "none" )
     elif "all" in options.profile_normalizations:
-        options.profile_normalizations = ["none", "area", "counts" ]
+        options.profile_normalizations = ["none", "area", "counts", "background" ]
 
     for method, counter in zip(options.methods, counters):
         if options.matrix_format == "multiple":
+            # output multiple files, each containing results of one normalization
             for norm in options.profile_normalizations:
                 with IOTools.openFile( E.getOutputFile( counter.name ) + ".%s.tsv.gz" % norm, "w") as outfile:
-                    counter.writeMatrix( outfile, normalize=norm )
+                    counter.writeMatrix( outfile, normalize=norm,
+                                         background_region = options.background_region )
 
         elif options.matrix_format == "single":
             # build a single output
             matrices = []
             for norm in options.profile_normalizations:
-                matrix = counter.buildMatrix( normalize = norm )
+                # build matrix, apply normalization
+                matrix = counter.buildMatrix( normalize = norm, 
+                                              background_region = options.background_region )
                 nrows, ncols = matrix.shape
                 matrix.shape = (nrows * ncols, 1 )
                 matrices.append( matrix )
@@ -626,7 +691,8 @@ The options are:
             matrix = numpy.hstack( matrices )
             nrows, ncols = matrix.shape
             with IOTools.openFile( E.getOutputFile( counter.name ) + ".matrix.tsv.gz", "w" ) as outfile:
-                outfile.write( "bin\tregion\tregion_bin\t%s\n" % "\t".join( options.profile_normalizations) )
+                outfile.write( "bin\tregion\tregion_bin\t%s\n" % "\t".join( \
+                        options.profile_normalizations) )
                 fields = []
                 bins = []
                 for field, nbins in zip( counter.fields, counter.nbins ):
@@ -640,7 +706,7 @@ The options are:
         with IOTools.openFile( E.getOutputFile( counter.name ) + ".lengths.tsv.gz", "w") as outfile:
             counter.writeLengthStats( outfile )
             
-        if options.all_profiles:
+        if options.output_all_profiles:
             counter.closeOutputProfiles()
 
     if options.plot:
@@ -652,9 +718,11 @@ The options are:
         
         for method, counter in zip(options.methods, counters):
 
-            if method in ("geneprofile", "geneprofilewithintrons", 
+            if method in ("geneprofile", 
+                          "geneprofilewithintrons", 
                           "geneprofileabsolutedistancefromthreeprimeend", 
-                          "utrprofile", "intervalprofile" ):
+                          "utrprofile", 
+                          "intervalprofile" ):
 
                 plt.figure()
                 plt.subplots_adjust( wspace = 0.05)

@@ -14,7 +14,10 @@ CountResult = collections.namedtuple( "Counts", "upstream upstream_utr cds downs
 
 class RangeCounter:
     
-    def __init__(self, countfiles, controlfiles = None, control_factor = None, *args, **kwargs ):
+    def __init__(self, countfiles, 
+                 controlfiles = None, 
+                 control_factor = None, 
+                 *args, **kwargs ):
 
         self.countfiles = countfiles
         self.controlfiles = controlfiles
@@ -82,7 +85,6 @@ class RangeCounter:
                 self.control_factor / self.counts_bg
 
         return self.counts
-            
 
 class RangeCounterBAM(RangeCounter):
     '''count densities using bam files.
@@ -488,6 +490,10 @@ class IntervalsCounter:
             sum_counts = sum( [len(x) for x in self.aggregate_counts] )
             self.outfile_profiles.write("\t%s\n" % ("\t".join(map(str, range(sum_counts))) ) )
 
+    def getNumBins( self ):
+        '''returns the number of bins in this counter.'''
+        return sum(self.nbins )
+
     def closeOutputProfiles( self ):
         if self.outfile_profiles:
             self.outfile_profiles.close()
@@ -556,7 +562,7 @@ class IntervalsCounter:
             except ValueError:
                 self.nskipped += 1
                 
-    def buildMatrix( self, normalize = None ):
+    def buildMatrix( self, normalize = None, background_region = 10 ):
         '''build single matrix with all counts across sections.
         
         cols = intervals counted (exons, introns) )
@@ -568,7 +574,9 @@ class IntervalsCounter:
                 [ (x, [0] * (max_counts - len(x))) for x in self.aggregate_counts ] )))
         
         matrix.shape = (len(self.aggregate_counts), max_counts )
-
+        # width of array in concatenated form
+        width = len(self.aggregate_counts) * max_counts
+        
         # normalize
         if normalize == "area":
             matrix = numpy.array( matrix, dtype = numpy.float )
@@ -578,17 +586,31 @@ class IntervalsCounter:
             matrix = numpy.array( matrix, dtype = numpy.float )
             for x in range( len(self.counts)):
                 matrix[x,:] /= self.counts[x]
+        elif normalize == "background":
+            matrix = numpy.array( matrix, dtype = numpy.float )
+            # flatten matrix to single row
+            matrix.shape = (width, 1)
+            # take counts at either end of profile
+            background_counts = numpy.concatenate( 
+                [ matrix[:background_region],
+                  matrix[-background_region:] ] )
+            # compute mean()
+            background = numpy.mean( background_counts )
+            # divide by mean()
+            matrix /= background
+            # reset matrix shape
+            matrix.shape = (len(self.aggregate_counts), max_counts )
 
         return matrix
 
-    def writeMatrix( self, outfile, normalize = None ):
+    def writeMatrix( self, outfile, normalize = None, background_region = 10 ):
         '''write aggregate counts to *outfile*.
 
         Output format by default is a tab-separated table.
         '''
         outfile.write("bin\t%s\n" % "\t".join(self.fields) )        
 
-        matrix = self.buildMatrix( normalize )
+        matrix = self.buildMatrix( normalize, background_region = background_region )
         
         if normalize and normalize != "none":
             format = "%f"
@@ -619,6 +641,21 @@ class IntervalsCounter:
     def __str__(self):
         return "%s=%s" % (self.name, ",".join( [str(sum(x)) for x in self.aggregate_counts]) )
 
+class UnsegmentedCounter( IntervalsCounter ):
+    '''clone a segmented counter as a single
+    unsegmented counter.
+    '''
+    
+    name = None
+    
+    def __init__(self, counter, 
+                 *args,
+                 **kwargs ):
+        IntervalsCounter.__init__(self, counter, *args, **kwargs)
+
+        self.name = counter.name
+        self.add( 'all', counter.getNumBins() )
+        
 class GeneCounter( IntervalsCounter ):
     '''count reads in exons and upstream/downstream of genes/transcripts.
     
@@ -1348,15 +1385,15 @@ class TSSCounter( IntervalsCounter ):
 
         return 1
 
-def count( counters,
-           gtf_iterator):
-    '''
+def countFromGTF( counters,
+                  gtf_iterator):
+    '''compute counts using counters for
+    transcripts in gtf_iterator.
     '''
 
     c = E.Counter()
     counts = [0] * len(counters)
 
-    iterations = 0
     E.info("starting counting" )
 
     for iteration, gtf in enumerate(gtf_iterator):
@@ -1376,6 +1413,29 @@ def count( counters,
     return
 
 
+def countFromCounts( counters,
+                     all_counts ):
+    '''collect counts from dataframe all_counts
+    for counters.
+    '''
+
+    c = E.Counter()
+    counts = [0] * len(counters)
+
+    E.info("starting counting" )
+
+    for iteration, x in enumerate(all_counts.iterrows()):
+        c.input += 1
+        name, read_counts = x
+        for x, counter in enumerate(counters):
+            counter.aggregate( numpy.array(read_counts) )
+            counts[x] += 1
+
+        if iteration % 100 == 0:
+            E.debug( "iteration %i: counts=%s" % (iteration, ",".join( map( str, counters) ) ))
+
+    E.info( "counts per counter: %s: %s" % (str(c), ",".join( map(str,counts)))) 
+    return
 
         
     
