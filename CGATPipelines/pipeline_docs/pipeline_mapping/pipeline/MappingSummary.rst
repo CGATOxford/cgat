@@ -73,12 +73,14 @@ This section shows the fragment size distribution.
    :render: line-plot
    :as-lines:
    :yrange: 0,
+   :split-at: 10
 
    Histogram of fragment sizes
 
 .. report:: Mapping.PicardInsertSizeMetrics
    :render: table
    :force:
+   :split-at: 10
 
    Fragment size summary
 

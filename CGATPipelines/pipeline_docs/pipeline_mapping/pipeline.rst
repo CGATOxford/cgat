@@ -21,17 +21,21 @@ Contents:
    pipeline/MappingComplexity.rst
    python/Trackers.rst
 
-.. ifconfig:: "tophat" in MAPPERS
+.. need to sort out variables. Need to be in conf.py
+.. but there should be a generic way to push updates
+.. to all reports.
+
+.. ifconfig:: True or "tophat" in MAPPERS
 
    .. toctree::
       pipeline/MappingTophat.rst
 
-.. ifconfig:: "star" in MAPPERS
+.. ifconfig:: True or "star" in MAPPERS
 
    .. toctree::
       pipeline/MappingStar.rst
 
-.. ifconfig:: "tophat" in MAPPERS or "star" in MAPPERS or "gsnap" in MAPPERS
+.. ifconfig:: True or "tophat" in MAPPERS or "star" in MAPPERS or "gsnap" in MAPPERS
 
    .. toctree::
       pipeline/Validation.rst

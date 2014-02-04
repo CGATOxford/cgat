@@ -1509,10 +1509,13 @@ def buildIntervalProfileOfTranscripts( infiles, outfile ):
                       --reporter=transcript
                       --method=geneprofile 
                       --method=tssprofile 
-                      --normalize-profile=none
-                      --normalize-profile=area
-                      --normalize-profile=counts
-                      --all-profiles
+                      --normalize-profile=all
+                      --output-all-profiles
+                      --resolution-upstream=1000
+                      --resolution-downstream=1000
+                      --resolution-cds=1000
+                      --extension-upstream=5000
+                      --extension-downstream=5000
                       %(options)s
                       %(bedfile)s -
                    > %(outfile)s
