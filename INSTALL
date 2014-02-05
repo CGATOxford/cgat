@@ -1,7 +1,17 @@
 REQUIREMENTS
 
+   # Become root and do:
+   ./install-CGAT-tools.sh --install-os-packages
+
 INSTALL
 
-    sh install_prerequisites.sh
-    python setup.py install
+    # As non-root user:
+   ./install-CGAT-tools.sh --install-python-deps
+
+NOTES
+
+    The "install-CGAT-tools.sh" script works only in Ubuntu 12.x and Scientific Linux 6.x
+
+    Please visit the following page to find more information about alternative installation methods:
+    http://www.cgat.org/~andreas/documentation/cgat/CGATInstallation.html
 
