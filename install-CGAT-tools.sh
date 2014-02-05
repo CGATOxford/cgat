@@ -2,6 +2,7 @@
 
 # function to detect the Operating System
 detect_os(){
+
 if [ -f /etc/os-release ]; then
 
    OS=$(cat /etc/os-release | awk '/VERSION_ID/ {sub("="," "); print $2;}' | sed 's/\"//g' | awk '{sub("\\."," "); print $1;}')
@@ -343,7 +344,6 @@ exit 1;
 
 
 # the main script starts here
-detect_os
 
 if [ $# -eq 0 -o $# -gt 1 ] ; then
 
@@ -365,18 +365,22 @@ else
 
    elif [ "$1" == "--install-os-packages" ] ; then
 
+      detect_os
       install_os_packages
 
    elif [ "$1" == "--install-python-deps" ] ; then
 
+      detect_os
       install_python_deps
 
    elif [ "$1" == "--install-nosetests-deps" ] ; then
 
+      detect_os
       install_nosetests_deps
 
    elif [ "$1" == "--run-nosetests" ] ; then
 
+      detect_os
       run_nosetests
 
    else 
