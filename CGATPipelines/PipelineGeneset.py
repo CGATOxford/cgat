@@ -326,7 +326,7 @@ def loadGeneInformation( infile, outfile, only_proteincoding = False ):
     | %(filter_cmd)s 
     | python %(scriptsdir)s/gtf2gtf.py --sort=gene
     | python %(scriptsdir)s/gtf2tsv.py --full --only-attributes -v 0
-    | python %(toolsdir)s/csv_cut.py --remove exon_number transcript_id transcript_name protein_id
+    | python %(toolsdir)s/csv_cut.py --remove exon_id transcript_id transcript_name protein_id
     | %(scriptsdir)s/hsort 1 | uniq 
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
               --index=gene_id 
