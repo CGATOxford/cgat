@@ -3,7 +3,7 @@ Pvalues
 
 .. report:: Tracker.TrackerImages
    :render: gallery-plot
-   :tracker: deseq.dir/*_pvalue_rowsums.*.png
+   :glob: deseq.dir/*_pvalue_rowsums.*.png
    :width: 200
    :layout: column-5
 
@@ -11,7 +11,7 @@ Pvalues
 
 .. report:: Tracker.TrackerImages
    :render: gallery-plot
-   :tracker: deseq.dir/*_pvalue_histogram.*.png
+   :glob: deseq.dir/*_pvalue_histogram.*.png
    :width: 200
    :layout: column-5
 

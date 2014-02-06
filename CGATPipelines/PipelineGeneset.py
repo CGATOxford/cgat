@@ -360,7 +360,7 @@ def loadTranscriptInformation( infile, outfile,
     | awk '$3 == "CDS"' 
     | python %(scriptsdir)s/gtf2gtf.py --sort=gene
     | python %(scriptsdir)s/gtf2tsv.py --full --only-attributes -v 0
-    | python %(toolsdir)s/csv_cut.py --remove exon_number 
+    | python %(toolsdir)s/csv_cut.py --remove exon_id 
     | %(scriptsdir)s/hsort 1 | uniq 
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
               --index=transcript_id 

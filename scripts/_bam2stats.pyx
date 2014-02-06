@@ -249,7 +249,7 @@ def count( Samfile samfile,
             fastq_count = &fastq_counts[index]
 
             # paired read counting
-            if fastq_count.is_paired : 
+            if fastq_count.is_paired: 
                 total_paired += 1
 
                 if fastq_count.is_unmapped == fastq_count.is_paired:

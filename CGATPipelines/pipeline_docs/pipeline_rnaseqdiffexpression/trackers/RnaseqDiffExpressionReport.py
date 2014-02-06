@@ -20,6 +20,8 @@ EXPORTDIR=P['rnaseqdiffexpression_exportdir']
 DATADIR=P['rnaseqdiffexpression_datadir']
 DATABASE=P['rnaseqdiffexpression_backend']
 
+DATABASE_ANNOTATIONS=P['annotations_database']
+
 ###################################################################
 # cf. pipeline_rnaseq.py
 # This should be automatically gleaned from pipeline_rnaseq.py
@@ -99,8 +101,12 @@ def linkToEnsembl( id ):
     return link
 
 ###########################################################################
-class RnaseqTracker( TrackerSQL ):
+class ProjectTracker( TrackerSQL ):
     '''Define convenience tracks for plots'''
     def __init__(self, *args, **kwargs ):
-        TrackerSQL.__init__(self, *args, backend = DATABASE, **kwargs )
+        TrackerSQL.__init__(self, 
+                            *args, 
+                            backend = DATABASE, 
+                            attach = [ ( DATABASE_ANNOTATIONS, 'annotations') ],
+                            **kwargs )
     

@@ -15,6 +15,7 @@ Contents:
    pipeline/Methods.rst
    pipeline/Status.rst
    pipeline/GeneExpression.rst
+   pipeline/TagCounting.rst
    pipeline/DifferentialGeneExpression.rst
    python/Trackers.rst
  

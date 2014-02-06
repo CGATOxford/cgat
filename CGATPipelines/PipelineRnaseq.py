@@ -24,10 +24,6 @@ Type::
 
 for command line help.
 
-Code
-----
-
-
 """
 
 import CGAT.Experiment as E
@@ -61,11 +57,27 @@ rpy2.robjects.numpy2ri.activate()
 
 import CGAT.Pipeline as P
 
-try:
-    PARAMS = P.getParameters()
-except IOError:
-    pass
+###################################################
+###################################################
+###################################################
+## Pipeline configuration
+###################################################
+P.getParameters( 
+    ["%s.ini" % __file__[:-len(".py")],
+     "../pipeline.ini",
+     "pipeline.ini" ] )
 
+PARAMS = P.PARAMS
+
+if os.path.exists("pipeline_conf.py"):
+    E.info( "reading additional configuration from pipeline_conf.py" )
+    execfile("pipeline_conf.py")
+
+#############################################################
+#############################################################
+#############################################################
+## UTR estimation
+#############################################################
 Utr = collections.namedtuple( "Utr", "old new max status" )
 
 def buildUTRExtension( infile, outfile ):
@@ -599,3 +611,50 @@ def filterAndMergeGTF( infile, outfile, remove_genes, merge = False ):
     P.run()
 
     os.unlink( tmpfilename )
+
+
+#############################################################
+#############################################################
+#############################################################
+## running cufflinks
+#############################################################
+def runCufflinks( infiles, outfiles ):
+    '''estimate expression levels in each set.
+    '''
+
+    gtffile, bamfile = infiles
+    to_cluster = True
+ 
+    job_options= "-pe dedicated %i -R y" % PARAMS["cufflinks_threads"]
+
+    track = os.path.basename( P.snip( gtffile, ".gtf.gz" ) )
+    
+    tmpfilename = P.getTempFilename( "." )
+    if os.path.exists( tmpfilename ):
+        os.unlink( tmpfilename )
+
+    gtffile = os.path.abspath( gtffile )
+    bamfile = os.path.abspath( bamfile )
+    outfile = os.path.abspath( outfile )
+
+    # note: cufflinks adds \0 bytes to gtf file - replace with '.'
+    # increase max-bundle-length to 4.5Mb due to Galnt-2 in mm9 with a 4.3Mb intron.
+    statement = '''mkdir %(tmpfilename)s; 
+    cd %(tmpfilename)s; 
+    cufflinks --label %(track)s      
+              --GTF <(gunzip < %(gtffile)s)
+              --num-threads %(cufflinks_threads)i
+              --frag-bias-correct %(bowtie_index_dir)s/%(genome)s.fa
+              --library-type %(cufflinks_library_type)s
+              %(cufflinks_options)s
+              %(bamfile)s 
+    >& %(outfile)s;
+    perl -p -e "s/\\0/./g" < transcripts.gtf | gzip > %(outfile)s.gtf.gz;
+    gzip < isoforms.fpkm_tracking > %(outfile)s.fpkm_tracking.gz;
+    gzip < genes.fpkm_tracking > %(outfile)s.genes_tracking.gz;
+    '''
+
+    P.run()
+
+    shutil.rmtree( tmpfilename )
+

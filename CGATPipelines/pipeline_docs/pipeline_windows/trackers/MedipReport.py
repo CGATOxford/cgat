@@ -9,9 +9,9 @@ from SphinxReport.Tracker import *
 # Run configuration script
 
 from SphinxReport.Utils import PARAMS as P
-EXPORTDIR=P['windows_exportdir']
-DATADIR=P['windows_datadir']
-DATABASE=P['windows_backend']
+#EXPORTDIR=P['windows_exportdir']
+#DATADIR=P['windows_datadir']
+#DATABASE=P['windows_backend']
 
 ###########################################################################
 ###########################################################################
