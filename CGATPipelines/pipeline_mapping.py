@@ -1114,7 +1114,7 @@ def mapReadsWithStampy( infile, outfile ):
 
 MAPPINGTARGETS = []
 mapToMappingTargets = { 'tophat': (mapReadsWithTophat, loadTophatStats),
-                        'tophat2': (mapReadsWithTophat2, loadTophatStats),
+                        'tophat2': (mapReadsWithTophat2,),
                         'bowtie': (mapReadsWithBowtie,),
                         'bwa': (mapReadsWithBWA,),
                         'stampy': (mapReadsWithStampy,),
@@ -1122,9 +1122,10 @@ mapToMappingTargets = { 'tophat': (mapReadsWithTophat, loadTophatStats),
                         'gsnap' : (mapReadsWithGSNAP,),
                         'star' : (mapReadsWithSTAR,loadSTARStats),
                         }
+
 for x in P.asList( PARAMS["mappers"]):
     MAPPINGTARGETS.extend( mapToMappingTargets[x] )
-        
+
 @follows( *MAPPINGTARGETS )
 def mapping(): pass
 

@@ -1210,7 +1210,7 @@ def clonePipeline( srcdir ):
 
 def writeConfigFiles( path ):
     
-    for dest in ( "pipeline.ini", "sphinxreport.ini", "conf.py" ):
+    for dest in ( "pipeline.ini", "conf.py"):
         src = os.path.join( path, dest)
         if os.path.exists(dest):
             L.warn( "file `%s` already exists - skipped" % dest )
@@ -1220,8 +1220,6 @@ def writeConfigFiles( path ):
             raise ValueError( "default config file `%s` not found"  % src )
         shutil.copyfile( src, dest )
         L.info( "created new configuration file `%s` " % dest )
-
-
 
 def clean( patterns, dry_run = False ):
     '''clean up files given by glob *patterns*.
