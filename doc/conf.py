@@ -77,6 +77,7 @@ rst_epilog='''
 .. _tabix: http://samtools.sourceforge.net/tabix.shtml/
 .. _Galaxy: https://main.g2.bx.psu.edu/
 .. _cython: http://cython.org/
+.. _python: http://python.org/
 .. _pyximport: http://www.prescod.net/pyximport/
 .. _sphinx: http://sphinx-doc.org/
 .. _ruffus: http://www.ruffus.org.uk/
@@ -88,6 +89,8 @@ rst_epilog='''
 .. _postgres: http://www.postgresql.org/
 .. _bedtools: http://bedtools.readthedocs.org/en/latest/
 .. _UCSC Tools: http://genome.ucsc.edu/admin/git.html
+.. _git: http://git-scm.com/
+.. _sge: http://wikis.sun.com/display/GridEngine/Home
 '''
 
 sys.path.insert( 0, "../scripts")
