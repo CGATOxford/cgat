@@ -419,16 +419,12 @@ def loadGeneSetGeneInformation( infile, outfile ):
     PipelineGeneset.loadGeneStats( infile, outfile )
 
 #########################################################################
-#########################################################################
-#########################################################################
 @follows( mkdir( "fpkm.dir"  ) )
 @files( [ (x, os.path.join( "fpkm.dir",y)) for x,y in TARGETS_FPKM ] )
 def runCufflinks(infiles, outfile):
     '''estimate expression levels in each set using cufflinks.'''
     PipelineRnaseq.runCufflinks( infiles, outfile )
 
-#########################################################################
-#########################################################################
 #########################################################################
 @transform( runCufflinks,
             suffix(".cufflinks"), 
@@ -465,6 +461,9 @@ def runCuffdiff( infiles, outfile ):
                             fdr = PARAMS["cuffdiff_fdr"],
                             mask_file = mask_file )
 
+#########################################################################
+#########################################################################
+#########################################################################
 @transform( runCuffdiff, 
             suffix(".diff"), 
             "_cuffdiff.load" )
@@ -1113,7 +1112,6 @@ def loadDESeqStats( infile, outfile ):
 #########################################################################
 @follows( aggregateFeatureCounts, mkdir("edger.dir") )
 @files( [ (x, os.path.join( "edger.dir", y)) for x, y in TARGETS_DE ] )
-
 def runEdgeR( infiles, outfile ):
     '''perform differential expression analysis using edger.'''
 

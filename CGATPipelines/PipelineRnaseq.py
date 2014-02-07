@@ -618,7 +618,7 @@ def filterAndMergeGTF( infile, outfile, remove_genes, merge = False ):
 #############################################################
 ## running cufflinks
 #############################################################
-def runCufflinks( infiles, outfiles ):
+def runCufflinks( infiles, outfile ):
     '''estimate expression levels in each set.
     '''
 
@@ -657,4 +657,22 @@ def runCufflinks( infiles, outfiles ):
     P.run()
 
     shutil.rmtree( tmpfilename )
+
+#########################################################################
+#########################################################################
+#########################################################################
+def loadCufflinks( infile, outfile ):
+    '''load expression level measurements.'''
+
+    track = P.snip( outfile, ".load" )
+    P.load( infile + ".genes_tracking.gz",
+            outfile = track + "_genefpkm.load",
+            options = "--index=gene_id --ignore-column=tracking_id --ignore-column=class_code --ignore-column=nearest_ref_id" )
+
+    track = P.snip( outfile, ".load" )
+    P.load( infile + ".fpkm_tracking.gz",
+            outfile = track + "_fpkm.load",
+            options = "--index=tracking_id --ignore-column=nearest_ref_id --rename-column=tracking_id:transcript_id" )
+
+    P.touch( outfile )
 

@@ -1494,8 +1494,6 @@ def buildTranscriptLevelReadCounts( infiles, outfile):
     '''count reads falling into transcripts of protein coding 
        gene models.
        
-    Data is not computed for tracks in transcripts.dir.
-
     .. note::
        In paired-end data sets each mate will be counted. Thus
        the actual read counts are approximately twice the fragment
@@ -1504,10 +1502,6 @@ def buildTranscriptLevelReadCounts( infiles, outfile):
     '''
     infile, genesets = infiles[0],infiles[1:]
     
-    if "transcriptome.dir" in infile:
-        P.touch()
-        return
-
     to_cluster = True
     statements = []
     
@@ -1534,9 +1528,11 @@ def buildTranscriptLevelReadCounts( infiles, outfile):
         statements.append(statement)
 
     P.run()
+
 #########################################################################
 @active_if( SPLICED_MAPPING )
-@collate(buildTranscriptLevelReadCounts, regex("(.+)\..+\.transcript_counts.tsv.gz"),
+@collate(buildTranscriptLevelReadCounts, 
+         regex("(.+)\..+\.transcript_counts.tsv.gz"),
          r"\1.transcript_counts.tsv.gz")
 def collateTranscriptCounts(infiles,outfile):
     ''' pull together the transcript counts over each chromosome '''

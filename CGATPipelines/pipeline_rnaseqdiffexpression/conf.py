@@ -37,6 +37,17 @@ version = '1.0'
 # The full version, including alpha/beta/rc tags.
 release = '1'
 
+# Adding custom configuration variables for ifconfig extension
+def setup(app):
+    app.add_config_value('PARAMS', '', True)
+
+#  Setting custom configuration variables
+import CGAT.Pipeline as P
+PARAMS = P.getParameters(
+            ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
+     "../pipeline.ini",
+     "pipeline.ini" ] )
+
 ################################################################
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the

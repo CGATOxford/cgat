@@ -5,10 +5,10 @@ from SphinxReport.Utils import PARAMS as P
 from collections import OrderedDict as odict
 
 # get from config file
-UCSC_DATABASE="hg19"
-ENSEMBL_DATABASE="Homo_sapiens"
-RX_ENSEMBL_GENE = re.compile("ENSG")
-RX_ENSEMBL_TRANSCRIPT = re.compile("ENST")
+UCSC_DATABASE=P["genome"]
+ENSEMBL_DATABASE=P["ensembl_database"]
+RX_ENSEMBL_GENE = re.compile(P["ensembl_gene_prefix"])
+RX_ENSEMBL_TRANSCRIPT = re.compile(P["ensembl_transcript_prefix"])
 
 REFERENCE="refcoding"
 
