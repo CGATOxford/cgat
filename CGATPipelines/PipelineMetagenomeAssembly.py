@@ -66,7 +66,7 @@ class PairedData(Format):
         '''
         return the track for the file
         '''
-        return P.snip(infile, ".%s" % self.fileFormat(infile))
+        return P.snip(os.path.basename(infile), ".%s" % self.fileFormat(infile))
 
     def getFormat(self, infile):
         self.format = self.fileFormat(infile)
@@ -250,7 +250,7 @@ class Metavelvet(Assembler):
         run velveth and velvetg
         followed by meta-velvetg
         '''
-        outdir = P.getTempDir()
+        outdir = P.getTempDir(".")
         format = self.getFormat(infile)
         paired = self.checkPairs(infile)
 
@@ -266,29 +266,37 @@ class Metavelvet(Assembler):
         if format == "fastq.1.gz":
             format = "fastq.gz"
         metavelvet_dir = os.path.join(os.getcwd(), "metavelvet.dir")
-        track = self.getTrack(infile)
+        track = self.getTrack(os.path.basename(infile))
         
         self.stats_file = track + ".stats.txt"
+        
+        if paired:
+            insert_length = "ins_length %i" % PARAMS["velvetg_insert_length"]
+        else:
+            insert_length = ""
 
         # velveth and velvetg have to be run to build hash tables and initial de bruijn graphs
         statement = '''%%(velveth_executable)s %(outdir)s %%(kmer)i -%(format)s -%(read_type)s %(pair)s %(files)s >> %(metavelvet_dir)s/%(track)s_velveth.log
                       ; checkpoint
                       ; mv %(outdir)s/Log %(metavelvet_dir)s/%(track)s.velveth.log
-                      ; cd %(outdir)s; %%(velvetg_executable)s %(outdir)s -exp_cov auto -ins_length %%(velvetg_insert_length)i
+                      ; %%(velvetg_executable)s %(outdir)s -exp_cov auto %(insert_length)s
                       ; checkpoint
-                      ; %%(metavelvet_executable)s %(outdir)s -ins_length %%(velvetg_insert_length)i
+                      ; %%(metavelvet_executable)s %(outdir)s %(insert_length)s
                       ; mv %(outdir)s/Roadmaps %(metavelvet_dir)s/%(track)s.roadmaps
                       ; gzip %(metavelvet_dir)s/%(track)s.roadmaps
                       ; mv %(outdir)s/Sequences %(metavelvet_dir)s/%(track)s.sequences
                       ; gzip %(metavelvet_dir)s/%(track)s.sequences
                       ; mv %(outdir)s/Graph2 %(metavelvet_dir)s/%(track)s.graph2
                       ; gzip %(metavelvet_dir)s/%(track)s.graph2
-                      ; cat %(outdir)s/meta-velvetg.contigs.fa | python %%(scriptsdir)s/rename_contigs.py -a metavelvet --log=%(metavelvet_dir)s/%(track)s.contigs.log
+                      ; cat %(outdir)s/meta-velvetg.contigs.fa | python %%(scriptsdir)s/rename_contigs.py -a metavelvet 
+                                                                 --log=%(metavelvet_dir)s/%(track)s.contigs.log
                         >  %(metavelvet_dir)s/%(track)s.contigs.fa
                       ; sed -i 's/in/_in/g' %(outdir)s/meta-velvetg.Graph2-stats.txt
                       ; mv  %(outdir)s/meta-velvetg.Graph2-stats.txt %(metavelvet_dir)s/%(track)s.stats.txt
-                      ; rm -rf %(outdir)s''' % locals()
-        P.run()
+                      ; rm -rf %(outdir)s
+                      ''' % locals()
+        return statement
+
 
 ##########################
 # meta-idba
@@ -409,17 +417,17 @@ class Ray(Idba):
         '''
         build statement for running Ray
         '''
-        track = self.getTrack(infile)
+        track = self.getTrack(os.path.basename(infile))
      
         format = self.getFormat(infile)
         paired = self.checkPairs(infile)
 
-        tempdir = P.getTempDir()
+        tempdir = P.getTempDir(dir = ".")
 
         # check whether the data are paired-end
         if not paired:
             pair = paired
-            files = os.path.join(tempdir, P.snip(infile, ".gz"))
+            files = os.path.join(tempdir, P.snip(os.path.basename(infile), ".gz"))
             gunzy = "gunzip -c %(infile)s > %(files)s" % locals()
         else:
             pair = paired[0]
@@ -453,7 +461,7 @@ class Ray(Idba):
         # note restrict use to 10 cores
         
         statement = ''' %(gunzy)s
-                       ; mpiexec -n 10  %%(ray_executable)s %(common_options)s %(filetype)s %(files)s -o %(raydir)s >> %(raydir_orig)s/%(track)s.log
+                       ; mpiexec %%(ray_executable)s %(common_options)s %(filetype)s %(files)s -o %(raydir)s >> %(raydir_orig)s/%(track)s.log
                        ; checkpoint; mv %(raydir)s/Scaffolds.fasta %(raydir_orig)s/%(track)s.scaffolds.fa
                        ; mv %(raydir)s/ScaffoldComponents.txt %(raydir_orig)s/%(track)s.scaffold_components.txt
                        ; mv %(raydir)s/ScaffoldLengths.txt %(raydir_orig)s/%(track)s.scaffold_lengths.txt
@@ -474,6 +482,201 @@ class Ray(Idba):
 
         return statement
 
+##########################
+# SGA
+##########################
+class SGA(Idba):
+    '''
+    String Graph assembler
+    '''
+    def build(self, infile):
+        '''
+        build statement for running SGA
+        '''
+        track = self.getTrack(os.path.basename(infile))
+     
+        # decide which algorithm to use based on
+        # read length
+        if "%(sga_long)s":
+            index_algorithm = "sais"
+        else:
+            index_algorithm = "ropebwt"
+
+        format = self.getFormat(infile)
+        paired = self.checkPairs(infile)
+
+        # directory in which to do the assembly
+        tempdir = P.getTempDir(dir = ".")
+
+        # check whether the data are paired-end
+        if not paired:
+            pe_mode = "--pe-mode=0"
+            files = os.path.abspath(infile)
+        else:
+            # DOESN'T DEAL WITH INTERLEAVED FILES YET
+            pe_mode = "--pe-mode=1"
+            files = " ".join([os.path.abspath(infile), paired[1]])
+            
+        executable = "%(sga_executable)s"
+        
+        outdir = os.path.abspath("sga.dir")
+        ###############################################
+        # preprocessing step converts missing bases to
+        # random bases or removes sequences with
+        # missing bases
+        ###############################################
+        preprocess_options = "%(sga_preprocess_options)s"
+        # outputs a merged fastq file
+        outf_preprocessed = track + ".fastq"
+        preprocess_statement = "cd %(tempdir)s; %(executable)s preprocess %(pe_mode)s %(preprocess_options)s %(files)s \
+                                 -o %(outf_preprocessed)s 2> %(outdir)s/%(track)s_preprocess.log"
+
+        ###############################################
+        # indexing reads with FM index
+        ###############################################
+        index_options = "%(sga_index_options)s"
+        index_statement = "%(executable)s index --algorithm=%(index_algorithm)s \
+                           %(outf_preprocessed)s 2> %(outdir)s/%(track)s_index.log"
+
+        ###############################################
+        # correct sequencing errors in reads
+        ###############################################
+        correction_method = "%(sga_correction_method)s"
+
+        # if correction_method == "kmer":
+        #     # ADD WARNING HERE
+        correction_options = "%(sga_kmer_correction_options)s"
+        # elif correction_method == "hybrid":
+        #     correction_options = "%(sga_hybrid_correction_options)s"
+        # elif correction_method == "overlap":
+        #     correction_options = "%(sga_overlap_correction_options)s"
+        # else:
+        #     raise ValueError("method %s does not exist: choose one of kmer, hybrid, overlap" % correction_method)
+        outf_corrected = track + "_corrected.fa"
+        metrics = "--metrics=%(track)s.metrics" % locals() 
+        correction_prefix = os.path.join(tempdir, P.snip(outf_corrected, ".fa"))
+        correction_statement = "%(executable)s correct %(metrics)s  \
+                                --algorithm=%(correction_method)s \
+                                %(correction_options)s \
+                                %(outf_preprocessed)s \
+                                -o %(outf_corrected)s 2> %(outdir)s/%(track)s_corrected.log"
+
+        ###############################################
+        # filter low quality reads and low abundance 
+        # kmers
+        ###############################################
+        filter_options = "%(sga_filter_options)s"
+        outf_filtered = track + "_filtered.fa"
+        filter_statement = "sga index %(outf_corrected)s; \
+                            %(executable)s filter %(filter_options)s  \
+                            -o %(outf_filtered)s \
+                            %(outf_corrected)s 2> %(outdir)s/%(track)s_filtered.log"
+
+        ###############################################
+        # overlap reads
+        ###############################################
+        # Note "asqg" is the default output from sga
+        outf_overlap = track + "_filtered.asqg.gz"
+        threads = "%(sga_threads)s"
+        overlap_options = "%(sga_overlap_options)s"
+        overlap_statement = "%(executable)s overlap %(overlap_options)s \
+                             %(outf_filtered)s 2> %(outdir)s/%(track)s_overlap.log"
+        
+        ###############################################
+        # assemble reads and perform error removal
+        ###############################################
+        assembly_options = "%(sga_assembly_options)s"
+        error_removal_options = "%(sga_error_removal_options)s"
+        out_prefix = track
+        assembly_statement = "%(executable)s assemble %(assembly_options)s \
+                              %(outf_overlap)s \
+                              --out-prefix=%(out_prefix)s 2> %(outdir)s/%(track)s_contigs.log"
+        
+        ###############################################
+        # build statement
+        ###############################################
+        metrics_file = os.path.basename(metrics.replace("--metrics=", ""))
+        contigs_file = os.path.basename(out_prefix + "-contigs.fa")
+        move_statement = "mv %(metrics_file)s %(outdir)s/%(metrics_file)s; \
+                          cat %(contigs_file)s \
+                          | python %%(scriptsdir)s/rename_contigs.py \
+                          --log=%(outdir)s/%(track)s.contigs.log \
+                          -a sga > %(outdir)s/%(track)s.contigs.fa"
+
+        statement = '''%s''' % "; ".join([preprocess_statement
+                                          , index_statement
+                                          , correction_statement
+                                          , filter_statement
+                                          , overlap_statement
+                                          , assembly_statement
+                                          , move_statement, "rm -rf %(tempdir)s"]) % locals()
+
+        return statement
+
+##########################
+# SOAPdenovo2
+##########################
+class SoapDenovo2(Idba):
+    '''
+    soapdenovo is a single genome assembler
+    and therefore may belong elsewhere
+    '''
+    def config(self, infile, outfile, PARAMS):
+        '''
+        build the configuration file based on
+        parameters specified in the .ini file
+        '''
+        # output directory
+        outdir = "soapdenovo.dir"
+
+        # config file
+        outf = open(outfile, "w")
+        paired = self.checkPairs(infile)
+        
+        # global parameters - only specifies maximum
+        # read length at the moment - shorter are
+        # trimmed
+        max_rd_len = "%(soapdenovo_max_rd_len)s" % PARAMS
+
+        # assume library parameters are the same
+        # for each library
+        avg_ins="%(soapdenovo_avg_ins)s" % PARAMS
+        asm_flags="%(soapdenovo_asm_flags)s" % PARAMS
+        reverse_seq="%(soapdenovo_reverse_seq)s" % PARAMS
+        rank="%(soapdenovo_rank)s" % PARAMS
+
+        # specify files
+        if not paired:
+            q = "q="+infile
+        else:
+            q = "\n".join(["q1="+infile, "q2="+paired[1]])
+        outf.write("""max_rd_len=%(max_rd_len)s\n[LIB]\navg_ins=%(avg_ins)s\nasm_flags=%(asm_flags)s\nreverse_seq=%(reverse_seq)s\nrank=%(rank)s\n%(q)s\n""" % locals())
+
+        outf.close()
+
+    def build(self, config):
+        '''
+        return build statement to be run
+        '''
+        # output directory
+        outdir = "soapdenovo.dir"
+
+        # get track from config file
+        for line in open(config).readlines():
+            if line.startswith("q") or line.startswith("q1"):
+                track = self.getTrack(line[:-1].split("=")[1])
+
+        options = "%(soapdenovo_options)s"
+        tempdir = P.getTempDir(".")
+        statement = '''%%(soapdenovo_executable)s all 
+                       -s %%(infile)s 
+                       -o %(tempdir)s/%(track)s
+                       -K %%(kmer)s
+                       %(options)s; checkpoint;
+                       mv %(tempdir)s/%(track)s* %(outdir)s;
+                       mv %(outdir)s/%(track)s.contig %(outdir)s/%(track)s.contigs.fa;
+                       rm -rf %(tempdir)s''' % locals()
+        return statement
 
 ##########################
 # metaphlan
