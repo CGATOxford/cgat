@@ -318,6 +318,54 @@ def loadFalsePositiveRate(infile, outfile):
 ###################################################
 ###################################################
 ###################################################
+@transform(loadEstimatedTaxonomicRelativeAbundances
+       , suffix(".load")
+       , add_inputs(loadTrueTaxonomicAbundances)
+       , ".comparison.pdf")
+def compareAbundanceOfFalsePositiveSpecies(infiles, outfile):
+    '''
+    boxplot the relative abundance of false positive
+    species compared to true positives
+    '''
+    tablename_estimate = P.toTable(infiles[0])
+    
+    track = P.snip(os.path.basename(infiles[0]).replace("metaphlan_", ""), ".load")
+    tablename_true = [P.toTable(x) for x in infiles[1:] if P.snip(os.path.basename(x), ".load") == track][0]
+    dbh = sqlite3.connect("csvdb")
+    cc = dbh.cursor()
+    tmp = P.getTempFile(".")
+    tmp.write("taxa\tabundance\tstatus\n")
+    estimate = {}
+    true = set()
+    for data in cc.execute("""SELECT taxon, rel_abundance FROM %s WHERE taxon_level == 'species'""" % tablename_estimate).fetchall():
+        estimate[data[0]] = data[1]
+    for data in cc.execute("""SELECT taxa FROM %s WHERE level == 'species'""" % tablename_true).fetchall():
+        true.add(data[0])
+
+    for taxa, abundance in estimate.iteritems():
+        if taxa in true:
+            tmp.write("%s\t%f\ttp\n" % (taxa, abundance))
+        else:
+            tmp.write("%s\t%f\tfp\n" % (taxa, abundance))
+    tmp.close()
+
+    inf = tmp.name
+    if track.find("15M") != -1:
+        col = "cadetblue"
+    elif track.find("30M") != -1:
+        col = "lightblue"
+    elif track.find("50M") != -1:
+        col =  "slategray" 
+
+    R('''dat <- read.csv("%s", header = T, stringsAsFactors = F, sep = "\t")''' % inf)
+    R('''library(ggplot2)''')
+    R('''ggplot(dat, aes(x = status, y = log2(abundance))) + geom_boxplot(colour = "%s") + geom_hline(yintersect=0, linetype="dashed")''' % col)
+    R('''ggsave("%s")''' % outfile)
+    os.unlink(inf)
+
+###################################################
+###################################################
+###################################################
 @follows(loadFalsePositiveRate
          , plotRelativeAbundanceCorrelations)
 def taxonomy():
@@ -327,7 +375,63 @@ def taxonomy():
 ###################################################
 ###################################################
 # look at assembly statistics after filtering 
-# for contigs that are above a certain coverage
+###################################################
+###################################################
+###################################################
+@active_if("idba" in PARAMS["assemblers"])
+@follows(mkdir("lengths.dir"))
+@merge(glob.glob(os.path.join(PARAMS["results_resultsdir"], "idba.dir/*lengths.tsv"))
+       , "lengths.dir/idba_length_comparison.pdf")
+def compareIdbaLengthDistributions(infiles, outfile):
+    '''
+    plot the CDF for different assemblies
+    '''
+    l100 = [inf for inf in infiles if inf.find("100BP") != -1][0]
+    l150 = [inf for inf in infiles if inf.find("150BP") != -1][0]
+    l250 = [inf for inf in infiles if inf.find("250BP") != -1][0]
+
+    R('''l100 <- read.csv("%s", stringsAsFactors = F, sep = "\t", header = T)''' % l100)
+    R('''l150 <- read.csv("%s", stringsAsFactors = F, sep = "\t", header = T)''' % l150)
+    R('''l250 <- read.csv("%s", stringsAsFactors = F, sep = "\t", header = T)''' % l250)
+    R('''l100$status <- 100''')
+    R('''l150$status <- 150''')
+    R('''l250$status <- 250''')
+    R('''dat <- as.data.frame(rbind(l100, l150, l250))''')
+    R('''library(ggplot2)''')
+    R('''ggplot(dat, aes(x = log2(length), colour = factor(status))) + stat_ecdf(size = 1) + scale_colour_manual(values = c("cadetblue", "slategray", "lightblue"))''')
+    R('''ggsave("%s")''' % outfile)
+
+###################################################
+###################################################
+###################################################
+@active_if("idba" in PARAMS["assemblers"])
+@follows(mkdir("lengths.dir"))
+@merge(glob.glob(os.path.join(PARAMS["results_resultsdir"], "idba.dir/*lengths.tsv"))
+       , "lengths.dir/idba_length_comparison.stats")
+def IdbaLengthDistributionStats(infiles, outfile):
+    '''
+    run ks test on different distributions
+    '''
+    l100 = [inf for inf in infiles if inf.find("100BP") != -1][0]
+    l150 = [inf for inf in infiles if inf.find("150BP") != -1][0]
+    l250 = [inf for inf in infiles if inf.find("250BP") != -1][0]
+
+    R('''l100 <- read.csv("%s", stringsAsFactors = F, sep = "\t", header = T)''' % l100)
+    R('''l150 <- read.csv("%s", stringsAsFactors = F, sep = "\t", header = T)''' % l150)
+    R('''l250 <- read.csv("%s", stringsAsFactors = F, sep = "\t", header = T)''' % l250)
+    # one sided test on 150 being less than 100 Alternative hypothesis
+    R('''ks.100.150 <- ks.test(l100$length, l150$length, alternative = "greater")''')
+    R('''ks.100.250 <- ks.test(l100$length, l250$length, alternative = "greater")''')
+    R('''ks.150.250 <- ks.test(l150$length, l250$length, alternative = "greater")''')
+
+    R('''pvals <- c(ks.100.150$p.value, ks.100.250$p.value, ks.150.250$p.value)''')
+    R('''ds <- c(ks.100.150$statistic, ks.100.250$statistic, ks.150.250$statistic)''')
+
+    R('''dat <- as.data.frame(cbind(pvals, ds))''')
+    R('''colnames(dat) <- c("pvalue", "D+")''')
+    R('''dat$track <- c("100-150", "100-250", "150-250")''')
+    R('''write.table(dat, file = "%s", sep = "\t", row.names = F)''' % outfile)
+
 ###################################################
 ###################################################
 ###################################################
@@ -643,7 +747,7 @@ def buildSpeciesMap(infiles, outfile):
     '''
     to_cluster = True
     bam = infiles[0]
-    contig = [x for x in infiles[1] if P.snip(x, ".contigs.fa") == P.snip(bam, ".bam")][0]
+    contig = [x for x in infiles[1] if P.snip(x, ".fa") == P.snip(bam, ".bam")][0]
     statement = ''' cat %(contig)s | python %(scriptsdir)s/bam2species_map.py -b %(bam)s --log=%(outfile)s.log > %(outfile)s'''
     P.run()
 
@@ -680,8 +784,8 @@ def buildExpectedContigs(infiles, outfile):
     contig = infiles[0]
 
     inputs = [infile for infile in infiles if infile != contig]
-    species_map = [infile for infile in inputs if P.snip(os.path.basename(infile), ".species_map.renamed.tsv") == P.snip(contig, ".contigs.fa")][0]
 
+    species_map = [infile for infile in inputs if P.snip(os.path.basename(infile), ".species_map.renamed.tsv") == P.snip(contig, ".fa")][0]
     genomes_dir = PARAMS["genomes_genomesdir"]
     statement = '''cat %(contig)s | python %(scriptsdir)s/contigs2random_sample.py 
                    -m %(species_map)s 
@@ -692,39 +796,43 @@ def buildExpectedContigs(infiles, outfile):
 ###################################################
 ###################################################
 ###################################################
-@transform(buildExpectedContigs, suffix(".fa"), ".bt2")
-def buildBowtie2Indices(infile, outfile):
+@transform(buildExpectedContigs, suffix(".fa"), ".bwt")
+def buildBwaIndices(infile, outfile):
     '''
     build bowtie indices
     '''
     to_cluster = True
-    outbase = P.snip(infile, ".fa")
-    statement = '''bowtie2-build -f %(infile)s %(outbase)s'''
+    to_cluster = True
+    statement = '''bwa index %(infile)s'''
     P.run()
     P.touch(outfile)
 
 ###################################################
 ###################################################
 ###################################################
-@follows(buildBowtie2Indices)
-@transform(buildBowtie2Indices
-           , regex("(\S+)/(\S+).bt2")
+@transform(buildBwaIndices
+           , regex("(\S+)/(\S+).bwt")
            , add_inputs(SEQUENCE_FILES)
            , r"\1/\2.bam")
-def mapReadsWithBowtieAgainstExpectedContigs(infiles, outfile):
+def mapReadsWithBwaAgainstExpectedContigs(infiles, outfile):
     '''
     map reads against contigs with bowtie
     '''
     to_cluster = True
-    
-    bowtie_index_dir = "expected_contigs.dir"
-    genome = os.path.basename(re.search(".*R[0-9]*", infiles[0]).group(0) + ".contigs.expected")
-    for seq in infiles[1]:
-        to_cluster = True
-        infile, reffile = seq,  genome + ".fa"
-        m = PipelineMapping.Bowtie( executable = P.substituteParameters( **locals() )["bowtie_executable"] )
-        statement = m.build( (infile,), outfile ) 
-        P.run()
+
+    index_dir = os.path.dirname(outfile)
+    genome = os.path.basename(re.search(".*R[0-9]*", infiles[0]).group(0) + ".filtered.contigs.expected.fa")
+    track = P.snip(genome, ".filtered.contigs.expected.fa")
+    fastq = [infile for infile in infiles[1] if P.snip(infile, ".fastq.1.gz") == track][0]
+    job_options= " -l mem_free=%s" % (PARAMS["bwa_memory"])
+    bwa_index_dir = index_dir
+    bwa_aln_options = PARAMS["bwa_aln_options"]
+    bwa_sampe_options=PARAMS["bwa_sampe_options"]
+    bwa_threads=PARAMS["bwa_threads"]
+    m = PipelineMapping.BWA(remove_non_unique = True)
+
+    statement = m.build( (fastq,), outfile ) 
+    P.run()
 
 ###################################################
 ###################################################
@@ -735,13 +843,13 @@ def linkAlignmentFiles(infile, outfile):
     '''
     not ideal but makes the next task easier to implement
     '''
-    statement = '''cd chimeras.dir; checkpoint; ln -s ../%(infile)s .; checkpoint ln -s ../%(infile)s.bai .'''
+    statement = '''cd chimeras.dir; checkpoint; ln -s ../%(infile)s .; checkpoint; ln -s ../%(infile)s.bai .'''
     P.run()
 
 ###################################################
 ###################################################
 ###################################################
-@transform([linkAlignmentFiles, mapReadsWithBowtieAgainstExpectedContigs]
+@transform([linkAlignmentFiles, mapReadsWithBwaAgainstExpectedContigs]
            , regex("(\S+)/(\S+).bam")
            , r"chimeras.dir/\2.chimera")
 def buildChimerasBasedOnReads(infile, outfile):
@@ -758,7 +866,7 @@ def buildChimerasBasedOnReads(infile, outfile):
     "good" if it is from the species from which the majority of alignments
     from that contig are derived'''
 
-    P.submit("PipelineMetagenomeBenchmark", "buildChimerasBasedOnReads"
+    P.submit("CGATPipelines.PipelineMetagenomeBenchmark", "buildChimerasBasedOnReads"
              , infiles = infile, outfiles = outfile)
         
 ###################################################
@@ -772,7 +880,6 @@ def mergeChimeras(infiles, outfile):
     '''
     pass
 
-
 ###################################################
 ###################################################
 ###################################################
@@ -783,7 +890,47 @@ def loadChimericityScores(infile, outfile):
     '''
     P.load(infile, outfile)
 
+###################################################
+###################################################
+###################################################
+# Uniformity of coverage
+###################################################
+###################################################
+###################################################
+@transform(linkAlignmentFiles
+           , suffix(".bam")
+           , add_inputs(glob.glob("*lengths.tsv"))
+           , ".peakshape")
+def buildUniformityOfCoverage(infiles, outfile):
+    '''
+    build matrix of coverage over contigs
+    '''
+    bam = infiles[0]
+    track = P.snip(os.path.basename(bam), ".bam")
+    tmp_bed = P.getTempFilename(".") + ".bed"
+    tmp_bam = P.getTempFilename(".") + ".bam"
+    
+    # filter for mapped reads
+    statement = '''cat %(bam)s | python %(scriptsdir)s/bam2bam.py --filter=mapped --log=/dev/null > %(tmp_bam)s
+                   ; samtools index %(tmp_bam)s'''
+    P.run()
 
+    for infs in infiles[1:]:
+        for inf in infs:
+            if P.snip(inf, ".lengths.tsv") == track:
+                length_file = inf
+                
+
+    statement = '''cat %(length_file)s | awk 'NR>1 {printf("%%s\\t0\\t%%s\\n", $1, $2)}' > %(tmp_bed)s'''
+    P.run()
+
+    statement = '''python %(scriptsdir)s/bam2peakshape.py 
+                   --only-interval %(tmp_bam)s %(tmp_bed)s 
+                   --log=%(outfile)s.log 
+                   --output-filename-pattern=%(track)s.%%s'''
+    P.run()
+    os.unlink(tmp_bed)
+    os.unlink(tmp_bam)
 
 ###################################################
 ###################################################
