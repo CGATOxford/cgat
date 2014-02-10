@@ -1218,6 +1218,7 @@ def writeConfigFiles( path ):
 
         if not os.path.exists( src ):
             raise ValueError( "default config file `%s` not found"  % src )
+
         shutil.copyfile( src, dest )
         L.info( "created new configuration file `%s` " % dest )
 

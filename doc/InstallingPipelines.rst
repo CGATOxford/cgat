@@ -26,7 +26,7 @@ Once checked-out, you can get the latest changes via pulling::
 
    git pull 
 
-Some scripts contain cython code that needs to be recompiled if the
+Some scripts contain cython_ code that needs to be recompiled if the
 script or the pysam_ installation has changed. To rebuild all scripts,
 for example after updating the repository, type::
 
@@ -320,9 +320,10 @@ has been set up for each tool.
 
 Additionally, there is a list of additional software that is required
 that are usually shipped as a source package with the operating
-system. These are:
+system such as sqlite_.
 
-sqlite
+Please see the installation instructions for the 
+`CGAT Toolkit <http://www.cgat.org/~andreas/documentation/cgat/CGATInstallation.html>`_.
 
 Python libraries
 ----------------

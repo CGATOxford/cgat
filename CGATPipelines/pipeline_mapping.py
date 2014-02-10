@@ -994,6 +994,7 @@ def buildSTARStats( infiles, outfile ):
         for line in IOTools.openFile( fn ):
             if not "|" in line: continue
             header, value = line.split("|")
+            header = re.sub( "%", "percent", header )
             data[header.strip()].append( value.strip() )
     
     keys = data.keys()
