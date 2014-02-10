@@ -19,6 +19,7 @@ Contents:
    pipeline/MappingContext.rst
    pipeline/MappingAlignmentStatistics.rst
    pipeline/MappingComplexity.rst
+   pipeline/ReferenceCoverage.rst
    python/Trackers.rst
 
 .. need to sort out variables. Need to be in conf.py
