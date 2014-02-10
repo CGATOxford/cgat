@@ -74,7 +74,7 @@ DESeq status
 
 .. report:: Tracker.TrackerImages
    :render: gallery-plot
-   :tracker: export/deseq/*.png
+   :glob: export/deseq/*.png
    :width: 200
    :layout: column-3
    

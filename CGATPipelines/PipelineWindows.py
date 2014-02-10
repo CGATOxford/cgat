@@ -2,10 +2,14 @@ import os
 import re
 import sys
 import collections
+import numpy
+import pandas
 
 import CGAT.Experiment as E
 import CGAT.Pipeline as P
 import CGAT.IOTools as IOTools
+import CGAT.Expression as Expression
+import CGAT.Bed as Bed
 
 #########################################################################
 #########################################################################
@@ -56,14 +60,17 @@ def aggregateWindowsReadCounts( infiles, outfile ):
     For bed6: use column 7
     For bed12: use column 13
 
-    This method uses the maximum number of reads found in any interval as the tag count.
-
     Tiles with no counts will not be output.
     '''
     
     to_cluster = True
 
-    src = " ".join( [ '''<( zcat %s | awk '{printf("%%s:%%i-%%i\\t%%i\\n", $1,$2,$3,$4 );}' ) ''' % x for x in infiles] )
+    # get bed format
+    bed_columns = Bed.getNumColumns( infiles[0] )
+    # +1 as awk is 1-based
+    column = bed_columns - 4 + 1
+
+    src = " ".join( [ '''<( zcat %s | awk '{printf("%%s:%%i-%%i\\t%%i\\n", $1,$2,$3,$%s );}' ) ''' % (x,column) for x in infiles] )
     tmpfile = P.getTempFilename( "." )
     statement = '''paste %(src)s > %(tmpfile)s'''
     P.run()
@@ -141,6 +148,31 @@ def buildDMRStats( infile, outfile, method ):
         outf.write( "\t".join( [str(r[x]) for x in header1 ] ) + "\t" )
         outf.write( "\t".join( [str(s[x]) for x in header2 ] ) + "\n" )
 
+#########################################################################
+#########################################################################
+#########################################################################
+def buildFDRStats( infile, outfile, method ):
+    '''compute number of windows called at different FDR.
+    '''
+
+    data = pandas.read_csv( IOTools.openFile(infile), sep="\t", index_col = 0 )
+
+    assert data['treatment_name'][0] == data['treatment_name'][-1]
+    assert data['control_name'][0] == data['control_name'][-1]
+
+    treatment_name, control_name = data['treatment_name'][0], data['control_name'][0]
+        
+    key = (treatment_name, control_name )
+    fdrs = (0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0 )
+
+    for fdr in fdrs:
+        print "fdr"
+        take = data['qvalue'] <= fdr
+
+        significant = sum(take)
+        print significant
+
+
 def outputAllWindows( infile, outfile ):
     '''output all Windows as a bed file with the l2fold change
     as a score.
@@ -173,4 +205,137 @@ def outputAllWindows( infile, outfile ):
         #                      log="x", pch=20, cex=.1 )
 
         #     R['dev.off']()
+
+
+def outputRegionsOfInterest( infiles, outfile, max_per_sample = 10, sum_per_group = 40 ):
+    '''output windows according to various filters.
+
+    The output is a mock analysis similar to a differential expression 
+    result.
+    '''
+    job_options = "-l mem_free=64G"
+
+    design_file, counts_file = infiles
+
+    design = Expression.readDesignFile( design_file )
+    
+    # remove tracks not included in the design
+    design = dict( [ (x,y) for x,y in design.items() if y.include ] )
+
+    # define the two groups
+    groups = sorted(set( [x.group for x in design.values() ] ))
+
+    # build a filtering statement
+    groupA, groupB = groups
+    upper_levelA = "max( (%s) ) < %f" % ( \
+        ",".join( \
+            [ "int(r['%s'])" % x for x,y in design.items() if y.group == groupA ] ),
+        max_per_sample )
+
+    sum_levelA = "sum( (%s) ) > %f" % ( \
+        ",".join( \
+            [ "int(r['%s'])" % x for x,y in design.items() if y.group == groupB ] ),
+        sum_per_group )
+
+    upper_levelB = "max( (%s) ) < %f" % ( \
+        ",".join( \
+            [ "int(r['%s'])" % x for x,y in design.items() if y.group == groupB ] ),
+        max_per_sample )
+
+    sum_levelB = "sum( (%s) ) > %f" % ( \
+        ",".join( \
+            [ "int(r['%s'])" % x for x,y in design.items() if y.group == groupA ] ),
+        sum_per_group )
+
+    statement = '''
+    zcat %(counts_file)s
+    | python %(scriptsdir)s/csv_select.py 
+            --log=%(outfile)s.log
+            "(%(upper_levelA)s and %(sum_levelA)s) or (%(upper_levelB)s and %(sum_levelB)s)"
+    | python %(scriptsdir)s/runExpression.py
+            --log=%(outfile)s.log          
+            --filename-design=%(design_file)s
+            --filename-tags=-
+            --method=mock
+            --filter-min-counts-per-sample=0 
+    | gzip 
+    > %(outfile)s
+    '''
+
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+def runDE( infiles, outfile, outdir, 
+           method = "deseq",
+           spike_file = None):
+    '''run DESeq or EdgeR.
+
+    The job is split into smaller sections. The order of the input 
+    data is randomized in order to avoid any biases due to chromosomes and
+    break up local correlations.
+
+    At the end, a new q-value is computed from all results.
+    '''
+
+    to_cluster = True
+    
+    design_file, counts_file = infiles
+
+    if spike_file == None:
+        statement = "zcat %(counts_file)s" 
+    else:
+        statement = '''python %(scriptsdir)s/combine_tables.py 
+                           --missing-value=0
+                           --cat=filename
+                           --log=%(outfile)s.log
+                           %(counts_file)s %(spike_file)s
+              | python %(scriptsdir)s/csv_cut.py 
+                           --remove filename
+                           --log=%(outfile)s.log
+        '''
+
+    prefix = os.path.basename( outfile )
+
+    # the post-processing strips away the warning,
+    # renames the qvalue column to old_qvalue
+    # and adds a new qvalue column after recomputing
+    # over all windows.
+    statement += '''
+              | perl %(scriptsdir)s/randomize_lines.pl -h
+              | %(cmd-farm)s
+                  --input-header 
+                  --output-header 
+                  --split-at-lines=200000 
+                  --cluster-options="-l mem_free=8G"
+                  --log=%(outfile)s.log
+                  --output-pattern=%(outdir)s/%%s
+                  --subdirs
+              "python %(scriptsdir)s/runExpression.py
+              --method=%(method)s
+              --filename-tags=-
+              --filename-design=%(design_file)s
+              --output-filename-pattern=%%DIR%%/%(prefix)s_
+              --deseq-fit-type=%(deseq_fit_type)s
+              --deseq-dispersion-method=%(deseq_dispersion_method)s
+              --deseq-sharing-mode=%(deseq_sharing_mode)s
+              --filter-min-counts-per-row=%(tags_filter_min_counts_per_row)i
+              --filter-min-counts-per-sample=%(tags_filter_min_counts_per_sample)i
+              --filter-percentile-rowsums=%(tags_filter_percentile_rowsums)i
+              --log=%(outfile)s.log
+              --fdr=%(edger_fdr)f"
+              | grep -v "warnings"
+              | perl %(scriptsdir)s/regtail.pl ^test_id
+              | perl -p -e "s/qvalue/old_qvalue/"
+              | python %(scriptsdir)s/table2table.py 
+              --log=%(outfile)s.log
+              --method=fdr 
+              --column=pvalue
+              --fdr-method=BH
+              --fdr-add-column=qvalue
+              | gzip
+              > %(outfile)s '''
+
+    P.run()
 

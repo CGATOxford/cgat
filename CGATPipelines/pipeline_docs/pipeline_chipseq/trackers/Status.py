@@ -1,5 +1,3 @@
-import os, sys, re, types, itertools, math, numpy
-
 from ChipseqReport import *
 
 class MappingStatus( Status ):

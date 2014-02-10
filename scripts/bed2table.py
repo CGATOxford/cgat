@@ -192,7 +192,6 @@ class CounterPeaks(Counter):
             # if offsets are given, shift tags. 
             for samfile, offset in zip(bamfiles,offsets):
 
-                if offset == 0: E.warn("0 offset will result in no data!" )
                 shift = offset / 2
                 # for peak counting I follow the MACS protocoll,
                 # see the function def __tags_call_peak in PeakDetect.py
@@ -256,7 +255,7 @@ class CounterPeaks(Counter):
 
         self.result = self._count( bed, self.bamfiles, self.offsets )
         if self.control_bamfiles:
-            self.control = self.count( bed, self.control_bamfiles, self.control_offsets )
+            self.control = self._count( bed, self.control_bamfiles, self.control_offsets )
 
     def __str__(self):
         if self.control_bamfiles:
@@ -448,7 +447,8 @@ def main( argv = None ):
                        help="format of secondary stream [default=%default]."  )
 
     parser.add_option("-c", "--counter", dest="counters", type="choice", action="append",
-                      choices=( "overlap", 
+                      choices=( "length",
+                                "overlap", 
                                 "peaks", 
                                 "composition-na", 
                                 "composition-cpg",
@@ -470,6 +470,9 @@ def main( argv = None ):
     parser.add_option("-f", "--filename-gff", dest="filename_gff", type="string", action="append", metavar='bed',
                       help="filename with extra gff files. The order is important [default=%default]."  )
 
+    parser.add_option("--has-header", dest="has_header", action="store_true",
+                      help="bed file with headers. Headers and first columns are preserved [default=%default]" )
+
     parser.set_defaults(
         genome_file = None,
         counters = [],
@@ -479,11 +482,29 @@ def main( argv = None ):
         control_offsets = [],
         all_fields = False,
         filename_format = None,
-        bed_headers = "contig,start,end,name",
+        bed_headers = None,
         filename_gff = [],
+        has_header = False,
         )
 
     (options, args) = E.Start( parser )
+
+    if options.bed_headers != None:
+        bed_headers = [ x.strip() for x in options.bed_headers.split(",") ]
+        if len(bed_headers) < 3:
+            raise ValueError( "a bed file needs at least three columns" )
+    else:
+        bed_headers = None
+
+    if options.has_header:
+        while 1:
+            line = options.stdin.readline()
+            if not line: 
+                E.warn( "empty bed file with no header")
+                E.Stop()
+                return
+            if not line.startswith("#"): break
+        bed_headers = line[:-1].split("\t")
 
     # get files
     if options.genome_file:
@@ -508,10 +529,15 @@ def main( argv = None ):
     counters = []
 
     for c in options.counters:
-        if c == "overlap":
-            counters.append( CounterOverlap( filename = options.filename_bed,
+        if c == "length":
+            counters.append( CounterLength( fasta=fasta,
+                                            options = options) )
+
+        elif c == "overlap":
+            counters.append( CounterOverlap( filename = options.filename_gff[0],
                                              fasta=fasta,
                                              options = options) )
+            del options.filename_gff[0]
         elif c == "peaks":
             counters.append( CounterPeaks( bam_files,
                                            options.offsets,
@@ -529,14 +555,29 @@ def main( argv = None ):
                                                 fasta = fasta,
                                                 options = options, 
                                                 prefix = None) )
+            del options.filename_gff[0]
 
 
-    options.stdout.write( "\t".join( [x.strip() for x in options.bed_headers.split(",") ] ) )
-
-    options.stdout.write( "\t" + "\t".join( 
-            [ x.getHeader() for x in counters] ) + "\n" )
+    extra_fields = None
 
     for bed in Bed.iterator(options.stdin):
+
+        if extra_fields == None:
+            
+            # output explicitely given headers
+            if bed_headers:
+                if len( bed_headers ) > bed.columns:
+                    raise ValueError("insufficient columns (%i, expected %i) in %s" % \
+                                         ( bed.columns, len(bed_headers), str(bed)))
+                
+            else:
+                bed_headers = Bed.Headers[:bed.columns ]
+
+            options.stdout.write( "\t".join( bed_headers )  )
+            options.stdout.write( "\t" + "\t".join( 
+                    [ x.getHeader() for x in counters] ) + "\n" )
+
+            extra_fields = list( range(len(bed_headers)-3) )
 
 	for counter in counters: 
             counter.update(bed)
@@ -544,10 +585,10 @@ def main( argv = None ):
         if options.all_fields:
             options.stdout.write( str(bed) )
         else:
-            options.stdout.write( "\t".join( (bed.contig, 
+            options.stdout.write( "\t".join( [bed.contig, 
                                               str(bed.start), 
-                                              str(bed.end), 
-                                              bed.fields[0]) ) )
+                                              str(bed.end)]
+                                             + [bed.fields[x] for x in extra_fields] ) )
         for counter in counters: 
             options.stdout.write("\t%s" % str(counter) )
 

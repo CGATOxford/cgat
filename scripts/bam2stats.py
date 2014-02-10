@@ -100,6 +100,9 @@ scores.
 * NH: number of hits of reads.
 * mapq: mapping quality of alignments.
 
+Supplying a fastq file
+++++++++++++++++++++++
+
 If a fastq file is supplied (``--filename-fastq``), the script will
 compute some additional summary statistics. However, as it builds a dictionary
 of all sequences, it will also require a good  amount of memory. The additional
@@ -130,6 +133,10 @@ metrics output are:
 +-------------------------+----------------------------------------+
 |pairs_other              |pairs not in any of the above categories|
 +-------------------------+----------------------------------------+
+
+Note that for paired-end data, any ``\1`` or ``/2`` suffixes will be
+removed from the read name in the assumption that these have been removed
+in the bam file as well.
 
 Usage
 -----
@@ -262,7 +269,9 @@ def main( argv = None ):
     parser.add_option( "-d", "--output-details", dest="output_details", action="store_true",
                        help = "output per-read details [%default]" )
     parser.add_option( "-q", "--filename-fastq", dest = "filename_fastq",
-                       help = "filename with fasta sequences [%default]" )
+                       help = "filename with sequences and quality scores. This file is only "
+                       "used to collect sequence identifiers. Thus, for paired end data a "
+                       "single file is sufficient [%default]" )
 
     parser.set_defaults(
         filename_rna = None,
@@ -281,12 +290,18 @@ def main( argv = None ):
     else:
         rna = None
 
-    pysam_in = pysam.Samfile( "-", "rb" )
+    if options.stdin == sys.stdin:
+        pysam_in = pysam.Samfile( "-", "rb" )
+    else:
+        raise NotImplementedError("-I option not implemented")
 
     if options.output_details:
         outfile_details = E.openOutputFile( "details", "w")
     else:
         outfile_details = None
+
+    if options.filename_fastq and not os.path.exists( options.filename_fastq ):
+        raise IOError("file %s does not exist" % options.filename_fastq)
 
     counter, flags_counts, nh_filtered, nh_all, nm_filtered, nm_all, mapq, mapq_all, max_hi = \
         _bam2stats.count( pysam_in, 
@@ -385,7 +400,7 @@ def main( argv = None ):
     # output paired end data 
     if flags_counts["read2"] > 0:
         if options.filename_fastq:
-            pairs_mapped = counter.total_pairs - counter.total_pair_is_unmapped
+            pairs_mapped = counter.total_pair_is_mapped
             outs.write( "pairs_total\t%i\t%5.2f\tpairs_total\n" % \
                             (counter.total_pairs, 100.0 * counter.total_pairs / counter.total_pairs ) )
             outs.write( "pairs_mapped\t%i\t%5.2f\tpairs_total\n" % \

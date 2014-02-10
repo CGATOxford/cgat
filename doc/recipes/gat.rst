@@ -29,7 +29,7 @@ from ENSEMBL_ and pushing it through a sequence of commands::
    wget -qO- ftp://ftp.ensembl.org/pub/release-72/gtf/homo_sapiens/Homo_sapiens.GRCh37.72.gtf.gz
    | gunzip
    | awk '$2 == "protein_coding"' 
-   | cgat gff2ff --genome-file=hg19 --sanitize=genome --skip-missing
+   | cgat gff2gff --genome-file=hg19 --sanitize=genome --skip-missing
    | cgat gtf2gtf --sort=gene
    | cgat gtf2gtf --merge-exons --with-utr
    | cgat gtf2gtf --filter=longest-gene

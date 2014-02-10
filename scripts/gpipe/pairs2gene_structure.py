@@ -82,7 +82,7 @@ Options:
 import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.PredictionParser as PredictionParser
-import alignlib
+import alignlib_lite
 
 param_long_options=["verbose=", "help", "genome-file=", "format=",
                     "cds=", "version"]
@@ -219,11 +219,11 @@ def main( argv = None ):
             print "#",genomic_fragment
             continue
 
-        cds_seq = alignlib.makeSequence( cds_fragment )
-        genomic_seq = alignlib.makeSequence( genomic_fragment )
+        cds_seq = alignlib_lite.makeSequence( cds_fragment )
+        genomic_seq = alignlib_lite.makeSequence( genomic_fragment )
         
         data = map( lambda x: string.split(x, "\t"),
-                    string.split( alignlib.writePairAlignment( cds_seq,
+                    string.split( alignlib_lite.writePairAlignment( cds_seq,
                                                                genomic_seq,
                                                                map_query2sbjct ), "\n" ))
 

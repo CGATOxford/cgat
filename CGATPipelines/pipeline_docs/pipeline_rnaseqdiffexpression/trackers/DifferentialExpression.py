@@ -9,6 +9,32 @@ from RnaseqDiffExpressionReport import *
 ##############################################################
 ##############################################################
 ##############################################################
+class DESummary( ProjectTracker, SingleTableTrackerRows ):
+    table = "de_stats"
+    fields = ( "track", "design", "treatment_name", "control_name" )
+
+class TrackerDESeqSizeFactors( ProjectTracker ):
+    pattern = "(.*)_deseq_size_factors" 
+    
+    def __call__(self, track ):
+        return self.getAll( "SELECT sample, * FROM %(track)s_deseq_size_factors" )
+
+class TrackerDESeqSummary( ProjectTracker ):
+    pattern = "(.*)_deseq_summary" 
+    
+    def __call__(self, track ):
+        return self.getAll( "SELECT sample, * FROM %(track)s_deseq_summary" )
+
+class TrackerEdgeRSummary( ProjectTracker ):
+    pattern = "(.*)_edger_summary" 
+    
+    def __call__(self, track ):
+        return self.getAll( "SELECT sample, * FROM %(track)s_edger_summary" )
+
+
+##############################################################
+##############################################################
+##############################################################
 class TrackerDESeqFit( Tracker ):
     method = "deseq"
     tracks = [ x.asFile() for x in DESIGNS ]
@@ -40,15 +66,15 @@ class TrackerDESeqFit( Tracker ):
 ##############################################################
 ##############################################################
 ##############################################################
-class TrackerDESummaryDESeq( RnaseqTracker, SingleTableTrackerRows ):
+class TrackerDESummaryDESeq( ProjectTracker, SingleTableTrackerRows ):
     table = "deseq_stats"
     fields = ("level", "geneset", "treatment_name", "control_name", "design" )
 
-class TrackerDESummaryEdgeR( RnaseqTracker, SingleTableTrackerRows ):
+class TrackerDESummaryEdgeR( ProjectTracker, SingleTableTrackerRows ):
     table = "edger_stats"
     fields = ("level", "geneset", "treatment_name", "control_name" ,"design")
 
-class TrackerDESummaryCuffdiff( RnaseqTracker, SingleTableTrackerRows ):
+class TrackerDESummaryCuffdiff( ProjectTracker, SingleTableTrackerRows ):
     table = "cuffdiff_stats"
     fields = ("level", "geneset", "treatment_name", "control_name", "design" )
 
@@ -143,22 +169,21 @@ class TrackerDEPairwiseCuffdiff( TrackerDifferentialExpression ):
 #############################################################
 ##
 #############################################################
-class DifferentialExpressionComparison( RnaseqTracker ):
+class DifferentialExpressionComparison( ProjectTracker ):
 
-    tracks = list( itertools.combinations( ("deseq", "cuffdiff", "edger"), 3 ))
- 
-    slices = [ "%s_%s" % (y,x.asFile()) for x,y in itertools.product(GENESETS,DESIGNS) ]
+    tracks = [ "%s_%s" % (y,x.asFile()) for x,y in itertools.product(GENESETS,DESIGNS) ]
 
 class DifferentialExpressionOverlap( DifferentialExpressionComparison ):
-
+    '''number of features differentially expressed
+    in all sets.
+    '''
     def __call__(self, track, slice = None ):
        
-        pair1, pair2, pair3 = track
-        
+        pair1, pair2, pair3 = "deseq", "cuffdiff", "edger"
 
-        a = self.get('''SELECT test_id FROM %(slice)s_%(pair1)s_gene_diff WHERE significant = 1''')
-        b = self.get('''SELECT test_id FROM %(slice)s_%(pair2)s_gene_diff WHERE significant = 1''')
-        c = self.get('''SELECT test_id FROM %(slice)s_%(pair3)s_gene_diff WHERE significant = 1''')
+        a = self.get('''SELECT test_id FROM %(track)s_%(pair1)s_gene_diff WHERE significant = 1''')
+        b = self.get('''SELECT test_id FROM %(track)s_%(pair2)s_gene_diff WHERE significant = 1''')
+        c = self.get('''SELECT test_id FROM %(track)s_%(pair3)s_gene_diff WHERE significant = 1''')
 
         a = set(map(str,a))
         b = set(map(str,b))
@@ -177,7 +202,6 @@ class DifferentialExpressionCorrelationPValueCuffdiffDeseq( DifferentialExpressi
     def getPairs(self, track):
         self.pair1, self.pair2 = track[0], track[1]   
         return self.pair1, self.pair2
-
 
     def __call__(self, track, slice = None ):
         
@@ -264,7 +288,7 @@ class DifferentialExpressionCorrelationFoldChangeDeseqEdger( DifferentialExpress
 #############################################################
 ##
 #############################################################
-class VolcanoTracker( RnaseqTracker ):
+class VolcanoTracker( ProjectTracker ):
     '''insert volcano plots.'''
     tracks = [ x.asFile() for x in GENESETS ]
     
@@ -298,7 +322,7 @@ class VolcanoPlotDESeq( VolcanoTracker ):
 #############################################################
 ##
 #############################################################
-class ExonCounts( RnaseqTracker ):
+class ExonCounts( ProjectTracker ):
     '''get unnormalized read counts in the exons for a gene.
     
     The gene name is given as the slice.'''

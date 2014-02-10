@@ -129,7 +129,8 @@ def configToDictionary( config ):
     return p
 
 def getParameters( filenames = ["pipeline.ini",],
-                   defaults = None ):
+                   defaults = None,
+                   default_ini = True ):
     '''read a config file and return as a dictionary.
 
     Sections and keys are combined with an underscore. If
@@ -150,11 +151,26 @@ def getParameters( filenames = ["pipeline.ini",],
     This function also updates the module-wide parameter map.
     
     The section [DEFAULT] is equivalent to [general].
+
+    If default_ini is set, the default initialization file
+    will be read from 'CGATPipelines/configuration/pipeline.ini'
     '''
 
     global CONFIG
 
     CONFIG = ConfigParser.ConfigParser()
+    
+    if default_ini:
+        # The link between CGATPipelines and Pipeline.py
+        # needs to severed at one point.
+        # 1. config files into CGAT module directory?
+        # 2. Pipeline.py into CGATPipelines module directory?
+        dirname = os.path.join( os.path.dirname( os.path.dirname( __file__ )), "CGATPipelines")
+        filenames.insert( 0, 
+                          os.path.join( dirname, 
+                                        'configuration', 
+                                        'pipeline.ini' ) )
+
     CONFIG.read( filenames )
 
     p = configToDictionary( CONFIG )
@@ -347,13 +363,16 @@ def isEmpty( filename ):
 
 def asList( param ):
     '''return a param as a list'''
-    if type(param) not in (types.ListType, types.TupleType):
+    if type(param) == str:
         try:
             params = [x.strip() for x in param.strip().split(",")]
         except AttributeError:
             params = [param.strip()]
         return [ x for x in params if x != ""]
-    else: return param
+    elif type(param) in (types.ListType, types.TupleType):
+        return param
+    else: 
+        return [param]
 
 def asTuple( param ):
     '''return a param as a list'''
@@ -408,9 +427,11 @@ def toTable( outfile ):
 def load( infile, 
           outfile = None, 
           options = "", 
-          collapse = None,
-          transpose = None,
-          tablename = None):
+          collapse = False,
+          transpose = False,
+          tablename = None,
+          limit = 0,
+          shuffle = False):
     '''straight import from tab separated table.
 
     The table name is given by outfile without the
@@ -422,6 +443,10 @@ def load( infile,
     If *transpose* is set, the table will be transposed before
     loading.  The first column in the first row will be set to the
     string within transpose.
+
+    If *limit* is set, only load the first n lines.
+    If *shuffle* is set, randomize lines before loading. Together
+    with *limit* this permits loading a sample of rows.
     '''
 
     if not tablename:
@@ -431,11 +456,20 @@ def load( infile,
     if infile.endswith(".gz"): statement.append( "zcat %(infile)s" )
     else: statement.append( "cat %(infile)s" )
 
-    if collapse != None:
+    if collapse:
         statement.append( "python %(scriptsdir)s/table2table.py --collapse=%(collapse)s" )
 
-    if transpose != None:
+    if transpose:
         statement.append( "python %(scriptsdir)s/table2table.py --transpose --set-transpose-field=%(transpose)s" )
+        
+    if shuffle:
+        statement.append( "perl %(scriptsdir)s/randomize_lines.pl -h" )
+
+    if limit > 0:
+        # use awk to filter in order to avoid a pipeline broken error from head
+        statement.append( "awk 'NR > %i {exit(0)} {print}'" % (limit + 1))
+        # ignore errors from cat or zcat due to broken pipe
+        ignore_pipe_errors = True
 
     statement.append('''
     python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
@@ -457,10 +491,6 @@ def concatenateAndLoad( infiles,
                         missing_value = "na",
                         options = "" ):
     '''concatenate categorical tables and load into a database.
-
-    Concatenation assumes that the header is the same in all files.
-    The first file will be taken in completion, headers in other files 
-    will be removed.
 
     If *has_titles* is False, the tables are assumed to have no titles.
     '''
@@ -779,10 +809,13 @@ def buildStatement( **kwargs ):
 
     return statement
 
-def expandStatement( statement ):
+def expandStatement( statement, ignore_pipe_errors = False ):
     '''add exec_prefix and exec_suffix to statement.'''
     
-    return " ".join( (_exec_prefix, statement, _exec_suffix) )
+    if ignore_pipe_errors:
+        return statement
+    else:
+        return " ".join( (_exec_prefix, statement, _exec_suffix) )
 
 def joinStatements( statements, infile ):
     '''join a chain of statements into a single statement.
@@ -798,7 +831,7 @@ def joinStatements( statements, infile ):
     returns a single statement.
     '''
     
-    prefix = getTempFilename()
+    prefix = getTempFilename(".")
     pattern = "%s_%%i" % prefix
 
     result = []
@@ -909,6 +942,8 @@ def run( **kwargs ):
     session = GLOBAL_SESSION
     L.debug( 'task: pid %i: sge session = %s' % (pid, str(session)))
 
+    ignore_pipe_errors = options.get( 'ignore_pipe_errors', False )
+
     def buildJobScript( statement ):
         '''build job script from statement.
 
@@ -923,7 +958,7 @@ def run( **kwargs ):
         tmpfile.write( "set &>> %s\n" % shellfile)
         tmpfile.write( "module list &>> %s\n" % shellfile )
         tmpfile.write( 'echo "END----------------------------------" >> %s \n' % shellfile )
-        tmpfile.write( expandStatement( statement ) + "\n" )
+        tmpfile.write( expandStatement( statement, ignore_pipe_errors = ignore_pipe_errors ) + "\n" )
         tmpfile.close()
 
         job_path = os.path.abspath( tmpfile.name )
@@ -996,7 +1031,7 @@ def run( **kwargs ):
     #     run on cluster
     elif (options.get( "job_queue" ) or 
           ("to_cluster" not in options or options.get( "to_cluster" ))) \
-            and not GLOBAL_OPTIONS.without_cluster:
+          and (GLOBAL_OPTIONS and not GLOBAL_OPTIONS.without_cluster):
 
         statement = buildStatement( **options )
 
@@ -1055,7 +1090,7 @@ def run( **kwargs ):
             if "'" in statement: raise ValueError( "advanced bash syntax combined with single quotes" )
             statement = """/bin/bash -c '%s'""" % statement
 
-        process = subprocess.Popen(  expandStatement( statement ),
+        process = subprocess.Popen(  expandStatement( statement, ignore_pipe_errors = ignore_pipe_errors ),
                                      cwd = os.getcwd(), 
                                      shell = True,
                                      stdin = subprocess.PIPE,
@@ -1136,6 +1171,8 @@ def clonePipeline( srcdir ):
     
     destdir = os.path.curdir
 
+    E.info( "cloning pipeline from %s to %s" % (srcdir, destdir))
+
     copy_files = ("sphinxreport.ini", "conf.py", "pipeline.ini", "csvdb" )
     ignore_prefix = ("report", "_cache", "export", "tmp", "ctmp", "_static", "_templates" )
 
@@ -1173,7 +1210,7 @@ def clonePipeline( srcdir ):
 
 def writeConfigFiles( path ):
     
-    for dest in ( "pipeline.ini", "sphinxreport.ini", "conf.py" ):
+    for dest in ( "pipeline.ini", "conf.py"):
         src = os.path.join( path, dest)
         if os.path.exists(dest):
             L.warn( "file `%s` already exists - skipped" % dest )
@@ -1181,10 +1218,9 @@ def writeConfigFiles( path ):
 
         if not os.path.exists( src ):
             raise ValueError( "default config file `%s` not found"  % src )
+
         shutil.copyfile( src, dest )
         L.info( "created new configuration file `%s` " % dest )
-
-
 
 def clean( patterns, dry_run = False ):
     '''clean up files given by glob *patterns*.
@@ -1307,6 +1343,8 @@ def run_report( clean = True):
 
     run()
 
+    L.info( 'the report is available at %s' % os.path.abspath( \
+            os.path.join( PARAMS['report_html'], "contents.html")))
 
 USAGE = '''
 usage: %prog [OPTIONS] [CMD] [target]
@@ -1323,6 +1361,10 @@ show <target>
 
 plot <target>
    plot image (using inkscape) of pipeline state for *target*
+
+debug <target> [args]
+   debug a method using the supplied arguments. The method <target>
+   in the pipeline is run without checking any dependencies.
 
 config
    write new configuration files pipeline.ini, sphinxreport.ini and conf.py
@@ -1428,7 +1470,17 @@ def main( args = sys.argv ):
         if len(args) > 1:
             options.pipeline_targets.extend( args[1:] )
 
-    if options.pipeline_action in ("make", "show", "svg", "plot", "touch" ):
+    if options.pipeline_action == "debug":
+        # create the session proxy
+        GLOBAL_SESSION = drmaa.Session()
+        GLOBAL_SESSION.initialize()
+        
+        method_name = options.pipeline_targets[0]
+        caller = getCaller()
+        method = getattr( caller, method_name )
+        method( *options.pipeline_targets[1:] )
+
+    elif options.pipeline_action in ("make", "show", "svg", "plot", "touch" ):
 
         try:
             if options.pipeline_action == "make":
@@ -1487,11 +1539,30 @@ def main( args = sys.argv ):
                 os.unlink( filename )
 
         except ruffus_exceptions.RethrownJobError, value:
-            E.error("some tasks resulted in errors - error messages follow below" )
-            # print value
-            E.error( value )
-            E.error( "end of error messages" )
-            raise
+            
+            E.error( "%i tasks with errors, please see summary below:" % len(value.args))
+            for idx, e in enumerate(value.args):
+                task, job, error, msg, traceback = e
+                task = re.sub( "__main__.", "", task)
+                job = re.sub( "\s", "", job)
+                # display only single line messages
+                if len([ x for x in msg.split("\n") if x != ""]) > 1:
+                    msg = ""
+                    
+                E.error( "%i: Task=%s Error=%s %s: %s" % (idx, task, error, job, msg ) )
+
+            E.error( "full traceback is in %s" % options.logfile )
+
+            # write full traceback to log file only by removing the stdout handler
+            lhStdout = logger.handlers[0]
+            logger.removeHandler(lhStdout)
+            logger.error( "start of error messages" )
+            logger.error( value )
+            logger.error( "end of error messages" )
+            logger.addHandler( lhStdout )
+
+            # raise error
+            raise ValueError( "pipeline failed with %i errors" % len(value.args))
 
     elif options.pipeline_action == "dump":
         # convert to normal dictionary (not defaultdict) for parsing purposes

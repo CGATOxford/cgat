@@ -124,6 +124,9 @@ class FastqcSummary( ReadqcTracker ):
     def __call__(self, track, slice ):
         return self.getAll( "SELECT * FROM %(track)s_Basic_Statistics WHERE measure = '%(slice)s'" )
 
+class FastqcSummary( ReadqcTracker, SingleTableTrackerRows ):
+    table = "basic_statistics_summary"
+
 class ProcessingDetails( ReadqcTracker ):
     '''return summary of the read processing steps.'''
     pattern = "(.*)_processed$"

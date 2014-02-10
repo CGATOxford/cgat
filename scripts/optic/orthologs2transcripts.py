@@ -112,7 +112,7 @@ Options:
 import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.Exons as Exons
-import alignlib
+import alignlib_lite
 
 import CGAT.WrapperDialign as WrapperDialign
 import CGAT.WrapperDBA as WrapperDBA
@@ -260,7 +260,7 @@ def makeAlignatorDNA( type = "EMBOSS" ):
         os.write( handle_tmpfile, string.join( map(str, m), "\t") + "\n")
     os.close(handle_tmpfile)
 
-    smatrix = alignlib.readSubstitutionMatrixAA( filename_tmpfile )
+    smatrix = alignlib_lite.readSubstitutionMatrixAA( filename_tmpfile )
 
     return smatrix, gop, gep
 
@@ -332,7 +332,7 @@ def makeSubstitutionMatrix( type = "EMBOSS" ):
         os.write( handle_tmpfile, string.join( map(str, m), "\t") + "\n")
     os.close(handle_tmpfile)
 
-    smatrix = alignlib.readSubstitutionMatrixAA( filename_tmpfile )
+    smatrix = alignlib_lite.readSubstitutionMatrixAA( filename_tmpfile )
     os.remove( filename_tmpfile)
     return smatrix, gop, gep
     
@@ -391,7 +391,7 @@ def WriteExons( token1, peptide1, cds1, transcript1,
     if param_loglevel >= 3:
         for cd in cds1: print "#", str(cd)
         for cd in cds2: print "#", str(cd)
-        print "# peptide_map_a2b", str(alignlib.AlignmentFormatExplicit( peptide_map_a2b ))
+        print "# peptide_map_a2b", str(alignlib_lite.AlignmentFormatExplicit( peptide_map_a2b ))
         sys.stdout.flush()
         
     dna_map_a2b = Genomics.AlignmentProtein2CDNA( peptide_map_a2b,
@@ -401,9 +401,9 @@ def WriteExons( token1, peptide1, cds1, transcript1,
         if param_loglevel >= 4:
             print ""# WARNING: different number of exons!"
         
-    seq1 = alignlib.makeSequence( transcript1 )
-    seq2 = alignlib.makeSequence( transcript2 )
-    tmp_map_a2b = alignlib.makeAlignmentVector()
+    seq1 = alignlib_lite.makeSequence( transcript1 )
+    seq2 = alignlib_lite.makeSequence( transcript2 )
+    tmp_map_a2b = alignlib_lite.makeAlignmentVector()
 
     dialign = WrapperDialign.Dialign( "-n" )
     dialignlgs = WrapperDialign.Dialign( "-n -it -thr 2 -lmax 30 -smin 8" )    
@@ -411,8 +411,8 @@ def WriteExons( token1, peptide1, cds1, transcript1,
     #clustal = WrapperClustal.Clustal()
 
     matrix, gop, gep = global_substitution_matrix
-    alignator_nw = alignlib.makeAlignatorDPFullDP( alignlib.ALIGNMENT_GLOBAL, gop, gep, matrix )
-    alignator_sw = alignlib.makeAlignatorDPFullDP( alignlib.ALIGNMENT_LOCAL, gop, gep, matrix )    
+    alignator_nw = alignlib_lite.makeAlignatorDPFullDP( alignlib_lite.ALIGNMENT_GLOBAL, gop, gep, matrix )
+    alignator_sw = alignlib_lite.makeAlignatorDPFullDP( alignlib_lite.ALIGNMENT_LOCAL, gop, gep, matrix )    
     
     ## concatenated alignments for exons:
     # 1: only the common parts
@@ -430,10 +430,10 @@ def WriteExons( token1, peptide1, cds1, transcript1,
         for x in range( dna_map_a2b.getRowFrom(), dna_map_a2b.getRowTo()+ 1):
             if dna_map_a2b.mapRowToCol( x ) >= 0: nmapped += 1
         print "# nmapped=", nmapped
-        print str(alignlib.AlignmentFormatEmissions( dna_map_a2b ) )
+        print str(alignlib_lite.AlignmentFormatEmissions( dna_map_a2b ) )
 
     ## declare alignments used
-    map_intron_a2b = alignlib.makeAlignmentVector()        
+    map_intron_a2b = alignlib_lite.makeAlignmentVector()        
 
     result = Exons.CompareGeneStructures( cds1, cds2, map_cmp2ref = peptide_map_a2b )
 
@@ -482,13 +482,13 @@ def WriteExons( token1, peptide1, cds1, transcript1,
         ##########################################################################################
         ## build alignment for overlap of both exons
 ##         tmp_map_a2b.clear()
-##         alignlib.copyAlignment( tmp_map_a2b, dna_map_a2b,
+##         alignlib_lite.copyAlignment( tmp_map_a2b, dna_map_a2b,
 ##                                c1.mGenomeFrom + 1, c1.mGenomeTo )
 
 
 ##         if param_loglevel >= 5:
 ##             print "# alignment: %i-%i" % (c1.mGenomeFrom + 1, c1.mGenomeTo)
-##             for x in alignlib.writeAlignmentTable( tmp_map_a2b ).split("\n"):
+##             for x in alignlib_lite.writeAlignmentTable( tmp_map_a2b ).split("\n"):
 ##                 print "#", x
 
 ##         if tmp_map_a2b.getLength() == 0:
@@ -509,7 +509,7 @@ def WriteExons( token1, peptide1, cds1, transcript1,
 ##             nerrors += 1
 ##             continue
         
-##         data = map(lambda x: x.split("\t"), alignlib.writePairAlignment( seq1, seq2, tmp_map_a2b  ).split("\n"))
+##         data = map(lambda x: x.split("\t"), alignlib_lite.writePairAlignment( seq1, seq2, tmp_map_a2b  ).split("\n"))
 
 ##         if "caligned" in param_write_exons :
 ##             print "exon\tcaligned\t%s\t%i\t%s\t%i\t%s\t%s\t%s\t%s\t%s\t%s" % ( token1, e1,
@@ -599,7 +599,7 @@ def WriteExons( token1, peptide1, cds1, transcript1,
 
 ##                             elif method in ("dialigned", "dbaligned", "clusaligned", "dialignedlgs"):
 
-##                                 tmp_intron_a2b = alignlib.makeAlignmentVector()
+##                                 tmp_intron_a2b = alignlib_lite.makeAlignmentVector()
 
 ##                                 if param_loglevel >= 1:
 ##                                     print "# aligning with method %s two fragments of length %i and %i" % (method,
@@ -625,7 +625,7 @@ def WriteExons( token1, peptide1, cds1, transcript1,
 ##                                     continue
 
 ##                                 tmp_intron_a2b.moveAlignment( anchored_from1, anchored_from2 )
-##                                 alignlib.copyAlignment( map_intron_a2b, tmp_intron_a2b,
+##                                 alignlib_lite.copyAlignment( map_intron_a2b, tmp_intron_a2b,
 ##                                                        intron_from1 + 1, intron_to1,
 ##                                                        intron_from2 + 1, intron_to2 )                                           
 
@@ -639,7 +639,7 @@ def WriteExons( token1, peptide1, cds1, transcript1,
 ##                             elif method == "swaligned":                        
 ##                                 seq1.useSegment( cds1[e1-1].mGenomeTo + 1, cds1[e1].mGenomeFrom )
 ##                                 seq2.useSegment( cds2[e2-1].mGenomeTo + 1, cds2[e2].mGenomeFrom )
-##                                 alignlib.performIterativeAlignment( map_intron_a2b, seq1, seq2, alignator_sw, param_min_score_sw )
+##                                 alignlib_lite.performIterativeAlignment( map_intron_a2b, seq1, seq2, alignator_sw, param_min_score_sw )
 ##                                 seq1.useFullLength()
 ##                                 seq2.useFullLength()
 ##                             else:
@@ -652,7 +652,7 @@ def WriteExons( token1, peptide1, cds1, transcript1,
 ##                                     ali1, ali2 = Alignlib.writeAlignmentCompressed( map_intron_a2b )
 ##                                 else:
 ##                                     data = map(lambda x: x.split("\t"),
-##                                                alignlib.writePairAlignment( seq1, seq2, map_intron_a2b  ).split("\n"))
+##                                                alignlib_lite.writePairAlignment( seq1, seq2, map_intron_a2b  ).split("\n"))
 ##                                     if len(data) < 2:
 ##                                         data=[ ( 0, "", 0), (0, "", 0)]
 ##                                     from1, ali1, to1 = data[0]
@@ -688,7 +688,7 @@ def WriteExons( token1, peptide1, cds1, transcript1,
 ##             ## Write full alignment without gaps.
 ##             ## This will not care about exon boundaries and gaps.
 ##             data = map(lambda x: x.split("\t"), 
-##                        alignlib.writePairAlignment( seq1, seq2, dna_map_a2b  ).split("\n"))
+##                        alignlib_lite.writePairAlignment( seq1, seq2, dna_map_a2b  ).split("\n"))
             
 ##             try:
 ##                 from1, s1, to1, from2, s2, to2 = data[0] + data[1]
@@ -724,7 +724,7 @@ def WriteExons( token1, peptide1, cds1, transcript1,
 ##         elif method == "full":
 ##             ## write full alignment (do not care about exon boundaries)
 ##             data = map(lambda x: x.split("\t"), 
-##                        alignlib.writePairAlignment( seq1, seq2, dna_map_a2b  ).split("\n"))
+##                        alignlib_lite.writePairAlignment( seq1, seq2, dna_map_a2b  ).split("\n"))
 ##             if len(data) < 2: data=[ ( 0, "", 0), (0, "", 0)]
 ##             print "exon\tfull\t%s\t%i\t%s\t%i\t%s\t%s\t%s\t%s\t%s\t%s" % ( token1, 0,
 ##                                                                            token2, 0,
@@ -760,14 +760,14 @@ def GetOrthologTranscripts( transcripts1, peptides1, cds1,
     implementation instead. Assign as much as possible according to descending weights.
     """
     
-    alignator = alignlib.makeAlignatorDPFull( alignlib.ALIGNMENT_LOCAL, -10.0, -2.0 )
+    alignator = alignlib_lite.makeAlignatorDPFull( alignlib_lite.ALIGNMENT_LOCAL, -10.0, -2.0 )
 
     # for long sequence: use dot alignment with tuple size of three
-    dottor = alignlib.makeAlignatorTuples( 3 )
-    alignator_dots = alignlib.makeAlignatorDotsSquared( param_gop, param_gep , dottor)
+    dottor = alignlib_lite.makeAlignatorTuples( 3 )
+    alignator_dots = alignlib_lite.makeAlignatorDotsSquared( param_gop, param_gep , dottor)
 
-    seqs1 = map( lambda x: alignlib.makeSequence(peptides1[x[0]]), transcripts1)
-    seqs2 = map( lambda x: alignlib.makeSequence(peptides2[x[0]]), transcripts2)
+    seqs1 = map( lambda x: alignlib_lite.makeSequence(peptides1[x[0]]), transcripts1)
+    seqs2 = map( lambda x: alignlib_lite.makeSequence(peptides2[x[0]]), transcripts2)
 
     if param_loglevel >= 4:
         print "# building sequence 1"
@@ -811,7 +811,7 @@ def GetOrthologTranscripts( transcripts1, peptides1, cds1,
         
         for j in range( len(seqs2) ):
             prediction_id2, sbjct_token2, sbjct_strand2, sbjct_from2, sbjct_to2 = transcripts2[j]            
-            map_a2b = alignlib.makeAlignmentVector()
+            map_a2b = alignlib_lite.makeAlignmentVector()
 
             m = seqs1[i].getLength() * seqs2[j].getLength()
 
@@ -907,7 +907,7 @@ def GetOrthologTranscripts( transcripts1, peptides1, cds1,
                       "mapped=", mapped_boundaries, \
                       "reference=",reference_boundaries
                 
-                print "#", string.join( map(str, (alignlib.AlignmentFormatEmissions( map_a2b ),
+                print "#", string.join( map(str, (alignlib_lite.AlignmentFormatEmissions( map_a2b ),
                                                   map_a2b.getNumGaps(), coverage_a, coverage_b)), "\t" )
                 sys.stdout.flush()
                 
@@ -1266,7 +1266,7 @@ def main( argv = None ):
             print "# reading has finished."
             sys.stdout.flush()
 
-        alignator = alignlib.makeAlignatorDPFull( alignlib.ALIGNMENT_LOCAL, -10.0, -2.0 )
+        alignator = alignlib_lite.makeAlignatorDPFull( alignlib_lite.ALIGNMENT_LOCAL, -10.0, -2.0 )
 
         for q1, q2 in pairs:
 
@@ -1276,11 +1276,11 @@ def main( argv = None ):
                 print "# processing %s and %s" % (q1, q2)
                 
             if q1 in transcripts1 and q2 in transcripts2:
-                map_a2b = alignlib.makeAlignmentVector()
+                map_a2b = alignlib_lite.makeAlignmentVector()
                 
                 alignator.align( map_a2b, 
-                                 alignlib.makeSequence( peptides1[q1]),
-                                 alignlib.makeSequence( peptides2[q2]) )
+                                 alignlib_lite.makeSequence( peptides1[q1]),
+                                 alignlib_lite.makeSequence( peptides2[q2]) )
 
                 if map_a2b.getLength() == 0:
                     if param_loglevel >= 1:

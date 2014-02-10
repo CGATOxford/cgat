@@ -43,6 +43,6 @@ Diagnostic plots
 
 .. report:: Tracker.TrackerImages 
    :render: gallery-plot    
-   :tracker: deseq.dir/*.png
+   :glob: edger.dir/*.png
    
    Diagnostic plots from the EdgeR analysis

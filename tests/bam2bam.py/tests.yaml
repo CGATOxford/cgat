@@ -4,3 +4,27 @@ version:
     outputs: [stdout]
     references: []
     options: --version
+
+strip_sequence:
+    stdin: paired.bam
+    outputs: [stdout]
+    references: [strip_sequence.bam]
+    options: -v 0 --strip=sequence
+
+strip_quality:
+    stdin: paired.bam
+    outputs: [stdout]
+    references: [strip_quality.bam]
+    options: -v 0 --strip=quality
+
+strip_match:
+    stdin: paired.bam
+    outputs: [stdout]
+    references: [strip_match.bam]
+    options: -v 0 --strip=match
+  
+unstrip:
+    stdin: strip_quality.bam
+    outputs: [stdout]
+    references: [paired.bam]
+    options: -v 0 --unstrip --fastq1=<DIR>/paired.fastq.1.gz --fastq2=<DIR>/paired.fastq.2.gz

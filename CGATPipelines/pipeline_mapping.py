@@ -211,6 +211,8 @@ import CGATPipelines.PipelineGeneset as PipelineGeneset
 import CGATPipelines.PipelineMapping as PipelineMapping
 import CGATPipelines.PipelineRnaseq as PipelineRnaseq
 import CGATPipelines.PipelineMappingQC as PipelineMappingQC
+import CGATPipelines.PipelinePublishing as PipelinePublishing
+
 import CGAT.Stats as Stats
 
 ###################################################
@@ -801,6 +803,48 @@ def mapReadsWithTophat( infiles, outfile ):
     statement = m.build( (infile,), outfile ) 
     P.run()
 
+@active_if( SPLICED_MAPPING )
+@follows( mkdir("tophat2.dir" ) )
+@transform( SEQUENCEFILES,
+            SEQUENCEFILES_REGEX,
+            add_inputs( buildJunctions, buildReferenceTranscriptome ), 
+            r"tophat2.dir/\1.tophat2.bam" )
+def mapReadsWithTophat2( infiles, outfile ):
+    '''map reads from .fastq or .sra files.
+
+    A list with known splice junctions is supplied.
+
+    If tophat fails with an error such as::
+
+       Error: segment-based junction search failed with err =-6
+       what():  std::bad_alloc
+ 
+    it means that it ran out of memory.
+
+    '''
+    job_options= "-pe dedicated %i -R y" % PARAMS["tophat_threads"]
+
+    if "--butterfly-search" in PARAMS["tophat_options"]:
+        # for butterfly search - require insane amount of
+        # RAM.
+        job_options += " -l mem_free=50G"
+    else:
+        job_options += " -l mem_free=%s" % PARAMS["tophat_memory"]
+
+    to_cluster = True
+    m = PipelineMapping.Tophat( executable = P.substituteParameters( **locals() )["tophat_executable"],
+                                strip_sequence = PARAMS["strip_sequence"] )
+    infile, reffile, transcriptfile = infiles
+    tophat_options = PARAMS["tophat_options"] + " --raw-juncs %(reffile)s " % locals()
+    
+    # Nick - added the option to map to the reference transcriptome first (built within the pipeline)
+    if PARAMS["tophat_include_reference_transcriptome"]:
+        prefix = os.path.abspath( P.snip( transcriptfile, ".fa" ) )
+        tophat_options = tophat_options + " --transcriptome-index=%s -n 2" % prefix
+
+    statement = m.build( (infile,), outfile ) 
+    P.run()
+
 ############################################################
 ############################################################
 ############################################################
@@ -950,6 +994,7 @@ def buildSTARStats( infiles, outfile ):
         for line in IOTools.openFile( fn ):
             if not "|" in line: continue
             header, value = line.split("|")
+            header = re.sub( "%", "percent", header )
             data[header.strip()].append( value.strip() )
     
     keys = data.keys()
@@ -1070,6 +1115,7 @@ def mapReadsWithStampy( infile, outfile ):
 
 MAPPINGTARGETS = []
 mapToMappingTargets = { 'tophat': (mapReadsWithTophat, loadTophatStats),
+                        'tophat2': (mapReadsWithTophat2,),
                         'bowtie': (mapReadsWithBowtie,),
                         'bwa': (mapReadsWithBWA,),
                         'stampy': (mapReadsWithStampy,),
@@ -1077,9 +1123,10 @@ mapToMappingTargets = { 'tophat': (mapReadsWithTophat, loadTophatStats),
                         'gsnap' : (mapReadsWithGSNAP,),
                         'star' : (mapReadsWithSTAR,loadSTARStats),
                         }
+
 for x in P.asList( PARAMS["mappers"]):
     MAPPINGTARGETS.extend( mapToMappingTargets[x] )
-        
+
 @follows( *MAPPINGTARGETS )
 def mapping(): pass
 
@@ -1090,9 +1137,10 @@ if "merge_pattern_input" in PARAMS and PARAMS["merge_pattern_input"]:
     if "merge_pattern_output" not in PARAMS or not PARAMS["merge_pattern_output"]:
         raise ValueError("no output pattern 'merge_pattern_output' specificied")
     @collate( MAPPINGTARGETS, 
-              regex( "%s.([^.]+).bam" % PARAMS["merge_pattern_input"] ),
+              regex( "%s\.([^.]+).bam" % PARAMS["merge_pattern_input"].strip() ),
               # the last expression counts number of groups in pattern_input
-              r"%s.\%i.bam" % (PARAMS["merge_pattern_output"], PARAMS["merge_pattern_input"].count("(")+1),
+              r"%s.\%i.bam" % (PARAMS["merge_pattern_output"].strip(), 
+                               PARAMS["merge_pattern_input"].count("(")+1),
               )
     def mergeBAMFiles( infiles, outfile ):
         '''merge BAM files from the same experiment.'''
@@ -1372,15 +1420,15 @@ def loadContextStats( infiles, outfile ):
     P.run()
     
     dbhandle = sqlite3.connect( PARAMS["database"] )
-    
-    cc = Database.executewait( dbhandle, '''ALTER TABLE %(tablename)s ADD COLUMN mapped INTEGER''' % locals())
-    statement = '''UPDATE %(tablename)s SET mapped = 
-                                       (SELECT b.alignments_mapped FROM bam_stats AS b 
-                                            WHERE %(tablename)s.track = b.track)''' % locals()
-
-    cc = Database.executewait( dbhandle, statement )
-    dbhandle.commit()
-
+ 
+# The following is not necessary any more as context stats now also outputs a "total" column   
+#    cc = Database.executewait( dbhandle, '''ALTER TABLE %(tablename)s ADD COLUMN mapped INTEGER''' % locals())
+#    statement = '''UPDATE %(tablename)s SET mapped = 
+#                                       (SELECT b.alignments_mapped FROM bam_stats AS b 
+#                                            WHERE %(tablename)s.track = b.track)''' % locals()#
+#
+#    cc = Database.executewait( dbhandle, statement )
+#    dbhandle.commit()
 
 ###################################################################
 ###################################################################
@@ -1448,8 +1496,6 @@ def buildTranscriptLevelReadCounts( infiles, outfile):
     '''count reads falling into transcripts of protein coding 
        gene models.
        
-    Data is not computed for tracks in transcripts.dir.
-
     .. note::
        In paired-end data sets each mate will be counted. Thus
        the actual read counts are approximately twice the fragment
@@ -1458,10 +1504,6 @@ def buildTranscriptLevelReadCounts( infiles, outfile):
     '''
     infile, genesets = infiles[0],infiles[1:]
     
-    if "transcriptome.dir" in infile:
-        P.touch()
-        return
-
     to_cluster = True
     statements = []
     
@@ -1488,9 +1530,11 @@ def buildTranscriptLevelReadCounts( infiles, outfile):
         statements.append(statement)
 
     P.run()
+
 #########################################################################
 @active_if( SPLICED_MAPPING )
-@collate(buildTranscriptLevelReadCounts, regex("(.+)\..+\.transcript_counts.tsv.gz"),
+@collate(buildTranscriptLevelReadCounts, 
+         regex("(.+)\..+\.transcript_counts.tsv.gz"),
          r"\1.transcript_counts.tsv.gz")
 def collateTranscriptCounts(infiles,outfile):
     ''' pull together the transcript counts over each chromosome '''
@@ -1772,8 +1816,11 @@ def publish():
         }
 
     # publish web pages
+    E.info( "publishing report")
     P.publish_report( export_files = export_files)
 
+    E.info( "publishing UCSC data hub" )
+    PipelinePublishing.publish_tracks( export_files )
 
 if __name__== "__main__":
     sys.exit( P.main(sys.argv) )

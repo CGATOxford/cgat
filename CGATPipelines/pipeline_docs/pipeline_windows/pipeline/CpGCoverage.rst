@@ -1,6 +1,45 @@
-===========
-CpGCoverage
-===========
+============
+CpG analysis
+============
+
+.. _CpGEnrichment:
+
+CpG Enrichment
+==============
+
+The following plot shows the distribution of percentage CpG in
+regions covered by reads in the individual data tracks.
+
+.. report:: CpGCoverage.CpGDistribution
+   :render: line-plot
+   :transform: histogram
+   :tf-aggregate: normalized-total
+   :xrange: 0,0.2
+   :as-lines:
+   :split-at: 10
+   :split-always: genomic
+   :xtitle: CpG content / %
+   :layout: column-2
+
+   Distribution of CpG in regions covered by reads
+
+.. report:: CpGCoverage.CpGDistribution
+   :render: line-plot
+   :transform: histogram
+   :tf-aggregate: normalized-total,cumulative
+   :xrange: 0,0.2
+   :as-lines:
+   :split-at: 10
+   :split-always: genomic
+   :xtitle: CpG content / %
+   :layout: column-2
+
+   Cumulative distribution of CpG in regions covered by reads
+
+.. _CpGCoverage:
+
+CpG coverage
+============
 
 This section displays the coverage of CpG dinucleotides by reads
 within the read data.
@@ -12,6 +51,8 @@ within the read data.
    :yrange: 0,1
    :tf-aggregate: normalized-total,cumulative
    :xtitle: read depth
+   :split-at: 10
+   :layout: column-2
 
    Cumulative plot of coverage of CpG dinucleotides with 
    reads.
@@ -39,4 +80,5 @@ within protein coding sequence and within repeats.
    :transpose:
 
    Number of CpG dinucleotides in different genomic regions.
+
 

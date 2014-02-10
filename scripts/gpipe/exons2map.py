@@ -87,7 +87,7 @@ param_filename_contigs = None
 import CGAT.Experiment as E
 import CGAT.PredictionParser as PredictionParser
 import CGAT.Exons as Exons
-import alignlib
+import alignlib_lite
 
 
 def main( argv = None ):
@@ -132,7 +132,7 @@ def main( argv = None ):
             sbjct_token, size = line[:-1].split("\t")[:2]
             contig_sizes[sbjct_token] = int(size)
     
-    map_prediction2genome = alignlib.makeAlignmentSet()
+    map_prediction2genome = alignlib_lite.makeAlignmentSet()
     nexons, npairs = 0, 0
     
     for line in sys.stdin:
@@ -150,7 +150,7 @@ def main( argv = None ):
         if last_exon.mQueryToken != this_exon.mQueryToken:
 
             if last_exon.mQueryToken:
-                f = alignlib.AlignmentFormatEmissions( map_prediction2genome )
+                f = alignlib_lite.AlignmentFormatEmissions( map_prediction2genome )
                 print string.join( map(str, (last_exon.mQueryToken,
                                              last_exon.mSbjctToken,
                                              last_exon.mSbjctStrand,
@@ -159,14 +159,14 @@ def main( argv = None ):
                 npairs += 1                
             map_prediction2genome.clear()
             
-        alignlib.addDiagonal2Alignment( map_prediction2genome,
+        alignlib_lite.addDiagonal2Alignment( map_prediction2genome,
                                        this_exon.mPeptideFrom + 1,
                                        this_exon.mPeptideTo + 1,
                                        this_exon.mGenomeFrom  - this_exon.mPeptideFrom)
 
         last_exon = this_exon
         
-    f = alignlib.AlignmentFormatEmissions( map_prediction2genome )    
+    f = alignlib_lite.AlignmentFormatEmissions( map_prediction2genome )    
     print string.join( map(str, (last_exon.mQueryToken, 
                                  last_exon.mSbjctToken,
                                  last_exon.mSbjctStrand,

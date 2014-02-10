@@ -57,12 +57,22 @@ The script implements the following methods:
    remove alignments based on a variety of flags.
 
 ``strip`` 
-   remove the sequence and/or quality scores from a bam-file
+   remove the sequence and/or quality scores from all reads in
+   a bam-file. If ``match``, sequence and quality are stripped 
+   for alignments without mismatches. The latter requires the
+   ``NM`` tag. If not present, nothing will be stripped. Note 
+   that stripping is not reversible if the read names are not
+   unique.
 
 ``set-sequence``
    set the sequence and quality scores in the bam file to some 
    dummy sequence. Necessary for some tools that can not work
    with bam-files without sequence.
+
+``unstrip``
+   add sequence and quality scores back to a bam file. The
+   argument to this option is a :term:`fastq` formatted file
+   with the sequences and quality scores to insert.
 
 By default, the script works from stdin and outputs to stdout.
 If the ``--inplace option`` is given, the script will modify
@@ -120,9 +130,12 @@ def main( argv = None ):
                        "[%default]" )
 
     parser.add_option( "--strip", dest="strip", type="choice",
-                       choices = ("sequence", "quality" ),
+                       choices = ("sequence", "quality", "match" ),
                        help = "remove parts of the bam-file. Note that stripping the sequence will "
                        "also strip the quality values [%default]" )
+
+    parser.add_option( "--unstrip", dest="unstrip", action="store_true",
+                       help = "add sequence and quality into bam file [%default]" )
 
     parser.add_option( "--filter", dest="filter", action="append", type="choice",
                        choices=('NM', 'CM', 'mapped', 'unique', "non-unique" ),
@@ -139,6 +152,13 @@ def main( argv = None ):
                        help = "modify bam files in-place. Bam files need to be given "
                        "as arguments. Temporary bam files are written to /tmp [%default]" )
 
+    parser.add_option( "--fastq1", "-1", dest="fastq_pair1", type="string",
+                       help = "fastq file with read information for first in pair or unpaired [%default]" )
+
+    parser.add_option( "--fastq2", "-2", dest="fastq_pair2", type="string",
+                       help = "fastq file with read information for second in pair [%default]" )
+
+
     parser.set_defaults(
         filter = [],
         set_nh = False,
@@ -146,8 +166,11 @@ def main( argv = None ):
         output_sam = False,
         reference_bam = None,
         strip = None,
+        unstrip = None,
         set_sequence = False,
         inplace = False,
+        fastq_pair1 = None,
+        fastq_pair2 = None,
         )
 
     ## add common options (-h/--help, ...) and parse command line 
@@ -165,6 +188,8 @@ def main( argv = None ):
 
     for bamfile in bamfiles:
 
+        E.info('processing %s' % bamfile )
+
         # reading bam from stdin does not work with only the "r" tag
         pysam_in = pysam.Samfile( bamfile, "rb" )
 
@@ -177,7 +202,7 @@ def main( argv = None ):
             tmpfile = tempfile.NamedTemporaryFile( delete=False, prefix = "ctmp" )
             tmpfile.close()
 
-            E.debug("writting temporary bam-file to %s" % tmpfile.name )
+            E.debug("writing temporary bam-file to %s" % tmpfile.name )
             pysam_out = pysam.Samfile( tmpfile.name, "wb", template = pysam_in )
 
         if options.filter:
@@ -256,15 +281,64 @@ def main( argv = None ):
                         read.seq = None
                         yield read
 
-                def strip_quality( read ):
+                def strip_quality( i ):
                     for read in i:
                         read.qual = None
+                        yield read
+
+                def strip_match( i ):
+                    for read in i:
+                        try:
+                            nm = read.opt( 'NM' )
+                        except KeyError:
+                            nm = 1
+                        if nm == 0:
+                            read.seq = None
                         yield read
 
                 if options.strip == "sequence":
                     it = strip_sequence( it )
                 elif options.strip == "quality":
                     it = strip_quality( it )
+                elif options.strip == "match":
+                    it = strip_match( it )
+
+            if options.unstrip:
+                def buildReadDictionary( filename ):
+                    if not os.path.exists( filename ):
+                        raise OSError( "file not found: %s" % filename )
+                    fastqfile = pysam.Fastqfile( filename )
+                    fastq2sequence = {}
+                    for x in fastqfile:
+                        if x.name in fastq2sequence: 
+                            raise ValueError("read %s duplicate - can not unstrip" % x.name )
+
+                        fastq2sequence[x.name] = (x.sequence, x.quality )
+                    return fastq2sequence
+            
+                if not options.fastq_pair1:
+                    raise ValueError("please supply fastq file(s) for unstripping")
+                fastq2sequence1 = buildReadDictionary( options.fastq_pair1 )
+                if options.fastq_pair2:
+                    fastq2sequence2 = buildReadDictionary( options.fastq_pair2 )
+                    
+                def unstrip_unpaired( i ):
+                    for read in i:
+                        read.seq, read.qual = fastq2sequence1[read.qname]
+                        yield read
+                
+                def unstrip_pair( i ):
+                    for read in i:
+                        if read.is_read1:
+                            read.seq, read.qual = fastq2sequence1[read.qname]
+                        else: 
+                            read.seq, read.qual = fastq2sequence2[read.qname]
+                        yield read
+
+                if options.fastq_pair2:
+                    it = unstrip_pair( it )
+                else:
+                    it = unstrip_unpaired( it )
 
             if options.set_nh:
                 it = _bam2bam.SetNH( it )

@@ -229,3 +229,31 @@ if __name__ == "__main__":
     print x.maskSequences( ("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
                             "GGGGGGGGGG", ) )
         
+def maskSequences( sequences, masker = None):
+    '''return a list of masked sequence.
+
+    *masker* can be one of
+        dust/dustmasker * run dustmasker on sequences
+        softmask        * use softmask to hardmask sequences
+    '''
+
+    if masker in ("dust", "dustmasker"):
+        masker_object = MaskerDustMasker()
+    else:
+        masker_object = None
+
+    if masker == "softmask":
+        # the genome sequence is repeat soft-masked
+        masked_seq = sequences
+    elif masker in ("dust", "dustmasker"):
+        # run dust
+        masked_seq = masker_object.maskSequences( [ x.upper() for x in sequences ] )
+    elif masker == None:
+        masked_seq = [x.upper() for x in sequences ]
+    else:
+        raise ValueError("unknown masker %s" % masker )
+
+    # hard mask softmasked characters
+    masked_seq = [re.sub( "[a-z]","N", x) for x in masked_seq ]
+
+    return masked_seq

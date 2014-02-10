@@ -785,12 +785,8 @@ def iterate( infile ):
             DATA = collections.namedtuple( "DATA", header )
             continue
 
-        print DATA
-        print line[:-1].split()
         result = DATA( *line[:-1].split() )
 
         yield result
-
-
 
 

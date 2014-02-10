@@ -31,10 +31,11 @@ data_dir = os.path.abspath('..')
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.todo', 'sphinx.ext.coverage', 'sphinx.ext.pngmath', 'sphinx.ext.ifconfig',
-              'SphinxReport.only_directives', 
-	      'SphinxReport.report_directive', 
-	      'SphinxReport.roles',
+extensions = ['sphinx.ext.autodoc', 
+              'sphinx.ext.todo', 
+              'sphinx.ext.coverage', 
+              'sphinx.ext.pngmath', 
+              'sphinx.ext.ifconfig',
 	      'sphinx.ext.inheritance_diagram',
 	      'sphinxcontrib.programoutput',
 	      'sphinx.ext.intersphinx' ]
@@ -61,7 +62,7 @@ source_suffix = '.rst'
 #source_encoding = 'utf-8'
 
 # The master toctree document.
-master_doc = 'contents'
+master_doc = 'index'
 
 # General information about the project.
 project = u'CGAT'
@@ -74,19 +75,22 @@ rst_epilog='''
 .. _pysam: http://code.google.com/p/pysam/
 .. _samtools: http://samtools.sourceforge.net/
 .. _tabix: http://samtools.sourceforge.net/tabix.shtml/
-.. _galaxy: https://main.g2.bx.psu.edu/
+.. _Galaxy: https://main.g2.bx.psu.edu/
 .. _cython: http://cython.org/
+.. _python: http://python.org/
 .. _pyximport: http://www.prescod.net/pyximport/
 .. _sphinx: http://sphinx-doc.org/
 .. _ruffus: http://www.ruffus.org.uk/
 .. _sphinxreport: http://code.google.com/p/sphinx-report/
 .. _sqlite: http://www.sqlite.org/
 .. _make: http://www.gnu.org/software/make
-.. _ucsc: http://genome.ucsc.edu
+.. _UCSC: http://genome.ucsc.edu
 .. _mysql: https://mariadb.org/
 .. _postgres: http://www.postgresql.org/
 .. _bedtools: http://bedtools.readthedocs.org/en/latest/
 .. _UCSC Tools: http://genome.ucsc.edu/admin/git.html
+.. _git: http://git-scm.com/
+.. _sge: http://wikis.sun.com/display/GridEngine/Home
 '''
 
 sys.path.insert( 0, "../scripts")

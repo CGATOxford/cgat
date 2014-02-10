@@ -277,6 +277,7 @@ def readAndCollapseTable( infile, options, missing_value = "" ):
     row_names = set( [ x[0] for x in table ] )
 
     row_name, value = table[0]
+
     values[row_name].append( value )
     added = set( [ row_name ])
     for row_name, value in table[1:]:
@@ -657,6 +658,9 @@ def main( argv = None ):
         table = [ list(x) for x in table]
 
         ncols = len(fields)
+        if len(table) == 0:
+            raise ValueError( "table is empty" )
+            
         nrows = len(table[0])
 
         E.info( "processing table with %i rows and %i columns" % (nrows, ncols) )

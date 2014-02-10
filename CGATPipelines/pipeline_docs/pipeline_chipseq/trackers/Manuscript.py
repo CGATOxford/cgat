@@ -2,11 +2,8 @@ import os, sys, re, types, itertools
 import matplotlib.pyplot as plt
 import numpy
 import numpy.ma
-import Stats
-import Histogram
 
-from SphinxReport.Tracker import *
-from ChipseqReport import DefaultTracker
+from ChipseqReport import *
 
 class ReproducibilityBetweenSamples( DefaultTracker ):
 

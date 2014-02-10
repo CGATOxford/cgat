@@ -65,7 +65,7 @@ import optparse
 import bisect
 
 import CGAT.Genomics as Genomics
-import alignlib
+import alignlib_lite
 
 USAGE="""python %s file1 file2
 
@@ -386,8 +386,8 @@ def main( argv = None ):
             nmapped += 1
             if last_sbjct_token != entry.mSbjctToken:
                 old_from, old_ali, new_from, new_ali = map_sbjcts[entry.mSbjctToken]
-                map_a2b = alignlib.makeAlignmentVector()
-                alignlib.AlignmentFormatExplicit(
+                map_a2b = alignlib_lite.makeAlignmentVector()
+                alignlib_lite.AlignmentFormatExplicit(
                     int(old_from), old_ali,
                     int(new_from), new_ali).copy( map_a2b )
                 

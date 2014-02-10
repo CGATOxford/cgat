@@ -2,6 +2,22 @@
 Release Notes
 =============
 
+The code collection is under continuous improvement and the 
+latest code can always be found in the code repository.
+Nevertheless, we occasionally prepare releases. Notes on
+each release are below.
+
+Release 0.2
+===========
+
+* release for CGAT manuscript - fixed various installation issues
+
+Release 0.1.9
+=============
+
+* alignlib incompatibility fixed
+* various bugfixes
+
 Release 0.1.8
 =============
 

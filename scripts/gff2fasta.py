@@ -42,7 +42,7 @@ import CGAT.Genomics as Genomics
 import CGAT.AGP as AGP
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Intervals as Intervals
-
+import CGAT.Masker as Masker
 import bx.intervals.io
 import bx.intervals.intersection
 
@@ -93,6 +93,10 @@ def main( argv = None ):
 
     parser.add_option( "--extend-by", dest="extend_by", type="int",
                        help="extend by # bases [default=%default]" )
+    
+    parser.add_option( "--masker", dest="masker", type="choice",
+                      choices= ("dust", "dustmasker", "softmask", "none" ),
+                      help="apply masker [%default]."  )
 
     parser.set_defaults(
         is_gtf = False,
@@ -105,6 +109,7 @@ def main( argv = None ):
         max_length = 0,
         extend_at = None,
         extend_by = 100,
+        masker= None
         )
 
     (options, args) = E.Start( parser )
@@ -216,6 +221,8 @@ def main( argv = None ):
             out.reverse()
 
         s = [ fasta.getSequence( contig, strand, start, end ) for start,end in intervals ]
+        #IMS: allow for masking of sequences
+        s = Masker.maskSequences(s,options.masker)
         l = sum( [len(x) for x in s ] )
         if l < options.min_length or (options.max_length and l > options.max_length):
             nskipped_length += 1

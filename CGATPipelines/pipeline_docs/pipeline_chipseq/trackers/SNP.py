@@ -1,15 +1,4 @@
-import os, sys, re, types, itertools, subprocess
-import matplotlib.pyplot as plt
-import numpy
-import numpy.ma
-import Stats
-import Histogram
-
-
-from SphinxReport.Tracker import *
-from SphinxReport.odict import OrderedDict as odict
-
-import ChipseqReport
+from ChipseqReport import *
 
 # for trackers_derived_sets and trackers_master
 if not os.path.exists("conf.py"):

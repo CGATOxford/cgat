@@ -15,19 +15,23 @@ for example binding intervals from a ChIP-Seq experiment. Using a collection
 of aligned reads is a :term:`bam` formatted file, the script outputs a collection
 of features describing the peak shape.
 
-This script is designed with a slight emphasis on ChIP-Seq datasets. For example,
-for the purpose of visualizing binding profiles of transcription factors
-ChIP-Seq purely based on the peaks regions defined by MACS, and without the need to use any genomic
-annotations (e.g. ENSEMBL, refseq). The reason is that, bam2peakshape.py is able to
-center the counting window at the summit of every individual peak. bam2peakshape.py is also able
-to: (1) plot the control RNA-Seq library to enable side-by-side comparison of treatment vs control;
-(2) randomly shift the set of input resions to generate a background set of regions in order to
-provide a peaks profile that can be used as the control.
+This script is designed with a slight emphasis on ChIP-Seq datasets.
+The main reason that bam2peakshape.py is better suited for ChIP-Seq is that: 
+(1) It is able to center the counting window at the summit of every individual peak;
+(2) bam2peakshape.py is also able to use the control ChIP-Seq library to enable 
+side-by-side comparison of treatment vs control;
+(3) It can randomly shift the set of input regions to generate a background 
+set of regions in order to provide a peaks profile that can be used as the 
+control.
+For example, given the peaks regions defined by analyzing some ChIP-Seq dataset
+(e.g. by using MACS), and without using any additional genomic annotations 
+(e.g. ENSEMBL, refseq), we can visualise the binding profiles of transcription 
+factors ChIP-Seq data relative to the center of the peak regions.
 
-Alternatively,  you may also consider using :doc:`bam2geneprofile`, which is
-designed with a slight emphasis on RNA-Seq datasets, which takes care of spliced reads,
-by using the CIGAR string in the BAM file to accurately define the covered bases (when
-the --base-accurate-off is not specified, currently it is not specified by default).
+Alternatively, you may consider using :doc:`bam2geneprofile`, which is
+designed with a slight emphasis on analysing RNA-Seq datasets. Because it takes 
+care of spliced reads by using the CIGAR string in the BAM file to accurately
+count the covered bases (when the --base-accurate is specified).
 
 The script outputs a tab-separated table on stdout containing features for each interval.
 A peak is defined as the location of the highest density in an interval. The width of 
@@ -350,11 +354,6 @@ def buildResults( bedfile, fg_file, control_file, counter, options ):
 
     E.info( "interval processing: %s" % c )
 
-    if c.input == 0:
-        E.warn( "no data - no output" )
-        E.Stop()
-        return
-    
     return result, bins
 
 def main( argv = None ):

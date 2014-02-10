@@ -1,8 +1,6 @@
 import os, sys, re, types, itertools, math
 import numpy
 import numpy.ma
-import Stats
-import Histogram
 import xml.etree.ElementTree
 
 from IntervalReport import *

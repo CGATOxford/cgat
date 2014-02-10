@@ -331,16 +331,16 @@ PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],
 ###################################################################
 import CGATPipelines.PipelineTracks as PipelineTracks
 
+Sample = PipelineTracks.AutoSample
+
 # collect sra nd fastq.gz tracks
-TRACKS = PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
+TRACKS = PipelineTracks.Tracks( Sample ).loadFromDirectory( 
     glob.glob( "*.bam" ), "(\S+).bam" )
 
-ALL = PipelineTracks.Sample3()
+# group by experiment (assume that last field is a replicate identifier)
 EXPERIMENTS = PipelineTracks.Aggregate( TRACKS, labels = ("condition", "tissue" ) )
-CONDITIONS = PipelineTracks.Aggregate( TRACKS, labels = ("condition", ) )
-TISSUES = PipelineTracks.Aggregate( TRACKS, labels = ("tissue", ) )
 
-GENESETS = PipelineTracks.Tracks( PipelineTracks.Sample ).loadFromDirectory( 
+GENESETS = PipelineTracks.Tracks( Sample ).loadFromDirectory( 
     glob.glob( "*.gtf.gz" ), "(\S+).gtf.gz" )
 
 ###################################################################
@@ -419,70 +419,19 @@ def loadGeneSetGeneInformation( infile, outfile ):
     PipelineGeneset.loadGeneStats( infile, outfile )
 
 #########################################################################
-#########################################################################
-#########################################################################
 @follows( mkdir( "fpkm.dir"  ) )
 @files( [ (x, os.path.join( "fpkm.dir",y)) for x,y in TARGETS_FPKM ] )
 def runCufflinks(infiles, outfile):
-    '''estimate expression levels in each set.
-    '''
+    '''estimate expression levels in each set using cufflinks.'''
+    PipelineRnaseq.runCufflinks( infiles, outfile )
 
-    gtffile, bamfile = infiles
-    to_cluster = True
- 
-    job_options= "-pe dedicated %i -R y" % PARAMS["cufflinks_threads"]
-
-    track = os.path.basename( P.snip( gtffile, ".gtf.gz" ) )
-    
-    tmpfilename = P.getTempFilename( "." )
-    if os.path.exists( tmpfilename ):
-        os.unlink( tmpfilename )
-
-    gtffile = os.path.abspath( gtffile )
-    bamfile = os.path.abspath( bamfile )
-    outfile = os.path.abspath( outfile )
-
-    # note: cufflinks adds \0 bytes to gtf file - replace with '.'
-    # increase max-bundle-length to 4.5Mb due to Galnt-2 in mm9 with a 4.3Mb intron.
-    statement = '''mkdir %(tmpfilename)s; 
-    cd %(tmpfilename)s; 
-    cufflinks --label %(track)s      
-              --GTF <(gunzip < %(gtffile)s)
-              --num-threads %(cufflinks_threads)i
-              --frag-bias-correct %(bowtie_index_dir)s/%(genome)s.fa
-              --library-type %(cufflinks_library_type)s
-              %(cufflinks_options)s
-              %(bamfile)s 
-    >& %(outfile)s;
-    perl -p -e "s/\\0/./g" < transcripts.gtf | gzip > %(outfile)s.gtf.gz;
-    gzip < isoforms.fpkm_tracking > %(outfile)s.fpkm_tracking.gz;
-    gzip < genes.fpkm_tracking > %(outfile)s.genes_tracking.gz;
-    '''
-
-    P.run()
-
-    shutil.rmtree( tmpfilename )
-
-#########################################################################
-#########################################################################
 #########################################################################
 @transform( runCufflinks,
             suffix(".cufflinks"), 
             ".load")
 def loadCufflinks( infile, outfile ):
     '''load expression level measurements.'''
-
-    track = P.snip( outfile, ".load" )
-    P.load( infile + ".genes_tracking.gz",
-            outfile = track + "_genefpkm.load",
-            options = "--index=gene_id --ignore-column=tracking_id --ignore-column=class_code --ignore-column=nearest_ref_id" )
-
-    track = P.snip( outfile, ".load" )
-    P.load( infile + ".fpkm_tracking.gz",
-            outfile = track + "_fpkm.load",
-            options = "--index=tracking_id --ignore-column=nearest_ref_id --rename-column=tracking_id:transcript_id" )
-
-    P.touch( outfile )
+    PipelineRnaseq.loadCufflinks( infile, outfile )
 
 #########################################################################
 #########################################################################
@@ -512,6 +461,9 @@ def runCuffdiff( infiles, outfile ):
                             fdr = PARAMS["cuffdiff_fdr"],
                             mask_file = mask_file )
 
+#########################################################################
+#########################################################################
+#########################################################################
 @transform( runCuffdiff, 
             suffix(".diff"), 
             "_cuffdiff.load" )
@@ -834,6 +786,31 @@ def buildGeneLevelReadCounts( infiles, outfile ):
             "_gene_counts.load" )
 def loadGeneLevelReadCounts( infile, outfile ):
     P.load( infile, outfile, options="--index=gene_id" )
+
+#########################################################################
+#########################################################################
+#########################################################################
+@collate(buildGeneLevelReadCounts, 
+         regex("gene_counts.dir/(.+)_vs_(.+).tsv.gz"),
+         r"gene_counts.dir/\2.gene_counts.tsv.gz")
+def aggregateGeneLevelReadCounts(infiles,outfile):
+    ''' build a matrix of counts with genes and tracks dimensions '''
+
+    infiles = " ".join(infiles)
+    # use anysense unique counts, needs to parameterized
+    # for stranded/unstranded rnaseq data
+    statement = '''python %(scriptsdir)s/combine_tables.py
+                                            --columns=1
+                                            --take=%(counting_type)s
+                                            --use-file-prefix
+                                            --regex-filename='(.+)_vs.+.tsv.gz'
+                                            --log=%(outfile)s.log
+                                             %(infiles)s 
+                  | sed 's/geneid/gene_id/'
+                  | gzip > %(outfile)s '''
+
+    P.run()
+
     
 #########################################################################
 #########################################################################
@@ -927,6 +904,7 @@ def buildTranscriptLevelReadCounts( infiles, outfile):
 def loadTranscriptLevelReadCounts( infile, outfile ):
     P.load( infile, outfile, options="--index=transcript_id" )
 
+
 #########################################################################
 #########################################################################
 #########################################################################
@@ -972,6 +950,7 @@ def buildFeatureCounts(infiles, outfile):
                     rm %(annotations_tmp)s '''
 
     P.run()
+
 #########################################################################
 #########################################################################
 #########################################################################
@@ -981,15 +960,13 @@ def buildFeatureCounts(infiles, outfile):
 def aggregateFeatureCounts(infiles,outfile):
     ''' build a matrix of counts with genes and tracks dimensions '''
 
-
     infiles = " ".join(infiles)
     statement = '''python %(scriptsdir)s/combine_tables.py
-                                            -c 1
-                                            -k 3
-                                            
+                                            --columns=1
+                                            --take=3
                                             --use-file-prefix
                                             --regex-filename='(.+)_vs.+.tsv.gz'
-                                            -L %(outfile)s.log
+                                            --log=%(outfile)s.log
                                              %(infiles)s 
                   | sed 's/geneid/gene_id/'
                   | gzip > %(outfile)s '''
@@ -999,12 +976,64 @@ def aggregateFeatureCounts(infiles,outfile):
 #########################################################################
 #########################################################################
 #########################################################################
-@transform(aggregateFeatureCounts, suffix(".tsv.gz"),
+@transform(aggregateFeatureCounts, 
+           suffix(".tsv.gz"),
            ".load")
 def loadFeatureCounts(infile, outfile):
     P.load(infile,outfile, "-i gene_id")
 
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( aggregateFeatureCounts,
+            suffix(".tsv.gz"),
+            "_stats.tsv" )
+def summarizeFeatureCountsAll( infile, outfile ):
+    '''perform summarization of read counts'''
 
+    prefix = P.snip(outfile, ".tsv")
+    job_options = "-l mem_free=32G"
+    statement = '''python %(scriptsdir)s/runExpression.py
+              --method=summary
+              --filename-tags=%(infile)s
+              --output-filename-pattern=%(prefix)s_
+              --log=%(outfile)s.log
+              > %(outfile)s'''
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( "design*.tsv",
+            regex( "(.*).tsv" ),
+            add_inputs( aggregateFeatureCounts ),
+            r"feature_counts.dir/\1_stats.tsv" )
+def summarizeFeatureCountsPerDesign( infiles, outfile ):
+    '''perform summarization of read counts within experiments.
+    '''
+
+    design_file, counts_file = infiles    
+    prefix = P.snip(outfile, ".tsv")
+    statement = '''python %(scriptsdir)s/runExpression.py
+              --method=summary
+              --filename-design=%(design_file)s
+              --filename-tags=%(counts_file)s
+              --output-filename-pattern=%(prefix)s_
+              --log=%(outfile)s.log
+              > %(outfile)s'''
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( (summarizeFeatureCountsAll, summarizeFeatureCountsPerDesign), 
+            suffix("_stats.tsv"), "_stats.load" )
+def loadTagCountSummary( infile, outfile ):
+    '''load windows summary.'''
+    P.load(infile, outfile )
+    P.load( P.snip(infile, ".tsv")+ "_correlation.tsv",
+            P.snip( outfile, "_stats.load") + "_correlation.load",
+            options = "--first-column=track")
 
 #########################################################################
 #IMS: switch exon counts to feature counts
@@ -1083,7 +1112,6 @@ def loadDESeqStats( infile, outfile ):
 #########################################################################
 @follows( aggregateFeatureCounts, mkdir("edger.dir") )
 @files( [ (x, os.path.join( "edger.dir", y)) for x, y in TARGETS_DE ] )
-
 def runEdgeR( infiles, outfile ):
     '''perform differential expression analysis using edger.'''
 
@@ -1152,8 +1180,18 @@ mapToTargets = { 'cuffdiff': loadCuffdiffStats,
                  }
 TARGETS_DIFFEXPRESSION = [ mapToTargets[x] for x in P.asList( PARAMS["methods"] ) ]
 
+
 @follows( *TARGETS_DIFFEXPRESSION )
 def diff_expression(): pass
+
+#########################################################################
+@follows( diff_expression )
+@merge( "*_stats.tsv", "de_stats.load" )
+def loadDEStats( infiles, outfile ):
+    '''load DE stats into table.'''
+    P.concatenateAndLoad( infiles, outfile,
+                          missing_value = 0,
+                          regex_filename = "(.*)_stats.tsv")
 
 ###################################################################
 ###################################################################

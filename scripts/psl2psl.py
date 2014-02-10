@@ -90,6 +90,7 @@ import CGAT.Stats as Stats
 import CGAT.Genomics as Genomics
 import CGAT.Blat as Blat
 import CGAT.GTF as GTF
+import CGAT.IOTools as IOTools
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.IndexedGenome as IndexedGenome
 
@@ -149,12 +150,12 @@ def iterator_psl_intervals( options ):
     """
 
     if options.filename_filter_query:
-        intervals_query = readIntervals( open(options.filename_filter_query, "r" ), options )
+        intervals_query = readIntervals( IOTools.openFile(options.filename_filter_query, "r" ), options )
     else:
         intervals_query = None
 
     if options.filename_filter_target:
-        intervals_target = readIntervals( open(options.filename_filter_target, "r" ), options )
+        intervals_target = readIntervals( IOTools.openFile(options.filename_filter_target, "r" ), options )
     else:
         intervals_target = None
         
@@ -871,6 +872,9 @@ def main( argv = None ):
 
     parser.add_option( "--threshold-merge-distance", dest="threshold_merge_distance", type="int",
                        help="distance in nucleotides at which two adjacent reads shall be merged even if they are not overlapping [%default]." )
+
+    parser.add_option("--test", dest="test", type="int",
+                      help="for debugging purposes - stop after x iterations [default=%default]."  )
 
     parser.set_defaults( filename_filter_target = None,
                          filename_filter_query = None,

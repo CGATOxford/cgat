@@ -39,6 +39,14 @@ import bisect
 import itertools
 
 import NCL as ncl
+import IOTools
+
+Headers = [
+    "contig", "start", "end",
+    "name", "score", "strand",
+    "thinkStart", "thickEnd",
+    "itemRGB", "blockCount",
+    "blockSizes", "blockStarts" ]
 
 class Bed(object):
     """an interval in bed format."""
@@ -353,3 +361,17 @@ def merge( iterator ):
         n.append( y )
 
     return n
+
+def getNumColumns( filename ):
+    '''return number of fields in bed-file by looking at the first 
+    entry.
+    
+    Returns 0 if file is empty.
+    '''
+    with IOTools.openFile( filename ) as inf:
+        for line in inf:
+            if line.startswith("#"): continue
+            if line.startswith("track"): continue
+            return len(line[:-1].split("\t"))
+    return 0
+    

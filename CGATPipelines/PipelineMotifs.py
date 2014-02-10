@@ -154,7 +154,8 @@ def exportSequencesFromBedFile( infile, outfile, masker = None, mode = "interval
 ############################################################
 ############################################################
 ############################################################
-def writeSequencesForIntervals( track, filename,
+def writeSequencesForIntervals( track, 
+                                filename,
                                 dbhandle,
                                 full = False,
                                 halfwidth = None,
@@ -163,7 +164,10 @@ def writeSequencesForIntervals( track, filename,
                                 masker = [],
                                 offset = 0,
                                 shuffled = False,
-                                min_sequences = None ):
+                                num_sequences = None,
+                                min_sequences = None,
+                                order = "peakval",
+                                shift = None ):
     '''build a sequence set for motif discovery. Intervals are taken 
     from the table <track>_intervals in the database *dbhandle* and 
     save to *filename* in :term:`fasta` format.
@@ -176,43 +180,42 @@ def writeSequencesForIntervals( track, filename,
     If *full* is set, the whole intervals will be output, otherwise
     only the region around the peak given by *halfwidth*
 
-    If *maxsize* is set, the output is truncated at *maxsize* characters.
+    If *maxsize* is set, the output is truncated at *maxsize* characters
+    in order to create jobs that take too long.
 
     If proportion is set, only the top *proportion* intervals are output
     (sorted by peakval).
+
+    If *num_sequences* is set, the first *num_sequences* will be used.
 
     *masker* can be a combination of 
         * dust, dustmasker: apply dustmasker
         * softmask: mask softmasked genomic regions
 
+    *order* is the order by which peaks should be sorted. Possible values
+    are 'peakval' (peak value, descending order), 'score' (peak score, descending order) 
+
+    If *shift* is set, intervals will be shifted. ``leftright`` creates two intervals
+    on the left and right of the actual interval. The intervals will be centered around
+    the mid-point and truncated the same way as the main intervals.
     '''
 
     fasta = IndexedFasta.IndexedFasta( os.path.join( PARAMS["genome_dir"], PARAMS["genome"] ) )
 
     cc = dbhandle.cursor()
 
-    if PARAMS["score"] == "peakval":
+    if order == "peakval":
         orderby = " ORDER BY peakval DESC"
-    elif PARAMS["score"] == "max":
+    elif order == "max":
         orderby = " ORDER BY score DESC"
-    elif PARAMS["score"] == "min":
-        orderby = " ORDER BY score ASC"
     else:
-        raise ValueError("Unknown value passed as score parameter, check your ini file")
+        raise ValueError("Unknown value passed as order parameter, check your ini file")
          
     tablename = "%s_intervals" % P.quote( track )
-    if full:
-        statement = '''SELECT start, end, interval_id, contig 
+    statement = '''SELECT contig, start, end, interval_id, peakcenter 
                        FROM %(tablename)s 
                        ''' % locals() + orderby
-    elif halfwidth:
-        statement = '''SELECT peakcenter - %(halfwidth)s, peakcenter + %(halfwidth)s,
-                       interval_id, contig 
-                       FROM %(tablename)s 
-                       ''' % locals() + orderby
-    else:
-        raise ValueError("either specify full or halfwidth" )
-    
+
     cc.execute( statement )
     data = cc.fetchall()
     cc.close()
@@ -221,18 +224,41 @@ def writeSequencesForIntervals( track, filename,
         cutoff = int(len(data) * proportion) + 1
         if min_sequences:
             cutoff = max( cutoff, min_sequences )
+    elif num_sequences:
+        cutoff = num_sequences
     else:
         cutoff = len(data)
         L.info( "writeSequencesForIntervals %s: using at most %i sequences for pattern finding" % (track, cutoff) )
+
+    data = data[:cutoff]
 
     L.info( "writeSequencesForIntervals %s: masker=%s" % (track,str(masker)))
 
     fasta = IndexedFasta.IndexedFasta( os.path.join( PARAMS["genome_dir"], PARAMS["genome"]) )
 
+    ## modify the ranges
+    if shift:
+        if shift == "leftright":
+            new_data = [ (contig, start - (end-start), start, str(interval_id) + "_left", peakcenter) \
+                             for contig, start, end, interval_id, peakcenter in data ]
+            new_data.extend( [ (contig, end, end + (end-start), str(interval_id) + "_right", peakcenter) \
+                                   for contig, start, end, interval_id, peakcenter in data ] )
+        data = new_data
+
+    if halfwidth: 
+        # center around peakcenter, add halfwidth on either side
+        data = [ (contig, peakcenter - halfwidth, peakcenter + halfwidth, interval_id) \
+                     for contig, start, end, interval_id, peakcenter in data ]
+    else:
+        # remove peakcenter
+        data = [ (contig, start, end, interval_id) \
+                     for contig, start, end, interval_id, peakcenter in data ]
+
+    ## get the sequences - cut at number of nucleotides
     sequences = []
     current_size, nseq = 0, 0
     new_data = []
-    for start, end, id, contig in data[:cutoff]:
+    for contig, start, end, interval_id in data:
         lcontig = fasta.getLength( contig )
         start, end = max(0, start + offset), min(end + offset, lcontig)
         if start >= end:
@@ -240,7 +266,7 @@ def writeSequencesForIntervals( track, filename,
             continue
         seq = fasta.getSequence( contig, "+", start, end )
         sequences.append( seq )
-        new_data.append( (start, end, id, contig) )
+        new_data.append( (start, end, interval_id, contig) )
         current_size += len(seq)
         if maxsize and current_size >= maxsize: 
             L.info( "writeSequencesForIntervals %s: maximum size (%i) reached - only %i sequences output (%i ignored)" % \
@@ -262,7 +288,8 @@ def writeSequencesForIntervals( track, filename,
     c = E.Counter()
     outs = IOTools.openFile(filename, "w" )
     for masker in masker:
-        sequences = maskSequences( sequences, masker )
+        if masker not in ("unmasked", "none", None ):
+            sequences = maskSequences( sequences, masker )
 
     for sequence, d in zip( sequences, data ):
         c.input += 1
@@ -270,7 +297,7 @@ def writeSequencesForIntervals( track, filename,
             c.empty += 1 
             continue
         start, end, id, contig = d
-        id = "%s_%s %s:%i..%i" % (track, str(id), contig, start, end)
+        id = "%s_%s %s:%i-%i" % (track, str(id), contig, start, end)
         outs.write( ">%s\n%s\n" % (id, sequence ) )
         c.output += 1
     outs.close()
@@ -464,7 +491,7 @@ def loadMAST( infile, outfile ):
 
     tablename = P.toTable( outfile )
 
-    tmpfile = tempfile.NamedTemporaryFile(delete=False)
+    tmpfile = P.getTempFile( ".")
 
     tmpfile.write( MAST.Match().header +\
                    "\tmotif\tcontig" \
@@ -479,7 +506,7 @@ def loadMAST( infile, outfile ):
     def readChunk( lines, chunk ):
         # use real file, as MAST parser can not deal with a
         # list of lines
-        tmpfile2 = tempfile.NamedTemporaryFile(delete=False)        
+        tmpfile2 = P.getTempFile(".")
         try:
             motif, part = re.match( ":: motif = (\S+) - (\S+) ::", lines[chunks[chunk]]).groups()
         except AttributeError:
@@ -859,7 +886,7 @@ def runMEME( track, outfile, dbhandle ):
     nseq = writeSequencesForIntervals( track, tmpfasta,
                                        dbhandle,
                                        full = False,
-                                       masker = PARAMS['motifs_masker'],
+                                       masker = P.asList(PARAMS['motifs_masker']),
                                        halfwidth = int(PARAMS["meme_halfwidth"]),
                                        maxsize = int(PARAMS["meme_max_size"]),
                                        proportion = PARAMS["meme_proportion"],
@@ -955,4 +982,3 @@ def runTomTom( infile, outfile ):
 
     shutil.copyfile( os.path.join(target_path, "tomtom.txt"), outfile)
     
-

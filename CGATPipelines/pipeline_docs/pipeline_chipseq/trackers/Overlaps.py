@@ -1,11 +1,4 @@
-import os, sys, re, types, itertools
-import Stats
-import IndexedGenome
-import PipelineTracks
-
-from SphinxReport.Tracker import *
 from ChipseqReport import *
-
 
 ##################################################################################
 ##################################################################################

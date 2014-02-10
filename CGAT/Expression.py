@@ -63,6 +63,7 @@ import os
 import collections
 import itertools
 import re
+import pandas
 
 from rpy2.robjects import r as R
 import rpy2.robjects as ro
@@ -117,7 +118,7 @@ def buildProbeset2Gene( infile,
 GeneExpressionResult = collections.namedtuple( "GeneExpressionResult", \
                                                    "test_id treatment_name treatment_mean treatment_std " \
                                                    " control_name control_mean control_std " \
-                                                   " pvalue qvalue l2fold fold significant status" )
+                                                   " pvalue qvalue l2fold fold transformed_l2fold significant status" )
 
 
 def writeExpressionResults( outfile, result ):
@@ -517,7 +518,7 @@ def filterTagData( filter_min_counts_per_row = 1,
 
     * remove rows with at least x number of counts
 
-    * remove samples with a total of less that *min_sample_counts*
+    * remove samples with a maximum of *min_sample_counts*
 
     * remove the lowest percentile of rows in the table, sorted
        by total tags per row
@@ -542,7 +543,7 @@ def filterTagData( filter_min_counts_per_row = 1,
                     (nempty_samples, ",".join( [sample_names[x] for x,y in enumerate( empty_samples) if y]) ) )
         R('''countsTable <- countsTable[, max_counts >= %i]''' % filter_min_counts_per_sample)
         R('''groups <- groups[max_counts >= %i]''' % filter_min_counts_per_sample)
-        R('''pairs <- pairs[max_counts >= %i]''' % filter_min_counts_per_samplee)
+        R('''pairs <- pairs[max_counts >= %i]''' % filter_min_counts_per_sample)
         observations, samples = tuple( R('''dim(countsTable)'''))
 
 
@@ -600,8 +601,10 @@ def plotHeatmap( method = "correlation" ):
 def plotPCA():
     '''plot a PCA plot from countsTable.'''
     
-    R('''pca = prcomp(t(countsTable]))''')
-    R('''if (length(groups) >= 3) colours = brewer.pal(nlevels(fac), "Paired") else colours = c("green", "blue")''')
+    R('''library( RColorBrewer )''')
+    R('''library( lattice )''')
+    R('''pca = prcomp(t(countsTable))''')
+    R('''if (length(groups) >= 3) colours = brewer.pal(nlevels(groups), "Paired") else colours = c("green", "blue")''')
     R('''xyplot( PC2 ~ PC1, data = as.data.frame(pca$x ), 
                  groups=groups, col = colours, 
                  main = draw.key(key = list(rect = list(col = colours), text = list(levels(groups)))),
@@ -695,12 +698,16 @@ def runEdgeR( outfile,
         R('''gp = ggplot(d)''')
         R('''pp = gp + \
             geom_line(aes(x=genes,y=value,group=comparison,color=comparison))''')
-                    
-        R.ggsave( '''%(outfile_prefix)sbalance_pairs.png''' % locals() )
-        R['dev.off']()
+              
+        try:
+            R.ggsave( '''%(outfile_prefix)sbalance_pairs.png''' % locals() )
+            R['dev.off']()
+        except rpy2.rinterface.RRuntimeError, msg:
+            E.warn( "could not plot: %s" % msg )
 
     # build DGEList object
-    R( '''countsTable = DGEList( countsTable, group = groups )''' )
+    # ignore message: "Calculating library sizes from column totals"
+    R( '''countsTable = suppressMessages(DGEList( countsTable, group = groups ))''' )
 
     # Relevel groups to make the results predictable - IMS
     if not ref_group is None:
@@ -828,6 +835,7 @@ def runEdgeR( outfile,
                     padj,
                     d.lfold,
                     fold,
+                    d.lfold, # no transform of lfold
                     str(signif),
                     status) ) )
             
@@ -949,8 +957,14 @@ def deseqParseResults( control_name, treatment_name, fdr, vsd = False):
     padj: The adjusted p values (adjusted with 'p.adjust( pval,
           method="BH")')
 
+    vsd_log2FoldChange: The log2 fold change after variance stabilization.
+          This data field is not part of DESeq proper, but has been added
+          in this module in the runDESeq() method.
+
     Here, 'conditionA' is 'control' and 'conditionB' is 'treatment' such that
     a foldChange of 2 means that treatment is twice upregulated compared to control.
+
+
 
     Returns a list of results.
 
@@ -970,7 +984,7 @@ def deseqParseResults( control_name, treatment_name, fdr, vsd = False):
             baseMeanA = "value1", 
             baseMeanB = "value2",
             id = "interval_id", 
-            log2FoldChange = "lfold") )
+            log2FoldChange = "lfold" ))
     
     rtype = collections.namedtuple( "rtype", names )
     counts = E.Counter()
@@ -1025,6 +1039,7 @@ def deseqParseResults( control_name, treatment_name, fdr, vsd = False):
                     d.padj,
                     d.log2FoldChange,
                     d.foldChange,
+                    d.transformed_log2FoldChange,
                     str(signif),
                     status) ) )
                     
@@ -1142,8 +1157,9 @@ def runDESeq( outfile,
     # plot scatter plots of pairs
     deseqPlotPairs('%(outfile_prefix)spairs.png' % locals()) 
 
-    if dispersion_method not in ("blind", "pooled"): 
-        # also do a blind/pooled dispersion estimate
+    if dispersion_method not in ("blind",): 
+        # also do a blind dispersion estimate for 
+        # a variance stabilizing transform
         R('''cds_blind <- estimateDispersions( cds, 
                                          method='blind',
                                          fitType='%(fit_type)s',
@@ -1230,8 +1246,8 @@ def runDESeq( outfile,
         R('''abline( a=0,b=%(fdr)f/length(pvalues), col="red") ''' % locals() )
         R['dev.off']()
 
-        # Substitute log2 fold with variance stabilized l2fold value
-        R('''res$log2FoldChange = vsd_l2f''' )
+        # Add log2 fold with variance stabilized l2fold value
+        R('''res$transformed_log2FoldChange = vsd_l2f''' )
 
         # Parse results and parse to file
         results, counts = deseqParseResults( control, 
@@ -1250,7 +1266,6 @@ def runDESeq( outfile,
     else:
         with IOTools.openFile(outfile, "w") as outf:
             writeExpressionResults(outf, all_results)
-
 
 Design = collections.namedtuple( "Design", ("include", "group", "pair") )
 
@@ -1406,6 +1421,7 @@ def parseCuffdiff( infile):
                     data.q_value,
                     data.l2fold,
                     fold,
+                    data.l2fold,
                     significant,
                     status ) ) )
                                             
@@ -1668,7 +1684,72 @@ def runCuffdiff( bamfiles,
     else:
         with IOTools.openFile( outfile, "w" ) as outf:
             writeExpressionResults( outf, results )
+
+def runMockAnalysis( outfile, 
+                     outfile_prefix, 
+                     ref_group = None,
+                     pseudo_counts = 0):
+    '''run a mock analysis on a count table.
+
+    compute fold enrichment values, but do not normalize or
+    perform any test.
+    '''
     
+    groups, pairs, has_replicates, has_pairs = groupTagData( ref_group )
+
+    all_results = []
+    for combination in itertools.combinations(groups,2):
+        control, treatment = combination
+        
+        R('''control_counts = rowSums( countsTable[groups == '%s'] )''' % control )
+        R('''treatment_counts = rowSums( countsTable[groups == '%s'] )''' % treatment )
+        
+        # add pseudocounts to enable analysis of regions 
+        # that are absent/present
+        if pseudo_counts: 
+            R('''control_counts = control_counts + %f''' % pseudo_counts )
+            R('''treatment_counts = treatment_counts + %f''' % pseudo_counts )
+            
+        R('''fc = treatment_counts / control_counts''')
+
+        results = []
+
+        for identifier, treatment_count, control_count, foldchange in \
+                zip( R('''rownames( countsTable)'''),
+                     R('''treatment_counts'''),
+                     R('''control_counts'''),
+                     R('''fc''')):
+            try:
+                log2fold = math.log( foldchange )
+            except ValueError:
+                log2fold = "Inf"
+            
+            results.append( GeneExpressionResult._make( ( \
+                        identifier,
+                        treatment,
+                        treatment_count,
+                        0,
+                        control,
+                        control_count,
+                        0,
+                        1,
+                        1,
+                        log2fold,
+                        foldchange,
+                        log2fold,
+                        "0",
+                        "OK") ) )
+            
+            
+        all_results.extend( results )
+
+    if outfile == sys.stdout:
+        writeExpressionResults(outfile, all_results)
+    else:
+        with IOTools.openFile(outfile, "w") as outf:
+            writeExpressionResults(outf, all_results)
+
+        
 def outputTagSummary( filename_tags, 
                       outfile, output_filename_pattern,
                       filename_design = None):
@@ -1694,6 +1775,7 @@ def outputTagSummary( filename_tags,
         nobservations, nsamples = tuple(R('''dim(countsTable)'''))
         E.info( "read data: %i observations for %i samples" % (nobservations,nsamples))
         E.debug( "sample names: %s" % R('''colnames(countsTable)'''))
+        R('''groups = factor(colnames( countsTable ))''')
 
     nrows, ncolumns = tuple(R('''dim(countsTable)'''))
 
@@ -1768,5 +1850,223 @@ def dumpTagData( filename_tags, filename_design, outfile ):
                       file='%(outfilename)s',
                       sep='\t',
                       quote=FALSE)''' % locals() )
-    
 
+#########################################################################
+#########################################################################
+#########################################################################
+def loadTagDataPandas( tags_filename, design_filename ):
+    '''load tag data for deseq/edger analysis.
+    
+    *Infile* is a tab-separated file with counts.
+
+    *design_file* is a tab-separated file with the
+    experimental design with four columns::
+
+      track   include group   pair
+      CW-CD14-R1      0       CD14    1
+      CW-CD14-R2      0       CD14    1
+      CW-CD14-R3      1       CD14    1
+      CW-CD4-R1       1       CD4     1
+      FM-CD14-R1      1       CD14    2
+      FM-CD4-R2       0       CD4     2
+      FM-CD4-R3       0       CD4     2
+      FM-CD4-R4       0       CD4     2
+
+    track
+        name of track - should correspond to column header in *infile*
+    include
+        flag to indicate whether or not to include this data
+    group
+        group indicator - experimental group
+    pair
+        pair that sample belongs to (for paired tests)
+
+    This method creates various R objects:
+
+    countsTable : data frame with counts.
+    groups : vector with groups
+    pairs  : vector with pairs
+
+    '''
+
+    E.info( "loading tag data from %s" % tags_filename)
+
+    inf = IOTools.openFile( tags_filename )
+    counts_table = pandas.read_csv( inf, sep="\t", index_col = 0 )
+    inf.close()
+    
+    E.info( "read data: %i observations for %i samples" % counts_table.shape )
+
+    E.debug( "sample names: %s" % list(counts_table.columns ))
+
+    inf = IOTools.openFile( design_filename )
+    design_table = pandas.read_csv( inf, sep="\t", index_col = 0)
+    inf.close()
+
+    E.debug( "design names: %s" % list(design_table.index))
+    
+    missing = set(counts_table.columns ).difference( design_table.index )
+    
+    if missing:
+        E.warn( "missing samples from design file are ignored: %s" % missing)
+
+    # remove unnecessary samples
+    design_table = design_table[ design_table["include"] != 0]
+    E.debug( "included samples: %s" % list( design_table.index) )
+
+    counts_table = counts_table[list(design_table.index)]
+    E.info( "filtered data: %i observations for %i samples" % counts_table.shape )
+
+    return counts_table, design_table
+
+def filterTagDataPandas( counts_table,
+                         design_table,
+                         filter_min_counts_per_row = 1, 
+                         filter_min_counts_per_sample = 10,
+                         filter_percentile_rowsums = 0):
+    '''filter tag data.
+
+    * remove rows with at least x number of counts
+
+    * remove samples with a maximum of *min_sample_counts*
+
+    * remove the lowest percentile of rows in the table, sorted
+       by total tags per row
+    '''
+    
+    # Remove windows with no data
+    max_counts_per_row = counts_table.max( 1 )
+    counts_table = counts_table[ max_counts_per_row >= filter_min_counts_per_row ]
+    observations, samples = counts_table.shape
+    E.info( "trimmed data: %i observations for %i samples" % (observations, samples ))
+
+    # remove samples without data
+    max_counts_per_sample = counts_table.max()
+
+    empty_samples = max_counts_per_sample < filter_min_counts_per_sample
+    sample_names = counts_table.columns
+    nempty_samples = sum( empty_samples)
+
+    if nempty_samples:
+        E.warn( "%i empty samples are being removed: %s" % \
+                    (nempty_samples, ",".join( [sample_names[x] for x,y in enumerate( empty_samples) if y]) ) )
+        raise NotImplementedError( "removing empty samples needs to be done")
+        # R('''countsTable <- countsTable[, max_counts >= %i]''' % filter_min_counts_per_sample)
+        # R('''groups <- groups[max_counts >= %i]''' % filter_min_counts_per_sample)
+        # R('''pairs <- pairs[max_counts >= %i]''' % filter_min_counts_per_sample)
+        # observations, samples = tuple( R('''dim(countsTable)'''))
+
+
+    # percentile filtering
+    if filter_percentile_rowsums > 0:
+        percentile = float( filter_percentile_rowsums) / 100.0
+        sum_counts = counts_table.sum(1)
+        take = sum_counts > sum_counts.quantile( percentile )
+        E.info( "percentile filtering at level %f: keep=%i, discard=%i" % (filter_percentile_rowsums,
+                                                                           sum(take==True),
+                                                                           sum(take=False)))
+        counts_table = counts_table[ take ]
+
+    return counts_table
+
+def outputSpikeIns( filename_tags, 
+                    outfile, 
+                    output_filename_pattern,
+                    filename_design = None,
+                    foldchange_max = 10.0,
+                    expression_max = 5.0,
+                    max_counts_per_bin = 100,
+                    expression_bin_width = 0.5,
+                    foldchange_bin_width = 0.5,
+                    iterations = 1):
+    
+    E.info( "loading tag data from %s" % filename_tags)
+
+    if filename_design != None:
+        # load all tag data
+        counts_table, design_table = loadTagDataPandas( filename_tags, filename_design )
+        
+        # filter
+        counts_table = filterTagDataPandas( counts_table, design_table )
+        
+    else:
+        raise NotImplementedError( "reading full table not implemented")
+
+    nobservations, nsamples = counts_table.shape
+
+    groups = list(set( design_table["group"] ))
+    if len(groups) != 2:
+        raise NotImplementedError( "spike in only implemented for one pairwise comparison" )
+
+    # select group data
+    group1 = counts_table[ design_table[design_table.group == groups[0]].index ]
+    group2 = counts_table[ design_table[design_table.group == groups[1]].index ]
+
+    outfile.write( "interval_id\t%s\t%s\n" % ("\t".join(group1.columns), "\t".join(group2.columns)))
+    outf_info = IOTools.openFile( output_filename_pattern + "info.tsv.gz" ,"w")
+    outf_info.write("interval_id\tl10_expression\tl2fold\n" )
+
+    # important: convert to matrixes, otherwise there will be a per-name lookup
+    # when l10average or l2fold are computed.
+    group1 = group1.as_matrix()
+    group2 = group2.as_matrix()
+
+    # compute bins
+    expression_bins = numpy.arange( 0, expression_max, expression_bin_width )
+    fold_change_bins = numpy.arange( -foldchange_max, foldchange_max, foldchange_bin_width )
+
+    E.info( "l10expression bins=%s" % expression_bins )
+    E.info( "l2fold change bins=%s" % fold_change_bins )
+
+    # output values
+    output_counts = numpy.zeros( (len(expression_bins)+1, len(fold_change_bins)+1))
+
+    for iteration in range(iterations): 
+
+        # randomize order
+        group1 = numpy.random.permutation( group1 )
+        group2 = numpy.random.permutation( group2 )
+
+        # compute means and foldchanges
+        group1_mean = group1.mean(1)
+        group2_mean = group2.mean(1)
+
+        # compute average expression by means
+        l10average = numpy.log((group1_mean + group2_mean) / 2.0)
+
+        # compute a fold change with pseudo count of 1
+        l2fold = numpy.log2((group1_mean + 1.0) / (group2_mean + 1.0))
+
+        # digitize arrays with bins
+        l10average_idx = numpy.digitize( l10average, expression_bins )
+        l2fold_idx = numpy.digitize( l2fold, fold_change_bins )
+
+        interval_id = 0
+        for idx, coord in enumerate( zip(l10average_idx,l2fold_idx)):
+            #assert expression_bins[coord[0]-1] <= l10average[idx] < expression_bins[coord[0]]
+            #assert fold_change_bins[coord[1]-1] <= l2fold[idx] <  expression_bins[coord[1]]
+
+            if output_counts[coord] >= max_counts_per_bin:
+                continue
+
+            output_counts[coord] += 1
+
+            outf_info.write( "spike%i\t%f\t%f\n" % (interval_id, 
+                                                    l10average[idx],
+                                                    l2fold[idx]))
+
+            outfile.write( "spike%i\t%s\t%s\n" % ( interval_id,
+                                                   "\t".join(map(str, list( group1[idx] ) )),
+                                                   "\t".join(map(str, list( group2[idx] ) ) )) )
+            interval_id += 1
+
+    outf_info.close()
+    
+    df = pandas.DataFrame( output_counts )
+    df.index = list(expression_bins) + [expression_max]
+    df.columns = list(fold_change_bins) + [foldchange_max]
+    
+    df.to_csv( IOTools.openFile( output_filename_pattern + "counts.tsv.gz" ,"w"),
+               sep="\t")
+    
+    E.info( "output %i spike in intervals" % interval_id)
