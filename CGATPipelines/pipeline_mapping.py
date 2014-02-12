@@ -822,23 +822,23 @@ def mapReadsWithTophat2( infiles, outfile ):
     it means that it ran out of memory.
 
     '''
-    job_options= "-pe dedicated %i -R y" % PARAMS["tophat_threads"]
+    job_options= "-pe dedicated %i -R y" % PARAMS["tophat2_threads"]
 
-    if "--butterfly-search" in PARAMS["tophat_options"]:
+    if "--butterfly-search" in PARAMS["tophat2_options"]:
         # for butterfly search - require insane amount of
         # RAM.
         job_options += " -l mem_free=50G"
     else:
-        job_options += " -l mem_free=%s" % PARAMS["tophat_memory"]
+        job_options += " -l mem_free=%s" % PARAMS["tophat2_memory"]
 
     to_cluster = True
-    m = PipelineMapping.Tophat( executable = P.substituteParameters( **locals() )["tophat_executable"],
-                                strip_sequence = PARAMS["strip_sequence"] )
+    m = PipelineMapping.Tophat2( executable = P.substituteParameters( **locals() )["tophat2_executable"],
+                                 strip_sequence = PARAMS["strip_sequence"] )
     infile, reffile, transcriptfile = infiles
-    tophat_options = PARAMS["tophat_options"] + " --raw-juncs %(reffile)s " % locals()
+    tophat_options = PARAMS["tophat2_options"] + " --raw-juncs %(reffile)s " % locals()
     
     # Nick - added the option to map to the reference transcriptome first (built within the pipeline)
-    if PARAMS["tophat_include_reference_transcriptome"]:
+    if PARAMS["tophat2_include_reference_transcriptome"]:
         prefix = os.path.abspath( P.snip( transcriptfile, ".fa" ) )
         tophat_options = tophat_options + " --transcriptome-index=%s -n 2" % prefix
 

@@ -696,6 +696,22 @@ class Tophat( Mapper ):
 
         return statement
 
+class Tophat2( Tophat ):
+    
+    executable = "tophat2"
+
+    def mapper( self, infiles, outfile ):
+        '''build mapping statement for infiles.'''
+        
+        # get tophat statement
+        statement = Tophat.mapper( self, infiles, outfile )
+        
+        # replace tophat options with tophat2 options
+        statement = re.sub( "%\(tophat_", "%(tophat2_", statement)
+
+        return statement 
+        
+
 class TopHat_fusion( Mapper ):
     
     # tophat can map colour space files directly
