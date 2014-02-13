@@ -331,7 +331,21 @@ def loadPicardDuplicationStats( infiles, outfile ):
     infiles = [ x[ 0 : -len( "." + suffix ) ] for x in infiles]
     
     loadPicardMetrics( infiles, outfile, suffix )
-    loadPicardHistogram( infiles, outfile, suffix, "coverage_multiple" )
+
+    infiles_with_histograms = []
+
+    # The complexity histogram is only present for PE data, so we must check
+    # because by design the pipeline does not track endedness
+    for infile in infiles:
+        with_hist = False
+        with open(infile) as open_infile:
+            for line in open_infile: 
+                if line.startswith("## HISTOGRAM"): with_hist = True
+        if with_hist == True: infiles_with_histograms.append( infile )
+
+    if len(infiles_with_histograms) > 0:
+        loadPicardHistogram( infiles_with_histograms, outfile, suffix, "coverage_multiple" )
+
 
 def loadPicardDuplicateStats( infiles, outfile, pipeline_suffix= ".bam" ):
     '''load picard duplicate filtering stats.'''

@@ -244,21 +244,32 @@ PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],
 ###################################################################
 import CGATPipelines.PipelineTracks as PipelineTracks
 
+# determine the location of the input files (reads).
+try:
+    PARAMS["input"]
+except NameError:
+    dataDir = "."
+else:
+    if PARAMS["input"]==0: dataDir = "."
+    elif PARAMS["input"]==1 : dataDir = "data.dir"
+    else: dataDir = PARAMS["input"] # not recommended practise.
+
 # collect sra nd fastq.gz tracks
 TRACKS = PipelineTracks.Tracks( PipelineTracks.Sample ).loadFromDirectory( 
-    glob.glob( "*.sra" ), "(\S+).sra" ) +\
+    glob.glob( os.path.join(dataDir, "*.sra") ), "(\S+).sra" ) +\
     PipelineTracks.Tracks( PipelineTracks.Sample ).loadFromDirectory( 
-        glob.glob( "*.fastq.gz" ), "(\S+).fastq.gz" ) +\
+        glob.glob( os.path.join(dataDir, "*.fastq.gz") ), "(\S+).fastq.gz" ) +\
         PipelineTracks.Tracks( PipelineTracks.Sample ).loadFromDirectory( 
-            glob.glob( "*.fastq.1.gz" ), "(\S+).fastq.1.gz" ) +\
+            glob.glob( os.path.join(dataDir, "*.fastq.1.gz") ), "(\S+).fastq.1.gz" ) +\
             PipelineTracks.Tracks( PipelineTracks.Sample ).loadFromDirectory( 
-                glob.glob( "*.csfasta.gz" ), "(\S+).csfasta.gz" )
+                glob.glob( os.path.join(dataDir, "*.csfasta.gz") ), "(\S+).csfasta.gz" )
 
 ###################################################################
 ## Global flags
 ###################################################################
 MAPPERS = P.asList( PARAMS["mappers" ] )
 SPLICED_MAPPING = "tophat" in MAPPERS or "gsnap" in MAPPERS or "star" in MAPPERS
+
 
 ###################################################################
 ###################################################################
@@ -415,9 +426,10 @@ def mergeAndFilterGTF( infile, outfile, logfile ):
 #########################################################################
 #########################################################################
 @active_if( SPLICED_MAPPING )
+@follows(mkdir("geneset.dir"))
 @merge( os.path.join( PARAMS["annotations_dir"], 
                       PARAMS_ANNOTATIONS["interface_geneset_all_gtf"]),
-        "reference.gtf.gz" )
+        "geneset.dir/reference.gtf.gz" )
 def buildReferenceGeneSet( infile, outfile ):
     '''sanitize ENSEMBL transcripts file for cufflinks analysis.
 
@@ -547,8 +559,9 @@ def buildCodingGeneSet( infile, outfile ):
 #########################################################################
 #########################################################################
 @active_if( SPLICED_MAPPING )
+@follows(mkdir("geneset.dir"))
 @merge( os.path.join(PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_geneset_flat_gtf"]),
-        "introns.gtf.gz" )
+        "geneset.dir/introns.gtf.gz" )
 def buildIntronGeneModels(infile, outfile ):
     '''build protein-coding intron-transcipts.
 
@@ -603,9 +616,10 @@ def loadGeneInformation( infile, outfile ):
 #########################################################################
 #########################################################################
 @active_if( SPLICED_MAPPING )
+@follows(mkdir("geneset.dir"))
 @merge( os.path.join( PARAMS["annotations_dir"], 
                       PARAMS_ANNOTATIONS["interface_geneset_all_gtf"]),
-        "coding_exons.gtf.gz" )
+        "geneset.dir/coding_exons.gtf.gz" )
 def buildCodingExons( infile, outfile ):
     '''compile set of protein coding exons.
 
@@ -732,23 +746,27 @@ def buildGSNAPSpliceSites( infile, outfile ):
 #########################################################################
 ## Read mapping
 #########################################################################
-SEQUENCEFILES=("*.fastq.1.gz", 
-               "*.fastq.gz",
-               "*.sra",
-               "*.export.txt.gz",
-               "*.csfasta.gz",
-               "*.csfasta.F3.gz",
-               )
-SEQUENCEFILES_REGEX=regex( r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz|csfasta.F3.gz|export.txt.gz)")
+
+SEQUENCESUFFIXES=("*.fastq.1.gz", 
+                  "*.fastq.gz",
+                  "*.sra",
+                  "*.export.txt.gz",
+                  "*.csfasta.gz",
+                  "*.csfasta.F3.gz",
+                  )
+
+SEQUENCEFILES= tuple([ os.path.join(dataDir, suffix_name) for suffix_name in SEQUENCESUFFIXES ])
+SEQUENCEFILES_REGEX=regex( r".*/(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz|csfasta.F3.gz|export.txt.gz)")
 
 ###################################################################
 ###################################################################
 ###################################################################
 ## load number of reads
 ###################################################################
+@follows(mkdir("nreads.dir"))
 @transform( SEQUENCEFILES,
             SEQUENCEFILES_REGEX,
-            r"\1.nreads" )
+            r"nreads.dir/\1.nreads" )
 def countReads( infile, outfile ):
     '''count number of reads in input files.'''
     to_cluster = True
@@ -1299,7 +1317,7 @@ def loadPicardDuplicationStats( infiles, outfile ):
 @follows( countReads, mergeReadCounts )
 @transform( MAPPINGTARGETS,
             regex("(.*)/(.*)\.(.*).bam"),
-            add_inputs( r"\2.nreads" ),
+            add_inputs( r"nreads.dir/\2.nreads" ),
             r"\1/\2.\3.readstats" )
 def buildBAMStats( infiles, outfile ):
     '''count number of reads mapped, duplicates, etc.
@@ -1477,7 +1495,8 @@ def loadExonValidation( infiles, outfile ):
 #########################################################################
 #########################################################################
 @active_if(SPLICED_MAPPING)
-@split(buildCodingGeneSet,"refcoding.*.gtf.gz")
+@split(buildCodingGeneSet,
+       "geneset.dir/refcoding.*.gtf.gz")
 def splitCodingGeneSetByChr(infile,outfiles):
     '''split coding geneset by chromosome to allow parallel
     read counting '''
@@ -1502,7 +1521,7 @@ def buildTranscriptLevelReadCounts( infiles, outfile):
        
     '''
     infile, genesets = infiles[0],infiles[1:]
-    
+
     if "transcriptome.dir" in infile:
         P.touch()
         return
@@ -1512,7 +1531,7 @@ def buildTranscriptLevelReadCounts( infiles, outfile):
     
     for geneset in genesets:
 
-        chrom = re.match("refcoding\.(.+)\.gtf.gz",geneset).groups()[0]
+        chrom = re.match("geneset.dir/refcoding\.(.+)\.gtf.gz",geneset).groups()[0]
         bam = P.snip(infile,".bam")
         outfile = "%s.%s.transcript_counts.tsv.gz" % (bam,chrom)
 
@@ -1775,7 +1794,7 @@ def views():
 ###################################################################
 ###################################################################
 ###################################################################
-@follows( mapping, qc, views)
+@follows( mapping, qc, views, duplication)
 def full(): pass
 
 ###################################################################

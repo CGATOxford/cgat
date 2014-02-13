@@ -316,7 +316,7 @@ def loadGeneInformation( infile, outfile, only_proteincoding = False ):
 
     '''
 
-    table = outfile[:-len(".load")]
+    table = P.toTable(outfile)
 
     if only_proteincoding: filter_cmd = ''' awk '$2 == "protein_coding"' '''
     else: filter_cmd = "cat"
@@ -349,7 +349,7 @@ def loadTranscriptInformation( infile, outfile,
     '''
     to_cluster = True
 
-    table = outfile[:-len(".load")]
+    table = P.toTable(outfile)
 
     if only_proteincoding: filter_cmd = ''' awk '$2 == "protein_coding"' '''
     else: filter_cmd = "cat"
@@ -502,7 +502,7 @@ def loadGeneStats( infile, outfile ):
     # ?do not run on cluster - 32/64 bit incompatible
     to_cluster = True
 
-    table = outfile[:-len(".load")]
+    table = P.toTable(outfile)
 
     statement = '''
     gunzip < %(infile)s |\
@@ -626,7 +626,7 @@ def buildCDS( infile, outfile ):
 def loadTranscripts( infile, outfile ):
     '''load the transcript set into the database.
     '''
-    table = outfile[:-len(".load")]
+    table = P.toTable(outfile)
     
     statement = '''
     gunzip < %(infile)s 
@@ -644,8 +644,8 @@ def loadTranscripts( infile, outfile ):
 def loadTranscript2Gene( infile, outfile ):
     '''build and load a map of transcript to gene from gtf file
     '''
-    table = outfile[:-len(".load")]
-    
+    table = P.toTable(outfile)    
+
     statement = '''
     gunzip < %(infile)s
     | python %(scriptsdir)s/gtf2tsv.py --map transcript2gene -v 0
@@ -667,7 +667,7 @@ def loadTranscriptStats( infile, outfile ):
 
     to_cluster = True
 
-    table = outfile[:-len(".load")]
+    table = P.toTable(outfile)
 
     statement = '''
     gunzip < %(infile)s |\
@@ -697,7 +697,7 @@ def loadProteinStats( infile, outfile ):
 
     to_cluster = True
 
-    table = outfile[:-len(".load")]
+    table = P.toTable(outfile)
 
     statement = '''
     gunzip < %(infile)s |
