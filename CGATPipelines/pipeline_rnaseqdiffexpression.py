@@ -1066,6 +1066,10 @@ def runDESeq( infiles, outfile ):
               --fdr=%(deseq_fdr)f
               --deseq-fit-type=%(deseq_fit_type)s
               --deseq-dispersion-method=%(deseq_dispersion_method)s
+              --deseq-sharing-mode=%(deseq_sharing_mode)s
+              --filter-min-counts-per-row=%(tags_filter_min_counts_per_row)i
+              --filter-min-counts-per-sample=%(tags_filter_min_counts_per_sample)i
+              --filter-percentile-rowsums=%(tags_filter_percentile_rowsums)i
               > %(outfile)s.log '''
 
     P.run()
@@ -1127,6 +1131,9 @@ def runEdgeR( infiles, outfile ):
               --output-filename-pattern=%(track)s_
               --outfile=%(outfile)s
               --fdr=%(edger_fdr)f
+              --filter-min-counts-per-row=%(tags_filter_min_counts_per_row)i
+              --filter-min-counts-per-sample=%(tags_filter_min_counts_per_sample)i
+              --filter-percentile-rowsums=%(tags_filter_percentile_rowsums)i
               > %(outfile)s.log '''
 
     P.run()
@@ -1230,7 +1237,9 @@ def plotRNASEQDEData( infile, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-@follows( plotRNASEQTagData, plotRNASEQDEData )
+@follows( plotRNASEQTagData, plotRNASEQDEData, 
+          loadTagCountSummary,
+          loadDEStats )
 def qc(): pass
 
 ###################################################################

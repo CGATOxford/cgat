@@ -36,12 +36,15 @@ import CGAT.Pipeline as P
 import CGATPipelines
 
 # The default configuration file - 'inifile' is read by
-# sphinxr-report.
+# sphinx-report.
 inifile = os.path.join( os.path.dirname( CGATPipelines.__file__), 
                         'configuration', 
                         'pipeline.ini' )
 
 PARAMS = P.getParameters( [inifile, "pipeline.ini" ] )
+
+def setup(app):
+    app.add_config_value('PARAMS', {}, True)
 
 ################################################################
 ################################################################
