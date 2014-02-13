@@ -169,6 +169,7 @@ import CGAT.Stats as Stats
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Pipeline as P
 import CGAT.Expression as Expression
+import CGAT.BamTools as BamTools
 import CGATPipelines.PipelineGeneset as PipelineGeneset
 import CGATPipelines.PipelineWindows as PipelineWindows
 import CGATPipelines.PipelineMapping as PipelineMapping
@@ -251,6 +252,8 @@ def prepareTags( infile, outfile ):
 
     tmpdir = P.getTempFilename()
 
+    is_paired = BamTools.isPaired( infile )
+
     current_file = infile
 
     nfiles = 0
@@ -285,20 +288,34 @@ def prepareTags( infile, outfile ):
         nfiles += 1
         current_file = next_file
 
-    statement.append( '''cat %(current_file)s 
-        | python %(scriptsdir)s/bam2bed.py
-          --merge-pairs
-          --min-insert-size=%(filtering_min_insert_size)i
-          --max-insert-size=%(filtering_max_insert_size)i
-          --log=%(outfile)s.log
-          -
-        | python %(scriptsdir)s/bed2bed.py
-          --method=sanitize-genome
-          --genome-file=%(genome_dir)s/%(genome)s
-          --log=%(outfile)s.log
-        | cut -f 1,2,3,4
-        | sort -k1,1 -k2,2n
-        | bgzip > %(outfile)s''')
+    if is_paired:
+        statement.append( '''cat %(current_file)s 
+            | python %(scriptsdir)s/bam2bed.py
+              --merge-pairs
+              --min-insert-size=%(filtering_min_insert_size)i
+              --max-insert-size=%(filtering_max_insert_size)i
+              --log=%(outfile)s.log
+              -
+            | python %(scriptsdir)s/bed2bed.py
+              --method=sanitize-genome
+              --genome-file=%(genome_dir)s/%(genome)s
+              --log=%(outfile)s.log
+            | cut -f 1,2,3,4
+            | sort -k1,1 -k2,2n
+            | bgzip > %(outfile)s''')
+    else:
+        statement.append( '''cat %(current_file)s 
+            | python %(scriptsdir)s/bam2bed.py
+              --log=%(outfile)s.log
+              -
+            | python %(scriptsdir)s/bed2bed.py
+              --method=sanitize-genome
+              --genome-file=%(genome_dir)s/%(genome)s
+              --log=%(outfile)s.log
+            | cut -f 1,2,3,4
+            | sort -k1,1 -k2,2n
+            | bgzip > %(outfile)s''')
+        
 
     statement.append( "tabix -p bed %(outfile)s" )
     statement.append( "rm -rf %(tmpdir)s" )
