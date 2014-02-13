@@ -70,12 +70,12 @@ def check_script( test_name, script, stdin, options, outputs, references, workin
     else:
         options = ""
 
+    options = re.sub("\n", "", options )
+        
     # use /bin/bash in order to enable "<( )" syntax in shells 
     statement = ( "/bin/bash -c '%(stdin)s python %(script)s "
                   " %(options)s" 
                   " > %(stdout)s'" ) % locals()
-
-    print statement
 
     retval = subprocess.call( statement, 
                               shell = True,
