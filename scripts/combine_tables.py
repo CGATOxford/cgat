@@ -14,7 +14,8 @@ This script reads several tab-separated tables and joins them into a single one.
 
 .. todo::
 
-   Rename to tables2table.py
+   * Rename to tables2table.py
+   * Use pandas dataframes for fast IO and merging/joining
 
 Usage
 -----
@@ -162,17 +163,6 @@ def joinTables( outfile, options, args ):
 
     headers_to_delete = []
 
-    if options.take:
-        take = []
-        # convert numeric columns for filtering
-        for x in options.take:
-            try:
-                take.append( int(x) - 1 )
-            except ValueError:
-                take.append( x )
-    else:
-        # tables with max 100 columns
-        take = None
 
     if options.prefixes:
         prefixes = [ x.strip() for x in options.prefixes.split(",") ]
@@ -210,6 +200,20 @@ def joinTables( outfile, options, args ):
                 key = "-".join( [data[x] for x in options.columns] )                
                 titles = [key]
             
+            # set take based on column titles or numerically
+            if options.take:
+                take = []
+                # convert numeric columns for filtering
+                for x in options.take:
+                    try:
+                        take.append( int(x) - 1 )
+                    except ValueError:
+                        # will raise error if x is not present
+                        take.append( data.index( x ) )
+            else:
+                # tables with max 100 columns
+                take = None
+
             for x in range(len(data)):
                 if x in options.columns or (take and x not in take ): continue
                 ncolumns += 1
@@ -234,6 +238,16 @@ def joinTables( outfile, options, args ):
                 
             del lines[0]
         else:
+
+            # set take based on numeric columns if no titles are present
+            if options.take:
+                take = []
+                # convert numeric columns for filtering
+                for x in options.take:
+                    take.append( int(x) - 1 )
+            else:
+                # tables with max 100 columns
+                take = None
 
             #IMS: We might still want filename titles even if the input columns don't have titles.
             if options.add_file_prefix:

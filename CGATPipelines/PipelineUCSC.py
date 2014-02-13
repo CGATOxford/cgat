@@ -250,6 +250,29 @@ def importRefSeqFromUCSC( infile, outfile, remove_duplicates = True ):
 #############################################################
 #############################################################
 #############################################################
+## 
+#############################################################
+def getCpGIslandsFromUCSC( dbhandle, outfile ):
+    '''get CpG islands from UCSC and save as a bed file.
+
+    The name will be set to the UCSC name. 
+    '''
+
+    cc = dbhandle.cursor()
+    table = "cpgIslandExt"
+    sql = """SELECT chrom, chromStart, chromEnd, name FROM %(table)s ORDER by chrom,chromStart"""
+    sql = sql % locals()
+
+    E.debug( "executing sql statement: %s" % sql )
+    cc.execute( sql )
+    outfile = IOTools.openFile( outfile, "w")
+    for data in cc.fetchall():
+        outfile.write( "\t".join(map(str,data)) + "\n" )
+    outfile.close()
+
+#############################################################
+#############################################################
+#############################################################
 ## Methods for setting up a UCSC Track Hub
 #############################################################
 def readUCSCFile( infile ):

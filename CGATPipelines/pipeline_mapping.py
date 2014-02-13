@@ -840,23 +840,23 @@ def mapReadsWithTophat2( infiles, outfile ):
     it means that it ran out of memory.
 
     '''
-    job_options= "-pe dedicated %i -R y" % PARAMS["tophat_threads"]
+    job_options= "-pe dedicated %i -R y" % PARAMS["tophat2_threads"]
 
-    if "--butterfly-search" in PARAMS["tophat_options"]:
+    if "--butterfly-search" in PARAMS["tophat2_options"]:
         # for butterfly search - require insane amount of
         # RAM.
         job_options += " -l mem_free=50G"
     else:
-        job_options += " -l mem_free=%s" % PARAMS["tophat_memory"]
+        job_options += " -l mem_free=%s" % PARAMS["tophat2_memory"]
 
     to_cluster = True
-    m = PipelineMapping.Tophat( executable = P.substituteParameters( **locals() )["tophat_executable"],
-                                strip_sequence = PARAMS["strip_sequence"] )
+    m = PipelineMapping.Tophat2( executable = P.substituteParameters( **locals() )["tophat2_executable"],
+                                 strip_sequence = PARAMS["strip_sequence"] )
     infile, reffile, transcriptfile = infiles
-    tophat_options = PARAMS["tophat_options"] + " --raw-juncs %(reffile)s " % locals()
+    tophat_options = PARAMS["tophat2_options"] + " --raw-juncs %(reffile)s " % locals()
     
     # Nick - added the option to map to the reference transcriptome first (built within the pipeline)
-    if PARAMS["tophat_include_reference_transcriptome"]:
+    if PARAMS["tophat2_include_reference_transcriptome"]:
         prefix = os.path.abspath( P.snip( transcriptfile, ".fa" ) )
         tophat_options = tophat_options + " --transcriptome-index=%s -n 2" % prefix
 
@@ -1012,6 +1012,7 @@ def buildSTARStats( infiles, outfile ):
         for line in IOTools.openFile( fn ):
             if not "|" in line: continue
             header, value = line.split("|")
+            header = re.sub( "%", "percent", header )
             data[header.strip()].append( value.strip() )
     
     keys = data.keys()
@@ -1132,7 +1133,7 @@ def mapReadsWithStampy( infile, outfile ):
 
 MAPPINGTARGETS = []
 mapToMappingTargets = { 'tophat': (mapReadsWithTophat, loadTophatStats),
-                        'tophat2': (mapReadsWithTophat2, loadTophatStats),
+                        'tophat2': (mapReadsWithTophat2,),
                         'bowtie': (mapReadsWithBowtie,),
                         'bwa': (mapReadsWithBWA,),
                         'stampy': (mapReadsWithStampy,),
@@ -1140,9 +1141,10 @@ mapToMappingTargets = { 'tophat': (mapReadsWithTophat, loadTophatStats),
                         'gsnap' : (mapReadsWithGSNAP,),
                         'star' : (mapReadsWithSTAR,loadSTARStats),
                         }
+
 for x in P.asList( PARAMS["mappers"]):
     MAPPINGTARGETS.extend( mapToMappingTargets[x] )
-        
+
 @follows( *MAPPINGTARGETS )
 def mapping(): pass
 
@@ -1153,9 +1155,10 @@ if "merge_pattern_input" in PARAMS and PARAMS["merge_pattern_input"]:
     if "merge_pattern_output" not in PARAMS or not PARAMS["merge_pattern_output"]:
         raise ValueError("no output pattern 'merge_pattern_output' specificied")
     @collate( MAPPINGTARGETS, 
-              regex( "%s.([^.]+).bam" % PARAMS["merge_pattern_input"] ),
+              regex( "%s\.([^.]+).bam" % PARAMS["merge_pattern_input"].strip() ),
               # the last expression counts number of groups in pattern_input
-              r"%s.\%i.bam" % (PARAMS["merge_pattern_output"], PARAMS["merge_pattern_input"].count("(")+1),
+              r"%s.\%i.bam" % (PARAMS["merge_pattern_output"].strip(), 
+                               PARAMS["merge_pattern_input"].count("(")+1),
               )
     def mergeBAMFiles( infiles, outfile ):
         '''merge BAM files from the same experiment.'''
@@ -1512,8 +1515,6 @@ def buildTranscriptLevelReadCounts( infiles, outfile):
     '''count reads falling into transcripts of protein coding 
        gene models.
        
-    Data is not computed for tracks in transcripts.dir.
-
     .. note::
        In paired-end data sets each mate will be counted. Thus
        the actual read counts are approximately twice the fragment
@@ -1521,10 +1522,6 @@ def buildTranscriptLevelReadCounts( infiles, outfile):
        
     '''
     infile, genesets = infiles[0],infiles[1:]
-
-    if "transcriptome.dir" in infile:
-        P.touch()
-        return
 
     to_cluster = True
     statements = []
@@ -1552,9 +1549,11 @@ def buildTranscriptLevelReadCounts( infiles, outfile):
         statements.append(statement)
 
     P.run()
+
 #########################################################################
 @active_if( SPLICED_MAPPING )
-@collate(buildTranscriptLevelReadCounts, regex("(.+)\..+\.transcript_counts.tsv.gz"),
+@collate(buildTranscriptLevelReadCounts, 
+         regex("(.+)\..+\.transcript_counts.tsv.gz"),
          r"\1.transcript_counts.tsv.gz")
 def collateTranscriptCounts(infiles,outfile):
     ''' pull together the transcript counts over each chromosome '''

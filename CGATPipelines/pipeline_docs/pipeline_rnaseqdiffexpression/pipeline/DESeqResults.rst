@@ -43,6 +43,6 @@ Diagnostic plots
 
 .. report:: Tracker.TrackerImages 
    :render: gallery-plot    
-   :tracker: deseq.dir/*.png
+   :glob: deseq.dir/*.png
    
    Diagnostic plots from the DESeq analysis

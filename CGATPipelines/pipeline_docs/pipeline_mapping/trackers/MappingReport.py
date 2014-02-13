@@ -16,9 +16,9 @@ REFERENCE="refcoding"
 ###################################################################
 ## parameterization
 
-EXPORTDIR=P['mapping_exportdir']
-DATADIR=P['mapping_datadir']
-DATABASE=P['mapping_backend']
+EXPORTDIR=P.get( 'mapping_exportdir', P.get( 'exportdir', 'export') )
+DATADIR=P.get( 'mapping_datadir', P.get( 'datadir', '.' ) )
+DATABASE=P.get( 'mapping_backend', P.get( 'sql_backend', 'sqlite:///./csvdb' ) )
 
 ###################################################################
 # cf. pipeline_rnaseq.py

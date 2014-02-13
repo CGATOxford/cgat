@@ -1472,7 +1472,8 @@ def buildDMRWindowStats( infile, outfile ):
             r"transcriptprofiles.dir/\1.transcriptprofile.tsv.gz" )
 def buildIntervalProfileOfTranscripts( infiles, outfile ):
     '''build a table with the overlap profile
-    with protein coding exons.'''
+    with protein coding exons.
+    '''
     
     to_cluster = True
 
@@ -1485,28 +1486,38 @@ def buildIntervalProfileOfTranscripts( infiles, outfile ):
         print msg
         return
 
-    input_files = getInput( t )
-
-    ## currently only implement one input file per track
-    assert len(input_files) <= 1, "%s more than input: %s" % (track, input_files)
-    
+    # no input normalization, this is done later.
     options = ''
-    if len(input_files) == 1:
-        options = '--controlfile=%s' % \
-            (os.path.join( os.path.dirname( bedfile ),
-                           input_files[0] + '.bed.gz') )
+    # input_files = getInput( t )
 
-    statement = '''python %(scriptsdir)s/bam2geneprofile.py
+    # ## currently only implement one input file per track
+    # assert len(input_files) <= 1, "%s more than input: %s" % (track, input_files)
+    
+
+    # if len(input_files) == 1:
+    #     options = '--controlfile=%s' % \
+    #         (os.path.join( os.path.dirname( bedfile ),
+    #                        input_files[0] + '.bed.gz') )
+
+    statement = '''zcat %(gtffile)s
+                   | python %(scriptsdir)s/gtf2gtf.py 
+                     --filter=representative-transcript 
+                     --log=%(outfile)s.log 
+                   | python %(scriptsdir)s/bam2geneprofile.py
                       --output-filename-pattern="%(outfile)s.%%s"
                       --force
                       --reporter=transcript
                       --method=geneprofile 
                       --method=tssprofile 
-                      --normalize-profile=none
-                      --normalize-profile=area
-                      --normalize-profile=counts
+                      --normalize-profile=all
+                      --output-all-profiles
+                      --resolution-upstream=1000
+                      --resolution-downstream=1000
+                      --resolution-cds=1000
+                      --extension-upstream=5000
+                      --extension-downstream=5000
                       %(options)s
-                      %(bedfile)s %(gtffile)s
+                      %(bedfile)s -
                    > %(outfile)s
                 '''
     P.run()

@@ -2,15 +2,15 @@ import os, sys, re, types, itertools, glob
 
 from SphinxReport.Tracker import *
 from SphinxReport.Utils import PARAMS as P
-from SphinxReport.odict import OrderedDict as odict
+from collections import OrderedDict as odict
 
 ###################################################################
 ###################################################################
 ## parameterization
 
-EXPORTDIR=P['@template@_exportdir']
-DATADIR  =P['@template@_datadir']
-DATABASE =P['@template@_backend']
+EXPORTDIR=P['exportdir']
+DATADIR  =P['datadir']
+DATABASE =P['sql_backend']
 
 ###########################################################################
 class ProjectTracker( TrackerSQL ):

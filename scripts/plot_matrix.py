@@ -295,12 +295,8 @@ def main( argv = None ):
 
         if options.zrange:
             vmin, vmax = options.zrange
-            for x in range(nrows):
-                for y in range(ncols):
-                    if matrix[x,y] < options.zrange[0]:
-                        matrix[x,y] = options.zrange[0]
-                    if matrix[x,y] > options.zrange[1]:
-                        matrix[x,y] = options.zrange[1]
+            matrix[ matrix < vmin ] = vmin
+            matrix[ matrix > vmax ] = vmax
         else:
             vmin, vmax = None, None
         

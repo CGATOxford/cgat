@@ -9,14 +9,14 @@ Intersection
 
 .. report:: macs_replicated_long_interval_genes.longGenesH3K27Venn
    :render: gallery-plot
-   :tracker: plots/*long*H3K27Me3*.png
+   :glob: plots/*long*H3K27Me3*.png
    :layout: column-2
 
    Intersection of H3K27Me3 intervals and genes overlapped by NMIs >3kb in length
 
 .. report:: macs_replicated_long_interval_genes.shortGenesH3K27Venn
    :render: gallery-plot
-   :tracker: plots/*short*H3K27Me3*.png
+   :glob: plots/*short*H3K27Me3*.png
    :layout: column-2
 
    Intersection of H3K27Me3 intervals and genes overlapped by NMIs <2kb in length

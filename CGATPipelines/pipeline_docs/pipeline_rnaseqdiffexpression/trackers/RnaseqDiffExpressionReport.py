@@ -5,10 +5,10 @@ from SphinxReport.Utils import PARAMS as P
 from collections import OrderedDict as odict
 
 # get from config file
-UCSC_DATABASE="hg19"
-ENSEMBL_DATABASE="Homo_sapiens"
-RX_ENSEMBL_GENE = re.compile("ENSG")
-RX_ENSEMBL_TRANSCRIPT = re.compile("ENST")
+UCSC_DATABASE=P["genome"]
+ENSEMBL_DATABASE=P["ensembl_database"]
+RX_ENSEMBL_GENE = re.compile(P["ensembl_gene_prefix"])
+RX_ENSEMBL_TRANSCRIPT = re.compile(P["ensembl_transcript_prefix"])
 
 REFERENCE="refcoding"
 
@@ -19,6 +19,8 @@ REFERENCE="refcoding"
 EXPORTDIR=P['rnaseqdiffexpression_exportdir']
 DATADIR=P['rnaseqdiffexpression_datadir']
 DATABASE=P['rnaseqdiffexpression_backend']
+
+DATABASE_ANNOTATIONS=P['annotations_database']
 
 ###################################################################
 # cf. pipeline_rnaseq.py
@@ -99,8 +101,12 @@ def linkToEnsembl( id ):
     return link
 
 ###########################################################################
-class RnaseqTracker( TrackerSQL ):
+class ProjectTracker( TrackerSQL ):
     '''Define convenience tracks for plots'''
     def __init__(self, *args, **kwargs ):
-        TrackerSQL.__init__(self, *args, backend = DATABASE, **kwargs )
+        TrackerSQL.__init__(self, 
+                            *args, 
+                            backend = DATABASE, 
+                            attach = [ ( DATABASE_ANNOTATIONS, 'annotations') ],
+                            **kwargs )
     

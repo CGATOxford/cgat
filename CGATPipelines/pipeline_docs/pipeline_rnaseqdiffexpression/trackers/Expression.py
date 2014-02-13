@@ -7,7 +7,7 @@ from RnaseqDiffExpressionReport import *
 
 import numpy
 
-class TrackerGeneCounts( RnaseqTracker ):
+class TrackerGeneCounts( ProjectTracker ):
     '''tracker with gene counts.'''
     pattern = "(\S+)_gene_counts$"
     
@@ -33,12 +33,12 @@ class TrackerRealEstate( TrackerGeneCounts ):
         
         return data
 
-class TrackerGeneFPKM( RnaseqTracker ):
+class TrackerGeneFPKM( ProjectTracker ):
     min_fpkm = 1
     pattern = "(.*)_genefpkm"
     as_tables = True
 
-class TrackerTranscriptFPKM( RnaseqTracker ):
+class TrackerTranscriptFPKM( ProjectTracker ):
     min_fpkm = 1
     pattern = "(.*)_fpkm"
     as_tables = True

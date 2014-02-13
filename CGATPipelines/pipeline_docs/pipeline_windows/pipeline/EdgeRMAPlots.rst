@@ -3,7 +3,7 @@ MA Plots
 
 .. report:: Tracker.TrackerImages
    :render: gallery-plot
-   :tracker: edger.dir/*_maplot*.png
+   :glob: edger.dir/*_maplot*.png
    :width: 200
    :layout: column-5
 

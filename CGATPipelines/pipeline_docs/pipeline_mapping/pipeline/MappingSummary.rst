@@ -17,13 +17,13 @@ BAM files for each :term:`track`. Note that a read can have multiple alignments.
 
 .. report:: Mapping.BamSummary
    :render: table
-   :slices: mapped,reverse,rna,duplicates
+   :slices: alignments_mapped,alignments_reverse,alignments_rna,alignments_duplicates
 
    Mapping summary
 
 .. report:: Mapping.BamSummary
    :render: interleaved-bar-plot
-   :slices: mapped,reverse,rna,duplicates
+   :slices: alignments_mapped,alignments_reverse,alignments_rna,alignments_duplicates
 
    Mapping summary
 
@@ -73,12 +73,14 @@ This section shows the fragment size distribution.
    :render: line-plot
    :as-lines:
    :yrange: 0,
+   :split-at: 10
 
    Histogram of fragment sizes
 
 .. report:: Mapping.PicardInsertSizeMetrics
    :render: table
    :force:
+   :split-at: 10
 
    Fragment size summary
 

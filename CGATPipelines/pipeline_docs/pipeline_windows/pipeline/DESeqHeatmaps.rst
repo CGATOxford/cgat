@@ -3,7 +3,7 @@ Heat maps
 
 .. report:: Tracker.TrackerImages
    :render: gallery-plot
-   :tracker: deseq.dir/*_heatmap.*.png
+   :glob: deseq.dir/*_heatmap.*.png
    :width: 200
    :layout: column-5
 
