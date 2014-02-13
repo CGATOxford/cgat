@@ -1129,6 +1129,19 @@ def importRepeatsFromUCSC( infile, outfile ):
     dbhandle = PipelineUCSC.connectToUCSC()
     PipelineUCSC.getRepeatsFromUCSC( dbhandle, repclasses, outfile )
 
+############################################################
+############################################################
+############################################################
+@files( ((None, PARAMS["interface_cpgislands_bed"] ), ) )
+def importCpGIslandsFromUCSC( infile, outfile ):
+    '''import cpg islands from UCSC
+
+    The repeats are stored as a :term:`bed` formatted file.
+    '''
+
+    dbhandle = PipelineUCSC.connectToUCSC()
+    PipelineUCSC.getCpGIslandsFromUCSC( dbhandle, outfile )
+
 #############################################################
 @transform( importRepeatsFromUCSC, suffix(".gff.gz"), ".gff.gz.load" )
 def loadRepeats( infile, outfile ):
@@ -1514,6 +1527,7 @@ def buildGenomicFunctionalAnnotation( infiles, outfiles ):
          importRNAAnnotationFromUCSC,
          buildGeneSet,
          buildFlatGeneSet,
+         importCpGIslandsFromUCSC,
          createGO,
          ),
         PARAMS["interface_genomic_context_bed"] )
@@ -1532,10 +1546,10 @@ def buildGenomicContext( infiles, outfile ):
 
     to_cluster = True
 
-    repeats_gff, rna_gff, annotations_gtf, geneset_flat_gff, go_tsv = infiles
+    repeats_gff, rna_gff, annotations_gtf, geneset_flat_gff, cpgisland_bed, go_tsv = infiles
 
     tmpfile = P.getTempFilename( "." )
-    tmpfiles = [ "%s_%i" % (tmpfile, x) for x in range( 5 ) ]
+    tmpfiles = [ "%s_%i" % (tmpfile, x) for x in range( 6 ) ]
 
     distance=10
 
@@ -1598,6 +1612,14 @@ def buildGenomicContext( infiles, outfile ):
     | sort -k1,1 -k2,2n
     | python %(scriptsdir)s/bed2bed.py --method=merge --merge-by-name --merge-distance=%(distance)i --log=%(outfile)s.log
     > %(tmpfile)s_4
+    '''
+    P.run()
+    
+    ## CpG islands
+    statement = ''' 
+    zcat %(cpgisland_bed)s
+    | awk '{printf("%%s\\t%%i\\t%%i\\tcpgisland\\n", $1,$2,$3 )}'
+    > %(tmpfile)s_5
     '''
     P.run()
 
@@ -1980,7 +2002,7 @@ def buildGFFSummary( infile, outfile ):
              buildGeneTSS,
              buildMapableRegions,
              buildGenomicContext,
-             buildGenomeGCSegmentation ),
+             buildGenomeGCSegmentation),
             suffix(".bed.gz"), ".summary.tsv.gz" )
 def buildBedSummary( infile, outfile ):
     '''summarize genomic coverage of bed file.'''
@@ -2040,6 +2062,7 @@ def geneset():
 
 @follows( importRepeatsFromUCSC,
           importRNAAnnotationFromUCSC,
+          importCpGIslandsFromUCSC,
           buildGenomicContext,
           loadRepeats,
           countTotalRepeatLength )
