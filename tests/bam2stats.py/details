@@ -1,4 +1,4 @@
-read	is_unmapped	mate_is_unmapped	is_paired	is_read1	is_read2	is_proper_pair	is_qcfail	is_duplicate
+read	is_unmapped	mate_is_unmapped	is_paired	mapped_is_read1	mapped_is_read2	is_proper_pair	is_qcfail	is_duplicate
 DHKW5DQ1:308:D28FGACXX:5:1216:9004:70532	0	0	1	1	0	0	0	0
 DHKW5DQ1:308:D28FGACXX:7:2213:10714:64618	0	0	2	1	1	2	0	0
 DHKW5DQ1:308:D28FGACXX:7:1106:7115:32653	0	0	2	1	1	2	0	0
