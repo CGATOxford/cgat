@@ -1,5 +1,4 @@
-'''
-bam2stats.py - compute stats from a bam-file
+'''bam2stats.py - compute stats from a bam-file
 ============================================
 
 :Author: Andreas Heger
@@ -145,8 +144,9 @@ Example::
 
    cat in.bam | python bam2stats.py -
 
-This command will generate various statistics based on the supplied BAM file, such as
-percentage reads mapped and percentage reads mapped in pairs.
+This command will generate various statistics based on the supplied
+BAM file, such as percentage reads mapped and percentage reads mapped
+in pairs.
 
 Type::
 
@@ -169,7 +169,8 @@ the HI flag is present, the maximum HI is used to correct the NH
 flag. The assumption is, that the same reporting threshold has been
 used for all alignments.
 
-If no NH flag is present, it is assumed that all reads have only been reported once.
+If no NH flag is present, it is assumed that all reads have only been
+reported once.
 
 Multi-matching counts after filtering are really guesswork. Basically,
 the assumption is that filtering is consistent and will tend to remove
@@ -182,9 +183,6 @@ Command line options
 
 import os
 import sys
-import re
-import optparse
-import collections
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import CGAT.GTF as GTF
@@ -208,24 +206,29 @@ FLAGS = {
     128: 'read2',
     256: 'secondary',
     512: 'qc_fail',
-    1024: 'duplicate'  }
+    1024: 'duplicate',
+}
 
-def computeMappedReadsFromAlignments( total_alignments, nh, max_hi ):
-    '''compute number of reads alignment from total number of alignments'''
+
+def computeMappedReadsFromAlignments(total_alignments, nh, max_hi):
+    '''compute number of reads alignment from total number of alignments.
+    '''
     nreads_mapped = total_alignments
     if len(nh) > 0:
         max_nh = max(nh.keys())
         if max_hi > 0:
-            for x in xrange( 2, min( max_nh + 1, max_hi )): 
-                nreads_mapped -= (nh[x] / x) * (x-1)
-            for x in xrange( max_hi, max_nh + 1): 
-                nreads_mapped -= (nh[x] / max_hi) * (max_hi-1)
+            for x in xrange(2, min(max_nh + 1, max_hi)):
+                nreads_mapped -= (nh[x] / x) * (x - 1)
+            for x in xrange(max_hi, max_nh + 1):
+                nreads_mapped -= (nh[x] / max_hi) * (max_hi - 1)
         else:
-            for x in xrange( 2, max(nh.keys() ) + 1 ): nreads_mapped -= (nh[x] / x) * (x-1)
+            for x in xrange(2, max(nh.keys()) + 1):
+                nreads_mapped -= (nh[x] / x) * (x - 1)
 
     return nreads_mapped
 
-def writeNH( outfile, nh, max_hi ):
+
+def writeNH(outfile, nh, max_hi):
     '''output nh array, correcting for max_hi if less than nh'''
 
     # need to remove double counting
@@ -233,29 +236,33 @@ def writeNH( outfile, nh, max_hi ):
 
     max_nh = max(nh.keys())
     if max_hi > 0:
-        for x in xrange( 1, min( max_nh + 1, max_hi) ): 
-            if nh[x] == 0: continue
+        for x in xrange(1, min(max_nh + 1, max_hi)):
+            if nh[x] == 0:
+                continue
             outfile.write("%i\t%i\n" % (x, nh[x] / x))
-        for x in xrange( max_hi, max_nh + 1): 
-            if nh[x] == 0: continue
+        for x in xrange(max_hi, max_nh + 1):
+            if nh[x] == 0:
+                continue
             outfile.write("%i\t%i\n" % (x, nh[x] / max_hi))
     else:
-        for x in xrange( 1, max_nh + 1):
-            if nh[x] == 0: continue
+        for x in xrange(1, max_nh + 1):
+            if nh[x] == 0:
+                continue
             outfile.write("%i\t%i\n" % (x, nh[x] / x))
 
 
-def main( argv = None ):
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if not argv: argv = sys.argv
+    if not argv:
+        argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser( version = "%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
-                                    usage = globals()["__doc__"] )
+    parser = E.OptionParser(version = "%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
+                            usage = globals()["__doc__"])
 
     parser.add_option( "-r", "--filename-rna", dest="filename_rna", type="string", metavar='GFF',
                        help = "gff formatted file with rna locations. Note that the computation currently "
@@ -282,21 +289,21 @@ def main( argv = None ):
         output_details = False,
         )
 
-    ## add common options (-h/--help, ...) and parse command line 
-    (options, args) = E.Start( parser, argv = argv, add_output_options = True )
+    ## add common options (-h/--help, ...) and parse command line
+    (options, args) = E.Start(parser, argv = argv, add_output_options = True)
 
     if options.filename_rna:
-        rna = GTF.readAndIndex( GTF.iterator( IOTools.openFile( options.filename_rna ) ) )
+        rna = GTF.readAndIndex(GTF.iterator(IOTools.openFile(options.filename_rna)))
     else:
         rna = None
 
     if options.stdin == sys.stdin:
-        pysam_in = pysam.Samfile( "-", "rb" )
+        pysam_in = pysam.Samfile("-", "rb")
     else:
         raise NotImplementedError("-I option not implemented")
 
     if options.output_details:
-        outfile_details = E.openOutputFile( "details", "w")
+        outfile_details = E.openOutputFile("details", "w")
     else:
         outfile_details = None
 
@@ -311,8 +318,8 @@ def main( argv = None ):
                           outfile_details = outfile_details )
 
     if max_hi > 0 and max_hi != max( nh_all.keys() ):
-        E.warn( "max_hi(%i) is inconsistent with max_nh (%i) - counts will be corrected" \
-                    % (max_hi, max(nh_all.keys())))
+        E.warn( "max_hi(%i) is inconsistent with max_nh (%i) - counts will be corrected" 
+                % (max_hi, max(nh_all.keys())))
     flags = sorted(flags_counts.keys())
 
     outs = options.stdout
@@ -358,7 +365,8 @@ def main( argv = None ):
         return
 
     for flag, counts in flags_counts.iteritems():
-        if flag == "unmapped": continue
+        if flag == "unmapped": 
+            continue
         _write( outs, 
                 'alignments_' + flag, 
                 counts, 
@@ -496,24 +504,24 @@ def main( argv = None ):
     if flags_counts["read2"] > 0:
         if options.filename_fastq:
             pairs_mapped = counter.total_pair_is_mapped
-            outs.write( "pairs_total\t%i\t%5.2f\tpairs_total\n" % \
-                            (counter.total_pairs, 100.0 * counter.total_pairs / counter.total_pairs ) )
-            outs.write( "pairs_mapped\t%i\t%5.2f\tpairs_total\n" % \
-                            (pairs_mapped, 100.0 * pairs_mapped / counter.total_pairs))
-            outs.write( "pairs_unmapped\t%i\t%5.2f\tpairs_total\n" % \
-                            ( counter.total_pair_is_unmapped, 100.0 * counter.total_pair_is_unmapped / counter.total_pairs ) )
-            outs.write( "pairs_proper_unique\t%i\t%5.2f\tpairs_total\n" % \
-                            ( counter.total_pair_is_proper_uniq, 100.0 * counter.total_pair_is_proper_uniq / counter.total_pairs ) )
-            outs.write( "pairs_incomplete\t%i\t%5.2f\tpairs_total\n" % \
-                            ( counter.total_pair_is_incomplete, 100.0 * counter.total_pair_is_incomplete / counter.total_pairs ) )
-            outs.write( "pairs_proper_duplicate\t%i\t%5.2f\tpairs_total\n" % \
-                            ( counter.total_pair_is_proper_duplicate, 100.0 * counter.total_pair_is_proper_duplicate / counter.total_pairs ) )
-            outs.write( "pairs_proper_multimapping\t%i\t%5.2f\tpairs_total\n" % \
-                            ( counter.total_pair_is_proper_mmap, 100.0 * counter.total_pair_is_proper_mmap / counter.total_pairs ) )
-            outs.write( "pairs_not_proper_unique\t%i\t%5.2f\tpairs_total\n" % \
-                            ( counter.total_pair_not_proper_uniq, 100.0 * counter.total_pair_not_proper_uniq / counter.total_pairs ) )
-            outs.write( "pairs_other\t%i\t%5.2f\tpairs_total\n" % \
-                            ( counter.total_pair_is_other, 100.0 * counter.total_pair_is_other / counter.total_pairs ) )
+            outs.write( "pairs_total\t%i\t%5.2f\tpairs_total\n" % 
+                        (counter.total_pairs, 100.0 * counter.total_pairs / counter.total_pairs ) )
+            outs.write( "pairs_mapped\t%i\t%5.2f\tpairs_total\n" %
+                        (pairs_mapped, 100.0 * pairs_mapped / counter.total_pairs))
+            outs.write( "pairs_unmapped\t%i\t%5.2f\tpairs_total\n" %
+                        ( counter.total_pair_is_unmapped, 100.0 * counter.total_pair_is_unmapped / counter.total_pairs ) )
+            outs.write( "pairs_proper_unique\t%i\t%5.2f\tpairs_total\n" %
+                        ( counter.total_pair_is_proper_uniq, 100.0 * counter.total_pair_is_proper_uniq / counter.total_pairs ) )
+            outs.write( "pairs_incomplete\t%i\t%5.2f\tpairs_total\n" %
+                        ( counter.total_pair_is_incomplete, 100.0 * counter.total_pair_is_incomplete / counter.total_pairs ) )
+            outs.write( "pairs_proper_duplicate\t%i\t%5.2f\tpairs_total\n" %
+                        ( counter.total_pair_is_proper_duplicate, 100.0 * counter.total_pair_is_proper_duplicate / counter.total_pairs ) )
+            outs.write( "pairs_proper_multimapping\t%i\t%5.2f\tpairs_total\n" %
+                        ( counter.total_pair_is_proper_mmap, 100.0 * counter.total_pair_is_proper_mmap / counter.total_pairs ) )
+            outs.write( "pairs_not_proper_unique\t%i\t%5.2f\tpairs_total\n" %
+                        ( counter.total_pair_not_proper_uniq, 100.0 * counter.total_pair_not_proper_uniq / counter.total_pairs ) )
+            outs.write( "pairs_other\t%i\t%5.2f\tpairs_total\n" %
+                        ( counter.total_pair_is_other, 100.0 * counter.total_pair_is_other / counter.total_pairs ) )
 
             nread1_total = counter.total_read1
             _write( outs, 
@@ -596,14 +604,15 @@ def main( argv = None ):
     else:
         # no paired end data
         pairs_total = pairs_mapped = 0
-        outs.write( "pairs_total\t%i\t%5.2f\tpairs_total\n" % (pairs_total,0.0))
-        outs.write( "pairs_mapped\t%i\t%5.2f\tpairs_total\n" % (pairs_mapped, 0.0))
+        outs.write("pairs_total\t%i\t%5.2f\tpairs_total\n" % (pairs_total, 0.0))
+        outs.write("pairs_mapped\t%i\t%5.2f\tpairs_total\n" % (pairs_mapped, 0.0))
 
     if options.force_output or len(nm_filtered) > 0:
         outfile = E.openOutputFile( "nm", "w" )
         outfile.write( "NM\talignments\n" )
         if len(nm_filtered) > 0:
-            for x in xrange( 0, max( nm_filtered.keys() ) + 1 ): outfile.write("%i\t%i\n" % (x, nm_filtered[x]))
+            for x in xrange( 0, max( nm_filtered.keys() ) + 1 ):
+                outfile.write("%i\t%i\n" % (x, nm_filtered[x]))
         else:
             outfile.write( "0\t%i\n" % (counter.filtered) )
         outfile.close()
@@ -634,12 +643,9 @@ def main( argv = None ):
         for x in xrange( 0, max( mapq_all.keys() ) + 1 ):       
             outfile.write("%i\t%i\t%i\n" % (x, mapq_all[x], mapq[x]))
         outfile.close()
-        
 
     ## write footer and output benchmark information.
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
-    
+    sys.exit(main(sys.argv))

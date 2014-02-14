@@ -1369,9 +1369,10 @@ def buildContextStats( infiles, outfile ):
 
     Examines the genomic context to where reads align.
 
-    A read is assigned to the genomic context that it
-    overlaps by at least 50%. Thus some reads mapping
-    several contexts might be dropped.
+    A read is assigned to the genomic context that it overlaps by at
+    least 50%. Thus some reads that map across several non-overlapping
+    contexts might be dropped.
+
     '''
 
     infile, reffile = infiles
@@ -1715,23 +1716,28 @@ def buildBed( infile, outfile ):
           loadPicardStats, 
           loadBAMStats, 
           loadContextStats )
-def general_qc(): pass
+def general_qc(): 
+    pass
 
 @active_if( SPLICED_MAPPING )
 @follows( loadExonValidation,
           loadGeneInformation,
           loadTranscriptLevelReadCounts,
           loadIntronLevelReadCounts )
-def spliced_qc(): pass
+def spliced_qc(): 
+    pass
 
 @follows( general_qc, spliced_qc )
-def qc(): pass
+def qc(): 
+    pass
 
 @follows( loadPicardDuplicationStats )
-def duplication(): pass
+def duplication(): 
+    pass
 
 @follows( buildBigWig, loadBigWigStats )
-def wig(): pass
+def wig(): 
+    pass
 
 ###################################################################
 ###################################################################
@@ -1775,7 +1781,8 @@ def views():
 ###################################################################
 ###################################################################
 @follows( mapping, qc, views)
-def full(): pass
+def full(): 
+    pass
 
 ###################################################################
 ###################################################################
