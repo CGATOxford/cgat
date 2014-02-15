@@ -1244,8 +1244,8 @@ def loadMACS( infile, outfile, bamfile, controlfile = None ):
     filename_subpeaks = P.snip( infile, ".macs", ) + ".subpeaks.macs_peaks.bed" 
 
     if not os.path.exists(filename_bed):
-        E.warn("could not find %s" % infilename )
-        P.touch( outfile )
+        E.warn("could not find %s" % filename_bed)
+        P.touch(outfile)
         return
 
     exportdir = os.path.join(PARAMS['exportdir'], 'macs' )
