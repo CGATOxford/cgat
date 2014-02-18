@@ -70,14 +70,21 @@ def main( argv = None ):
                       help="whether or not to trim last character of sequence name. For example sometimes ids in the first \
                             file in the pair will end with \1 and teh second with \2. If --chop is not specified \
                             then the results will be wrong [default=%default]."  )
+    parser.add_option("-u", "--unpaired", dest="unpaired", action="store_true",
+                     help="whether or not to write out unpaired reads to a seperate file")
+
 
     parser.add_option("-o", "--output-pattern", dest="output_pattern", type="string",
                       help="pattern for output files [default=%default]."  )
 
+
+
+
     parser.set_defaults(
         method = "reconcile",
         chop = False,
-        output_pattern = "%i.fastq.gz",
+        unpaired = False,
+        output_pattern = "%s.fastq.gz",
         )
 
     ## add common options (-h/--help, ...) and parse command line 
@@ -102,7 +109,7 @@ def main( argv = None ):
                 if options.chop: yield r[:-1]
                 else: yield r
 
-        def write( outfile, infile, take ):
+        def write( outfile, infile, take, unpaired_file = None ):
             '''filter fastq files with ids in take.'''
             aread = infile.readline
             while True:
@@ -110,8 +117,13 @@ def main( argv = None ):
                 if not l[0]: break
                 r = l[0].split()[0]
                 if options.chop: r = r[:-1]
-                if r not in take: continue
-                outfile.write("\n".join(l) + "\n" )
+                if r not in take:
+                    if unpaired_file == None: 
+                        continue
+                    else:
+                        unpaired_file.write("\n".join(l) + "\n")
+                else:              
+                    outfile.write("\n".join(l) + "\n" )
 
         E.info( "reading first in pair" )
         inf1 = IOTools.openFile( fn1 )
@@ -128,15 +140,22 @@ def main( argv = None ):
                       len(ids2),
                       len(take)) )
  
-        with IOTools.openFile( options.output_pattern % 1, "w" ) as outf:
+        if options.unpaired:
+            unpaired_filename = IOTools.openFile( options.output_pattern % "unpaired", "w")
+        else:
+            unpaired_filename = None
+
+        with IOTools.openFile( options.output_pattern % "1", "w" ) as outf:
             inf = IOTools.openFile( fn1 )
             E.info( "writing first in pair" )
-            write( outf, inf, take )
+            write( outf, inf, take, unpaired_filename )
 
-        with IOTools.openFile( options.output_pattern % 2, "w" ) as outf:
+        with IOTools.openFile( options.output_pattern % "2", "w" ) as outf:
             inf = IOTools.openFile( fn2 )
             E.info( "writing second in pair" )
-            write( outf, inf, take )
+            write( outf, inf, take, unpaired_filename )
+
+        if options.unpaired: unpaired_filename.close()
         
     ## write footer and output benchmark information.
     E.info( "%s" % str(c) )
