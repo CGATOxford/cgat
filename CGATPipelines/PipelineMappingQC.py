@@ -342,12 +342,12 @@ def loadPicardDuplicationStats( infiles, outfile ):
     '''load picard duplicate filtering stats.'''
     # SNS: added to enable naming consistency
 
-    suffix = "duplication_metrics"
+    suffix = ".duplication_metrics"
 
     # the loading functions expect "infile_name.pipeline_suffix" as the infile names.
-    infiles = [ x[ 0 : -len( "." + suffix ) ] for x in infiles]
+    infile_names = [ x[ 0 : -len( suffix ) ] for x in infiles]
     
-    loadPicardMetrics( infiles, outfile, suffix )
+    loadPicardMetrics( infile_names, outfile, suffix )
 
     infiles_with_histograms = []
 
@@ -355,10 +355,13 @@ def loadPicardDuplicationStats( infiles, outfile ):
     # because by design the pipeline does not track endedness
     for infile in infiles:
         with_hist = False
-        with open(infile) as open_infile:
+        print infile
+        with open(infile, "r") as open_infile:
             for line in open_infile: 
-                if line.startswith("## HISTOGRAM"): with_hist = True
-        if with_hist == True: infiles_with_histograms.append( infile )
+                if line.startswith("## HISTOGRAM"): 
+                    with_hist = True
+
+        if with_hist == True: infiles_with_histograms.append( infile[:-len(suffix)] )
 
     if len(infiles_with_histograms) > 0:
         loadPicardHistogram( infiles_with_histograms, outfile, suffix, "coverage_multiple" )
