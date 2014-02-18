@@ -1091,56 +1091,65 @@ def runMACS2( infile, outfile, controlfile = None ):
 
     Build bedgraph files and convert to bigwig files.
     '''
-    to_cluster = True
+    if controlfile:
+        control = "%s" % controlfile
+    else:
+        control = ""
 
-    if controlfile: control = "%s" % controlfile
-    else: control = ""
+    job_options = "-l mem_free=8G"
 
-    job_options= "-l mem_free=8G"
-
-    # example statement: macs2 callpeak -t R1-paupar-R1.call.bam -c R1-lacZ-R1.call.bam -f BAMPE -g 2.39e9 --verbose 5 --bw 150 -q 0.01 -m 10 100000 --name test
+    # example statement: macs2 callpeak -t R1-paupar-R1.call.bam -c
+    # R1-lacZ-R1.call.bam -f BAMPE -g 2.39e9 --verbose 5 --bw 150 -q
+    # 0.01 -m 10 100000 --name test
 
     # used to set the option --format=bampe
     # removed to let macs2 detect the format.
 
-    # format bam needs to be set explicitely, autodetection does not work.
-    # -B --SPMR: ask macs to create a bed-graph file with fragment pileup per million reads
+    # format bam needs to be set explicitely, autodetection does not
+    # work.  -B --SPMR: ask macs to create a bed-graph file with
+    # fragment pileup per million reads
     statement = '''
-                    macs2 callpeak 
+                    macs2 callpeak
                     --format=BAM
-                    -t %(infile)s 
-                    -c %(control)s 
-                    --verbose=10 
-                    --name=%(outfile)s 
+                    -t %(infile)s
+                    -c %(control)s
+                    --verbose=10
+                    --name=%(outfile)s
                     --qvalue=%(macs2_max_qvalue)s
                     -B --SPMR
-                    %(macs2_options)s 
+                    %(macs2_options)s
                     >& %(outfile)s
-                ''' 
-    P.run() 
-    
+                '''
+    P.run()
+
     # compress macs bed files and index with tabix
     for suffix in ('peaks', 'summits'):
-        statement = '''
-        bgzip -f %(outfile)s_%(suffix)s.bed; 
-        tabix -f -p bed %(outfile)s_%(suffix)s.bed.gz
-        '''
+        bedfile = outfile + "_" + suffix + ".bed"
+        if os.path.exists(bedfile):
+            statement = '''
+                 bgzip -f %(bedfile)s
+                 tabix -f-p bed %(bedfile)s.gz
+            '''
         P.run()
-    
+
     # convert normalized bed graph to bigwig
     # saves 75% of space
-    # compressing only saves 60%   
-    bedGraphToBigwig( outfile + "_treat_pileup.bdg", 
-                      os.path.join(PARAMS["annotations_dir"], "contigs.tsv"),
-                      outfile + "_treat_pileup.bw" )
-    bedGraphToBigwig( outfile + "_control_lambda.bdg", 
-                      os.path.join(PARAMS["annotations_dir"], "contigs.tsv"),
-                      outfile + "_control_lambda.bw" )
+    # compressing only saves 60%
+    if os.path.exists(outfile + "_treat_pileup.bdg"):
+        bedGraphToBigwig(outfile + "_treat_pileup.bdg",
+                         os.path.join(PARAMS["annotations_dir"],
+                                      "contigs.tsv"),
+                         outfile + "_treat_pileup.bw")
+    if os.path.exists(outfile + "_control_lambda.bdg"):
+        bedGraphToBigwig(outfile + "_control_lambda.bdg",
+                         os.path.join(PARAMS["annotations_dir"],
+                                      "contigs.tsv"),
+                         outfile + "_control_lambda.bw")
 
     # index and compress peak file
     suffix = 'peaks.xls'
-    statement = '''grep -v "^$" 
-                   < %(outfile)s_%(suffix)s 
+    statement = '''grep -v "^$"
+                   < %(outfile)s_%(suffix)s
                    | bgzip > %(outfile)s_%(suffix)s.gz;
                    tabix -f -p bed %(outfile)s_%(suffix)s.gz;
                    checkpoint;
@@ -1235,8 +1244,8 @@ def loadMACS( infile, outfile, bamfile, controlfile = None ):
     filename_subpeaks = P.snip( infile, ".macs", ) + ".subpeaks.macs_peaks.bed" 
 
     if not os.path.exists(filename_bed):
-        E.warn("could not find %s" % infilename )
-        P.touch( outfile )
+        E.warn("could not find %s" % filename_bed)
+        P.touch(outfile)
         return
 
     exportdir = os.path.join(PARAMS['exportdir'], 'macs' )
