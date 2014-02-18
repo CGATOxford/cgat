@@ -1102,7 +1102,7 @@ def loadPicardStats( infiles, outfile ):
 ############################################################
 @transform( MAPPINGTARGETS,
             suffix(".bam" ), 
-            ".picard_stats.duplication_metrics")
+            ".picard_duplication_metrics")
 def buildPicardDuplicationStats( infile, outfile ):
     '''Get duplicate stats from picard MarkDuplicates.
     Pair duplication is properly handled, including inter-chromosomal cases. SE data is also handled.
@@ -1116,11 +1116,12 @@ def buildPicardDuplicationStats( infile, outfile ):
 ############################################################
 ############################################################
 @jobs_limit( 1, "db" )
-@merge( buildPicardDuplicationStats, "picard_duplication_stats.load" )
-def loadPicardDuplicationStats( infiles, outfile ):
+@merge( buildPicardDuplicationStats, ["picard_duplication_stats.load", 
+                                      "picard_duplication_histogram.load"] )
+def loadPicardDuplicationStats( infiles, outfiles ):
     '''merge alignment stats into single tables.'''
     #separate load function while testing
-    PipelineMappingQC.loadPicardDuplicationStats( infiles, outfile )
+    PipelineMappingQC.loadPicardDuplicationStats( infiles, outfiles )
 
 # ############################################################
 # ############################################################

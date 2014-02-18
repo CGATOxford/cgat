@@ -220,11 +220,11 @@ def buildPicardGCStats( infile, outfile, genome_file ):
 
     P.run()
 
-def loadPicardMetrics( infiles, outfile, suffix, pipeline_suffix = ".picard_stats" ):
+def loadPicardMetrics( infiles, outfile, suffix, pipeline_suffix = ".picard_stats", tablename=False ):
     '''load picard metrics.'''
 
-    tablename = P.toTable( outfile )
-    tname = "%s_%s" % (tablename, suffix)
+    if not tablename:
+        tablename = "%s_%s" % (P.toTable(outfile), suffix)
 
     outf = P.getTempFile( "." )
 
@@ -278,7 +278,7 @@ def loadPicardMetrics( infiles, outfile, suffix, pipeline_suffix = ".picard_stat
     statement = '''cat %(tmpfilename)s
                 | python %(scriptsdir)s/csv2db.py
                       --index=track
-                      --table=%(tname)s 
+                      --table=%(tablename)s 
                       --allow-empty
                 > %(outfile)s
                '''
@@ -286,19 +286,18 @@ def loadPicardMetrics( infiles, outfile, suffix, pipeline_suffix = ".picard_stat
 
     os.unlink( tmpfilename )
 
-def loadPicardHistogram( infiles, outfile, suffix, column, pipeline_suffix = ".picard_stats" ):
+def loadPicardHistogram( infiles, outfile, suffix, column, pipeline_suffix = ".picard_stats", tablename = False ):
     '''extract a histogram from a picard output file and load it into database.'''
 
-    tablename = P.toTable( outfile )
-    tname = "%s_%s" % (tablename, suffix)
-    
-    tname = P.snip( tname, "_metrics") + "_histogram"
+    if not tablename:
+        tablename = "%s_%s" % (P.toTable(outfile), suffix)
+        tablename = tablename.replace("_metrics", "_histogram") 
 
     # some files might be missing
     xfiles = [ x for x in infiles if os.path.exists( "%s.%s" % (x, suffix) ) ]
 
     if len(xfiles) == 0: 
-        E.warn ( "no files for %s" % tname )
+        E.warn ( "no files for %s" % tablename )
         return
     
     header = ",".join( [P.snip( os.path.basename(x), pipeline_suffix) for x in xfiles ] )        
@@ -315,7 +314,7 @@ def loadPicardHistogram( infiles, outfile, suffix, column, pipeline_suffix = ".p
                       --header=%(column)s,%(header)s
                       --replace-header
                       --index=track
-                      --table=%(tname)s 
+                      --table=%(tablename)s 
                 >> %(outfile)s
                 """
     
@@ -338,33 +337,38 @@ def loadPicardAlignmentStats( infiles, outfile ):
         loadPicardHistogram( infiles, outfile, suffix, column )
 
 
-def loadPicardDuplicationStats( infiles, outfile ):
+def loadPicardDuplicationStats( infiles, outfiles ):
     '''load picard duplicate filtering stats.'''
     # SNS: added to enable naming consistency
 
-    suffix = ".duplication_metrics"
+    outfile_metrics, outfile_histogram = outfiles
+
+    suffix = "picard_duplication_metrics"
 
     # the loading functions expect "infile_name.pipeline_suffix" as the infile names.
-    infile_names = [ x[ 0 : -len( suffix ) ] for x in infiles]
+    infile_names = [ x[:-len("."+suffix)] for x in infiles]
     
-    loadPicardMetrics( infile_names, outfile, suffix )
+    loadPicardMetrics( infile_names, outfile_metrics, suffix, "", 
+                       tablename="picard_duplication_metrics" )
 
     infiles_with_histograms = []
 
     # The complexity histogram is only present for PE data, so we must check
     # because by design the pipeline does not track endedness
-    for infile in infiles:
+    for infile in infile_names:
         with_hist = False
-        print infile
-        with open(infile, "r") as open_infile:
+        with open( ".".join([infile, suffix]), "r" ) as open_infile:
             for line in open_infile: 
                 if line.startswith("## HISTOGRAM"): 
-                    with_hist = True
-
-        if with_hist == True: infiles_with_histograms.append( infile[:-len(suffix)] )
+                    infiles_with_histograms.append( infile )
+                    break
 
     if len(infiles_with_histograms) > 0:
-        loadPicardHistogram( infiles_with_histograms, outfile, suffix, "coverage_multiple" )
+        loadPicardHistogram( infiles_with_histograms, outfile_histogram, suffix, "coverage_multiple", "", 
+                             tablename = "picard_complexity_histogram")
+    else:
+        with open(outfile_histogram, "w") as ofh:
+            ofh.write("No histograms detected, no data loaded.")
 
 
 def loadPicardDuplicateStats( infiles, outfile, pipeline_suffix= ".bam" ):
