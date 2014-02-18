@@ -104,7 +104,8 @@ def getRepeatsFromUCSC( dbhandle, repclasses, outfile ):
                FROM %(table)s"""
         
         if repclasses:
-            sql += " WHERE repClass in ('%(repclasses)s') "
+            repclasses_str = ",".join([ "'"+x.strip()+"'" for x in repclasses])
+            sql += ''' WHERE repClass in (%(repclasses_str)s) ''' % locals()
                
         sql = sql % locals()
 
