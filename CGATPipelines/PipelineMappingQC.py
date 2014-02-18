@@ -152,14 +152,31 @@ def buildPicardDuplicationStats( infile, outfile ):
         P.touch( outfile )
         return
 
-    statement = '''MarkDuplicates
-                                   INPUT=%(infile)s 
-                                   ASSUME_SORTED=true 
-                                   METRICS_FILE=%(outfile)s
-                                   OUTPUT=/dev/null 
-                                   VALIDATION_STRINGENCY=SILENT 
+    # currently, MarkDuplicates cannot handle split alignments from gsnap
+    # these can be identified by the custom XT tag.
+    if ".gsnap.bam" in infile:
+        tmpf = P.getTempFile( ".")
+        tmpfile_name = tmpf.name
+        statement = '''samtools view -h %(infile)s
+                         | awk "!/\\tXT:/" 
+                         | samtools view /dev/stdin -S -b > %(tmpfile_name)s;
+                      ''' % locals()
+        data_source = tmpfile_name
+    else:
+        statement = ""
+        data_source = infile
+
+    statement += '''MarkDuplicates
+                       INPUT=%(data_source)s 
+                       ASSUME_SORTED=true 
+                       METRICS_FILE=%(outfile)s
+                       OUTPUT=/dev/null 
+                       VALIDATION_STRINGENCY=SILENT 
                  '''
+
     P.run()
+
+    if ".gsnap.bam" in infile: os.unlink(tmpfile_name)
 
 def buildPicardDuplicateStats( infile, outfile ):
     '''Record duplicate metrics using Picard and keep the dedupped .bam file'''
