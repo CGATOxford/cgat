@@ -24,7 +24,9 @@ BAM files for each :term:`track`. Note that a read can have multiple alignments.
 .. report:: Mapping.BamSummary
    :render: interleaved-bar-plot
    :slices: mapped,reverse,rna,duplicates
-
+   :split-at: 10
+   :layout: column-3
+   
    Mapping summary
 
 .. report:: Mapping.MappingFlagsMismatches
@@ -45,12 +47,14 @@ of :term:`reads`.
 .. report:: Mapping.BamSummary
    :render: table
    :slices: reads_total,reads_mapped,reads_norna,reads_norna_unique_alignments
-
+  
    Mapping summary
 
 .. report:: Mapping.BamSummary
    :render: interleaved-bar-plot
    :slices: reads_total,reads_mapped,reads_norna,reads_norna_unique_alignments
+   :split-at: 10
+   :layout: column-3
 
    Mapping summary
 
