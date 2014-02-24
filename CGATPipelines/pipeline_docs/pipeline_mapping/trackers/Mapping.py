@@ -19,7 +19,7 @@ class PicardSummary( MappingTracker, SingleTableTrackerRows ):
     table = "picard_stats_alignment_summary_metrics"
 
 class PicardDuplicationSummary( MappingTracker, SingleTableTrackerRows ):
-    table = "picard_duplication_stats_duplication_metrics"
+    table = "picard_duplication_metrics"
 
 class PicardAlignmentSummaryMetrics( MappingTracker, SingleTableTrackerRows ):
     table = "picard_stats_alignment_summary_metrics"
@@ -48,7 +48,7 @@ class PicardQualityDistributionHistogram( MappingTracker, SingleTableTrackerHist
 
 class DuplicationMetricsTable( MappingTracker, SingleTableTrackerHistogram ):
 
-    table = "picard_duplication_stats_duplication_histogram"
+    table = "picard_complexity_histogram"
 
     def __call__(self, track = None, slice = None ):
         cols = self.getColumns(self.table)
@@ -76,7 +76,7 @@ class AlignmentQualityByCycle( MappingTracker, SingleTableTrackerHistogram ):
     column = "cycle"
 
 class DuplicationMetrics( MappingTracker, SingleTableTrackerHistogram ):
-    table = "picard_duplication_stats_duplication_histogram"
+    table = "picard_complexity_histogram"
     column = "coverage_multiple"
 
 class AlignmentQualityDistribution( MappingTracker, SingleTableTrackerHistogram ):

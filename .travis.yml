@@ -4,17 +4,8 @@ language: python
 python:
   - "2.7"
 
-before_install:
-  - chmod +x setup-DEBs.sh
-  - sudo ./setup-DEBs.sh
-
-install:
-  - chmod +x setup-DEBs.sh
-  - sudo ./setup-CGAT.sh
-
 script: 
-  - chmod +x nosetests-DEBs.sh
-  - sudo ./nosetests-DEBs.sh
+  - sudo ./install-CGAT-tools.sh --travis
 
 notifications:
   email:
@@ -29,3 +20,4 @@ notifications:
     - thomas.smith2@dpag.ox.ac.uk
     - michael.morgan@dpag.ox.ac.uk
     - xiaoming.hu@dpag.ox.ac.uk
+    - nicholas.ilott@NDM.OX.AC.UK

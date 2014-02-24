@@ -96,6 +96,9 @@ def main( argv = None ):
 
     parser.add_option( "--seed", dest="seed", type="int",
                        help="seed for random number generator [default=%default]."  )
+    
+    parser.add_option( "--renumber-ids", dest="renumber_ids", type="string",
+                       help="rename reads in file by pattern [default=%default]"  )
 
 
     parser.set_defaults(
@@ -108,7 +111,8 @@ def main( argv = None ):
         uniq = False,
         outfile_pair = None,
         sort = None,
-        seed = None )
+        seed = None ,
+        renumber_ids = None)
 
     ## add common options (-h/--help, ...) and parse command line 
     (options, args) = E.Start( parser, argv = argv )
@@ -150,7 +154,7 @@ def main( argv = None ):
 
     elif options.apply:
         ids = set(IOTools.readList( IOTools.openFile( options.apply ) ))
-        
+
         for record in Fastq.iterate( options.stdin ):
             c.input += 1
             if re.sub(" .*", "", record.identifier).strip() in ids:
@@ -197,6 +201,13 @@ def main( argv = None ):
             for entry in sorted(entries1):
                 outfile1.write("@%s/1\n%s\n+\n%s\n" % (entry, entries1[entry][0], entries1[entry][1]))
                 outfile2.write("@%s/2\n%s\n+\n%s\n" % (entry, entries2[entry][0], entries2[entry][1]))
+
+    elif options.renumber_ids:
+        id_count = 1
+        for record in Fastq.iterate( options.stdin ):
+            record.identifier = options.renumber_ids % id_count  
+            id_count += 1
+            options.stdout.write("@%s\n%s\n+\n%s\n" % (record.identifier, record.seq, record.quals))
 
     ## write footer and output benchmark information.
     E.info( "%s" % str(c) )

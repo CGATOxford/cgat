@@ -14,6 +14,7 @@ plots from the MeDIP-Seq pipeline.
    pipeline/CpGCoverage.rst
    pipeline/Signal.rst
    pipeline/Processing.rst
+   pipeline/Profiles.rst
    pipeline/DifferentialMethylation.rst
 
 .. errorlist::

@@ -11,14 +11,14 @@ for all methods, for example :term:`cuffdiff`.
 Shared genes
 ============
 
-The following table lists the number of shared predictions in each
-gene set.
+The following table lists the number of features called differentially
+expressed that are common to all methods.
 
 .. report:: DifferentialExpression.DifferentialExpressionOverlap
    :render: table
    :groupby: all
 
-   Number of shared predictions between different methods.
+   Number of consistent predictions between different methods.
 
 Fold change
 ===========
@@ -29,7 +29,6 @@ Fold change
    :width: 300
    
    Scatter-plots of fold change estimates Cuffdiff vs. DESeq
-
 
 .. report:: DifferentialExpression.DifferentialExpressionCorrelationFoldChangeCuffdiffEdger
    :render: r-smooth-scatter-plot
@@ -45,10 +44,8 @@ Fold change
    
    Scatter-plots of fold change estimates DESeq vs. EdgeR
 
-
 P-values
 ===========
-
 
 .. report:: DifferentialExpression.DifferentialExpressionCorrelationPValueCuffdiffDeseq
    :render: r-smooth-scatter-plot

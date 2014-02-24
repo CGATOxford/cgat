@@ -115,8 +115,7 @@ def main( argv = sys.argv ):
 
         shutil.copytree( fn_src, fn_dest )
 
-    for f in ( "sphinxreport.ini",
-               "conf.py",
+    for f in ( "conf.py",
                "pipeline.ini" ):
         copy( f, 'src/pipeline_%s' % options.name )
         
@@ -124,17 +123,15 @@ def main( argv = sys.argv ):
         copy( f, 'src' )
 
     # create links
-    for src, dest in ( ("sphinxreport.ini", "sphinxreport.ini"),
-                      ("conf.py", "conf.py"),
-                      ( "pipeline.ini", "pipeline.ini" )):
+    for src, dest in ( ("conf.py", "conf.py"), 
+                       ( "pipeline.ini", "pipeline.ini" )):
         d = os.path.join( "report", dest )
         if os.path.exists( d ) and options.force: 
             os.unlink( d )
         os.symlink( os.path.join( confdir, src), d )
 
     for f in ( "cgat_logo.png",
-               "index.html",
-               "gallery.html" ):
+               "index.html" ):
         copy( f, "%s/_templates" % reportdir )
 
     for f in ("themes",):
@@ -142,7 +139,6 @@ def main( argv = sys.argv ):
         
     for f in ( "contents.rst",
                "pipeline.rst",
-               "analysis.rst",
                "__init__.py" ):
         copy( f, reportdir )
 

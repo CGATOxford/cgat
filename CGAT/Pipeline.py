@@ -129,7 +129,8 @@ def configToDictionary( config ):
     return p
 
 def getParameters( filenames = ["pipeline.ini",],
-                   defaults = None ):
+                   defaults = None,
+                   default_ini = True ):
     '''read a config file and return as a dictionary.
 
     Sections and keys are combined with an underscore. If
@@ -150,11 +151,26 @@ def getParameters( filenames = ["pipeline.ini",],
     This function also updates the module-wide parameter map.
     
     The section [DEFAULT] is equivalent to [general].
+
+    If default_ini is set, the default initialization file
+    will be read from 'CGATPipelines/configuration/pipeline.ini'
     '''
 
     global CONFIG
 
     CONFIG = ConfigParser.ConfigParser()
+    
+    if default_ini:
+        # The link between CGATPipelines and Pipeline.py
+        # needs to severed at one point.
+        # 1. config files into CGAT module directory?
+        # 2. Pipeline.py into CGATPipelines module directory?
+        dirname = os.path.join( os.path.dirname( os.path.dirname( __file__ )), "CGATPipelines")
+        filenames.insert( 0, 
+                          os.path.join( dirname, 
+                                        'configuration', 
+                                        'pipeline.ini' ) )
+
     CONFIG.read( filenames )
 
     p = configToDictionary( CONFIG )
@@ -1194,7 +1210,7 @@ def clonePipeline( srcdir ):
 
 def writeConfigFiles( path ):
     
-    for dest in ( "pipeline.ini", "sphinxreport.ini", "conf.py" ):
+    for dest in ( "pipeline.ini", "conf.py"):
         src = os.path.join( path, dest)
         if os.path.exists(dest):
             L.warn( "file `%s` already exists - skipped" % dest )
@@ -1202,10 +1218,9 @@ def writeConfigFiles( path ):
 
         if not os.path.exists( src ):
             raise ValueError( "default config file `%s` not found"  % src )
+
         shutil.copyfile( src, dest )
         L.info( "created new configuration file `%s` " % dest )
-
-
 
 def clean( patterns, dry_run = False ):
     '''clean up files given by glob *patterns*.
@@ -1329,7 +1344,7 @@ def run_report( clean = True):
     run()
 
     L.info( 'the report is available at %s' % os.path.abspath( \
-            os.path.join( PARAMS['report_html'], "index.html")))
+            os.path.join( PARAMS['report_html'], "contents.html")))
 
 USAGE = '''
 usage: %prog [OPTIONS] [CMD] [target]

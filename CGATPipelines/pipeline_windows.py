@@ -1,5 +1,4 @@
-"""
-================
+"""================
 Windows pipeline
 ================
 
@@ -9,42 +8,39 @@ Windows pipeline
 :Tags: Python
 
 This pipeline takes mapped reads from ChIP-Seq experiments
-such has chromatin marks, MeDIP and performs a window based
-enrichment analysis.
+such has chromatin marks, MeDIP and performs analyses
+of the genomic read distribution. This contrasts with 
+:doc:`pipeline_intervals`, which annotates a set of
+non-overlapping intervals.
+
+The pipeline performs the following analyses:
+
+Window based analysis
+    The pipeline defines windows across the genome
+    add counts the reads mapping into the windows.
+    It then detects if there are any differences
+    in window read counts between different experimental
+    conditions
+
+Meta-gene profiling
+    Compute read distributions across genes.
+
+Genomic context analysis
+    The genome is divided into annotations such
+    as repeat, exon, .... Reads are aggregated
+    across annotations.
+
+Methods
+=======
+
+Window based analysis
+---------------------
 
    1. Identify differentially occupied regions
    4. Filter DMRs
    5. Calculate DMR statistics
    6. Produce report (SphinxReport)
 
-Methods
-=======
-
-Read processing
----------------
-
-For medip-seq analysis, the following filtering steps are typically applied to the mapped data:
-
-   1. removing duplicate reads
-   2. removing reads with a mapping quality of less than 10
-
-Medip analysis
---------------
-
-The medip analysis makes use of the MEDIPS R package by `Chavez et al. <http://medips.molgen.mpg.de/>`_ 
-(see :pmid:`20802089`).
-
-Briefly, the data is processed in the following way:
-
-1. Quality control
-   1. Saturation analysis
-   2. Computing CpG coverage
-   3. Computing CpG enrichment
-   
-2. Normalization
-   1. Output data normalized by total read depth (rpm - reads per million)
-   2. Output normalized relative methylation scores (rms)
-   3. Output normalized absolute methylation scores (ams)
 
 Tiling strategies
 -----------------
@@ -59,7 +55,7 @@ fixwidth_nooverlap
    tiles of size ``tiling_window_size`` with adjacent tiles not overlapping.
 
 fixwidth_overlap
-   tiles of size ``tiling_window_size`` with adjacent tiles overlapping by 
+   tiles of size ``tiling_window_size`` with adjacent tiles overlapping by
    by 50%.
 
 cpg
@@ -70,7 +66,8 @@ cpg
 Usage
 =====
 
-See :ref:`PipelineSettingUp` and :ref:`PipelineRunning` on general information how to use CGAT pipelines.
+See :ref:`PipelineSettingUp` and :ref:`PipelineRunning` on general
+information how to use CGAT pipelines.
 
 Configuration
 -------------
@@ -78,35 +75,39 @@ Configuration
 Input
 -----
 
-Reads are imported by placing files or linking to files in the :term:`working directory`.
+Reads are imported by placing files or linking to files in the
+:term:`working directory`.
 
 The default file format assumes the following convention:
 
    <sample>-<condition>-<replicate>.<suffix>
 
-``sample`` and ``condition`` make up an :term:`experiment`, while ``replicate`` denotes
-the :term:`replicate` within an :term:`experiment`. The ``suffix`` determines the file type.
-The following suffixes/file types are possible:
+``sample`` and ``condition`` make up an :term:`experiment`, while
+``replicate`` denotes the :term:`replicate` within an
+:term:`experiment`. The ``suffix`` determines the file type.  The
+following suffixes/file types are possible:
 
 sra
-   Short-Read Archive format. Reads will be extracted using the :file:`fastq-dump` tool.
+   Short-Read Archive format. Reads will be extracted using the
+   :file:`fastq-dump` tool.
 
 fastq.gz
    Single-end reads in fastq format.
 
 fastq.1.gz, fastq2.2.gz
-   Paired-end reads in fastq format. The two fastq files must be sorted by read-pair.
+   Paired-end reads in fastq format. The two
+   fastq files must be sorted by read-pair.
 
 .. note::
 
-   Quality scores need to be of the same scale for all input files. Thus it might be
-   difficult to mix different formats.
+   Quality scores need to be of the same scale for all input
+   files. Thus it might be difficult to mix different formats.
 
 Requirements
 ------------
 
-On top of the default CGAT setup, the pipeline requires the following software to be in the 
-path:
+On top of the default CGAT setup, the pipeline requires the following
+software to be in the path:
 
 +--------------------+-------------------+------------------------------------------------+
 |*Program*           |*Version*          |*Purpose*                                       |
@@ -148,48 +149,35 @@ import logging as L
 import sys
 import os
 import re
-import shutil
 import itertools
-import math
 import glob
-import time
-import gzip
-import collections
-import random
 import csv
 import numpy
 import sqlite3
 import pandas
 
 import CGAT.Experiment as E
-import CGAT.Database as Database
-import CGAT.GTF as GTF
 import CGAT.IOTools as IOTools
-import CGAT.Stats as Stats
-import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Pipeline as P
-import CGAT.Expression as Expression
-import CGATPipelines.PipelineGeneset as PipelineGeneset
+import CGAT.BamTools as BamTools
 import CGATPipelines.PipelineWindows as PipelineWindows
-import CGATPipelines.PipelineMapping as PipelineMapping
 import CGATPipelines.PipelineTracks as PipelineTracks
 import CGATPipelines.PipelineMappingQC as PipelineMappingQC
 
 from rpy2.robjects import r as R
-import rpy2.robjects as ro
 
 #########################################################################
 #########################################################################
 #########################################################################
 # load options from the config file
-P.getParameters( ["%s/pipeline.ini" % os.path.splitext(__file__)[0], 
-                  "../pipeline.ini", 
-                  "pipeline.ini" ] )
+P.getParameters(["%s/pipeline.ini" % os.path.splitext(__file__)[0],
+                 "../pipeline.ini",
+                 "pipeline.ini"])
 
 PARAMS = P.PARAMS
 
-PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],
-                                       "pipeline_annotations.py" )
+PARAMS_ANNOTATIONS = P.peekParameters(PARAMS["annotations_dir"],
+                                      "pipeline_annotations.py")
 
 ###################################################################
 ###################################################################
@@ -199,7 +187,7 @@ PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],
 # load all tracks - exclude input/control tracks
 Sample = PipelineTracks.AutoSample
 
-METHODS = P.asList( PARAMS["methods" ] )
+METHODS = P.asList(PARAMS["methods" ])
 
 ###################################################################
 ###################################################################
@@ -218,23 +206,63 @@ def connect():
     This method also attaches to helper databases.
     '''
 
-    dbh = sqlite3.connect( PARAMS["database"] )
-    statement = '''ATTACH DATABASE '%s' as annotations''' % (PARAMS["annotations_database"])
+    dbh = sqlite3.connect(PARAMS["database"])
+    statement = '''ATTACH DATABASE '%s' as annotations''' %\
+                (PARAMS["annotations_database"])
     cc = dbh.cursor()
-    cc.execute( statement )
+    cc.execute(statement)
     cc.close()
 
     return dbh
 
 #########################################################################
 #########################################################################
+def preprocessBAM(infile, outfile):
+    '''returns a command line statement for pre-processing a BAM
+    file for further processing.
+    '''
+    tmpdir = P.getTempFilename()
+
+    nfiles = 0
+
+    if "filtering_quality" in PARAMS and PARAMS["filtering_quality"] > 0:
+        next_file = "%(tmpdir)s/bam_%(nfiles)i.bam" % locals()
+        statement.append('''samtools view -q %%(filtering_quality)i -b
+                            %(current_file)s
+                            2>> %%(outfile)s.log
+                            > %(next_file)s ''' % locals())
+        nfiles += 1
+        current_file = next_file
+
+    if "filtering_dedup" in PARAMS and PARAMS["filtering_dedup"]:
+        # Picard's MarkDuplicates requries an explicit bam file.
+        next_file = "%(tmpdir)s/bam_%(nfiles)i.bam" % locals()
+
+        dedup_method = PARAMS["filtering_dedup_method"]
+
+        if dedup_method == 'samtools':
+            statement.append('''samtools rmdup - - ''')
+
+        elif dedup_method == 'picard':
+            statement.append('''MarkDuplicates INPUT=%(current_file)s
+                    OUTPUT=%(next_file)s
+                    ASSUME_SORTED=true
+                    METRICS_FILE=%(outfile)s.duplicate_metrics
+                    REMOVE_DUPLICATES=TRUE
+                                               VALIDATION_STRINGENCY=SILENT
+                                               2>> %%(outfile)s.log ''' % locals())
+        nfiles += 1
+        current_file = next_file
+
+    return statement, current_file, tmpdir
+
 #########################################################################
-#@transform( "*CD4*/bam/*.genome.bam",
-@follows( mkdir("tags.dir") )
-@transform( '*.bam',
-            regex("(.*).bam"),
-            r"tags.dir/\1.bed.gz" )
-def prepareTags( infile, outfile ):
+#########################################################################
+@follows(mkdir("tags.dir"))
+@transform('*.bam',
+           regex("(.*).bam"),
+           r"tags.dir/\1.bed.gz")
+def prepareTags(infile, outfile):
     '''prepare tag files from bam files for medip-seq analysis.
 
     Optional steps include:
@@ -245,16 +273,13 @@ def prepareTags( infile, outfile ):
     * paired ended data - filter by insert size
 
     '''
-    to_cluster = True
+    track = P.snip(outfile, ".bed.gz")
 
-    track = P.snip( outfile, ".bed.gz" )
-
-    tmpdir = P.getTempFilename()
+    is_paired = BamTools.isPaired(infile)
 
     current_file = infile
 
-    nfiles = 0
-    statement = [ "mkdir %(tmpdir)s" ]
+    statement = ["mkdir %(tmpdir)s"]
 
     if "filtering_quality" in PARAMS and PARAMS["filtering_quality"] > 0:
         next_file = "%(tmpdir)s/bam_%(nfiles)i.bam" % locals()
@@ -285,20 +310,33 @@ def prepareTags( infile, outfile ):
         nfiles += 1
         current_file = next_file
 
-    statement.append( '''cat %(current_file)s 
-        | python %(scriptsdir)s/bam2bed.py
-          --merge-pairs
-          --min-insert-size=%(filtering_min_insert_size)i
-          --max-insert-size=%(filtering_max_insert_size)i
-          --log=%(outfile)s.log
-          -
-        | python %(scriptsdir)s/bed2bed.py
-          --method=sanitize-genome
-          --genome-file=%(genome_dir)s/%(genome)s
-          --log=%(outfile)s.log
-        | cut -f 1,2,3,4
-        | sort -k1,1 -k2,2n
-        | bgzip > %(outfile)s''')
+    if is_paired:
+        statement.append( '''cat %(current_file)s 
+            | python %(scriptsdir)s/bam2bed.py
+              --merge-pairs
+              --min-insert-size=%(filtering_min_insert_size)i
+              --max-insert-size=%(filtering_max_insert_size)i
+              --log=%(outfile)s.log
+              -
+            | python %(scriptsdir)s/bed2bed.py
+              --method=sanitize-genome
+              --genome-file=%(genome_dir)s/%(genome)s
+              --log=%(outfile)s.log
+            | cut -f 1,2,3,4
+            | sort -k1,1 -k2,2n
+            | bgzip > %(outfile)s''')
+    else:
+        statement.append( '''cat %(current_file)s 
+            | python %(scriptsdir)s/bam2bed.py
+              --log=%(outfile)s.log
+              -
+            | python %(scriptsdir)s/bed2bed.py
+              --method=sanitize-genome
+              --genome-file=%(genome_dir)s/%(genome)s
+              --log=%(outfile)s.log
+            | cut -f 1,2,3,4
+            | sort -k1,1 -k2,2n
+            | bgzip > %(outfile)s''')
 
     statement.append( "tabix -p bed %(outfile)s" )
     statement.append( "rm -rf %(tmpdir)s" )
@@ -478,7 +516,7 @@ def buildReferenceCpGComposition( infiles, outfile ):
     # | awk '$1 !~ /%(tiling_remove_contigs)s/'
     # | awk '$1 == "contig" || $17 < 0.5'
 
-@transform( (buildCpGComposition,buildReferenceCpGComposition), 
+@transform( (buildCpGComposition, buildReferenceCpGComposition), 
             suffix(".tsv.gz"), 
             ".composition.load" )
 def loadCpGComposition( infile, outfile ):
@@ -563,7 +601,7 @@ def buildWindows( infiles, outfile ):
 
         statement = '''python %(scriptsdir)s/genome_bed.py
                       -g %(genome_dir)s/%(genome)s
-                      --window=%(tiling_nonoverlapping_window)i
+                      --window=%(tiling_window_size)i
                       --shift=%(tiling_window_size)i
                       --log=%(outfile)s.log'''
 
@@ -1581,10 +1619,50 @@ def buildMRBed( infile, outfile ):
 
 @follows( loadDMRStats, loadSpikeResults,
           outputAllWindows, outputTopWindows )
-def dmr(): pass
+def dmr(): 
+    pass
+
+############################################################
+############################################################
+############################################################
+## Genomic Context analysis
+############################################################
+@follows(mkdir('contextstats.dir'))
+@transform( '*.bam',
+            regex("(.*).bam"),
+            add_inputs( os.path.join( PARAMS["annotations_dir"],
+                                      PARAMS_ANNOTATIONS["interface_genomic_context_bed"] ) ),
+            r"contextstats.dir/\1.contextstats.tsv.gz" )
+def buildContextStats( infiles, outfile ):
+    '''build mapping context stats.
+
+    Examines the genomic context to where reads align.
+
+    A read is assigned to the genomic context that it overlaps by at
+    least 50%. Thus some reads that map across several non-overlapping
+    contexts might be dropped.
+    '''
+
+    infile, reffile = infiles
+
+    min_overlap = 0.5
+    job_options = "-l mem_free=4G"
+
+    statement = '''
+       python %(scriptsdir)s/bam_vs_bed.py
+              --min-overlap=%(min_overlap)f
+              --log=%(outfile)s.log
+              %(infile)s %(reffile)s
+       | gzip
+       > %(outfile)s
+       '''
+
+    P.run()
+
 
 @follows( diff_windows, dmr) 
-def full(): pass
+def full(): 
+    pass
 
 ###################################################################
 ###################################################################
@@ -1616,15 +1694,16 @@ def publish():
     '''publish files.'''
 
     # directory : files
-    export_files = { #"bamfiles": glob.glob("*.bam") + glob.glob("*.bam.bai"),
-                     #"bigwigfiles": glob.glob("*.bw"),
-                     "bedfiles": glob.glob("deseq.dir/*.bed.gz") + glob.glob("edger.dir/*.bed.gz"),
-                     }
+    export_files = {
+        "bedfiles":
+        glob.glob("deseq.dir/*.bed.gz") +
+        glob.glob("edger.dir/*.bed.gz"),
+    }
 
     # publish web pages
-    P.publish_report( export_files = export_files )
+    P.publish_report(export_files=export_files)
 
-if __name__== "__main__":
-    sys.exit( P.main(sys.argv) )
+if __name__ == "__main__":
+    sys.exit(P.main(sys.argv))
 
 

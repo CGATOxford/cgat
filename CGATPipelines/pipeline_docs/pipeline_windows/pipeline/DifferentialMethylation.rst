@@ -46,7 +46,7 @@ significantly different number of reads.
    .. toctree::
       DESeq.rst
 
-.. ifconfig:: "deseq" in METHODS
+.. ifconfig:: "edger" in METHODS
 
    .. toctree::
       EdgeR.rst

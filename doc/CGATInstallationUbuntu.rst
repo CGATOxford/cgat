@@ -20,23 +20,21 @@ Get a copy of the installation scripts
 Download and place them into your home directory::
 
         cd
-        wget https://raw.github.com/CGATOxford/cgat/master/requires.txt
-        wget https://raw.github.com/CGATOxford/cgat/master/setup-DEBs.sh
-        wget https://raw.github.com/CGATOxford/cgat/master/setup-CGAT.sh
+        wget https://raw.github.com/CGATOxford/cgat/master/install-CGAT-tools.sh
 
 Install DEB dependencies
 ------------------------
 
-Become root (or ask your system administrator to do it for you) and run ``setup-DEBs.sh``::
+Become root (or ask your system administrator to do it for you) and run::
 
-        ./setup-DEBs.sh
+        ./install-CGAT-tools.sh --install-os-packages
 
 Install a Python virtual environment with the CGAT code collection
 ------------------------------------------------------------------- 
 
-Do not be root for this step and run ``setup-CGAT.sh``::
+Do not be root for this step and run::
 
-        ./setup-CGAT.sh
+        ./install-CGAT-tools.sh --install-python-deps
 
 Test the installation
 ---------------------

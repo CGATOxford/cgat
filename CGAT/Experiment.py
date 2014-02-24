@@ -181,6 +181,7 @@ global_options = DefaultOptions()
 global_args    = None
 # import hashlib
 # global_id = hashlib.md5(time.asctime(time.localtime(time.time()))).hexdigest()
+import random
 import uuid
 global_id      = uuid.uuid4()
 global_benchmark = collections.defaultdict( int )
@@ -492,6 +493,11 @@ def Start( parser = None,
     ``timeit-header``
          output header for timing information.
 
+    ``seed``
+         the random seed. If given, the python random 
+         number generator will be initialized with this 
+         seed.
+
     Optional options added are:
 
     add_csv_options
@@ -539,6 +545,8 @@ def Start( parser = None,
                        help="name in timing file for this class of jobs [%default]." )
     parser.add_option( "--timeit-header", dest='timeit_header', action="store_true",
                        help="add header for timing information [%default]." )        
+    parser.add_option( "--random-seed", dest='random_seed', type="int",
+                       help="random seed to initialize number generator with [%default]." )        
                                      
     if quiet:
         parser.set_defaults( loglevel = 0 )
@@ -549,6 +557,7 @@ def Start( parser = None,
         timeit_file = None,
         timeit_name = 'all',
         timeit_header = None,
+        random_seed = None,
         )
 
     if add_csv_options:
@@ -639,6 +648,9 @@ def Start( parser = None,
 
     if not no_parsing:
         (global_options, global_args) = parser.parse_args( argv[1:] )
+
+    if global_options.random_seed != None:
+        random.seed( global_options.random_seed )
 
     if add_pipe_options:
         if global_options.stdout != sys.stdout: 

@@ -667,7 +667,7 @@ def processReads( infiles, outfile ):
         E.info("starting reconciliation" )
         statement = """python %(scriptsdir)s/fastqs2fastqs.py
                            --method=reconcile
-                           --output-pattern=%(track)s.fastq.%%i.gz
+                           --output-pattern=%(track)s.fastq.%%s.gz
                            %(tmpfile1)s %(tmpfile2)s
                      > %(outfile)s_reconcile.log"""
         

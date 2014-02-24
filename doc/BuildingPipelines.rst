@@ -38,7 +38,7 @@ the following files within this directory:
 Other files that might be used in a pipeline are:
 
    * external data files such as genomes that a referred to by they their full path name.
-   * sphinxreport.ini and conf.py for automated reports.
+   * conf.py for automated reports.
 
 The pipelines will work from the input files in the :term:`working directory`, usually identified by their
 suffix. For example, a ChIP-Seq pipeline might look for any ``*.fastq.gz`` files in the directory, 
@@ -292,13 +292,15 @@ will simply contain the following::
 	E.info( "updating report" )
 	P.run_report( clean = False )
 
-This will add the two tasks ``build_report`` and ``update_report`` to the pipeline. The former completely rebuilds
-a report, while the latter only updates changed pages. The report will be in the directory :file:`report`. 
+This will add the two tasks ``build_report`` and ``update_report`` to
+the pipeline. The former completely rebuilds a report, while the
+latter only updates changed pages. The report will be in the directory
+:file:`report`.
 
-Note that report building requries two files in the :term:`working directory`:
-
-   * :file:`sphinxreport.ini` - configuration values for Sphinxreport_.
-   * :file:`conf.py` - configuration values for sphinx.
+Note that report building requires the file :file:`conf.py` in the
+:term:`working directory`. This file is read by sphinx_ and can be
+used to report building options. By default, the file is a stub
+reading in common options from the CGAT code base.
 
 The section :ref:`WritingReports` contains more information.
 
@@ -322,9 +324,12 @@ to set it all up::
 	  "pipeline.ini" ] )
    PARAMS = P.PARAMS
 
-Configuration parameters will be read first from the 
-file named :file:`pipeline_<pipeline_name>.ini` in the :term:`source directory`.
-These sets all configuration values to default paramteres.
+Default values of configuration parameters will be read from a global
+configuration file that is part of the CGAT code base
+in :file:`CGATPipelines/configuration/pipeline.ini`.
+
+These values will be updated with the file named 
+:file:`pipeline_<pipeline_name>.ini` in the :term:`source directory`.
 
 Next, the file :file:`../pipeline.ini` will be read (if it exists) and configuration
 values that are specific to a certain project will overwrite default values.
@@ -460,7 +465,7 @@ in the :file:`export` directory will get copied over and links pointing to such 
 automatically corrected.
 
 The report will then be available at ``http://www.cgat.org/downloads/%(project_id)s/report`` where
-project_id is the unique identifier given to each project. It is looked up automatically, but the
+``project_id`` is the unique identifier given to each project. It is looked up automatically, but the
 automatic look-up requires that the pipeline is executed within the :file:`/ifs/proj` directory.
 
 If the option *prefix* is given to publish_report, all output directories will be output

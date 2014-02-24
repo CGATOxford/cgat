@@ -8,7 +8,7 @@ This method counts CAPseq reads overlapping the entire gene model (exons and int
 
 .. report:: macs_replicated_long_interval_genes.longGenesCapseqProfile
    :render: gallery-plot
-   :tracker: long_intervals/*.capseq_profile.png
+   :glob: long_intervals/*.capseq_profile.png
    :layout: column-2
 
    Density of CAPseq reads over genes associated with long (>3kb) CAPseq intervals

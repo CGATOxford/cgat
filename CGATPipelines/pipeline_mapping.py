@@ -244,21 +244,32 @@ PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],
 ###################################################################
 import CGATPipelines.PipelineTracks as PipelineTracks
 
+# determine the location of the input files (reads).
+try:
+    PARAMS["input"]
+except NameError:
+    dataDir = "."
+else:
+    if PARAMS["input"]==0: dataDir = "."
+    elif PARAMS["input"]==1 : dataDir = "data.dir"
+    else: dataDir = PARAMS["input"] # not recommended practise.
+
 # collect sra nd fastq.gz tracks
 TRACKS = PipelineTracks.Tracks( PipelineTracks.Sample ).loadFromDirectory( 
-    glob.glob( "*.sra" ), "(\S+).sra" ) +\
+    glob.glob( os.path.join(dataDir, "*.sra") ), "(\S+).sra" ) +\
     PipelineTracks.Tracks( PipelineTracks.Sample ).loadFromDirectory( 
-        glob.glob( "*.fastq.gz" ), "(\S+).fastq.gz" ) +\
+        glob.glob( os.path.join(dataDir, "*.fastq.gz") ), "(\S+).fastq.gz" ) +\
         PipelineTracks.Tracks( PipelineTracks.Sample ).loadFromDirectory( 
-            glob.glob( "*.fastq.1.gz" ), "(\S+).fastq.1.gz" ) +\
+            glob.glob( os.path.join(dataDir, "*.fastq.1.gz") ), "(\S+).fastq.1.gz" ) +\
             PipelineTracks.Tracks( PipelineTracks.Sample ).loadFromDirectory( 
-                glob.glob( "*.csfasta.gz" ), "(\S+).csfasta.gz" )
+                glob.glob( os.path.join(dataDir, "*.csfasta.gz") ), "(\S+).csfasta.gz" )
 
 ###################################################################
 ## Global flags
 ###################################################################
 MAPPERS = P.asList( PARAMS["mappers" ] )
 SPLICED_MAPPING = "tophat" in MAPPERS or "gsnap" in MAPPERS or "star" in MAPPERS
+
 
 ###################################################################
 ###################################################################
@@ -289,135 +300,15 @@ if os.path.exists("pipeline_conf.py"):
 #########################################################################
 #########################################################################
 #########################################################################
-def mergeAndFilterGTF( infile, outfile, logfile ):
-    '''sanitize transcripts file for cufflinks analysis.
-
-    Merge exons separated by small introns (< 5bp).
-
-    Transcript will be ignored that
-       * have very long introns (max_intron_size) (otherwise, cufflinks complains)
-       * are located on contigs to be ignored (usually: chrM, _random, ...)
-
-    This method preserves all features in a gtf file (exon, CDS, ...).
-
-    returns a dictionary of all gene_ids that have been kept.
-    '''
-
-    max_intron_size =  PARAMS["max_intron_size"]
-
-    c = E.Counter()
-
-    outf = gzip.open( outfile, "w" )
-
-    E.info( "filtering by contig and removing long introns" )    
-    contigs = set(IndexedFasta.IndexedFasta( os.path.join( PARAMS["genome_dir"], PARAMS["genome"]) ).getContigs())
-
-    rx_contigs = None
-    if "geneset_remove_contigs" in PARAMS:
-        rx_contigs = re.compile( PARAMS["geneset_remove_contigs"] )
-        E.info( "removing contigs %s" % PARAMS["geneset_remove_contigs"] )
-
-    rna_index = None
-    if "geneset_remove_repetetive_rna" in PARAMS:
-        rna_file = os.path.join( PARAMS["annotations_dir"],
-                                 PARAMS_ANNOTATIONS["interface_rna_gff"] )
-        if not os.path.exists( rna_file ):
-            E.warn( "file '%s' to remove repetetive rna does not exist" % rna_file )
-        else:
-            rna_index = GTF.readAndIndex( GTF.iterator( IOTools.openFile( rna_file, "r" ) ) )
-            E.info( "removing ribosomal RNA in %s" % rna_file )
-    
-    gene_ids = {}
-
-    logf = IOTools.openFile( logfile, "w" )
-    logf.write( "gene_id\ttranscript_id\treason\n" )
-
-    for all_exons in GTF.transcript_iterator( GTF.iterator( IOTools.openFile( infile )) ):
-
-        c.input += 1
-        
-        e = all_exons[0]
-        # filtering 
-        if e.contig not in contigs:
-            c.missing_contig += 1
-            logf.write( "\t".join( (e.gene_id, e.transcript_id, "missing_contig" )) + "\n" )
-            continue
-
-        if rx_contigs and rx_contigs.search(e.contig):
-            c.remove_contig += 1
-            logf.write( "\t".join( (e.gene_id, e.transcript_id, "remove_contig" )) + "\n" )
-            continue
-
-        if rna_index and all_exons[0].source != 'protein_coding':
-            found = False
-            for exon in all_exons:
-                if rna_index.contains( e.contig, e.start, e.end ):
-                    found = True
-                    break
-            if found:
-                logf.write( "\t".join( (e.gene_id, e.transcript_id, "overlap_rna" )) + "\n" )
-                c.overlap_rna += 1
-                continue
-                
-        is_ok = True
-
-        # keep exons and cds separate by grouping by feature
-        all_exons.sort( key = lambda x: x.feature )
-        new_exons = []
-
-        for feature, exons in itertools.groupby( all_exons, lambda x: x.feature ):
-
-            tmp = sorted( list(exons) , key = lambda x: x.start )
-
-            gene_ids[tmp[0].transcript_id] = tmp[0].gene_id
-            
-            l, n = tmp[0], []
-
-            for e in tmp[1:]:
-                d = e.start - l.end
-                if d > max_intron_size:
-                    is_ok = False
-                    break
-                elif d < 5:
-                    l.end = max(e.end, l.end)
-                    c.merged += 1
-                    continue
-
-                n.append( l )
-                l = e
-
-            n.append( l )
-            new_exons.extend( n )
-
-            if not is_ok: break
-
-        if not is_ok: 
-            logf.write( "\t".join( (e.gene_id, e.transcript_id, "bad_transcript" )) + "\n" )
-            c.skipped += 1
-            continue
-
-        new_exons.sort( key = lambda x: x.start )
-
-        for e in new_exons:
-            outf.write( "%s\n" % str(e) )
-            c.exons += 1
-
-        c.output += 1
-
-
-    outf.close()
-
-    L.info( "%s" % str(c) )
-    
-    return gene_ids
 
 #########################################################################
 #########################################################################
 #########################################################################
 @active_if( SPLICED_MAPPING )
+@follows(mkdir("geneset.dir"))
 @merge( os.path.join( PARAMS["annotations_dir"], 
                       PARAMS_ANNOTATIONS["interface_geneset_all_gtf"]),
-        "reference.gtf.gz" )
+        "geneset.dir/reference.gtf.gz" )
 def buildReferenceGeneSet( infile, outfile ):
     '''sanitize ENSEMBL transcripts file for cufflinks analysis.
 
@@ -430,7 +321,7 @@ def buildReferenceGeneSet( infile, outfile ):
     ``geneset_remove_repetitive_rna`` is set. Protein
     coding transcripts are not removed.
 
-    Transcript will be ignored that
+    Transcripts will be ignored that
        * have very long introns (max_intron_size) (otherwise, cufflinks complains)
        * are located on contigs to be ignored (usually: chrM, _random, ...)
        
@@ -442,82 +333,29 @@ def buildReferenceGeneSet( infile, outfile ):
 
     Cuffdiff requires overlapping genes to have different tss_id tags.
 
-    This gene is the source for most other gene sets in the pipeline.
+    This geneset is the source for most other genesets in the pipeline.
     '''
+    tmp_mergedfiltered = P.getTempFilename( "." )
 
-    tmpfilename = P.getTempFilename( "." )
-    tmpfilename2 = P.getTempFilename( "." )
-    tmpfilename3 = P.getTempFilename( "." )
+    if "geneset_remove_repetetive_rna" in PARAMS:
+        rna_file = os.path.join( PARAMS["annotations_dir"],
+                                  PARAMS_ANNOTATIONS["interface_rna_gff"] )
+    else: rna_file = None
 
-    gene_ids = mergeAndFilterGTF( infile, tmpfilename, "%s.removed.gz" % outfile )
+    gene_ids = PipelineMapping.mergeAndFilterGTF( infile, tmp_mergedfiltered, "%s.removed.gz" % outfile,
+                                                  genome = os.path.join( PARAMS["genome_dir"],PARAMS["genome"]),
+                                                  max_intron_size = PARAMS["max_intron_size"],
+                                                  remove_contigs = PARAMS["geneset_remove_contigs"], 
+                                                  rna_file = rna_file)
+
+    #Add tss_id and p_id
+    PipelineMapping.resetGTFAttributes(infile = tmp_mergedfiltered,
+                                       genome = os.path.join(PARAMS["bowtie_index_dir"], PARAMS["genome"]),
+                                       gene_ids = gene_ids,
+                                       outfile = outfile   )
     
-    #################################################
-    E.info( "adding tss_id and p_id" )
+    os.unlink( tmp_mergedfiltered )
 
-    # The p_id attribute is set if the fasta sequence is given.
-    # However, there might be some errors in cuffdiff downstream:
-    #
-    # cuffdiff: bundles.cpp:479: static void HitBundle::combine(const std::vector<HitBundle*, std::allocator<HitBundle*> >&, HitBundle&): Assertion `in_bundles[i]->ref_id() == in_bundles[i-1]->ref_id()' failed.
-    #
-    # I was not able to resolve this, it was a complex
-    # bug dependent on both the read libraries and the input reference gtf files
-    statement = '''
-    cuffcompare -r <( gunzip < %(tmpfilename)s )
-         -T 
-         -s %(bowtie_index_dir)s/%(genome)s.fa
-         -o %(tmpfilename2)s
-         <( gunzip < %(tmpfilename)s )
-         <( gunzip < %(tmpfilename)s )
-    > %(outfile)s.log
-    '''
-    P.run()
-
-    #################################################
-    E.info( "resetting gene_id and transcript_id" )
-
-    # reset gene_id and transcript_id to ENSEMBL ids
-    # cufflinks patch: 
-    # make tss_id and p_id unique for each gene id
-    outf = IOTools.openFile( tmpfilename3, "w")
-    map_tss2gene, map_pid2gene = {}, {}
-    inf = IOTools.openFile( tmpfilename2 + ".combined.gtf" )
-
-    def _map( gtf, key, val, m ):
-        if val in m:
-            while gene_id != m[val]:
-                val += "a" 
-                if val not in m: break
-        m[val] = gene_id
-
-        gtf.setAttribute( key, val )
-        
-    for gtf in GTF.iterator( inf ):
-        transcript_id = gtf.oId
-        gene_id = gene_ids[transcript_id] 
-        gtf.setAttribute( "transcript_id", transcript_id )
-        gtf.setAttribute( "gene_id", gene_id )
-        
-        # set tss_id
-        try: tss_id = gtf.tss_id
-        except AttributeError: tss_id = None
-        try: p_id = gtf.p_id
-        except AttributeError: p_id = None
-        
-        if tss_id: _map( gtf, "tss_id", tss_id, map_tss2gene)
-        if p_id: _map( gtf, "p_id", p_id, map_pid2gene)
-
-        outf.write( str(gtf) + "\n" )
-        
-    outf.close()
-
-    # sort gtf file
-    PipelineGeneset.sortGTF( tmpfilename3, outfile )
-
-    os.unlink( tmpfilename )
-    # make sure tmpfilename2 is NEVER empty
-    assert tmpfilename2
-    for x in glob.glob( tmpfilename2 + "*" ): os.unlink( x )
-    os.unlink( tmpfilename3 )
 
 #########################################################################
 #########################################################################
@@ -536,7 +374,7 @@ def buildCodingGeneSet( infile, outfile ):
 
     This set includes UTR and CDS.
     '''
-    
+   
     to_cluster = True
     statement = '''
     zcat %(infile)s | awk '$2 == "protein_coding"' | gzip > %(outfile)s
@@ -547,8 +385,9 @@ def buildCodingGeneSet( infile, outfile ):
 #########################################################################
 #########################################################################
 @active_if( SPLICED_MAPPING )
+@follows(mkdir("geneset.dir"))
 @merge( os.path.join(PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_geneset_flat_gtf"]),
-        "introns.gtf.gz" )
+        "geneset.dir/introns.gtf.gz" )
 def buildIntronGeneModels(infile, outfile ):
     '''build protein-coding intron-transcipts.
 
@@ -603,9 +442,10 @@ def loadGeneInformation( infile, outfile ):
 #########################################################################
 #########################################################################
 @active_if( SPLICED_MAPPING )
+@follows(mkdir("geneset.dir"))
 @merge( os.path.join( PARAMS["annotations_dir"], 
                       PARAMS_ANNOTATIONS["interface_geneset_all_gtf"]),
-        "coding_exons.gtf.gz" )
+        "geneset.dir/coding_exons.gtf.gz" )
 def buildCodingExons( infile, outfile ):
     '''compile set of protein coding exons.
 
@@ -716,11 +556,12 @@ def buildJunctions( infile, outfile ):
 #########################################################################
 #########################################################################
 @active_if( SPLICED_MAPPING )
-@transform( buildCodingGeneSet, suffix(".gtf.gz"), ".splicesites.iit")
+@follows(mkdir("gsnap.dir"))
+@files( os.path.join(PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_geneset_exons_gtf"]), "gsnap.dir/splicesites.iit")
 def buildGSNAPSpliceSites( infile, outfile ):
-    '''build file with know splice sites for GSNAP.
+    '''build file with known splice sites for GSNAP from all exons...
     '''
-    
+   
     outfile = P.snip( outfile, ".iit" )
     statement = '''
     zcat %(infile)s | gtf_splicesites | iit_store -o %(outfile)s > %(outfile)s.log'''
@@ -732,23 +573,27 @@ def buildGSNAPSpliceSites( infile, outfile ):
 #########################################################################
 ## Read mapping
 #########################################################################
-SEQUENCEFILES=("*.fastq.1.gz", 
-               "*.fastq.gz",
-               "*.sra",
-               "*.export.txt.gz",
-               "*.csfasta.gz",
-               "*.csfasta.F3.gz",
-               )
-SEQUENCEFILES_REGEX=regex( r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz|csfasta.F3.gz|export.txt.gz)")
+
+SEQUENCESUFFIXES=("*.fastq.1.gz", 
+                  "*.fastq.gz",
+                  "*.sra",
+                  "*.export.txt.gz",
+                  "*.csfasta.gz",
+                  "*.csfasta.F3.gz",
+                  )
+
+SEQUENCEFILES= tuple([ os.path.join(dataDir, suffix_name) for suffix_name in SEQUENCESUFFIXES ])
+SEQUENCEFILES_REGEX=regex( r".*/(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz|csfasta.F3.gz|export.txt.gz)")
 
 ###################################################################
 ###################################################################
 ###################################################################
 ## load number of reads
 ###################################################################
+@follows(mkdir("nreads.dir"))
 @transform( SEQUENCEFILES,
             SEQUENCEFILES_REGEX,
-            r"\1.nreads" )
+            r"nreads.dir/\1.nreads" )
 def countReads( infile, outfile ):
     '''count number of reads in input files.'''
     to_cluster = True
@@ -822,23 +667,23 @@ def mapReadsWithTophat2( infiles, outfile ):
     it means that it ran out of memory.
 
     '''
-    job_options= "-pe dedicated %i -R y" % PARAMS["tophat_threads"]
+    job_options= "-pe dedicated %i -R y" % PARAMS["tophat2_threads"]
 
-    if "--butterfly-search" in PARAMS["tophat_options"]:
+    if "--butterfly-search" in PARAMS["tophat2_options"]:
         # for butterfly search - require insane amount of
         # RAM.
         job_options += " -l mem_free=50G"
     else:
-        job_options += " -l mem_free=%s" % PARAMS["tophat_memory"]
+        job_options += " -l mem_free=%s" % PARAMS["tophat2_memory"]
 
     to_cluster = True
-    m = PipelineMapping.Tophat( executable = P.substituteParameters( **locals() )["tophat_executable"],
-                                strip_sequence = PARAMS["strip_sequence"] )
+    m = PipelineMapping.Tophat2( executable = P.substituteParameters( **locals() )["tophat2_executable"],
+                                 strip_sequence = PARAMS["strip_sequence"] )
     infile, reffile, transcriptfile = infiles
-    tophat_options = PARAMS["tophat_options"] + " --raw-juncs %(reffile)s " % locals()
+    tophat_options = PARAMS["tophat2_options"] + " --raw-juncs %(reffile)s " % locals()
     
     # Nick - added the option to map to the reference transcriptome first (built within the pipeline)
-    if PARAMS["tophat_include_reference_transcriptome"]:
+    if PARAMS["tophat2_include_reference_transcriptome"]:
         prefix = os.path.abspath( P.snip( transcriptfile, ".fa" ) )
         tophat_options = tophat_options + " --transcriptome-index=%s -n 2" % prefix
 
@@ -940,8 +785,12 @@ def mapReadsWithGSNAP( infiles, outfile ):
     '''
 
     infile, infile_splices = infiles
-    job_options= "-pe dedicated %i -R y -l mem_free=%s" % (PARAMS["gsnap_threads"],
+
+    job_options= "-pe dedicated %i -R y -l mem_free=%s" % (PARAMS["gsnap_node_threads"],
                                                            PARAMS["gsnap_memory"])
+
+    gsnap_mapping_genome = PARAMS["gsnap_genome"] or PARAMS["genome"]
+
     to_cluster = True
     m = PipelineMapping.GSNAP( executable = P.substituteParameters( **locals() )["gsnap_executable"],
                                strip_sequence = PARAMS["strip_sequence"] )
@@ -994,6 +843,7 @@ def buildSTARStats( infiles, outfile ):
         for line in IOTools.openFile( fn ):
             if not "|" in line: continue
             header, value = line.split("|")
+            header = re.sub( "%", "percent", header )
             data[header.strip()].append( value.strip() )
     
     keys = data.keys()
@@ -1114,7 +964,7 @@ def mapReadsWithStampy( infile, outfile ):
 
 MAPPINGTARGETS = []
 mapToMappingTargets = { 'tophat': (mapReadsWithTophat, loadTophatStats),
-                        'tophat2': (mapReadsWithTophat2, loadTophatStats),
+                        'tophat2': (mapReadsWithTophat2,),
                         'bowtie': (mapReadsWithBowtie,),
                         'bwa': (mapReadsWithBWA,),
                         'stampy': (mapReadsWithStampy,),
@@ -1122,9 +972,10 @@ mapToMappingTargets = { 'tophat': (mapReadsWithTophat, loadTophatStats),
                         'gsnap' : (mapReadsWithGSNAP,),
                         'star' : (mapReadsWithSTAR,loadSTARStats),
                         }
+
 for x in P.asList( PARAMS["mappers"]):
     MAPPINGTARGETS.extend( mapToMappingTargets[x] )
-        
+
 @follows( *MAPPINGTARGETS )
 def mapping(): pass
 
@@ -1194,23 +1045,26 @@ else:
 ############################################################
 ############################################################
 ############################################################
-@active_if( SPLICED_MAPPING )
-@transform( MAPPINGTARGETS,
-            suffix(".bam" ),
-            ".picard_inserts")
-def buildPicardTranscriptomeInsertSize( infiles, outfile ):
-    '''build alignment stats using picard.
+#
+# This is not a pipelined task - remove?
+#
+# @active_if( SPLICED_MAPPING )
+# @transform( MAPPINGTARGETS,
+#             suffix(".bam" ),
+#             ".picard_inserts")
+# def buildPicardTranscriptomeInsertSize( infiles, outfile ):
+#     '''build alignment stats using picard.
 
-    Note that picards counts reads but they are in fact alignments.
-    '''
-    infile, reffile = infiles
+#     Note that picards counts reads but they are in fact alignments.
+#     '''
+#     infile, reffile = infiles
 
-    PipelineMappingQC.buildPicardAlignmentStats( infile, 
-                                                 outfile,
-                                                 reffile )
+#     PipelineMappingQC.buildPicardAlignmentStats( infile, 
+#                                                  outfile,
+#                                                  reffile )
 
 ############################################################
-############################################################
+###########################################################
 ############################################################
 @transform( MAPPINGTARGETS,
             suffix(".bam" ), 
@@ -1248,7 +1102,7 @@ def loadPicardStats( infiles, outfile ):
 ############################################################
 @transform( MAPPINGTARGETS,
             suffix(".bam" ), 
-            ".picard_stats.duplication_metrics")
+            ".picard_duplication_metrics")
 def buildPicardDuplicationStats( infile, outfile ):
     '''Get duplicate stats from picard MarkDuplicates.
     Pair duplication is properly handled, including inter-chromosomal cases. SE data is also handled.
@@ -1262,11 +1116,12 @@ def buildPicardDuplicationStats( infile, outfile ):
 ############################################################
 ############################################################
 @jobs_limit( 1, "db" )
-@merge( buildPicardDuplicationStats, "picard_duplication_stats.load" )
-def loadPicardDuplicationStats( infiles, outfile ):
+@merge( buildPicardDuplicationStats, ["picard_duplication_stats.load", 
+                                      "picard_duplication_histogram.load"] )
+def loadPicardDuplicationStats( infiles, outfiles ):
     '''merge alignment stats into single tables.'''
     #separate load function while testing
-    PipelineMappingQC.loadPicardDuplicationStats( infiles, outfile )
+    PipelineMappingQC.loadPicardDuplicationStats( infiles, outfiles )
 
 # ############################################################
 # ############################################################
@@ -1300,7 +1155,7 @@ def loadPicardDuplicationStats( infiles, outfile ):
 @follows( countReads, mergeReadCounts )
 @transform( MAPPINGTARGETS,
             regex("(.*)/(.*)\.(.*).bam"),
-            add_inputs( r"\2.nreads" ),
+            add_inputs( r"nreads.dir/\2.nreads" ),
             r"\1/\2.\3.readstats" )
 def buildBAMStats( infiles, outfile ):
     '''count number of reads mapped, duplicates, etc.
@@ -1367,9 +1222,10 @@ def buildContextStats( infiles, outfile ):
 
     Examines the genomic context to where reads align.
 
-    A read is assigned to the genomic context that it
-    overlaps by at least 50%. Thus some reads mapping
-    several contexts might be dropped.
+    A read is assigned to the genomic context that it overlaps by at
+    least 50%. Thus some reads that map across several non-overlapping
+    contexts might be dropped.
+
     '''
 
     infile, reffile = infiles
@@ -1478,7 +1334,8 @@ def loadExonValidation( infiles, outfile ):
 #########################################################################
 #########################################################################
 @active_if(SPLICED_MAPPING)
-@split(buildCodingGeneSet,"refcoding.*.gtf.gz")
+@split(buildCodingGeneSet,
+       "geneset.dir/refcoding.*.gtf.gz")
 def splitCodingGeneSetByChr(infile,outfiles):
     '''split coding geneset by chromosome to allow parallel
     read counting '''
@@ -1494,8 +1351,6 @@ def buildTranscriptLevelReadCounts( infiles, outfile):
     '''count reads falling into transcripts of protein coding 
        gene models.
        
-    Data is not computed for tracks in transcripts.dir.
-
     .. note::
        In paired-end data sets each mate will be counted. Thus
        the actual read counts are approximately twice the fragment
@@ -1503,17 +1358,13 @@ def buildTranscriptLevelReadCounts( infiles, outfile):
        
     '''
     infile, genesets = infiles[0],infiles[1:]
-    
-    if "transcriptome.dir" in infile:
-        P.touch()
-        return
 
     to_cluster = True
     statements = []
     
     for geneset in genesets:
 
-        chrom = re.match("refcoding\.(.+)\.gtf.gz",geneset).groups()[0]
+        chrom = re.match("geneset.dir/refcoding\.(.+)\.gtf.gz",geneset).groups()[0]
         bam = P.snip(infile,".bam")
         outfile = "%s.%s.transcript_counts.tsv.gz" % (bam,chrom)
 
@@ -1534,9 +1385,11 @@ def buildTranscriptLevelReadCounts( infiles, outfile):
         statements.append(statement)
 
     P.run()
+
 #########################################################################
 @active_if( SPLICED_MAPPING )
-@collate(buildTranscriptLevelReadCounts, regex("(.+)\..+\.transcript_counts.tsv.gz"),
+@collate(buildTranscriptLevelReadCounts, 
+         regex("(.+)\..+\.transcript_counts.tsv.gz"),
          r"\1.transcript_counts.tsv.gz")
 def collateTranscriptCounts(infiles,outfile):
     ''' pull together the transcript counts over each chromosome '''
@@ -1717,23 +1570,28 @@ def buildBed( infile, outfile ):
           loadPicardStats, 
           loadBAMStats, 
           loadContextStats )
-def general_qc(): pass
+def general_qc(): 
+    pass
 
 @active_if( SPLICED_MAPPING )
 @follows( loadExonValidation,
           loadGeneInformation,
           loadTranscriptLevelReadCounts,
           loadIntronLevelReadCounts )
-def spliced_qc(): pass
+def spliced_qc(): 
+    pass
 
 @follows( general_qc, spliced_qc )
-def qc(): pass
+def qc(): 
+    pass
 
 @follows( loadPicardDuplicationStats )
-def duplication(): pass
+def duplication(): 
+    pass
 
 @follows( buildBigWig, loadBigWigStats )
-def wig(): pass
+def wig(): 
+    pass
 
 ###################################################################
 ###################################################################
@@ -1776,8 +1634,10 @@ def views():
 ###################################################################
 ###################################################################
 ###################################################################
-@follows( mapping, qc, views)
+
+@follows( mapping, qc, views, duplication)
 def full(): pass
+
 
 ###################################################################
 ###################################################################

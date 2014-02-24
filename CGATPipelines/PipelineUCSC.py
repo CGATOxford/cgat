@@ -104,7 +104,8 @@ def getRepeatsFromUCSC( dbhandle, repclasses, outfile ):
                FROM %(table)s"""
         
         if repclasses:
-            sql += " WHERE repClass in ('%(repclasses)s') "
+            repclasses_str = ",".join([ "'"+x.strip()+"'" for x in repclasses])
+            sql += ''' WHERE repClass in (%(repclasses_str)s) ''' % locals()
                
         sql = sql % locals()
 
@@ -246,6 +247,29 @@ def importRefSeqFromUCSC( infile, outfile, remove_duplicates = True ):
     
     E.info("%s" % str(counts))
 
+
+#############################################################
+#############################################################
+#############################################################
+## 
+#############################################################
+def getCpGIslandsFromUCSC( dbhandle, outfile ):
+    '''get CpG islands from UCSC and save as a bed file.
+
+    The name will be set to the UCSC name. 
+    '''
+
+    cc = dbhandle.cursor()
+    table = "cpgIslandExt"
+    sql = """SELECT chrom, chromStart, chromEnd, name FROM %(table)s ORDER by chrom,chromStart"""
+    sql = sql % locals()
+
+    E.debug( "executing sql statement: %s" % sql )
+    cc.execute( sql )
+    outfile = IOTools.openFile( outfile, "w")
+    for data in cc.fetchall():
+        outfile.write( "\t".join(map(str,data)) + "\n" )
+    outfile.close()
 
 #############################################################
 #############################################################

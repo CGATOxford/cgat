@@ -25,7 +25,7 @@ class TrackerEdgeRSummary( ProjectTracker ):
     def __call__(self, track ):
         return self.getAll( "SELECT sample, * FROM %(track)s_edger_summary" )
 
-class TrackerDESeqSpikeIn( TrackerMatrix ):
+class TrackerDESeqSpikeIn( TrackerMatrices ):
     pass
 
 class TrackerDESeqPower( ProjectTracker, MultipleTableTrackerEdgeList ):

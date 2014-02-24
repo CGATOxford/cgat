@@ -10,7 +10,7 @@ twice the one shown as data points are added in a symmetrized fashion.
 
 .. report:: DifferentialMethylation.TrackerDESeqSpikeIn
    :render: matrixNP-plot
-   :tracker: deseq.dir/*.tsv.spike.gz
+   :glob: deseq.dir/*.tsv.spike.gz
    :palette: Blues
    :xtitle: l2fold
    :ytitle: l10counts
