@@ -11,9 +11,9 @@ from SphinxReport import Utils
 ###################################################################
 ## parameterization
 
-EXPORTDIR=P['readqc_exportdir']
-DATADIR=P['readqc_datadir']
-DATABASE=P['readqc_backend']
+EXPORTDIR = P.get('readqc_exportdir', P.get('exportdir', 'export'))
+DATADIR = P.get('readqc_datadir', P.get('datadir', '.'))
+DATABASE = P.get('readqc_backend', P.get('sql_backend', 'sqlite:///./csvdb'))
 
 ###################################################################
 # cf. pipeline_rnaseq.py
