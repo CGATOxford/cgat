@@ -325,9 +325,12 @@ def main(argv=None):
     outs = options.stdout
     outs.write( "category\tcounts\tpercent\tof\n" )
 
-    def _write( outs, text, numerator, denominator, base ):
-        outs.write( '%s\t%i\t%5.2f\t%s\n' % (text, numerator,
-                                             100.0 * numerator / denominator, base ) )
+    def _write(outs, text, numerator, denominator, base):
+        percent = IOTools.prettyPercent(numerator, denominator)
+        outs.write('%s\t%i\t%s\t%s\n' % (text,
+                                         numerator,
+                                         percent,
+                                         base))
 
     ###############################
     ###############################
