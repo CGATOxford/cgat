@@ -1,5 +1,4 @@
-"""
-=====================
+"""=====================
 Peak calling pipeline
 =====================
 
@@ -14,10 +13,11 @@ on mapped reads.
 Overview
 ========
 
-pipeline_peakcalling takes as input reads aligned to genomic sequence as :term:`bam` formatted files
-and calls peaks. The pipeline implements several peak callers:
+pipeline_peakcalling takes as input reads aligned to genomic sequence
+as :term:`bam` formatted files and calls peaks. The pipeline
+implements several peak callers:
 
-macs_ 
+macs_
    Model-based Analysis of ChIP-Seq (MACS), for identifying
    transcript factor binding sites. MACS captures the influence of
    genome complexity to evaluate the significance of enriched ChIP
@@ -94,27 +94,31 @@ for peaks:
 .. glossary::
 
    region
-      A broad region defined by a peak caller. Regions are usually created in the first step of
-      peak calling, before peak refinement or detection of subpeaks is performed.
+      A broad region defined by a peak caller. Regions are usually
+      created in the first step of peak calling, before peak
+      refinement or detection of subpeaks is performed.
 
    summit
-      A narrow region defined by a caller. These are the output of any peak refinement
-      or subpeak detection steps
+      A narrow region defined by a caller. These are the output of any
+      peak refinement or subpeak detection steps
 
    interval
-      Generic term for an interval in which the read density is higher then expected. Both
-      a :term:`region` or a :term:`summit` are an :term:`interval`.
+      Generic term for an interval in which the read density is higher
+      then expected. Both a :term:`region` or a :term:`summit` are an
+      :term:`interval`.
 
    peak
-      Within a :term:`region` or :term:`summit` the position with the highest base coverage.
+      Within a :term:`region` or :term:`summit` the position with the
+      highest base coverage.
 
-The pipeline computes some basic measures to validate peak calling. In order to fully annotate
-peaks, use :doc:`pipeline_intervals`.
+The pipeline computes some basic measures to validate peak calling. In
+order to fully annotate peaks, use :doc:`pipeline_intervals`.
 
 .. note::
 
-   The pipeline currently expects that mulit-mapping reads (reads mapping to multiple locations)
-   have been removed.
+   The pipeline currently expects that mulit-mapping reads (reads
+   mapping to multiple locations) have been removed.  
+
 QC
 ---
 
@@ -133,16 +137,17 @@ called peaks.
 Usage
 =====
 
-See :ref:`PipelineSettingUp` and :ref:`PipelineRunning` on general information how to use CGAT pipelines.
+See :ref:`PipelineSettingUp` and :ref:`PipelineRunning` on general
+information how to use CGAT pipelines.
 
 Configuration
 -------------
 
-The pipeline requires a configured :file:`pipeline.ini` file. 
+The pipeline requires a configured :file:`pipeline.ini` file.
 
-The sphinxreport report requires a :file:`conf.py` and :file:`sphinxreport.ini` file 
-(see :ref:`PipelineReporting`). To start with, use the files supplied with the
-Example_ data.
+The sphinxreport report requires a :file:`conf.py` and
+:file:`sphinxreport.ini` file (see :ref:`PipelineReporting`). To start
+with, use the files supplied with the Example_ data.
 
 Input
 -----
@@ -393,7 +398,8 @@ def getBamFiles( infile, suffix ):
     bamfile = P.snip( os.path.basename(infile), suffix ) + ".call.bam"
     assert os.path.exists( bamfile ), "bamfile %s does not exist" % bamfile
 
-    controlfile = "%s.call.bam" % getControl(Sample(track)).asFile()
+    controls = getControl(Sample(track))
+    controlfile = getControlFile( controls, "%s.call.bam" )
     if not os.path.exists( controlfile ):
         L.warn( "no controlfile '%s' for track '%s' not found " % (controlfile, track ) )
         controlfile = None
@@ -627,11 +633,12 @@ def checkDataQuality( infile, outfile ):
     '''
     
     track = P.snip( infile, ".call.bam" )
-    controlfile = "%s.call.bam" % getControl(Sample(track)).asFile()
+    controls = getControl(Sample(track))
+    controlfile = getControlFile( controls, "%s.call.bam" )
 
-    if not os.path.exists( controlfile ):
-        L.warn( "controlfile '%s' for track '%s' not found " % (controlfile, track ) )
-        P.touch( outfile )
+    if not os.path.exists(controlfile):
+        L.warn("controlfile '%s' for track '%s' not found " % (controlfile, track ))
+        P.touch(outfile)
         return
 
     to_cluster = True
@@ -953,8 +960,12 @@ def callPeaksWithPeakRanger( infile, outfile ):
             r"\1_peakranger.load" )
 def loadPeakRanger( infile, outfile ):
     '''load macs results.''' 
-    bamfile,controlfile = getBamFiles( infile,".peakranger")
-    PipelinePeakcalling.loadPeakRanger( infile, outfile, bamfile, controlfile ,"peaks")
+    bamfile, controlfile = getBamFiles(infile, ".peakranger")
+    PipelinePeakcalling.loadPeakRanger(infile, 
+                                       outfile, 
+                                       bamfile, 
+                                       controlfile ,
+                                       "peaks")
 
 ############################################################
 @merge( callPeaksWithPeakRanger, "peakranger.ranger.summary" )

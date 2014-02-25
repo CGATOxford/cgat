@@ -54,7 +54,7 @@ def main(argv=None):
     parser.add_option("-n", "--dry-run", dest="dry_run", action="store_true",
                       help="dry run, do not delete any files [%default]")
 
-    parser.set_defaults(dry_run = False)
+    parser.set_defaults(dry_run=False)
 
     ## add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv)
