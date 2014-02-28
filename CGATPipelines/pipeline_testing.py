@@ -169,7 +169,11 @@ def runTest(infile, outfile, update = False):
     test_name = P.snip(outfile, ".log")
     pipeline_name, test_description = splitTestName(test_name)
 
+    # do not run on cluster, mirro
+    # that a pipeline is set up on
+    # the head node
     to_cluster = False
+
     pipelines_dir = getPipelinesDir()
 
     if not update:
@@ -190,7 +194,7 @@ def runTest(infile, outfile, update = False):
 
         # link to new files, overwriting default
         # configuration files if necessary.
-        statement = '''ln -fs %(infile)s.dir/* %(test_name)s.dir'''
+        statement = '''ln -fs %(infile)s.dir/* %(test_name)s.dir/'''
         P.run()
 
     statement = '''
@@ -221,7 +225,8 @@ def runPreparationTests(infile, outfile):
 @follows(runPreparationTests)
 @files([(x, os.path.basename(x) + ".log")
         for x in glob.glob(
-            os.path.join(PARAMS["data_dir"], "pipeline_*"))])
+            os.path.join(PARAMS["data_dir"], "pipeline_*"))
+        if x not in P.asList(PARAMS["prerequisites"])])
 def runTests(infile, outfile):
     '''run a pipeline with test data.'''
     runTest(infile, outfile)
