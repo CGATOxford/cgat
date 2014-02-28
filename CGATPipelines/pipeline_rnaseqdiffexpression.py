@@ -1,5 +1,4 @@
-"""
-========================================
+"""========================================
 RNA-Seq Differential expression pipeline
 ========================================
 
@@ -35,21 +34,24 @@ The pipeline performs the following:
 Background
 ============
 
-The quality of the rnaseq data (read-length, paired-end) determines the
-quality of transcript models. For instance, if reads are short (35bp) and/or 
-reads are not paired-ended, transcript models will be short and truncated.
-In these cases it might be better to concentrate the analysis on only previously
-known transcript models. 
+The quality of the rnaseq data (read-length, paired-end) determines
+the quality of transcript models. For instance, if reads are short
+(35bp) and/or reads are not paired-ended, transcript models will be
+short and truncated.  In these cases it might be better to concentrate
+the analysis on only previously known transcript models.
 
 
-Transcripts are the natural choice to measure expression of. However other quantities
-might be of interest. Some quantities are biological meaningful, for example differential 
-expression from a promotor shared by several trancripts. Other quantities might no biologically
-meaningful but are necessary as a technical comprise.
-For example, the overlapping transcripts might be hard to resolve and thus might need to be
-aggregated per gene. Furthermore, functional annotation is primarily associated with genes
-and not individual transcripts. The pipeline attempts to measure transcription and differential
-expression for a variety of entities following the classification laid down by :term:`cuffdiff`:
+Transcripts are the natural choice to measure expression of. However
+other quantities might be of interest. Some quantities are biological
+meaningful, for example differential expression from a promotor shared
+by several trancripts. Other quantities might no biologically
+meaningful but are necessary as a technical comprise.  For example,
+the overlapping transcripts might be hard to resolve and thus might
+need to be aggregated per gene. Furthermore, functional annotation is
+primarily associated with genes and not individual transcripts. The
+pipeline attempts to measure transcription and differential expression
+for a variety of entities following the classification laid down by
+:term:`cuffdiff`:
 
 isoform
    Transcript level
@@ -61,27 +63,30 @@ cds
    Coding sequence expression. Ignore reads overlapping non-coding parts of transcripts (UTRs, etc.). Requires
    annotation of the cds and thus only available for :file:`reference.gtf.gz`.
 
-Methods differ in their ability to measure transcription on all levels. 
+Methods differ in their ability to measure transcription on all
+levels.
  
 .. todo::
    add promoters and splicing output
 
-Overprediction of differential expression for low-level expressed transcripts with :term:`cuffdiff`
-is a `known problem <http://seqanswers.com/forums/showthread.php?t=6283&highlight=fpkm>`_.
+Overprediction of differential expression for low-level expressed
+transcripts with :term:`cuffdiff` is a `known problem
+<http://seqanswers.com/forums/showthread.php?t=6283&highlight=fpkm>`_.
 
 Usage
 =====
 
-See :ref:`PipelineSettingUp` and :ref:`PipelineRunning` on general information how to use CGAT pipelines.
+See :ref:`PipelineSettingUp` and :ref:`PipelineRunning` on general
+information how to use CGAT pipelines.
 
 Configuration
 -------------
 
 The pipeline requires a configured :file:`pipeline.ini` file. 
 
-The sphinxreport report requires a :file:`conf.py` and :file:`sphinxreport.ini` file 
-(see :ref:`PipelineReporting`). To start with, use the files supplied with the
-Example_ data.
+The sphinxreport report requires a :file:`conf.py` and
+:file:`sphinxreport.ini` file (see :ref:`PipelineReporting`). To start
+with, use the files supplied with the Example_ data.
 
 Input
 -----
@@ -89,25 +94,28 @@ Input
 Reads
 +++++
 
-Reads are imported by placing :term:`bam` formatted files are linking to files in the :term:`working directory`.
+Reads are imported by placing :term:`bam` formatted files are linking
+to files in the :term:`working directory`.
 
 The default file format assumes the following convention:
 
    <sample>-<condition>-<replicate>.<suffix>
 
-``sample`` and ``condition`` make up an :term:`experiment`, while ``replicate`` denotes
-the :term:`replicate` within an :term:`experiment`.
+``sample`` and ``condition`` make up an :term:`experiment`, while
+``replicate`` denotes the :term:`replicate` within an
+:term:`experiment`.
 
 Genesets
 ++++++++
 
-Genesets are imported by placing :term:`gtf` formatted files in the :term:`working directory`.
+Genesets are imported by placing :term:`gtf` formatted files in the
+:term:`working directory`.
 
 Design matrices
 +++++++++++++++
 
-Design matrices are imported by placing :term:`tsv` formatted files into the :term:`working directory`.
-The file has four columns::
+Design matrices are imported by placing :term:`tsv` formatted files
+into the :term:`working directory`.  The file has four columns::
 
       track   include group   pair
       CW-CD14-R1      0       CD14    1
@@ -135,11 +143,12 @@ Optional inputs
 Requirements
 ------------
 
-The pipeline requires the results from :doc:`pipeline_annotations`. Set the configuration variable 
+The pipeline requires the results from
+:doc:`pipeline_annotations`. Set the configuration variable
 :py:data:`annotations_database` and :py:data:`annotations_dir`.
 
-On top of the default CGAT setup, the pipeline requires the following software to be in the 
-path:
+On top of the default CGAT setup, the pipeline requires the following
+software to be in the path:
 
 +--------------------+-------------------+------------------------------------------------+
 |*Program*           |*Version*          |*Purpose*                                       |
@@ -166,20 +175,20 @@ Pipeline output
 FPKM values
 -----------
 
-The directory :file:`fpkm.dir` contains the output of running cufflinks against each 
-set of reads for each geneset. 
+The directory :file:`fpkm.dir` contains the output of running
+cufflinks against each set of reads for each geneset.
 
-The syntax of the output files is ``<geneset>_<track>.cufflinks``. The FPKM values are
-uploaded into tables as ``<geneset>_<track>_fpkm`` for per-transcript FPKM values and 
-``<geneset>_<track>_genefpkm`` for per-gene FPKM values.
+The syntax of the output files is ``<geneset>_<track>.cufflinks``. The
+FPKM values are uploaded into tables as ``<geneset>_<track>_fpkm`` for
+per-transcript FPKM values and ``<geneset>_<track>_genefpkm`` for
+per-gene FPKM values.
 
 Differential gene expression results
 -------------------------------------
 
-Differential expression is estimated for different genesets
-with a variety of methods. Results are stored per method in 
-subdirectories such as :file:`deseq.dir`, :file:`edger.dir`
-or :file:`cuffdiff.dir`.
+Differential expression is estimated for different genesets with a
+variety of methods. Results are stored per method in subdirectories
+such as :file:`deseq.dir`, :file:`edger.dir` or :file:`cuffdiff.dir`.
 
 The syntax of the output files is ``<design>_<geneset>_...``.
 
@@ -213,18 +222,22 @@ The syntax of the output files is ``<design>_<geneset>_...``.
        status of test. Values are 
        OK: test ok, FAIL: test failed, NOCALL: no test (insufficient data, etc.).
 
-The results are uploaded into the database as tables called ``<design>_<geneset>_<method>_<level>_<section>``.
+The results are uploaded into the database as tables called
+``<design>_<geneset>_<method>_<level>_<section>``.
 
-Level denotes the biological entity that the differential analysis was performed on.
-Level can be one of ``cds``,``isoform``,``tss`` and ``gene``. The later should always be present.
+Level denotes the biological entity that the differential analysis was
+performed on.  Level can be one of ``cds``,``isoform``,``tss`` and
+``gene``. The later should always be present.
 
-Section is ``diff`` for differential expression results (:file:`.diff`` files) and ``levels`` for expression levels.
+Section is ``diff`` for differential expression results
+(:file:`.diff`` files) and ``levels`` for expression levels.
 
 
 Example
 =======
 
-Example data is available at http://www.cgat.org/~andreas/sample_data/pipeline_rnaseqdiffexpression.tgz.
+Example data is available at
+http://www.cgat.org/~andreas/sample_data/pipeline_rnaseqdiffexpression.tgz.
 To run the example, simply unpack and untar::
 
    wget http://www.cgat.org/~andreas/sample_data/pipeline_rnaseqdiffexpression.tgz
@@ -232,7 +245,8 @@ To run the example, simply unpack and untar::
    cd pipeline_rnaseq
    python <srcdir>/pipeline_rnaseq.py make full
 
-.. note:: 
+.. note::
+
    For the pipeline to run, install the :doc:`pipeline_annotations` as well.
 
 Glossary
@@ -269,44 +283,28 @@ Code
 from ruffus import *
 
 import CGAT.Experiment as E
-import logging as L
 import CGAT.Database as Database
-import CGAT.CSV as CSV
 
 import sys
 import os
 import re
-import shutil
 import itertools
-import math
 import glob
-import time
-import gzip
 import collections
-import random
-
-import numpy
 import sqlite3
 import CGAT.GTF as GTF
 import CGAT.IOTools as IOTools
-import CGAT.IndexedFasta as IndexedFasta
-import CGAT.Tophat as Tophat
 from rpy2.robjects import r as R
 import rpy2.robjects as ro
-import rpy2.robjects.vectors as rovectors
-from rpy2.rinterface import RRuntimeError
 
 import CGAT.Expression as Expression
 
 import CGATPipelines.PipelineGeneset as PipelineGeneset
-import CGATPipelines.PipelineMapping as PipelineMapping
 import CGATPipelines.PipelineRnaseq as PipelineRnaseq
-import CGATPipelines.PipelineMappingQC as PipelineMappingQC
-import CGAT.Stats as Stats
 
 # levels of cuffdiff analysis
 # (no promotor and splice -> no lfold column)
-CUFFDIFF_LEVELS = ("gene", "cds", "isoform", "tss" )
+CUFFDIFF_LEVELS = ("gene", "cds", "isoform", "tss")
 
 ###################################################
 ###################################################
@@ -334,14 +332,14 @@ import CGATPipelines.PipelineTracks as PipelineTracks
 Sample = PipelineTracks.AutoSample
 
 # collect sra nd fastq.gz tracks
-TRACKS = PipelineTracks.Tracks( Sample ).loadFromDirectory( 
-    glob.glob( "*.bam" ), "(\S+).bam" )
+TRACKS = PipelineTracks.Tracks(Sample).loadFromDirectory( 
+    glob.glob("*.bam"), "(\S+).bam")
 
 # group by experiment (assume that last field is a replicate identifier)
-EXPERIMENTS = PipelineTracks.Aggregate( TRACKS, labels = ("condition", "tissue" ) )
+EXPERIMENTS = PipelineTracks.Aggregate(TRACKS, labels=("condition", "tissue"))
 
-GENESETS = PipelineTracks.Tracks( Sample ).loadFromDirectory( 
-    glob.glob( "*.gtf.gz" ), "(\S+).gtf.gz" )
+GENESETS = PipelineTracks.Tracks(Sample).loadFromDirectory( 
+    glob.glob("*.gtf.gz"), "(\S+).gtf.gz")
 
 ###################################################################
 ###################################################################
