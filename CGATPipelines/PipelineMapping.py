@@ -679,7 +679,7 @@ class BWA( Mapper ):
 
         # add options specific to data type
         # note: not fully implemented
-        data_options = ["%(bwa_align_options)s"]
+        data_options = ["%(bwa_aln_options)s"]
         if self.datatype == "solid":
             data_options.append( "-c" )
             index_prefix = "%(bwa_index_dir)s/%(genome)s_cs"
@@ -752,6 +752,69 @@ class BWA( Mapper ):
                 samtools index %(outfile)s;''' % locals()
 
         return statement
+
+class BWAMEM( BWA ):
+
+    '''run bwa with mem algorithm to map reads against genome.
+    class inherits postprocess function from BWA class.
+    '''
+      
+    def mapper( self, infiles, outfile ):
+        '''build mapping statement on infiles.'''
+
+        num_files = [ len( x ) for x in infiles ]
+        
+        if max(num_files) != min(num_files):
+            raise ValueError("mixing single and paired-ended data not possible." )
+        
+        nfiles = max(num_files)
+        
+        tmpdir = os.path.join( self.tmpdir_fastq + "bwa" )
+        statement = [ "mkdir -p %s;" % tmpdir ]
+        tmpdir_fastq = self.tmpdir_fastq
+
+        # add options specific to data type
+        # note: not fully implemented
+        data_options = ["%(bwa_mem_options)s"]
+        if self.datatype == "solid":
+            data_options.append( "-c" )
+            index_prefix = "%(bwa_index_dir)s/%(genome)s_cs"
+        elif self.datatype == "fasta":
+            index_prefix = "%(bwa_index_dir)s/%(genome)s"
+        else:
+            index_prefix = "%(bwa_index_dir)s/%(genome)s"
+
+        data_options = " ".join( data_options )
+
+        tmpdir_fastq = self.tmpdir_fastq
+
+        track = P.snip( os.path.basename( outfile ), ".bam" )
+
+        if nfiles == 1:
+            infiles = ",".join( [ self.quoteFile(x[0]) for x in infiles ] )
+            
+            statement.append('''
+            bwa mem %%(mem_options)s -t %%(bwa_threads)i %(index_prefix)s %(infiles)s 
+            > %(tmpdir)s/%(track)s.sam 2>>%(outfile)s.bwa.log; 
+            ''' % locals() )
+
+        elif nfiles == 2:
+            infiles1 = ",".join( [ self.quoteFile(x[0]) for x in infiles ] )
+            infiles2 = ",".join( [ self.quoteFile(x[1]) for x in infiles ] )
+
+            statement.append('''
+            bwa mem %%(mem_options)s -t %%(bwa_threads)i %(index_prefix)s %(infiles1)s 
+            %(infiles2)s > %(tmpdir)s/%(track)s.sam 2>>%(outfile)s.bwa.log;
+            ''' % locals() )
+        else:
+            raise ValueError( "unexpected number read files to map: %i " % nfiles )
+
+        self.tmpdir = tmpdir
+
+        return " ".join( statement )
+    
+    
+
 
 class Stampy( BWA ):
     '''map reads against genome using STAMPY.

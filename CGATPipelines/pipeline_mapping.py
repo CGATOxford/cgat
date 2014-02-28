@@ -937,8 +937,16 @@ def mapReadsWithBWA( infile, outfile ):
     job_options= "-pe dedicated %i -R y -l mem_free=%s" % (PARAMS["bwa_threads"],
                                                            PARAMS["bwa_memory"] )
     to_cluster = True
-    m = PipelineMapping.BWA( remove_non_unique = PARAMS["remove_non_unique"],
-                             strip_sequence = PARAMS["strip_sequence"] )
+    if PARAMS["bwa_algorithm"] == "aln":
+        m = PipelineMapping.BWA(
+            remove_non_unique = PARAMS["remove_non_unique"],
+            strip_sequence = PARAMS["strip_sequence"])
+    elif PARAMS["bwa_algorithm"] == "mem":
+        m = PipelineMapping.BWAMEM(
+            remove_non_unique = PARAMS["remove_non_unique"],
+            strip_sequence = PARAMS["strip_sequence"])
+    else:
+        raise ValueError("bwa algorithm parameter not set")
 
     statement = m.build( (infile,), outfile ) 
     P.run()
@@ -946,7 +954,7 @@ def mapReadsWithBWA( infile, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-## Map reads with bwa
+## Map reads with stampy
 ###################################################################
 @follows( mkdir("stampy.dir") )
 @transform( SEQUENCEFILES,
@@ -1637,6 +1645,14 @@ def views():
 @follows( mapping, qc, views, duplication)
 def full(): pass
 
+###################################################################
+###################################################################
+###################################################################
+## target added to allow testing of bwa mapping in isolation
+## remove once modified pipeline accepted
+##################################################################
+@follows( mapReadsWithBWA)
+def bwamap(): pass
 
 ###################################################################
 ###################################################################
