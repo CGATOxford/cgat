@@ -53,13 +53,13 @@ number of pairs submitted as a pair might map to multiple locations.
 |pairs_mapped                           |Number of pairs mapped (proper pairs)             |
 +---------------------------------------+--------------------------------------------------+
 
-.. report:: Mapping.MappingSummary
+.. report:: Mapping.PairedMappingSummary
    :render: table
    :slices: pairs_total,pairs_mapped
 
    Mapping results in terms of pairs
 
-.. report:: Mapping.MappingSummary
+.. report:: Mapping.PairedMappingSummary
    :render: interleaved-bar-plot
    :slices: pairs_total,pairs_mapped
    :split-at: 10
@@ -95,13 +95,13 @@ categories.
 |pairs_other              |pairs not in any of the above categories|
 +-------------------------+----------------------------------------+
 
-.. report:: Mapping.MappingSummary
+.. report:: Mapping.PairedMappingSummary
    :render: table
    :slices: pairs_proper_unique_alignments,pairs_unmapped,pairs_incomplete,pairs_not_proper_unique_alignments,pairs_other,pairs_proper_duplicate,pairs_proper_multimapping
 
    Mapping results in terms of pairs
 
-.. report:: Mapping.MappingSummary
+.. report:: Mapping.PairedMappingSummary
    :render: stacked-bar-plot
    :slices: pairs_proper_unique_alignments,pairs_unmapped,pairs_incomplete,pairs_not_proper_unique_alignments,pairs_other,pairs_proper_duplicate,pairs_proper_multimapping
    :split-at: 10

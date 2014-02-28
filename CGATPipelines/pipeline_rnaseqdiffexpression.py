@@ -900,7 +900,7 @@ def buildTranscriptLevelReadCounts( infiles, outfile):
             suffix(".tsv.gz"),
             ".load" )
 def loadTranscriptLevelReadCounts( infile, outfile ):
-    P.load( infile, outfile, options="--index=transcript_id" )
+    P.load(infile, outfile, options="--index=transcript_id")
 
 
 #########################################################################
@@ -915,17 +915,20 @@ def buildFeatureCounts(infiles, outfile):
 
     A read overlaps if at least one bp overlaps.
 
-    Pairs and strandedness can be used to resolve reads falling into more
-    than one feautre. Reads that cannot be resolved to a single feature 
-    are ignored.  '''
+    Pairs and strandedness can be used to resolve reads falling into
+    more than one feature. Reads that cannot be resolved to a single
+    feature are ignored.
+
+    '''
 
     infile, annotations = infiles
 
     # featureCounts cannot handle gzipped in or out files
-    outfile = P.snip(outfile,".gz")
+    outfile = P.snip(outfile, ".gz")
     annotations_tmp = P.getTempFilename()
 
-    # -p -B specifies count fragments rather than reads, and both reads must map to the feature
+    # -p -B specifies count fragments rather than reads, and both
+    # reads must map to the feature
     if PARAMS['featurecounts_paired'] == "1":
         paired = "-p -B"
     else:
@@ -940,8 +943,9 @@ def buildFeatureCounts(infiles, outfile):
                                  -s %(featurecounts_strand)s
                                  -b 
                                  -a %(annotations_tmp)s
-                                 -i %(infile)s
-                                 -o %(outfile)s > %(outfile)s.log;
+                                 -o %(outfile)s 
+                                 %(infile)s
+                    > %(outfile)s.log;
                     checkpoint;
                     gzip %(outfile)s;
                     checkpoint;
@@ -955,13 +959,17 @@ def buildFeatureCounts(infiles, outfile):
 @collate(buildFeatureCounts, 
          regex("feature_counts.dir/(.+)_vs_(.+).tsv.gz"),
          r"feature_counts.dir/\2.feature_counts.tsv.gz")
-def aggregateFeatureCounts(infiles,outfile):
-    ''' build a matrix of counts with genes and tracks dimensions '''
+def aggregateFeatureCounts(infiles, outfile):
+    ''' build a matrix of counts with genes and tracks dimensions.
+    '''
+
+    # Use column 7 as counts This is a possible source of bugs, the
+    # column position has changed before.
 
     infiles = " ".join(infiles)
     statement = '''python %(scriptsdir)s/combine_tables.py
                                             --columns=1
-                                            --take=3
+                                            --take=7
                                             --use-file-prefix
                                             --regex-filename='(.+)_vs.+.tsv.gz'
                                             --log=%(outfile)s.log
@@ -978,7 +986,7 @@ def aggregateFeatureCounts(infiles,outfile):
            suffix(".tsv.gz"),
            ".load")
 def loadFeatureCounts(infile, outfile):
-    P.load(infile,outfile, "-i gene_id")
+    P.load(infile, outfile, "--index=gene_id")
 
 #########################################################################
 #########################################################################

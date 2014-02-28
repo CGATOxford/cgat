@@ -131,7 +131,6 @@ def check_script(test_name, script, stdin,
 
     shutil.rmtree(tmpdir)
 
-
 def test_scripts():
     '''yield list of scripts to test.'''
 

@@ -39,7 +39,12 @@ class MappingStatus( Status ):
         in proper pairs divided by 2. It is just an estimated and does
         not reflect reads mapping to multiple locations.
         '''
-        value = self.getValue( "SELECT pairs_mapped/CAST( pairs_total AS FLOAT) from view_mapping WHERE track = '%(track)s'" )
+
+        value = self.getValue("""SELECT
+        pairs_mapped / CAST(pairs_total AS FLOAT)
+        FROM view_mapping
+        WHERE track = '%(track)s'
+        AND pairs_total > 0""")
 
         if value == None: return "NA", 0
 

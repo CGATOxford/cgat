@@ -3,8 +3,13 @@ import os, sys, re, types, itertools
 from SphinxReport.Tracker import *
 from MappingReport import *
 
-class MappingSummary( MappingTracker, SingleTableTrackerRows ):
+class MappingSummary(MappingTracker, SingleTableTrackerRows):
     table = "view_mapping"
+
+class PairedMappingSummary(MappingTracker, SingleTableTrackerRows):
+    table = "view_mapping"
+    # select only tracks with paired reads
+    where = "pairs_total > 0"
 
 class TophatSummary( MappingTracker, SingleTableTrackerRows ):
     table = "tophat_stats"

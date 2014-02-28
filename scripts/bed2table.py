@@ -66,9 +66,7 @@ import CGAT.GTF as GTF
 import CGAT.Bed as Bed
 import CGAT.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
-import CGAT.Stats as Stats
 import CGAT.SequenceProperties as SequenceProperties
-import CGAT.Genomics as Genomics
 import CGAT.Intervals as Intervals
 import numpy
 import CGAT.IndexedGenome as IndexedGenome
