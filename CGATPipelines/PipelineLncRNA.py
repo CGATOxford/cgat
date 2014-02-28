@@ -121,7 +121,7 @@ def buildLncRNAGeneSet( abinitio_lincrna, reference, refnoncoding, pseudogenes_g
                       "IG_J_gene",
                       "IG_C_gene",
                       "IG_D_gene",
-                      "IG_LV_gene"
+                      "IG_LV_gene",
                       "TR_V_gene",
                       "CDS")       
                                    
