@@ -1,5 +1,5 @@
-################################################################################
-#   Gene prediction pipeline 
+##########################################################################
+#   Gene prediction pipeline
 #
 #   $Id: WrapperBaseML.py 2765 2009-09-04 16:55:18Z andreas $
 #
@@ -18,24 +18,33 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
+##########################################################################
 """
 Wrapper for BaseML
 ==================
 
 """
-import os, sys, string, re, tempfile, subprocess
+import os
+import sys
+import string
+import re
+import tempfile
+import subprocess
 
 import Genomics
 
+
 class Error(Exception):
+
     """Base class for exceptions in this module."""
     pass
 
     def __str__(self):
         return str(self.message)
 
+
 class ParsingError(Error):
+
     """Exception raised for errors while parsing
 
     Attributes:
@@ -45,7 +54,9 @@ class ParsingError(Error):
     def __init__(self, message):
         self.message = message
 
+
 class UsageError(Error):
+
     """Exception raised for errors while starting
 
     Attributes:
@@ -55,12 +66,15 @@ class UsageError(Error):
     def __init__(self, message):
         self.message = message
 
+
 class BaseMLResult:
+
     def __init__(self):
         pass
 
+
 class BaseML:
-    
+
     """
     Parser and outputs configuration files like this::
 
@@ -101,105 +115,105 @@ class BaseML:
     """
 
     mOptions = {
-        "noisy"         : 9,
-        "verbose"       : 0,
-        "runmode"       : 0, 
-        "model"         : 4,     
-        "Mgene"         : 0,
-        "clock"         : 0,
-        "fix_kappa"     : 0,
-        "kappa"         : 5,
-        "fix_alpha"     : 0, 
-        "alpha"         : 0.5, 
-        "Malpha"        : 0,
-        "ncatG"         : 5,
-        "nparK"         : 0,
-        "nhomo"         : 0,
-        "getSE"         : 0,
-        "RateAncestor"  : 1,
-        "Small_Diff"    : "7e-6",
-        "cleandata"     : 1,
-        "method"        : 0,
-        }
+        "noisy": 9,
+        "verbose": 0,
+        "runmode": 0,
+        "model": 4,
+        "Mgene": 0,
+        "clock": 0,
+        "fix_kappa": 0,
+        "kappa": 5,
+        "fix_alpha": 0,
+        "alpha": 0.5,
+        "Malpha": 0,
+        "ncatG": 5,
+        "nparK": 0,
+        "nhomo": 0,
+        "getSE": 0,
+        "RateAncestor": 1,
+        "Small_Diff": "7e-6",
+        "cleandata": 1,
+        "method": 0,
+    }
     mExecutable = "baseml"
 
-    def __init__( self ):
+    def __init__(self):
 
         self.mFilenameTree = None
         self.mFilenameSequences = None
 
-    def GetOptions( self ):
+    def GetOptions(self):
         """return options in pretty format"""
-        result = ["# Options for BaseML" ]
+        result = ["# Options for BaseML"]
         for var in self.mOptions.keys():
             result.append("# %-40s: %s" % (var, self.mOptions[var]))
         return string.join(result, "\n")
-        
-    def SetOption( self, option, value ):
+
+    def SetOption(self, option, value):
         self.mOptions[option] = value
 
-    def WriteAlignment( self, alignment ):
+    def WriteAlignment(self, alignment):
         """write alignment in Phylip format."""
 
-        outfile = open( self.mTempdir + "/" + self.mFilenameSequences, "w" )
+        outfile = open(self.mTempdir + "/" + self.mFilenameSequences, "w")
 
-        outfile.write( " %4i %i\n" % (len(alignment), len(alignment[0][1])) )
+        outfile.write(" %4i %i\n" % (len(alignment), len(alignment[0][1])))
         for i, s in alignment:
             outfile.write("%s\n%s\n" % (i, s))
 
         outfile.close()
 
-    def WriteTree( self, alignment ):
+    def WriteTree(self, alignment):
         """write tree to file."""
 
-        outfile = open( self.mTempdir + "/" + self.mFilenameTree, "w" )
+        outfile = open(self.mTempdir + "/" + self.mFilenameTree, "w")
 
         if len(alignment) != 2:
-            raise UsageError( "only 2 sequences right now!")
+            raise UsageError("only 2 sequences right now!")
 
         outfile.write("(%s,%s);\n" % (alignment[0][0], alignment[1][0]))
         outfile.close()
-        
-    def WriteControlFile( self ):
+
+    def WriteControlFile(self):
         """write baseml.ctl"""
-        
-        outfile = open( self.mTempdir + "/baseml.ctl", "w" )
+
+        outfile = open(self.mTempdir + "/baseml.ctl", "w")
 
         if self.mFilenameSequences:
-            outfile.write( "seqfile = %s\n" % (self.mFilenameSequences) )
+            outfile.write("seqfile = %s\n" % (self.mFilenameSequences))
         if self.mFilenameTree:
-            outfile.write( "treefile = %s\n" % (self.mFilenameTree) )
+            outfile.write("treefile = %s\n" % (self.mFilenameTree))
 
-        outfile.write( "outfile = %s\n" % (self.mFilenameOutput) )
+        outfile.write("outfile = %s\n" % (self.mFilenameOutput))
 
-        for o,a in self.mOptions.items():
-            outfile.write( "%s = %s\n" % (o, str(a)))
-            
+        for o, a in self.mOptions.items():
+            outfile.write("%s = %s\n" % (o, str(a)))
+
         outfile.close()
-    
-    def Run( self, alignment, dump_result = 0 ):
+
+    def Run(self, alignment, dump_result=0):
 
         self.mTempdir = tempfile.mkdtemp()
         self.mFilenameSequences = "input"
         self.mFilenameTree = "tree"
-        self.mFilenameOutput = "output"        
+        self.mFilenameOutput = "output"
         self.mNumSequences = len(alignment)
-        
-        self.WriteAlignment( alignment )
-        self.WriteTree( alignment )
-        self.WriteControlFile()
-        
-        statement = "cd %s; %s;" % (self.mTempdir, self.mExecutable )
 
-        p = subprocess.Popen( statement , 
-                              shell=True, 
-                              stdin=subprocess.PIPE, 
-                              stdout=subprocess.PIPE, 
-                              stderr=subprocess.PIPE, 
-                              close_fds=True)
+        self.WriteAlignment(alignment)
+        self.WriteTree(alignment)
+        self.WriteControlFile()
+
+        statement = "cd %s; %s;" % (self.mTempdir, self.mExecutable)
+
+        p = subprocess.Popen(statement,
+                             shell=True,
+                             stdin=subprocess.PIPE,
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE,
+                             close_fds=True)
 
         (file_stdout, file_stdin, file_stderr) = (p.stdin, p.stdout, p.stderr)
-        
+
         file_stdin.close()
         lines = file_stdout.readlines()
         lines_stderr = file_stderr.readlines()
@@ -207,14 +221,16 @@ class BaseML:
         file_stderr.close()
         file_stdout.close()
 
-        lines = open( "%s/%s" % (self.mTempdir, self.mFilenameOutput), "r").readlines()
+        lines = open("%s/%s" %
+                     (self.mTempdir, self.mFilenameOutput), "r").readlines()
 
-        if dump_result: print string.join(lines, "")
-        os.system( "rm -rf %s" % self.mTempdir )
-        
-        return self.ParseResult( lines )
+        if dump_result:
+            print string.join(lines, "")
+        os.system("rm -rf %s" % self.mTempdir)
 
-    def ParseResult( self, lines ):
+        return self.ParseResult(lines)
+
+    def ParseResult(self, lines):
         """parse BaseML output.
         """
 
@@ -325,72 +341,86 @@ f:   0.20000  0.20000  0.20000  0.20000  0.20000
 If alpha is fixed, there are only three values for alpha.
 
 """
-        result = BaseMLResult()        
+        result = BaseMLResult()
         # chop
-        lines = map(lambda x: x[:-1], lines )
-        lines = filter( lambda x: x != "", lines)
+        lines = map(lambda x: x[:-1], lines)
+        lines = filter(lambda x: x != "", lines)
 
-        result.mVersion, result.mModel = re.search("BASEML \(in (.+)\)\s+input\s+(\S.+)", lines[0]).groups()
+        result.mVersion, result.mModel = re.search(
+            "BASEML \(in (.+)\)\s+input\s+(\S.+)", lines[0]).groups()
 
         try:
             if result.mVersion == "paml 3.14, January 2004":
-                result.mSitePatterns = map(int, re.split("\s+", lines[0].strip()))
-                while not re.match("^Frequencies", lines[0] ): del lines[0]
+                result.mSitePatterns = map(
+                    int, re.split("\s+", lines[0].strip()))
+                while not re.match("^Frequencies", lines[0]):
+                    del lines[0]
                 result.mFrequencies = {}
                 result.mMatrix = {}
                 for x in range(self.mNumSequences):
                     id = lines[0][:30].strip()
                     result.mMatrix[id] = {}
-                    result.mFrequencies[id] = map(float, re.split( "\s+", lines[0][30:].strip()))
+                    result.mFrequencies[id] = map(
+                        float, re.split("\s+", lines[0][30:].strip()))
                     del lines[0]
-                result.mFrequencies['average'] = map(float, re.split( "\s+", lines[0][30:].strip()))
+                result.mFrequencies['average'] = map(
+                    float, re.split("\s+", lines[0][30:].strip()))
                 result.mConstantSites, result.mConstantSitesPercent = \
-                                       re.search( "# constant sites:\s+(\S+)\s\((.+)%\)", lines[0] ).groups()
-                result.mLmax  = re.search( "ln Lmax \(unconstrained\) = (\S+)", lines[0] ).groups()
+                    re.search(
+                        "# constant sites:\s+(\S+)\s\((.+)%\)", lines[0]).groups()
+                result.mLmax = re.search(
+                    "ln Lmax \(unconstrained\) = (\S+)", lines[0]).groups()
                 previous_ids = []
                 for x in range(self.mNumSequences):
                     id = lines[0][:17].strip()
                     rest = lines[0][17:].strip()
                     if rest:
-                        values = re.findall("[\d.+-]+", rest)                    
+                        values = re.findall("[\d.+-]+", rest)
                         if self.mOptions['model'] == 4:
                             values = map(float, values[::2])
                         else:
-                            values = map(float, values )
+                            values = map(float, values)
                         for i in range(len(previous_ids)):
                             result.mMatrix[previous_ids[i]][id] = values[i]
-                            result.mMatrix[id][previous_ids[i]] = values[i]                
+                            result.mMatrix[id][previous_ids[i]] = values[i]
                     previous_ids.append(id)
             elif result.mVersion == "paml 3.14b, May 2005":
                 # print string.join(lines,"\n")
-                while not re.match("^# site patterns", lines[0] ): del lines[0]
+                while not re.match("^# site patterns", lines[0]):
+                    del lines[0]
                 del lines[0]
-                result.mSitePatterns = map(int, re.split("\s+", lines[0].strip()))
+                result.mSitePatterns = map(
+                    int, re.split("\s+", lines[0].strip()))
 
                 result.mFrequencies = {}
                 result.mMatrix = {}
-                while not re.match("^Frequencies", lines[0] ): del lines[0]
+                while not re.match("^Frequencies", lines[0]):
+                    del lines[0]
                 del lines[:2]
                 for x in range(self.mNumSequences):
                     id = lines[0][:30].strip()
                     result.mMatrix[id] = {}
-                    result.mFrequencies[id] = map(float, re.split( "\s+", lines[0][30:].strip()))
+                    result.mFrequencies[id] = map(
+                        float, re.split("\s+", lines[0][30:].strip()))
                     del lines[0]
-                result.mX2, result.mG = map(float, re.search( "Homogeneity statistic: X2 = (\S+) G = (\S+)", lines[0] ).groups())
+                result.mX2, result.mG = map(float, re.search(
+                    "Homogeneity statistic: X2 = (\S+) G = (\S+)", lines[0]).groups())
                 del lines[0]
-                result.mFrequencies['average'] = map(float, re.split( "\s+", lines[0][30:].strip()))
+                result.mFrequencies['average'] = map(
+                    float, re.split("\s+", lines[0][30:].strip()))
                 del lines[0]
                 result.mConstantSites, result.mConstantSitesPercent = \
-                                       map(float, re.search( "# constant sites:\s+(\S+)\s\((.+)%\)", lines[0] ).groups())
+                    map(float, re.search(
+                        "# constant sites:\s+(\S+)\s\((.+)%\)", lines[0]).groups())
 
-                while lines and not re.match("^TREE", lines[0] ):
+                while lines and not re.match("^TREE", lines[0]):
                     del lines[0]
 
-                result.mBranch1, result.mBranch2, result.mKappa, result.mAlpha = 0.0, 0.0, 0.0, 0.0                                                        
-                ## sometimes, nothing after tree follows,
-                ## for example, if there are no variable sites, no estimation possible
-                ## take only branch lengths from the next line, because alpha and kappa might or might
-                ## not be present
+                result.mBranch1, result.mBranch2, result.mKappa, result.mAlpha = 0.0, 0.0, 0.0, 0.0
+                # sometimes, nothing after tree follows,
+                # for example, if there are no variable sites, no estimation possible
+                # take only branch lengths from the next line, because alpha and kappa might or might
+                # not be present
                 del lines[:3]
                 if lines:
                     data = map(float, re.split("\s+", lines[0].strip()))
@@ -401,26 +431,24 @@ If alpha is fixed, there are only three values for alpha.
                         self.mKappa, self.mAlpha = data[2:4]
                     else:
                         self.mKappa = data[2]
-                    
+
                 result.mDistance = result.mBranch1 + result.mBranch2
                 keys = result.mMatrix.keys()
                 result.mMatrix[keys[0]][keys[1]] = result.mDistance
-                result.mMatrix[keys[1]][keys[0]] = result.mDistance            
+                result.mMatrix[keys[1]][keys[0]] = result.mDistance
             else:
-                raise ParsingError( "unknown BaseML version" )
+                raise ParsingError("unknown BaseML version")
 
         except Exception, inst:
-            raise ParsingError( str(inst) + ":" + lines[0] )
-            
+            raise ParsingError(str(inst) + ":" + lines[0])
+
         return result
 
 if __name__ == "__main__":
-    
+
     baseml = BaseML()
 
-    alignment = ( ("sequence 1", "AAGCTTCACCGGCGCAGTCATTCTCATAATCGCCCACGGACTTACATCCTCATTACTATT"),
-                  ("sequence 2", "AAGCTTCACCGGCGCAATTATCCTCATAATCGCCCACGGACTTACATCCTCATTATTATT") )
-                  
-    baseml.Run( alignment )
-    
-        
+    alignment = (("sequence 1", "AAGCTTCACCGGCGCAGTCATTCTCATAATCGCCCACGGACTTACATCCTCATTACTATT"),
+                 ("sequence 2", "AAGCTTCACCGGCGCAATTATCCTCATAATCGCCCACGGACTTACATCCTCATTATTATT"))
+
+    baseml.Run(alignment)

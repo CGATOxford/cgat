@@ -1,21 +1,26 @@
 from ChipseqReport import *
 
-class TrackerROI( TrackerSQL ):
+
+class TrackerROI(TrackerSQL):
 
     def getTracks(self, subset):
-        return self.getValues( "SELECT DISTINCT(class) FROM regions_of_interest" )
+        return self.getValues("SELECT DISTINCT(class) FROM regions_of_interest")
 
-##################################################################################
-##################################################################################
-##################################################################################
-class AllRegionsOfInterest( TrackerROI ):
+##########################################################################
+##########################################################################
+##########################################################################
+
+
+class AllRegionsOfInterest(TrackerROI):
+
     '''return all regions of interest.'''
-    
-    def __call__(self, track, slice = None ):
 
-        columns = self.getColumns( "regions_of_interest" )
-        extra_columns = sorted( [ x for x in columns if x not in ("class", "contig", "start", "end", "roi_id", "pos" ) ] )
-        extra =",".join( extra_columns)
+    def __call__(self, track, slice=None):
+
+        columns = self.getColumns("regions_of_interest")
+        extra_columns = sorted(
+            [x for x in columns if x not in ("class", "contig", "start", "end", "roi_id", "pos")])
+        extra = ",".join(extra_columns)
         data = self.get( '''SELECT roi_id, contig, start, end, %(extra)s FROM
         regions_of_interest WHERE class = '%(track)s' ''' % locals())
 
@@ -26,30 +31,37 @@ class AllRegionsOfInterest( TrackerROI ):
             roi_id, contig, start, end = d[:4]
             pos = "`%(contig)s:%(start)i..%(end)i <http://genome.ucsc.edu/cgi-bin/hgTracks?db=hg18&position=%(contig)s:%(start)i..%(end)i>`_" \
                 % locals()
-            n[roi_id] = odict( zip ( ("pos",) + tuple(extra_columns), (pos,)+d[3:] ) )
+            n[roi_id] = odict(
+                zip(("pos",) + tuple(extra_columns), (pos,) + d[3:]))
 
         return n
 
-##################################################################################
-##################################################################################
-##################################################################################
-class RegionSizes( TrackerROI ):
+##########################################################################
+##########################################################################
+##########################################################################
+
+
+class RegionSizes(TrackerROI):
+
     '''return all regions of interest.'''
-    
-    def __call__(self, track, slice = None ):
 
-        return odict( ( ("size",
-                         self.getValues( "SELECT end-start FROM regions_of_interest WHERE class='%(track)s'" % locals())
-                         ), )
-                      )
+    def __call__(self, track, slice=None):
 
-##################################################################################
-##################################################################################
-##################################################################################
-class ROIOverlapCounts( ChipseqReport.DefaultTracker ):
+        return odict((("size",
+                       self.getValues(
+                           "SELECT end-start FROM regions_of_interest WHERE class='%(track)s'" % locals())
+                       ), )
+                     )
+
+##########################################################################
+##########################################################################
+##########################################################################
+
+
+class ROIOverlapCounts(ChipseqReport.DefaultTracker):
     mPattern = "_intervals$"
-    
-    def __call__( self, track, slice = None ):
+
+    def __call__(self, track, slice=None):
         '''return a table linking regions of interest,
         their associated marker SNP and ChIP-seq intervals.
 
@@ -72,24 +84,25 @@ class ROIOverlapCounts( ChipseqReport.DefaultTracker ):
         GROUP BY class
         '''
 
-        data = self.get( statement % locals() )
+        data = self.get(statement % locals())
 
-        return odict( zip( columns,
-                           zip(*data ) ) )
-    
+        return odict(zip(columns,
+                         zip(*data)))
 
-##################################################################################
-##################################################################################
-##################################################################################
-class ROIOverlap( ChipseqReport.DefaultTracker ):
+
+##########################################################################
+##########################################################################
+##########################################################################
+class ROIOverlap(ChipseqReport.DefaultTracker):
     mPattern = "_intervals$"
-    
-    def __call__( self, track, slice = None ):
+
+    def __call__(self, track, slice=None):
         '''return a table linking regions of interest,
         their associated marker SNP and ChIP-seq intervals.
         '''
 
-        columns = ("class", "contig", "roi_start", "roi_end", "snp", "pos", "iv_start", "iv_end", "distance" )
+        columns = ("class", "contig", "roi_start", "roi_end",
+                   "snp", "pos", "iv_start", "iv_end", "distance")
         statement = '''
         SELECT class, roi.contig, roi.start, roi.end, snp.snp, snp.pos, i.start, i.end,
         min( abs(i.start - snp.pos), abs(i.end - snp.pos) )
@@ -103,28 +116,30 @@ class ROIOverlap( ChipseqReport.DefaultTracker ):
         ORDER BY class, roi.contig
         '''
 
-        data = self.get( statement % locals() )
+        data = self.get(statement % locals())
 
-        return odict( zip( columns,
-                           zip(*data ) ) )
+        return odict(zip(columns,
+                         zip(*data)))
 
-##################################################################################
-##################################################################################
-##################################################################################
-class ROIOverlapWithGenes( ChipseqReport.DefaultTracker ):
+##########################################################################
+##########################################################################
+##########################################################################
+
+
+class ROIOverlapWithGenes(ChipseqReport.DefaultTracker):
     mPattern = "_intervals$"
 
-    def __call__( self, track, slice = None ):
+    def __call__(self, track, slice=None):
         '''return a table linking regions of interest,
         their associated marker SNP and ChIP-seq intervals.
 
         '''
 
-        columns = ("class", "contig", "roi_start", "roi_end", "snp", "pos", 
+        columns = ("class", "contig", "roi_start", "roi_end", "snp", "pos",
                    "genenames",
                    "iv_start", "iv_end", "iv_distance",
-                   "gene_id", "gene_name", 
-                   "gene_strand", "gene_distance" )
+                   "gene_id", "gene_name",
+                   "gene_strand", "gene_distance")
 
         statement = '''
         SELECT class, roi.contig, roi.start, roi.end, 
@@ -147,30 +162,32 @@ class ROIOverlapWithGenes( ChipseqReport.DefaultTracker ):
         ORDER BY class, roi.contig
         '''
 
-        data = self.get( statement % locals() )
+        data = self.get(statement % locals())
 
-        return odict( zip( columns,
-                           zip(*data ) ) )
+        return odict(zip(columns,
+                         zip(*data)))
 
-##################################################################################
-##################################################################################
-##################################################################################
-class GWASOverlapWithGenes( ChipseqReport.DefaultTracker ):
+##########################################################################
+##########################################################################
+##########################################################################
+
+
+class GWASOverlapWithGenes(ChipseqReport.DefaultTracker):
     mPattern = "_intervals$"
     tablename = "gwas_merged"
 
-    def __call__( self, track, slice = None ):
+    def __call__(self, track, slice=None):
         '''return a table linking regions of interest,
         their associated marker SNP and ChIP-seq intervals.
         '''
 
-        columns = ("class", "contig", 
-                   "roi_start", "roi_end", 
-                   "snp", "pos", 
+        columns = ("class", "contig",
+                   "roi_start", "roi_end",
+                   "snp", "pos",
                    "genenames",
                    "iv_start", "iv_end", "iv_distance",
-                   "gene_id", "gene_name", 
-                   "gene_strand", "gene_distance" )
+                   "gene_id", "gene_name",
+                   "gene_strand", "gene_distance")
 
         statement = '''
         SELECT class, regions.contig, regions.start, regions.end, 
@@ -192,51 +209,52 @@ class GWASOverlapWithGenes( ChipseqReport.DefaultTracker ):
              tss.closest_id = info.gene_id
         ORDER BY class, regions.contig
         '''
-        
-        data = self.get( statement % self.members( locals() ) )
 
-        return odict( zip( columns,
-                           zip(*data ) ) )
+        data = self.get(statement % self.members(locals()))
 
-    
-##################################################################################
-##################################################################################
-##################################################################################
-class GWASIntervalList( ChipseqReport.DefaultTracker ):
+        return odict(zip(columns,
+                         zip(*data)))
+
+
+##########################################################################
+##########################################################################
+##########################################################################
+class GWASIntervalList(ChipseqReport.DefaultTracker):
+
     '''return a list with all gwas intervals.'''
-    
-    def getTracks(self, subset = None ):
+
+    def getTracks(self, subset=None):
         return ["gwas_merged"]
-    
-    def __call__( self, track, slice = None ):
-        
+
+    def __call__(self, track, slice=None):
+
         statement = '''
         SELECT class, contig, start, end, snp FROM
              %(track)s ORDER BY class, contig, start
         ''' % (locals())
-        
-        data = self.get( statement % self.members( locals() ) )
-        return odict( zip( ("class", "contig", "start", "end", "snps"),
-                           zip(*data)))
+
+        data = self.get(statement % self.members(locals()))
+        return odict(zip(("class", "contig", "start", "end", "snps"),
+                         zip(*data)))
 
 
-##################################################################################
-##################################################################################
-##################################################################################
-class SelectionOverlapWithGenes( ChipseqReport.DefaultTracker ):
+##########################################################################
+##########################################################################
+##########################################################################
+class SelectionOverlapWithGenes(ChipseqReport.DefaultTracker):
     mPattern = "_intervals$"
     tablename = "selection"
 
-    def __call__( self, track, slice = None ):
+    def __call__(self, track, slice=None):
         '''return a table linking regions of interest,
         their associated marker SNP and ChIP-seq intervals.
         '''
 
-        columns = ("class", "contig", 
-                   "roi_start", "roi_end", 
-                   "iv_start", "iv_end", 
-                   "gene_id", "gene_name", 
-                   "gene_strand", "gene_distance" )
+        columns = ("class", "contig",
+                   "roi_start", "roi_end",
+                   "iv_start", "iv_end",
+                   "gene_id", "gene_name",
+                   "gene_strand", "gene_distance")
 
         statement = '''
         SELECT class, regions.contig, regions.start, regions.end, 
@@ -254,8 +272,8 @@ class SelectionOverlapWithGenes( ChipseqReport.DefaultTracker ):
              tss.closest_id = info.gene_id
         ORDER BY class, regions.contig
         '''
-        
-        data = self.get( statement % self.members( locals() ) )
 
-        return odict( zip( columns,
-                           zip(*data ) ) )
+        data = self.get(statement % self.members(locals()))
+
+        return odict(zip(columns,
+                         zip(*data)))

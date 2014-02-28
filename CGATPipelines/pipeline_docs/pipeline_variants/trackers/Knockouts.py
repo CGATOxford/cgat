@@ -1,4 +1,7 @@
-import os, sys, re, types
+import os
+import sys
+import re
+import types
 from VariantsReport import *
 
 from Effects import TrackerEffects
@@ -6,10 +9,13 @@ from Effects import TrackerEffects
 #####################################################
 #####################################################
 #####################################################
-class TranscriptsTruncatedStopsMin( TrackerEffects ):
+
+
+class TranscriptsTruncatedStopsMin(TrackerEffects):
+
     '''return number of truncated codons for transcipts with variants.'''
 
-    def __call__(self, track, slice = None ):
+    def __call__(self, track, slice=None):
 
         p = self.getPrefix(slice)
         field_select = p + "stop_min"
@@ -18,16 +24,19 @@ class TranscriptsTruncatedStopsMin( TrackerEffects ):
         statement = '''SELECT COUNT(*)
         FROM %(track)s_effects WHERE %(field_where)s > 0 AND %(field_select)s >= %(min_truncated)i''' % \
             self.members(locals())
-        
-        return odict((("transcripts with stops", self.getValue( statement )),))
+
+        return odict((("transcripts with stops", self.getValue(statement)),))
 
 #####################################################
 #####################################################
 #####################################################
-class TranscriptsTruncatedStopsMax( TrackerEffects ):
+
+
+class TranscriptsTruncatedStopsMax(TrackerEffects):
+
     '''return number of truncated codons for transcipts with variants.'''
 
-    def __call__(self, track, slice = None ):
+    def __call__(self, track, slice=None):
 
         p = self.getPrefix(slice)
         field_select = p + "stop_max"
@@ -36,16 +45,19 @@ class TranscriptsTruncatedStopsMax( TrackerEffects ):
         statement = '''SELECT COUNT(*)
         FROM %(track)s_effects WHERE %(field_where)s > 0 AND %(field_select)s >= %(min_truncated)i''' %\
             self.members(locals())
-        
-        return odict((("transcripts with stops", self.getValue( statement )),))
+
+        return odict((("transcripts with stops", self.getValue(statement)),))
 
 #####################################################
 #####################################################
 #####################################################
-class GenesTruncatedStops( TrackerEffects ):
+
+
+class GenesTruncatedStops(TrackerEffects):
+
     '''integrate stats for transcripts by genes.'''
 
-    def __call__(self, track, slice = None ):
+    def __call__(self, track, slice=None):
 
         p = self.getPrefix(slice)
         statement = '''
@@ -61,23 +73,29 @@ class GenesTruncatedStops( TrackerEffects ):
         r = odict()
 
         field = p + "stop_min"
-        r["genes with min stops"] = len(self.getValues( statement % self.members(locals()) ))
+        r["genes with min stops"] = len(
+            self.getValues(statement % self.members(locals())))
         field = p + "stop_max"
-        r["genes with max stops"] = len(self.getValues( statement % self.members(locals()) ))
+        r["genes with max stops"] = len(
+            self.getValues(statement % self.members(locals())))
         return r
 
 #####################################################
 #####################################################
 #####################################################
-class GeneListTruncatedStopsMin( TrackerEffects ):
+
+
+class GeneListTruncatedStopsMin(TrackerEffects):
+
     '''output a genelist of genes with truncated stops.
     '''
 
-    def __call__(self, track, slice = None ):
+    def __call__(self, track, slice=None):
 
-        headers = ("gene_id", "gene_name", "min(cds_len)", "ntranscripts", "truncated")
-        
-        field = self.getPrefix(slice) + "stop_min"        
+        headers = (
+            "gene_id", "gene_name", "min(cds_len)", "ntranscripts", "truncated")
+
+        field = self.getPrefix(slice) + "stop_min"
         statement = '''
         SELECT
             i.gene_id,
@@ -93,16 +111,19 @@ class GeneListTruncatedStopsMin( TrackerEffects ):
         HAVING m >= %(min_truncated)i 
         ''' % self.members(locals())
 
-        return odict( zip( headers,
-                           zip(*self.get( statement ))) )
+        return odict(zip(headers,
+                         zip(*self.get(statement))))
 
 #####################################################
 #####################################################
 #####################################################
-class GenesNMDMin( TrackerEffects ):
+
+
+class GenesNMDMin(TrackerEffects):
+
     '''return genes in which all transcripts are knocked out by :term:`nmd`.'''
 
-    def __call__(self, track, slice = None ):
+    def __call__(self, track, slice=None):
 
         raise NotImplementedError
         slice = "cds"
@@ -123,20 +144,24 @@ class GenesNMDMin( TrackerEffects ):
         WHERE i.transcript_id = e.transcript_id
         GROUP BY i.gene_id
         ''' % self.members(locals())
-        
-        return odict((("transcripts with nmd", self.getValue( statement )),))
+
+        return odict((("transcripts with nmd", self.getValue(statement)),))
 
 #####################################################
 #####################################################
 #####################################################
-class TranscriptListTruncatedStopsMin( TrackerEffects ):
+
+
+class TranscriptListTruncatedStopsMin(TrackerEffects):
+
     '''output a genelist of genes with truncated stops.'''
 
-    def __call__(self, track, slice = None ):
+    def __call__(self, track, slice=None):
 
-        headers = ("gene_id", "gene_name", "transcript_id", "cds_len", "truncated")
-        
-        field = self.getPrefix(slice) + "stop_min"        
+        headers = (
+            "gene_id", "gene_name", "transcript_id", "cds_len", "truncated")
+
+        field = self.getPrefix(slice) + "stop_min"
         statement = '''
         SELECT
             i.gene_id,
@@ -152,20 +177,24 @@ class TranscriptListTruncatedStopsMin( TrackerEffects ):
         ORDER BY i.gene_id
         ''' % self.members(locals())
 
-        return odict( zip( headers,
-                           zip(*self.get( statement ))) )
+        return odict(zip(headers,
+                         zip(*self.get(statement))))
 
 #####################################################
 #####################################################
 #####################################################
-class TranscriptListTruncatedStopsMax( TrackerEffects ):
+
+
+class TranscriptListTruncatedStopsMax(TrackerEffects):
+
     '''output a genelist of genes with truncated stops.'''
 
-    def __call__(self, track, slice = None ):
+    def __call__(self, track, slice=None):
 
-        headers = ("gene_id", "gene_name", "transcript_id", "cds_len", "truncated")
-        
-        field = self.getPrefix(slice) + "stop_max"        
+        headers = (
+            "gene_id", "gene_name", "transcript_id", "cds_len", "truncated")
+
+        field = self.getPrefix(slice) + "stop_max"
         statement = '''
         SELECT
             i.gene_id,
@@ -181,18 +210,18 @@ class TranscriptListTruncatedStopsMax( TrackerEffects ):
         ORDER BY i.gene_id
         ''' % self.members(locals())
 
-        return odict( zip( headers,
-                           zip(*self.get( statement ))) )
-
+        return odict(zip(headers,
+                         zip(*self.get(statement))))
 
 
 #####################################################
 #####################################################
 #####################################################
-class TranscriptsNMDMin( TrackerEffects ):
+class TranscriptsNMDMin(TrackerEffects):
+
     '''return number of transcripts that are likely to be affected by :term:`nmd`.'''
 
-    def __call__(self, track, slice = None ):
+    def __call__(self, track, slice=None):
 
         slice = "cds"
         p = self.getPrefix(slice)
@@ -206,16 +235,19 @@ class TranscriptsNMDMin( TrackerEffects ):
         %(field_select)s > 0 AND 
         cds_len - %(field_select)s * 3 < last_exon_start''' % \
             self.members(locals())
-        
-        return odict((("transcripts with nmd", self.getValue( statement )),))
+
+        return odict((("transcripts with nmd", self.getValue(statement)),))
 
 #####################################################
 #####################################################
 #####################################################
-class TranscriptsNMDMax( TrackerEffects ):
+
+
+class TranscriptsNMDMax(TrackerEffects):
+
     '''return number of transcripts that are likely to be affected by :term:`nmd`.'''
 
-    def __call__(self, track, slice = None ):
+    def __call__(self, track, slice=None):
 
         p = self.getPrefix(slice)
         field_select = p + "stop_max"
@@ -228,20 +260,24 @@ class TranscriptsNMDMax( TrackerEffects ):
         %(field_select)s > 0 AND 
         cds_len - %(field_select)s * 3 < last_exon_start''' % \
             self.members(locals())
-        
-        return odict((("transcripts with nmd", self.getValue( statement )),))
+
+        return odict((("transcripts with nmd", self.getValue(statement)),))
 
 #####################################################
 #####################################################
 #####################################################
-class TranscriptListNMDMin( TrackerEffects ):
+
+
+class TranscriptListNMDMin(TrackerEffects):
+
     '''output a genelist of genes with truncated stops.'''
 
-    def __call__(self, track, slice = None ):
+    def __call__(self, track, slice=None):
 
-        headers = ("gene_id", "gene_name", "transcript_id", "cds_len", "truncated", "last_exon_start" )
-        
-        field = self.getPrefix(slice) + "stop_min"        
+        headers = ("gene_id", "gene_name", "transcript_id",
+                   "cds_len", "truncated", "last_exon_start")
+
+        field = self.getPrefix(slice) + "stop_min"
         statement = '''
         SELECT
             DISTINCT
@@ -260,20 +296,24 @@ class TranscriptListNMDMin( TrackerEffects ):
         ORDER BY i.gene_id
         ''' % self.members(locals())
 
-        return odict( zip( headers,
-                           zip(*self.get( statement ))) )
+        return odict(zip(headers,
+                         zip(*self.get(statement))))
 
 #####################################################
 #####################################################
 #####################################################
-class TranscriptListNMDMax( TrackerEffects ):
+
+
+class TranscriptListNMDMax(TrackerEffects):
+
     '''output a genelist of genes with truncated stops.'''
 
-    def __call__(self, track, slice = None ):
+    def __call__(self, track, slice=None):
 
-        headers = ("gene_id", "gene_name", "transcript_id", "cds_len", "truncated", "last_exon_start")
-        
-        field = self.getPrefix(slice) + "stop_max"        
+        headers = ("gene_id", "gene_name", "transcript_id",
+                   "cds_len", "truncated", "last_exon_start")
+
+        field = self.getPrefix(slice) + "stop_max"
         statement = '''
         SELECT
             DISTINCT
@@ -292,6 +332,5 @@ class TranscriptListNMDMax( TrackerEffects ):
         ORDER BY i.gene_id
         ''' % self.members(locals())
 
-        return odict( zip( headers,
-                           zip(*self.get( statement ))) )
-
+        return odict(zip(headers,
+                         zip(*self.get(statement))))

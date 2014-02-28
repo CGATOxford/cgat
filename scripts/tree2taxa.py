@@ -30,7 +30,7 @@ for command line help.
 Command line options
 --------------------
 
-""" 
+"""
 
 import os
 import sys
@@ -43,29 +43,31 @@ import CGAT.Experiment as E
 import CGAT.TreeTools as TreeTools
 
 
-def main( argv = None ):
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv == None:
+        argv = sys.argv
 
-    parser = E.OptionParser( version = "%prog version: $Id: tree2taxa.py 2782 2009-09-10 11:40:29Z andreas $",
-                                    usage = globals()["__doc__"] )
+    parser = E.OptionParser(version="%prog version: $Id: tree2taxa.py 2782 2009-09-10 11:40:29Z andreas $",
+                            usage=globals()["__doc__"])
 
-    parser.add_option( "--skip-trees", dest="skip_trees", action="store_true",
-                       help="do not output tree names in third field [default=%default]."  )
+    parser.add_option("--skip-trees", dest="skip_trees", action="store_true",
+                      help="do not output tree names in third field [default=%default].")
 
     parser.set_defaults(
-        skip_trees = False
-        )
+        skip_trees=False
+    )
 
-    (options, args) = E.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start(parser, add_pipe_options=True)
 
-    nexus = TreeTools.Newick2Nexus( sys.stdin )
+    nexus = TreeTools.Newick2Nexus(sys.stdin)
     if options.loglevel >= 1:
-        options.stdlog.write( "# read %i trees from stdin.\n" % len(nexus.trees))
+        options.stdlog.write(
+            "# read %i trees from stdin.\n" % len(nexus.trees))
 
     ntree = 0
     ntotal = len(nexus.trees)
@@ -77,10 +79,10 @@ def main( argv = None ):
             options.stdout.write("taxon\ttree\n")
         else:
             options.stdout.write("taxon\ttree\tname\n")
-            
+
     for tree in nexus.trees:
         ntree += 1
-        taxa = TreeTools.GetTaxa( tree )
+        taxa = TreeTools.GetTaxa(tree)
 
         if ntotal == 1:
             for t in taxa:
@@ -93,10 +95,9 @@ def main( argv = None ):
                 options.stdout.write("%s\t%i\t%s\n" % (t, ntree, tree.name))
 
     if options.loglevel >= 1:
-        options.stdlog.write( "# ntotal=%i\n" % (ntotal))
-        
+        options.stdlog.write("# ntotal=%i\n" % (ntotal))
+
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

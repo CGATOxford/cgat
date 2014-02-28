@@ -50,67 +50,73 @@ import CGAT.WrapperPhylip as WrapperPhylip
 import CGAT.WrapperCodeML as WrapperCodeML
 import CGAT.RateEstimation as RateEstimation
 
-##-----------------------------------------------------------------------------------
-##-----------------------------------------------------------------------------------
-##-----------------------------------------------------------------------------------
-def writeModel( grammar, section, options):
+# ------------------------------------------------------------------------
+# ------------------------------------------------------------------------
+# ------------------------------------------------------------------------
+
+
+def writeModel(grammar, section, options):
     """write a model to output file."""
     if section in options.write or "all" in options.write:
-        outfile = open( options.output_pattern % section, "w" )
-        outfile.write( "%s\n" % grammar.getGrammar())
+        outfile = open(options.output_pattern % section, "w")
+        outfile.write("%s\n" % grammar.getGrammar())
         outfile.close()
 
 
-def CalculateDistancePOVL( seq1, seq2, gap_chars = (".", "-") ):
+def CalculateDistancePOVL(seq1, seq2, gap_chars=(".", "-")):
     """calculate overlap distance between two sequences."""
     naligned, nunaligned = 0, 0
-    for c1, c2 in zip( seq1.upper(), seq2.upper()):
+    for c1, c2 in zip(seq1.upper(), seq2.upper()):
         if c1 in gap_chars or c2 in gap_chars:
             if not (c1 in gap_chars and c2 in gap_chars):
                 nunaligned += 1
         else:
             naligned += 1
-        
-    return 100.0 * float( naligned) / float(nunaligned + naligned), 0
 
-def CalculateDistancePID( seq1, seq2,
-                          gap_chars = ("-", "."),
-                          mask_chars = ("X"),
-                          ):
+    return 100.0 * float(naligned) / float(nunaligned + naligned), 0
+
+
+def CalculateDistancePID(seq1, seq2,
+                         gap_chars=("-", "."),
+                         mask_chars = ("X"),
+                         ):
 
     nidentical, naligned, nunaligned = 0, 0, 0
-    for c1, c2 in zip( seq1.upper(), seq2.upper()):
+    for c1, c2 in zip(seq1.upper(), seq2.upper()):
         if c1 in gap_chars or c2 in gap_chars:
             nunaligned += 1
             continue
-        naligned += 1        
+        naligned += 1
         if c1 == c2:
             nidentical += 1
 
     return 100.0 * float(nidentical) / naligned, 0
 
-def CalculateDistanceJC69( info, do_gamma = False, alpha = None ):
+
+def CalculateDistanceJC69(info, do_gamma=False, alpha=None):
     """return Jukes-Cantor distance.
     """
 
     p = float(info.mNDifferent) / info.mNAligned
-    
+
     if do_gamma:
-        ## not done yet
-        distance = 0.75 * alpha * (pow(1 - 4*p/3, -1/ alpha) - 1)
-        variance = p*(1 - p)/(pow(1 - 4*p/3, -2/(alpha + 1)) * L)
+        # not done yet
+        distance = 0.75 * alpha * (pow(1 - 4 * p / 3, -1 / alpha) - 1)
+        variance = p * (1 - p) / (pow(1 - 4 * p / 3, -2 / (alpha + 1)) * L)
 
     else:
-        distance = -0.75 * math.log(1.0 - 4.0 * p / 3.0);
-        variance = p * ( 1.0 - p) / ( math.pow(1.0 - 4.0 * p / 3, 2.0) * info.mNAligned);
-        
+        distance = -0.75 * math.log(1.0 - 4.0 * p / 3.0)
+        variance = p * (1.0 - p) / \
+            (math.pow(1.0 - 4.0 * p / 3, 2.0) * info.mNAligned)
+
     return distance, variance
 
-def CalculateDistanceT92( info ):
+
+def CalculateDistanceT92(info):
     """
     P,Q: transitions, transversions frequencies
     q: G+C content
-    
+
     d = -2q(1 - q)loge(1 - P/[2q(1 - q)] - Q) -[1 -2q(1 -q)]loge(1 - 2Q)/2,(4.18)
     V(d) = [c12P + c32Q - (c1P + c3Q)2]/n,(4.19)
     where c1 = 1/(1 - P/[2q(1 - q)] - Q), c2 = 1/(1 - 2Q), c3 = 2q(1 - q)(c1 - c2) + c2, and q is the G+C content
@@ -118,55 +124,60 @@ def CalculateDistanceT92( info ):
     Note: result is undefined if
         the number of transversions is >= 0.5
         the G+C content is 0
-    
+
     """
     gc = info.getGCContent()
 
     # if there are no GC or no AT pairs: result is undefined
     if gc == 0 or gc == 1:
         return -1, -1
-    
+
     wg = 2.0 * gc * (1.0 - gc)
 
     P = float(info.mNTransitions) / info.mNAligned
     Q = float(info.mNTransversions) / info.mNAligned
 
-    a1 = 1.0 - P / wg - Q;
-    if a1 <= 0: return -1, -1
-    
-    a2 = 1.0 - 2.0 * Q;
-    if a2 <= 0: return -1, -1
+    a1 = 1.0 - P / wg - Q
+    if a1 <= 0:
+        return -1, -1
+
+    a2 = 1.0 - 2.0 * Q
+    if a2 <= 0:
+        return -1, -1
 
     # print a1, a2, wg, gc, "p=", P, "q=", Q, str(info)
 
-    distance = -wg * math.log(a1) - 0.5 * (1.0 - wg) * math.log(a2);
+    distance = -wg * math.log(a1) - 0.5 * (1.0 - wg) * math.log(a2)
 
-    c1 = 1/a1;
-    c2 = 1/a2;
-    c3 = wg*(c1 - c2) + c2;
-    
-    variance = (c1 * c1 * P + c3 * c3 * Q - math.pow(c1 * P + c3 * Q, 2.0))/ info.mNAligned;
+    c1 = 1 / a1
+    c2 = 1 / a2
+    c3 = wg * (c1 - c2) + c2
+
+    variance = (
+        c1 * c1 * P + c3 * c3 * Q - math.pow(c1 * P + c3 * Q, 2.0)) / info.mNAligned
 
     return distance, variance
 
-def writePhylipResult( result, options ):
-    """write result of phylip run."""
-    
-    options.stdout.write( "seq1\tseq2\tdist\n" )
 
-    for x in range( len(result.mRowHeaders) - 1 ):
-        for y in range( x+1, len(result.mColHeaders) ):
-            options.stdout.write( "\t".join( map(str, (
+def writePhylipResult(result, options):
+    """write result of phylip run."""
+
+    options.stdout.write("seq1\tseq2\tdist\n")
+
+    for x in range(len(result.mRowHeaders) - 1):
+        for y in range(x + 1, len(result.mColHeaders)):
+            options.stdout.write("\t".join(map(str, (
                 result.mRowHeaders[x],
                 result.mColHeaders[y],
-                options.format % result.mMatrix[x,y] ))) + "\n" )
+                options.format % result.mMatrix[x, y]))) + "\n")
 
-def runDNADIST( mali, pairs, options ):
+
+def runDNADIST(mali, pairs, options):
     """run dnadist."""
     # use phylip for these
     phylip = WrapperPhylip.Phylip()
-    phylip.setProgram( "dnadist" )
-    phylip.setMali( mali )
+    phylip.setProgram("dnadist")
+    phylip.setMali(mali)
 
     phylip_options = []
     if options.distance == "K80":
@@ -177,51 +188,58 @@ def runDNADIST( mali, pairs, options ):
         phylip_options += ["D"] * 3
 
     phylip_options.append("Y")
-    phylip.setOptions( phylip_options )
+    phylip.setOptions(phylip_options)
 
     if options.dump:
         phylip.setLogLevel(2)
-    
+
     result = phylip.run()
 
-    writePhylipResult( result, options )
+    writePhylipResult(result, options)
 
 
-def printValue( value, format = "%f" ):
+def printValue(value, format="%f"):
     if value == "na":
         return "na"
     else:
         return format % value
 
-##-------------------------------------------------------------------
-##-------------------------------------------------------------------
-##-------------------------------------------------------------------
-def printPair( pair, mali, map_new2old, options, msg ="" ):
+# -------------------------------------------------------------------
+# -------------------------------------------------------------------
+# -------------------------------------------------------------------
+
+
+def printPair(pair, mali, map_new2old, options, msg=""):
     """print pairs form codeml."""
 
     ids = mali.getIdentifiers()
     if options.output_format == "list":
-        options.stdout.write( "\t".join( (map_new2old[ids[0]],
-                                          map_new2old[ids[1]],
-                                          options.format % pair.mDistanceMatrix[ids[0]][ids[1]],
-                                          options.format % pair.mLogLikelihood,
-                                          printValue( pair.mAlpha, options.format),
-                                          printValue( pair.mKappa, options.format),
-                                          msg ) ) )
+        options.stdout.write("\t".join((map_new2old[ids[0]],
+                                        map_new2old[ids[1]],
+                                        options.format % pair.mDistanceMatrix[
+                                            ids[0]][ids[1]],
+                                        options.format % pair.mLogLikelihood,
+                                        printValue(
+                                            pair.mAlpha, options.format),
+                                        printValue(
+                                            pair.mKappa, options.format),
+                                        msg)))
 
     elif options.output_format == "tree":
-        options.stdout.write( ">pair%i" % (noutput + 1))
-        options.stdout.write( "%s\n" % pair.mTree )
+        options.stdout.write(">pair%i" % (noutput + 1))
+        options.stdout.write("%s\n" % pair.mTree)
 
     if options.with_counts:
-        info = Genomics.CalculatePairIndices( mali[ids[1]], mali[ids[0]], with_codons = options.is_codons )
-        options.stdout.write( "\t%s" % (str(info)) )
+        info = Genomics.CalculatePairIndices(
+            mali[ids[1]], mali[ids[0]], with_codons=options.is_codons)
+        options.stdout.write("\t%s" % (str(info)))
 
-    options.stdout.write( "\n" )
+    options.stdout.write("\n")
 
     return 1
 
-def runBaseML( mali, pairs, options ):
+
+def runBaseML(mali, pairs, options):
 
     baseml = WrapperCodeML.BaseML()
 
@@ -231,110 +249,117 @@ def runBaseML( mali, pairs, options ):
     ids = mali.getIdentifiers()
 
     if options.kappa != None:
-        paml_options[ "kappa" ] = str(options.kappa)
+        paml_options["kappa"] = str(options.kappa)
 
     if options.fix_kappa:
-        paml_options[ "fix_kappa" ] = "1"
+        paml_options["fix_kappa"] = "1"
 
     if options.alpha != None:
-       paml_options[ "alpha" ] = str(options.alpha)
+        paml_options["alpha"] = str(options.alpha)
 
     if options.fix_alpha:
-        paml_options[ "fix_alpha" ] = "1"
+        paml_options["fix_alpha"] = "1"
 
     if options.clean_data:
-        paml_options[ "cleandata" ] = options.clean_data
+        paml_options["cleandata"] = options.clean_data
 
     map_distance2index = {}
-    for key,val in baseml.mOptions["model"].items():
+    for key, val in baseml.mOptions["model"].items():
         map_distance2index[val] = key
-        
+
     if options.distance.upper() in map_distance2index:
-        paml_options[ "model"] = map_distance2index[options.distance]
+        paml_options["model"] = map_distance2index[options.distance]
     else:
         raise "unknown distance for baseml: %s" % options.distance
 
     if options.filename_tree:
-        result = baseml.Run( mali,
-                             tree = options.filename_tree,
-                             dump = options.dump,
-                             test = options.test,
-                             options = paml_options )
+        result = baseml.Run(mali,
+                            tree=options.filename_tree,
+                            dump=options.dump,
+                            test=options.test,
+                            options=paml_options)
 
     elif options.pairwise:
-        
+
         noutput = 0
         ninput = 0
-        ntotal = (len(ids) * (len(ids) -1 ) ) / 2
+        ntotal = (len(ids) * (len(ids) - 1)) / 2
 
         if options.output_format == "list":
-            options.stdout.write( "\t".join( ("seq1", "seq2", "distance", "lnL", "alpha", "kappa", "msg" ) ) )
+            options.stdout.write(
+                "\t".join(("seq1", "seq2", "distance", "lnL", "alpha", "kappa", "msg")))
 
             if options.with_counts:
-                options.stdout.write("\t%s" % Genomics.SequencePairInfo().getHeader() )
-            options.stdout.write( "\n" )
+                options.stdout.write(
+                    "\t%s" % Genomics.SequencePairInfo().getHeader())
+            options.stdout.write("\n")
 
-        for x,y in pairs:
-            m1 = mali.getSequence( ids[x] )            
+        for x, y in pairs:
+            m1 = mali.getSequence(ids[x])
             ninput += 1
             temp_mali = Mali.Mali()
-            m2 = mali.getSequence( ids[y] )
+            m2 = mali.getSequence(ids[y])
 
-            temp_mali.addSequence( ids[x], m1.mFrom, m1.mTo, m1.mString )
-            temp_mali.addSequence( ids[y], m2.mFrom, m2.mTo, m2.mString )
+            temp_mali.addSequence(ids[x], m1.mFrom, m1.mTo, m1.mString)
+            temp_mali.addSequence(ids[y], m2.mFrom, m2.mTo, m2.mString)
 
-            result = baseml.Run( temp_mali,
-                                 tree = "(%s,%s);" % (ids[x], ids[y]),
-                                 dump = options.dump,
-                                 test = options.test,
-                                 options = paml_options )
+            result = baseml.Run(temp_mali,
+                                tree="(%s,%s);" % (ids[x], ids[y]),
+                                dump=options.dump,
+                                test=options.test,
+                                options=paml_options)
 
             if options.loglevel >= 1 and ninput % options.report_step == 0:
-                options.stdlog.write( "# pairwise computation: %i/%i -> %i%% in %i seconds.\n" % (ninput, ntotal, 100.0 * ninput / ntotal, time.time() - tstart ) )
+                options.stdlog.write("# pairwise computation: %i/%i -> %i%% in %i seconds.\n" %
+                                     (ninput, ntotal, 100.0 * ninput / ntotal, time.time() - tstart))
                 options.stdlog.flush()
 
-            noutput += printPair( result,
-                                  temp_mali,
-                                  map_new2old,
-                                  options )
+            noutput += printPair(result,
+                                 temp_mali,
+                                 map_new2old,
+                                 options)
 
             options.stdout.flush()
-            
+
     else:
-        ## assume that there are only two sequences
+        # assume that there are only two sequences
         if mali.getLength() == 2:
             id1, id2 = mali.getIdentifiers()
-            result = baseml.Run( mali,
-                                 tree = "(%s,%s);" % (id1, id2),
-                                 dump = options.dump,
-                                 test = options.test,
-                                 options = paml_options )
+            result = baseml.Run(mali,
+                                tree="(%s,%s);" % (id1, id2),
+                                dump=options.dump,
+                                test=options.test,
+                                options=paml_options)
 
         else:
             raise "please supply tree if there are more than two sequences and pairwise mode is not selected."
 
         if options.output_format == "list":
             all_identifiers = mali.getIdentifiers()
-            options.stdout.write( "\t".join( ("seq1", "seq2", "distance", "lnL", "alpha", "kappa" ) ) + "\n" )    
-            for x in range( len(all_identifiers) -1 ):
+            options.stdout.write(
+                "\t".join(("seq1", "seq2", "distance", "lnL", "alpha", "kappa")) + "\n")
+            for x in range(len(all_identifiers) - 1):
                 id_x = all_identifiers[x]
                 for y in range(x + 1, len(all_identifiers)):
                     id_y = all_identifiers[y]
 
-                    options.stdout.write( "\t".join( (id_x,
-                                                      id_y,
-                                                      options.format % result.mDistanceMatrix[id_x][id_y],
-                                                      options.format % result.mLogLikelihood,
-                                                      options.format % result.mAlpha,
-                                                      options.format % result.mKappa ) ) + "\n")
+                    options.stdout.write("\t".join((id_x,
+                                                    id_y,
+                                                    options.format % result.mDistanceMatrix[
+                                                        id_x][id_y],
+                                                    options.format % result.mLogLikelihood,
+                                                    options.format % result.mAlpha,
+                                                    options.format % result.mKappa)) + "\n")
 
         elif options.output_format == "tree":
-            options.stdout.write( "%s\n" % result.mTree )
+            options.stdout.write("%s\n" % result.mTree)
 
-##---------------------------------------------------------------------------------------
-##---------------------------------------------------------------------------------------
-##---------------------------------------------------------------------------------------        
-def runXrate( mali, pairs, options ):
+# ------------------------------------------------------------------------
+# ------------------------------------------------------------------------
+# ------------------------------------------------------------------------
+
+
+def runXrate(mali, pairs, options):
 
     from XGram.Generator.Prebuilt import DNA
     from XGram.Model import Annotation
@@ -342,7 +367,7 @@ def runXrate( mali, pairs, options ):
 
     xgram = XGram.XGram()
     if options.xrate_min_increment:
-        xgram.setMinIncrement( options.xrate_min_increment )
+        xgram.setMinIncrement(options.xrate_min_increment)
 
     ninput, noutput, nskipped = 0, 0, 0
 
@@ -350,46 +375,48 @@ def runXrate( mali, pairs, options ):
     data = tempdir + "/data"
 
     if options.distance == "K80":
-        model = DNA.buildModel( substitution_model = "k80" )
+        model = DNA.buildModel(substitution_model="k80")
     elif options.distance == "JC69":
-        model = DNA.buildModel( substitution_model = "jc69" )        
+        model = DNA.buildModel(substitution_model="jc69")
     elif options.distance == "REV":
-        model = DNA.buildModel( substitution_model = "gtr" )        
+        model = DNA.buildModel(substitution_model="gtr")
     else:
         raise "distance %s not implemented for xrate" % (options.distance)
 
-    writeModel( model, "input", options )
-    
+    writeModel(model, "input", options)
+
     if options.output_format == "list":
-        options.stdout.write( "\t".join( ("seq1", "seq2", "distance", "lnL", "alpha", "kappa", "msg" ) ) )
+        options.stdout.write(
+            "\t".join(("seq1", "seq2", "distance", "lnL", "alpha", "kappa", "msg")))
 
         if options.with_counts:
-            options.stdout.write("\t%s" % Genomics.SequencePairInfo().getHeader() )
-        options.stdout.write( "\n" )
+            options.stdout.write(
+                "\t%s" % Genomics.SequencePairInfo().getHeader())
+        options.stdout.write("\n")
 
-    for x,y in pairs:
-        
-        m1 = mali.getSequence( ids[x] )            
+    for x, y in pairs:
+
+        m1 = mali.getSequence(ids[x])
         ninput += 1
         temp_mali = Mali.Mali()
-        m2 = mali.getSequence( ids[y] )
+        m2 = mali.getSequence(ids[y])
 
-        temp_mali.addSequence( m1.mId, m1.mFrom, m1.mTo, m1.mString )
-        temp_mali.addSequence( m2.mId, m2.mFrom, m2.mTo, m2.mString )
+        temp_mali.addSequence(m1.mId, m1.mFrom, m1.mTo, m1.mString)
+        temp_mali.addSequence(m2.mId, m2.mFrom, m2.mTo, m2.mString)
 
-##         if temp_mali.getWidth() < options.min_overlap:
-##             if options.loglevel >= 1:
-##                 options.stdlog.write("# pair %s-%s: not computed because only %i residues overlap\n" % (mali.getEntry(ids[x]).mId,
-##                                                                                                         mali.getEntry(ids[y]).mId,
-##                                                                                                         temp_mali.getWidth()) )
+# if temp_mali.getWidth() < options.min_overlap:
+# if options.loglevel >= 1:
+# options.stdlog.write("# pair %s-%s: not computed because only %i residues overlap\n" % (mali.getEntry(ids[x]).mId,
+# mali.getEntry(ids[y]).mId,
+# temp_mali.getWidth()) )
 
 ##             nskipped += 1
-##             continue
+# continue
 
-        outfile = open(data, "w" )
-        temp_mali.writeToFile( outfile, format="stockholm",
-                               write_ranges = False,
-                               options = ("#=GF NH (%s:1.0)%s;" % tuple(temp_mali.getIdentifiers()),) )
+        outfile = open(data, "w")
+        temp_mali.writeToFile(outfile, format="stockholm",
+                              write_ranges=False,
+                              options=("#=GF NH (%s:1.0)%s;" % tuple(temp_mali.getIdentifiers()),))
         outfile.close()
 
         o_alpha, o_kappa = "na", "na"
@@ -399,13 +426,13 @@ def runXrate( mali, pairs, options ):
         if options.test_xrate:
             for alpha in (0.1, 0.5, 1.0, 1.5):
                 for beta in (0.1, 0.5, 1.0, 1.5):
-                    model.mGrammar.setParameter( "alpha", alpha )
-                    model.mGrammar.setParameter( "beta", beta )                        
-                    result = xgram.train( model, data )
+                    model.mGrammar.setParameter("alpha", alpha)
+                    model.mGrammar.setParameter("beta", beta)
+                    result = xgram.train(model, data)
                     trained_model = result.getModel()
                     xalpha, xbeta = \
-                            ( trained_model.mGrammar.getParameter( 'alpha' ),
-                              trained_model.mGrammar.getParameter( 'beta' ) )
+                        (trained_model.mGrammar.getParameter('alpha'),
+                         trained_model.mGrammar.getParameter('beta'))
                     # this assumes that the branch length in the input is normalized to 1
                     # this is the normalization constant
                     o_distance = options.format % (2 * xbeta + xalpha)
@@ -413,47 +440,49 @@ def runXrate( mali, pairs, options ):
 
                     msg = "alpha=%6.4f, beta=%6.4f" % (xalpha, xbeta)
 
-                    options.stdout.write( "\t".join( ("%f" % alpha,
-                                                      "%f" % beta,
-                                                      o_distance,
-                                                      options.format % result.getLogLikelihood(),
-                                                      o_alpha,
-                                                      o_kappa,
-                                                      msg) ) )
-                    options.stdout.write("\n" )
+                    options.stdout.write("\t".join(("%f" % alpha,
+                                                    "%f" % beta,
+                                                    o_distance,
+                                                    options.format % result.getLogLikelihood(
+                                                    ),
+                                                    o_alpha,
+                                                    o_kappa,
+                                                    msg)))
+                    options.stdout.write("\n")
             continue
-        
-        options.stdout.write( "%s\t%s\t" % (m1.mId, m2.mId) )
-        
-        if options.distance in ( "K80", ):
-            result = xgram.train( model, data )
+
+        options.stdout.write("%s\t%s\t" % (m1.mId, m2.mId))
+
+        if options.distance in ("K80", ):
+            result = xgram.train(model, data)
             trained_model = result.getModel()
 
-        elif options.distance in ( "REV", ):
-            result = xgram.train( model, data )
+        elif options.distance in ("REV", ):
+            result = xgram.train(model, data)
             trained_model = result.getModel()
             alpha, beta, gamma, delta, epsilon, theta = \
-                ( trained_model.mGrammar.getParameter( 'alpha' ),
-                  trained_model.mGrammar.getParameter( 'beta' ),
-                  trained_model.mGrammar.getParameter( 'gamma' ),
-                  trained_model.mGrammar.getParameter( 'delta' ),
-                  trained_model.mGrammar.getParameter( 'epsilon' ),
-                  trained_model.mGrammar.getParameter( 'theta' ) )
+                (trained_model.mGrammar.getParameter('alpha'),
+                 trained_model.mGrammar.getParameter('beta'),
+                 trained_model.mGrammar.getParameter('gamma'),
+                 trained_model.mGrammar.getParameter('delta'),
+                 trained_model.mGrammar.getParameter('epsilon'),
+                 trained_model.mGrammar.getParameter('theta'))
 
-            pi = trained_model.evaluateTerminalFrequencies( ('A0',) )[('A0',)]
-            matrix = trained_model.evaluateRateMatrix( ('A0',) )[('A0',)]
-            q, d = RateEstimation.getDistanceGTR( pi, matrix )
+            pi = trained_model.evaluateTerminalFrequencies(('A0',))[('A0',)]
+            matrix = trained_model.evaluateRateMatrix(('A0',))[('A0',)]
+            q, d = RateEstimation.getDistanceGTR(pi, matrix)
             o_distance = options.format % (d)
             o_kappa = ""
-            msg = "alpha=%6.4f, beta=%6.4f, gamma=%6.4f, delta=%6.4f, epsilon=%6.4f, theta=%6.4f" % (alpha, beta, gamma, delta, epsilon, theta)
+            msg = "alpha=%6.4f, beta=%6.4f, gamma=%6.4f, delta=%6.4f, epsilon=%6.4f, theta=%6.4f" % (
+                alpha, beta, gamma, delta, epsilon, theta)
 
         elif options.distance in ('JC69', ):
-            result = xgram.buildTree( model, data )
+            result = xgram.buildTree(model, data)
 
         if options.distance == "K80":
             alpha, beta = \
-                   ( trained_model.mGrammar.getParameter( 'alpha' ),
-                     trained_model.mGrammar.getParameter( 'beta' ) )
+                (trained_model.mGrammar.getParameter('alpha'),
+                    trained_model.mGrammar.getParameter('beta'))
             # this assumes that the branch length in the input is normalized to 1
             # this is the normalization constant
             o_distance = options.format % (2 * beta + alpha)
@@ -461,74 +490,79 @@ def runXrate( mali, pairs, options ):
 
             msg = "alpha=%6.4f, beta=%6.4f" % (alpha, beta)
             alpha = "na"
-            
+
         elif options.distance == "JC69":
 
             tree = result.getTree()
-            ## multiply distance by tree, as rates are set to 1 and 
-            ## thus the matrix is scaled by a factor of 3
-            o_distance = options.format % (3.0 * float(re.search("\(\S+:([0-9.]+)\)", tree).groups()[0]))
+            # multiply distance by tree, as rates are set to 1 and
+            # thus the matrix is scaled by a factor of 3
+            o_distance = options.format % (
+                3.0 * float(re.search("\(\S+:([0-9.]+)\)", tree).groups()[0]))
             o_kappa = "na"
             msg = ""
 
-        writeModel( result.mModel, "trained", options )
-    
-        options.stdout.write("\t".join( (o_distance,
-                                         options.format % result.getLogLikelihood(),
-                                         o_alpha,
-                                         o_kappa,
-                                         msg) ) )
+        writeModel(result.mModel, "trained", options)
+
+        options.stdout.write("\t".join((o_distance,
+                                        options.format % result.getLogLikelihood(
+                                        ),
+                                        o_alpha,
+                                        o_kappa,
+                                        msg)))
 
         if options.with_counts:
-            info = Genomics.CalculatePairIndices( mali[ids[x]], mali[ids[y]], with_codons = options.is_codons )
-            options.stdout.write( "\t%s" % (str(info)) )
+            info = Genomics.CalculatePairIndices(
+                mali[ids[x]], mali[ids[y]], with_codons=options.is_codons)
+            options.stdout.write("\t%s" % (str(info)))
 
-        options.stdout.write( "\n" )
-    
-    shutil.rmtree( tempdir )
+        options.stdout.write("\n")
+
+    shutil.rmtree(tempdir)
 
 
-def main( argv = None ):
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv == None:
+        argv = sys.argv
 
-    parser = E.OptionParser( version = "%prog version: $Id: mali2rates.py 2781 2009-09-10 11:33:14Z andreas $",
-                                    usage = globals()["__doc__"])
+    parser = E.OptionParser(version="%prog version: $Id: mali2rates.py 2781 2009-09-10 11:33:14Z andreas $",
+                            usage=globals()["__doc__"])
 
     parser.add_option("-i", "--input-format", dest="input_format", type="choice",
-                      choices=("plain", "fasta", "clustal", "stockholm", "phylip" ),
-                      help="input format of multiple alignment"  )
+                      choices=(
+                          "plain", "fasta", "clustal", "stockholm", "phylip"),
+                      help="input format of multiple alignment")
 
     parser.add_option("-s", "--sites", dest="sites", type="string",
                       help="sites to use [default=%default].", )
 
     parser.add_option("-f", "--file", dest="filename", type="string",
                       help="filename of multiple alignment (- for stdin) [default=%default].",
-                      metavar = "FILE" )
+                      metavar="FILE")
 
     parser.add_option("-o", "--format", dest="format", type="string",
                       help="format [default=%default].",
-                      metavar = "format" )
+                      metavar="format")
 
     parser.add_option("-d", "--distance", dest="distance", type="choice",
                       choices=("PID", "T92", "JC69", "POVL", "F84", "LogDet",
                                "K80", "F81", "HKY85", "TN93", "REV", "UNREST", "REVU",
                                "UNRESTU",
-                               "JTT", "PMB", "PAM", "Kimura", "CategoriesModel" ),
-                      help="method to use for distance calculation [default=%default]." )
+                               "JTT", "PMB", "PAM", "Kimura", "CategoriesModel"),
+                      help="method to use for distance calculation [default=%default].")
 
-    parser.add_option( "--method", dest="method", type="choice",
+    parser.add_option("--method", dest="method", type="choice",
                       choices=("phylip", "baseml", "own", "xrate"),
                       help = "program to use for rate calculation.")
 
-    parser.add_option( "--output-format", dest="output_format", type="choice",
+    parser.add_option("--output-format", dest="output_format", type="choice",
                       choices=("list", "tree"),
                       help = "output format.")
-                     
+
     parser.add_option("-m", "--min-sites", dest="min_sites", type="int",
                       help="minimum number of sites for output[default=%default].", )
 
@@ -537,96 +571,97 @@ def main( argv = None ):
                       help="alphabet to use.", )
 
     parser.add_option("-t", "--filename-tree", dest="filename_tree", type="string",
-                      help="filename with tree information."  )
+                      help="filename with tree information.")
 
-    parser.add_option( "--set-alpha", dest="alpha", type="float",
+    parser.add_option("--set-alpha", dest="alpha", type="float",
                       help="initial alpha value.")
 
-    parser.add_option( "--fix-alpha", dest="fix_alpha", action = "store_true",
-                       help="do not estimate alpha.")
+    parser.add_option("--fix-alpha", dest="fix_alpha", action="store_true",
+                      help="do not estimate alpha.")
 
-    parser.add_option( "--set-kappa", dest="kappa", type="float",
-                       help="initial kappa value.")
+    parser.add_option("--set-kappa", dest="kappa", type="float",
+                      help="initial kappa value.")
 
-    parser.add_option( "--fix-kappa", dest="fix_kappa", action = "store_true",
-                       help="do not estimate kappa.")
+    parser.add_option("--fix-kappa", dest="fix_kappa", action="store_true",
+                      help="do not estimate kappa.")
 
-    parser.add_option( "--dump", dest="dump", action="store_true",
-                      help="dump output."  )
+    parser.add_option("--dump", dest="dump", action="store_true",
+                      help="dump output.")
 
-    parser.add_option( "--test", dest="test", action="store_true",
-                      help="test run - does not clean up."  )
+    parser.add_option("--test", dest="test", action="store_true",
+                      help="test run - does not clean up.")
 
-    parser.add_option( "--pairwise", dest="pairwise", action="store_true",
+    parser.add_option("--pairwise", dest="pairwise", action="store_true",
                       help="force pairwise comparison.")
 
-    parser.add_option( "--set-clean-data", dest="clean_data", type="choice",
-                       choices = ("0", "1"),
-                       help="PAML should cleanup data:  0=only gaps within pair are removed, 1=columns in the mali with gaps are removed.")
+    parser.add_option("--set-clean-data", dest="clean_data", type="choice",
+                      choices=("0", "1"),
+                      help="PAML should cleanup data:  0=only gaps within pair are removed, 1=columns in the mali with gaps are removed.")
 
-    parser.add_option( "--with-counts", dest="with_counts", action="store_true",
-                      help="output counts of aligned positions, transitions and transversions."  )
+    parser.add_option("--with-counts", dest="with_counts", action="store_true",
+                      help="output counts of aligned positions, transitions and transversions.")
 
     parser.add_option("-w", "--write", dest="write", type="choice", action="append",
-                      choices=("input", "trained", "all" ),
-                      help="output sections to write for xrate."  )
-    
-    parser.add_option( "--output-pattern", dest="output_pattern", type="string",
-                      help="output pattern for output files." )
+                      choices=("input", "trained", "all"),
+                      help="output sections to write for xrate.")
 
-    parser.add_option( "--xrate-min-increment", dest="xrate_min_increment", type = float,
-                       help="minimum increment to stop iteration in xrate." )
+    parser.add_option("--output-pattern", dest="output_pattern", type="string",
+                      help="output pattern for output files.")
 
-    parser.set_defaults( \
-        input_format = "fasta",
-        filename_tree = None,
-        with_counts = False,
-        sites = "d4",
-        distance = "T92",
-        min_sites = 1,
-        filename = "-",
+    parser.add_option("--xrate-min-increment", dest="xrate_min_increment", type=float,
+                      help="minimum increment to stop iteration in xrate.")
+
+    parser.set_defaults(
+        input_format="fasta",
+        filename_tree=None,
+        with_counts=False,
+        sites="d4",
+        distance="T92",
+        min_sites=1,
+        filename="-",
         alphabet="auto",
-        format= "%6.4f",
+        format="%6.4f",
         method="phylip",
-        kappa = None,
-        fix_kappa = False,
-        alpha = None,
-        fix_alpha = False,
-        dump = False,
-        clean_data = None,
-        output_format = "list",
+        kappa=None,
+        fix_kappa=False,
+        alpha=None,
+        fix_alpha=False,
+        dump=False,
+        clean_data=None,
+        output_format="list",
         iteration="all-vs-all",
         pairwise=False,
-        report_step = 1000,
-        output_pattern = "%s.eg",
-        write = [],
-        test_xrate = False,
-        xrate_min_increment = None,
-        is_codons = False,
-        )
-    
-    (options, args) = E.Start( parser )
+        report_step=1000,
+        output_pattern="%s.eg",
+        write=[],
+        test_xrate=False,
+        xrate_min_increment=None,
+        is_codons=False,
+    )
+
+    (options, args) = E.Start(parser)
 
     if options.filename != "-":
         infile = open(options.filename, "r")
     else:
         infile = sys.stdin
 
-    ## read multiple alignment
+    # read multiple alignment
     if options.pairwise:
-        ## read sequences, but not as a multiple alignment. This permits multiple names.
+        # read sequences, but not as a multiple alignment. This permits
+        # multiple names.
         mali = Mali.SequenceCollection()
         options.iteration = "pairwise"
     else:
         mali = Mali.Mali()
 
-    mali.readFromFile( infile, format = options.input_format )
-    
+    mali.readFromFile(infile, format=options.input_format)
+
     ids = mali.getIdentifiers()
 
     if options.alphabet == "auto":
-        s = "".join( map( lambda x: x.mString, mali.values())).lower()
-        ss = re.sub( "[acgtxn]", "", s)
+        s = "".join(map(lambda x: x.mString, mali.values())).lower()
+        ss = re.sub("[acgtxn]", "", s)
         if float(len(ss)) < (len(s) * 0.1):
             options.alphabet = "na"
             if mali.getNumColumns() % 3 == 0:
@@ -635,8 +670,9 @@ def main( argv = None ):
             options.alphabet = "aa"
 
         if options.loglevel >= 1:
-            options.stdlog.write("# autodetected alphabet: %s\n" % options.alphabet)
-            
+            options.stdlog.write(
+                "# autodetected alphabet: %s\n" % options.alphabet)
+
     if options.filename != "-":
         infile.close()
 
@@ -647,31 +683,32 @@ def main( argv = None ):
     pairs = []
     if options.iteration == "all-vs-all":
         for x in range(len(ids) - 1):
-            for y in range(x+1, len(ids)):
-                pairs.append( (x,y) )
+            for y in range(x + 1, len(ids)):
+                pairs.append((x, y))
     elif options.iteration == "first-vs-all":
         for y in range(1, len(ids)):
-            pairs.append( (0,y) )
+            pairs.append((0, y))
     elif options.iteration == "pairwise":
         if len(ids) % 2 != 0:
-            raise "uneven number of sequences (%i) not compatible with --iteration=pairwise" % len(ids)
+            raise "uneven number of sequences (%i) not compatible with --iteration=pairwise" % len(
+                ids)
         for x in range(0, len(ids), 2):
-            pairs.append( (x, x+1) )
+            pairs.append((x, x + 1))
 
     if options.alphabet == "na":
 
-        if options.method=="baseml":
-            runBaseML( mali, pairs, options )
-        elif options.method == "phylip" and options.distance in ("F84", "K80", "JC69", "LogDet" ):
-            runDNADIST( mali, pairs, options )
+        if options.method == "baseml":
+            runBaseML(mali, pairs, options)
+        elif options.method == "phylip" and options.distance in ("F84", "K80", "JC69", "LogDet"):
+            runDNADIST(mali, pairs, options)
         elif options.method == "xrate":
-            runXrate( mali, pairs, options )
+            runXrate(mali, pairs, options)
         else:
             if options.is_codons:
                 h = Genomics.SequencePairInfoCodons().getHeader()
             else:
                 h = Genomics.SequencePairInfo().getHeader()
-            options.stdout.write( "seq1\tseq2\tdist\tvar\t%s\n" % ( h ))
+            options.stdout.write("seq1\tseq2\tdist\tvar\t%s\n" % (h))
 
             for x, y in pairs:
                 id_x = ids[x]
@@ -679,11 +716,13 @@ def main( argv = None ):
 
                 id_y = ids[y]
 
-                info = Genomics.CalculatePairIndices( mali[id_x], mali[id_y], with_codons = options.is_codons )
+                info = Genomics.CalculatePairIndices(
+                    mali[id_x], mali[id_y], with_codons=options.is_codons)
 
                 if options.distance in ("T92", "JC69"):
                     if options.sites == "d4":
-                        seq1, seq2 = Genomics.GetDegenerateSites( mali[id_x], mali[id_y], position=3, degeneracy=4 )
+                        seq1, seq2 = Genomics.GetDegenerateSites(
+                            mali[id_x], mali[id_y], position=3, degeneracy=4)
 
                         if len(seq1) < options.min_sites:
                             nskipped_length += 1
@@ -692,30 +731,32 @@ def main( argv = None ):
                         raise "unknown sites %s" % options.sites
 
                 if options.distance == "T92":
-                    distance, variance = CalculateDistanceT92( info )
+                    distance, variance = CalculateDistanceT92(info)
                 elif options.distance == "JC69":
-                    distance, variance = CalculateDistanceJC69( info )
+                    distance, variance = CalculateDistanceJC69(info)
                 elif options.distance == "PID":
-                    distance, variance = CalculateDistancePID( mali[id_x], mali[id_y] )
+                    distance, variance = CalculateDistancePID(
+                        mali[id_x], mali[id_y])
                 elif options.distance == "POVL":
-                    distance, variance = CalculateDistancePOVL( mali[id_x], mali[id_y] )
+                    distance, variance = CalculateDistancePOVL(
+                        mali[id_x], mali[id_y])
 
                 if distance >= 0:
-                    options.stdout.write( "\t".join( map(str, (id_x, id_y,
-                                                               options.format % distance,
-                                                               options.format % variance, info) ) ) + "\n" )
+                    options.stdout.write("\t".join(map(str, (id_x, id_y,
+                                                             options.format % distance,
+                                                             options.format % variance, info))) + "\n")
                 else:
                     nskipped_distance += 1
 
     elif options.alphabet == "aa":
 
-        if options.distance in ( "JTT", "PMB", "PAM", "Kimura", "CategoriesModel" ):
+        if options.distance in ("JTT", "PMB", "PAM", "Kimura", "CategoriesModel"):
 
             # use phylip for these
             phylip = WrapperPhylip.Phylip()
-            phylip.setProgram( "protdist" )
-            phylip.setMali( mali )
-            
+            phylip.setProgram("protdist")
+            phylip.setMali(mali)
+
             phylip_options = []
             if options.distance == "PMG":
                 phylip_options += ["D"] * 1
@@ -725,17 +766,17 @@ def main( argv = None ):
                 phylip_options += ["D"] * 3
             elif options.distance == "CategoriesModel":
                 phylip_options += ["D"] * 4
-                
+
             phylip_options.append("Y")
-            phylip.setOptions( phylip_options )
+            phylip.setOptions(phylip_options)
             result = phylip.run()
 
-            writePhylipResult( result, options )
+            writePhylipResult(result, options)
 
         else:
-            options.stdout.write( "id1\tid2\tdist\tvar\n" )
+            options.stdout.write("id1\tid2\tdist\tvar\n")
 
-            ## iterate over all pairs of sequences
+            # iterate over all pairs of sequences
             for x, y in pairs:
                 id_x = ids[x]
                 npairs += 1
@@ -743,21 +784,24 @@ def main( argv = None ):
                 id_y = ids[y]
 
                 if options.distance == "PID":
-                    distance, variance = CalculateDistancePID( mali[id_x], mali[id_y] )
+                    distance, variance = CalculateDistancePID(
+                        mali[id_x], mali[id_y])
                 elif options.distance == "POVL":
-                    ## percentage overlap
-                    distance, variance = CalculateDistancePOVL( mali[id_x], mali[id_y] )
+                    # percentage overlap
+                    distance, variance = CalculateDistancePOVL(
+                        mali[id_x], mali[id_y])
 
                 if distance >= 0:
-                    options.stdout.write("\t".join( (id_x, id_y,
-                                      options.format % distance,
-                                      options.format % variance) ) + "\n" ) 
+                    options.stdout.write("\t".join((id_x, id_y,
+                                                    options.format % distance,
+                                                    options.format % variance)) + "\n")
                 else:
                     nskipped_distance += 1
-        
+
     if options.loglevel >= 1:
-        options.stdlog.write("# nseqs=%i, npairs=%i, nskipped_length=%i, nskipped_distance=%i\n" % ( len(ids), npairs, nskipped_length, nskipped_distance))
-    
+        options.stdlog.write("# nseqs=%i, npairs=%i, nskipped_length=%i, nskipped_distance=%i\n" % (
+            len(ids), npairs, nskipped_length, nskipped_distance))
+
     E.Stop()
 
 """
@@ -1295,10 +1339,7 @@ void dist_dna(char **x, int *n, int *s, int *model, double *d,
   }
 }
 """
-        
 
-        
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

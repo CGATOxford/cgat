@@ -55,57 +55,59 @@ param_bin_size1 = 1
 param_bin_size2 = 1
 param_titles = True
 
-##---------------------------------------------------------------------------------------------------------        
-def main( argv = None ):
+# ------------------------------------------------------------------------
+
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv == None:
+        argv = sys.argv
 
-    parser = E.OptionParser( version = "%prog version: $Id: calculate_histogram_2D.py 2782 2009-09-10 11:40:29Z andreas $", 
-                             usage = globals()["__doc__"])
+    parser = E.OptionParser(version="%prog version: $Id: calculate_histogram_2D.py 2782 2009-09-10 11:40:29Z andreas $",
+                            usage=globals()["__doc__"])
 
     parser.add_option("-t", "--titles", dest="titles", action="store_true",
-                      help="input data has title in first row [default=%default]." )
+                      help="input data has title in first row [default=%default].")
 
-    parser.add_option( "--no-titles", dest="titles", action="store_false",
-                      help="input data has no title in first row [default=%default]." )
+    parser.add_option("--no-titles", dest="titles", action="store_false",
+                      help="input data has no title in first row [default=%default].")
 
     parser.add_option("-1", "--column1", dest="column1", type="int",
-                      help="first column to use [default=%default]." )
- 
+                      help="first column to use [default=%default].")
+
     parser.add_option("-2", "--column2", dest="column2", type="int",
-                      help="second column to use [default=%default]." )
- 
+                      help="second column to use [default=%default].")
+
     parser.add_option("--bin-size1", dest="bin_size1", type="float",
-                      help="bin size for first column [default=%default]." )
+                      help="bin size for first column [default=%default].")
 
     parser.add_option("--bin-size2", dest="bin_size2", type="float",
-                      help="bin size for second column [default=%default]." )
+                      help="bin size for second column [default=%default].")
 
-    parser.set_defaults( 
-        column1 = 1,
-        column2 = 2,
-        bin_size1 = 1.0,
-        bin_size2 = 1.0,
-        titles = True )
+    parser.set_defaults(
+        column1=1,
+        column2=2,
+        bin_size1=1.0,
+        bin_size2=1.0,
+        titles=True)
 
-
-    (options, args) = E.Start( parser )                                  
+    (options, args) = E.Start(parser)
     options.column1 -= 1
     options.column2 -= 1
 
     histograms = []
 
     vals = []
-    
+
     # retrieve histogram
-    lines = filter( lambda x: x[0] <> "#", sys.stdin.readlines())
+    lines = filter(lambda x: x[0] <> "#", sys.stdin.readlines())
 
     if options.titles:
-        data = string.split(lines[0][:-1], "\t")        
+        data = string.split(lines[0][:-1], "\t")
         print "\t".join((data[options.column1], data[options.column2], "counts"))
         del lines[0]
 
@@ -116,7 +118,8 @@ def main( argv = None ):
         data = string.split(l[:-1], "\t")
 
         try:
-            val = map( string.atof, (data[options.column1],data[options.column2]))
+            val = map(
+                string.atof, (data[options.column1], data[options.column2]))
         except IndexError:
             nskipped += 1
             continue
@@ -124,18 +127,20 @@ def main( argv = None ):
             nskipped += 1
             continue
 
-        vals.append( val )
+        vals.append(val)
         noutput += 1
 
     lines = None
-    
-    h = Histogram2D.Calculate( vals, bin_function=lambda x:(int(x[0] / options.bin_size1), int(x[1] / options.bin_size2)) )
 
-    Histogram2D.Print(h, bin_function=lambda x: (x[0] * options.bin_size1, x[1] * options.bin_size2, x[2]))
+    h = Histogram2D.Calculate(vals, bin_function=lambda x: (
+        int(x[0] / options.bin_size1), int(x[1] / options.bin_size2)))
 
-    E.info( "ninput=%i, noutput=%i, nskipped=%i" % (ninput,noutput,nskipped) )
+    Histogram2D.Print(h, bin_function=lambda x: (
+        x[0] * options.bin_size1, x[1] * options.bin_size2, x[2]))
+
+    E.info("ninput=%i, noutput=%i, nskipped=%i" % (ninput, noutput, nskipped))
 
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
+    sys.exit(main(sys.argv))

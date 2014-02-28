@@ -1,4 +1,4 @@
-################################################################################
+##########################################################################
 #
 #   MRC FGU Computational Genomics Group
 #
@@ -19,7 +19,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
+##########################################################################
 '''
 runZinba.py - wrap zinba peak caller
 ========================================
@@ -50,10 +50,16 @@ Code
 
 '''
 
-import os, sys, re, optparse, tempfile, shutil, subprocess
+import os
+import sys
+import re
+import optparse
+import tempfile
+import shutil
+import subprocess
 import collections
 
-## for zinba
+# for zinba
 from rpy2.robjects import r as R
 import rpy2.robjects as ro
 import rpy2.robjects.vectors as rovectors
@@ -62,130 +68,137 @@ from rpy2.rinterface import RRuntimeError
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 
-def bamToBed( infile, outfile ):
+
+def bamToBed(infile, outfile):
     '''convert bam to bed with bedtools.'''
 
     statement = "bamToBed -i %(infile)s > %(outfile)s" % locals()
 
-    E.debug( "executing statement '%s'" % statement )
+    E.debug("executing statement '%s'" % statement)
 
-    retcode = subprocess.call(  statement,
-                                cwd = os.getcwd(), 
-                                shell = True )
+    retcode = subprocess.call(statement,
+                              cwd=os.getcwd(),
+                              shell=True)
     if retcode < 0:
-        raise OSError( "Child was terminated by signal %i: \n%s\n" % (-retcode, statement ))
+        raise OSError("Child was terminated by signal %i: \n%s\n" %
+                      (-retcode, statement))
 
     return outfile
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if not argv: argv = sys.argv
+    if not argv:
+        argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser( version = "%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
-                                    usage = globals()["__doc__"] )
+    parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+                            usage=globals()["__doc__"])
 
     parser.add_option("-f", "--input-format", dest="input_format", type="choice",
-                      choices = ("bed", "bam"),
-                      help="input file format [default=%default]."  )
-    
+                      choices=("bed", "bam"),
+                      help="input file format [default=%default].")
+
     parser.add_option("-s", "--fragment-size", dest="fragment_size", type="int",
-                      help="fragment size [default=%default]."  )
+                      help="fragment size [default=%default].")
 
     parser.add_option("-m", "--mappability-dir", dest="mappability_dir", type="string",
-                      help="mappability_dir [default=%default]."  )
+                      help="mappability_dir [default=%default].")
 
     parser.add_option("-b", "--bit-filename", dest="bit_filename", type="string",
-                      help="2bit genome filename [default=%default]."  )
+                      help="2bit genome filename [default=%default].")
 
     parser.add_option("-c", "--control-filename", dest="control_filename", type="string",
-                      help="filename of input/control data in bed format [default=%default]."  )
+                      help="filename of input/control data in bed format [default=%default].")
 
     parser.add_option("-i", "--index-dir", dest="index_dir", type="string",
-                      help="index directory [default=%default]."  )
+                      help="index directory [default=%default].")
 
     parser.add_option("-t", "--threads", dest="threads", type="int",
-                      help="number of threads to use [default=%default]."  )
+                      help="number of threads to use [default=%default].")
 
     parser.add_option("-q", "--fdr-threshold", dest="fdr_threshold", type="float",
-                      help="fdr threshold [default=%default]."  )
+                      help="fdr threshold [default=%default].")
 
     parser.add_option("-a", "--alignability-threshold", dest="alignability_threshold", type="int",
-                      help="alignability threshold [default=%default]."  )
+                      help="alignability threshold [default=%default].")
 
-    parser.add_option("-p", "--per-contig", dest="per_contig", action = "store_true",
+    parser.add_option("-p", "--per-contig", dest="per_contig", action="store_true",
                       help="run analysis per chromosome [default=%default]")
 
     parser.add_option("-w", "--temp-dir", dest="tempdir", type="string",
-                      help="use existing directory as temporary directory [default=%default]."  )
+                      help="use existing directory as temporary directory [default=%default].")
 
-    parser.add_option( "--keep-temp", dest="keep_temp", action = "store_true",
+    parser.add_option("--keep-temp", dest="keep_temp", action="store_true",
                       help="keep temporary directory [default=%default]")
 
-    parser.add_option( "--action", dest="action", type="choice",
-                       choices=("full", "count", "predict", "model"),
-                       help="action to perform [default=%default]")
+    parser.add_option("--action", dest="action", type="choice",
+                      choices=("full", "count", "predict", "model"),
+                      help="action to perform [default=%default]")
 
-    parser.add_option( "--improvement", dest="improvement", type="float",
-                       help="relative improvement of likelihood until convergence [default=%default]")
-    
+    parser.add_option("--improvement", dest="improvement", type="float",
+                      help="relative improvement of likelihood until convergence [default=%default]")
+
     parser.set_defaults(
-        input_format = "bed",
-        fragment_size = 200,
-        mappability_dir = None,
-        threads = 1,
-        alignability_threshold = 1,
-        bit_filename = None,
-        fdr_threshold = 0.05,
-        tempdir = None,
-        winsize = 250,
-        offset = 125,
-        cnvWinSize = 1e+05,
-        cnvOffset = 2500,
-        per_contig = False,
-        keep_temp = False,
-        filelist = "files.list",
-        action = "full",
-        improvement = 0.00001,
-        )
+        input_format="bed",
+        fragment_size=200,
+        mappability_dir=None,
+        threads=1,
+        alignability_threshold=1,
+        bit_filename=None,
+        fdr_threshold=0.05,
+        tempdir=None,
+        winsize=250,
+        offset=125,
+        cnvWinSize=1e+05,
+        cnvOffset=2500,
+        per_contig=False,
+        keep_temp=False,
+        filelist="files.list",
+        action="full",
+        improvement=0.00001,
+    )
 
-
-    ## add common options (-h/--help, ...) and parse command line 
-    (options, args) = E.Start( parser, argv = argv )
+    # add common options (-h/--help, ...) and parse command line
+    (options, args) = E.Start(parser, argv=argv)
 
     if len(args) != 2:
-        raise ValueError("please specify a filename with sample data and an output file")
+        raise ValueError(
+            "please specify a filename with sample data and an output file")
 
     filename_sample, filename_output = args[0], args[1]
     filename_control = options.control_filename
-    
+
     # load Zinba
-    R.library( 'zinba' )
+    R.library('zinba')
 
     if not options.tempdir:
-        tmpdir = tempfile.mkdtemp( )
+        tmpdir = tempfile.mkdtemp()
     else:
         tmpdir = options.tempdir
 
-    E.debug( "temporary files are in %s" % tmpdir )
+    E.debug("temporary files are in %s" % tmpdir)
 
     if options.input_format == "bam":
-        E.info( "converting bam files to bed" )
-        if not os.path.exists( os.path.join( tmpdir, "sample.bed")):
-            filename_sample = bamToBed( filename_sample, os.path.join( tmpdir, "sample.bed" ) )
+        E.info("converting bam files to bed")
+        if not os.path.exists(os.path.join(tmpdir, "sample.bed")):
+            filename_sample = bamToBed(
+                filename_sample, os.path.join(tmpdir, "sample.bed"))
         else:
-            E.info("using existing file %(tmpdir)s/sample.bed" % locals() )
-            filename_sample = os.path.join( tmpdir, "sample.bed")
+            E.info("using existing file %(tmpdir)s/sample.bed" % locals())
+            filename_sample = os.path.join(tmpdir, "sample.bed")
         if filename_control:
-            if not os.path.exists( os.path.join( tmpdir, "control.bed")):
-                filename_control = bamToBed( filename_control, os.path.join( tmpdir, "control.bed" ) )
+            if not os.path.exists(os.path.join(tmpdir, "control.bed")):
+                filename_control = bamToBed(
+                    filename_control, os.path.join(tmpdir, "control.bed"))
             else:
-                E.info("using existing file %(tmpdir)s/control.bed" % locals() )
-                filename_control = os.path.join( os.path.join( tmpdir, "control.bed"))
+                E.info("using existing file %(tmpdir)s/control.bed" % locals())
+                filename_control = os.path.join(
+                    os.path.join(tmpdir, "control.bed"))
 
     fragment_size = options.fragment_size
     threads = options.threads
@@ -194,25 +207,27 @@ def main( argv = None ):
     fdr_threshold = options.fdr_threshold
     tol = options.improvement
 
-    contigs = E.run( "twoBitInfo %(bit_filename)s %(tmpdir)s/contig_sizes" % locals() )
-    contig2size = dict( [x.split() for x in IOTools.openFile( os.path.join( tmpdir, "contig_sizes")) ] )
+    contigs = E.run(
+        "twoBitInfo %(bit_filename)s %(tmpdir)s/contig_sizes" % locals())
+    contig2size = dict(
+        [x.split() for x in IOTools.openFile(os.path.join(tmpdir, "contig_sizes"))])
 
-    outdir = filename_output + "_files" 
-    if not os.path.exists( outdir ):
-        os.mkdir( outdir )
-        
-    filelist = os.path.join( outdir, filename_output + ".list")
-    modelfile = os.path.join( outdir, filename_output + ".model")
-    winfile = os.path.join( outdir, filename_output + ".wins")
-    winSize=250
-    offset=125
-    cnvWinSize=100000
-    cnvOffset=0
+    outdir = filename_output + "_files"
+    if not os.path.exists(outdir):
+        os.mkdir(outdir)
+
+    filelist = os.path.join(outdir, filename_output + ".list")
+    modelfile = os.path.join(outdir, filename_output + ".model")
+    winfile = os.path.join(outdir, filename_output + ".wins")
+    winSize = 250
+    offset = 125
+    cnvWinSize = 100000
+    cnvOffset = 0
     winGap = 0
     peakconfidence = 1.0 - fdr_threshold
 
-    if not os.path.exists( os.path.join( tmpdir, "basecount")):
-        E.info( "computing counts" )
+    if not os.path.exists(os.path.join(tmpdir, "basecount")):
+        E.info("computing counts")
 
         R( '''basealigncount( inputfile='%(filename_sample)s',
                           outputfile='%(tmpdir)s/basecount',
@@ -221,15 +236,15 @@ def main( argv = None ):
                           twoBitFile='%(bit_filename)s' )
                           '''  % locals() )
     else:
-        E.info( "using existing counts" )
+        E.info("using existing counts")
 
     # tried incremental updates
     # for contig, size in contig2size.iteritems():
-    #     for size in 
+    #     for size in
     #     fn = os.path.join( tmpdir, "sample_%(contig)s_win%(size)ibp_offset(offset)ibp.txt" % locals() )
     if options.action == "count":
 
-        E.info("computing window counts only - saving results in %s" % outdir )
+        E.info("computing window counts only - saving results in %s" % outdir)
         R('''buildwindowdata(
                      seq='%(filename_sample)s', 
                      align='%(mappability_dir)s',
@@ -283,15 +298,15 @@ def main( argv = None ):
                 FDR=TRUE)''' % locals())
 
     elif options.action == "predict":
-    
+
         # The important option is buildwin = 0 and selectmodel = FALSE
         # parameterized for broad == FALSE and input present
         # see zinba.R
         # model selection only on chr19.
-        if not os.path.exists( modelfile ):
-            raise OSError( "model file %s does not exist" % modelfile )
+        if not os.path.exists(modelfile):
+            raise OSError("model file %s does not exist" % modelfile)
 
-        E.info( "reading model from %s" % modelfile )
+        E.info("reading model from %s" % modelfile)
 
         R('''
         final=read.table('%(modelfile)s', header=T, sep="\t")
@@ -308,7 +323,7 @@ def main( argv = None ):
         print(formulaE)
         ''' % locals() )
 
-        E.info( "predicting peaks" )
+        E.info("predicting peaks")
 
         R('''run.zinba(
                 filelist='%(filelist)s',
@@ -343,23 +358,28 @@ def main( argv = None ):
 
     elif options.action == "per_contig":
 
-        E.info("processing per chromosome" )
+        E.info("processing per chromosome")
         for contig, size in contig2size.iteritems():
-            if contig not in ("chr16",): continue
+            if contig not in ("chr16",):
+                continue
 
             E.info("processing contig %s" % contig)
             filename_sample_contig = filename_sample + "_%s" % contig
             filename_control_contig = filename_control + "_%s" % contig
-            if not os.path.exists( filename_output + "_files" ):
-                os.mkdir( filename_output + "_files" )
-            filename_output_contig = os.path.join( filename_output + "_files", contig )
-            filename_basecounts_contig = os.path.join( tmpdir, "basecount_%s" % contig)
+            if not os.path.exists(filename_output + "_files"):
+                os.mkdir(filename_output + "_files")
+            filename_output_contig = os.path.join(
+                filename_output + "_files", contig)
+            filename_basecounts_contig = os.path.join(
+                tmpdir, "basecount_%s" % contig)
 
-            E.run( "grep %(contig)s < %(filename_sample)s > %(filename_sample_contig)s" % locals() )
-            E.run( "grep %(contig)s < %(filename_control)s > %(filename_control_contig)s" % locals() )
+            E.run(
+                "grep %(contig)s < %(filename_sample)s > %(filename_sample_contig)s" % locals())
+            E.run(
+                "grep %(contig)s < %(filename_control)s > %(filename_control_contig)s" % locals())
 
-            if not os.path.exists( filename_basecounts_contig ):
-                E.info( "computing counts" )
+            if not os.path.exists(filename_basecounts_contig):
+                E.info("computing counts")
 
                 R( '''basealigncount( inputfile='%(filename_sample_contig)s',
                                   outputfile='%(filename_basecounts_contig)s',
@@ -368,7 +388,7 @@ def main( argv = None ):
                                   twoBitFile='%(bit_filename)s' )
                                   '''  % locals() )
             else:
-                E.info( "using existing counts" )
+                E.info("using existing counts")
 
             # run zinba, do not build window data
             R( '''zinba( refinepeaks=1,
@@ -408,11 +428,10 @@ def main( argv = None ):
                      FDR=TRUE) '''  % locals() )
 
     if not (options.tempdir or options.keep_temp):
-        shutil.rmtree( tmpdir )
+        shutil.rmtree(tmpdir)
 
-    ## write footer and output benchmark information.
+    # write footer and output benchmark information.
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

@@ -42,29 +42,33 @@ import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import CGAT.FastaIterator as FastaIterator
 
-##------------------------------------------------------------
-def main( argv = None ):
+# ------------------------------------------------------------
+
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv == None:
+        argv = sys.argv
 
-    parser = E.OptionParser( version = "%prog version: $Id: fastas2fasta.py 2782 2009-09-10 11:40:29Z andreas $", 
-                             usage = globals()["__doc__"])
+    parser = E.OptionParser(version="%prog version: $Id: fastas2fasta.py 2782 2009-09-10 11:40:29Z andreas $",
+                            usage=globals()["__doc__"])
 
-    (options, args) = E.Start( parser )
+    (options, args) = E.Start(parser)
 
     if len(args) < 2:
-        raise ValueError("please supply at least two filenames to concatenate.")
+        raise ValueError(
+            "please supply at least two filenames to concatenate.")
 
     iterators = []
     for a in args:
-        iterators.append(FastaIterator.FastaIterator( IOTools.openFile(a,"r") ) )
+        iterators.append(FastaIterator.FastaIterator(IOTools.openFile(a, "r")))
 
     ninput, noutput, nerrors = 0, 0, 0
-    
+
     while 1:
 
         sequences = []
@@ -76,10 +80,11 @@ def main( argv = None ):
             except StopIteration:
                 break
 
-            sequences.append( re.sub( " ", "", cur_record.sequence) )
-            ids.append( cur_record.title )
+            sequences.append(re.sub(" ", "", cur_record.sequence))
+            ids.append(cur_record.title)
 
-        if not sequences: break
+        if not sequences:
+            break
         ninput += 1
 
         if len(sequences) != len(iterators):
@@ -87,14 +92,12 @@ def main( argv = None ):
 
         noutput += 1
 
-        options.stdout.write( ">%s\n%s\n" % (ids[0],
-                                             "".join( sequences )))
+        options.stdout.write(">%s\n%s\n" % (ids[0],
+                                            "".join(sequences)))
 
-    E.info( "ninput=%i, noutput=%i, nerrors=%i" % (ninput, noutput, nerrors) )
-    
+    E.info("ninput=%i, noutput=%i, nerrors=%i" % (ninput, noutput, nerrors))
+
     E.Stop()
-    
-if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
 
-    
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

@@ -62,15 +62,15 @@ import CGAT.WrapperDBA as WrapperDBA
 # clustalw wrapper not up-to-date
 # import CGAT.WrapperClustal as WrapperClustal
 
-param_long_options=["verbose=", "help",
-                    "write-exons=", "write-introns=",
-                    "extend-introns=",
-                    "is-compressed", "do-gblocks",
-                    "skip-distance", "skip-alistats", "echo-unaligned",
-                    "method=", "fixed-alpha=",
-                    "anchor-alignment=", "version"]
+param_long_options = ["verbose=", "help",
+                      "write-exons=", "write-introns=",
+                      "extend-introns=",
+                      "is-compressed", "do-gblocks",
+                      "skip-distance", "skip-alistats", "echo-unaligned",
+                      "method=", "fixed-alpha=",
+                      "anchor-alignment=", "version"]
 
-param_short_options="v:hg:"
+param_short_options = "v:hg:"
 
 param_loglevel = 2
 
@@ -81,9 +81,9 @@ param_do_gblocks = 0
 
 param_do_distance = 1
 
-param_intron_types = ( ( "U2-GT/AG", "GT", "AG"),
-                       ( "U2-nc-GC/AG", "GC", "AG"),
-                       ( "U12-AT/AC", "AT", "AC") )
+param_intron_types = (("U2-GT/AG", "GT", "AG"),
+                      ("U2-nc-GC/AG", "GC", "AG"),
+                      ("U12-AT/AC", "AT", "AC"))
 
 param_method = None
 
@@ -94,7 +94,9 @@ param_fixed_alpha = None
 
 param_anchor_alignment = 0
 
+
 class IntronPair:
+
     def __init__(self):
         self.mCategory = ""
         self.mMethod = ""
@@ -111,14 +113,14 @@ class IntronPair:
         self.mTransversions = 0
         self.mNumGaps = 0
         self.mLength = 0
-        self.mAligned = 0        
+        self.mAligned = 0
         self.mMatches = 1
         self.mFrom1 = 0
         self.mTo1 = 0
         self.mAlignedSequence1 = ""
         self.mFrom2 = 0
         self.mTo2 = 0
-        self.mAlignedSequence2 = ""        
+        self.mAlignedSequence2 = ""
         self.mUnaligned = 0
         self.mBlockSizes = []
         self.mGapSizes1 = []
@@ -132,26 +134,26 @@ class IntronPair:
         self.mIntronTo1 = 0
         self.mIntronFrom2 = 0
         self.mIntronTo2 = 0
-        
-    def Read( self, line ):
+
+    def Read(self, line):
         """read data from tab-separated line."""
 
-        data = string.split( line[:-1], "\t")
-        
-        if len(data) == 19:        
+        data = string.split(line[:-1], "\t")
+
+        if len(data) == 19:
             (self.mCategory, self.mMethod,
              self.mToken1, self.mIntronId1, self.mNumIntrons1, self.mLenIntron1,
              self.mToken2, self.mIntronId2, self.mNumIntrons2, self.mLenIntron2,
              self.mNumGaps, self.mLength, self.mAligned,
-             self.mFrom1, self.mTo1, self.mAlignedSequence1, 
-             self.mFrom2, self.mTo2, self.mAlignedSequence2 ) = data
+             self.mFrom1, self.mTo1, self.mAlignedSequence1,
+             self.mFrom2, self.mTo2, self.mAlignedSequence2) = data
         elif len(data) == 12:
             (self.mCategory, self.mMethod,
-             self.mToken1, self.mIntronId1, 
-             self.mToken2, self.mIntronId2, 
-             self.mFrom1, self.mTo1, self.mAlignedSequence1, 
-             self.mFrom2, self.mTo2, self.mAlignedSequence2 ) = data
-            
+             self.mToken1, self.mIntronId1,
+             self.mToken2, self.mIntronId2,
+             self.mFrom1, self.mTo1, self.mAlignedSequence1,
+             self.mFrom2, self.mTo2, self.mAlignedSequence2) = data
+
             (self.mNumIntrons1, self.mLenIntron1, self.mNumIntrons2, self.mLenIntron2,
              self.mNumGaps, self.mLength, self.mAligned) = [0] * 7
         elif len(data) == 23:
@@ -159,47 +161,48 @@ class IntronPair:
              self.mToken1, self.mIntronId1, self.mNumIntrons1, self.mLenIntron1,
              self.mToken2, self.mIntronId2, self.mNumIntrons2, self.mLenIntron2,
              self.mNumGaps, self.mLength, self.mAligned,
-             self.mFrom1, self.mTo1, self.mAlignedSequence1, 
+             self.mFrom1, self.mTo1, self.mAlignedSequence1,
              self.mFrom2, self.mTo2, self.mAlignedSequence2,
              self.mIntronFrom1, self.mIntronTo1,
-             self.mIntronFrom2, self.mIntronTo2 ) = data
+             self.mIntronFrom2, self.mIntronTo2) = data
 
-        ( self.mIntronId1, self.mNumIntrons1, self.mLenIntron1,
-          self.mIntronId2, self.mNumIntrons2, self.mLenIntron2,
-          self.mNumGaps, self.mLength, self.mAligned,
-          self.mFrom1, self.mTo1, self.mFrom2, self.mTo2,
-          self.mIntronFrom1, self.mIntronTo1,
-          self.mIntronFrom2, self.mIntronTo2) = \
-          map(int, ( self.mIntronId1, self.mNumIntrons1, self.mLenIntron1,
-                     self.mIntronId2, self.mNumIntrons2, self.mLenIntron2,
-                     self.mNumGaps, self.mLength, self.mAligned,
-                     self.mFrom1, self.mTo1, self.mFrom2, self.mTo2,
-                     self.mIntronFrom1, self.mIntronTo1,
-                     self.mIntronFrom2, self.mIntronTo2, ))
+        (self.mIntronId1, self.mNumIntrons1, self.mLenIntron1,
+         self.mIntronId2, self.mNumIntrons2, self.mLenIntron2,
+         self.mNumGaps, self.mLength, self.mAligned,
+         self.mFrom1, self.mTo1, self.mFrom2, self.mTo2,
+         self.mIntronFrom1, self.mIntronTo1,
+         self.mIntronFrom2, self.mIntronTo2) = \
+            map(int, (self.mIntronId1, self.mNumIntrons1, self.mLenIntron1,
+                      self.mIntronId2, self.mNumIntrons2, self.mLenIntron2,
+                      self.mNumGaps, self.mLength, self.mAligned,
+                      self.mFrom1, self.mTo1, self.mFrom2, self.mTo2,
+                      self.mIntronFrom1, self.mIntronTo1,
+                      self.mIntronFrom2, self.mIntronTo2, ))
 
-    def __str__( self ):
-        return string.join( map(str,\
-                                ( self.mCategory, self.mMethod,
-                                  self.mToken1, self.mIntronId1, self.mNumIntrons1, self.mLenIntron1,
-                                  self.mToken2, self.mIntronId2, self.mNumIntrons2, self.mLenIntron2,
-                                  self.mNumGaps, self.mLength, self.mAligned, 
-                                  self.mFrom1, self.mTo1, self.mAlignedSequence1,
-                                  self.mFrom2, self.mTo2, self.mAlignedSequence2)), "\t")
+    def __str__(self):
+        return string.join(map(str,
+                               (self.mCategory, self.mMethod,
+                                self.mToken1, self.mIntronId1, self.mNumIntrons1, self.mLenIntron1,
+                                self.mToken2, self.mIntronId2, self.mNumIntrons2, self.mLenIntron2,
+                                self.mNumGaps, self.mLength, self.mAligned,
+                                self.mFrom1, self.mTo1, self.mAlignedSequence1,
+                                self.mFrom2, self.mTo2, self.mAlignedSequence2)), "\t")
 
 
-def CalculateBlockSizes( pair, gap_char = "-" ):
+def CalculateBlockSizes(pair, gap_char="-"):
     """return the block-sizes in the alignment.
     """
     block_sizes = []
     left_gap_sizes = []
-    right_gap_sizes = []    
+    right_gap_sizes = []
 
     was_left_gap = pair.mAlignedSequence1[0] == gap_char
-    was_block = pair.mAlignedSequence1[0] != gap_char and pair.mAlignedSequence2[0] != gap_char
+    was_block = pair.mAlignedSequence1[
+        0] != gap_char and pair.mAlignedSequence2[0] != gap_char
     size = 1
-    
-    for x in range(1,min(len(pair.mAlignedSequence1), len(pair.mAlignedSequence2))):
-        is_left_gap  = pair.mAlignedSequence1[x] == gap_char
+
+    for x in range(1, min(len(pair.mAlignedSequence1), len(pair.mAlignedSequence2))):
+        is_left_gap = pair.mAlignedSequence1[x] == gap_char
         is_right_gap = pair.mAlignedSequence2[x] == gap_char
         is_block = not is_left_gap and not is_right_gap
         if is_block and not was_block:
@@ -223,9 +226,9 @@ def CalculateBlockSizes( pair, gap_char = "-" ):
 
         was_block = is_block
         was_left_gap = is_left_gap
-            
+
         size += 1
-            
+
     if was_block:
         block_sizes.append(size)
     else:
@@ -233,15 +236,16 @@ def CalculateBlockSizes( pair, gap_char = "-" ):
             left_gap_sizes.append(size)
         else:
             right_gap_sizes.append(size)
-        
+
     return block_sizes, left_gap_sizes, right_gap_sizes
-    
-def CalculatePercentIdentity( pair, gap_char = "-" ):
+
+
+def CalculatePercentIdentity(pair, gap_char="-"):
     """return number of idential and transitions/transversions substitutions
     in the alignment.
     """
-    transitions   = ("AG", "GA", "CT", "TC")
-    transversions = ("AT", "TA", "GT", "TG", "GC", "CG", "AC", "CA" )    
+    transitions = ("AG", "GA", "CT", "TC")
+    transversions = ("AT", "TA", "GT", "TG", "GC", "CG", "AC", "CA")
 
     nidentical = 0
     naligned = 0
@@ -265,11 +269,13 @@ def CalculatePercentIdentity( pair, gap_char = "-" ):
                 ntransversions += 1
         else:
             nunaligned += 1
-            
+
     return nidentical, ntransitions, ntransversions, naligned, nunaligned
 
-##------------------------------------------------------------
-def GetIntronType( sequence ):
+# ------------------------------------------------------------
+
+
+def GetIntronType(sequence):
     """return intron type for an intronic sequence."""
 
     for name, prime5, prime3 in param_intron_types:
@@ -279,8 +285,10 @@ def GetIntronType( sequence ):
     else:
         return "unknown-" + sequence[:5] + "-" + sequence[-5:]
 
-##------------------------------------------------------------
-def AlignPair( pair, anchor = 0 ):
+# ------------------------------------------------------------
+
+
+def AlignPair(pair, anchor=0):
     """align a pair of introns."""
 
     map_intron_a2b = alignlib_lite.py_makeAlignmentVector()
@@ -296,38 +304,40 @@ def AlignPair( pair, anchor = 0 ):
     s2 = "A" * anchor + pair.mAlignedSequence2 + "A" * anchor
 
     if param_method == "dialigned":
-        dialign.Align( s1, s2, map_intron_a2b )
+        dialign.Align(s1, s2, map_intron_a2b)
     elif param_method == "dialignedlgs":
-        dialignlgs.Align( s1, s2, map_intron_a2b ) 
+        dialignlgs.Align(s1, s2, map_intron_a2b)
     elif param_method == "dbaligned":
-        dba.Align( s1, s2, map_intron_a2b )
+        dba.Align(s1, s2, map_intron_a2b)
     elif param_method == "clusaligned":
         raise NotImplementedError("clustalw wrapper not up-to-date")
-        clustal.Align( s1, s2, map_intron_a2b )
+        clustal.Align(s1, s2, map_intron_a2b)
 
     if anchor:
-        map_intron_a2b.removeRowRegion( anchor + len(pair.mAlignedSequence1) + 1, map_intron_a2b.getRowTo() )
-        map_intron_a2b.removeRowRegion( 1, anchor)        
-        map_intron_a2b.removeColRegion( anchor + len(pair.mAlignedSequence2) + 1, map_intron_a2b.getColTo() )        
-        map_intron_a2b.removeColRegion( 1, anchor)
-        map_intron_a2b.moveAlignment( -anchor, -anchor )
+        map_intron_a2b.removeRowRegion(
+            anchor + len(pair.mAlignedSequence1) + 1, map_intron_a2b.getRowTo())
+        map_intron_a2b.removeRowRegion(1, anchor)
+        map_intron_a2b.removeColRegion(
+            anchor + len(pair.mAlignedSequence2) + 1, map_intron_a2b.getColTo())
+        map_intron_a2b.removeColRegion(1, anchor)
+        map_intron_a2b.moveAlignment(-anchor, -anchor)
 
     if map_intron_a2b.getLength() == 0:
         if param_loglevel >= 1:
             print "# Error: empty intron alignment"
         return False
 
+    seq1 = alignlib_lite.py_makeSequence(pair.mAlignedSequence1)
+    seq2 = alignlib_lite.py_makeSequence(pair.mAlignedSequence2)
 
-    seq1 = alignlib_lite.py_makeSequence( pair.mAlignedSequence1 )
-    seq2 = alignlib_lite.py_makeSequence( pair.mAlignedSequence2 )
-    
-    data = alignlib_lite.py_AlignmentFormatExplicit( map_intron_a2b, seq1, seq2 )
+    data = alignlib_lite.py_AlignmentFormatExplicit(map_intron_a2b, seq1, seq2)
 
     pair.mFrom1, pair.mAlignedSequence1, pair.mTo1 = data.mRowFrom, data.mRowAlignment, data.mRowTo
     pair.mFrom2, pair.mAlignedSequence2, pair.mTo2 = data.mColFrom, data.mColAlignment, data.mColTo
     pair.mMethod = param_method
 
-    pair.mNumGaps, pair.mLength = map_intron_a2b.getNumGaps(), map_intron_a2b.getLength()
+    pair.mNumGaps, pair.mLength = map_intron_a2b.getNumGaps(
+    ), map_intron_a2b.getLength()
     pair.mAligned = pair.mLength - pair.mNumGaps
 
     if param_loglevel >= 2:
@@ -335,29 +345,32 @@ def AlignPair( pair, anchor = 0 ):
 
     return True
 
-##------------------------------------------------------------
+# ------------------------------------------------------------
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv == None:
+        argv = sys.argv
 
     try:
-        optlist, args = getopt.getopt(sys.argv[1:], param_short_options, param_long_options)
+        optlist, args = getopt.getopt(
+            sys.argv[1:], param_short_options, param_long_options)
     except getopt.error, msg:
         print globals()["__doc__"], msg
         sys.exit(2)
 
-    for o,a in optlist:
-        if o in ( "-v", "--verbose" ):
+    for o, a in optlist:
+        if o in ("-v", "--verbose"):
             param_loglevel = int(a)
-        elif o in ( "-h", "--help" ):
+        elif o in ("-h", "--help"):
             print globals()["__doc__"]
             sys.exit(0)
-        elif o in ( "--version", ):
+        elif o in ("--version", ):
             print "version="
             sys.exit(0)
         elif o == "--is-compressed":
@@ -384,18 +397,18 @@ def main( argv = None ):
 
     baseml = WrapperBaseML.BaseML()
     if param_fixed_alpha != None:
-        baseml.SetOption( "alpha", param_fixed_alpha )
-        baseml.SetOption( "fix_alpha", 1 )
-        
+        baseml.SetOption("alpha", param_fixed_alpha)
+        baseml.SetOption("fix_alpha", 1)
+
     gblocks = WrapperGblocks.Gblocks()
-    
+
     print E.GetHeader()
     print E.GetParams()
     print baseml.GetOptions()
     sys.stdout.flush()
-    
+
     last_token1, last_token2 = None, None
-    
+
     nintron_pairs, ntoken_pairs = 0, 0
     ninput, nskipped, nerrors = 0, 0, 0
 
@@ -406,11 +419,11 @@ def main( argv = None ):
 
     unaligned_pair = None
 
-    ## setup alignment objects
+    # setup alignment objects
     if param_do_alignment:
-        dialign = WrapperDialign.Dialign( "-n" )
-        dialignlgs = WrapperDialign.Dialign( "-n -it -thr 2 -lmax 30 -smin 8" )    
-        dba = WrapperDBA.DBA()    
+        dialign = WrapperDialign.Dialign("-n")
+        dialignlgs = WrapperDialign.Dialign("-n -it -thr 2 -lmax 30 -smin 8")
+        dba = WrapperDBA.DBA()
         clustal = WrapperClustal.Clustal()
 
     print """# CATEGORY:       category [intron|exon]
@@ -437,26 +450,30 @@ def main( argv = None ):
 
     for line in sys.stdin:
 
-        if line[0] == "#": continue
+        if line[0] == "#":
+            continue
         ninput += 1
-        data = string.split( line[:-1], "\t")
-        
-        if data[0] != "intron": continue
+        data = string.split(line[:-1], "\t")
+
+        if data[0] != "intron":
+            continue
 
         pair = IntronPair()
         pair.Read(line)
 
         if param_do_alignment:
 
-            pair.mType1 = GetIntronType( string.replace( pair.mAlignedSequence1, "-", "" ) )
-            pair.mType2 = GetIntronType( string.replace( pair.mAlignedSequence1, "-", "" ) )
-            
-            is_ok = AlignPair( pair, anchor = param_anchor_alignment )
-            
+            pair.mType1 = GetIntronType(
+                string.replace(pair.mAlignedSequence1, "-", ""))
+            pair.mType2 = GetIntronType(
+                string.replace(pair.mAlignedSequence1, "-", ""))
+
+            is_ok = AlignPair(pair, anchor=param_anchor_alignment)
+
             if not is_ok:
                 nerrors += 1
                 continue
-            
+
         if len(pair.mAlignedSequence1) == 0 or len(pair.mAlignedSequence2) == 0:
 
             if param_loglevel >= 1:
@@ -466,28 +483,30 @@ def main( argv = None ):
 
         if pair.mMethod == "unaligned":
             unaligned_pair = pair
-            pair.mType1 = GetIntronType( unaligned_pair.mAlignedSequence1 )
-            pair.mType2 = GetIntronType( unaligned_pair.mAlignedSequence2 )
+            pair.mType1 = GetIntronType(unaligned_pair.mAlignedSequence1)
+            pair.mType2 = GetIntronType(unaligned_pair.mAlignedSequence2)
             do_print = param_echo_unaligned
         else:
             do_print = 1
             if param_is_compressed:
                 if unaligned_pair and \
-                       unaligned_pair.mToken1 == pair.mToken1 and \
-                       unaligned_pair.mToken2 == pair.mToken2 and \
-                       unaligned_pair.mIntronId1 == pair.mIntronId1:
+                        unaligned_pair.mToken1 == pair.mToken1 and \
+                        unaligned_pair.mToken2 == pair.mToken2 and \
+                        unaligned_pair.mIntronId1 == pair.mIntronId1:
 
                     map_a2b = alignlib_lite.py_makeAlignmentVector()
-                    f = AlignmentFormatEmissions( 
-                        pair.mFrom1, 
+                    f = AlignmentFormatEmissions(
+                        pair.mFrom1,
                         pair.mAlignedSequence1,
-                        pair.mFrom2, 
-                        pair.mAlignedSequence2).copy( map_a2b )
-                    map_a2b.moveAlignment( -unaligned_pair.mFrom1 + 1, -unaligned_pair.mFrom2 + 1 )            
+                        pair.mFrom2,
+                        pair.mAlignedSequence2).copy(map_a2b)
+                    map_a2b.moveAlignment(-unaligned_pair.mFrom1 +
+                                          1, -unaligned_pair.mFrom2 + 1)
 
-                    data = alignlib_lite.py_AlignmentFormatExplicit( map_a2b,
-                                                             alignlib_lite.py_makeSequence( unaligned_pair.mAlignedSequence1),
-                                                             alignlib_lite.py_makeSequence( unaligned_pair.mAlignedSequence2) )
+                    data = alignlib_lite.py_AlignmentFormatExplicit(map_a2b,
+                                                                    alignlib_lite.py_makeSequence(
+                                                                        unaligned_pair.mAlignedSequence1),
+                                                                    alignlib_lite.py_makeSequence(unaligned_pair.mAlignedSequence2))
 
                     from1, ali1, to1 = data.mRowFrom, data.mRowAlignment, data.mRowTo
                     from2, ali2, to2 = data.mColFrom, data.mColAlignment, data.mColTo
@@ -498,11 +517,11 @@ def main( argv = None ):
                 else:
                     raise "sequence not found for pair %s" % str(pair)
 
-                    
             if param_do_gblocks:
                 if param_loglevel >= 4:
                     print "# length before: %i %i" % (len(pair.mAlignedSequence1), pair.mAligned)
-                pair.mAlignedSequence1, pair.mAlignedSequence2 = gblocks.GetBlocks( pair.mAlignedSequence1, pair.mAlignedSequence2)
+                pair.mAlignedSequence1, pair.mAlignedSequence2 = gblocks.GetBlocks(
+                    pair.mAlignedSequence1, pair.mAlignedSequence2)
                 if param_loglevel >= 4:
                     print "# length after: %i" % len(pair.mAlignedSequence1)
 
@@ -511,20 +530,20 @@ def main( argv = None ):
                     continue
 
             if param_loglevel >= 5:
-                print ">seq1\n%s\n>seq2\n%s" % (pair.mAlignedSequence1, pair.mAlignedSequence2 )
-                
+                print ">seq1\n%s\n>seq2\n%s" % (pair.mAlignedSequence1, pair.mAlignedSequence2)
+
             if param_do_distance:
                 try:
-                    result = baseml.Run( ( ("seq1", pair.mAlignedSequence1),
-                                           ("seq2", pair.mAlignedSequence2)),
-                                         dump_result = dump_result )
+                    result = baseml.Run((("seq1", pair.mAlignedSequence1),
+                                         ("seq2", pair.mAlignedSequence2)),
+                                        dump_result=dump_result)
                     pair.mDistance = result.mMatrix["seq1"]["seq2"]
-                    pair.mAlpha    = result.mAlpha
-                    pair.mKappa    = result.mKappa
+                    pair.mAlpha = result.mAlpha
+                    pair.mKappa = result.mKappa
                 except WrapperBaseML.ParsingError, x:
                     if param_loglevel >= 2:
                         print "# parsing error in BaseML output", x
-                        
+
                     nerrors += 1
                     pair.mDistance = 999.0
 
@@ -535,16 +554,19 @@ def main( argv = None ):
             else:
                 pair.mDistance = 0.0
 
-            #if param_do_alignment:
+            # if param_do_alignment:
             pair.mIdentical, pair.mTransitions, pair.mTransversions, pair.mMatches, pair.mUnaligned = \
-                             CalculatePercentIdentity( pair )
+                CalculatePercentIdentity(pair)
 
-            pair.mBlockSizes, pair.mGapSizes1, pair.mGapSizes2 = CalculateBlockSizes( pair )
+            pair.mBlockSizes, pair.mGapSizes1, pair.mGapSizes2 = CalculateBlockSizes(
+                pair)
 
         if do_print:
-            if not pair.mLength: pair.mLength = 1
-            if not pair.mMatches: pair.mMatches = 1
-            print string.join( map(str, ( \
+            if not pair.mLength:
+                pair.mLength = 1
+            if not pair.mMatches:
+                pair.mMatches = 1
+            print string.join(map(str, (
                 pair.mCategory, pair.mMethod,
                 pair.mToken1, pair.mIntronId1, pair.mNumIntrons1, pair.mLenIntron1,
                 pair.mToken2, pair.mIntronId2, pair.mNumIntrons2, pair.mLenIntron2,
@@ -563,10 +585,10 @@ def main( argv = None ):
                 string.join(map(str, pair.mGapSizes2), ","),
                 pair.mType1, pair.mType2,
                 pair.mAlpha, pair.mKappa,
-                )), "\t")
-        
+            )), "\t")
+
             nintron_pairs += 1
-            
+
         if last_token1 != pair.mToken1 and\
            last_token2 != pair.mToken2:
             ntoken_pairs += 1
@@ -574,9 +596,8 @@ def main( argv = None ):
             last_token2 = pair.mToken2
 
     print "# input=%i, skipped=%i, nerrors=%i, transcripts=%i, introns=%i" % (ninput, nskipped, nerrors,
-                                                                              ntoken_pairs, nintron_pairs )
+                                                                              ntoken_pairs, nintron_pairs)
     print E.GetFooter()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

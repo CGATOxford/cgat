@@ -1,4 +1,8 @@
-import os, sys, re, types, itertools
+import os
+import sys
+import re
+import types
+import itertools
 import matplotlib.pyplot as plt
 import numpy
 import numpy.ma
@@ -9,13 +13,16 @@ from SphinxReport.Tracker import *
 from cpgReport import *
 from SphinxReport.odict import OrderedDict as odict
 
-##################################################################################
+##########################################################################
+
+
 class cgiAnnotations(cpgTracker):
+
     """Breakdown of overlap of predicted CGIs with genomic regions """
 
     mPattern = "cgi_annotations"
 
-    def __call__(self, track, slice = None ):
+    def __call__(self, track, slice=None):
 
         data = self.getFirstRow( """SELECT 
                                 sum(is_cds) AS cds, 
@@ -27,42 +34,46 @@ class cgiAnnotations(cpgTracker):
                                 sum(is_flank) AS flank, 
                                 sum(is_ambiguous) AS ambiguous 
                                 FROM cgi_annotations""" )
-        mColumns = [ "cds", 
-                 "utr", 
-                 "upstream", 
-                 "downstream", 
-                 "intronic", 
-                 "intergenic", 
-                 "flank",
-                 "ambiguous" ]
+        mColumns = ["cds",
+                    "utr",
+                    "upstream",
+                    "downstream",
+                    "intronic",
+                    "intergenic",
+                    "flank",
+                    "ambiguous"]
 
-        return odict( zip(mColumns, data) )
+        return odict(zip(mColumns, data))
 
-##################################################################################
+##########################################################################
+
+
 class cgitssoverlap(cpgTracker):
+
     """overlap of predicted CGIs with TSS """
 
     mPattern = "tss_cgi_venn"
 
-    def __call__(self, track, slice = None ):
+    def __call__(self, track, slice=None):
         data = self.getAll("SELECT track, intervals from tss_cgi_venn")
         return data
 
-##################################################################################
-class CGI_CpGObsExp2( cpgTracker ):
+##########################################################################
+
+
+class CGI_CpGObsExp2(cpgTracker):
     mPattern = "_comp$"
 
-    def __call__(self, track, slice = None):
-        data = self.getAll( "SELECT CpG_ObsExp2 FROM %(track)s_comp" % locals() )
+    def __call__(self, track, slice=None):
+        data = self.getAll("SELECT CpG_ObsExp2 FROM %(track)s_comp" % locals())
         return data
 
-##################################################################################
-class CGI_GCContent( cpgTracker ):
+##########################################################################
+
+
+class CGI_GCContent(cpgTracker):
     mPattern = "_comp$"
 
-    def __call__(self, track, slice = None):
-        data = self.getAll( "SELECT pGC FROM %(track)s_comp" % locals() )
+    def __call__(self, track, slice=None):
+        data = self.getAll("SELECT pGC FROM %(track)s_comp" % locals())
         return data
-
-
-

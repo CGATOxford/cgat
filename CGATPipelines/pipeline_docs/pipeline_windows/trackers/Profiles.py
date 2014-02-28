@@ -1,3 +1,5 @@
 from MedipReport import *
 
-class TranscriptProfile( TrackerDataframes ): pass
+
+class TranscriptProfile(TrackerDataframes):
+    pass

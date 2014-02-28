@@ -151,7 +151,9 @@ Command line options
 
 '''
 
-import collections, array, struct
+import collections
+import array
+import struct
 import CGAT.Experiment as E
 
 import os
@@ -199,24 +201,26 @@ try:
 except ImportError:
     import CGAT._gtf2table as _gtf2table
 
-def readIntervalsFromGFF( filename_gff, source, feature, 
-			  with_values = False, with_records = False, fasta = None, 
-			  merge_genes = False, format = "gtf", use_strand = False ):
+
+def readIntervalsFromGFF(filename_gff, source, feature,
+                         with_values=False, with_records=False, fasta=None,
+                         merge_genes=False, format="gtf", use_strand=False):
     """read intervals from a file or list.
     """
 
-    assert not (with_values and with_records), "both with_values and with_records are true."
+    assert not (
+        with_values and with_records), "both with_values and with_records are true."
 
     ninput = 0
 
     if format == None:
         if type(filename_gff) == types.StringType:
             fn = filename_gff
-            if fn.endswith( ".gtf" ) or fn.endswith( ".gtf.gz"):
+            if fn.endswith(".gtf") or fn.endswith(".gtf.gz"):
                 format = "gtf"
-            elif fn.endswith( ".gff" ) or fn.endswith( ".gff.gz"):
+            elif fn.endswith(".gff") or fn.endswith(".gff.gz"):
                 format = "gff"
-            elif fn.endswith( ".bed" ) or fn.endswith( ".bed.gz"):
+            elif fn.endswith(".bed") or fn.endswith(".bed.gz"):
                 format = "bed"
         else:
             format = "gff"
@@ -225,9 +229,10 @@ def readIntervalsFromGFF( filename_gff, source, feature,
         infile = None
         # read data without value
         if type(filename_gff) == types.StringType:
-            E.info(  "loading data from %s for source '%s' and feature '%s'" % (filename_gff, source, feature) )
+            E.info("loading data from %s for source '%s' and feature '%s'" %
+                   (filename_gff, source, feature))
 
-            infile = IOTools.openFile( filename_gff, "r")        
+            infile = IOTools.openFile(filename_gff, "r")
             if format == "gtf":
                 iterator_gff = GTF.iterator(infile)
             elif format == "gff":
@@ -235,93 +240,104 @@ def readIntervalsFromGFF( filename_gff, source, feature,
 
         elif type(filename_gff) in (types.TupleType, types.ListType):
 
-            E.info( "loading data from cache for source '%s' and feature '%s'" % (source, feature) )
+            E.info("loading data from cache for source '%s' and feature '%s'" %
+                   (source, feature))
 
             # from preparsed gff entries
             iterator_gff = filename_gff
 
-        gff_iterator = GTF.iterator_filtered( iterator_gff,
-                                              feature = feature,
-                                              source = source )
+        gff_iterator = GTF.iterator_filtered(iterator_gff,
+                                             feature=feature,
+                                             source=source)
 
         if format == "gtf":
-            e = GTF.readAsIntervals( gff_iterator, 
-                                     with_values = with_values, 
-                                     with_records = with_records,
-                                     merge_genes = merge_genes,
-                                     use_strand = use_strand )
+            e = GTF.readAsIntervals(gff_iterator,
+                                    with_values=with_values,
+                                    with_records=with_records,
+                                    merge_genes=merge_genes,
+                                    use_strand=use_strand)
         elif format == "gff":
-            e = GTF.readAsIntervals( gff_iterator, 
-                                     with_values = with_values, 
-                                     with_records = with_records,
-                                     use_strand = use_strand )
+            e = GTF.readAsIntervals(gff_iterator,
+                                    with_values=with_values,
+                                    with_records=with_records,
+                                    use_strand=use_strand)
 
-        if infile: infile.close()
+        if infile:
+            infile.close()
 
     elif format == "bed":
-        if merge_genes: raise ValueError("can not merge genes from bed format" )
-        if use_strand: raise NotImplementedError( "stranded comparison not implemented for bed format")
-        iterator = Bed.iterator( IOTools.openFile(filename_gff, "r") )
-        e = collections.defaultdict( list )
+        if merge_genes:
+            raise ValueError("can not merge genes from bed format")
+        if use_strand:
+            raise NotImplementedError(
+                "stranded comparison not implemented for bed format")
+        iterator = Bed.iterator(IOTools.openFile(filename_gff, "r"))
+        e = collections.defaultdict(list)
         if with_values:
             for bed in iterator:
                 ninput += 1
-                e[bed.contig].append( (bed.start,bed.end,bed.fields[0]) )
+                e[bed.contig].append((bed.start, bed.end, bed.fields[0]))
         elif with_records:
             for bed in iterator:
                 ninput += 1
                 bed.gene_id = bed.fields[0]
                 bed.transcript_id = bed.gene_id
-                e[bed.contig].append( (bed.start,bed.end,bed) )
+                e[bed.contig].append((bed.start, bed.end, bed))
         else:
             for bed in iterator:
                 ninput += 1
-                e[bed.contig].append( (bed.start,bed.end) )
-        E.info("read intervals for %i contigs from %s: %i intervals" % (len(e), filename_gff, ninput) )
+                e[bed.contig].append((bed.start, bed.end))
+        E.info("read intervals for %i contigs from %s: %i intervals" %
+               (len(e), filename_gff, ninput))
 
     else:
-        raise ValueError("unknown format %s" % format )
+        raise ValueError("unknown format %s" % format)
 
     # translate names of contigs
     if fasta:
         if use_strand:
-            for contig,strand in e.keys():
-                if  contig in fasta:
+            for contig, strand in e.keys():
+                if contig in fasta:
                     x = e[contig]
-                    del e[contig,strand]
-                    e[fasta.getToken(contig),strand] = x
+                    del e[contig, strand]
+                    e[fasta.getToken(contig), strand] = x
         else:
             for contig in e.keys():
-                if  contig in fasta:
+                if contig in fasta:
                     x = e[contig]
                     del e[contig]
                     e[fasta.getToken(contig)] = x
 
     return e
 
+
 class CounterIntronsExons(_gtf2table.Counter):
+
     """count number of introns and exons.
     """
 
-    header = ( "ntranscripts", "nexons", "nintrons", )
+    header = ("ntranscripts", "nexons", "nintrons", )
+
     def __init__(self, *args, **kwargs):
-        _gtf2table.Counter.__init__(self, *args, **kwargs )
+        _gtf2table.Counter.__init__(self, *args, **kwargs)
 
     def count(self):
         segments = self.getSegments()
-        self.mNTranscripts = len( set( [x.transcript_id for x in self.mGFFs] ) )
+        self.mNTranscripts = len(set([x.transcript_id for x in self.mGFFs]))
         self.mNExons = len(segments)
         self.mNIntrons = len(segments) - 1
 
     def __str__(self):
-        return "\t".join( (str(self.mNTranscripts), str(self.mNSegments), str(self.mNIntrons)) ) 
+        return "\t".join((str(self.mNTranscripts), str(self.mNSegments), str(self.mNIntrons)))
+
 
 class CounterPosition(_gtf2table.Counter):
-    """output the position of the transcript."""
-    header = ( "contig", "strand", "start", "end" )
 
-    def __init__(self, *args, **kwargs ):
-        _gtf2table.Counter.__init__(self, *args, **kwargs )
+    """output the position of the transcript."""
+    header = ("contig", "strand", "start", "end")
+
+    def __init__(self, *args, **kwargs):
+        _gtf2table.Counter.__init__(self, *args, **kwargs)
 
     def count(self):
 
@@ -330,98 +346,110 @@ class CounterPosition(_gtf2table.Counter):
         self.strand = self.getStrand()
 
         if len(segments) > 0:
-            self.start = min( [ x[0] for x in segments ] )
-            self.end = max( [ x[1] for x in segments ] )
+            self.start = min([x[0] for x in segments])
+            self.end = max([x[1] for x in segments])
         else:
             self.start, self.end = "na", "na"
 
     def __str__(self):
-        return "\t".join( [ str(x) for x in (self.contig, self.strand, self.start, self.end) ] )
+        return "\t".join([str(x) for x in (self.contig, self.strand, self.start, self.end)])
 
-##----------------------------------------------------------------
+# ----------------------------------------------------------------
+
+
 class CounterLengths(_gtf2table.Counter):
     header = Stats.Summary().getHeaders()
 
-    def __init__(self, *args, **kwargs ):
-        _gtf2table.Counter.__init__(self, *args, **kwargs )
+    def __init__(self, *args, **kwargs):
+        _gtf2table.Counter.__init__(self, *args, **kwargs)
 
     def count(self):
         segments = self.getSegments()
-        self.result = Stats.Summary( [x[1] - x[0] for x in segments ], mode="int", allow_empty = True )
+        self.result = Stats.Summary(
+            [x[1] - x[0] for x in segments], mode="int", allow_empty=True)
 
     def __str__(self):
         return str(self.result)
 
-##----------------------------------------------------------------
+# ----------------------------------------------------------------
+
+
 class CounterSpliceSites(_gtf2table.Counter):
 
-    mIntronTypes = ( ( "U2-GT/AG", "GT", "AG"),
-                     ( "U2-nc-GC/AG", "GC", "AG"),
-                     ( "U12-AT/AC", "AT", "AC") )
+    mIntronTypes = (("U2-GT/AG", "GT", "AG"),
+                    ("U2-nc-GC/AG", "GC", "AG"),
+                    ("U12-AT/AC", "AT", "AC"))
 
-    mNames = [x[0] for x in mIntronTypes ] + ["unknown"]
-    header = ["%s" % x for x in mNames ]
+    mNames = [x[0] for x in mIntronTypes] + ["unknown"]
+    header = ["%s" % x for x in mNames]
 
     mCheckBothStrands = True
 
-    def __init__(self, *args, **kwargs ):
-        _gtf2table.Counter.__init__(self, *args, **kwargs )
+    def __init__(self, *args, **kwargs):
+        _gtf2table.Counter.__init__(self, *args, **kwargs)
 
     def count(self):
 
-        self.mCounts = dict( [( x[0], 0) for x in self.mIntronTypes ] )
+        self.mCounts = dict([(x[0], 0) for x in self.mIntronTypes])
         self.mCounts["unknown"] = 0
 
         introns = self.getIntrons()
         contig = self.getContig()
         strand = self.getStrand()
-        
+
         for start, end in introns:
-            s = self.fasta.getSequence( contig, "+", start, end )
-            
+            s = self.fasta.getSequence(contig, "+", start, end)
+
             if self.mCheckBothStrands:
-                r = self.getIntronType( s )
+                r = self.getIntronType(s)
                 if r == "unknown":
-                    r = self.getIntronType( string.translate( s, string.maketrans("ACGTacgt", "TGCAtgca") )[::-1] )
+                    r = self.getIntronType(
+                        string.translate(s, string.maketrans("ACGTacgt", "TGCAtgca"))[::-1])
             else:
-                if Genomics.IsNegativeStrand( strand ):
-                    s = string.translate( s, string.maketrans("ACGTacgt", "TGCAtgca") )[::-1]
-                r = self.getIntronType( s )
+                if Genomics.IsNegativeStrand(strand):
+                    s = string.translate(
+                        s, string.maketrans("ACGTacgt", "TGCAtgca"))[::-1]
+                r = self.getIntronType(s)
 
             self.mCounts[r] += 1
-                
-    def __str__(self):
-        return "\t".join( map(str, [ self.mCounts[x] for x in self.mNames ] ) )
 
-    def getIntronType( self, sequence ):
+    def __str__(self):
+        return "\t".join(map(str, [self.mCounts[x] for x in self.mNames]))
+
+    def getIntronType(self, sequence):
         """return intron type for an intronic sequence."""
 
         for name, prime5, prime3 in self.mIntronTypes:
             if sequence[:len(prime5)].upper() == prime5 and \
                     sequence[-len(prime3):].upper() == prime3:
                 return name
-                
+
         else:
             return "unknown"
 
-##-----------------------------------------------------------------------------------
-class CounterCompositionNucleotides(_gtf2table.Counter):
-    header = SequenceProperties.SequencePropertiesNA().getHeaders() 
+# ------------------------------------------------------------------------
 
-    def __init__(self, *args, **kwargs ):
-        _gtf2table.Counter.__init__(self, *args, **kwargs )
+
+class CounterCompositionNucleotides(_gtf2table.Counter):
+    header = SequenceProperties.SequencePropertiesNA().getHeaders()
+
+    def __init__(self, *args, **kwargs):
+        _gtf2table.Counter.__init__(self, *args, **kwargs)
 
     def count(self):
         ee = self.getSegments()
-        s = self.getSequence( ee )
+        s = self.getSequence(ee)
         self.result = SequenceProperties.SequencePropertiesNA()
-        self.result.loadSequence( s )
+        self.result.loadSequence(s)
 
     def __str__(self):
         return str(self.result)
 
-##-----------------------------------------------------------------------------------
+# ------------------------------------------------------------------------
+
+
 class CounterCompositionCpG(_gtf2table.Counter):
+
     '''compute CpG frequencies as well as nucleotide frequencies.
 
     Note that CpG density is calculated across the merged exons
@@ -431,33 +459,36 @@ class CounterCompositionCpG(_gtf2table.Counter):
     many transcript CpG are created by exon fusion.
     '''
 
-    header = SequenceProperties.SequencePropertiesCpg().getHeaders() 
+    header = SequenceProperties.SequencePropertiesCpg().getHeaders()
 
-    def __init__(self, *args, **kwargs ):
-        _gtf2table.Counter.__init__(self, *args, **kwargs )
+    def __init__(self, *args, **kwargs):
+        _gtf2table.Counter.__init__(self, *args, **kwargs)
 
     def count(self):
         ee = self.getSegments()
-        s = self.getSequence( ee )
+        s = self.getSequence(ee)
         self.result = SequenceProperties.SequencePropertiesCpg()
-        self.result.loadSequence( s )
+        self.result.loadSequence(s)
 
     def __str__(self):
         return str(self.result)
 
-##-----------------------------------------------------------------------------------
+# ------------------------------------------------------------------------
+
+
 class CounterOverlap(_gtf2table.Counter):
+
     """count overlap with segments in another file.
 
     nover1 and nover2 count "exons".
     """
 
-    headerTemplate = ( "nover1", "nover2", "nover", "pover1", "pover2" )
+    headerTemplate = ("nover1", "nover2", "nover", "pover1", "pover2")
 
-    ## do not save value for intervals
+    # do not save value for intervals
     mWithValues = False
 
-    ## do not save records for intervals
+    # do not save records for intervals
     mWithRecords = False
 
     mIsGTF = False
@@ -465,74 +496,79 @@ class CounterOverlap(_gtf2table.Counter):
     mUseStrand = False
 
     def __init__(self, filename_gff, source, feature, *args, **kwargs):
-        _gtf2table.Counter.__init__(self, *args, **kwargs )
+        _gtf2table.Counter.__init__(self, *args, **kwargs)
 
         if feature and source:
-            self.header = [ "%s:%s:%s" % (x, source, feature) for x in self.headerTemplate ]
+            self.header = ["%s:%s:%s" % (x, source, feature)
+                           for x in self.headerTemplate]
         elif feature:
-            self.header = [ "%s:%s" % (x, feature) for x in self.headerTemplate ]
+            self.header = ["%s:%s" % (x, feature) for x in self.headerTemplate]
         elif source:
-            self.header = [ "%s:%s" % (x, source) for x in self.headerTemplate ]
+            self.header = ["%s:%s" % (x, source) for x in self.headerTemplate]
         else:
             self.header = self.headerTemplate
 
         if len(filename_gff) != 1:
-            raise ValueError("expected one gff file" )
-        
-        e = readIntervalsFromGFF( filename_gff[0], 
-				  source, 
-				  feature, 
-                                  self.mWithValues, 
-				  self.mWithRecords, 
-                                  self.fasta, 
-                                  format = self.options.filename_format,
-                                  use_strand = self.mUseStrand )
+            raise ValueError("expected one gff file")
+
+        e = readIntervalsFromGFF(filename_gff[0],
+                                 source,
+                                 feature,
+                                 self.mWithValues,
+                                 self.mWithRecords,
+                                 self.fasta,
+                                 format=self.options.filename_format,
+                                 use_strand=self.mUseStrand)
 
         # convert intervals to intersectors
         for key in e.keys():
             intersector = bx.intervals.intersection.Intersecter()
             if self.mWithValues or self.mWithRecords:
                 for start, end, value in e[key]:
-                    intersector.add_interval( bx.intervals.Interval(start,end,value=value) )
+                    intersector.add_interval(
+                        bx.intervals.Interval(start, end, value=value))
             else:
                 for start, end in e[key]:
-                    intersector.add_interval( bx.intervals.Interval(start,end) )
+                    intersector.add_interval(bx.intervals.Interval(start, end))
 
             e[key] = intersector
 
         self.mIntersectors = e
 
-        E.info( "loading data finished" )
+        E.info("loading data finished")
 
     def count(self):
 
         # collect overlapping segments
         segments = []
         contig = self.getContig()
-        if self.fasta: 
-            contig = self.fasta.getToken( contig)
-            
+        if self.fasta:
+            contig = self.fasta.getToken(contig)
+
         n = 0
         segments = self.getSegments()
         intervals = []
         if contig in self.mIntersectors:
             for start, end in segments:
-                r = self.mIntersectors[contig].find( start, end )
-                intervals += [ (x.start, x.end) for x in r ]
-                if r: n += 1
+                r = self.mIntersectors[contig].find(start, end)
+                intervals += [(x.start, x.end) for x in r]
+                if r:
+                    n += 1
 
         self.mNOverlap1 = n
         intervals = list(set(intervals))
         self.mNOverlap2 = len(intervals)
 
-        intervals = Intervals.combineAtDistance( intervals,
-                                                 self.mMinIntronSize )
+        intervals = Intervals.combineAtDistance(intervals,
+                                                self.mMinIntronSize)
 
         if n and len(intervals):
-            self.mNOverlap = Intervals.calculateOverlap( segments, intervals )
+            self.mNOverlap = Intervals.calculateOverlap(segments, intervals)
 
-            self.mPOverlap1 = 100.0 * self.mNOverlap / sum( [ end - start for start, end in segments] ) 
-            self.mPOverlap2 = 100.0 * self.mNOverlap / sum( [ end - start for start, end in intervals ] )
+            self.mPOverlap1 = 100.0 * self.mNOverlap / \
+                sum([end - start for start, end in segments])
+            self.mPOverlap2 = 100.0 * self.mNOverlap / \
+                sum([end - start for start, end in intervals])
 
             self.mONOverlap = "%i" % self.mNOverlap
             self.mOPOverlap1 = "%5.2f" % self.mPOverlap1
@@ -546,14 +582,17 @@ class CounterOverlap(_gtf2table.Counter):
             self.mNOverlap = 0
 
     def __str__(self):
-        return "\t".join( map(str, (self.mNOverlap1, 
-                                    self.mNOverlap2, 
-                                    self.mONOverlap, 
-                                    self.mOPOverlap1,
-                                    self.mOPOverlap2 ) ) )
+        return "\t".join(map(str, (self.mNOverlap1,
+                                   self.mNOverlap2,
+                                   self.mONOverlap,
+                                   self.mOPOverlap1,
+                                   self.mOPOverlap2)))
 
-##-----------------------------------------------------------------------------------
+# ------------------------------------------------------------------------
+
+
 class CounterOverlapStranded(CounterOverlap):
+
     """count overlap with segments in another file.
 
     nover1 and nover2 count "exons".
@@ -567,52 +606,62 @@ class CounterOverlapStranded(CounterOverlap):
 
     mUseStrand = True
 
-    def __init__(self, *args, **kwargs ):
-        CounterOverlap.__init__(self, *args, **kwargs )
+    def __init__(self, *args, **kwargs):
+        CounterOverlap.__init__(self, *args, **kwargs)
 
     def count(self):
 
         # collect overlapping segments
         segments = self.getSegments()
         contig, strand = self.getContig(), self.getStrand()
-        if self.fasta: contig = self.fasta.getToken( contig)
-            
-        def count( contig, strand ):
+        if self.fasta:
+            contig = self.fasta.getToken(contig)
+
+        def count(contig, strand):
             n, intervals = 0, []
-            if (contig,strand) in self.mIntersectors:
+            if (contig, strand) in self.mIntersectors:
                 for start, end in segments:
-                    r = self.mIntersectors[contig,strand].find( start, end )
-                    intervals.extend( [ (x.start, x.end) for x in r ] )
-                    if r: n += 1
+                    r = self.mIntersectors[contig, strand].find(start, end)
+                    intervals.extend([(x.start, x.end) for x in r])
+                    if r:
+                        n += 1
             return n, intervals
 
-        sense = count( contig, strand )
-        if strand == "+": strand = "-"
-        else: strand = "+"
-        antisense = count( contig, strand )
+        sense = count(contig, strand)
+        if strand == "+":
+            strand = "-"
+        else:
+            strand = "+"
+        antisense = count(contig, strand)
 
         if sense[0] and antisense[0]:
-            E.warn( "%s overlapping both sense and antisense features" % self.getGeneId())
+            E.warn("%s overlapping both sense and antisense features" %
+                   self.getGeneId())
             self.counter.mixed_sense += 1
 
         is_sense = sense[0] > 0
 
-        if  is_sense: n, intervals = sense
-        else: n, intervals = antisense
-            
+        if is_sense:
+            n, intervals = sense
+        else:
+            n, intervals = antisense
+
         self.mNOverlap1 = n
         intervals = list(set(intervals))
         self.mNOverlap2 = len(intervals)
 
-        intervals = Intervals.combineAtDistance( intervals,
-                                                 self.mMinIntronSize )
+        intervals = Intervals.combineAtDistance(intervals,
+                                                self.mMinIntronSize)
 
         if n and len(intervals):
-            self.mNOverlap = Intervals.calculateOverlap( segments, intervals )
-            if not is_sense: self.mNOverlap = -self.mNOverlap
+            self.mNOverlap = Intervals.calculateOverlap(segments, intervals)
+            if not is_sense:
+                self.mNOverlap = -self.mNOverlap
 
-            self.mPOverlap1 = 100.0 * self.mNOverlap / sum( [ end - start for start, end in segments] ) 
-            self.mPOverlap2 = 100.0 * self.mNOverlap / sum( [ end - start for start, end in intervals ] )
+            self.mPOverlap1 = 100.0 * self.mNOverlap / \
+                sum([end - start for start, end in segments])
+            self.mPOverlap2 = 100.0 * self.mNOverlap / \
+                sum([end - start for start, end in intervals])
 
             self.mONOverlap = "%i" % self.mNOverlap
             self.mOPOverlap1 = "%5.2f" % self.mPOverlap1
@@ -626,69 +675,77 @@ class CounterOverlapStranded(CounterOverlap):
             self.mNOverlap = 0
 
     def __str__(self):
-        return "\t".join( map(str, (self.mNOverlap1, 
-                                    self.mNOverlap2, 
-                                    self.mONOverlap, 
-                                    self.mOPOverlap1,
-                                    self.mOPOverlap2 ) ) )
+        return "\t".join(map(str, (self.mNOverlap1,
+                                   self.mNOverlap2,
+                                   self.mONOverlap,
+                                   self.mOPOverlap1,
+                                   self.mOPOverlap2)))
 
-##-----------------------------------------------------------------------------------
+# ------------------------------------------------------------------------
+
+
 class CounterOverlapTranscripts(CounterOverlap):
+
     """count overlap with segments in another file.
 
     Nover1 and nover2 now count "transcripts".
     """
 
-    headerTemplate = ( "ngenes", "ntranscripts", 
-		       "nexons", "nbases", 
-		       "pover1", "pover2" )
+    headerTemplate = ("ngenes", "ntranscripts",
+                      "nexons", "nbases",
+                      "pover1", "pover2")
 
-    ## save value for intervals
+    # save value for intervals
     mWithValues = False
 
-    ## do not save records for intervals
+    # do not save records for intervals
     mWithRecords = True
 
     ## input is gtf
     mIsGTF = True
 
     def __init__(self, *args, **kwargs):
-        CounterOverlap.__init__(self, *args, **kwargs )
+        CounterOverlap.__init__(self, *args, **kwargs)
 
     def count(self):
 
         # collect overlapping segments
         segments = []
         contig = self.getContig()
-        if self.fasta: 
-            contig = self.fasta.getToken( contig)
-            
+        if self.fasta:
+            contig = self.fasta.getToken(contig)
+
         n = 0
         segments = self.getSegments()
         intervals = []
         gene_ids, transcript_ids = set(), set()
         if contig in self.mIntersectors:
             for start, end in segments:
-                r = self.mIntersectors[contig].find( start, end )
-                intervals += [ (x.start, x.end) for x in r ]
-                for x in r: gene_ids.add( x.value.gene_id )
-                for x in r: transcript_ids.add( x.value.transcript_id )
-                    
-                if r: n += 1
+                r = self.mIntersectors[contig].find(start, end)
+                intervals += [(x.start, x.end) for x in r]
+                for x in r:
+                    gene_ids.add(x.value.gene_id)
+                for x in r:
+                    transcript_ids.add(x.value.transcript_id)
+
+                if r:
+                    n += 1
 
         self.mNGenes = len(gene_ids)
         self.mNTranscripts = len(transcript_ids)
         intervals = list(set(intervals))
         self.mNExons = len(intervals)
 
-        intervals = Intervals.combineAtDistance( intervals,
-                                                 self.mMinIntronSize )
+        intervals = Intervals.combineAtDistance(intervals,
+                                                self.mMinIntronSize)
 
         if n and len(intervals):
 
-            self.mNBases = Intervals.calculateOverlap( segments, intervals )
-            self.mPOverlap1 = 100.0 * self.mNBases / sum( [ end - start for start, end in segments] ) 
-            self.mPOverlap2 = 100.0 * self.mNBases / sum( [ end - start for start, end in intervals ] )
+            self.mNBases = Intervals.calculateOverlap(segments, intervals)
+            self.mPOverlap1 = 100.0 * self.mNBases / \
+                sum([end - start for start, end in segments])
+            self.mPOverlap2 = 100.0 * self.mNBases / \
+                sum([end - start for start, end in intervals])
             self.mOPOverlap1 = "%5.2f" % self.mPOverlap1
             self.mOPOverlap2 = "%5.2f" % self.mPOverlap2
 
@@ -698,39 +755,43 @@ class CounterOverlapTranscripts(CounterOverlap):
             self.mNBases = 0
 
     def __str__(self):
-        return "\t".join( map(str, (
-                    self.mNGenes,
-                    self.mNTranscripts,
-                    self.mNExons, 
-                    self.mNBases,
-                    self.mOPOverlap1,
-                    self.mOPOverlap2 ) ) )
+        return "\t".join(map(str, (
+            self.mNGenes,
+            self.mNTranscripts,
+            self.mNExons,
+            self.mNBases,
+            self.mOPOverlap1,
+            self.mOPOverlap2)))
 
-##-----------------------------------------------------------------------------------
+# ------------------------------------------------------------------------
+
+
 class CounterCoverage(CounterOverlap):
+
     """compute nucleotide coverage of input with segments in another file.
     The values are output in 5' to 3' order for each nucleotide.
     """
 
-    headerTemplate = ["cov_%s" % x for x in Stats.Summary().getHeaders()+ ("covered", "values",) ]
+    headerTemplate = [
+        "cov_%s" % x for x in Stats.Summary().getHeaders() + ("covered", "values",)]
 
-    ## do not save value for intervals
+    # do not save value for intervals
     mWithValues = False
 
-    ## do not save records for intervals
+    # do not save records for intervals
     mWithRecords = False
 
     def __init__(self, *args, **kwargs):
-        CounterOverlap.__init__(self, *args, **kwargs )
+        CounterOverlap.__init__(self, *args, **kwargs)
 
     def count(self):
 
         # collect overlapping segments
         segments = []
         contig = self.getContig()
-        if self.fasta: 
-            contig = self.fasta.getToken( contig)
-            
+        if self.fasta:
+            contig = self.fasta.getToken(contig)
+
         n = 0
         segments = self.getSegments()
         segments.sort()
@@ -739,45 +800,50 @@ class CounterCoverage(CounterOverlap):
 
         x = 0
         for start, end in segments:
-            map_genome2transcript.addDiagonal( start,
-                                               end, 
-                                               x - start)
+            map_genome2transcript.addDiagonal(start,
+                                              end,
+                                              x - start)
             x += end - start
 
-        l = sum( [ x[1] - x[0] for x in segments ] )
+        l = sum([x[1] - x[0] for x in segments])
 
-        counts = numpy.zeros( l, numpy.int )
+        counts = numpy.zeros(l, numpy.int)
 
         intervals = set()
         if contig in self.mIntersectors:
             for start, end in segments:
-                r = self.mIntersectors[contig].find( start, end )
-                for x in r: intervals.add( (x.start, x.end) )
-                
+                r = self.mIntersectors[contig].find(start, end)
+                for x in r:
+                    intervals.add((x.start, x.end))
+
         for start, end in intervals:
-            for x in range(start,end):
+            for x in range(start, end):
                 y = map_genome2transcript.mapRowToCol(x)
-                if y >= 0: counts[ y ] += 1
-        
-        if Genomics.IsNegativeStrand( self.getStrand() ):
+                if y >= 0:
+                    counts[y] += 1
+
+        if Genomics.IsNegativeStrand(self.getStrand()):
             self.mCounts = counts[::-1].copy()
         else:
             self.mCounts = counts
 
     def __str__(self):
-        s = Stats.Summary( self.mCounts )
+        s = Stats.Summary(self.mCounts)
 
         if max(self.mCounts) > 0:
-            values = ";".join( map(str,self.mCounts) )
-            ncovered = sum( [1 for x in self.mCounts if x > 0 ] )
+            values = ";".join(map(str, self.mCounts))
+            ncovered = sum([1 for x in self.mCounts if x > 0])
         else:
             values = "na"
             ncovered = 0
 
-        return "\t".join( (str(s), str(ncovered), values) )
+        return "\t".join((str(s), str(ncovered), values))
 
-##-----------------------------------------------------------------------------------
+# ------------------------------------------------------------------------
+
+
 class Classifier(_gtf2table.Counter):
+
     """classify transcripts based on a reference annotation.
 
     This assumes the input is a genome annotation derived from an ENSEMBL gtf file
@@ -802,13 +868,14 @@ class Classifier(_gtf2table.Counter):
                   to any feature).
     """
 
-    header = [ "is_known", "is_unknown", "is_ambiguous", 
-               "is_pc", "is_pseudo", "is_npc", "is_utr", 
-               "is_intronic", "is_assoc", "is_intergenic" ] 
+    header = ["is_known", "is_unknown", "is_ambiguous",
+              "is_pc", "is_pseudo", "is_npc", "is_utr",
+              "is_intronic", "is_assoc", "is_intergenic"]
 
     # features to use for classification
-    features = ( "CDS", "UTR", "UTR3", "UTR5", "exon", "intronic", "intergenic", "flank", "3flank", "5flank", "telomeric" )
-    
+    features = ("CDS", "UTR", "UTR3", "UTR5", "exon", "intronic",
+                "intergenic", "flank", "3flank", "5flank", "telomeric")
+
     # sources to use for classification
     sources = ("", "protein_coding", "pseudogene", )
 
@@ -824,21 +891,22 @@ class Classifier(_gtf2table.Counter):
     # do not use strand
     mUseStrand = False
 
-    def __init__(self, filename_gff, *args, **kwargs ):
+    def __init__(self, filename_gff, *args, **kwargs):
 
-        _gtf2table.Counter.__init__(self, *args, **kwargs )
+        _gtf2table.Counter.__init__(self, *args, **kwargs)
 
         if len(filename_gff) != 1:
-            raise ValueError("expected one gff file, received %i" % len(filename_gff) )
+            raise ValueError(
+                "expected one gff file, received %i" % len(filename_gff))
 
-        E.info( "loading data from %s" % (filename_gff[0]) )
-            
+        E.info("loading data from %s" % (filename_gff[0]))
+
         gffs = []
-        infile = IOTools.openFile( filename_gff[0], "r")     
+        infile = IOTools.openFile(filename_gff[0], "r")
         for g in GTF.iterator(infile):
-            gffs.append( g )
+            gffs.append(g)
 
-        E.info( "loaded data from %s" % (filename_gff[0]) )
+        E.info("loaded data from %s" % (filename_gff[0]))
 
         self.mCounters = {}
         self.mKeys = []
@@ -848,84 +916,90 @@ class Classifier(_gtf2table.Counter):
         else:
             counter = CounterOverlap
 
-        for source in self.sources:             
+        for source in self.sources:
             for feature in self.features:
-                key = "%s:%s" % (source, feature )
-                self.mKeys.append( key )
-                self.mCounters[key] = counter( [gffs], 
-                                               source = source, 
-                                               feature = feature, 
-                                               fasta = self.fasta,
-                                               options = self.options )
-                
+                key = "%s:%s" % (source, feature)
+                self.mKeys.append(key)
+                self.mCounters[key] = counter([gffs],
+                                              source=source,
+                                              feature=feature,
+                                              fasta=self.fasta,
+                                              options=self.options)
+
     def count(self):
-        
+
         for key in self.mKeys:
             self.mCounters[key].update(self.mGFFs)
 
-        def s_min( *args ):
-            return sum( [ abs(self.mCounters[x].mPOverlap1) for x in args ] ) >= self.mThresholdMinCoverage
+        def s_min(*args):
+            return sum([abs(self.mCounters[x].mPOverlap1) for x in args]) >= self.mThresholdMinCoverage
 
-        def s_excl( *args ):
-            return sum( [ abs(self.mCounters[x].mPOverlap1) for x in args ] ) < (100 - self.mThresholdMinCoverage)
+        def s_excl(*args):
+            return sum([abs(self.mCounters[x].mPOverlap1) for x in args]) < (100 - self.mThresholdMinCoverage)
 
-        def s_full( *args ):
-            return sum( [ abs(self.mCounters[x].mPOverlap1) for x in args ] ) >= self.mThresholdFullCoverage
+        def s_full(*args):
+            return sum([abs(self.mCounters[x].mPOverlap1) for x in args]) >= self.mThresholdFullCoverage
 
-        def s_some( *args ):
-            return sum( [ abs(self.mCounters[x].mPOverlap1) for x in args ] ) >= self.mThresholdSomeCoverage
+        def s_some(*args):
+            return sum([abs(self.mCounters[x].mPOverlap1) for x in args]) >= self.mThresholdSomeCoverage
 
         # classify wether it is know or unknown
-        self.mIsKnown = s_min( ":exon", ":CDS", ":UTR", ":UTR3", ":UTR5" ) 
-        self.mIsUnknown = s_excl( ":exon", ":CDS", ":UTR", ":UTR3", ":UTR5" )
-        self.mIsAmbiguous = not( self.mIsUnknown or self.mIsKnown )
+        self.mIsKnown = s_min(":exon", ":CDS", ":UTR", ":UTR3", ":UTR5")
+        self.mIsUnknown = s_excl(":exon", ":CDS", ":UTR", ":UTR3", ":UTR5")
+        self.mIsAmbiguous = not(self.mIsUnknown or self.mIsKnown)
 
         # check type of gene:
         self.mIsNPC, self.mIsPC, self.mIsPseudo, self.mIsUTR = False, False, False, False
         if self.mIsKnown:
-            self.mIsUTR = s_min( "protein_coding:UTR", "protein_coding:UTR3", "protein_coding:UTR5" )
+            self.mIsUTR = s_min(
+                "protein_coding:UTR", "protein_coding:UTR3", "protein_coding:UTR5")
             # for assigning as protein coding, also include the known UTR
             # do not include intronic sequence, as this conflicts with intronic
             # pseudo genes, which then leads to double assignments
             if not self.mIsUTR:
-                self.mIsPC = s_min( "protein_coding:CDS", "protein_coding:UTR", "protein_coding:UTR3", "protein_coding:UTR5" )
+                self.mIsPC = s_min(
+                    "protein_coding:CDS", "protein_coding:UTR", "protein_coding:UTR3", "protein_coding:UTR5")
                 if not self.mIsPC:
-                    self.mIsPseudo = s_min( "pseudogene:exon" ) 
-            self.mIsNPC = not (self.mIsPC or self.mIsPseudo or self.mIsUTR )
+                    self.mIsPseudo = s_min("pseudogene:exon")
+            self.mIsNPC = not (self.mIsPC or self.mIsPseudo or self.mIsUTR)
 
         # classify location of unknown transcripts
         self.mIsIntronic, self.mIsAssociated, self.mIsIntergenic = False, False, False
         if self.mIsUnknown:
-            self.mIsAssociated = s_some( "protein_coding:5flank", "protein_coding:3flank", "protein_coding:flank") 
+            self.mIsAssociated = s_some(
+                "protein_coding:5flank", "protein_coding:3flank", "protein_coding:flank")
             if not self.mIsAssociated:
-                self.mIsIntronic = s_full( ":intronic" )
-                self.mIsIntergenic = s_full( ":intergenic", ":telomeric" )
+                self.mIsIntronic = s_full(":intronic")
+                self.mIsIntergenic = s_full(":intergenic", ":telomeric")
 
     def __str__(self):
 
-        def to( v ):
-            if v: return "1" 
-            else: return "0"
+        def to(v):
+            if v:
+                return "1"
+            else:
+                return "0"
 
-        h = [ to(x) for x in (self.mIsKnown, self.mIsUnknown, self.mIsAmbiguous,
+        h = [to(x) for x in (self.mIsKnown, self.mIsUnknown, self.mIsAmbiguous,
                              self.mIsPC, self.mIsPseudo, self.mIsNPC, self.mIsUTR,
-                             self.mIsIntronic, self.mIsAssociated, self.mIsIntergenic ) ]
+                             self.mIsIntronic, self.mIsAssociated, self.mIsIntergenic)]
 
         for key in self.mKeys:
-            h.append( str(self.mCounters[key]) )
-        return "\t".join( h )
+            h.append(str(self.mCounters[key]))
+        return "\t".join(h)
 
     def getHeader(self):
-        h = [_gtf2table.Counter.getHeader( self ) ]
+        h = [_gtf2table.Counter.getHeader(self)]
 
         for key in self.mKeys:
-            h.append( self.mCounters[key].getHeader() )
+            h.append(self.mCounters[key].getHeader())
 
-        return "\t".join( h )
+        return "\t".join(h)
 
 
-##-----------------------------------------------------------------------------------
+# ------------------------------------------------------------------------
 class ClassifierRNASeq(_gtf2table.Counter):
+
     """classify RNASeq transcripts based on a reference annotation.
 
     Transcripts are classified by checking overlap with all known
@@ -982,9 +1056,9 @@ class ClassifierRNASeq(_gtf2table.Counter):
 
     """
 
-    header = [ "noverlap_transcripts", 
-               "noverlap_genes",
-               "match_transcript_id", "match_gene_id", "source", "class", "sense" ]
+    header = ["noverlap_transcripts",
+              "noverlap_genes",
+              "match_transcript_id", "match_gene_id", "source", "class", "sense"]
 
     # number of residues that are permitted for negligible overlap
     tolerance = 10
@@ -993,159 +1067,176 @@ class ClassifierRNASeq(_gtf2table.Counter):
     flank = 5000
 
     # priority of classifications to select best match
-    priority = ( ( 's', "complete", ),
-                 ( 's', "exon-fragment", ),
-                 ( 's', "fragment", ),
-                 ( 's', "extended-fragment", ),
-                 ( 's', "extension", ),
-                 ( 's', "alternative", ),
-                 ( 's', "unknown", ),
-                 ( 's', "utr5", ),
-                 ( 's', "utr3", ),
-                 ( 's', "intronic", ),
-		 ( 's', "flank5", ),
-                 ( 's', "flank3", ),
-                 ( 'n', "complete", ),
-                 ( 'n', "fragment", ),
-                 ( 'n', "exon-fragment", ),
-                 ( 'n', "extended-fragment", ),
-                 ( 'n', "extension", ),
-                 ( 'n', "alternative", ),
-                 ( 'n', "unknown", ),
-                 ( 'n', "utr5", ),
-                 ( 'n', "utr3", ),
-		 ( 'n', "intronic", ),
-                 ( 'n', "flank5", ),
-                 ( 'n', "flank3", ),
-                 ( 'a', "complete", ),
-                 ( 'a', "exon-fragment", ),
-                 ( 'a', "fragment", ),
-                 ( 'a', "extended-fragment", ),
-                 ( 'a', "extension", ),
-                 ( 'a', "alternative", ),
-                 ( 'a', "unknown", ),
-		 ( 'a', "utr5", ),
-                 ( 'a', "utr3", ),
-		 ( 'a', "intronic", ),
-		 ( 'a', "flank5", ),
-                 ( 'a', "flank3", ),
-                 ( 'n', "flank", ),
-                 ( 'n', "intergenic" ) )
+    priority = (('s', "complete", ),
+                ('s', "exon-fragment", ),
+                ('s', "fragment", ),
+                ('s', "extended-fragment", ),
+                ('s', "extension", ),
+                ('s', "alternative", ),
+                ('s', "unknown", ),
+                ('s', "utr5", ),
+                ('s', "utr3", ),
+                ('s', "intronic", ),
+                ('s', "flank5", ),
+                ('s', "flank3", ),
+                ('n', "complete", ),
+                ('n', "fragment", ),
+                ('n', "exon-fragment", ),
+                ('n', "extended-fragment", ),
+                ('n', "extension", ),
+                ('n', "alternative", ),
+                ('n', "unknown", ),
+                ('n', "utr5", ),
+                ('n', "utr3", ),
+                ('n', "intronic", ),
+                ('n', "flank5", ),
+                ('n', "flank3", ),
+                ('a', "complete", ),
+                ('a', "exon-fragment", ),
+                ('a', "fragment", ),
+                ('a', "extended-fragment", ),
+                ('a', "extension", ),
+                ('a', "alternative", ),
+                ('a', "unknown", ),
+                ('a', "utr5", ),
+                ('a', "utr3", ),
+                ('a', "intronic", ),
+                ('a', "flank5", ),
+                ('a', "flank3", ),
+                ('n', "flank", ),
+                ('n', "intergenic"))
 
-    def __init__(self, filename_gff, *args, **kwargs ):
+    def __init__(self, filename_gff, *args, **kwargs):
 
-        _gtf2table.Counter.__init__(self, *args, **kwargs )
+        _gtf2table.Counter.__init__(self, *args, **kwargs)
 
         if len(filename_gff) != 1:
-            raise ValueError("expected only one gff file" )
+            raise ValueError("expected only one gff file")
 
-        E.info( "loading data from %s" % (filename_gff[0]) )
+        E.info("loading data from %s" % (filename_gff[0]))
 
         map_transcript2gene = {}
         transcripts = {}
         transcript_intervals = IndexedGenome.Quicksect()
 
-        f = IOTools.openFile( filename_gff[0]) 
+        f = IOTools.openFile(filename_gff[0])
 
-        for t in GTF.transcript_iterator(GTF.iterator( f )):
-            t.sort( key = lambda x: x.start )
+        for t in GTF.transcript_iterator(GTF.iterator(f)):
+            t.sort(key=lambda x: x.start)
             transcript_id, gene_id = t[0].transcript_id, t[0].gene_id
             map_transcript2gene[transcript_id] = gene_id
             transcripts[transcript_id] = t
-            transcript_intervals.add( t[0].contig, t[0].start, t[-1].end, transcript_id )
+            transcript_intervals.add(
+                t[0].contig, t[0].start, t[-1].end, transcript_id)
 
         f.close()
 
-        E.info( "loaded data from %s" % (filename_gff[0]) )
+        E.info("loaded data from %s" % (filename_gff[0]))
 
         self.transcripts = transcripts
         self.transcript_intervals = transcript_intervals
         self.map_transcript2gene = map_transcript2gene
-        self.map_gene2transcripts = dict( [ (y,x) for x,y in map_transcript2gene.iteritems() ] )
+        self.map_gene2transcripts = dict(
+            [(y, x) for x, y in map_transcript2gene.iteritems()])
 
-        self.mapClass2Priority = dict( [(y,x) for x,y in enumerate(self.priority) ] )
+        self.mapClass2Priority = dict(
+            [(y, x) for x, y in enumerate(self.priority)])
 
-    def get_sense( self, strand, transcript_strand):
+    def get_sense(self, strand, transcript_strand):
         '''encode sense as (s)ense, (a)ntisense and (n)ot available'''
-        
-        if strand == "." or transcript_strand == ".": sense = "n"
-        elif strand == transcript_strand: sense = "s"
-        else: sense = "a"
+
+        if strand == "." or transcript_strand == ".":
+            sense = "n"
+        elif strand == transcript_strand:
+            sense = "s"
+        else:
+            sense = "a"
         return sense
 
-
-    def classify_nonoverlap( self, exons ):
+    def classify_nonoverlap(self, exons):
         '''classify_nonoverlapping transcripts.'''
-        
+
         contig = self.getContig()
         strand = self.getStrand()
         start, end = exons[0][0], exons[-1][1]
 
         # get closest gene upstream and downstream
-        before = self.transcript_intervals.before( contig, start, end, num_intervals = 1, max_dist = self.flank )
-        after = self.transcript_intervals.after( contig, start, end, num_intervals = 1, max_dist = self.flank )
+        before = self.transcript_intervals.before(
+            contig, start, end, num_intervals=1, max_dist=self.flank)
+        after = self.transcript_intervals.after(
+            contig, start, end, num_intervals=1, max_dist=self.flank)
 
         # convert to id, distance, is_before
         associated = []
         if before:
             d = before[0]
-            associated.append( (d[2], start - d[1], True ) )
-            
+            associated.append((d[2], start - d[1], True))
+
         if after:
             d = after[0]
-            associated.append( (d[2], d[0] - end, False ) )
-                
+            associated.append((d[2], d[0] - end, False))
+
         results = []
 
         for transcript_id, distance, is_before in associated:
             transcript_strand = self.transcripts[transcript_id][0].strand
-            sense = self.get_sense( strand, transcript_strand )
+            sense = self.get_sense(strand, transcript_strand)
 
             if transcript_strand == "+":
-                if is_before: cls = "flank3"            
-                else: cls = "flank5"
+                if is_before:
+                    cls = "flank3"
+                else:
+                    cls = "flank5"
             elif transcript_strand == "-":
-                if is_before: cls = "flank5"
-                else: cls = "flank3"
+                if is_before:
+                    cls = "flank5"
+                else:
+                    cls = "flank3"
             else:
-                cls= "flank"
-                
-            results.append( (cls, sense, transcript_id ) )
+                cls = "flank"
+
+            results.append((cls, sense, transcript_id))
 
         if len(results) == 0:
-            results.append( ("intergenic", "n", "" ) )
+            results.append(("intergenic", "n", ""))
 
         return results
 
-    def classify_overlap( self, exons, transcript_id ):
+    def classify_overlap(self, exons, transcript_id):
         '''classify overlapping transcripts.'''
 
-        introns = Intervals.complement( exons )
+        introns = Intervals.complement(exons)
         strand = self.getStrand()
-        lexons = Intervals.getLength( exons )
+        lexons = Intervals.getLength(exons)
 
         start, end = exons[0][0], exons[-1][1]
 
         gtfs = self.transcripts[transcript_id]
         transcript_strand = gtfs[0].strand
-        transcript_exons = [ (x.start, x.end) for x in gtfs if x.feature == "exon" ]
-        transcript_start, transcript_end = transcript_exons[0][0], transcript_exons[-1][1]
-        transcript_lexons = Intervals.getLength( transcript_exons )
-        transcript_introns = Intervals.complement( transcript_exons )
-        transcript_lintrons = Intervals.getLength( transcript_introns )
+        transcript_exons = [(x.start, x.end)
+                            for x in gtfs if x.feature == "exon"]
+        transcript_start, transcript_end = transcript_exons[
+            0][0], transcript_exons[-1][1]
+        transcript_lexons = Intervals.getLength(transcript_exons)
+        transcript_introns = Intervals.complement(transcript_exons)
+        transcript_lintrons = Intervals.getLength(transcript_introns)
 
         tolerance = self.tolerance
 
         # check if transcript purely intronic
-        overlap_exons = Intervals.calculateOverlap( exons, transcript_exons )
+        overlap_exons = Intervals.calculateOverlap(exons, transcript_exons)
 
-        if overlap_exons == 0: is_intronic = True
-        else: is_intronic = False
+        if overlap_exons == 0:
+            is_intronic = True
+        else:
+            is_intronic = False
 
         # determine sense-ness
-        # if no strand is given, set to sense 
-        if strand == "." or transcript_strand == ".": sense = True
-        else: sense = strand == transcript_strand
+        # if no strand is given, set to sense
+        if strand == "." or transcript_strand == ".":
+            sense = True
+        else:
+            sense = strand == transcript_strand
 
         cls = "unclassified"
 
@@ -1153,14 +1244,15 @@ class ClassifierRNASeq(_gtf2table.Counter):
             cls = "intronic"
         else:
             # count (exactly) shared introns
-            shared_introns = [ x for x in introns if x in transcript_introns ]
+            shared_introns = [x for x in introns if x in transcript_introns]
 
             # count shared boundaries
-            boundaries = sorted([ (x[0] - tolerance, x[0] + tolerance) for x in introns ] + 
-                                [ (x[1] - tolerance, x[1] + tolerance) for x in introns ])
-            transcript_boundaries = sorted([ (x[0], x[0] + 1) for x in transcript_introns ] + 
-                                           [ (x[1], x[1] + 1) for x in transcript_introns ])
-            shared_boundaries = Intervals.intersect( boundaries, transcript_boundaries )
+            boundaries = sorted([(x[0] - tolerance, x[0] + tolerance) for x in introns] +
+                                [(x[1] - tolerance, x[1] + tolerance) for x in introns])
+            transcript_boundaries = sorted([(x[0], x[0] + 1) for x in transcript_introns] +
+                                           [(x[1], x[1] + 1) for x in transcript_introns])
+            shared_boundaries = Intervals.intersect(
+                boundaries, transcript_boundaries)
 
             # if there are no introns, matched_structure will be True
             if len(exons) == 1 and len(transcript_exons) == 1:
@@ -1171,7 +1263,7 @@ class ClassifierRNASeq(_gtf2table.Counter):
             else:
                 matched_structure = len(shared_introns) == len(introns)
                 approx_structure = len(shared_boundaries) > 0
-            
+
             if matched_structure and abs(overlap_exons - transcript_lexons) < tolerance:
                 cls = "complete"
             elif approx_structure and len(exons) > 1 and abs(overlap_exons - transcript_lexons) < tolerance:
@@ -1191,27 +1283,29 @@ class ClassifierRNASeq(_gtf2table.Counter):
             else:
                 cls = "unknown"
 
-        transcript_cds = [ (x.start, x.end) for x in gtfs if x.feature == "CDS" ]
-        transcript_lcds = Intervals.getLength( transcript_cds )
+        transcript_cds = [(x.start, x.end) for x in gtfs if x.feature == "CDS"]
+        transcript_lcds = Intervals.getLength(transcript_cds)
         # intersect with CDS
         if len(transcript_cds) > 0:
-            overlap_cds = Intervals.calculateOverlap( transcript_cds, exons )                
+            overlap_cds = Intervals.calculateOverlap(transcript_cds, exons)
 
             # if no overlap with CDS, check for UTR ovelap
             if overlap_cds < tolerance:
-                utrs = Intervals.truncate( transcript_exons, transcript_cds )
-                cds_start,cds_end = transcript_cds[0][0], transcript_cds[-1][1]
-                utr5 = [ x for x in utrs if x[1] <= cds_start ]
-                utr3 = [ x for x in utrs if x[0] >= cds_end ]
-                if strand == "-": utr5, utr3= utr3, utr5
-                overlap_utr5 = Intervals.calculateOverlap( utr5, exons )
-                overlap_utr3 = Intervals.calculateOverlap( utr3, exons )
+                utrs = Intervals.truncate(transcript_exons, transcript_cds)
+                cds_start, cds_end = transcript_cds[
+                    0][0], transcript_cds[-1][1]
+                utr5 = [x for x in utrs if x[1] <= cds_start]
+                utr3 = [x for x in utrs if x[0] >= cds_end]
+                if strand == "-":
+                    utr5, utr3 = utr3, utr5
+                overlap_utr5 = Intervals.calculateOverlap(utr5, exons)
+                overlap_utr3 = Intervals.calculateOverlap(utr3, exons)
                 if overlap_utr5 >= lexons - tolerance:
                     cls = "utr5"
                 elif overlap_utr3 >= lexons - tolerance:
                     cls = "utr3"
-            
-        return cls, self.get_sense( strand, transcript_strand )
+
+        return cls, self.get_sense(strand, transcript_strand)
 
     def count(self):
 
@@ -1220,42 +1314,48 @@ class ClassifierRNASeq(_gtf2table.Counter):
         introns = self.getIntrons()
 
         try:
-            overlaps = list(self.transcript_intervals.get( contig, segments[0][0], segments[-1][1] ))
+            overlaps = list(
+                self.transcript_intervals.get(contig, segments[0][0], segments[-1][1]))
         except KeyError, msg:
-            E.warn( "failed lookup of interval %s:%i-%i: '%s'" % (contig, segments[0][0], segments[-1][1], msg) )
+            E.warn("failed lookup of interval %s:%i-%i: '%s'" %
+                   (contig, segments[0][0], segments[-1][1], msg))
             self.skip = True
             return
 
         noverlap_transcripts = len(overlaps)
-        noverlap_genes = len( set( [self.map_transcript2gene[transcript_id] for start,end,transcript_id in overlaps] ) )
+        noverlap_genes = len(
+            set([self.map_transcript2gene[transcript_id] for start, end, transcript_id in overlaps]))
 
         results = []
-        
+
         if len(overlaps) == 0:
-            for cls, sense, transcript_id in self.classify_nonoverlap( segments ):
+            for cls, sense, transcript_id in self.classify_nonoverlap(segments):
                 if transcript_id != "":
                     source = self.transcripts[transcript_id][0].source
                     gene_id = self.map_transcript2gene[transcript_id]
                 else:
                     source, gene_id = "", ""
-                results.append( (self.mapClass2Priority[(sense,cls)], 
-                                 ( 0, 0, transcript_id, gene_id, source, cls, sense ) ) )
+                results.append((self.mapClass2Priority[(sense, cls)],
+                                (0, 0, transcript_id, gene_id, source, cls, sense)))
         else:
             for start, end, transcript_id in overlaps:
-                cls, sense = self.classify_overlap(segments, transcript_id) 
+                cls, sense = self.classify_overlap(segments, transcript_id)
                 source = self.transcripts[transcript_id][0].source
                 gene_id = self.map_transcript2gene[transcript_id]
-                results.append( (self.mapClass2Priority[(sense,cls)], 
-                                 ( noverlap_transcripts, noverlap_genes, transcript_id, gene_id, source, cls, sense ) ) )
-        
+                results.append((self.mapClass2Priority[(sense, cls)],
+                                (noverlap_transcripts, noverlap_genes, transcript_id, gene_id, source, cls, sense)))
+
         results.sort()
         self.result = results[0][1]
 
     def __str__(self):
-        return "\t".join( map(str, self.result) )
+        return "\t".join(map(str, self.result))
 
-##-----------------------------------------------------------------------------------
+# ------------------------------------------------------------------------
+
+
 class ClassifierRNASeqSplicing(_gtf2table.Counter):
+
     """This is IMSs new style transcript classifier. It aims to give classifications
     that make more sense to biologists involved in splicing by using familiar catagories.
 
@@ -1296,16 +1396,16 @@ class ClassifierRNASeqSplicing(_gtf2table.Counter):
     |                    |                                                            |
     +--------------------+------------------------------------------------------------+
     |unknown             |``predicted`` and ``known`` transcript overlap, but do not  |
-	|                    |fall in any of the above categories.                        |
-	|                    |                                                            |
-	+--------------------+------------------------------------------------------------+
+        |                    |fall in any of the above categories.                        |
+        |                    |                                                            |
+        +--------------------+------------------------------------------------------------+
 
     Any of these forms can also exist as a -fragment. This means that the comparison
-	known and the predicted transcript did not make the criteria for a class, but the 
-	comparison of the predicted and the part of the known transcirpt bewteen the start and
-	end of the known transcript do. 
+        known and the predicted transcript did not make the criteria for a class, but the 
+        comparison of the predicted and the part of the known transcirpt bewteen the start and
+        end of the known transcript do. 
 
-	Furthermore, ``predicted`` transcripts that do not overlap the exons of a ``known`` 
+        Furthermore, ``predicted`` transcripts that do not overlap the exons of a ``known`` 
     transcript, but only introns, are classed as ``intronic``. All other transcripts
     that overlap neither introns nor exons of a ``known`` transcript are labeled 
     ``intergenic``.
@@ -1323,9 +1423,9 @@ class ClassifierRNASeqSplicing(_gtf2table.Counter):
 
     """
 
-    header = [ "noverlap_transcripts", 
-               "noverlap_genes",
-               "match_transcript_id", "match_gene_id", "source", "class", "sense" ]
+    header = ["noverlap_transcripts",
+              "noverlap_genes",
+              "match_transcript_id", "match_gene_id", "source", "class", "sense"]
 
     # number of residues that are permitted for negligible overlap
     tolerance = 1
@@ -1334,207 +1434,224 @@ class ClassifierRNASeqSplicing(_gtf2table.Counter):
     flank = 5000
 
     # priority of classifications to select best match
-    priority = ( ( 's', "complete", ),
-		 ( 's', "fragment", ),
-		 ( 's', "extended", ),
-		 ( 's', "extended-fragment", ),
-		 ( 's', "retained-intron", ),
-		 ( 's', "retained-intron-fragment", ),
-		 ( 's', "exon-boundary-change", ),
-		 ( 's', "alternate-5prime", ),
-		 ( 's', "alternate-3prime", ),
-		 ( 's', "novel-intron",),
-		 ( 's', "skipped-exon" ,),
-		 ( 's', "novel-exon", ),
-		 ( 's', "alternate-exon", ),
-		 ( 's', "exon-boundary-change-fragment", ),
-		 ( 's', "alternate-5prime-fragment", ),
-		 ( 's', "alternate-3prime-fragment", ),
-		 ( 's', "novel-intron-fragment",),
-		 ( 's', "skipped-exon-fragment", ),
-		 ( 's', "novel-exon-fragment", ),
-		 ( 's', "alternate-exon-fragment", ),
-		 ( 's', "alternative", ),
-		 ( 's', "unknown", ),
-		 ( 's', "utr5", ),
-		 ( 's', "utr3", ),
-		 ( 's', "intronic", ),
-		 ( 's', "flank5", ),
-		 ( 's', "flank3", ),
-		 ( 's', "intergenic", ),
-		 ( 'n', "complete", ),
-		 ( 'n', "fragment", ),
-		 ( 'n', "extended", ),
-		 ( 'n', "extended-fragment", ),
-		 ( 'n', "retained-intron", ),
-		 ( 'n', "retained-intron-fragment", ),
-		 ( 'n', "exon-boundary-change", ),
-		 ( 'n', "alternate-5prime", ),
-		 ( 'n', "alternate-3prime", ),
-		 ( 'n', "novel-intron",),
-		 ( 'n', "skipped-exon" ,),
-		 ( 'n', "novel-exon", ),
-		 ( 'n', "alternate-exon", ),
-		 ( 'n', "exon-boundary-change-fragment", ),
-		 ( 'n', "alternate-5prime-fragment", ),
-		 ( 'n', "alternate-3prime-fragment", ),
-		 ( 'n', "novel-intron-fragment",),
-		 ( 'n', "skipped-exon-fragment", ),
-		 ( 'n', "novel-exon-fragment", ),
-		 ( 'n', "alternate-exon-fragment", ),
-		 ( 'n', "alternative", ),
-		 ( 'n', "unknown", ),
-		 ( 'n', "utr5", ),
-		 ( 'n', "utr3", ),
-		 ( 'n', "intronic", ),
-		 ( 'n', "flank5", ),
-		 ( 'n', "flank3", ),
-		 ( 'n', "flank", ),
-		 ( 'n', "intergenic", ),
-		 ( 'a', "complete", ),
-		 ( 'a', "fragment", ),
-		 ( 'a', "extended", ),
-		 ( 'a', "extended-fragment", ),
-		 ( 'a', "retained-intron", ),
-		 ( 'a', "retained-intron-fragment", ),
-		 ( 'a', "exon-boundary-change", ),
-		 ( 'a', "alternate-5prime", ),
-		 ( 'a', "alternate-3prime", ),
-		 ( 'a', "novel-intron",),
-		 ( 'a', "skipped-exon" ,),
-		 ( 'a', "novel-exon", ),
-		 ( 'a', "alternate-exon", ),
-		 ( 'a', "exon-boundary-change-fragment", ),
-		 ( 'a', "alternate-5prime-fragment", ),
-		 ( 'a', "alternate-3prime-fragment", ),
-		 ( 'a', "novel-intron-fragment",),
-		 ( 'a', "skipped-exon-fragment", ),
-		 ( 'a', "novel-exon-fragment", ),
-		 ( 'a', "alternate-exon-fragment", ),
-		 ( 'a', "alternative", ),
-		 ( 'a', "unknown", ),
-		 ( 'a', "utr5", ),
-		 ( 'a', "utr3", ),
-		 ( 'a', "intronic", ),
-		 ( 'a', "flank5", ),
-		 ( 'a', "flank3", ),
-		 ( 'a', "intergenic", )	 )
+    priority = (('s', "complete", ),
+                ('s', "fragment", ),
+                ('s', "extended", ),
+                ('s', "extended-fragment", ),
+                ('s', "retained-intron", ),
+                ('s', "retained-intron-fragment", ),
+                ('s', "exon-boundary-change", ),
+                ('s', "alternate-5prime", ),
+                ('s', "alternate-3prime", ),
+                ('s', "novel-intron",),
+                ('s', "skipped-exon",),
+                ('s', "novel-exon", ),
+                ('s', "alternate-exon", ),
+                ('s', "exon-boundary-change-fragment", ),
+                ('s', "alternate-5prime-fragment", ),
+                ('s', "alternate-3prime-fragment", ),
+                ('s', "novel-intron-fragment",),
+                ('s', "skipped-exon-fragment", ),
+                ('s', "novel-exon-fragment", ),
+                ('s', "alternate-exon-fragment", ),
+                ('s', "alternative", ),
+                ('s', "unknown", ),
+                ('s', "utr5", ),
+                ('s', "utr3", ),
+                ('s', "intronic", ),
+                ('s', "flank5", ),
+                ('s', "flank3", ),
+                ('s', "intergenic", ),
+                ('n', "complete", ),
+                ('n', "fragment", ),
+                ('n', "extended", ),
+                ('n', "extended-fragment", ),
+                ('n', "retained-intron", ),
+                ('n', "retained-intron-fragment", ),
+                ('n', "exon-boundary-change", ),
+                ('n', "alternate-5prime", ),
+                ('n', "alternate-3prime", ),
+                ('n', "novel-intron",),
+                ('n', "skipped-exon",),
+                ('n', "novel-exon", ),
+                ('n', "alternate-exon", ),
+                ('n', "exon-boundary-change-fragment", ),
+                ('n', "alternate-5prime-fragment", ),
+                ('n', "alternate-3prime-fragment", ),
+                ('n', "novel-intron-fragment",),
+                ('n', "skipped-exon-fragment", ),
+                ('n', "novel-exon-fragment", ),
+                ('n', "alternate-exon-fragment", ),
+                ('n', "alternative", ),
+                ('n', "unknown", ),
+                ('n', "utr5", ),
+                ('n', "utr3", ),
+                ('n', "intronic", ),
+                ('n', "flank5", ),
+                ('n', "flank3", ),
+                ('n', "flank", ),
+                ('n', "intergenic", ),
+                ('a', "complete", ),
+                ('a', "fragment", ),
+                ('a', "extended", ),
+                ('a', "extended-fragment", ),
+                ('a', "retained-intron", ),
+                ('a', "retained-intron-fragment", ),
+                ('a', "exon-boundary-change", ),
+                ('a', "alternate-5prime", ),
+                ('a', "alternate-3prime", ),
+                ('a', "novel-intron",),
+                ('a', "skipped-exon",),
+                ('a', "novel-exon", ),
+                ('a', "alternate-exon", ),
+                ('a', "exon-boundary-change-fragment", ),
+                ('a', "alternate-5prime-fragment", ),
+                ('a', "alternate-3prime-fragment", ),
+                ('a', "novel-intron-fragment",),
+                ('a', "skipped-exon-fragment", ),
+                ('a', "novel-exon-fragment", ),
+                ('a', "alternate-exon-fragment", ),
+                ('a', "alternative", ),
+                ('a', "unknown", ),
+                ('a', "utr5", ),
+                ('a', "utr3", ),
+                ('a', "intronic", ),
+                ('a', "flank5", ),
+                ('a', "flank3", ),
+                ('a', "intergenic", ))
 
-    def __init__(self, filename_gff, *args, **kwargs ):
+    def __init__(self, filename_gff, *args, **kwargs):
 
-        _gtf2table.Counter.__init__(self, *args, **kwargs )
+        _gtf2table.Counter.__init__(self, *args, **kwargs)
 
         if len(filename_gff) != 1:
-            raise ValueError("expected only one gff file" )
+            raise ValueError("expected only one gff file")
 
-        E.info( "loading data from %s" % (filename_gff[0]) )
+        E.info("loading data from %s" % (filename_gff[0]))
 
         map_transcript2gene = {}
         transcripts = {}
         transcript_intervals = IndexedGenome.Quicksect()
 
-        f = IOTools.openFile( filename_gff[0]) 
+        f = IOTools.openFile(filename_gff[0])
 
-        for t in GTF.transcript_iterator(GTF.iterator( f )):
-            t.sort( key = lambda x: x.start )
+        for t in GTF.transcript_iterator(GTF.iterator(f)):
+            t.sort(key=lambda x: x.start)
             transcript_id, gene_id = t[0].transcript_id, t[0].gene_id
             map_transcript2gene[transcript_id] = gene_id
             transcripts[transcript_id] = t
             t = [x for x in t if x.feature == "exon"]
-            transcript_intervals.add( t[0].contig, t[0].start, t[-1].end, transcript_id )
+            transcript_intervals.add(
+                t[0].contig, t[0].start, t[-1].end, transcript_id)
 
         f.close()
 
-        E.info( "loaded data from %s" % (filename_gff[0]) )
+        E.info("loaded data from %s" % (filename_gff[0]))
 
         self.transcripts = transcripts
         self.transcript_intervals = transcript_intervals
         self.map_transcript2gene = map_transcript2gene
-        self.map_gene2transcripts = dict( [ (y,x) for x,y in map_transcript2gene.iteritems() ] )
+        self.map_gene2transcripts = dict(
+            [(y, x) for x, y in map_transcript2gene.iteritems()])
 
-        self.mapClass2Priority = dict( [(y,x) for x,y in enumerate(self.priority) ] )
+        self.mapClass2Priority = dict(
+            [(y, x) for x, y in enumerate(self.priority)])
 
-    def get_sense( self, strand, transcript_strand):
+    def get_sense(self, strand, transcript_strand):
         '''encode sense as (s)ense, (a)ntisense and (n)ot available'''
-        
-        if strand == "." or transcript_strand == ".": sense = "n"
-        elif strand == transcript_strand: sense = "s"
-        else: sense = "a"
+
+        if strand == "." or transcript_strand == ".":
+            sense = "n"
+        elif strand == transcript_strand:
+            sense = "s"
+        else:
+            sense = "a"
         return sense
 
-
-    def classify_nonoverlap( self, exons ):
+    def classify_nonoverlap(self, exons):
         '''classify_nonoverlapping transcripts.'''
-        
+
         contig = self.getContig()
         strand = self.getStrand()
         start, end = exons[0][0], exons[-1][1]
 
         # get closest gene upstream and downstream
-        before = self.transcript_intervals.before( contig, start, end, num_intervals = 1, max_dist = self.flank )
-        after = self.transcript_intervals.after( contig, start, end, num_intervals = 1, max_dist = self.flank )
+        before = self.transcript_intervals.before(
+            contig, start, end, num_intervals=1, max_dist=self.flank)
+        after = self.transcript_intervals.after(
+            contig, start, end, num_intervals=1, max_dist=self.flank)
 
         # convert to id, distance, is_before
         associated = []
         if before:
             d = before[0]
-            associated.append( (d[2], start - d[1], True ) )
-            
+            associated.append((d[2], start - d[1], True))
+
         if after:
             d = after[0]
-            associated.append( (d[2], d[0] - end, False ) )
-                
+            associated.append((d[2], d[0] - end, False))
+
         results = []
 
         for transcript_id, distance, is_before in associated:
             transcript_strand = self.transcripts[transcript_id][0].strand
-            sense = self.get_sense( strand, transcript_strand )
+            sense = self.get_sense(strand, transcript_strand)
 
             if transcript_strand == "+":
-                if is_before: cls = "flank3"            
-                else: cls = "flank5"
+                if is_before:
+                    cls = "flank3"
+                else:
+                    cls = "flank5"
             elif transcript_strand == "-":
-                if is_before: cls = "flank5"
-                else: cls = "flank3"
+                if is_before:
+                    cls = "flank5"
+                else:
+                    cls = "flank3"
             else:
-                cls= "flank"
-                
-            results.append( (cls, sense, transcript_id ) )
+                cls = "flank"
+
+            results.append((cls, sense, transcript_id))
 
         if len(results) == 0:
-            results.append( ("intergenic", "n", "" ) )
+            results.append(("intergenic", "n", ""))
 
         return results
 
-    def classify_overlap( self, exons, transcript_id ):
+    def classify_overlap(self, exons, transcript_id):
         '''classify overlapping transcripts.'''
 
-        introns = Intervals.complement( exons )
+        introns = Intervals.complement(exons)
         strand = self.getStrand()
-        lexons = Intervals.getLength( exons )
+        lexons = Intervals.getLength(exons)
 
         start, end = exons[0][0], exons[-1][1]
 
         gtfs = self.transcripts[transcript_id]
         transcript_strand = gtfs[0].strand
-        transcript_exons = [ (x.start, x.end) for x in gtfs if x.feature == "exon" ]
-        transcript_start, transcript_end = transcript_exons[0][0], transcript_exons[-1][1]
-        transcript_lexons = Intervals.getLength( transcript_exons )
-        transcript_introns = Intervals.complement( transcript_exons )
-        transcript_lintrons = Intervals.getLength( transcript_introns )
+        transcript_exons = [(x.start, x.end)
+                            for x in gtfs if x.feature == "exon"]
+        transcript_start, transcript_end = transcript_exons[
+            0][0], transcript_exons[-1][1]
+        transcript_lexons = Intervals.getLength(transcript_exons)
+        transcript_introns = Intervals.complement(transcript_exons)
+        transcript_lintrons = Intervals.getLength(transcript_introns)
 
         tolerance = self.tolerance
 
         # check if transcript purely intronic
-        overlap_exons = Intervals.calculateOverlap( exons, transcript_exons )
+        overlap_exons = Intervals.calculateOverlap(exons, transcript_exons)
 
-        if overlap_exons == 0: is_intronic = True
-        else: is_intronic = False
+        if overlap_exons == 0:
+            is_intronic = True
+        else:
+            is_intronic = False
 
         # determine sense-ness
-        # if no strand is given, set to sense 
-        if strand == "." or transcript_strand == ".": sense = True
-        else: sense = strand == transcript_strand
+        # if no strand is given, set to sense
+        if strand == "." or transcript_strand == ".":
+            sense = True
+        else:
+            sense = strand == transcript_strand
 
         cls = "unclassified"
 
@@ -1542,15 +1659,15 @@ class ClassifierRNASeqSplicing(_gtf2table.Counter):
             cls = "intronic"
         else:
             # count (exactly) shared introns
-            shared_introns = [ x for x in introns if x in transcript_introns ]
+            shared_introns = [x for x in introns if x in transcript_introns]
 
             # count shared boundaries
-            boundaries = sorted([ (x[0] - tolerance, x[0] + tolerance) for x in introns ] + 
-                                [ (x[1] - tolerance, x[1] + tolerance) for x in introns ])
-            transcript_boundaries = sorted([ (x[0], x[0] + 1) for x in transcript_introns ] + 
-                                           [ (x[1], x[1] + 1) for x in transcript_introns ])
-            shared_boundaries = Intervals.intersect( boundaries, transcript_boundaries )
-        
+            boundaries = sorted([(x[0] - tolerance, x[0] + tolerance) for x in introns] +
+                                [(x[1] - tolerance, x[1] + tolerance) for x in introns])
+            transcript_boundaries = sorted([(x[0], x[0] + 1) for x in transcript_introns] +
+                                           [(x[1], x[1] + 1) for x in transcript_introns])
+            shared_boundaries = Intervals.intersect(
+                boundaries, transcript_boundaries)
 
             # if there are no introns, matched_structure will be True
             if len(exons) == 1 and len(transcript_exons) == 1:
@@ -1559,73 +1676,82 @@ class ClassifierRNASeqSplicing(_gtf2table.Counter):
                 matched_structure = False
                 approx_structure = False
             else:
-				# IMS structure is an exact match if and only if all intron boundaries in both exons and 
-				# transcripts are shared. This allows extensions of the 3' or 5' UTRs.
+                                # IMS structure is an exact match if and only if all intron boundaries in both exons and
+                                # transcripts are shared. This allows
+                                # extensions of the 3' or 5' UTRs.
                 matched_structure = len(shared_introns) == len(introns)
                 approx_structure = len(shared_boundaries) > 0
-             
 
-            included_exons = [x for x in transcript_exons if x[1] > start and x[0] < end ]
-            included_transcript_introns = [x for x in transcript_introns if x[0] > start and x[1] <= end]
-            included_boundaries = sorted([x for x in transcript_boundaries if x[1] >= exons[0][1]  and x[0] <= exons[-1][0]  ])
-            shared_included_boundaries = Intervals.intersect( boundaries, included_boundaries )
-            
-			# If there is a matched structure, i.e. all of the introns in the gene model are in an existing gene
-			# model, then either we have a fragment of the complete transcript or some sort of retain intron 
-			# (or both)
-            #if matched_structure and abs(overlap_exons - transcript_lexons) < tolerance:
+            included_exons = [
+                x for x in transcript_exons if x[1] > start and x[0] < end]
+            included_transcript_introns = [
+                x for x in transcript_introns if x[0] > start and x[1] <= end]
+            included_boundaries = sorted(
+                [x for x in transcript_boundaries if x[1] >= exons[0][1] and x[0] <= exons[-1][0]])
+            shared_included_boundaries = Intervals.intersect(
+                boundaries, included_boundaries)
+
+                        # If there is a matched structure, i.e. all of the introns in the gene model are in an existing gene
+                        # model, then either we have a fragment of the complete transcript or some sort of retain intron
+                        # (or both)
+            # if matched_structure and abs(overlap_exons - transcript_lexons) <
+            # tolerance:
             if matched_structure and len(shared_introns) == len(transcript_introns):
                 cls = "complete"
             elif matched_structure:
-                shared_included = [x for x in introns if x in included_transcript_introns]
+                shared_included = [
+                    x for x in introns if x in included_transcript_introns]
 
                 cls = []
 
-                if not len(shared_included) == len(included_transcript_introns):   
+                if not len(shared_included) == len(included_transcript_introns):
                     cls.append("retained-intron")
                 elif start < included_exons[0][0] or end > included_exons[-1][1]:
                     cls.append("extended")
-                    
+
                 if (Intervals.calculateOverlap([boundaries[0]], transcript_boundaries[1:]) > 0 or
-                    Intervals.calculateOverlap([boundaries[-1]], transcript_boundaries[:-2]) > 0):
-                
+                        Intervals.calculateOverlap([boundaries[-1]], transcript_boundaries[:-2]) > 0):
+
                     cls.append("fragment")
-                
-                cls = "-".join(cls)         
-                
-            #elif approx_structure and len(exons) > 1 and abs(overlap_exons - transcript_lexons) < tolerance:
+
+                cls = "-".join(cls)
+
+            # elif approx_structure and len(exons) > 1 and abs(overlap_exons - transcript_lexons) < tolerance:
             #    cls = "complete"
 
-        
             elif approx_structure and (len(shared_included_boundaries) == len(included_boundaries) and
-                  len(shared_included_boundaries) < len(boundaries)):
-                #there are boundaries present in the test model that are not present in the transcript 
-                #therefore there is a novel exon. Could be fragement or complete.
-                
-                #print exons[0]
-		#print transcript_exons
-		#print Intervals.calculateOverlap([exons[0]],transcript_exons)
+                                       len(shared_included_boundaries) < len(boundaries)):
+                # there are boundaries present in the test model that are not present in the transcript
+                # therefore there is a novel exon. Could be fragement or
+                # complete.
 
-                if (Intervals.calculateOverlap([exons[0]],transcript_exons) == 0):
-                    #print "hello"
+                # print exons[0]
+                # print transcript_exons
+                # print Intervals.calculateOverlap([exons[0]],transcript_exons)
+
+                if (Intervals.calculateOverlap([exons[0]], transcript_exons) == 0):
+                    # print "hello"
                     cls = "alternate-5prime"
-                        
-                    if len(Intervals.intersect([boundaries[-1]], transcript_boundaries[0:-1])) > 0 :
-                    # is a fragment if the final boundary is in the transcript but isn't its final one.
+
+                    if len(Intervals.intersect([boundaries[-1]], transcript_boundaries[0:-1])) > 0:
+                    # is a fragment if the final boundary is in the transcript
+                    # but isn't its final one.
                         cls = cls + "-fragment"
                     if not len(boundaries) == len(shared_included_boundaries) + 1:
                         cls = "alternative"
-                elif (Intervals.calculateOverlap([exons[-1]],transcript_exons) == 0):
+                elif (Intervals.calculateOverlap([exons[-1]], transcript_exons) == 0):
                     cls = "alternate-3prime"
                     if len(Intervals.intersect([boundaries[-1]], transcript_boundaries[2:])) > 0:
-                        #is a fragment if the first boundary is in the transcript but is the first one.
+                        # is a fragment if the first boundary is in the
+                        # transcript but is the first one.
                         cls = cls + "-fragment"
                     if not len(boundaries) == len(shared_included_boundaries) + 1:
                         cls = "alternative"
-                elif (len(shared_boundaries) == len(transcript_boundaries) and 
-		      len(shared_boundaries) < len (boundaries) ):
-                    
-                    novel_exons = [exon for exon in exons if Intervals.calculateOverlap([exon],transcript_exons) ==0]
+                elif (len(shared_boundaries) == len(transcript_boundaries) and
+                      len(shared_boundaries) < len(boundaries)):
+
+                    novel_exons = [exon for exon in exons if Intervals.calculateOverlap(
+                        [exon], transcript_exons) == 0]
                     if len(novel_exons) == 1:
                         cls = "novel-exon"
                     elif len(novel_exons) == 0:
@@ -1633,36 +1759,38 @@ class ClassifierRNASeqSplicing(_gtf2table.Counter):
                     else:
                         cls = "alternative"
                 else:
-                    novel_exons = [exon for exon in exons if Intervals.calculateOverlap([exon],transcript_exons) ==0]
+                    novel_exons = [exon for exon in exons if Intervals.calculateOverlap(
+                        [exon], transcript_exons) == 0]
                     if len(novel_exons) == 1:
                         cls = "novel-exon-fragment"
                     elif len(novel_exons) == 0:
                         cls = "novel-intron-fragment"
                     else:
                         cls = "alternative"
-                
-            elif approx_structure and (len(shared_included_boundaries) == len (boundaries) and 
-                  len(shared_included_boundaries) < len (included_boundaries)):
-                #there are boundaries in the transcript that are not in the test model. There for an exon has been 
-                #skipped. Could be fragment or complete.
-                if (Intervals.calculateOverlap([boundaries[0]],[transcript_boundaries[0]]) > 0 and
-                    Intervals.calculateOverlap([boundaries[-1]],[transcript_boundaries[-1]]) > 0):
+
+            elif approx_structure and (len(shared_included_boundaries) == len(boundaries) and
+                                       len(shared_included_boundaries) < len(included_boundaries)):
+                # there are boundaries in the transcript that are not in the test model. There for an exon has been
+                # skipped. Could be fragment or complete.
+                if (Intervals.calculateOverlap([boundaries[0]], [transcript_boundaries[0]]) > 0 and
+                        Intervals.calculateOverlap([boundaries[-1]], [transcript_boundaries[-1]]) > 0):
                     cls = "skipped-exon"
                 else:
                     cls = "skipped-exon-fragment"
-                
-            elif approx_structure and (len(Intervals.combine(exons + included_exons)) == len(exons) and
-                  len(Intervals.combine(exons + included_exons)) == len(included_exons)):
-                #same exons exist in each (where two exons are the "same" exon if they overlap with each other, but
-                #only each other).
-                cls = "exon-boundary-change"
-                if not (len(Intervals.combine(exons + transcript_exons)) == len (exons) and
-                        len(Intervals.combine(exons + transcript_exons)) == len (transcript_exons)):
-                    cls = cls +"-fragment"
 
-            elif approx_structure and (len(Intervals.combine(exons + included_exons)) == len(exons) +1 and
-                                       len(Intervals.combine(exons + included_exons)) == len(included_exons)+1):
-                #there is exactly one exon in test model that is not in transcript and vice versa
+            elif approx_structure and (len(Intervals.combine(exons + included_exons)) == len(exons) and
+                                       len(Intervals.combine(exons + included_exons)) == len(included_exons)):
+                # same exons exist in each (where two exons are the "same" exon if they overlap with each other, but
+                # only each other).
+                cls = "exon-boundary-change"
+                if not (len(Intervals.combine(exons + transcript_exons)) == len(exons) and
+                        len(Intervals.combine(exons + transcript_exons)) == len(transcript_exons)):
+                    cls = cls + "-fragment"
+
+            elif approx_structure and (len(Intervals.combine(exons + included_exons)) == len(exons) + 1 and
+                                       len(Intervals.combine(exons + included_exons)) == len(included_exons) + 1):
+                # there is exactly one exon in test model that is not in
+                # transcript and vice versa
                 cls = "alternate-"
                 if (Intervals.calculateOverlap([exons[0]], transcript_exons) == 0):
                     if len(boundaries) == len(shared_boundaries) + 1:
@@ -1671,21 +1799,22 @@ class ClassifierRNASeqSplicing(_gtf2table.Counter):
                         cls = "alternative"
 
                 elif (Intervals.calculateOverlap([exons[-1]], transcript_exons) == 0):
-                    if len(boundaries) == len(shared_boundaries) +1:
+                    if len(boundaries) == len(shared_boundaries) + 1:
                         cls = cls + "3prime"
                     else:
                         cls = "alternative"
-                elif len(boundaries) == len(shared_boundaries) +2:
+                elif len(boundaries) == len(shared_boundaries) + 2:
                     cls = cls + "exon"
                 else:
                     cls = "alternative"
-                    
 
-                if len(Intervals.intersect([boundaries[-1]], transcript_boundaries[0:-1])) > 0 :
-                    # is a fragment if the final boundary is in the transcript but isn't its final one.
+                if len(Intervals.intersect([boundaries[-1]], transcript_boundaries[0:-1])) > 0:
+                    # is a fragment if the final boundary is in the transcript
+                    # but isn't its final one.
                     cls = cls + "-fragment"
                 elif len(Intervals.intersect([boundaries[-1]], transcript_boundaries[2:])) > 0:
-                    #is a fragment if the first boundary is in the transcript but is the first one.
+                    # is a fragment if the first boundary is in the transcript
+                    # but is the first one.
                     cls = cls + "-fragment"
                 if cls == "alternative-fragment":
                     cls = "alternative"
@@ -1698,26 +1827,28 @@ class ClassifierRNASeqSplicing(_gtf2table.Counter):
             else:
                 cls = "unknown"
 
-        transcript_cds = [ (x.start, x.end) for x in gtfs if x.feature == "CDS" ]
-        transcript_lcds = Intervals.getLength( transcript_cds )
+        transcript_cds = [(x.start, x.end) for x in gtfs if x.feature == "CDS"]
+        transcript_lcds = Intervals.getLength(transcript_cds)
         # intersect with CDS
         if len(transcript_cds) > 0:
-            overlap_cds = Intervals.calculateOverlap( transcript_cds, exons )                
+            overlap_cds = Intervals.calculateOverlap(transcript_cds, exons)
             # if no overlap with CDS, check for UTR ovelap
             if overlap_cds < tolerance:
-                utrs = Intervals.truncate( transcript_exons, transcript_cds )
-                cds_start,cds_end = transcript_cds[0][0], transcript_cds[-1][1]
-                utr5 = [ x for x in utrs if x[1] <= cds_start ]
-                utr3 = [ x for x in utrs if x[0] >= cds_end ]
-                if strand == "-": utr5, utr3= utr3, utr5
-                overlap_utr5 = Intervals.calculateOverlap( utr5, exons )
-                overlap_utr3 = Intervals.calculateOverlap( utr3, exons )
+                utrs = Intervals.truncate(transcript_exons, transcript_cds)
+                cds_start, cds_end = transcript_cds[
+                    0][0], transcript_cds[-1][1]
+                utr5 = [x for x in utrs if x[1] <= cds_start]
+                utr3 = [x for x in utrs if x[0] >= cds_end]
+                if strand == "-":
+                    utr5, utr3 = utr3, utr5
+                overlap_utr5 = Intervals.calculateOverlap(utr5, exons)
+                overlap_utr3 = Intervals.calculateOverlap(utr3, exons)
                 if overlap_utr5 > 0:
                     cls = "utr5"
                 elif overlap_utr3 > 0:
                     cls = "utr3"
-            
-        return cls, self.get_sense( strand, transcript_strand )
+
+        return cls, self.get_sense(strand, transcript_strand)
 
     def count(self):
 
@@ -1725,71 +1856,80 @@ class ClassifierRNASeqSplicing(_gtf2table.Counter):
         segments = self.getSegments()
         introns = self.getIntrons()
         try:
-            overlaps = list(self.transcript_intervals.get( contig, segments[0][0], segments[-1][1] ))
+            overlaps = list(
+                self.transcript_intervals.get(contig, segments[0][0], segments[-1][1]))
         except KeyError, msg:
-            E.warn( "failed lookup of interval %s:%i-%i: '%s'" % (contig, segments[0][0], segments[-1][1], msg) )
+            E.warn("failed lookup of interval %s:%i-%i: '%s'" %
+                   (contig, segments[0][0], segments[-1][1], msg))
             self.skip = True
             return
 
         noverlap_transcripts = len(overlaps)
-        noverlap_genes = len( set( [self.map_transcript2gene[transcript_id] for start,end,transcript_id in overlaps] ) )
+        noverlap_genes = len(
+            set([self.map_transcript2gene[transcript_id] for start, end, transcript_id in overlaps]))
 
         results = []
-        
+
         if len(overlaps) == 0:
-            for cls, sense, transcript_id in self.classify_nonoverlap( segments ):
+            for cls, sense, transcript_id in self.classify_nonoverlap(segments):
                 if transcript_id != "":
                     source = self.transcripts[transcript_id][0].source
                     gene_id = self.map_transcript2gene[transcript_id]
                 else:
                     source, gene_id = "", ""
-                results.append( (self.mapClass2Priority[(sense,cls)], 
-                                 ( 0, 0, transcript_id, gene_id, source, cls, sense ) ) )
+                results.append((self.mapClass2Priority[(sense, cls)],
+                                (0, 0, transcript_id, gene_id, source, cls, sense)))
         else:
             for start, end, transcript_id in overlaps:
-                cls, sense = self.classify_overlap(segments, transcript_id) 
+                cls, sense = self.classify_overlap(segments, transcript_id)
                 source = self.transcripts[transcript_id][0].source
                 gene_id = self.map_transcript2gene[transcript_id]
-                results.append( (self.mapClass2Priority[(sense,cls)], 
-                                 ( noverlap_transcripts, noverlap_genes, transcript_id, gene_id, source, cls, sense ) ) )
+                results.append((self.mapClass2Priority[(sense, cls)],
+                                (noverlap_transcripts, noverlap_genes, transcript_id, gene_id, source, cls, sense)))
         results.sort()
         self.result = results[0][1]
 
     def __str__(self):
-        return "\t".join( map(str, self.result) )
-##-----------------------------------------------------------------------------------
+        return "\t".join(map(str, self.result))
+# ------------------------------------------------------------------------
+
+
 class ClassifierIntervals(CounterOverlap):
+
     """classify transcripts based on a list of intervals.
     """
 
-    header = [ "is_known", "is_unknown", "is_ambiguous", 
-               "is_pc", "is_pseudo", "is_npc", "is_utr", 
-               "is_intronic", "is_assoc", "is_intergenic" ] 
+    header = ["is_known", "is_unknown", "is_ambiguous",
+              "is_pc", "is_pseudo", "is_npc", "is_utr",
+              "is_intronic", "is_assoc", "is_intergenic"]
 
     # do not use strand
     mUseStrand = False
 
-    def __init__(self, *args, **kwargs ):
+    def __init__(self, *args, **kwargs):
 
-        CounterOverlap.__init__(self, *args, **kwargs )
+        CounterOverlap.__init__(self, *args, **kwargs)
 
-##-----------------------------------------------------------------------------------
+# ------------------------------------------------------------------------
+
+
 class ClassifierPolII(ClassifierIntervals):
+
     """classify transcripts based on PolII annotation.
-    
+
     The input is a list of PolII intervals.
-    
+
     An interval is classified as:
-    
+
     is_transcribed: 
         the longest interval covers *threshold_min_coverage* of the 
         gene body.
 
     """
 
-    headerTemplate = [ "is_transcribed", "is_primed", "noverlap", 
-                       "largest_size", "largest_overlap", "largest_coverage",
-                       "promotor_overlap", "promotor_coverage" ]
+    headerTemplate = ["is_transcribed", "is_primed", "noverlap",
+                      "largest_size", "largest_overlap", "largest_coverage",
+                      "promotor_overlap", "promotor_coverage"]
 
     # minimum coverage of a transcript to accept
     threshold_min_coverage_transcript = 80
@@ -1799,7 +1939,7 @@ class ClassifierPolII(ClassifierIntervals):
 
     # size of promotor - 1kb upstream of tss
     promotor_upstream = 200
-    
+
     # size of promotor - 1kb downstream of tss
     promotor_downstream = 200
 
@@ -1817,35 +1957,43 @@ class ClassifierPolII(ClassifierIntervals):
 
         contig = self.getContig()
 
-        if contig not in self.mIntersectors: return
-        
+        if contig not in self.mIntersectors:
+            return
+
         # count overlap over full gene body
         segments = self.getExons()
         start, end = segments[0][0], segments[-1][1]
-        
-        promotor_max = max( self.promotor_upstream, self.promotor_downstream )
 
-        r = list(self.mIntersectors[contig].find( start - promotor_max, end + promotor_max ))
-        if len(r) == 0: return
+        promotor_max = max(self.promotor_upstream, self.promotor_downstream)
+
+        r = list(self.mIntersectors[contig].find(
+            start - promotor_max, end + promotor_max))
+        if len(r) == 0:
+            return
         self.noverlap = len(r)
 
-        r.sort( key = lambda x: x.end-x.start )
+        r.sort(key=lambda x: x.end - x.start)
 
         largest_start, largest_end = r[-1].start, r[-1].end
         self.largest_interval = largest_end - largest_start
-        self.largest_overlap = min( largest_end, end) - max(largest_start, start)
-        self.largest_coverage = 100.0 * float( self.largest_overlap ) / (end - start)
+        self.largest_overlap = min(
+            largest_end, end) - max(largest_start, start)
+        self.largest_coverage = 100.0 * \
+            float(self.largest_overlap) / (end - start)
 
         strand = self.getStrand()
         if strand == "+":
-            promotor_start, promotor_end = start - self.promotor_upstream, start + self.promotor_downstream
+            promotor_start, promotor_end = start - \
+                self.promotor_upstream, start + self.promotor_downstream
         else:
-            promotor_start, promotor_end = end - self.promotor_downstream, end + self.promotor_upstream
-            
-        self.promotor_overlap = Intervals.calculateOverlap( [ (x.start, x.end) for x in r ],
-                                                            [ (promotor_start, promotor_end), ] )
+            promotor_start, promotor_end = end - \
+                self.promotor_downstream, end + self.promotor_upstream
 
-        self.promotor_coverage = 100.0 * float( self.promotor_overlap ) / (promotor_end - promotor_start)
+        self.promotor_overlap = Intervals.calculateOverlap([(x.start, x.end) for x in r],
+                                                           [(promotor_start, promotor_end), ])
+
+        self.promotor_coverage = 100.0 * \
+            float(self.promotor_overlap) / (promotor_end - promotor_start)
 
         if self.largest_coverage >= self.threshold_min_coverage_transcript:
             self.is_transcribed = True
@@ -1854,23 +2002,28 @@ class ClassifierPolII(ClassifierIntervals):
 
     def __str__(self):
 
-        def to( v ):
-            if v: return "1" 
-            else: return "0"
+        def to(v):
+            if v:
+                return "1"
+            else:
+                return "0"
 
-        h = [ to(x) for x in (self.is_transcribed, 
-                              self.is_primed ) ]
-        h.extend( [ "%i" % self.noverlap,
-                    "%i" % self.largest_interval,
-                    "%i" % self.largest_overlap,
-                    "%5.2f" % self.largest_coverage,
-                    "%i" % self.promotor_overlap,
-                    "%5.2f" % self.promotor_coverage ] )
-        
-        return "\t".join( h )
+        h = [to(x) for x in (self.is_transcribed,
+                             self.is_primed)]
+        h.extend(["%i" % self.noverlap,
+                  "%i" % self.largest_interval,
+                  "%i" % self.largest_overlap,
+                  "%5.2f" % self.largest_coverage,
+                  "%i" % self.promotor_overlap,
+                  "%5.2f" % self.promotor_coverage])
 
-##-----------------------------------------------------------------------------------
+        return "\t".join(h)
+
+# ------------------------------------------------------------------------
+
+
 class CounterBindingPattern(CounterOverlap):
+
     """compute overlaps between gene and various tracks given
     by one or more gff files.
 
@@ -1878,7 +2031,7 @@ class CounterBindingPattern(CounterOverlap):
        a binding pattern.
     overlap
        number of intervals overlapping the genic region
-    
+
     Single exon genes have no intron.
     Genes with one intron have only a first intron.
     Genes with two introns have a first and a middle intron.
@@ -1889,14 +2042,13 @@ class CounterBindingPattern(CounterOverlap):
     intervals are point features.
     """
 
-    headerTemplate = [ "pattern", "overlap" ]
-
+    headerTemplate = ["pattern", "overlap"]
 
     # do not use strand
     mUseStrand = False
 
     mWithValues = False
-    
+
     mWithRecords = False
 
     # size of flank, make sure the headers are updated above.
@@ -1905,19 +2057,20 @@ class CounterBindingPattern(CounterOverlap):
     # number of bins in the flank
     flank_bins = 10
 
-    def __init__(self, *args, **kwargs ):
-        CounterOverlap.__init__(self, *args, **kwargs )
+    def __init__(self, *args, **kwargs):
+        CounterOverlap.__init__(self, *args, **kwargs)
 
         increment = self.flank // self.flank_bins
-	
-        self.headerTemplate.extend( 
-            [ "%s_%s" % (x,y) for x,y in itertools.product( 
-                    ("cds", "first_exon", "exon", "utr5", "utr3", "first_intron", "middle_intron", "last_intron", "intron" ) +\
-                        tuple( ["flank5_%05i" % x for x in range(0, self.flank, increment) ] ) +\
-                        tuple( ["flank3_%05i" % x for x in range(0, self.flank, increment) ] ),
-                    ("overlap", "poverlap" ) ) ] )
 
-    def count( self ):
+        self.headerTemplate.extend(
+            ["%s_%s" % (x, y) for x, y in itertools.product(
+                ("cds", "first_exon", "exon", "utr5", "utr3", "first_intron", "middle_intron", "last_intron", "intron") +
+                tuple(["flank5_%05i" % x for x in range(0, self.flank, increment)]) +
+                tuple(
+                    ["flank3_%05i" % x for x in range(0, self.flank, increment)]),
+                ("overlap", "poverlap"))])
+
+    def count(self):
 
         self.overlap_intron = 0
         self.overlap_exon = 0
@@ -1951,10 +2104,11 @@ class CounterBindingPattern(CounterOverlap):
 
         contig = self.getContig()
         strand = self.getStrand()
-        if contig not in self.mIntersectors: return
+        if contig not in self.mIntersectors:
+            return
 
         ######################################
-        ## build sub-intervals to count
+        # build sub-intervals to count
         utr5, utr3 = self.getUTRs()
         cds = self.getCDS()
         exons = self.getExons()
@@ -1962,134 +2116,160 @@ class CounterBindingPattern(CounterOverlap):
         start, end = exons[0][0], exons[-1][1]
 
         ######################################
-        ## get overlapping intervals
+        # get overlapping intervals
         extended_start, extended_end = start - self.flank, end + self.flank
-        overlaps = list(self.mIntersectors[contig].find( extended_start, extended_end ))
-        if len(overlaps) == 0 : return 
-        intervals = [(x.start, x.end) for x in overlaps ]
+        overlaps = list(
+            self.mIntersectors[contig].find(extended_start, extended_end))
+        if len(overlaps) == 0:
+            return
+        intervals = [(x.start, x.end) for x in overlaps]
 
-        self.overlap = len(intervals )
+        self.overlap = len(intervals)
 
         ######################################
-        ## build special sets
+        # build special sets
         first_intron, first_exon = [], []
         last_intron, middle_intron = [], []
         flank_increment = self.flank // self.flank_bins
 
         # flank is ordered such that indices move away from the tss or tes
         if strand == "+":
-            flank5 = [ [(x-flank_increment, x)] for x in range(start, start - self.flank, -flank_increment) ]
-            flank3 = [ [(x,x+flank_increment)] for x in range(end, end + self.flank, flank_increment) ]
-            if introns: 
+            flank5 = [[(x - flank_increment, x)]
+                      for x in range(start, start - self.flank, -flank_increment)]
+            flank3 = [[(x, x + flank_increment)]
+                      for x in range(end, end + self.flank, flank_increment)]
+            if introns:
                 first_intron = [introns[0]]
                 if len(introns) > 1:
                     last_intron = [introns[-1]]
                 if len(introns) > 2:
-                    middle_intron = [introns[len(introns) // 2 ] ] 
+                    middle_intron = [introns[len(introns) // 2]]
             first_exon = [exons[0]]
             del exons[0]
         else:
-            flank3 = [ [(x-flank_increment, x)] for x in range(start, start - self.flank, -flank_increment) ]
-            flank5 = [ [(x,x+flank_increment)] for x in range(end, end + self.flank, flank_increment) ]
-            if introns: 
+            flank3 = [[(x - flank_increment, x)]
+                      for x in range(start, start - self.flank, -flank_increment)]
+            flank5 = [[(x, x + flank_increment)]
+                      for x in range(end, end + self.flank, flank_increment)]
+            if introns:
                 first_intron = [introns[-1]]
                 if len(introns) > 1:
                     last_intron = [introns[0]]
                 if len(introns) > 2:
-                    middle_intron = [introns[len(introns) // 2 ] ] 
+                    middle_intron = [introns[len(introns) // 2]]
 
             first_exon = [exons[-1]]
             del exons[-1]
 
         #######################################
-        ## calculate overlap
-        self.overlap_intron = Intervals.calculateOverlap( introns, intervals )
-        self.overlap_exon = Intervals.calculateOverlap( exons, intervals )
-        self.overlap_utr5 = Intervals.calculateOverlap( utr5, intervals )
-        self.overlap_utr3 = Intervals.calculateOverlap( utr3, intervals )
-        self.overlap_cds = Intervals.calculateOverlap( cds, intervals )
-        self.overlap_first_exon = Intervals.calculateOverlap( first_exon, intervals )
-        self.overlap_first_intron = Intervals.calculateOverlap( first_intron, intervals )
-        self.overlap_last_intron = Intervals.calculateOverlap( last_intron, intervals )
-        self.overlap_middle_intron = Intervals.calculateOverlap( middle_intron, intervals )
+        # calculate overlap
+        self.overlap_intron = Intervals.calculateOverlap(introns, intervals)
+        self.overlap_exon = Intervals.calculateOverlap(exons, intervals)
+        self.overlap_utr5 = Intervals.calculateOverlap(utr5, intervals)
+        self.overlap_utr3 = Intervals.calculateOverlap(utr3, intervals)
+        self.overlap_cds = Intervals.calculateOverlap(cds, intervals)
+        self.overlap_first_exon = Intervals.calculateOverlap(
+            first_exon, intervals)
+        self.overlap_first_intron = Intervals.calculateOverlap(
+            first_intron, intervals)
+        self.overlap_last_intron = Intervals.calculateOverlap(
+            last_intron, intervals)
+        self.overlap_middle_intron = Intervals.calculateOverlap(
+            middle_intron, intervals)
 
-        for x, i in enumerate( flank5):
-            self.overlap_flank5[x] = Intervals.calculateOverlap( i, intervals )
-        for x, i in enumerate( flank3):
-            self.overlap_flank3[x] = Intervals.calculateOverlap( i, intervals )
-        
+        for x, i in enumerate(flank5):
+            self.overlap_flank5[x] = Intervals.calculateOverlap(i, intervals)
+        for x, i in enumerate(flank3):
+            self.overlap_flank3[x] = Intervals.calculateOverlap(i, intervals)
+
         #######################################
-        ## calculate percent overlap
+        # calculate percent overlap
         pp = IOTools.prettyPercent
-        self.poverlap_intron = pp( self.overlap_intron, Intervals.getLength( introns ), na = 0)
-        self.poverlap_exon = pp(self.overlap_exon, Intervals.getLength( exons ), na = 0)
-        self.poverlap_cds = pp(self.overlap_cds, Intervals.getLength( cds ), na = 0)
-        self.poverlap_utr5 = pp( self.overlap_utr5, Intervals.getLength( utr5 ), na = 0)
-        self.poverlap_utr3 = pp( self.overlap_utr3, Intervals.getLength( utr3 ), na = 0)
-        self.poverlap_first_exon = pp( self.overlap_first_exon, Intervals.getLength( first_exon ), na = 0)
-        self.poverlap_first_intron = pp( self.overlap_first_intron, Intervals.getLength( first_intron ), na = 0)
-        self.poverlap_middle_intron = pp( self.overlap_middle_intron, Intervals.getLength( middle_intron ), na = 0)
-        self.poverlap_last_intron = pp( self.overlap_last_intron, Intervals.getLength( last_intron ), na = 0)
+        self.poverlap_intron = pp(
+            self.overlap_intron, Intervals.getLength(introns), na=0)
+        self.poverlap_exon = pp(
+            self.overlap_exon, Intervals.getLength(exons), na=0)
+        self.poverlap_cds = pp(
+            self.overlap_cds, Intervals.getLength(cds), na=0)
+        self.poverlap_utr5 = pp(
+            self.overlap_utr5, Intervals.getLength(utr5), na=0)
+        self.poverlap_utr3 = pp(
+            self.overlap_utr3, Intervals.getLength(utr3), na=0)
+        self.poverlap_first_exon = pp(
+            self.overlap_first_exon, Intervals.getLength(first_exon), na=0)
+        self.poverlap_first_intron = pp(
+            self.overlap_first_intron, Intervals.getLength(first_intron), na=0)
+        self.poverlap_middle_intron = pp(
+            self.overlap_middle_intron, Intervals.getLength(middle_intron), na=0)
+        self.poverlap_last_intron = pp(
+            self.overlap_last_intron, Intervals.getLength(last_intron), na=0)
 
-        for x, v in enumerate( self.overlap_flank5 ):
-            self.poverlap_flank5[x] = pp( v, Intervals.getLength( flank5[x] ), na = 0)
-            
-        for x, v in enumerate( self.overlap_flank3 ):
-            self.poverlap_flank3[x] = pp( v, Intervals.getLength( flank3[x] ), na = 0)
+        for x, v in enumerate(self.overlap_flank5):
+            self.poverlap_flank5[x] = pp(
+                v, Intervals.getLength(flank5[x]), na=0)
+
+        for x, v in enumerate(self.overlap_flank3):
+            self.poverlap_flank3[x] = pp(
+                v, Intervals.getLength(flank3[x]), na=0)
 
         #######################################
-        ## build binding pattern
+        # build binding pattern
         pattern = []
-        for x in ( self.overlap_flank5[0], self.overlap_utr5, self.overlap_cds, 
-                   self.overlap_intron, self.overlap_utr3, self.overlap_flank3[0]):
-            if x: pattern.append("1")
-            else: pattern.append("0")
+        for x in (self.overlap_flank5[0], self.overlap_utr5, self.overlap_cds,
+                  self.overlap_intron, self.overlap_utr3, self.overlap_flank3[0]):
+            if x:
+                pattern.append("1")
+            else:
+                pattern.append("0")
 
         self.pattern = "".join(pattern)
 
     def __str__(self):
-        
-        data = [ self.pattern,
-                 self.overlap,
-                 self.overlap_cds,
-                 self.poverlap_cds,
-                 self.overlap_first_exon,
-                 self.poverlap_first_exon,
-                 self.overlap_exon,
-                 self.poverlap_exon,
-                 self.overlap_utr5,
-                 self.poverlap_utr5,
-                 self.overlap_utr3,
-                 self.poverlap_utr3,
-                 self.overlap_first_intron,
-                 self.poverlap_first_intron,
-                 self.overlap_middle_intron,
-                 self.poverlap_middle_intron,
-                 self.overlap_last_intron,
-                 self.poverlap_last_intron,
-                 self.overlap_intron,
-                 self.poverlap_intron,
-		 ]
+
+        data = [self.pattern,
+                self.overlap,
+                self.overlap_cds,
+                self.poverlap_cds,
+                self.overlap_first_exon,
+                self.poverlap_first_exon,
+                self.overlap_exon,
+                self.poverlap_exon,
+                self.overlap_utr5,
+                self.poverlap_utr5,
+                self.overlap_utr3,
+                self.poverlap_utr3,
+                self.overlap_first_intron,
+                self.poverlap_first_intron,
+                self.overlap_middle_intron,
+                self.poverlap_middle_intron,
+                self.overlap_last_intron,
+                self.poverlap_last_intron,
+                self.overlap_intron,
+                self.poverlap_intron,
+                ]
 
         for x in range(len(self.overlap_flank5)):
-            data.append( self.overlap_flank5[x] )
-            data.append( self.poverlap_flank5[x] )
+            data.append(self.overlap_flank5[x])
+            data.append(self.poverlap_flank5[x])
 
         for x in range(len(self.overlap_flank3)):
-            data.append( self.overlap_flank3[x] )
-            data.append( self.poverlap_flank3[x] )
+            data.append(self.overlap_flank3[x])
+            data.append(self.poverlap_flank3[x])
 
-        return "\t".join( map(str, data ) )
+        return "\t".join(map(str, data))
 
-##-----------------------------------------------------------------------------------
+# ------------------------------------------------------------------------
+
+
 class CounterOverrun(_gtf2table.Counter):
+
     """count intron overrun. 
-    
+
     This code is similar to counter, but ignores overlap with 
     introns at the 5' or 3' end of a transcript, i.e, only
     introns that are within the transcript range count.
 
-    
+
     AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
        RRRRRRRRRR       RRRRRRRRRRRRRR
     ^ignore          ^count
@@ -2098,86 +2278,90 @@ class CounterOverrun(_gtf2table.Counter):
     specially.
     """
 
-    header = ( "nover_exonic", "nover_intronic", "nover_external", "length" )
+    header = ("nover_exonic", "nover_intronic", "nover_external", "length")
 
-    ## Do not save value for intervals
+    # Do not save value for intervals
     mWithValues = False
 
-    ## do not save records for intervals
+    # do not save records for intervals
     mWithRecords = False
 
     def __init__(self, filename_gff, *args, **kwargs):
 
-        _gtf2table.Counter.__init__(self, *args, **kwargs )
+        _gtf2table.Counter.__init__(self, *args, **kwargs)
 
         if len(filename_gff) != 1:
-            raise ValueError("expected only one gff file" )
+            raise ValueError("expected only one gff file")
 
         source, feature = None, "CDS"
-        
-        e = readIntervalsFromGFF( filename_gff[0], 
-                                  source,
-                                  feature, 
-                                  with_values = self.mWithValues, 
-                                  with_records = self.mWithRecords, 
-                                  fasta = self.fasta,
-                                  format = self.options.filename_format )
+
+        e = readIntervalsFromGFF(filename_gff[0],
+                                 source,
+                                 feature,
+                                 with_values=self.mWithValues,
+                                 with_records=self.mWithRecords,
+                                 fasta=self.fasta,
+                                 format=self.options.filename_format)
 
         # convert intervals to intersectors
         for contig in e.keys():
             intersector = bx.intervals.intersection.Intersecter()
             for start, end in e[contig]:
-                intersector.add_interval( bx.intervals.Interval(start,end) )
+                intersector.add_interval(bx.intervals.Interval(start, end))
 
             e[contig] = intersector
 
         self.mIntersectors = e
-        
-        E.info( "loading data finished" )
+
+        E.info("loading data finished")
 
     def count(self):
 
         # collect overlapping segments
         segments = []
         contig = self.getContig()
-        if self.fasta: 
-            contig = self.fasta.getToken( contig)
-            
+        if self.fasta:
+            contig = self.fasta.getToken(contig)
+
         n = 0
         segments = self.getSegments()
         intervals = []
         if contig in self.mIntersectors:
             for start, end in segments:
-                r = self.mIntersectors[contig].find( start, end )
-                intervals += [ (x.start, x.end) for x in r ]
-                if r: n += 1
+                r = self.mIntersectors[contig].find(start, end)
+                intervals += [(x.start, x.end) for x in r]
+                if r:
+                    n += 1
 
-        intervals = Intervals.combineAtDistance( intervals,
-                                                 self.mMinIntronSize )
+        intervals = Intervals.combineAtDistance(intervals,
+                                                self.mMinIntronSize)
 
-        self.mNTotalLength = sum( [ x[1] - x[0] for x in segments ] )
+        self.mNTotalLength = sum([x[1] - x[0] for x in segments])
 
         if n and len(intervals):
 
             # build list with internal introns
-            internal_introns = Intervals.complement( intervals )
- 
+            internal_introns = Intervals.complement(intervals)
+
             # Truncate terminal CDS
             #start, end = min( [x[0] for x in segments] ), max( [ x[1] for x in segments ] )
             #intervals = [ ( max( start, x[0]), min( end,x[1]) ) for x in intervals ]
 
             # remove exons those not overlapping exons and
-            # truncate terminal exons in transcripts 
+            # truncate terminal exons in transcripts
             #start, end = min( [x[0] for x in intervals] ), max( [ x[1] for x in intervals ] )
-            #print start, end, segments
+            # print start, end, segments
             #segments = [ ( max( start, x[0]), min( end,x[1]) ) for x in segments if not (x[0] < end or x[1] > start) ]
 
-            self.mNOverlapExonic = Intervals.calculateOverlap( segments, intervals )
-            self.mNOverlapIntronic = Intervals.calculateOverlap( segments, internal_introns )
-            self.mNOverlapExternal = sum( [ x[1] - x[0] for x in segments ] ) - self.mNOverlapExonic - self.mNOverlapIntronic
+            self.mNOverlapExonic = Intervals.calculateOverlap(
+                segments, intervals)
+            self.mNOverlapIntronic = Intervals.calculateOverlap(
+                segments, internal_introns)
+            self.mNOverlapExternal = sum(
+                [x[1] - x[0] for x in segments]) - self.mNOverlapExonic - self.mNOverlapIntronic
 
             assert self.mNOverlapExternal >= 0, \
-                "intronic=%i, ovl=%i, intervals=%s - segments=%s" % (self.mNOverlapIntronic, 
+                "intronic=%i, ovl=%i, intervals=%s - segments=%s" % (self.mNOverlapIntronic,
                                                                      self.mNOverlapExonic,
                                                                      intervals, segments)
         else:
@@ -2186,14 +2370,17 @@ class CounterOverrun(_gtf2table.Counter):
             self.mNOverlapIntronic = 0
 
     def __str__(self):
-        return "\t".join( map(str, (self.mNOverlapExonic, 
-                                    self.mNOverlapIntronic, 
-                                    self.mNOverlapExternal,
-                                    self.mNTotalLength,
-                                    ) ) )
+        return "\t".join(map(str, (self.mNOverlapExonic,
+                                   self.mNOverlapIntronic,
+                                   self.mNOverlapExternal,
+                                   self.mNTotalLength,
+                                   )))
 
-##-----------------------------------------------------------------------------------
+# ------------------------------------------------------------------------
+
+
 class CounterDistance(_gtf2table.Counter):
+
     """counter for computing the distance to features on either side 
     of a feature.
 
@@ -2224,33 +2411,35 @@ class CounterDistance(_gtf2table.Counter):
     is set to 0.
     """
 
-    headerTemplate = ( "distance", "id", "dist5", "strand5", "id5", "dist3", "strand3", "id3" )
+    headerTemplate = (
+        "distance", "id", "dist5", "strand5", "id5", "dist3", "strand3", "id3")
 
-    ## do not save value for intervals
+    # do not save value for intervals
     mWithValues = False
 
-    ## save records for intervals in order to get strand information
+    # save records for intervals in order to get strand information
     mWithRecords = True
 
-    ## also compute overlap
+    # also compute overlap
     mWithOverlap = False
 
     def __init__(self, filename_gff, source, feature, *args, **kwargs):
-        _gtf2table.Counter.__init__(self, *args, **kwargs )
+        _gtf2table.Counter.__init__(self, *args, **kwargs)
 
         if feature and source:
-            self.header = [ "%s:%s:%s" % (x, source, feature) for x in self.headerTemplate ]
+            self.header = ["%s:%s:%s" % (x, source, feature)
+                           for x in self.headerTemplate]
         elif feature:
-            self.header = [ "%s:%s" % (x, feature) for x in self.headerTemplate ]
+            self.header = ["%s:%s" % (x, feature) for x in self.headerTemplate]
         elif source:
-            self.header = [ "%s:%s" % (x, source) for x in self.headerTemplate ]
+            self.header = ["%s:%s" % (x, source) for x in self.headerTemplate]
         else:
             self.header = self.headerTemplate
 
         if len(filename_gff) != 1:
-            raise ValueError("expected only one gff file" )
+            raise ValueError("expected only one gff file")
 
-        e = self.readIntervals( filename_gff[0], source, feature )
+        e = self.readIntervals(filename_gff[0], source, feature)
 
         # collect start and end points and points of intersection
         self.startPoints, self.startValues = {}, {}
@@ -2259,22 +2448,22 @@ class CounterDistance(_gtf2table.Counter):
 
         for contig, values in e.items():
             for start, end, value in values:
-                self.mIntervals.add( contig, start, end, value )
-		
-            values.sort( key = lambda x: x[0] )
-            self.startPoints[contig] = [ x[0] for x in values ]
-            self.startValues[contig] = [ x[2] for x in values ]
-            values.sort( key = lambda x: x[1] )
-            self.endPoints[contig] = [ x[1] for x in values ]
-            self.endValues[contig] = [ x[2] for x in values ]
+                self.mIntervals.add(contig, start, end, value)
 
-        E.info( "loading data finished" )
+            values.sort(key=lambda x: x[0])
+            self.startPoints[contig] = [x[0] for x in values]
+            self.startValues[contig] = [x[2] for x in values]
+            values.sort(key=lambda x: x[1])
+            self.endPoints[contig] = [x[1] for x in values]
+            self.endValues[contig] = [x[2] for x in values]
 
-    def readIntervals( self, filename_gff, source, feature ):
+        E.info("loading data finished")
 
-        return readIntervalsFromGFF( filename_gff, source, feature, 
-                                     self.mWithValues, self.mWithRecords, self.fasta,
-                                     format = self.options.filename_format )
+    def readIntervals(self, filename_gff, source, feature):
+
+        return readIntervalsFromGFF(filename_gff, source, feature,
+                                    self.mWithValues, self.mWithRecords, self.fasta,
+                                    format=self.options.filename_format)
 
     def count(self):
         """find closest feature in 5' and 3' direction."""
@@ -2282,10 +2471,11 @@ class CounterDistance(_gtf2table.Counter):
         # collect overlapping segments
         segments = self.getSegments()
         contig = self.getContig()
-        if self.fasta: contig = self.fasta.getToken( contig)
+        if self.fasta:
+            contig = self.fasta.getToken(contig)
 
-        start = min( x[0] for x in segments )
-        end = max( x[1] for x in segments )
+        start = min(x[0] for x in segments)
+        end = max(x[1] for x in segments)
 
         self.mData = None
         self.mDistance5 = "na"
@@ -2294,7 +2484,7 @@ class CounterDistance(_gtf2table.Counter):
         self.mDistance3 = "na"
         self.strand3 = "na"
         self.mData3 = None
-        self.mIsNegativeStrand = Genomics.IsNegativeStrand( self.getStrand() )
+        self.mIsNegativeStrand = Genomics.IsNegativeStrand(self.getStrand())
         self.mDistance = "na"
         has5, has3 = False, False
 
@@ -2304,7 +2494,7 @@ class CounterDistance(_gtf2table.Counter):
             self.mOverlaps = list(self.mIntervals.get(contig, start, end))
         except KeyError:
             # ignore unknown contigs
-            E.warn( "unknown contig %s" % contig )
+            E.warn("unknown contig %s" % contig)
             return
 
         if self.mOverlaps:
@@ -2313,9 +2503,9 @@ class CounterDistance(_gtf2table.Counter):
             self.mData = [x[2] for x in self.mOverlaps]
         else:
             if contig in self.startValues:
-                entry_before = bisect.bisect( self.endPoints[contig], start ) - 1
-                entry_after = bisect.bisect( self.startPoints[contig], end )
-		
+                entry_before = bisect.bisect(self.endPoints[contig], start) - 1
+                entry_after = bisect.bisect(self.startPoints[contig], end)
+
                 if entry_before >= 0:
                     e = self.endValues[contig][entry_before]
                     self.mDistance5 = start - e.end
@@ -2323,11 +2513,11 @@ class CounterDistance(_gtf2table.Counter):
                     self.mData5 = e
                     has5 = True
 
-                if entry_after < len( self.startPoints[contig] ):
+                if entry_after < len(self.startPoints[contig]):
                     e = self.startValues[contig][entry_after]
                     self.mDistance3 = e.start - end
                     self.strand3 = e.strand
-                    self.mData3 = e 
+                    self.mData3 = e
                     has3 = True
 
             if has5 and has3:
@@ -2336,10 +2526,10 @@ class CounterDistance(_gtf2table.Counter):
                 else:
                     self.mDistance, self.mData = self.mDistance3, self.mData3
             elif has5:
-                self.mDistance =self.mDistance5 
+                self.mDistance = self.mDistance5
                 self.mData = self.mData5
             elif has3:
-                self.mDistance =self.mDistance3
+                self.mDistance = self.mDistance3
                 self.mData = self.mData3
 
             if self.mIsNegativeStrand:
@@ -2347,22 +2537,27 @@ class CounterDistance(_gtf2table.Counter):
                     self.mDistance3, self.strand3, self.mData3, self.mDistance5, self.strand5, self.mData5
 
     def __str__(self):
-        
-        def toId( x ):
-            if x: return x.gene_id
-            else: return "na"
 
-        return "\t".join( ( str(self.mDistance),
-                            toId( self.mData),
-                            str(self.mDistance5),
-                            self.strand5,
-                            toId( self.mData5),
-                            str(self.mDistance3),
-                            self.strand3,
-                            toId( self.mData3) ))
+        def toId(x):
+            if x:
+                return x.gene_id
+            else:
+                return "na"
 
-##-----------------------------------------------------------------------------------
+        return "\t".join((str(self.mDistance),
+                          toId(self.mData),
+                          str(self.mDistance5),
+                          self.strand5,
+                          toId(self.mData5),
+                          str(self.mDistance3),
+                          self.strand3,
+                          toId(self.mData3)))
+
+# ------------------------------------------------------------------------
+
+
 class CounterDistanceGenes(CounterDistance):
+
     """counter for computing the distance to genes.
 
     There are two distances of interest:
@@ -2395,27 +2590,28 @@ class CounterDistanceGenes(CounterDistance):
     only one (the first) is output.
     """
 
-    headerTemplate = ( "closest_id", "closest_dist", "closest_strand", "id5", "dist5", "strand5", "id3", "dist3", "strand3", "min5", "min3", "amin5", "amin3" )
+    headerTemplate = ("closest_id", "closest_dist", "closest_strand", "id5", "dist5",
+                      "strand5", "id3", "dist3", "strand3", "min5", "min3", "amin5", "amin3")
 
-    ## do not save value for intervals
+    # do not save value for intervals
     mWithValues = False
 
-    ## save records for intervals in order to get strand information
+    # save records for intervals in order to get strand information
     mWithRecords = True
 
     def __init__(self, *args, **kwargs):
-        CounterDistance.__init__(self, *args, **kwargs )
+        CounterDistance.__init__(self, *args, **kwargs)
 
-    def readIntervals( self, filename_gff, source, feature ):
+    def readIntervals(self, filename_gff, source, feature):
 
-        return readIntervalsFromGFF( filename_gff, source, feature, 
-                                     self.mWithValues, self.mWithRecords, self.fasta,
-                                     merge_genes = True,
-                                     format = self.options.filename_format )
+        return readIntervalsFromGFF(filename_gff, source, feature,
+                                    self.mWithValues, self.mWithRecords, self.fasta,
+                                    merge_genes=True,
+                                    format=self.options.filename_format)
 
     def __str__(self):
 
-        id5, id3, d3, d5, m3, m5 = "na", "na", "na" , "na", "na", "na"
+        id5, id3, d3, d5, m3, m5 = "na", "na", "na", "na", "na", "na"
         any3, any5 = "", ""
 
         if self.mOverlaps:
@@ -2423,12 +2619,12 @@ class CounterDistanceGenes(CounterDistance):
             closest_dist = 0
             closest_strand = "."
         else:
-            if self.mData5: 
+            if self.mData5:
                 id5 = self.mData5.gene_id
-            if self.mData3: 
+            if self.mData3:
                 id3 = self.mData3.gene_id
 
-	    ## get distances to closest feature in 3' and 5' directions
+            # get distances to closest feature in 3' and 5' directions
             d5, d3 = [], []
             dist5, dist3, strand5, strand3 = self.mDistance5, self.mDistance3, self.strand5, self.strand3
 
@@ -2437,25 +2633,31 @@ class CounterDistanceGenes(CounterDistance):
                 strand5, strand3 = strand3, strand5
 
             if not Genomics.IsNegativeStrand(strand5):
-                d3.append( dist5 )
+                d3.append(dist5)
             else:
-                d5.append( dist5 )
+                d5.append(dist5)
 
             if not Genomics.IsNegativeStrand(strand3):
-                d5.append( dist3 )
+                d5.append(dist3)
             else:
-                d3.append( dist3 )
+                d3.append(dist3)
 
-	    # get minimum distance to 3' or 5' end of a gene
-            if d3: any3 = d3 = min(d3) 
-            else: any3 = d3 = "na"
-            if d5: any5 = d5 = min(d5)
-            else: any5 = d5 = "na"
+            # get minimum distance to 3' or 5' end of a gene
+            if d3:
+                any3 = d3 = min(d3)
+            else:
+                any3 = d3 = "na"
+            if d5:
+                any5 = d5 = min(d5)
+            else:
+                any5 = d5 = "na"
 
             # record the closest distance to a gene in any direction
             if any3 != "na" and any5 != "na":
-                if any3 < any5: any5 = "na"
-                elif any5 < any3: any3 = "na"
+                if any3 < any5:
+                    any5 = "na"
+                elif any5 < any3:
+                    any3 = "na"
 
             # record the shortest distance
             if self.mDistance3 == None or self.mDistance5 == None:
@@ -2471,25 +2673,27 @@ class CounterDistanceGenes(CounterDistance):
                 closest_id, closest_dist, closest_strand = self.mData5.gene_id, self.mDistance5, self.strand5
             else:
                 closest_id, closest_dist, closest_strand = "na", "na", "na"
- 
 
-        return "\t".join( ( 
-                closest_id,
-                str(closest_dist),
-                str(closest_strand),
-                id5,
-                str(self.mDistance5),
-                self.strand5,
-                id3,
-                str(self.mDistance3),
-                self.strand3,
-                str(d5),
-                str(d3),
-                str(any5),
-                str(any3)) )
+        return "\t".join((
+            closest_id,
+            str(closest_dist),
+            str(closest_strand),
+            id5,
+            str(self.mDistance5),
+            self.strand5,
+            id3,
+            str(self.mDistance3),
+            self.strand3,
+            str(d5),
+            str(d3),
+            str(any5),
+            str(any3)))
 
-##-----------------------------------------------------------------------------------
+# ------------------------------------------------------------------------
+
+
 class CounterDistanceTranscriptionStartSites(CounterDistance):
+
     """compute the distance to transcription start sites.
 
     Assumes that the intervals supplied are transcription start sites.
@@ -2515,31 +2719,31 @@ class CounterDistanceTranscriptionStartSites(CounterDistance):
     the tss. It is negative for upstream distances.
     """
 
+    headerTemplate = ("closest_id", "closest_dist",
+                      "closest_strand",
+                      "upstream_id", "upstream_dist",
+                      "downstream_id", "downstream_dist",
+                      "is_overlap")
 
-    headerTemplate = ( "closest_id", "closest_dist",                        
-                       "closest_strand", 
-                       "upstream_id", "upstream_dist",
-                       "downstream_id", "downstream_dist",
-                       "is_overlap" )
-
-    ## do not save value for intervals
+    # do not save value for intervals
     mWithValues = False
 
-    ## save records for intervals in order to get strand information
+    # save records for intervals in order to get strand information
     mWithRecords = True
 
-    ## also compute overlap
+    # also compute overlap
     mWithOverlap = True
 
     def __init__(self, *args, **kwargs):
-        CounterDistance.__init__(self, *args, **kwargs )
+        CounterDistance.__init__(self, *args, **kwargs)
 
-    def readIntervals( self, filename_gff, source, feature ):
+    def readIntervals(self, filename_gff, source, feature):
 
-        return readIntervalsFromGFF( filename_gff, source, feature, 
-                                     self.mWithValues, self.mWithRecords, self.fasta,
-                                     merge_genes = False,
-                                     format = self.options.filename_format )
+        return readIntervalsFromGFF(filename_gff, source, feature,
+                                    self.mWithValues, self.mWithRecords, self.fasta,
+                                    merge_genes=False,
+                                    format=self.options.filename_format)
+
     def __str__(self):
 
         closest_id, closest_dist, closest_strand = ["na"] * 3
@@ -2547,17 +2751,19 @@ class CounterDistanceTranscriptionStartSites(CounterDistance):
 
         overlaps = self.mOverlaps
         if overlaps:
-            gene_ids = set([ x[2].gene_id for x in overlaps ])
+            gene_ids = set([x[2].gene_id for x in overlaps])
             is_overlap = str(len(gene_ids))
-            closest_id, closest_dist, closest_strand = ",".join( gene_ids), 0, "."            
-            closest_id, closest_dist, closest_strand = list(gene_ids)[0], 0, "."
+            closest_id, closest_dist, closest_strand = ",".join(
+                gene_ids), 0, "."
+            closest_id, closest_dist, closest_strand = list(
+                gene_ids)[0], 0, "."
         else:
             is_overlap = "0"
 
-            ## get distances to closest features depending which
-            ## direction they are pointing.
+            # get distances to closest features depending which
+            # direction they are pointing.
 
-            ## distance is always distance to 5' end
+            # distance is always distance to 5' end
 
             upstream, downstream = [], []
             # 5'-----[ this ] ----- 3'
@@ -2565,28 +2771,35 @@ class CounterDistanceTranscriptionStartSites(CounterDistance):
             # feature closest in 5' direction of this feature
             if self.mData5:
                 if Genomics.IsPositiveStrand(self.strand5):
-                    # 5'->3'-----[this] 
+                    # 5'->3'-----[this]
                     # feature points in same direction
-                    downstream.append( (self.mDistance5 + (self.mData5.end - self.mData5.start), 
-                                        self.mData5.gene_id, self.strand5) )
+                    downstream.append((self.mDistance5 + (self.mData5.end - self.mData5.start),
+                                       self.mData5.gene_id, self.strand5))
                 else:
-                    # 3'<-5'-----[this] 
+                    # 3'<-5'-----[this]
                     # feature points in different direction
-                    upstream.append( (self.mDistance5, self.mData5.gene_id, self.strand5) )
+                    upstream.append(
+                        (self.mDistance5, self.mData5.gene_id, self.strand5))
 
             if self.mData3:
                 if Genomics.IsPositiveStrand(self.strand3):
                     # [this]-----5'->3'
-                    upstream.append( (self.mDistance3, self.mData3.gene_id, self.strand3) )
+                    upstream.append(
+                        (self.mDistance3, self.mData3.gene_id, self.strand3))
                 else:
                     # [this]-----3'<-5'
-                    downstream.append( (self.mDistance3 + (self.mData3.end - self.mData3.start), self.mData3.gene_id, self.strand3) )
+                    downstream.append(
+                        (self.mDistance3 + (self.mData3.end - self.mData3.start), self.mData3.gene_id, self.strand3))
 
             # get minimum distance to 3' or 5' end of a gene
-            if downstream: downstream = min(downstream) 
-            else: downstream = []
-            if upstream: upstream = min(upstream)
-            else: upstream = []
+            if downstream:
+                downstream = min(downstream)
+            else:
+                downstream = []
+            if upstream:
+                upstream = min(upstream)
+            else:
+                upstream = []
 
             if downstream and upstream:
                 if downstream < upstream:
@@ -2599,44 +2812,51 @@ class CounterDistanceTranscriptionStartSites(CounterDistance):
             elif upstream:
                 closest_dist, closest_id, closest_strand = upstream
 
-            if downstream: downstream_dist, downstream_id = downstream[:2]
-            if upstream: upstream_dist, upstream_id = upstream[:2]
+            if downstream:
+                downstream_dist, downstream_id = downstream[:2]
+            if upstream:
+                upstream_dist, upstream_id = upstream[:2]
 
-        return "\t".join( ( 
-                closest_id,
-                str(closest_dist),
-                str(closest_strand),
-                upstream_id,
-                str(upstream_dist),
-                downstream_id,
-                str(downstream_dist),
-                is_overlap) )    
+        return "\t".join((
+            closest_id,
+            str(closest_dist),
+            str(closest_strand),
+            upstream_id,
+            str(upstream_dist),
+            downstream_id,
+            str(downstream_dist),
+            is_overlap))
 
-##--------------------------------------------------------------------------------------------
-##--------------------------------------------------------------------------------------------
-##--------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------
+# ------------------------------------------------------------------------
+# ------------------------------------------------------------------------
+
+
 class CounterSpliceSiteComparison(CounterOverlap):
+
     """compare splice sites to reference
     """
 
-    headerTemplate = [ "splice_%s" % x for x in ( "total", "found", "missed", "perfect", "partial", "incomplete", "exon_skipping" ) ]
+    headerTemplate = ["splice_%s" % x for x in (
+        "total", "found", "missed", "perfect", "partial", "incomplete", "exon_skipping")]
 
     def __init__(self, *args, **kwargs):
-        CounterOverlap.__init__(self, *args, **kwargs )
+        CounterOverlap.__init__(self, *args, **kwargs)
 
     def count(self):
 
         # collect overlapping segments with introns
         segments = self.getIntrons()
         contig = self.getContig()
-        if self.fasta: contig = self.fasta.getToken( contig)
+        if self.fasta:
+            contig = self.fasta.getToken(contig)
 
         self.mNMissed, self.mNFound = 0, 0
         self.mNPerfectMatch, self.mNPartialMatch = 0, 0
         self.mNIncompleteMatch, self.mNExonSkippingMatch = 0, 0
         for start, end in segments:
             if contig in self.mIntersectors:
-                s = self.mIntersectors[contig].find( start, end )
+                s = self.mIntersectors[contig].find(start, end)
                 if s:
                     self.mNFound += 1
                     if len(s) == 1:
@@ -2655,18 +2875,21 @@ class CounterSpliceSiteComparison(CounterOverlap):
         self.mNTotal = self.mNMissed + self.mNFound
 
     def __str__(self):
-        return "\t".join( [str(x) for x in (self.mNTotal,
-                                            self.mNFound,
-                                            self.mNMissed,
-                                            self.mNPerfectMatch,
-                                            self.mNPartialMatch,
-                                            self.mNIncompleteMatch,
-                                            self.mNExonSkippingMatch ) ] )
+        return "\t".join([str(x) for x in (self.mNTotal,
+                                           self.mNFound,
+                                           self.mNMissed,
+                                           self.mNPerfectMatch,
+                                           self.mNPartialMatch,
+                                           self.mNIncompleteMatch,
+                                           self.mNExonSkippingMatch)])
 
-##--------------------------------------------------------------------------------------------
-##--------------------------------------------------------------------------------------------
-##--------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------
+# ------------------------------------------------------------------------
+# ------------------------------------------------------------------------
+
+
 class CounterProximity(CounterOverlap):
+
     """extract ranges in proximity to feature. 
 
     Outputs arrays and stats of the lengths and values 
@@ -2679,13 +2902,14 @@ class CounterProximity(CounterOverlap):
     may overlap the range in question.
     """
 
-    headerTemplate = Stats.Summary().getHeaders() + ( "length", "lengths", "values", ) 
+    headerTemplate = Stats.Summary().getHeaders(
+    ) + ("length", "lengths", "values", )
 
-    ## save value for intervals
+    # save value for intervals
     mWithValues = True
 
     def __init__(self, *args, **kwargs):
-        CounterOverlap.__init__(self, *args, **kwargs )
+        CounterOverlap.__init__(self, *args, **kwargs)
 
         self.mProximalDistance = self.options.proximal_distance
 
@@ -2694,32 +2918,36 @@ class CounterProximity(CounterOverlap):
         # collect overlapping segments
         segments = self.getSegments()
         contig = self.getContig()
-        if self.fasta: 
-            contig = self.fasta.getToken( contig)
+        if self.fasta:
+            contig = self.fasta.getToken(contig)
 
         n = 0
-        start = min( x[0] for x in segments )
-        end = max( x[1] for x in segments )
+        start = min(x[0] for x in segments)
+        end = max(x[1] for x in segments)
 
-        start = max( start - self.mProximalDistance, 0 )
+        start = max(start - self.mProximalDistance, 0)
         end += self.mProximalDistance
 
         if contig in self.mIntersectors:
-            self.mSegments = self.mIntersectors[contig].find( start, end )
+            self.mSegments = self.mIntersectors[contig].find(start, end)
         else:
             self.mSegments = []
 
     def __str__(self):
-        s = Stats.Summary( [ x.value for x in self.mSegments ] )
-        values = ";".join( [ "%s-%s:%s" % (x.start, x.end, x.value) for x in self.mSegments ] )
-        length = sum( [ x.end - x.start for x in self.mSegments ] )
-        lengths = ";".join( [ str(x.end-x.start) for x in self.mSegments ] )
-        return "\t".join( (str(s),str(length),lengths,values ) )
+        s = Stats.Summary([x.value for x in self.mSegments])
+        values = ";".join(["%s-%s:%s" % (x.start, x.end, x.value)
+                          for x in self.mSegments])
+        length = sum([x.end - x.start for x in self.mSegments])
+        lengths = ";".join([str(x.end - x.start) for x in self.mSegments])
+        return "\t".join((str(s), str(length), lengths, values))
 
-##--------------------------------------------------------------------------------------------
-##--------------------------------------------------------------------------------------------
-##--------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------
+# ------------------------------------------------------------------------
+# ------------------------------------------------------------------------
+
+
 class CounterProximityExclusive(CounterProximity):
+
     """extract ranges in proximity with ranges.
 
     Proximal ranges are within distance mMaxDistance and
@@ -2731,7 +2959,7 @@ class CounterProximityExclusive(CounterProximity):
     """
 
     def __init__(self, *args, **kwargs):
-        CounterProximity.__init__(self, *args, **kwargs )
+        CounterProximity.__init__(self, *args, **kwargs)
 
     def count(self):
 
@@ -2744,17 +2972,20 @@ class CounterProximityExclusive(CounterProximity):
         new = []
         for ss in self.mSegments:
             for s, e in segments:
-                if min(ss.end,e)-max(ss.start,s) > 0:
+                if min(ss.end, e) - max(ss.start, s) > 0:
                     break
             else:
                 new.append(ss)
 
         self.mSegments = new
 
-##--------------------------------------------------------------------------------------------
-##--------------------------------------------------------------------------------------------
-##--------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------
+# ------------------------------------------------------------------------
+# ------------------------------------------------------------------------
+
+
 class CounterProximityLengthMatched(CounterProximity):
+
     """extract ranges in proximity with ranges and also
     do a length match.
 
@@ -2769,7 +3000,7 @@ class CounterProximityLengthMatched(CounterProximity):
     mSizeDifference = 0.1
 
     def __init__(self, *args, **kwargs):
-        CounterProximity.__init__(self, *args, **kwargs )
+        CounterProximity.__init__(self, *args, **kwargs)
 
     def count(self):
 
@@ -2779,16 +3010,18 @@ class CounterProximityLengthMatched(CounterProximity):
         # remove all segments overlapping with any of these segments
         # quick and dirty exhaustive search against exons (should be only few)
         segments = self.getSegments()
-        total_length = sum( x[1] - x[0] for x in segments )
-        min_length = int(math.floor((1.0 - self.mSizeDifference) * total_length))
-        max_length = int(math.ceil((1.0 + self.mSizeDifference) * total_length))
+        total_length = sum(x[1] - x[0] for x in segments)
+        min_length = int(
+            math.floor((1.0 - self.mSizeDifference) * total_length))
+        max_length = int(
+            math.ceil((1.0 + self.mSizeDifference) * total_length))
         new = []
         for ss in self.mSegments:
             l = ss.end - ss.start
-            if l < min_length or l > max_length: 
+            if l < min_length or l > max_length:
                 continue
             for s, e in segments:
-                if min(ss.end,e)-max(ss.start,s) > 0:
+                if min(ss.end, e) - max(ss.start, s) > 0:
                     break
             else:
                 new.append(ss)
@@ -2796,10 +3029,11 @@ class CounterProximityLengthMatched(CounterProximity):
         self.mSegments = new
 
 
-##--------------------------------------------------------------------------------------------
-##--------------------------------------------------------------------------------------------
-##--------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------
+# ------------------------------------------------------------------------
+# ------------------------------------------------------------------------
 class CounterNeighbours(CounterProximity):
+
     """extract features in second stream that are in proximity 
     to feature. 
 
@@ -2812,12 +3046,12 @@ class CounterNeighbours(CounterProximity):
     may overlap the range in question.
     """
 
-    headerTemplate = ( "ids", "dists" ) 
+    headerTemplate = ("ids", "dists")
 
-    ## save value for intervals
+    # save value for intervals
     mWithValues = False
     mWithRecords = True
-    mIsGTF = True 
+    mIsGTF = True
 
     def count(self):
 
@@ -2826,8 +3060,8 @@ class CounterNeighbours(CounterProximity):
 
         # compute distance to segments
         segments = self.getSegments()
-        start = min( x[0] for x in segments )
-        end = max( x[1] for x in segments )
+        start = min(x[0] for x in segments)
+        end = max(x[1] for x in segments)
 
         self.mDistances = []
 
@@ -2839,21 +3073,24 @@ class CounterNeighbours(CounterProximity):
             else:
                 d = 0
 
-            if Genomics.IsNegativeStrand( seg.value.strand ):
+            if Genomics.IsNegativeStrand(seg.value.strand):
                 d = -d
 
-            self.mDistances.append( d )
+            self.mDistances.append(d)
 
     def __str__(self):
 
-        ids = ";".join( [x.value.gene_id for x in self.mSegments] )
-        dists = ";".join( map(str,self.mDistances))
-        return "\t".join( (ids,dists) )
+        ids = ";".join([x.value.gene_id for x in self.mSegments])
+        dists = ";".join(map(str, self.mDistances))
+        return "\t".join((ids, dists))
 
-##--------------------------------------------------------------------------------------------
-##--------------------------------------------------------------------------------------------
-##--------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------
+# ------------------------------------------------------------------------
+# ------------------------------------------------------------------------
+
+
 class CounterTerritories(CounterOverlap):
+
     """compute overlap of a feature with territories.
 
     status flag:
@@ -2864,32 +3101,32 @@ class CounterTerritories(CounterOverlap):
 
     headerTemplate = ("status", "nterritories", "territories", )
 
-    ## save pointer for intervals
+    # save pointer for intervals
     mWithRecords = True
 
     def __init__(self, *args, **kwargs):
-        CounterOverlap.__init__(self, *args, **kwargs )
+        CounterOverlap.__init__(self, *args, **kwargs)
 
     def count(self):
 
         # collect overlapping segments
         segments = self.getSegments()
         contig = self.getContig()
-        if self.fasta: 
+        if self.fasta:
             try:
-                contig = self.fasta.getToken( contig)
+                contig = self.fasta.getToken(contig)
             except KeyError:
-                E.warn( "contig %s not found" % contig )
+                E.warn("contig %s not found" % contig)
 
         n = 0
-        start = min( x[0] for x in segments )
-        end = max( x[1] for x in segments )
+        start = min(x[0] for x in segments)
+        end = max(x[1] for x in segments)
 
         if contig in self.mIntersectors:
-            self.mSegments = self.mIntersectors[contig].find( start, end )
+            self.mSegments = self.mIntersectors[contig].find(start, end)
         else:
             self.mSegments = []
-            
+
         if self.mSegments:
             if len(self.mSegments) == 1:
                 self.mStatus = "U"
@@ -2899,28 +3136,31 @@ class CounterTerritories(CounterOverlap):
             self.mStatus = "0"
 
         self.mNAssignments = len(self.mSegments)
-        self.mAssignments = ":".join( [x.value["gene_id"] for x in self.mSegments] )
+        self.mAssignments = ":".join(
+            [x.value["gene_id"] for x in self.mSegments])
 
     def __str__(self):
-        return "\t".join( (self.mStatus, 
-                           "%i" % self.mNAssignments,
-                           self.mAssignments) )
+        return "\t".join((self.mStatus,
+                          "%i" % self.mNAssignments,
+                          self.mAssignments))
 
-##-----------------------------------------------------------------------------------
+# ------------------------------------------------------------------------
+
+
 class CounterQuality(_gtf2table.Counter):
 
-    header = (Stats.Summary().getHeaders() + ("values",) )
-    
+    header = (Stats.Summary().getHeaders() + ("values",))
+
     # discard segments with size > mMaxLength in order
     # to avoid out-of-memory
     mMaxLength = 100000
 
-    def __init__(self, *args, **kwargs ):
-        _gtf2table.Counter.__init__(self, *args, **kwargs )
+    def __init__(self, *args, **kwargs):
+        _gtf2table.Counter.__init__(self, *args, **kwargs)
 
     def count(self):
         ee = self.getSegments()
-        self.result = self.getQuality( ee )
+        self.result = self.getQuality(ee)
 
     def getQuality(self, segments):
         """get sequence from a set of segments."""
@@ -2928,24 +3168,26 @@ class CounterQuality(_gtf2table.Counter):
         contig = self.getContig()
         # quality is always '+'
         strand = "+"
-        
+
         s = None
-        for start,end in segments:
-            if end - start > self.mMaxLength: return []
+        for start, end in segments:
+            if end - start > self.mMaxLength:
+                return []
             if not s:
-                s = self.fasta.getSequence( contig, strand, start, end )
+                s = self.fasta.getSequence(contig, strand, start, end)
             else:
-                s.extend(self.fasta.getSequence( contig, strand, start, end ))
+                s.extend(self.fasta.getSequence(contig, strand, start, end))
         return s
 
     def __str__(self):
-        s = Stats.Summary( self.result, mode = "int" )
-        values = ";".join( [ str(x) for x in self.result ] )
-        return "\t".join( (str(s),values ) )
+        s = Stats.Summary(self.result, mode="int")
+        values = ";".join([str(x) for x in self.result])
+        return "\t".join((str(s), values))
 
 
-##-----------------------------------------------------------------------------------
+# ------------------------------------------------------------------------
 class CounterReadExtension(_gtf2table.Counter):
+
     '''compute read distribution from 3' to 5' end.
 
     Requires bam files to compute that coverage. Multiple bam
@@ -2971,54 +3213,59 @@ class CounterReadExtension(_gtf2table.Counter):
     # ignore those with 0 quality
     min_quality = 1
 
-    def __init__(self, bamfiles, filename_gff, *args, **kwargs ):
+    def __init__(self, bamfiles, filename_gff, *args, **kwargs):
 
-        _gtf2table.Counter.__init__(self, *args, **kwargs )
+        _gtf2table.Counter.__init__(self, *args, **kwargs)
 
         if len(filename_gff) != 2:
-            raise ValueError("expected two gff files: territories and UTRs" )
+            raise ValueError("expected two gff files: territories and UTRs")
 
-        self.labels = ("upstream", "downstream", "firstexon", "lastexon", "utr5", "utr3" )
-        self.directions =  ("sense", "antisense", "anysense" )
+        self.labels = (
+            "upstream", "downstream", "firstexon", "lastexon", "utr5", "utr3")
+        self.directions = ("sense", "antisense", "anysense")
 
         self.header = \
-            tuple( 
-            [ "%s_%s" % (x,y) for x,y in itertools.product( self.labels, ("length", "start", "end")) ] +\
-                [ "%s_%s" % (x,y) for x,y in itertools.product(             
-                        [ "%s_%s" % (xx, yy) for xx, yy in itertools.product(self.labels, self.directions)],
-                        ("pcovered", ) + Stats.Summary().getHeaders() ) ] )
-            
-        self.outfiles = IOTools.FilePool( self.options.output_filename_pattern % "readextension_%s" )
+            tuple(
+                ["%s_%s" % (x, y) for x, y in itertools.product(self.labels, ("length", "start", "end"))] +
+                ["%s_%s" % (x, y) for x, y in itertools.product(
+                    ["%s_%s" % (xx, yy)
+                     for xx, yy in itertools.product(self.labels, self.directions)],
+                    ("pcovered", ) + Stats.Summary().getHeaders())])
+
+        self.outfiles = IOTools.FilePool(
+            self.options.output_filename_pattern % "readextension_%s")
 
         # -1 is the terminal exon
-        for x,y in itertools.product( self.labels[:2], self.directions):
-            self.outfiles.write( "%s_%s" % (x,y), 
-                                 "%s\n" % "\t".join( 
-                    ("gene_id", "length", "utr", "exon" ) + tuple(map(str, range( 0, 
-                                                                                  self.max_territory_size, 
-                                                                                  self.increment ) ) ) ) )
+        for x, y in itertools.product(self.labels[:2], self.directions):
+            self.outfiles.write("%s_%s" % (x, y),
+                                "%s\n" % "\t".join(
+                                    ("gene_id", "length", "utr", "exon") + tuple(map(str, range(0,
+                                                                                                self.max_territory_size,
+                                                                                                self.increment)))))
 
-        if not bamfiles: raise ValueError("supply --bam-file options for readcoverage")
+        if not bamfiles:
+            raise ValueError("supply --bam-file options for readcoverage")
         self.mBamFiles = bamfiles
 
         filename_territories_gff, filename_utrs_gff = filename_gff
 
         # read territories
         self.territories = {}
-        for gtf in GTF.iterator( IOTools.openFile( filename_territories_gff ) ):
+        for gtf in GTF.iterator(IOTools.openFile(filename_territories_gff)):
             if gtf.gene_id in self.territories:
-                raise ValueError( "need territories - multiple entries for gene %s" % gtf.gene_id)
-            
+                raise ValueError(
+                    "need territories - multiple entries for gene %s" % gtf.gene_id)
+
             self.territories[gtf.gene_id] = (gtf.contig, gtf.start, gtf.end)
-            
+
         # read known UTRs
-        self.UTRs = collections.defaultdict( list )
-        for gtf in GTF.iterator( IOTools.openFile( filename_utrs_gff ) ):
+        self.UTRs = collections.defaultdict(list)
+        for gtf in GTF.iterator(IOTools.openFile(filename_utrs_gff)):
             if gtf.feature in ("UTR5", "UTR3", "UTR"):
-                self.UTRs[gtf.gene_id].append( (gtf.contig, gtf.start, gtf.end) )
+                self.UTRs[gtf.gene_id].append((gtf.contig, gtf.start, gtf.end))
 
     def count(self):
-        
+
         segments = self.getSegments()
 
         first_exon_start, last_exon_end = segments[0][0], segments[-1][1]
@@ -3033,7 +3280,8 @@ class CounterReadExtension(_gtf2table.Counter):
             is_reverse = True
 
         try:
-            territory_contig, territory_start, territory_end = self.territories[gene_id]
+            territory_contig, territory_start, territory_end = self.territories[
+                gene_id]
         except KeyError:
             self.skip = True
             return
@@ -3046,8 +3294,10 @@ class CounterReadExtension(_gtf2table.Counter):
         assert contig == territory_contig
 
         # truncate territory
-        territory_start = max( territory_start, first_exon_start - self.max_territory_size )
-        territory_end = min( territory_end, last_exon_end + self.max_territory_size )
+        territory_start = max(
+            territory_start, first_exon_start - self.max_territory_size)
+        territory_end = min(
+            territory_end, last_exon_end + self.max_territory_size)
 
         min_quality = self.min_quality
 
@@ -3066,7 +3316,7 @@ class CounterReadExtension(_gtf2table.Counter):
                     # ignore - "internal" UTRs
                     pass
 #                    raise ValueError( "UTR mismatch for %s:%i-%i: utrs=%s" % \
-#                                          (gene_id, 
+#                                          (gene_id,
 #                                           first_exon_start, last_exon_end,
 #                                           str(self.UTRs[gene_id]) ) )
 
@@ -3074,11 +3324,11 @@ class CounterReadExtension(_gtf2table.Counter):
         # these are pairs of before/after on
         # positive strand coordinates - will be re-oriented
         # later as downstream/upstream
-        regions = [ (territory_start, first_exon_start),
-                    (last_exon_end, territory_end),
-                    (first_exon_start, first_exon_end),
-                    (last_exon_start, last_exon_end ) ] + utrs
-        
+        regions = [(territory_start, first_exon_start),
+                   (last_exon_end, territory_end),
+                   (first_exon_start, first_exon_end),
+                   (last_exon_start, last_exon_end)] + utrs
+
         counts = []
 
         for region in regions:
@@ -3087,81 +3337,85 @@ class CounterReadExtension(_gtf2table.Counter):
             else:
                 # create dummy counts vector
                 start, end = 0, 1
-            
-            counts.append( [numpy.zeros( end-start, numpy.int ),
-                            numpy.zeros( end-start, numpy.int )] )
 
-        def __add( counts, positions, offset ):
+            counts.append([numpy.zeros(end - start, numpy.int),
+                           numpy.zeros(end - start, numpy.int)])
+
+        def __add(counts, positions, offset):
             l = len(counts)
             for p in positions:
                 pos = p - offset
-                if 0 <= pos < l: counts[ pos ] += 1
+                if 0 <= pos < l:
+                    counts[pos] += 1
 
-        def _update( counts, start, end ):
+        def _update(counts, start, end):
             counts_sense, counts_antisense = counts
-            
+
             for samfile in self.mBamFiles:
-                for read in samfile.fetch( contig, start, end ):
+                for read in samfile.fetch(contig, start, end):
                     # ignore low quality mapped reads
-                    if read.mapq < min_quality: continue
+                    if read.mapq < min_quality:
+                        continue
                     # only count positions actually overlapping
                     positions = read.positions
-                    if not positions: continue
+                    if not positions:
+                        continue
                     if is_reverse == read.is_reverse:
-                        __add( counts_sense, positions, start )
+                        __add(counts_sense, positions, start)
                     else:
-                        __add( counts_antisense, positions, start )
+                        __add(counts_antisense, positions, start)
 
-        for region, cc in zip( regions, counts):
+        for region, cc in zip(regions, counts):
             if region:
                 start, end = region
-                _update( cc, start, end )
+                _update(cc, start, end)
 
         # invert "upstream" counts so that they are counting from TSS
-        for x in xrange( 0, len(regions), 2):
-            for y in range( len(counts[x]) ):
+        for x in xrange(0, len(regions), 2):
+            for y in range(len(counts[x])):
                 counts[x][y] = counts[x][y][::-1]
 
         # switch upstream (x) /downstream (x+1)
         if is_reverse:
-            for x in xrange( 0, len(regions), 2):
-                counts[x], counts[x+1] = counts[x+1], counts[x]
-                regions[x], regions[x+1] = regions[x+1], regions[x]
+            for x in xrange(0, len(regions), 2):
+                counts[x], counts[x + 1] = counts[x + 1], counts[x]
+                regions[x], regions[x + 1] = regions[x + 1], regions[x]
 
         # add anysense_counts
         for x in range(len(counts)):
-            counts[x] = counts[x] + [ counts[x][0] + counts[x][1] ]
-            
+            counts[x] = counts[x] + [counts[x][0] + counts[x][1]]
+
         self.counts = counts
         self.regions = regions
 
     def __str__(self):
 
-        if self.skip: return "\t".join( ["na"] * len(self.header))
+        if self.skip:
+            return "\t".join(["na"] * len(self.header))
 
         r = []
 
-        for label, region in zip( self.labels, self.regions):
+        for label, region in zip(self.labels, self.regions):
             if region:
                 start, end = region
                 length = end - start
-                r.append( "%i" % length )
-                r.append( "%i" % start )
-                r.append( "%i" % end )
+                r.append("%i" % length)
+                r.append("%i" % start)
+                r.append("%i" % end)
             else:
-                r.extend( ["na"] * 3 )
+                r.extend(["na"] * 3)
 
         # max number of distances, +1 for exon
-        max_d = len(range(0,self.max_territory_size, self.increment) ) + 1
+        max_d = len(range(0, self.max_territory_size, self.increment)) + 1
 
-        # compute distributions for regions 
+        # compute distributions for regions
         for label, region, counts, exon_counts, utr_region in \
-                zip( self.labels[:2], 
-                     self.regions[:2], 
-                     self.counts[:2], 
-                     self.counts[2:4],
-                     self.regions[4:6],
-                     ):
+                zip(self.labels[:2],
+                    self.regions[:2],
+                    self.counts[:2],
+                    self.counts[2:4],
+                    self.regions[4:6],
+                    ):
             start, end = region
             length = end - start
             if utr_region:
@@ -3171,73 +3425,82 @@ class CounterReadExtension(_gtf2table.Counter):
                 utr_extension = ""
 
             # output distributions (only for UTR counts)
-            for direction, cc, ec in zip( self.directions, counts, exon_counts ):
-                if len(ec) == 0: d = [0]
-                else: d = [ec.max()]
-                for x in range(0, length, self.increment ):
-                    d.append( cc[x:min( length, x+self.increment)].max() )
-                d.extend( [""] * (max_d - len(d)) )
-                self.outfiles.write( "%s_%s" % (label, direction),
-                                     "%s\t%i\t%s\t%s\n" % (self.gene_id,
-                                                           length, 
-                                                           utr_extension,
-                                                           "\t".join( map(str, d ) ) ) ) 
+            for direction, cc, ec in zip(self.directions, counts, exon_counts):
+                if len(ec) == 0:
+                    d = [0]
+                else:
+                    d = [ec.max()]
+                for x in range(0, length, self.increment):
+                    d.append(cc[x:min(length, x + self.increment)].max())
+                d.extend([""] * (max_d - len(d)))
+                self.outfiles.write("%s_%s" % (label, direction),
+                                    "%s\t%i\t%s\t%s\n" % (self.gene_id,
+                                                          length,
+                                                          utr_extension,
+                                                          "\t".join(map(str, d))))
 
         # output coverage stats
-        for label, region, counts in zip( self.labels, self.regions, self.counts ):
+        for label, region, counts in zip(self.labels, self.regions, self.counts):
             if not region:
-                r.extend( ["na"] * (1+len(Stats.Summary().getHeaders()) ) )
+                r.extend(["na"] * (1 + len(Stats.Summary().getHeaders())))
                 continue
 
             start, end = region
             length = end - start
 
             # output stats
-            for direction, c in zip( self.directions, counts ):
+            for direction, c in zip(self.directions, counts):
                 # compress
                 c = c[c > 0]
                 # pcovered
-                if length == 0: r.append( "na" )
-                else: r.append( "%5.2f" % (100.0 * len(c) / length) )
+                if length == 0:
+                    r.append("na")
+                else:
+                    r.append("%5.2f" % (100.0 * len(c) / length))
 
                 # coverage stats
-                r.append( str( Stats.Summary( c, mode = "int" ) ) )
+                r.append(str(Stats.Summary(c, mode="int")))
 
-        return "\t".join( r )
+        return "\t".join(r)
 
-##-----------------------------------------------------------------------------------
+# ------------------------------------------------------------------------
+
+
 class CounterBigwigCounts(_gtf2table.Counter):
+
     '''obtain bigwig values and return summary stats.
 
     Requires a bigwig files to compute.
     '''
-    
+
     header = ("length", "pcovered",) + Stats.Summary().getHeaders()
-    
+
     # discard segments with size > mMaxLength in order
     # to avoid out-of-memory
     mMaxLength = 100000
 
-    def __init__(self, bigwig_file, *args, **kwargs ):
-        _gtf2table.Counter.__init__(self, *args, **kwargs )
-        if not bigwig_file: raise ValueError("supply --bigwig-file options for bigwig")
+    def __init__(self, bigwig_file, *args, **kwargs):
+        _gtf2table.Counter.__init__(self, *args, **kwargs)
+        if not bigwig_file:
+            raise ValueError("supply --bigwig-file options for bigwig")
         self.mBigwigFile = bigwig_file
 
     def count(self):
         segments = self.getSegments()
 
-        length = sum( [x[1] - x[0] for x in segments ] )
+        length = sum([x[1] - x[0] for x in segments])
         nreads = 0
         contig = self.getContig()
 
         t, valid = None, None
         l = 0
         for start, end in segments:
-            d = self.mBigwigFile.summarize( contig, start, end, end - start)
-            if t != None: 
-                t = numpy.append( t, d.sum_data)
-                valid = numpy.append( valid, d.valid_count )
-            else: t, valid = d.sum_data, d.valid_count
+            d = self.mBigwigFile.summarize(contig, start, end, end - start)
+            if t != None:
+                t = numpy.append(t, d.sum_data)
+                valid = numpy.append(valid, d.valid_count)
+            else:
+                t, valid = d.sum_data, d.valid_count
 
             l += end - start
 
@@ -3248,152 +3511,159 @@ class CounterBigwigCounts(_gtf2table.Counter):
         self.result = t
 
     def __str__(self):
-        s = Stats.Summary( self.result, mode = "int" )
-        return "\t".join( (str(self.mTotalLength),
-                           "%5.2f" % (100.0 * self.mCovered / self.mTotalLength),
-                           str(s),))
+        s = Stats.Summary(self.result, mode="int")
+        return "\t".join((str(self.mTotalLength),
+                          "%5.2f" % (
+                              100.0 * self.mCovered / self.mTotalLength),
+                          str(s),))
 
-##------------------------------------------------------------
-def main( argv = None ):
+# ------------------------------------------------------------
 
-    parser = E.OptionParser( version = "%prog version: $Id: gtf2table.py 2888 2010-04-07 08:48:36Z andreas $", 
-			     usage = globals()["__doc__"] )
+
+def main(argv=None):
+
+    parser = E.OptionParser(version="%prog version: $Id: gtf2table.py 2888 2010-04-07 08:48:36Z andreas $",
+                            usage=globals()["__doc__"])
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
-                      help="filename with genome [default=%default]."  )
+                      help="filename with genome [default=%default].")
 
     parser.add_option("-q", "--quality-file", dest="quality_file", type="string",
-                      help="filename with genomic base quality information [default=%default]."  )
+                      help="filename with genomic base quality information [default=%default].")
 
     parser.add_option("-b", "--bam-file", dest="bam_files", type="string", metavar="bam",
-                      help="filename with read mapping information. Multiple files can be submitted in a comma-separated list [default=%default]."  )
+                      help="filename with read mapping information. Multiple files can be submitted in a comma-separated list [default=%default].")
 
     parser.add_option("-i", "--bigwig-file", dest="bigwig_file", type="string", metavar="bigwig",
-                      help="filename with bigwig information [default=%default]."  )
+                      help="filename with bigwig information [default=%default].")
 
     parser.add_option("-f", "--filename-gff", dest="filename_gff", type="string", action="append", metavar='bed',
-                      help="filename with extra gff files. The order is important [default=%default]."  )
+                      help="filename with extra gff files. The order is important [default=%default].")
 
-    parser.add_option( "--filename-format", dest="filename_format", type="choice",
-                       choices=("bed", "gff", "gtf" ),
-                       help="format of secondary stream [default=%default]."  )
+    parser.add_option("--filename-format", dest="filename_format", type="choice",
+                      choices=("bed", "gff", "gtf"),
+                      help="format of secondary stream [default=%default].")
 
-    parser.add_option( "--gff-source", dest="gff_sources", type="string", action="append",
-                      help="restrict input to this 'source' in extra gff file (for counter: overlap) [default=%default]."  )
+    parser.add_option("--gff-source", dest="gff_sources", type="string", action="append",
+                      help="restrict input to this 'source' in extra gff file (for counter: overlap) [default=%default].")
 
-    parser.add_option( "--gff-feature", dest="gff_features", type="string", action="append",
-                      help="restrict input to this 'feature' in extra gff file (for counter: overlap) [default=%default]."  )
+    parser.add_option("--gff-feature", dest="gff_features", type="string", action="append",
+                      help="restrict input to this 'feature' in extra gff file (for counter: overlap) [default=%default].")
 
     parser.add_option("-r", "--reporter", dest="reporter", type="choice",
-                      choices=("genes", "transcripts" ),
-                      help="report results for 'genes' or 'transcripts' [default=%default]."  )
+                      choices=("genes", "transcripts"),
+                      help="report results for 'genes' or 'transcripts' [default=%default].")
 
     parser.add_option("-s", "--section", dest="sections", type="choice", action="append",
-                      choices= ("exons", "introns" ), 
-                      help="select range on which counters will operate [default=%default]."  )
+                      choices=("exons", "introns"),
+                      help="select range on which counters will operate [default=%default].")
 
     parser.add_option("-c", "--counter", dest="counters", type="choice", action="append",
                       choices=(	"bigwig-counts",
-				"binding-pattern",
-				"classifier", 
-				"classifier-rnaseq",
-				"classifier-rnaseq-splicing",
-				"classifier-polii",
-				"composition-na", 
-				"composition-cpg", 
-				"coverage", 
-				"distance", 
-				"distance-genes", 
-				"distance-tss",
-				"length", 
-				'neighbours',
-				"overlap", 
-				"overlap-stranded",
-				"overlap-transcripts",
-				"overrun",
-				"position", 
-				"proximity", 
-				"proximity-exclusive", 
-				"proximity-lengthmatched",
-				"quality",
-				"read-coverage", 
-				"read-extension", 
-				"read-counts",
-				"splice", 
-				"splice-comparison", 
-				"territories"),
-		      help="select counters to apply to input [default=%default]."  )
+                                "binding-pattern",
+                                "classifier",
+                                "classifier-rnaseq",
+                                "classifier-rnaseq-splicing",
+                                "classifier-polii",
+                                "composition-na",
+                                "composition-cpg",
+                                "coverage",
+                                "distance",
+                                "distance-genes",
+                                "distance-tss",
+                                "length",
+                                'neighbours',
+                                "overlap",
+                                "overlap-stranded",
+                                "overlap-transcripts",
+                                "overrun",
+                                "position",
+                                "proximity",
+                                "proximity-exclusive",
+                                "proximity-lengthmatched",
+                                "quality",
+                                "read-coverage",
+                                "read-extension",
+                                "read-counts",
+                                "splice",
+                                "splice-comparison",
+                                "territories"),
+                      help="select counters to apply to input [default=%default].")
 
-    parser.add_option( "--add-gtf-source", dest="add_gtf_source", action="store_true",
-                      help="add gtf field of source to output [default=%default]."  )
+    parser.add_option("--add-gtf-source", dest="add_gtf_source", action="store_true",
+                      help="add gtf field of source to output [default=%default].")
 
-    parser.add_option( "--proximal-distance", dest="proximal_distance", type="int",
-                      help="distance to be considered proximal to an interval [default=%default]."  )
+    parser.add_option("--proximal-distance", dest="proximal_distance", type="int",
+                      help="distance to be considered proximal to an interval [default=%default].")
 
-    parser.add_option( "--weight-multi-mapping", dest="weight_multi_mapping", action="store_true",
-		       help="weight multi-mapping reads is read-counts counter. Requires "
-		       "the NH flag to be set by the mapper [default=%default]."  )
+    parser.add_option("--weight-multi-mapping", dest="weight_multi_mapping", action="store_true",
+                      help="weight multi-mapping reads is read-counts counter. Requires "
+                      "the NH flag to be set by the mapper [default=%default].")
 
-    parser.add_option( "--prefix", dest="prefixes", type="string", action="append",
-                      help="add prefix to column headers - prefixes are used in the same order as the counters [default=%default]."  )
+    parser.add_option("--prefix", dest="prefixes", type="string", action="append",
+                      help="add prefix to column headers - prefixes are used in the same order as the counters [default=%default].")
 
     parser.set_defaults(
-        genome_file = None,
-        reporter = "genes",
-        with_values = True,
-        sections = [],
-        counters = [],
-        filename_gff = [],
-        filename_format = None,
-        gff_features = [],
-        gff_sources = [],
-        add_gtf_source = False,
-        proximal_distance = 10000, 
-        bam_files = None,
-	weight_multi_mapping = False,
-        prefixes = []
-        )
+        genome_file=None,
+        reporter="genes",
+        with_values=True,
+        sections=[],
+        counters=[],
+        filename_gff=[],
+        filename_format=None,
+        gff_features=[],
+        gff_sources=[],
+        add_gtf_source=False,
+        proximal_distance=10000,
+        bam_files=None,
+        weight_multi_mapping=False,
+        prefixes=[]
+    )
 
-    if not argv: argv = sys.argv
+    if not argv:
+        argv = sys.argv
 
-    (options, args) = E.Start( parser, add_output_options = True, argv = argv )
+    (options, args) = E.Start(parser, add_output_options=True, argv=argv)
 
     if options.prefixes:
         if len(options.prefixes) != len(options.counters):
-            raise ValueError("if any prefix is given, the number of prefixes must be the same as the number of counters" )
+            raise ValueError(
+                "if any prefix is given, the number of prefixes must be the same as the number of counters")
 
     # get files
     if options.genome_file:
-        fasta = IndexedFasta.IndexedFasta( options.genome_file )
+        fasta = IndexedFasta.IndexedFasta(options.genome_file)
     else:
         fasta = None
 
     if options.quality_file:
-        quality = IndexedFasta.IndexedFasta( options.quality_file )
-        quality.setTranslator( IndexedFasta.TranslatorBytes() )
+        quality = IndexedFasta.IndexedFasta(options.quality_file)
+        quality.setTranslator(IndexedFasta.TranslatorBytes())
     else:
         quality = None
 
     if options.bam_files:
         bam_files = []
         for bamfile in options.bam_files.split(","):
-            bam_files.append( pysam.Samfile(bamfile, "rb" ) )
+            bam_files.append(pysam.Samfile(bamfile, "rb"))
     else:
         bam_files = None
 
     if options.bigwig_file:
-        bigwig_file = bx.bbi.bigwig_file.BigWigFile( open(options.bigwig_file))
+        bigwig_file = bx.bbi.bigwig_file.BigWigFile(open(options.bigwig_file))
     else:
         bigwig_file = None
 
     counters = []
 
-    if not options.sections: 
-        E.info( "counters will use the default section (exons)" )
-        options.sections.append( None)
+    if not options.sections:
+        E.info("counters will use the default section (exons)")
+        options.sections.append(None)
 
-    if not options.gff_sources: options.gff_sources.append( None )
-    if not options.gff_features: options.gff_features.append( None )
+    if not options.gff_sources:
+        options.gff_sources.append(None)
+    if not options.gff_features:
+        options.gff_features.append(None)
 
     cc = E.Counter()
 
@@ -3405,62 +3675,64 @@ def main( argv = None ):
 
         if c == "position":
             for section in options.sections:
-                counters.append( CounterPosition( section = section, options = options, prefix = prefix ) )
+                counters.append(
+                    CounterPosition(section=section, options=options, prefix=prefix))
         elif c == "length":
             for section in options.sections:
-                counters.append( CounterLengths( section = section, options = options, prefix = prefix ) )
+                counters.append(
+                    CounterLengths(section=section, options=options, prefix=prefix))
         elif c == "splice":
-            counters.append( CounterSpliceSites( fasta=fasta, prefix = prefix ) )
+            counters.append(CounterSpliceSites(fasta=fasta, prefix=prefix))
         elif c == "quality":
-            counters.append( CounterQuality( fasta=quality, prefix = prefix ) )
+            counters.append(CounterQuality(fasta=quality, prefix=prefix))
         elif c == "overrun":
-            counters.append( CounterOverrun( filename_gff = options.filename_gff,
-                                             options = options, prefix = prefix ) )
+            counters.append(CounterOverrun(filename_gff=options.filename_gff,
+                                           options=options, prefix=prefix))
         elif c == "read-coverage":
-            counters.append( _gtf2table.CounterReadCoverage( bam_files,
-                                                  options = options, prefix = prefix ) )
+            counters.append(_gtf2table.CounterReadCoverage(bam_files,
+                                                           options=options, prefix=prefix))
         elif c == "read-extension":
-            counters.append( CounterReadExtension( bam_files,
-                                                   filename_gff = options.filename_gff,
-                                                   options = options, 
-                                                   prefix = prefix ) )
+            counters.append(CounterReadExtension(bam_files,
+                                                 filename_gff=options.filename_gff,
+                                                 options=options,
+                                                 prefix=prefix))
         elif c == "read-counts":
-            counters.append( _gtf2table.CounterReadCounts( bam_files,
-							   weight_multi_mapping = options.weight_multi_mapping,
-							   options = options, 
-							   prefix = prefix ) )
+            counters.append(_gtf2table.CounterReadCounts(bam_files,
+                                                         weight_multi_mapping=options.weight_multi_mapping,
+                                                         options=options,
+                                                         prefix=prefix))
         elif c == "bigwig-counts":
-            counters.append( CounterBigwigCounts( bigwig_file,
-                                                  options = options, prefix = prefix ) )
+            counters.append(CounterBigwigCounts(bigwig_file,
+                                                options=options, prefix=prefix))
 
         elif c == "splice-comparison":
-            counters.append( CounterSpliceSiteComparison( fasta=fasta, 
-                                                          filename_gff = options.filename_gff,
-                                                          feature=None, 
-                                                          source=None, 
-                                                          options=options, prefix = prefix ) )
+            counters.append(CounterSpliceSiteComparison(fasta=fasta,
+                                                        filename_gff=options.filename_gff,
+                                                        feature=None,
+                                                        source=None,
+                                                        options=options, prefix=prefix))
         elif c == "composition-na":
             for section in options.sections:
-                counters.append( CounterCompositionNucleotides( fasta=fasta,
-                                                                section = section,
-                                                                options = options, prefix = prefix ) )
+                counters.append(CounterCompositionNucleotides(fasta=fasta,
+                                                              section=section,
+                                                              options=options, prefix=prefix))
         elif c == "composition-cpg":
             for section in options.sections:
-                counters.append( CounterCompositionCpG( fasta=fasta,
-                                                                section = section,
-                                                                options = options, prefix = prefix ) )
+                counters.append(CounterCompositionCpG(fasta=fasta,
+                                                      section=section,
+                                                      options=options, prefix=prefix))
 
-        elif c in ( "overlap", 
-                    "overlap-stranded",
-                    "overlap-transcripts", 
-                    "proximity", "proximity-exclusive", "proximity-lengthmatched",
-                    "neighbours",
-                    "territories", 
-                    "distance", 
-                    "distance-genes", 
-                    "distance-tss",
-                    "binding-pattern",
-                    "coverage" ):
+        elif c in ("overlap",
+                   "overlap-stranded",
+                   "overlap-transcripts",
+                   "proximity", "proximity-exclusive", "proximity-lengthmatched",
+                   "neighbours",
+                   "territories",
+                   "distance",
+                   "distance-genes",
+                   "distance-tss",
+                   "binding-pattern",
+                   "coverage"):
             if c == "overlap":
                 template = CounterOverlap
             if c == "overlap-stranded":
@@ -3490,39 +3762,39 @@ def main( argv = None ):
 
             for section in options.sections:
                 for source in options.gff_sources:
-                     for feature in options.gff_features:
-			     counters.append( template( filename_gff = options.filename_gff,
-							feature = feature,
-							source = source,
-							fasta=fasta,
-							section = section,
-							options = options, prefix = prefix) )
+                    for feature in options.gff_features:
+                        counters.append(template(filename_gff=options.filename_gff,
+                                                 feature=feature,
+                                                 source=source,
+                                                 fasta=fasta,
+                                                 section=section,
+                                                 options=options, prefix=prefix))
 
         elif c == "classifier":
-            counters.append( Classifier( filename_gff = options.filename_gff,
-                                         fasta = fasta,
-                                         options = options, prefix = prefix) )
+            counters.append(Classifier(filename_gff=options.filename_gff,
+                                       fasta=fasta,
+                                       options=options, prefix=prefix))
 
         elif c == "classifier-rnaseq":
-            counters.append( ClassifierRNASeq( filename_gff = options.filename_gff,
-                                               fasta = fasta,
-                                               options = options, prefix = prefix) )
+            counters.append(ClassifierRNASeq(filename_gff=options.filename_gff,
+                                             fasta=fasta,
+                                             options=options, prefix=prefix))
         elif c == "classifier-rnaseq-splicing":
-            counters.append( ClassifierRNASeqSplicing (filename_gff = options.filename_gff,
-						       fasta = fasta,
-						       options = options, prefix = prefix) )
+            counters.append(ClassifierRNASeqSplicing(filename_gff=options.filename_gff,
+                                                     fasta=fasta,
+                                                     options=options, prefix=prefix))
         elif c == "classifier-polii":
-            counters.append( ClassifierPolII( filename_gff = options.filename_gff,
-                                              feature = None,
-                                              source = None,
-                                              fasta = fasta,
-                                              options = options, prefix = prefix) )
+            counters.append(ClassifierPolII(filename_gff=options.filename_gff,
+                                            feature=None,
+                                            source=None,
+                                            fasta=fasta,
+                                            options=options, prefix=prefix))
         elif c == "binding-pattern":
-            counters.append( CounterBindingPattern( filename_gff = options.filename_gff,
-                                                    feature = None,
-                                                    source = None,
-                                                    fasta = fasta,
-                                                    options = options, prefix = prefix) )
+            counters.append(CounterBindingPattern(filename_gff=options.filename_gff,
+                                                  feature=None,
+                                                  source=None,
+                                                  fasta=fasta,
+                                                  options=options, prefix=prefix))
 
     if options.reporter == "genes":
         iterator = GTF.flat_gene_iterator
@@ -3535,38 +3807,36 @@ def main( argv = None ):
         fheader = lambda x: [x[0].transcript_id]
 
     if options.add_gtf_source:
-        header.append( "source" )
+        header.append("source")
         ffields = lambda x: [x[0].source]
     else:
         ffields = lambda x: []
 
-    options.stdout.write( "\t".join( 
-            header + [ x.getHeader() for x in counters] ) + "\n" )
+    options.stdout.write("\t".join(
+        header + [x.getHeader() for x in counters]) + "\n")
 
-    for gffs in iterator( GTF.iterator(options.stdin) ):
+    for gffs in iterator(GTF.iterator(options.stdin)):
         cc.input += 1
 
-	for counter in counters: counter.update(gffs)
-	    
-        skip = len( [x for x in counters if x.skip] ) == len(counters)
+        for counter in counters:
+            counter.update(gffs)
+
+        skip = len([x for x in counters if x.skip]) == len(counters)
         if skip:
             cc.skipped += 1
             continue
 
-        options.stdout.write( "\t".join( \
-                fheader(gffs) +\
-                ffields(gffs) +\
-                [str( counter ) for counter in counters] ) + "\n" )
-        
+        options.stdout.write("\t".join(
+            fheader(gffs) +
+            ffields(gffs) +
+            [str(counter) for counter in counters]) + "\n")
+
         cc.output += 1
 
-    E.info("%s" %str(cc))
+    E.info("%s" % str(cc))
     for counter in counters:
-        E.info( "%s\t%s" % (repr(counter), str(counter.counter) ) )
+        E.info("%s\t%s" % (repr(counter), str(counter.counter)))
     E.Stop()
 
 if __name__ == "__main__":
-	sys.exit( main( sys.argv) )
-
-
-
+    sys.exit(main(sys.argv))

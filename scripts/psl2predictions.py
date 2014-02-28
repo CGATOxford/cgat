@@ -36,7 +36,7 @@ import string
 import re
 import getopt
 
-USAGE="""python %s [OPTIONS] < psl > predictions
+USAGE = """python %s [OPTIONS] < psl > predictions
 
 Convert BLAT output to predictions.
 
@@ -49,8 +49,8 @@ Options:
 """ % sys.argv[0]
 
 
-param_long_options=["verbose=", "help", "trans", "version"]
-param_short_options="v:ht"
+param_long_options = ["verbose=", "help", "trans", "version"]
+param_short_options = "v:ht"
 
 param_trans = None
 
@@ -58,30 +58,32 @@ import CGAT.Experiment as E
 import CGAT.PredictionParser as PredictionParser
 
 
-def main( argv = None ):
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv == None:
+        argv = sys.argv
 
     try:
-        optlist, args = getopt.getopt(sys.argv[1:], param_short_options, param_long_options)
+        optlist, args = getopt.getopt(
+            sys.argv[1:], param_short_options, param_long_options)
     except getopt.error, msg:
         print USAGE, msg
         sys.exit(2)
 
-    for o,a in optlist:
-        if o in ( "-v", "--verbose" ):
+    for o, a in optlist:
+        if o in ("-v", "--verbose"):
             param_loglevel = int(a)
-        elif o in ( "--version", ):
+        elif o in ("--version", ):
             print "version="
             sys.exit(0)
-        elif o in ( "-h", "--help" ):
+        elif o in ("-h", "--help"):
             print USAGE
             sys.exit(0)
-        elif o in ( "-t", "--trans"):
+        elif o in ("-t", "--trans"):
             param_trans = 1
 
     print E.GetHeader()
@@ -92,11 +94,12 @@ def main( argv = None ):
     else:
         parser = PredictionParser.PredictionParserBlatCDNA()
 
-
     nmatches = 1
     for line in sys.stdin:
-        if line[0] == "#": continue
-        if not re.match("^[0-9]", line): continue
+        if line[0] == "#":
+            continue
+        if not re.match("^[0-9]", line):
+            continue
 
         try:
             entries = parser.Parse((line,))
@@ -104,17 +107,15 @@ def main( argv = None ):
             print "# %s" % str(e)
             print "#", line[:-1]
             sys.exit(1)
-        
+
         for entry in entries:
             entry.mPredictionId = nmatches
             nmatches += 1
-            
+
         print str(entries)
 
     print E.GetFooter()
 
-    
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

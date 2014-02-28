@@ -1,16 +1,20 @@
 #########################################################
-# provide utility functions for parsing the output from 
+# provide utility functions for parsing the output from
 # a metaphlan analysis
 #########################################################
-import sys, os
+import sys
+import os
 import gzip
 import collections
 
+
 class ReadMap(object):
+
     '''
     Each read is mapped to a 
     taxonomic group
     '''
+
     def __init__(self):
         self.seq_id = None
         self.kingdom = None
@@ -27,13 +31,16 @@ class ReadMap(object):
         return self
 
 #-------------------------------
+
+
 class RelativeAbundance(object):
+
     '''
     parsing the output from relative
     abundance
     '''
+
     def __init__(self):
-        
         '''
         each entry will have an associated
         * taxonomic level
@@ -53,7 +60,9 @@ class RelativeAbundance(object):
 
 ##############################
 # iterator for read map output
-##############################        
+##############################
+
+
 def relative_abundance_iterator(infile):
     '''
     read in rel_ab outfile from metaphlan 
@@ -66,9 +75,9 @@ def relative_abundance_iterator(infile):
         data = line[:-1].split("\t")
         abundance = data[1]
         entries = data[0].split("|")
-        taxon = entries[len(entries)-1]
+        taxon = entries[len(entries) - 1]
         taxon_names = taxon.split("__")
-        if len(taxon_names) == 1: # unclassified set
+        if len(taxon_names) == 1:  # unclassified set
             taxons[taxon_names[0]].append(taxon_names[0])
             abundances[taxon_names[0]].append(abundance)
         else:
@@ -99,7 +108,9 @@ def relative_abundance_iterator(infile):
 
 ##############################
 # iterator for read map output
-##############################        
+##############################
+
+
 def read_map_iterator(infile):
     '''
     iterate over read_map file
@@ -114,28 +125,38 @@ def read_map_iterator(infile):
         # more general taxonomic classes so can iteratively sort them out
         data = [x.split("__")[1] for x in data]
         if len(data) == 7:
-            kingdom, phylum, c_lass, order, family, genus, species  = data[0], data[1], data[2], data[3], data[4], data[5], data[6]    
+            kingdom, phylum, c_lass, order, family, genus, species = data[
+                0], data[1], data[2], data[3], data[4], data[5], data[6]
         elif len(data) == 6:
-            kingdom, phylum, c_lass, order, family, genus, species = data[0], data[1], data[2], data[3], data[4], data[5], "unclassified"
+            kingdom, phylum, c_lass, order, family, genus, species = data[
+                0], data[1], data[2], data[3], data[4], data[5], "unclassified"
         elif len(data) == 5:
-            kingdom, phylum, c_lass, order, family, genus, species = data[0], data[1], data[2], data[3], data[4], "unclassified", "unclassified"
+            kingdom, phylum, c_lass, order, family, genus, species = data[0], data[
+                1], data[2], data[3], data[4], "unclassified", "unclassified"
         elif len(data) == 4:
-            kingdom, phylum, c_lass, order, family, genus, species = data[0], data[1], data[2], data[3], "unclassified", "unclassified", "unclassified"
+            kingdom, phylum, c_lass, order, family, genus, species = data[0], data[
+                1], data[2], data[3], "unclassified", "unclassified", "unclassified"
         elif len(data) == 3:
-            kingdom, phylum, c_lass, order, family, genus, species = data[0], data[1], data[2], "unclassified", "unclassified", "unclassified", "unclassified"
+            kingdom, phylum, c_lass, order, family, genus, species = data[0], data[
+                1], data[2], "unclassified", "unclassified", "unclassified", "unclassified"
         elif len(data) == 2:
-            kingdom, phylum, c_lass, order, family, genus, species = data[0], data[1], "unclassified", "unclassified", "unclassified", "unclassified", "unclassified"
+            kingdom, phylum, c_lass, order, family, genus, species = data[0], data[
+                1], "unclassified", "unclassified", "unclassified", "unclassified", "unclassified"
         elif len(data) < 2:
             raise ValueError("could not assign taxonomy at the phylum level")
         yield ReadMap().read(seq_id, kingdom, phylum, c_lass, order, family, genus, species)
 
 ##############################
 # count by taxonomic group
-##############################        
+##############################
+
+
 class Counter(ReadMap):
+
     '''
     counter class for taxonomic counts
     '''
+
     def __init__(self):
         self.counts = collections.defaultdict(int)
         self.total = 0
@@ -146,8 +167,9 @@ class Counter(ReadMap):
         that were assigned to a taxonomic group in that
         particular taxonomic group
         '''
-        taxonomies = ["kingdom", "phylum", "class", "order", "family", "genus", "species"]
-        for read in read_map_iterator(infile): 
+        taxonomies = [
+            "kingdom", "phylum", "class", "order", "family", "genus", "species"]
+        for read in read_map_iterator(infile):
             self.total += 1
             if read.kingdom != "unclassified":
                 self.counts["kingdom"] += 1
@@ -166,43 +188,49 @@ class Counter(ReadMap):
         return self.counts
 
     def total_count(self, infile):
-        for read in read_map_iterator(infile): 
+        for read in read_map_iterator(infile):
             self.total += 1
         return self.total
+
     def count_kingdom(self, infile):
         counts = self.count(infile)
         return x["kingdom"]
+
     def count_phylum(self, infile):
         counts = self.count(infile)
         return counts["phylum"]
+
     def count_class(self, infile):
         counts = self.count(infile)
         return counts["class"]
+
     def count_order(self, infile):
         counts = self.count(infile)
         return counts["order"]
+
     def count_family(self, infile):
         counts = self.count(infile)
         return counts["family"]
+
     def count_genus(self, infile):
         counts = self.count(infile)
         return counts["genus"]
+
     def count_species(self, infile):
         counts = self.count(infile)
         return counts["species"]
+
     def count_total_species(self, infile):
         species = set()
         for read in read_map_iterator(infile):
-            if read.species.find("unclassified") == -1: continue
+            if read.species.find("unclassified") == -1:
+                continue
             species.add(read.species)
         return len(species)
+
     def proportion_with_clade_assignment(self, infile, total_reads):
-        return float(total_reads)/self.total_count(infile)
+        return float(total_reads) / self.total_count(infile)
 
 ###########################################
 ###########################################
 ###########################################
-        
-
-
-

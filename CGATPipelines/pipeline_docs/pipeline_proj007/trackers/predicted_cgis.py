@@ -1,4 +1,8 @@
-import os, sys, re, types, itertools
+import os
+import sys
+import re
+import types
+import itertools
 import matplotlib.pyplot as plt
 import numpy
 import numpy.ma
@@ -9,51 +13,68 @@ from SphinxReport.Tracker import *
 from cpgReport import *
 from SphinxReport.odict import OrderedDict as odict
 
-##################################################################################
+##########################################################################
+
+
 class cgiTranscriptOverlap(featureOverlap):
-    mPattern = "cgi_"+ANNOTATIONS_NAME+"_overlap$"
-    mTable = "cgi_"+ANNOTATIONS_NAME+"_overlap"
+    mPattern = "cgi_" + ANNOTATIONS_NAME + "_overlap$"
+    mTable = "cgi_" + ANNOTATIONS_NAME + "_overlap"
     mWhere = "tss_transcript_extended_pover1"
 
-##################################################################################
+##########################################################################
+
+
 class cgiGeneOverlap(featureOverlap):
-    mPattern = "cgi_"+ANNOTATIONS_NAME+"_overlap$"
-    mTable = "cgi_"+ANNOTATIONS_NAME+"_overlap"
+    mPattern = "cgi_" + ANNOTATIONS_NAME + "_overlap$"
+    mTable = "cgi_" + ANNOTATIONS_NAME + "_overlap"
     mWhere = "tss_gene_extended_pover1"
 
-##################################################################################
+##########################################################################
+
+
 class cgiTranscriptTSSOverlap(cpgTracker):
-    """overlap of predicted CGIs with TSS """
-    mPattern = "cgi_"+ANNOTATIONS_NAME+"_transcript_tss_venn"
 
-    def __call__(self, track, slice = None ):
-        data = self.getAll("SELECT track, intervals from cgi_"+ANNOTATIONS_NAME+"_transcript_tss_venn")
+    """overlap of predicted CGIs with TSS """
+    mPattern = "cgi_" + ANNOTATIONS_NAME + "_transcript_tss_venn"
+
+    def __call__(self, track, slice=None):
+        data = self.getAll(
+            "SELECT track, intervals from cgi_" + ANNOTATIONS_NAME + "_transcript_tss_venn")
         return data
 
-##################################################################################
+##########################################################################
+
+
 class cgiGeneTSSOverlap(cpgTracker):
-    """overlap of predicted CGIs with TSS """
-    mPattern = "cgi_"+ANNOTATIONS_NAME+"_gene_tss_venn"
 
-    def __call__(self, track, slice = None ):
-        data = self.getAll("SELECT track, intervals from cgi_"+ANNOTATIONS_NAME+"_gene_tss_venn")
+    """overlap of predicted CGIs with TSS """
+    mPattern = "cgi_" + ANNOTATIONS_NAME + "_gene_tss_venn"
+
+    def __call__(self, track, slice=None):
+        data = self.getAll(
+            "SELECT track, intervals from cgi_" + ANNOTATIONS_NAME + "_gene_tss_venn")
         return data
 
-##################################################################################
-class CGI_CpGObsExp( cpgTracker ):
+##########################################################################
+
+
+class CGI_CpGObsExp(cpgTracker):
+
     """CpG Obs/Exp of predicted CGI and TSS intervals """
     mPattern = "cgi_comp$"
 
-    def __call__(self, track, slice = None):
-        data = self.getAll( "SELECT CpG_ObsExp FROM cgi_comp" % locals() )
+    def __call__(self, track, slice=None):
+        data = self.getAll("SELECT CpG_ObsExp FROM cgi_comp" % locals())
         return data
 
-##################################################################################
-class CGI_GCContent( cpgTracker ):
+##########################################################################
+
+
+class CGI_GCContent(cpgTracker):
+
     """GC content of proedicted CGI and TSS intervals """
     mPattern = "cgi_comp$"
 
-    def __call__(self, track, slice = None):
-        data = self.getAll( "SELECT pGC FROM cgi_comp" % locals() )
+    def __call__(self, track, slice=None):
+        data = self.getAll("SELECT pGC FROM cgi_comp" % locals())
         return data
-

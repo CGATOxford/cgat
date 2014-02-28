@@ -1,4 +1,4 @@
-################################################################################
+##########################################################################
 #
 #   MRC FGU Computational Genomics Group
 #
@@ -19,7 +19,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
+##########################################################################
 '''
 MACS.py - Parser for MACS output
 ================================
@@ -39,31 +39,37 @@ API
 
 import collections
 
-MacsPeak = collections.namedtuple( "MacsPeak", "contig start end length summit tags pvalue fold fdr" )
+MacsPeak = collections.namedtuple(
+    "MacsPeak", "contig start end length summit tags pvalue fold fdr")
 
-def iterateMacsPeaks( infile ):
+
+def iterateMacsPeaks(infile):
     '''iterate over peaks.xls file and return parsed data.
     The fdr is converted from percent to values between 0 and 1.
     '''
- 
+
     for line in infile:
-        if line.startswith("#"): continue
-        if line.startswith("chr\tstart"): continue
+        if line.startswith("#"):
+            continue
+        if line.startswith("chr\tstart"):
+            continue
         # skip empty lines
-        if line.startswith("\n"): continue
+        if line.startswith("\n"):
+            continue
 
         data = line[:-1].split("\t")
 
         if len(data) == 9:
-            # convert % fdr 
+            # convert % fdr
             data[8] = float(data[8]) / 100.0
         elif len(data) == 8:
-            ## if no fdr given, set to 0
+            # if no fdr given, set to 0
             # data.append( 0.0 )
-            ## Steve - I don't understand this so I'm commenting it out and raising an error
-            raise ValueError( "FDR value not set line %s" % line )
+            # Steve - I don't understand this so I'm commenting it out and
+            # raising an error
+            raise ValueError("FDR value not set line %s" % line)
         else:
-            raise ValueError( "could not parse line %s" % line )
+            raise ValueError("could not parse line %s" % line)
 
         # these are 1-based coordinates
         # macs can have negative start coordinates
@@ -81,33 +87,38 @@ def iterateMacsPeaks( infile ):
         data[6] = float(data[6])
         # fold
         data[7] = float(data[7])
-        
-        yield MacsPeak._make( data )
 
-Macs2Peak = collections.namedtuple( "Macs2Peak", "contig start end length summit pileup pvalue fold fdr name" )
+        yield MacsPeak._make(data)
 
-def iterateMacs2Peaks( infile ):
+Macs2Peak = collections.namedtuple(
+    "Macs2Peak", "contig start end length summit pileup pvalue fold fdr name")
+
+
+def iterateMacs2Peaks(infile):
     '''iterate over peaks.xls file and return parsed data.
     The fdr is converted from percent to values between 0 and 1.
     '''
- 
+
     for line in infile:
-        if line.startswith("#"): continue
-        if line.startswith("chr\tstart"): continue
+        if line.startswith("#"):
+            continue
+        if line.startswith("chr\tstart"):
+            continue
         # skip empty lines
-        if line.startswith("\n"): continue
+        if line.startswith("\n"):
+            continue
 
         data = line[:-1].split("\t")
 
         if len(data) == 10:
-            # convert % fdr 
-            data[8] = 10**-float(data[8])
+            # convert % fdr
+            data[8] = 10 ** -float(data[8])
         elif len(data) == 8:
             # if no fdr given, set to 0
             #data.append( 0.0 )
-            raise ValueError( "No FDR found line %s" % line )
+            raise ValueError("No FDR found line %s" % line)
         else:
-            raise ValueError( "could not parse line %s" % line )
+            raise ValueError("could not parse line %s" % line)
 
         # these are 1-based coordinates
         # macs can have negative start coordinates
@@ -125,6 +136,5 @@ def iterateMacs2Peaks( infile ):
         data[6] = float(data[6])
         # fold
         data[7] = float(data[7])
-        
-        yield Macs2Peak._make( data )
 
+        yield Macs2Peak._make(data)

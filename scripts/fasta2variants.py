@@ -58,29 +58,31 @@ import CGAT.Genomics as Genomics
 import CGAT.IOTools as IOTools
 import CGAT.FastaIterator as FastaIterator
 
-##---------------------------------------------------------------------------------------------
-    
-def main( argv = None ):
+# ------------------------------------------------------------------------
 
-    parser = E.OptionParser( version = "%prog version: $Id: analyze_codonbias_shannon.py 2864 2010-03-03 10:18:16Z andreas $",
-                                    usage = globals()["__doc__"] )
 
-    parser.add_option( "-c", "--is-cds", dest="is_cds", action="store_true",
-                       help = "input are cds (nucleotide) sequences [%default]" )
-    
+def main(argv=None):
+
+    parser = E.OptionParser(version="%prog version: $Id: analyze_codonbias_shannon.py 2864 2010-03-03 10:18:16Z andreas $",
+                            usage=globals()["__doc__"])
+
+    parser.add_option("-c", "--is-cds", dest="is_cds", action="store_true",
+                      help="input are cds (nucleotide) sequences [%default]")
+
     parser.set_defaults(
-        is_cds = False,
-        )
-    
-    (options, args) = E.Start( parser, argv = argv )
+        is_cds=False,
+    )
 
-    options.stdout.write( "snpid\tidentifier\tpos\treference\tvariant\tcounts\tweight\n" )
+    (options, args) = E.Start(parser, argv=argv)
+
+    options.stdout.write(
+        "snpid\tidentifier\tpos\treference\tvariant\tcounts\tweight\n")
 
     alphabet = "ACDEFGHIKLMNPQRSTVWY"
-    
+
     snpid = 0
 
-    for entry in FastaIterator.iterate( options.stdin ):
+    for entry in FastaIterator.iterate(options.stdin):
         identifier = entry.title
 
         if options.is_cds:
@@ -88,45 +90,50 @@ def main( argv = None ):
             assert len(cds_sequence) % 3 == 0, \
                 "length of sequence '%s' is not a multiple of 3" % entry.title
 
-            sequence = Genomics.translate( cds_sequence )
+            sequence = Genomics.translate(cds_sequence)
             weights = []
-            for pos, cds_pos in enumerate(range( 0, len(cds_sequence), 3)):
-                codon = cds_sequence[cds_pos:cds_pos+3]
+            for pos, cds_pos in enumerate(range(0, len(cds_sequence), 3)):
+                codon = cds_sequence[cds_pos:cds_pos + 3]
                 counts = collections.defaultdict(int)
-                for x in range(0,3):
+                for x in range(0, 3):
                     rna = codon[x]
                     for na in "ACGT":
-                        if na == rna: continue
-                        taa = Genomics.translate(codon[:x] + na + codon[x+1:])
+                        if na == rna:
+                            continue
+                        taa = Genomics.translate(
+                            codon[:x] + na + codon[x + 1:])
                         counts[taa] += 1
-                weights.append( counts )
+                weights.append(counts)
 
         else:
             sequence = entry.sequence.upper()
             counts = {}
-            for x in alphabet: counts[x] = 1
+            for x in alphabet:
+                counts[x] = 1
             weights = [counts] * len(sequence)
 
-        for pos, ref in enumerate( sequence ):
+        for pos, ref in enumerate(sequence):
 
-            if ref not in alphabet: continue
+            if ref not in alphabet:
+                continue
             w = weights[pos]
             t = float(sum(w.values()))
             for variant in alphabet:
-                if variant == ref: continue
-                snpid +=1
-                options.stdout.write( 
+                if variant == ref:
+                    continue
+                snpid += 1
+                options.stdout.write(
                     "%s\n" % "\t".join(
-                        ( "%010i" % snpid,
-                          identifier,
-                          str(pos+1),
-                          ref, 
-                          variant,
-                          "%i" % w[variant],
-                          "%6.4f" % (w[variant] / t),
-                          )))
-    
+                        ("%010i" % snpid,
+                         identifier,
+                         str(pos + 1),
+                         ref,
+                         variant,
+                         "%i" % w[variant],
+                         "%6.4f" % (w[variant] / t),
+                         )))
+
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
+    sys.exit(main(sys.argv))

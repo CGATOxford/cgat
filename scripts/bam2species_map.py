@@ -50,29 +50,31 @@ import pysam
 import collections
 import CGAT.FastaIterator as FastaIterator
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if not argv: argv = sys.argv
+    if not argv:
+        argv = sys.argv
 
     # setup command line parser
-    parser = optparse.OptionParser( version = "%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
-                                    usage = globals()["__doc__"] )
+    parser = optparse.OptionParser(version="%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+                                   usage=globals()["__doc__"])
 
     parser.add_option("-b", "--bamfile", dest="bamfile", type="string",
-                      help="supply bam file"  )
+                      help="supply bam file")
 
-    ## add common options (-h/--help, ...) and parse command line 
-    (options, args) = E.Start( parser, argv = argv )
+    # add common options (-h/--help, ...) and parse command line
+    (options, args) = E.Start(parser, argv=argv)
 
     # read in contigs
     E.info("reading in contig file")
     contigs = {}
     for fasta in FastaIterator.iterate(options.stdin):
-        contigs[fasta.title] = (1, len(fasta.sequence) -1)
+        contigs[fasta.title] = (1, len(fasta.sequence) - 1)
     E.info("read %i contigs" % len(contigs.keys()))
 
     # read in bamfile
@@ -95,20 +97,20 @@ def main( argv = None ):
             species_counts[species_id] += 1
 
         # at the moment ignore if there are no counts
-        if len(species_counts.values()) == 0: 
+        if len(species_counts.values()) == 0:
             E.warn("no reads map to %s" % contig)
             continue
 
         for species, count in species_counts.iteritems():
-            if species_counts[species] == max(species_counts.values()): 
+            if species_counts[species] == max(species_counts.values()):
                 top_dog = species
                 c += 1
                 break
         E.info("species %s assigned to contig number %i" % (top_dog, c))
         options.stdout.write("%s\t%s\n" % (contig, top_dog))
 
-    ## write footer and output benchmark information.
+    # write footer and output benchmark information.
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
+    sys.exit(main(sys.argv))

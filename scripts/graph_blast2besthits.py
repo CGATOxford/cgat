@@ -40,7 +40,7 @@ import tempfile
 import time
 import popen2
 
-USAGE="""python %s [OPTIONS] < graph.in > graph.out
+USAGE = """python %s [OPTIONS] < graph.in > graph.out
 
 Version: $Id: graph_blast2besthits.py 2782 2009-09-10 11:40:29Z andreas $
 
@@ -56,8 +56,8 @@ Options:
 -i, --pide-factor=              thresholding on pide (additive)
 """ % sys.argv[0]
 
-param_long_options = ["help", "verbose=", "pattern-genome=", "method=", "score-factor=", "pide-factor=" ,
-                      "version" ]
+param_long_options = ["help", "verbose=", "pattern-genome=", "method=", "score-factor=", "pide-factor=",
+                      "version"]
 
 param_short_options = "hv:p:f:i"
 
@@ -75,10 +75,12 @@ param_method = "evalue"
 param_score_threshold_factor = 1.0
 param_pide_threshold_factor = 0.0
 
-##-------------------------------------------------------------------------------
-def PrintMatches( matches, method=None, filter=None,
-                  score_threshold_factor = 1.0,
-                  pide_threshold_factor = 0.0):
+# ------------------------------------------------------------------------
+
+
+def PrintMatches(matches, method=None, filter=None,
+                 score_threshold_factor=1.0,
+                 pide_threshold_factor=0.0):
     """print best match per organism (sorted by E-Value).
 
     If there are several matches with the same E-Value, all are printed.
@@ -88,22 +90,23 @@ def PrintMatches( matches, method=None, filter=None,
     orgs.sort()
 
     if method == "evalue":
-        f1 = lambda x,y: cmp(x.mEvalue, y.mEvalue)
+        f1 = lambda x, y: cmp(x.mEvalue, y.mEvalue)
         f2 = lambda x: x.mEvalue
     elif method == "score":
-        f1 = lambda x,y:  -cmp(x.score, y.score)
+        f1 = lambda x, y: -cmp(x.score, y.score)
         f2 = lambda x: x.score
     elif method == "pid":
-        f1 = lambda x,y:  -cmp(x.mPercentIdentity, y.mPercentIdentity)
+        f1 = lambda x, y: -cmp(x.mPercentIdentity, y.mPercentIdentity)
         f2 = lambda x: x.mPercentIdentity
     else:
         raise "unknown method"
 
     noutput = 0
-    
+
     for org in orgs:
-        
-        if filter and filter == org: continue
+
+        if filter and filter == org:
+            continue
 
         m = matches[org]
         score_threshold = int(m[0].score * score_threshold_factor)
@@ -115,51 +118,54 @@ def PrintMatches( matches, method=None, filter=None,
         if param_loglevel >= 3:
             for mm in m:
                 print str(mm)
-            
-        m.sort( f1 )
+
+        m.sort(f1)
 
         s = f2(m[0])
         x = 0
 
         if score_threshold_factor != 1.0 and pide_threshold_factor >= 0.0:
-            ## take best match and all within score threshold factor
+            # take best match and all within score threshold factor
             for x in range(len(m)):
                 if m[x].score > score_threshold or \
-                       m[x].mPercentIdentity >= pide_threshold:
+                        m[x].mPercentIdentity >= pide_threshold:
                     print str(m[x])
                     noutput += 1
         else:
-            ## write all with same primary score
-            while x < len(m) and s == f2(m[x]) and m[x].score >= score_threshold :            
+            # write all with same primary score
+            while x < len(m) and s == f2(m[x]) and m[x].score >= score_threshold:
                 print str(m[x])
                 x += 1
-                noutput +=1
-                
+                noutput += 1
+
     return noutput
 
-##-------------------------------------------------------------------------------
+# ------------------------------------------------------------------------
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv == None:
+        argv = sys.argv
 
     try:
-        optlist, args = getopt.getopt(sys.argv[1:], param_short_options, param_long_options)
+        optlist, args = getopt.getopt(
+            sys.argv[1:], param_short_options, param_long_options)
     except getopt.error, msg:
         print USAGE, msg
         sys.exit(2)
 
-    for o,a in optlist:
-        if o in ( "-v", "--verbose" ):
+    for o, a in optlist:
+        if o in ("-v", "--verbose"):
             param_loglevel = int(a)
-        elif o in ( "--version", ):
+        elif o in ("--version", ):
             print "version="
             sys.exit(0)
-        elif o in ( "-h", "--help" ):
+        elif o in ("-h", "--help"):
             print USAGE
             sys.exit(0)
         elif o in ("-p", "--pattern-genome"):
@@ -170,7 +176,7 @@ def main( argv = None ):
             param_score_threshold_factor = float(a)
         elif o in ("-i", "--pide-factor"):
             param_pide_threshold_factor = float(a)
-            
+
     print E.GetHeader()
     print E.GetParams()
 
@@ -178,44 +184,47 @@ def main( argv = None ):
 
     last_query_token = None
     rx = re.compile(param_pattern_genome)
-    
+
     matches = {}
-    
+
     for line in sys.stdin:
 
-        if line[0] == "#": continue
+        if line[0] == "#":
+            continue
 
         link = BlastAlignments.Link()
         try:
-            link.Read( line )
+            link.Read(line)
         except ValueError:
-            sys.stderr.write( "parsing error in line %s\n" % line[:-1] )
+            sys.stderr.write("parsing error in line %s\n" % line[:-1])
             continue
-        
+
         ninput += 1
-        if link.mQueryToken != last_query_token :
+        if link.mQueryToken != last_query_token:
             if last_query_token:
-                noutput += PrintMatches( matches,
-                                         method = param_method,
-                                         filter = rx.search(last_query_token).groups()[0],
-                                         score_threshold_factor = param_score_threshold_factor,
-                                         pide_threshold_factor = param_pide_threshold_factor )
+                noutput += PrintMatches(matches,
+                                        method=param_method,
+                                        filter=rx.search(
+                                            last_query_token).groups()[0],
+                                        score_threshold_factor=param_score_threshold_factor,
+                                        pide_threshold_factor=param_pide_threshold_factor)
             matches = {}
             last_query_token = link.mQueryToken
 
         org = rx.search(link.mSbjctToken).groups()[0]
-        
-        if org not in matches: matches[org] = []
-        matches[org].append( link )
 
-    noutput += PrintMatches( matches,
-                             method = param_method,
-                             filter = rx.search(last_query_token).groups()[0],
-                             score_threshold_factor = param_score_threshold_factor,
-                             pide_threshold_factor = param_pide_threshold_factor )
-    
-    print "# ninput=%i, noutput=%i" % ( ninput, noutput )
-    
+        if org not in matches:
+            matches[org] = []
+        matches[org].append(link)
+
+    noutput += PrintMatches(matches,
+                            method=param_method,
+                            filter=rx.search(last_query_token).groups()[0],
+                            score_threshold_factor=param_score_threshold_factor,
+                            pide_threshold_factor=param_pide_threshold_factor)
+
+    print "# ninput=%i, noutput=%i" % (ninput, noutput)
+
     print E.GetFooter()
 
     if noutput == 0:
@@ -223,8 +232,7 @@ def main( argv = None ):
             raise "no output, because no input."
         else:
             raise "no output."
-        
+
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

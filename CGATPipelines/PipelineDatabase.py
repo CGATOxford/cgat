@@ -27,35 +27,36 @@ try:
 except IOError:
     pass
 
-def importFromIterator( 
-    outfile,
-    tablename,
-    iterator,
-    columns = None,
-    indices = None ):
+
+def importFromIterator(
+        outfile,
+        tablename,
+        iterator,
+        columns=None,
+        indices=None):
     '''import data in *iterator* into *tablename* via temporary file.
 
     '''
-    
+
     tmpfile = P.getTempFile(".")
 
     if columns:
-        keys, values = zip( *columns.items() )
-        tmpfile.write( "\t".join( values) + "\n" )
-        
+        keys, values = zip(*columns.items())
+        tmpfile.write("\t".join(values) + "\n")
+
     for row in iterator:
         if not columns:
             keys = row[0].keys()
             values = keys
             columns = keys
-            tmpfile.write( "\t".join( values) + "\n" )
+            tmpfile.write("\t".join(values) + "\n")
 
-        tmpfile.write( "\t".join( str(row[x]) for x in keys ) + "\n" )
-        
+        tmpfile.write("\t".join(str(row[x]) for x in keys) + "\n")
+
     tmpfile.close()
 
     if indices:
-        indices = " ".join( "--index=%s" % x for x in indices)
+        indices = " ".join("--index=%s" % x for x in indices)
     else:
         indices = ""
 
@@ -67,7 +68,7 @@ def importFromIterator(
                      %(indices)s
         < %(tmpfilename)s > %(outfile)s
     '''
-    
+
     P.run()
 
-    os.unlink( tmpfilename )
+    os.unlink(tmpfilename)

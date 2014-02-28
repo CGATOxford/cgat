@@ -53,55 +53,55 @@ Possibilities are:
 import CGAT.Experiment as E
 import CGAT.Histogram as Histogram
 
-def PrintHistograms( outfile, titles, histograms, options ):
 
-    combined_histogram = Histogram.Combine( hists )
+def PrintHistograms(outfile, titles, histograms, options):
 
-    outfile.write( "\t".join( ("bin",) + titles ) )
-    Histogram.Print( combined_histogram, nonull = options.nonull )        
+    combined_histogram = Histogram.Combine(hists)
 
-    
-    
+    outfile.write("\t".join(("bin",) + titles))
+    Histogram.Print(combined_histogram, nonull=options.nonull)
 
 
-def main( argv = None ):
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv == None:
+        argv = sys.argv
 
-    parser = E.OptionParser( version = "%prog version: $Id: graph2stats.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser(
+        version="%prog version: $Id: graph2stats.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option("-r", "--range", dest="range", type="string",
-                      help="range to calculate histogram for."  )
+                      help="range to calculate histogram for.")
     parser.add_option("-b", "--bin-size", dest="bin_size", type="string",
-                      help="bin size."  )
-    parser.add_option("-i", "--titles", dest ="titles", action="store_true",
-                      help="use supplied column titles." )
-    parser.add_option("-s", "--make-symmetric", dest ="make_symmetric", action="store_true",
-                      help="symmetrize graph." )
+                      help="bin size.")
+    parser.add_option("-i", "--titles", dest="titles", action="store_true",
+                      help="use supplied column titles.")
+    parser.add_option("-s", "--make-symmetric", dest="make_symmetric", action="store_true",
+                      help="symmetrize graph.")
     parser.add_option("-c", "--columns", dest="columns", type="string",
-                      help="columns to take for calculating histograms." )
+                      help="columns to take for calculating histograms.")
     parser.add_option("-p", "--output-pattern", dest="output_pattern", type="string",
-                      help="pattern for output files." )
+                      help="pattern for output files.")
     parser.add_option("-m", "--method", dest="method", type="string",
-                      help="method." )
+                      help="method.")
     parser.add_option("-o", "--output-format", dest="output_format", type="string",
-                      help="output format." )
-    
+                      help="output format.")
+
     parser.add_option("--min-value", dest="min_value", type="float",
                       help="minimum value for histogram.")
     parser.add_option("--max-value", dest="max_value", type="float",
                       help="maximum value for histogram.")
-    
+
     parser.set_defaults(
-        bin_size = None,
-        range = None,
-        titles = False,
-        columns = "all",
-        append = (),
+        bin_size=None,
+        range=None,
+        titles=False,
+        columns="all",
+        append=(),
         empty_bins = False,
         min_value = None,
         max_value = None,
@@ -113,24 +113,25 @@ def main( argv = None ):
         output_pattern = "%s.hist",
         method = "histograms",
         output_format = "semi"
-        )
+    )
 
-    (options, args) = E.Start( parser )
+    (options, args) = E.Start(parser)
 
     if options.columns != "all":
-        options.columns = map(lambda x: int(x) -1 , options.columns.split(","))
+        options.columns = map(lambda x: int(x) - 1, options.columns.split(","))
 
     if options.range:
-        options.min_value, options.max_value = map(float, options.range(split(",")))
-        
+        options.min_value, options.max_value = map(
+            float, options.range(split(",")))
+
     # retrieve data
-    lines = filter( lambda x: x[0] <> "#", sys.stdin.readlines())
+    lines = filter(lambda x: x[0] <> "#", sys.stdin.readlines())
 
     vals = {}
 
     if options.method == "histograms":
 
-        ## read data
+        # read data
         for line in lines:
 
             v1, v2, w = line[:-1].split("\t")[:3]
@@ -141,70 +142,82 @@ def main( argv = None ):
                 nerrors += 1
                 continnue
 
-            if v1 not in vals: vals[v1] = {}
-            if v2 not in vals[v1]: vals[v1][v2] = []
-            vals[v1][v2].append( w )
+            if v1 not in vals:
+                vals[v1] = {}
+            if v2 not in vals[v1]:
+                vals[v1][v2] = []
+            vals[v1][v2].append(w)
             if options.make_symmetric:
-                if v2 not in vals: vals[v2] = {}
-                if v1 not in vals[v2]: vals[v2][v1] = []
-                vals[v2][v1].append( w )
+                if v2 not in vals:
+                    vals[v2] = {}
+                if v1 not in vals[v2]:
+                    vals[v2][v1] = []
+                vals[v2][v1].append(w)
 
-        ## convert to histograms
+        # convert to histograms
         for k1, vv in vals.items():
             for k2 in vv.keys():
-                if len(vv[k2]) == 0: continue
+                if len(vv[k2]) == 0:
+                    continue
 
-                h = Histogram.Calculate( vv[k2],
-                                         no_empty_bins = options.empty_bins,
-                                         increment = options.bin_size,
-                                         min_value = options.min_value,
-                                         max_value = options.max_value)
-                
-                if options.normalize: h = Histogram.Normalize( h )
-                if options.cumulative: h = Histogram.Cumulate( h )
-                if options.reverse_cumulative: h = Histogram.Cumulate( h, direction = 0 )
+                h = Histogram.Calculate(vv[k2],
+                                        no_empty_bins=options.empty_bins,
+                                        increment=options.bin_size,
+                                        min_value=options.min_value,
+                                        max_value=options.max_value)
+
+                if options.normalize:
+                    h = Histogram.Normalize(h)
+                if options.cumulative:
+                    h = Histogram.Cumulate(h)
+                if options.reverse_cumulative:
+                    h = Histogram.Cumulate(h, direction=0)
 
                 vv[k2] = h
-        
-        ## write output
+
+        # write output
         if options.output == "semi":
             for k1, vv in vals.items():
 
-                outfile = open( options.output_pattern % k1 )
+                outfile = open(options.output_pattern % k1)
 
                 kk2 = vv.keys()
                 kk2.sort()
 
                 hists = []
-                for k2 in kk2: hists.append( vv[k2] )
+                for k2 in kk2:
+                    hists.append(vv[k2])
 
-                PrintHistograms( outfile, kk2, hists, options )
+                PrintHistograms(outfile, kk2, hists, options)
 
                 outfile.close()
-                
+
     elif options.method == "counts":
 
-        ## read data
+        # read data
         for line in lines:
 
             v1, v2 = line[:-1].split("\t")[:2]
 
-            if v1 not in vals: vals[v1] = {}
-            if v2 not in vals[v1]: vals[v1][v2] = 0
+            if v1 not in vals:
+                vals[v1] = {}
+            if v2 not in vals[v1]:
+                vals[v1][v2] = 0
             vals[v1][v2] += 1
             if options.make_symmetric:
-                if v2 not in vals: vals[v2] = {}
-                if v1 not in vals[v2]: vals[v2][v1] = 0
+                if v2 not in vals:
+                    vals[v2] = {}
+                if v1 not in vals[v2]:
+                    vals[v2][v1] = 0
                 vals[v2][v1] += 1
 
-        ## convert to histograms
+        # convert to histograms
         for k1, vv in vals.items():
             for k2 in vv.keys():
-                options.stdout.write( "%s\t%s\t%i\n" % (k1, k2, vv[k2] ) )
-                
+                options.stdout.write("%s\t%s\t%i\n" % (k1, k2, vv[k2]))
+
     E.Stop()
 
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

@@ -1,4 +1,4 @@
-################################################################################
+##########################################################################
 #
 #   MRC FGU Computational Genomics Group
 #
@@ -19,7 +19,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
+##########################################################################
 '''
 gpipe/list2regions.py - predict genes from a list of associations
 ===========================================================
@@ -75,15 +75,15 @@ import CGAT.Genomics as Genomics
 import CGAT.Intervalls as Intervalls
 import CGAT.PredictionParser as PredictionParser
 
-param_long_options=["verbose=", "help", "max-percent-overlap=",
-                    "min-coverage-query=", "min-score=", "min-percent-identity=",
-                    "max-matches=", "peptides=", "genome-file=",
-                    "map=","version"]
+param_long_options = ["verbose=", "help", "max-percent-overlap=",
+                      "min-coverage-query=", "min-score=", "min-percent-identity=",
+                      "max-matches=", "peptides=", "genome-file=",
+                      "map=", "version"]
 
-param_short_options="v:ho:c:s:i:m:p:"
+param_short_options = "v:ho:c:s:i:m:p:"
 
 
-## pattern for genomes, %s is substituted for the sbjct_token
+# pattern for genomes, %s is substituted for the sbjct_token
 param_genome_file = "genome_%s.fasta"
 param_filename_peptides = None
 param_filename_map = None
@@ -94,15 +94,17 @@ param_border = 100
 
 from predict_genes import PredictorExonerate, PredictorGenewise
 
-##------------------------------------------------------------
+# ------------------------------------------------------------
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv == None:
+        argv = sys.argv
 
     try:
         optlist, args = getopt.getopt(sys.argv[1:],
@@ -111,13 +113,13 @@ def main( argv = None ):
         print globals()["__doc__"], msg
         sys.exit(2)
 
-    for o,a in optlist:
-        if o in ( "-v", "--verbose" ):
+    for o, a in optlist:
+        if o in ("-v", "--verbose"):
             param_loglevel = int(a)
-        elif o in ( "--version", ):
+        elif o in ("--version", ):
             print "version="
             sys.exit(0)
-        elif o in ( "-h", "--help" ):
+        elif o in ("-h", "--help"):
             print globals()["__doc__"]
             sys.exit(0)
         elif o in ("-p", "--peptides"):
@@ -130,40 +132,43 @@ def main( argv = None ):
     last_filename_genome = None
     # read peptide sequences
     if param_filename_peptides:
-        peptide_sequences = Genomics.ReadPeptideSequences( open(param_filename_peptides, "r") )
+        peptide_sequences = Genomics.ReadPeptideSequences(
+            open(param_filename_peptides, "r"))
     else:
         peptide_sequences = {}
 
     map_a2b = {}
-    
-    if param_filename_map:
-        infile = open( param_filename_map, "r")
-        for line in infile:
-            a, b = string.split( line[:-1], "\t")
-            map_a2b[a] = b
 
+    if param_filename_map:
+        infile = open(param_filename_map, "r")
+        for line in infile:
+            a, b = string.split(line[:-1], "\t")
+            map_a2b[a] = b
 
     predictor = PredictorExonerate()
 
     nmissed, nfound, nfailed = 0, 0, 0
-    
+
     for line in sys.stdin:
 
-        gene, sbjct_genome_from, sbjct_genome_to, sbjct_strand, chromosome, query_token = re.split("\s+", line[:-1])
+        gene, sbjct_genome_from, sbjct_genome_to, sbjct_strand, chromosome, query_token = re.split(
+            "\s+", line[:-1])
 
         sbjct_token = "chr" + chromosome
-        sbjct_genome_from, sbjct_genome_to = map(int, ( sbjct_genome_from, sbjct_genome_to) )
+        sbjct_genome_from, sbjct_genome_to = map(
+            int, (sbjct_genome_from, sbjct_genome_to))
         if sbjct_strand == "1":
             sbjct_strand = "+"
         else:
             sbjct_strand = "-"
-            
+
         filename_genome = param_genome_file % sbjct_token
 
         if last_filename_genome != filename_genome:
             E.debug("reading genome %s" % filename_genome)
-                
-            forward_sequences, reverse_sequences = Genomics.ReadGenomicSequences( open(filename_genome, "r"))
+
+            forward_sequences, reverse_sequences = Genomics.ReadGenomicSequences(
+                open(filename_genome, "r"))
             last_filename_genome = filename_genome
 
             lgenome = len(forward_sequences[sbjct_token])
@@ -179,37 +184,35 @@ def main( argv = None ):
         sbjct_genome_from -= 100
         sbjct_genome_to += 100
 
-        if map_a2b.has_key( query_token ):
+        if map_a2b.has_key(query_token):
             query_token = map_a2b[query_token]
 
-        E.debug( "aligning: %s to %s:%s:%i-%i" %\
-                 (query_token, sbjct_token, sbjct_strand, sbjct_genome_from, sbjct_genome_to))
-            
-        if not peptide_sequences.has_key( query_token):
-            E.warn( "peptides sequence not found for %s" % query_token )
+        E.debug("aligning: %s to %s:%s:%i-%i" %
+                (query_token, sbjct_token, sbjct_strand, sbjct_genome_from, sbjct_genome_to))
+
+        if not peptide_sequences.has_key(query_token):
+            E.warn("peptides sequence not found for %s" % query_token)
             nmissed += 1
             continue
-        
+
         result = predictor(query_token,
                            peptide_sequences[query_token],
                            sbjct_token,
                            genomic_sequence[sbjct_genome_from:sbjct_genome_to],
-                           param_options, 
+                           param_options,
                            0, sbjct_genome_to - sbjct_genome_from)
 
         if result:
-            result.ShiftGenomicRegion( sbjct_genome_from )
-            result.SetStrand( sbjct_strand )
+            result.ShiftGenomicRegion(sbjct_genome_from)
+            result.SetStrand(sbjct_strand)
             print str(result)
             nfound += 1
         else:
             nfailed += 1
-        
 
     if param_loglevel >= 1:
-        print "# found=%i, missed=%i, failed=%i" % (nfound, nmissed, nfailed) 
-        
+        print "# found=%i, missed=%i, failed=%i" % (nfound, nmissed, nfailed)
+
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

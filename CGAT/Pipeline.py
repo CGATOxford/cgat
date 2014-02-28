@@ -1,4 +1,4 @@
-################################################################################
+##########################################################################
 #
 #   MRC FGU Computational Genomics Group
 #
@@ -19,7 +19,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
+##########################################################################
 '''
 Pipeline.py - Tools for ruffus pipelines
 ========================================
@@ -37,9 +37,23 @@ API
 ----
 
 '''
-import os, sys, re, subprocess, optparse, stat, tempfile
-import time, random, inspect, types, multiprocessing
-import logging, collections, shutil, glob, gzip
+import os
+import sys
+import re
+import subprocess
+import optparse
+import stat
+import tempfile
+import time
+import random
+import inspect
+import types
+import multiprocessing
+import logging
+import collections
+import shutil
+import glob
+import gzip
 import ConfigParser
 import Database
 
@@ -73,33 +87,35 @@ GLOBAL_OPTIONS, GLOBAL_ARGS = None, None
 # global drmaa session
 GLOBAL_SESSION = None
 
-class PipelineError( Exception ): pass
+
+class PipelineError(Exception):
+    pass
 
 # Sort out the important paths
-LIB_DIR=os.path.dirname( __file__ )
-ROOT_DIR=os.path.dirname( LIB_DIR )
-SCRIPTS_DIR=os.path.join( ROOT_DIR, "scripts" )
+LIB_DIR = os.path.dirname(__file__)
+ROOT_DIR = os.path.dirname(LIB_DIR)
+SCRIPTS_DIR = os.path.join(ROOT_DIR, "scripts")
 # if Pipeline.py is from an installed version,
 # scripts are located in the "bin" directory.
-if not os.path.exists( SCRIPTS_DIR):
+if not os.path.exists(SCRIPTS_DIR):
     SCRIPTS_DIR = os.path.join(sys.exec_prefix, "bin")
-    
+
 # possible to use defaultdict, but then statements will
 # fail on execution if a parameter does not exists, and not
 # while building the statement. Hence, use dict.
-PARAMS = { 
-    'scriptsdir' : SCRIPTS_DIR,
-    'toolsdir' : SCRIPTS_DIR,
+PARAMS = {
+    'scriptsdir': SCRIPTS_DIR,
+    'toolsdir': SCRIPTS_DIR,
     'cmd-farm' : """python %s/farm.py 
                 --method=drmaa 
                 --cluster-priority=-10 
 		--cluster-queue=all.q 
 		--cluster-num-jobs=100 
                 --bashrc=%s/bashrc.cgat
-		--cluster-options="" """ % (SCRIPTS_DIR,SCRIPTS_DIR),
+		--cluster-options="" """ % (SCRIPTS_DIR, SCRIPTS_DIR),
     'cmd-sql' : """sqlite3 -header -csv -separator $'\\t' """,
     'cmd-run' : """%s/run.py""" % SCRIPTS_DIR
-    }
+}
 
 # path until parameter sharing is resolved between CGAT module
 # and the pipelines module.
@@ -113,24 +129,26 @@ CONFIG = {}
 # local temporary directory to use
 TMPDIR = '/scratch'
 
-def configToDictionary( config ):
+
+def configToDictionary(config):
 
     p = {}
     for section in config.sections():
-        for key,value in config.items( section ):
-            v = IOTools.convertValue( value )
-            p["%s_%s" % (section,key)] = v
-            if section in ( "general", "DEFAULT" ):
+        for key, value in config.items(section):
+            v = IOTools.convertValue(value)
+            p["%s_%s" % (section, key)] = v
+            if section in ("general", "DEFAULT"):
                 p["%s" % (key)] = v
-               
+
     for key, value in config.defaults().iteritems():
-        p["%s" % (key)] =  IOTools.convertValue( value )
-        
+        p["%s" % (key)] = IOTools.convertValue(value)
+
     return p
 
-def getParameters( filenames = ["pipeline.ini",],
-                   defaults = None,
-                   default_ini = True ):
+
+def getParameters(filenames=["pipeline.ini", ],
+                  defaults=None,
+                  default_ini=True):
     '''read a config file and return as a dictionary.
 
     Sections and keys are combined with an underscore. If
@@ -149,7 +167,7 @@ def getParameters( filenames = ["pipeline.ini",],
     'input: "input1.file", 'special_input' : "input2.file" }
 
     This function also updates the module-wide parameter map.
-    
+
     The section [DEFAULT] is equivalent to [general].
 
     If default_ini is set, the default initialization file
@@ -159,40 +177,44 @@ def getParameters( filenames = ["pipeline.ini",],
     global CONFIG
 
     CONFIG = ConfigParser.ConfigParser()
-    
+
     if default_ini:
         # The link between CGATPipelines and Pipeline.py
         # needs to severed at one point.
         # 1. config files into CGAT module directory?
         # 2. Pipeline.py into CGATPipelines module directory?
-        dirname = os.path.join( os.path.dirname( os.path.dirname( __file__ )), "CGATPipelines")
-        filenames.insert( 0, 
-                          os.path.join( dirname, 
-                                        'configuration', 
-                                        'pipeline.ini' ) )
+        dirname = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)), "CGATPipelines")
+        filenames.insert(0,
+                         os.path.join(dirname,
+                                      'configuration',
+                                      'pipeline.ini'))
 
-    CONFIG.read( filenames )
+    CONFIG.read(filenames)
 
-    p = configToDictionary( CONFIG )
-    if defaults: PARAMS.update( defaults )
-    PARAMS.update( p )
+    p = configToDictionary(CONFIG)
+    if defaults:
+        PARAMS.update(defaults)
+    PARAMS.update(p)
 
     return PARAMS
 
-def loadParameters( filenames  ):
+
+def loadParameters(filenames):
     '''load parameters from a tuple of filenames.
-    
+
     Parameters are processed in the same way as
     getParameters, but the global parameter dictionary
     is not updated.
     '''
     config = ConfigParser.ConfigParser()
-    config.read( filenames )
+    config.read(filenames)
 
-    p = configToDictionary( config )
+    p = configToDictionary(config)
     return p
 
-def substituteParameters( **kwargs ):
+
+def substituteParameters(**kwargs):
     '''return a local PARAMS dictionary.
 
     Options in ``**kwargs`` substitute default
@@ -211,33 +233,37 @@ def substituteParameters( **kwargs ):
         outfile = local_params["outfile"]
         for k in local_params.keys():
             if k.startswith(outfile):
-                p = k[len(outfile)+1:]
+                p = k[len(outfile) + 1:]
                 if p not in local_params:
-                    raise KeyError( "task specific parameter '%s' does not exist for '%s' " % (p,k))
-                E.debug( "substituting task specific parameter for %s: %s = %s" % (outfile,p,local_params[k] ) )
+                    raise KeyError(
+                        "task specific parameter '%s' does not exist for '%s' " % (p, k))
+                E.debug("substituting task specific parameter for %s: %s = %s" %
+                        (outfile, p, local_params[k]))
                 local_params[p] = local_params[k]
 
     return local_params
 
-def checkFiles( filenames ):
+
+def checkFiles(filenames):
     """check for the presence/absence of files"""
-    
+
     missing = []
     for filename in filenames:
-        if not os.path.exists( filename ):
-            missing.append( filename )
+        if not os.path.exists(filename):
+            missing.append(filename)
 
     if missing:
-        raise ValueError( "missing files: %s" % ",".join(missing) )
+        raise ValueError("missing files: %s" % ",".join(missing))
 
-def which( filename ):
+
+def which(filename):
 
     if not os.environ.has_key('PATH') or os.environ['PATH'] == '':
         p = os.defpath
     else:
         p = os.environ['PATH']
 
-    pathlist = p.split (os.pathsep)
+    pathlist = p.split(os.pathsep)
 
     for path in pathlist:
         f = os.path.join(path, filename)
@@ -245,25 +271,28 @@ def which( filename ):
             return f
     return None
 
-def clone( infile, outfile ):
+
+def clone(infile, outfile):
     '''create a clone of ``infile`` named ``outfile``
     by creating a soft-link.
     '''
-    # link via relative paths, otherwise it 
+    # link via relative paths, otherwise it
     # fails if infile and outfile are in different
     # directories or in a subdirectory
     if os.path.dirname(infile) != os.path.dirname(outfile):
-        relpath = os.path.relpath( os.path.dirname(infile), os.path.dirname(outfile) )
+        relpath = os.path.relpath(
+            os.path.dirname(infile), os.path.dirname(outfile))
     else:
         relpath = "."
-    target = os.path.join( relpath, os.path.basename( infile ) )
+    target = os.path.join(relpath, os.path.basename(infile))
 
     try:
-        os.symlink( target, outfile )
+        os.symlink(target, outfile)
     except OSError:
         pass
-    
-def touch( filename, times = None ):
+
+
+def touch(filename, times=None):
     '''update/create a sentinel file.
 
     Compressed files (ending in .gz) are created
@@ -272,85 +301,99 @@ def touch( filename, times = None ):
     existed = os.path.exists(filename)
     fhandle = file(filename, 'a')
 
-    if filename.endswith (".gz") and not existed:
+    if filename.endswith(".gz") and not existed:
         # this will automatically add a gzip header
-        fhandle = gzip.GzipFile( filename, fileobj = fhandle )
-        
+        fhandle = gzip.GzipFile(filename, fileobj=fhandle)
+
     try:
         os.utime(filename, times)
     finally:
         fhandle.close()
-    
-def getTempFilename( dir = TMPDIR ):
+
+
+def getTempFilename(dir=TMPDIR):
     '''get a temporary filename.
 
     The caller needs to delete it.
     '''
-    tmpfile = tempfile.NamedTemporaryFile(dir=dir,delete=False, prefix = "ctmp" )
+    tmpfile = tempfile.NamedTemporaryFile(dir=dir, delete=False, prefix="ctmp")
     tmpfile.close()
     return tmpfile.name
 
-def getTempFile( dir = TMPDIR ):
+
+def getTempFile(dir=TMPDIR):
     '''get a temporary file.
 
     The caller needs to delete it.
     '''
-    return tempfile.NamedTemporaryFile(dir=dir, delete=False, prefix = "ctmp" )
+    return tempfile.NamedTemporaryFile(dir=dir, delete=False, prefix="ctmp")
 
-def getTempDir( dir = TMPDIR ):
-    return tempfile.mkdtemp( dir=dir, prefix = "ctmp" )
 
-def checkExecutables( filenames ):
+def getTempDir(dir=TMPDIR):
+    return tempfile.mkdtemp(dir=dir, prefix="ctmp")
+
+
+def checkExecutables(filenames):
     """check for the presence/absence of executables in the path"""
-    
+
     missing = []
 
     for filename in filenames:
-        if not which( filename ):
-            missing.append( filename )
+        if not which(filename):
+            missing.append(filename)
 
     if missing:
-        raise ValueError( "missing executables: %s" % ",".join(missing) )
+        raise ValueError("missing executables: %s" % ",".join(missing))
 
-def checkScripts( filenames ):
+
+def checkScripts(filenames):
     """check for the presence/absence of scripts"""
     missing = []
     for filename in filenames:
-        if not os.path.exists( filename ):
-            missing.append( filename )
+        if not os.path.exists(filename):
+            missing.append(filename)
 
     if missing:
-        raise ValueError( "missing scripts: %s" % ",".join(missing) )
+        raise ValueError("missing scripts: %s" % ",".join(missing))
 
-def checkParameter( key ):
+
+def checkParameter(key):
     if key not in PARAMS:
-        raise ValueError("need `%s` to be set" % key )
+        raise ValueError("need `%s` to be set" % key)
 
-def log( loglevel, message ):
+
+def log(loglevel, message):
     """log message at loglevel."""
-    E.log( loglevel, message )
+    E.log(loglevel, message)
 
-def info( message ):
-    L.info( message )
 
-def warning( message ):
-    E.warning( message )
+def info(message):
+    L.info(message)
 
-def warn( message ):
-    E.warning( message )
 
-def debug( message ):
-    L.debug( message )
+def warning(message):
+    E.warning(message)
 
-def error( message ):
-    E.error( message )
-        
-def critical( message):
-    E.critical( message )
 
-def isEmpty( filename ):
+def warn(message):
+    E.warning(message)
+
+
+def debug(message):
+    L.debug(message)
+
+
+def error(message):
+    E.error(message)
+
+
+def critical(message):
+    E.critical(message)
+
+
+def isEmpty(filename):
     '''return true if file *filename* is empty.
-    
+
     If filename ends in .gz, it checks if the contents are empty
     by opening it.
     '''
@@ -359,24 +402,27 @@ def isEmpty( filename ):
         with gzip.open(filename) as inf:
             return len(inf.read(10)) == 0
     else:
-        return os.stat(filename)[6]==0
+        return os.stat(filename)[6] == 0
 
-def asList( param ):
+
+def asList(param):
     '''return a param as a list'''
     if type(param) == str:
         try:
             params = [x.strip() for x in param.strip().split(",")]
         except AttributeError:
             params = [param.strip()]
-        return [ x for x in params if x != ""]
+        return [x for x in params if x != ""]
     elif type(param) in (types.ListType, types.TupleType):
         return param
-    else: 
+    else:
         return [param]
 
-def asTuple( param ):
+
+def asTuple(param):
     '''return a param as a list'''
-    return tuple(asList( param ))
+    return tuple(asList(param))
+
 
 def flatten(l, ltypes=(list, tuple)):
     '''flatten a nested list/tuple.'''
@@ -394,15 +440,18 @@ def flatten(l, ltypes=(list, tuple)):
         i += 1
     return ltype(l)
 
-def asDict( param ):
+
+def asDict(param):
     '''return a section of configuration file as a dictionary.'''
     return dict(CONFIG.items(param))
 
-def quote( track ):
-    '''quote track such that is applicable for a table name.'''
-    return re.sub( "[-(),\[\].]", "_", track)
 
-def shellquote( statement ):
+def quote(track):
+    '''quote track such that is applicable for a table name.'''
+    return re.sub("[-(),\[\].]", "_", track)
+
+
+def shellquote(statement):
     '''shell quote a string to be used as a function argument.
 
     from http://stackoverflow.com/questions/967443/python-module-to-shellquote-unshellquote
@@ -410,28 +459,30 @@ def shellquote( statement ):
     _quote_pos = re.compile('(?=[^-0-9a-zA-Z_./\n])')
 
     if statement:
-        return _quote_pos.sub('\\\\', statement).replace('\n',"'\n'")
+        return _quote_pos.sub('\\\\', statement).replace('\n', "'\n'")
     else:
         return "''"
 
-def toTable( outfile ):
+
+def toTable(outfile):
     '''convert an outfile (filename) into
     a table name.
 
     The table name is quoted.
     '''
-    assert outfile.endswith( ".load" ) 
-    name = os.path.basename( outfile[:-len(".load")] )
-    return quote( name )
+    assert outfile.endswith(".load")
+    name = os.path.basename(outfile[:-len(".load")])
+    return quote(name)
 
-def load( infile, 
-          outfile = None, 
-          options = "", 
-          collapse = False,
-          transpose = False,
-          tablename = None,
-          limit = 0,
-          shuffle = False):
+
+def load(infile,
+         outfile=None,
+         options="",
+         collapse=False,
+         transpose=False,
+         tablename=None,
+         limit=0,
+         shuffle=False):
     '''straight import from tab separated table.
 
     The table name is given by outfile without the
@@ -450,24 +501,28 @@ def load( infile,
     '''
 
     if not tablename:
-        tablename = toTable( outfile )
-    
+        tablename = toTable(outfile)
+
     statement = []
-    if infile.endswith(".gz"): statement.append( "zcat %(infile)s" )
-    else: statement.append( "cat %(infile)s" )
+    if infile.endswith(".gz"):
+        statement.append("zcat %(infile)s")
+    else:
+        statement.append("cat %(infile)s")
 
     if collapse:
-        statement.append( "python %(scriptsdir)s/table2table.py --collapse=%(collapse)s" )
+        statement.append(
+            "python %(scriptsdir)s/table2table.py --collapse=%(collapse)s")
 
     if transpose:
-        statement.append( "python %(scriptsdir)s/table2table.py --transpose --set-transpose-field=%(transpose)s" )
-        
+        statement.append(
+            "python %(scriptsdir)s/table2table.py --transpose --set-transpose-field=%(transpose)s")
+
     if shuffle:
-        statement.append( "perl %(scriptsdir)s/randomize_lines.pl -h" )
+        statement.append("perl %(scriptsdir)s/randomize_lines.pl -h")
 
     if limit > 0:
         # use awk to filter in order to avoid a pipeline broken error from head
-        statement.append( "awk 'NR > %i {exit(0)} {print}'" % (limit + 1))
+        statement.append("awk 'NR > %i {exit(0)} {print}'" % (limit + 1))
         # ignore errors from cat or zcat due to broken pipe
         ignore_pipe_errors = True
 
@@ -478,41 +533,44 @@ def load( infile,
     > %(outfile)s
     ''')
 
-    statement = " | ".join( statement)
+    statement = " | ".join(statement)
 
     run()
 
-def concatenateAndLoad( infiles, 
-                        outfile, 
-                        regex_filename = None, 
-                        header = None, 
-                        cat = None, 
-                        has_titles = True, 
-                        missing_value = "na",
-                        options = "" ):
+
+def concatenateAndLoad(infiles,
+                       outfile,
+                       regex_filename=None,
+                       header=None,
+                       cat=None,
+                       has_titles=True,
+                       missing_value="na",
+                       options=""):
     '''concatenate categorical tables and load into a database.
 
     If *has_titles* is False, the tables are assumed to have no titles.
     '''
-    
+
     infiles = " ".join(infiles)
 
-    tablename = toTable( outfile )
+    tablename = toTable(outfile)
 
     passed_options = options
-    load_options,options = [], []
+    load_options, options = [], []
 
     if regex_filename:
-        options.append( "--regex-filename='%s'" % regex_filename )
+        options.append("--regex-filename='%s'" % regex_filename)
 
     if header:
-        load_options.append( "--header=%s" % header )
+        load_options.append("--header=%s" % header)
 
     if not cat:
         cat = "track"
-        
-    if has_titles == False: no_titles = "--no-titles"
-    else: no_titles = ""
+
+    if has_titles == False:
+        no_titles = "--no-titles"
+    else:
+        no_titles = ""
 
     options = " ".join(options)
     load_options = " ".join(load_options) + " " + passed_options
@@ -529,14 +587,15 @@ def concatenateAndLoad( infiles,
                    > %(outfile)s'''
     run()
 
-def mergeAndLoad( infiles, 
-                  outfile, 
-                  suffix = None, 
-                  columns=(0,1), 
-                  regex = None, 
-                  row_wise = True,
-                  options = "",
-                  prefixes = None ):
+
+def mergeAndLoad(infiles,
+                 outfile,
+                 suffix=None,
+                 columns=(0, 1),
+                 regex = None,
+                 row_wise = True,
+                 options = "",
+                 prefixes = None):
     '''merge categorical tables and load into a database.
 
     The tables are merged and entered row-wise, i.e each file is a
@@ -564,33 +623,37 @@ def mergeAndLoad( infiles,
     *options* are passed on to ``csv2db.py``.
     '''
     if len(infiles) == 0:
-        raise ValueError( "no files for merging")
+        raise ValueError("no files for merging")
 
     if suffix:
-        header = ",".join( [ os.path.basename( snip( x, suffix) ) for x in infiles] )
+        header = ",".join([os.path.basename(snip(x, suffix)) for x in infiles])
     elif regex:
-        header = ",".join( [ "-".join(re.search( regex, x).groups()) for x in infiles] )        
+        header = ",".join(["-".join(re.search(regex, x).groups())
+                          for x in infiles])
     else:
-        header = ",".join( [ os.path.basename( x ) for x in infiles] )
+        header = ",".join([os.path.basename(x) for x in infiles])
 
     header_stmt = "--header=%s" % header
 
     if columns:
-        column_filter = "| cut -f %s" % ",".join( map(str, [ x + 1 for x in columns ]))
+        column_filter = "| cut -f %s" % ",".join(map(str,
+                                                 [x + 1 for x in columns]))
     else:
         column_filter = ""
         if prefixes:
             assert len(prefixes) == len(infiles)
-            header_stmt = "--prefixes=%s" % ",".join( prefixes)
+            header_stmt = "--prefixes=%s" % ",".join(prefixes)
         else:
             header_stmt = "--add-file-prefix"
 
     if infiles[0].endswith(".gz"):
-        filenames = " ".join( [ "<( zcat %s %s )" % (x,column_filter) for x in infiles ] )
+        filenames = " ".join(
+            ["<( zcat %s %s )" % (x, column_filter) for x in infiles])
     else:
-        filenames = " ".join( [ "<( cat %s %s )" % (x,column_filter) for x in infiles ] )
+        filenames = " ".join(
+            ["<( cat %s %s )" % (x, column_filter) for x in infiles])
 
-    tablename = toTable( outfile )
+    tablename = toTable(outfile)
 
     if row_wise:
         transform = """| perl -p -e "s/bin/track/" | python %(scriptsdir)s/table2table.py --transpose""" % PARAMS
@@ -612,14 +675,15 @@ def mergeAndLoad( infiles,
             """
     run()
 
-def createView( dbhandle, tables, tablename, outfile, view_type = "TABLE",
-                ignore_duplicates = True ):
+
+def createView(dbhandle, tables, tablename, outfile, view_type="TABLE",
+               ignore_duplicates=True):
     '''create a view in database for tables.
 
     Tables should be a list of tuples. Each tuple
     should contain the name of a table and the field
     to join with the first table.
-    
+
     If ignore duplicates is set to False, duplicate column
     names will be added with the tablename as prefix. The
     default is to ignore.
@@ -636,75 +700,88 @@ def createView( dbhandle, tables, tablename, outfile, view_type = "TABLE",
 
     '''
 
-    Database.executewait( dbhandle, "DROP %(view_type)s IF EXISTS %(tablename)s" % locals() )
+    Database.executewait(
+        dbhandle, "DROP %(view_type)s IF EXISTS %(tablename)s" % locals())
 
     tracks, columns = [], []
-    tablenames = [ x[0] for x in tables ]
+    tablenames = [x[0] for x in tables]
     for table, track in tables:
-        d = Database.executewait( dbhandle,"SELECT COUNT(DISTINCT %s) FROM %s" % (track,table))
-        tracks.append( d.fetchone()[0] )
-        columns.append( [x.lower() for x in Database.getColumnNames( dbhandle, table ) if x != track ] )
+        d = Database.executewait(
+            dbhandle, "SELECT COUNT(DISTINCT %s) FROM %s" % (track, table))
+        tracks.append(d.fetchone()[0])
+        columns.append(
+            [x.lower() for x in Database.getColumnNames(dbhandle, table) if x != track])
 
-    E.info( "creating %s from the following tables: %s" % (tablename, str(zip( tablenames, tracks ))))
+    E.info("creating %s from the following tables: %s" %
+           (tablename, str(zip(tablenames, tracks))))
     if min(tracks) != max(tracks):
-        raise ValueError("number of rows not identical - will not create view" )
+        raise ValueError("number of rows not identical - will not create view")
 
-    from_statement = " , ".join( [ "%s as t%i" % (y[0],x) for x,y in enumerate(tables) ] )
+    from_statement = " , ".join(
+        ["%s as t%i" % (y[0], x) for x, y in enumerate(tables)])
     f = tables[0][1]
-    where_statement = " AND ".join( ["t0.%s = t%i.%s" % (f,x+1,y[1]) for x,y in enumerate(tables[1:]) ] )
-    
+    where_statement = " AND ".join(
+        ["t0.%s = t%i.%s" % (f, x + 1, y[1]) for x, y in enumerate(tables[1:])])
+
     all_columns, taken = [], set()
     for x, c in enumerate(columns):
-        i = set(taken).intersection( set(c))
+        i = set(taken).intersection(set(c))
         if i:
-            E.warn("duplicate column names: %s " % i )
+            E.warn("duplicate column names: %s " % i)
             if not ignore_duplicates:
                 table = tables[x][0]
-                all_columns.extend( ["t%i.%s AS %s_%s" % (x,y,table,y) for y in i ] )
-                c = [ y for y in c if y not in i ]
-                
-        all_columns.extend( ["t%i.%s" % (x,y) for y in c ] )
-        taken.update( set(c) )
+                all_columns.extend(
+                    ["t%i.%s AS %s_%s" % (x, y, table, y) for y in i])
+                c = [y for y in c if y not in i]
 
-    all_columns = ",".join( all_columns)
+        all_columns.extend(["t%i.%s" % (x, y) for y in c])
+        taken.update(set(c))
+
+    all_columns = ",".join(all_columns)
     statement = '''CREATE %(view_type)s %(tablename)s AS SELECT t0.track, %(all_columns)s
                    FROM %(from_statement)s
                    WHERE %(where_statement)s
     ''' % locals()
 
-    Database.executewait( dbhandle, statement )
+    Database.executewait(dbhandle, statement)
 
-    nrows = Database.executewait( dbhandle, "SELECT COUNT(*) FROM view_mapping" ).fetchone()[0]
-    
+    nrows = Database.executewait(
+        dbhandle, "SELECT COUNT(*) FROM view_mapping").fetchone()[0]
+
     if nrows == 0:
-        raise ValueError( "empty view mapping, check statement = %s" % (statement % locals()) )
+        raise ValueError(
+            "empty view mapping, check statement = %s" % (statement % locals()))
     if nrows != min(tracks):
-        E.warn( "view creates duplicate rows, got %i, expected %i" % (nrows, min(tracks)))
+        E.warn("view creates duplicate rows, got %i, expected %i" %
+               (nrows, min(tracks)))
 
-    E.info( "created view_mapping with %i rows" % nrows )
+    E.info("created view_mapping with %i rows" % nrows)
 
-    touch( outfile )
+    touch(outfile)
 
 
-def snip( filename, extension = None, alt_extension = None, path = False):
+def snip(filename, extension=None, alt_extension=None, path=False):
     '''return prefix of filename.
 
     If extension is given, make sure that filename has the extension.
 
     If path is set to false, the path is stripped from the file name.
     '''
-    if extension: 
-        if filename.endswith( extension ):
+    if extension:
+        if filename.endswith(extension):
             root = filename[:-len(extension)]
-        elif alt_extension and filename.endswith( alt_extension ):
+        elif alt_extension and filename.endswith(alt_extension):
             root = filename[:-len(alt_extension)]
         else:
-            raise ValueError("'%s' expected to end in '%s'" % (filename, extension))
+            raise ValueError("'%s' expected to end in '%s'" %
+                             (filename, extension))
     else:
-        root, ext = os.path.splitext( filename )
+        root, ext = os.path.splitext(filename)
 
-    if path==True: snipped = os.path.basename(root)
-    else: snipped = root
+    if path == True:
+        snipped = os.path.basename(root)
+    else:
+        snipped = root
 
     return snipped
 
@@ -713,50 +790,55 @@ def getCallerLocals(decorators=0):
     '''returns locals of caller using frame.
 
     optional pass number of decorators
-    
+
     from http://pylab.blogspot.com/2009/02/python-accessing-caller-locals-from.html
     '''
-    f = sys._getframe(2+decorators)
+    f = sys._getframe(2 + decorators)
     args = inspect.getargvalues(f)
     return args[3]
 
+
 def getCaller(decorators=0):
-    frm = inspect.stack()[2+decorators]
+    frm = inspect.stack()[2 + decorators]
     mod = inspect.getmodule(frm[0])
     return mod
 
-def execute( statement, **kwargs ):
+
+def execute(statement, **kwargs):
     '''execute a statement locally.'''
 
-    if not kwargs: kwargs = getCallerLocals()
+    if not kwargs:
+        kwargs = getCallerLocals()
 
-    kwargs = dict( PARAMS.items() + kwargs.items() )    
+    kwargs = dict(PARAMS.items() + kwargs.items())
 
     L.debug("running %s" % (statement % kwargs))
-    
+
     if "cwd" not in kwargs:
         cwd = os.getcwd()
     else:
         cwd = kwargs["cwd"]
 
-    process = subprocess.Popen(  statement % kwargs,
-                                 cwd = cwd, 
-                                 shell = True,
-                                 stdin = subprocess.PIPE,
-                                 stdout = subprocess.PIPE,
-                                 stderr = subprocess.PIPE )
+    process = subprocess.Popen(statement % kwargs,
+                               cwd=cwd,
+                               shell=True,
+                               stdin=subprocess.PIPE,
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
 
     # process.stdin.close()
     stdout, stderr = process.communicate()
 
     if process.returncode != 0:
-        raise PipelineError( "Child was terminated by signal %i: \nThe stderr was: \n%s\n%s\n" % (-process.returncode, stderr, statement ))
+        raise PipelineError("Child was terminated by signal %i: \nThe stderr was: \n%s\n%s\n" %
+                            (-process.returncode, stderr, statement))
 
     return stdout, stderr
 
 # Definition of helper functions for job scripts
 # detect_pipe_error(): propagate error of programs not at the end of a pipe
-# checkpoint(): exit a set of chained commands (via ;) if the previous command failed.
+# checkpoint(): exit a set of chained commands (via ;) if the previous
+# command failed.
 _exec_prefix = '''detect_pipe_error_helper() 
     {
     while [ "$#" != 0 ] ; do
@@ -778,81 +860,89 @@ _exec_prefix = '''detect_pipe_error_helper()
 
 _exec_suffix = "; detect_pipe_error"
 
-def buildStatement( **kwargs ):
+
+def buildStatement(**kwargs):
     '''build statement from kwargs.
 
     Options in PARAMS are added, but kwargs take precedence.
-    
+
     If outfile is in kwargs, 
     '''
 
     if "statement" not in kwargs:
         raise ValueError("'statement' not defined")
 
-    local_params = substituteParameters( **kwargs )
+    local_params = substituteParameters(**kwargs)
 
     # build the statement
     try:
         statement = kwargs.get("statement") % local_params
     except KeyError, msg:
-        raise KeyError( "Error when creating command: could not find %s in dictionaries" % msg)
+        raise KeyError(
+            "Error when creating command: could not find %s in dictionaries" % msg)
     except ValueError, msg:
-        raise ValueError( "Error when creating command: %s, statement = %s" % (msg, kwargs.get("statement") ) )
+        raise ValueError("Error when creating command: %s, statement = %s" % (
+            msg, kwargs.get("statement")))
 
     # add bash as prefix to allow advanced shell syntax like 'wc -l <( gunzip < x.gz)'
     # executable option to call() does not work. Note that there will be an extra
     # indirection.
-    statement = " ".join( re.sub( "\t+", " ", statement).split( "\n" ) ).strip()
-    if statement.endswith(";"): statement = statement[:-1]
+    statement = " ".join(re.sub("\t+", " ", statement).split("\n")).strip()
+    if statement.endswith(";"):
+        statement = statement[:-1]
 
-    L.debug( "running statement:\n%s" % statement )
+    L.debug("running statement:\n%s" % statement)
 
     return statement
 
-def expandStatement( statement, ignore_pipe_errors = False ):
+
+def expandStatement(statement, ignore_pipe_errors=False):
     '''add exec_prefix and exec_suffix to statement.'''
-    
+
     if ignore_pipe_errors:
         return statement
     else:
-        return " ".join( (_exec_prefix, statement, _exec_suffix) )
+        return " ".join((_exec_prefix, statement, _exec_suffix))
 
-def joinStatements( statements, infile ):
+
+def joinStatements(statements, infile):
     '''join a chain of statements into a single statement.
 
     Each statement contains an @IN@ or a @OUT@ or both.
     These will be replaced by the names of successive temporary
     files.
-    
+
     In the first statement, @IN@ is replaced with *infile*. 
-    
+
     The last statement should move @IN@ to outfile.
 
     returns a single statement.
     '''
-    
+
     prefix = getTempFilename(".")
     pattern = "%s_%%i" % prefix
 
     result = []
     for x, statement in enumerate(statements):
         if x == 0:
-            s = re.sub( "@IN@", infile, statement )
+            s = re.sub("@IN@", infile, statement)
         else:
-            s = re.sub( "@IN@", pattern % x, statement )
+            s = re.sub("@IN@", pattern % x, statement)
 
-        s = re.sub( "@OUT@", pattern % (x+1), s ).strip()
+        s = re.sub("@OUT@", pattern % (x + 1), s).strip()
 
-        if s.endswith(";"): s = s[:-1]
-        result.append( s )
+        if s.endswith(";"):
+            s = s[:-1]
+        result.append(s)
 
     assert prefix != ""
-    result.append( "rm -f %s*" % prefix )
-    
-    result = "; checkpoint ; ".join( result )
+    result.append("rm -f %s*" % prefix)
+
+    result = "; checkpoint ; ".join(result)
     return result
 
-def getStdoutStderr( stdout_path, stderr_path, tries=5 ):
+
+def getStdoutStderr(stdout_path, stderr_path, tries=5):
     '''get stdout/stderr allowing for same lag.
 
     Try at most *tries* times. If unsuccessfull, throw PipelineError.
@@ -863,37 +953,40 @@ def getStdoutStderr( stdout_path, stderr_path, tries=5 ):
     '''
     x = tries
     while x >= 0:
-        if os.path.exists( stdout_path ): break
+        if os.path.exists(stdout_path):
+            break
         time.sleep(1)
         x -= 1
-            
+
     x = tries
     while x >= 0:
-        if os.path.exists( stderr_path ): break
+        if os.path.exists(stderr_path):
+            break
         time.sleep(1)
         x -= 1
 
     try:
-        stdout = open( stdout_path, "r" ).readlines()
+        stdout = open(stdout_path, "r").readlines()
     except IOError, msg:
-        E.warn( "could not open stdout: %s" % msg )
+        E.warn("could not open stdout: %s" % msg)
         stdout = []
-            
+
     try:
-        stderr = open( stderr_path, "r" ).readlines()
+        stderr = open(stderr_path, "r").readlines()
     except IOError, msg:
-        E.warn( "could not open stdout: %s" % msg )
+        E.warn("could not open stdout: %s" % msg)
         stderr = []
 
     try:
-        os.unlink( stdout_path )
-        os.unlink( stderr_path )
+        os.unlink(stdout_path)
+        os.unlink(stderr_path)
     except OSError, msg:
         pass
 
     return stdout, stderr
 
-def run( **kwargs ):
+
+def run(**kwargs):
     """run a statement.
 
     runs it on the cluster using drmaa if to_cluster is set.
@@ -913,115 +1006,122 @@ def run( **kwargs ):
 
     # combine options using correct preference
     options = dict(PARAMS.items())
-    options.update( getCallerLocals().items() )
-    options.update( kwargs.items() )
+    options.update(getCallerLocals().items())
+    options.update(kwargs.items())
 
-    def setupJob( session ):
+    def setupJob(session):
 
         jt = session.createJobTemplate()
         jt.workingDirectory = os.getcwd()
-        jt.jobEnvironment = { 'BASH_ENV' : '~/.bashrc' }
+        jt.jobEnvironment = {'BASH_ENV': '~/.bashrc'}
         jt.args = []
         jt.nativeSpecification = "-V -q %s -p %i -N %s %s" % \
-            (options.get("job_queue", GLOBAL_OPTIONS.cluster_queue ),
-             options.get("job_priority", GLOBAL_OPTIONS.cluster_priority ),
-             "_" + re.sub( "[:]", "_", os.path.basename(options.get("outfile", "ruffus" ))),
+            (options.get("job_queue", GLOBAL_OPTIONS.cluster_queue),
+             options.get("job_priority", GLOBAL_OPTIONS.cluster_priority),
+             "_" +
+             re.sub("[:]", "_", os.path.basename(
+                 options.get("outfile", "ruffus"))),
              options.get("job_options", GLOBAL_OPTIONS.cluster_options))
-            
+
         # keep stdout and stderr separate
-        jt.joinFiles=False
+        jt.joinFiles = False
 
         return jt
 
-    shellfile = os.path.join( os.getcwd(), "shell.log" )
+    shellfile = os.path.join(os.getcwd(), "shell.log")
 
     pid = os.getpid()
-    L.debug( 'task: pid = %i' % pid )
+    L.debug('task: pid = %i' % pid)
 
-    # connect to global session 
+    # connect to global session
     session = GLOBAL_SESSION
-    L.debug( 'task: pid %i: sge session = %s' % (pid, str(session)))
+    L.debug('task: pid %i: sge session = %s' % (pid, str(session)))
 
-    ignore_pipe_errors = options.get( 'ignore_pipe_errors', False )
+    ignore_pipe_errors = options.get('ignore_pipe_errors', False)
 
-    def buildJobScript( statement ):
+    def buildJobScript(statement):
         '''build job script from statement.
 
         returns (name_of_script, stdout_path, stderr_path)
         '''
-        
-        tmpfile = getTempFile( dir = os.getcwd() )
-        tmpfile.write( "#!/bin/bash\n" ) #  -l -O expand_aliases\n" )
-        tmpfile.write( 'echo "START--------------------------------" >> %s \n' % shellfile )
+
+        tmpfile = getTempFile(dir=os.getcwd())
+        tmpfile.write("#!/bin/bash\n")  # -l -O expand_aliases\n" )
+        tmpfile.write(
+            'echo "START--------------------------------" >> %s \n' % shellfile)
         # disabled - problems with quoting
         # tmpfile.write( '''echo 'statement=%s' >> %s\n''' % (shellquote(statement), shellfile) )
-        tmpfile.write( "set &>> %s\n" % shellfile)
-        tmpfile.write( "module list &>> %s\n" % shellfile )
-        tmpfile.write( 'echo "END----------------------------------" >> %s \n' % shellfile )
-        tmpfile.write( expandStatement( statement, ignore_pipe_errors = ignore_pipe_errors ) + "\n" )
+        tmpfile.write("set &>> %s\n" % shellfile)
+        tmpfile.write("module list &>> %s\n" % shellfile)
+        tmpfile.write(
+            'echo "END----------------------------------" >> %s \n' % shellfile)
+        tmpfile.write(
+            expandStatement(statement, ignore_pipe_errors=ignore_pipe_errors) + "\n")
         tmpfile.close()
 
-        job_path = os.path.abspath( tmpfile.name )
-        stdout_path = job_path + ".stdout" 
-        stderr_path = job_path + ".stderr" 
+        job_path = os.path.abspath(tmpfile.name)
+        stdout_path = job_path + ".stdout"
+        stderr_path = job_path + ".stderr"
 
-        os.chmod( job_path, stat.S_IRWXG | stat.S_IRWXU )
+        os.chmod(job_path, stat.S_IRWXG | stat.S_IRWXU)
 
         return (job_path, stdout_path, stderr_path)
-    
+
     # run multiple jobs
-    if options.get( "statements" ):
+    if options.get("statements"):
 
         statement_list = []
-        for statement in options.get("statements"): 
+        for statement in options.get("statements"):
             options["statement"] = statement
-            statement_list.append(buildStatement( **options))
-            
-        if options.get( "dryrun", False ): return
+            statement_list.append(buildStatement(**options))
 
-        jt = setupJob( session )
-        
+        if options.get("dryrun", False):
+            return
+
+        jt = setupJob(session)
+
         jobids, filenames = [], []
         for statement in statement_list:
 
-            job_path, stdout_path, stderr_path = buildJobScript( statement )
+            job_path, stdout_path, stderr_path = buildJobScript(statement)
 
             jt.remoteCommand = job_path
-            jt.outputPath=":"+ stdout_path
-            jt.errorPath=":" + stderr_path
+            jt.outputPath = ":" + stdout_path
+            jt.errorPath = ":" + stderr_path
 
-            os.chmod( job_path, stat.S_IRWXG | stat.S_IRWXU )
+            os.chmod(job_path, stat.S_IRWXG | stat.S_IRWXU)
 
             jobid = session.runJob(jt)
-            jobids.append( jobid )
-            filenames.append( (job_path, stdout_path, stderr_path) )
+            jobids.append(jobid)
+            filenames.append((job_path, stdout_path, stderr_path))
 
-            L.debug( "job has been submitted with jobid %s" % str(jobid ))
-        
-        L.debug( "waiting for %i jobs to finish " % len(jobids) )
+            L.debug("job has been submitted with jobid %s" % str(jobid))
+
+        L.debug("waiting for %i jobs to finish " % len(jobids))
         session.synchronize(jobids, drmaa.Session.TIMEOUT_WAIT_FOREVER, False)
-        
+
         # collect and clean up
-        for jobid, statement, paths in zip( jobids, statement_list, filenames) :
+        for jobid, statement, paths in zip(jobids, statement_list, filenames):
             job_path, stdout_path, stderr_path = paths
             retval = session.wait(jobid, drmaa.Session.TIMEOUT_WAIT_FOREVER)
 
-            stdout, stderr = getStdoutStderr( stdout_path, stderr_path )
+            stdout, stderr = getStdoutStderr(stdout_path, stderr_path)
 
             if retval.exitStatus != 0:
-                raise PipelineError( "---------------------------------------\n"
-                                     "Child was terminated by signal %i: \n"
-                                     "The stderr was: \n%s\n%s\n" 
-                                     "---------------------------------------\n" % \
-                                         (retval.exitStatus, 
-                                          "".join( stderr),
-                                          statement ) )
+                raise PipelineError("---------------------------------------\n"
+                                    "Child was terminated by signal %i: \n"
+                                    "The stderr was: \n%s\n%s\n"
+                                    "---------------------------------------\n" %
+                                    (retval.exitStatus,
+                                     "".join(stderr),
+                                     statement))
 
             try:
-                os.unlink( job_path )
+                os.unlink(job_path)
             except OSError:
-                L.warn( "temporary job file %s not present for clean-up - ignored" % job_path )
-            
+                L.warn(
+                    "temporary job file %s not present for clean-up - ignored" % job_path)
+
         session.deleteJobTemplate(jt)
 
     # Run a single parallel job if
@@ -1029,99 +1129,114 @@ def run( **kwargs ):
     #   2. to_cluster is not defined or to_cluster is set to True.
     # If the cluster has not been disabled through the command line, do not
     #     run on cluster
-    elif (options.get( "job_queue" ) or 
+    elif (options.get("job_queue") or
           ("to_cluster" not in options or options.get( "to_cluster" ))) \
-          and (GLOBAL_OPTIONS and not GLOBAL_OPTIONS.without_cluster):
+            and (GLOBAL_OPTIONS and not GLOBAL_OPTIONS.without_cluster):
 
-        statement = buildStatement( **options )
+        statement = buildStatement(**options)
 
-        if options.get( "dryrun", False ): return
+        if options.get("dryrun", False):
+            return
 
-        job_path, stdout_path, stderr_path = buildJobScript( statement )
+        job_path, stdout_path, stderr_path = buildJobScript(statement)
 
-        jt = setupJob( session )
-        
+        jt = setupJob(session)
+
         jt.remoteCommand = job_path
-        # later: allow redirection of stdout and stderr to files; can even be across hosts?
-        jt.outputPath=":"+ stdout_path
-        jt.errorPath=":" + stderr_path
+        # later: allow redirection of stdout and stderr to files; can even be
+        # across hosts?
+        jt.outputPath = ":" + stdout_path
+        jt.errorPath = ":" + stderr_path
 
         if "job_array" in options and options["job_array"] != None:
             # run an array job
-            start, end, increment = options.get("job_array" )
-            L.debug("starting an array job: %i-%i,%i" % (start, end, increment ))
+            start, end, increment = options.get("job_array")
+            L.debug("starting an array job: %i-%i,%i" %
+                    (start, end, increment))
             # sge works with 1-based, closed intervals
-            jobids = session.runBulkJobs( jt, start+1, end, increment )
-            L.debug( "%i array jobs have been submitted as jobid %s" % (len(jobids), jobids[0]) )
-            retval = session.synchronize(jobids, drmaa.Session.TIMEOUT_WAIT_FOREVER, True)
+            jobids = session.runBulkJobs(jt, start + 1, end, increment)
+            L.debug("%i array jobs have been submitted as jobid %s" %
+                    (len(jobids), jobids[0]))
+            retval = session.synchronize(
+                jobids, drmaa.Session.TIMEOUT_WAIT_FOREVER, True)
         else:
             jobid = session.runJob(jt)
-            L.debug( "job has been submitted with jobid %s" % str(jobid ))
+            L.debug("job has been submitted with jobid %s" % str(jobid))
             try:
-                retval = session.wait(jobid, drmaa.Session.TIMEOUT_WAIT_FOREVER)
+                retval = session.wait(
+                    jobid, drmaa.Session.TIMEOUT_WAIT_FOREVER)
             except Exception, msg:
                 # ignore message 24 in PBS
-                # code 24: drmaa: Job finished but resource usage information and/or termination status could not be provided.":
-                if not msg.message.startswith("code 24"): raise
+                # code 24: drmaa: Job finished but resource usage information
+                # and/or termination status could not be provided.":
+                if not msg.message.startswith("code 24"):
+                    raise
                 retval = None
 
-        stdout, stderr = getStdoutStderr( stdout_path, stderr_path )
+        stdout, stderr = getStdoutStderr(stdout_path, stderr_path)
 
         if "job_array" not in options:
             if retval and retval.exitStatus != 0:
-                raise PipelineError( "---------------------------------------\n"
-                                     "Child was terminated by signal %i: \n"
-                                     "The stderr was: \n%s\n%s\n"
-                                     "-----------------------------------------" % \
-                                         (retval.exitStatus, 
-                                          "".join( stderr), statement))
-            
+                raise PipelineError("---------------------------------------\n"
+                                    "Child was terminated by signal %i: \n"
+                                    "The stderr was: \n%s\n%s\n"
+                                    "-----------------------------------------" %
+                                    (retval.exitStatus,
+                                     "".join(stderr), statement))
+
         session.deleteJobTemplate(jt)
         try:
-            os.unlink( job_path )
+            os.unlink(job_path)
         except OSError:
-            L.warn( "temporary job file %s not present for clean-up - ignored" % job_path )
+            L.warn(
+                "temporary job file %s not present for clean-up - ignored" % job_path)
     else:
-        statement = buildStatement( **options )
+        statement = buildStatement(**options)
 
-        if options.get( "dryrun", False ): return
- 
+        if options.get("dryrun", False):
+            return
+
         if "<(" in statement:
-            if "'" in statement: raise ValueError( "advanced bash syntax combined with single quotes" )
+            if "'" in statement:
+                raise ValueError(
+                    "advanced bash syntax combined with single quotes")
             statement = """/bin/bash -c '%s'""" % statement
 
-        process = subprocess.Popen(  expandStatement( statement, ignore_pipe_errors = ignore_pipe_errors ),
-                                     cwd = os.getcwd(), 
-                                     shell = True,
-                                     stdin = subprocess.PIPE,
-                                     stdout = subprocess.PIPE,
-                                     stderr = subprocess.PIPE )
+        process = subprocess.Popen(expandStatement(statement, ignore_pipe_errors=ignore_pipe_errors),
+                                   cwd=os.getcwd(),
+                                   shell=True,
+                                   stdin=subprocess.PIPE,
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
 
         # process.stdin.close()
         stdout, stderr = process.communicate()
 
         if process.returncode != 0:
-            raise PipelineError( "---------------------------------------\n"
-                                 "Child was terminated by signal %i: \n"
-                                 "The stderr was: \n%s\n%s\n"
-                                 "-----------------------------------------" % \
-                                     (-process.returncode, stderr, statement ))
+            raise PipelineError("---------------------------------------\n"
+                                "Child was terminated by signal %i: \n"
+                                "The stderr was: \n%s\n%s\n"
+                                "-----------------------------------------" %
+                                (-process.returncode, stderr, statement))
+
 
 class MultiLineFormatter(logging.Formatter):
+
     '''logfile formatter: add identation for multi-line entries.'''
 
     def format(self, record):
         s = logging.Formatter.format(self, record)
         if record.message:
             header, footer = s.split(record.message)
-            s = s.replace('\n', '\n' + ' '*len(header))
+            s = s.replace('\n', '\n' + ' ' * len(header))
         return s
 
-def submit( module, function, params = None,
-            infiles = None, outfiles = None, 
-            toCluster = True,
-            logfile = None, 
-            jobOptions = ""):
+
+def submit(module, function, params=None,
+           infiles=None, outfiles=None,
+           toCluster=True,
+           logfile=None,
+           jobOptions=""):
     '''Submit a python *function* as a job to the cluster.
 
     The function should reside in *module*. If *module* is
@@ -1131,13 +1246,13 @@ def submit( module, function, params = None,
     input/output filenames. Neither options supports yet nested lists.
     '''
 
-    if type( infiles ) in (list, tuple):
-        infiles = " ".join( ["--input=%s" % x for x in infiles ] )
+    if type(infiles) in (list, tuple):
+        infiles = " ".join(["--input=%s" % x for x in infiles])
     else:
         infiles = "--input=%s" % infiles
 
-    if type( outfiles ) in (list, tuple):
-        outfiles = " ".join( ["--output=%s" % x for x in outfiles ] )
+    if type(outfiles) in (list, tuple):
+        outfiles = " ".join(["--output=%s" % x for x in outfiles])
     else:
         outfiles = "--output=%s" % outfiles
 
@@ -1151,7 +1266,7 @@ def submit( module, function, params = None,
     else:
         params = ""
 
-    job_options = jobOptions 
+    job_options = jobOptions
 
     to_cluster = toCluster
 
@@ -1165,64 +1280,71 @@ def submit( module, function, params = None,
                 '''
     run()
 
-def clonePipeline( srcdir ):
+
+def clonePipeline(srcdir):
     '''clone a pipeline from srcdir into the current directory.
     '''
-    
+
     destdir = os.path.curdir
 
-    E.info( "cloning pipeline from %s to %s" % (srcdir, destdir))
+    E.info("cloning pipeline from %s to %s" % (srcdir, destdir))
 
-    copy_files = ("sphinxreport.ini", "conf.py", "pipeline.ini", "csvdb" )
-    ignore_prefix = ("report", "_cache", "export", "tmp", "ctmp", "_static", "_templates" )
+    copy_files = ("sphinxreport.ini", "conf.py", "pipeline.ini", "csvdb")
+    ignore_prefix = (
+        "report", "_cache", "export", "tmp", "ctmp", "_static", "_templates")
 
-    def _ignore( p ):
+    def _ignore(p):
         for x in ignore_prefix:
-            if p.startswith( x ): 
+            if p.startswith(x):
                 return True
         return False
 
     for root, dirs, files in os.walk(srcdir):
 
-        relpath = os.path.relpath( root, srcdir )
-        if _ignore( relpath ): continue
+        relpath = os.path.relpath(root, srcdir)
+        if _ignore(relpath):
+            continue
 
         for d in dirs:
-            if _ignore( d ): continue
-            dest = os.path.join( os.path.join(destdir, relpath, d ) )
-            os.mkdir( dest )
+            if _ignore(d):
+                continue
+            dest = os.path.join(os.path.join(destdir, relpath, d))
+            os.mkdir(dest)
             # touch
-            s = os.stat( os.path.join(root, d ) )
-            os.utime( dest, (s.st_atime, s.st_mtime ))
+            s = os.stat(os.path.join(root, d))
+            os.utime(dest, (s.st_atime, s.st_mtime))
 
         for f in files:
-            if _ignore( f ): continue
+            if _ignore(f):
+                continue
 
-            fn = os.path.join( root, f )
-            dest_fn = os.path.join( destdir, relpath, f ) 
+            fn = os.path.join(root, f)
+            dest_fn = os.path.join(destdir, relpath, f)
             if f in copy_files:
-                shutil.copyfile( fn, dest_fn )
+                shutil.copyfile(fn, dest_fn)
             else:
                 # realpath resolves links - thus links will be linked to
                 # the original target
-                os.symlink( os.path.realpath( fn),
-                            dest_fn )
+                os.symlink(os.path.realpath(fn),
+                           dest_fn)
 
-def writeConfigFiles( path ):
-    
-    for dest in ( "pipeline.ini", "conf.py"):
-        src = os.path.join( path, dest)
+
+def writeConfigFiles(path):
+
+    for dest in ("pipeline.ini", "conf.py"):
+        src = os.path.join(path, dest)
         if os.path.exists(dest):
-            L.warn( "file `%s` already exists - skipped" % dest )
+            L.warn("file `%s` already exists - skipped" % dest)
             continue
 
-        if not os.path.exists( src ):
-            raise ValueError( "default config file `%s` not found"  % src )
+        if not os.path.exists(src):
+            raise ValueError("default config file `%s` not found" % src)
 
-        shutil.copyfile( src, dest )
-        L.info( "created new configuration file `%s` " % dest )
+        shutil.copyfile(src, dest)
+        L.info("created new configuration file `%s` " % dest)
 
-def clean( patterns, dry_run = False ):
+
+def clean(patterns, dry_run=False):
     '''clean up files given by glob *patterns*.
 
     returns list of files deleted together with their statinfo.
@@ -1231,24 +1353,26 @@ def clean( patterns, dry_run = False ):
     cleaned = []
 
     for p in patterns:
-        files = glob.glob( p )
+        files = glob.glob(p)
         for x in files:
-            statinfo = os.stat( x )
-            cleaned.append( (x, statinfo) )
-            if dry_run: continue
-            os.unlink( x )
-        L.info( "%i files: %s" % (len(files), p ))
+            statinfo = os.stat(x)
+            cleaned.append((x, statinfo))
+            if dry_run:
+                continue
+            os.unlink(x)
+        L.info("%i files: %s" % (len(files), p))
 
     return cleaned
 
-def peekParameters( workingdir, pipeline ):
+
+def peekParameters(workingdir, pipeline):
     '''peak configuration parameters from an external directory.
     '''
-    
+
     # attempt to locate directory with pipeline source code
     # This is a patch as pipelines might be called within the repository directory
     # or from an installed location
-    dirname = os.path.dirname( __file__ )
+    dirname = os.path.dirname(__file__)
 
     # called without a directory, use current directory
     if dirname == "":
@@ -1256,63 +1380,69 @@ def peekParameters( workingdir, pipeline ):
     else:
         # else: use location of Pipeline.py
         # remove CGAT part, add CGATPipelines
-        dirname = os.path.join( os.path.dirname(dirname), "CGATPipelines")
+        dirname = os.path.join(os.path.dirname(dirname), "CGATPipelines")
         # if not exists, assume we want version located
         # in directory of calling script.
-        if not os.path.exists( dirname ):
+        if not os.path.exists(dirname):
             # directory is path of calling script
             v = getCallerLocals()
             dirname = os.path.dirname(v['__file__'])
 
-    pipeline = os.path.join( dirname, pipeline )
-    assert os.path.exists( pipeline ), "can't find pipeline source %s" % ( dirname, pipeline )
-    if workingdir == "": workingdir = os.path.abspath(".")
+    pipeline = os.path.join(dirname, pipeline)
+    assert os.path.exists(
+        pipeline), "can't find pipeline source %s" % (dirname, pipeline)
+    if workingdir == "":
+        workingdir = os.path.abspath(".")
 
-    assert os.path.exists( workingdir ), "can't find working dir %s" % workingdir
+    assert os.path.exists(workingdir), "can't find working dir %s" % workingdir
 
     statement = "python %s -f -v 0 dump" % pipeline
-    process = subprocess.Popen(  statement,
-                                 cwd = workingdir, 
-                                 shell = True,
-                                 stdin = subprocess.PIPE,
-                                 stdout = subprocess.PIPE,
-                                 stderr = subprocess.PIPE )
+    process = subprocess.Popen(statement,
+                               cwd=workingdir,
+                               shell=True,
+                               stdin=subprocess.PIPE,
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
 
     # process.stdin.close()
     stdout, stderr = process.communicate()
 
     if process.returncode != 0:
-        raise PipelineError( "Child was terminated by signal %i: \nThe stderr was: \n%s\n" % (-process.returncode, stderr ))
+        raise PipelineError(
+            "Child was terminated by signal %i: \nThe stderr was: \n%s\n" % (-process.returncode, stderr))
 
     for line in stdout.split("\n"):
         if line.startswith("dump"):
-            exec( line )
+            exec(line)
 
     return dump
 
-def run_report( clean = True):
+
+def run_report(clean=True):
     '''run sphinxreport.'''
 
-    dirname, basename = os.path.split( getCaller().__file__ )
+    dirname, basename = os.path.split(getCaller().__file__)
 
-    docdir = os.path.join( dirname, "pipeline_docs", snip( basename, ".py" ) )
-    themedir = os.path.join( dirname, "pipeline_docs", "themes")
-    relpath = os.path.relpath( docdir )
-    trackerdir = os.path.join( docdir, "trackers" )
+    docdir = os.path.join(dirname, "pipeline_docs", snip(basename, ".py"))
+    themedir = os.path.join(dirname, "pipeline_docs", "themes")
+    relpath = os.path.relpath(docdir)
+    trackerdir = os.path.join(docdir, "trackers")
 
     # Requires an X11 connection to cluster nodes
     # A solution is to run xvfb on the nodes.
     to_cluster = False
-    
-    job_options= "-pe dedicated %i -R y" % PARAMS["report_threads"]
+
+    job_options = "-pe dedicated %i -R y" % PARAMS["report_threads"]
 
     # use a fake X display in order to avoid windows popping up
     # from R plots.
-    xvfb_command = which("xvfb-run" )
+    xvfb_command = which("xvfb-run")
 
     # permit multiple servers using -a option
-    if xvfb_command: xvfb_command += " -a "
-    else: xvfb_command = ""
+    if xvfb_command:
+        xvfb_command += " -a "
+    else:
+        xvfb_command = ""
 
     # if there is no DISPLAY variable set, xvfb runs, but
     # exits with error when killing process. Thus, ignore return
@@ -1323,8 +1453,10 @@ def run_report( clean = True):
     else:
         erase_return = ""
 
-    if clean: clean = """rm -rf report _cache _static;"""
-    else: clean = ""
+    if clean:
+        clean = """rm -rf report _cache _static;"""
+    else:
+        clean = ""
 
     statement = '''
     %(clean)s
@@ -1343,8 +1475,8 @@ def run_report( clean = True):
 
     run()
 
-    L.info( 'the report is available at %s' % os.path.abspath( \
-            os.path.join( PARAMS['report_html'], "contents.html")))
+    L.info('the report is available at %s' % os.path.abspath(
+        os.path.join(PARAMS['report_html'], "contents.html")))
 
 USAGE = '''
 usage: %prog [OPTIONS] [CMD] [target]
@@ -1384,60 +1516,62 @@ clone <source>
 
 '''
 
-def main( args = sys.argv ):
+
+def main(args=sys.argv):
 
     global GLOBAL_OPTIONS
     global GLOBAL_ARGS
     global GLOBAL_SESSION
 
-    parser = optparse.OptionParser( version = "%prog version: $Id: Pipeline.py 2799 2009-10-22 13:40:13Z andreas $",
-                                    usage = USAGE )
-    
-    parser.add_option( "--pipeline-action", dest="pipeline_action", type="choice",
-                       choices=("make", "show", "plot", "dump", "config", "clone" ),
-                       help="action to take [default=%default]." )
+    parser = optparse.OptionParser(version="%prog version: $Id: Pipeline.py 2799 2009-10-22 13:40:13Z andreas $",
+                                   usage=USAGE)
 
-    parser.add_option( "--pipeline-format", dest="pipeline_format", type="choice",
-                      choices=( "dot", "jpg", "svg", "ps", "png" ),
-                      help="pipeline format [default=%default]." )
+    parser.add_option("--pipeline-action", dest="pipeline_action", type="choice",
+                      choices=(
+                          "make", "show", "plot", "dump", "config", "clone"),
+                      help="action to take [default=%default].")
 
-    parser.add_option( "-n", "--dry-run", dest="dry_run", action="store_true",
-                      help="perform a dry run (do not execute any shell commands) [default=%default]." )
+    parser.add_option("--pipeline-format", dest="pipeline_format", type="choice",
+                      choices=("dot", "jpg", "svg", "ps", "png"),
+                      help="pipeline format [default=%default].")
 
-    parser.add_option( "-f", "--force", dest="force", action="store_true",
+    parser.add_option("-n", "--dry-run", dest="dry_run", action="store_true",
+                      help="perform a dry run (do not execute any shell commands) [default=%default].")
+
+    parser.add_option("-f", "--force", dest="force", action="store_true",
                       help="force running the pipeline even if there are uncommited changes "
-                           "in the repository [default=%default]." )
+                      "in the repository [default=%default].")
 
-    parser.add_option( "-l", "--local", dest="without_cluster", action="store_true",
-                      help="execute all jobs locally [default=%default]." )
+    parser.add_option("-l", "--local", dest="without_cluster", action="store_true",
+                      help="execute all jobs locally [default=%default].")
 
-    parser.add_option( "-p", "--multiprocess", dest="multiprocess", type="int",
-                       help="number of parallel processes to use (different from number of jobs to use for cluster jobs) [default=%default]." ) 
+    parser.add_option("-p", "--multiprocess", dest="multiprocess", type="int",
+                      help="number of parallel processes to use (different from number of jobs to use for cluster jobs) [default=%default].")
 
-    parser.add_option( "-t", "--tempdir", dest="tempdir", type="string",
-                       help="temporary directory to use [default=%default].")
+    parser.add_option("-t", "--tempdir", dest="tempdir", type="string",
+                      help="temporary directory to use [default=%default].")
 
-    parser.add_option( "-e", "--exceptions", dest="log_exceptions", action="store_true",
-                      help="echo exceptions immediately as they occur [default=%default]." )
+    parser.add_option("-e", "--exceptions", dest="log_exceptions", action="store_true",
+                      help="echo exceptions immediately as they occur [default=%default].")
 
-    parser.add_option( "-i", "--terminate", dest="terminate", action="store_true",
-                      help="terminate immediately at the first exception [default=%default]." )
+    parser.add_option("-i", "--terminate", dest="terminate", action="store_true",
+                      help="terminate immediately at the first exception [default=%default].")
 
     parser.set_defaults(
-        pipeline_action = None,
-        pipeline_format = "svg",
-        pipeline_targets = [],
-        multiprocess = 2,
-        logfile = "pipeline.log",
-        dry_run = False,
-        without_cluster = False,
-        force = False,
-        log_exceptions = False,
-        exceptions_terminate_immediately = False,
-        )
+        pipeline_action=None,
+        pipeline_format="svg",
+        pipeline_targets=[],
+        multiprocess=2,
+        logfile="pipeline.log",
+        dry_run=False,
+        without_cluster=False,
+        force=False,
+        log_exceptions=False,
+        exceptions_terminate_immediately=False,
+    )
 
-    (options, args) = E.Start( parser, 
-                               add_cluster_options = True )
+    (options, args) = E.Start(parser,
+                              add_cluster_options=True)
 
     GLOBAL_OPTIONS, GLOBAL_ARGS = options, args
     PARAMS["dryrun"] = options.dry_run
@@ -1447,40 +1581,42 @@ def main( args = sys.argv ):
     try:
         # this is for backwards compatibility
         # get mercurial version
-        repo = hgapi.Repo( PARAMS["scriptsdir"] )
+        repo = hgapi.Repo(PARAMS["scriptsdir"])
         version = repo.hg_id()
 
         status = repo.hg_status()
         if status["M"] or status["A"]:
             if not options.force:
-                raise ValueError( "uncommitted change in code repository at '%s'. Either commit or use --force" % PARAMS["scriptsdir"])
+                raise ValueError(
+                    "uncommitted change in code repository at '%s'. Either commit or use --force" % PARAMS["scriptsdir"])
             else:
-                E.warn( "uncommitted changes in code repository - ignored ")
+                E.warn("uncommitted changes in code repository - ignored ")
         version = version[:-1]
     except:
         # try git:
         try:
-            stdout, stderr = execute( "git rev-parse HEAD", cwd = PARAMS["scriptsdir"] )
-        except: 
+            stdout, stderr = execute(
+                "git rev-parse HEAD", cwd=PARAMS["scriptsdir"])
+        except:
             stdout = "NA"
         version = stdout
 
-    if args: 
+    if args:
         options.pipeline_action = args[0]
         if len(args) > 1:
-            options.pipeline_targets.extend( args[1:] )
+            options.pipeline_targets.extend(args[1:])
 
     if options.pipeline_action == "debug":
         # create the session proxy
         GLOBAL_SESSION = drmaa.Session()
         GLOBAL_SESSION.initialize()
-        
+
         method_name = options.pipeline_targets[0]
         caller = getCaller()
-        method = getattr( caller, method_name )
-        method( *options.pipeline_targets[1:] )
+        method = getattr(caller, method_name)
+        method(*options.pipeline_targets[1:])
 
-    elif options.pipeline_action in ("make", "show", "svg", "plot", "touch" ):
+    elif options.pipeline_action in ("make", "show", "svg", "plot", "touch"):
 
         try:
             if options.pipeline_action == "make":
@@ -1488,81 +1624,87 @@ def main( args = sys.argv ):
                 # create the session proxy
                 GLOBAL_SESSION = drmaa.Session()
                 GLOBAL_SESSION.initialize()
-                
+
                 #
                 #   make sure we are not logging at the same time in different processes
                 #
                 #session_mutex = manager.Lock()
 
                 # set up extra file logger
-                handler = logging.FileHandler( filename = options.logfile, 
-                                               mode = "a" )
-                handler.setFormatter( MultiLineFormatter( '%(asctime)s %(levelname)s %(module)s.%(funcName)s.%(lineno)d %(message)s' ) )
+                handler = logging.FileHandler(filename=options.logfile,
+                                              mode="a")
+                handler.setFormatter(MultiLineFormatter(
+                    '%(asctime)s %(levelname)s %(module)s.%(funcName)s.%(lineno)d %(message)s'))
                 logger = logging.getLogger()
-                logger.addHandler( handler )
-                
-                L.info( E.GetHeader() )
-                L.info( "code location: %s" % PARAMS["scriptsdir"] )
-                L.info( "code version: %s" % version )
+                logger.addHandler(handler)
 
-                pipeline_run( options.pipeline_targets, 
-                              multiprocess = options.multiprocess, 
-                              logger = logger,
-                              verbose = options.loglevel,
-                              log_exceptions = options.log_exceptions,
-                              exceptions_terminate_immediately = options.exceptions_terminate_immediately,
-                              )
+                L.info(E.GetHeader())
+                L.info("code location: %s" % PARAMS["scriptsdir"])
+                L.info("code version: %s" % version)
 
-                L.info( E.GetFooter() )
+                pipeline_run(options.pipeline_targets,
+                             multiprocess=options.multiprocess,
+                             logger=logger,
+                             verbose=options.loglevel,
+                             log_exceptions=options.log_exceptions,
+                             exceptions_terminate_immediately=options.exceptions_terminate_immediately,
+                             )
+
+                L.info(E.GetFooter())
 
                 GLOBAL_SESSION.exit()
 
             elif options.pipeline_action == "show":
-                pipeline_printout( options.stdout, options.pipeline_targets, verbose = options.loglevel )
+                pipeline_printout(
+                    options.stdout, options.pipeline_targets, verbose=options.loglevel)
 
             elif options.pipeline_action == "touch":
-                pipeline_run( options.pipeline_targets, 
-                              touch_files_only = True,
-                              verbose = options.loglevel )
+                pipeline_run(options.pipeline_targets,
+                             touch_files_only=True,
+                             verbose=options.loglevel)
 
             elif options.pipeline_action == "svg":
-                pipeline_printout_graph( options.stdout, 
-                                         options.pipeline_format,
-                                         options.pipeline_targets )
+                pipeline_printout_graph(options.stdout,
+                                        options.pipeline_format,
+                                        options.pipeline_targets)
 
             elif options.pipeline_action == "plot":
                 outf, filename = tempfile.mkstemp()
-                pipeline_printout_graph( os.fdopen(outf,"w"),
-                                         options.pipeline_format,
-                                         options.pipeline_targets )
-                execute( "inkscape %s" % filename ) 
-                os.unlink( filename )
+                pipeline_printout_graph(os.fdopen(outf, "w"),
+                                        options.pipeline_format,
+                                        options.pipeline_targets)
+                execute("inkscape %s" % filename)
+                os.unlink(filename)
 
         except ruffus_exceptions.RethrownJobError, value:
-            
-            E.error( "%i tasks with errors, please see summary below:" % len(value.args))
+
+            E.error("%i tasks with errors, please see summary below:" %
+                    len(value.args))
             for idx, e in enumerate(value.args):
                 task, job, error, msg, traceback = e
-                task = re.sub( "__main__.", "", task)
-                job = re.sub( "\s", "", job)
+                task = re.sub("__main__.", "", task)
+                job = re.sub("\s", "", job)
                 # display only single line messages
-                if len([ x for x in msg.split("\n") if x != ""]) > 1:
+                if len([x for x in msg.split("\n") if x != ""]) > 1:
                     msg = ""
-                    
-                E.error( "%i: Task=%s Error=%s %s: %s" % (idx, task, error, job, msg ) )
 
-            E.error( "full traceback is in %s" % options.logfile )
+                E.error("%i: Task=%s Error=%s %s: %s" %
+                        (idx, task, error, job, msg))
 
-            # write full traceback to log file only by removing the stdout handler
+            E.error("full traceback is in %s" % options.logfile)
+
+            # write full traceback to log file only by removing the stdout
+            # handler
             lhStdout = logger.handlers[0]
             logger.removeHandler(lhStdout)
-            logger.error( "start of error messages" )
-            logger.error( value )
-            logger.error( "end of error messages" )
-            logger.addHandler( lhStdout )
+            logger.error("start of error messages")
+            logger.error(value)
+            logger.error("end of error messages")
+            logger.addHandler(lhStdout)
 
             # raise error
-            raise ValueError( "pipeline failed with %i errors" % len(value.args))
+            raise ValueError(
+                "pipeline failed with %i errors" % len(value.args))
 
     elif options.pipeline_action == "dump":
         # convert to normal dictionary (not defaultdict) for parsing purposes
@@ -1572,13 +1714,14 @@ def main( args = sys.argv ):
         f = sys._getframe(1)
         caller = inspect.getargvalues(f).locals["__file__"]
         prefix = os.path.splitext(caller)[0]
-        writeConfigFiles( prefix )
+        writeConfigFiles(prefix)
 
     elif options.pipeline_action == "clone":
-        clonePipeline( options.pipeline_targets[0] )
+        clonePipeline(options.pipeline_targets[0])
 
     else:
-        raise ValueError("unknown pipeline action %s" % options.pipeline_action )
+        raise ValueError("unknown pipeline action %s" %
+                         options.pipeline_action)
 
     E.Stop()
 
@@ -1599,4 +1742,3 @@ if __name__ == "__main__":
     #run( **{"statement" : "printenv > test.out", "job_queue" : "server_jobs.q", "job_priority" : -10 } )
     #run( **{"statement" : "printenv > test2.out", "job_queue" : "server_jobs.q", "job_priority" : -10 } )
     #run( **{"statement" : "printenv > test3.out", "job_queue" : "server_jobs.q", "job_priority" : -10 } )
-    

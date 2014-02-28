@@ -61,25 +61,29 @@ import CGAT.Genomics as Genomics
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 
-def MapIdentifiers( seqs, pattern):
+
+def MapIdentifiers(seqs, pattern):
 
     rx = re.compile(pattern)
-    
-    for k,s in seqs.items():
+
+    for k, s in seqs.items():
         try:
             nk = rx.search(k).groups()[0]
         except AttributeError:
-            raise ValueError( "identifier can not be parsed from '%s' pattern='%s'" % (k, pattern) )
-            
+            raise ValueError(
+                "identifier can not be parsed from '%s' pattern='%s'" % (k, pattern))
+
         del seqs[k]
         seqs[nk] = s
-        
-def main( argv = None ):
 
-    if argv == None: argv = sys.argv 
 
-    parser = E.OptionParser( version = "%prog version: $Id: diff_fasta.py 2781 2009-09-10 11:33:14Z andreas $",
-                             usage = globals()["__doc__"] )
+def main(argv=None):
+
+    if argv == None:
+        argv = sys.argv
+
+    parser = E.OptionParser(version="%prog version: $Id: diff_fasta.py 2781 2009-09-10 11:33:14Z andreas $",
+                            usage=globals()["__doc__"])
 
     parser.add_option("-s", "--correct-gap-shift", dest="correct_shift", action="store_true",
                       help="correct gap length shifts in alignments. Requires alignlib_lite.py_ "
@@ -94,33 +98,35 @@ def main( argv = None ):
     parser.add_option("-o", "--output", dest="output", type="choice", action="append",
                       choices=("diff", "missed", "seqdiff"),
                       help="what to output [%default]")
-                      
-    parser.set_defaults( correct_shift = False,
-                         pattern1 = "(\S+)",
-                         pattern2 = "(\S+)",
-                         output = [] ) 
-                         
 
-    (options, args) = E.Start( parser )
+    parser.set_defaults(correct_shift=False,
+                        pattern1="(\S+)",
+                        pattern2="(\S+)",
+                        output=[])
+
+    (options, args) = E.Start(parser)
 
     if len(args) != 2:
-        raise ValueError( "two files needed to compare." )
+        raise ValueError("two files needed to compare.")
 
     if options.correct_shift:
         try:
             import alignlib_lite
         except ImportError:
-            raise ImportError("option --correct-shift requires alignlib_lite.py_ but alignlib not found" )
+            raise ImportError(
+                "option --correct-shift requires alignlib_lite.py_ but alignlib not found")
 
-    seqs1 = Genomics.ReadPeptideSequences( IOTools.openFile(args[0], "r") )
-    seqs2 = Genomics.ReadPeptideSequences( IOTools.openFile(args[1], "r") )    
+    seqs1 = Genomics.ReadPeptideSequences(IOTools.openFile(args[0], "r"))
+    seqs2 = Genomics.ReadPeptideSequences(IOTools.openFile(args[1], "r"))
 
-    if not seqs1: raise ValueError( "first file %s is empty." % (args[0] ) )
-    if not seqs2: raise ValueError( "second file %s is empty." % (args[1] ) )
-    
-    MapIdentifiers( seqs1, options.pattern1 )
-    MapIdentifiers( seqs2, options.pattern2 )    
-    
+    if not seqs1:
+        raise ValueError("first file %s is empty." % (args[0]))
+    if not seqs2:
+        raise ValueError("second file %s is empty." % (args[1]))
+
+    MapIdentifiers(seqs1, options.pattern1)
+    MapIdentifiers(seqs2, options.pattern2)
+
     nsame = 0
     nmissed1 = 0
     nmissed2 = 0
@@ -137,27 +143,27 @@ def main( argv = None ):
     write_missed2 = "missed" in options.output
     write_seqdiff = "seqdiff" in options.output
     write_diff = "diff" in options.output or write_seqdiff
-    
+
     for k in seqs1:
         if k not in seqs2:
-            nmissed1+=1
+            nmissed1 += 1
             if write_missed1:
-                options.stdout.write("---- %s ---- %s\n" % (k, "missed1") )
+                options.stdout.write("---- %s ---- %s\n" % (k, "missed1"))
             continue
-        
+
         found2[k] = 1
-        
+
         s1 = seqs1[k].upper()
         s2 = seqs2[k].upper()
         m = min(len(s1), len(s2))
-        
+
         if s1 == s2:
             nsame += 1
         else:
             status = "other"
-            
+
             ndiff += 1
-            
+
             if s1[1:] == s2[1:]:
                 ndiff_first += 1
                 status = "first"
@@ -173,29 +179,29 @@ def main( argv = None ):
                     # the first and last residues can be different for peptide sequences when comparing
                     # my translations with ensembl peptides.
                     differences = []
-                    for x in range(1,len(s1)-1):
+                    for x in range(1, len(s1) - 1):
                         if s1[x] != s2[x]:
-                            differences.append( (s1[x], s2[x]) )
+                            differences.append((s1[x], s2[x]))
 
                     l = len(differences)
                     # check for Selenocysteins
-                    if len( filter( lambda x: x[0] == "U" or x[1] == "U", differences)) == l:
+                    if len(filter(lambda x: x[0] == "U" or x[1] == "U", differences)) == l:
                         ndiff_selenocysteine += 1
                         status = "selenocysteine"
-                        
+
                     # check for masked residues
-                    elif len( filter( lambda x: x[0] in "NX" or x[1] in "NX", differences)) == l:
+                    elif len(filter(lambda x: x[0] in "NX" or x[1] in "NX", differences)) == l:
                         ndiff_masked += 1
                         status = "masked"
-                        
-            ## correct for different gap lengths
+
+            # correct for different gap lengths
             if options.correct_shift:
-                        
+
                 map_a2b = alignlib_lite.py_makeAlignmentVector()
 
                 a, b = 0, 0
                 keep = False
-                
+
                 x = 0
                 while x < m and not (a == len(s1) and b == len(s2)):
                     try:
@@ -204,7 +210,7 @@ def main( argv = None ):
                                 a += 1
                             while s1[a] != "N" and s2[b] == "N":
                                 b += 1
-                            
+
                             if s1[a] != s2[b]:
                                 break
                     except IndexError:
@@ -213,28 +219,28 @@ def main( argv = None ):
 
                     a += 1
                     b += 1
-                    map_a2b.addPairExplicit( a, b, 0.0 )
-                    ## check if we have reached the end:
+                    map_a2b.addPairExplicit(a, b, 0.0)
+                    # check if we have reached the end:
                 else:
                     keep = True
                     nfixed += 1
-                    f = alignlib_lite.py_AlignmentFormatEmissions( map_a2b)
+                    f = alignlib_lite.py_AlignmentFormatEmissions(map_a2b)
                     print "fix\t%s\t%s" % (k, str(f))
 
                 if not keep:
                     print "# warning: not fixable: %s" % k
-                    
+
             if write_diff:
-                options.stdout.write("---- %s ---- %s\n" % (k, status) )
+                options.stdout.write("---- %s ---- %s\n" % (k, status))
 
             if write_seqdiff:
-                options.stdout.write( "< %s\n> %s\n" % (seqs1[k], seqs2[k]) )
+                options.stdout.write("< %s\n> %s\n" % (seqs1[k], seqs2[k]))
 
     for k in seqs2.keys():
         if k not in found2:
             nmissed2 += 1
             if write_missed2:
-                options.stdout.write("---- %s ---- %s\n" % (k, "missed2") )
+                options.stdout.write("---- %s ---- %s\n" % (k, "missed2"))
 
     options.stdlog.write( """# Legend:
 # seqs1:          number of sequences in set 1
@@ -253,13 +259,13 @@ def main( argv = None ):
 # other:          other differences
 """)
 
-    E.info( "seqs1=%i, seqs2=%i, same=%i, ndiff=%i, nmissed1=%i, nmissed2=%i" %\
-                (len(seqs1), len(seqs2), nsame, ndiff, nmissed1, nmissed2) )
-    E.info( "ndiff=%i: first=%i, last=%i, prefix=%i, selenocysteine=%i, masked=%i, fixed=%i, other=%i" %\
-                (ndiff, ndiff_first, ndiff_last, ndiff_prefix, ndiff_selenocysteine, ndiff_masked, nfixed,
-                 ndiff - ndiff_first - ndiff_last - ndiff_prefix - ndiff_selenocysteine - ndiff_masked - nfixed) )
-    
+    E.info("seqs1=%i, seqs2=%i, same=%i, ndiff=%i, nmissed1=%i, nmissed2=%i" %
+           (len(seqs1), len(seqs2), nsame, ndiff, nmissed1, nmissed2))
+    E.info("ndiff=%i: first=%i, last=%i, prefix=%i, selenocysteine=%i, masked=%i, fixed=%i, other=%i" %
+           (ndiff, ndiff_first, ndiff_last, ndiff_prefix, ndiff_selenocysteine, ndiff_masked, nfixed,
+            ndiff - ndiff_first - ndiff_last - ndiff_prefix - ndiff_selenocysteine - ndiff_masked - nfixed))
+
     E.Stop()
-        
+
 if __name__ == "__main__":
-    sys.exit(main( sys.argv ))
+    sys.exit(main(sys.argv))

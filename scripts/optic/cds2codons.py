@@ -1,4 +1,4 @@
-################################################################################
+##########################################################################
 #
 #   MRC FGU Computational Genomics Group
 #
@@ -19,7 +19,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
+##########################################################################
 '''
 optic/cds2codons.py - remove frameshifts from cdna sequences
 ======================================================
@@ -70,26 +70,29 @@ import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import alignlib_lite
 
+
 class Map:
+
     def __init__(self):
         pass
 
-    def Read( self, line ):
-        ( self.mToken,
-          self.mOldFrom, self.mOldTo, self.mOldAli,
-          self.mNewFrom, self.mNewTo, self.mNewAli,
-          self.mOldLength, self.mNewLength) = line[:-1].split("\t")
+    def Read(self, line):
+        (self.mToken,
+         self.mOldFrom, self.mOldTo, self.mOldAli,
+         self.mNewFrom, self.mNewTo, self.mNewAli,
+         self.mOldLength, self.mNewLength) = line[:-1].split("\t")
 
         (self.mOldFrom, self.mOldTo, self.mNewFrom, self.mNewTo) = \
-                        map(int, (self.mOldFrom, self.mOldTo, self.mNewFrom, self.mNewTo))
+            map(int, (self.mOldFrom, self.mOldTo, self.mNewFrom, self.mNewTo))
         self.mMapOld2New = None
-    def Expand( self ):
+
+    def Expand(self):
         self.mMapOld2New = alignlib_lite.makeAlignmentVector()
-        alignlib_lite.AlignmentFormatEmissions( 
+        alignlib_lite.AlignmentFormatEmissions(
             self.mOldFrom, self.mOldAli,
-            self.mNewFrom, self.mNewAli).copy( self.mMapOld2New )
-        
-    def Clear( self ):
+            self.mNewFrom, self.mNewAli).copy(self.mMapOld2New)
+
+    def Clear(self):
         if self.mMapOld2New:
             self.mMapOld2New.clear()
         self.mMapOld2New = None
@@ -99,34 +102,35 @@ class Map:
                                      self.mOldFrom, self.mOldTo, self.mOldAli,
                                      self.mNewFrom, self.mNewTo, self.mNewAli,
                                      self.mOldLength, self.mNewLength)), "\t")
-            
 
 
-def main( argv = None ):
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv == None:
+        argv = sys.argv
 
-    parser = E.OptionParser( version = "%prog version: $Id: optic/cds2codons.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser(
+        version="%prog version: $Id: optic/cds2codons.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-m", "--map", dest="filename_map", type="string",
-                      help="filename with mapping information."  )
+                      help="filename with mapping information.")
     parser.add_option("-f", "--format", dest="format", type="string",
-                      help="output file format [fasta-codons]."  )
+                      help="output file format [fasta-codons].")
     parser.add_option("-c", "--codons", dest="codons", action="store_true",
-                      help="print codons separated by spaces."  )
+                      help="print codons separated by spaces.")
 
     parser.set_defaults(
-        filename_cds = None,
-        codons = False,
-        format = "fasta",
-        filename_map = None,
-        )
+        filename_cds=None,
+        codons=False,
+        format="fasta",
+        filename_map=None,
+    )
 
-    (options, args) = E.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start(parser, add_pipe_options=True)
 
     if not options.filename_map:
         raise "please supply filename with map between peptide to cds."
@@ -134,17 +138,19 @@ def main( argv = None ):
     if options.filename_map:
         map_old2new = {}
         for line in open(options.filename_map, "r"):
-            if line[0] == "#": continue
+            if line[0] == "#":
+                continue
             m = Map()
-            m.Read( line )
+            m.Read(line)
             map_old2new[m.mToken] = m
     else:
         map_old2new = {}
 
     if options.filename_cds:
-        sequences = Genomics.ReadPeptideSequences( open(options.filename_cds, "r") )
+        sequences = Genomics.ReadPeptideSequences(
+            open(options.filename_cds, "r"))
     else:
-        sequences = Genomics.ReadPeptideSequences( sys.stdin )
+        sequences = Genomics.ReadPeptideSequences(sys.stdin)
 
     if options.loglevel >= 1:
         print "# read %i sequences" % len(sequences)
@@ -152,12 +158,12 @@ def main( argv = None ):
 
     ninput, nskipped, noutput, nerrors, nstops = 0, 0, 0, 0, 0
 
-    for key,s in sequences.items():
-        
+    for key, s in sequences.items():
+
         ninput += 1
-        
+
         if key not in map_old2new:
-            nskipped +=1
+            nskipped += 1
             continue
 
         out_seq = []
@@ -167,34 +173,37 @@ def main( argv = None ):
         mm = m.mMapOld2New
 
         if mm.getColTo() > len(s):
-            options.stderr.write( "# error for %s: sequence shorter than alignment: %i < %i\n" % (key, len(s), mm.getColTo()))
+            options.stderr.write("# error for %s: sequence shorter than alignment: %i < %i\n" % (
+                key, len(s), mm.getColTo()))
             nerrors += 1
             continue
-        
-        for x in range( mm.getRowFrom(), mm.getRowTo() + 1):
+
+        for x in range(mm.getRowFrom(), mm.getRowTo() + 1):
 
             y = mm.mapRowToCol(x)
             if y > 0:
-                out_seq.append( s[y-1] )
+                out_seq.append(s[y - 1])
 
         m.Clear()
 
         out_seq = "".join(out_seq)
-        translation = Genomics.TranslateDNA2Protein( out_seq )
-        
-        if "X" in translation: nstops += 1
+        translation = Genomics.TranslateDNA2Protein(out_seq)
+
+        if "X" in translation:
+            nstops += 1
 
         if options.codons:
-            out_seq = " ".join( [ out_seq[x:x+3] for x in range(0,len(out_seq),3)])
+            out_seq = " ".join([out_seq[x:x + 3]
+                               for x in range(0, len(out_seq), 3)])
 
         noutput += 1
-        options.stdout.write(">%s\n%s\n" % ( key, out_seq ) )
+        options.stdout.write(">%s\n%s\n" % (key, out_seq))
 
-    options.stderr.write( "# input=%i, output=%i, errors=%i, stops=%i\n" % (ninput, noutput, nerrors, nstops ))
-    
+    options.stderr.write("# input=%i, output=%i, errors=%i, stops=%i\n" % (
+        ninput, noutput, nerrors, nstops))
+
     E.Stop()
 
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

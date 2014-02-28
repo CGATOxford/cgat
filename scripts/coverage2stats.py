@@ -51,34 +51,35 @@ import itertools
 
 import CGAT.Experiment as E
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if not argv: argv = sys.argv
+    if not argv:
+        argv = sys.argv
 
     # setup command line parser
-    parser = optparse.OptionParser( version = "%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
-                                    usage = globals()["__doc__"] )
+    parser = optparse.OptionParser(version="%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+                                   usage=globals()["__doc__"])
 
     parser.add_option("--bin", dest="bin", action="store_true",
-                       help="output average in bins across the interval"  )
-    parser.add_option( "-n", "--bin-number", dest="bin_number", type = int,
-                       help="pattern to write coverage bins to" )
-    parser.add_option( "-o", "--output-filename-prefix", dest="output_filename_prefix",
-                       help="number of bins for histogram"  )
+                      help="output average in bins across the interval")
+    parser.add_option("-n", "--bin-number", dest="bin_number", type=int,
+                      help="pattern to write coverage bins to")
+    parser.add_option("-o", "--output-filename-prefix", dest="output_filename_prefix",
+                      help="number of bins for histogram")
 
     parser.set_defaults(
-        bin= False
-        , bin_number=10)
+        bin=False, bin_number=10)
 
-    ## add common options (-h/--help, ...) and parse command line 
-    (options, args) = E.Start( parser, argv = argv )
+    # add common options (-h/--help, ...) and parse command line
+    (options, args) = E.Start(parser, argv=argv)
 
     inf = options.stdin
-    
+
     coverage_result = collections.defaultdict(list)
     E.info("reading in coverage data")
     for line in inf.readlines():
@@ -86,23 +87,24 @@ def main( argv = None ):
         contig, coverage = data[0], data[2]
         coverage_result[contig].append(coverage)
     E.info("read %i contigs" % len(coverage_result.keys()))
-        
+
     options.stdout.write("contig\tcov_mean\tcov_sd\n")
     if options.bin:
         outf = open(options.output_filename_prefix + ".binned", "w")
     for contig, coverage in coverage_result.iteritems():
         coverage = map(float, coverage)
-        options.stdout.write("%s\t%s\t%s\n" % (contig, str(np.mean(coverage)), str(np.std(coverage))))
+        options.stdout.write(
+            "%s\t%s\t%s\n" % (contig, str(np.mean(coverage)), str(np.std(coverage))))
         if options.bin:
             bins = np.linspace(0, max(coverage), options.bin_number)
-            hist = np.histogram(coverage, bins = bins)
+            hist = np.histogram(coverage, bins=bins)
             print hist
 
 #            outf.write(contig + "\t" + "\t".join(map(str, list(bin_means))) + "\n")
 #    outf.close()
 
-    ## write footer and output benchmark information.
+    # write footer and output benchmark information.
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
+    sys.exit(main(sys.argv))

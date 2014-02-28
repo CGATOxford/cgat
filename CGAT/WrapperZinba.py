@@ -1,4 +1,4 @@
-################################################################################
+##########################################################################
 #
 #   MRC FGU Computational Genomics Group
 #
@@ -19,7 +19,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
+##########################################################################
 '''
 WrapperZinba.py - utility functions for zinba output
 ====================================================
@@ -43,25 +43,36 @@ Code
 
 '''
 
-import os, sys, re, optparse, tempfile, shutil, subprocess
+import os
+import sys
+import re
+import optparse
+import tempfile
+import shutil
+import subprocess
 import collections
 
-ZinbaPeak = collections.namedtuple( "ZinbaPeak", "contig unrefined_start unrefined_end strand posterior summit height refined_start refined_end median fdr" )
+ZinbaPeak = collections.namedtuple(
+    "ZinbaPeak", "contig unrefined_start unrefined_end strand posterior summit height refined_start refined_end median fdr")
 
-def iteratePeaks( infile ):
+
+def iteratePeaks(infile):
     '''iterate of zinba peaks in infile.'''
-    
+
     for line in infile:
 
-        if line.startswith("#"): continue
-        if line.startswith("PEAKID\tChrom"): continue
+        if line.startswith("#"):
+            continue
+        if line.startswith("PEAKID\tChrom"):
+            continue
         # skip empty lines
-        if line.startswith("\n"): continue
+        if line.startswith("\n"):
+            continue
 
         data = line[:-1].split("\t")
 
         if len(data) != 12:
-            raise ValueError( "could not parse line %s" % line )
+            raise ValueError("could not parse line %s" % line)
 
         # I assume these are 1-based coordinates
         data[2] = max(int(data[2]) - 1, 0)
@@ -82,5 +93,4 @@ def iteratePeaks( infile ):
         # qvalue
         data[11] = float(data[11])
 
-        yield ZinbaPeak._make( data[1:] )
-
+        yield ZinbaPeak._make(data[1:])

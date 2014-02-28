@@ -40,32 +40,34 @@ import random
 import CGAT.Experiment as E
 
 
-def main( argv = None ):
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv == None:
+        argv = sys.argv
 
-    parser = E.OptionParser( version = "%prog version: $Id: numbers2rgb.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser(
+        version="%prog version: $Id: numbers2rgb.py 2782 2009-09-10 11:40:29Z andreas $")
 
-    parser.add_option( "-m", "--method", dest="method", type="string" ,
-                       help="method to use.")
+    parser.add_option("-m", "--method", dest="method", type="string",
+                      help="method to use.")
 
     parser.set_defaults(
-        method = "random_rgb",
-        )
-    
-    (options, args) = E.Start( parser, add_pipe_options = True )
+        method="random_rgb",
+    )
 
-    numbers = map( lambda x: int(x[:-1].split("\t")[0]),
-                   filter( lambda x: x[0] != "#", sys.stdin.readlines()) )
+    (options, args) = E.Start(parser, add_pipe_options=True)
+
+    numbers = map(lambda x: int(x[:-1].split("\t")[0]),
+                  filter(lambda x: x[0] != "#", sys.stdin.readlines()))
 
     if options.method == "random_rgb":
-        f = lambda x: "%i,%i,%i" % (random.randint(0,256),
-                                    random.randint(0,256),
-                                    random.randint(0,256) )
+        f = lambda x: "%i,%i,%i" % (random.randint(0, 256),
+                                    random.randint(0, 256),
+                                    random.randint(0, 256))
 
     map_number2output = {}
     for x in numbers:
@@ -73,11 +75,10 @@ def main( argv = None ):
             map_number2output[x] = f(x)
 
     for x, y in map_number2output.items():
-        options.stdout.write( "%i\t%s\n" % (x, y) )
+        options.stdout.write("%i\t%s\n" % (x, y))
 
     E.Stop()
-    
+
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

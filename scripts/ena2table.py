@@ -95,12 +95,12 @@ from Bio import Entrez
 # to an experiment type
 MAP_CODE2DESIGN = \
     {
-    ("CAGE", "TRANSCRIPTOMIC"): 'CAGE' ,
-    ("ChIP", "GENOMIC"): "ChIP-Seq",
-    ("DNase", "GENOMIC"): "DNase-Seq",
-    ("Hybrid Selection", "GENOMIC"): "Exome-Seq",
-    ("cDNA", "TRANSCRIPTOMIC"): "RNA-Seq",
-    ("PCR", "GENOMIC"): "Genome-Seq",
+        ("CAGE", "TRANSCRIPTOMIC"): 'CAGE',
+        ("ChIP", "GENOMIC"): "ChIP-Seq",
+        ("DNase", "GENOMIC"): "DNase-Seq",
+        ("Hybrid Selection", "GENOMIC"): "Exome-Seq",
+        ("cDNA", "TRANSCRIPTOMIC"): "RNA-Seq",
+        ("PCR", "GENOMIC"): "Genome-Seq",
     }
 
 # all other:
@@ -149,33 +149,35 @@ MAP_CODE2DESIGN = \
 # unspecified     SYNTHETIC       14
 # unspecified     TRANSCRIPTOMIC  337
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if not argv: argv = sys.argv
+    if not argv:
+        argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser( version = "%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
-                                    usage = globals()["__doc__"] )
+    parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+                            usage=globals()["__doc__"])
 
-    parser.add_option( "--library-source", dest="library_source", type="string",
-                      help="supply help"  )
+    parser.add_option("--library-source", dest="library_source", type="string",
+                      help="supply help")
 
-    parser.add_option( "--library-selection", dest="library_selection", type="string",
-                      help="supply help"  )
+    parser.add_option("--library-selection", dest="library_selection", type="string",
+                      help="supply help")
 
-    parser.add_option( "--tax-id", dest="tax_id", type="int",
-                      help="supply help"  )
+    parser.add_option("--tax-id", dest="tax_id", type="int",
+                      help="supply help")
 
-    parser.set_defaults( library_source = None,
-                         library_selection = None,
-                         tax_id = 9606 )
+    parser.set_defaults(library_source=None,
+                        library_selection=None,
+                        tax_id=9606)
 
-    ## add common options (-h/--help, ...) and parse command line 
-    (options, args) = E.Start( parser, argv = argv )
+    # add common options (-h/--help, ...) and parse command line
+    (options, args) = E.Start(parser, argv=argv)
 
     # tree = ET.parse('/ifs/home/andreas/ena.xml')
     # root = tree.getroot()
@@ -190,7 +192,7 @@ def main( argv = None ):
     #     except AttributeError:
     #         description = ""
 
-    #     options.stdout.write( "\t".join( (alias, 
+    #     options.stdout.write( "\t".join( (alias,
     #                                       accession,
     #                                       center_name,
     #                                       description ) ) + "\n")
@@ -206,17 +208,17 @@ def main( argv = None ):
     #params = None
     # query_url = "http://www.ebi.ac.uk/ena/data/view/DRP000011&display=xml"
 
-    fields = ['base_count', 
-              'read_count', 
-              'instrument_model', 
-              'scientific_name', 
-              'library_layout', 
+    fields = ['base_count',
+              'read_count',
+              'instrument_model',
+              'scientific_name',
+              'library_layout',
               'library_source',
-              'library_strategy', 
-              'library_selection', 
-              'experiment_accession', 
-              'experiment_title', 
-              'study_accession', 
+              'library_strategy',
+              'library_selection',
+              'experiment_accession',
+              'experiment_title',
+              'study_accession',
               'study_title',
               'first_public',
               'submission_accession',
@@ -231,26 +233,26 @@ def main( argv = None ):
         query += ' AND library_selection="%s" ' % options.library_selection
 
     # collect pre-study results
-    params = urllib.urlencode( { 'query' :  query,
-                                 'display' : 'report',
-                                 'fields' : ",".join(fields),
-                                 'result' : 'read_run' } )
+    params = urllib.urlencode({'query':  query,
+                               'display': 'report',
+                               'fields': ",".join(fields),
+                               'result': 'read_run'})
 
-    E.debug( "?".join( (query_url, params )) )
+    E.debug("?".join((query_url, params)))
 
-    lines = urllib2.urlopen( query_url, params )
+    lines = urllib2.urlopen(query_url, params)
 
     header = lines.readline()
-    
-    fields.insert( 0, 'run_accession' )
 
-    DATA = collections.namedtuple( "DATA", fields )
+    fields.insert(0, 'run_accession')
 
-    fields.append( "read_length" )
-    fields.append( "design" )
+    DATA = collections.namedtuple("DATA", fields)
 
-    table_study = options.stdout # IOTools.openFile( "study.tsv", "w" )
-    table_study.write( "\t".join( fields ) + "\n" )
+    fields.append("read_length")
+    fields.append("design")
+
+    table_study = options.stdout  # IOTools.openFile( "study.tsv", "w" )
+    table_study.write("\t".join(fields) + "\n")
     # collect a list of all studies
     studies = set()
 
@@ -258,27 +260,28 @@ def main( argv = None ):
         # line endings are \r\n for data, but only \n for header
         line = line[:-2]
 
-        data = DATA( *line.split("\t") )
+        data = DATA(*line.split("\t"))
         try:
             read_length = float(data.base_count) / float(data.read_count)
-        except ValueError: 
+        except ValueError:
             read_length = 0
 
         if data.library_layout == "PAIRED":
             read_length /= 2.0
 
-        design = MAP_CODE2DESIGN.get( 
+        design = MAP_CODE2DESIGN.get(
             (data.library_selection, data.library_source),
-            "other" )
-            
-        table_study.write( line + "\t" + str(read_length) + "\t" + design + "\n" )
+            "other")
 
-        studies.add( data.study_accession )
+        table_study.write(
+            line + "\t" + str(read_length) + "\t" + design + "\n")
 
-    table_studies = IOTools.openFile( "studies.tsv", "w" )
-    studies_fields = ["study_accession", "nreferences", "pubmed_ids" ]
+        studies.add(data.study_accession)
 
-    table_studies.write( "\t".join( studies_fields ) + "\n" )
+    table_studies = IOTools.openFile("studies.tsv", "w")
+    studies_fields = ["study_accession", "nreferences", "pubmed_ids"]
+
+    table_studies.write("\t".join(studies_fields) + "\n")
 
     return
 
@@ -288,62 +291,62 @@ def main( argv = None ):
 
     for study_accession in studies:
         # get additional info
-        params = urllib.urlencode( { 'display' : 'xml' } )
-        url =  "/".join( ( data_url, study_accession) ) + "&" + params
+        params = urllib.urlencode({'display': 'xml'})
+        url = "/".join((data_url, study_accession)) + "&" + params
 
-        info_lines = urllib2.urlopen( url )
+        info_lines = urllib2.urlopen(url)
         tree = ET.parse(info_lines)
         root = tree.getroot()
 
         pmids = []
-        for link in root.findall('*//XREF_LINK' ):
+        for link in root.findall('*//XREF_LINK'):
             db = link.find('DB').text
             if db == "pubmed":
-                pmids.append( link.find('ID').text )
+                pmids.append(link.find('ID').text)
 
         # get geo
         geos = []
         for attribute in root.findall('*//STUDY_ATTRIBUTE'):
             if attribute.find('TAG').text == "GEO Accession":
-                geos.append( attribute.find('VALUE').text )
-        
-        params = { 'dbfrom' : 'gds',
-                   'db' : 'pubmed',
-                   }
-        
+                geos.append(attribute.find('VALUE').text)
+
+        params = {'dbfrom': 'gds',
+                  'db': 'pubmed',
+                  }
+
         geo_pmids = []
         for geo in geos:
             Entrez.email = "andreas.heger@dpag.ox.ac.uk"
             handle = Entrez.esearch(db="gds", retmax=1, term=geo)
             record = Entrez.read(handle)
-            
+
             uids = record['IdList']
             handle.close()
-            
+
             for uid in uids:
-                record = Entrez.read( Entrez.elink(dbfrom="gds", 
-                                                   dbto = "pubmed",
-                                                   id = uid ) )
+                record = Entrez.read(Entrez.elink(dbfrom="gds",
+                                                  dbto="pubmed",
+                                                  id=uid))
                 linksets = record[0]["LinkSetDb"]
-                if not linksets: continue
+                if not linksets:
+                    continue
 
                 assert len(linksets) == 1
                 for linksetdb in linksets:
-                    geo_pmids = [ x['Id'] for x in linksetdb["Link"] ]
+                    geo_pmids = [x['Id'] for x in linksetdb["Link"]]
 
-        if not pmids: pmids = geo_pmids 
+        if not pmids:
+            pmids = geo_pmids
 
-        table_studies.write( "\t".join( map(str, ( 
-                        study_accession,
-                        len(pmids),
-                        ",".join(pmids),
-                        len(geos),
-                        ",".join(geos)) )) + "\n" )
-        
+        table_studies.write("\t".join(map(str, (
+            study_accession,
+            len(pmids),
+            ",".join(pmids),
+            len(geos),
+            ",".join(geos)))) + "\n")
 
-    ## write footer and output benchmark information.
+    # write footer and output benchmark information.
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

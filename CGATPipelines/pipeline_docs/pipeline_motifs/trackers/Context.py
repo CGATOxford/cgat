@@ -1,7 +1,12 @@
-import os, sys, re, types, itertools
+import os
+import sys
+import re
+import types
+import itertools
 
 from SphinxReport.Tracker import *
 from IntervalReport import *
 
-class ContextSummary( IntervalTracker, SingleTableTrackerRows ):
+
+class ContextSummary(IntervalTracker, SingleTableTrackerRows):
     table = "context_stats"

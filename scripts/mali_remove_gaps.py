@@ -38,7 +38,7 @@ import re
 import getopt
 import math
 
-USAGE="""python %s [OPTIONS] < exonerate_output > filtered
+USAGE = """python %s [OPTIONS] < exonerate_output > filtered
 
 Prune a nucelotide multiple alignment according to a master sequence.
 
@@ -57,9 +57,9 @@ Options:
 -o, --file-output               output
 """ % sys.argv[0]
 
-param_long_options=["verbose=", "help", "file-output=", "version" ]
+param_long_options = ["verbose=", "help", "file-output=", "version"]
 
-param_short_options="v:hm:e:p:c"
+param_short_options = "v:hm:e:p:c"
 
 param_loglevel = 1
 
@@ -73,36 +73,39 @@ import CGAT.Genomics as Genomics
 import CGAT.MaliIO as MaliIO
 import CGAT.Exons as Exons
 
-##------------------------------------------------------------
+# ------------------------------------------------------------
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv == None:
+        argv = sys.argv
 
     try:
-        optlist, args = getopt.getopt(sys.argv[1:], param_short_options, param_long_options)
+        optlist, args = getopt.getopt(
+            sys.argv[1:], param_short_options, param_long_options)
     except getopt.error, msg:
         print USAGE, msg
         sys.exit(2)
 
-    for o,a in optlist:
-        if o in ( "-v", "--verbose" ):
+    for o, a in optlist:
+        if o in ("-v", "--verbose"):
             param_loglevel = int(a)
-        elif o in ( "--version", ):
+        elif o in ("--version", ):
             print "version="
             sys.exit(0)
-        elif o in ( "-h", "--help" ):
+        elif o in ("-h", "--help"):
             print USAGE
             sys.exit(0)
         elif o in ("-o", "--file-output"):
             param_filename_output = a
-            
-    ## 1. read multiple alignment in fasta format
-    mali, identifiers = MaliIO.readFasta( sys.stdin )
+
+    # 1. read multiple alignment in fasta format
+    mali, identifiers = MaliIO.readFasta(sys.stdin)
 
     if param_loglevel >= 1:
         print "# read mali with %i entries." % len(identifiers)
@@ -110,22 +113,23 @@ def main( argv = None ):
     print E.GetHeader()
     print E.GetParams()
 
-    ## 1. remove gaps in multiple alignment
+    # 1. remove gaps in multiple alignment
 
-    mali = MaliIO.removeGaps( mali )
-    
+    mali = MaliIO.removeGaps(mali)
+
     if param_master:
-        frame_columns = GetFrameColumns( mali, param_master )
+        frame_columns = GetFrameColumns(mali, param_master)
     elif param_master_pattern:
         columns = []
         for id in identifiers:
-            if re.search( param_master_pattern, id ):
-                columns += GetFrameColumns( mali, id )
+            if re.search(param_master_pattern, id):
+                columns += GetFrameColumns(mali, id)
 
         if len(columns) == 0:
-            columns += GetFrameColumns( mali, identifiers[0] )
-                
-        # sort all columns by tuple. The "shortest" codon will be first (1,2,3) before (1,2,100)
+            columns += GetFrameColumns(mali, identifiers[0])
+
+        # sort all columns by tuple. The "shortest" codon will be first (1,2,3)
+        # before (1,2,100)
         columns.sort()
 
         # select codons
@@ -133,91 +137,93 @@ def main( argv = None ):
         last_codon = columns[0]
         for codon in columns[1:]:
             # skip identical codons
-            if codon == last_codon: continue
+            if codon == last_codon:
+                continue
 
             # take first (shortest) codon in case of identical first residue
-            if codon[0] == last_codon[0]: continue
-                
+            if codon[0] == last_codon[0]:
+                continue
+
             # if not overlapping, keep
             if codon[0] > last_codon[2]:
-                frame_columns.append( last_codon )
+                frame_columns.append(last_codon)
 
             # if overlapping, but out of register: skip
             last_codon = codon
-            
-        frame_columns.append( last_codon )        
 
-    ## translate characters to upper/lower case according to exon info.
+        frame_columns.append(last_codon)
+
+    # translate characters to upper/lower case according to exon info.
     if exons:
         for id in mali:
             if id in exons:
-                mali[id] = AddExonInformation( mali[id], exons[id], mask_char = param_mask_char )
+                mali[id] = AddExonInformation(
+                    mali[id], exons[id], mask_char=param_mask_char)
 
     if param_loglevel >= 1:
         print "# found %i columns" % (len(frame_columns))
 
-    mask_chars = ( string.upper( param_mask_char ), string.lower( param_mask_char ) )
+    mask_chars = (string.upper(param_mask_char), string.lower(param_mask_char))
 
-    
     for id in mali.keys():
         sequence = mali[id]
         fragments = []
         nstops, ncodons, naligned = 0, 0, 0
-        for a,b,c in frame_columns:
+        for a, b, c in frame_columns:
             codon = sequence[a] + sequence[b] + sequence[c]
 
             codon_is_aligned = False
             codon_is_ok = True
             for x in codon:
-                ## a codon will be masked, if it either
-                ## 1. contains a gap character
-                ## 2. is an unaligned character, i.e.,
-                ##     exons and masked, or no exons and lowerwase
+                # a codon will be masked, if it either
+                # 1. contains a gap character
+                # 2. is an unaligned character, i.e.,
+                # exons and masked, or no exons and lowerwase
                 residue_is_unaligned = (x == param_gap_char) or \
                                        (not exons and x in string.lowercase) or \
                                        (exons and x in mask_chars)
                 codon_is_aligned = codon_is_aligned or not residue_is_unaligned
                 codon_is_ok = codon_is_ok and not residue_is_unaligned
 
-            if codon_is_aligned: naligned += 1
-            
+            if codon_is_aligned:
+                naligned += 1
+
             if codon_is_ok:
                 ncodons += 1
                 if string.upper(codon) in ("TAG", "TAA", "TGA"):
                     if param_remove_stops:
-                        fragments.append( param_gap_char * 3 )
+                        fragments.append(param_gap_char * 3)
                     else:
-                        fragments.append( codon )                        
+                        fragments.append(codon)
                     nstops += 1
                 else:
-                    fragments.append( codon )                                            
+                    fragments.append(codon)
             else:
-                fragments.append( param_gap_char * 3 )
-                
+                fragments.append(param_gap_char * 3)
+
         mali[id] = string.join(fragments, "")
         if param_loglevel >= 1:
             print "# sequence: %s\tpositions: %i\taligned:%i\tcodons: %i\t stops: %i" % (id, len(fragments), naligned, ncodons, nstops)
             sys.stdout.flush()
-            
+
     for id in mali.keys():
         if param_mark_codons:
             a = mali[id]
-            f = lambda x: a[x:x+3]
-            s = string.join( [ f(x) for x in range(0,len(a),3)], " ")
+            f = lambda x: a[x:x + 3]
+            s = string.join([f(x) for x in range(0, len(a), 3)], " ")
         else:
             s = mali[id]
-        print ">%s\n%s" % (id, s )
+        print ">%s\n%s" % (id, s)
 
     if param_filename_translation:
-        outfile = open( param_filename_translation, "w")
+        outfile = open(param_filename_translation, "w")
         for id in mali.keys():
-            outfile.write( ">%s\n%s\n" % (id, Genomics.TranslateDNA2Protein(mali[id])))
+            outfile.write(">%s\n%s\n" %
+                          (id, Genomics.TranslateDNA2Protein(mali[id])))
         outfile.close()
 
     print E.GetFooter()
-    
-    
+
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

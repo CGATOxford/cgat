@@ -35,6 +35,7 @@ import optparse
 
 import CGAT.Experiment as E
 
+
 def main(argv=None):
     """script main.
 
@@ -51,10 +52,10 @@ def main(argv=None):
     parser.add_option("-t", "--test", dest="test", type="string",
                       help="supply help")
 
-    ## add common options (-h/--help, ...) and parse command line
+    # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv)
 
-    ## write footer and output benchmark information.
+    # write footer and output benchmark information.
     E.Stop()
 
 if __name__ == "__main__":

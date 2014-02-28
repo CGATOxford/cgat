@@ -104,29 +104,33 @@ Component = Namespace('http://www.isi.edu/ikcap/Wingse/componentOntology.owl#')
 FO = Namespace('http://www.isi.edu/ikcap/Wingse/fileOntology.owl#')
 CLP = Namespace('http://www.humgen.nl/climate/ontologies/clp#')
 
+
 def _e(string):
     return string.replace(' ', '_')
 
 MAP_FORMATS = {
-    'tsv' : 'tabular',
-    'table' : 'tabular',
-    'stats' : 'tabular',
-    'csv' : 'tabular',
-    }
+    'tsv': 'tabular',
+    'table': 'tabular',
+    'stats': 'tabular',
+    'csv': 'tabular',
+}
 
 MAP_TYPE2FORMAT = {
-    'gff' : 'gff,gtf',
-    'gtf' : 'gff,gtf',
-    'bam' : 'bam',
-    'sam' : 'sam',
+    'gff': 'gff,gtf',
+    'gtf': 'gff,gtf',
+    'bam': 'bam',
+    'sam': 'sam',
     'bigwig': 'bigWig',
-    'bed' : 'bed',
-    }
+    'bed': 'bed',
+}
 
 
-class DummyError( Exception ): pass
+class DummyError(Exception):
+    pass
+
 
 class Generator:
+
     '''inspired by:
     https://github.com/zuotian/CLI-mate/blob/master/climate/utils/legacy_parser.py
     '''
@@ -134,9 +138,7 @@ class Generator:
     def __init__(self):
         self.graph = Graph()
 
-
-
-    def _addTriple( self, s, p, o):
+    def _addTriple(self, s, p, o):
         if type(o) in [BNode, URIRef]:
             self.graph.add((s, p, o))
         elif type(o) is list:
@@ -147,14 +149,14 @@ class Generator:
                 os.append(Literal(item))
         elif o != '':
             self.graph.add((s, p, Literal(o)))
-            
+
     def _generateStatements(self, subject_node, properties):
         """
         properties = {"from_loc" : ["data_table", "no"]
         "access_location : ["/path/to/somewhere/", "yes"]}
         """
         for (key, values) in properties.items():
-            if values[1] == 'no': # not a volatile property.
+            if values[1] == 'no':  # not a volatile property.
                 a_node = BNode()
                 self._addTriple(a_node, RDF['type'], RDF['Statement'])
                 self._addTriple(a_node, CLP['relatedTo'], Literal(key))
@@ -162,23 +164,26 @@ class Generator:
                 self._addTriple(a_node, RDF['predicate'], CLP['hasProperty'])
                 self._addTriple(a_node, RDF['object'], values[0])
 
-
     def _generateDependencies(self, ap_node, dependencies):
         if dependencies:
             for dep in dependencies:
                 d_node = BNode()
                 self._addTriple(d_node, RDF.type, CLP['dependency'])
-                self._addTriple(d_node, CLP['hasDependingItem'], BNode(_e(dep['depending_parameter'])))
-                self._addTriple(d_node, CLP['dependingCondition'], dep['depending_condition'])
+                self._addTriple(
+                    d_node, CLP['hasDependingItem'], BNode(_e(dep['depending_parameter'])))
+                self._addTriple(
+                    d_node, CLP['dependingCondition'], dep['depending_condition'])
                 self._addTriple(d_node, CLP['hasDependentItem'], ap_node)
-                self._addTriple(d_node, CLP['dependentScope'], dep['dependent_scope'])
+                self._addTriple(
+                    d_node, CLP['dependentScope'], dep['dependent_scope'])
                 self._addTriple(d_node, CLP['effect'], dep['dependent_effect'])
 
-    def _addDict(self, data ):
+    def _addDict(self, data):
         '''convert a dictionary to an RDF graph.'''
 
         t_node = BNode(_e(data['name']))
-        self._addTriple(t_node, RDF.type, CLP['CommandLineProgramComponentType'])
+        self._addTriple(
+            t_node, RDF.type, CLP['CommandLineProgramComponentType'])
         self._addTriple(t_node, DCTERMS['label'], data['name'])
         self._addTriple(t_node, DCTERMS['title'], data['binary'])
         self._addTriple(t_node, DCTERMS['description'], data['description'])
@@ -189,12 +194,16 @@ class Generator:
         r_node = BNode()
         self._addTriple(t_node, Component['hasExecutionRequirements'], r_node)
         self._addTriple(r_node, RDF.type, Component['ExecutionRequirements'])
-        self._addTriple(r_node, Component['requiresOperationSystem'], Component['Linux']) # TODO
+        self._addTriple(
+            r_node, Component['requiresOperationSystem'], Component['Linux'])  # TODO
         if data['interpreter'] != '(binary)':
-            self._addTriple(r_node, Component['requiresSoftware'], Component[data['interpreter']])
+            self._addTriple(
+                r_node, Component['requiresSoftware'], Component[data['interpreter']])
         if data['grid_access_type'] != '-':
-            self._addTriple(r_node, CLP['gridAccessType'], data['grid_access_type'])
-            self._addTriple(r_node, Component['gridID'], data['grid_access_location'])
+            self._addTriple(
+                r_node, CLP['gridAccessType'], data['grid_access_type'])
+            self._addTriple(
+                r_node, Component['gridID'], data['grid_access_location'])
         for req in data['requirements']:
             req_node = BNode()
             self._addTriple(r_node, CLP['requiresSoftware'], req_node)
@@ -237,14 +246,15 @@ class Generator:
                     self._addTriple(a_node, FO['hasIntValue'], int(p['value']))
                     choices = map(lambda x: int(x), choices)
                 except ValueError:
-                    pass # do nothing if value is not an integer
+                    pass  # do nothing if value is not an integer
             elif p_type == 'float':
                 self._addTriple(a_node, RDF.type, FO['Float'])
                 try:
-                    self._addTriple(a_node, FO['hasFloatValue'], float(p['value']))
+                    self._addTriple(
+                        a_node, FO['hasFloatValue'], float(p['value']))
                     choices = map(lambda x: float(x), choices)
                 except ValueError:
-                    pass # do nothing if value is not a float
+                    pass  # do nothing if value is not a float
             elif p_type in ['string', 'select']:
                 self._addTriple(a_node, RDF.type, FO['String'])
                 self._addTriple(a_node, FO['hasStringValue'], p['value'])
@@ -271,7 +281,8 @@ class Generator:
             self._addTriple(ap_node, DCTERMS['description'], p['description'])
             self._addTriple(ap_node, RDFS.label, p['label'])
             self._addTriple(ap_node, Component['hasPrefix'], p['arg'])
-            self._addTriple(ap_node, CLP['hasAlternativePrefix'], p['arg_long'])
+            self._addTriple(
+                ap_node, CLP['hasAlternativePrefix'], p['arg_long'])
             self._addTriple(ap_node, CLP['order'], int(p['rank']))
             self._addTriple(ap_node, CLP['display'], p['display'])
             self._addTriple(ap_node, CLP['minOccurrence'], p['min_occurrence'])
@@ -279,10 +290,10 @@ class Generator:
 
             self._generateStatements(ap_node, p['property_bag'])
             self._generateDependencies(ap_node, p['dependencies'])
-        #for
+        # for
 
     def _addMetaInfo(self, data):
-        
+
         # meta data node about the Interface Generator itself.
         ig_node = URIRef('http://climate.host.url')
         self._addTriple(ig_node, RDF.type, FOAF['Agent'])
@@ -294,11 +305,13 @@ class Generator:
         self._addTriple(m_node, RDF.type, FOAF['Document'])
         self._addTriple(m_node, DCTERMS['creator'], ig_node)
         self._addTriple(m_node, DCTERMS['created'], datetime.datetime.utcnow())
-        self._addTriple(m_node, RDFS['label'], 'RDF Definition of ' + data['name'])
+        self._addTriple(
+            m_node, RDFS['label'], 'RDF Definition of ' + data['name'])
 
     def serialize(self, data, format='n3'):
-        #TODO: current RDFLib doesn't support base url serialization!
-        base_uri = "http://www.humgen.nl/climate/ontologies/clp" + _e(data['name']) + '.rdf#'
+        # TODO: current RDFLib doesn't support base url serialization!
+        base_uri = "http://www.humgen.nl/climate/ontologies/clp" + \
+            _e(data['name']) + '.rdf#'
         Base = Namespace(base_uri)
         self.graph.bind('base', Base)
 
@@ -312,41 +325,45 @@ class Generator:
         self._addMetaInfo(data)
         return self.graph.serialize(format=format)
 
-def LocalStart( parser, **kwargs ):
+
+def LocalStart(parser, **kwargs):
     '''stub for E.Start - set return_parser argument to true'''
     global PARSER
-    PARSER = ORIGINAL_START( parser,
-                             return_parser = True,
-                             **kwargs
-                             )
+    PARSER = ORIGINAL_START(parser,
+                            return_parser=True,
+                            **kwargs
+                            )
     raise DummyError()
 
-def getDescription( scriptname, docstring ):
+
+def getDescription(scriptname, docstring):
     '''get script description from docstring.'''
 
     description = scriptname
     for line in docstring.split("\n"):
-        if line.startswith( scriptname ):
-            description = line[line.index("-")+1:].strip()
+        if line.startswith(scriptname):
+            description = line[line.index("-") + 1:].strip()
             break
-        
+
     return description
 
-def guessFormats( scriptname, docstring ):
+
+def guessFormats(scriptname, docstring):
     '''guess the input/output format of a script.'''
 
     input_format, output_format = "tsv", "tsv"
 
     if "2" in scriptname:
         input_format, output_format = scriptname.split("2")
-        
+
     # map CGAT format names to GALAXY ones
-    input_format = MAP_FORMATS.get( input_format, input_format )
-    output_format = MAP_FORMATS.get( output_format, output_format )
+    input_format = MAP_FORMATS.get(input_format, input_format)
+    output_format = MAP_FORMATS.get(output_format, output_format)
 
     return input_format, output_format
 
-def buildParam( **kwargs ):
+
+def buildParam(**kwargs):
     '''return a parameter with default values.
 
     Specific fields can be set by providing keyword arguments.
@@ -363,32 +380,33 @@ def buildParam( **kwargs ):
 
     # get default value
     param['value'] = "value"
-    param['type' ] = "text"
+    param['type'] = "text"
     param['dependencies'] = {}
     param['property_bag'] = {}
     param['arg_long'] = '--long-argument'
 
-    param.update( kwargs )
+    param.update(kwargs)
     return param
 
-def processScript( script_name, outfile, options ):
+
+def processScript(script_name, outfile, options):
     '''process one script.'''
 
     # call other script
-    dirname = os.path.dirname( script_name )
-    basename = os.path.basename( script_name)[:-3]
+    dirname = os.path.dirname(script_name)
+    basename = os.path.basename(script_name)[:-3]
 
-    if options.src_dir: 
+    if options.src_dir:
         dirname = options.src_dir
-        script_name = os.path.join( dirname, basename ) + ".py"
+        script_name = os.path.join(dirname, basename) + ".py"
 
-    sys.path.insert(0, dirname )
+    sys.path.insert(0, dirname)
     module = __import__(basename)
 
     E.Start = LocalStart
-    E.info( "loaded modules %s" % module)
+    E.info("loaded modules %s" % module)
     try:
-        module.main( argv = ["--help"])
+        module.main(argv=["--help"])
     except DummyError:
         pass
 
@@ -398,16 +416,17 @@ def processScript( script_name, outfile, options ):
     # for k in dir(PARSER):
     #     print k, getattr(PARSER, k)
     # for option in PARSER.option_list:
-    #     print option, option.type, option.help, option._short_opts, option._long_opts, option.default
+    # print option, option.type, option.help, option._short_opts,
+    # option._long_opts, option.default
 
-    #@prefix clp: <http://www.humgen.nl/climate/ontologies/clp#> .
-    #@prefix co: <http://www.isi.edu/ikcap/Wingse/componentOntology.owl#> .
+    # @prefix clp: <http://www.humgen.nl/climate/ontologies/clp#> .
+    # @prefix co: <http://www.isi.edu/ikcap/Wingse/componentOntology.owl#> .
     #@prefix dcterms: <http://purl.org/dc/terms/> .
 
     # n = Namespace("http://example.org/people/")
-    g = Generator()                            
+    g = Generator()
 
-    data = collections.defaultdict( str )
+    data = collections.defaultdict(str)
 
     data['meta_title'] = 'Interface generator for CGAT scripts'
     data['meta_author'] = 'Andreas Heger'
@@ -416,17 +435,17 @@ def processScript( script_name, outfile, options ):
     data['name'] = basename
     data['interpreter'] = 'python'
     data['property_bag'] = {}
-    data['description'] = getDescription( basename, docstring )
+    data['description'] = getDescription(basename, docstring)
     data['help'] = docstring
     data['version'] = "1.0"
     data['owner'] = "CGAT"
     data['email'] = "andreas.heger@gmail.com"
     data['binary'] = script_name
 
-    # does not output multiple files 
+    # does not output multiple files
     data['multiple_output_files'] = False
-    
-    input_format, output_format = guessFormats( basename, docstring )
+
+    input_format, output_format = guessFormats(basename, docstring)
 
     stdin = {}
     stdin['name'] = 'input_file'
@@ -435,7 +454,7 @@ def processScript( script_name, outfile, options ):
     stdin['label'] = 'input file'
     stdin['description'] = 'input file'
     stdin['choices'] = None
-    stdin['format'] = MAP_TYPE2FORMAT.get( input_format, input_format )
+    stdin['format'] = MAP_TYPE2FORMAT.get(input_format, input_format)
     stdin['rank'] = 1
     stdin['display'] = 'show'
     stdin['min_occurrence'] = 1
@@ -453,7 +472,7 @@ def processScript( script_name, outfile, options ):
     stdout['label'] = 'table'
     stdout['description'] = 'bam file'
     stdout['choices'] = None
-    stdout['format'] = MAP_TYPE2FORMAT.get( output_format, output_format )
+    stdout['format'] = MAP_TYPE2FORMAT.get(output_format, output_format)
     stdout['rank'] = 1
     stdout['display'] = 'show'
     stdout['min_occurrence'] = 1
@@ -464,9 +483,9 @@ def processScript( script_name, outfile, options ):
     stdout['property_bag'] = {}
     stdout['dependencies'] = {}
 
-    outputs = [ stdout ]
+    outputs = [stdout]
 
-    data['parameters'] = [stdin, stdout ]
+    data['parameters'] = [stdin, stdout]
 
     defaults = PARSER.get_default_values()
 
@@ -475,34 +494,40 @@ def processScript( script_name, outfile, options ):
 
     for option in PARSER.option_list:
         # ignore options added by optparse
-        if option.dest == None: continue
-        
+        if option.dest == None:
+            continue
+
         # ignore benchmarking options
-        if option.dest.startswith("timeit"):continue
+        if option.dest.startswith("timeit"):
+            continue
 
         # ignore options related to forcing output
-        if "force" in option.dest: continue
+        if "force" in option.dest:
+            continue
 
         # ignore some special options:
-        #if option.dest in ("output_filename_pattern", ): 
+        # if option.dest in ("output_filename_pattern", ):
         #    continue
 
         # ignore output options
-        if option.dest in ("stdin", "stdout", "stdlog", "stderr", "loglevel" ): continue
+        if option.dest in ("stdin", "stdout", "stdlog", "stderr", "loglevel"):
+            continue
 
         # remove default from help string
-        option.help = re.sub( "\[[^\]]*%default[^\]]*\]", "", option.help)
+        option.help = re.sub("\[[^\]]*%default[^\]]*\]", "", option.help)
 
         param = buildParam()
 
         # get command line option call (long/short option)
         try:
             param['arg'] = option._short_opts[0]
-        except IndexError: pass
+        except IndexError:
+            pass
 
         try:
-            param['arg_long'] = option._long_opts[0] 
-        except IndexError: pass
+            param['arg_long'] = option._long_opts[0]
+        except IndexError:
+            pass
 
         assert 'arg' in param or 'arg_long' in param
 
@@ -524,29 +549,30 @@ def processScript( script_name, outfile, options ):
                     param['type'] = "data"
                 if mvar == "bam":
                     use_wrapper = True
-                    data['parameters'].append( buildParam( name = 'wrapper_bam_file',
-                                                           ns_name = 'wrapper_bam_file',
-                                                           arg_long = '--wrapper-bam-file',
-                                                           label = option.dest,
-                                                           type = 'data',
-                                                           format = 'bam',
-                                                           help = option.help,
-                                                           value = getattr( defaults,  option.dest ) ) )
+                    data['parameters'].append(buildParam(name='wrapper_bam_file',
+                                                         ns_name='wrapper_bam_file',
+                                                         arg_long='--wrapper-bam-file',
+                                                         label=option.dest,
+                                                         type='data',
+                                                         format='bam',
+                                                         help=option.help,
+                                                         value=getattr(defaults,  option.dest)))
 
-                    data['parameters'].append( buildParam( name = 'wrapper_bam_index',
-                                                           ns_name = 'wrapper_bam_index',
-                                                           arg_long = '--wrapper-bai-file',
-                                                           type = 'data',
-                                                           value = '${wrapper_bam_file.metadata.bam_index}',
-                                                           display = 'hidden' ) )
+                    data['parameters'].append(buildParam(name='wrapper_bam_index',
+                                                         ns_name='wrapper_bam_index',
+                                                         arg_long='--wrapper-bai-file',
+                                                         type='data',
+                                                         value='${wrapper_bam_file.metadata.bam_index}',
+                                                         display='hidden'))
 
                     # use long argument
-                    data['parameters'].append( buildParam( name = 'wrapper_bam_option',
-                                                           ns_name = 'wrapper_bam_option',
-                                                           arg_long = '--wrapper-bam-option',
-                                                           value = param['arg_long'],
-                                                           display = 'hidden' ) )
-                    
+                    data['parameters'].append(buildParam(name='wrapper_bam_option',
+                                                         ns_name='wrapper_bam_option',
+                                                         arg_long='--wrapper-bam-option',
+                                                         value=param[
+                                                             'arg_long'],
+                                                         display='hidden'))
+
                     continue
 
         elif option.type == "choice":
@@ -558,7 +584,7 @@ def processScript( script_name, outfile, options ):
             param['type'] = "boolean"
         else:
             raise ValueError("unknown type for %s" % str(option))
-            
+
         param['label'] = option.dest
         param['description'] = option.help
         param['rank'] = 1
@@ -567,155 +593,158 @@ def processScript( script_name, outfile, options ):
         param['max_occurrence'] = 1
 
         # get default value
-        param['value'] = getattr( defaults,  option.dest )
-            
+        param['value'] = getattr(defaults,  option.dest)
+
         param['dependencies'] = {}
         param['property_bag'] = {}
 
         if option.dest == "genome_file":
-            param['property_bag'] = { 'from_loc' : 'path',
-                                      'loc_id' : 'sam_fa',
-                                      'loc_id_filter' : '1'}
-
+            param['property_bag'] = {'from_loc': 'path',
+                                     'loc_id': 'sam_fa',
+                                     'loc_id_filter': '1'}
 
         # deal with multiple output files:
         if option.dest == "output_filename_pattern":
             use_wrapper = True
-            data['parameters'].append( buildParam( name = 'wrapper_html_file',
-                                                   ns_name = 'wrapper_html_file',
-                                                   arg_long = '--wrapper-html-file',
-                                                   value = '$html_file',
-                                                   display = 'hidden' ) )
+            data['parameters'].append(buildParam(name='wrapper_html_file',
+                                                 ns_name='wrapper_html_file',
+                                                 arg_long='--wrapper-html-file',
+                                                 value='$html_file',
+                                                 display='hidden'))
 
-            data['parameters'].append( buildParam( name = 'wrapper_html_dir',
-                                                   ns_name = 'wrapper_html_dir',
-                                                   arg_long = '--wrapper-html-dir',
-                                                   value = '$html_file.files_path',
-                                                   display = 'hidden' ) )
+            data['parameters'].append(buildParam(name='wrapper_html_dir',
+                                                 ns_name='wrapper_html_dir',
+                                                 arg_long='--wrapper-html-dir',
+                                                 value='$html_file.files_path',
+                                                 display='hidden'))
 
-            outputs.append( buildParam( name = 'html_file',
-                                        ns_name = 'html_file',
-                                        format= 'html',
-                                        label= 'html' ),
-                            )
+            outputs.append(buildParam(name='html_file',
+                                      ns_name='html_file',
+                                      format='html',
+                                      label='html'),
+                           )
             continue
 
-
-        data['parameters'].append( param )
-
+        data['parameters'].append(param)
 
     if options.output_format == "rdf":
-        outfile.write( g.serialize(data, format='turtle') + "\n" )
+        outfile.write(g.serialize(data, format='turtle') + "\n")
 
     elif options.output_format == "galaxy":
 
         if use_wrapper:
-        
-            # add hidden option for wrapper
-            param = buildParam( 
-                name = 'wrapper-command',
-                ns_name = 'wrapper-command',
-                display = 'hidden',
-                type = 'text',
-                value = data['binary'],
-                label = 'wrapper',
-                description = 'wrapper',
-                arg_long = "--wrapper-command" )
-            
-            data['parameters'].append( param )
-        
-            # point to wrapper
-            data['binary'] = os.path.join( dirname, "cgat_galaxy_wrapper.py" )
 
-        displayMap = collections.defaultdict( list )
+            # add hidden option for wrapper
+            param = buildParam(
+                name='wrapper-command',
+                ns_name='wrapper-command',
+                display='hidden',
+                type='text',
+                value=data['binary'],
+                label='wrapper',
+                description='wrapper',
+                arg_long="--wrapper-command")
+
+            data['parameters'].append(param)
+
+            # point to wrapper
+            data['binary'] = os.path.join(dirname, "cgat_galaxy_wrapper.py")
+
+        displayMap = collections.defaultdict(list)
 
         for param in data['parameters']:
-            displayMap[ param['display'] ].append( param ) 
+            displayMap[param['display']].append(param)
 
         displayMap['normal'] = displayMap['show']
-        
-        target = Template( open('/ifs/devel/andreas/cgat/scripts/cgat2rdf/galaxy.xml').read() )
-        outfile.write( target.render( data = data, 
-                                      displayMap = displayMap,
-                                      outputs = outputs ) + "\n" )
+
+        target = Template(
+            open('/ifs/devel/andreas/cgat/scripts/cgat2rdf/galaxy.xml').read())
+        outfile.write(target.render(data=data,
+                                    displayMap=displayMap,
+                                    outputs=outputs) + "\n")
 
 
-
-def main( argv = None ):
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if not argv: argv = sys.argv
+    if not argv:
+        argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser( version = "%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
-                             usage = globals()["__doc__"] )
+    parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+                            usage=globals()["__doc__"])
 
-    parser.add_option( "-f", "--format", dest="output_format", type="choice",
-                       choices = ("rdf", "galaxy"),
-                       help = "output format [%default]. ")
+    parser.add_option("-f", "--format", dest="output_format", type="choice",
+                      choices=("rdf", "galaxy"),
+                      help = "output format [%default]. ")
 
-    parser.add_option( "-l", "--list", dest="filename_list", type="string",
-                       help = "filename with list of files to export [%default]. ")
+    parser.add_option("-l", "--list", dest="filename_list", type="string",
+                      help="filename with list of files to export [%default]. ")
 
-    parser.add_option( "-s", "--source-dir", dest="src_dir", type="string",
-                       help = "directory to look for scripts [%default]. ")
+    parser.add_option("-s", "--source-dir", dest="src_dir", type="string",
+                      help="directory to look for scripts [%default]. ")
 
-    parser.add_option( "-r", "--input-regex", dest="input_regex", type="string",
-                       help = "regular expression to extract script name [%default]. ")
+    parser.add_option("-r", "--input-regex", dest="input_regex", type="string",
+                      help="regular expression to extract script name [%default]. ")
 
-    parser.add_option( "-p", "--output-pattern", dest="output_pattern", type="string",
-                       help = "pattern to build output filename. Should contain an '%s' [%default]. ")
-    
-    parser.set_defaults( output_format = "rdf",
-                         src_dir = None,
-                         input_regex = None,
-                         output_pattern = None,
-                         filename_list = None )
+    parser.add_option("-p", "--output-pattern", dest="output_pattern", type="string",
+                      help="pattern to build output filename. Should contain an '%s' [%default]. ")
 
-    ## add common options (-h/--help, ...) and parse command line 
-    (options, args) = E.Start( parser, argv = argv )
+    parser.set_defaults(output_format="rdf",
+                        src_dir=None,
+                        input_regex=None,
+                        output_pattern=None,
+                        filename_list=None)
+
+    # add common options (-h/--help, ...) and parse command line
+    (options, args) = E.Start(parser, argv=argv)
 
     if len(args) == 0:
-        E.info( "reading script names from stdin" )
+        E.info("reading script names from stdin")
         for line in options.stdin:
-            if line.startswith("#"): continue
-            args.append( line[:-1].split("\t")[0] )
+            if line.startswith("#"):
+                continue
+            args.append(line[:-1].split("\t")[0])
 
     # start script in order to build the command line parser
     global ORIGINAL_START
     ORIGINAL_START = E.Start
 
     if options.output_pattern and not options.input_regex:
-        raise ValueError("please specify --input-regex when using --output-pattern")
+        raise ValueError(
+            "please specify --input-regex when using --output-pattern")
 
     if options.output_format == "galaxy":
-        options.stdout.write( '''<section name="CGAT Tools" id="cgat_tools">\n''')
+        options.stdout.write(
+            '''<section name="CGAT Tools" id="cgat_tools">\n''')
 
     for script_name in args:
         if not script_name.endswith(".py"):
-            raise ValueError( "expected a python script ending in '.py'" )
+            raise ValueError("expected a python script ending in '.py'")
 
         if options.input_regex:
             try:
-                input_string = re.search( options.input_regex, script_name ).groups()[0]
+                input_string = re.search(
+                    options.input_regex, script_name).groups()[0]
             except AttributeError:
-                E.warn("can not parse %s - skipped", script_name )
+                E.warn("can not parse %s - skipped", script_name)
                 continue
 
         if options.output_pattern:
-            outfile_name = re.sub( "%s", input_string, options.output_pattern )
-            outfile = open( outfile_name, "w" )
+            outfile_name = re.sub("%s", input_string, options.output_pattern)
+            outfile = open(outfile_name, "w")
         else:
             outfile = options.stdout
 
-        E.info( "input=%s, output=%s" % (script_name, outfile_name ))
-        processScript( script_name, outfile, options )
-        
+        E.info("input=%s, output=%s" % (script_name, outfile_name))
+        processScript(script_name, outfile, options)
+
         if options.output_format == "galaxy":
-            options.stdout.write( '''   <tool file="cgat/%s" />\n''' % outfile_name )
+            options.stdout.write(
+                '''   <tool file="cgat/%s" />\n''' % outfile_name )
 
         if outfile != options.stdout:
             outfile.close()
@@ -726,4 +755,4 @@ def main( argv = None ):
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
+    sys.exit(main(sys.argv))

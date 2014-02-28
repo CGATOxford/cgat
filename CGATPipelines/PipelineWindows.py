@@ -13,6 +13,8 @@ import CGAT.Bed as Bed
 #########################################################################
 #########################################################################
 #########################################################################
+
+
 def convertReadsToIntervals(bamfile,
                             bedfile,
                             filtering_quality=None,
@@ -110,10 +112,12 @@ def convertReadsToIntervals(bamfile,
 #########################################################################
 #########################################################################
 #########################################################################
+
+
 def countReadsWithinWindows(bedfile,
                             windowfile,
                             outfile,
-                            counting_method = "midpoint"):
+                            counting_method="midpoint"):
     '''count reads given in *tagfile* within intervals in 
     *windowfile*.
 
@@ -146,7 +150,7 @@ def countReadsWithinWindows(bedfile,
 #########################################################################
 #########################################################################
 #########################################################################
-def aggregateWindowsReadCounts(infiles, 
+def aggregateWindowsReadCounts(infiles,
                                outfile,
                                regex="(.*)\..*"):
     '''aggregate several results from coverageBed
@@ -180,28 +184,28 @@ def aggregateWindowsReadCounts(infiles,
     column = bed_columns - 4 + 1
 
     src = " ".join(['''<( zcat %s | awk '{printf("%%s:%%i-%%i\\t%%i\\n", $1,$2,$3,$%s );}' ) ''' %
-                     (x, column) for x in infiles])
+                    (x, column) for x in infiles])
     tmpfile = P.getTempFilename(".")
     statement = '''paste %(src)s > %(tmpfile)s'''
     P.run()
-    
+
     # build track names
     tracks = [re.search(regex, os.path.basename(x)).groups()[0]
               for x in infiles]
-    
-    outf = IOTools.openFile( outfile, "w")
-    outf.write( "interval_id\t%s\n" % "\t".join(tracks))
-    
+
+    outf = IOTools.openFile(outfile, "w")
+    outf.write("interval_id\t%s\n" % "\t".join(tracks))
+
     for line in open(tmpfile, "r"):
         data = line[:-1].split("\t")
         genes = list(set([data[x] for x in range(0, len(data), 2)]))
-        values = [int(data[x]) for x in range(1, len(data), 2 )]
+        values = [int(data[x]) for x in range(1, len(data), 2)]
         if sum(values) == 0:
             continue
         assert len(genes) == 1, \
             "paste command failed, wrong number of genes per line: '%s'" % line
         outf.write("%s\t%s\n" % (genes[0], "\t".join(map(str, values))))
-    
+
     outf.close()
 
     os.unlink(tmpfile)
@@ -210,16 +214,16 @@ def aggregateWindowsReadCounts(infiles,
 #########################################################################
 #########################################################################
 #########################################################################
-def buildDMRStats( infile, outfile, method ):
+def buildDMRStats(infile, outfile, method):
     '''build dmr summary statistics.
     '''
-    results = collections.defaultdict( lambda : collections.defaultdict(int) )
+    results = collections.defaultdict(lambda: collections.defaultdict(int))
 
-    status =  collections.defaultdict( lambda : collections.defaultdict(int) )
+    status = collections.defaultdict(lambda: collections.defaultdict(int))
     x = 0
-    for line in IOTools.iterate( IOTools.openFile( infile ) ):
-        key = (line.treatment_name, line.control_name )
-        r,s = results[key], status[key]
+    for line in IOTools.iterate(IOTools.openFile(infile)):
+        key = (line.treatment_name, line.control_name)
+        r, s = results[key], status[key]
         r["tested"] += 1
         s[line.status] += 1
 
@@ -230,54 +234,68 @@ def buildDMRStats( infile, outfile, method ):
         fold2down = float(line.l2fold) < -1
         fold2 = fold2up or fold2down
 
-        if up: r["up"] += 1
-        if down: r["down"] += 1
-        if fold2up: r["l2fold_up"] += 1
-        if fold2down: r["l2fold_down"] += 1
+        if up:
+            r["up"] += 1
+        if down:
+            r["down"] += 1
+        if fold2up:
+            r["l2fold_up"] += 1
+        if fold2down:
+            r["l2fold_down"] += 1
 
         if is_significant:
             r["significant"] += 1
-            if up: r["significant_up"] += 1
-            if down: r["significant_down"] += 1
-            if fold2: r["fold2"] += 1
-            if fold2up: r["significant_l2fold_up"] += 1
-            if fold2down: r["significant_l2fold_down"] += 1
-            
+            if up:
+                r["significant_up"] += 1
+            if down:
+                r["significant_down"] += 1
+            if fold2:
+                r["fold2"] += 1
+            if fold2up:
+                r["significant_l2fold_up"] += 1
+            if fold2down:
+                r["significant_l2fold_down"] += 1
+
     header1, header2 = set(), set()
-    for r in results.values(): header1.update( r.keys() )
-    for s in status.values(): header2.update( s.keys() )
-    
-    header = ["method", "treatment", "control" ]
+    for r in results.values():
+        header1.update(r.keys())
+    for s in status.values():
+        header2.update(s.keys())
+
+    header = ["method", "treatment", "control"]
     header1 = list(sorted(header1))
     header2 = list(sorted(header2))
 
-    outf = IOTools.openFile( outfile, "w" )
-    outf.write( "\t".join(header + header1 + header2) + "\n" )
+    outf = IOTools.openFile(outfile, "w")
+    outf.write("\t".join(header + header1 + header2) + "\n")
 
-    for treatment,control in results.keys():
-        key = (treatment,control)
+    for treatment, control in results.keys():
+        key = (treatment, control)
         r = results[key]
         s = status[key]
-        outf.write( "%s\t%s\t%s\t" % (method,treatment, control))
-        outf.write( "\t".join( [str(r[x]) for x in header1 ] ) + "\t" )
-        outf.write( "\t".join( [str(s[x]) for x in header2 ] ) + "\n" )
+        outf.write("%s\t%s\t%s\t" % (method, treatment, control))
+        outf.write("\t".join([str(r[x]) for x in header1]) + "\t")
+        outf.write("\t".join([str(s[x]) for x in header2]) + "\n")
 
 #########################################################################
 #########################################################################
 #########################################################################
-def buildFDRStats( infile, outfile, method ):
+
+
+def buildFDRStats(infile, outfile, method):
     '''compute number of windows called at different FDR.
     '''
 
-    data = pandas.read_csv( IOTools.openFile(infile), sep="\t", index_col = 0 )
+    data = pandas.read_csv(IOTools.openFile(infile), sep="\t", index_col=0)
 
     assert data['treatment_name'][0] == data['treatment_name'][-1]
     assert data['control_name'][0] == data['control_name'][-1]
 
-    treatment_name, control_name = data['treatment_name'][0], data['control_name'][0]
-        
-    key = (treatment_name, control_name )
-    fdrs = (0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0 )
+    treatment_name, control_name = data[
+        'treatment_name'][0], data['control_name'][0]
+
+    key = (treatment_name, control_name)
+    fdrs = (0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0)
 
     for fdr in fdrs:
         print "fdr"
@@ -287,26 +305,27 @@ def buildFDRStats( infile, outfile, method ):
         print significant
 
 
-def outputAllWindows( infile, outfile ):
+def outputAllWindows(infile, outfile):
     '''output all Windows as a bed file with the l2fold change
     as a score.
     '''
-    outf = IOTools.openFile( outfile, "w" )
-    for line in IOTools.iterate( IOTools.openFile( infile ) ):
-        outf.write( "\t".join( (line.contig, line.start, line.end, "%6.4f" % float(line.l2fold ))) + "\n" ) 
+    outf = IOTools.openFile(outfile, "w")
+    for line in IOTools.iterate(IOTools.openFile(infile)):
+        outf.write("\t".join(
+            (line.contig, line.start, line.end, "%6.4f" % float(line.l2fold))) + "\n")
 
     outf.close()
 
         # ###########################################
         # ###########################################
         # ###########################################
-        # # plot length versus P-Value
-        # data = Database.executewait( dbhandle, 
-        #                              '''SELECT end - start, pvalue 
+        # plot length versus P-Value
+        # data = Database.executewait( dbhandle,
+        #                              '''SELECT end - start, pvalue
         #                      FROM %(tablename)s
         #                      WHERE significant'''% locals() ).fetchall()
 
-        # # require at least 10 datapoints - otherwise smooth scatter fails
+        # require at least 10 datapoints - otherwise smooth scatter fails
         # if len(data) > 10:
         #     data = zip(*data)
 
@@ -321,7 +340,7 @@ def outputAllWindows( infile, outfile ):
         #     R['dev.off']()
 
 
-def outputRegionsOfInterest( infiles, outfile, max_per_sample = 10, sum_per_group = 40 ):
+def outputRegionsOfInterest(infiles, outfile, max_per_sample=10, sum_per_group=40):
     '''output windows according to various filters.
 
     The output is a mock analysis similar to a differential expression 
@@ -331,35 +350,35 @@ def outputRegionsOfInterest( infiles, outfile, max_per_sample = 10, sum_per_grou
 
     design_file, counts_file = infiles
 
-    design = Expression.readDesignFile( design_file )
-    
+    design = Expression.readDesignFile(design_file)
+
     # remove tracks not included in the design
-    design = dict( [ (x,y) for x,y in design.items() if y.include ] )
+    design = dict([(x, y) for x, y in design.items() if y.include])
 
     # define the two groups
-    groups = sorted(set( [x.group for x in design.values() ] ))
+    groups = sorted(set([x.group for x in design.values()]))
 
     # build a filtering statement
     groupA, groupB = groups
-    upper_levelA = "max( (%s) ) < %f" % ( \
-        ",".join( \
-            [ "int(r['%s'])" % x for x,y in design.items() if y.group == groupA ] ),
-        max_per_sample )
+    upper_levelA = "max( (%s) ) < %f" % (
+        ",".join(
+            ["int(r['%s'])" % x for x, y in design.items() if y.group == groupA]),
+        max_per_sample)
 
-    sum_levelA = "sum( (%s) ) > %f" % ( \
-        ",".join( \
-            [ "int(r['%s'])" % x for x,y in design.items() if y.group == groupB ] ),
-        sum_per_group )
+    sum_levelA = "sum( (%s) ) > %f" % (
+        ",".join(
+            ["int(r['%s'])" % x for x, y in design.items() if y.group == groupB]),
+        sum_per_group)
 
-    upper_levelB = "max( (%s) ) < %f" % ( \
-        ",".join( \
-            [ "int(r['%s'])" % x for x,y in design.items() if y.group == groupB ] ),
-        max_per_sample )
+    upper_levelB = "max( (%s) ) < %f" % (
+        ",".join(
+            ["int(r['%s'])" % x for x, y in design.items() if y.group == groupB]),
+        max_per_sample)
 
-    sum_levelB = "sum( (%s) ) > %f" % ( \
-        ",".join( \
-            [ "int(r['%s'])" % x for x,y in design.items() if y.group == groupA ] ),
-        sum_per_group )
+    sum_levelB = "sum( (%s) ) > %f" % (
+        ",".join(
+            ["int(r['%s'])" % x for x, y in design.items() if y.group == groupA]),
+        sum_per_group)
 
     statement = '''
     zcat %(counts_file)s
@@ -381,9 +400,11 @@ def outputRegionsOfInterest( infiles, outfile, max_per_sample = 10, sum_per_grou
 #########################################################################
 #########################################################################
 #########################################################################
-def runDE( infiles, outfile, outdir, 
-           method = "deseq",
-           spike_file = None):
+
+
+def runDE(infiles, outfile, outdir,
+          method="deseq",
+          spike_file=None):
     '''run DESeq or EdgeR.
 
     The job is split into smaller sections. The order of the input 
@@ -394,11 +415,11 @@ def runDE( infiles, outfile, outdir,
     '''
 
     to_cluster = True
-    
+
     design_file, counts_file = infiles
 
     if spike_file == None:
-        statement = "zcat %(counts_file)s" 
+        statement = "zcat %(counts_file)s"
     else:
         statement = '''python %(scriptsdir)s/combine_tables.py 
                            --missing-value=0
@@ -410,7 +431,7 @@ def runDE( infiles, outfile, outdir,
                            --log=%(outfile)s.log
         '''
 
-    prefix = os.path.basename( outfile )
+    prefix = os.path.basename(outfile)
 
     # the post-processing strips away the warning,
     # renames the qvalue column to old_qvalue
@@ -452,4 +473,3 @@ def runDE( infiles, outfile, outdir,
               > %(outfile)s '''
 
     P.run()
-

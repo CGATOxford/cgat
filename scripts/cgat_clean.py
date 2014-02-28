@@ -38,6 +38,7 @@ import sys
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 
+
 def main(argv=None):
     """script main.
 
@@ -56,7 +57,7 @@ def main(argv=None):
 
     parser.set_defaults(dry_run=False)
 
-    ## add common options (-h/--help, ...) and parse command line
+    # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv)
 
     filenames = args
@@ -77,7 +78,7 @@ def main(argv=None):
 
     E.info(c)
 
-    ## write footer and output benchmark information.
+    # write footer and output benchmark information.
     E.Stop()
 
 if __name__ == "__main__":

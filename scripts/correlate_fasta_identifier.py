@@ -39,30 +39,33 @@ import tempfile
 
 param_loglevel = 0
 
-param_long_options=["verbose=", "help", "version"]
-param_short_options="v:h"
+param_long_options = ["verbose=", "help", "version"]
+param_short_options = "v:h"
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv == None:
+        argv = sys.argv
 
     try:
-        optlist, args = getopt.getopt(sys.argv[1:], param_short_options, param_long_options)
+        optlist, args = getopt.getopt(
+            sys.argv[1:], param_short_options, param_long_options)
     except getopt.error, msg:
         print USAGE, msg
         sys.exit(2)
-        
-    for o,a in optlist:
-        if o in ( "-v", "--verbose" ):
+
+    for o, a in optlist:
+        if o in ("-v", "--verbose"):
             param_loglevel = int(a)
-        elif o in ( "--version", ):
+        elif o in ("--version", ):
             print "version="
             sys.exit(0)
-        elif o in ( "-h", "--help" ):
+        elif o in ("-h", "--help"):
             print USAGE
             sys.exit(0)
 
@@ -71,21 +74,21 @@ def main( argv = None ):
         print USAGE
         sys.exit(1)
 
-
     identifiers = []
     infile = open(args[0], "r")
     for line in infile:
         if line[0] == ">":
-            identifiers.append( line[1:string.find(" ", line)] )
+            identifiers.append(line[1:string.find(" ", line)])
     infile.close()
 
     x = 0
     for line in sys.stdin:
         if line[0] == ">":
-            if x >= len(identifiers): raise "different number of sequences."            
+            if x >= len(identifiers):
+                raise "different number of sequences."
             line = ">" + identifiers[x] + "\n"
             x += 1
         print line[:-1]
-            
+
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
+    sys.exit(main(sys.argv))

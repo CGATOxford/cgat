@@ -1,4 +1,4 @@
-################################################################################
+##########################################################################
 #
 #   MRC FGU Computational Genomics Group
 #
@@ -19,7 +19,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
+##########################################################################
 '''
 gpipe/export_all.py - 
 ======================================================
@@ -78,15 +78,16 @@ import pgdb
 prepare export of fly data.
 """
 
-def ExportFilesFromSubdirs( directories,
-                            build_dir,
-                            file_list,
-                            options, 
-                            section = "",
-                            extract_id_from_dirname = None,
-                            extract_id_from_filename = None,
-                            within_subdirs = None,
-                            readme = None):
+
+def ExportFilesFromSubdirs(directories,
+                           build_dir,
+                           file_list,
+                           options,
+                           section="",
+                           extract_id_from_dirname=None,
+                           extract_id_from_filename=None,
+                           within_subdirs=None,
+                           readme=None):
 
     missing = []
     nfiles = 0
@@ -94,19 +95,20 @@ def ExportFilesFromSubdirs( directories,
     nfiles_ok = 0
 
     if options.loglevel >= 1:
-        options.stdlog.write( "# exporting section %s: %i directories\n" % (section, len(directories)))
+        options.stdlog.write(
+            "# exporting section %s: %i directories\n" % (section, len(directories)))
 
-    if os.path.exists( build_dir ):
-        os.rmdir( build_dir )
-        
-    os.mkdir( build_dir )
-    
+    if os.path.exists(build_dir):
+        os.rmdir(build_dir)
+
+    os.mkdir(build_dir)
+
     for src_dir in directories:
         if extract_id_from_dirname:
-            dir_id = extract_id_from_dirname.search( src_dir ).groups()[0]
+            dir_id = extract_id_from_dirname.search(src_dir).groups()[0]
         else:
             dir_id = None
-            
+
         has_error = False
 
         if within_subdirs:
@@ -114,22 +116,25 @@ def ExportFilesFromSubdirs( directories,
             os.mkdir(dest_dir)
         else:
             dest_dir = build_dir
-        
+
         for file_src, file_dest, converter in file_list:
 
             if options.loglevel >= 3:
-                options.stdlog.write( "# processing %s: %s\n" % (file_src, file_dest))
-                
-            ## if we have not id and there is a wildcard in file_src: use glob operator to get all files
-            if not dir_id and re.search( "%s", file_src ):                
-                x = re.sub( "%s", "*", file_src)
-                files = glob.glob( src_dir + "/" + x )
+                options.stdlog.write(
+                    "# processing %s: %s\n" % (file_src, file_dest))
+
+            # if we have not id and there is a wildcard in file_src: use glob
+            # operator to get all files
+            if not dir_id and re.search("%s", file_src):
+                x = re.sub("%s", "*", file_src)
+                files = glob.glob(src_dir + "/" + x)
                 if options.stdlog >= 4:
-                    options.stdlog.write("# found %i files using pattern %s\n" % (len(files), src_dir + "/" + x))
+                    options.stdlog.write(
+                        "# found %i files using pattern %s\n" % (len(files), src_dir + "/" + x))
                 single_file = False
             else:
                 single_file = True
-                if re.search( "%s", file_src ):
+                if re.search("%s", file_src):
                     file_src = file_src % dir_id
                 files = (src_dir + "/" + file_src, )
 
@@ -143,86 +148,95 @@ def ExportFilesFromSubdirs( directories,
 
                 if not dir_id:
                     if extract_id_from_filename:
-                        id = extract_id_from_filename.search( f ).groups()[0]
+                        id = extract_id_from_filename.search(f).groups()[0]
                     else:
                         id = ""
                 else:
                     id = dir_id
 
-                if single_file and re.search( "%s", file_src ):                
+                if single_file and re.search("%s", file_src):
                     file_src = file_src % id
                 else:
                     file_src = f
 
-                if re.search( "%s", file_dest):
+                if re.search("%s", file_dest):
                     fdest = file_dest % id
                 else:
                     fdest = file_dest
 
-                if not os.path.exists( file_src ):
-                    missing.append( file_src )
+                if not os.path.exists(file_src):
+                    missing.append(file_src)
                     has_error = True
                     continue
 
                 if options.loglevel >= 5:
-                    options.stdlog.write( "# copying %s to %s\n" % (file_src, fdest ))
-                
+                    options.stdlog.write(
+                        "# copying %s to %s\n" % (file_src, fdest))
+
                 if converter:
-                    os.system( converter % { 'src': file_src, 'dest': fdest } )
+                    os.system(converter % {'src': file_src, 'dest': fdest})
                 else:
-                    shutil.copyfile( file_src, fdest )
+                    shutil.copyfile(file_src, fdest)
                 nfiles_ok += 1
 
                 id = None
-                
+
         if not has_error:
             ndirs_ok += 1
 
     if options.loglevel >= 1:
-        options.stdlog.write( "section %s - summary\n" % section)
-        options.stdlog.write( "directories:\t%6i out of %6i (%6.4f%%)\n" % (ndirs_ok, len(directories), 100 * float(ndirs_ok) / len(directories) ))
-        options.stdlog.write( "files:\t\t%6i out of %6i (%6.4f%%)\n" % (nfiles_ok, nfiles, 100 * float(nfiles_ok) / nfiles))
+        options.stdlog.write("section %s - summary\n" % section)
+        options.stdlog.write("directories:\t%6i out of %6i (%6.4f%%)\n" % (
+            ndirs_ok, len(directories), 100 * float(ndirs_ok) / len(directories)))
+        options.stdlog.write("files:\t\t%6i out of %6i (%6.4f%%)\n" % (
+            nfiles_ok, nfiles, 100 * float(nfiles_ok) / nfiles))
 
     if options.loglevel >= 2:
-        options.stderr.write( "# section %s - %i missing files\n" % (section, len(missing)) )
+        options.stderr.write(
+            "# section %s - %i missing files\n" % (section, len(missing)))
         for m in missing:
-            options.stderr.write( "# %s\n" % (m) )
+            options.stderr.write("# %s\n" % (m))
 
     outfile = open(build_dir + "/readme", "w")
 
-    outfile.write( "Protein coding gene predictions and analysis of gene predictions of 12 fly genomes.\n")
-    outfile.write( "\nAndreas Heger and Chris Ponting, MRC Functional Genetics Unit, Oxford, UK.\n")
-    outfile.write( "\nThis is release %s.\n" % options.release)
-    outfile.write( "\nSection %s created on %s.\n\n" % (section, time.asctime(time.localtime(time.time())) ) )
+    outfile.write(
+        "Protein coding gene predictions and analysis of gene predictions of 12 fly genomes.\n")
+    outfile.write(
+        "\nAndreas Heger and Chris Ponting, MRC Functional Genetics Unit, Oxford, UK.\n")
+    outfile.write("\nThis is release %s.\n" % options.release)
+    outfile.write("\nSection %s created on %s.\n\n" %
+                  (section, time.asctime(time.localtime(time.time()))))
 
     if readme:
         outfile.write(readme)
-        
+
     outfile.close()
-        
+
     return
 
-def ExportMalis( options ):
+
+def ExportMalis(options):
     """export multiple alignments.
 
     Multiple alignments are exported as a tar/gzipped file.
     """
 
-    ## export directories
-    directories = glob.glob( options.dir_export_malis + "/data.dir/*.dir" )
+    # export directories
+    directories = glob.glob(options.dir_export_malis + "/data.dir/*.dir")
 
-    file_list = ( ("cluster_%s.aa_mali", None, None, ),
-                  ("cluster_%s.aa_mali", None, None, ),
-                  ("cluster_%s.raw_mali", None, None,),
-                  ("cluster_%s_ks.tree", None, None, ),
-                  ("cluster_%s.bl_kaks", "cluster_%s.kaks", "cut -f  1-12, %(src)s > %(dest)s" ),
-                  ("cluster_%s.bs_partitions", None, None),
-                  ("cluster_%s.bs_evaluate.components", None, None),
-                  ("cluster_%s.bs_evaluate.inconsistencies", None, None),
-                  ("cluster_%s.bs_evaluate.subtrees", None, None),                                    
-                  )
+    file_list = (("cluster_%s.aa_mali", None, None, ),
+                 ("cluster_%s.aa_mali", None, None, ),
+                 ("cluster_%s.raw_mali", None, None,),
+                 ("cluster_%s_ks.tree", None, None, ),
+                 ("cluster_%s.bl_kaks", "cluster_%s.kaks",
+                  "cut -f  1-12, %(src)s > %(dest)s"),
+                 ("cluster_%s.bs_partitions", None, None),
+                 ("cluster_%s.bs_evaluate.components", None, None),
+                 ("cluster_%s.bs_evaluate.inconsistencies", None, None),
+                 ("cluster_%s.bs_evaluate.subtrees", None, None),
+                 )
 
-    readme="""Contents: Multiple alignments of orthologs.
+    readme = """Contents: Multiple alignments of orthologs.
 
 Input is the cds of predicted orthologs. Clusters are given by the multiple orthology
 procedure.
@@ -244,27 +258,30 @@ Dn and ds is claculated using codonml from the PAML package. The format of the .
 columns corresponding to:
 
 seq1    seq2    dN      dS      dN/dS   N       S       dN_std_err      dS_std_err      kappa   lnL     tau     error_str
-""" 
+"""
 
-    ExportFilesFromSubdirs( directories,
-                            options.build_dir + "/multiple_alignments",
-                            file_list,
-                            options,
-                            extract_id_from_dirname = re.compile( "cluster_(\S+).dir" ),
-                            section = "multiple alignments",
-                            within_subdirs = "cluster_%s",
-                            readme = readme )
+    ExportFilesFromSubdirs(directories,
+                           options.build_dir + "/multiple_alignments",
+                           file_list,
+                           options,
+                           extract_id_from_dirname=re.compile(
+                               "cluster_(\S+).dir"),
+                           section="multiple alignments",
+                           within_subdirs="cluster_%s",
+                           readme=readme)
 
-def ExportOrthologs( options ):
+
+def ExportOrthologs(options):
     """export orthology information."""
 
-    file_list = ( ("orthologs_consistent.components.map", "map_sequence2cluster", None, ),
-                  ("orthologs_consistent.orgs_per_cluster", "clusters.info", None, ),                                    
-                  ("orthologs_consistent.patterns", "patterns", None, ),
-                  ("orthologs_consistent.summary", "summary", None),
-                  )
-    
-    readme="""Contents: Clusters of orthologs
+    file_list = (("orthologs_consistent.components.map", "map_sequence2cluster", None, ),
+                 ("orthologs_consistent.orgs_per_cluster",
+                  "clusters.info", None, ),
+                 ("orthologs_consistent.patterns", "patterns", None, ),
+                 ("orthologs_consistent.summary", "summary", None),
+                 )
+
+    readme = """Contents: Clusters of orthologs
 
 Pairwise orthology relationships are grouped into clusters of orthologs across all
 fly genomes. The method is clustering by components and then filtering by edge and
@@ -279,25 +296,26 @@ patterns:               species patterns and whether the absences of species is
                         consistent with the phylogenetic tree.
                         
 summary:                summary of clustering.
-""" 
+"""
 
-    ExportFilesFromSubdirs( (options.dir_export_orthologs, ),
-                            options.build_dir + "/orthologs",
-                            file_list,
-                            options,
-                            section = "orthologs",
-                            within_subdirs = None,
-                            readme = readme )
+    ExportFilesFromSubdirs((options.dir_export_orthologs, ),
+                           options.build_dir + "/orthologs",
+                           file_list,
+                           options,
+                           section="orthologs",
+                           within_subdirs=None,
+                           readme=readme)
 
-def ExportCodonbias( options ):
+
+def ExportCodonbias(options):
     """export codon bias information."""
 
-    directories = glob.glob( options.dir_export_codonbias + "/bias_*" )
+    directories = glob.glob(options.dir_export_codonbias + "/bias_*")
 
-    file_list = ( ("all.data", "%s.data", None, ),
-                  )
+    file_list = (("all.data", "%s.data", None, ),
+                 )
 
-    readme="""Sequence properties for predicted sequences.
+    readme = """Sequence properties for predicted sequences.
 
 For each predicted transcript in each species, various sequence features are listed. The
 data is organized in tab separated tables. Some of the information in the file:
@@ -342,56 +360,60 @@ rel_ml: relative message length
 kl:     symmetric Kullback-Leibler divergence
 """
 
-    ExportFilesFromSubdirs( directories,
-                            options.build_dir + "/codonbias",
-                            file_list,
-                            options,
-                            extract_id_from_dirname = re.compile( "bias_(\S+)" ),
-                            section = "codon bias",
-                            within_subdirs = None,
-                            readme = readme)
+    ExportFilesFromSubdirs(directories,
+                           options.build_dir + "/codonbias",
+                           file_list,
+                           options,
+                           extract_id_from_dirname=re.compile("bias_(\S+)"),
+                           section="codon bias",
+                           within_subdirs=None,
+                           readme=readme)
 
     return
 
-def ExportAAA( options ):
+
+def ExportAAA(options):
     """export gene predictions for AAA."""
 
-    directories = glob.glob( options.dir_export_aaa, )
+    directories = glob.glob(options.dir_export_aaa, )
 
-    file_list = ( ("%s_caf1_genes.map", None, None, ),
-                  ("%s_caf1_predictions.map", None, None, ),
-                  ("%s_caf1.gff", None, None, ),                  
-                  )
+    file_list = (("%s_caf1_genes.map", None, None, ),
+                 ("%s_caf1_predictions.map", None, None, ),
+                 ("%s_caf1.gff", None, None, ),
+                 )
 
-    readme="""Gene predictions as submitted to AAA. The files ending in .map
+    readme = """Gene predictions as submitted to AAA. The files ending in .map
 map transcript/gene identifiers to the identfiers required by AAA. See
 http://rana.lbl.gov/drosophila/wiki/index.php/Formats_and_Naming_Schemes
 for more information.
 """
-    
-    ExportFilesFromSubdirs( directories,
-                            options.build_dir + "/predictions_aaa",
-                            file_list,
-                            options,
-                            extract_id_from_dirname = None,
-                            extract_id_from_filename = re.compile( "export/export_aaa.dir/(\S+)_caf1" ),
-                            section = "gene predictions for AAA",
-                            within_subdirs = None,
-                            readme = readme)
+
+    ExportFilesFromSubdirs(directories,
+                           options.build_dir + "/predictions_aaa",
+                           file_list,
+                           options,
+                           extract_id_from_dirname=None,
+                           extract_id_from_filename=re.compile(
+                               "export/export_aaa.dir/(\S+)_caf1"),
+                           section="gene predictions for AAA",
+                           within_subdirs=None,
+                           readme=readme)
 
     return
 
-def ExportPredictions( options ):
+
+def ExportPredictions(options):
     """export gene predictions for AAA."""
 
-    directories = glob.glob( options.dir_export_predictions, )
+    directories = glob.glob(options.dir_export_predictions, )
 
-    file_list = ( ("export_clustering_%s.exons", "%s.exons", None, ),
-                  ("export_clustering_%s_cds.fasta", "%s_cds.fasta", None, ),
-                  ("export_clustering_%s_peptides.fasta", "%s_peptides.fasta", None, ),
-                  )
+    file_list = (("export_clustering_%s.exons", "%s.exons", None, ),
+                 ("export_clustering_%s_cds.fasta", "%s_cds.fasta", None, ),
+                 ("export_clustering_%s_peptides.fasta",
+                  "%s_peptides.fasta", None, ),
+                 )
 
-    readme="""Gene predictions.
+    readme = """Gene predictions.
 
 Contents:
 
@@ -410,83 +432,89 @@ Column  Content
 6       location of exon on cds sequence
 7       location of exon on contig
 """
-    
-    ExportFilesFromSubdirs( directories,
-                            options.build_dir + "/predictions",
-                            file_list,
-                            options,
-                            extract_id_from_dirname = None,
-                            extract_id_from_filename = re.compile( "export/export_clustering.dir/(\S+_vs_dmel\d+)" ),
-                            section = "gene predictions",
-                            within_subdirs = None,
-                            readme = readme)
+
+    ExportFilesFromSubdirs(directories,
+                           options.build_dir + "/predictions",
+                           file_list,
+                           options,
+                           extract_id_from_dirname=None,
+                           extract_id_from_filename=re.compile(
+                               "export/export_clustering.dir/(\S+_vs_dmel\d+)"),
+                           section="gene predictions",
+                           within_subdirs=None,
+                           readme=readme)
     return
 
 
-def main( argv = None ):
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv == None:
+        argv = sys.argv
 
-    parser = E.OptionParser( version = "%prog version: $Id: gpipe/export_all.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser(
+        version="%prog version: $Id: gpipe/export_all.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-r", "--release", dest="release", type="string",
                       help="release.")
 
     parser.add_option("-s", "--sections", dest="sections", type="string",
                       help="sections to export: malis,codonbias,aaa,predictions,orthologs")
-    
+
     parser.add_option("-p", "--package-name", dest="package_name", type="string",
                       help="Package name. This also provides the build directory.")
 
     parser.add_option("-c", "--compress", dest="compress", action="store_true",
                       help="Compress files.")
-    
-    parser.set_defaults(
-        sections = "malis,codonbias,orthologs,aaa,predictions",
-        dir_export_malis = "../orthology_malis",
-        dir_export_orthologs = "../orthology_multiple",
-        dir_export_codonbias = "../codonbias",
-        dir_export_aaa = "../export/export_aaa.dir",
-        dir_export_predictions = "../export/export_clustering.dir",
-        package_name = "gpipe",
-        build_dir = None,
-        compress = False,
-        release = "unknown",
-        )
 
-    (options, args) = E.Start( parser, add_psql_options = True )
+    parser.set_defaults(
+        sections="malis,codonbias,orthologs,aaa,predictions",
+        dir_export_malis="../orthology_malis",
+        dir_export_orthologs="../orthology_multiple",
+        dir_export_codonbias="../codonbias",
+        dir_export_aaa="../export/export_aaa.dir",
+        dir_export_predictions="../export/export_clustering.dir",
+        package_name="gpipe",
+        build_dir=None,
+        compress=False,
+        release="unknown",
+    )
+
+    (options, args) = E.Start(parser, add_psql_options=True)
 
     options.build_dir = options.package_name + "_" + options.release
     options.sections = options.sections.split(",")
-    dbhandle = pgdb.connect( options.psql_connection )
+    dbhandle = pgdb.connect(options.psql_connection)
 
     if not os.path.exists(options.build_dir):
         os.mkdir(options.build_dir)
 
     for section in options.sections:
-        
+
         if section == "malis":
-            ExportMalis( options )
+            ExportMalis(options)
         elif section == "codonbias":
-            ExportCodonbias( options )
+            ExportCodonbias(options)
         elif section == "orthologs":
-            ExportOrthologs( options )
+            ExportOrthologs(options)
         elif section == "aaa":
-            ExportAAA( options )
+            ExportAAA(options)
         elif section == "predictions":
-            ExportPredictions( options )
-        
+            ExportPredictions(options)
+
     outfile = open(options.build_dir + "/readme", "w")
 
-    outfile.write( "Protein coding gene predictions and analysis of gene predictions of 12 fly genomes.\n")
-    outfile.write( "\nAndreas Heger and Chris Ponting, MRC Functional Genetics Unit, Oxford, UK.\n")
-    outfile.write( "\ncreated on %s.\n\n" % (time.asctime(time.localtime(time.time())) ) )
+    outfile.write(
+        "Protein coding gene predictions and analysis of gene predictions of 12 fly genomes.\n")
+    outfile.write(
+        "\nAndreas Heger and Chris Ponting, MRC Functional Genetics Unit, Oxford, UK.\n")
+    outfile.write("\ncreated on %s.\n\n" %
+                  (time.asctime(time.localtime(time.time()))))
 
-    readme="""This directory contains gene predictions and annotatios in the twelve fruit fly
+    readme = """This directory contains gene predictions and annotatios in the twelve fruit fly
 genomes using a pipeline based exonerate (Slater et al. (2005)).  
 
 Contents
@@ -536,20 +564,20 @@ Genomes are those in the comparative analysis freeze 1 (caf1). D. melanogaster a
 are those from flybase obtained via ensembl.
 """
 
-    outfile.write( readme + "\n" )
+    outfile.write(readme + "\n")
     outfile.close()
 
     if options.compress:
         if options.loglevel >= 1:
             options.stdlog.write("# compressing files started.\n")
             options.stdlog.flush()
-        os.system( 'find %s -name "*" -not -name "readme" -exec gzip -q {} \;' % options.build_dir )
+        os.system(
+            'find %s -name "*" -not -name "readme" -exec gzip -q {} \;' % options.build_dir)
         if options.loglevel >= 1:
             options.stdlog.write("# compressing files finished.\n")
-            options.stdlog.flush()            
-    
+            options.stdlog.flush()
+
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

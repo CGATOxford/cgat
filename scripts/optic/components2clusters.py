@@ -1,4 +1,4 @@
-################################################################################
+##########################################################################
 #
 #   MRC FGU Computational Genomics Group
 #
@@ -19,7 +19,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
+##########################################################################
 '''
 optic/components2clusters.py - 
 ======================================================
@@ -70,10 +70,10 @@ import tempfile
 import time
 import popen2
 
-param_long_options=["verbose=", "help", 
-                    "equivalences=", "components=", "queries=", "transcripts=", "filter=",
-                    "version"]
-param_short_options="v:he:c:q:t:f:"
+param_long_options = ["verbose=", "help",
+                      "equivalences=", "components=", "queries=", "transcripts=", "filter=",
+                      "version"]
+param_short_options = "v:he:c:q:t:f:"
 
 param_filename_equivalences = None
 param_filename_components = None
@@ -85,30 +85,32 @@ param_filename_filter = None
 import CGAT.Experiment as E
 
 
-def main( argv = None ):
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv == None:
+        argv = sys.argv
 
     print E.GetHeader()
-    print E.GetParams()    
+    print E.GetParams()
 
     try:
-        optlist, args = getopt.getopt(sys.argv[1:], param_short_options, param_long_options)
+        optlist, args = getopt.getopt(
+            sys.argv[1:], param_short_options, param_long_options)
     except getopt.error, msg:
         print globals()["__doc__"], msg
         sys.exit(2)
 
-    for o,a in optlist:
-        if o in ( "-v", "--verbose" ):
+    for o, a in optlist:
+        if o in ("-v", "--verbose"):
             param_loglevel = int(a)
-        elif o in ( "--version", ):
+        elif o in ("--version", ):
             print "version="
             sys.exit(0)
-        elif o in ( "-h", "--help" ):
+        elif o in ("-h", "--help"):
             print globals()["__doc__"]
             sys.exit(0)
         elif o in ("-e", "--equivalences"):
@@ -125,40 +127,47 @@ def main( argv = None ):
     filter_transcripts = {}
     if param_filename_filter:
         for line in open(param_filename_filter, "r"):
-            if line[0] == "#": continue
+            if line[0] == "#":
+                continue
             filter_transcripts[line[:-1].split("\t")[0]] = 1
-        
+
     map_gid2tid = {}
     map_tid2cid = {}
     for line in open(param_filename_equivalences, "r"):
-        if line[0] == "#": continue
+        if line[0] == "#":
+            continue
         tid, gid, cid = line[:-1].split("\t")
         map_tid2cid[tid] = cid
-        if gid not in map_gid2tid: map_gid2tid[gid] = []
-        map_gid2tid[gid].append( tid )
+        if gid not in map_gid2tid:
+            map_gid2tid[gid] = []
+        map_gid2tid[gid].append(tid)
 
     if param_loglevel >= 1:
         print "# read %i transcripts" % len(map_tid2cid)
-    
+
     map_nr2gid = {}
-    
-    for line in open(param_filename_components,"r"):
-        if line[0] == "#": continue
-        if line[:2] == "//": continue
-        if string.find( line, "# total number of") != -1: break
+
+    for line in open(param_filename_components, "r"):
+        if line[0] == "#":
+            continue
+        if line[:2] == "//":
+            continue
+        if string.find(line, "# total number of") != -1:
+            break
 
         xid, nr = line[:-1].split("\t")
 
-        ## save all gene ids per cluster
-        if nr not in map_nr2gid: map_nr2gid[nr] = []
+        # save all gene ids per cluster
+        if nr not in map_nr2gid:
+            map_nr2gid[nr] = []
         if xid in map_gid2tid:
-            map_nr2gid[nr].append( xid )
+            map_nr2gid[nr].append(xid)
 
     if param_loglevel >= 1:
         print "# read %i clusters" % len(map_nr2gid)
 
     outfile_clusters = open(param_filename_map_cluster2queries, "w")
-    outfile_transcripts = open(param_filename_map_transcript2cluster, "w")    
+    outfile_transcripts = open(param_filename_map_transcript2cluster, "w")
 
     ntranscripts = 0
     nclusters = 0
@@ -167,25 +176,26 @@ def main( argv = None ):
         master = None
         for gid in gids:
             for tid in map_gid2tid[gid]:
-                if filter_transcripts and tid not in filter_transcripts: continue
+                if filter_transcripts and tid not in filter_transcripts:
+                    continue
                 queries[map_tid2cid[tid]] = 1
-                if not master: master = map_tid2cid[tid]
+                if not master:
+                    master = map_tid2cid[tid]
                 ntranscripts += 1
-                outfile_transcripts.write( string.join( map(str,(
-                    tid, master )), "\t") + "\n")
-        outfile_clusters.write( string.join( map(str, ( \
-            master, nr, len(gids), len(queries), string.join( queries.keys(), ";"))), "\t") + "\n")
+                outfile_transcripts.write(string.join(map(str, (
+                    tid, master)), "\t") + "\n")
+        outfile_clusters.write(string.join(map(str, (
+            master, nr, len(gids), len(queries), string.join(queries.keys(), ";"))), "\t") + "\n")
         nclusters += 1
-        
+
     if param_loglevel >= 1:
-        print "# written %i transcripts" % ntranscripts        
+        print "# written %i transcripts" % ntranscripts
         print "# written %i clusters" % nclusters
-        
+
     outfile_clusters.close()
     outfile_transcripts.close()
 
     print E.GetFooter()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

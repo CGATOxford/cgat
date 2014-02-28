@@ -47,40 +47,43 @@ import CGAT.IOTools as IOTools
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Bed as Bed
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if not argv: argv = sys.argv
+    if not argv:
+        argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser( version = "%prog version: $Id: snp2table.py 2861 2010-02-23 17:36:32Z davids $", usage = globals()["__doc__"] )
+    parser = E.OptionParser(
+        version="%prog version: $Id: snp2table.py 2861 2010-02-23 17:36:32Z davids $", usage=globals()["__doc__"])
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
-                      help="filename with Samtools indexed genome [default=%default]."  )
+                      help="filename with Samtools indexed genome [default=%default].")
     parser.add_option("-w", "--window-size", dest="window", type="int",
-                      help="Window size for tiling [default=%default]."  )
+                      help="Window size for tiling [default=%default].")
     parser.add_option("-s", "--shift-size", dest="shift", type="int",
-                      help="Window shift for tiling [default=%default]."  )
+                      help="Window shift for tiling [default=%default].")
 
     parser.set_defaults(
-        genome_file = None,
+        genome_file=None,
         window=1000,
         shift=1000,
-        output_file = None,
-        )
+        output_file=None,
+    )
 
-    ## add common options (-h/--help, ...) and parse command line 
-    (options, args) = E.Start( parser, argv = argv )
+    # add common options (-h/--help, ...) and parse command line
+    (options, args) = E.Start(parser, argv=argv)
 
     ninput, nunchanged, nchanged = 0, 0, 0
 
     # Open input file
     E.info("Opening input file: %s" % options.genome_file)
-    fasta = IndexedFasta.IndexedFasta( options.genome_file )
-    contigs = fasta.getContigSizes( with_synonyms = False )
+    fasta = IndexedFasta.IndexedFasta(options.genome_file)
+    contigs = fasta.getContigSizes(with_synonyms=False)
 
     # Open output file
     bed = options.stdout
@@ -91,20 +94,19 @@ def main( argv = None ):
     ncontigs = 0
     for contig, stop in contigs.iteritems():
         ncontigs += 1
-        i=0
+        i = 0
         while (i < stop):
-            j = min( i+options.window, stop )
+            j = min(i + options.window, stop)
             #bed.write( """%(contig)s\t%(i)i\t%(j)i\t%(contig)s:%(i)i..%(j)i\n""" % locals() )
             bed.write( """%(contig)s\t%(i)i\t%(j)i\n""" % locals() )
             nwindows += 1
             i += shift
-        
-    # Report statistics
-    E.info( "ncontigs=%i, nwindows=%i" % (ncontigs,nwindows) )
 
-    ## write footer and output benchmark information.
+    # Report statistics
+    E.info("ncontigs=%i, nwindows=%i" % (ncontigs, nwindows))
+
+    # write footer and output benchmark information.
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

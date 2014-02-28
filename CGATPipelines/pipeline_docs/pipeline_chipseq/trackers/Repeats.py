@@ -2,30 +2,38 @@ from ChipseqReport import *
 import Annotations
 import Motifs
 
-##################################################################################
-##################################################################################
-##################################################################################
-## Looking at overlap with repeats
-##################################################################################
+##########################################################################
+##########################################################################
+##########################################################################
+# Looking at overlap with repeats
+##########################################################################
+
+
 class RepeatOverlap(Annotations.AnnotationsAssociated):
+
     """Overlap with repeats."""
     mPattern = "_repeats$"
-    mColumns = "SUM(CASE WHEN nover>0 THEN 1 ELSE 0 END) as with, SUM(CASE WHEN nover=0 THEN 1 ELSE 0 END) AS without" 
+    mColumns = "SUM(CASE WHEN nover>0 THEN 1 ELSE 0 END) as with, SUM(CASE WHEN nover=0 THEN 1 ELSE 0 END) AS without"
     mTable = "repeats"
-    
-    def __call__(self, track, slice = None ):
-        statement = self.getStatement( track, slice )
-        if not statement: return []
-        return odict( zip( ("with","without"), self.getFirstRow( statement) ))
+
+    def __call__(self, track, slice=None):
+        statement = self.getStatement(track, slice)
+        if not statement:
+            return []
+        return odict(zip(("with", "without"), self.getFirstRow(statement)))
 
 ###########################################################################
 ###########################################################################
 ###########################################################################
-class RepeatsMastEValueVersusPeakValueAndDistance( Motifs.Mast ):
+
+
+class RepeatsMastEValueVersusPeakValueAndDistance(Motifs.Mast):
+
     '''three way correlation.'''
-    
+
     mPattern = "_repeats$"
-    def __call__(self, track, slice = None ):
+
+    def __call__(self, track, slice=None):
 
         field = "peakval"
         statement =  """SELECT m.evalue, i.%(field)s, r.pover1 
@@ -34,6 +42,7 @@ class RepeatsMastEValueVersusPeakValueAndDistance( Motifs.Mast ):
                                        i.interval_id = r.gene_id 
                                  ORDER BY i.%(field)s DESC""" % locals()
 
-        data = [ (x[2], x[1], math.log(x[0])  ) for x in self.get( statement % locals() ) ]
+        data = [(x[2], x[1], math.log(x[0]))
+                for x in self.get(statement % locals())]
 
-        return odict( zip( ("evalue", field, "log(distance)"), zip(*data) ) )
+        return odict(zip(("evalue", field, "log(distance)"), zip(*data)))

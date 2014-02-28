@@ -55,20 +55,20 @@ import pysam
 ###################################################################
 ###################################################################
 ###################################################################
-## read global options from configuration file
-P.getParameters( 
+# read global options from configuration file
+P.getParameters(
     ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
      "../pipeline.ini",
-     "pipeline.ini" ],
-    defaults = { 'polyphen_modes' : "" } )
+     "pipeline.ini"],
+    defaults={'polyphen_modes': ""})
 
-P.PARAMS.update( 
-    { "transcripts" :"transcripts.gtf.gz",
-      "genes" : 'genes.gtf.gz',
-      "annotation" : 'geneset_regions.gff.gz',
-      "peptides": 'peptides.fasta',
-      "cdna": 'cdna.fasta',
-      "cds": 'cds.fasta' } )
+P.PARAMS.update(
+    {"transcripts": "transcripts.gtf.gz",
+     "genes": 'genes.gtf.gz',
+     "annotation": 'geneset_regions.gff.gz',
+     "peptides": 'peptides.fasta',
+     "cdna": 'cdna.fasta',
+     "cds": 'cds.fasta'})
 
 PARAMS = P.PARAMS
 
@@ -80,158 +80,186 @@ SEPARATOR = "|"
 ###################################################################
 ###################################################################
 ###################################################################
-## gene set section
+# gene set section
 ############################################################
 ############################################################
 ############################################################
-@files( PARAMS["ensembl_filename_gtf"], PARAMS['annotation'] )
-def buildGeneRegions( infile, outfile ):
+
+
+@files(PARAMS["ensembl_filename_gtf"], PARAMS['annotation'])
+def buildGeneRegions(infile, outfile):
     '''annotate genomic regions with reference gene set.
 
     Only considers protein coding genes. In case of overlapping
     genes, only take the longest (in genomic coordinates).
     Genes not on UCSC contigs are removed.
     '''
-    PGeneset.buildGeneRegions( infile, outfile )
+    PGeneset.buildGeneRegions(infile, outfile)
 
 ############################################################
 ############################################################
 ############################################################
-@follows( buildGeneRegions )
-@files( PARAMS["ensembl_filename_gtf"], PARAMS['genes'] )
-def buildGenes( infile, outfile ):
+
+
+@follows(buildGeneRegions)
+@files(PARAMS["ensembl_filename_gtf"], PARAMS['genes'])
+def buildGenes(infile, outfile):
     '''build a collection of exons from the protein-coding
     section of the ENSEMBL gene set. The exons include both CDS
     and UTR.
 
     The set is filtered in the same way as in :meth:`buildGeneRegions`.
     '''
-    PGeneset.buildProteinCodingGenes( infile, outfile )
+    PGeneset.buildProteinCodingGenes(infile, outfile)
 
 ############################################################
 ############################################################
 ############################################################
-@files( PARAMS["ensembl_filename_gtf"], "gene_info.load" )
-def loadGeneInformation( infile, outfile ):
+
+
+@files(PARAMS["ensembl_filename_gtf"], "gene_info.load")
+def loadGeneInformation(infile, outfile):
     '''load the transcript set.'''
-    PGeneset.loadGeneInformation( infile, outfile )
+    PGeneset.loadGeneInformation(infile, outfile)
 
 ############################################################
 ############################################################
 ############################################################
-@files( buildGenes, "gene_stats.load" )
-def loadGeneStats( infile, outfile ):
+
+
+@files(buildGenes, "gene_stats.load")
+def loadGeneStats(infile, outfile):
     '''load the transcript set.'''
 
-    PGeneset.loadGeneStats( infile, outfile )
+    PGeneset.loadGeneStats(infile, outfile)
 
 ############################################################
 ############################################################
 ############################################################
-@files( PARAMS["ensembl_filename_gtf"], PARAMS["transcripts"] )
-def buildTranscripts( infile, outfile ):
+
+
+@files(PARAMS["ensembl_filename_gtf"], PARAMS["transcripts"])
+def buildTranscripts(infile, outfile):
     '''build a collection of transcripts from the protein-coding
     section of the ENSEMBL gene set.
 
     Only CDS are used.
     '''
-    PGeneset.buildProteinCodingTranscripts( infile, outfile )
+    PGeneset.buildProteinCodingTranscripts(infile, outfile)
 
 ############################################################
 ############################################################
 ############################################################
-@transform( buildTranscripts, suffix(".gtf.gz"), "_gtf.load" )
-def loadTranscripts( infile, outfile ):
+
+
+@transform(buildTranscripts, suffix(".gtf.gz"), "_gtf.load")
+def loadTranscripts(infile, outfile):
     '''load the transcript set.'''
-    PGeneset.loadTranscripts( infile, outfile )
+    PGeneset.loadTranscripts(infile, outfile)
 
 ############################################################
 ############################################################
 ############################################################
-@files( buildTranscripts, "transcript_stats.load" )
-def loadTranscriptStats( infile, outfile ):
+
+
+@files(buildTranscripts, "transcript_stats.load")
+def loadTranscriptStats(infile, outfile):
     '''load the transcript set.'''
 
-    PGeneset.loadTranscriptStats( infile, outfile )
+    PGeneset.loadTranscriptStats(infile, outfile)
 
 ############################################################
 ############################################################
 ############################################################
-@files( PARAMS["ensembl_filename_gtf"], "transcript_info.load" )
-def loadTranscriptInformation( infile, outfile ):
+
+
+@files(PARAMS["ensembl_filename_gtf"], "transcript_info.load")
+def loadTranscriptInformation(infile, outfile):
     '''load the transcript set.'''
-    PGeneset.loadTranscriptInformation( infile, 
-                                          outfile,
-                                          only_proteincoding = PARAMS["ensembl_only_proteincoding"] )
+    PGeneset.loadTranscriptInformation(infile,
+                                       outfile,
+                                       only_proteincoding=PARAMS["ensembl_only_proteincoding"])
 
 ###################################################################
 ###################################################################
 ###################################################################
-@files( ( (PARAMS["ensembl_filename_pep"], PARAMS["peptides"] ), ) )
-def buildPeptideFasta( infile, outfile ):
+
+
+@files(((PARAMS["ensembl_filename_pep"], PARAMS["peptides"]), ))
+def buildPeptideFasta(infile, outfile):
     '''load ENSEMBL peptide file
-    
+
     *infile* is an ENSEMBL .pep.all.fa.gz file.
     '''
-    PGeneset.buildPeptideFasta( infile, outfile )
+    PGeneset.buildPeptideFasta(infile, outfile)
 
 ###################################################################
 ###################################################################
 ###################################################################
-@files( ( (PARAMS["ensembl_filename_cdna"], PARAMS["cdna"] ), ) )
-def buildCDNAFasta( infile, outfile ):
+
+
+@files(((PARAMS["ensembl_filename_cdna"], PARAMS["cdna"]), ))
+def buildCDNAFasta(infile, outfile):
     '''load ENSEMBL peptide file
-    
+
     *infile* is an ENSEMBL .cdna.all.fa.gz file.
     '''
-    PGeneset.buildCDNAFasta( infile, outfile )
+    PGeneset.buildCDNAFasta(infile, outfile)
 
 ###################################################################
 ###################################################################
 ###################################################################
-@follows( loadTranscriptInformation )
-@files( [(PARAMS["transcripts"], PARAMS["cds"] ),] )
-def buildCDSFasta( infile, outfile ):
+
+
+@follows(loadTranscriptInformation)
+@files([(PARAMS["transcripts"], PARAMS["cds"]), ])
+def buildCDSFasta(infile, outfile):
     '''build cds sequences from peptide and cds file.
-    
+
     *infile* is an ENSEMBL .cdna.all.fa.gz file.
     '''
 
-    PGeneset.buildCDSFasta( infile, outfile )
+    PGeneset.buildCDSFasta(infile, outfile)
 
 ############################################################
 ############################################################
 ############################################################
-@files( PARAMS["ensembl_filename_pep"], "protein_stats.load" )
-def loadProteinStats( infile, outfile ):
+
+
+@files(PARAMS["ensembl_filename_pep"], "protein_stats.load")
+def loadProteinStats(infile, outfile):
     '''load the transcript set.'''
 
-    PGeneset.loadProteinStats( infile, outfile )
+    PGeneset.loadProteinStats(infile, outfile)
 
 ############################################################
 ############################################################
 ############################################################
-@files( ((None, "benchmark.ids"), ) )
-def buildBenchmarkSet( infile, outfile ):
+
+
+@files(((None, "benchmark.ids"), ))
+def buildBenchmarkSet(infile, outfile):
     '''build a benchmark set of protein ids.'''
     pass
 
 ############################################################
 ############################################################
 ############################################################
-@files( ((buildBenchmarkSet, "benchmark.input") ,) )
-def buildBenchmarkInput( infile, outfile ):
+
+
+@files(((buildBenchmarkSet, "benchmark.input"),))
+def buildBenchmarkInput(infile, outfile):
 
     tmpfile = P.getTempFile()
 
-    dbhandle = sqlite3.connect( PARAMS["database"] )
+    dbhandle = sqlite3.connect(PARAMS["database"])
     cc = dbhandle.cursor()
     statement = '''
     SELECT DISTINCT transcript_id, protein_id FROM peptide_info
     '''
-    cc.execute( statement )
+    cc.execute(statement)
     tmpfile.write("transcript_id\tprotein_id\n")
-    tmpfile.write("\n".join( [ "\t".join(x) for x in cc ] ) )
+    tmpfile.write("\n".join(["\t".join(x) for x in cc]))
     tmpfile.write("\n")
     tmpfilename = tmpfile.name
 
@@ -245,13 +273,15 @@ def buildBenchmarkInput( infile, outfile ):
     '''
     P.run()
 
-    os.unlink( tmpfilename )
+    os.unlink(tmpfilename)
 
 ###################################################################
 ###################################################################
 ###################################################################
-@transform( "*.input", suffix(".input"), ".features")
-def buildPolyphenFeatures( infile, outfile ):
+
+
+@transform("*.input", suffix(".input"), ".features")
+def buildPolyphenFeatures(infile, outfile):
     '''run polyphen on the cluster.
 
     To do this, first send uniref to all nodes:
@@ -260,23 +290,23 @@ def buildPolyphenFeatures( infile, outfile ):
            --collection=andreas 
            /net/cpp-group/tools/polyphen-2.0.18/nrdb/uniref100*.{pin,psd,psi,phr,psq,pal}
     '''
-    
-    nsnps = len([ x for x in open(infile)])
+
+    nsnps = len([x for x in open(infile)])
 
     to_cluster = True
-    stepsize = max( int(nsnps / 200000.0), 1000 )
-    job_array=(0, nsnps, stepsize)
-    E.info("running array jobs on %i snps" % nsnps )
+    stepsize = max(int(nsnps / 200000.0), 1000)
+    job_array = (0, nsnps, stepsize)
+    E.info("running array jobs on %i snps" % nsnps)
 
     scratchdir = os.path.join(os.path.abspath("."), "scratch")
     try:
-        os.mkdir( scratchdir )
+        os.mkdir(scratchdir)
     except OSError:
         pass
 
     resultsdir = outfile + ".dir"
     try:
-        os.mkdir( resultsdir )
+        os.mkdir(resultsdir)
     except OSError:
         pass
 
@@ -290,7 +320,7 @@ def buildPolyphenFeatures( infile, outfile ):
     P.run()
 
     to_cluster = False
-    job_array=None
+    job_array = None
 
     statement = '''find %(resultsdir)s -name "*.err.*" -exec cat {} \; 
                    | gzip 
@@ -305,15 +335,17 @@ def buildPolyphenFeatures( infile, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-@files( [ (x, "%s_%s.output.gz" % (x[:-len(".features.gz")],y), y ) \
-              for x,y in itertools.product( 
-            glob.glob( "*.features.gz"), P.asList( PARAMS["polyphen_models"] ) ) ] ) 
-def runPolyphen( infile, outfile, model ):
+
+
+@files([(x, "%s_%s.output.gz" % (x[:-len(".features.gz")], y), y)
+        for x, y in itertools.product(
+            glob.glob("*.features.gz"), P.asList(PARAMS["polyphen_models"]))])
+def runPolyphen(infile, outfile, model):
     '''run POLYPHEN on feature tables to classify SNPs.
     '''
 
     to_cluster = False
-    
+
     # need to run in chunks for large feature files
     statement = """gunzip 
         < %(infile)s
@@ -334,8 +366,10 @@ def runPolyphen( infile, outfile, model ):
 ###################################################################
 ###################################################################
 ###################################################################
-@transform( buildBenchmarkInput, suffix(".input"), ".load" )
-def loadPolyphenWeights( infile, outfile ):
+
+
+@transform(buildBenchmarkInput, suffix(".input"), ".load")
+def loadPolyphenWeights(infile, outfile):
     '''load polyphen input data.'''
 
     table = "weights"
@@ -353,14 +387,16 @@ def loadPolyphenWeights( infile, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-@transform( runPolyphen, suffix(".output.gz"), ".load")
-def loadPolyphen( infile, outfile ):
+
+
+@transform(runPolyphen, suffix(".output.gz"), ".load")
+def loadPolyphen(infile, outfile):
     '''load polyphen results.
 
     The comment column is ignored.
     '''
-    
-    table = P.toTable( outfile )
+
+    table = P.toTable(outfile)
 
     statement = '''gunzip
     < %(infile)s
@@ -376,15 +412,14 @@ def loadPolyphen( infile, outfile ):
     P.run()
 
 
-@follows( loadTranscripts,
-          loadTranscriptInformation,
-          loadGeneStats,
-          loadGeneInformation,
-          buildPeptideFasta,
-          buildCDSFasta)
+@follows(loadTranscripts,
+         loadTranscriptInformation,
+         loadGeneStats,
+         loadGeneInformation,
+         buildPeptideFasta,
+         buildCDSFasta)
 def prepare():
     pass
 
-if __name__== "__main__":
-    sys.exit( P.main(sys.argv) )
-
+if __name__ == "__main__":
+    sys.exit(P.main(sys.argv))

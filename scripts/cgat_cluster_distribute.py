@@ -53,70 +53,73 @@ import optparse
 
 import CGAT.Experiment as E
 
-def getNodes( nodes = None):
+
+def getNodes(nodes=None):
     '''hack - allow ranges, ...'''
     if nodes == None or len(nodes) == 0:
-        return [ "cgat%03i" % x for x in range( 1,15) + range(101,117) ] + \
-            [ "cgat150", "cgatsmp1", "cgatgpu1", 
-              "andromeda", "gandalf", "saruman" ]
+        return [ "cgat%03i" % x for x in range( 1, 15) + range(101, 117) ] + \
+            ["cgat150", "cgatsmp1", "cgatgpu1",
+             "andromeda", "gandalf", "saruman"]
     return nodes
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if not argv: argv = sys.argv
+    if not argv:
+        argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser( version = "%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
-                                    usage = globals()["__doc__"] )
+    parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+                            usage=globals()["__doc__"])
 
     parser.add_option("-s", "--scratchdir", dest="scratchdir", type="string",
-                      help="the scratch directory on the nodes [default=%default]."  )
+                      help="the scratch directory on the nodes [default=%default].")
 
     parser.add_option("-c", "--collection", dest="collection", type="string",
                       help="files will be put into collection. This is a directory that will be"
-                      " created just below the scratch directory [default=%default]."  )
+                      " created just below the scratch directory [default=%default].")
 
     parser.set_defaults(
-        scratchdir = "/scratch",
-        collection = "",
-        nodes = [],
-        )
+        scratchdir="/scratch",
+        collection="",
+        nodes=[],
+    )
 
-    ## add common options (-h/--help, ...) and parse command line 
-    (options, args) = E.Start( parser, argv = argv )
+    # add common options (-h/--help, ...) and parse command line
+    (options, args) = E.Start(parser, argv=argv)
 
     if len(args) == 0:
-        raise ValueError("please specify a collection of files/directories that should be mirrored." )
+        raise ValueError(
+            "please specify a collection of files/directories that should be mirrored.")
 
-    targetdir = os.path.join( options.scratchdir, options.collection )
+    targetdir = os.path.join(options.scratchdir, options.collection)
 
-    nodes = getNodes( options.nodes )
+    nodes = getNodes(options.nodes)
 
-    E.info( "copying to %s on nodes %s" % (targetdir, ",".join(nodes) ))
+    E.info("copying to %s on nodes %s" % (targetdir, ",".join(nodes)))
 
     ninput, noutput, nskipped = 0, 0, 0
 
     filenames = " ".join(args)
 
     for node in nodes:
-        E.info( "copying to node %s" % node )
+        E.info("copying to node %s" % node)
         ninput += 1
         statement = '''
                ssh %(node)s mkdir %(targetdir)s >& /dev/null;
                rsync --progress -az %(filenames)s %(node)s:%(targetdir)s
         ''' % locals()
-        E.run( statement )
+        E.run(statement)
         noutput += 1
 
-    E.info( "ninput=%i, noutput=%i, nskipped=%i" % (ninput, noutput,nskipped) )
+    E.info("ninput=%i, noutput=%i, nskipped=%i" % (ninput, noutput, nskipped))
 
-
-    ## write footer and output benchmark information.
+    # write footer and output benchmark information.
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
+    sys.exit(main(sys.argv))

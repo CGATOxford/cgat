@@ -115,47 +115,47 @@ import PipelineAnnotator as PAnnotator
 
 # load options from the config file
 import CGAT.Pipeline as P
-P.getParameters( 
+P.getParameters(
     ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
      "../pipeline.ini",
-     "pipeline.ini" ] )
+     "pipeline.ini"])
 
 PARAMS = P.PARAMS
 
 USECLUSTER = True
 
-## link up with annotations
-PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],
-                                       "pipeline_annotations.py" )
+# link up with annotations
+PARAMS_ANNOTATIONS = P.peekParameters(PARAMS["annotations_dir"],
+                                      "pipeline_annotations.py")
 
-## link up with ancestral repeats
-PARAMS_ANCESTRAL_REPEATS = P.peekParameters( PARAMS["ancestral_repeats_dir"],
-                                            "pipeline_ancestral_repeats.py" )
+# link up with ancestral repeats
+PARAMS_ANCESTRAL_REPEATS = P.peekParameters(PARAMS["ancestral_repeats_dir"],
+                                            "pipeline_ancestral_repeats.py")
 
 ###################################################################
 ###################################################################
-## Helper functions mapping tracks to conditions, etc
+# Helper functions mapping tracks to conditions, etc
 ###################################################################
 import CGATPipelines.PipelineTracks as PipelineTracks
 
 # collect sra nd fastq.gz tracks
-TRACKS = PipelineTracks.Tracks( PipelineTracks.Sample ).loadFromDirectory( 
-    glob.glob( "*.gtf.gz" ), "(\S+).gtf.gz", exclude=("repeats.gtf.gz", "introns.gtf.gz", "merged.gtf.gz") )
+TRACKS = PipelineTracks.Tracks(PipelineTracks.Sample).loadFromDirectory(
+    glob.glob("*.gtf.gz"), "(\S+).gtf.gz", exclude=("repeats.gtf.gz", "introns.gtf.gz", "merged.gtf.gz"))
 
-TRACKS_CONTROL = PipelineTracks.Tracks( PipelineTracks.Sample ).loadFromDirectory( 
-    ( "repeats.gtf.gz", "introns.gtf.gz"), "(\S+).gtf.gz" )
+TRACKS_CONTROL = PipelineTracks.Tracks(PipelineTracks.Sample).loadFromDirectory(
+    ("repeats.gtf.gz", "introns.gtf.gz"), "(\S+).gtf.gz")
 
-TRACKS_META = PipelineTracks.Tracks( PipelineTracks.Sample ).loadFromDirectory( 
-    ( "merged.gtf.gz",), "(\S+).gtf.gz" )
+TRACKS_META = PipelineTracks.Tracks(PipelineTracks.Sample).loadFromDirectory(
+    ("merged.gtf.gz",), "(\S+).gtf.gz")
 
-TRACKS_GENESETS = PipelineTracks.Tracks( PipelineTracks.Sample ).loadFromDirectory( 
-    ( "genes.gtf.gz",), "(\S+).gtf.gz" )
+TRACKS_GENESETS = PipelineTracks.Tracks(PipelineTracks.Sample).loadFromDirectory(
+    ("genes.gtf.gz",), "(\S+).gtf.gz")
 
 # collection of all tracks including controls
 TRACKS_WITH_CONTROLS = TRACKS + TRACKS_CONTROL
 
-# # TRACKS to work on
-# REFERENCE_TRACKS= [ "guttmanExons.gtf.gz", 
+# TRACKS to work on
+# REFERENCE_TRACKS= [ "guttmanExons.gtf.gz",
 #                     "guttmanK4K36.gtf.gz",
 #                     "khalilExons.gtf.gz",
 #                     "khalilK4K36.gtf.gz",
@@ -178,86 +178,101 @@ TRACKS_OVERLAP = TRACKS_META + TRACKS_GENESETS
 ###################################################################
 ##
 ###################################################################
-if os.path.exists("pipeline_conf.py"): 
-    L.info( "reading additional configuration from pipeline_conf.py" )
+if os.path.exists("pipeline_conf.py"):
+    L.info("reading additional configuration from pipeline_conf.py")
     execfile("pipeline_conf.py")
 
 ###################################################################
 ###################################################################
 ###################################################################
-def getSourceTrack( track, all_tracks ):
+
+
+def getSourceTrack(track, all_tracks):
     '''if track is in derived tracks, get the source track.
 
     returns None if track is not a derived track
     '''
-    if len(all_tracks) == 0: return None
+    if len(all_tracks) == 0:
+        return None
 
     # get rid of any extensions
-    all_tracks = [ re.sub("\..*$", "", x) for x in all_tracks ]
-    track = re.sub("\..*$", "", track )
+    all_tracks = [re.sub("\..*$", "", x) for x in all_tracks]
+    track = re.sub("\..*$", "", track)
 
     if len(all_tracks) == 1:
-        if len(os.path.commonprefix( (track, all_tracks[0]))) > 0:
+        if len(os.path.commonprefix((track, all_tracks[0]))) > 0:
             return all_tracks[0]
         else:
             return None
 
     # get all tracks with a common prefix of length 3 or more
-    prefixes = [ t for t in all_tracks if len(os.path.commonprefix( (track, t) ) ) > 3 ]
+    prefixes = [t for t in all_tracks if len(
+        os.path.commonprefix((track, t))) > 3]
 
-    prefixes.sort( key = lambda x: len(x) )
+    prefixes.sort(key=lambda x: len(x))
     # return the shortest
     return prefixes[0]
 
-def getRelatedTracks( track, all_tracks ):
+
+def getRelatedTracks(track, all_tracks):
     '''return tracks in ``all_tracks`` that are related to ``track`` (including itself)
 
     related tracks are build by merging or slicing another track.
     '''
 
-    source = getSourceTrack( track, all_tracks )
+    source = getSourceTrack(track, all_tracks)
 
-    if not source: source = track
+    if not source:
+        source = track
 
-    related = set([x for x in all_tracks if x.startswith( source ) ])
+    related = set([x for x in all_tracks if x.startswith(source)])
 
-    if track not in related: related.add( track )
-    
+    if track not in related:
+        related.add(track)
+
     for x in related:
         if x in EXPERIMENTAL_TRACKS:
-            related.add( PARAMS["merged"] )
+            related.add(PARAMS["merged"])
             break
 
     return list(related)
 
 ###################################################################
 ###################################################################
-@files( ( (os.path.join( PARAMS["ancestral_repeats_dir"],
-                         PARAMS_ANCESTRAL_REPEATS["interface_rates_query_gff"]), 
-           "repeats.gtf.gz"),) )
-def buildRepeatTrack( infile, outfile ):
+
+
+@files(((os.path.join(PARAMS["ancestral_repeats_dir"],
+                      PARAMS_ANCESTRAL_REPEATS["interface_rates_query_gff"]),
+         "repeats.gtf.gz"),))
+def buildRepeatTrack(infile, outfile):
     '''build a repeat track as negative control.'''
 
     nrepeats = 0
-    for gff in GTF.iterator( gzip.open(infile, "r" ) ): nrepeats+=1
-    sample = set( random.sample( xrange( nrepeats), PARAMS["ancestral_repeats_samplesize"]) )
+    for gff in GTF.iterator(gzip.open(infile, "r")):
+        nrepeats += 1
+    sample = set(
+        random.sample(xrange(nrepeats), PARAMS["ancestral_repeats_samplesize"]))
 
-    outf = gzip.open( outfile, "w" )
+    outf = gzip.open(outfile, "w")
     gtf = GTF.Entry()
-    for x,gff in enumerate( GTF.iterator( gzip.open(infile, "r" ) ) ):
-        if not x in sample: continue
-        gtf.fromGTF( gff, "%08i" % x, "%08i" % x )
-        outf.write( "%s\n" % str(gtf) )
+    for x, gff in enumerate(GTF.iterator(gzip.open(infile, "r"))):
+        if not x in sample:
+            continue
+        gtf.fromGTF(gff, "%08i" % x, "%08i" % x)
+        outf.write("%s\n" % str(gtf))
     outf.close()
 
-    E.debug( "created sample of %i repeats out of %i in %s" % (len(sample), nrepeats, outfile))
+    E.debug("created sample of %i repeats out of %i in %s" %
+            (len(sample), nrepeats, outfile))
 
 ###################################################################
 ###################################################################
-@files( ( (os.path.join( PARAMS["ancestral_repeats_dir"],
-                         PARAMS_ANCESTRAL_REPEATS["interface_rates_query_gff"]), 
-           "introns.gtf.gz"),) )
-def buildIntronTrack( infile, outfile ):
+
+
+@files(((os.path.join(PARAMS["ancestral_repeats_dir"],
+                      PARAMS_ANCESTRAL_REPEATS["interface_rates_query_gff"]),
+         "introns.gtf.gz"),))
+def buildIntronTrack(infile, outfile):
     '''build an intron track as negative control.
 
     The ``intron`` track is build from ancestral repeats. Here,
@@ -282,18 +297,20 @@ def buildIntronTrack( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-@files( ( ( (PARAMS["repeats_filename"], PARAMS["genome"] + ".idx" ),
-            "repeats_table.load" ), ) )
-def loadRepeatInformation( infiles, outfile ):
+
+
+@files((((PARAMS["repeats_filename"], PARAMS["genome"] + ".idx"),
+         "repeats_table.load"), ))
+def loadRepeatInformation(infiles, outfile):
     '''load genome information.'''
-    
+
     to_cluster = True
 
     table = outfile[:-len(".load")]
 
     repeatsfile, indexfile = infiles
 
-    tmpfilename = P.getTempFilename( "." )
+    tmpfilename = P.getTempFilename(".")
 
     statement = '''awk '{printf("%%s\\t0\\t%%i\\n", $1, $4)}' < %(indexfile)s > %(tmpfilename)s'''
     P.run()
@@ -309,12 +326,14 @@ def loadRepeatInformation( infiles, outfile ):
     '''
     P.run()
 
-    os.unlink( tmpfilename )
+    os.unlink(tmpfilename)
 
 ###################################################################
 ###################################################################
-@merge( TRACKS.getTracks( "%s.gtf.gz"), "merged.gtf.gz" )
-def buildMergedTracks( infiles, outfile ):
+
+
+@merge(TRACKS.getTracks("%s.gtf.gz"), "merged.gtf.gz")
+def buildMergedTracks(infiles, outfile):
     '''merge gtf transcripts across all data sets.'''
 
     infiles = " ".join(infiles)
@@ -364,12 +383,12 @@ def buildMergedTracks( infiles, outfile ):
 ############################################################
 ############################################################
 ############################################################
-@files( ( os.path.join( PARAMS["ancestral_repeats_dir"],
-                        PARAMS_ANCESTRAL_REPEATS["interface_alignment_psl"]),
-          os.path.join( PARAMS["annotations_dir"],
-                       PARAMS_ANNOTATIONS["interface_geneset_flat_gtf"])), 
-        "alignment_filtered.psl.gz" )
-def buildFilteredAlignment( infiles, outfile ):
+@files((os.path.join(PARAMS["ancestral_repeats_dir"],
+                     PARAMS_ANCESTRAL_REPEATS["interface_alignment_psl"]),
+        os.path.join(PARAMS["annotations_dir"],
+                     PARAMS_ANNOTATIONS["interface_geneset_flat_gtf"])),
+       "alignment_filtered.psl.gz")
+def buildFilteredAlignment(infiles, outfile):
     '''build a genomic alignment without exons from the reference gene set.
 
     This alignment is used for rate computation within introns.
@@ -391,14 +410,16 @@ def buildFilteredAlignment( infiles, outfile ):
 ############################################################
 ############################################################
 ############################################################
-@transform(buildFilteredAlignment, 
-           suffix(".psl.gz"), 
-           ".stats" )
-def buildAlignmentStats( infile, outfile ):
+
+
+@transform(buildFilteredAlignment,
+           suffix(".psl.gz"),
+           ".stats")
+def buildAlignmentStats(infile, outfile):
     '''build alignment statistics.'''
 
     to_cluster = USECLUSTER
-    
+
     statement = '''
 	python %(scriptsdir)s/psl2stats.py 
 	    --log=%(outfile)s.log 
@@ -410,13 +431,15 @@ def buildAlignmentStats( infile, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-@transform( TRACKS.getTracks( "%s.gtf.gz" ),
-            suffix(".gtf.gz"), 
-            "_gtf.load" )
-def loadGTF( infile, outfile ):
+
+
+@transform(TRACKS.getTracks("%s.gtf.gz"),
+           suffix(".gtf.gz"),
+           "_gtf.load")
+def loadGTF(infile, outfile):
     '''load gtf files.'''
-    
-    table = P.toTable( outfile )
+
+    table = P.toTable(outfile)
 
     to_cluster = USECLUSTER
 
@@ -436,14 +459,16 @@ def loadGTF( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-@transform( TRACKS_WITH_CONTROLS.getTracks( "%s.gtf.gz" ),
-            suffix(".gtf.gz"), 
-            add_inputs( os.path.join( PARAMS["annotations_dir"],
-                      PARAMS_ANNOTATIONS["interface_annotation_gff"])), 
-            ".annotation.gz")
-def buildAnnotations( infiles, outfile ):
+
+
+@transform(TRACKS_WITH_CONTROLS.getTracks("%s.gtf.gz"),
+           suffix(".gtf.gz"),
+           add_inputs(os.path.join(PARAMS["annotations_dir"],
+                                   PARAMS_ANNOTATIONS["interface_annotation_gff"])),
+           ".annotation.gz")
+def buildAnnotations(infiles, outfile):
     '''annotate transcripts by location (intergenic, intronic, ...)'''
-    
+
     infile, annotation = infiles
 
     statement = '''gunzip 
@@ -471,20 +496,24 @@ def buildAnnotations( infiles, outfile ):
 ############################################################
 ############################################################
 ############################################################
-@transform( buildAnnotations, suffix(".annotation.gz"), "_annotation.load")
-def loadAnnotations( infile, outfile ):
+
+
+@transform(buildAnnotations, suffix(".annotation.gz"), "_annotation.load")
+def loadAnnotations(infile, outfile):
     '''load annotations'''
-    P.load( infile, outfile, "--index=gene_id --map=gene_id:str")
-    
+    P.load(infile, outfile, "--index=gene_id --map=gene_id:str")
+
 ########################################################
 ########################################################
 ########################################################
-@transform( TRACKS_WITH_CONTROLS.getTracks( "%s.gtf.gz" ),
-            suffix(".gtf.gz"), 
-            add_inputs( os.path.join( PARAMS["annotations_dir"],
-                                      PARAMS_ANNOTATIONS["interface_annotation_gff"])), 
-            ".overrun.gz")
-def makeOverrun( infiles, outfile ):
+
+
+@transform(TRACKS_WITH_CONTROLS.getTracks("%s.gtf.gz"),
+           suffix(".gtf.gz"),
+           add_inputs(os.path.join(PARAMS["annotations_dir"],
+                                   PARAMS_ANNOTATIONS["interface_annotation_gff"])),
+           ".overrun.gz")
+def makeOverrun(infiles, outfile):
     '''compute intron overrun.'''
 
     infile, annotation = infiles
@@ -507,20 +536,24 @@ def makeOverrun( infiles, outfile ):
 ############################################################
 ############################################################
 ############################################################
-@transform( makeOverrun, suffix(".overrun.gz"), "_overrun.load")
-def loadOverrun( infile, outfile ):
+
+
+@transform(makeOverrun, suffix(".overrun.gz"), "_overrun.load")
+def loadOverrun(infile, outfile):
     '''load annotations'''
-    P.load( infile, outfile, "--index=gene_id --map=gene_id:str")    
+    P.load(infile, outfile, "--index=gene_id --map=gene_id:str")
 
 ########################################################
 ########################################################
 ########################################################
-@transform( TRACKS_WITH_CONTROLS.getTracks( "%s.gtf.gz" ),
-            suffix(".gtf.gz"), 
-            add_inputs( os.path.join( PARAMS["annotations_dir"],
-                                      PARAMS_ANNOTATIONS["interface_geneset_flat_gtf"])), 
-            ".distances")
-def makeDistances( infiles, outfile ):
+
+
+@transform(TRACKS_WITH_CONTROLS.getTracks("%s.gtf.gz"),
+           suffix(".gtf.gz"),
+           add_inputs(os.path.join(PARAMS["annotations_dir"],
+                                   PARAMS_ANNOTATIONS["interface_geneset_flat_gtf"])),
+           ".distances")
+def makeDistances(infiles, outfile):
     '''compute intron overrun.'''
 
     infile, annotation = infiles
@@ -540,19 +573,24 @@ def makeDistances( infiles, outfile ):
 ########################################################
 ########################################################
 ############################################################
-@transform(  makeDistances, suffix(".distances"), "_distances.load")
-def loadDistances( infile, outfile ):
+
+
+@transform(makeDistances, suffix(".distances"), "_distances.load")
+def loadDistances(infile, outfile):
     '''load annotations'''
-    P.load( infile, outfile, "--index=gene_id --map=gene_id:str --index=closest_id --map=closest_id:str")    
+    P.load(infile, outfile,
+           "--index=gene_id --map=gene_id:str --index=closest_id --map=closest_id:str")
     table = outfile[:-len(".load")]
 
 ########################################################
 ########################################################
 ########################################################
-@transform( TRACKS_WITH_CONTROLS.getTracks( "%s.gtf.gz" ),
-            suffix(".gtf.gz"), 
-            ".segments")
-def makeSegments( infile, outfile ):
+
+
+@transform(TRACKS_WITH_CONTROLS.getTracks("%s.gtf.gz"),
+           suffix(".gtf.gz"),
+           ".segments")
+def makeSegments(infile, outfile):
     '''compute intron overrun.'''
 
     to_cluster = True
@@ -582,14 +620,16 @@ def makeSegments( infile, outfile ):
     P.run()
 
 ############################################################
-@transform(  makeSegments, suffix(".segments"), "_segments.load")
-def loadSegments( infile, outfile ):
+
+
+@transform(makeSegments, suffix(".segments"), "_segments.load")
+def loadSegments(infile, outfile):
     '''load segments'''
-    
+
     table = outfile[:-len(".load")]
-    
-    for x in (".distances", ".sizes", ".overlaps", 
-              "_genes.distances", "_genes.sizes", "_genes.overlaps" ):
+
+    for x in (".distances", ".sizes", ".overlaps",
+              "_genes.distances", "_genes.sizes", "_genes.overlaps"):
         y = re.sub("\.", "_", x)
         statement = '''
        python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
@@ -602,12 +642,14 @@ def loadSegments( infile, outfile ):
         P.run()
 
 ########################################################
-@transform( TRACKS_WITH_CONTROLS.getTracks( "%s.gtf.gz" ),
-            suffix(".gtf.gz"), 
-            add_inputs( os.path.join( PARAMS["annotations_dir"],
-                                      PARAMS_ANNOTATIONS["interface_repeats_gff"])), 
-            ".repeats.gz")
-def makeRepeats( infiles, outfile ):
+
+
+@transform(TRACKS_WITH_CONTROLS.getTracks("%s.gtf.gz"),
+           suffix(".gtf.gz"),
+           add_inputs(os.path.join(PARAMS["annotations_dir"],
+                                   PARAMS_ANNOTATIONS["interface_repeats_gff"])),
+           ".repeats.gz")
+def makeRepeats(infiles, outfile):
     '''compute overlap with repeats
     '''
 
@@ -628,16 +670,20 @@ def makeRepeats( infiles, outfile ):
     P.run()
 
 ############################################################
-@transform(  makeRepeats, suffix(".repeats.gz"), "_repeats.load")
-def loadRepeats( infile, outfile ):
+
+
+@transform(makeRepeats, suffix(".repeats.gz"), "_repeats.load")
+def loadRepeats(infile, outfile):
     '''load repeat overlap'''
-    P.load( infile, outfile, "--index=gene_id --map=gene_id:str")
+    P.load(infile, outfile, "--index=gene_id --map=gene_id:str")
 
 ############################################################
-@files( [ ( 
-            ("%s.gtf.gz" % x, "%s.gtf.gz" % y),
-            "%s_vs_%s.diff" % (x,y)) for x,y in itertools.product( TRACKS_OVERLAP, TRACKS) ] )
-def makeDifference( infiles, outfile ):
+
+
+@files([(
+    ("%s.gtf.gz" % x, "%s.gtf.gz" % y),
+    "%s_vs_%s.diff" % (x, y)) for x, y in itertools.product(TRACKS_OVERLAP, TRACKS)])
+def makeDifference(infiles, outfile):
     '''compute the difference between two sets
 
     This target computes three differences
@@ -647,7 +693,7 @@ def makeDifference( infiles, outfile ):
     3. intron/exon overlap %_genes.diff.{diff,overlap,total,genes_ovl,genes_total,genes_uniq1,genes_uniq2}
     An intronic transcript will overlap with an exonic transcript.
     '''
-    
+
     to_cluster = True
 
     first, last = [x[:-len(".gtf.gz")] for x in infiles]
@@ -668,7 +714,7 @@ def makeDifference( infiles, outfile ):
 		<( gunzip < %(last)s.gtf.gz | python %(scriptsdir)s/gtf2gtf.py --merge-transcripts --log=%(outfile)s.log )
 	> %(outfile)s.log'''
     P.run()
-    
+
     # note that the option --counter=overlap-transcripts
     # has been set to --counter=overlap
     statement = '''gunzip
@@ -680,12 +726,14 @@ def makeDifference( infiles, outfile ):
 		--counter=coverage 
 		--filename-gff=<( gunzip < %(last)s.gtf.gz)
                 > %(outfile)s'''
-    
+
     P.run()
 
 ############################################################
-@transform(  makeDifference, suffix(".diff"), "_diff.load")
-def loadDifference( infile, outfile ):
+
+
+@transform(makeDifference, suffix(".diff"), "_diff.load")
+def loadDifference(infile, outfile):
     '''load overlap'''
 
     table = outfile[:-len("_diff.load")]
@@ -704,7 +752,7 @@ def loadDifference( infile, outfile ):
     P.run()
 
     i = infile + ".genes_ovl"
-    if os.path.exists( i ):
+    if os.path.exists(i):
         statement = '''
        python %(scriptsdir)s/csv2db.py --allow-empty 
                %(csv2db_options)s 
@@ -717,10 +765,10 @@ def loadDifference( infile, outfile ):
         > %(outfile)s'''
         P.run()
     else:
-        E.warn( "file %s does not exist: not loaded" % i )
+        E.warn("file %s does not exist: not loaded" % i)
 
     i = infile + "_genes.genes_ovl"
-    if os.path.exists( i ):
+    if os.path.exists(i):
         statement = '''
        python %(scriptsdir)s/csv2db.py --allow-empty 
                %(csv2db_options)s 
@@ -733,23 +781,27 @@ def loadDifference( infile, outfile ):
         > %(outfile)s'''
         P.run()
     else:
-        E.warn( "file %s does not exist: not loaded" % i )
+        E.warn("file %s does not exist: not loaded" % i)
 
 ############################################################
-def _makeOverlap( infiles, outfile, subset = "all" ):
+
+
+def _makeOverlap(infiles, outfile, subset="all"):
     '''compute overlaps between sets.'''
 
-    tracks = [x[:-len(".gtf.gz")] for x in infiles ]
+    tracks = [x[:-len(".gtf.gz")] for x in infiles]
     to_cluster = True
-    
-    if os.path.exists( outfile ):
-        shutil.move( outfile, outfile + ".old" )
+
+    if os.path.exists(outfile):
+        shutil.move(outfile, outfile + ".old")
         extra_options = "--update=%(outfile)s.old" % locals()
     else:
         extra_options = ""
 
-    if subset == "all": where = "1" 
-    else: where = "is_%s" % subset
+    if subset == "all":
+        where = "1"
+    else:
+        where = "is_%s" % subset
 
     tracks = " ".join(tracks)
 
@@ -770,45 +822,51 @@ def _makeOverlap( infiles, outfile, subset = "all" ):
         > %(outfile)s
     '''
     P.run()
-    
-    statement = "rm -f %(outfile)s_tmp*" 
+
+    statement = "rm -f %(outfile)s_tmp*"
     P.run()
 
-@merge( TRACKS.getTracks( "%s.gtf.gz" ), "overlap_all.table")
-def makeOverlapAll( infiles, outfile ):
-    '''compute overlaps between sets.'''
-    _makeOverlap( infiles, outfile, subset = "all" )
 
-@merge( TRACKS.getTracks( "%s.gtf.gz" ), "overlap_unknown.table")
-def makeOverlapUnknown( infiles, outfile ):
+@merge(TRACKS.getTracks("%s.gtf.gz"), "overlap_all.table")
+def makeOverlapAll(infiles, outfile):
     '''compute overlaps between sets.'''
-    _makeOverlap( infiles, outfile, subset = "unknown" )
+    _makeOverlap(infiles, outfile, subset="all")
 
-@merge( TRACKS.getTracks( "%s.gtf.gz" ), "overlap_ambiguous.table")
-def makeOverlapAmbiguous( infiles, outfile ):
+
+@merge(TRACKS.getTracks("%s.gtf.gz"), "overlap_unknown.table")
+def makeOverlapUnknown(infiles, outfile):
     '''compute overlaps between sets.'''
-    _makeOverlap( infiles, outfile, subset = "ambiguous" )
+    _makeOverlap(infiles, outfile, subset="unknown")
 
-@merge( TRACKS.getTracks( "%s.gtf.gz" ), "overlap_known.table")
-def makeOverlapKnown( infiles, outfile ):
+
+@merge(TRACKS.getTracks("%s.gtf.gz"), "overlap_ambiguous.table")
+def makeOverlapAmbiguous(infiles, outfile):
     '''compute overlaps between sets.'''
-    _makeOverlap( infiles, outfile, subset = "known" )
+    _makeOverlap(infiles, outfile, subset="ambiguous")
 
-@merge( TRACKS.getTracks( "%s.gtf.gz" ), "overlap_pc.table")
-def makeOverlapPC( infiles, outfile ):
+
+@merge(TRACKS.getTracks("%s.gtf.gz"), "overlap_known.table")
+def makeOverlapKnown(infiles, outfile):
     '''compute overlaps between sets.'''
-    _makeOverlap( infiles, outfile, subset = "pc" )
+    _makeOverlap(infiles, outfile, subset="known")
 
-@transform( (makeOverlapAll,
-             makeOverlapUnknown,
-             makeOverlapAmbiguous,
-             makeOverlapKnown,
-             makeOverlapPC ),
-            suffix(".table"),
-            "_table.load" )
-def loadOverlap( infile, outfile ):
+
+@merge(TRACKS.getTracks("%s.gtf.gz"), "overlap_pc.table")
+def makeOverlapPC(infiles, outfile):
+    '''compute overlaps between sets.'''
+    _makeOverlap(infiles, outfile, subset="pc")
+
+
+@transform((makeOverlapAll,
+            makeOverlapUnknown,
+            makeOverlapAmbiguous,
+            makeOverlapKnown,
+            makeOverlapPC),
+           suffix(".table"),
+           "_table.load")
+def loadOverlap(infile, outfile):
     '''load results of overlap computation.'''
-    
+
     tablename = outfile[:-len("_table.load")]
     statement = '''
 	grep -v "\\bna\\b" 
@@ -823,19 +881,22 @@ def loadOverlap( infile, outfile ):
     '''
     P.run()
 
-@transform( TRACKS.getTracks( "%s.gtf.gz" ), 
-            suffix(".gtf.gz"), 
-            "_merged.overlap")
-def makeMergedOverlap( infile, outfile ):
+
+@transform(TRACKS.getTracks("%s.gtf.gz"),
+           suffix(".gtf.gz"),
+           "_merged.overlap")
+def makeMergedOverlap(infile, outfile):
     '''compute overlap of a track with the merged set.'''
-    
+
     pass
 
 ########################################################
-@transform( TRACKS.getTracks( "%s.gtf.gz" ),
-            suffix(".gtf.gz"), 
-            "_norepeats.fasta")
-def buildRepeatMaskedSequences( infile, outfile ):
+
+
+@transform(TRACKS.getTracks("%s.gtf.gz"),
+           suffix(".gtf.gz"),
+           "_norepeats.fasta")
+def buildRepeatMaskedSequences(infile, outfile):
     '''output sequences masking repeats.
 
     .. todo: assess which repeats to use (+low complexity?)
@@ -843,8 +904,8 @@ def buildRepeatMaskedSequences( infile, outfile ):
 
     to_cluster = True
 
-    repeats = os.path.join( PARAMS["annotations_dir"],
-                            PARAMS_ANNOTATIONS["interface_repeats_gff"])
+    repeats = os.path.join(PARAMS["annotations_dir"],
+                           PARAMS_ANNOTATIONS["interface_repeats_gff"])
 
     statement = '''gunzip < %(infile)s 
         | python %(scriptsdir)s/gtf2gtf.py --sort=gene
@@ -863,12 +924,14 @@ def buildRepeatMaskedSequences( infile, outfile ):
 ########################################################
 ########################################################
 ########################################################
-@transform( buildRepeatMaskedSequences,
-            suffix("_norepeats.fasta"),
-            ".blast.gz")
-def runAgainstProteinDatabase( infile, outfile ):
+
+
+@transform(buildRepeatMaskedSequences,
+           suffix("_norepeats.fasta"),
+           ".blast.gz")
+def runAgainstProteinDatabase(infile, outfile):
     '''run blastx.
-    
+
     search on both strands. Note that the CPC default is: only forward strand
     '''
 
@@ -883,16 +946,18 @@ def runAgainstProteinDatabase( infile, outfile ):
     | gzip 
     > %(outfile)s
     '''
-    
+
     P.run()
 
 ########################################################
 ########################################################
 ########################################################
-@transform( buildRepeatMaskedSequences,
-            suffix("_norepeats.fasta"),
-            ".frame.gz")
-def runFrameFinder( infile, outfile ):
+
+
+@transform(buildRepeatMaskedSequences,
+           suffix("_norepeats.fasta"),
+           ".frame.gz")
+def runFrameFinder(infile, outfile):
     '''run FrameFinder
 
     search on both strands (-r TRUE). Note that CPC default is: only forward strand.
@@ -906,17 +971,19 @@ def runFrameFinder( infile, outfile ):
     | gzip
      > %(outfile)s
     '''
-    
+
     P.run()
 
 ########################################################
 ########################################################
 ########################################################
-@follows( runFrameFinder )
-@transform( runAgainstProteinDatabase,
-            suffix(".blast.gz"),
-            ".coding.gz")
-def buildCodingPotential( infile, outfile ):
+
+
+@follows(runFrameFinder)
+@transform(runAgainstProteinDatabase,
+           suffix(".blast.gz"),
+           ".coding.gz")
+def buildCodingPotential(infile, outfile):
     '''run CPC analysis as in the cpc script.
 
     This module runs framefinder and blastx on both strands.
@@ -932,30 +999,32 @@ def buildCodingPotential( infile, outfile ):
     except KeyError:
         raise ValueError("CPC_HOME environment variable is not set. ")
 
-    tmpdir = P.getTempDir( ".")
-    track = P.snip( outfile, ".coding.gz" )
+    tmpdir = P.getTempDir(".")
+    track = P.snip(outfile, ".coding.gz")
 
     # extract features for frame finder
     # replaces extract_framefinder_feats.pl to parse both strands
-    with open( os.path.join(tmpdir, "ff.feat"), "w") as outf:
-        outf.write( "\t".join(("QueryID", "CDSLength", "Score", "Used", "Strict")) + "\n")
-        for line in IOTools.openFile( "%s.frame.gz" % track ):
+    with open(os.path.join(tmpdir, "ff.feat"), "w") as outf:
+        outf.write(
+            "\t".join(("QueryID", "CDSLength", "Score", "Used", "Strict")) + "\n")
+        for line in IOTools.openFile("%s.frame.gz" % track):
             if line.startswith(">"):
                 try:
                     ( id, start, end, score, used, mode, tpe) = \
                         re.match(
-                        ">(\S+).*framefinder \((\d+),(\d+)\) score=(\S+) used=(\S+)% \{(\S+),(\w+)\}", line ).groups()
+                            ">(\S+).*framefinder \((\d+),(\d+)\) score=(\S+) used=(\S+)% \{(\S+),(\w+)\}", line).groups()
                 except AttributeError:
-                    raise ValueError( "parsing error in line %s" % line )
+                    raise ValueError("parsing error in line %s" % line)
                 length = int(end) - int(start) + 1
                 strict = int(tpe == "strict")
-                outf.write( "\t".join( (id, str(length), used, str(strict )) )+ "\n")
+                outf.write(
+                    "\t".join((id, str(length), used, str(strict))) + "\n")
 
     to_cluster = USECLUSTER
 
     # extract features and prepare svm data
     s = []
-            
+
     s.append( '''
     zcat %(infile)s
     | perl %(cpc_dir)s/libs/blast2table.pl 
@@ -976,7 +1045,7 @@ def buildCodingPotential( infile, outfile ):
     perl %(cpc_dir)s/bin/feat2libsvm.pl -c 2,4,6 NA NA %(tmpdir)s/blastx.feat 
     > %(tmpdir)s/blastx.lsv;
     ''' )
-    
+
     s.append( '''
     perl %(cpc_dir)s/bin/feat2libsvm.pl -c 2,3,4,5 NA NA %(tmpdir)s/ff.feat 
     > %(tmpdir)s/ff.lsv;
@@ -993,12 +1062,13 @@ def buildCodingPotential( infile, outfile ):
                %(tmpdir)s/test.lsv 
     > %(tmpdir)s/test.lsv.scaled;
     ''' )
-    
+
     # step 3: prediction
-    m_libsvm_model0=os.path.join( cpc_dir, "data/libsvm.model0") # standard
-    m_libsvm_model=os.path.join( cpc_dir, "data/libsvm.model") # Prob
-    m_libsvm_model2=os.path.join( cpc_dir, "data/libsvm.model2" )	# Prob + weighted version
-    m_libsvm_range=os.path.join( cpc_dir, "data/libsvm.range" )
+    m_libsvm_model0 = os.path.join(cpc_dir, "data/libsvm.model0")  # standard
+    m_libsvm_model = os.path.join(cpc_dir, "data/libsvm.model")  # Prob
+    m_libsvm_model2 = os.path.join(
+        cpc_dir, "data/libsvm.model2")  # Prob + weighted version
+    m_libsvm_range = os.path.join(cpc_dir, "data/libsvm.range")
 
     s.append( '''
                %(cpc_dir)s/libs/libsvm/libsvm-2.81/svm-predict2
@@ -1024,18 +1094,20 @@ def buildCodingPotential( infile, outfile ):
     ''' )
 
     # now run it all
-    statement = " checkpoint; ".join( s )
+    statement = " checkpoint; ".join(s)
     P.run()
 
     # clean up
-    shutil.rmtree( tmpdir )
+    shutil.rmtree(tmpdir)
 
 ########################################################
-@transform(  buildCodingPotential, suffix(".coding.gz"), "_coding.load")
-def loadCodingPotential( infile, outfile ):
+
+
+@transform(buildCodingPotential, suffix(".coding.gz"), "_coding.load")
+def loadCodingPotential(infile, outfile):
     '''load annotations'''
-    
-    table = P.toTable( outfile )
+
+    table = P.toTable(outfile)
 
     statement = '''
     gunzip < %(infile)s 
@@ -1050,18 +1122,22 @@ def loadCodingPotential( infile, outfile ):
     P.run()
 
     # set the is_coding flag
-    dbhandle = sqlite3.connect( PARAMS["database"] )
-    Database.executewait( dbhandle, '''ALTER TABLE %(table)s ADD COLUMN is_coding INTEGER''' % locals())
-    Database.executewait( dbhandle, '''UPDATE %(table)s SET is_coding = (result == 'coding')''' % locals())
+    dbhandle = sqlite3.connect(PARAMS["database"])
+    Database.executewait(
+        dbhandle, '''ALTER TABLE %(table)s ADD COLUMN is_coding INTEGER''' % locals())
+    Database.executewait(
+        dbhandle, '''UPDATE %(table)s SET is_coding = (result == 'coding')''' % locals())
     dbhandle.commit()
 
 ########################################################
-@transform( TRACKS_WITH_CONTROLS.getTracks( "%s.gtf.gz" ),
-            suffix(".gtf.gz"), 
-            ".fasta")
-def exportSequences( infile, outfile ):
+
+
+@transform(TRACKS_WITH_CONTROLS.getTracks("%s.gtf.gz"),
+           suffix(".gtf.gz"),
+           ".fasta")
+def exportSequences(infile, outfile):
     '''collect sequences from a gtf file.'''
-    
+
     prefix = outfile[:-len(".fasta")]
 
     to_cluster = True
@@ -1078,28 +1154,29 @@ def exportSequences( infile, outfile ):
     P.run()
 
 ############################################################
-@transform( exportSequences, 
-            regex("(.*).fasta"), 
-            add_inputs( r"\1.gtf.gz", 
-                        os.path.join( PARAMS["ancestral_repeats_dir"],
-                                      PARAMS_ANCESTRAL_REPEATS["interface_alignment_psl"] )),
-            r"\1.rates.gz")
-def makeRates( infiles, outfile ):
+
+
+@transform(exportSequences,
+           regex("(.*).fasta"),
+           add_inputs(r"\1.gtf.gz",
+                      os.path.join(PARAMS["ancestral_repeats_dir"],
+                                   PARAMS_ANCESTRAL_REPEATS["interface_alignment_psl"])),
+           r"\1.rates.gz")
+def makeRates(infiles, outfile):
     '''compute nucleotide substitution rates for transcripts from a gtf file - 
     this applies only for transcripts mapped onto the reference genome.
 
     Sequences from the transcripts are mapped onto the rate genome.
-    
+
     Softmasked sequence will be ignored unless track is in CONTROL_TRACKS.
 
     The longest contiguous block is selected ignoring matches to other parts of the genome.
     '''
 
-
     infile_sequences, infile_gtf, alignment = infiles
 
-    track = P.snip( infile_sequences, ".fasta" )
-    
+    track = P.snip(infile_sequences, ".fasta")
+
     if track in TRACKS_CONTROL:
         # when aligning repeats, do not mask lower case characters
         mask = ""
@@ -1107,8 +1184,8 @@ def makeRates( infiles, outfile ):
         mask = "--mask-lowercase"
 
     # locate target genome from ancestral repeats ini file
-    target_genome = os.path.join( PARAMS["genome_dir"],
-                                  PARAMS_ANCESTRAL_REPEATS["target"] )
+    target_genome = os.path.join(PARAMS["genome_dir"],
+                                 PARAMS_ANCESTRAL_REPEATS["target"])
 
     statement = '''gunzip 
         < %(infile_gtf)s 
@@ -1143,12 +1220,14 @@ def makeRates( infiles, outfile ):
 	| gzip 
         > %(outfile)s
     '''
-    
+
     P.run()
 
 ############################################################
-@transform(  makeRates, suffix(".rates.gz"), "_rates.load")
-def loadRates( infile, outfile ):
+
+
+@transform(makeRates, suffix(".rates.gz"), "_rates.load")
+def loadRates(infile, outfile):
     '''load rates.
 
     Select the longest stretch for each transcript.
@@ -1170,17 +1249,19 @@ def loadRates( infile, outfile ):
     P.run()
 
 ########################################################
-@transform( TRACKS_WITH_CONTROLS.getTracks( "%s.gtf.gz" ),
-            regex("(.*).gtf.gz"), 
-            r"\1.repeats_rates.gz")
-def makeRepeatsRates( infile, outfile ):
+
+
+@transform(TRACKS_WITH_CONTROLS.getTracks("%s.gtf.gz"),
+           regex("(.*).gtf.gz"),
+           r"\1.repeats_rates.gz")
+def makeRepeatsRates(infile, outfile):
     '''collect ancestral repeats around transcripts and
     estimate neutral rate.'''
 
     to_cluster = True
 
-    ancestral_repeats_filename = os.path.join( PARAMS["ancestral_repeats_dir"],
-                                               PARAMS_ANCESTRAL_REPEATS["interface_rates_query_gff"])
+    ancestral_repeats_filename = os.path.join(PARAMS["ancestral_repeats_dir"],
+                                              PARAMS_ANCESTRAL_REPEATS["interface_rates_query_gff"])
 
     statement = '''gunzip 
     < %(infile)s 
@@ -1192,15 +1273,15 @@ def makeRepeatsRates( infile, outfile ):
         --filename-gff=<(gunzip < %(ancestral_repeats_filename)s )
     | gzip 
     > %(outfile)s'''
-    
+
     P.run()
 
 
 ############################################################
-@transform(  makeRepeatsRates, suffix(".repeats_rates.gz"), "_repeats_rates.load")
-def loadRepeatsRates( infile, outfile ):
+@transform(makeRepeatsRates, suffix(".repeats_rates.gz"), "_repeats_rates.load")
+def loadRepeatsRates(infile, outfile):
     '''load repeat overlap'''
-    
+
     table = outfile[:-len(".load")]
 
     statement = '''gunzip 
@@ -1217,10 +1298,12 @@ def loadRepeatsRates( infile, outfile ):
     P.run()
 
 ############################################################
-@transform( TRACKS_WITH_CONTROLS.getTracks( "%s.gtf.gz" ),
-            suffix(".gtf.gz"), 
-            "_evol.load") 
-def loadSummary( infile, outfile ):
+
+
+@transform(TRACKS_WITH_CONTROLS.getTracks("%s.gtf.gz"),
+           suffix(".gtf.gz"),
+           "_evol.load")
+def loadSummary(infile, outfile):
     '''load several rates into a single convenience table.
     '''
 
@@ -1232,42 +1315,47 @@ def loadSummary( infile, outfile ):
 
     tablename = "%s_evol" % track
 
-    if os.path.exists( "%s_rates.load" % track ):
-        stmt_select.append( "a.distance AS ks, a.aligned AS aligned" )
+    if os.path.exists("%s_rates.load" % track):
+        stmt_select.append("a.distance AS ks, a.aligned AS aligned")
         stmt_from.append('''LEFT JOIN %(track)s_rates AS a
                      ON r.gene_id = a.gene_id AND 
                      a.aligned >= %(rates_min_aligned)i AND 
                      a.distance <= %(rates_max_rate)f''' )
 
-    if os.path.exists( "%s_coverage.load" % track ):
-        stmt_select.append("cov.nmatches AS nreads, cov.mean AS meancoverage" )
-        stmt_from.append("LEFT JOIN %(track)s_coverage AS cov ON r.gene_id = cov.gene_id" )
+    if os.path.exists("%s_coverage.load" % track):
+        stmt_select.append("cov.nmatches AS nreads, cov.mean AS meancoverage")
+        stmt_from.append(
+            "LEFT JOIN %(track)s_coverage AS cov ON r.gene_id = cov.gene_id")
 
-    if os.path.exists( "%s_repeats_gc.load" % track ):
-        stmt_select.append("ar_gc.exons_mean AS repeats_gc" )
-        stmt_from.append("LEFT JOIN %(track)s_repeats_gc AS ar_gc ON r.gene_id = ar_gc.gene_id" )
+    if os.path.exists("%s_repeats_gc.load" % track):
+        stmt_select.append("ar_gc.exons_mean AS repeats_gc")
+        stmt_from.append(
+            "LEFT JOIN %(track)s_repeats_gc AS ar_gc ON r.gene_id = ar_gc.gene_id")
 
-    if os.path.exists( "%s_repeats_rates.load" % track ):
-        stmt_select.append("ar.exons_length AS ar_aligned, ar.exons_median AS ka, a.distance/ar.exons_median AS kska" )
+    if os.path.exists("%s_repeats_rates.load" % track):
+        stmt_select.append(
+            "ar.exons_length AS ar_aligned, ar.exons_median AS ka, a.distance/ar.exons_median AS kska")
         stmt_from.append('''LEFT JOIN %(track)s_repeats_rates AS ar 
                      ON r.gene_id = ar.gene_id AND 
                      ar.exons_nval >= %(rates_min_repeats)i''' )
 
-    if os.path.exists( "%s_introns_rates.load" % track ):
-        stmt_select.append("ir.aligned AS ir_aligned, ir.distance AS ki, a.distance/ir.distance AS kski" )
+    if os.path.exists("%s_introns_rates.load" % track):
+        stmt_select.append(
+            "ir.aligned AS ir_aligned, ir.distance AS ki, a.distance/ir.distance AS kski")
         stmt_from.append('''LEFT JOIN %(track)s_introns_rates AS ir 
                             ON r.gene_id = ir.gene_id AND 
                             ir.aligned >= %(rates_min_aligned)i''' )
 
     x = locals()
-    x.update( PARAMS )
-    stmt_select = ", ".join( stmt_select ) % x 
-    stmt_from = " ".join( stmt_from ) % x
-    stmt_where = " AND ".join( stmt_where ) % x
+    x.update(PARAMS)
+    stmt_select = ", ".join(stmt_select) % x
+    stmt_from = " ".join(stmt_from) % x
+    stmt_where = " AND ".join(stmt_where) % x
 
-    dbhandle = sqlite3.connect( PARAMS["database"] )
+    dbhandle = sqlite3.connect(PARAMS["database"])
 
-    Database.executewait( dbhandle, "DROP TABLE IF EXISTS %(tablename)s " % locals() )
+    Database.executewait(
+        dbhandle, "DROP TABLE IF EXISTS %(tablename)s " % locals())
 
     statement = '''
     CREATE TABLE %(tablename)s AS
@@ -1282,7 +1370,7 @@ def loadSummary( infile, outfile ):
         WHERE %(stmt_where)s
     ''' % locals()
 
-    Database.executewait( dbhandle, statement)
+    Database.executewait(dbhandle, statement)
     dbhandle.commit()
     P.touch(outfile)
 
@@ -1315,12 +1403,12 @@ def loadSummary( infile, outfile ):
 
 # ############################################################
 # @files( [ (track, "%s.%s.sets.annotator" % (track[:-len(".gtf.gz")],slice), slice) \
-#              for track, slice in list( itertools.product( EXPERIMENTAL_TRACKS + DERIVED_TRACKS, 
+#              for track, slice in list( itertools.product( EXPERIMENTAL_TRACKS + DERIVED_TRACKS,
 #                                                           ("known", "unknown", "all", "intronic", "intergenic" ))) ] )
 # def makeAnnotatorGeneSets( infile, outfile, slice ):
 #     '''compute annotator overlap between sets.
 #     '''
-    
+
 #     workspaces = ("genomic", "alignable", slice )
 
 #     track = infile[:-len(".gtf.gz")]
@@ -1334,7 +1422,7 @@ def loadSummary( infile, outfile ):
 #                    ( related, infile ) )
 #         related = set(related)
 #         infiles = [x for x in TRACKS if x not in related ]
-        
+
 #     tmpdir = tempfile.mkdtemp( dir = os.getcwd() )
 
 #     annotations = os.path.join( tmpdir, "annotations")
@@ -1342,9 +1430,9 @@ def loadSummary( infile, outfile ):
 #                                         annotations,
 #                                         slice )
 
-#     segments = PAnnotator.buildAnnotatorSlicedSegments( tmpdir, 
-#                                                         outfile, 
-#                                                         track, 
+#     segments = PAnnotator.buildAnnotatorSlicedSegments( tmpdir,
+#                                                         outfile,
+#                                                         track,
 #                                                         slice )
 
 #     if not segments:
@@ -1353,16 +1441,16 @@ def loadSummary( infile, outfile ):
 #         P.touch( outfile )
 #         return
 
-#     workspaces, synonyms = PAnnotator.buildAnnotatorWorkSpace( tmpdir, 
+#     workspaces, synonyms = PAnnotator.buildAnnotatorWorkSpace( tmpdir,
 #                                                                outfile,
 #                                                                workspaces = workspaces,
-#                                                                gc_control = True )
-    
-#     PAnnotator.runAnnotator( tmpdir, 
-#                              outfile, 
-#                              annotations, 
-#                              segments, 
-#                              workspaces, 
+# gc_control = True )
+
+#     PAnnotator.runAnnotator( tmpdir,
+#                              outfile,
+#                              annotations,
+#                              segments,
+#                              workspaces,
 #                              synonyms )
 
 #     shutil.rmtree( tmpdir )
@@ -1371,62 +1459,70 @@ def loadSummary( infile, outfile ):
 # def loadAnnotatorGeneSets( infiles, outfile ):
 #     '''load genesets.'''
 
-#     PAnnotator.loadAnnotator( infiles, 
-#                                 outfile, 
+#     PAnnotator.loadAnnotator( infiles,
+#                                 outfile,
 #                                 regex_id = "(.*).sets.annotator",
-#                                 table = "annotator_sets", 
+#                                 table = "annotator_sets",
 #                                 fdr_method = "annotator",
 #                                 with_slice = True )
 
 
 ############################################################
-@follows( buildRepeatTrack,
-          buildIntronTrack )
+@follows(buildRepeatTrack,
+         buildIntronTrack)
 def setup():
     pass
 
-@follows( buildMergedTracks,
-          buildFilteredAlignment,
-          loadGTF)
+
+@follows(buildMergedTracks,
+         buildFilteredAlignment,
+         loadGTF)
 def prepare():
     pass
 
-@follows( loadDifference,
-          loadOverlap,
-          #buildAnnotatorGCWorkspace, 
-          #loadAnnotatorGeneSets,
-          )
-def difference(): pass
 
-@follows( loadAnnotations,
-          loadOverrun,
-          loadDistances,
-          loadRepeats,
-          loadSegments,
-          loadCodingPotential,
-          )
+@follows(loadDifference,
+         loadOverlap,
+         # buildAnnotatorGCWorkspace,
+         # loadAnnotatorGeneSets,
+         )
+def difference():
+    pass
+
+
+@follows(loadAnnotations,
+         loadOverrun,
+         loadDistances,
+         loadRepeats,
+         loadSegments,
+         loadCodingPotential,
+         )
 def annotation():
     pass
 
-@follows( loadRates, loadRepeatsRates )
+
+@follows(loadRates, loadRepeatsRates)
 def rates():
     pass
 
-@follows( annotation, rates, difference )
-def full(): pass
 
-@follows( annotation, rates, loadSummary )
-def summary(): pass
+@follows(annotation, rates, difference)
+def full():
+    pass
 
-@follows( mkdir( "report" ) )
+
+@follows(annotation, rates, loadSummary)
+def summary():
+    pass
+
+
+@follows(mkdir("report"))
 def build_report():
     '''build report from scratch.'''
 
-    E.info( "starting documentation build process from scratch" )
-    P.run_report( clean = True )
+    E.info("starting documentation build process from scratch")
+    P.run_report(clean=True)
 
 
-if __name__== "__main__":
-    sys.exit( P.main(sys.argv) )
-
-    
+if __name__ == "__main__":
+    sys.exit(P.main(sys.argv))

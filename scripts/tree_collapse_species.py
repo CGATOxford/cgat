@@ -29,7 +29,7 @@ for command line help.
 Command line options
 --------------------
 
-""" 
+"""
 
 import os
 import sys
@@ -42,7 +42,7 @@ import popen2
 
 from Bio.Nexus import Nexus
 
-USAGE="""python %s [OPTIONS] < tree.in > tree.out
+USAGE = """python %s [OPTIONS] < tree.in > tree.out
 
 Version: $Id: tree_collapse_species.py 2782 2009-09-10 11:40:29Z andreas $
 
@@ -58,53 +58,56 @@ import CGAT.Experiment as E
 
 param_loglevel = 1
 
-param_long_options=["verbose=", "help",
-                    "pattern-species=",
-                    "version"]
+param_long_options = ["verbose=", "help",
+                      "pattern-species=",
+                      "version"]
 
-param_short_options="v:hp:"
+param_short_options = "v:hp:"
 
 param_pattern_species = "^([^@:]+)[@:]"
 
 
-def PruneTree( tree, id ):
+def PruneTree(tree, id):
 
     if id not in tree.get_terminals():
         raise "Not a terminal taxon: %i" % id
-    
-    prev=tree.unlink(id)
+
+    prev = tree.unlink(id)
     tree.kill(id)
-    if not prev==tree.root and len(tree.node(prev).succ)==1:
-        
-        succ=tree.node(prev).get_succ()[0]
-        new_bl=tree.node(prev).data.branchlength+tree.node(succ).data.branchlength
+    if not prev == tree.root and len(tree.node(prev).succ) == 1:
+
+        succ = tree.node(prev).get_succ()[0]
+        new_bl = tree.node(prev).data.branchlength + \
+            tree.node(succ).data.branchlength
         tree.collapse(prev)
-        tree.node(succ).data.branchlength=new_bl
-        
+        tree.node(succ).data.branchlength = new_bl
+
     return prev
 
 
-def main( argv = None ):
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv == None:
+        argv = sys.argv
 
     try:
-        optlist, args = getopt.getopt(sys.argv[1:], param_short_options, param_long_options)
+        optlist, args = getopt.getopt(
+            sys.argv[1:], param_short_options, param_long_options)
     except getopt.error, msg:
         print USAGE, msg
         sys.exit(2)
 
-    for o,a in optlist:
-        if o in ( "-v", "--verbose" ):
+    for o, a in optlist:
+        if o in ("-v", "--verbose"):
             param_loglevel = int(a)
-        elif o in ( "-h", "--help" ):
+        elif o in ("-h", "--help"):
             print USAGE
             sys.exit(0)
-        elif o in ( "--version", ):
+        elif o in ("--version", ):
             print "version="
             sys.exit(0)
         elif o in ("-p", "--pattern-species"):
@@ -113,42 +116,42 @@ def main( argv = None ):
     print E.GetHeader()
     print E.GetParams()
 
-    lines = ["#NEXUS\nBegin trees;\ntree tree = "] + sys.stdin.readlines() + ["End;"]
-    nexus = Nexus.Nexus( string.join(lines, "") )
+    lines = ["#NEXUS\nBegin trees;\ntree tree = "] + \
+        sys.stdin.readlines() + ["End;"]
+    nexus = Nexus.Nexus(string.join(lines, ""))
 
     if len(nexus.trees) != 1:
         raise "no tree found in file."
-    
+
     tree = nexus.trees[0]
-    
+
     if param_loglevel >= 2:
         tree.display()
 
-    rx = re.compile( param_pattern_species )
+    rx = re.compile(param_pattern_species)
     changed = True
-    
+
     while changed:
         changed = False
         leaves = tree.get_terminals()
-        for x in range(0, len(leaves) -1 ):
+        for x in range(0, len(leaves) - 1):
             nx = leaves[x]
             t1 = tree.node(nx).get_data().taxon
-            s1 = rx.search( t1 ).groups()[0]
-            p1 = tree.node(nx).get_prev()            
-            for y in range( x + 1, len(leaves)):
+            s1 = rx.search(t1).groups()[0]
+            p1 = tree.node(nx).get_prev()
+            for y in range(x + 1, len(leaves)):
                 ny = leaves[y]
-                t2 = tree.node(ny).get_data().taxon                
-                s2 = rx.search( t2 ).groups()[0]
+                t2 = tree.node(ny).get_data().taxon
+                s2 = rx.search(t2).groups()[0]
                 p2 = tree.node(ny).get_prev()
-                if s1 == s2 and tree.is_monophyletic( (nx, ny) ) != -1:
-                    print "collapsing nodes", t1, t2, nx, ny, p1, p2                    
-                    PruneTree( tree, nx )
+                if s1 == s2 and tree.is_monophyletic((nx, ny)) != -1:
+                    print "collapsing nodes", t1, t2, nx, ny, p1, p2
+                    PruneTree(tree, nx)
                     if param_loglevel >= 2:
                         tree.display()
                     changed = True
-        
+
     print E.GetFooter()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

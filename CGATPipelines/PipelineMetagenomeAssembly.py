@@ -30,9 +30,11 @@ import shutil
 
 
 class Format:
+
     '''
     class for assessing formats
     '''
+
     def fileFormat(self, infile):
         '''
         return the file format for the short read data
@@ -43,7 +45,8 @@ class Format:
         fastq.gz
         fasta.1.gz
         '''
-        possible_formats = ["fa", "fasta", "fastq", "fasta.gz", "fastq.gz", "fasta.1.gz", "fastq.1.gz"]
+        possible_formats = [
+            "fa", "fasta", "fastq", "fasta.gz", "fastq.gz", "fasta.1.gz", "fastq.1.gz"]
         format = None
         for f in possible_formats:
             if infile.endswith(f):
@@ -51,10 +54,13 @@ class Format:
         assert format, "file %s is not of correct format" % infile
         return format
 
+
 class PairedData(Format):
+
     '''
     class for assessing paired end data
     '''
+
     def __init__(self):
 
         self.format = None
@@ -80,10 +86,11 @@ class PairedData(Format):
         format = self.getFormat(infile)
         track = self.getTrack(infile)
         read2 = track + ".fastq.2.gz"
-        assert len(glob.glob(read2)) > 0, "cannot find %s file for read 2 in the pair for %s" % (read2, infile)
+        assert len(glob.glob(read2)) > 0, "cannot find %s file for read 2 in the pair for %s" % (
+            read2, infile)
         return ("separate", read2)
 
-    def checkPairs(self, infile, ntries = 10):
+    def checkPairs(self, infile, ntries=10):
         '''
         Function to check if pairs exist interleaved
         within a file. If not it will check for separate
@@ -99,20 +106,22 @@ class PairedData(Format):
             iterator = Fastq.iterate
         elif format in ["fasta.1.gz", "fastq.1.gz"]:
             return self.checkPairedFile(infile)
-        
+
         c = 0
         for record in iterator(inf):
             if record.quals:
                 # make sure there are not other "/" in the sequence name
-                seq_id = record.identifier.split("/") 
+                seq_id = record.identifier.split("/")
             else:
-                seq_id = record.title.split("/") 
-            
-            assert len(seq_id) < 3, "cannot deal with this sequence name %s" % seq_id
+                seq_id = record.title.split("/")
+
+            assert len(
+                seq_id) < 3, "cannot deal with this sequence name %s" % seq_id
             seq_id = seq_id[0]
             if seq_id not in pairs:
                 pairs.add(seq_id)
-                if c >= ntries: break
+                if c >= ntries:
+                    break
                 paired = False
                 return paired
             else:
@@ -122,9 +131,11 @@ class PairedData(Format):
         return paired
 
 #############################
-# pooling reads across 
+# pooling reads across
 # conditions
 #############################
+
+
 def pool_reads(infiles, outfile):
     '''
     pool raw reads across conditions
@@ -133,12 +144,13 @@ def pool_reads(infiles, outfile):
     paired = PairedData().checkPairs(infiles[0])
     format = PairedData().getFormat(infiles[0])
     infs = " ".join(infiles)
-    
+
     if not paired:
         statement = '''zcat %(infs)s | gzip > %(outfile)s''' % locals()
     else:
-        infs2 = " ".join([P.snip(x, format) + format.replace("1", "2") for x in infiles]  )
-        outf2 = outfile.replace(format, format.replace("1","2"))
+        infs2 = " ".join(
+            [P.snip(x, format) + format.replace("1", "2") for x in infiles])
+        outf2 = outfile.replace(format, format.replace("1", "2"))
         statement = '''zcat %(infs)s | gzip > %(outfile)s;
                        zcat %(infs2)s | gzip > %(outf2)s''' % locals()
     return statement
@@ -146,6 +158,8 @@ def pool_reads(infiles, outfile):
 #############################
 # filtering contigs by length
 #############################
+
+
 def filterContigs(infile, outfile, length):
     '''
     filter contigs by length
@@ -153,7 +167,8 @@ def filterContigs(infile, outfile, length):
     outf = open(outfile, "w")
     for fasta in FastaIterator.iterate(IOTools.openFile(infile)):
         seq_length = len(fasta.sequence)
-        if seq_length < length: continue
+        if seq_length < length:
+            continue
         outf.write(">%s\n%s\n" % (fasta.title, fasta.sequence))
     outf.close()
 
@@ -161,6 +176,8 @@ def filterContigs(infile, outfile, length):
 # function for performing
 # claculation of stats
 ############################
+
+
 def contig_to_stats(contigs_file, stats_file, params):
     '''
     calculate descriptive stats for a set
@@ -174,7 +191,7 @@ def contig_to_stats(contigs_file, stats_file, params):
     else:
         f = 0
 
-    # iterate over the contigs/scaffolds and return stats                                                                                                                                                                                              
+    # iterate over the contigs/scaffolds and return stats
     number_of_scaffolds = 0
 
     N = PARAMS["scaffold_n"]
@@ -192,24 +209,28 @@ def contig_to_stats(contigs_file, stats_file, params):
     median_length = np.median(scaffold_lengths)
     max_length = max(scaffold_lengths)
 
-    # iterate over contigs/scaffolds sorted by longest                                                                                                                                                                                               
-    # and caculate the NX                                                                                                                                                                                                                    
+    # iterate over contigs/scaffolds sorted by longest
+    # and caculate the NX
     index = 0
     cum_length = 0
     total_length = sum(scaffold_lengths)
-    for length in sorted(scaffold_lengths, reverse = True):
-        while cum_length <= total_length*(float(N)/100):
+    for length in sorted(scaffold_lengths, reverse=True):
+        while cum_length <= total_length * (float(N) / 100):
             index += 1
             cum_length += length
 
-    # output the results                                                                                                                                                                                                                     
+    # output the results
     outf = open(stats_file, "w")
-    outf.write("nscaffolds\tscaffold_length\tN%i\tmedian_length\tmean_length\tmax_length\n" % N)
-    outf.write("%s\t%s\t%s\t%s\t%s\t%s\n" % (number_of_scaffolds, total_length, sorted(scaffold_lengths, reverse = True)[index], str(median_length), str(mean_length), str(max_length)))
+    outf.write(
+        "nscaffolds\tscaffold_length\tN%i\tmedian_length\tmean_length\tmax_length\n" % N)
+    outf.write("%s\t%s\t%s\t%s\t%s\t%s\n" % (number_of_scaffolds, total_length, sorted(
+        scaffold_lengths, reverse=True)[index], str(median_length), str(mean_length), str(max_length)))
 
 ###############################
 ###############################
 ###############################
+
+
 def build_scaffold_lengths(contigs_file, outfile, params):
     '''
     output the distribution of scaffold lengths
@@ -225,12 +246,16 @@ def build_scaffold_lengths(contigs_file, outfile, params):
 ############################
 # general assembler class
 ############################
+
+
 class Assembler(PairedData):
+
     '''
     general class for assembly algorithms
     '''
+
     def __init_(self):
-        
+
         self.kmer = 0
         self.format = None
         self.read_type = None
@@ -241,10 +266,14 @@ class Assembler(PairedData):
 ##########################
 # meta-velvet
 ##########################
+
+
 class Metavelvet(Assembler):
+
     '''
     velvet single genome assembly software
     '''
+
     def build(self, infile):
         '''
         run velveth and velvetg
@@ -267,15 +296,16 @@ class Metavelvet(Assembler):
             format = "fastq.gz"
         metavelvet_dir = os.path.join(os.getcwd(), "metavelvet.dir")
         track = self.getTrack(os.path.basename(infile))
-        
+
         self.stats_file = track + ".stats.txt"
-        
+
         if paired:
             insert_length = "ins_length %i" % PARAMS["velvetg_insert_length"]
         else:
             insert_length = ""
 
-        # velveth and velvetg have to be run to build hash tables and initial de bruijn graphs
+        # velveth and velvetg have to be run to build hash tables and initial
+        # de bruijn graphs
         statement = '''%%(velveth_executable)s %(outdir)s %%(kmer)i -%(format)s -%(read_type)s %(pair)s %(files)s >> %(metavelvet_dir)s/%(track)s_velveth.log
                       ; checkpoint
                       ; mv %(outdir)s/Log %(metavelvet_dir)s/%(track)s.velveth.log
@@ -302,9 +332,11 @@ class Metavelvet(Assembler):
 # meta-idba
 ##########################
 class Idba(Metavelvet):
+
     '''
     meta-idba contig assembler
     '''
+
     def preprocess(self, infile):
         '''
         fastq files need to be converted to fasta
@@ -312,34 +344,38 @@ class Idba(Metavelvet):
         '''
 
         mtype = None
-        
+
         # check for paired end data either in the same file or in a separate file
         # for each read - will need to be gunzipped
         # check compression status
         if infile.endswith(".gz"):
-            if len(self.checkPairs(infile)) > 1: # check for paired data in separate files
-               read1 = infile 
-               read2 = self.checkPairs(infile)[1]
-               temp = P.getTempDir()
+            # check for paired data in separate files
+            if len(self.checkPairs(infile)) > 1:
+                read1 = infile
+                read2 = self.checkPairs(infile)[1]
+                temp = P.getTempDir()
             elif self.checkPairs == "interleaved":
-                infile_new = os.path.join(temp, P.snip(infile, ".gz")) 
+                infile_new = os.path.join(temp, P.snip(infile, ".gz"))
                 zippy = """gunzip -c %(infile)s > %(infile_new)s; """ % locals()
         else:
             zippy = ""
-        
+
         # only need to convert if the data are in fastq format
-        if self.getFormat(infile).find("fastq") != -1 and len(self.checkPairs(infile)) >1: # reads are fastq and paired in separate files
-            mtype = "--merge" # argument for conversion tool
-        elif self.getFormat(infile).find("fastq") != -1 and self.checkPairs(infile) == "interleaved": # reads are fastq and in the same file
-            mtype = "--paired" # argument for conversion tool
+        # reads are fastq and paired in separate files
+        if self.getFormat(infile).find("fastq") != -1 and len(self.checkPairs(infile)) > 1:
+            mtype = "--merge"  # argument for conversion tool
+        # reads are fastq and in the same file
+        elif self.getFormat(infile).find("fastq") != -1 and self.checkPairs(infile) == "interleaved":
+            mtype = "--paired"  # argument for conversion tool
 
         # requires a merge of the fastq files in to fasta format
-        if mtype: # the reads are paired end
+        if mtype:  # the reads are paired end
             if mtype == "--merge":
-                outf = P.snip(os.path.basename(read1), ".fastq.1.gz") + ".fa" 
+                outf = P.snip(os.path.basename(read1), ".fastq.1.gz") + ".fa"
 
-                # check if file exists - metaphlan also performs this preprocessing step
-                if not os.path.exists(outf): 
+                # check if file exists - metaphlan also performs this
+                # preprocessing step
+                if not os.path.exists(outf):
                     statement = '''python %%(scriptsdir)s/fastqs2fasta.py -a %(read1)s -b %(read2)s --log=%(read1)s.log > %(outf)s
                                 ''' % locals()
                     P.run()
@@ -377,9 +413,9 @@ class Idba(Metavelvet):
 
         shutil.rmtree(tempdir)
         return statement
-        
-        # DEPRECATED    
-        # # create single fasta file if required (reads are fastq format)
+
+        # DEPRECATED
+        # create single fasta file if required (reads are fastq format)
         # if self.preprocess(infile):
         #     inf = track + ".fa"
         #     if not os.path.exists(inf):
@@ -389,15 +425,15 @@ class Idba(Metavelvet):
         #         P.run()
         # else:
         #     inf = infile
-    
-        # # build statement
+
+        # build statement
         # track = self.getTrack(infile)
         # outdir = "idba.dir"
 
-        # # get temporary file for running idba
+        # get temporary file for running idba
         # tempdir = P.getTempDir()
 
-        # # NB at the moment we assume the default maxkmer of 100
+        # NB at the moment we assume the default maxkmer of 100
         # statement = '''%%(idba_executable)s -r %(inf)s -o %(tempdir)s %%(idba_options)s
         #                ; mv %(tempdir)s/scaffold.fa idba.dir/%(track)s.scaffolds.fa
         #                ; mv %(tempdir)s/contig-%%(idba_maxkmer)s.fa idba.dir/%(track)s.contigs.fa''' % locals()
@@ -408,7 +444,10 @@ class Idba(Metavelvet):
 ##########################
 # Ray meta
 ##########################
+
+
 class Ray(Idba):
+
     '''
     ray contig assembler
     '''
@@ -418,33 +457,36 @@ class Ray(Idba):
         build statement for running Ray
         '''
         track = self.getTrack(os.path.basename(infile))
-     
+
         format = self.getFormat(infile)
         paired = self.checkPairs(infile)
 
-        tempdir = P.getTempDir(dir = ".")
+        tempdir = P.getTempDir(dir=".")
 
         # check whether the data are paired-end
         if not paired:
             pair = paired
-            files = os.path.join(tempdir, P.snip(os.path.basename(infile), ".gz"))
+            files = os.path.join(
+                tempdir, P.snip(os.path.basename(infile), ".gz"))
             gunzy = "gunzip -c %(infile)s > %(files)s" % locals()
         else:
             pair = paired[0]
             # Ray doesn't like .fastq.1.gz etc
             read1 = infile
             read2 = paired[1]
-            read1_new = os.path.join(tempdir,read1.replace(".fastq.1.gz", ".1.fastq"))
-            read2_new = os.path.join(tempdir,read2.replace(".fastq.2.gz", ".2.fastq"))
+            read1_new = os.path.join(
+                tempdir, read1.replace(".fastq.1.gz", ".1.fastq"))
+            read2_new = os.path.join(
+                tempdir, read2.replace(".fastq.2.gz", ".2.fastq"))
             files = " ".join([read1_new, read2_new])
             gunzy = """gunzip -c %(read1)s > %(read1_new)s
                        ; gunzip -c %(read2)s > %(read2_new)s""" % locals()
-             
+
         # ray likes an output directory but needs it not
         # to exist beforehand
         raydir = os.path.join(os.getcwd(), "ray.dir/export_%s" % track)
         raydir_orig = os.path.join(os.getcwd(), "ray.dir")
-        
+
         # Ray picks up file types so should just have to
         # say whether its paired or not
         # build statement
@@ -459,7 +501,7 @@ class Ray(Idba):
             raise IOError, "do not support file of this type: %s" % infile
 
         # note restrict use to 10 cores
-        
+
         statement = ''' %(gunzy)s
                        ; mpiexec %%(ray_executable)s %(common_options)s %(filetype)s %(files)s -o %(raydir)s >> %(raydir_orig)s/%(track)s.log
                        ; checkpoint; mv %(raydir)s/Scaffolds.fasta %(raydir_orig)s/%(track)s.scaffolds.fa
@@ -485,16 +527,20 @@ class Ray(Idba):
 ##########################
 # SGA
 ##########################
+
+
 class SGA(Idba):
+
     '''
     String Graph assembler
     '''
+
     def build(self, infile):
         '''
         build statement for running SGA
         '''
         track = self.getTrack(os.path.basename(infile))
-     
+
         # decide which algorithm to use based on
         # read length
         if "%(sga_long)s":
@@ -506,7 +552,7 @@ class SGA(Idba):
         paired = self.checkPairs(infile)
 
         # directory in which to do the assembly
-        tempdir = P.getTempDir(dir = ".")
+        tempdir = P.getTempDir(dir=".")
 
         # check whether the data are paired-end
         if not paired:
@@ -516,9 +562,9 @@ class SGA(Idba):
             # DOESN'T DEAL WITH INTERLEAVED FILES YET
             pe_mode = "--pe-mode=1"
             files = " ".join([os.path.abspath(infile), paired[1]])
-            
+
         executable = "%(sga_executable)s"
-        
+
         outdir = os.path.abspath("sga.dir")
         ###############################################
         # preprocessing step converts missing bases to
@@ -544,7 +590,7 @@ class SGA(Idba):
         correction_method = "%(sga_correction_method)s"
 
         # if correction_method == "kmer":
-        #     # ADD WARNING HERE
+        # ADD WARNING HERE
         correction_options = "%(sga_kmer_correction_options)s"
         # elif correction_method == "hybrid":
         #     correction_options = "%(sga_hybrid_correction_options)s"
@@ -553,8 +599,9 @@ class SGA(Idba):
         # else:
         #     raise ValueError("method %s does not exist: choose one of kmer, hybrid, overlap" % correction_method)
         outf_corrected = track + "_corrected.fa"
-        metrics = "--metrics=%(track)s.metrics" % locals() 
-        correction_prefix = os.path.join(tempdir, P.snip(outf_corrected, ".fa"))
+        metrics = "--metrics=%(track)s.metrics" % locals()
+        correction_prefix = os.path.join(
+            tempdir, P.snip(outf_corrected, ".fa"))
         correction_statement = "%(executable)s correct %(metrics)s  \
                                 --algorithm=%(correction_method)s \
                                 %(correction_options)s \
@@ -562,7 +609,7 @@ class SGA(Idba):
                                 -o %(outf_corrected)s 2> %(outdir)s/%(track)s_corrected.log"
 
         ###############################################
-        # filter low quality reads and low abundance 
+        # filter low quality reads and low abundance
         # kmers
         ###############################################
         filter_options = "%(sga_filter_options)s"
@@ -581,7 +628,7 @@ class SGA(Idba):
         overlap_options = "%(sga_overlap_options)s"
         overlap_statement = "%(executable)s overlap %(overlap_options)s \
                              %(outf_filtered)s 2> %(outdir)s/%(track)s_overlap.log"
-        
+
         ###############################################
         # assemble reads and perform error removal
         ###############################################
@@ -591,7 +638,7 @@ class SGA(Idba):
         assembly_statement = "%(executable)s assemble %(assembly_options)s \
                               %(outf_overlap)s \
                               --out-prefix=%(out_prefix)s 2> %(outdir)s/%(track)s_contigs.log"
-        
+
         ###############################################
         # build statement
         ###############################################
@@ -604,23 +651,22 @@ class SGA(Idba):
                           -a sga > %(outdir)s/%(track)s.contigs.fa"
 
         statement = '''%s''' % "; ".join([preprocess_statement
-                                          , index_statement
-                                          , correction_statement
-                                          , filter_statement
-                                          , overlap_statement
-                                          , assembly_statement
-                                          , move_statement, "rm -rf %(tempdir)s"]) % locals()
+                                          , index_statement, correction_statement, filter_statement, overlap_statement, assembly_statement, move_statement, "rm -rf %(tempdir)s"]) % locals()
 
         return statement
 
 ##########################
 # SOAPdenovo2
 ##########################
+
+
 class SoapDenovo2(Idba):
+
     '''
     soapdenovo is a single genome assembler
     and therefore may belong elsewhere
     '''
+
     def config(self, infile, outfile, PARAMS):
         '''
         build the configuration file based on
@@ -632,7 +678,7 @@ class SoapDenovo2(Idba):
         # config file
         outf = open(outfile, "w")
         paired = self.checkPairs(infile)
-        
+
         # global parameters - only specifies maximum
         # read length at the moment - shorter are
         # trimmed
@@ -640,17 +686,18 @@ class SoapDenovo2(Idba):
 
         # assume library parameters are the same
         # for each library
-        avg_ins="%(soapdenovo_avg_ins)s" % PARAMS
-        asm_flags="%(soapdenovo_asm_flags)s" % PARAMS
-        reverse_seq="%(soapdenovo_reverse_seq)s" % PARAMS
-        rank="%(soapdenovo_rank)s" % PARAMS
+        avg_ins = "%(soapdenovo_avg_ins)s" % PARAMS
+        asm_flags = "%(soapdenovo_asm_flags)s" % PARAMS
+        reverse_seq = "%(soapdenovo_reverse_seq)s" % PARAMS
+        rank = "%(soapdenovo_rank)s" % PARAMS
 
         # specify files
         if not paired:
-            q = "q="+infile
+            q = "q=" + infile
         else:
-            q = "\n".join(["q1="+infile, "q2="+paired[1]])
-        outf.write("""max_rd_len=%(max_rd_len)s\n[LIB]\navg_ins=%(avg_ins)s\nasm_flags=%(asm_flags)s\nreverse_seq=%(reverse_seq)s\nrank=%(rank)s\n%(q)s\n""" % locals())
+            q = "\n".join(["q1=" + infile, "q2=" + paired[1]])
+        outf.write(
+            """max_rd_len=%(max_rd_len)s\n[LIB]\navg_ins=%(avg_ins)s\nasm_flags=%(asm_flags)s\nreverse_seq=%(reverse_seq)s\nrank=%(rank)s\n%(q)s\n""" % locals())
 
         outf.close()
 
@@ -681,18 +728,22 @@ class SoapDenovo2(Idba):
 ##########################
 # metaphlan
 ##########################
+
+
 class Metaphlan(Idba):
+
     '''
     metphlan is more of an annotation tool
     and therefore may be removed from this pipeline
     - however it is directly relevant for metagenome sequencing
     '''
+
     def build(self, infile, method="read_map"):
         '''
         build statement for running metaphlan
         '''
         track = self.getTrack(infile)
-        
+
         if method == "read_map":
             statement = '''cat %(infile)s                                                                                                                                                                                                           
                       | metaphlan.py -t reads_map                                                                                                                                                                              
@@ -714,7 +765,7 @@ class Metaphlan(Idba):
         return statement
 
         # DEPRECATED
-        # # create single fasta file if required (reads are fastq format)
+        # create single fasta file if required (reads are fastq format)
         # inf = track + ".fa"
 
         # if not os.path.exists(inf):
@@ -725,21 +776,21 @@ class Metaphlan(Idba):
         #         P.run()
         #     else:
         #         inf = infile
-        
+
         # if method == "read_map":
-        #     statement = '''cat %(inf)s                                                                                                                                                                                                           
-        #               | python %%(scriptsdir)s/metaphlan.py -t reads_map                                                                                                                                                                              
-        #                --input_type multifasta %%(method)s %%(metaphlan_db)s --no_map                                                                                                                                                                      
-        #               | python %%(scriptsdir)s/metaphlan2table.py -t read_map                                                                                                                                                              
-        #                --log=%%(outfile)s.log                                                                                                                                                                                                     
+        #     statement = '''cat %(inf)s
+        #               | python %%(scriptsdir)s/metaphlan.py -t reads_map
+        #                --input_type multifasta %%(method)s %%(metaphlan_db)s --no_map
+        #               | python %%(scriptsdir)s/metaphlan2table.py -t read_map
+        #                --log=%%(outfile)s.log
         #               > %%(outfile)s; checkpoint
         #               ; sed -i 's/order/_order/g' %%(outfile)s''' % locals()
         # elif method == "rel_ab":
-        #     statement = '''cat %(inf)s                                                                                                                                                                                                           
-        #               | python %%(scriptsdir)s/metaphlan.py -t rel_ab                                                                                                                                                                              
-        #                --input_type multifasta %%(method)s %%(metaphlan_db)s --no_map                                                                                                                                                                                                                                                                                                                                   
-        #               | python %%(scriptsdir)s/metaphlan2table.py -t rel_ab 
-        #                --log=%%(outfile)s.log                                                                                                                                                                                                   
+        #     statement = '''cat %(inf)s
+        #               | python %%(scriptsdir)s/metaphlan.py -t rel_ab
+        #                --input_type multifasta %%(method)s %%(metaphlan_db)s --no_map
+        #               | python %%(scriptsdir)s/metaphlan2table.py -t rel_ab
+        #                --log=%%(outfile)s.log
         #               > %%(outfile)s''' % locals()
         # else:
         #     raise ValueError, "do not support method %s" % method
@@ -747,19 +798,17 @@ class Metaphlan(Idba):
         # return statement
 
 
-
-
-
-
 ##########################
-# cortex_var 
+# cortex_var
 ##########################
 class Cortex_var(Idba):
+
     '''
     cortex genome assembler
     '''
-    def build(self,infile):
-        
+
+    def build(self, infile):
+
         track = self.getTrack(infile)
 
         format = self.getFormat(infile)
@@ -767,12 +816,12 @@ class Cortex_var(Idba):
             format = P.snip(format, ".gz")
         format = format.upper()
 
-        # cortex_var only uses paired end information to 
+        # cortex_var only uses paired end information to
         # remove pcr duplicates
         if not self.checkPairs(infile):
             paired = "--se_list"
             reads = os.path.join(os.getcwd(), infile)
-        
+
         elif len(self.checkPairs(infile)) > 1:
             paired = "--pe_list"
             read1 = infile
@@ -797,7 +846,8 @@ class Cortex_var(Idba):
         list1 = os.path.abspath("cortex_var.dir/read1.txt")
         list2 = os.path.abspath("cortex_var.dir/read2.txt")
 
-        reads = ",".join([os.path.join(os.getcwd(), x) for x in [read1_new, read2_new]])        
+        reads = ",".join([os.path.join(os.getcwd(), x)
+                         for x in [read1_new, read2_new]])
         statement = '''  gunzip -c %(read1)s > %(read1_new)s
                        ; gunzip -c %(read2)s > %(read2_new)s  
                        ; cd cortex_var.dir
@@ -812,13 +862,5 @@ class Cortex_var(Idba):
                        --dump_binary dump_binary.ctx
                        ; rm -rf %(temp)s
                     ''' % locals()
-        
+
         return statement
-    
-
-
-
-
-
-
-

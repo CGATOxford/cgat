@@ -249,14 +249,14 @@ TABLE_SEPARATOR = "_"
 AGGREGATE_PLACEHOLDER = "agg"
 
 
-def to_aggregate( x ):
+def to_aggregate(x):
     if x:
         return x
     else:
         return AGGREGATE_PLACEHOLDER
 
 
-def from_aggregate( x ):
+def from_aggregate(x):
     if x == AGGREGATE_PLACEHOLDER:
         return None
     else:
@@ -265,66 +265,73 @@ def from_aggregate( x ):
 # Hacky, think about improvements:
 # 1. use a named-tuple factory style approach?
 # 2. read-only
+
+
 class Sample(object):
+
     '''a sample/track with one attribute called ``experiment``.
     '''
 
     attributes = ("experiment",)
     representation = "file"
 
-    def __init__(self, filename = None, tablename = None ):
+    def __init__(self, filename=None, tablename=None):
         '''create a new Sample.
 
         If filename is given, the sample name will be derived from *filename*.
         Similarly, from *tablename*.
         '''
-        
+
         collections.namedtuple.__init__(self)
-        self.data = collections.OrderedDict( zip( self.attributes, [None] * len(self.attributes) ) )
-        if filename: self.fromFile( filename )
-        if tablename: self.fromTable( tablename )
+        self.data = collections.OrderedDict(
+            zip(self.attributes, [None] * len(self.attributes)))
+        if filename:
+            self.fromFile(filename)
+        if tablename:
+            self.fromTable(tablename)
 
-    def clone( self ):
+    def clone(self):
         '''return a copy of self.'''
-        return copy.deepcopy( self )
+        return copy.deepcopy(self)
 
-    def asFile( self ):
+    def asFile(self):
         '''return sample as a filename'''
-        return FILE_SEPARATOR.join( map( to_aggregate, self.data.values() ) )
-    
-    def asTable( self):
+        return FILE_SEPARATOR.join(map(to_aggregate, self.data.values()))
+
+    def asTable(self):
         '''return sample as a tablename'''
-        return TABLE_SEPARATOR.join( map( to_aggregate, self.data.values() ) )
+        return TABLE_SEPARATOR.join(map(to_aggregate, self.data.values()))
 
-    def asR( self):
+    def asR(self):
         '''return sample as valid R label'''
-        return R_SEPARATOR.join( map( to_aggregate, self.data.values() ) )
+        return R_SEPARATOR.join(map(to_aggregate, self.data.values()))
 
-    def fromFile( self, fn ):
+    def fromFile(self, fn):
         '''build sample from filename *fn*'''
-        self._split( fn, FILE_SEPARATOR )
+        self._split(fn, FILE_SEPARATOR)
 
-    def fromTable( self, tn ):
+    def fromTable(self, tn):
         '''build sample from tablename *tn*'''
-        self._split( tn, TABLE_SEPARATOR )
+        self._split(tn, TABLE_SEPARATOR)
 
-    def fromR( self, rn ):
+    def fromR(self, rn):
         '''build sample from R name *rn*'''
-        self._split( rn, R_SEPARATOR )
+        self._split(rn, R_SEPARATOR)
 
-    def _split( self, s, sep ):
+    def _split(self, s, sep):
         if len(self.attributes) == 1:
-            self.data = collections.OrderedDict( ((self.attributes,s),) )
+            self.data = collections.OrderedDict(((self.attributes, s),))
         else:
-            d = map( from_aggregate, s.split(sep) )
+            d = map(from_aggregate, s.split(sep))
             if len(d) != len(self.attributes):
-                raise ValueError("can not match %s (sep='%s') against attributes %s" % (s, sep, self.attributes))
-            self.data = collections.OrderedDict( zip( self.attributes, d ))
-    
-    def asAggregate( self, *args ):
+                raise ValueError(
+                    "can not match %s (sep='%s') against attributes %s" % (s, sep, self.attributes))
+            self.data = collections.OrderedDict(zip(self.attributes, d))
+
+    def asAggregate(self, *args):
         '''return a new aggregate Sample.'''
-        n = copy.deepcopy( self )
-        for x in self.attributes: 
+        n = copy.deepcopy(self)
+        for x in self.attributes:
             if x not in args:
                 n.data[x] = None
         return n
@@ -332,8 +339,8 @@ class Sample(object):
     def toLabels(self):
         '''return attributes that this track is an aggregate of.'''
         return [x for x in self.attributes if self.data[x] is not None]
-        
-    def __str__(self ):
+
+    def __str__(self):
         return self.__repr__()
 
     def __repr__(self):
@@ -341,7 +348,7 @@ class Sample(object):
 
     def __eq__(self, other):
         return str(other) == str(self)
-    
+
     def __hash__(self):
         '''return hash value.'''
         return hash(self.asFile())
@@ -359,7 +366,7 @@ class Sample(object):
             object.__setattr__(self, key, val)
 
     @classmethod
-    def setDefault( cls, representation = None ):
+    def setDefault(cls, representation=None):
         '''set default representation for tracks to *representation*.
         If *represenation* is None, the representation will be set to
         the library default (asFile()).
@@ -371,17 +378,23 @@ class Sample(object):
         elif representation == "asR":
             cls.__repr__ = cls.asR
 
+
 class Sample3(Sample):
+
     '''a sample/track with three attributes: tissue, condition and replicate.
     '''
-    attributes = ( "tissue", "condition", "replicate" )
+    attributes = ("tissue", "condition", "replicate")
+
 
 class Sample4(Sample):
+
     '''a sample/track with four attributes: experiment, tissue, condition and replicate.
     '''
-    attributes = ( "experiment", "tissue", "condition", "replicate" )
+    attributes = ("experiment", "tissue", "condition", "replicate")
+
 
 class AutoSample(Sample):
+
     '''a sample/track with unknown number of attributes.
 
     The number of attributes will be guessed from *filename*,
@@ -402,15 +415,16 @@ class AutoSample(Sample):
             self.attributes = tuple(["attribute%i" % x for x in range(nparts)])
         else:
             self.attributes = self.attributes + tuple(["attribute%i" % x
-                                    for x in range(nparts - len(self.attributes))])
+                                                       for x in range(nparts - len(self.attributes))])
         Sample.__init__(self, filename=filename, tablename=tablename)
 
+
 class Aggregate:
-    
-    def __init__(self, 
-                 tracks, 
-                 track = None,
-                 labels = None,
+
+    def __init__(self,
+                 tracks,
+                 track=None,
+                 labels=None,
                  ):
         '''an aggregate of samples. 
 
@@ -433,49 +447,51 @@ class Aggregate:
         else:
             # aggregate all
             self.aggregates = []
-            
+
         self.track2groups = {}
         for track in tracks:
-        
-            key = track.asAggregate( *self.aggregates )
+
+            key = track.asAggregate(*self.aggregates)
             if key not in self.track2groups:
                 self.track2groups[key] = []
-            self.track2groups[key].append( track )
+            self.track2groups[key].append(track)
 
-    def getTracks( self, pattern = None ):
+    def getTracks(self, pattern=None):
         '''return all tracks within this aggregate.'''
-        r = sum([x for x in self.track2groups.values()], [] )
+        r = sum([x for x in self.track2groups.values()], [])
         if pattern:
-            return [ pattern % x for x in r ]
+            return [pattern % x for x in r]
         else:
             return r
 
     def __str__(self):
         x = []
         for key, v in self.track2groups.iteritems():
-            x.append( "%s\t%s" % (str(key), "\t".join( map(str, v))) )
+            x.append("%s\t%s" % (str(key), "\t".join(map(str, v))))
         return "\n".join(x)
 
     def __getitem__(self, key):
         return self.track2groups[key]
-    
+
     def __iter__(self):
         return self.track2groups.keys().__iter__()
-    
+
     def __len__(self):
         return len(self.track2groups)
 
     def keys(self):
         return self.track2groups.keys()
-    
-    def iteritems( self ):
+
+    def iteritems(self):
         return self.track2groups.iteritems()
 
+
 class Tracks:
+
     '''a collection of tracks.'''
     factory = Sample
-    
-    def __init__(self, factory = Sample): 
+
+    def __init__(self, factory=Sample):
         '''create a new container. 
 
         New tracks are derived using *factory*.
@@ -484,7 +500,7 @@ class Tracks:
         self.factory = factory
         self.tracks = []
 
-    def loadFromDirectory( self, files, pattern, exclude = None ):
+    def loadFromDirectory(self, files, pattern, exclude=None):
         '''load tracks from a list of files, applying pattern.
 
         Pattern is a regular expression with at at least one 
@@ -494,19 +510,21 @@ class Tracks:
         '''
         tracks = []
         rx = re.compile(pattern)
-        
-        if exclude: to_exclude = [ re.compile(x) for x in exclude]
+
+        if exclude:
+            to_exclude = [re.compile(x) for x in exclude]
 
         for f in files:
             if exclude:
                 skip = False
                 for x in to_exclude:
-                    if x.search( f ): 
+                    if x.search(f):
                         skip = True
                         break
-                if skip: continue
+                if skip:
+                    continue
 
-            tracks.append( self.factory( filename = rx.search( f ).groups()[0] ) )
+            tracks.append(self.factory(filename=rx.search(f).groups()[0]))
 
         self.tracks = tracks
         return self
@@ -517,30 +535,31 @@ class Tracks:
     def __len__(self):
         return len(self.tracks)
 
-    def __iadd__(self, other ):
+    def __iadd__(self, other):
         assert self.factory == other.factory
-        self.tracks.extend( other.tracks )
+        self.tracks.extend(other.tracks)
         return self
 
-    def __add__(self, other ):
+    def __add__(self, other):
         assert self.factory == other.factory
-        n = copy.deepcopy( self )
-        n.tracks.extend( other.tracks )
+        n = copy.deepcopy(self)
+        n.tracks.extend(other.tracks)
         return n
 
-    def __contains__(self, key ):
+    def __contains__(self, key):
         '''return true if *key* is in tracks.'''
         # do parsing (i.e. filenames versus tablenames?)
         return key in self.tracks
 
-    def getTracks( self, pattern = None ):
+    def getTracks(self, pattern=None):
         '''return all tracks in container.
         '''
         if pattern:
-            return [ pattern % x for x in self.tracks ]
+            return [pattern % x for x in self.tracks]
         else:
             return self.tracks
 
-def getSamplesInTrack( track, tracks ):
+
+def getSamplesInTrack(track, tracks):
     '''return all tracks in *tracks* that constitute *track*.'''
-    return Aggregate( tracks, track = track )[track]
+    return Aggregate(tracks, track=track)[track]

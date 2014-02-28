@@ -96,113 +96,123 @@ import optparse
 import collections
 import CGAT.Experiment as E
 
-BlastResult = collections.namedtuple( "blastresult",
-                                      "qseqid qstart qend sseqid sstart send evalue bitscore pident score qseq sseq" )
+BlastResult = collections.namedtuple("blastresult",
+                                     "qseqid qstart qend sseqid sstart send evalue bitscore pident score qseq sseq")
 
-class Output( object ):
 
-    def __init__(self, line ):
+class Output(object):
+
+    def __init__(self, line):
 
         data = line[:-1].split("\t")
         try:
-            self.r = BlastResult._make( data )
+            self.r = BlastResult._make(data)
         except TypeError:
-            raise ValueError( "parsing error in line: '%s'" % line[:-1])
-        
+            raise ValueError("parsing error in line: '%s'" % line[:-1])
+
         # define some shortcuts for fields used in processing later
         self.query = self.r.qseqid
         self.sbjct = self.r.sseqid
         self.bitscore = float(self.r.bitscore)
         self.iteration = None
 
-class OutputEmissions( Output ):
+
+class OutputEmissions(Output):
+
     '''output blast results in the legacy pairsdb emissions format.'''
 
     header = ["query_nid", "sbjct_nid", "evalue",
               "query_start", "query_end", "query_ali",
               "sbjct_start", "sbjct_end", "sbjct_ali",
-              "bitscore", "pid" ]
-    
-    def __str__( self ):
-        
-        def seq2ali( seq ):
-            ali = seq.split( "-" )
+              "bitscore", "pid"]
+
+    def __str__(self):
+
+        def seq2ali(seq):
+            ali = seq.split("-")
             result = []
             x = 0
-            while x < len(ali)-1:
-                result.append( "+%i" % len(ali[x] ) )
+            while x < len(ali) - 1:
+                result.append("+%i" % len(ali[x]))
                 x += 1
                 g = x
-                while ali[x] == "": x += 1
-                result.append( "-%i" % (x-g+1) ) 
-            result.append( "+%i" % len(ali[-1] ) )
+                while ali[x] == "":
+                    x += 1
+                result.append("-%i" % (x - g + 1))
+            result.append("+%i" % len(ali[-1]))
             return "".join(result)
 
-        return "\t".join( ( self.r.qseqid,
-                            self.r.sseqid,
-                            self.r.evalue,
-                            str(int(self.r.qstart) -1),
-                            self.r.qend,
-                            seq2ali( self.r.qseq ),
-                            str(int(self.r.sstart) -1),
-                            self.r.send,
-                            seq2ali( self.r.sseq ),
-                            self.r.bitscore,
-                            self.r.pident ) )
+        return "\t".join((self.r.qseqid,
+                          self.r.sseqid,
+                          self.r.evalue,
+                          str(int(self.r.qstart) - 1),
+                          self.r.qend,
+                          seq2ali(self.r.qseq),
+                          str(int(self.r.sstart) - 1),
+                          self.r.send,
+                          seq2ali(self.r.sseq),
+                          self.r.bitscore,
+                          self.r.pident))
 
-class OutputBlocks( Output ):
+
+class OutputBlocks(Output):
+
     '''output blast alignments as blocks.'''
 
     header = ["query_nid", "sbjct_nid", "evalue",
-              "query_start", "query_end", 
-              "sbjct_start", "sbjct_end", 
+              "query_start", "query_end",
+              "sbjct_start", "sbjct_end",
               "block_sizes", "query_starts", "query_ends",
-              "bitscore", "pid" ]
-    
-    def __str__( self ):
+              "bitscore", "pid"]
+
+    def __str__(self):
 
         block_sizes, query_starts, sbjct_starts = [], [], []
 
         in_block = True
         block_size = 0
         qc, sc = 0, 0
-        query_starts.append( qc )
-        sbjct_starts.append( sc )
-        
-        for qa, sa in zip( self.r.qseq, self.r.sseq ):
+        query_starts.append(qc)
+        sbjct_starts.append(sc)
+
+        for qa, sa in zip(self.r.qseq, self.r.sseq):
             qisgap = qa == "-"
             sisgap = sa == "-"
             if qisgap or sisgap:
-                if in_block: block_sizes.append( block_size )
+                if in_block:
+                    block_sizes.append(block_size)
                 in_block = False
             else:
                 if not in_block:
                     # start of new block
-                    query_starts.append( qc )
-                    sbjct_starts.append( sc )
+                    query_starts.append(qc)
+                    sbjct_starts.append(sc)
                     block_size = 0
                 block_size += 1
                 in_block = True
 
-            if not qisgap: qc += 1
-            if not sisgap: sc += 1
+            if not qisgap:
+                qc += 1
+            if not sisgap:
+                sc += 1
 
-        block_sizes.append( block_size)
+        block_sizes.append(block_size)
 
-        return "\t".join( ( self.r.qseqid,
-                            self.r.sseqid,
-                            self.r.evalue,
-                            str(int(self.r.qstart) -1),
-                            self.r.qend,
-                            str(int(self.r.sstart) -1),
-                            self.r.send,
-                            ",".join( map(str, block_sizes) ),
-                            ",".join( map(str, query_starts) ),
-                            ",".join( map(str, sbjct_starts) ),
-                            self.r.bitscore,
-                            self.r.pident ) )
+        return "\t".join((self.r.qseqid,
+                          self.r.sseqid,
+                          self.r.evalue,
+                          str(int(self.r.qstart) - 1),
+                          self.r.qend,
+                          str(int(self.r.sstart) - 1),
+                          self.r.send,
+                          ",".join(map(str, block_sizes)),
+                          ",".join(map(str, query_starts)),
+                          ",".join(map(str, sbjct_starts)),
+                          self.r.bitscore,
+                          self.r.pident))
 
-def addIterations( group ):
+
+def addIterations(group):
     '''for each pair of query and sbjct add the
     iteration.
 
@@ -213,53 +223,54 @@ def addIterations( group ):
     returns a dictionary and the number of iterations
     '''
 
-    query2sbjct_pairs = collections.defaultdict( list )
+    query2sbjct_pairs = collections.defaultdict(list)
     last_score = group[0].bitscore
     iteration = 1
     for r in group:
         if r.bitscore > last_score:
             iteration += 1
         r.iteration = iteration
-        query2sbjct_pairs[ (r.query, r.sbjct) ].append( iteration )
+        query2sbjct_pairs[(r.query, r.sbjct)].append(iteration)
         last_score = r.bitscore
 
     # normalize
     normed = {}
     for pair, iterations in query2sbjct_pairs.iteritems():
-        normed[pair] = sorted(list( set( iterations )))
+        normed[pair] = sorted(list(set(iterations)))
     return normed, iteration
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if not argv: argv = sys.argv
+    if not argv:
+        argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser( version = "%prog version: $Id$", 
-                                    usage = globals()["__doc__"] )
+    parser = E.OptionParser(version="%prog version: $Id$",
+                            usage=globals()["__doc__"])
 
     parser.add_option("-f", "--alignment-format", dest="alignment_format", type="choice",
-                      choices = ("emissions", "blocks" ),
-                      help="output format options [default=%default]."  )
+                      choices=("emissions", "blocks"),
+                      help="output format options [default=%default].")
 
-    parser.add_option( "--no-header", dest="with_header", action="store_false",
-                       help="skip output of header [default=%default]."  )
+    parser.add_option("--no-header", dest="with_header", action="store_false",
+                      help="skip output of header [default=%default].")
 
     parser.add_option("-i", "--iterations", dest="iterations", type="choice",
-                      choices = ("last", "all", "first", None ),
-                      help="output for iterative searches [default=%default]."  )
-
+                      choices=("last", "all", "first", None),
+                      help="output for iterative searches [default=%default].")
 
     parser.set_defaults(
-        alignment_format = "emissions",
-        with_header = True,
-        iterations = None,
-        )
+        alignment_format="emissions",
+        with_header=True,
+        iterations=None,
+    )
 
-    (options, args) = parser.parse_args() 
+    (options, args) = parser.parse_args()
 
     if options.alignment_format == "emissions":
         outer = OutputEmissions
@@ -269,50 +280,56 @@ def main( argv = None ):
 
     if options.with_header:
         header = outer.header[:]
-        if options.iterations != None: header.append( "iteration" )
-        sys.stdout.write( "\t".join( header) + "\n" )
+        if options.iterations != None:
+            header.append("iteration")
+        sys.stdout.write("\t".join(header) + "\n")
 
-    def grouper( infile ):
-        
+    def grouper(infile):
+
         group = []
-        
+
         query = None
         for line in infile:
-            if line.startswith("#"): continue
-            if not line.strip(): continue
+            if line.startswith("#"):
+                continue
+            if not line.strip():
+                continue
             if line.startswith("Search has CONVERGED!"):
                 sys.stdout.write("# %s" % line)
                 continue
 
-            r = outer( line )
+            r = outer(line)
             if r.query != query:
-                if query: yield group
+                if query:
+                    yield group
                 query, group = r.query, []
 
-            group.append( r )
+            group.append(r)
 
-        if query: yield group
+        if query:
+            yield group
 
-    for group in grouper( sys.stdin ):
+    for group in grouper(sys.stdin):
         if options.iterations == None:
             for r in group:
-                sys.stdout.write( str(r) + "\n" )
+                sys.stdout.write(str(r) + "\n")
         else:
-            query2sbjct_pairs, max_iterations = addIterations( group )
+            query2sbjct_pairs, max_iterations = addIterations(group)
             if options.iterations == "all":
                 filtered = group
             elif options.iterations == "last":
-                filtered = ( r for r in group if r.iteration == max_iterations )
+                filtered = (r for r in group if r.iteration == max_iterations)
             elif options.iterations == "first":
                 output_pairs = {}
                 for r in group:
-                    key = (r.query,r.sbjct)
-                    if key not in output_pairs: output_pairs[key] = r.iteration
-                filtered = (r for r in group if r.iteration <= output_pairs[(r.query,r.sbjct)] )
-                        
+                    key = (r.query, r.sbjct)
+                    if key not in output_pairs:
+                        output_pairs[key] = r.iteration
+                filtered = (
+                    r for r in group if r.iteration <= output_pairs[(r.query, r.sbjct)])
+
             for r in filtered:
-                sys.stdout.write( "%s\t%i\n" % (str(r), r.iteration) )
+                sys.stdout.write("%s\t%i\n" % (str(r), r.iteration))
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-    
+    sys.exit(main(sys.argv))

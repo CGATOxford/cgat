@@ -261,39 +261,40 @@ def main(argv=None):
         argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser(version = "%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
-                            usage = globals()["__doc__"])
+    parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+                            usage=globals()["__doc__"])
 
-    parser.add_option( "-r", "--filename-rna", dest="filename_rna", type="string", metavar='GFF',
-                       help = "gff formatted file with rna locations. Note that the computation currently "
-                              "does not take into account indels, so it is an approximate count only [%default]" )
-    parser.add_option( "-f", "--remove-rna", dest="remove_rna", action="store_true",
-                       help = "as well as counting, also remove rna reads for duplicate and other counts [%default]" )
-    parser.add_option( "-i", "--input-reads", dest="input_reads", type="int",
-                       help = "the number of reads - if given, used to provide percentages [%default]" )
-    parser.add_option( "--force-output", dest="force_output", action="store_true",
-                       help = "output nh/nm stats even if there is only a single count [%default]" )
-    parser.add_option( "-d", "--output-details", dest="output_details", action="store_true",
-                       help = "output per-read details [%default]" )
-    parser.add_option( "-q", "--filename-fastq", dest = "filename_fastq",
-                       help = "filename with sequences and quality scores. This file is only "
-                       "used to collect sequence identifiers. Thus, for paired end data a "
-                       "single file is sufficient [%default]" )
+    parser.add_option("-r", "--filename-rna", dest="filename_rna", type="string", metavar='GFF',
+                      help="gff formatted file with rna locations. Note that the computation currently "
+                      "does not take into account indels, so it is an approximate count only [%default]")
+    parser.add_option("-f", "--remove-rna", dest="remove_rna", action="store_true",
+                      help="as well as counting, also remove rna reads for duplicate and other counts [%default]")
+    parser.add_option("-i", "--input-reads", dest="input_reads", type="int",
+                      help="the number of reads - if given, used to provide percentages [%default]")
+    parser.add_option("--force-output", dest="force_output", action="store_true",
+                      help="output nh/nm stats even if there is only a single count [%default]")
+    parser.add_option("-d", "--output-details", dest="output_details", action="store_true",
+                      help="output per-read details [%default]")
+    parser.add_option("-q", "--filename-fastq", dest="filename_fastq",
+                      help="filename with sequences and quality scores. This file is only "
+                      "used to collect sequence identifiers. Thus, for paired end data a "
+                      "single file is sufficient [%default]")
 
     parser.set_defaults(
-        filename_rna = None,
-        remove_rna = False,
-        input_reads = 0,
-        force_output = False,
-        filename_fastq = None,
-        output_details = False,
-        )
+        filename_rna=None,
+        remove_rna=False,
+        input_reads=0,
+        force_output=False,
+        filename_fastq=None,
+        output_details=False,
+    )
 
-    ## add common options (-h/--help, ...) and parse command line
-    (options, args) = E.Start(parser, argv = argv, add_output_options = True)
+    # add common options (-h/--help, ...) and parse command line
+    (options, args) = E.Start(parser, argv=argv, add_output_options=True)
 
     if options.filename_rna:
-        rna = GTF.readAndIndex(GTF.iterator(IOTools.openFile(options.filename_rna)))
+        rna = GTF.readAndIndex(
+            GTF.iterator(IOTools.openFile(options.filename_rna)))
     else:
         rna = None
 
@@ -307,23 +308,23 @@ def main(argv=None):
     else:
         outfile_details = None
 
-    if options.filename_fastq and not os.path.exists( options.filename_fastq ):
+    if options.filename_fastq and not os.path.exists(options.filename_fastq):
         raise IOError("file %s does not exist" % options.filename_fastq)
 
     counter, flags_counts, nh_filtered, nh_all, nm_filtered, nm_all, mapq, mapq_all, max_hi = \
-        _bam2stats.count( pysam_in, 
-                          options.remove_rna, 
-                          rna,
-                          filename_fastq = options.filename_fastq,
-                          outfile_details = outfile_details )
+        _bam2stats.count(pysam_in,
+                         options.remove_rna,
+                         rna,
+                         filename_fastq=options.filename_fastq,
+                         outfile_details=outfile_details)
 
-    if max_hi > 0 and max_hi != max( nh_all.keys() ):
-        E.warn( "max_hi(%i) is inconsistent with max_nh (%i) - counts will be corrected" 
-                % (max_hi, max(nh_all.keys())))
+    if max_hi > 0 and max_hi != max(nh_all.keys()):
+        E.warn("max_hi(%i) is inconsistent with max_nh (%i) - counts will be corrected"
+               % (max_hi, max(nh_all.keys())))
     flags = sorted(flags_counts.keys())
 
     outs = options.stdout
-    outs.write( "category\tcounts\tpercent\tof\n" )
+    outs.write("category\tcounts\tpercent\tof\n")
 
     def _write(outs, text, numerator, denominator, base):
         percent = IOTools.prettyPercent(numerator, denominator)
@@ -335,64 +336,64 @@ def main(argv=None):
     ###############################
     ###############################
     ###############################
-    ## Output alignment information
+    # Output alignment information
     ###############################
     nalignments_unmapped = flags_counts["unmapped"]
     nalignments_mapped = counter.alignments_input - nalignments_unmapped
 
-    _write( outs, 
-            "alignments_total",
-            counter.alignments_input, 
-            counter.alignments_input, 
-            "alignments_total" )
+    _write(outs,
+           "alignments_total",
+           counter.alignments_input,
+           counter.alignments_input,
+           "alignments_total")
 
-    if counter.alignments_input == 0: 
-        E.warn( "no alignments in BAM file - no further output" )
+    if counter.alignments_input == 0:
+        E.warn("no alignments in BAM file - no further output")
         E.Stop()
         return
-        
-    _write( outs, 
-            "alignments_mapped", 
-            nalignments_mapped, 
-            counter.alignments_input, 
-            'alignments_total' )
-    _write( outs, 
-            "alignments_unmapped", 
-            nalignments_unmapped, 
-            counter.alignments_input, 
-            'alignments_total' )
 
-    if nalignments_mapped == 0: 
-        E.warn( "no mapped alignments - no further output" )
+    _write(outs,
+           "alignments_mapped",
+           nalignments_mapped,
+           counter.alignments_input,
+           'alignments_total')
+    _write(outs,
+           "alignments_unmapped",
+           nalignments_unmapped,
+           counter.alignments_input,
+           'alignments_total')
+
+    if nalignments_mapped == 0:
+        E.warn("no mapped alignments - no further output")
         E.Stop()
         return
 
     for flag, counts in flags_counts.iteritems():
-        if flag == "unmapped": 
+        if flag == "unmapped":
             continue
-        _write( outs, 
-                'alignments_' + flag, 
-                counts, 
-                nalignments_mapped, 
-                'alignments_mapped')
+        _write(outs,
+               'alignments_' + flag,
+               counts,
+               nalignments_mapped,
+               'alignments_mapped')
 
     if options.filename_rna:
-        _write( outs, 
-                "alignments_rna", 
-                counter.rna, 
-                nalignments_mapped, 
-                'alignments_mapped' )
-        _write( outs, 
-                "alignments_no_rna", 
-                counter.no_rna, 
-                nalignments_mapped, 
-                'alignments_mapped' )
+        _write(outs,
+               "alignments_rna",
+               counter.rna,
+               nalignments_mapped,
+               'alignments_mapped')
+        _write(outs,
+               "alignments_no_rna",
+               counter.no_rna,
+               nalignments_mapped,
+               'alignments_mapped')
 
-    _write( outs,
-            "alignments_filtered", 
-            counter.filtered, 
-            nalignments_mapped, 
-            "alignments_mapped" )
+    _write(outs,
+           "alignments_filtered",
+           counter.filtered,
+           nalignments_mapped,
+           "alignments_mapped")
 
     if counter.filtered == nalignments_mapped:
         normby = "alignments_mapped"
@@ -400,69 +401,69 @@ def main(argv=None):
         normby = "alignments_filtered"
 
     if counter.filtered > 0:
-        _write( outs, 
-                "alignments_duplicates", 
-                counter.alignments_duplicates, 
-                counter.alignments_filtered, 
-                normby)
-        _write( outs, 
-                "alignments_unique",
-                counter.aligmnments_filtered - counter.alignments_duplicates,
-                counter.alignments_filtered,
-                normby )
+        _write(outs,
+               "alignments_duplicates",
+               counter.alignments_duplicates,
+               counter.alignments_filtered,
+               normby)
+        _write(outs,
+               "alignments_unique",
+               counter.aligmnments_filtered - counter.alignments_duplicates,
+               counter.alignments_filtered,
+               normby)
 
     ###############################
     ###############################
     ###############################
-    ## Output read based information
+    # Output read based information
     ###############################
 
     # derive the number of mapped reads in file from alignment counts
     if options.filename_fastq:
         nreads_total = counter.total_read
-        _write( outs, 
-                "reads_total", 
-                counter.total_read,
-                nreads_total, 
-                'reads_total' )
-        _write( outs, 
-                "reads_unmapped", 
-                counter.total_read_is_unmapped, 
-                nreads_total, 
-                'reads_total' )
-        _write( outs, 
-                "reads_mapped", 
-                counter.total_read_is_mapped, 
-                nreads_total, 
-                'reads_total' )
-        _write( outs, 
-                "reads_missing", 
-                counter.total_read_is_missing,
-                nreads_total,
-                'reads_total' )
-        _write( outs, 
-                "reads_mapped_unique", 
-                counter.total_read_is_mapped_uniq,
-                counter.total_read_is_mapped,
-                'reads_mapped' )
-        _write( outs, 
-                "reads_multimapping", 
-                counter.total_read_is_mmap,
-                counter.total_read_is_mapped,
-                'reads_mapped' )
+        _write(outs,
+               "reads_total",
+               counter.total_read,
+               nreads_total,
+               'reads_total')
+        _write(outs,
+               "reads_unmapped",
+               counter.total_read_is_unmapped,
+               nreads_total,
+               'reads_total')
+        _write(outs,
+               "reads_mapped",
+               counter.total_read_is_mapped,
+               nreads_total,
+               'reads_total')
+        _write(outs,
+               "reads_missing",
+               counter.total_read_is_missing,
+               nreads_total,
+               'reads_total')
+        _write(outs,
+               "reads_mapped_unique",
+               counter.total_read_is_mapped_uniq,
+               counter.total_read_is_mapped,
+               'reads_mapped')
+        _write(outs,
+               "reads_multimapping",
+               counter.total_read_is_mmap,
+               counter.total_read_is_mapped,
+               'reads_mapped')
     else:
-        E.warn( 'inferring read counts from alignments and NH tags' )
+        E.warn('inferring read counts from alignments and NH tags')
         nreads_unmapped = flags_counts["unmapped"]
-        nreads_mapped = computeMappedReadsFromAlignments( nalignments_mapped, 
-                                                          nh_all, max_hi )
-    
+        nreads_mapped = computeMappedReadsFromAlignments(nalignments_mapped,
+                                                         nh_all, max_hi)
+
         nreads_missing = 0
         if options.input_reads:
             nreads_total = options.input_reads
             # unmapped reads in bam file?
-            if nreads_unmapped: 
+            if nreads_unmapped:
                 nreads_missing = nreads_total - nreads_unmapped - nreads_mapped
-            else: 
+            else:
                 nreads_unmapped = nreads_total - nreads_mapped
 
         elif nreads_unmapped:
@@ -473,181 +474,189 @@ def main(argv=None):
             nreads_unmapped = 0
             nreads_total = nreads_mapped
 
-        outs.write( "reads_total\t%i\t%5.2f\treads_total\n" % (nreads_total, 100.0 ) )
-        outs.write( "reads_mapped\t%i\t%5.2f\treads_total\n" % (nreads_mapped, 100.0 * nreads_mapped / nreads_total ) )
-        outs.write( "reads_unmapped\t%i\t%5.2f\treads_total\n" % (nreads_unmapped, 100.0 * nreads_unmapped / nreads_total ) )
-        outs.write( "reads_missing\t%i\t%5.2f\treads_total\n" % (nreads_missing, 100.0 * nreads_missing / nreads_total ) )
+        outs.write("reads_total\t%i\t%5.2f\treads_total\n" %
+                   (nreads_total, 100.0))
+        outs.write("reads_mapped\t%i\t%5.2f\treads_total\n" %
+                   (nreads_mapped, 100.0 * nreads_mapped / nreads_total))
+        outs.write("reads_unmapped\t%i\t%5.2f\treads_total\n" %
+                   (nreads_unmapped, 100.0 * nreads_unmapped / nreads_total))
+        outs.write("reads_missing\t%i\t%5.2f\treads_total\n" %
+                   (nreads_missing, 100.0 * nreads_missing / nreads_total))
 
         if len(nh_all) > 1:
-            outs.write( "reads_unique\t%i\t%5.2f\treads_mapped\n" % (nh_all[1], 100.0 * nh_all[1] / nreads_mapped ) )
+            outs.write("reads_unique\t%i\t%5.2f\treads_mapped\n" %
+                       (nh_all[1], 100.0 * nh_all[1] / nreads_mapped))
 
         # compute after filtering
         # not that these are rough guesses
         if options.filename_rna:
-            nreads_norna = computeMappedReadsFromAlignments( counter.filtered, nh_filtered, max_hi )
-            _write( outs, 
-                    "reads_norna",
-                    nreads_norna, 
-                    nreads_mapped,
-                    "reads_mapped" )
+            nreads_norna = computeMappedReadsFromAlignments(
+                counter.filtered, nh_filtered, max_hi)
+            _write(outs,
+                   "reads_norna",
+                   nreads_norna,
+                   nreads_mapped,
+                   "reads_mapped")
             if len(nh_filtered) > 1:
-                _write( outs, 
-                        "reads_norna_unique",
-                        nh_filtered[1], 
-                        nreads_norna,
-                        "reads_mapped" )
+                _write(outs,
+                       "reads_norna_unique",
+                       nh_filtered[1],
+                       nreads_norna,
+                       "reads_mapped")
 
     pysam_in.close()
 
     ###############################
     ###############################
     ###############################
-    ## Output pair information
+    # Output pair information
     ###############################
     if flags_counts["read2"] > 0:
         if options.filename_fastq:
             pairs_mapped = counter.total_pair_is_mapped
-            outs.write( "pairs_total\t%i\t%5.2f\tpairs_total\n" % 
-                        (counter.total_pairs, 100.0 * counter.total_pairs / counter.total_pairs ) )
-            outs.write( "pairs_mapped\t%i\t%5.2f\tpairs_total\n" %
-                        (pairs_mapped, 100.0 * pairs_mapped / counter.total_pairs))
-            outs.write( "pairs_unmapped\t%i\t%5.2f\tpairs_total\n" %
-                        ( counter.total_pair_is_unmapped, 100.0 * counter.total_pair_is_unmapped / counter.total_pairs ) )
-            outs.write( "pairs_proper_unique\t%i\t%5.2f\tpairs_total\n" %
-                        ( counter.total_pair_is_proper_uniq, 100.0 * counter.total_pair_is_proper_uniq / counter.total_pairs ) )
-            outs.write( "pairs_incomplete\t%i\t%5.2f\tpairs_total\n" %
-                        ( counter.total_pair_is_incomplete, 100.0 * counter.total_pair_is_incomplete / counter.total_pairs ) )
-            outs.write( "pairs_proper_duplicate\t%i\t%5.2f\tpairs_total\n" %
-                        ( counter.total_pair_is_proper_duplicate, 100.0 * counter.total_pair_is_proper_duplicate / counter.total_pairs ) )
-            outs.write( "pairs_proper_multimapping\t%i\t%5.2f\tpairs_total\n" %
-                        ( counter.total_pair_is_proper_mmap, 100.0 * counter.total_pair_is_proper_mmap / counter.total_pairs ) )
-            outs.write( "pairs_not_proper_unique\t%i\t%5.2f\tpairs_total\n" %
-                        ( counter.total_pair_not_proper_uniq, 100.0 * counter.total_pair_not_proper_uniq / counter.total_pairs ) )
-            outs.write( "pairs_other\t%i\t%5.2f\tpairs_total\n" %
-                        ( counter.total_pair_is_other, 100.0 * counter.total_pair_is_other / counter.total_pairs ) )
+            outs.write("pairs_total\t%i\t%5.2f\tpairs_total\n" %
+                       (counter.total_pairs, 100.0 * counter.total_pairs / counter.total_pairs))
+            outs.write("pairs_mapped\t%i\t%5.2f\tpairs_total\n" %
+                       (pairs_mapped, 100.0 * pairs_mapped / counter.total_pairs))
+            outs.write("pairs_unmapped\t%i\t%5.2f\tpairs_total\n" %
+                       (counter.total_pair_is_unmapped, 100.0 * counter.total_pair_is_unmapped / counter.total_pairs))
+            outs.write("pairs_proper_unique\t%i\t%5.2f\tpairs_total\n" %
+                       (counter.total_pair_is_proper_uniq, 100.0 * counter.total_pair_is_proper_uniq / counter.total_pairs))
+            outs.write("pairs_incomplete\t%i\t%5.2f\tpairs_total\n" %
+                       (counter.total_pair_is_incomplete, 100.0 * counter.total_pair_is_incomplete / counter.total_pairs))
+            outs.write("pairs_proper_duplicate\t%i\t%5.2f\tpairs_total\n" %
+                       (counter.total_pair_is_proper_duplicate, 100.0 * counter.total_pair_is_proper_duplicate / counter.total_pairs))
+            outs.write("pairs_proper_multimapping\t%i\t%5.2f\tpairs_total\n" %
+                       (counter.total_pair_is_proper_mmap, 100.0 * counter.total_pair_is_proper_mmap / counter.total_pairs))
+            outs.write("pairs_not_proper_unique\t%i\t%5.2f\tpairs_total\n" %
+                       (counter.total_pair_not_proper_uniq, 100.0 * counter.total_pair_not_proper_uniq / counter.total_pairs))
+            outs.write("pairs_other\t%i\t%5.2f\tpairs_total\n" %
+                       (counter.total_pair_is_other, 100.0 * counter.total_pair_is_other / counter.total_pairs))
 
             nread1_total = counter.total_read1
-            _write( outs, 
-                    "read1_total", 
-                    counter.total_read1,
-                    nread1_total, 
-                    'read1_total' )
-            _write( outs, 
-                    "read1_unmapped", 
-                    counter.total_read1_is_unmapped, 
-                    nread1_total, 
-                    'read1_total' )
-            _write( outs, 
-                    "read1_mapped", 
-                    counter.total_read1_is_mapped, 
-                    nread1_total, 
-                    'read1_total' )
-            _write( outs, 
-                    "read1_mapped_unique", 
-                    counter.total_read1_is_mapped_uniq,
-                    counter.total_read1_is_mapped,
-                    'read1_mapped' )
-            _write( outs, 
-                    "reads_multimapping", 
-                    counter.total_read1_is_mmap,
-                    counter.total_read1_is_mapped,
-                    'read1_mapped' )
-            _write( outs, 
-                    "read1_missing", 
-                    counter.total_read1_is_missing,
-                    counter.total_read1_is_mapped,
-                    'read1_total' )
+            _write(outs,
+                   "read1_total",
+                   counter.total_read1,
+                   nread1_total,
+                   'read1_total')
+            _write(outs,
+                   "read1_unmapped",
+                   counter.total_read1_is_unmapped,
+                   nread1_total,
+                   'read1_total')
+            _write(outs,
+                   "read1_mapped",
+                   counter.total_read1_is_mapped,
+                   nread1_total,
+                   'read1_total')
+            _write(outs,
+                   "read1_mapped_unique",
+                   counter.total_read1_is_mapped_uniq,
+                   counter.total_read1_is_mapped,
+                   'read1_mapped')
+            _write(outs,
+                   "reads_multimapping",
+                   counter.total_read1_is_mmap,
+                   counter.total_read1_is_mapped,
+                   'read1_mapped')
+            _write(outs,
+                   "read1_missing",
+                   counter.total_read1_is_missing,
+                   counter.total_read1_is_mapped,
+                   'read1_total')
 
             nread2_total = counter.total_read2
-            _write( outs, 
-                    "read2_total", 
-                    counter.total_read2,
-                    nread2_total, 
-                    'read2_total' )
-            _write( outs, 
-                    "read2_unmapped", 
-                    counter.total_read2_is_unmapped, 
-                    nread2_total, 
-                    'read2_total' )
-            _write( outs, 
-                    "read2_mapped", 
-                    counter.total_read2_is_mapped, 
-                    nread2_total, 
-                    'read2_total' )
-            _write( outs, 
-                    "read2_mapped_unique", 
-                    counter.total_read2_is_mapped_uniq,
-                    counter.total_read2_is_mapped,
-                    'read2_mapped' )
-            _write( outs, 
-                    "reads_multimapping", 
-                    counter.total_read2_is_mmap,
-                    counter.total_read2_is_mapped,
-                    'read2_mapped' )
-            _write( outs, 
-                    "read2_missing", 
-                    counter.total_read2_is_missing,
-                    counter.total_read2_is_mapped,
-                    'read2_total' )
+            _write(outs,
+                   "read2_total",
+                   counter.total_read2,
+                   nread2_total,
+                   'read2_total')
+            _write(outs,
+                   "read2_unmapped",
+                   counter.total_read2_is_unmapped,
+                   nread2_total,
+                   'read2_total')
+            _write(outs,
+                   "read2_mapped",
+                   counter.total_read2_is_mapped,
+                   nread2_total,
+                   'read2_total')
+            _write(outs,
+                   "read2_mapped_unique",
+                   counter.total_read2_is_mapped_uniq,
+                   counter.total_read2_is_mapped,
+                   'read2_mapped')
+            _write(outs,
+                   "reads_multimapping",
+                   counter.total_read2_is_mmap,
+                   counter.total_read2_is_mapped,
+                   'read2_mapped')
+            _write(outs,
+                   "read2_missing",
+                   counter.total_read2_is_missing,
+                   counter.total_read2_is_mapped,
+                   'read2_total')
 
         else:
             # approximate counts
             pairs_total = nreads_total // 2
             pairs_mapped = flags_counts["proper_pair"] // 2
-            _write( outs, 
-                    "pairs_total",
-                    pairs_total,
-                    pairs_total,
-                    "pairs_total" )
-            _write( outs, 
-                    "pairs_mapped",
-                    pairs_mapped,
-                    pairs_total,
-                    "pairs_total" )
+            _write(outs,
+                   "pairs_total",
+                   pairs_total,
+                   pairs_total,
+                   "pairs_total")
+            _write(outs,
+                   "pairs_mapped",
+                   pairs_mapped,
+                   pairs_total,
+                   "pairs_total")
     else:
         # no paired end data
         pairs_total = pairs_mapped = 0
-        outs.write("pairs_total\t%i\t%5.2f\tpairs_total\n" % (pairs_total, 0.0))
-        outs.write("pairs_mapped\t%i\t%5.2f\tpairs_total\n" % (pairs_mapped, 0.0))
+        outs.write("pairs_total\t%i\t%5.2f\tpairs_total\n" %
+                   (pairs_total, 0.0))
+        outs.write("pairs_mapped\t%i\t%5.2f\tpairs_total\n" %
+                   (pairs_mapped, 0.0))
 
     if options.force_output or len(nm_filtered) > 0:
-        outfile = E.openOutputFile( "nm", "w" )
-        outfile.write( "NM\talignments\n" )
+        outfile = E.openOutputFile("nm", "w")
+        outfile.write("NM\talignments\n")
         if len(nm_filtered) > 0:
-            for x in xrange( 0, max( nm_filtered.keys() ) + 1 ):
+            for x in xrange(0, max(nm_filtered.keys()) + 1):
                 outfile.write("%i\t%i\n" % (x, nm_filtered[x]))
         else:
-            outfile.write( "0\t%i\n" % (counter.filtered) )
+            outfile.write("0\t%i\n" % (counter.filtered))
         outfile.close()
 
     if options.force_output or len(nh_all) > 1:
-        outfile = E.openOutputFile( "nh_all", "w")
-        outfile.write( "NH\treads\n" )
+        outfile = E.openOutputFile("nh_all", "w")
+        outfile.write("NH\treads\n")
         if len(nh_all) > 0:
-            writeNH( outfile, nh_all, max_hi )
+            writeNH(outfile, nh_all, max_hi)
         else:
             # assume all are unique if NH flag not set
-            outfile.write( "1\t%i\n" % (counter.mapped_reads) )
+            outfile.write("1\t%i\n" % (counter.mapped_reads))
         outfile.close()
 
     if options.force_output or len(nh_filtered) > 1:
-        outfile = E.openOutputFile( "nh", "w")
-        outfile.write( "NH\treads\n" )
+        outfile = E.openOutputFile("nh", "w")
+        outfile.write("NH\treads\n")
         if len(nh_filtered) > 0:
-            writeNH( outfile, nh_filtered, max_hi )
+            writeNH(outfile, nh_filtered, max_hi)
         else:
             # assume all are unique if NH flag not set
-            outfile.write( "1\t%i\n" % (counter.filtered) )
+            outfile.write("1\t%i\n" % (counter.filtered))
         outfile.close()
 
     if options.force_output or len(mapq_all) > 1:
-        outfile = E.openOutputFile( "mapq", "w")
-        outfile.write( "mapq\tall_reads\tfiltered_reads\n" )
-        for x in xrange( 0, max( mapq_all.keys() ) + 1 ):       
+        outfile = E.openOutputFile("mapq", "w")
+        outfile.write("mapq\tall_reads\tfiltered_reads\n")
+        for x in xrange(0, max(mapq_all.keys()) + 1):
             outfile.write("%i\t%i\t%i\n" % (x, mapq_all[x], mapq[x]))
         outfile.close()
 
-    ## write footer and output benchmark information.
+    # write footer and output benchmark information.
     E.Stop()
 
 if __name__ == "__main__":

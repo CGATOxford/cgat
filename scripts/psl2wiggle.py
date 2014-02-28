@@ -52,38 +52,41 @@ import CGAT.IndexedFasta as IndexedFasta
 import CGAT.IOTools as IOTools
 import numpy
 
-def main( argv = sys.argv ):
 
-    parser = E.OptionParser( version = "%prog version: $Id: psl2wiggle.py 2834 2009-11-24 16:11:23Z andreas $", usage = globals()["__doc__"] )
+def main(argv=sys.argv):
+
+    parser = E.OptionParser(
+        version="%prog version: $Id: psl2wiggle.py 2834 2009-11-24 16:11:23Z andreas $", usage=globals()["__doc__"])
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
-                      help="filename with genome [default=%default]."  )
+                      help="filename with genome [default=%default].")
 
     parser.add_option("-b", "--output-filename", dest="output_filename", type="string",
-                      help="filename for output [default=%default]" )
+                      help="filename for output [default=%default]")
 
     parser.add_option("-o", "--output-format", dest="output_format", type="choice",
                       choices=("bedgraph", "wiggle", "bigbed", "bigwig"),
-                      help="output format [default=%default]" )
+                      help="output format [default=%default]")
 
-    parser.set_defaults( genome_file = None,
-                         typecode = numpy.int16,
-                         output_filename = None,
-                         output_format = "wiggle",
-                         test = None )
+    parser.set_defaults(genome_file=None,
+                        typecode=numpy.int16,
+                        output_filename=None,
+                        output_format="wiggle",
+                        test=None)
 
-    (options, args) = E.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start(parser, add_pipe_options=True)
 
     typecode = options.typecode
 
     if options.genome_file:
-        fasta = IndexedFasta.IndexedFasta(options.genome_file )
+        fasta = IndexedFasta.IndexedFasta(options.genome_file)
         counts = {}
-        contig_sizes = fasta.getContigSizes( with_synonyms = False )
-        E.info("allocating memory for %i contigs and %i bytes" % (len(contig_sizes), sum(contig_sizes.values()) * typecode().itemsize ))
-        for contig,size in contig_sizes.items():
-            E.debug( "allocating %s: %i bases" % (contig, size ) )
-            counts[contig] = numpy.zeros( size, typecode )
+        contig_sizes = fasta.getContigSizes(with_synonyms=False)
+        E.info("allocating memory for %i contigs and %i bytes" %
+               (len(contig_sizes), sum(contig_sizes.values()) * typecode().itemsize))
+        for contig, size in contig_sizes.items():
+            E.debug("allocating %s: %i bases" % (contig, size))
+            counts[contig] = numpy.zeros(size, typecode)
 
         E.info("allocated memory for %i contigs" % len(fasta))
 
@@ -92,47 +95,50 @@ def main( argv = sys.argv ):
         contig_sizes = {}
 
     if options.output_format in ("bigwig", "bigbed"):
-        
+
         if not options.genome_file:
-            raise ValueError("please supply genome file for bigwig/bigbed computation.")
+            raise ValueError(
+                "please supply genome file for bigwig/bigbed computation.")
 
         if not options.output_filename:
-            raise ValueError("please output file for bigwig/bigbed computation.")
+            raise ValueError(
+                "please output file for bigwig/bigbed computation.")
 
         if options.output_format == "bigwig":
             executable_name = "wigToBigWig"
         elif options.output_format == "bigbed":
             executable_name = "bedToBigBed"
         else:
-            raise ValueError("unknown output format `%s`" % options.output_format)
+            raise ValueError("unknown output format `%s`" %
+                             options.output_format)
 
-        executable = IOTools.which( executable_name )
+        executable = IOTools.which(executable_name)
 
         if not executable:
-            raise OSError( "could not find %s in path." % executable_name )
+            raise OSError("could not find %s in path." % executable_name)
 
         tmpdir = tempfile.mkdtemp()
-        E.debug( "temporary files are in %s" % tmpdir)
+        E.debug("temporary files are in %s" % tmpdir)
 
-        tmpfile_wig = os.path.join( tmpdir, "wig" )
-        tmpfile_sizes = os.path.join( tmpdir, "sizes" )
+        tmpfile_wig = os.path.join(tmpdir, "wig")
+        tmpfile_sizes = os.path.join(tmpdir, "sizes")
 
         # write contig sizes
-        outfile_size = open( tmpfile_sizes, "w")
+        outfile_size = open(tmpfile_sizes, "w")
         for contig, size in contig_sizes.items():
-            outfile_size.write("%s\t%s\n" % (contig, size) )
-        outfile_size.close()    
-        
-        outfile = open( tmpfile_wig, "w" )
+            outfile_size.write("%s\t%s\n" % (contig, size))
+        outfile_size.close()
+
+        outfile = open(tmpfile_wig, "w")
 
     else:
         outfile = options.stdout
 
-    iterator = Blat.BlatIterator( sys.stdin )
+    iterator = Blat.BlatIterator(sys.stdin)
 
     ninput, ncontigs, nskipped = 0, 0, 0
 
-    E.info( "started counting" )
+    E.info("started counting")
 
     while 1:
 
@@ -140,74 +146,78 @@ def main( argv = sys.argv ):
             break
 
         match = iterator.next()
-        
-        if match == None: break
-        
+
+        if match == None:
+            break
+
         ninput += 1
 
         contig = match.mSbjctId
 
-        for start, length in zip( match.mSbjctBlockStarts, match.mBlockSizes):
-            counts[contig][start:start+length] += 1
+        for start, length in zip(match.mSbjctBlockStarts, match.mBlockSizes):
+            counts[contig][start:start + length] += 1
 
-    E.info( "finished counting" )
+    E.info("finished counting")
 
     if options.output_format in ("wig", "bigwig"):
-        E.info( "starting wig output" )
+        E.info("starting wig output")
 
         for contig, vals in counts.items():
 
-            E.debug("output for %s" % contig )
-            for val, iter in itertools.groupby( enumerate( vals ), lambda x: x[1] ):
+            E.debug("output for %s" % contig)
+            for val, iter in itertools.groupby(enumerate(vals), lambda x: x[1]):
                 l = list(iter)
-                start,end = l[0][0],l[-1][0]
+                start, end = l[0][0], l[-1][0]
                 val = vals[start]
                 if val > 0:
-                    outfile.write("variableStep chrom=%s span=%i\n" % (contig, end-start+1))
-                    outfile.write("%i\t%i\n" % (start, val) )
+                    outfile.write("variableStep chrom=%s span=%i\n" %
+                                  (contig, end - start + 1))
+                    outfile.write("%i\t%i\n" % (start, val))
 
             ncontigs += 1
     elif options.output_format in ("bedgraph", "bigbed"):
-        
-        E.info( "starting bedgraph output" )
+
+        E.info("starting bedgraph output")
 
         for contig, vals in counts.items():
-            E.debug("output for %s" % contig )
-            for val, iter in itertools.groupby( enumerate( vals ), lambda x: x[1] ):
+            E.debug("output for %s" % contig)
+            for val, iter in itertools.groupby(enumerate(vals), lambda x: x[1]):
                 l = list(iter)
-                start,end = l[0][0],l[-1][0]
+                start, end = l[0][0], l[-1][0]
                 val = vals[start]
                 if val > 0:
-                    outfile.write("%s\t%i\t%i\t%i\n" % (contig, start, end+1,val))
-            
+                    outfile.write("%s\t%i\t%i\t%i\n" %
+                                  (contig, start, end + 1, val))
+
             ncontigs += 1
 
-    E.info( "finished output" )
+    E.info("finished output")
 
     if options.output_format in ("bigwig", "bigbed"):
         outfile.close()
 
-        E.info( "starting bigwig conversion" )
+        E.info("starting bigwig conversion")
         try:
-            retcode = subprocess.call( " ".join( (executable,
-                                                 tmpfile_wig,
-                                                 tmpfile_sizes,
-                                                 os.path.abspath( options.output_filename )), ),
-                                       shell=True)
+            retcode = subprocess.call(" ".join((executable,
+                                                tmpfile_wig,
+                                                tmpfile_sizes,
+                                                os.path.abspath(options.output_filename)), ),
+                                      shell=True)
             if retcode < 0:
-                warn( "wigToBigWig terminated with signal: %i" % -retcode)
+                warn("wigToBigWig terminated with signal: %i" % -retcode)
                 return -retcode
         except OSError, msg:
-            warn( "Error while executing bigwig: %s" % e)
+            warn("Error while executing bigwig: %s" % e)
             return 1
 
-        shutil.rmtree( tmpdir )
-        
-        E.info( "finished bigwig conversion" )
+        shutil.rmtree(tmpdir)
 
-    E.info( "ninput=%i, ncontigs=%i, nskipped=%i\n" % (ninput, ncontigs, nskipped) )
+        E.info("finished bigwig conversion")
+
+    E.info("ninput=%i, ncontigs=%i, nskipped=%i\n" %
+           (ninput, ncontigs, nskipped))
 
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv ) )
+    sys.exit(main(sys.argv))

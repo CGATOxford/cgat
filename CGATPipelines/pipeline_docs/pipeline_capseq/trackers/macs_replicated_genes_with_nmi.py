@@ -1,4 +1,8 @@
-import os, sys, re, types, itertools
+import os
+import sys
+import re
+import types
+import itertools
 import matplotlib.pyplot as plt
 import numpy
 import numpy.ma
@@ -9,13 +13,16 @@ import cpgReport
 from SphinxReport.Tracker import *
 from SphinxReport.odict import OrderedDict as odict
 
-##################################################################################
-##################################################################################
+##########################################################################
+##########################################################################
+
+
 class genesWithNMItranscript(cpgReport.cpgTracker):
+
     ''''''
     mPattern = "_replicated_tss$"
 
-    def __call__(self, track, slice = None ):
+    def __call__(self, track, slice=None):
         query = '''SELECT a.nmi_genes, b.total_genes, round((a.nmi_genes+0.0)/b.total_genes, 2) as fraction_nmi
                    FROM (SELECT count(distinct a.gene_id) as nmi_genes
                    FROM %(track)s_replicated_tss t, annotations.transcript_info a
@@ -32,12 +39,15 @@ class genesWithNMItranscript(cpgReport.cpgTracker):
         data = self.getAll(query)
         return data
 
-##################################################################################
+##########################################################################
+
+
 class genesWithNMIGene(cpgReport.cpgTracker):
+
     ''''''
     mPattern = "_replicated_gene_tss$"
 
-    def __call__(self, track, slice = None ):
+    def __call__(self, track, slice=None):
         query = '''SELECT a.nmi_genes, b.total_genes, round((a.nmi_genes+0.0)/b.total_genes, 2) as fraction_nmi
                    FROM (SELECT count(distinct t.closest_id) as nmi_genes
                    FROM %(track)s_replicated_gene_tss t, annotations.transcript_info a
@@ -53,4 +63,3 @@ class genesWithNMIGene(cpgReport.cpgTracker):
                    WHERE gene_biotype='protein_coding') b'''
         data = self.getAll(query)
         return data
-        

@@ -27,46 +27,48 @@ try:
 except IOError:
     pass
 
-def outputSegments( outfile,
-                    intervals,
-                    section,
-                    outfile_synonyms = None,
-                    max_length = 100000,
-                    remove_regex = None ):
+
+def outputSegments(outfile,
+                   intervals,
+                   section,
+                   outfile_synonyms=None,
+                   max_length=100000,
+                   remove_regex=None):
 
     if section == "segments":
         prefix = "##Segs"
     elif section == "workspace":
         prefix = "##Work"
     else:
-        raise ValueError("invalid section `%s`" % section )
-    
+        raise ValueError("invalid section `%s`" % section)
+
     ninput, ncontigs, nsegments, ndiscarded = 0, 0, 0, 0
     for contig, gffs in intervals.items():
         ninput += 1
-        if remove_regex and remove_regex.search(contig): continue
+        if remove_regex and remove_regex.search(contig):
+            continue
 
         if max_length:
-            segments = [ x for x in gffs if x[1]-x[0] <= max_length ]
+            segments = [x for x in gffs if x[1] - x[0] <= max_length]
         else:
-            segments = [ x for x in gffs ]
+            segments = [x for x in gffs]
 
         nsegments += len(segments)
         ndiscarded += len(gffs) - len(segments)
 
         if outfile_synonyms:
-            synonyms = collections.defaultdict( list )
+            synonyms = collections.defaultdict(list)
             for x in segments:
-                synonyms[x[2].source].append( (x[0], x[1]) )
+                synonyms[x[2].source].append((x[0], x[1]))
 
             for key, segs in synonyms.iteritems():
-                outfile.write( "%s\t%s\t%s\n" % (prefix, key, "\t".join(
-                    [ "(%i,%i)" % x for x in segs ] )))
-                outfile_synonyms.write("##Synonym\t%s\t%s\n" % (key, contig) )
+                outfile.write("%s\t%s\t%s\n" % (prefix, key, "\t".join(
+                    ["(%i,%i)" % x for x in segs])))
+                outfile_synonyms.write("##Synonym\t%s\t%s\n" % (key, contig))
 
         else:
-            outfile.write( "%s\t%s\t%s\n" % (prefix, contig, "\t".join(
-                [ "(%i,%i)" % x for x in segments ] )))
+            outfile.write("%s\t%s\t%s\n" % (prefix, contig, "\t".join(
+                ["(%i,%i)" % x for x in segments])))
 
         ncontigs += 1
     return ninput, nsegments, ndiscarded, ncontigs
@@ -74,13 +76,15 @@ def outputSegments( outfile,
 ############################################################
 ############################################################
 ############################################################
-## 
+##
 ############################################################
-def buildGenomeGCSegmentation( infile, outfile ):
+
+
+def buildGenomeGCSegmentation(infile, outfile):
     '''segment the genome into windows according to G+C content.'''
 
     to_cluster = True
-    
+
     statement = '''
     python %(scriptsdir)s/fasta2bed.py 
         --method=fixed-width-windows 
@@ -93,9 +97,11 @@ def buildGenomeGCSegmentation( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-## 
+##
 ############################################################
-def buildAnnotatorGC( infile, outfile ):
+
+
+def buildAnnotatorGC(infile, outfile):
     '''compute G+C regions.'''
 
     to_cluster = True
@@ -112,13 +118,15 @@ def buildAnnotatorGC( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-## 
+##
 ############################################################
-def buildIsochoresGC( infile, outfile ):
+
+
+def buildIsochoresGC(infile, outfile):
     '''compute isochores based on G+C content
     '''
     to_cluster = True
-    
+
     statement = '''
     python %(scriptsdir)s/fasta2bed.py 
         --method=fixed-width-windows 
@@ -138,9 +146,11 @@ def buildIsochoresGC( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-## Annotator utility functions
+# Annotator utility functions
 ############################################################
-def buildWorkSpace( outfile, workspace):
+
+
+def buildWorkSpace(outfile, workspace):
     '''write genomic workspace.
 
     Available workspaces are:
@@ -171,7 +181,7 @@ def buildWorkSpace( outfile, workspace):
     workspace = workspace.lower()
 
     if workspace == "genomic":
-        P.checkParameter( "genome" )
+        P.checkParameter("genome")
 
         statement = '''
         python %(scriptsdir)s/index2bed.py 
@@ -181,9 +191,9 @@ def buildWorkSpace( outfile, workspace):
         > %(outfile)s
         '''
 
-    elif workspace in ("intergenic", "intronic", "cds" ):
+    elif workspace in ("intergenic", "intronic", "cds"):
 
-        P.checkParameter( "enrichment_regions" )
+        P.checkParameter("enrichment_regions")
 
         workspace_upper = workspace.upper()
 
@@ -198,7 +208,7 @@ def buildWorkSpace( outfile, workspace):
         '''
     elif workspace == "unknown":
 
-        P.checkParameter( "enrichment_regions" )
+        P.checkParameter("enrichment_regions")
         statement = '''
         awk '($3 == "intronic" || $3 == "intergenic" )' 
         < %(enrichment_regions)s
@@ -211,7 +221,7 @@ def buildWorkSpace( outfile, workspace):
         '''
 
     elif workspace == "known":
-        P.checkParameter( "enrichment_regions" )
+        P.checkParameter("enrichment_regions")
         statement = '''
         awk '($3 == "CDS" || $3 ~ /UTR/ || $3 ~ /flank/)' 
         < %(enrichment_regions)s
@@ -225,7 +235,7 @@ def buildWorkSpace( outfile, workspace):
 
     elif workspace == "alignable":
 
-        P.checkParameter( "enrichment_alignment" )
+        P.checkParameter("enrichment_alignment")
         statement = '''gunzip
         < %(enrichment_alignment)s 
         | sort -k10,10 
@@ -238,7 +248,7 @@ def buildWorkSpace( outfile, workspace):
 
     elif workspace == "gene-territories":
 
-        P.checkParameter( "enrichment_geneterritories" )
+        P.checkParameter("enrichment_geneterritories")
         statement = '''
         python %(scriptsdir)s/gff2enrichment.py \
                 --section=workspace \
@@ -250,7 +260,7 @@ def buildWorkSpace( outfile, workspace):
 
     elif workspace == "mappable":
 
-        P.checkParameter( "enrichment_mappability" )
+        P.checkParameter("enrichment_mappability")
         statement = '''
         python %(scriptsdir)s/bed2gff.py < %(enrichment_mappability)s 
         | python %(scriptsdir)s/gff2enrichment.py 
@@ -261,7 +271,7 @@ def buildWorkSpace( outfile, workspace):
         > %(outfile)s
         '''
     else:
-        raise P.PipelineError("unknown workspace '%s'" % workspace )
+        raise P.PipelineError("unknown workspace '%s'" % workspace)
 
     P.run()
 
@@ -270,18 +280,20 @@ def buildWorkSpace( outfile, workspace):
 ############################################################
 ##
 ############################################################
-def buildAnnotatorAnnotations( tmpdir, outfile,
-                               annotations=None,
-                               bedfiles = None,
-                               gfffiles = None,
-                               gofile = None ):
+
+
+def buildAnnotatorAnnotations(tmpdir, outfile,
+                              annotations=None,
+                              bedfiles=None,
+                              gfffiles=None,
+                              gofile=None):
     '''write annotations in annotator format.
     '''
 
-    tmpannotations = os.path.join( tmpdir, "annotations" )
+    tmpannotations = os.path.join(tmpdir, "annotations")
     to_cluster = True
     job_options = "-l mem_free=4000M"
-    
+
     if annotations == "architecture":
         statement = '''
          cat %(promotors)s %(annotation)s 
@@ -291,7 +303,7 @@ def buildAnnotatorAnnotations( tmpdir, outfile,
                 --remove-regex='%(annotator_remove_pattern)s'
          > %(tmpannotations)s
         '''
-    elif annotations=="go":
+    elif annotations == "go":
         statement = '''
         python %(scriptsdir)s/gff2annotator2tsv.py 
         --section=annotations-go 
@@ -313,13 +325,14 @@ def buildAnnotatorAnnotations( tmpdir, outfile,
         > %(tmpannotations)s
         '''
     else:
-        raise P.PipelineError("unknown annotations '%s'" % annotations )
-    
+        raise P.PipelineError("unknown annotations '%s'" % annotations)
+
     P.run()
 
     return tmpannotations
 
-def buildGeneSetAnnotations( infiles, outfile, slice ):
+
+def buildGeneSetAnnotations(infiles, outfile, slice):
     '''build annotations of all sets from database.
 
     ``slice`` can be any of the slices in the ``annotation`` 
@@ -327,30 +340,32 @@ def buildGeneSetAnnotations( infiles, outfile, slice ):
 
     statement = '''SELECT gene_id FROM %(track)s_annotation as a WHERE %(where)s'''
 
-    if slice == "all": where = "'1'"
-    else: where = "is_%(slice)s" % locals()
+    if slice == "all":
+        where = "'1'"
+    else:
+        where = "is_%(slice)s" % locals()
 
-    dbhandle = sqlite3.connect( PARAMS["database"] )
-    
+    dbhandle = sqlite3.connect(PARAMS["database"])
+
     subsets = []
-    
+
     for f in infiles:
 
-        assert f.endswith( ".gtf.gz" )
+        assert f.endswith(".gtf.gz")
         track = f[:-len(".gtf.gz")]
-        key = "%s.%s" % (track,slice)
+        key = "%s.%s" % (track, slice)
 
         cc = dbhandle.cursor()
-        data = [x[0] for x in cc.execute( statement % locals() ).fetchall() ]
-        E.info( "%s: adding %i genes" % (key, len(data)))
+        data = [x[0] for x in cc.execute(statement % locals()).fetchall()]
+        E.info("%s: adding %i genes" % (key, len(data)))
 
         filename = outfile + ".tmp.%s" % key
-        outf = open( filename, "w" )
-        outf.write( "gene_id\n%s\n" % "\n".join( map(str, data) ))
+        outf = open(filename, "w")
+        outf.write("gene_id\n%s\n" % "\n".join(map(str, data)))
         outf.close()
 
-        subsets.append( "--subset=%s" % ",".join( (track, key, filename) ) )
-        
+        subsets.append("--subset=%s" % ",".join((track, key, filename)))
+
     infiles = " ".join(infiles)
     subsets = " ".join(subsets)
 
@@ -378,15 +393,19 @@ def buildGeneSetAnnotations( infiles, outfile, slice ):
 ############################################################
 ##
 ############################################################
-def buildAnnotatorSlicedSegments( tmpdir, outfile, track, slice ):
+
+
+def buildAnnotatorSlicedSegments(tmpdir, outfile, track, slice):
     '''slice segments.'''
-    
-    tmpsegments = os.path.join( tmpdir, "segments" )
+
+    tmpsegments = os.path.join(tmpdir, "segments")
     to_cluster = True
 
-    if slice == "all": where = "'1'"
-    else: where = "is_%(slice)s" % locals()
-    
+    if slice == "all":
+        where = "'1'"
+    else:
+        where = "is_%(slice)s" % locals()
+
     statement = '''
         %(cmd-sql)s %(database)s 
         "SELECT g.* FROM %(track)s_gtf as g, %(track)s_annotation AS a WHERE a.gene_id = g.gene_id AND %(where)s"
@@ -410,14 +429,16 @@ def buildAnnotatorSlicedSegments( tmpdir, outfile, track, slice ):
 ############################################################
 ##
 ############################################################
-def buildAnnotatorSegments(tmpdir, infile, outfile ):
+
+
+def buildAnnotatorSegments(tmpdir, infile, outfile):
     '''convert segments in bed format to annotator format
     from infile to outfile.
     '''
 
-    tmpsegments = os.path.join( tmpdir, "segments" )
+    tmpsegments = os.path.join(tmpdir, "segments")
     to_cluster = True
-    
+
     statement = '''
         python %(scriptsdir)s/bed2gff.py < %(infile)s 
 	| python %(scriptsdir)s/gff2annotator2tsv.py 
@@ -435,12 +456,14 @@ def buildAnnotatorSegments(tmpdir, infile, outfile ):
 ############################################################
 ##
 ############################################################
-def runAnnotator( tmpdir, outfile, 
-                  tmpannotations, 
-                  tmpsegments, 
-                  tmpworkspaces, 
-                  tmpsynonyms,
-                  options = ""):
+
+
+def runAnnotator(tmpdir, outfile,
+                 tmpannotations,
+                 tmpsegments,
+                 tmpworkspaces,
+                 tmpsynonyms,
+                 options=""):
     '''run annotator.'''
 
     to_cluster = True
@@ -448,15 +471,15 @@ def runAnnotator( tmpdir, outfile,
     job_options = "-l mem_free=8000M"
 
     workspace_options = ""
-    for x,workspace in enumerate( tmpworkspaces ):
+    for x, workspace in enumerate(tmpworkspaces):
         if x == 0:
             workspace_options += " -workspace %s" % workspace
         else:
-            workspace_options += " -workspace%i %s" % (x+1, workspace)
+            workspace_options += " -workspace%i %s" % (x + 1, workspace)
 
     if tmpsynonyms:
         workspace_options += " -synonyms %s" % tmpsynonyms
-            
+
     statement = '''
     java -Xmx8000M -cp %(annotator_dir)s/commons-cli-1.0.jar:%(annotator_dir)s/Annotator.jar app.Annotator 
     -verbose 4 -iterations %(annotator_iterations)s 
@@ -466,22 +489,24 @@ def runAnnotator( tmpdir, outfile,
     %(workspace_options)s 
     %(options)s 
     > %(outfile)s '''
-    
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+
+    P.run(**dict(locals().items() + PARAMS.items()))
 
 ############################################################
 ############################################################
 ############################################################
-## import annotator GO results
+# import annotator GO results
 ############################################################
-def genericImportAnnotator( infiles, outfile, table, workspace, slice, subset, fdr_method ):
+
+
+def genericImportAnnotator(infiles, outfile, table, workspace, slice, subset, fdr_method):
     '''generic import of annotator results.
 
     Assumes that the suffix of all infiles is the same.
     '''
 
     infile = " ".join(infiles)
-    x, suffix = os.path.splitext( infiles[0] )
+    x, suffix = os.path.splitext(infiles[0])
 
     tmpfilename = P.getTempFilename()
 
@@ -493,11 +518,11 @@ def genericImportAnnotator( infiles, outfile, table, workspace, slice, subset, f
                 --regex-id="(.*)%(suffix)s" \
                 %(infile)s > %(tmpfilename)s
         '''
-    P.run( **dict( locals().items() + PARAMS.items() ) )
+    P.run(**dict(locals().items() + PARAMS.items()))
 
     tmpfile = P.getTempFile()
-    
-    for line in open( tmpfilename, "r" ):
+
+    for line in open(tmpfilename, "r"):
         if line.startswith("id"):
             line = "subset\tworkspace\tslice\t" + re.sub("^id", "track", line)
         else:
@@ -505,26 +530,28 @@ def genericImportAnnotator( infiles, outfile, table, workspace, slice, subset, f
         tmpfile.write(line)
     tmpfile.close()
     tmpfilename2 = tmpfile.name
-        
+
     statement = '''
    python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
             --table=%(table)s 
     < %(tmpfilename2)s > %(outfile)s'''
 
-    P.run( **dict( locals().items() + PARAMS.items() ) )
-    os.unlink( tmpfilename )
-    os.unlink( tmpfilename2 )
+    P.run(**dict(locals().items() + PARAMS.items()))
+    os.unlink(tmpfilename)
+    os.unlink(tmpfilename2)
 
 ############################################################
 ############################################################
 ############################################################
-## import annotator GO results
+# import annotator GO results
 ############################################################
-def importAnnotator( infiles, outfile, regex_id, table, 
-                     fdr_method,
-                     with_slice = False ):
+
+
+def importAnnotator(infiles, outfile, regex_id, table,
+                    fdr_method,
+                    with_slice=False):
     '''generic import of annotator results.
-    
+
     If with-slice is true, the first id field is assumed
     to be a concatenation of track.slice.
     '''
@@ -548,7 +575,7 @@ def importAnnotator( infiles, outfile, regex_id, table,
                 --table=%(table)s 
         > %(outfile)s
     '''
-    
+
     P.run()
 
 
@@ -557,7 +584,7 @@ def importAnnotator( infiles, outfile, regex_id, table,
 ############################################################
 ##
 ############################################################
-def makeAnnotatorGO( infile, outfile, gofile, workspace ):
+def makeAnnotatorGO(infile, outfile, gofile, workspace):
     '''check statistical overlap between intervals and genomic
     segements having GO assignments.
 
@@ -568,40 +595,42 @@ def makeAnnotatorGO( infile, outfile, gofile, workspace ):
     # require 4Gb of free memory
     job_options = "-l mem_free=4000M"
 
-    tmpdir = tempfile.mkdtemp( dir = os.getcwd() )
+    tmpdir = tempfile.mkdtemp(dir=os.getcwd())
 
-    annotations = buildAnnotatorAnnotations( tmpdir, 
-                                             outfile, 
-                                             annotations="go", 
-                                             gofile = gofile )
+    annotations = buildAnnotatorAnnotations(tmpdir,
+                                            outfile,
+                                            annotations="go",
+                                            gofile=gofile)
 
     # take only those promotors with GO categories for workspace
     workspaces, synonyms = buildAnnotatorWorkSpace(
         tmpdir, outfile,
-        workspaces = ("mappable", workspace),
-        gc_control=True )
-    
-    segments = buildAnnotatorSegments( tmpdir, infile, outfile )
+        workspaces=("mappable", workspace),
+        gc_control=True)
 
-    runAnnotator( tmpdir, outfile, annotations, segments, workspaces, synonyms )
+    segments = buildAnnotatorSegments(tmpdir, infile, outfile)
+
+    runAnnotator(tmpdir, outfile, annotations, segments, workspaces, synonyms)
 
 ############################################################
 ############################################################
 ############################################################
 ##
 ############################################################
-def buildAnnotatorSegmentsROI( tmpdir, roi_class, outfile, overlap = None ):
+
+
+def buildAnnotatorSegmentsROI(tmpdir, roi_class, outfile, overlap=None):
     '''convert segments in bed format to annotator format
     from infile to outfile.
     '''
 
-    tmpsegments = os.path.join( tmpdir, "segments" )
+    tmpsegments = os.path.join(tmpdir, "segments")
     to_cluster = True
 
-    dbhandle = sqlite3.connect( PARAMS["database"] )
+    dbhandle = sqlite3.connect(PARAMS["database"])
 
     if overlap:
-            statement = '''
+        statement = '''
             SELECT roi.contig, roi.start, roi.end
             FROM regions_of_interest AS roi,
                  %(overlap)s_intervals AS i
@@ -617,20 +646,21 @@ def buildAnnotatorSegmentsROI( tmpdir, roi_class, outfile, overlap = None ):
         '''
 
     cc = dbhandle.cursor()
-    cc.execute( statement % locals() )
+    cc.execute(statement % locals())
 
     noutput = 0
-    contigs = collections.defaultdict( list )
+    contigs = collections.defaultdict(list)
     for result in cc:
         contig, start, end = result
-        contigs[contig].append( (start,end) )
+        contigs[contig].append((start, end))
         noutput += 1
 
-    E.info("segments for roi_class `%s` and overlap `%s`: %i" % (roi_class, overlap, noutput))
-        
-    outs = open(tmpsegments, "w" )
-    gff2annotator.outputSegments( outs, contigs,
-                                  section = "segments" )
+    E.info("segments for roi_class `%s` and overlap `%s`: %i" %
+           (roi_class, overlap, noutput))
+
+    outs = open(tmpsegments, "w")
+    gff2annotator.outputSegments(outs, contigs,
+                                 section="segments")
     outs.close()
 
     if noutput == 0:
@@ -643,7 +673,9 @@ def buildAnnotatorSegmentsROI( tmpdir, roi_class, outfile, overlap = None ):
 ############################################################
 ##
 ############################################################
-def makeAnnotatorROIGO( roi_class, outfile, gofile, workspace, overlap = None ):
+
+
+def makeAnnotatorROIGO(roi_class, outfile, gofile, workspace, overlap=None):
     '''check statistical overlap between intervals and genomic
     segements having GO assignments.
 
@@ -654,40 +686,42 @@ def makeAnnotatorROIGO( roi_class, outfile, gofile, workspace, overlap = None ):
     # require 4Gb of free memory
     job_options = "-l mem_free=4000M"
 
-    tmpdir = tempfile.mkdtemp( dir = os.getcwd() )
+    tmpdir = tempfile.mkdtemp(dir=os.getcwd())
 
-    segments = buildAnnotatorSegmentsROI( tmpdir, 
-                                          roi_class,
-                                          outfile, 
-                                          overlap = overlap )
+    segments = buildAnnotatorSegmentsROI(tmpdir,
+                                         roi_class,
+                                         outfile,
+                                         overlap=overlap)
 
-    if segments == None: 
-        E.info("no segments for roi_class `%s` and overlap `%s` - no computation." %(roi_class,
-                                                                                     overlap ))
+    if segments == None:
+        E.info("no segments for roi_class `%s` and overlap `%s` - no computation." % (roi_class,
+                                                                                      overlap))
         return
-    annotations = buildAnnotatorAnnotations( tmpdir, 
-                                             outfile, 
-                                             annotations="go", 
-                                             gofile = gofile )
+    annotations = buildAnnotatorAnnotations(tmpdir,
+                                            outfile,
+                                            annotations="go",
+                                            gofile=gofile)
 
     # take only those promotors with GO categories for workspace
     workspaces, synonyms = buildAnnotatorWorkSpace(
         tmpdir, outfile,
-        workspaces = (workspace,),
-        gc_control=True )
-    
+        workspaces=(workspace,),
+        gc_control=True)
+
     # these are large segments, so increase bucket size
-    runAnnotator( tmpdir, outfile, annotations, segments, workspaces, synonyms,
-                  "-bucketsize 100" )
+    runAnnotator(tmpdir, outfile, annotations, segments, workspaces, synonyms,
+                 "-bucketsize 100")
 
 ############################################################
 ############################################################
 ############################################################
 ##
 ############################################################
-def makeAnnotatorArchitecture( infile, outfile, 
-                               workspaces = ("mappable","genomic"),
-                               **kwargs ):
+
+
+def makeAnnotatorArchitecture(infile, outfile,
+                              workspaces=("mappable", "genomic"),
+                              **kwargs):
     '''check statistical overlap between intervals and and other genomic features
     defined in the file PARAMS["annotations"].
 
@@ -702,57 +736,60 @@ def makeAnnotatorArchitecture( infile, outfile,
 
       3 Workspace: the full genome
     '''
-    
-    tmpdir = tempfile.mkdtemp( dir = os.getcwd() )
+
+    tmpdir = tempfile.mkdtemp(dir=os.getcwd())
 
     track = infile[:-len(".bed")]
 
-    segments = buildAnnotatorSegments( tmpdir, infile, outfile )
+    segments = buildAnnotatorSegments(tmpdir, infile, outfile)
 
+    workspaces, synonyms = buildAnnotatorWorkSpace(tmpdir, outfile,
+                                                   workspaces=workspaces,
+                                                   gc_control=True)
 
-    workspaces, synonyms = buildAnnotatorWorkSpace( tmpdir, outfile,
-                                                    workspaces = workspaces,
-                                                    gc_control=True )
-    
-    
-    annotations = buildAnnotatorAnnotations( tmpdir, outfile, annotations="architecture" )
-    
-    runAnnotator( tmpdir, outfile, annotations, segments, workspaces, synonyms )
+    annotations = buildAnnotatorAnnotations(
+        tmpdir, outfile, annotations="architecture")
 
-    shutil.rmtree( tmpdir )
+    runAnnotator(tmpdir, outfile, annotations, segments, workspaces, synonyms)
+
+    shutil.rmtree(tmpdir)
 
 ############################################################
 ############################################################
 ############################################################
 ##
 ############################################################
-def makeAnnotator( infile, outfile, 
-                   segments,
-                   annotations,
-                   workspaces = ("mappable","genomic"),
-                   gc_control = True ):
+
+
+def makeAnnotator(infile, outfile,
+                  segments,
+                  annotations,
+                  workspaces=("mappable", "genomic"),
+                  gc_control = True):
     '''check statistical overlap between intervals and and other genomic features
     '''
-    
-    tmpdir = tempfile.mkdtemp( dir = os.getcwd() )
+
+    tmpdir = tempfile.mkdtemp(dir=os.getcwd())
 
     # build work spaces
-    workspaces, synonyms = buildAnnotatorWorkSpace( tmpdir, outfile,
-                                                    workspaces = workspaces,
-                                                    gc_control=gc_control )
-        
-    annotations = buildAnnotatorAnnotations( tmpdir, outfile,  )
-    
-    runAnnotator( tmpdir, outfile, annotations, segments, workspaces, synonyms )
+    workspaces, synonyms = buildAnnotatorWorkSpace(tmpdir, outfile,
+                                                   workspaces=workspaces,
+                                                   gc_control=gc_control)
 
-    shutil.rmtree( tmpdir )
+    annotations = buildAnnotatorAnnotations(tmpdir, outfile,)
+
+    runAnnotator(tmpdir, outfile, annotations, segments, workspaces, synonyms)
+
+    shutil.rmtree(tmpdir)
 
 ############################################################
 ############################################################
 ############################################################
 ##
 ############################################################
-def makeAnnotatorTracks( infiles, outfile, **kwargs ):
+
+
+def makeAnnotatorTracks(infiles, outfile, **kwargs):
     '''check statistical overlap between intervals and selected ucsc tracks
 
     Annotator is run with the following parameters:
@@ -764,37 +801,40 @@ def makeAnnotatorTracks( infiles, outfile, **kwargs ):
 
       3 Workspace: the full genome
     '''
-    
+
     infile, infile_annotations = infiles
 
     track = infile[:-len(".bed")]
 
-    tmpdir = tempfile.mkdtemp( dir = os.getcwd() )
+    tmpdir = tempfile.mkdtemp(dir=os.getcwd())
 
     if kwargs:
-        segments = buildAnnotatorSegmentsFromDatabase( tmpdir,
-                                                                 track, outfile,
-                                                                 **kwargs )
+        segments = buildAnnotatorSegmentsFromDatabase(tmpdir,
+                                                      track, outfile,
+                                                      **kwargs)
     else:
-        segments = buildAnnotatorSegments( tmpdir, infile, outfile )
-    
-    workspaces, synonyms = buildAnnotatorWorkSpace( tmpdir, outfile,
-                                                    workspaces = ("mappable","genomic"),
-                                                    gc_control = True )
+        segments = buildAnnotatorSegments(tmpdir, infile, outfile)
 
-    annotations = buildAnnotatorAnnotations( tmpdir, outfile, bedfiles=(infile_annotations,) )
+    workspaces, synonyms = buildAnnotatorWorkSpace(tmpdir, outfile,
+                                                   workspaces=(
+                                                       "mappable", "genomic"),
+                                                   gc_control = True)
 
+    annotations = buildAnnotatorAnnotations(
+        tmpdir, outfile, bedfiles=(infile_annotations,))
 
-    runAnnotator( tmpdir, outfile, annotations, segments, workspaces, synonyms )
+    runAnnotator(tmpdir, outfile, annotations, segments, workspaces, synonyms)
 
-    shutil.rmtree( tmpdir )
+    shutil.rmtree(tmpdir)
 
 ############################################################
 ############################################################
 ############################################################
 ##
 ############################################################
-def makeAnnotatorRegionsOfInterest( infiles, outfile, **kwargs ):
+
+
+def makeAnnotatorRegionsOfInterest(infiles, outfile, **kwargs):
     '''check statistical overlap between intervals regions of interest.
 
     Annotator is run with the following parameters:
@@ -811,27 +851,24 @@ def makeAnnotatorRegionsOfInterest( infiles, outfile, **kwargs ):
     infile, infile_regions = infiles
     track = infile[:-len(".bed")]
 
-    tmpdir = tempfile.mkdtemp( dir = os.getcwd() )
+    tmpdir = tempfile.mkdtemp(dir=os.getcwd())
 
-    annotations = buildAnnotatorAnnotations( tmpdir, outfile, bedfiles=(infile_regions,) )
+    annotations = buildAnnotatorAnnotations(
+        tmpdir, outfile, bedfiles=(infile_regions,))
 
-    workspaces, synonyms = buildAnnotatorWorkSpace( tmpdir,
-                                                    outfile,
-                                                    workspaces = ("mappable", "gene-territories"),
-                                                    gc_control = True )
+    workspaces, synonyms = buildAnnotatorWorkSpace(tmpdir,
+                                                   outfile,
+                                                   workspaces=(
+                                                       "mappable", "gene-territories"),
+                                                   gc_control = True)
 
-    
     if kwargs:
-        segments = buildAnnotatorSegmentsFromDatabase( tmpdir,
-                                                       track, outfile,
-                                                       **kwargs )
+        segments = buildAnnotatorSegmentsFromDatabase(tmpdir,
+                                                      track, outfile,
+                                                      **kwargs)
     else:
-        segments = buildAnnotatorSegments( tmpdir, infile, outfile )
+        segments = buildAnnotatorSegments(tmpdir, infile, outfile)
 
+    runAnnotator(tmpdir, outfile, annotations, segments, workspaces, synonyms)
 
-
-    runAnnotator( tmpdir, outfile, annotations, segments, workspaces, synonyms )
-
-    shutil.rmtree( tmpdir )
-
-
+    shutil.rmtree(tmpdir)

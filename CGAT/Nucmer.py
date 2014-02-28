@@ -3,14 +3,18 @@
 # from nucmer
 #####################################################
 
-import os, sys, re
+import os
+import sys
+import re
 
 
 class Coords(object):
+
     '''
     class for reading, writing etc the output from 
     show-coords - with nucmer
     '''
+
     def __init__(self):
         '''
         initialise class
@@ -28,7 +32,3 @@ class Coords(object):
         self.fields = coordsfile.readline().split("\t")
         for line in coordsfile.readlines():
             yield line[:-1].split("\t")
-
-
-        
-

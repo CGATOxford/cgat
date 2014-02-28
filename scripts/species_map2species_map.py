@@ -52,23 +52,25 @@ import glob
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if not argv: argv = sys.argv
+    if not argv:
+        argv = sys.argv
 
     # setup command line parser
-    parser = optparse.OptionParser( version = "%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
-                                    usage = globals()["__doc__"] )
+    parser = optparse.OptionParser(version="%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+                                   usage=globals()["__doc__"])
 
     parser.add_option("-g", "--genome-dir", dest="genome_dir", type="string",
-                      help="supply help"  )
+                      help="supply help")
 
-    ## add common options (-h/--help, ...) and parse command line 
-    (options, args) = E.Start( parser, argv = argv )
+    # add common options (-h/--help, ...) and parse command line
+    (options, args) = E.Start(parser, argv=argv)
 
     contigs_map = {}
     for genome in glob.glob(os.path.join(options.genome_dir, "*")):
@@ -80,14 +82,12 @@ def main( argv = None ):
     for line in options.stdin.readlines():
         data = line[:-1].split("\t")
         gi = data[1]
-        assert gi in contigs_map, "cannot find genome with id gi|%s in genomes directory" % gi 
-            
+        assert gi in contigs_map, "cannot find genome with id gi|%s in genomes directory" % gi
+
         options.stdout.write("%s\t%s\n" % (data[0], contigs_map[gi]))
 
-    ## write footer and output benchmark information.
+    # write footer and output benchmark information.
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
-
+    sys.exit(main(sys.argv))

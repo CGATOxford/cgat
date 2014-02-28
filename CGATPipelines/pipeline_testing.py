@@ -112,7 +112,7 @@ import CGAT.Experiment as E
 ###################################################
 ###################################################
 ###################################################
-## Pipeline configuration
+# Pipeline configuration
 ###################################################
 
 # load options from the config file
@@ -131,8 +131,10 @@ def getPipelinesDir():
 
 ###################################################################
 ###################################################################
-## Helper functions mapping tracks to conditions, etc
+# Helper functions mapping tracks to conditions, etc
 ###################################################################
+
+
 def splitTestName(outfile):
     '''split the test name into pipeline and data part.
 
@@ -163,7 +165,9 @@ def splitTestName(outfile):
 ###################################################################
 ###################################################################
 ###################################################################
-def runTest(infile, outfile, update = False):
+
+
+def runTest(infile, outfile, update=False):
     '''run a test.'''
 
     test_name = P.snip(outfile, ".log")
@@ -201,14 +205,14 @@ def runTest(infile, outfile, update = False):
     (cd %(test_name)s.dir;
     python %(pipelines_dir)s/%(pipeline_name)s.py
     %(pipeline_options)s make full) >& %(outfile)s
-    ''' 
+    '''
     P.run()
 
 
 ###################################################################
 ###################################################################
 ###################################################################
-## general tests
+# general tests
 ###################################################################
 @files([(os.path.join(PARAMS["data_dir"], x + ".dir"),
          x + ".log")
@@ -221,7 +225,7 @@ def runPreparationTests(infile, outfile):
 ###################################################################
 ###################################################################
 ###################################################################
-## run a test
+# run a test
 ###################################################################
 @follows(runPreparationTests)
 @files([(x,
@@ -237,7 +241,7 @@ def runTests(infile, outfile):
 ###################################################################
 ###################################################################
 ###################################################################
-## update a test
+# update a test
 ###################################################################
 @follows(runPreparationTests)
 @files([(x,
@@ -252,12 +256,14 @@ def updateTests(infile, outfile):
 ###################################################################
 ###################################################################
 ###################################################################
-## build reports
+# build reports
 ###################################################################
+
+
 @transform(runTests, suffix(".log"), ".report")
 def runReports(infile, outfile):
     '''run a pipeline report.'''
-    
+
     test_name = P.snip(outfile, ".report")
 
     pipeline_name, test_description = splitTestName(test_name)
@@ -265,15 +271,17 @@ def runReports(infile, outfile):
     statement = '''
     (cd %(test_name)s.dir; python %(scriptsdir)s/%(pipeline_name)s.py
     %(pipeline_options)s make build_report) >& %(outfile)s
-    ''' 
-    
+    '''
+
     P.run()
 
 ###################################################################
 ###################################################################
 ###################################################################
-## primary targets
+# primary targets
 ###################################################################
+
+
 @follows(runTests, runReports)
 def full():
     pass
@@ -281,21 +289,25 @@ def full():
 ###################################################################
 ###################################################################
 ###################################################################
-## primary targets
+# primary targets
 ###################################################################
+
+
 @follows(mkdir("report"))
 def build_report():
     '''build report from scratch.'''
 
     E.info("starting report build process from scratch")
-    P.run_report(clean = True)
+    P.run_report(clean=True)
+
 
 @follows(mkdir("report"))
 def update_report():
     '''update report.'''
 
     E.info("updating report")
-    P.run_report(clean = False)
+    P.run_report(clean=False)
+
 
 @follows(update_report)
 def publish_report():

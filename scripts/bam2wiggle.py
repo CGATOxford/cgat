@@ -46,7 +46,7 @@ for command line help.
 Command line options
 --------------------
 
-""" 
+"""
 
 import os
 import sys
@@ -66,13 +66,16 @@ try:
 except ImportError:
     import CGAT._bam2bed as _bam2bed
 
+
 class SpanWriter(object):
+
     '''output values within spans.
-    
+
     values are collected according to a span and an average is
     output.
     '''
-    def __init__(self,span):
+
+    def __init__(self, span):
         self.span = span
 
         self.laststart = 0
@@ -81,8 +84,8 @@ class SpanWriter(object):
 
         self.lastout = None
 
-    def __call__( self, outfile, contig, start, end, val ):
-        
+    def __call__(self, outfile, contig, start, end, val):
+
         # deal with previous window
         if self.lastend:
             last_window_start = self.lastend - self.lastend % self.span
@@ -100,7 +103,7 @@ class SpanWriter(object):
                 (start, end, self.laststart, self.lastend, last_window_start)
             self.lastout = last_window_start
             v = self.val / float(self.span)
-            outfile.write( "%i\t%f\n" % (last_window_start, v ) )
+            outfile.write("%i\t%f\n" % (last_window_start, v))
             self.val = 0
 
             last_window_start = start - start % self.span
@@ -109,28 +112,29 @@ class SpanWriter(object):
         if end < last_window_end:
             # window too small to output, simply add values
             self.val += val * (end - start)
-            self.lastend = max( end, self.lastend )
+            self.lastend = max(end, self.lastend)
         else:
             # output first window
-            v = self.val + val * (self.span - start % self.span) / float(self.span)
-            
+            v = self.val + val * \
+                (self.span - start % self.span) / float(self.span)
+
             s = last_window_start
             assert self.lastout != s, \
-                    "start=%i, end=%i, laststart=%i, lastend=%i, s=%i" % \
-                    (start, end, self.laststart, self.lastend, s)
-            outfile.write( "%i\t%f\n" % (s, v ) )
+                "start=%i, end=%i, laststart=%i, lastend=%i, s=%i" % \
+                (start, end, self.laststart, self.lastend, s)
+            outfile.write("%i\t%f\n" % (s, v))
             self.lastout = s
             self.val = 0
 
             # Output middle windows
-            for x in range( start + self.span - start % self.span, end - self.span, self.span ):
+            for x in range(start + self.span - start % self.span, end - self.span, self.span):
                 assert self.lastout != x
-                outfile.write( "%i\t%f\n" % (x, val ) )
+                outfile.write("%i\t%f\n" % (x, val))
                 self.lastout = x
 
             if end % self.span:
                 # save rest
-                self.lastend = end 
+                self.lastend = end
                 self.val = val * end % self.span
             elif end - self.span != last_window_start:
                 # special case, end ends on window
@@ -138,67 +142,70 @@ class SpanWriter(object):
                     "start=%i, end=%i, laststart=%i, lastend=%i" % \
                     (start, end, self.laststart, self.lastend)
                 self.lastout = end - self.span
-                outfile.write( "%i\t%f\n" % (end - self.span, val ) )
+                outfile.write("%i\t%f\n" % (end - self.span, val))
                 self.lastend = None
             else:
                 # special case, end ends on window and only single window - already
                 # output as start
                 self.lastend = None
 
-
-    def flush( self, outfile ):
+    def flush(self, outfile):
         if self.lastend:
-            outfile.write( "%i\t%f\n" % (self.lastend - self.lastend % self.span, 
-                                         self.val / (self.lastend % self.span) ) )
+            outfile.write("%i\t%f\n" % (self.lastend - self.lastend % self.span,
+                                        self.val / (self.lastend % self.span)))
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
     """
 
-    if not argv: argv = sys.argv
+    if not argv:
+        argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser( version = "%prog version: $Id: bam2wiggle.py 2832 2009-11-24 16:11:06Z andreas $", usage = globals()["__doc__"] )
+    parser = E.OptionParser(
+        version="%prog version: $Id: bam2wiggle.py 2832 2009-11-24 16:11:06Z andreas $", usage=globals()["__doc__"])
 
     parser.add_option("-o", "--output-format", dest="output_format", type="choice",
-                      choices=("bedgraph", "wiggle", "bigbed", "bigwig", "bed"),
-                      help="output format [default=%default]" )
+                      choices=(
+                          "bedgraph", "wiggle", "bigbed", "bigwig", "bed"),
+                      help="output format [default=%default]")
 
     parser.add_option("-b", "--output-filename", dest="output_filename", type="string",
-                      help="filename for output [default=%default]" )
+                      help="filename for output [default=%default]")
 
-    parser.add_option( "-s", "--shift", dest="shift", type = "int",
-                       help = "shift reads by a certain amount (ChIP-Seq) [%default]" )
+    parser.add_option("-s", "--shift", dest="shift", type="int",
+                      help="shift reads by a certain amount (ChIP-Seq) [%default]")
 
-    parser.add_option( "-e", "--extend", dest="extend", type = "int",
-                       help = "extend reads by a certain amount (ChIP-Seq) [%default]" )
+    parser.add_option("-e", "--extend", dest="extend", type="int",
+                      help="extend reads by a certain amount (ChIP-Seq) [%default]")
 
-    parser.add_option( "-p", "--span", dest="span", type = "int",
-                       help = "span of a window in wiggle tracks [%default]" )
+    parser.add_option("-p", "--span", dest="span", type="int",
+                      help="span of a window in wiggle tracks [%default]")
 
     parser.add_option("-m", "--merge-pairs", dest="merge_pairs", action="store_true",
-                      help="merge paired-ended reads into a single bed interval [default=%default]. " )
+                      help="merge paired-ended reads into a single bed interval [default=%default]. ")
 
-    parser.add_option( "--max-insert-size", dest="max_insert_size", type = "int",
-                      help = "only merge if insert size less that # bases. 0 turns of this filter [default=%default]."  )
+    parser.add_option("--max-insert-size", dest="max_insert_size", type="int",
+                      help="only merge if insert size less that # bases. 0 turns of this filter [default=%default].")
 
-    parser.add_option( "--min-insert-size", dest="min_insert_size", type = "int",
-                       help = "only merge paired-end reads if they are at least # bases apart. "
-                              " 0 turns of this filter. [default=%default]" )
+    parser.add_option("--min-insert-size", dest="min_insert_size", type="int",
+                      help="only merge paired-end reads if they are at least # bases apart. "
+                      " 0 turns of this filter. [default=%default]")
     parser.set_defaults(
-        samfile = None,
-        output_format = "wiggle",
-        output_filename = None,
-        shift = 0,
-        extend = 0,
-        span = 1,
-        merge_pairs = None,
-        min_insert_size = 0,
-        max_insert_size = 0,
-        )
+        samfile=None,
+        output_format="wiggle",
+        output_filename=None,
+        shift=0,
+        extend=0,
+        span=1,
+        merge_pairs=None,
+        min_insert_size=0,
+        max_insert_size=0,
+    )
 
-    ## add common options (-h/--help, ...) and parse command line 
-    (options, args) = E.Start( parser, argv = argv )
+    # add common options (-h/--help, ...) and parse command line
+    (options, args) = E.Start(parser, argv=argv)
 
     if len(args) >= 1:
         options.samfile = args[0]
@@ -209,68 +216,73 @@ def main( argv = None ):
     if len(args) == 2:
         options.output_filename = args[1]
 
-    samfile = pysam.Samfile( options.samfile, "rb" )
+    samfile = pysam.Samfile(options.samfile, "rb")
 
-    contig_sizes = dict( zip( samfile.references, samfile.lengths) )
+    contig_sizes = dict(zip(samfile.references, samfile.lengths))
 
     if options.shift or options.extend:
         if options.output_format != "bigwig":
-            raise ValueError( "shift and extend only available for bigwig output" )
+            raise ValueError(
+                "shift and extend only available for bigwig output")
 
     if options.output_format in ("bigwig", "bigbed"):
-        
+
         if not options.output_filename:
-            raise ValueError("please output file for bigwig/bigbed computation.")
+            raise ValueError(
+                "please output file for bigwig/bigbed computation.")
 
         if options.output_format == "bigwig":
             executable_name = "wigToBigWig"
         elif options.output_format == "bigbed":
             executable_name = "bedToBigBed"
         else:
-            raise ValueError("unknown output format `%s`" % options.output_format)
+            raise ValueError("unknown output format `%s`" %
+                             options.output_format)
 
-        executable = IOTools.which( executable_name )
+        executable = IOTools.which(executable_name)
 
         if not executable:
-            raise OSError( "could not find %s in path." % executable_name )
+            raise OSError("could not find %s in path." % executable_name)
 
         tmpdir = tempfile.mkdtemp()
-        E.debug( "temporary files are in %s" % tmpdir)
+        E.debug("temporary files are in %s" % tmpdir)
 
-        tmpfile_wig = os.path.join( tmpdir, "wig" )
-        tmpfile_sizes = os.path.join( tmpdir, "sizes" )
+        tmpfile_wig = os.path.join(tmpdir, "wig")
+        tmpfile_sizes = os.path.join(tmpdir, "sizes")
 
         # write contig sizes
-        outfile_size = open( tmpfile_sizes, "w")
+        outfile_size = open(tmpfile_sizes, "w")
         for contig, size in contig_sizes.items():
-            outfile_size.write("%s\t%s\n" % (contig, size) )
-        outfile_size.close()    
-        
-        outfile = open( tmpfile_wig, "w" )
-        E.info( "starting output to %s" % tmpfile_wig )
+            outfile_size.write("%s\t%s\n" % (contig, size))
+        outfile_size.close()
+
+        outfile = open(tmpfile_wig, "w")
+        E.info("starting output to %s" % tmpfile_wig)
 
     else:
         outfile = options.stdout
-        E.info( "starting output to stdout" )        
+        E.info("starting output to stdout")
 
     if options.output_format in ("wiggle", "bigwig"):
-        # wiggle is one-based, so add 1, also step-size is 1, so need to output all bases
+        # wiggle is one-based, so add 1, also step-size is 1, so need to output
+        # all bases
         if options.span == 1:
             outf = lambda outfile, contig, start, end, val: \
-                outfile.write( "".join( [ "%i\t%i\n" % (x, val) for x in xrange(start+1,end+1) ] ) )
+                outfile.write(
+                    "".join(["%i\t%i\n" % (x, val) for x in xrange(start + 1, end + 1)]))
         else:
-            outf = SpanWriter( options.span )
+            outf = SpanWriter(options.span)
 
     elif options.output_format in ("bed", "bigbed"):
         # bed is 0-based, open-closed
         outf = lambda outfile, contig, start, end, val: \
-            outfile.write("%s\t%i\t%i\t%i\n" % (contig, start, end,val))
+            outfile.write("%s\t%i\t%i\t%i\n" % (contig, start, end, val))
 
     ninput, nskipped, ncontigs = 0, 0, 0
 
-    output_filename = options.output_filename 
+    output_filename = options.output_filename
     if output_filename:
-        output_filename = os.path.abspath( output_filename )
+        output_filename = os.path.abspath(output_filename)
 
     if options.shift > 0 or options.extend > 0 or options.merge_pairs:
 
@@ -287,48 +299,50 @@ def main( argv = None ):
             shift_extend = shift + extend
 
             for contig in samfile.references:
-                E.debug("output for %s" % contig )
+                E.debug("output for %s" % contig)
                 lcontig = contig_sizes[contig]
 
-                for read in samfile.fetch( contig ):
+                for read in samfile.fetch(contig):
                     pos = read.pos
                     if read.is_reverse:
-                        start = max(0, read.pos + read.alen - shift_extend )
-                    else: 
+                        start = max(0, read.pos + read.alen - shift_extend)
+                    else:
                         start = max(0, read.pos + shift)
 
                     # intervals extending beyond contig are removed
-                    if start >= lcontig: continue
+                    if start >= lcontig:
+                        continue
 
-                    end = min( lcontig, start + extend )
-                    outfile.write( "%s\t%i\t%i\n" % (contig, start, end))
-                
+                    end = min(lcontig, start + extend)
+                    outfile.write("%s\t%i\t%i\n" % (contig, start, end))
+
         outfile.close()
 
-        tmpfile_bed = os.path.join( tmpdir, "bed" )
+        tmpfile_bed = os.path.join(tmpdir, "bed")
         E.info("computing coverage")
         # calculate coverage - format is bedgraph
         statement = "genomeCoverageBed -bg -i %(tmpfile_wig)s -g %(tmpfile_sizes)s > %(tmpfile_bed)s" % locals()
-        E.run( statement )
-        
-        E.info("converting to bigwig" )
+        E.run(statement)
 
-        tmpfile_sorted = os.path.join( tmpdir, "sorted" )
+        E.info("converting to bigwig")
+
+        tmpfile_sorted = os.path.join(tmpdir, "sorted")
         statement = "sort -k 1,1 -k2,2n %(tmpfile_bed)s > %(tmpfile_sorted)s; bedGraphToBigWig %(tmpfile_sorted)s %(tmpfile_sizes)s %(output_filename)s" % locals()
-        E.run( statement)
+        E.run(statement)
 
-        shutil.rmtree( tmpdir )
+        shutil.rmtree(tmpdir)
 
     else:
 
-        def column_iter( iterator ):
-            
+        def column_iter(iterator):
+
             start = None
             end = 0
             n = None
             for t in iterator:
-                if t.pos - end > 1 or n != t.n: 
-                    if start != None: yield start, end, n
+                if t.pos - end > 1 or n != t.n:
+                    if start != None:
+                        yield start, end, n
                     start = t.pos
                     end = t.pos
                     n = t.n
@@ -337,56 +351,61 @@ def main( argv = None ):
 
         for contig in samfile.references:
             # if contig != "chrX": continue
-            E.debug("output for %s" % contig )
+            E.debug("output for %s" % contig)
             lcontig = contig_sizes[contig]
 
             if options.output_format in ("wiggle", "bigwig"):
-                outfile.write( "variableStep chrom=%s span=%i\n" % (contig, options.span) )
-                
-            for start, end, val in column_iter( samfile.pileup(contig)):
+                outfile.write("variableStep chrom=%s span=%i\n" %
+                              (contig, options.span))
+
+            for start, end, val in column_iter(samfile.pileup(contig)):
 
                 # patch: there was a problem with bam files and reads overextending at the end.
-                # These are usually Ns, but need to check as otherwise wigToBigWig fails.
-                if lcontig <= end: 
-                    E.warn( "read extending beyond contig: %s: %i > %i" % (contig, end, lcontig))
-                    end = lcontig 
-                    if start >= end: continue
+                # These are usually Ns, but need to check as otherwise
+                # wigToBigWig fails.
+                if lcontig <= end:
+                    E.warn("read extending beyond contig: %s: %i > %i" %
+                           (contig, end, lcontig))
+                    end = lcontig
+                    if start >= end:
+                        continue
 
-                if val > 0: 
-                    outf( outfile, contig, start, end, val)
+                if val > 0:
+                    outf(outfile, contig, start, end, val)
             ncontigs += 1
 
         if type(outf) == type(SpanWriter):
             outf.flush(outfile)
 
-        E.info( "finished output" )
+        E.info("finished output")
 
-        E.info( "ninput=%i, ncontigs=%i, nskipped=%i" % (ninput, ncontigs, nskipped) )
+        E.info("ninput=%i, ncontigs=%i, nskipped=%i" %
+               (ninput, ncontigs, nskipped))
 
         if options.output_format in ("bigwig", "bigbed"):
             outfile.close()
 
-            E.info( "starting %s conversion" % executable )
+            E.info("starting %s conversion" % executable)
             try:
-                retcode = subprocess.call( " ".join( (executable,
-                                                      tmpfile_wig,
-                                                      tmpfile_sizes,
-                                                      output_filename )),
-                                           shell=True)
+                retcode = subprocess.call(" ".join((executable,
+                                                    tmpfile_wig,
+                                                    tmpfile_sizes,
+                                                    output_filename)),
+                                          shell=True)
                 if retcode != 0:
-                    E.warn( "%s terminated with signal: %i" % (executable, -retcode))
+                    E.warn("%s terminated with signal: %i" %
+                           (executable, -retcode))
                     return -retcode
             except OSError, msg:
-                E.warn( "Error while executing bigwig: %s" % e)
+                E.warn("Error while executing bigwig: %s" % e)
                 return 1
 
-            shutil.rmtree( tmpdir )
+            shutil.rmtree(tmpdir)
 
-            E.info( "finished bigwig conversion" )
+            E.info("finished bigwig conversion")
 
     E.Stop()
 
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

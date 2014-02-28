@@ -1,26 +1,33 @@
-import os, sys, re, types, itertools, glob
+import os
+import sys
+import re
+import types
+import itertools
+import glob
 
 from SphinxReport.Tracker import *
 from SphinxReport.Utils import PARAMS as P
 from collections import OrderedDict as odict
 
 # get from config file
-UCSC_DATABASE=P["genome"]
-ENSEMBL_DATABASE=P["ensembl_database"]
+UCSC_DATABASE = P["genome"]
+ENSEMBL_DATABASE = P["ensembl_database"]
 RX_ENSEMBL_GENE = re.compile(P["ensembl_gene_prefix"])
 RX_ENSEMBL_TRANSCRIPT = re.compile(P["ensembl_transcript_prefix"])
 
-REFERENCE="refcoding"
+REFERENCE = "refcoding"
 
 ###################################################################
 ###################################################################
-## parameterization
+# parameterization
 
-EXPORTDIR = P.get('rnaseqdiffexpression_exportdir', P.get('exportdir', 'export'))
+EXPORTDIR = P.get(
+    'rnaseqdiffexpression_exportdir', P.get('exportdir', 'export'))
 DATADIR = P.get('rnaseqdiffexpression_datadir', P.get('datadir', '.'))
-DATABASE = P.get('rnaseqdiffexpression_backend', P.get('sql_backend', 'sqlite:///./csvdb'))
+DATABASE = P.get('rnaseqdiffexpression_backend', P.get(
+    'sql_backend', 'sqlite:///./csvdb'))
 
-DATABASE_ANNOTATIONS=P['annotations_database']
+DATABASE_ANNOTATIONS = P['annotations_database']
 
 ###################################################################
 # cf. pipeline_rnaseq.py
@@ -28,38 +35,40 @@ DATABASE_ANNOTATIONS=P['annotations_database']
 ###################################################################
 import CGATPipelines.PipelineTracks as PipelineTracks
 
-TRACKS = PipelineTracks.Tracks( PipelineTracks.Sample ).loadFromDirectory( 
-    glob.glob( "%s/*.bam" % DATADIR), "%s/(\S+).bam" % DATADIR)
+TRACKS = PipelineTracks.Tracks(PipelineTracks.Sample).loadFromDirectory(
+    glob.glob("%s/*.bam" % DATADIR), "%s/(\S+).bam" % DATADIR)
 
-ALL = PipelineTracks.Aggregate( TRACKS )
-EXPERIMENTS = PipelineTracks.Aggregate( TRACKS, labels = ("condition", "tissue" ) )
-CONDITIONS = PipelineTracks.Aggregate( TRACKS, labels = ("condition", ) )
-TISSUES = PipelineTracks.Aggregate( TRACKS, labels = ("tissue", ) )
+ALL = PipelineTracks.Aggregate(TRACKS)
+EXPERIMENTS = PipelineTracks.Aggregate(TRACKS, labels=("condition", "tissue"))
+CONDITIONS = PipelineTracks.Aggregate(TRACKS, labels=("condition", ))
+TISSUES = PipelineTracks.Aggregate(TRACKS, labels=("tissue", ))
 
-GENESETS = PipelineTracks.Tracks( PipelineTracks.Sample ).loadFromDirectory( 
-    glob.glob( "*.gtf.gz" ), "(\S+).gtf.gz" )
+GENESETS = PipelineTracks.Tracks(PipelineTracks.Sample).loadFromDirectory(
+    glob.glob("*.gtf.gz"), "(\S+).gtf.gz")
 
-DESIGNS = PipelineTracks.Tracks( PipelineTracks.Sample ).loadFromDirectory( 
-    glob.glob( "design*.tsv" ), "(\S+).tsv" )
+DESIGNS = PipelineTracks.Tracks(PipelineTracks.Sample).loadFromDirectory(
+    glob.glob("design*.tsv"), "(\S+).tsv")
 
-METHODS = PipelineTracks.Tracks( PipelineTracks.Sample ).loadFromDirectory( 
-    glob.glob( "*_stats.tsv" ), "(\S+)_stats.tsv" )
-
-###########################################################################
-CUFFDIFF_LEVELS= ("gene", "isoform", "cds", "tss")
+METHODS = PipelineTracks.Tracks(PipelineTracks.Sample).loadFromDirectory(
+    glob.glob("*_stats.tsv"), "(\S+)_stats.tsv")
 
 ###########################################################################
-## shorthand
+CUFFDIFF_LEVELS = ("gene", "isoform", "cds", "tss")
+
+###########################################################################
+# shorthand
 MAP_TRACKS = {
-    'default' : EXPERIMENTS,
-    'experiments' : EXPERIMENTS,
-    'conditions' : CONDITIONS,
-    'tissues' : TISSUES,
-    'merged' : ALL,
-    'geneset-summary': GENESETS }
+    'default': EXPERIMENTS,
+    'experiments': EXPERIMENTS,
+    'conditions': CONDITIONS,
+    'tissues': TISSUES,
+    'merged': ALL,
+    'geneset-summary': GENESETS}
 
 ###########################################################################
-def selectTracks( subset ):
+
+
+def selectTracks(subset):
     '''select tracks from *all_tracks* according to *subset*.
     '''
     if subset == None or subset == "default":
@@ -70,16 +79,20 @@ def selectTracks( subset ):
     return subset
 
 ###########################################################################
-def splitLocus( locus ):
+
+
+def splitLocus(locus):
     if ".." in locus:
-        contig, start, end = re.match("(\S+):(\d+)\.\.(\d+)", locus ).groups()
+        contig, start, end = re.match("(\S+):(\d+)\.\.(\d+)", locus).groups()
     elif "-" in locus:
-        contig, start, end = re.match("(\S+):(\d+)\-(\d+)", locus ).groups()
-        
+        contig, start, end = re.match("(\S+):(\d+)\-(\d+)", locus).groups()
+
     return contig, int(start), int(end)
 
 ###########################################################################
-def linkToUCSC( contig, start, end ):
+
+
+def linkToUCSC(contig, start, end):
     '''build URL for UCSC.'''
 
     ucsc_database = UCSC_DATABASE
@@ -88,25 +101,30 @@ def linkToUCSC( contig, start, end ):
     return link
 
 ###########################################################################
-def linkToEnsembl( id ):
+
+
+def linkToEnsembl(id):
     ensembl_database = ENSEMBL_DATABASE
-    if RX_ENSEMBL_GENE.match( id ):
+    if RX_ENSEMBL_GENE.match(id):
         link = "`%(id)s <http://www.ensembl.org/%(ensembl_database)s/Gene/Summary?g=%(id)s>`_" \
-                % locals()
-    elif RX_ENSEMBL_TRANSCRIPT.match( id ):
+            % locals()
+    elif RX_ENSEMBL_TRANSCRIPT.match(id):
         link = "`%(id)s <http://www.ensembl.org/%(ensembl_database)s/Transcript/Summary?t=%(id)s>`_" \
-                % locals()
+            % locals()
     else:
         link = id
     return link
 
 ###########################################################################
-class ProjectTracker( TrackerSQL ):
+
+
+class ProjectTracker(TrackerSQL):
+
     '''Define convenience tracks for plots'''
-    def __init__(self, *args, **kwargs ):
-        TrackerSQL.__init__(self, 
-                            *args, 
-                            backend = DATABASE, 
-                            attach = [ ( DATABASE_ANNOTATIONS, 'annotations') ],
-                            **kwargs )
-    
+
+    def __init__(self, *args, **kwargs):
+        TrackerSQL.__init__(self,
+                            *args,
+                            backend=DATABASE,
+                            attach=[(DATABASE_ANNOTATIONS, 'annotations')],
+                            **kwargs)

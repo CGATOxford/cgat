@@ -42,24 +42,27 @@ import optparse
 
 import CGAT.Experiment as E
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if not argv: argv = sys.argv
+    if not argv:
+        argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser( version = "%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
-                                    usage = globals()["__doc__"] )
+    parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+                            usage=globals()["__doc__"])
 
-    ## add common options (-h/--help, ...) and parse command line 
-    (options, args) = E.Start( parser, argv = argv )
+    # add common options (-h/--help, ...) and parse command line
+    (options, args) = E.Start(parser, argv=argv)
 
     for line in sys.stdin:
 
-        if line[0] == "#": continue
+        if line[0] == "#":
+            continue
 
         data = string.split(line[:-1], "\t")
 
@@ -79,22 +82,13 @@ def main( argv = None ):
             else:
                 hours, minutes, seconds = x.groups()
 
-
-            new_fields.append( "%.2f" % (string.atof(hours) * 3600.0 + string.atof(minutes) * 60.0 + string.atof(seconds)))
+            new_fields.append("%.2f" % (
+                string.atof(hours) * 3600.0 + string.atof(minutes) * 60.0 + string.atof(seconds)))
 
         print string.join(new_fields, "\t")
 
-    ## write footer and output benchmark information.
+    # write footer and output benchmark information.
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
-
-
-    
-
-
-
-    
-
+    sys.exit(main(sys.argv))

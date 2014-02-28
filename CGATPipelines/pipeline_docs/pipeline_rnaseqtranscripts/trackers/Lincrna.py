@@ -1,6 +1,7 @@
-import os, sys, re, types, itertools
+import os
+import sys
+import re
+import types
+import itertools
 
 from RnaseqTranscriptsReport import *
-
-
-

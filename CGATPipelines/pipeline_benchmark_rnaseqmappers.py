@@ -152,35 +152,37 @@ import CGAT.IOTools as IOTools
 ###################################################
 ###################################################
 ###################################################
-## Pipeline configuration
+# Pipeline configuration
 ###################################################
 
 # load options from the config file
 import CGAT.Pipeline as P
-P.getParameters( 
+P.getParameters(
     ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
      "../pipeline.ini",
-     "pipeline.ini" ] )
+     "pipeline.ini"])
 PARAMS = P.PARAMS
 
-PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],
-                                       "pipeline_annotations.py" )
+PARAMS_ANNOTATIONS = P.peekParameters(PARAMS["annotations_dir"],
+                                      "pipeline_annotations.py")
 
 ###################################################################
 ###################################################################
-## Helper functions mapping tracks to conditions, etc
+# Helper functions mapping tracks to conditions, etc
 ###################################################################
 import CGATPipelines.PipelineMapping as PipelineMapping
 import CGATPipelines.PipelineTracks as PipelineTracks
 
-TRACKS = PipelineTracks.Tracks( PipelineTracks.Sample ).loadFromDirectory( 
-    glob.glob( "*.fastq.gz" ), "(\S+).fastq.gz" )
+TRACKS = PipelineTracks.Tracks(PipelineTracks.Sample).loadFromDirectory(
+    glob.glob("*.fastq.gz"), "(\S+).fastq.gz")
 
-USECLUSTER=True
+USECLUSTER = True
 
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 def connect():
     '''connect to database.
 
@@ -189,10 +191,11 @@ def connect():
     Returns a database connection.
     '''
 
-    dbh = sqlite3.connect( PARAMS["database"] )
-    statement = '''ATTACH DATABASE '%s' as annotations''' % (PARAMS["annotations_database"])
+    dbh = sqlite3.connect(PARAMS["database"])
+    statement = '''ATTACH DATABASE '%s' as annotations''' % (
+        PARAMS["annotations_database"])
     cc = dbh.cursor()
-    cc.execute( statement )
+    cc.execute(statement)
     cc.close()
 
     return dbh
@@ -200,10 +203,12 @@ def connect():
 #########################################################################
 #########################################################################
 #########################################################################
-@merge( os.path.join( PARAMS["annotations_dir"], 
-                      PARAMS_ANNOTATIONS["interface_geneset_all_gtf"]),
-        "coding_exons.gtf.gz" )
-def buildCodingExons( infile, outfile ):
+
+
+@merge(os.path.join(PARAMS["annotations_dir"],
+                    PARAMS_ANNOTATIONS["interface_geneset_all_gtf"]),
+       "coding_exons.gtf.gz")
+def buildCodingExons(infile, outfile):
     to_cluster = True
     statement = '''
     zcat %(infile)s 
@@ -218,10 +223,12 @@ def buildCodingExons( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@merge( os.path.join( PARAMS["annotations_dir"], 
-                      PARAMS_ANNOTATIONS["interface_geneset_all_gtf"]),
-        "coding_regions.gtf.gz" )
-def buildCodingRegions( infile, outfile ):
+
+
+@merge(os.path.join(PARAMS["annotations_dir"],
+                    PARAMS_ANNOTATIONS["interface_geneset_all_gtf"]),
+       "coding_regions.gtf.gz")
+def buildCodingRegions(infile, outfile):
     to_cluster = True
     statement = '''
     zcat %(infile)s 
@@ -236,22 +243,25 @@ def buildCodingRegions( infile, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-## Pipeline start
+# Pipeline start
 ###################################################################
-@transform( "bfast_*.ini", 
-            suffix( ".ini" ),
-            add_inputs( "data.fastq.gz" ),
-            ".bfast.sam.gz" )
-def mapReadsWithBFAST( infiles, outfile ):
+
+
+@transform("bfast_*.ini",
+           suffix(".ini"),
+           add_inputs("data.fastq.gz"),
+           ".bfast.sam.gz")
+def mapReadsWithBFAST(infiles, outfile):
     '''map reads with bfast'''
 
     inifile, infile = infiles
 
     to_cluster = True
-    job_options= "-pe dedicated %i -R y -l mem_free=16G" % PARAMS["bfast_threads"] 
+    job_options = "-pe dedicated %i -R y -l mem_free=16G" % PARAMS[
+        "bfast_threads"]
 
     update = False
-    if not os.path.exists( "%s.bmf" % outfile ):
+    if not os.path.exists("%s.bmf" % outfile):
         statement = '''
         bfast match -f %(bfast_genome_dir)s/%(genome)s.fa 
                     -A 1 
@@ -265,7 +275,7 @@ def mapReadsWithBFAST( infiles, outfile ):
         update = True
         P.run()
 
-    if not os.path.exists( "%s.baf" % outfile ) or update:
+    if not os.path.exists("%s.baf" % outfile) or update:
         statement = '''
         bfast localalign -f %(bfast_genome_dir)s/%(genome)s.fa 
                     -A 1 
@@ -276,7 +286,7 @@ def mapReadsWithBFAST( infiles, outfile ):
                     2> %(outfile)s.baf.log
         '''
         P.run()
-    
+
     statement = '''
     bfast postprocess -f %(bfast_genome_dir)s/%(genome)s.fa 
                 %(bfast_postprocess_options)s
@@ -292,17 +302,20 @@ def mapReadsWithBFAST( infiles, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-@transform( "shrimp_*.ini", 
-            suffix( ".ini" ),
-            add_inputs( "data.fastq.gz" ),
-            ".shrimp.sam.gz" )
-def mapReadsWithShrimp( infiles, outfile ):
+
+
+@transform("shrimp_*.ini",
+           suffix(".ini"),
+           add_inputs("data.fastq.gz"),
+           ".shrimp.sam.gz")
+def mapReadsWithShrimp(infiles, outfile):
     '''map reads with shrimp'''
 
     inifile, infile = infiles
 
     to_cluster = USECLUSTER
-    job_options= "-pe dedicated %i -R y -l mem_free=64G" % PARAMS["shrimp_threads"] 
+    job_options = "-pe dedicated %i -R y -l mem_free=64G" % PARAMS[
+        "shrimp_threads"]
 
     statement = '''
     gmapper-cs --full-threshold 80%% --threads %(shrimp_threads)i --fastq --report 5 --sam
@@ -320,17 +333,20 @@ def mapReadsWithShrimp( infiles, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-@transform( "novoalign_*.ini", 
-            suffix( ".ini" ),
-            add_inputs( "data.fastq.gz" ),
-            ".novoalign.sam.gz" )
-def mapReadsWithNovoalign( infiles, outfile ):
+
+
+@transform("novoalign_*.ini",
+           suffix(".ini"),
+           add_inputs("data.fastq.gz"),
+           ".novoalign.sam.gz")
+def mapReadsWithNovoalign(infiles, outfile):
     '''map reads with shrimp'''
 
     inifile, infile = infiles
 
     to_cluster = USECLUSTER
-    job_options= "-pe dedicated %i -R y -l mem_free=64G" % PARAMS["novoalign_threads"] 
+    job_options = "-pe dedicated %i -R y -l mem_free=64G" % PARAMS[
+        "novoalign_threads"]
 
     statement = '''
     novoalignCS 
@@ -350,17 +366,20 @@ def mapReadsWithNovoalign( infiles, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-@transform( "bwa_*.ini", 
-            suffix( ".ini" ),
-            add_inputs( "data.bwafastq.gz" ),
-            ".sam.gz" )
-def mapReadsWithBWA( infiles, outfile ):
+
+
+@transform("bwa_*.ini",
+           suffix(".ini"),
+           add_inputs("data.bwafastq.gz"),
+           ".sam.gz")
+def mapReadsWithBWA(infiles, outfile):
     '''map reads with shrimp'''
 
     inifile, infile = infiles
 
     to_cluster = USECLUSTER
-    job_options= "-pe dedicated %i -R y -l mem_free=64G" % PARAMS["bwa_threads"] 
+    job_options = "-pe dedicated %i -R y -l mem_free=64G" % PARAMS[
+        "bwa_threads"]
 
     statement = '''
     bwa aln -t %(bwa_threads)s -c %(bwa_align_options)s %(bwa_genome_dir)s/%(genome)s_cs %(infile)s > %(outfile)s.sai
@@ -379,22 +398,25 @@ def mapReadsWithBWA( infiles, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-@transform( "tophat_*.ini", 
-            suffix( ".ini" ),
-            add_inputs( "data.fastq.gz" ),
-            ".bam" )
-def mapReadsWithTophat( infiles, outfile ):
+
+
+@transform("tophat_*.ini",
+           suffix(".ini"),
+           add_inputs("data.fastq.gz"),
+           ".bam")
+def mapReadsWithTophat(infiles, outfile):
     '''map reads with tophat
 
     '''
     inifile, infile = infiles
 
-    local_params = P.loadParameters( inifile )
+    local_params = P.loadParameters(inifile)
 
     to_cluster = USECLUSTER
-    job_options= "-pe dedicated %i -R y -l mem_free=16G" % PARAMS["tophat_threads"] 
+    job_options = "-pe dedicated %i -R y -l mem_free=16G" % PARAMS[
+        "tophat_threads"]
 
-    tmpfile = P.getTempFilename( "." )
+    tmpfile = P.getTempFilename(".")
 
     #qualfile = P.snip(infile, "csfasta.gz" ) + "qual.gz"
     '''
@@ -403,7 +425,7 @@ def mapReadsWithTophat( infiles, outfile ):
     gunzip < %(qualfile)s > %(tmpfile)s.qual;
     checkpoint;
     '''
-    
+
     statement = '''
     zcat %(infile)s 
     | python %(scriptsdir)s/fastq2solid.py 
@@ -429,27 +451,30 @@ def mapReadsWithTophat( infiles, outfile ):
     '''
 
     # use local parameters to overwrite default ones.
-    P.run( **local_params )
+    P.run(**local_params)
 
-    os.unlink( tmpfile )
+    os.unlink(tmpfile)
 
 ###################################################################
 ###################################################################
 ###################################################################
-@transform( "bowtie_*.ini", 
-            suffix( ".ini" ),
-            add_inputs( "data.fastq.gz" ),
-            ".bowtie.sam.gz" )
-def mapReadsWithBowtie( infiles, outfile ):
+
+
+@transform("bowtie_*.ini",
+           suffix(".ini"),
+           add_inputs("data.fastq.gz"),
+           ".bowtie.sam.gz")
+def mapReadsWithBowtie(infiles, outfile):
     '''map reads with bowtie'''
 
     inifile, infile = infiles
 
     to_cluster = USECLUSTER
-    job_options= "-pe dedicated %i -R y -l mem_free=16G" % PARAMS["bowtie_threads"] 
+    job_options = "-pe dedicated %i -R y -l mem_free=16G" % PARAMS[
+        "bowtie_threads"]
 
     tmpfile = P.getTempFilename()
-    
+
     statement = '''
     gunzip < %(infile)s > %(tmpfile)s;
     checkpoint;
@@ -469,22 +494,23 @@ def mapReadsWithBowtie( infiles, outfile ):
 
     P.run()
 
-@transform(  (mapReadsWithBowtie,
-              mapReadsWithShrimp,
-              mapReadsWithNovoalign,
-              mapReadsWithBFAST,
-              mapReadsWithBWA ),
-             suffix(".sam.gz"),
-             add_inputs( os.path.join(PARAMS["annotations_dir"],
-                                      PARAMS_ANNOTATIONS["interface_contigs"] ) ),
-            ".bam" )
-def buildBAMs( infiles, outfile ):
+
+@transform((mapReadsWithBowtie,
+            mapReadsWithShrimp,
+            mapReadsWithNovoalign,
+            mapReadsWithBFAST,
+            mapReadsWithBWA),
+           suffix(".sam.gz"),
+           add_inputs(os.path.join(PARAMS["annotations_dir"],
+                                   PARAMS_ANNOTATIONS["interface_contigs"])),
+           ".bam")
+def buildBAMs(infiles, outfile):
     '''build BAM files.'''
 
     infile, contigs = infiles
     to_cluster = USECLUSTER
-    
-    track = P.snip( outfile, ".bam" )
+
+    track = P.snip(outfile, ".bam")
 
     # samtools sort does not set sorted flag, do it yourself
     statement = '''
@@ -501,10 +527,12 @@ def buildBAMs( infiles, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@merge( os.path.join( PARAMS["annotations_dir"], 
-                      PARAMS_ANNOTATIONS["interface_geneset_all_gtf"]),
-        "refcoding.gtf.gz" )
-def buildCodingGeneSet( infile, outfile ):
+
+
+@merge(os.path.join(PARAMS["annotations_dir"],
+                    PARAMS_ANNOTATIONS["interface_geneset_all_gtf"]),
+       "refcoding.gtf.gz")
+def buildCodingGeneSet(infile, outfile):
     '''build a gene set with only protein coding 
     transcripts.
 
@@ -514,7 +542,7 @@ def buildCodingGeneSet( infile, outfile ):
 
     This set includes UTR and CDS.
     '''
-    
+
     to_cluster = True
     statement = '''
     zcat %(infile)s | awk '$2 == "protein_coding"' | gzip > %(outfile)s
@@ -524,8 +552,10 @@ def buildCodingGeneSet( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@transform( buildCodingGeneSet, suffix(".gtf.gz"), ".fa")
-def buildReferenceTranscriptome( infile, outfile ):
+
+
+@transform(buildCodingGeneSet, suffix(".gtf.gz"), ".fa")
+def buildReferenceTranscriptome(infile, outfile):
     '''build reference transcriptome. 
 
     The reference transcriptome contains all known 
@@ -549,11 +579,11 @@ def buildReferenceTranscriptome( infile, outfile ):
     > %(outfile)s;
     checkpoint; 
     samtools faidx %(outfile)s
-    ''' 
+    '''
 
     P.run()
-    
-    prefix = P.snip( outfile, ".fa" )
+
+    prefix = P.snip(outfile, ".fa")
 
     # build raw index
     statement = '''
@@ -572,13 +602,15 @@ def buildReferenceTranscriptome( infile, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-@transform( ("*.fastq.gz" ),
-            suffix(".fastq.gz" ),
-            add_inputs( buildReferenceTranscriptome, 
-                        os.path.join(PARAMS["annotations_dir"],
-                                     PARAMS_ANNOTATIONS["interface_contigs"] ) ),
-            r"\1.trans.bam" )
-def mapReadsWithBowtieAgainstTranscriptome( infiles, outfile ):
+
+
+@transform(("*.fastq.gz"),
+           suffix(".fastq.gz"),
+           add_inputs(buildReferenceTranscriptome,
+                      os.path.join(PARAMS["annotations_dir"],
+                                   PARAMS_ANNOTATIONS["interface_contigs"])),
+           r"\1.trans.bam")
+def mapReadsWithBowtieAgainstTranscriptome(infiles, outfile):
     '''map reads from short read archive sequence using bowtie against
     transcriptome data.
     '''
@@ -589,19 +621,20 @@ def mapReadsWithBowtieAgainstTranscriptome( infiles, outfile ):
     # Change this, if the number of permitted mismatches for the genome
     # increases.
 
-    # Output all valid matches in the best stratum. This will 
+    # Output all valid matches in the best stratum. This will
     # inflate the file sizes due to matches to alternative transcripts
     # but otherwise matches to paralogs will be missed (and such
     # reads would be filtered out).
     to_cluster = USECLUSTER
-    job_options= "-pe dedicated %i -R y -l mem_free=16G" % PARAMS["bowtie_threads"] 
+    job_options = "-pe dedicated %i -R y -l mem_free=16G" % PARAMS[
+        "bowtie_threads"]
 
     tmpfile = P.getTempFilename()
 
     infile, reffile, contigs = infiles
-    track = P.snip( outfile, ".bam" )
-    prefix = P.snip( reffile, ".fa" )
-    
+    track = P.snip(outfile, ".bam")
+    prefix = P.snip(reffile, ".fa")
+
     statement = '''
     gunzip < %(infile)s > %(tmpfile)s;
     checkpoint;
@@ -629,19 +662,25 @@ def mapReadsWithBowtieAgainstTranscriptome( infiles, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-@transform( (mapReadsWithTophat, buildBAMs),
-            suffix(".bam"),
-            ".bam" )
-def mapping( infile, outfile): pass
+
+
+@transform((mapReadsWithTophat, buildBAMs),
+           suffix(".bam"),
+           ".bam")
+def mapping(infile, outfile):
+    pass
 
 ###################################################################
 ###################################################################
 ###################################################################
-@transform( mapping, 
-            suffix(".bam"),
-            add_inputs( buildCodingGeneSet, mapReadsWithBowtieAgainstTranscriptome),
-            ".accepted.bam" )
-def checkMappedReadsAgainstTranscriptome( infiles, outfile): 
+
+
+@transform(mapping,
+           suffix(".bam"),
+           add_inputs(
+               buildCodingGeneSet, mapReadsWithBowtieAgainstTranscriptome),
+           ".accepted.bam")
+def checkMappedReadsAgainstTranscriptome(infiles, outfile):
     '''reconcile genomic and transcriptome matches.
     '''
     genome, reffile, transcriptome = infiles
@@ -651,11 +690,11 @@ def checkMappedReadsAgainstTranscriptome( infiles, outfile):
 
     options = []
     if "tophat_unique" in PARAMS and PARAMS["tophat_unique"]:
-        options.append( "--unique" )
+        options.append("--unique")
 
     if "tophat_remove_contigs" in PARAMS and PARAMS["tophat_remove_contigs"]:
-        options.append( "--remove-contigs=%s" % PARAMS["tophat_remove_contigs"] )
-        
+        options.append("--remove-contigs=%s" % PARAMS["tophat_remove_contigs"])
+
     # if "tophat_protocol" in PARAMS and "stranded" in PARAMS["tophat_protocol"]:
     #     options.append( "--set-strand" )
 
@@ -663,8 +702,8 @@ def checkMappedReadsAgainstTranscriptome( infiles, outfile):
 
     # using mismatches to filter is inappropriate as mismatches are not handled in the same
     # way across all mappers:
-    # * not all mappers have NM, for example (bwa does not) and 
-    # * not all have CM (tophat does not). 
+    # * not all mappers have NM, for example (bwa does not) and
+    # * not all have CM (tophat does not).
 
     statement = '''
     python %(scriptsdir)s/bams2bam.py 
@@ -684,16 +723,18 @@ def checkMappedReadsAgainstTranscriptome( infiles, outfile):
 ###################################################################
 ###################################################################
 ###################################################################
-@merge( checkMappedReadsAgainstTranscriptome, "transcriptome_validation.load" )
-def loadTranscriptomeValidation( infiles, outfile ):
+
+
+@merge(checkMappedReadsAgainstTranscriptome, "transcriptome_validation.load")
+def loadTranscriptomeValidation(infiles, outfile):
     '''load transcriptome validation data into database.'''
 
     to_cluster = USECLUSTER
 
-    headers = ",".join( [P.quote( P.snip( x, ".accepted.bam")) for x in infiles ] )
-    infiles = " ".join( ["%s.log" % x for x in infiles ] )
-    
-    tablename = P.toTable( outfile )
+    headers = ",".join([P.quote(P.snip(x, ".accepted.bam")) for x in infiles])
+    infiles = " ".join(["%s.log" % x for x in infiles])
+
+    tablename = P.toTable(outfile)
 
     statement = '''
     python %(scriptsdir)s/combine_tables.py 
@@ -711,10 +752,12 @@ def loadTranscriptomeValidation( infiles, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-@transform( (mapping), 
-            suffix(".bam"),
-            ".mapped_reads.gz" )
-def buildListOfMappedReadsGenome( infile, outfile ):
+
+
+@transform((mapping),
+           suffix(".bam"),
+           ".mapped_reads.gz")
+def buildListOfMappedReadsGenome(infile, outfile):
     '''compile list of reads mapped to transcripts.'''
     to_cluster = USECLUSTER
 
@@ -731,8 +774,8 @@ def buildListOfMappedReadsGenome( infile, outfile ):
     P.run()
 
 
-@merge( "refcoding.junctions.gz", "junctions.fa" )
-def buildJunctionsDB( infiles, outfile ):
+@merge("refcoding.junctions.gz", "junctions.fa")
+def buildJunctionsDB(infiles, outfile):
     '''build a database of all junctions.'''
 
     to_cluster = USECLUSTER
@@ -741,42 +784,44 @@ def buildJunctionsDB( infiles, outfile ):
     read_length = 50
     infiles = (infiles, )
 
-    tmpfile = P.getTempFile( "." )
+    tmpfile = P.getTempFile(".")
 
     for infile in infiles:
         if infile.endswith(".bam"):
-            junctions_file = P.snip( infile, ".bam" ) + ".junctions.bed.gz"
-            columns = (0,1,2,5)
+            junctions_file = P.snip(infile, ".bam") + ".junctions.bed.gz"
+            columns = (0, 1, 2, 5)
         else:
             junctions_file = infile
-            columns = (0,1,2,3)
+            columns = (0, 1, 2, 3)
 
-        if not os.path.exists( junctions_file ):
-            E.warn( "can't find junctions file '%s'" % junctions_file )
+        if not os.path.exists(junctions_file):
+            E.warn("can't find junctions file '%s'" % junctions_file)
             continue
 
-        inf = IOTools.openFile( junctions_file )
+        inf = IOTools.openFile(junctions_file)
         for line in inf:
-            if line.startswith("#"): continue
-            if line.startswith("track"): continue
+            if line.startswith("#"):
+                continue
+            if line.startswith("track"):
+                continue
             data = line[:-1].split("\t")
             try:
-                tmpfile.write( "\t".join( [data[x] for x in columns] ) + "\n" )
+                tmpfile.write("\t".join([data[x] for x in columns]) + "\n")
             except IndexError:
-                raise IndexError( "parsing error in line %s" % line)
+                raise IndexError("parsing error in line %s" % line)
 
     tmpfile.close()
     tmpfilename = tmpfile.name
-    
+
     statement = '''
     sort %(tmpfilename)s | gzip > %(outfile_junctions)s
     '''
 
     P.run()
 
-    os.unlink( tmpfilename )
+    os.unlink(tmpfilename)
 
-    E.info( "building junctions database" )
+    E.info("building junctions database")
     statement = '''
     juncs_db %(min_anchor_length)i %(read_length)i 
               <( zcat %(outfile_junctions)s )
@@ -786,10 +831,10 @@ def buildJunctionsDB( infiles, outfile ):
               2> %(outfile)s.log
     '''
     P.run()
-    
-    E.info( "indexing junctions database" )
 
-    prefix = P.snip( outfile, ".fa" )
+    E.info("indexing junctions database")
+
+    prefix = P.snip(outfile, ".fa")
 
     # build raw index
     statement = '''
@@ -810,26 +855,29 @@ def buildJunctionsDB( infiles, outfile ):
 #########################################################################
 ##
 #########################################################################
-@transform( ("*.fastq.gz" ),
-            suffix(".fastq.gz" ),
-            add_inputs( buildJunctionsDB, 
-                        os.path.join(PARAMS["annotations_dir"],
-                                     PARAMS_ANNOTATIONS["interface_contigs"] ) ),
-            r"\1.junc.bam" )
-def mapReadsWithBowtieAgainstJunctions( infiles, outfile ):
+
+
+@transform(("*.fastq.gz"),
+           suffix(".fastq.gz"),
+           add_inputs(buildJunctionsDB,
+                      os.path.join(PARAMS["annotations_dir"],
+                                   PARAMS_ANNOTATIONS["interface_contigs"])),
+           r"\1.junc.bam")
+def mapReadsWithBowtieAgainstJunctions(infiles, outfile):
     '''map reads from short read archive sequence using bowtie against
     splice junctions.
 
     The reads are converted to genomic coordinates.
     '''
 
-    job_options= "-pe dedicated %i -R y -l mem_free=16G" % PARAMS["bowtie_threads"] 
+    job_options = "-pe dedicated %i -R y -l mem_free=16G" % PARAMS[
+        "bowtie_threads"]
 
     tmpfile = P.getTempFilename()
 
     infile, reffile, contigs = infiles
-    track = P.snip( outfile, ".bam" )
-    prefix = P.snip( reffile, ".fa" )
+    track = P.snip(outfile, ".bam")
+    prefix = P.snip(reffile, ".fa")
 
     to_cluster = USECLUSTER
     statement = '''
@@ -852,18 +900,20 @@ def mapReadsWithBowtieAgainstJunctions( infiles, outfile ):
     checkpoint;
     rm -f %(tmpfile)s
     '''
-    
+
     P.run()
-    
-    os.unlink( tmpfile )
+
+    os.unlink(tmpfile)
 
 ###################################################################
 ###################################################################
 ###################################################################
-@transform( (mapReadsWithBowtieAgainstTranscriptome, mapReadsWithBowtieAgainstJunctions),
-            suffix(".bam"),
-            ".mapped_reads.gz" )
-def buildListOfMappedReadsTranscriptome( infile, outfile ):
+
+
+@transform((mapReadsWithBowtieAgainstTranscriptome, mapReadsWithBowtieAgainstJunctions),
+           suffix(".bam"),
+           ".mapped_reads.gz")
+def buildListOfMappedReadsTranscriptome(infile, outfile):
     '''compile list of reads mapped to transcripts.'''
     to_cluster = USECLUSTER
 
@@ -883,11 +933,11 @@ def buildListOfMappedReadsTranscriptome( infile, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-@transform( buildListOfMappedReadsGenome, 
-            suffix(".mapped_reads.gz"),
-            add_inputs( buildListOfMappedReadsTranscriptome ),
-            ".missed_transcriptome.gz" )
-def buildMissedTranscriptomeReads( infiles, outfile): 
+@transform(buildListOfMappedReadsGenome,
+           suffix(".mapped_reads.gz"),
+           add_inputs(buildListOfMappedReadsTranscriptome),
+           ".missed_transcriptome.gz")
+def buildMissedTranscriptomeReads(infiles, outfile):
     '''compile list of reads mapped to transcriptome that fail to match
     to the genome.
     '''
@@ -904,11 +954,13 @@ def buildMissedTranscriptomeReads( infiles, outfile):
 ###################################################################
 ###################################################################
 ###################################################################
-@transform( buildListOfMappedReadsGenome, 
-            suffix(".mapped_reads.gz"),
-            add_inputs( buildListOfMappedReadsTranscriptome ),
-            ".missed_junctions.gz" )
-def buildMissedJunctionsReads( infiles, outfile): 
+
+
+@transform(buildListOfMappedReadsGenome,
+           suffix(".mapped_reads.gz"),
+           add_inputs(buildListOfMappedReadsTranscriptome),
+           ".missed_junctions.gz")
+def buildMissedJunctionsReads(infiles, outfile):
     '''compile list of reads mapped to junctions.
     '''
     genomefile, juncfile, transffile = infiles
@@ -924,48 +976,55 @@ def buildMissedJunctionsReads( infiles, outfile):
 ###################################################################
 ###################################################################
 ###################################################################
-@merge( (buildMissedTranscriptomeReads, buildMissedJunctionsReads), "missed_reads.load" )
-def loadMissedReadCounts( infiles, outfile ):
+
+
+@merge((buildMissedTranscriptomeReads, buildMissedJunctionsReads), "missed_reads.load")
+def loadMissedReadCounts(infiles, outfile):
     '''load summary table of numbers of missed reads.'''
-    
-    def _getlines( inf ):
+
+    def _getlines(inf):
         return len(IOTools.openFile(inf).readlines()) - 1
-    
+
     tmpfile = P.getTempFile()
 
     infiles = sorted(infiles)
-    
-    tmpfile.write( "track\tmapped_genome\tmissed_junctions\tmissed_transcriptome\n" )
 
-    for x in range(0, len(infiles), 2 ):
-        junctions, transcriptome= infiles[x], infiles[x+1]
-        track = P.snip( junctions, ".missed_junctions.gz" )
-        mapped_genome = _getlines( track + ".mapped_reads.gz" )
-        tmpfile.write( "%s\t%i\t%i\t%i\n" % (track, 
-                                             mapped_genome,
-                                             _getlines( junctions),
-                                             _getlines( transcriptome) ) )
+    tmpfile.write(
+        "track\tmapped_genome\tmissed_junctions\tmissed_transcriptome\n")
+
+    for x in range(0, len(infiles), 2):
+        junctions, transcriptome = infiles[x], infiles[x + 1]
+        track = P.snip(junctions, ".missed_junctions.gz")
+        mapped_genome = _getlines(track + ".mapped_reads.gz")
+        tmpfile.write("%s\t%i\t%i\t%i\n" % (track,
+                                            mapped_genome,
+                                            _getlines(junctions),
+                                            _getlines(transcriptome)))
     tmpfile.close()
-    P.load( tmpfile.name, outfile )
-    os.unlink( tmpfile.name )
+    P.load(tmpfile.name, outfile)
+    os.unlink(tmpfile.name)
 
 ###################################################################
 ###################################################################
 ###################################################################
-@follows( mkdir( os.path.join( PARAMS["exportdir"], "fastqc" ) ) )
-@transform( mapping, suffix( ".bam"), ".fastqc" )
-def buildFastQCReport( infile, outfile ):
+
+
+@follows(mkdir(os.path.join(PARAMS["exportdir"], "fastqc")))
+@transform(mapping, suffix(".bam"), ".fastqc")
+def buildFastQCReport(infile, outfile):
     '''run fastqc on aligned reads.'''
-    
+
     to_cluster = USECLUSTER
-    statement = '''fastqc --outdir=%(exportdir)s/fastqc %(infile)s >& %(outfile)s''' 
+    statement = '''fastqc --outdir=%(exportdir)s/fastqc %(infile)s >& %(outfile)s'''
     P.run()
 
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 @transform("*.fastq.gz", suffix(".fastq.gz"), ".nreads")
-def countReads( infile, outfile ):
+def countReads(infile, outfile):
     '''count number of reads in fastq file.'''
     statement = '''
     echo "`zcat %(infile)s | grep -v "#" | wc -l` / 4" | bc > %(outfile)s
@@ -975,23 +1034,25 @@ def countReads( infile, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-@follows( countReads )
-@transform( mapping,
-            suffix(".bam"),
-            add_inputs( "data.nreads"),
-            ".readstats" )
-def buildBAMStats( infiles, outfile ):
+
+
+@follows(countReads)
+@transform(mapping,
+           suffix(".bam"),
+           add_inputs("data.nreads"),
+           ".readstats")
+def buildBAMStats(infiles, outfile):
     '''count number of reads mapped, duplicates, etc.
     '''
     to_cluster = USECLUSTER
 
     infile, readsfile = infiles
 
-    def __getReads( fn ):
+    def __getReads(fn):
         return int(open(fn).readlines()[0])
 
     track = infile[:infile.index(".")]
-    nreads = __getReads( readsfile )
+    nreads = __getReads(readsfile)
 
     statement = '''python
     %(scriptsdir)s/bam2stats.py
@@ -1008,14 +1069,16 @@ def buildBAMStats( infiles, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@merge( buildBAMStats, "bam_stats.load" )
-def loadBAMStats( infiles, outfile ):
+
+
+@merge(buildBAMStats, "bam_stats.load")
+def loadBAMStats(infiles, outfile):
     '''import bam statisticis.'''
 
-    header = ",".join( [ P.quote( P.snip( x, ".readstats")) for x in infiles] )
-    filenames = " ".join( [ "<( cut -f 1,2 < %s)" % x for x in infiles ] )
-    tablename = P.toTable( outfile )
-    E.info( "loading bam stats - summary" )
+    header = ",".join([P.quote(P.snip(x, ".readstats")) for x in infiles])
+    filenames = " ".join(["<( cut -f 1,2 < %s)" % x for x in infiles])
+    tablename = P.toTable(outfile)
+    E.info("loading bam stats - summary")
     statement = """python %(scriptsdir)s/combine_tables.py
                       --headers=%(header)s
                       --missing=0
@@ -1032,10 +1095,10 @@ def loadBAMStats( infiles, outfile ):
     P.run()
 
     for suffix in ("nm", "nh"):
-        E.info( "loading bam stats - %s" % suffix )
-        filenames = " ".join( [ "%s.%s" % (x, suffix) for x in infiles ] )
+        E.info("loading bam stats - %s" % suffix)
+        filenames = " ".join(["%s.%s" % (x, suffix) for x in infiles])
         tname = "%s_%s" % (tablename, suffix)
-        
+
         statement = """python %(scriptsdir)s/combine_tables.py
                       --header=%(header)s
                       --skip-titles
@@ -1047,17 +1110,19 @@ def loadBAMStats( infiles, outfile ):
                       --table=%(tname)s 
                 >> %(outfile)s
                 """
-    
+
         P.run()
 
 ###################################################################
 ###################################################################
 ###################################################################
-@transform( mapping,
-            suffix(".bam"),
-            add_inputs( buildCodingExons ),
-            ".exon.validation.tsv.gz" )
-def buildExonValidation( infiles, outfile ):
+
+
+@transform(mapping,
+           suffix(".bam"),
+           add_inputs(buildCodingExons),
+           ".exon.validation.tsv.gz")
+def buildExonValidation(infiles, outfile):
     '''count number of reads mapped, duplicates, etc.
     '''
 
@@ -1078,10 +1143,12 @@ def buildExonValidation( infiles, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 @transform("*.fastq.gz",
            suffix(".fastq.gz"),
-           ".readstats.tsv.gz" )
-def buildReadStats( infile, outfile ):
+           ".readstats.tsv.gz")
+def buildReadStats(infile, outfile):
     '''count number of reads mapped, duplicates, etc.
     '''
 
@@ -1099,16 +1166,19 @@ def buildReadStats( infile, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-@merge( mapping,
-        "read_correspondence.tsv.gz" )
-def buildReadCorrespondence( infiles, outfile ):
+
+
+@merge(mapping,
+       "read_correspondence.tsv.gz")
+def buildReadCorrespondence(infiles, outfile):
     '''count number of reads mapped, duplicates, etc.
     '''
 
     to_cluster = USECLUSTER
-    
-    headers = ",".join([ P.snip( x, ".bam") for x in infiles  ])
-    sorters = " ".join([ "<( samtools view -h %s | %s/hsort 0 )" % (x, PARAMS["scriptsdir"]) for x in infiles ] )
+
+    headers = ",".join([P.snip(x, ".bam") for x in infiles])
+    sorters = " ".join(["<( samtools view -h %s | %s/hsort 0 )" %
+                       (x, PARAMS["scriptsdir"]) for x in infiles])
 
     statement = '''
     python %(scriptsdir)s/diff_bam.py
@@ -1124,16 +1194,18 @@ def buildReadCorrespondence( infiles, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@follows( buildReadStats )
-@merge( (buildReadCorrespondence, "data.readstats.tsv.gz" ), "read_correspondence.load" )
-def loadReadCorrespondence( infiles, outfile ):
+
+
+@follows(buildReadStats)
+@merge((buildReadCorrespondence, "data.readstats.tsv.gz"), "read_correspondence.load")
+def loadReadCorrespondence(infiles, outfile):
     '''load read correspondence data into database.'''
 
     to_cluster = USECLUSTER
 
     infiles = " ".join(infiles)
 
-    tablename = P.toTable( outfile )
+    tablename = P.toTable(outfile)
 
     statement = '''
     python %(scriptsdir)s/combine_tables.py 
@@ -1148,19 +1220,22 @@ def loadReadCorrespondence( infiles, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-def mergeAndLoad( infiles, outfile, suffix ):
+
+
+def mergeAndLoad(infiles, outfile, suffix):
     '''load categorical tables (two columns) into a database.
 
     The tables are merged and entered row-wise.
 
     '''
-    header = ",".join( [ P.quote( P.snip( x, suffix)) for x in infiles] )
+    header = ",".join([P.quote(P.snip(x, suffix)) for x in infiles])
     if suffix.endswith(".gz"):
-        filenames = " ".join( [ "<( zcat %s | cut -f 1,2 )" % x for x in infiles ] )
+        filenames = " ".join(
+            ["<( zcat %s | cut -f 1,2 )" % x for x in infiles])
     else:
-        filenames = " ".join( [ "<( cat %s | cut -f 1,2 )" % x for x in infiles ] )
+        filenames = " ".join(["<( cat %s | cut -f 1,2 )" % x for x in infiles])
 
-    tablename = P.toTable( outfile )
+    tablename = P.toTable(outfile)
 
     statement = """python %(scriptsdir)s/combine_tables.py
                       --headers=%(header)s
@@ -1179,24 +1254,28 @@ def mergeAndLoad( infiles, outfile, suffix ):
 ############################################################
 ############################################################
 ############################################################
-@merge( buildExonValidation, "exon_validation.load" )
-def loadExonValidation( infiles, outfile ):
+
+
+@merge(buildExonValidation, "exon_validation.load")
+def loadExonValidation(infiles, outfile):
     '''merge alignment stats into single tables.'''
-    suffix = suffix = ".exon.validation.tsv.gz" 
-    mergeAndLoad( infiles, outfile, suffix = suffix )
+    suffix = suffix = ".exon.validation.tsv.gz"
+    mergeAndLoad(infiles, outfile, suffix=suffix)
     for infile in infiles:
-        track = P.snip( infile, suffix )
-        o = "%s_overrun.load" % track 
-        P.load( infile + ".overrun.gz", o )
+        track = P.snip(infile, suffix)
+        o = "%s_overrun.load" % track
+        P.load(infile + ".overrun.gz", o)
 
 ###################################################################
 ###################################################################
 ###################################################################
-@transform( mapping,
-            suffix(".bam"),
-            add_inputs( buildCodingExons ),
-            ".exon.coverage.tsv.gz" )
-def buildExonCoverage( infiles, outfile ):
+
+
+@transform(mapping,
+           suffix(".bam"),
+           add_inputs(buildCodingExons),
+           ".exon.coverage.tsv.gz")
+def buildExonCoverage(infiles, outfile):
     '''count number of reads mapped, duplicates, etc.
     '''
 
@@ -1217,11 +1296,13 @@ def buildExonCoverage( infiles, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-@transform( mapping,
-            suffix(".bam"),
-            add_inputs( buildCodingRegions ),
-            ".region.coverage.tsv.gz" )
-def buildRegionCoverage( infiles, outfile ):
+
+
+@transform(mapping,
+           suffix(".bam"),
+           add_inputs(buildCodingRegions),
+           ".region.coverage.tsv.gz")
+def buildRegionCoverage(infiles, outfile):
     '''count number of reads mapped, duplicates, etc.
     '''
 
@@ -1242,24 +1323,28 @@ def buildRegionCoverage( infiles, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-@transform( (buildExonCoverage, 
-             buildRegionCoverage),
-            suffix(".coverage.tsv.gz"), "_coverage.load" )
-def loadCoverage( infile, outfile ):
-    P.load( infile, outfile, options = "--index=gene_id" )
+
+
+@transform((buildExonCoverage,
+            buildRegionCoverage),
+           suffix(".coverage.tsv.gz"), "_coverage.load")
+def loadCoverage(infile, outfile):
+    P.load(infile, outfile, options="--index=gene_id")
 
 ############################################################
 ############################################################
 ############################################################
-@transform( mapping, 
-            suffix(".bam" ), ".bam.stats")
-def buildAlignmentStats( infile, outfile ):
+
+
+@transform(mapping,
+           suffix(".bam"), ".bam.stats")
+def buildAlignmentStats(infile, outfile):
     '''build alignment stats using picard.
 
     Note that picards counts reads but they are in fact alignments.
     '''
     to_cluster = USECLUSTER
-    
+
     # replace the SO field from tophat/samtools with coordinate to indicate
     # that the file is sorted by coordinate.
     # naturally - the bam files should be sorted.
@@ -1275,33 +1360,36 @@ def buildAlignmentStats( infile, outfile ):
             ASSUME_SORTED=true
     >& %(outfile)s
     '''
-    
+
     P.run()
 
 ############################################################
 ############################################################
 ############################################################
-@merge( buildAlignmentStats, "alignment_stats.load" )
-def loadAlignmentStats( infiles, outfile ):
+
+
+@merge(buildAlignmentStats, "alignment_stats.load")
+def loadAlignmentStats(infiles, outfile):
     '''merge alignment stats into single tables.'''
 
-    tablename = P.toTable( outfile )
-
+    tablename = P.toTable(outfile)
 
     outf = P.getTempFile()
 
     first = True
     for f in infiles:
-        track = P.snip( f, ".bam.stats" )
-        fn = f + ".alignment_summary_metrics" 
-        if not os.path.exists( fn ): 
-            E.warn( "file %s missing" % fn )
+        track = P.snip(f, ".bam.stats")
+        fn = f + ".alignment_summary_metrics"
+        if not os.path.exists(fn):
+            E.warn("file %s missing" % fn)
             continue
-        lines = [ x for x in open( fn, "r").readlines() if not x.startswith("#") and x.strip() ]
-        if first: outf.write( "%s\t%s" % ("track", lines[0] ) )
+        lines = [
+            x for x in open(fn, "r").readlines() if not x.startswith("#") and x.strip()]
+        if first:
+            outf.write("%s\t%s" % ("track", lines[0]))
         first = False
-        outf.write( "%s\t%s" % (track,lines[1] ))
-        
+        outf.write("%s\t%s" % (track, lines[1]))
+
     outf.close()
     tmpfilename = outf.name
 
@@ -1313,17 +1401,17 @@ def loadAlignmentStats( infiles, outfile ):
                '''
     P.run()
 
-    for suffix, column in ( ("quality_by_cycle_metrics", "cycle"),
-                            ("quality_distribution_metrics", "quality") ):
+    for suffix, column in (("quality_by_cycle_metrics", "cycle"),
+                           ("quality_distribution_metrics", "quality")):
 
         # some files might be missing - bugs in Picard
-        xfiles = [ x for x in infiles if os.path.exists( "%s.%s" % (x, suffix) ) ]
+        xfiles = [x for x in infiles if os.path.exists("%s.%s" % (x, suffix))]
 
-        header = ",".join( [P.snip( x, ".bam.stats") for x in xfiles] )        
-        filenames = " ".join( [ "%s.%s" % (x, suffix) for x in xfiles ] )
+        header = ",".join([P.snip(x, ".bam.stats") for x in xfiles])
+        filenames = " ".join(["%s.%s" % (x, suffix) for x in xfiles])
 
         tname = "%s_%s" % (tablename, suffix)
-        
+
         statement = """python %(scriptsdir)s/combine_tables.py
                       --missing=0
                    %(filenames)s
@@ -1334,48 +1422,55 @@ def loadAlignmentStats( infiles, outfile ):
                       --table=%(tname)s 
                 >> %(outfile)s
                 """
-    
+
         P.run()
 
-    os.unlink( tmpfilename )
+    os.unlink(tmpfilename)
 
-@follows( loadBAMStats, 
-          loadCoverage, 
-          buildFastQCReport, 
-          loadAlignmentStats,
-          loadTranscriptomeValidation,
-          loadExonValidation,
-          loadReadCorrespondence,
-          buildMissedJunctionsReads,
-          buildMissedTranscriptomeReads )
-def validate(): pass
 
-@follows( validate )
-def full(): pass
+@follows(loadBAMStats,
+         loadCoverage,
+         buildFastQCReport,
+         loadAlignmentStats,
+         loadTranscriptomeValidation,
+         loadExonValidation,
+         loadReadCorrespondence,
+         buildMissedJunctionsReads,
+         buildMissedTranscriptomeReads)
+def validate():
+    pass
+
+
+@follows(validate)
+def full():
+    pass
 
 ###################################################################
 ###################################################################
 ###################################################################
-## export targets
+# export targets
 ###################################################################
-@merge( mapping,  "view_mapping.load" )
-def createViewMapping( infile, outfile ):
+
+
+@merge(mapping,  "view_mapping.load")
+def createViewMapping(infile, outfile):
     '''create view in database for alignment stats.
 
     This view aggregates all information on a per-track basis.
 
     The table is built from the following tracks:
-    
+
     mapping_stats
     bam_stats
     '''
 
-    tablename = P.toTable( outfile )
+    tablename = P.toTable(outfile)
     # can not create views across multiple database, so use table
     view_type = "TABLE"
-    
+
     dbhandle = connect()
-    Database.executewait( dbhandle, "DROP %(view_type)s IF EXISTS %(tablename)s" % locals() )
+    Database.executewait(
+        dbhandle, "DROP %(view_type)s IF EXISTS %(tablename)s" % locals())
 
     statement = '''
     CREATE %(view_type)s %(tablename)s AS
@@ -1383,35 +1478,41 @@ def createViewMapping( infile, outfile ):
     FROM bam_stats AS b
     '''
 
-    Database.executewait( dbhandle, statement % locals() )
+    Database.executewait(dbhandle, statement % locals())
 
 ###################################################################
 ###################################################################
 ###################################################################
-@follows( createViewMapping )
+
+
+@follows(createViewMapping)
 def views():
     pass
 
 ###################################################################
 ###################################################################
 ###################################################################
-## primary targets
+# primary targets
 ###################################################################
-@follows( views, mkdir( "report" ) )
+
+
+@follows(views, mkdir("report"))
 def build_report():
     '''build report from scratch.'''
 
-    E.info( "starting documentation build process from scratch" )
-    P.run_report( clean = True )
+    E.info("starting documentation build process from scratch")
+    P.run_report(clean=True)
 
-@follows( views, mkdir( "report" ) )
+
+@follows(views, mkdir("report"))
 def update_report():
     '''update report.'''
 
-    E.info( "updating documentation" )
-    P.run_report( clean = False )
+    E.info("updating documentation")
+    P.run_report(clean=False)
 
-@follows() 
+
+@follows()
 def publish():
     '''publish files.'''
     P.publish_report()
@@ -1419,7 +1520,7 @@ def publish():
 ###################################################################
 ###################################################################
 ###################################################################
-## Epilog
+# Epilog
 ###################################################################
-if __name__== "__main__":
-    sys.exit( P.main(sys.argv) )
+if __name__ == "__main__":
+    sys.exit(P.main(sys.argv))

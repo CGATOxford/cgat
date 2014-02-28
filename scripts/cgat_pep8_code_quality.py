@@ -92,7 +92,7 @@ def main(argv=None):
     parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
-    ## add common options (-h/--help, ...) and parse command line
+    # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv)
 
     rows = []
@@ -141,7 +141,7 @@ def main(argv=None):
     for row in zip(*results):
         outfile.write('%s\n' % ('\t'.join(map(str, row))))
 
-    ## write footer and output benchmark information.
+    # write footer and output benchmark information.
     E.Stop()
 
 if __name__ == "__main__":

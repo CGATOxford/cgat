@@ -111,132 +111,146 @@ try:
 except ImportError:
     import CGAT._bam2peakshape as _bam2peakshape
 
-def buildOptionParser( argv ):
-    
-    if not argv: argv = sys.argv
+
+def buildOptionParser(argv):
+
+    if not argv:
+        argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser( version = "%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
-                                    usage = globals()["__doc__"] )
+    parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+                            usage=globals()["__doc__"])
 
-    parser.add_option( "-f", "--format", dest="format", type = "choice",
-                       choices = ("bam", "bigwig" ),
-                       help = "format of genomic input files for densities "
-                              "[%default]" )
+    parser.add_option("-f", "--format", dest="format", type="choice",
+                      choices=("bam", "bigwig"),
+                      help = "format of genomic input files for densities "
+                      "[%default]")
 
-    parser.add_option( "-o", "--only-interval", dest="only_interval", action="store_true",
-                       help = "only count tags strictly in interval. Otherwise, use window around peak center "
-                              " [%default]" )
+    parser.add_option("-o", "--only-interval", dest="only_interval", action="store_true",
+                      help="only count tags strictly in interval. Otherwise, use window around peak center "
+                      " [%default]")
 
-    parser.add_option( "-w", "--window-size", dest="window_size", type = "int",
-                       help = "window size to use"
-                              "[%default]" )
+    parser.add_option("-w", "--window-size", dest="window_size", type="int",
+                      help="window size to use"
+                      "[%default]")
 
-    parser.add_option( "-b", "--bin-size", dest="bin_size", type = "int",
-                       help = "bin-size for histogram of read depth. "
-                              "[%default]" )
+    parser.add_option("-b", "--bin-size", dest="bin_size", type="int",
+                      help="bin-size for histogram of read depth. "
+                      "[%default]")
 
-    parser.add_option( "-s", "--sort", dest="sort", type = "choice", action = "append",
-                       choices = ("peak-height", "peak-width", "unsorted", 
-                                  "interval-width", "interval-score" ),
-                       help = "output sort order for matrices. "
-                              "[%default]" )
+    parser.add_option("-s", "--sort", dest="sort", type="choice", action="append",
+                      choices=("peak-height", "peak-width", "unsorted",
+                               "interval-width", "interval-score"),
+                      help = "output sort order for matrices. "
+                      "[%default]")
 
-    parser.add_option( "-c", "--control-file", dest="control_file", type = "string",
-                       help = "control file. If given, two peakshapes are computed, "
-                       "one for the primary data and one for the control data. "
-                       "The control file is centered around the same "
-                       "base as the primary file and output in the same "
-                       "sort order as the primary profile to all side-by-side. "
-                       "comparisons. "
-                       "[%default]" )
+    parser.add_option("-c", "--control-file", dest="control_file", type="string",
+                      help="control file. If given, two peakshapes are computed, "
+                      "one for the primary data and one for the control data. "
+                      "The control file is centered around the same "
+                      "base as the primary file and output in the same "
+                      "sort order as the primary profile to all side-by-side. "
+                      "comparisons. "
+                      "[%default]")
 
-    parser.add_option( "-r", "--random-shift", dest="random_shift", action="store_true",
-                       help = "shift intervals in random direction up/downstream of interval "
-                              "[%default]" )
- 
-    parser.add_option( "-e", "--centring-method", dest="centring_method", type = "choice",
-                       choices = ("reads", "middle"),
-                       help = "centring method. Available are: "
-                              "reads=use density to determine peak, "
-                              "middle=use middle of interval " 
-                              "[%default]" )
-                              
-    parser.add_option( "-n", "--normalization", dest="normalization", type = "choice",
-                       choices = ("none", "sum" ),
-                       help = "normalisation to perform. "
-                              "[%default]" )                                 
+    parser.add_option("-r", "--random-shift", dest="random_shift", action="store_true",
+                      help="shift intervals in random direction up/downstream of interval "
+                      "[%default]")
 
-    parser.add_option( "--use-strand", dest="strand_specific", action="store_true",
-                       help = "use strand information in intervals. Intervals on the "
-                       "negative strand are flipped "
-                       "[%default]" )
- 
-    parser.add_option( "-i", "--shift", dest="shift", type = "int",
-                       help = "shift for reads. When processing bam files, "
-                       "reads will be shifted upstream/downstream by this amount. "
-                       "[%default]" )
+    parser.add_option("-e", "--centring-method", dest="centring_method", type="choice",
+                      choices=("reads", "middle"),
+                      help = "centring method. Available are: "
+                      "reads=use density to determine peak, "
+                      "middle=use middle of interval "
+                      "[%default]")
+
+    parser.add_option("-n", "--normalization", dest="normalization", type="choice",
+                      choices=("none", "sum"),
+                      help = "normalisation to perform. "
+                      "[%default]")
+
+    parser.add_option("--use-strand", dest="strand_specific", action="store_true",
+                      help="use strand information in intervals. Intervals on the "
+                      "negative strand are flipped "
+                      "[%default]")
+
+    parser.add_option("-i", "--shift", dest="shift", type="int",
+                      help="shift for reads. When processing bam files, "
+                      "reads will be shifted upstream/downstream by this amount. "
+                      "[%default]")
 
     parser.set_defaults(
-        bin_size = 10,
-        shift = 0,
-        window_size = 1000,
-        sort = [],
-        centring_method = "reads",
-        control_file = None,
-        random_shift = False,
-        strand_specific = False,
-        format = "bam",
-        report_step = 100,
-        )
+        bin_size=10,
+        shift=0,
+        window_size=1000,
+        sort=[],
+        centring_method="reads",
+        control_file=None,
+        random_shift=False,
+        strand_specific=False,
+        format="bam",
+        report_step=100,
+    )
 
     return parser
 
-def outputResults( result, bins, options ):
+
+def outputResults(result, bins, options):
     '''ouput results from density profiles.'''
 
     # center bins
     out_bins = bins[:-1] + options.bin_size
 
-    def writeMatrix( result, sort ):
+    def writeMatrix(result, sort):
 
-        outfile_matrix = E.openOutputFile( "matrix_%s.gz" % re.sub("-", "_", sort ) )            
-        outfile_matrix.write( "name\t%s\n" % "\t".join( map(str, out_bins )))
-        
+        outfile_matrix = E.openOutputFile(
+            "matrix_%s.gz" % re.sub("-", "_", sort))
+        outfile_matrix.write("name\t%s\n" % "\t".join(map(str, out_bins)))
+
         if result[0][2] != None:
-            outfile_control = E.openOutputFile( "control_%s.gz" % re.sub("-", "_", sort ) )            
-            outfile_control.write( "name\t%s\n" % "\t".join( map(str, out_bins )))
+            outfile_control = E.openOutputFile(
+                "control_%s.gz" % re.sub("-", "_", sort))
+            outfile_control.write("name\t%s\n" % "\t".join(map(str, out_bins)))
 
         if result[0][3] != None:
-            outfile_shift = E.openOutputFile( "shift_%s.gz" % re.sub("-", "_", sort ) )            
-            outfile_shift.write( "name\t%s\n" % "\t".join( map(str, out_bins )))
-            
+            outfile_shift = E.openOutputFile(
+                "shift_%s.gz" % re.sub("-", "_", sort))
+            outfile_shift.write("name\t%s\n" % "\t".join(map(str, out_bins)))
+
         n = 0
         for features, bed, control, shifted in result:
             n += 1
-            if "name" in bed: name = bed.name
-            else:name = str(n)
+            if "name" in bed:
+                name = bed.name
+            else:
+                name = str(n)
             bins, counts = features[-2], features[-1]
-            outfile_matrix.write( "%s\t%s\n" % (name, "\t".join(map(str,counts))) )
+            outfile_matrix.write(
+                "%s\t%s\n" % (name, "\t".join(map(str, counts))))
             if control:
-                outfile_control.write( "%s\t%s\n" % (name, "\t".join(map(str,control.counts))) )
+                outfile_control.write(
+                    "%s\t%s\n" % (name, "\t".join(map(str, control.counts))))
             if shifted:
-                outfile_shift.write( "%s\t%s\n" % (name, "\t".join(map(str,shifted.counts))) )
+                outfile_shift.write(
+                    "%s\t%s\n" % (name, "\t".join(map(str, shifted.counts))))
 
         outfile_matrix.close()
 
     n = 0
     for features, bed, control, shifted in result:
         n += 1
-        if "name" in bed: name = bed.name
-        else: name = str(n)
-        options.stdout.write( "%s\t%i\t%i\t%s\t" % (bed.contig, bed.start, bed.end, name ) )
+        if "name" in bed:
+            name = bed.name
+        else:
+            name = str(n)
+        options.stdout.write("%s\t%i\t%i\t%s\t" %
+                             (bed.contig, bed.start, bed.end, name))
 
-        options.stdout.write( "\t".join( map(str, features[:-2] ) ) )
+        options.stdout.write("\t".join(map(str, features[:-2])))
         bins, counts = features[-2], features[-1]
-        options.stdout.write( "\t%s" % ",".join( map(str, bins )))
-        options.stdout.write( "\t%s" % ",".join( map(str, counts)))
-        options.stdout.write( "\n" )
+        options.stdout.write("\t%s" % ",".join(map(str, bins)))
+        options.stdout.write("\t%s" % ",".join(map(str, counts)))
+        options.stdout.write("\n")
 
     norm_result = []
     if options.normalization == "sum":
@@ -248,127 +262,132 @@ def outputResults( result, bins, options ):
             norm += sum(counts)
         norm /= 1000000
         E.info("norm = %i" % norm)
-        
+
         # normalise
         for features, bed, control, shifted in result:
             counts = features[-1]
             norm_counts = []
             for c in counts:
-                norm_counts.append( c/(norm) )
-            new_features = features._replace( counts=norm_counts )
-            norm_result.append( (new_features, bed, control, shifted) )
+                norm_counts.append(c / (norm))
+            new_features = features._replace(counts=norm_counts)
+            norm_result.append((new_features, bed, control, shifted))
     else:
         E.info("No normalization performed")
         norm_result = result
-        
-    # output sorted matrices
-    if not options.sort: writeMatrix( norm_result, "unsorted" )
 
-    for sort in options.sort: 
+    # output sorted matrices
+    if not options.sort:
+        writeMatrix(norm_result, "unsorted")
+
+    for sort in options.sort:
 
         if sort == "peak-height":
-            norm_result.sort( key = lambda x: x[0].peak_height )
-            
+            norm_result.sort(key=lambda x: x[0].peak_height)
+
         elif sort == "peak-width":
-            norm_result.sort( key = lambda x: x[0].peak_width )
+            norm_result.sort(key=lambda x: x[0].peak_width)
 
         elif sort == "interval-width":
-            norm_result.sort( key = lambda x: x[1].end - x[1].start )
+            norm_result.sort(key=lambda x: x[1].end - x[1].start)
 
         elif sort == "interval-score":
             try:
-                norm_result.sort( key = lambda x: float(x[1].score) )
+                norm_result.sort(key=lambda x: float(x[1].score))
             except IndexError:
-                E.warn("score field not present - no output" )
+                E.warn("score field not present - no output")
 
-        writeMatrix( norm_result, sort )
+        writeMatrix(norm_result, sort)
 
 
-def buildResults( bedfile, fg_file, control_file, counter, options ):
+def buildResults(bedfile, fg_file, control_file, counter, options):
     '''compute densities and peakshape parameters.'''
 
-    options.stdout.write( "\t".join( ("contig", 
-                                      "start",
-                                      "end",
-                                      "name",
-                                      "\t".join(_bam2peakshape.PeakShapeResult._fields) ) ) + "\n" )
-    
+    options.stdout.write("\t".join(("contig",
+                                    "start",
+                                    "end",
+                                    "name",
+                                    "\t".join(_bam2peakshape.PeakShapeResult._fields))) + "\n")
+
     if options.window_size:
         # bins are centered at peak-center and then stretching outwards.
-        bins = numpy.arange( -options.window_size + options.bin_size // 2, 
-                              +options.window_size, 
-                              options.bin_size )        
-        
+        bins = numpy.arange(-options.window_size + options.bin_size // 2,
+                            +options.window_size,
+                            options.bin_size)
+
     #contigs = set(pysam_in.references)
- 
+
     strand_specific = options.strand_specific
 
-    result =[]
+    result = []
     c = E.Counter()
     c.input = 0
 
-    for bed in Bed.iterator( IOTools.openFile( bedfile ) ):
+    for bed in Bed.iterator(IOTools.openFile(bedfile)):
         c.input += 1
 
-        #if bed.contig not in contigs: 
+        # if bed.contig not in contigs:
         #    c.skipped += 1
         #    continue
 
         if c.input % options.report_step == 0:
-            E.info( "iteration: %i" % c.input )
-        
-        features = counter.countInInterval( fg_file, bed.contig, bed.start, bed.end, 
-                                            window_size = options.window_size,
-                                            bins = bins,
-                                            only_interval = options.only_interval,
-                                            centring_method = options.centring_method )
-     
+            E.info("iteration: %i" % c.input)
+
+        features = counter.countInInterval(fg_file, bed.contig, bed.start, bed.end,
+                                           window_size=options.window_size,
+                                           bins=bins,
+                                           only_interval=options.only_interval,
+                                           centring_method=options.centring_method)
 
         if control_file:
-            control = counter.countAroundPos(control_file, 
+            control = counter.countAroundPos(control_file,
                                              bed.contig,
                                              features.peak_center,
-                                             bins = features.bins )
+                                             bins=features.bins)
 
         else:
             control = None
 
         if options.random_shift:
-            direction = numpy.random.randint( 0, 2 )
-            if direction: pos = features.peak_center + 2 * bins[0]
-            else: pos = features.peak_center + 2 * bins[-1]
-            shifted = counter.countAroundPos(fg_file, 
+            direction = numpy.random.randint(0, 2)
+            if direction:
+                pos = features.peak_center + 2 * bins[0]
+            else:
+                pos = features.peak_center + 2 * bins[-1]
+            shifted = counter.countAroundPos(fg_file,
                                              bed.contig,
                                              pos,
-                                             bins = features.bins )
+                                             bins=features.bins)
         else:
             shifted = None
 
         if strand_specific and bed.strand == "-":
-            features._replace( hist=hist[::-1] )
-            if control: control._replace( hist=hist[::-1] )
-            if shifted: shift._replace( hist=hist[::-1] )
+            features._replace(hist=hist[::-1])
+            if control:
+                control._replace(hist=hist[::-1])
+            if shifted:
+                shift._replace(hist=hist[::-1])
 
-        result.append( (features, bed, control, shifted) )
+        result.append((features, bed, control, shifted))
         c.added += 1
 
-    E.info( "interval processing: %s" % c )
+    E.info("interval processing: %s" % c)
 
     return result, bins
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    parser = buildOptionParser( argv )
-    
-    ## add common options (-h/--help, ...) and parse command line 
-    (options, args) = E.Start( parser, argv = argv, add_output_options = True )
+    parser = buildOptionParser(argv)
+
+    # add common options (-h/--help, ...) and parse command line
+    (options, args) = E.Start(parser, argv=argv, add_output_options=True)
 
     if len(args) != 2:
-        raise ValueError("please specify a bam and bed file" )
+        raise ValueError("please specify a bam and bed file")
 
     infile, bedfile = args
     control_file = None
@@ -376,34 +395,33 @@ def main( argv = None ):
         E.info("using control file %s" % options.control_file)
 
     if options.format == "bigwig":
-        fg_file = bx.bbi.bigwig_file.BigWigFile( open(infile) )
+        fg_file = bx.bbi.bigwig_file.BigWigFile(open(infile))
         if options.control_file:
-            control_file = bx.bbi.bigwig_file.BigWigFile( open(options.control_file) )
+            control_file = bx.bbi.bigwig_file.BigWigFile(
+                open(options.control_file))
         counter = _bam2peakshape.CounterBigwig()
 
     elif options.format == "bam":
-        fg_file = pysam.Samfile( infile, "rb" )
+        fg_file = pysam.Samfile(infile, "rb")
         if options.control_file:
-            control_file = pysam.Samfile( options.control_file, "rb" )
-        counter = _bam2peakshape.CounterBam( shift = options.shift)
+            control_file = pysam.Samfile(options.control_file, "rb")
+        counter = _bam2peakshape.CounterBam(shift=options.shift)
 
-    result, bins = buildResults( bedfile,
-                                 fg_file, 
-                                 control_file, 
-                                 counter,
-                                 options )
+    result, bins = buildResults(bedfile,
+                                fg_file,
+                                control_file,
+                                counter,
+                                options)
 
     if len(result) == 0:
-        E.warn( "no data - no output" )
+        E.warn("no data - no output")
         E.Stop()
         return
 
-    outputResults( result, bins, options )
+    outputResults(result, bins, options)
 
-    ## write footer and output benchmark information.
+    # write footer and output benchmark information.
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
-
+    sys.exit(main(sys.argv))

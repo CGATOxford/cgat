@@ -268,206 +268,218 @@ except ImportError:
 
 from bx.bbi.bigwig_file import BigWigFile
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if not argv: argv = sys.argv
+    if not argv:
+        argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser( version = "%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
-                                    usage = globals()["__doc__"] )
+    parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+                            usage=globals()["__doc__"])
 
-    parser.add_option( "-m", "--method", dest="methods", type = "choice", action = "append",
-                       choices = ("geneprofile", "tssprofile", "utrprofile", 
-                                  "intervalprofile", "midpointprofile",
-                                  "geneprofilewithintrons", 
-                                  "geneprofileabsolutedistancefromthreeprimeend",
-                                  ),
-                       help = 'counters to use. Counters describe the meta-gene structure to use '
-                       '[%default]. \n Note using geneprofilewithintrons, or geneprofileabsolutedistancefromthreeprimeend will automatically turn on the --base-accuracy option' )
+    parser.add_option("-m", "--method", dest="methods", type="choice", action="append",
+                      choices=("geneprofile", "tssprofile", "utrprofile",
+                               "intervalprofile", "midpointprofile",
+                               "geneprofilewithintrons",
+                               "geneprofileabsolutedistancefromthreeprimeend",
+                               ),
+                      help = 'counters to use. Counters describe the meta-gene structure to use '
+                      '[%default]. \n Note using geneprofilewithintrons, or geneprofileabsolutedistancefromthreeprimeend will automatically turn on the --base-accuracy option')
 
-    parser.add_option( "-b", "--bamfile", "--bedfile", "--bigwigfile", dest="infiles", 
-                       metavar = "BAM",
-                       type = "string", action = "append",
-                       help = "BAM/bed/bigwig files to use. Do not mix different types"
-                              "[%default]" )
+    parser.add_option("-b", "--bamfile", "--bedfile", "--bigwigfile", dest="infiles",
+                      metavar="BAM",
+                      type="string", action="append",
+                      help="BAM/bed/bigwig files to use. Do not mix different types"
+                      "[%default]")
 
-    parser.add_option( "-c", "--controlfile", dest="controlfiles",
-                       metavar = "BAM",
-                       type = "string", action = "append",
-                       help = "control/input to use. Should be of the same type as the bam/bed/bigwig file"
-                       " [%default]" )
+    parser.add_option("-c", "--controlfile", dest="controlfiles",
+                      metavar="BAM",
+                      type="string", action="append",
+                      help="control/input to use. Should be of the same type as the bam/bed/bigwig file"
+                      " [%default]")
 
-    parser.add_option( "-g", "--gtffile", dest="gtffile", type = "string",
-                       metavar = "GTF",
-                       help = "GTF file to use. "
-                              "[%default]" )
+    parser.add_option("-g", "--gtffile", dest="gtffile", type="string",
+                      metavar="GTF",
+                      help="GTF file to use. "
+                      "[%default]")
 
-    parser.add_option( "-n", "--normalization", dest="normalization", type = "choice",
-                       choices = ("none", "max", "sum", "total-max", "total-sum"),
-                       help = "normalization to apply on each transcript profile before adding to meta-gene profile. "
-                       "[%default]" )
+    parser.add_option("-n", "--normalization", dest="normalization", type="choice",
+                      choices=("none", "max", "sum", "total-max", "total-sum"),
+                      help = "normalization to apply on each transcript profile before adding to meta-gene profile. "
+                      "[%default]")
 
-    parser.add_option( "-p", "--normalize-profile", dest="profile_normalizations", type = "choice", action="append",
-                       choices = ( "all", "none", "area", "counts", "background"),
-                       help = "normalization to apply on meta-gene profile normalization. "
-                       "[%default]" )
+    parser.add_option("-p", "--normalize-profile", dest="profile_normalizations", type="choice", action="append",
+                      choices=("all", "none", "area", "counts", "background"),
+                      help = "normalization to apply on meta-gene profile normalization. "
+                      "[%default]")
 
-    parser.add_option( "-r", "--reporter", dest="reporter", type = "choice",
-                       choices = ("gene", "transcript"  ),
-                       help = "report results for genes or transcripts."
-                              " When 'genes` is chosen, exons across all transcripts for"
-                              " a gene are merged. When 'transcript' is chosen, counts are"
-                              " computed for each transcript separately with each transcript"
-                              " contributing equally to the meta-gene profile."
-                              " [%default]" )
+    parser.add_option("-r", "--reporter", dest="reporter", type="choice",
+                      choices=("gene", "transcript"),
+                      help = "report results for genes or transcripts."
+                      " When 'genes` is chosen, exons across all transcripts for"
+                      " a gene are merged. When 'transcript' is chosen, counts are"
+                      " computed for each transcript separately with each transcript"
+                      " contributing equally to the meta-gene profile."
+                      " [%default]")
 
-    parser.add_option( "-i", "--shift", dest="shifts", type = "int", action = "append",
-                       help = "shift reads in :term:`bam` formatted file before computing densities (ChIP-Seq). "
-                       "[%default]" )
+    parser.add_option("-i", "--shift", dest="shifts", type="int", action="append",
+                      help="shift reads in :term:`bam` formatted file before computing densities (ChIP-Seq). "
+                      "[%default]")
 
-    parser.add_option( "-a", "--merge-pairs", dest="merge_pairs", action = "store_true",
-                       help = "merge pairs in :term:`bam` formatted file before computing"
-                              " densities (ChIP-Seq)."
-                              "[%default]" )
+    parser.add_option("-a", "--merge-pairs", dest="merge_pairs", action="store_true",
+                      help="merge pairs in :term:`bam` formatted file before computing"
+                      " densities (ChIP-Seq)."
+                      "[%default]")
 
-    parser.add_option( "-u", "--base-accuracy", dest="base_accuracy", action = "store_true",
-                       help = "compute densities with base accuracy. The default is to"
-                              " only use the start and end of the aligned region (RNA-Seq)"
-                              " [%default]" )
+    parser.add_option("-u", "--base-accuracy", dest="base_accuracy", action="store_true",
+                      help="compute densities with base accuracy. The default is to"
+                      " only use the start and end of the aligned region (RNA-Seq)"
+                      " [%default]")
 
-    parser.add_option( "-e", "--extend", dest="extends", type = "int", action = "append",
-                       help = "extend reads in :term:`bam` formatted file (ChIP-Seq). "
-                              "[%default]" )
+    parser.add_option("-e", "--extend", dest="extends", type="int", action="append",
+                      help="extend reads in :term:`bam` formatted file (ChIP-Seq). "
+                      "[%default]")
 
-    parser.add_option("--resolution-upstream", dest="resolution_upstream", type = "int",
-                       help = "resolution of upstream region in bp "
-                              "[%default]" )
+    parser.add_option("--resolution-upstream", dest="resolution_upstream", type="int",
+                      help="resolution of upstream region in bp "
+                      "[%default]")
 
-    parser.add_option("--resolution-downstream", dest="resolution_downstream", type = "int",
-                       help = "resolution of downstream region in bp "
-                              "[%default]" )
+    parser.add_option("--resolution-downstream", dest="resolution_downstream", type="int",
+                      help="resolution of downstream region in bp "
+                      "[%default]")
 
-    parser.add_option("--resolution-upstream-utr", dest="resolution_upstream_utr", type = "int",
-                       help = "resolution of upstream UTR region in bp "
-                              "[%default]" )
+    parser.add_option("--resolution-upstream-utr", dest="resolution_upstream_utr", type="int",
+                      help="resolution of upstream UTR region in bp "
+                      "[%default]")
 
-    parser.add_option("--resolution-downstream-utr", dest="resolution_downstream_utr", type = "int",
-                       help = "resolution of downstream UTR region in bp "
-                              "[%default]" )
+    parser.add_option("--resolution-downstream-utr", dest="resolution_downstream_utr", type="int",
+                      help="resolution of downstream UTR region in bp "
+                      "[%default]")
 
-    parser.add_option("--resolution-cds", dest="resolution_cds", type = "int",
-                       help = "resolution of cds region in bp "
-                              "[%default]" )
+    parser.add_option("--resolution-cds", dest="resolution_cds", type="int",
+                      help="resolution of cds region in bp "
+                      "[%default]")
 
-    parser.add_option("--resolution-introns", dest="resolution_introns", type = "int",
-                       help = "resolution of introns region in bp "
-                              "[%default]" )
-                              
-    parser.add_option("--resolution-exons-absolute-distance-topolya", dest="resolution_exons_absolute_distance_topolya", type = "int",
-                       help = "resolution of exons absolute distance topolya in bp "
-                              "[%default]" )                    
-                       
-    parser.add_option("--resolution-introns-absolute-distance-topolya", dest="resolution_introns_absolute_distance_topolya", type = "int",
-                       help = "resolution of introns absolute distance topolya in bp "
-                              "[%default]" )
-                       
-    parser.add_option("--extension-exons-absolute-distance-topolya", dest="extension_exons_absolute_distance_topolya", type = "int",
-                       help = "extension for exons from the absolute distance from the topolya in bp"
-                              "[%default]" )
+    parser.add_option("--resolution-introns", dest="resolution_introns", type="int",
+                      help="resolution of introns region in bp "
+                      "[%default]")
 
-    parser.add_option("--extension-introns-absolute-distance-topolya", dest="extension_introns_absolute_distance_topolya", type = "int",
-                       help = "extension for introns from the absolute distance from the topolya in bp"
-                              "[%default]" )                
-                              
-    parser.add_option("--extension-upstream", dest = "extension_upstream", type = "int",
-                       help = "extension upstream from the first exon in bp"
-                              "[%default]" )
+    parser.add_option("--resolution-exons-absolute-distance-topolya", dest="resolution_exons_absolute_distance_topolya", type="int",
+                      help="resolution of exons absolute distance topolya in bp "
+                      "[%default]")
 
-    parser.add_option("--extension-downstream", dest = "extension_downstream", type = "int",
-                       help = "extension downstream from the last exon in bp"
-                              "[%default]" )
+    parser.add_option("--resolution-introns-absolute-distance-topolya", dest="resolution_introns_absolute_distance_topolya", type="int",
+                      help="resolution of introns absolute distance topolya in bp "
+                      "[%default]")
 
-    parser.add_option("--extension-inward", dest="extension_inward", type = "int",
-                       help = "extension inward from a TSS start site in bp"
-                              "[%default]" )
+    parser.add_option("--extension-exons-absolute-distance-topolya", dest="extension_exons_absolute_distance_topolya", type="int",
+                      help="extension for exons from the absolute distance from the topolya in bp"
+                      "[%default]")
 
-    parser.add_option("--extension-outward", dest="extension_outward", type = "int",
-                       help = "extension outward from a TSS start site in bp"
-                              "[%default]" )
-                       
-    parser.add_option("--scale-flank-length", dest="scale_flanks", type = "int",
-                       help = "scale flanks to (integer multiples of) gene length"
-                              "[%default]" )
+    parser.add_option("--extension-introns-absolute-distance-topolya", dest="extension_introns_absolute_distance_topolya", type="int",
+                      help="extension for introns from the absolute distance from the topolya in bp"
+                      "[%default]")
 
-    parser.add_option("--control-factor", dest="control_factor", type = "float",
-                      help = "factor for normalizing control and fg data. Computed from data "
+    parser.add_option("--extension-upstream", dest="extension_upstream", type="int",
+                      help="extension upstream from the first exon in bp"
+                      "[%default]")
+
+    parser.add_option("--extension-downstream", dest="extension_downstream", type="int",
+                      help="extension downstream from the last exon in bp"
+                      "[%default]")
+
+    parser.add_option("--extension-inward", dest="extension_inward", type="int",
+                      help="extension inward from a TSS start site in bp"
+                      "[%default]")
+
+    parser.add_option("--extension-outward", dest="extension_outward", type="int",
+                      help="extension outward from a TSS start site in bp"
+                      "[%default]")
+
+    parser.add_option("--scale-flank-length", dest="scale_flanks", type="int",
+                      help="scale flanks to (integer multiples of) gene length"
+                      "[%default]")
+
+    parser.add_option("--control-factor", dest="control_factor", type="float",
+                      help="factor for normalizing control and fg data. Computed from data "
                       "if not set. "
-                      "[%default]" )
+                      "[%default]")
 
-    parser.add_option( "--output-all-profiles", dest="output_all_profiles", action = "store_true",
-                       help = "keep individual profiles for each transcript and output. "
-                              "[%default]" )
+    parser.add_option("--output-all-profiles", dest="output_all_profiles", action="store_true",
+                      help="keep individual profiles for each transcript and output. "
+                      "[%default]")
 
-    parser.add_option( "--input-filename-counts", dest="input_filename_counts", type="string",
-                       help = "filename with count data for each transcript. Use this instead "
-                       "of recomputing the profile. Useful for plotting the meta-gene profile "
-                       "from previously computed counts "
-                       "[%default]" )
+    parser.add_option("--input-filename-counts", dest="input_filename_counts", type="string",
+                      help="filename with count data for each transcript. Use this instead "
+                      "of recomputing the profile. Useful for plotting the meta-gene profile "
+                      "from previously computed counts "
+                      "[%default]")
 
-    parser.add_option("--background-region", dest="background-region", type = "int",
-                       help = "number of bins on either side of the profile to be considered "
+    parser.add_option("--background-region", dest="background-region", type="int",
+                      help="number of bins on either side of the profile to be considered "
                       "for background meta-gene normalizatian "
-                      "[%default]" )
+                      "[%default]")
 
     parser.set_defaults(
-        remove_rna = False,
-        ignore_pairs = False,
-        force_output = False,
-        bin_size = 10,
-        extends = [],
-        shifts = [],
-        sort = [],
-        reporter = "transcript",
-        resolution_cds = 1000,
-        resolution_introns = 1000,
-        resolution_exons_absolute_distance_topolya = 3000,    #3kb is a good balance of seeing long enough 3 prime bias and not omit too many genes. Tim 31th Aug 2013
-        resolution_introns_absolute_distance_topolya = 500,   #introns is only for assess the noise level, thus do ont need a long region, a long region has the side effect of omit more genes. Tim 31th Aug 2013
-        extension_exons_absolute_distance_topolya = 3000,     #3kb is a good balance of seeing long enough 3 prime bias and not omit too many genes. Tim 31th Aug 2013
-        extension_introns_absolute_distance_topolya = 500,    #introns is only for assess the noise level, thus do ont need a long region, a long region has the side effect of omit more genes. Tim 31th Aug 2013
-        resolution_upstream_utr = 1000,
-        resolution_downstream_utr = 1000,
-        resolution_upstream = 1000,
-        resolution_downstream = 1000,
+        remove_rna=False,
+        ignore_pairs=False,
+        force_output=False,
+        bin_size=10,
+        extends=[],
+        shifts=[],
+        sort=[],
+        reporter="transcript",
+        resolution_cds=1000,
+        resolution_introns=1000,
+        # 3kb is a good balance of seeing long enough 3 prime bias and not omit
+        # too many genes. Tim 31th Aug 2013
+        resolution_exons_absolute_distance_topolya=3000,
+        # introns is only for assess the noise level, thus do ont need a long
+        # region, a long region has the side effect of omit more genes. Tim
+        # 31th Aug 2013
+        resolution_introns_absolute_distance_topolya=500,
+        # 3kb is a good balance of seeing long enough 3 prime bias and not omit
+        # too many genes. Tim 31th Aug 2013
+        extension_exons_absolute_distance_topolya=3000,
+        # introns is only for assess the noise level, thus do ont need a long
+        # region, a long region has the side effect of omit more genes. Tim
+        # 31th Aug 2013
+        extension_introns_absolute_distance_topolya=500,
+        resolution_upstream_utr=1000,
+        resolution_downstream_utr=1000,
+        resolution_upstream=1000,
+        resolution_downstream=1000,
         # mean length of transcripts: about 2.5 kb
-        extension_upstream = 2500,
-        extension_downstream = 2500,
-        extension_inward = 3000,
-        extension_outward = 3000,
-        plot = True,
-        methods = [],
-        infiles = [],
-        controlfiles = [],
-        gtffile = None,
-        profile_normalizations = [],
-        normalization = None,
-        scale_flanks = 0,
-        merge_pairs = False,
-        min_insert_size = 0,
-        max_insert_size = 1000,
-        base_accuracy = False,
-        matrix_format = "single",
-        control_factor = None,
-        output_all_profiles = False,
-        background_region = 10,
-        input_filename_counts = None,
-        )
+        extension_upstream=2500,
+        extension_downstream=2500,
+        extension_inward=3000,
+        extension_outward=3000,
+        plot=True,
+        methods=[],
+        infiles=[],
+        controlfiles=[],
+        gtffile=None,
+        profile_normalizations=[],
+        normalization=None,
+        scale_flanks=0,
+        merge_pairs=False,
+        min_insert_size=0,
+        max_insert_size=1000,
+        base_accuracy=False,
+        matrix_format="single",
+        control_factor=None,
+        output_all_profiles=False,
+        background_region=10,
+        input_filename_counts=None,
+    )
 
-    ## add common options (-h/--help, ...) and parse command line 
-    (options, args) = E.Start( parser, argv = argv, add_output_options = True )
+    # add common options (-h/--help, ...) and parse command line
+    (options, args) = E.Start(parser, argv=argv, add_output_options=True)
 
     # Keep for backwards compatability
     if len(args) == 2:
@@ -476,160 +488,181 @@ def main( argv = None ):
         options.gtffile = gtf
 
     if not options.gtffile:
-        raise ValueError("no GTF file specified" )
+        raise ValueError("no GTF file specified")
 
     if options.gtffile == "-":
         options.gtffile = options.stdin
     else:
-        options.gtffile = IOTools.openFile( options.gtffile )
+        options.gtffile = IOTools.openFile(options.gtffile)
 
     if len(options.infiles) == 0:
-        raise ValueError("no bam/wig/bed files specified" )
-    
-    for methodsRequiresBaseAccuracy in ["geneprofilewithintrons", 
+        raise ValueError("no bam/wig/bed files specified")
+
+    for methodsRequiresBaseAccuracy in ["geneprofilewithintrons",
                                         "geneprofileabsolutedistancefromthreeprimeend",
-                                       ]:
-        # If you implemented any methods that you do not want the spliced out introns 
+                                        ]:
+        # If you implemented any methods that you do not want the spliced out introns
         # or exons appear to be covered by non-existent reads, it is better you let those
         # methods imply --base-accurarcy by add them here.
         if methodsRequiresBaseAccuracy in options.methods:
-            options.base_accuracy=True
+            options.base_accuracy = True
 
     if options.reporter == "gene":
-        gtf_iterator = GTF.flat_gene_iterator( GTF.iterator( options.gtffile ) )
+        gtf_iterator = GTF.flat_gene_iterator(GTF.iterator(options.gtffile))
     elif options.reporter == "transcript":
-        gtf_iterator = GTF.transcript_iterator( GTF.iterator( options.gtffile ) )
+        gtf_iterator = GTF.transcript_iterator(GTF.iterator(options.gtffile))
 
     # Select rangecounter based on file type
     if len(options.infiles) > 0:
-        if options.infiles[0].endswith( ".bam" ):
-            bamfiles = [ pysam.Samfile( x, "rb" ) for x in options.infiles ]
+        if options.infiles[0].endswith(".bam"):
+            bamfiles = [pysam.Samfile(x, "rb") for x in options.infiles]
 
             if options.controlfiles:
-                controlfiles = [ pysam.Samfile( x, "rb" ) for x in options.controlfiles ]
-            else: controlfiles = None
-                
+                controlfiles = [pysam.Samfile(x, "rb")
+                                for x in options.controlfiles]
+            else:
+                controlfiles = None
+
             format = "bam"
             if options.merge_pairs:
-                range_counter = _bam2geneprofile.RangeCounterBAM( bamfiles, 
-                                                                  shifts = options.shifts, 
-                                                                  extends = options.extends,
-                                                                  merge_pairs = options.merge_pairs,
-                                                                  min_insert_size = options.min_insert_size,
-                                                                  max_insert_size = options.max_insert_size,
-                                                                  controfiles = controlfiles,
-                                                                  control_factor = options.control_factor )
+                range_counter = _bam2geneprofile.RangeCounterBAM(bamfiles,
+                                                                 shifts=options.shifts,
+                                                                 extends=options.extends,
+                                                                 merge_pairs=options.merge_pairs,
+                                                                 min_insert_size=options.min_insert_size,
+                                                                 max_insert_size=options.max_insert_size,
+                                                                 controfiles=controlfiles,
+                                                                 control_factor=options.control_factor)
             elif options.shifts or options.extends:
-                range_counter = _bam2geneprofile.RangeCounterBAM( bamfiles, 
-                                                                  shifts = options.shifts, 
-                                                                  extends = options.extends,
-                                                                  controlfiles = controlfiles,
-                                                                  control_factor = options.control_factor )
+                range_counter = _bam2geneprofile.RangeCounterBAM(bamfiles,
+                                                                 shifts=options.shifts,
+                                                                 extends=options.extends,
+                                                                 controlfiles=controlfiles,
+                                                                 control_factor=options.control_factor)
 
             elif options.base_accuracy:
-                range_counter = _bam2geneprofile.RangeCounterBAMBaseAccuracy( bamfiles,
-                                                                              controlfiles = controlfiles,
-                                                                              control_factor = options.control_factor )
+                range_counter = _bam2geneprofile.RangeCounterBAMBaseAccuracy(bamfiles,
+                                                                             controlfiles=controlfiles,
+                                                                             control_factor=options.control_factor)
             else:
-                range_counter = _bam2geneprofile.RangeCounterBAM( bamfiles,
-                                                                  controlfiles = controlfiles,
-                                                                  control_factor = options.control_factor )
-            
-                                                              
-        elif options.infiles[0].endswith( ".bed.gz" ):
-            bedfiles = [ pysam.Tabixfile( x ) for x in options.infiles ]
+                range_counter = _bam2geneprofile.RangeCounterBAM(bamfiles,
+                                                                 controlfiles=controlfiles,
+                                                                 control_factor=options.control_factor)
+
+        elif options.infiles[0].endswith(".bed.gz"):
+            bedfiles = [pysam.Tabixfile(x) for x in options.infiles]
 
             if options.controlfiles:
-                controlfiles = [ pysam.Tabixfile( x ) for x in options.controlfiles ]
-            else: controlfiles = None
+                controlfiles = [pysam.Tabixfile(x)
+                                for x in options.controlfiles]
+            else:
+                controlfiles = None
 
             format = "bed"
-            range_counter = _bam2geneprofile.RangeCounterBed( bedfiles, 
-                                                              controlfiles = controlfiles,
-                                                              control_factor = options.control_factor )
+            range_counter = _bam2geneprofile.RangeCounterBed(bedfiles,
+                                                             controlfiles=controlfiles,
+                                                             control_factor=options.control_factor)
 
-        elif options.infiles[0].endswith( ".bw" ):
-            wigfiles = [ BigWigFile(file=open(x)) for x in options.infiles ]
+        elif options.infiles[0].endswith(".bw"):
+            wigfiles = [BigWigFile(file=open(x)) for x in options.infiles]
             format = "bigwig"
-            range_counter = _bam2geneprofile.RangeCounterBigWig( wigfiles )
+            range_counter = _bam2geneprofile.RangeCounterBigWig(wigfiles)
 
         else:
-            raise NotImplementedError( "can't determine file type for %s" % bamfile )
+            raise NotImplementedError(
+                "can't determine file type for %s" % bamfile)
 
     counters = []
     for method in options.methods:
         if method == "utrprofile":
-            counters.append( _bam2geneprofile.UTRCounter( range_counter, 
-                                                          options.resolution_upstream,
-                                                          options.resolution_upstream_utr,
-                                                          options.resolution_cds,
-                                                          options.resolution_downstream_utr,
-                                                          options.resolution_downstream,
-                                                          options.extension_upstream,
-                                                          options.extension_downstream,
-                                                          ) )
+            counters.append(_bam2geneprofile.UTRCounter(range_counter,
+                                                        options.resolution_upstream,
+                                                        options.resolution_upstream_utr,
+                                                        options.resolution_cds,
+                                                        options.resolution_downstream_utr,
+                                                        options.resolution_downstream,
+                                                        options.extension_upstream,
+                                                        options.extension_downstream,
+                                                        ))
 
         elif method == "geneprofile":
-            counters.append( _bam2geneprofile.GeneCounter( range_counter, 
+            counters.append(_bam2geneprofile.GeneCounter(range_counter,
+                                                         options.resolution_upstream,
+                                                         options.resolution_cds,
+                                                         options.resolution_downstream,
+                                                         options.extension_upstream,
+                                                         options.extension_downstream,
+                                                         options.scale_flanks))
+
+        elif method == "geneprofilewithintrons":
+            counters.append(_bam2geneprofile.GeneCounterWithIntrons(range_counter,
+                                                                    options.resolution_upstream,
+                                                                    options.resolution_cds,
+                                                                    options.resolution_introns,
+                                                                    options.resolution_downstream,
+                                                                    options.extension_upstream,
+                                                                    options.extension_downstream,
+                                                                    options.scale_flanks))
+
+        elif method == "geneprofileabsolutedistancefromthreeprimeend":
+            counters.append(_bam2geneprofile.GeneCounterAbsoluteDistanceFromThreePrimeEnd(range_counter,
+                                                                                          options.resolution_upstream,
+                                                                                          options.resolution_downstream,
+                                                                                          options.resolution_exons_absolute_distance_topolya,
+                                                                                          options.resolution_introns_absolute_distance_topolya,
+                                                                                          # options.resolution_exons_absolute_distance_tostartsite,
+                                                                                          # options.resolution_introns_absolute_distance_tostartsite,
+                                                                                          # Tim 31th Aug 2013: a possible feature for future,  if five prime bias is of your interest.
+                                                                                          #(you need to create another class). It is not very difficult to derive from this class, but is not implemented yet
+                                                                                          # This future
+                                                                                          # feature is
+                                                                                          # slightly different
+                                                                                          # the TSS profile
+                                                                                          # already
+                                                                                          # implemented,
+                                                                                          # because in this
+                                                                                          # future feature
+                                                                                          # introns are
+                                                                                          # skipped,
+                                                                                          options.extension_upstream,
+                                                                                          options.extension_downstream,
+                                                                                          options.extension_exons_absolute_distance_topolya,
+                                                                                          options.extension_introns_absolute_distance_topolya,
+                                                                                          # options.extension_exons_absolute_distance_tostartsite,
+                                                                                          # options.extension_introns_absolute_distance_tostartsite,
+                                                                                          # Tim 31th Aug 2013: a possible feature for future,  if five prime bias is of your interest.
+                                                                                          #(you need to create another class). It is not very difficult to derive from this class, but is not implemented yet
+                                                                                          # This future
+                                                                                          # feature is
+                                                                                          # slightly different
+                                                                                          # the TSS profile
+                                                                                          # already
+                                                                                          # implemented,
+                                                                                          # because in this
+                                                                                          # future feature
+                                                                                          # introns are
+                                                                                          # skipped,
+                                                                                          options.scale_flanks))
+
+        elif method == "tssprofile":
+            counters.append(_bam2geneprofile.TSSCounter(range_counter,
+                                                        options.extension_outward,
+                                                        options.extension_inward))
+
+        elif method == "intervalprofile":
+            counters.append(_bam2geneprofile.RegionCounter(range_counter,
                                                            options.resolution_upstream,
                                                            options.resolution_cds,
                                                            options.resolution_downstream,
                                                            options.extension_upstream,
-                                                           options.extension_downstream,
-                                                           options.scale_flanks ) )
-
-        elif method == "geneprofilewithintrons":
-            counters.append( _bam2geneprofile.GeneCounterWithIntrons( range_counter, 
-                                                                      options.resolution_upstream,
-                                                                      options.resolution_cds,
-                                                                      options.resolution_introns,
-                                                                      options.resolution_downstream,
-                                                                      options.extension_upstream,
-                                                                      options.extension_downstream,
-                                                                      options.scale_flanks ) )
-            
-        elif method == "geneprofileabsolutedistancefromthreeprimeend":
-            counters.append( _bam2geneprofile.GeneCounterAbsoluteDistanceFromThreePrimeEnd( range_counter, 
-                                                           options.resolution_upstream,                                                           
-                                                           options.resolution_downstream,
-                                                           options.resolution_exons_absolute_distance_topolya,
-                                                           options.resolution_introns_absolute_distance_topolya,
-                                                           # options.resolution_exons_absolute_distance_tostartsite,   
-                                                           # options.resolution_introns_absolute_distance_tostartsite,             
-                                                           # Tim 31th Aug 2013: a possible feature for future,  if five prime bias is of your interest. 
-                                                           #(you need to create another class). It is not very difficult to derive from this class, but is not implemented yet
-                                                           # This future feature is slightly different the TSS profile already implemented, because in this future feature introns are skipped, 
-                                                           options.extension_upstream,
-                                                           options.extension_downstream,
-                                                           options.extension_exons_absolute_distance_topolya,
-                                                           options.extension_introns_absolute_distance_topolya,
-                                                           # options.extension_exons_absolute_distance_tostartsite,   
-                                                           # options.extension_introns_absolute_distance_tostartsite,                                           
-                                                           # Tim 31th Aug 2013: a possible feature for future,  if five prime bias is of your interest. 
-                                                           #(you need to create another class). It is not very difficult to derive from this class, but is not implemented yet
-                                                           # This future feature is slightly different the TSS profile already implemented, because in this future feature introns are skipped, 
-                                                           options.scale_flanks ) )
-             
-
-        elif method == "tssprofile":
-            counters.append( _bam2geneprofile.TSSCounter( range_counter, 
-                                                           options.extension_outward,
-                                                           options.extension_inward ) )
-
-        elif method == "intervalprofile":
-            counters.append( _bam2geneprofile.RegionCounter( range_counter, 
-                                                             options.resolution_upstream,
-                                                             options.resolution_cds,
-                                                             options.resolution_downstream,
-                                                             options.extension_upstream,
-                                                             options.extension_downstream ) )
+                                                           options.extension_downstream))
 
         elif method == "midpointprofile":
-            counters.append( _bam2geneprofile.MidpointCounter( range_counter, 
-                                                               options.resolution_upstream,
-                                                               options.resolution_downstream,
-                                                               options.extension_upstream,
-                                                               options.extension_downstream ) )
+            counters.append(_bam2geneprofile.MidpointCounter(range_counter,
+                                                             options.resolution_upstream,
+                                                             options.resolution_downstream,
+                                                             options.extension_upstream,
+                                                             options.extension_downstream))
 
     # set normalization
     for c in counters:
@@ -641,9 +674,9 @@ def main( argv = None ):
     if options.input_filename_counts:
         # read counts from file
         E.info("reading counts from %s" % options.input_filename_counts)
-        all_counts = pandas.read_csv(IOTools.openFile(options.input_filename_counts), 
+        all_counts = pandas.read_csv(IOTools.openFile(options.input_filename_counts),
                                      sep='\t', header=0, index_col=0)
-        
+
         if len(counters) != 1:
             raise NotImplementedError(
                 'counting from matrix only implemented for 1 counter.')
@@ -651,9 +684,9 @@ def main( argv = None ):
         counter = _bam2geneprofile.UnsegmentedCounter(counters[0])
         counters = [counter]
         _bam2geneprofile.countFromCounts(counters, all_counts)
-        
+
     else:
-        E.info( "starting counting with %i counters" % len(counters))
+        E.info("starting counting with %i counters" % len(counters))
         _bam2geneprofile.countFromGTF(counters, gtf_iterator)
 
     # output matrices
@@ -742,7 +775,7 @@ def main( argv = None ):
                 for x, counts in enumerate(counter.aggregate_counts):
                     points.extend(counts)
                     cuts.append(len(counts))
-                                 
+
                 plt.plot(range(len(points)), points)
                 xx, xxx = 0, []
                 for x in cuts:
@@ -755,23 +788,27 @@ def main( argv = None ):
                 plt.xticks(xxx, counter.fields)
 
                 figname = counter.name + ".detail"
-                
-                fn = E.getOutputFile( figname ) + ".png"
-                plt.savefig( os.path.expanduser(fn) )
+
+                fn = E.getOutputFile(figname) + ".png"
+                plt.savefig(os.path.expanduser(fn))
 
             elif method == "tssprofile":
 
                 plt.figure()
                 plt.subplot(1, 3, 1)
-                plt.plot(range(-options.extension_outward, options.extension_inward), counter.aggregate_counts[0] )
+                plt.plot(range(-options.extension_outward,
+                         options.extension_inward), counter.aggregate_counts[0])
                 plt.title(counter.fields[0])
                 plt.subplot(1, 3, 2)
-                plt.plot(range(-options.extension_inward, options.extension_outward), counter.aggregate_counts[1] )
+                plt.plot(range(-options.extension_inward,
+                         options.extension_outward), counter.aggregate_counts[1])
                 plt.title(counter.fields[1])
-                plt.subplot( 1, 3, 3)
+                plt.subplot(1, 3, 3)
                 plt.title("combined")
-                plt.plot(range(-options.extension_outward, options.extension_inward), counter.aggregate_counts[0] )
-                plt.plot(range(-options.extension_inward, options.extension_outward), counter.aggregate_counts[1] )
+                plt.plot(range(-options.extension_outward,
+                         options.extension_inward), counter.aggregate_counts[0])
+                plt.plot(range(-options.extension_inward,
+                         options.extension_outward), counter.aggregate_counts[1])
                 plt.legend(counter.fields[:2])
 
                 fn = E.getOutputFile(counter.name) + ".png"
@@ -787,11 +824,9 @@ def main( argv = None ):
 
                 fn = E.getOutputFile(counter.name) + ".png"
                 plt.savefig(os.path.expanduser(fn))
-        
-    ## write footer and output benchmark information.
+
+    # write footer and output benchmark information.
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
-    
+    sys.exit(main(sys.argv))

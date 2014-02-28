@@ -1,12 +1,14 @@
 from RnaseqDiffExpressionReport import *
 
-class TopDifferentiallyExpressedGenes( ProjectTracker ):
+
+class TopDifferentiallyExpressedGenes(ProjectTracker):
+
     '''output differentially expressed genes.'''
     limit = 10
-    
-    pattern = '(.*)_gene_diff' 
 
-    def __call__(self, track, slice = None ):
+    pattern = '(.*)_gene_diff'
+
+    def __call__(self, track, slice=None):
         statement = '''SELECT a.gene_name, 
                               a.gene_id,
                               a.gene_biotype, 
@@ -23,25 +25,27 @@ class TopDifferentiallyExpressedGenes( ProjectTracker ):
                                     s.gene_id = t.test_id AND
                                     t.significant
                               ORDER BY t.l2fold DESC LIMIT %(limit)i'''
-        data = self.getAll( statement )
-        if len(data) == 0: return data
+        data = self.getAll(statement)
+        if len(data) == 0:
+            return data
 
-        data['gene_id'] = [ linkToEnsembl( x ) for x in data["gene_id"] ]
-        data["locus"] = [ linkToUCSC( *x ) for x in zip( 
+        data['gene_id'] = [linkToEnsembl(x) for x in data["gene_id"]]
+        data["locus"] = [linkToUCSC(*x) for x in zip(
             data["contig"],
             data["start"],
-            data["end"]) ]
+            data["end"])]
         print data.keys()
         return data
 
 
-class AllDifferentiallyExpressedGenes( ProjectTracker ):
+class AllDifferentiallyExpressedGenes(ProjectTracker):
+
     '''output differentially expressed genes.'''
     limit = 1000
-    
-    pattern = '(.*)_gene_diff' 
 
-    def __call__(self, track, slice = None ):
+    pattern = '(.*)_gene_diff'
+
+    def __call__(self, track, slice=None):
         statement = '''SELECT a.gene_name, 
                               a.gene_id,
                               a.gene_biotype, 
@@ -58,13 +62,13 @@ class AllDifferentiallyExpressedGenes( ProjectTracker ):
                                     s.gene_id = t.test_id AND
                                     t.significant
                               ORDER BY t.l2fold DESC LIMIT %(limit)i'''
-        data = self.getAll( statement )
-        if len(data) == 0: return data
+        data = self.getAll(statement)
+        if len(data) == 0:
+            return data
 
-        data['gene_id'] = [ linkToEnsembl( x ) for x in data["gene_id"] ]
-        data["locus"] = [ linkToUCSC( *x ) for x in zip( 
+        data['gene_id'] = [linkToEnsembl(x) for x in data["gene_id"]]
+        data["locus"] = [linkToUCSC(*x) for x in zip(
             data["contig"],
             data["start"],
-            data["end"]) ]
+            data["end"])]
         return data
-

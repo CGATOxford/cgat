@@ -136,28 +136,30 @@ Code
 '''
 """
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if not argv: argv = sys.argv
+    if not argv:
+        argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser( version = "%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
-                                    usage = globals()["__doc__"] )
+    parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+                            usage=globals()["__doc__"])
 
     parser.add_option("-t", "--template", dest="template", type="choice",
-                      choices = ("script", "module"),
-                      help="which template to choose [default=%default]."  )
+                      choices=("script", "module"),
+                      help="which template to choose [default=%default].")
 
     parser.set_defaults(
-        template = "script",
-        )
+        template="script",
+    )
 
-    ## add common options (-h/--help, ...) and parse command line 
-    (options, args) = E.Start( parser, argv = argv )
+    # add common options (-h/--help, ...) and parse command line
+    (options, args) = E.Start(parser, argv=argv)
 
     if options.template == "script":
         template = SCRIPT
@@ -165,24 +167,23 @@ def main( argv = None ):
         template = MODULE
 
     for filename in args:
-        E.info( "processing %s" % filename)
+        E.info("processing %s" % filename)
         lines = open(filename).readlines()
         x = 0
         while x < len(lines) and lines[x][0] in ("#", "", "\n"):
             x += 1
         l = lines[x]
-        if l.startswith( "'''" ) or l.startswith('"""'): continue
-        E.info( "moving %s to %s.bak" % (filename, filename) )
-        shutil.move( filename, "%s.bak" % filename )
-        outfile = open( filename, "w")
-        outfile.write( template % locals() )
-        outfile.write( "".join(lines[x:]) )
+        if l.startswith( "'''" ) or l.startswith('"""'):
+            continue
+        E.info("moving %s to %s.bak" % (filename, filename))
+        shutil.move(filename, "%s.bak" % filename)
+        outfile = open(filename, "w")
+        outfile.write(template % locals())
+        outfile.write("".join(lines[x:]))
         outfile.close()
 
-    ## write footer and output benchmark information.
+    # write footer and output benchmark information.
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
-
+    sys.exit(main(sys.argv))

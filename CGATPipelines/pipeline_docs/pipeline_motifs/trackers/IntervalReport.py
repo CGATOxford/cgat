@@ -1,4 +1,9 @@
-import os, sys, re, types, itertools, glob
+import os
+import sys
+import re
+import types
+import itertools
+import glob
 
 from SphinxReport.Tracker import *
 from SphinxReport.Utils import PARAMS as P
@@ -12,16 +17,18 @@ from SphinxReport import Utils
 
 ###################################################################
 ###################################################################
-## parameterization
+# parameterization
 
-EXPORTDIR=P['intervals_exportdir']
-DATADIR=P['intervals_datadir']
-DATABASE=P['intervals_backend']
+EXPORTDIR = P['intervals_exportdir']
+DATADIR = P['intervals_datadir']
+DATABASE = P['intervals_backend']
 
 ###########################################################################
-class IntervalTracker( TrackerSQL ):
+
+
+class IntervalTracker(TrackerSQL):
+
     '''Define convenience tracks for plots'''
-    def __init__(self, *args, **kwargs ):
-        TrackerSQL.__init__(self, *args, backend = DATABASE, **kwargs )
 
-
+    def __init__(self, *args, **kwargs):
+        TrackerSQL.__init__(self, *args, backend=DATABASE, **kwargs)

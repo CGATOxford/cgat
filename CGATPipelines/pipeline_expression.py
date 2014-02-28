@@ -69,8 +69,8 @@ from rpy2.robjects import r as R
 if os.path.exists("conf.py"):
     execfile("conf.py")
 
-TARGET_ANNOTATION= 'ensembl_regions.gff'
-TARGET_GENESET= 'ensembl.gtf'
+TARGET_ANNOTATION = 'ensembl_regions.gff'
+TARGET_GENESET = 'ensembl.gtf'
 TARGET_PROMOTORS = 'promotors.gtf'
 TARGET_TSS = 'tss.gtf'
 TARGET_REPEATS = 'repeats.gff'
@@ -78,47 +78,54 @@ TARGET_TRANSCRIPTS = 'transcripts.gtf.gz'
 TARGET_PROBESET = 'probeset.gtf'
 TARGET_TRANSCRIPTS_TSS = 'transcripts_tss.gtf'
 TARGET_TRANSCRIPTS_PROMOTORS = 'transcripts_promotors.gtf'
-TARGET_ANNOTATOR_GENETERRITORIES='annotator_geneterritories.gff'
-TARGET_MAPPABILITY='mappability.bed'
+TARGET_ANNOTATOR_GENETERRITORIES = 'annotator_geneterritories.gff'
+TARGET_MAPPABILITY = 'mappability.bed'
 
 PARAMS = P.getParameters()
 
-@files( ((None, "probeset2gene.table" ), ) )
-def buildProbeset2Gene( infile, outfile ):
+
+@files(((None, "probeset2gene.table"), ))
+def buildProbeset2Gene(infile, outfile):
     '''build map relating a probeset to an ENSEMBL gene_id'''
-    Expression.buildProbeset2Gene( infile, outfile )
+    Expression.buildProbeset2Gene(infile, outfile)
 
-@follows( buildProbeset2Gene )
-def prepare(): pass    
 
-@files( [ ( (x, "%s.map" % x), "%s_levels.import" % x[:-len("_series_matrix.txt.gz")] ) 
-          for x in glob.glob("*_series_matrix.txt.gz") ] )
-def importFromSeries( infiles, outfile ):
+@follows(buildProbeset2Gene)
+def prepare():
+    pass
+
+
+@files([((x, "%s.map" % x), "%s_levels.import" % x[:-len("_series_matrix.txt.gz")])
+        for x in glob.glob("*_series_matrix.txt.gz")])
+def importFromSeries(infiles, outfile):
     '''import expression levels from a GEO series.'''
-    tablename = P.toTable( outfile )
-    
+    tablename = P.toTable(outfile)
+
     tmpf = P.getTempFile()
 
     infile_data, infile_map = infiles
 
-    map_header = IOTools.readMap( open(infile_map, "r") )
+    map_header = IOTools.readMap(open(infile_map, "r"))
     if "ID_REF" not in map_header:
         map_header["ID_REF"] = "probeset"
 
-    inf = gzip.open( infile_data, "r" )
+    inf = gzip.open(infile_data, "r")
 
     for line in inf:
-        if line.startswith("!"): continue
-        if not line.strip(): continue
-        line = re.sub('"',"", line)
-        if line.startswith( "ID_REF"):
-            line = "\t".join( [map_header[x] for x in line[:-1].split("\t")] ) + "\n" 
-                              
-        tmpf.write( line )
-        
+        if line.startswith("!"):
+            continue
+        if not line.strip():
+            continue
+        line = re.sub('"', "", line)
+        if line.startswith("ID_REF"):
+            line = "\t".join([map_header[x]
+                             for x in line[:-1].split("\t")]) + "\n"
+
+        tmpf.write(line)
+
     tmpf.close()
     tmpname = tmpf.name
-    
+
     header = map_header["ID_REF"]
     statement = '''
    python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
@@ -130,58 +137,62 @@ def importFromSeries( infiles, outfile ):
     P.run()
     os.unlink(tmpname)
 
-@split( "import.map", "*.CEL" )
-def importCEL( infile, outfiles ):
+
+@split("import.map", "*.CEL")
+def importCEL(infile, outfiles):
     '''import CEL files.'''
-    
-    map_cel = IOTools.readMap( open(infile, "r"), has_header = True )
-    
+
+    map_cel = IOTools.readMap(open(infile, "r"), has_header=True)
+
     indir = PARAMS["datadir"]
-    
+
     for old, new in map_cel.iteritems():
-        oldname = os.path.join( indir, old + ".CEL" )
-        newname = os.path.join( ".", new + ".CEL" )
+        oldname = os.path.join(indir, old + ".CEL")
+        newname = os.path.join(".", new + ".CEL")
 
-        if not os.path.exists( oldname ):
-            raise IOError( "input file %s does not exist" % oldname )
-        if os.path.exists(newname): continue
+        if not os.path.exists(oldname):
+            raise IOError("input file %s does not exist" % oldname)
+        if os.path.exists(newname):
+            continue
 
-        os.symlink( os.path.abspath( oldname), os.path.abspath( newname ) )
-    
-@merge( "*.CEL.gz", "expression.out" )
-def estimateExpression( infiles, outfile ):
+        os.symlink(os.path.abspath(oldname), os.path.abspath(newname))
+
+
+@merge("*.CEL.gz", "expression.out")
+def estimateExpression(infiles, outfile):
     '''estimate expression levels.'''
-    
-    R.library( "affy" )
 
-    E.info( "reading data" )
+    R.library("affy")
 
-    raw_data = R.ReadAffy( infiles )
+    E.info("reading data")
 
-    E.info( "RMA normalization" )
+    raw_data = R.ReadAffy(infiles)
 
-    eset = R.rma( raw_data )
+    E.info("RMA normalization")
 
-    R.boxplot( raw_data )
-    R.boxplot( eset )
-    
+    eset = R.rma(raw_data)
+
+    R.boxplot(raw_data)
+    R.boxplot(eset)
+
     print R.as_list(R.assayData(eset))
 
-def getTreatmentsAndControls( infile ):
-    
+
+def getTreatmentsAndControls(infile):
+
     layout = ConfigParser.RawConfigParser()
-    
-    layout.read( infile )
-    
+
+    layout.read(infile)
+
     tablename = "levels"
     controls = layout.get("sam", "control").split(",")
     treatments = layout.get("sam", "treatment").split(",")
-    
-    dbhandle = sqlite3.connect( PARAMS["database"] )
+
+    dbhandle = sqlite3.connect(PARAMS["database"])
     cc = dbhandle.cursor()
- 
-    treatment_columns = ",".join( ["%s" % x for x in treatments ] )
-    control_columns = ",".join( ["%s" % x for x in controls ] )
+
+    treatment_columns = ",".join(["%s" % x for x in treatments])
+    control_columns = ",".join(["%s" % x for x in controls])
 
     presence = "rma_presence"
 
@@ -192,59 +203,62 @@ def getTreatmentsAndControls( infile ):
                         FROM %(tablename)s AS l, %(presence)s AS p
               WHERE p.probeset = l.probeset""" % locals()
 
-    cc.execute( statement )
+    cc.execute(statement)
 
     r = zip(*cc.fetchall())
 
     probesets = r[0]
-    treatments = r[1:len(treatments)+1]
-    controls = r[len(treatments)+1:]
+    treatments = r[1:len(treatments) + 1]
+    controls = r[len(treatments) + 1:]
 
     return probesets, treatments, controls
-        
-@merge( "*.CEL", ("rma.Rdata", "levels.tsv" ) )
-def computeExpressionLevels( infiles, outfiles ):
+
+
+@merge("*.CEL", ("rma.Rdata", "levels.tsv"))
+def computeExpressionLevels(infiles, outfiles):
     '''normalize data using gcrma libary.
-    
+
     output a file with the R object and
     another as human readable table.
     '''
-    
+
     outfile_r, outfile_table = outfiles
 
-    R.library( "simpleaffy" )
-    R.library( "gcrma" )
+    R.library("simpleaffy")
+    R.library("gcrma")
 
-    E.info( "reading data" )
+    E.info("reading data")
 
     raw_data = R('''raw.data = ReadAffy()''')
 
-    E.info( "normalization" )
+    E.info("normalization")
 
-    R('''gcrma.eset = call.exprs( raw.data, "%(normalization_method)s" )''' % PARAMS )
+    R('''gcrma.eset = call.exprs( raw.data, "%(normalization_method)s" )''' %
+      PARAMS)
 
-    E.info( "saving data" )
+    E.info("saving data")
     R('''save( gcrma.eset, raw.data, file = "%s") ''' % outfile_r)
 
     data = R('''as.list(assayData(gcrma.eset))''')['exprs']
     probesets, headers = R('''dimnames( assayData(gcrma.eset)$exprs )''')
-    headers = [ re.sub(".CEL", "", x) for x in headers ]
+    headers = [re.sub(".CEL", "", x) for x in headers]
 
-    outf = open( outfile_table, "w" )
-    outf.write( "probeset\t%s\n" % "\t".join( headers) )
+    outf = open(outfile_table, "w")
+    outf.write("probeset\t%s\n" % "\t".join(headers))
 
-    for probeset, data in zip( probesets, data ):
-        outf.write( "%s\t%s\n" % (probeset,
-        "\t".join( map(str, data)) ) )
+    for probeset, data in zip(probesets, data):
+        outf.write("%s\t%s\n" % (probeset,
+                                 "\t".join(map(str, data))))
     outf.close()
 
-@merge( computeExpressionLevels, "levels.import")
-def importExpressionLevels( infiles, outfile ):
+
+@merge(computeExpressionLevels, "levels.import")
+def importExpressionLevels(infiles, outfile):
     '''import presence/absence data.'''
-    
+
     infile_data, infile_table = infiles
 
-    tablename = P.toTable( outfile )
+    tablename = P.toTable(outfile)
 
     statement = '''
    python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
@@ -255,8 +269,9 @@ def importExpressionLevels( infiles, outfile ):
 
     P.run()
 
-@transform( computeExpressionLevels, suffix(".Rdata"), ".presence")
-def computePresenceCalls( infiles, outfile ):
+
+@transform(computeExpressionLevels, suffix(".Rdata"), ".presence")
+def computePresenceCalls(infiles, outfile):
     '''
     modified workflow from https://stat.ethz.ch/pipermail/bioconductor/2005-July/009758.html
 
@@ -270,8 +285,8 @@ def computePresenceCalls( infiles, outfile ):
     not exist on other arrays.
     '''
 
-    R.library( "simpleaffy" )
-    R.library( "gcrma" )
+    R.library("simpleaffy")
+    R.library("gcrma")
 
     infile_r, infile_table = infiles
 
@@ -295,22 +310,23 @@ def computePresenceCalls( infiles, outfile ):
                       quote=FALSE,
                       col.names = NA, row.names = TRUE)''' % outfile)
 
-    # build list of probesets to keep 
-    # keep all probesets where at least 3 out of 4 replicates 
+    # build list of probesets to keep
+    # keep all probesets where at least 3 out of 4 replicates
     # are indicated as present (P/M) in at least one treatment group
-    R('''absent = rowSums( call.eset$call == 'A')''' ) 
-    keep = R('''remove = names(absent[absent <= length(colnames(assayData( gcrma.eset )$exprs))-4] )''')
-    outf = open( outfile, "w" )
+    R('''absent = rowSums( call.eset$call == 'A')''' )
+    keep = R(
+        '''remove = names(absent[absent <= length(colnames(assayData( gcrma.eset )$exprs))-4] )''')
+    outf = open(outfile, "w")
     outf.write("probeset\n")
-    outf.write("\n".join(map(str, keep)) + "\n" )
+    outf.write("\n".join(map(str, keep)) + "\n")
     outf.close()
 
 
-@transform( computePresenceCalls, suffix(".presence"), "_presence.import")
-def importPresence( infile, outfile ):
+@transform(computePresenceCalls, suffix(".presence"), "_presence.import")
+def importPresence(infile, outfile):
     '''import presence/absence data.'''
-    
-    tablename = P.toTable( outfile )
+
+    tablename = P.toTable(outfile)
 
     statement = '''
    python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
@@ -321,71 +337,75 @@ def importPresence( infile, outfile ):
 
     P.run()
 
-@transform( "*.layout", suffix(".layout"), ".sam")
-def computeDifferentialExpressionSAM( infile, outfile ):
+
+@transform("*.layout", suffix(".layout"), ".sam")
+def computeDifferentialExpressionSAM(infile, outfile):
     '''check for differential expression.
-    
+
     Probesets that are called absent in either control or treatment
     are removed.
     '''
 
-    probesets, treatments, controls = getTreatmentsAndControls( infile )
-    
-    E.info( "computing SAM for %i probesets, %i samples, %i control" % (
-            len(probesets),
-            len(treatments),
-            len(controls)))
+    probesets, treatments, controls = getTreatmentsAndControls(infile)
 
-    target_path = os.path.join( os.path.abspath( PARAMS["exportdir"] ), "SAM" )
-    if not os.path.exists( target_path): 
+    E.info("computing SAM for %i probesets, %i samples, %i control" % (
+        len(probesets),
+        len(treatments),
+        len(controls)))
+
+    target_path = os.path.join(os.path.abspath(PARAMS["exportdir"]), "SAM")
+    if not os.path.exists(target_path):
         try:
-            os.makedirs( target_path )
-        except OSError: 
+            os.makedirs(target_path)
+        except OSError:
             pass
 
-    genes, summary, cutoffs = Expression.SAM()( probesets, treatments, controls,
-                                                pattern = os.path.join(target_path, outfile + "%s"),
-                                                fdr = float(PARAMS["sam_fdr"]),
-                                                ngenes = float(PARAMS["sam_ngenes"]),
-                                                ndelta = float(PARAMS["sam_ndelta"]),
-                                                npermutations = PARAMS["sam_permutations"],
-                                                method = PARAMS["sam_method"] )
+    genes, summary, cutoffs = Expression.SAM()(probesets, treatments, controls,
+                                               pattern=os.path.join(
+                                                   target_path, outfile + "%s"),
+                                               fdr=float(PARAMS["sam_fdr"]),
+                                               ngenes=float(
+                                                   PARAMS["sam_ngenes"]),
+                                               ndelta=float(
+                                                   PARAMS["sam_ndelta"]),
+                                               npermutations=PARAMS[
+                                                   "sam_permutations"],
+                                               method=PARAMS["sam_method"])
 
     if summary == None:
-        E.warn( "no cutoff when running sam for %s" % infile )
+        E.warn("no cutoff when running sam for %s" % infile)
 
     if cutoffs:
-        logs = open( outfile + ".cutoffs", "w" )
-        logs.write("\t".join( cutoffs[0]._fields) + "\n" )
+        logs = open(outfile + ".cutoffs", "w")
+        logs.write("\t".join(cutoffs[0]._fields) + "\n")
         for x in cutoffs:
-            logs.write( "\t".join(map(str,x) ) + "\n" )
+            logs.write("\t".join(map(str, x)) + "\n")
         logs.close()
 
-    outs = open( outfile,"w")
-    outs.write( "cluster_id\tmean1\tstd1\tmean2\tstd2\tpvalue\tqvalue\tdiff\tfold\tcalled\n" )
-        
+    outs = open(outfile, "w")
+    outs.write(
+        "cluster_id\tmean1\tstd1\tmean2\tstd2\tpvalue\tqvalue\tdiff\tfold\tcalled\n")
+
     for s in genes:
-        outs.write ("%s\t%f\t%f\t%f\t%f\t%e\t%f\t%f\t%f\t%i\n" % \
-                        (s.probeset, 
-                         s.mean1,
-                         s.stddev1,
-                         s.mean2,
-                         s.stddev2,
-                         s.pvalue, 
-                         s.qvalue, 
-                         s.difference,
-                         s.fold,
-                         s.called,
-                         ) )
+        outs.write("%s\t%f\t%f\t%f\t%f\t%e\t%f\t%f\t%f\t%i\n" %
+                   (s.probeset,
+                    s.mean1,
+                    s.stddev1,
+                    s.mean2,
+                    s.stddev2,
+                    s.pvalue,
+                    s.qvalue,
+                    s.difference,
+                    s.fold,
+                    s.called,
+                    ))
     outs.close()
 
 
-
-
-@follows( importExpressionLevels,
-          importPresence )
+@follows(importExpressionLevels,
+         importPresence)
 def full():
     pass
 
-if __name__== "__main__":
-    sys.exit( P.main(sys.argv) )
+if __name__ == "__main__":
+    sys.exit(P.main(sys.argv))

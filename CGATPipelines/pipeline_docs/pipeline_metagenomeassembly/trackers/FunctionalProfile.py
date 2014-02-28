@@ -5,9 +5,8 @@ import numpy as np
 
 
 class AlignmentCounts(TrackerSQL):
-    
-    def __call__(self, track, slice = None):
-        
+
+    def __call__(self, track, slice=None):
         '''return counts of unique sequence
         alignments to protein database
         '''
@@ -22,7 +21,7 @@ class CogCounts(TrackerSQL):
 
     pattern = "(.*)_cog_counts"
 
-    def __call__(self, track, slice= None):
+    def __call__(self, track, slice=None):
         '''
         return the distribution of reads across
         COG categories
@@ -31,4 +30,3 @@ class CogCounts(TrackerSQL):
         for data in self.execute("""SELECT funtion, proportion FROM %s_cog_counts""" % track).fetchall():
             result[data[0]] = data[1]
         return result
-        

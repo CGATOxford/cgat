@@ -102,13 +102,13 @@ import CGATPipelines.PipelineMetagenomeAssembly as PipelineMetagenomeAssembly
 ###################################################
 ###################################################
 ###################################################
-## Pipeline configuration
+# Pipeline configuration
 ###################################################
 
 # load options from the config file
 import CGAT.Pipeline as P
-P.getParameters( 
-    "pipeline.ini" )
+P.getParameters(
+    "pipeline.ini")
 
 PARAMS = P.PARAMS
 
@@ -120,6 +120,8 @@ ALIGNMENTS = glob.glob("*.bam")
 ######################################################
 ######################################################
 ######################################################
+
+
 def dbList(xset):
     '''
     return a list for checking inclusion from a db query
@@ -135,9 +137,10 @@ def dbList(xset):
 ######################################################
 ######################################################
 ######################################################
+
+
 @follows(mkdir("taxonomy.dir"))
-@merge(GENOMES
-       , r"taxonomy.dir/gi_accessions.tsv")
+@merge(GENOMES, r"taxonomy.dir/gi_accessions.tsv")
 def buildGiAccessionNumbers(infiles, outfile):
     '''
     build a list of gi accession numbers from the genomes
@@ -148,12 +151,13 @@ def buildGiAccessionNumbers(infiles, outfile):
     for inf in infiles:
         outf.write(open(inf).readline().split("|")[1] + "\n")
     outf.close()
-        
+
 ######################################################
 ######################################################
 ######################################################
-@merge([buildGiAccessionNumbers] + [os.path.join(PARAMS["taxonomy_taxdir"], x) for x in ["ncbi.map", "gi_taxid_nucl.dmp.gz", "ncbi.lvl", "nodes.dmp"]]
-       , "taxonomy.dir/gi2taxa.tsv")
+
+
+@merge([buildGiAccessionNumbers] + [os.path.join(PARAMS["taxonomy_taxdir"], x) for x in ["ncbi.map", "gi_taxid_nucl.dmp.gz", "ncbi.lvl", "nodes.dmp"]], "taxonomy.dir/gi2taxa.tsv")
 def buildGi2Taxa(infiles, outfile):
     '''
     associate each input genome gi identifier to
@@ -179,6 +183,8 @@ def buildGi2Taxa(infiles, outfile):
 ######################################################
 ######################################################
 ######################################################
+
+
 @transform(buildGiAccessionNumbers, suffix(".tsv"), ".load")
 def loadGiAccessionNumbers(infile, outfile):
     '''
@@ -189,10 +195,9 @@ def loadGiAccessionNumbers(infile, outfile):
 ###################################################
 ###################################################
 ###################################################
-@transform(SEQUENCE_FILES
-           , regex("(\S+).(fastq.gz|fastq.1.gz)")
-           , add_inputs(buildGi2Taxa)
-           , r"taxonomy.dir/\1.taxonomy.relab")
+
+
+@transform(SEQUENCE_FILES, regex("(\S+).(fastq.gz|fastq.1.gz)"), add_inputs(buildGi2Taxa), r"taxonomy.dir/\1.taxonomy.relab")
 def buildTrueTaxonomicRelativeAbundances(infiles, outfile):
     '''
     relative abundances for the simulateds at different levels of
@@ -204,11 +209,14 @@ def buildTrueTaxonomicRelativeAbundances(infiles, outfile):
     takes an age to run - can think of optimising this somehow
     '''
     to_cluster = True
-    PipelineMetagenomeBenchmark.buildTrueTaxonomicRelativeAbundances(infiles, outfile)
+    PipelineMetagenomeBenchmark.buildTrueTaxonomicRelativeAbundances(
+        infiles, outfile)
 
 ###################################################
 ###################################################
 ###################################################
+
+
 @jobs_limit(1, "db")
 @transform(buildTrueTaxonomicRelativeAbundances, suffix(".relab"), ".relab.load")
 def loadTrueTaxonomicAbundances(infile, outfile):
@@ -216,14 +224,14 @@ def loadTrueTaxonomicAbundances(infile, outfile):
     load the true taxonomic relative abundances
     '''
     P.load(infile, outfile)
-    
+
 ###################################################
 ###################################################
 ###################################################
+
+
 @follows(mkdir("taxonomy.dir"))
-@transform(glob.glob(os.path.join(os.path.join(PARAMS["results_resultsdir"], "metaphlan.dir"), "*.relab"))
-       , regex("(\S+)/(\S+).relab")
-       , r"taxonomy.dir/metaphlan_\2.taxonomy.relab.load")
+@transform(glob.glob(os.path.join(os.path.join(PARAMS["results_resultsdir"], "metaphlan.dir"), "*.relab")), regex("(\S+)/(\S+).relab"), r"taxonomy.dir/metaphlan_\2.taxonomy.relab.load")
 def loadEstimatedTaxonomicRelativeAbundances(infile, outfile):
     '''
     load metaphlan taxonomic abundance estimations
@@ -233,26 +241,25 @@ def loadEstimatedTaxonomicRelativeAbundances(infile, outfile):
 ###################################################
 ###################################################
 ###################################################
+
+
 @jobs_limit(1, "R")
-@transform(loadTrueTaxonomicAbundances
-           , suffix(".load")
-           , add_inputs(loadEstimatedTaxonomicRelativeAbundances)
-           , ".pdf")
+@transform(loadTrueTaxonomicAbundances, suffix(".load"), add_inputs(loadEstimatedTaxonomicRelativeAbundances), ".pdf")
 def plotRelativeAbundanceCorrelations(infiles, outfile):
     '''
     plot the correlation between the estimated 
     relative abundance of species and the true
     relative abundances - done on the shared set
     '''
-    PipelineMetagenomeBenchmark.plotRelativeAbundanceCorrelations(infiles, outfile)
+    PipelineMetagenomeBenchmark.plotRelativeAbundanceCorrelations(
+        infiles, outfile)
 
 ###################################################
 ###################################################
 ###################################################
-@transform(loadTrueTaxonomicAbundances
-           , suffix(".load")
-           , add_inputs(loadEstimatedTaxonomicRelativeAbundances)
-           , ".fp")
+
+
+@transform(loadTrueTaxonomicAbundances, suffix(".load"), add_inputs(loadEstimatedTaxonomicRelativeAbundances), ".fp")
 def calculateFalsePositiveRate(infiles, outfile):
     '''
     calculate the false positive rate in taxonomic
@@ -263,6 +270,8 @@ def calculateFalsePositiveRate(infiles, outfile):
 ###################################################
 ###################################################
 ###################################################
+
+
 @merge(calculateFalsePositiveRate, "taxonomy.dir/false_positives.tsv")
 def mergeFalsePositiveRates(infiles, outfile):
     '''
@@ -280,6 +289,8 @@ def mergeFalsePositiveRates(infiles, outfile):
 ###################################################
 ###################################################
 ###################################################
+
+
 @transform(mergeFalsePositiveRates, suffix(".tsv"), ".pdf")
 def plotFalsePositiveRates(infile, outfile):
     '''
@@ -287,18 +298,21 @@ def plotFalsePositiveRates(infile, outfile):
     taxonomic levels
     '''
     R('''library(ggplot2)''')
-    R('''dat <- read.csv("%s", header = T, stringsAsFactors = F, sep = "\t")''' % infile)
-    for i in [0,1]:
+    R('''dat <- read.csv("%s", header = T, stringsAsFactors = F, sep = "\t")''' %
+      infile)
+    for i in [0, 1]:
         # specificity
         outf = P.snip(outfile, ".pdf") + ".%i.specificity.pdf" % i
-        R('''plot1 <- ggplot(dat[dat$cutoff == %i,], aes(x=reorder(level, fp_rate), y = fp_rate, fill = track, stat = "identity"))''' % i) 
+        R('''plot1 <- ggplot(dat[dat$cutoff == %i,], aes(x=reorder(level, fp_rate), y = fp_rate, fill = track, stat = "identity"))''' %
+          i)
         R('''plot2 <- plot1 + geom_bar(position = "dodge", stat="identity")''')
         R('''plot2 + scale_fill_manual(values = c("cadetblue", "slategray", "lightblue"))''')
         R('''ggsave("%s")''' % outf)
 
         # sensitivity
         outf = P.snip(outfile, ".pdf") + ".%i.sensitivity.pdf" % i
-        R('''plot1 <- ggplot(dat[dat$cutoff == %i,], aes(x=reorder(level, fp_rate), y = tp_rate, fill = track, stat = "identity"))''' % i) 
+        R('''plot1 <- ggplot(dat[dat$cutoff == %i,], aes(x=reorder(level, fp_rate), y = tp_rate, fill = track, stat = "identity"))''' %
+          i)
         R('''plot2 <- plot1 + geom_bar(position = "dodge", stat="identity")''')
         R('''plot2 + scale_fill_manual(values = c("cadetblue", "slategray", "lightblue"))''')
         R('''ggsave("%s")''' % outf)
@@ -308,6 +322,8 @@ def plotFalsePositiveRates(infile, outfile):
 ###################################################
 ###################################################
 ###################################################
+
+
 @transform(calculateFalsePositiveRate, suffix(".fp"), ".fp.load")
 def loadFalsePositiveRate(infile, outfile):
     '''
@@ -318,19 +334,20 @@ def loadFalsePositiveRate(infile, outfile):
 ###################################################
 ###################################################
 ###################################################
-@transform(loadEstimatedTaxonomicRelativeAbundances
-       , suffix(".load")
-       , add_inputs(loadTrueTaxonomicAbundances)
-       , ".comparison.pdf")
+
+
+@transform(loadEstimatedTaxonomicRelativeAbundances, suffix(".load"), add_inputs(loadTrueTaxonomicAbundances), ".comparison.pdf")
 def compareAbundanceOfFalsePositiveSpecies(infiles, outfile):
     '''
     boxplot the relative abundance of false positive
     species compared to true positives
     '''
     tablename_estimate = P.toTable(infiles[0])
-    
-    track = P.snip(os.path.basename(infiles[0]).replace("metaphlan_", ""), ".load")
-    tablename_true = [P.toTable(x) for x in infiles[1:] if P.snip(os.path.basename(x), ".load") == track][0]
+
+    track = P.snip(
+        os.path.basename(infiles[0]).replace("metaphlan_", ""), ".load")
+    tablename_true = [P.toTable(x) for x in infiles[1:] if P.snip(
+        os.path.basename(x), ".load") == track][0]
     dbh = sqlite3.connect("csvdb")
     cc = dbh.cursor()
     tmp = P.getTempFile(".")
@@ -355,33 +372,37 @@ def compareAbundanceOfFalsePositiveSpecies(infiles, outfile):
     elif track.find("30M") != -1:
         col = "lightblue"
     elif track.find("50M") != -1:
-        col =  "slategray" 
+        col = "slategray"
 
-    R('''dat <- read.csv("%s", header = T, stringsAsFactors = F, sep = "\t")''' % inf)
+    R('''dat <- read.csv("%s", header = T, stringsAsFactors = F, sep = "\t")''' %
+      inf)
     R('''library(ggplot2)''')
-    R('''ggplot(dat, aes(x = status, y = log2(abundance))) + geom_boxplot(colour = "%s") + geom_hline(yintersect=0, linetype="dashed")''' % col)
+    R('''ggplot(dat, aes(x = status, y = log2(abundance))) + geom_boxplot(colour = "%s") + geom_hline(yintersect=0, linetype="dashed")''' %
+      col)
     R('''ggsave("%s")''' % outfile)
     os.unlink(inf)
 
 ###################################################
 ###################################################
 ###################################################
-@follows(loadFalsePositiveRate
-         , plotRelativeAbundanceCorrelations)
+
+
+@follows(loadFalsePositiveRate, plotRelativeAbundanceCorrelations)
 def taxonomy():
     pass
 
 ###################################################
 ###################################################
 ###################################################
-# look at assembly statistics after filtering 
+# look at assembly statistics after filtering
 ###################################################
 ###################################################
 ###################################################
+
+
 @active_if("idba" in PARAMS["assemblers"])
 @follows(mkdir("lengths.dir"))
-@merge(glob.glob(os.path.join(PARAMS["results_resultsdir"], "idba.dir/*lengths.tsv"))
-       , "lengths.dir/idba_length_comparison.pdf")
+@merge(glob.glob(os.path.join(PARAMS["results_resultsdir"], "idba.dir/*lengths.tsv")), "lengths.dir/idba_length_comparison.pdf")
 def compareIdbaLengthDistributions(infiles, outfile):
     '''
     plot the CDF for different assemblies
@@ -390,9 +411,12 @@ def compareIdbaLengthDistributions(infiles, outfile):
     l150 = [inf for inf in infiles if inf.find("150BP") != -1][0]
     l250 = [inf for inf in infiles if inf.find("250BP") != -1][0]
 
-    R('''l100 <- read.csv("%s", stringsAsFactors = F, sep = "\t", header = T)''' % l100)
-    R('''l150 <- read.csv("%s", stringsAsFactors = F, sep = "\t", header = T)''' % l150)
-    R('''l250 <- read.csv("%s", stringsAsFactors = F, sep = "\t", header = T)''' % l250)
+    R('''l100 <- read.csv("%s", stringsAsFactors = F, sep = "\t", header = T)''' %
+      l100)
+    R('''l150 <- read.csv("%s", stringsAsFactors = F, sep = "\t", header = T)''' %
+      l150)
+    R('''l250 <- read.csv("%s", stringsAsFactors = F, sep = "\t", header = T)''' %
+      l250)
     R('''l100$status <- 100''')
     R('''l150$status <- 150''')
     R('''l250$status <- 250''')
@@ -404,10 +428,11 @@ def compareIdbaLengthDistributions(infiles, outfile):
 ###################################################
 ###################################################
 ###################################################
+
+
 @active_if("idba" in PARAMS["assemblers"])
 @follows(mkdir("lengths.dir"))
-@merge(glob.glob(os.path.join(PARAMS["results_resultsdir"], "idba.dir/*lengths.tsv"))
-       , "lengths.dir/idba_length_comparison.stats")
+@merge(glob.glob(os.path.join(PARAMS["results_resultsdir"], "idba.dir/*lengths.tsv")), "lengths.dir/idba_length_comparison.stats")
 def IdbaLengthDistributionStats(infiles, outfile):
     '''
     run ks test on different distributions
@@ -416,9 +441,12 @@ def IdbaLengthDistributionStats(infiles, outfile):
     l150 = [inf for inf in infiles if inf.find("150BP") != -1][0]
     l250 = [inf for inf in infiles if inf.find("250BP") != -1][0]
 
-    R('''l100 <- read.csv("%s", stringsAsFactors = F, sep = "\t", header = T)''' % l100)
-    R('''l150 <- read.csv("%s", stringsAsFactors = F, sep = "\t", header = T)''' % l150)
-    R('''l250 <- read.csv("%s", stringsAsFactors = F, sep = "\t", header = T)''' % l250)
+    R('''l100 <- read.csv("%s", stringsAsFactors = F, sep = "\t", header = T)''' %
+      l100)
+    R('''l150 <- read.csv("%s", stringsAsFactors = F, sep = "\t", header = T)''' %
+      l150)
+    R('''l250 <- read.csv("%s", stringsAsFactors = F, sep = "\t", header = T)''' %
+      l250)
     # one sided test on 150 being less than 100 Alternative hypothesis
     R('''ks.100.150 <- ks.test(l100$length, l150$length, alternative = "greater")''')
     R('''ks.100.250 <- ks.test(l100$length, l250$length, alternative = "greater")''')
@@ -435,20 +463,24 @@ def IdbaLengthDistributionStats(infiles, outfile):
 ###################################################
 ###################################################
 ###################################################
-COVERAGE_FILES = glob.glob(os.path.join(PARAMS["results_resultsdir"], "*/*.coverage.load"))
+COVERAGE_FILES = glob.glob(
+    os.path.join(PARAMS["results_resultsdir"], "*/*.coverage.load"))
+
+
 @follows(mkdir("contig_stats.dir"))
-@transform(CONTIGS, regex("(\S+).fa")
-           , add_inputs(*COVERAGE_FILES)
-           , r"contig_stats.dir/\1.filtered.fa")
+@transform(CONTIGS, regex("(\S+).fa"), add_inputs(*COVERAGE_FILES), r"contig_stats.dir/\1.filtered.fa")
 def filterContigsByCoverage(infiles, outfile):
     '''
     filter contigs by their average base coverage
     '''
-    P.submit("PipelineMetagenomeBenchmark", "filterByCoverage", infiles = infiles, outfiles = outfile)
+    P.submit("PipelineMetagenomeBenchmark", "filterByCoverage",
+             infiles=infiles, outfiles=outfile)
 
 ###################################################
 ###################################################
 ###################################################
+
+
 @transform(filterContigsByCoverage, suffix(".fa"), ".stats")
 def buildFilteredContigStats(infile, outfile):
     '''
@@ -461,6 +493,8 @@ def buildFilteredContigStats(infile, outfile):
 ###################################################
 ###################################################
 ###################################################
+
+
 @transform(filterContigsByCoverage, suffix(".fa"), ".lengths.tsv")
 def buildFilteredContigLengths(infile, outfile):
     '''
@@ -469,21 +503,26 @@ def buildFilteredContigLengths(infile, outfile):
     PARAMS["filter"] = None
     PipelineGenomeAssembly.build_scaffold_lengths(infile, outfile, PARAMS)
 
-###################################################################                                                                                                                                                                          
-###################################################################                                                                                                                                                                          
-###################################################################                                                                                                                                                                          
+###################################################################
+###################################################################
+###################################################################
+
+
 @transform(buildFilteredContigLengths, suffix(".lengths.tsv"), ".lengths.load")
 def loadFilteredContigLengths(infile, outfile):
     '''
     load contig lengths
     '''
-    outname = P.snip(os.path.dirname(infile), ".dir") + "_" + P.snip(os.path.basename(infile), ".tsv") + ".load"
+    outname = P.snip(os.path.dirname(infile), ".dir") + \
+        "_" + P.snip(os.path.basename(infile), ".tsv") + ".load"
     P.load(infile, outname)
     P.touch(outfile)
 
 ###################################################
 ###################################################
 ###################################################
+
+
 @transform(buildFilteredContigStats, suffix(".filtered.stats"), ".filtered.load")
 def loadFilteredContigStats(infile, outfile):
     '''
@@ -494,6 +533,8 @@ def loadFilteredContigStats(infile, outfile):
 ###################################################
 ###################################################
 ###################################################
+
+
 def alignmentTargets(genome_files, contig_files):
     '''
     generator object to produce filenames for 
@@ -501,13 +542,16 @@ def alignmentTargets(genome_files, contig_files):
     '''
     parameters = []
     for genome, contig in itertools.product(genome_files, contig_files):
-        outfile = os.path.join("alignment.dir", P.snip(contig, ".contigs.fa") + "_vs_"  + P.snip(os.path.basename(genome), ".fna")) + ".delta"
+        outfile = os.path.join("alignment.dir", P.snip(
+            contig, ".contigs.fa") + "_vs_" + P.snip(os.path.basename(genome), ".fna")) + ".delta"
         parameters.append([genome, outfile, contig])
     return parameters
 
 ###################################################
 ###################################################
 ###################################################
+
+
 @follows(mkdir("alignment.dir"))
 @files(alignmentTargets(GENOMES, CONTIGS))
 def alignContigsToReference(infile, outfile, param):
@@ -530,6 +574,8 @@ def alignContigsToReference(infile, outfile, param):
 ###################################################
 ###################################################
 ###################################################
+
+
 @transform(alignContigsToReference, regex("alignment.dir/(\S+).delta"), r"alignment.dir/\1.filtered")
 def filterAlignments(infile, outfile):
     '''
@@ -543,6 +589,8 @@ def filterAlignments(infile, outfile):
 ###################################################
 ###################################################
 ###################################################
+
+
 @transform(filterAlignments, suffix(".filtered"), ".coords")
 def buildAlignmentCoordinates(infile, outfile):
     '''
@@ -556,6 +604,8 @@ def buildAlignmentCoordinates(infile, outfile):
 ###################################################
 ###################################################
 ###################################################
+
+
 @transform(buildAlignmentCoordinates, suffix(".coords"), ".bed.gz")
 def createAlignmentBedFiles(infile, outfile):
     '''
@@ -575,6 +625,8 @@ def createAlignmentBedFiles(infile, outfile):
 ###################################################
 ###################################################
 ###################################################
+
+
 @merge(createAlignmentBedFiles, "alignment.dir/alignments.size")
 def buildAlignmentSizes(infiles, outfile):
     '''
@@ -595,10 +647,10 @@ def buildAlignmentSizes(infiles, outfile):
 ###################################################
 ###################################################
 ###################################################
+
+
 @follows(mkdir("genome_stats.dir"))
-@transform(glob.glob(os.path.join(PARAMS["genomes_genomesdir"], "*.fna"))
-           , regex("(\S+)/(\S+).fna")
-           , r"genome_stats.dir/\2.size")
+@transform(glob.glob(os.path.join(PARAMS["genomes_genomesdir"], "*.fna")), regex("(\S+)/(\S+).fna"), r"genome_stats.dir/\2.size")
 def collectGenomeSizes(infile, outfile):
     '''
     output the genome sizes for each genome
@@ -616,6 +668,8 @@ def collectGenomeSizes(infile, outfile):
 ###################################################
 ###################################################
 ###################################################
+
+
 @merge(collectGenomeSizes, "genome_stats.dir/genome.sizes")
 def mergeGenomeSizes(infiles, outfile):
     '''
@@ -634,17 +688,17 @@ def mergeGenomeSizes(infiles, outfile):
 ###################################################
 ###################################################
 ###################################################
+
+
 @follows(mkdir("expected_genome_coverage.dir"))
-@transform(SEQUENCE_FILES
-           , regex("(\S+).(fastq.gz|fastq.1.gz)")
-           , add_inputs(mergeGenomeSizes)
-           , r"expected_genome_coverage.dir/\1.expected.coverage")
+@transform(SEQUENCE_FILES, regex("(\S+).(fastq.gz|fastq.1.gz)"), add_inputs(mergeGenomeSizes), r"expected_genome_coverage.dir/\1.expected.coverage")
 def buildExpectedGenomeCoverage(infiles, outfile):
     '''
     build the expected coverage over the genomes
     in the sample based on read depth and length
     '''
-    P.submit("PipelineMetagenomeBenchmark", "buildExpectedCoverageOverGenomes", infiles = infiles, outfiles = outfile)
+    P.submit("PipelineMetagenomeBenchmark",
+             "buildExpectedCoverageOverGenomes", infiles=infiles, outfiles=outfile)
 
 
 ###################################################
@@ -657,21 +711,21 @@ def buildCoverageOverGenomes(infiles, outfile):
     create file with the coverage over each of the 
     simulated genomes
     '''
-    P.submit("PipelineMetagenomeBenchmark", "buildCoverageOverGenomes", infiles = infiles, outfiles = outfile)
+    P.submit("PipelineMetagenomeBenchmark", "buildCoverageOverGenomes",
+             infiles=infiles, outfiles=outfile)
 
 ###################################################
 ###################################################
 ###################################################
-@transform(buildExpectedGenomeCoverage
-           , regex("(\S+)/(\S+).coverage")
-           , add_inputs(buildCoverageOverGenomes)
-       , r"genome_coverage.dir/\2_observed.tsv")
+
+
+@transform(buildExpectedGenomeCoverage, regex("(\S+)/(\S+).coverage"), add_inputs(buildCoverageOverGenomes), r"genome_coverage.dir/\2_observed.tsv")
 def mergeExpectedAndObservedGenomeCoverage(infiles, outfile):
     '''
     merge the expected and actual estimates
     of genome coverage
     '''
- 
+
     expected = open(infiles[0])
     expected_header = expected.readline()
     observed = open(infiles[1])
@@ -689,13 +743,17 @@ def mergeExpectedAndObservedGenomeCoverage(infiles, outfile):
     outf.write("track\tgi\tspecies\tobserved\texpected\n")
     for line in observed.readlines():
         data = line[:-1].split("\t")
-        track, gi, species, coverage = data[0], data[1], "_".join(data[2].split("_")[5:7]), data[3]
-        outf.write("%s\t%s\t%s\t%s\t%s\n" % (track, gi, species, coverage, expected_data[gi]))
+        track, gi, species, coverage = data[0], data[
+            1], "_".join(data[2].split("_")[5:7]), data[3]
+        outf.write("%s\t%s\t%s\t%s\t%s\n" %
+                   (track, gi, species, coverage, expected_data[gi]))
     outf.close()
 
 ###################################################
 ###################################################
 ###################################################
+
+
 @transform(mergeExpectedAndObservedGenomeCoverage, suffix(".tsv"), ".load")
 def loadExpectedAndObservedGenomeCoverage(infile, outfile):
     '''
@@ -707,6 +765,8 @@ def loadExpectedAndObservedGenomeCoverage(infile, outfile):
 ###################################################
 ###################################################
 ###################################################
+
+
 @split(buildCoverageOverGenomes, "genome_coverage.dir/*.coverage.png")
 def plotCoverageOverGenomes(infile, outfile):
     '''
@@ -721,6 +781,8 @@ def plotCoverageOverGenomes(infile, outfile):
 ###################################################
 ###################################################
 ###################################################
+
+
 def chimeraTargets(alignment_files, contig_files):
     '''
     generator object to produce filenames for 
@@ -728,18 +790,18 @@ def chimeraTargets(alignment_files, contig_files):
     '''
     parameters = []
     for alignment, contig in itertools.product(genome_files, contig_files):
-        outfile = os.path.join("chimeras.dir", P.snip(alignment, ".bam") + ".chimeras")
-        parameters.append( [outfile, alignment, contig] )
+        outfile = os.path.join(
+            "chimeras.dir", P.snip(alignment, ".bam") + ".chimeras")
+        parameters.append([outfile, alignment, contig])
     return parameters
 
 ###################################################
 ###################################################
 ###################################################
+
+
 @follows(mkdir("expected_contigs.dir"))
-@transform(ALIGNMENTS
-           , regex("(\S+).bam")
-           , add_inputs(CONTIGS)
-           , r"expected_contigs.dir/\1.species_map.tsv")
+@transform(ALIGNMENTS, regex("(\S+).bam"), add_inputs(CONTIGS), r"expected_contigs.dir/\1.species_map.tsv")
 def buildSpeciesMap(infiles, outfile):
     '''
     build species map file for input into
@@ -747,13 +809,16 @@ def buildSpeciesMap(infiles, outfile):
     '''
     to_cluster = True
     bam = infiles[0]
-    contig = [x for x in infiles[1] if P.snip(x, ".fa") == P.snip(bam, ".bam")][0]
+    contig = [x for x in infiles[1] if P.snip(
+        x, ".fa") == P.snip(bam, ".bam")][0]
     statement = ''' cat %(contig)s | python %(scriptsdir)s/bam2species_map.py -b %(bam)s --log=%(outfile)s.log > %(outfile)s'''
     P.run()
 
 ###################################################
 ###################################################
 ###################################################
+
+
 @transform(buildSpeciesMap, suffix(".tsv"), ".renamed.tsv")
 def renameGenomesInSpeciesMap(infile, outfile):
     '''
@@ -770,9 +835,9 @@ def renameGenomesInSpeciesMap(infile, outfile):
 ###################################################
 ###################################################
 ###################################################
-@transform(CONTIGS, regex("(\S+).fa")
-           , add_inputs(renameGenomesInSpeciesMap)
-           , r"expected_contigs.dir/\1.expected.fa")
+
+
+@transform(CONTIGS, regex("(\S+).fa"), add_inputs(renameGenomesInSpeciesMap), r"expected_contigs.dir/\1.expected.fa")
 def buildExpectedContigs(infiles, outfile):
     '''
     build an expectation set of contigs - sample from
@@ -785,7 +850,8 @@ def buildExpectedContigs(infiles, outfile):
 
     inputs = [infile for infile in infiles if infile != contig]
 
-    species_map = [infile for infile in inputs if P.snip(os.path.basename(infile), ".species_map.renamed.tsv") == P.snip(contig, ".fa")][0]
+    species_map = [infile for infile in inputs if P.snip(
+        os.path.basename(infile), ".species_map.renamed.tsv") == P.snip(contig, ".fa")][0]
     genomes_dir = PARAMS["genomes_genomesdir"]
     statement = '''cat %(contig)s | python %(scriptsdir)s/contigs2random_sample.py 
                    -m %(species_map)s 
@@ -796,6 +862,8 @@ def buildExpectedContigs(infiles, outfile):
 ###################################################
 ###################################################
 ###################################################
+
+
 @transform(buildExpectedContigs, suffix(".fa"), ".bwt")
 def buildBwaIndices(infile, outfile):
     '''
@@ -810,10 +878,9 @@ def buildBwaIndices(infile, outfile):
 ###################################################
 ###################################################
 ###################################################
-@transform(buildBwaIndices
-           , regex("(\S+)/(\S+).bwt")
-           , add_inputs(SEQUENCE_FILES)
-           , r"\1/\2.bam")
+
+
+@transform(buildBwaIndices, regex("(\S+)/(\S+).bwt"), add_inputs(SEQUENCE_FILES), r"\1/\2.bam")
 def mapReadsWithBwaAgainstExpectedContigs(infiles, outfile):
     '''
     map reads against contigs with bowtie
@@ -821,22 +888,26 @@ def mapReadsWithBwaAgainstExpectedContigs(infiles, outfile):
     to_cluster = True
 
     index_dir = os.path.dirname(outfile)
-    genome = os.path.basename(re.search(".*R[0-9]*", infiles[0]).group(0) + ".filtered.contigs.expected.fa")
+    genome = os.path.basename(
+        re.search(".*R[0-9]*", infiles[0]).group(0) + ".filtered.contigs.expected.fa")
     track = P.snip(genome, ".filtered.contigs.expected.fa")
-    fastq = [infile for infile in infiles[1] if P.snip(infile, ".fastq.1.gz") == track][0]
-    job_options= " -l mem_free=%s" % (PARAMS["bwa_memory"])
+    fastq = [infile for infile in infiles[1]
+             if P.snip(infile, ".fastq.1.gz") == track][0]
+    job_options = " -l mem_free=%s" % (PARAMS["bwa_memory"])
     bwa_index_dir = index_dir
     bwa_aln_options = PARAMS["bwa_aln_options"]
-    bwa_sampe_options=PARAMS["bwa_sampe_options"]
-    bwa_threads=PARAMS["bwa_threads"]
-    m = PipelineMapping.BWA(remove_non_unique = True)
+    bwa_sampe_options = PARAMS["bwa_sampe_options"]
+    bwa_threads = PARAMS["bwa_threads"]
+    m = PipelineMapping.BWA(remove_non_unique=True)
 
-    statement = m.build( (fastq,), outfile ) 
+    statement = m.build((fastq,), outfile)
     P.run()
 
 ###################################################
 ###################################################
 ###################################################
+
+
 @follows(mkdir("chimeras.dir"))
 @transform(ALIGNMENTS, regex("(\S+).bam"), r"chimeras.dir/\1.bam")
 def linkAlignmentFiles(infile, outfile):
@@ -849,9 +920,9 @@ def linkAlignmentFiles(infile, outfile):
 ###################################################
 ###################################################
 ###################################################
-@transform([linkAlignmentFiles, mapReadsWithBwaAgainstExpectedContigs]
-           , regex("(\S+)/(\S+).bam")
-           , r"chimeras.dir/\2.chimera")
+
+
+@transform([linkAlignmentFiles, mapReadsWithBwaAgainstExpectedContigs], regex("(\S+)/(\S+).bam"), r"chimeras.dir/\2.chimera")
 def buildChimerasBasedOnReads(infile, outfile):
     '''
     this function is an alternative to counting a contig as a chimera
@@ -866,12 +937,14 @@ def buildChimerasBasedOnReads(infile, outfile):
     "good" if it is from the species from which the majority of alignments
     from that contig are derived'''
 
-    P.submit("CGATPipelines.PipelineMetagenomeBenchmark", "buildChimerasBasedOnReads"
-             , infiles = infile, outfiles = outfile)
-        
+    P.submit("CGATPipelines.PipelineMetagenomeBenchmark",
+             "buildChimerasBasedOnReads", infiles=infile, outfiles=outfile)
+
 ###################################################
 ###################################################
 ###################################################
+
+
 @merge(buildChimerasBasedOnReads, "chimeras.dir/observed_expected.chimera")
 def mergeChimeras(infiles, outfile):
     '''
@@ -883,6 +956,8 @@ def mergeChimeras(infiles, outfile):
 ###################################################
 ###################################################
 ###################################################
+
+
 @transform(buildChimerasBasedOnReads, suffix(".chimera"), ".chimera.load")
 def loadChimericityScores(infile, outfile):
     '''
@@ -897,10 +972,9 @@ def loadChimericityScores(infile, outfile):
 ###################################################
 ###################################################
 ###################################################
-@transform(linkAlignmentFiles
-           , suffix(".bam")
-           , add_inputs(glob.glob("*lengths.tsv"))
-           , ".peakshape")
+
+
+@transform(linkAlignmentFiles, suffix(".bam"), add_inputs(glob.glob("*lengths.tsv")), ".peakshape")
 def buildUniformityOfCoverage(infiles, outfile):
     '''
     build matrix of coverage over contigs
@@ -909,7 +983,7 @@ def buildUniformityOfCoverage(infiles, outfile):
     track = P.snip(os.path.basename(bam), ".bam")
     tmp_bed = P.getTempFilename(".") + ".bed"
     tmp_bam = P.getTempFilename(".") + ".bam"
-    
+
     # filter for mapped reads
     statement = '''cat %(bam)s | python %(scriptsdir)s/bam2bam.py --filter=mapped --log=/dev/null > %(tmp_bam)s
                    ; samtools index %(tmp_bam)s'''
@@ -919,7 +993,6 @@ def buildUniformityOfCoverage(infiles, outfile):
         for inf in infs:
             if P.snip(inf, ".lengths.tsv") == track:
                 length_file = inf
-                
 
     statement = '''cat %(length_file)s | awk 'NR>1 {printf("%%s\\t0\\t%%s\\n", $1, $2)}' > %(tmp_bed)s'''
     P.run()
@@ -935,36 +1008,29 @@ def buildUniformityOfCoverage(infiles, outfile):
 ###################################################
 ###################################################
 ###################################################
-@follows(taxonomy
-         , loadExpectedAndObservedGenomeCoverage
-         , loadChimericityScores)
+
+
+@follows(taxonomy, loadExpectedAndObservedGenomeCoverage, loadChimericityScores)
 def full():
     pass
 
 ####################
 # report building
 ####################
-@follows( mkdir( "report" ) )
+
+
+@follows(mkdir("report"))
 def build_report():
     '''build report from scratch.'''
-    E.info( "starting documentation build process from scratch" )
-    P.run_report( clean = True )
+    E.info("starting documentation build process from scratch")
+    P.run_report(clean=True)
 
-@follows( mkdir( "report" ) )
+
+@follows(mkdir("report"))
 def update_report():
     '''update report.'''
-    E.info( "updating documentation" )
-    P.run_report( clean = False )
+    E.info("updating documentation")
+    P.run_report(clean=False)
 
-if __name__== "__main__":
-    sys.exit( P.main(sys.argv) )
-
-
-
-
-
-
-
-
-
-
+if __name__ == "__main__":
+    sys.exit(P.main(sys.argv))

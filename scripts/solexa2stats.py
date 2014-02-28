@@ -55,62 +55,63 @@ import collections
 
 import CGAT.Experiment as E
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if not argv: argv = sys.argv
+    if not argv:
+        argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser( version = "%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
-                                    usage = globals()["__doc__"] )
+    parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+                            usage=globals()["__doc__"])
 
     parser.add_option("-i", "--test-option", dest="test_option", type="string",
-                      help="test option [default=%default]."  )
+                      help="test option [default=%default].")
 
     parser.set_defaults(
-        test_option = "test"
-        )
+        test_option="test"
+    )
 
-    ## add common options (-h/--help, ...) and parse command line 
-    (options, args) = E.Start( parser, argv = argv )
+    # add common options (-h/--help, ...) and parse command line
+    (options, args) = E.Start(parser, argv=argv)
 
     infile = options.stdin
     outfile = options.stdout
 
-    line=infile.readline()
-    line2=infile.readline()
-    seq_len=len(line.split("\t")[8])
-   
-    counts = collections.defaultdict( int )
+    line = infile.readline()
+    line2 = infile.readline()
+    seq_len = len(line.split("\t")[8])
+
+    counts = collections.defaultdict(int)
 
     while 1:
 
-       data = line.split("\t")
-       data2 = line2.split("\t")
+        data = line.split("\t")
+        data2 = line2.split("\t")
 
-       try:
-          if data[10]==data[10] and 'chr' in data[10]:
-             size = abs(int(data[12])-int(data2[12]))-seq_len
-             counts[size] += 1
-       except (ValueError, IndexError):
-          pass
+        try:
+            if data[10] == data[10] and 'chr' in data[10]:
+                size = abs(int(data[12]) - int(data2[12])) - seq_len
+                counts[size] += 1
+        except (ValueError, IndexError):
+            pass
 
-       line=infile.readline()
-       line2=infile.readline()
+        line = infile.readline()
+        line2 = infile.readline()
 
-       if not line or not line2: break
+        if not line or not line2:
+            break
 
-    outfile.write( "size\tcounts\n" )
+    outfile.write("size\tcounts\n")
     for key in sorted(counts.keys()):
-       outfile.write( "%i\t%i\n" % (key, counts[key]) )
+        outfile.write("%i\t%i\n" % (key, counts[key]))
 
-    ## write footer and output benchmark information.
+    # write footer and output benchmark information.
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
-
+    sys.exit(main(sys.argv))

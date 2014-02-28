@@ -1,4 +1,7 @@
-import os, sys, re, types
+import os
+import sys
+import re
+import types
 from VariantsReport import *
 
 from Effects import TrackerEffects
@@ -6,14 +9,18 @@ from Effects import TrackerEffects
 #####################################################
 #####################################################
 #####################################################
-class TranscriptListSNP( TrackerEffects ):
+
+
+class TranscriptListSNP(TrackerEffects):
+
     '''output a genelist of genes with nonsynonymous SNPs'''
 
-    def __call__(self, track, slice = None ):
+    def __call__(self, track, slice=None):
 
-        headers = ("gene_id", "gene_name", "transcript_id", "chr", "snp_position", "reference", "ref_aa", "Variant_type", "genotype", "variant_aa")
-        
-        #field = self.getPrefix(slice) + "stop_min"        
+        headers = ("gene_id", "gene_name", "transcript_id", "chr", "snp_position",
+                   "reference", "ref_aa", "Variant_type", "genotype", "variant_aa")
+
+        #field = self.getPrefix(slice) + "stop_min"
         statement = '''
         SELECT
             i.gene_id,
@@ -34,6 +41,4 @@ class TranscriptListSNP( TrackerEffects ):
         ORDER BY i.gene_id
         ''' % self.members(locals())
 
-        return odict( zip( headers, zip(*self.get( statement ))) )
-
-
+        return odict(zip(headers, zip(*self.get(statement))))

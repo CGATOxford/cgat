@@ -56,96 +56,102 @@ import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 
 
-def main( argv = None ):
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
-    
-    parser = E.OptionParser( version = "%prog version: $Id: set_diff.py 2782 2009-09-10 11:40:29Z andreas $" )
+    if argv == None:
+        argv = sys.argv
+
+    parser = E.OptionParser(
+        version="%prog version: $Id: set_diff.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option("-p", "--add-percent", dest="add_percent", action="store_true",
-                      help="add percentage information to each line." )
+                      help="add percentage information to each line.")
 
     parser.add_option("-t", "--headers", dest="headers", type="string",
-                      help="comma separated list of headers. If empty or set to '-', filenames are used." )
+                      help="comma separated list of headers. If empty or set to '-', filenames are used.")
 
     parser.add_option("--skip-header", dest="add_header", action="store_false",
-                      help="do not add header to flat format."  )
+                      help="do not add header to flat format.")
 
     parser.add_option("--write-header", dest="write_header", action="store_true",
-                      help="write header and exit."  )
+                      help="write header and exit.")
 
     parser.add_option("--with-title", dest="with_title", action="store_true",
-                      help="use column titles in input data [%default]."  )
+                      help="use column titles in input data [%default].")
 
     parser.add_option("--no-title", dest="with_title", action="store_false",
-                      help="there are no titles in input data [%default]."  )
+                      help="there are no titles in input data [%default].")
 
     parser.set_defaults(
-        add_percent = False,
-        percent_format = "%5.2f",
-        headers = None,
-        add_header = True,
-        write_header = False,
-        with_title = True,
-        )
+        add_percent=False,
+        percent_format="%5.2f",
+        headers=None,
+        add_header=True,
+        write_header=False,
+        with_title=True,
+    )
 
-    (options, args) = E.Start( parser )
+    (options, args) = E.Start(parser)
 
     if options.add_header:
-        options.stdout.write("set1\tset2\tn1\tn2\tunion\tinter\tunique1\tunique2" )
+        options.stdout.write(
+            "set1\tset2\tn1\tn2\tunion\tinter\tunique1\tunique2")
         if options.add_percent:
-            options.stdout.write( "\tpinter\tpunique1\tpunique2\tpcov1\tpcov2\tpcovmax" )
+            options.stdout.write(
+                "\tpinter\tpunique1\tpunique2\tpcov1\tpcov2\tpcovmax")
         options.stdout.write("\n")
 
         if options.write_header:
             sys.exit(0)
-            
+
     if len(args) < 2:
-        raise ValueError( "please supply at least two filenames.")
+        raise ValueError("please supply at least two filenames.")
 
     headers, titles, sets = [], [], []
 
     if options.headers:
         if options.headers == "-":
-            headers=args
+            headers = args
         else:
-            headers=options.headers.split(",")
+            headers = options.headers.split(",")
             if len(headers) != len(args):
-                raise ValueError ("please supply the same number of headers as there are filenames." )
+                raise ValueError(
+                    "please supply the same number of headers as there are filenames.")
 
     for f in args:
         if options.with_title:
-            title, data = IOTools.readList( open(f,"r"), with_title = options.with_title )
-            titles.append( title )
+            title, data = IOTools.readList(
+                open(f, "r"), with_title=options.with_title)
+            titles.append(title)
         else:
-            data = IOTools.readList( open(f,"r") )
-        sets.append( set( data ))
-        
+            data = IOTools.readList(open(f, "r"))
+        sets.append(set(data))
+
     if not headers and titles:
         headers = titles
     else:
         headers = args
 
-    for x in range(len(sets)-1):
-        set1=sets[x]
+    for x in range(len(sets) - 1):
+        set1 = sets[x]
 
-        for y in range(x+1, len(sets)):
-            set2=sets[y]
-            l1,l2 = len(set1), len(set2)
-            options.stdout.write("%s\t%s\t%i\t%i\t%i\t%i\t%i\t%i" % (headers[x],headers[y],
-                                                                     l1,l2,
-                                                                     len(set1.union(set2)),                                                                   
-                                                                     len(set1.intersection(set2)),
-                                                                     len(set1.difference(set2)),
+        for y in range(x + 1, len(sets)):
+            set2 = sets[y]
+            l1, l2 = len(set1), len(set2)
+            options.stdout.write("%s\t%s\t%i\t%i\t%i\t%i\t%i\t%i" % (headers[x], headers[y],
+                                                                     l1, l2,
+                                                                     len(set1.union(
+                                                                         set2)),
+                                                                     len(set1.intersection(
+                                                                         set2)),
+                                                                     len(set1.difference(
+                                                                         set2)),
                                                                      len(set2.difference(set1))))
 
-
-
-            
             if options.add_percent:
                 if len(set1) == 0:
                     ri, r1, r2 = 0, 1, 0
@@ -160,14 +166,14 @@ def main( argv = None ):
                         len(set1.difference(set2)) / float(l1),
                         len(set2.difference(set1)) / float(l2))
                     c1, c2 = (i / float(l1), i / float(l2))
-                    cm = max( c1, c2)
+                    cm = max(c1, c2)
 
-                options.stdout.write( "\t" + ("\t".join([options.percent_format for z in range(6)] )) % (ri, r1, r2, c1, c2, cm))
-            
+                options.stdout.write(
+                    "\t" + ("\t".join([options.percent_format for z in range(6)])) % (ri, r1, r2, c1, c2, cm))
+
             options.stdout.write("\n")
-    
+
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

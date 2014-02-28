@@ -44,7 +44,7 @@ from Bio.Nexus import Nexus
 from Bio.Nexus.Nodes import Node
 
 
-USAGE="""python %s [OPTIONS] < tree.in > tree.out
+USAGE = """python %s [OPTIONS] < tree.in > tree.out
 
 Version: $Id: tree_map_leaves.py 2782 2009-09-10 11:40:29Z andreas $
 
@@ -64,11 +64,11 @@ import CGAT.TreeTools as TreeTools
 
 param_loglevel = 1
 
-param_long_options=["verbose=", "help", "pattern-species=",
-                    "invert", "create=", "apply=", "strip-brances",
-                    "version"]
+param_long_options = ["verbose=", "help", "pattern-species=",
+                      "invert", "create=", "apply=", "strip-brances",
+                      "version"]
 
-param_short_options="v:hp:a:c:i"
+param_short_options = "v:hp:a:c:i"
 
 param_apply = None
 param_create = None
@@ -76,27 +76,29 @@ param_invert = False
 param_remove_branch_lengths = False
 
 
-def main( argv = None ):
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv == None:
+        argv = sys.argv
 
     try:
-        optlist, args = getopt.getopt(sys.argv[1:], param_short_options, param_long_options)
+        optlist, args = getopt.getopt(
+            sys.argv[1:], param_short_options, param_long_options)
     except getopt.error, msg:
         print USAGE, msg
         sys.exit(2)
 
-    for o,a in optlist:
-        if o in ( "-v", "--verbose" ):
+    for o, a in optlist:
+        if o in ("-v", "--verbose"):
             param_loglevel = int(a)
-        elif o in ( "--version", ):
+        elif o in ("--version", ):
             print "version="
             sys.exit(0)
-        elif o in ( "-h", "--help" ):
+        elif o in ("-h", "--help"):
             print USAGE
             sys.exit(0)
         elif o in ("-a", "--apply"):
@@ -115,23 +117,24 @@ def main( argv = None ):
     if param_apply:
         infile = open(param_apply, "r")
         for line in infile:
-            if line[0] == "#": continue
+            if line[0] == "#":
+                continue
             a, b = line[:-1].split("\t")[:2]
-            if param_invert:            
+            if param_invert:
                 a, b = b, a
             keys[a] = b
 
-    nexus = TreeTools.Newick2Nexus( sys.stdin )
+    nexus = TreeTools.Newick2Nexus(sys.stdin)
 
     notu = 0
-    
+
     for tree in nexus.trees:
         if param_loglevel >= 2:
             tree.display()
 
         for nx in tree.get_terminals():
             t1 = tree.node(nx).get_data().taxon
-            
+
             if param_create:
                 if t1 not in keys:
                     keys[t1] = "otu%i" % notu
@@ -140,7 +143,7 @@ def main( argv = None ):
             if t1 in keys:
                 tree.node(nx).get_data().taxon = keys[t1]
 
-    print TreeTools.Nexus2Newick( nexus )
+    print TreeTools.Nexus2Newick(nexus)
 
     if param_create:
         outfile = open(param_create, "w")
@@ -151,5 +154,4 @@ def main( argv = None ):
     print E.GetFooter()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

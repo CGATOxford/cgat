@@ -26,15 +26,17 @@ import logging as L
 from ruffus import *
 import CGAT.Pipeline as P
 
-P.getParameters(  ["%s.ini" % os.path.splitext(__file__)[0],  "pipeline.ini" ] )
+P.getParameters(["%s.ini" % os.path.splitext(__file__)[0],  "pipeline.ini"])
 PARAMS = P.PARAMS
 USECLUSTER = True
 
 ###################################################################
 ###################################################################
 ###################################################################
-@files( os.path.join(PARAMS["gem_dir"],PARAMS["genome"]+".gem"),  PARAMS["genome"]+".mappability" )
-def calculateMappability( infile, outfile ):
+
+
+@files(os.path.join(PARAMS["gem_dir"], PARAMS["genome"] + ".gem"),  PARAMS["genome"] + ".mappability")
+def calculateMappability(infile, outfile):
     '''Calculate mappability using GEM '''
     index = P.snip(infile, ".gem")
     to_cluster = True
@@ -46,16 +48,20 @@ def calculateMappability( infile, outfile ):
     P.run()
 
 ###################################################################
-@transform( calculateMappability, suffix(".mappability"), ".mappability.count" )
-def countMappableBases( infile, outfile ):
+
+
+@transform(calculateMappability, suffix(".mappability"), ".mappability.count")
+def countMappableBases(infile, outfile):
     '''Count mappable bases in genome'''
     to_cluster = True
     statement = '''cat %(infile)s | tr -cd ! | wc -c > %(outfile)s''' % locals()
     P.run()
-    
+
 ###################################################################
-@transform( countMappableBases, suffix(".count"), ".count.load" )
-def loadMappableBases( infile, outfile ):
+
+
+@transform(countMappableBases, suffix(".count"), ".count.load")
+def loadMappableBases(infile, outfile):
     '''load count of mappable bases in genome'''
     to_cluster = True
     header = "total_mappable_bases"
@@ -66,31 +72,37 @@ def loadMappableBases( infile, outfile ):
     P.run()
 
 ###################################################################
-@transform( calculateMappability, suffix(".mappability"), ".split.log" )
-def splitMappabiliyFileByContig( infile, outfile ):
+
+
+@transform(calculateMappability, suffix(".mappability"), ".split.log")
+def splitMappabiliyFileByContig(infile, outfile):
     '''Count mappable bases in genome'''
     to_cluster = True
-    track = P.snip( os.path.basename(infile), ".mappability" )
+    track = P.snip(os.path.basename(infile), ".mappability")
     statement = '''mkdir contigs; 
                    csplit -k -f contigs/contig %(infile)s '/^~[a-zA-Z]/' {100000} > %(outfile)s;
                    rm contigs/contig00;''' % locals()
     P.run()
 
 ###################################################################
-@follows( splitMappabiliyFileByContig )
-@merge( "contigs/contig*", PARAMS["genome"]+"_mappability_per_contig.tsv" )
-def countMappableBasesPerContig( infiles, outfile ):
+
+
+@follows(splitMappabiliyFileByContig)
+@merge("contigs/contig*", PARAMS["genome"] + "_mappability_per_contig.tsv")
+def countMappableBasesPerContig(infiles, outfile):
     '''Count mappable bases for each contig'''
     for infile in infiles:
         statement = '''grep '~' %(infile)s | sed s/~//g >> %(outfile)s; cat %(infile)s | tr -cd ! | wc -c >> %(outfile)s'''
         P.run()
-    
+
     statement = '''sed -i '{N;s/\\n/\\t/g}' %(outfile)s;'''
     P.run()
 
 ###################################################################
-@transform( countMappableBasesPerContig, suffix(".tsv"), ".tsv.load" )
-def loadMappableBasesPerContig( infile, outfile ):
+
+
+@transform(countMappableBasesPerContig, suffix(".tsv"), ".tsv.load")
+def loadMappableBasesPerContig(infile, outfile):
     '''load count of mappable bases per contig '''
     to_cluster = True
     header = "contig,mappable_bases"
@@ -103,13 +115,14 @@ def loadMappableBasesPerContig( infile, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-@follows( calculateMappability, countMappableBases,
-          loadMappableBases, splitMappabiliyFileByContig,
-          countMappableBasesPerContig, loadMappableBasesPerContig )
+
+
+@follows(calculateMappability, countMappableBases,
+         loadMappableBases, splitMappabiliyFileByContig,
+         countMappableBasesPerContig, loadMappableBasesPerContig)
 def full():
     '''Count mappable bases in genome'''
     pass
 
-if __name__== "__main__":
-    sys.exit( P.main(sys.argv) )
-    
+if __name__ == "__main__":
+    sys.exit(P.main(sys.argv))

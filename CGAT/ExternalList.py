@@ -1,4 +1,4 @@
-################################################################################
+##########################################################################
 #
 #   Tools
 #
@@ -19,7 +19,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
+##########################################################################
 """
 ExternalList.py - large disk-based lists
 ========================================
@@ -31,53 +31,61 @@ Implements not all functionality of lists yet. Lists are stored
 as tab-separated values for unix sort functionality, so all
 elements in the list should have the same type.
 """
-import os, sys, string, tempfile
+import os
+import sys
+import string
+import tempfile
+
 
 class ListIterator:
-    
-    def __init__( self, file ):
+
+    def __init__(self, file):
         self.mFile = file
 
-    def __iter__( self ):
+    def __iter__(self):
         return self
-    
-    def next( self ):
+
+    def next(self):
 
         while 1:
             line = self.mFile.readline()
-            if not line: raise StopIteration
-            if line[0] != "#": break
-            
-        entry = PredictionParser.PredictionParserEntry( expand = 0 )
+            if not line:
+                raise StopIteration
+            if line[0] != "#":
+                break
+
+        entry = PredictionParser.PredictionParserEntry(expand=0)
         entry.Read(line)
         return entry
-    
+
+
 class ExternalList:
 
     mMapKey2Field = {}
 
-    def __init__( self ):
+    def __init__(self):
         self.mIsOpened = 0
-    
-    def __del__( self ):
+
+    def __del__(self):
         pass
-    
-    def open( self, filename = None, mode = "r"):
-        if filename: self.mFilename = filename
-        self.mFile = open( self.mFilename, mode )
+
+    def open(self, filename=None, mode="r"):
+        if filename:
+            self.mFilename = filename
+        self.mFile = open(self.mFilename, mode)
         self.mIsOpened = 1
 
-    def getFileName( self ):
+    def getFileName(self):
         return self.mFilename
-    
-    def close( self ):
+
+    def close(self):
         self.mIsOpened = 0
         self.mFile.close()
-        
-    def append( self, entry ):
-        self.mFile.write( str(entry) + "\n" )
-        
-    def sort( self, fields, offset = 0 ):
+
+    def append(self, entry):
+        self.mFile.write(str(entry) + "\n")
+
+    def sort(self, fields, offset=0):
         """sort file according to criteria."""
 
         if self.mIsOpened:
@@ -85,41 +93,40 @@ class ExternalList:
             self.close()
         else:
             reopen = 0
-        
+
         sort_criteria = []
         for field in fields:
-            id, modifier = self.mMapKey2Field[ field ]
+            id, modifier = self.mMapKey2Field[field]
             field_id = 1 + id + offset
-            sort_criteria.append( "-k%i,%i%s" % (field_id, field_id, modifier) )            
-            
+            sort_criteria.append("-k%i,%i%s" % (field_id, field_id, modifier))
+
         outfile, filename_temp = tempfile.mkstemp()
         os.close(outfile)
 
-        ## empty fields are a problem with sort, which by default uses whitespace to non-whitespace
-        ## transitions as field separate. 
-        ## make \t explicit field separator.
-        statement = "sort -t'\t' %s %s > %s" % (string.join( sort_criteria, " " ), self.mFilename, filename_temp)
+        # empty fields are a problem with sort, which by default uses whitespace to non-whitespace
+        # transitions as field separate.
+        # make \t explicit field separator.
+        statement = "sort -t'\t' %s %s > %s" % (
+            string.join(sort_criteria, " "), self.mFilename, filename_temp)
         exit_code = os.system(statement)
         if exit_code:
             raise "error while sorting, statement =%s" % statement
-        os.system( "mv %s %s" % (filename_temp, self.mFilename))
+        os.system("mv %s %s" % (filename_temp, self.mFilename))
 
-        if reopen: self.open()
-        
-    def __iter__( self ):
+        if reopen:
+            self.open()
+
+    def __iter__(self):
         self.mFile.seek(0)
-        return FileIterator( self.mFile )
+        return FileIterator(self.mFile)
 
 if __name__ == "__main__":
 
     file = PredictionFile()
 
-    file.open( "tmp.predictions" )
+    file.open("tmp.predictions")
 
-    file.sort( ("mQueryToken", "mSbjctToken"), offset = -1 )
-    
+    file.sort(("mQueryToken", "mSbjctToken"), offset=-1)
+
     for entry in file:
         print str(entry)
-
-        
-    

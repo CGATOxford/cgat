@@ -40,7 +40,7 @@ import tempfile
 import time
 import popen2
 
-USAGE="""python %s [OPTIONS] < graph.in > graph.out
+USAGE = """python %s [OPTIONS] < graph.in > graph.out
 
 Version: $Id: graph_reweight_links.py 2782 2009-09-10 11:40:29Z andreas $
 
@@ -97,29 +97,32 @@ param_gop = -11.0
 param_gep = -1.0
 param_max_distance = 0.0
 
-##-------------------------------------------------------------------------------
+# ------------------------------------------------------------------------
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv == None:
+        argv = sys.argv
 
     try:
-        optlist, args = getopt.getopt(sys.argv[1:], param_short_options, param_long_options)
+        optlist, args = getopt.getopt(
+            sys.argv[1:], param_short_options, param_long_options)
     except getopt.error, msg:
         print USAGE, msg
         sys.exit(2)
 
-    for o,a in optlist:
-        if o in ( "-v", "--verbose" ):
+    for o, a in optlist:
+        if o in ("-v", "--verbose"):
             param_loglevel = int(a)
-        elif o in ( "--version", ):
+        elif o in ("--version", ):
             print "version="
             sys.exit(0)
-        elif o in ( "-h", "--help" ):
+        elif o in ("-h", "--help"):
             print USAGE
             sys.exit(0)
         elif o in ("-m", "--method"):
@@ -134,47 +137,51 @@ def main( argv = None ):
             param_expected = float(a)
         elif o in ("-d", "--distance"):
             param_max_distance = float(a)
-            
+
     print E.GetHeader()
     print E.GetParams()
 
     if param_filename_self_scores:
         self_scores = {}
         for line in open(param_filename_self_scores, "r"):
-            if line[0] == "#": continue
+            if line[0] == "#":
+                continue
             d = line[:-1].split("\t")[:2]
-            if d[0] not in self_scores: self_scores[d[0]] = 0.0
-            self_scores[d[0]] = max( self_scores[d[0]], float(d[1]))
+            if d[0] not in self_scores:
+                self_scores[d[0]] = 0.0
+            self_scores[d[0]] = max(self_scores[d[0]], float(d[1]))
 
     if param_method == "kimura":
         a = 0
-        f = lambda x: x < 0.85 and 0.0000001 - math.log( 1.0 - x - 0.2 * x * x ) or 5.2030
+        f = lambda x: x < 0.85 and 0.0000001 - \
+            math.log(1.0 - x - 0.2 * x * x) or 5.2030
 
     elif param_method == "bitscore":
-        a = 1        
+        a = 1
         lK = math.log(param_K)
         l2 = math.log(2)
         f = lambda x: (param_lambda * x - lK) / l2
-        
+
     elif param_method in ("normalize-product", "normalize-max", "normalize-min", "normalize-avg"):
         a = 2
         if param_method == "normalize-product":
-            f = lambda x,y,z: x * x / self_scores[y] / self_scores[z]
+            f = lambda x, y, z: x * x / self_scores[y] / self_scores[z]
         elif param_method == "normalize-max":
-            f = lambda x,y,z: max( x / self_scores[y], x / self_scores[z])
+            f = lambda x, y, z: max(x / self_scores[y], x / self_scores[z])
         elif param_method == "normalize-min":
-            f = lambda x,y,z: min( x / self_scores[y], x / self_scores[z])
+            f = lambda x, y, z: min(x / self_scores[y], x / self_scores[z])
         elif param_method == "normalize-avg":
-            f = lambda x,y,z: (x / self_scores[y] + x / self_scores[z]) / 2.0
+            f = lambda x, y, z: (x / self_scores[y] + x / self_scores[z]) / 2.0
     else:
         raise "unknown method %s" % param_method
-    
+
     ninput, noutput, nskipped, nfailed = 0, 0, 0, 0
 
     for line in sys.stdin:
 
-        if line[0] == "#": continue
-        
+        if line[0] == "#":
+            continue
+
         token1, token2, score = line.split("\t")[:3]
         try:
             score = float(score)
@@ -182,29 +189,26 @@ def main( argv = None ):
             # ignore headers
             continue
         ninput += 1
-        
-        if a == 0:
-            score = f( (100.0 - score) / 100.0 )
-        elif a == 1:
-            score = f( score )
-        elif a == 2:
-            score = f( score, token1, token2 )
 
-        
+        if a == 0:
+            score = f((100.0 - score) / 100.0)
+        elif a == 1:
+            score = f(score)
+        elif a == 2:
+            score = f(score, token1, token2)
+
         if param_max_distance:
             score = param_max_distance - score
 
-        print string.join(map( str, (token1, token2, score) ), "\t") 
+        print string.join(map(str, (token1, token2, score)), "\t")
 
         noutput += 1
-            
-    print "# ninput=%i, noutput=%i, nskipped=%i, failed=%i" % (\
-        ninput, noutput, nskipped, nfailed )
-    
+
+    print "# ninput=%i, noutput=%i, nskipped=%i, failed=%i" % (
+        ninput, noutput, nskipped, nfailed)
+
     print E.GetFooter()
 
 
-
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))
