@@ -93,7 +93,7 @@ def executewait( dbhandle, statement, error, retry = False, wait=5):
             i -= 1
             continue
         break
-    raise sqlite.OperationalError("Database locked and too many retries")
+    raise sqlite3.OperationalError("Database locked and too many retries")
 
 def quoteRow( row, take, 
               map_column2type, 
