@@ -202,7 +202,6 @@ def runTest(infile, outfile, update = False):
     python %(pipelines_dir)s/%(pipeline_name)s.py
     %(pipeline_options)s make full) >& %(outfile)s
     ''' 
-    
     P.run()
 
 
@@ -211,11 +210,13 @@ def runTest(infile, outfile, update = False):
 ###################################################################
 ## general tests
 ###################################################################
-@files([(os.path.join(PARAMS["data_dir"], x + ".dir"), x + ".log")
+@files([(os.path.join(PARAMS["data_dir"], x + ".dir"),
+         x + ".log")
         for x in P.asList(PARAMS["prerequisites"])])
 def runPreparationTests(infile, outfile):
     '''run pre-requisite pipelines.'''
     runTest(infile, outfile)
+
 
 ###################################################################
 ###################################################################
@@ -223,13 +224,15 @@ def runPreparationTests(infile, outfile):
 ## run a test
 ###################################################################
 @follows(runPreparationTests)
-@files([(x, os.path.basename(x) + ".log")
+@files([(x,
+         os.path.basename(P.snip(x, '.dir')) + ".log")
         for x in glob.glob(
-            os.path.join(PARAMS["data_dir"], "pipeline_*"))
+            os.path.join(PARAMS["data_dir"], "pipeline_*.dir"))
         if x not in P.asList(PARAMS["prerequisites"])])
 def runTests(infile, outfile):
     '''run a pipeline with test data.'''
     runTest(infile, outfile)
+
 
 ###################################################################
 ###################################################################
@@ -237,8 +240,11 @@ def runTests(infile, outfile):
 ## update a test
 ###################################################################
 @follows(runPreparationTests)
-@files([(x, os.path.basename(x) + ".log") for x in
-        glob.glob(os.path.join(PARAMS["data_dir"], "pipeline_*"))])
+@files([(x,
+         os.path.basename(P.snip(x, '.dir')) + ".log")
+        for x in glob.glob(
+            os.path.join(PARAMS["data_dir"], "pipeline_*.dir"))
+        if x not in P.asList(PARAMS["prerequisites"])])
 def updateTests(infile, outfile):
     '''run a pipeline with test data.'''
     runTest(infile, outfile, update=True)
