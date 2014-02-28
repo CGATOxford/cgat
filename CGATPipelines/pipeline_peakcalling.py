@@ -1514,14 +1514,19 @@ def loadReproducibility( infile, outfile ):
 ############################################################
 @follows( loadReproducibility )
 def reproducibility(): pass
-    
+
+
 ###################################################################
-@follows( loadBAMStats, loadDuplicationStats, loadSPPQualityMetrics )
-def qc(): pass
+@follows(loadBAMStats,
+         loadDuplicationStats,
+         loadSPPQualityMetrics)
+def qc():
+    pass
 
 ###################################################################
 @follows( calling, exportIntervalsAsBed, qc )
-def full(): pass
+def full():
+    pass
 
 ###################################################################
 ###################################################################

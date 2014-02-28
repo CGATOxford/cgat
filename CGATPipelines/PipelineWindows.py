@@ -1,12 +1,11 @@
 import os
 import re
-import sys
 import collections
-import numpy
 import pandas
 
 import CGAT.Experiment as E
 import CGAT.Pipeline as P
+import CGAT.BamTools as BamTools
 import CGAT.IOTools as IOTools
 import CGAT.Expression as Expression
 import CGAT.Bed as Bed
@@ -14,79 +13,194 @@ import CGAT.Bed as Bed
 #########################################################################
 #########################################################################
 #########################################################################
-def countReadsWithinWindows( bedfile, windowfile, outfile, counting_method = "midpoint" ):
-    '''count reads in *bedfile* within *windowfile*.
+def convertReadsToIntervals(bamfile,
+                            bedfile,
+                            filtering_quality=None,
+                            filtering_dedup=None,
+                            filtering_dedup_method='picard'):
+    '''convert reads in *bamfile* to *intervals*.
+
+    This method converts read data into intervals for
+    counting based methods.
+
+    This method is not appropriated for RNA-Seq.
+
+    Optional steps include:
+
+    * deduplication - remove duplicate reads
+    * quality score filtering - remove reads below a certain quality score.
+    * paired ended data - merge pairs
+    * paired ended data - filter by insert size
 
     '''
-    to_cluster = True
+    track = P.snip(bedfile, ".bed.gz")
 
+    is_paired = BamTools.isPaired(bamfile)
+    current_file = bamfile
+    tmpdir = P.getTempFilename()
+    statement = ["mkdir %(tmpdir)s"]
+    nfiles = 0
+
+    if filtering_quality > 0:
+        next_file = "%(tmpdir)s/bam_%(nfiles)i.bam" % locals()
+        statement.append('''samtools view
+        -q %(filtering_quality)i -b
+        %(current_file)s
+        2>> %%(bedfile)s.log
+        > %(next_file)s ''' % locals())
+
+        nfiles += 1
+        current_file = next_file
+
+    if filtering_dedup is not None:
+        # Picard's MarkDuplicates requries an explicit bam file.
+        next_file = "%(tmpdir)s/bam_%(nfiles)i.bam" % locals()
+
+        if filtering_dedup_method == 'samtools':
+            statement.append('''samtools rmdup - - ''')
+
+        elif filtering_dedup_method == 'picard':
+            statement.append('''MarkDuplicates
+            INPUT=%(current_file)s
+            OUTPUT=%(next_file)s
+            ASSUME_SORTED=TRUE
+            METRICS_FILE=%(bedfile)s.duplicate_metrics
+            REMOVE_DUPLICATES=TRUE
+            VALIDATION_STRINGENCY=SILENT
+            2>> %%(bedfile)s.log ''' % locals())
+
+        nfiles += 1
+        current_file = next_file
+
+    if is_paired:
+        statement.append('''cat %(current_file)s
+            | python %(scriptsdir)s/bam2bed.py
+              --merge-pairs
+              --min-insert-size=%(filtering_min_insert_size)i
+              --max-insert-size=%(filtering_max_insert_size)i
+              --log=%(bedfile)s.log
+              -
+            | python %(scriptsdir)s/bed2bed.py
+              --method=sanitize-genome
+              --genome-file=%(genome_dir)s/%(genome)s
+              --log=%(bedfile)s.log
+            | cut -f 1,2,3,4
+            | sort -k1,1 -k2,2n
+            | bgzip > %(bedfile)s''')
+    else:
+        statement.append('''cat %(current_file)s
+            | python %(scriptsdir)s/bam2bed.py
+              --log=%(bedfile)s.log
+              -
+            | python %(scriptsdir)s/bed2bed.py
+              --method=sanitize-genome
+              --genome-file=%(genome_dir)s/%(genome)s
+              --log=%(bedfile)s.log
+            | cut -f 1,2,3,4
+            | sort -k1,1 -k2,2n
+            | bgzip > %(bedfile)s''')
+
+    statement.append("tabix -p bed %(bedfile)s")
+    statement.append("rm -rf %(tmpdir)s")
+    statement = " ; ".join(statement)
+    P.run()
+
+    os.unlink(tmpdir)
+
+#########################################################################
+#########################################################################
+#########################################################################
+def countReadsWithinWindows(bedfile,
+                            windowfile,
+                            outfile,
+                            counting_method = "midpoint"):
+    '''count reads given in *tagfile* within intervals in 
+    *windowfile*.
+
+    Both files need to be :term:`bed` formatted.
+
+    Counting is done using bedtools. The counting method
+    can be 'midpoint' or 'nucleotide'.
+    '''
     job_options = "-l mem_free=4G"
 
     if counting_method == "midpoint":
         f = '''| awk '{a = $2+($3-$2)/2; printf("%s\\t%i\\t%i\\n", $1, a, a+1)}' '''
-    elif countig_method == "nucleotide":
+    elif counting_method == "nucleotide":
         f = ""
-    else: 
-        raise ValueError("unknown counting method: %s" % counting_method )
+    else:
+        raise ValueError("unknown counting method: %s" % counting_method)
 
     statement = '''
     zcat %(bedfile)s
     %(f)s
     | coverageBed -a stdin -b %(windowfile)s -split
-    | sort -k1,1 -k2,2n 
+    | sort -k1,1 -k2,2n
     | gzip
     > %(outfile)s
     '''
 
     P.run()
 
+
 #########################################################################
 #########################################################################
 #########################################################################
-def aggregateWindowsReadCounts( infiles, outfile ):
-    '''aggregate tag counts for each window.
+def aggregateWindowsReadCounts(infiles, 
+                               outfile,
+                               regex="(.*)\..*"):
+    '''aggregate several results from coverageBed
+    into a single file.
+
+    *regex* is used to extract the track name from the filename.
+    The default removes any suffix.
 
     coverageBed outputs the following columns:
-    1) Contig
-    2) Start
-    3) Stop
-    4) Name
-    5) The number of features in A that overlapped (by at least one base pair) the B interval.
-    6) The number of bases in B that had non-zero coverage from features in A.
-    7) The length of the entry in B.
-    8) The fraction of bases in B that had non-zero coverage from features in A.
+    1 Contig
+    2 Start
+    3 Stop
+    4 Name
+    5 The number of features in A that overlapped (by at least one
+      base pair) the B interval.
+    6 The number of bases in B that had non-zero coverage from features in A.
+    7 The length of the entry in B.
+    8 The fraction of bases in B that had non-zero coverage from
+      features in A.
 
     For bed: use column 5
     For bed6: use column 7
     For bed12: use column 13
 
-    Tiles with no counts will not be output.
+    Windows without any counts will not be output.
     '''
-    
-    to_cluster = True
 
     # get bed format
-    bed_columns = Bed.getNumColumns( infiles[0] )
+    bed_columns = Bed.getNumColumns(infiles[0])
     # +1 as awk is 1-based
     column = bed_columns - 4 + 1
 
-    src = " ".join( [ '''<( zcat %s | awk '{printf("%%s:%%i-%%i\\t%%i\\n", $1,$2,$3,$%s );}' ) ''' % (x,column) for x in infiles] )
-    tmpfile = P.getTempFilename( "." )
+    src = " ".join(['''<( zcat %s | awk '{printf("%%s:%%i-%%i\\t%%i\\n", $1,$2,$3,$%s );}' ) ''' %
+                     (x, column) for x in infiles])
+    tmpfile = P.getTempFilename(".")
     statement = '''paste %(src)s > %(tmpfile)s'''
     P.run()
     
-    tracks = [ re.sub( "\..*", '', os.path.basename(x) ) for x in infiles ]
-
-    outf = IOTools.openFile( outfile, "w")
-    outf.write( "interval_id\t%s\n" % "\t".join( tracks ) )
+    # build track names
+    tracks = [re.search(regex, os.path.basename(x)).groups()[0]
+              for x in infiles]
     
-    for line in open( tmpfile, "r" ):
+    outf = IOTools.openFile( outfile, "w")
+    outf.write( "interval_id\t%s\n" % "\t".join(tracks))
+    
+    for line in open(tmpfile, "r"):
         data = line[:-1].split("\t")
-        genes = list(set([ data[x] for x in range(0,len(data), 2 ) ]))
-        values = [ int(data[x]) for x in range(1,len(data), 2 ) ]
-        if sum(values) == 0: continue
-        assert len(genes) == 1, "paste command failed, wrong number of genes per line: '%s'" % line
-        outf.write( "%s\t%s\n" % (genes[0], "\t".join(map(str, values) ) ) )
+        genes = list(set([data[x] for x in range(0, len(data), 2)]))
+        values = [int(data[x]) for x in range(1, len(data), 2 )]
+        if sum(values) == 0:
+            continue
+        assert len(genes) == 1, \
+            "paste command failed, wrong number of genes per line: '%s'" % line
+        outf.write("%s\t%s\n" % (genes[0], "\t".join(map(str, values))))
     
     outf.close()
 

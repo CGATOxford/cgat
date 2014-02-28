@@ -131,11 +131,6 @@ Pipeline output
 
 ?
 
-Example
-=======
-
-ToDo: make exome sequencing example
-
 
 Code
 ====
@@ -263,89 +258,14 @@ def preprocessBAM(infile, outfile):
            regex("(.*).bam"),
            r"tags.dir/\1.bed.gz")
 def prepareTags(infile, outfile):
-    '''prepare tag files from bam files for medip-seq analysis.
-
-    Optional steps include:
-
-    * deduplication - remove duplicate reads
-    * quality score filtering - remove reads below a certain quality score.
-    * paired ended data - merge pairs
-    * paired ended data - filter by insert size
-
+    '''prepare tag files from bam files for counting.
     '''
-    track = P.snip(outfile, ".bed.gz")
-
-    is_paired = BamTools.isPaired(infile)
-
-    current_file = infile
-
-    statement = ["mkdir %(tmpdir)s"]
-
-    if "filtering_quality" in PARAMS and PARAMS["filtering_quality"] > 0:
-        next_file = "%(tmpdir)s/bam_%(nfiles)i.bam" % locals()
-        statement.append( '''samtools view -q %%(filtering_quality)i -b 
-                             %(current_file)s 
-                             2>> %%(outfile)s.log 
-                             > %(next_file)s ''' % locals())
-        nfiles += 1
-        current_file = next_file
-
-    if "filtering_dedup" in PARAMS and PARAMS["filtering_dedup"]:
-        # Picard's MarkDuplicates requries an explicit bam file.
-        next_file = "%(tmpdir)s/bam_%(nfiles)i.bam" % locals()
-
-        dedup_method = PARAMS["filtering_dedup_method"]
-
-        if dedup_method == 'samtools':
-            statement.append( '''samtools rmdup - - ''' )
-
-        elif dedup_method == 'picard':
-            statement.append('''MarkDuplicates INPUT=%(current_file)s
-                                               OUTPUT=%(next_file)s
-                                               ASSUME_SORTED=true 
-                                               METRICS_FILE=%(outfile)s.duplicate_metrics
-                                               REMOVE_DUPLICATES=TRUE 
-                                               VALIDATION_STRINGENCY=SILENT
-                                               2>> %%(outfile)s.log ''' % locals() )
-        nfiles += 1
-        current_file = next_file
-
-    if is_paired:
-        statement.append( '''cat %(current_file)s 
-            | python %(scriptsdir)s/bam2bed.py
-              --merge-pairs
-              --min-insert-size=%(filtering_min_insert_size)i
-              --max-insert-size=%(filtering_max_insert_size)i
-              --log=%(outfile)s.log
-              -
-            | python %(scriptsdir)s/bed2bed.py
-              --method=sanitize-genome
-              --genome-file=%(genome_dir)s/%(genome)s
-              --log=%(outfile)s.log
-            | cut -f 1,2,3,4
-            | sort -k1,1 -k2,2n
-            | bgzip > %(outfile)s''')
-    else:
-        statement.append( '''cat %(current_file)s 
-            | python %(scriptsdir)s/bam2bed.py
-              --log=%(outfile)s.log
-              -
-            | python %(scriptsdir)s/bed2bed.py
-              --method=sanitize-genome
-              --genome-file=%(genome_dir)s/%(genome)s
-              --log=%(outfile)s.log
-            | cut -f 1,2,3,4
-            | sort -k1,1 -k2,2n
-            | bgzip > %(outfile)s''')
-
-    statement.append( "tabix -p bed %(outfile)s" )
-    statement.append( "rm -rf %(tmpdir)s" )
-
-    statement = " ; ".join( statement )
-
-    P.run()
-
-    os.unlink( tmpdir )
+    PipelineWindows.convertReadsToIntervals(
+        infile,
+        outfile,
+        filtering_quality=PARAMS.get('filtering_quality', None),
+        filtering_dedup='filtering_dedup' in PARAMS,
+        filtering_dedup_method=PARAMS['dedup_method'])
 
 #########################################################################
 #########################################################################
@@ -726,7 +646,7 @@ def countReadsWithinWindows(infiles, outfile ):
 @merge( countReadsWithinWindows,
         r"counts.dir/counts.tsv.gz")
 def aggregateWindowsReadCounts( infiles, outfile ):
-    '''aggregate tag counts for each window.
+    '''aggregate tag counts into a single file.
     '''
     PipelineWindows.aggregateWindowsReadCounts( infiles, outfile )
 
