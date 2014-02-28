@@ -394,9 +394,11 @@ if PARAMS["genesets_previous"]:
         '''
         PipelineLncRNA.buildFilteredLncRNAGeneSet(infiles[0], outfile, infiles[1:len(infiles)])
 else:
+
     # Writing the following to log will cause all subsequent log messages
     # to be empty.
     # L.info("no previous lncRNA set provided: Using refnoncoding set")
+
     @transform(flagExonStatus, regex(r"(\S+)_flag.gtf.gz")
                , r"\1_filtered.gtf.gz")
     def buildFilteredLncRNAGeneSet(infile, outfile):
@@ -630,7 +632,7 @@ def createMAFAlignment( infiles, outfile ):
     axt_files = []
     for axt_file in os.listdir( axt_dir ):
         if axt_file.endswith( "net.axt.gz" ) and not to_ignore.search( axt_file ):
-            axt_files.append( axt_dir + axt_file )
+            axt_files.append( os.path.join( axt_dir,  axt_file ) )
     axt_files = (" ").join( sorted( axt_files ) )
     
     E.info( "axt files from which MAF alignment will be created: %s" % axt_files )
