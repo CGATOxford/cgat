@@ -1624,9 +1624,13 @@ def buildGenomicContext( infiles, outfile ):
     P.run()
 
     ## sort and merge
+    ## remove strand information as bedtools
+    ## complains if there are annotations with 
+    ## different number of field
     files = " ".join( tmpfiles )
     statement = '''
     sort --merge -k1,1 -k2,2n %(files)s
+    | cut -f 1-4
     | gzip
     > %(outfile)s
     '''

@@ -597,6 +597,30 @@ def plotHeatmap( method = "correlation" ):
 
     R('''heatmap( as.matrix( dists ), symm=TRUE )''' )
 
+def plotPairs():
+    '''requires counts table'''
+    # Plot pairs
+    R('''panel.pearson <- function(x, y, digits=2, prefix="", cex.cor, ...)
+            {
+            usr <- par("usr"); on.exit(par(usr))
+            par(usr = c(0, 1, 0, 1))
+            r <- abs(cor(x, y))
+            txt <- format(c(r, 0.123456789), digits=digits)[1]
+            txt <- paste(prefix, txt, sep="")
+            if(missing(cex.cor)) cex <- 0.6/strwidth(txt)
+            x = 0.5;
+            y = 0.5;
+            if (par("xlog")) { x = 10^x };
+            if (par("ylog")) { y = 10^y };
+            text(x, y, txt, cex = cex);
+            }
+       ''')
+    #R('''pairs(countsTable, lower.panel = panel.pearson, pch=".", log="xy")''')
+    R('''pairs(countsTable,
+               lower.panel = panel.pearson, 
+               pch=".", 
+               labels=colnames(countsTable),
+               log="xy")''')
 
 def plotPCA():
     '''plot a PCA plot from countsTable.'''
@@ -895,22 +919,7 @@ def deseqPlotPairs( outfile ):
     '''requires counts table'''
     # Plot pairs
     R.png( outfile, width=960, height=960 )
-    R('''panel.pearson <- function(x, y, digits=2, prefix="", cex.cor, ...)
-            {
-            usr <- par("usr"); on.exit(par(usr))
-            par(usr = c(0, 1, 0, 1))
-            r <- abs(cor(x, y))
-            txt <- format(c(r, 0.123456789), digits=digits)[1]
-            txt <- paste(prefix, txt, sep="")
-            if(missing(cex.cor)) cex <- 0.6/strwidth(txt)
-            x = 0.5;
-            y = 0.5;
-            if (par("xlog")) { x = 10^x }; 
-            if (par("ylog")) { y = 10^y }; 
-            text(x, y, txt, cex = cex);
-            }
-       ''')
-    R('''pairs( countsTable, lower.panel = panel.pearson, pch=".", log="xy" )''')
+    plotPairs()
     R['dev.off']()
 
 def deseqPlotPvaluesAgainstRowsums( outfile ):
@@ -1795,7 +1804,7 @@ def outputTagSummary( filename_tags,
     E.info( "removing rows with no counts in any sample" )
     R( '''countsTable = countsTable[max_counts>0,]''')
 
-    for x in range( 0,20):
+    for x in range(0, 20):
         nempty = tuple( R('''sum(max_counts <= %i)''' % x))[0]
         outfile.write( "max per row<=%i\t%i\t%f\n" % (x, nempty, 100.0 * nempty / nrows ) )
                        
@@ -1811,6 +1820,12 @@ def outputTagSummary( filename_tags,
                       row.names=TRUE,
                       col.names=NA, 
                       quote=FALSE)''' % locals())
+
+    # output scatter plots
+    outfilename = output_filename_pattern + "scatter.png"
+    R.png( outfilename, width=960, height=960 )
+    plotPairs()
+    R['dev.off']()
 
     # output heatmap based on correlations
     outfilename = output_filename_pattern + "heatmap.svg"

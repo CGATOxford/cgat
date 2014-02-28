@@ -1431,22 +1431,19 @@ def loadMACS2( infile, outfile, bamfile, controlfile = None ):
     filename_subpeaks = infile + "_summits.bed.gz" 
 
     if not os.path.exists(filename_bed):
-        E.warn("could not find %s" % infilename )
-        P.touch( outfile )
+        E.warn("could not find %s" % infilename)
+        P.touch(outfile)
         return
 
-    # jethro os.mkdir can't create nested directories
-    # exportdir = os.path.join(PARAMS['exportdir'], 'macs2' )
-    exportdir = os.path.join(PARAMS['exportdir'], 'macs2' )
-    if not os.path.exists( PARAMS[ 'exportdir' ] ):
-        os.mkdir( PARAMS[ 'exportdir' ] )
-        os.mkdir( exportdir )
-    elif not os.path.exists( exportdir ):
-        os.mkdir( exportdir )
+    # Jethro: os.mkdir can't create nested directories
+    # AH: use os.makedirs
+    exportdir = os.path.join(PARAMS['exportdir'], 'macs2')
+    if not os.path.exists(exportdir):
+        os.makedirs(exportdir)
 
     ###############################################################
     # create plot by calling R
-    if os.path.exists( filename_r ):
+    if os.path.exists(filename_r):
         statement = '''R --vanilla < %(filename_r)s > %(filename_rlog)s; mv %(filename_pdf)s %(exportdir)s'''
         P.run()
 
@@ -1457,14 +1454,14 @@ def loadMACS2( infile, outfile, bamfile, controlfile = None ):
     # min, as it is -10log10
     min_pvalue = float(PARAMS["macs_min_pvalue"])
 
-    outtemp = P.getTempFile( "." )
+    outtemp = P.getTempFile(".")
     tmpfilename = outtemp.name
 
     id = 0
     
     counter = E.Counter()
-    with IOTools.openFile( filename_bed, "r" ) as ins:
-        for peak in WrapperMACS.iterateMacs2Peaks( ins ):
+    with IOTools.openFile(filename_bed, "r") as ins:
+        for peak in WrapperMACS.iterateMacs2Peaks(ins):
 
             if peak.fdr > max_qvalue:
                 counter.removed_qvalue += 1
@@ -1896,11 +1893,11 @@ def runPeakRanger( infile, outfile, controlfile):
     job_options= "-l mem_free=8G"
     
     to_cluster = True
-    assert controlfile != None, "peakranger requires a control"
+    assert controlfile is not None, "peakranger requires a control"
 
     statement = '''peakranger ranger
-              --data %(infile)s 
-              --control %(controlfile)s
+              --data <( python %(scriptsdir)s/bam2bam.py -v 0 --set-sequence < %(infile)s)
+              --control <( python %(scriptsdir)s/bam2bam.py -v 0 --set-sequence < %(controlfile)s)
               --output %(outfile)s
               --format bam
               --pval %(peakranger_pvalue_threshold)f

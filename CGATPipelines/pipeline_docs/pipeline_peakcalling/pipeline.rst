@@ -37,8 +37,6 @@ Contents:
 ..   pipeline/TSS.rst
    python/Trackers.rst
  
-.. errorlist::
-  
 .. glossary::
 
 region

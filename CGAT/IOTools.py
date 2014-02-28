@@ -390,11 +390,12 @@ def getLastLine( filename, nlines = 1, read_size = 1024 ):
     offset = read_size
     f.seek(0, 2)
     file_size = f.tell()
-    if file_size == 0: return ""
+    if file_size == 0: 
+        return ""
     while 1:
         if file_size < offset:
             offset = file_size
-        f.seek(-1*offset, 2)
+        f.seek(-1 * offset, 2)
         read_str = f.read(offset)
         # Remove newline at the end
         if read_str[offset - 1] == '\n':
@@ -440,6 +441,19 @@ def isEmpty( filename ):
     raises OSError if file does not exist
     '''
     return os.stat( filename )[stat.ST_SIZE] == 0
+
+def isComplete( filename ):
+    '''return True if file exists and is complete.
+
+    A file in complete if its last line starts
+    with '# job finished'
+    '''
+    if filename.endswith(".gz"):
+        raise NotImplementedError('isComplete not implemented for compressed files')
+    if isEmpty(filename):
+        return False
+    lastline = getLastLine(filename)
+    return lastline.startswith("# job finished")
     
 class FilePool:
     """manage a pool of output files

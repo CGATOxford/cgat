@@ -11,9 +11,9 @@ from SphinxReport import Utils
 ###################################################################
 ## parameterization
 
-EXPORTDIR=P['annotations_exportdir']
-DATADIR=P['annotations_datadir']
-DATABASE=P['annotations_backend']
+EXPORTDIR=P.get('annotations_exportdir', P.get('exportdir', 'export'))
+DATADIR=P.get('annotations_datadir', P.get('datadir', '.'))
+DATABASE=P.get('annotations_backend', P.get('sql_backend', 'sqlite:///./csvdb'))
 
 ###########################################################################
 class AnnotationTracker( TrackerSQL ):

@@ -16,9 +16,9 @@ REFERENCE="refcoding"
 ###################################################################
 ## parameterization
 
-EXPORTDIR=P['rnaseqdiffexpression_exportdir']
-DATADIR=P['rnaseqdiffexpression_datadir']
-DATABASE=P['rnaseqdiffexpression_backend']
+EXPORTDIR = P.get('rnaseqdiffexpression_exportdir', P.get('exportdir', 'export'))
+DATADIR = P.get('rnaseqdiffexpression_datadir', P.get('datadir', '.'))
+DATABASE = P.get('rnaseqdiffexpression_backend', P.get('sql_backend', 'sqlite:///./csvdb'))
 
 DATABASE_ANNOTATIONS=P['annotations_database']
 

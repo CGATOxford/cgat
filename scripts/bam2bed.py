@@ -1,5 +1,4 @@
-"""
-bam2bed.py - convert bam formatted file to bed formatted file
+"""bam2bed.py - convert bam formatted file to bed formatted file
 =============================================================
 
 :Author: Andreas Heger
@@ -30,8 +29,9 @@ for command line help.
 Documentation
 -------------
 
-This tool converts BAM files into BED files supplying the intervals for each read in the BAM file.  BAM files must
-have a corresponding index file ie. example.bam and example.bam.bai
+This tool converts BAM files into BED files supplying the intervals
+for each read in the BAM file.  BAM files must have a corresponding
+index file ie. example.bam and example.bam.bai
 
 For example::
 
@@ -78,7 +78,8 @@ To output read intervals that overlap chromosome 1, coordinates 13000-13100::
 
    1       13039   13115   READ1     15      +
 
-To merge paired-end reads and output fragment interval ie. leftmost mapped base to rightmost mapped base::
+To merge paired-end reads and output fragment interval ie. leftmost
+mapped base to rightmost mapped base::
 
    python bam2bed.py example.bam --merge-pairs
 
@@ -90,10 +91,7 @@ Command line options
 
 """ 
 
-import os
 import sys
-import re
-import optparse
 import pysam
 
 import CGAT.Experiment as E

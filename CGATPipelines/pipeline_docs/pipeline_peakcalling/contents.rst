@@ -7,14 +7,28 @@
  Contents
 ==========
 
+The following pages contain automatically created tables and 
+plots from the ChIP-Seq pipeline.
+
 Contents:
 
 .. toctree::
    :maxdepth: 2
 
-   analysis.rst
    pipeline.rst
    usage.rst
+
+====================
+Errors
+====================
+
+.. errorlist::
+
+====================
+Warnings
+====================
+
+.. warninglist::
 
 ====================
  Indices and tables

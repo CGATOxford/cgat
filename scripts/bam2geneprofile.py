@@ -403,11 +403,6 @@ def main( argv = None ):
                        help = "scale flanks to (integer multiples of) gene length"
                               "[%default]" )
 
-    parser.add_option( "--matrix-format", dest="matrix_format", type = "choice", 
-                       choices = ("multiple", "single" ),
-                       help = "matrix output format, either 'multiple' files or a 'single' file "
-                       "[%default]" )
-
     parser.add_option("--control-factor", dest="control_factor", type = "float",
                       help = "factor for normalizing control and fg data. Computed from data "
                       "if not set. "
@@ -638,74 +633,75 @@ def main( argv = None ):
 
     # set normalization
     for c in counters:
-        c.setNormalization( options.normalization )
+        c.setNormalization(options.normalization)
         if options.output_all_profiles:
-            c.setOutputProfiles( IOTools.openFile( E.getOutputFile( c.name ) + ".profiles.tsv.gz", "w"))
+            c.setOutputProfiles(IOTools.openFile(E.getOutputFile(c.name) +
+                                                 ".profiles.tsv.gz", "w"))
 
     if options.input_filename_counts:
         # read counts from file
-        E.info( "reading counts from %s" % options.input_filename_counts )
-        all_counts = pandas.read_csv( IOTools.openFile(options.input_filename_counts), 
-                                      sep='\t', header=0, index_col=0 )
+        E.info("reading counts from %s" % options.input_filename_counts)
+        all_counts = pandas.read_csv(IOTools.openFile(options.input_filename_counts), 
+                                     sep='\t', header=0, index_col=0)
         
         if len(counters) != 1:
-            raise NotImplementedError('counting from matrix only implemented for 1 counter.')
+            raise NotImplementedError(
+                'counting from matrix only implemented for 1 counter.')
         # build counter based on reference counter
-        counter = _bam2geneprofile.UnsegmentedCounter( counters[0] )
+        counter = _bam2geneprofile.UnsegmentedCounter(counters[0])
         counters = [counter]
-        _bam2geneprofile.countFromCounts( counters, all_counts )
+        _bam2geneprofile.countFromCounts(counters, all_counts)
         
     else:
-        E.info( "starting counting with %i counters" % len(counters) )
-        _bam2geneprofile.countFromGTF( counters, gtf_iterator )
+        E.info( "starting counting with %i counters" % len(counters))
+        _bam2geneprofile.countFromGTF(counters, gtf_iterator)
 
     # output matrices
     if not options.profile_normalizations:
-        options.profile_normalizations.append( "none" )
+        options.profile_normalizations.append("none")
     elif "all" in options.profile_normalizations:
-        options.profile_normalizations = ["none", "area", "counts", "background" ]
+        options.profile_normalizations = ["none",
+                                          "area",
+                                          "counts",
+                                          "background"]
 
     for method, counter in zip(options.methods, counters):
-        if options.matrix_format == "multiple":
-            # output multiple files, each containing results of one normalization
-            for norm in options.profile_normalizations:
-                with IOTools.openFile( E.getOutputFile( counter.name ) + ".%s.tsv.gz" % norm, "w") as outfile:
-                    counter.writeMatrix( outfile, normalize=norm,
-                                         background_region = options.background_region )
+        profiles = []
+        for norm in options.profile_normalizations:
+            # build matrix, apply normalization
+            profile = counter.getProfile(normalize=norm,
+                                         background_region=
+                                         options.background_region)
+            profiles.append(profile)
 
-        elif options.matrix_format == "single":
-            # build a single output
-            matrices = []
-            for norm in options.profile_normalizations:
-                # build matrix, apply normalization
-                matrix = counter.buildMatrix( normalize = norm, 
-                                              background_region = options.background_region )
-                nrows, ncols = matrix.shape
-                matrix.shape = (nrows * ncols, 1 )
-                matrices.append( matrix )
+        for x in range(1, len(profiles)):
+            assert profiles[0].shape == profiles[x].shape
 
-            for x in range(1,len(matrices)):
-                assert matrices[0].shape == matrices[x].shape
-                
-            # build a single matrix
-            matrix = numpy.hstack( matrices )
-            nrows, ncols = matrix.shape
-            with IOTools.openFile( E.getOutputFile( counter.name ) + ".matrix.tsv.gz", "w" ) as outfile:
-                outfile.write( "bin\tregion\tregion_bin\t%s\n" % "\t".join( \
-                        options.profile_normalizations) )
-                fields = []
-                bins = []
-                for field, nbins in zip( counter.fields, counter.nbins ):
-                    fields.extend( [field] * nbins )
-                    bins.extend( list(range(nbins)) )
+        # build a single matrix of all profiles for output
+        matrix = numpy.concatenate(profiles)
+        matrix.shape = len(profiles), len(profiles[0])
+        matrix = matrix.transpose()
 
-                for row, cols in enumerate(zip( fields, bins, matrix)):
-                    outfile.write( "%i\t%s\t" % (row, "\t".join( [ str(x) for x in cols[:-1]  ]) ))
-                    outfile.write( "%s\n" % ("\t".join( [ str(x) for x in cols[-1]  ]) ))
+        with IOTools.openFile(E.getOutputFile(counter.name) +
+                              ".matrix.tsv.gz", "w") as outfile:
+            outfile.write("bin\tregion\tregion_bin\t%s\n" % "\t".join(
+                options.profile_normalizations))
+            fields = []
+            bins = []
+            for field, nbins in zip(counter.fields, counter.nbins):
+                fields.extend([field] * nbins)
+                bins.extend(list(range(nbins)))
 
-        with IOTools.openFile( E.getOutputFile( counter.name ) + ".lengths.tsv.gz", "w") as outfile:
-            counter.writeLengthStats( outfile )
-            
+            for row, cols in enumerate(zip(fields, bins, matrix)):
+                outfile.write("%i\t%s\t" %
+                              (row, "\t".join([str(x) for x in cols[:-1]])))
+                outfile.write("%s\n" %
+                              ("\t".join([str(x) for x in cols[-1]])))
+
+        with IOTools.openFile(E.getOutputFile(counter.name) +
+                              ".lengths.tsv.gz", "w") as outfile:
+            counter.writeLengthStats(outfile)
+
         if options.output_all_profiles:
             counter.closeOutputProfiles()
 
@@ -713,48 +709,50 @@ def main( argv = None ):
 
         import matplotlib
         # avoid Tk or any X
-        matplotlib.use( "Agg" )
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
-        
+
         for method, counter in zip(options.methods, counters):
 
-            if method in ("geneprofile", 
-                          "geneprofilewithintrons", 
-                          "geneprofileabsolutedistancefromthreeprimeend", 
-                          "utrprofile", 
-                          "intervalprofile" ):
+            if method in ("geneprofile",
+                          "geneprofilewithintrons",
+                          "geneprofileabsolutedistancefromthreeprimeend",
+                          "utrprofile",
+                          "intervalprofile"):
 
                 plt.figure()
-                plt.subplots_adjust( wspace = 0.05)
-                max_scale = max( [max(x) for x in counter.aggregate_counts ] )
+                plt.subplots_adjust(wspace=0.05)
+                max_scale = max([max(x) for x in counter.aggregate_counts])
 
-                for x, counts in enumerate( counter.aggregate_counts ):
-                    plt.subplot( 5, 1, x+1)
-                    plt.plot( range(len(counts)), counts )
-                    plt.title( counter.fields[x] )
-                    plt.ylim( 0, max_scale )
+                for x, counts in enumerate(counter.aggregate_counts):
+                    plt.subplot(5, 1, x + 1)
+                    plt.plot(range(len(counts)), counts)
+                    plt.title(counter.fields[x])
+                    plt.ylim(0, max_scale)
 
                 figname = counter.name + ".full"
-                
-                fn = E.getOutputFile( figname ) + ".png"
-                plt.savefig( os.path.expanduser(fn) )
+
+                fn = E.getOutputFile(figname) + ".png"
+                plt.savefig(os.path.expanduser(fn))
 
                 plt.figure()
 
                 points = []
                 cuts = []
-                for x, counts in enumerate( counter.aggregate_counts ):
-                    points.extend( counts )
-                    cuts.append( len( counts ) )
+                for x, counts in enumerate(counter.aggregate_counts):
+                    points.extend(counts)
+                    cuts.append(len(counts))
                                  
-                plt.plot( range(len(points)), points )
-                xx,xxx = 0, []
+                plt.plot(range(len(points)), points)
+                xx, xxx = 0, []
                 for x in cuts:
-                    xxx.append( xx + x // 2 )
+                    xxx.append(xx + x // 2)
                     xx += x
-                    plt.axvline( xx, color = "r", ls = "--" )
+                    plt.axvline(xx,
+                                color="r",
+                                ls="--")
 
-                plt.xticks( xxx, counter.fields )
+                plt.xticks(xxx, counter.fields)
 
                 figname = counter.name + ".detail"
                 
@@ -764,29 +762,31 @@ def main( argv = None ):
             elif method == "tssprofile":
 
                 plt.figure()
-                plt.subplot( 1, 3, 1)
-                plt.plot( range(-options.extension_outward, options.extension_inward), counter.aggregate_counts[0] )
-                plt.title( counter.fields[0] )
-                plt.subplot( 1, 3, 2)
-                plt.plot( range(-options.extension_inward, options.extension_outward), counter.aggregate_counts[1] )
-                plt.title( counter.fields[1] )
+                plt.subplot(1, 3, 1)
+                plt.plot(range(-options.extension_outward, options.extension_inward), counter.aggregate_counts[0] )
+                plt.title(counter.fields[0])
+                plt.subplot(1, 3, 2)
+                plt.plot(range(-options.extension_inward, options.extension_outward), counter.aggregate_counts[1] )
+                plt.title(counter.fields[1])
                 plt.subplot( 1, 3, 3)
-                plt.title( "combined" )
-                plt.plot( range(-options.extension_outward, options.extension_inward), counter.aggregate_counts[0] )
-                plt.plot( range(-options.extension_inward, options.extension_outward), counter.aggregate_counts[1] )
-                plt.legend( counter.fields[:2] )
+                plt.title("combined")
+                plt.plot(range(-options.extension_outward, options.extension_inward), counter.aggregate_counts[0] )
+                plt.plot(range(-options.extension_inward, options.extension_outward), counter.aggregate_counts[1] )
+                plt.legend(counter.fields[:2])
 
-                fn = E.getOutputFile( counter.name ) + ".png"
-                plt.savefig( os.path.expanduser(fn) )
+                fn = E.getOutputFile(counter.name) + ".png"
+                plt.savefig(os.path.expanduser(fn))
 
             elif method == "midpointprofile":
 
                 plt.figure()
-                plt.plot( numpy.arange(-options.resolution_upstream, 0), counter.aggregate_counts[0] )
-                plt.plot( numpy.arange(0, options.resolution_downstream), counter.aggregate_counts[1] )
+                plt.plot(numpy.arange(-options.resolution_upstream, 0),
+                         counter.aggregate_counts[0])
+                plt.plot(numpy.arange(0, options.resolution_downstream),
+                         counter.aggregate_counts[1])
 
-                fn = E.getOutputFile( counter.name ) + ".png"
-                plt.savefig( os.path.expanduser(fn) )
+                fn = E.getOutputFile(counter.name) + ".png"
+                plt.savefig(os.path.expanduser(fn))
         
     ## write footer and output benchmark information.
     E.Stop()

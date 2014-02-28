@@ -35,7 +35,6 @@ import optparse
 
 import CGAT.Experiment as E
 
-
 def main(argv=None):
     """script main.
 

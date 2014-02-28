@@ -14,9 +14,9 @@ EXPORTDIR="export"
 # Run configuration script
 
 from SphinxReport.Utils import PARAMS as P
-EXPORTDIR=P['exome_exportdir']
-DATADIR=P['exome_datadir']
-DATABASE=P['exome_backend']
+EXPORTDIR = P.get('exome_exportdir', P.get('exportdir', 'export'))
+DATADIR = P.get('exome_datadir', P.get('datadir', '.'))
+DATABASE = P.get('exome_backend', P.get('sql_backend', 'sqlite:///./csvdb'))
 
 TRACKS = ['WTCHG_10997_01','WTCHG_10997_02']
 

@@ -12,9 +12,9 @@ from collections import OrderedDict as odict
 ###################################################################
 ## parameterization
 
-EXPORTDIR=P['calling_exportdir']
-DATADIR=P['calling_datadir']
-DATABASE=P['calling_backend']
+EXPORTDIR=P.get('calling_exportdir', P.get( 'exportdir', 'export'))
+DATADIR=P.get('calling_datadir', P.get( 'datadir', '.'))
+DATABASE=P.get('calling_backend', P.get( 'sql_backend', 'sqlite:///./csvdb'))
 
 ###################################################################
 # cf. pipeline_chipseq.py

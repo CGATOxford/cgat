@@ -472,19 +472,24 @@ class IntervalsCounter:
         # for keeping totals without aggregation
         self.outfile_profiles = outfile_profiles
 
-    def add( self, field, length ):
-        self.counts.append( 0 )
-        self.lengths.append( [] )
-        self.fields.append( field )
-        self.nbins.append( length )
-        if self.normalization in ("max", "sum", "total-max", "total-sum" ):
+    def add(self, field, length):
+        '''add a new region to counter.
+
+        The region is named *field* and has length *length*.
+
+        '''
+        self.counts.append(0)
+        self.lengths.append([])
+        self.fields.append(field)
+        self.nbins.append(length)
+        if self.normalization in ("max", "sum", "total-max", "total-sum"):
             self.dtype = numpy.float
         else:
             self.dtype = numpy.int
 
-        self.aggregate_counts.append( numpy.zeros( length, dtype = self.dtype ) )
+        self.aggregate_counts.append(numpy.zeros(length, dtype = self.dtype))
 
-    def setOutputProfiles( self, outfile_profiles ):
+    def setOutputProfiles(self, outfile_profiles):
         if outfile_profiles:
             self.outfile_profiles = outfile_profiles
             sum_counts = sum( [len(x) for x in self.aggregate_counts] )
@@ -561,65 +566,55 @@ class IntervalsCounter:
                 agg += cc
             except ValueError:
                 self.nskipped += 1
-                
-    def buildMatrix( self, normalize = None, background_region = 10 ):
-        '''build single matrix with all counts across sections.
+
+    def getProfile(self,
+                   normalize=None,
+                   background_region=10):
+        '''return meta gene profile.
+
+        apply various normalization methods.
+
+        area
+           Normalize by total area under curve of
+           the complete profile.
+
+        counts
+           Normalize each segment individually by
+           the number of regions included.
         
-        cols = intervals counted (exons, introns) )
-        rows = number of bins in intervals (every 10b / 10kb = 1000 bins)
+        background
+           Apply background normalization to complete
+           profile.
+
         '''
-        max_counts = max( [len(x) for x in self.aggregate_counts] )
-
-        matrix = numpy.concatenate( list(itertools.chain.from_iterable( 
-                [ (x, [0] * (max_counts - len(x))) for x in self.aggregate_counts ] )))
+        if normalize is None or normalize == "none":
+            profile = numpy.concatenate(self.aggregate_counts)
         
-        matrix.shape = (len(self.aggregate_counts), max_counts )
-        # width of array in concatenated form
-        width = len(self.aggregate_counts) * max_counts
-        
-        # normalize
-        if normalize == "area":
-            matrix = numpy.array( matrix, dtype = numpy.float )
-            total = matrix.sum()
-            matrix /= total
-        elif normalize == "counts":
-            matrix = numpy.array( matrix, dtype = numpy.float )
-            for x in range( len(self.counts)):
-                matrix[x,:] /= self.counts[x]
-        elif normalize == "background":
-            matrix = numpy.array( matrix, dtype = numpy.float )
-            # flatten matrix to single row
-            matrix.shape = (width, 1)
-            # take counts at either end of profile
-            background_counts = numpy.concatenate( 
-                [ matrix[:background_region],
-                  matrix[-background_region:] ] )
-            # compute mean()
-            background = numpy.mean( background_counts )
-            # divide by mean()
-            matrix /= background
-            # reset matrix shape
-            matrix.shape = (len(self.aggregate_counts), max_counts )
-
-        return matrix
-
-    def writeMatrix( self, outfile, normalize = None, background_region = 10 ):
-        '''write aggregate counts to *outfile*.
-
-        Output format by default is a tab-separated table.
-        '''
-        outfile.write("bin\t%s\n" % "\t".join(self.fields) )        
-
-        matrix = self.buildMatrix( normalize, background_region = background_region )
-        
-        if normalize and normalize != "none":
-            format = "%f"
-        else:
-            format = self.format
-
-        for row, cols in enumerate(matrix.transpose()):
-            outfile.write( "%i\t%s\n" % (row, "\t".join( [ format % x for x in cols ] ) ))
+        elif normalize in ("area", "background"):
+            profile = numpy.concatenate(self.aggregate_counts)
+            profile = numpy.array(profile, dtype=numpy.float)
             
+            if normalize == "area":
+                background = profile.sum()
+                
+            elif normalize == "background":
+                # take counts at either end of profile
+                background_counts = numpy.concatenate( 
+                    [profile[:background_region],
+                     profile[-background_region:]])
+                # compute mean()
+                background = numpy.mean(background_counts)
+
+            profile /= background
+
+        elif normalize == "counts":
+            profile = numpy.concatenate(
+                [numpy.array(x, dtype=numpy.float) / y
+                 for x, y in zip(self.aggregate_counts,
+                                 self.counts)])
+
+        return profile
+
     def writeLengthStats( self, outfile ):
         '''output length stats to outfile.'''
         
@@ -709,18 +704,28 @@ class GeneCounter( IntervalsCounter ):
             E.debug("scale flanks")
 
         if gtf[0].strand == "-":
-            downstream = [ ( max(0, exon_start - self.extension_downstream), exon_start ), ] 
-            upstream = [ ( exon_end, exon_end + self.extension_upstream ), ]
+            downstream = [( max(0, exon_start - self.extension_downstream),
+                            exon_start ),] 
+            upstream = [( exon_end,
+                          exon_end + self.extension_upstream),]
         else:
-            upstream = [ ( max(0, exon_start - self.extension_upstream), exon_start ), ] 
-            downstream = [ ( exon_end, exon_end + self.extension_downstream ), ]
+            upstream = [(max(0, exon_start - self.extension_upstream),
+                         exon_start ),] 
+            downstream = [(exon_end,
+                           exon_end + self.extension_downstream ),]
 
         E.debug("counting exons" )
-        self.counts_exons = self.counter.getCounts( contig, exons, self.resolution_exons  )
+        self.counts_exons = self.counter.getCounts(contig,
+                                                   exons,
+                                                   self.resolution_exons)
         E.debug("counting upstream" )
-        self.counts_upstream = self.counter.getCounts( contig, upstream, self.resolution_upstream ) 
+        self.counts_upstream = self.counter.getCounts(contig, 
+                                                      upstream,
+                                                      self.resolution_upstream) 
         E.debug("counting downstream" )
-        self.counts_downstream = self.counter.getCounts( contig, downstream, self.resolution_downstream )
+        self.counts_downstream = self.counter.getCounts(contig,
+                                                        downstream,
+                                                        self.resolution_downstream)
 
         E.debug("counting finished" )
 
@@ -848,42 +853,52 @@ class GeneCounterWithIntrons( IntervalsCounter ):
 
 
 class GeneCounterAbsoluteDistanceFromThreePrimeEnd( IntervalsCounter ):
-    '''count reads in exons of genes/transcripts from the three prime polyA tail,
-    without shrinking or lengthening the gene as it would in other genecounter mode
-    in this script.
-    i.e. Only count the reads that fall on the exons of the (virtual maximal) mNRA transcript. 
-    Note that the distance is relative to TTS (three prime polyA tail) on the mNRA 
-    transcript, insteads of on the genomic assembly is used for the counting and plotting.
+    '''count reads in exons of genes/transcripts from the three prime
+    polyA tail, without shrinking or lengthening the gene as it would
+    in other genecounter mode in this script.  
+
+    In other words, only count the reads that fall on the exons of the
+    (virtual maximal) mNRA transcript.  Note that the distance is
+    relative to TTS (three prime polyA tail) on the mNRA transcript,
+    insteads of on the genomic assembly is used for the counting and
+    plotting.
     
-    For mRNA with multiple exons, the exons are first stiched together into one 
-    piece of mRNA (the virtual maximal transcript for each gene). Subsequently, the mNRA is being 
-    used for counting. This is the (only) proper way to avoid counting in introns, which screw up the 
-    actual genebody coverage profile. And this only works with --base-accuracy option, 
-    because otherwise spliced reads will be considered as covering the entire intron, or 
-    spliced out introns will be counted as covered by reads.
-    (this option imply the --base-accuracy option). 
+    For mRNA with multiple exons, the exons are first stiched together
+    into one piece of mRNA (the virtual maximal transcript for each
+    gene). Subsequently, the mNRA is being used for counting. This is
+    the (only) proper way to avoid counting in introns, which screw up
+    the actual genebody coverage profile. And this only works with
+    --base-accuracy option, because otherwise spliced reads will be
+    considered as covering the entire intron, or spliced out introns
+    will be counted as covered by reads.  (this option imply the
+    --base-accuracy option).
     
-    Also count reads in introns (in exctly the same manner as if they are exons described above ) 
-    of genes/transcripts from the three prime polyA tail.
+    Also count reads in introns (in exctly the same manner as if they
+    are exons described above ) of genes/transcripts from the three
+    prime polyA tail.
     
+    Note:
+
+    * Both protein coding transcripts, and non coding
+    transcripts are counted.  i.e. both those with a CDS, and those
+    without a CDS are counted.
     
-    NOTE:
-    (*) Both protein coding transcripts, and non coding transcripts are counted.
-    i.e. both those with a CDS, and those without a CDS are counted.
+    * Only genes/transcripts with total length longer than the
+    --extension-exons-absolute-distance-topolya is counted (i.e. those
+    genes/transcripts shorter than this is omitted because they will
+    only contribute to the last len(gene) base pair of the graph, thus
+    end-up ploting a graph appears to have three prime bias even when
+    there is no three prime bias at all.
     
-    (*) Only genes/transcripts with total length longer than the 
-    --extension-exons-absolute-distance-topolya is counted 
-    (i.e. those genes/transcripts shorter than this is omitted because they will only 
-    contribute to the last len(gene) base pair of the graph, thus end-up ploting a 
-    graph appears to have three prime bias even when there is no three prime bias at all.
-    
-    There is one alternative way of dealing with this issue: is to count the number of times 
-    a nucleotide is being visited, and normalize against the counts curve with the visits counting 
-    curve. However, under current architecture of the counter, it seems hard to support this method.
-    Assumeing you get enough number of genes longer than 4000b (in hg19) to plot the three 
-    prime bias to satisfactory quality, it seems not really worth the effort to implement 
-    the alternative way, 
-    
+    There is one alternative way of dealing with this issue: is to
+    count the number of times a nucleotide is being visited, and
+    normalize against the counts curve with the visits counting
+    curve. However, under current architecture of the counter, it
+    seems hard to support this method.  Assumeing you get enough
+    number of genes longer than 4000b (in hg19) to plot the three
+    prime bias to satisfactory quality, it seems not really worth the
+    effort to implement the alternative way,
+
     '''
     
     name = "geneprofileabsolutedistancefromthreeprimeend"   #Tim 31th Aug 2013

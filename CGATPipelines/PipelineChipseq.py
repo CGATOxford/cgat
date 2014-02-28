@@ -1219,6 +1219,11 @@ def loadZinba( infile, outfile, bamfile,
     the control. Thus this method applies a filtering step 
     removing all intervals in which there is a peak of
     more than readlength / 2 height in the control.
+
+    .. note:
+
+       Zinba calls peaks that are overlapping.
+
     '''
 
     track = P.snip( os.path.basename(infile), ".zinba" )

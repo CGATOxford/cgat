@@ -1163,33 +1163,32 @@ def loadPicardDuplicationStats( infiles, outfiles ):
 @follows( countReads, mergeReadCounts )
 @transform( MAPPINGTARGETS,
             regex("(.*)/(.*)\.(.*).bam"),
-            add_inputs( r"nreads.dir/\2.nreads" ),
+            add_inputs(r"nreads.dir/\2.nreads"),
             r"\1/\2.\3.readstats" )
 def buildBAMStats( infiles, outfile ):
     '''count number of reads mapped, duplicates, etc.
     '''
 
-    to_cluster = True
-
-    rna_file = os.path.join( PARAMS["annotations_dir"],
-                             PARAMS_ANNOTATIONS["interface_rna_gff"] )
+    rna_file = os.path.join(PARAMS["annotations_dir"],
+                            PARAMS_ANNOTATIONS["interface_rna_gff"])
 
     job_options = "-l mem_free=8G"
 
     bamfile, readsfile = infiles
 
-    nreads = PipelineMappingQC.getNumReadsFromReadsFile( readsfile )
-    track = P.snip( readsfile, ".nreads" )
+    nreads = PipelineMappingQC.getNumReadsFromReadsFile(readsfile)
+    track = P.snip(os.path.basename(readsfile),
+                   ".nreads")
 
     # if a fastq file exists, submit for counting
-    if os.path.exists( track + ".fastq.gz" ):
+    if os.path.exists(track + ".fastq.gz"):
         fastqfile = track + ".fastq.gz"
-    elif os.path.exists( track + ".fastq.1.gz" ):
+    elif os.path.exists(track + ".fastq.1.gz"):
         fastqfile = track + ".fastq.1.gz"
     else:
         fastqfile = None
 
-    if fastqfile != None:
+    if fastqfile is not None:
         fastq_option = "--filename-fastq=%s" % fastqfile
     else:
         fastq_option = ""

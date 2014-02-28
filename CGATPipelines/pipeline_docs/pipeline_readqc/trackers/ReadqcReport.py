@@ -11,9 +11,9 @@ from SphinxReport import Utils
 ###################################################################
 ## parameterization
 
-EXPORTDIR=P['readqc_exportdir']
-DATADIR=P['readqc_datadir']
-DATABASE=P['readqc_backend']
+EXPORTDIR = P.get('readqc_exportdir', P.get('exportdir', 'export'))
+DATADIR = P.get('readqc_datadir', P.get('datadir', '.'))
+DATABASE = P.get('readqc_backend', P.get('sql_backend', 'sqlite:///./csvdb'))
 
 ###################################################################
 # cf. pipeline_rnaseq.py
@@ -50,8 +50,6 @@ class TrackerFastQC( ReadqcTracker ):
         link_text = []
         
         tracks = sorted( [x.asFile() for x in TRACKS ] )
-        print tracks
-        print "hello"
         for track in tracks:
             
               for x, fn in enumerate( glob.glob( os.path.join( EXPORTDIR, "fastqc", "%s*_fastqc" % track ) )):
@@ -59,16 +57,10 @@ class TrackerFastQC( ReadqcTracker ):
                 toc_text.append( "* %(track)s-%(y)i_" % locals()) 
                 link_text.append( ".. _%(track)s-%(y)i: %(fn)s/fastqc_report.html" % locals() )
         
-        print toc_text
         toc_text = "\n".join(toc_text)
-        print toc_text
-        print link_text
-        link_text =  "\n".join(link_text)
-        print link_text
+        link_text = "\n".join(link_text)
         rst_text = "\n%(toc_text)s\n\n%(link_text)s\n" % locals()
-
-        print rst_text
-        return odict( (("text", rst_text),) )
+        return odict((("text", rst_text),))
 
 ##########################################################
 ##########################################################
