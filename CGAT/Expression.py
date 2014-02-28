@@ -1235,8 +1235,13 @@ def runDESeq( outfile,
         R.png( '''%(outfile_groups_prefix)sfdr.png''' % locals() )
         R('''orderInPlot = order(pvalues)''')
         R('''showInPlot = (pvalues[orderInPlot] < 0.08)''')
+        # Jethro - previously plotting x = pvalues[orderInPlot][showInPlot]
+        # pvalues[orderInPlot][showInPlot] contains all NA values from pvalues
+        # which(showInPlot) doesn't... removing NA values
+        R('''true.pvalues  <- pvalues[orderInPlot][showInPlot]''')
+        R('''true.pvalues  <- true.pvalues[is.finite(true.pvalues)]''')
         R('''plot( seq( along=which(showInPlot)), 
-                   pvalues[orderInPlot][showInPlot], 
+                   true.pvalues, 
                    pch='.',
                    xlab=expression( rank(p[i]) ), 
                    ylab=expression( p[i] ) )''')
