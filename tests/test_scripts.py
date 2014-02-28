@@ -33,15 +33,6 @@ from nose.tools import assert_equal, ok_
 SUBDIRS = ("gpipe", "optic")
 
 
-#########################################
-# List of tests to perform.
-#########################################
-# The fields are:
-# 1. Name of the script
-# 2. Filename to use as stdin
-# 3. Option string
-# 4. List of output files to collect
-# 5. List of reference files
 def check_main(script):
     '''test is if a script can be imported and has a main function.
     '''
@@ -57,7 +48,6 @@ def check_main(script):
     #         (file, pathname, description) =
     #                imp.find_module( basename[:-3], [path,])
     #         module = imp.load_module( basename, file, pathname, description)
-
     #     ok_( "main" in dir(module), "no main function" )
 
     # subsitute gpipe and other subdirectories.
@@ -65,12 +55,24 @@ def check_main(script):
         script = re.sub("%s_" % s, "%s/" % s, script)
 
     # check for text match
-    ok_( [ x for x in open(script) if x.startswith("def main(") ], "no main function" )
+    ok_([x for x in open(script) if x.startswith("def main(")],
+        "no main function")
 
+#########################################
+# List of tests to perform.
+#########################################
+# The fields are:
 def check_script(test_name, script, stdin,
                  options, outputs,
                  references, workingdir):
-    '''check script.'''
+    '''check script.
+
+    # 1. Name of the script
+    # 2. Filename to use as stdin
+    # 3. Option string
+    # 4. List of output files to collect
+    # 5. List of reference files
+    '''
     
     tmpdir = tempfile.mkdtemp()
 
@@ -183,8 +185,8 @@ def test_scripts():
         script_name = os.path.basename(scriptdir)
 
         check_main.description = os.path.join(scriptdir, "def_main")
-        yield(check_main,
-              os.path.abspath(os.path.join("scripts", script_name )))
+        yield (check_main,
+               os.path.abspath(os.path.join("scripts", script_name)))
 
         fn = '%s/tests.yaml' % scriptdir
         if not os.path.exists(fn):
