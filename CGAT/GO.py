@@ -1057,7 +1057,7 @@ def outputResults( outfile,
 
         outfile.write("\n")
 
-def getSamples( gene2go, genes, background, options, test_ontology ):
+def getSamples( gene2go, foreground, background, options, test_ontology, go2info ):
 
     sample_size = options.sample
     # List of all minimum probabilities in simulation
@@ -1080,7 +1080,7 @@ def getSamples( gene2go, genes, background, options, test_ontology ):
             options.stdlog.flush()
 
         ## get shuffled array of genes from background
-        sample_genes = random.sample( background, len(genes) )
+        sample_genes = random.sample( background, len(foreground) )
 
         go_results = AnalyseGO( gene2go , sample_genes, background )
 
@@ -1096,7 +1096,7 @@ def getSamples( gene2go, genes, background, options, test_ontology ):
             prob_overs[k].append( v.mProbabilityOverRepresentation )
             prob_unders[k].append( v.mProbabilityUnderRepresentation )                    
 
-            simulation_min_pvalues.append( self.mPValue )
+            simulation_min_pvalues.append( v.mPValue )
 
     if options.loglevel >= 1:
         sys.stdout.write("\n")
@@ -1155,7 +1155,13 @@ def getSamples( gene2go, genes, background, options, test_ontology ):
 
     return samples, simulation_min_pvalues
 
-def computeFDRs( go_results, options, test_ontology ):
+def computeFDRs( go_results, 
+                 foreground,
+                 background,
+                 options, 
+                 test_ontology, 
+                 gene2go,
+                 go2info ):
 
     pairs = go_results.mResults.items()
 
@@ -1195,7 +1201,12 @@ def computeFDRs( go_results, options, test_ontology ):
         ## for each GO-category:
         ##      get maximum and minimum counts in x samples -> calculate minimum/maximum significance
         ##      get average and stdev counts in x samples -> calculate z-scores for test set
-        samples, simulation_min_pvalues = getSamples( gene2go, genes, background, options, test_ontology )
+        samples, simulation_min_pvalues = getSamples( gene2go, 
+                                                      foreground, 
+                                                      background, 
+                                                      options, 
+                                                      test_ontology,
+                                                      go2info )
 
         # compute P-values from sampling
         observed_min_pvalues.sort()
@@ -1290,7 +1301,11 @@ def buildMatrix( results, valuef, dtype = numpy.float, default = 0 ):
 
     for col, pairs in enumerate(results):
         for row,v in pairs: 
-            matrix[map_row[row]][col] = valuef( v )
+            try:
+                matrix[map_row[row]][col] = valuef( v )
+            except ValueError:
+                # ignore errors for log(0)
+                pass
 
     return matrix, row_headers
 

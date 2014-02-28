@@ -5,10 +5,10 @@ from SphinxReport.Utils import PARAMS as P
 from collections import OrderedDict as odict
 
 # get from config file
-UCSC_DATABASE="hg19"
-ENSEMBL_DATABASE="Homo_sapiens"
-RX_ENSEMBL_GENE = re.compile("ENSG")
-RX_ENSEMBL_TRANSCRIPT = re.compile("ENST")
+UCSC_DATABASE=P["genome"]
+ENSEMBL_DATABASE=P["ensembl_database"]
+RX_ENSEMBL_GENE = re.compile(P["ensembl_gene_prefix"])
+RX_ENSEMBL_TRANSCRIPT = re.compile(P["ensembl_transcript_prefix"])
 
 REFERENCE="refcoding"
 
@@ -16,9 +16,11 @@ REFERENCE="refcoding"
 ###################################################################
 ## parameterization
 
-EXPORTDIR=P['rnaseqdiffexpression_exportdir']
-DATADIR=P['rnaseqdiffexpression_datadir']
-DATABASE=P['rnaseqdiffexpression_backend']
+EXPORTDIR = P.get('rnaseqdiffexpression_exportdir', P.get('exportdir', 'export'))
+DATADIR = P.get('rnaseqdiffexpression_datadir', P.get('datadir', '.'))
+DATABASE = P.get('rnaseqdiffexpression_backend', P.get('sql_backend', 'sqlite:///./csvdb'))
+
+DATABASE_ANNOTATIONS=P['annotations_database']
 
 ###################################################################
 # cf. pipeline_rnaseq.py
@@ -26,7 +28,7 @@ DATABASE=P['rnaseqdiffexpression_backend']
 ###################################################################
 import CGATPipelines.PipelineTracks as PipelineTracks
 
-TRACKS = PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
+TRACKS = PipelineTracks.Tracks( PipelineTracks.Sample ).loadFromDirectory( 
     glob.glob( "%s/*.bam" % DATADIR), "%s/(\S+).bam" % DATADIR)
 
 ALL = PipelineTracks.Aggregate( TRACKS )
@@ -99,8 +101,12 @@ def linkToEnsembl( id ):
     return link
 
 ###########################################################################
-class RnaseqTracker( TrackerSQL ):
+class ProjectTracker( TrackerSQL ):
     '''Define convenience tracks for plots'''
     def __init__(self, *args, **kwargs ):
-        TrackerSQL.__init__(self, *args, backend = DATABASE, **kwargs )
+        TrackerSQL.__init__(self, 
+                            *args, 
+                            backend = DATABASE, 
+                            attach = [ ( DATABASE_ANNOTATIONS, 'annotations') ],
+                            **kwargs )
     

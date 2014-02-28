@@ -228,7 +228,7 @@ Transcript TSS
 
 .. report:: macs_replicated_interval_tss_distance.transcriptTSSProfile
    :render: gallery-plot
-   :tracker: tss-profile/*.transcript.tss-profile.all.png
+   :glob: tss-profile/*.transcript.tss-profile.all.png
    :layout: column-2
 
    TSS profile for all transcript TSSs
@@ -236,14 +236,14 @@ Transcript TSS
 
 .. report:: macs_replicated_interval_tss_distance.transcriptTSSProfileCapseq
    :render: gallery-plot
-   :tracker: tss-profile/*.transcript.tss-profile.capseq.png
+   :glob: tss-profile/*.transcript.tss-profile.capseq.png
    :layout: column-2
 
    TSS profile for transcript TSSs with overlapping CAPseq interval
 
 .. report:: macs_replicated_interval_tss_distance.transcriptTSSProfileNoCapseq
    :render: gallery-plot
-   :tracker: tss-profile/*.transcript.tss-profile.nocapseq.png
+   :glob: tss-profile/*.transcript.tss-profile.nocapseq.png
    :layout: column-2
 
    TSS profile for transcript TSSs with no overlapping CAPseq interval
@@ -253,7 +253,7 @@ Gene TSS
 
 .. report:: macs_replicated_interval_tss_distance.geneTSSProfile
    :render: gallery-plot
-   :tracker: tss-profile/*.gene.tss-profile.all.png
+   :glob: tss-profile/*.gene.tss-profile.all.png
    :layout: column-2
 
    TSS profile for all gene TSSs
@@ -261,14 +261,14 @@ Gene TSS
 
 .. report:: macs_replicated_interval_tss_distance.geneTSSProfileCapseq
    :render: gallery-plot
-   :tracker: tss-profile/*.gene.tss-profile.capseq.png
+   :glob: tss-profile/*.gene.tss-profile.capseq.png
    :layout: column-2
 
    TSS profile for gene TSSs with overlapping CAPseq interval
 
 .. report:: macs_replicated_interval_tss_distance.geneTSSProfileNoCapseq
    :render: gallery-plot
-   :tracker: tss-profile/*.gene.tss-profile.nocapseq.png
+   :glob: tss-profile/*.gene.tss-profile.nocapseq.png
    :layout: column-2
 
    TSS profile for gene TSSs with no overlapping CAPseq interval

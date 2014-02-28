@@ -1,5 +1,4 @@
-'''
-PipelineTracks.py - Definition of tracks in pipelines
+'''PipelineTracks.py - Definition of tracks in pipelines
 =====================================================
 
 :Author: Andreas Heger
@@ -55,32 +54,39 @@ There are three class within :mod:`PipelineTracks`: :class:`Sample`, :class:`Tra
 A Track
 +++++++
 
-The basic atomic data structure is a :class:`Sample` or :term:`track`. A :term:`track` is a 
-single measurement that can be combined with other tracks. A track identifier consists of a tuple of
-attributes. Each track in and experimental design has the same number of labels in the same order. 
-In the example above, there are three attributes: tissue, condition and replicate. Identifiers are thus 
+The basic atomic data structure is a :class:`Sample` or
+:term:`track`. A :term:`track` is a single measurement that can be
+combined with other tracks. A track identifier consists of a tuple of
+attributes. Each track in and experimental design has the same number
+of labels in the same order.  In the example above, there are three
+attributes: tissue, condition and replicate. Identifiers are thus
 ``('liver', 'stimulated','R1')`` or ``('heart','unstimulated','R2')``.
 
-The same track can be represented by different names depending on context, for example when 
-it is used as a filename or a database table. As filename, the track ``('heart','unstimulated','R2')``
-is rendered as ``heart-unstimulated-R2`` (avoiding spaces), while as a table, it reads
-``heart-unstimulated-R2``, avoiding ``-+.``. The :class:`Sample` class provides convenience methods to 
-convert names from  one context to another. 
+The same track can be represented by different names depending on
+context, for example when it is used as a filename or a database
+table. As filename, the track ``('heart','unstimulated','R2')`` is
+rendered as ``heart-unstimulated-R2`` (avoiding spaces), while as a
+table, it reads ``heart-unstimulated-R2``, avoiding ``-+.``. The
+:class:`Sample` class provides convenience methods to convert names
+from one context to another.
 
 Track containers
 ++++++++++++++++
 
-A container of type :class:`Tracks` stores one or more objects of type :class:`Sample`.
+A container of type :class:`Tracks` stores one or more objects of type
+:class:`Sample`.
 
 Aggregates
 ++++++++++
 
-Tracks can be combined into aggregates. Aggregation is indicated by the ``agg`` keyword.
+Tracks can be combined into aggregates. Aggregation is indicated by
+the ``agg`` keyword.
 
-For example, the ``liver-stimulated-agg`` aggregate combines the tracks ``liver-stimulated-R1``
-and ``liver-stimulated-R2``. The aggregate ``agg-stimulated-agg`` combines all replicates and
-all tissues (``liver-stimulated-R1``, ``liver-stimulated-R2``, ``heart-stimulated-R1``, 
-``heart-stimulated-R2``)
+For example, the ``liver-stimulated-agg`` aggregate combines the
+tracks ``liver-stimulated-R1`` and ``liver-stimulated-R2``. The
+aggregate ``agg-stimulated-agg`` combines all replicates and all
+tissues (``liver-stimulated-R1``, ``liver-stimulated-R2``,
+``heart-stimulated-R1``, ``heart-stimulated-R2``)
 
 Usage
 -----
@@ -88,8 +94,9 @@ Usage
 Defining tracks and aggregates
 ++++++++++++++++++++++++++++++
 
-To use tracks, you need to first define a new :class:`Sample`. In the example above with the attributes 
-tissue, condition and replicate, the :class:`Sample` could be::
+To use tracks, you need to first define a new :class:`Sample`. In the
+example above with the attributes tissue, condition and replicate, the
+:class:`Sample` could be::
 
    import PipelineTracks
    
@@ -101,17 +108,21 @@ Once defined, you can add tracks to a :class:`tracks` container. For example::
    TRACKS = PipelineTracks.Tracks( MySample ).loadFromDirectory( glob.glob( "*.fastq.gz" ), 
                                                                  pattern = "(\S+).fastq.gz" )
 
-will collect all files ending in ``.fastq.gz``. The track identifiers will be derived by removing the ``fastq.gz``
-suffix. The variable ``TRACKS`` contains all the tracks derived from files ending in ``*.fastq.gz``::
+will collect all files ending in ``.fastq.gz``. The track identifiers
+will be derived by removing the ``fastq.gz`` suffix. The variable
+``TRACKS`` contains all the tracks derived from files ending in
+``*.fastq.gz``::
 
    >>> print TRACKS
    [liver-stimulated-R2, heart-stimulated-R2, liver-stimulated-R1, liver-unstimulated-R1, heart-unstimulated-R2, heart-stimulated-R1, heart-unstimulated-R1, liver-unstimulated-R2]
 
-To build aggregates, use :class:`PipelineTracks.Aggregate`. The following combines replicates for each experiment::
+To build aggregates, use :class:`PipelineTracks.Aggregate`. The
+following combines replicates for each experiment::
 
    EXPERIMENTS = PipelineTracks.Aggregate( TRACKS, labels = ("condition", "tissue" ) )
 
-Aggregates are simply containers of associated data sets. To get a list of experiments, type::
+Aggregates are simply containers of associated data sets. To get a
+list of experiments, type::
 
    >>> EXPERIMENTS = PipelineTracks.Aggregate( TRACKS, labels = ("condition", "tissue" ) )
    >>> print list(EXPERIMENT)
@@ -122,13 +133,15 @@ or::
    >>> print EXPERIMENT.keys()
    [heart-stimulated-agg, heart-unstimulated-agg, liver-stimulated-agg, liver-unstimulated-agg]
 
-To obtain all replicates in the experiment ``heart-stimulated``, use dictionary access::
+To obtain all replicates in the experiment ``heart-stimulated``, use
+dictionary access::
 
    >>> print EXPERIMENTS['heart-stimulated-agg']
    [heart-stimulated-R2, heart-stimulated-R1]
    
-The returned objects are tracks. To use a :term:`track` as a tablename or as a file, use data
-access functions :meth:`Sample.asTable` or :meth:`Sample.asFile`, respectively::
+The returned objects are tracks. To use a :term:`track` as a tablename
+or as a file, use data access functions :meth:`Sample.asTable` or
+:meth:`Sample.asFile`, respectively::
 
    >>> print [x.asFile() for x in EXPERIMENTS['heart-stimulated-agg'] ]
    ['heart-stimulated-R2', 'heart-stimulated-R1']
@@ -147,21 +160,22 @@ The default representation is file-based. By using the class method::
 
 the default representation can be changed for all tracks simultaneously.
 
-You can have multiple aggregates. For example, some tasks might require all conditions or all 
-tissues::
+You can have multiple aggregates. For example, some tasks might
+require all conditions or all tissues::
 
    CONDITIONS = PipelineTracks.Aggregate( TRACKS, labels = ("condition", ) )
    TISSUES = PipelineTracks.Aggregate( TRACKS, labels = ("tissue", ) )
 
-You can have several :class:`Tracks` within a directory. :class:`Tracks` are simply
-containers and as such do not have any actions associated with them.
+You can have several :class:`Tracks` within a
+directory. :class:`Tracks` are simply containers and as such do not
+have any actions associated with them.
 
 Using tracks in pipelines
 +++++++++++++++++++++++++
 
-Unfortunately, tracks and aggregates do not work yet directly as ruffus_ 
-task lists. Instead, they need to be converted to files explicitely using 
-list comprehensions.
+Unfortunately, tracks and aggregates do not work yet directly as
+ruffus_ task lists. Instead, they need to be converted to files
+explicitely using list comprehensions.
 
 If you wanted to process all tracks separately, use::
 
@@ -170,7 +184,8 @@ If you wanted to process all tracks separately, use::
    def performQC( infile, outfile ):
       ....
 
-The above statement will create the following list of input/output files for the ``performQC`` task::
+The above statement will create the following list of input/output
+files for the ``performQC`` task::
 
    [ ( "liver-stimulated-R1.fastq.gz", "liver-stimulated-R1.qc" )
      ( "liver-stimulated-R2.fastq.gz" , "liver-stimulated-R2.qc" ),
@@ -195,11 +210,13 @@ The above statement will create the following list of input/output files::
      ( ( "heart-unstimulated-R1.fastq.gz", "heart-unstimulated-R2.fastq.gz" ), "heart-unstimulated-agg.out" ),
    ]
 
-The above code makes sure that the file dependencies are observed. Thus, if ``heart-stimulated-R1.fastq.gz``
-changes, only ``heart-stimulated-agg.out`` will be re-computed.
+The above code makes sure that the file dependencies are
+observed. Thus, if ``heart-stimulated-R1.fastq.gz`` changes, only
+``heart-stimulated-agg.out`` will be re-computed.
 
-Tracks and aggregates can be used within a task. The following code will collect all replicates for 
-the experiment ``liver-stimulated-agg``
+Tracks and aggregates can be used within a task. The following code
+will collect all replicates for the experiment
+``liver-stimulated-agg``
 
     >>> track = TRACKS.factory( filename = "liver-stimulated-agg" )
     >>> replicates = PipelineTracks.getSamplesInTrack( track, TRACKS )
@@ -211,7 +228,6 @@ API
 
 .. _ruffus: http://www.ruffus.org.uk/
 
-
 '''
 
 import sys
@@ -222,23 +238,29 @@ import collections
 import copy
 
 # '-' as separator
-FILE_SEPARATOR="-"
+FILE_SEPARATOR = "-"
 
 # no '_'
-R_SEPARATOR="."
+R_SEPARATOR = "."
 
 # no '-', use '_'
-TABLE_SEPARATOR="_"
+TABLE_SEPARATOR = "_"
 
-AGGREGATE_PLACEHOLDER="agg"
+AGGREGATE_PLACEHOLDER = "agg"
+
 
 def to_aggregate( x ):
-    if x: return x
-    else: return AGGREGATE_PLACEHOLDER
+    if x:
+        return x
+    else:
+        return AGGREGATE_PLACEHOLDER
+
 
 def from_aggregate( x ):
-    if x == AGGREGATE_PLACEHOLDER: return None
-    else: return x
+    if x == AGGREGATE_PLACEHOLDER:
+        return None
+    else:
+        return x
 
 # Hacky, think about improvements:
 # 1. use a named-tuple factory style approach?
@@ -247,7 +269,7 @@ class Sample(object):
     '''a sample/track with one attribute called ``experiment``.
     '''
 
-    attributes = ( "experiment", )
+    attributes = ("experiment",)
     representation = "file"
 
     def __init__(self, filename = None, tablename = None ):
@@ -307,9 +329,9 @@ class Sample(object):
                 n.data[x] = None
         return n
 
-    def toLabels( self ):
+    def toLabels(self):
         '''return attributes that this track is an aggregate of.'''
-        return [ x for x in self.attributes if self.data[x] != None ]
+        return [x for x in self.attributes if self.data[x] is not None]
         
     def __str__(self ):
         return self.__repr__()
@@ -324,17 +346,17 @@ class Sample(object):
         '''return hash value.'''
         return hash(self.asFile())
 
-    def __getattr__(self, key ):
-        if key in self.attributes:
+    def __getattr__(self, key):
+        if self.attributes is not None and key in self.attributes:
             return object.__getattribute__(self, "data")[key]
         else:
-            return object.__getattribute__(self, key )
+            return object.__getattribute__(self, key)
 
-    def __setattr__(self, key, val ):
-        if key in self.attributes:
-            object.__getattribute__(self, "data" )[key] = val
+    def __setattr__(self, key, val):
+        if self.attributes and key in self.attributes:
+            object.__getattribute__(self, "data")[key] = val
         else:
-            object.__setattr__( self, key, val)
+            object.__setattr__(self, key, val)
 
     @classmethod
     def setDefault( cls, representation = None ):
@@ -358,6 +380,30 @@ class Sample4(Sample):
     '''a sample/track with four attributes: experiment, tissue, condition and replicate.
     '''
     attributes = ( "experiment", "tissue", "condition", "replicate" )
+
+class AutoSample(Sample):
+    '''a sample/track with unknown number of attributes.
+
+    The number of attributes will be guessed from *filename*,
+    *tablename* or a given list of *attributes*.
+    '''
+    attributes = None
+
+    def __init__(self, filename=None, tablename=None):
+        if filename is not None:
+            nparts = len(filename.split(FILE_SEPARATOR))
+        elif tablename is not None:
+            nparts = len(tablename.split(TABLE_SEPARATOR))
+        else:
+            raise ValueError(
+                "for AutoSample please supply either filename or tablename")
+
+        if self.attributes is None:
+            self.attributes = tuple(["attribute%i" % x for x in range(nparts)])
+        else:
+            self.attributes = self.attributes + tuple(["attribute%i" % x
+                                    for x in range(nparts - len(self.attributes))])
+        Sample.__init__(self, filename=filename, tablename=tablename)
 
 class Aggregate:
     

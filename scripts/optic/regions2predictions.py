@@ -93,7 +93,7 @@ import CGAT.Genomics as Genomics
 import CGAT.Intervalls as Intervalls
 import CGAT.PredictionParser as PredictionParser
 import CGAT.PredictionFile as PredictionFile
-import alignlib
+import alignlib_lite
 
 param_loglevel = 2
 
@@ -539,8 +539,8 @@ def FilterConflicts( old_predictions, new_predictions, removed_predictions,
     ##################################################################################################
     ## filter predictions and resolve conflicts based on genomic overlap
     ## deleted segments are put in a temporary storage space. 
-    alignator = alignlib.makeAlignatorDPFull( alignlib.ALIGNMENT_LOCAL, param_gop, param_gep )
-    result = alignlib.makeAlignmentVector()
+    alignator = alignlib_lite.makeAlignatorDPFull( alignlib_lite.ALIGNMENT_LOCAL, param_gop, param_gep )
+    result = alignlib_lite.makeAlignmentVector()
     alignments = {}
     noverlaps = 0
     nredundants = 0
@@ -587,8 +587,8 @@ def FilterConflicts( old_predictions, new_predictions, removed_predictions,
                     if not alignments.has_key( key ):
                         result.clear()
                         alignator.align( result,
-                                         alignlib.makeSequence( peptide_sequences[this_prediction.mQueryToken]),
-                                         alignlib.makeSequence( peptide_sequences[last_prediction.mQueryToken]) )
+                                         alignlib_lite.makeSequence( peptide_sequences[this_prediction.mQueryToken]),
+                                         alignlib_lite.makeSequence( peptide_sequences[last_prediction.mQueryToken]) )
                         alignments[key] = result.getScore()
                         if result.getScore() >= param_min_score_overlap:
                             nredundants += 1

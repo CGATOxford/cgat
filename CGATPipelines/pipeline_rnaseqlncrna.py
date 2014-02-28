@@ -148,20 +148,13 @@ code
 ##########################################################
 ##########################################################
 
-# load modules                                                                                                                                                                                                                               
+# load modules 
 from ruffus import *
-import CGAT.Experiment as E
+
 import logging as L
-import CGAT.Database as Database
-import CGAT.CSV as CSV
 import numpy as np
-import fnmatch
 import sqlite3
-import CGATPipelines.PipelineMappingQC as PipelineMappingQC
-import CGAT.GTF as GTF
-import CGAT.IOTools as IOTools
 import gzip
-import CGATPipelines.PipelineRnaseq as PipelineRnaseq
 import sys
 import os
 import re
@@ -174,11 +167,19 @@ import gzip
 import collections
 import random
 from rpy2.robjects import r as R
+
+import CGAT.Experiment as E
+import CGAT.Pipeline as P
+
+import CGAT.Database as Database
+import CGAT.CSV as CSV
+import CGATPipelines.PipelineMappingQC as PipelineMappingQC
+import CGAT.GTF as GTF
+import CGAT.IOTools as IOTools
+import CGATPipelines.PipelineRnaseq as PipelineRnaseq
 import CGAT.Expression as Expression
 import CGAT.IndexedGenome as IndexedGenome
 import CGATPipelines.PipelineLncRNA as PipelineLncRNA
-
-import CGAT.Pipeline as P
 
 # get parameters
 P.getParameters( 
@@ -393,10 +394,13 @@ if PARAMS["genesets_previous"]:
         '''
         PipelineLncRNA.buildFilteredLncRNAGeneSet(infiles[0], outfile, infiles[1:len(infiles)])
 else:
-    #E.info("no previous lncRNA set provided: Using refnoncoding set")
+
+    # Writing the following to log will cause all subsequent log messages
+    # to be empty.
+    # L.info("no previous lncRNA set provided: Using refnoncoding set")
+
     @transform(flagExonStatus, regex(r"(\S+)_flag.gtf.gz")
                , r"\1_filtered.gtf.gz")
-     
     def buildFilteredLncRNAGeneSet(infile, outfile):
         '''
         will just filter out single exon lncRNA

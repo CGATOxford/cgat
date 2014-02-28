@@ -33,6 +33,8 @@ these were from the first or second pair.
 .. report:: Mapping.MappingSummary
    :render: interleaved-bar-plot
    :slices: reads_total,reads_mapped,reads_norna,reads_norna_unique_alignments
+   :split-at: 10
+   :layout: column-3
 
    Mapping results in terms of reads
 
@@ -60,6 +62,8 @@ number of pairs submitted as a pair might map to multiple locations.
 .. report:: Mapping.MappingSummary
    :render: interleaved-bar-plot
    :slices: pairs_total,pairs_mapped
+   :split-at: 10
+   :layout: column-3
 
    Mapping results in terms of pairs
 
@@ -100,6 +104,8 @@ categories.
 .. report:: Mapping.MappingSummary
    :render: stacked-bar-plot
    :slices: pairs_proper_unique_alignments,pairs_unmapped,pairs_incomplete,pairs_not_proper_unique_alignments,pairs_other,pairs_proper_duplicate,pairs_proper_multimapping
+   :split-at: 10
+   :layout: column-3
 
    Mapping results in terms of pairs
 

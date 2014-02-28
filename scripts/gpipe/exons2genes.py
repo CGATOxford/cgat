@@ -83,7 +83,7 @@ import CGAT.Genomics as Genomics
 import CGAT.Exons as Exons
 import CGAT.Intervalls as Intervalls
 import CGAT.PredictionParser as PredictionParser
-import alignlib
+import alignlib_lite
 import pgdb
 
 param_long_options=["verbose=", "help", "overlap=", "filter-tokens=", "filter-predictions=",

@@ -126,7 +126,7 @@ SHORT_HEADER="""# QUERY\tSBJCT\tSCORE\tQFROM\tQTO\tSBJCT\tSFROM\tSTO\tSALI\tQLEN
 import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.IndexedFasta as IndexedFasta
-import alignlib
+import alignlib_lite
 import CGAT.PredictionParser as PredictionParser
 import CGAT.Exons as Exons
 
@@ -747,10 +747,10 @@ class TranscriptPredictor(E.Experiment):
                 pide = best_entry.mPercentIdentity
 
                 if self.mLogLevel >= 2:
-                    row_seq = alignlib.makeSequence( self.mPeptideSequences[best_entry.mQueryToken] )
-                    col_seq = alignlib.makeSequence( best_entry.mTranslation )
+                    row_seq = alignlib_lite.makeSequence( self.mPeptideSequences[best_entry.mQueryToken] )
+                    col_seq = alignlib_lite.makeSequence( best_entry.mTranslation )
                     
-                    f = alignlib.AlignmentFormatExplicit( best_entry.mMapPeptide2Translation, row_seq, col_seq )
+                    f = alignlib_lite.AlignmentFormatExplicit( best_entry.mMapPeptide2Translation, row_seq, col_seq )
                     print "# TOPALI:", f.mRowAlignment
                     print "# TOPALI:", f.mColAlignment
             else:

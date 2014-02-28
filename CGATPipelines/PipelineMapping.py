@@ -42,10 +42,16 @@ import shutil
 import glob
 import collections
 import re
+import gzip
+import itertools
 import CGAT.Pipeline as P
+import logging as L
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
+import CGAT.GTF as GTF
 import CGAT.Fastq as Fastq
+import CGAT.IndexedFasta as IndexedFasta
+import CGATPipelines.PipelineGeneset as PipelineGeneset
 import pysam
 
 SequenceInformation = collections.namedtuple( "SequenceInformation",
@@ -108,6 +114,235 @@ def getSequencingInformation( track ):
                                        getReadLength( first_pair ),
                                        second_length,
                                        colour ) )
+
+
+
+def mergeAndFilterGTF( infile, outfile, logfile, 
+                       genome, 
+                       max_intron_size = None,
+                       remove_contigs = None, 
+                       rna_file = None ):
+    '''sanitize transcripts file for cufflinks analysis.
+
+    Merge exons separated by small introns (< 5bp).
+
+    Transcripts will be ignored that
+       * have very long introns (max_intron_size) (otherwise, cufflinks complains)
+       * are located on contigs to be ignored (usually: chrM, _random, ...)
+
+    Optionally remove transcripts based on repetitive sequences by supplying a
+       repetitve "rna_file"
+
+    This method preserves all features in a gtf file (exon, CDS, ...).
+
+    returns a dictionary of all gene_ids that have been kept.
+    '''
+
+    #max_intron_size =  PARAMS["max_intron_size"]
+
+    c = E.Counter()
+
+    outf = gzip.open( outfile, "w" )
+
+    E.info( "filtering by contig and removing long introns" )    
+    contigs = set(IndexedFasta.IndexedFasta( genome ).getContigs())
+
+
+    #
+    if remove_contigs != None:
+        rx_contigs = re.compile( remove_contigs)
+        E.info( "removing contigs %s" % remove_contigs )
+
+    if rna_file != None:
+        if not os.path.exists( rna_file ):
+            E.warn( "file '%s' to remove repetetive rna does not exist" % rna_file )
+        else:
+            rna_index = GTF.readAndIndex( GTF.iterator( IOTools.openFile( rna_file, "r" ) ) )
+            E.info( "removing ribosomal RNA in %s" % rna_file )
+
+    #
+
+
+    # rx_contigs = None
+    # if "geneset_remove_contigs" in PARAMS:
+    #     rx_contigs = re.compile( PARAMS["geneset_remove_contigs"] )
+    #     E.info( "removing contigs %s" % PARAMS["geneset_remove_contigs"] )
+
+    # rna_index = None
+    # if "geneset_remove_repetetive_rna" in PARAMS:
+    #     rna_file = os.path.join( PARAMS["annotations_dir"],
+    #                              PARAMS_ANNOTATIONS["interface_rna_gff"] )
+    #     if not os.path.exists( rna_file ):
+    #         E.warn( "file '%s' to remove repetetive rna does not exist" % rna_file )
+    #     else:
+    #         rna_index = GTF.readAndIndex( GTF.iterator( IOTools.openFile( rna_file, "r" ) ) )
+    #         E.info( "removing ribosomal RNA in %s" % rna_file )
+
+    
+    gene_ids = {}
+
+    logf = IOTools.openFile( logfile, "w" )
+    logf.write( "gene_id\ttranscript_id\treason\n" )
+
+    for all_exons in GTF.transcript_iterator( GTF.iterator( IOTools.openFile( infile )) ):
+
+        c.input += 1
+        
+        e = all_exons[0]
+        # filtering 
+        if e.contig not in contigs:
+            c.missing_contig += 1
+            logf.write( "\t".join( (e.gene_id, e.transcript_id, "missing_contig" )) + "\n" )
+            continue
+
+        if rx_contigs and rx_contigs.search(e.contig):
+            c.remove_contig += 1
+            logf.write( "\t".join( (e.gene_id, e.transcript_id, "remove_contig" )) + "\n" )
+            continue
+
+        if rna_index and all_exons[0].source != 'protein_coding':
+            found = False
+            for exon in all_exons:
+                if rna_index.contains( e.contig, e.start, e.end ):
+                    found = True
+                    break
+            if found:
+                logf.write( "\t".join( (e.gene_id, e.transcript_id, "overlap_rna" )) + "\n" )
+                c.overlap_rna += 1
+                continue
+                
+        is_ok = True
+
+        # keep exons and cds separate by grouping by feature
+        all_exons.sort( key = lambda x: x.feature )
+        new_exons = []
+
+        for feature, exons in itertools.groupby( all_exons, lambda x: x.feature ):
+
+            tmp = sorted( list(exons) , key = lambda x: x.start )
+
+            gene_ids[tmp[0].transcript_id] = tmp[0].gene_id
+            
+            l, n = tmp[0], []
+
+            for e in tmp[1:]:
+                d = e.start - l.end
+                if max_intron_size and d > max_intron_size:
+                    is_ok = False
+                    break
+                elif d < 5:
+                    l.end = max(e.end, l.end)
+                    c.merged += 1
+                    continue
+
+                n.append( l )
+                l = e
+
+            n.append( l )
+            new_exons.extend( n )
+
+            if not is_ok: break
+
+        if not is_ok: 
+            logf.write( "\t".join( (e.gene_id, e.transcript_id, "bad_transcript" )) + "\n" )
+            c.skipped += 1
+            continue
+
+        new_exons.sort( key = lambda x: x.start )
+
+        for e in new_exons:
+            outf.write( "%s\n" % str(e) )
+            c.exons += 1
+
+        c.output += 1
+
+    outf.close()
+    L.info( "%s" % str(c) )
+    
+    return gene_ids
+
+
+def resetGTFAttributes(infile, genome, gene_ids, outfile):
+
+
+    tmpfile1 = P.getTempFilename( "." )
+    tmpfile2 = P.getTempFilename( "." )
+
+    #################################################
+    E.info( "adding tss_id and p_id" )
+
+    # The p_id attribute is set if the fasta sequence is given.
+    # However, there might be some errors in cuffdiff downstream:
+    #
+    # cuffdiff: bundles.cpp:479: static void HitBundle::combine(const std::vector<HitBundle*, std::allocator<HitBundle*> >&, HitBundle&): Assertion `in_bundles[i]->ref_id() == in_bundles[i-1]->ref_id()' failed.
+    #
+    # I was not able to resolve this, it was a complex
+    # bug dependent on both the read libraries and the input reference gtf files
+
+    statement = '''
+    cuffcompare -r <( gunzip < %(infile)s )
+         -T 
+         -s %(genome)s.fa
+         -o %(tmpfile1)s
+         <( gunzip < %(infile)s )
+         <( gunzip < %(infile)s )
+    > %(outfile)s.log
+    '''
+    P.run()
+
+    #################################################
+    E.info( "resetting gene_id and transcript_id" )
+
+    # reset gene_id and transcript_id to ENSEMBL ids
+    # cufflinks patch: 
+    # make tss_id and p_id unique for each gene id
+    outf = IOTools.openFile( tmpfile2, "w")
+    map_tss2gene, map_pid2gene = {}, {}
+    inf = IOTools.openFile( tmpfile1 + ".combined.gtf" )
+
+    def _map( gtf, key, val, m ):
+        if val in m:
+            while gene_id != m[val]:
+                val += "a" 
+                if val not in m: break
+        m[val] = gene_id
+
+        gtf.setAttribute( key, val )
+
+    for gtf in GTF.iterator( inf ):
+        transcript_id = gtf.oId
+        gene_id = gene_ids[transcript_id] 
+        gtf.setAttribute( "transcript_id", transcript_id )
+        gtf.setAttribute( "gene_id", gene_id )
+
+        # set tss_id
+        try: tss_id = gtf.tss_id
+        except AttributeError: tss_id = None
+        try: p_id = gtf.p_id
+        except AttributeError: p_id = None
+
+        if tss_id: _map( gtf, "tss_id", tss_id, map_tss2gene)
+        if p_id: _map( gtf, "p_id", p_id, map_pid2gene)
+
+        outf.write( str(gtf) + "\n" )
+
+    outf.close()
+
+    # sort gtf file
+    PipelineGeneset.sortGTF( tmpfile2, outfile )
+
+    # make sure tmpfile1 is NEVER empty
+    assert tmpfile1
+    for x in glob.glob( tmpfile1 + "*" ): os.unlink( x )
+    os.unlink( tmpfile2 )
+
+
+
+###############################################################################
+############################### Classes #######################################
+###############################################################################
+
+
 
 class Mapper( object ):
     '''map reads.
@@ -371,6 +606,8 @@ class Mapper( object ):
 
         return statement
     
+
+
 class FastQc( Mapper ):
     '''run fastqc to test read quality.'''
 
@@ -442,7 +679,7 @@ class BWA( Mapper ):
 
         # add options specific to data type
         # note: not fully implemented
-        data_options = ["%(bwa_align_options)s"]
+        data_options = ["%(bwa_aln_options)s"]
         if self.datatype == "solid":
             data_options.append( "-c" )
             index_prefix = "%(bwa_index_dir)s/%(genome)s_cs"
@@ -515,6 +752,69 @@ class BWA( Mapper ):
                 samtools index %(outfile)s;''' % locals()
 
         return statement
+
+class BWAMEM( BWA ):
+
+    '''run bwa with mem algorithm to map reads against genome.
+    class inherits postprocess function from BWA class.
+    '''
+      
+    def mapper( self, infiles, outfile ):
+        '''build mapping statement on infiles.'''
+
+        num_files = [ len( x ) for x in infiles ]
+        
+        if max(num_files) != min(num_files):
+            raise ValueError("mixing single and paired-ended data not possible." )
+        
+        nfiles = max(num_files)
+        
+        tmpdir = os.path.join( self.tmpdir_fastq + "bwa" )
+        statement = [ "mkdir -p %s;" % tmpdir ]
+        tmpdir_fastq = self.tmpdir_fastq
+
+        # add options specific to data type
+        # note: not fully implemented
+        data_options = ["%(bwa_mem_options)s"]
+        if self.datatype == "solid":
+            data_options.append( "-c" )
+            index_prefix = "%(bwa_index_dir)s/%(genome)s_cs"
+        elif self.datatype == "fasta":
+            index_prefix = "%(bwa_index_dir)s/%(genome)s"
+        else:
+            index_prefix = "%(bwa_index_dir)s/%(genome)s"
+
+        data_options = " ".join( data_options )
+
+        tmpdir_fastq = self.tmpdir_fastq
+
+        track = P.snip( os.path.basename( outfile ), ".bam" )
+
+        if nfiles == 1:
+            infiles = ",".join( [ self.quoteFile(x[0]) for x in infiles ] )
+            
+            statement.append('''
+            bwa mem %%(mem_options)s -t %%(bwa_threads)i %(index_prefix)s %(infiles)s 
+            > %(tmpdir)s/%(track)s.sam 2>>%(outfile)s.bwa.log; 
+            ''' % locals() )
+
+        elif nfiles == 2:
+            infiles1 = ",".join( [ self.quoteFile(x[0]) for x in infiles ] )
+            infiles2 = ",".join( [ self.quoteFile(x[1]) for x in infiles ] )
+
+            statement.append('''
+            bwa mem %%(mem_options)s -t %%(bwa_threads)i %(index_prefix)s %(infiles1)s 
+            %(infiles2)s > %(tmpdir)s/%(track)s.sam 2>>%(outfile)s.bwa.log;
+            ''' % locals() )
+        else:
+            raise ValueError( "unexpected number read files to map: %i " % nfiles )
+
+        self.tmpdir = tmpdir
+
+        return " ".join( statement )
+    
+    
+
 
 class Stampy( BWA ):
     '''map reads against genome using STAMPY.
@@ -696,6 +996,22 @@ class Tophat( Mapper ):
 
         return statement
 
+class Tophat2( Tophat ):
+    
+    executable = "tophat2"
+
+    def mapper( self, infiles, outfile ):
+        '''build mapping statement for infiles.'''
+        
+        # get tophat statement
+        statement = Tophat.mapper( self, infiles, outfile )
+        
+        # replace tophat options with tophat2 options
+        statement = re.sub( "%\(tophat_", "%(tophat2_", statement)
+
+        return statement 
+        
+
 class TopHat_fusion( Mapper ):
     
     # tophat can map colour space files directly
@@ -842,20 +1158,25 @@ class GSNAP( Mapper ):
 
         # add options specific to data type
         # index_dir set by environment variable
-        index_prefix = "%(genome)s"
+        index_prefix = "%(gsnap_mapping_genome)s"
         
         if nfiles == 1:
-            infiles = ",".join( [ x[0] for x in infiles ] )
-            statement = '''
-            zcat %(infiles)s 
-            | %(executable)s 
-                   --nthreads %%(gsnap_threads)i
-                   --format=sam
-                   --db=%(index_prefix)s
-                   %%(gsnap_options)s
-                   > %(tmpdir)s/%(track)s.sam
-                   2> %(outfile)s.log;
-            ''' % locals() 
+            if len(infiles) > 1:
+                infiles_list = ",".join( [ x[0] for x in infiles ] )
+                files = "<( zcat %(infiles_list)s)" % locals()
+            else:
+                files = "%(infiles)s" % locals()
+                
+#            statement = '''
+#            zcat %(infiles)s 
+#            | %(executable)s 
+#                   --nthreads %%(gsnap_worker_threads)i
+#                   --format=sam
+#                   --db=%(index_prefix)s
+#                   %%(gsnap_options)s
+#                   > %(tmpdir)s/%(track)s.sam
+#                   2> %(outfile)s.log;
+#            ''' % locals() 
 
         elif nfiles == 2:
             # this section works both for paired-ended fastq files
@@ -869,19 +1190,20 @@ class GSNAP( Mapper ):
             else:
                 files = "%(infiles1)s %(infiles2)s" % locals()
 
-            statement = '''
-            %(executable)s 
-                   --nthreads %%(gsnap_threads)i
-                   --format=sam
-                   --db=%(index_prefix)s
-                   %%(gsnap_options)s
-                   %(files)s
-                   > %(tmpdir)s/%(track)s.sam 
-                   2> %(outfile)s.log ;
-            ''' % locals() 
-
         else:
             raise ValueError( "unexpected number reads to map: %i " % nfiles )
+
+        statement = '''
+        %(executable)s 
+               --nthreads %%(gsnap_worker_threads)i
+               --format=sam
+               --db=%(index_prefix)s
+               %%(gsnap_options)s
+               %(files)s
+               > %(tmpdir)s/%(track)s.sam 
+               2> %(outfile)s.log ;
+        ''' % locals() 
+
 
         return statement
     

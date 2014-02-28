@@ -39,5 +39,12 @@ sample:
    references: [test_out_single_end.sample.tsv.gz]
    options: --sample=0.50 --seed=123
    description: test sampling
-        
+ 
+renumber_ids:
+   stdin: THP1-stimulated-R1.short.fastq.gz
+   outputs: [stdout]
+   references: [test_renumber_ids.fastq.gz]
+   options: --renumber-ids=MISEQ%s --log=test_renumber_ids.log
+   description: renumber ids according to pattern
+       
 

@@ -11,8 +11,6 @@ Contents:
 
    pipeline/Methods.rst
    pipeline/Dummy.rst
- 
-.. errorlist::
   
 Indices and tables
 ==================

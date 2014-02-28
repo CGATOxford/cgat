@@ -14,9 +14,9 @@ EXPORTDIR="export"
 # Run configuration script
 
 from SphinxReport.Utils import PARAMS as P
-EXPORTDIR=P['medip_exportdir']
-DATADIR=P['medip_datadir']
-DATABASE=P['medip_backend']
+EXPORTDIR = P.get('medip_exportdir', P.get('exportdir', 'export'))
+DATADIR = P.get('medip_datadir', P.get('datadir', '.'))
+DATABASE = P.get('medip_backend', P.get('sql_backend', 'sqlite:///./csvdb'))
 
 ###################################################################
 # cf. pipeline_medip.py

@@ -8,14 +8,17 @@ Sample clustering
 =================
 
 The following plots show how the various samples cluster according to
-the different experimental designs that have been submitted to the pipeline.
+the different experimental designs that have been submitted to the
+pipeline.
+
+The clustering is performed using a read-count correlation distance.
 
 Overall clustering
 ------------------
 
 .. report:: Tracker.TrackerImages
    :render: gallery-plot
-   :tracker: counts.dir/counts_stats_heatmap.svg
+   :glob: counts.dir/counts_stats_heatmap.svg
    :width: 200
 
    Heatmap of overall sample similarity based on all samples
@@ -26,7 +29,7 @@ Clustering within designs
 
 .. report:: Tracker.TrackerImages
    :render: gallery-plot
-   :tracker: counts.dir/design*_stats_heatmap.svg
+   :glob: counts.dir/design*_stats_heatmap.svg
    :width: 200
    :layout: column-2
 

@@ -19,12 +19,7 @@ It really helps if you are familiar with following:
    * python_ in order to understand what happens in the pipeline
    * ruffus_ in order to understand the pipeline code
    * sge_ in order to monitor your jobs
-   * mercurial_ in order to up-to-date code
-
-.. _python: http:www.python.org
-.. _sge: http://wikis.sun.com/display/GridEngine/Home
-.. _mercurial: http://mercurial.selenic.com/wiki/
-.. _sphinxreport: http://code.google.com/p/sphinx-report/
+   * git_ in order to up-to-date code
 
 .. _PipelineSettingUp:
 
@@ -37,13 +32,10 @@ pipeline involves the following steps:
 
 *Step 1*: Get the latest clone of the cgat script repository::
 
-   hg clone http://www.cgat.org/hg/cgat/ src
+   git clone https://github.com/CGATOxford/cgat.git
 
-.. note:: 
-   You need to have mercurial installed.
-
-The directory :file:`src` is the :term:`source directory`. It will be abbreviated
-``<src>`` in the following commands. This directory will contain the pipeline
+The directory :file:`cgat` is the :term:`source directory`. It will be abbreviated
+``<cgat>`` in the following commands. This directory will contain the pipeline
 master script named :file:`pipeline_<name>.py`, the default configuration files
 and all the helper scripts and libraries to run the pipeline.
 
@@ -59,7 +51,7 @@ from within this directory.
 by a configuration file. A configuration file with all the default values can be 
 obtained by running::
 
-      python <src>/pipeline_<name>.py config
+      python <cgat>/pipeline_<name>.py config
 
 This will create a new :file:`pipeline.ini` file. **YOU MUST EDIT THIS FILE**.
 The default values are likely to use the wrong genome or point to non-existing
@@ -69,8 +61,9 @@ and the format is simple. The documenation for the
 contains the full specification.
 
 *Step 4*: Add the input files. The required input is specific for each pipeline; read
-the pipeline documentation to find out exactly which files are needed. Commonly, a pipeline
-works from input files copied or linked into the :term:`working directory` and named
+the pipeline documentation to find out exactly which files are needed
+and where they should be put. Commonly, a pipeline
+works from input files linked into the :term:`working directory` and named
 following pipeline specific conventions.
 
 .. _PipelineRunning:
@@ -82,11 +75,11 @@ Pipelines are controlled by a single python script called :file:`pipeline_<name>
 that lives in the :term:`source directory`. Command line usage information is available
 by running::
 
-   python <src>/pipeline_<name>.py --help
+   python <cgat>/pipeline_<name>.py --help
 
 The basic syntax for ``pipeline_<name>.py`` is::
 
-   python <src>/pipeline_<name>.py [options] _COMMAND_
+   python <cgat>/pipeline_<name>.py [options] _COMMAND_
 
 ``COMMAND`` can be one of the following:
 
@@ -114,7 +107,7 @@ clone <srcdir>
 
 In case you are running a long pipeline, make sure you start it appropriately, for example::
 
-   nice -19 nohup <src>/pipeline_<name>.py make full
+   nice -19 nohup <cgat>/pipeline_<name>.py make full
 
 This will keep the pipeline running if you close the terminal.
 
@@ -125,7 +118,7 @@ Many things can go wrong while running the pipeline. Look out for
 
    * bad input format. The pipeline does not perform sanity checks on the input format.
        If the input is bad, you might see wrong or missing results or an error message.
-   * pipeline disrutions. Problems with the cluster, the file system or the controlling terminal 
+   * pipeline disruptions. Problems with the cluster, the file system or the controlling terminal 
        might all cause the pipeline to abort.
    * bugs. The pipeline makes many implicit assumptions about the input files and the programs it
        runs. If program versions change or inputs change, the pipeline might not be able to deal with it.
@@ -135,7 +128,7 @@ If the pipeline aborts, locate the step that caused the error by reading the log
 the error messages on stderr (:file:`nohup.out`). See if you can understand the error and guess
 the likely problem (new program versions, badly formatted input, ...). If you are able to fix 
 the error, remove the output files of the step in which the error occured and restart the 
-pipeline. It should continue from the appropriate location.
+pipeline. Processing should resume at the appropriate point.
 
 .. note::
    Look out for upstream errors. For example, the pipeline might build a geneset filtering
@@ -150,8 +143,7 @@ Updating to the latest code version
 
 To get the latest bugfixes, go into the :term:`source directory` and type::
 
-   hg pull
-   hg update
+   git pull
 
 The first command retrieves the latest changes from the master repository
 and the second command updates your local version with these changes.

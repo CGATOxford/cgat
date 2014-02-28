@@ -3,7 +3,7 @@ Dispersion estimates
 
 .. report:: Tracker.TrackerImages
    :render: gallery-plot
-   :tracker: deseq.dir/*_dispersion_estimates_*.*.png
+   :glob: deseq.dir/*_dispersion_estimates_*.*.png
    :width: 200
    :layout: column-5
 

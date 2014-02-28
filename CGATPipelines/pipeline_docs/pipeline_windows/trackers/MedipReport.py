@@ -9,9 +9,10 @@ from SphinxReport.Tracker import *
 # Run configuration script
 
 from SphinxReport.Utils import PARAMS as P
-EXPORTDIR=P['windows_exportdir']
-DATADIR=P['windows_datadir']
-DATABASE=P['windows_backend']
+
+EXPORTDIR = P.get('windows_exportdir', P.get('exportdir', 'export'))
+DATADIR = P.get('windows_datadir', P.get('datadir', '.'))
+DATABASE = P.get('windows_backend', P.get('sql_backend', 'sqlite:///./csvdb'))
 
 ###########################################################################
 ###########################################################################

@@ -41,6 +41,8 @@ class MappingStatus( Status ):
         '''
         value = self.getValue( "SELECT pairs_mapped/CAST( pairs_total AS FLOAT) from view_mapping WHERE track = '%(track)s'" )
 
+        if value == None: return "NA", 0
+
         if value >= 0.8: status= "PASS"
         elif value >= 0.4: status= "WARNING"
         else: status= "FAIL"
@@ -50,17 +52,18 @@ class MappingStatus( Status ):
     def testRepetetiveRNA( self, track ):
         '''proportion of reads mapping to repetetive RNA.
         
-        PASS : < 10% reads mapping to repetetive RNA
-        WARN : < 50% reads mapping to repetetive RNA
-        FAIL : >=50% reads mapping to repetetive RNA
+        PASS : < 10% alignments mapping to repetetive RNA
+        WARN : < 50% alignments mapping to repetetive RNA
+        FAIL : >=50% alignments mapping to repetetive RNA
 
         '''
         
-        value = self.getValue( "SELECT 1.0 - reads_norna/CAST(reads_mapped AS FLOAT) from view_mapping WHERE track = '%(track)s'" )
+        value = self.getValue( "SELECT 1.0 - alignments_no_rna/CAST(alignments_mapped AS FLOAT) from view_mapping WHERE track = '%(track)s'" )
         if value < 0.05: status= "PASS"
         elif value < 0.1: status= "WARNING"
         else: status= "FAIL"
 
+        return "NA", "NOT TESTED"
         return status, "%5.2f%%" % (100.0 * value)
 
     def testSplicedAlignments( self, track ):

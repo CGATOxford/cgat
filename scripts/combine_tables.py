@@ -1,5 +1,4 @@
-'''
-combine_tables.py - join tables
+'''combine_tables.py - join tables
 ===============================
 
 :Author: Andreas Heger
@@ -10,17 +9,20 @@ combine_tables.py - join tables
 Purpose
 -------
 
-This script reads several tab-separated tables and joins them into a single one.
+This script reads several tab-separated tables and joins them into a
+single one.
 
 .. todo::
 
-   Rename to tables2table.py
+   * Rename to tables2table.py
+   * Use pandas dataframes for fast IO and merging/joining
 
 Usage
 -----
 
-The option ``--headers`` sets the column titles explicitely. Add ``--skip-titles`` if you want to avoid
-echoing the original title in the input files.
+The option ``--headers`` sets the column titles explicitely. Add
+``--skip-titles`` if you want to avoid echoing the original title in
+the input files.
 
 
 Example::
@@ -41,13 +43,12 @@ import sys
 import re
 import string
 import os
-import time
 import glob
-import optparse
 import collections
 
 import CGAT.IOTools as IOTools
 import CGAT.Experiment as E
+
 
 def readTable( filename, options):
     '''read table and filter.
@@ -98,15 +99,15 @@ def concatenateTables( outfile, options, args ):
     tables = []
     # read all tables
     for filename in options.filenames:
-        tables.append( readTable( filename, options ) )
+        tables.append(readTable(filename, options))
 
-    if options.cat == None:
-        if len(row_headers)==1:
-            row_head_titles = [ "filename" ]
+    if options.cat is None:
+        if len(row_headers) == 1:
+            row_head_titles = ["filename"]
         else:
-            row_head_titles = [ "pattern" + str(x) for x in range(len(row_headers)) ]
+            row_head_titles = ["pattern" + str(x) for x in range(len(row_headers))]
     else:
-        row_head_titles = [ x.strip() for x in options.cat.split(",") ]
+        row_head_titles = [x.strip() for x in options.cat.split(",")]
 
     # collect titles
     if options.input_has_titles:
@@ -114,35 +115,42 @@ def concatenateTables( outfile, options, args ):
         for table in tables:
             for key in table[0][:-1].split("\t"):
                 titles[key] = 1
-        outfile.write( "%s\t%s\n" % \
-                           ( "\t".join([x for x in row_head_titles ]),
-                             "\t".join( titles.keys() ) ) )
+        outfile.write("%s\t%s\n" %
+                      ("\t".join([x for x in row_head_titles]),
+                       "\t".join(titles.keys())))
+
         map_title2column = {}
-        for x,title in enumerate(titles.keys()):
+        for x, title in enumerate(titles.keys()):
             map_title2column[title] = x
+    else:
+        ncolumns = [len(table[0].split('\t')) for table in tables]
+        if min(ncolumns) != max(ncolumns):
+            raise ValueError('tables have unequal number of columns (min=%i, max=%i)' %
+                             (min(ncolumns) != max(ncolumns)))
+        # create a pseudo dictionary of columns
+        titles = collections.OrderedDict([(x, x) for x in range(min(ncolumns))])
 
-        all_titles = set(titles.keys())
+    all_titles = set(titles.keys())
 
-    for nindex, table in enumerate( tables ):
-        
-        extra = ""
+    for nindex, table in enumerate(tables):
         if options.input_has_titles:
             titles = table[0][:-1].split("\t")
-            map_old2new = [ map_title2column[t] for t in titles]
+            map_old2new = [map_title2column[t] for t in titles]
             del table[0]
-            
         else:
             map_old2new = list(range(len(all_titles)))
 
         for l in table:
-            data = [missing_value] * len( all_titles )
-            for x,d in enumerate(l[:-1].split("\t")):
+            data = [missing_value] * len(all_titles)
+            for x, d in enumerate(l[:-1].split("\t")):
                 data[map_old2new[x]] = d
 
-            row = "\t".join([str(x) for x in  row_headers[nindex]] + data ) + "\n"
-            outfile.write(row )
-            
-def joinTables( outfile, options, args ):
+            row = "\t".join([str(x) for x in row_headers[nindex]] +
+                            data) + "\n"
+            outfile.write(row)
+
+
+def joinTables(outfile, options, args):
     '''join tables.'''
 
     if options.headers and options.headers[0] != "auto" and \
@@ -162,17 +170,6 @@ def joinTables( outfile, options, args ):
 
     headers_to_delete = []
 
-    if options.take:
-        take = []
-        # convert numeric columns for filtering
-        for x in options.take:
-            try:
-                take.append( int(x) - 1 )
-            except ValueError:
-                take.append( x )
-    else:
-        # tables with max 100 columns
-        take = None
 
     if options.prefixes:
         prefixes = [ x.strip() for x in options.prefixes.split(",") ]
@@ -210,6 +207,20 @@ def joinTables( outfile, options, args ):
                 key = "-".join( [data[x] for x in options.columns] )                
                 titles = [key]
             
+            # set take based on column titles or numerically
+            if options.take:
+                take = []
+                # convert numeric columns for filtering
+                for x in options.take:
+                    try:
+                        take.append( int(x) - 1 )
+                    except ValueError:
+                        # will raise error if x is not present
+                        take.append( data.index( x ) )
+            else:
+                # tables with max 100 columns
+                take = None
+
             for x in range(len(data)):
                 if x in options.columns or (take and x not in take ): continue
                 ncolumns += 1
@@ -234,6 +245,16 @@ def joinTables( outfile, options, args ):
                 
             del lines[0]
         else:
+
+            # set take based on numeric columns if no titles are present
+            if options.take:
+                take = []
+                # convert numeric columns for filtering
+                for x in options.take:
+                    take.append( int(x) - 1 )
+            else:
+                # tables with max 100 columns
+                take = None
 
             #IMS: We might still want filename titles even if the input columns don't have titles.
             if options.add_file_prefix:

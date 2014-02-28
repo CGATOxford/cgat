@@ -1,5 +1,4 @@
-"""
-========================================
+"""========================================
 RNA-Seq Differential expression pipeline
 ========================================
 
@@ -35,21 +34,24 @@ The pipeline performs the following:
 Background
 ============
 
-The quality of the rnaseq data (read-length, paired-end) determines the
-quality of transcript models. For instance, if reads are short (35bp) and/or 
-reads are not paired-ended, transcript models will be short and truncated.
-In these cases it might be better to concentrate the analysis on only previously
-known transcript models. 
+The quality of the rnaseq data (read-length, paired-end) determines
+the quality of transcript models. For instance, if reads are short
+(35bp) and/or reads are not paired-ended, transcript models will be
+short and truncated.  In these cases it might be better to concentrate
+the analysis on only previously known transcript models.
 
 
-Transcripts are the natural choice to measure expression of. However other quantities
-might be of interest. Some quantities are biological meaningful, for example differential 
-expression from a promotor shared by several trancripts. Other quantities might no biologically
-meaningful but are necessary as a technical comprise.
-For example, the overlapping transcripts might be hard to resolve and thus might need to be
-aggregated per gene. Furthermore, functional annotation is primarily associated with genes
-and not individual transcripts. The pipeline attempts to measure transcription and differential
-expression for a variety of entities following the classification laid down by :term:`cuffdiff`:
+Transcripts are the natural choice to measure expression of. However
+other quantities might be of interest. Some quantities are biological
+meaningful, for example differential expression from a promotor shared
+by several trancripts. Other quantities might no biologically
+meaningful but are necessary as a technical comprise.  For example,
+the overlapping transcripts might be hard to resolve and thus might
+need to be aggregated per gene. Furthermore, functional annotation is
+primarily associated with genes and not individual transcripts. The
+pipeline attempts to measure transcription and differential expression
+for a variety of entities following the classification laid down by
+:term:`cuffdiff`:
 
 isoform
    Transcript level
@@ -61,27 +63,30 @@ cds
    Coding sequence expression. Ignore reads overlapping non-coding parts of transcripts (UTRs, etc.). Requires
    annotation of the cds and thus only available for :file:`reference.gtf.gz`.
 
-Methods differ in their ability to measure transcription on all levels. 
+Methods differ in their ability to measure transcription on all
+levels.
  
 .. todo::
    add promoters and splicing output
 
-Overprediction of differential expression for low-level expressed transcripts with :term:`cuffdiff`
-is a `known problem <http://seqanswers.com/forums/showthread.php?t=6283&highlight=fpkm>`_.
+Overprediction of differential expression for low-level expressed
+transcripts with :term:`cuffdiff` is a `known problem
+<http://seqanswers.com/forums/showthread.php?t=6283&highlight=fpkm>`_.
 
 Usage
 =====
 
-See :ref:`PipelineSettingUp` and :ref:`PipelineRunning` on general information how to use CGAT pipelines.
+See :ref:`PipelineSettingUp` and :ref:`PipelineRunning` on general
+information how to use CGAT pipelines.
 
 Configuration
 -------------
 
 The pipeline requires a configured :file:`pipeline.ini` file. 
 
-The sphinxreport report requires a :file:`conf.py` and :file:`sphinxreport.ini` file 
-(see :ref:`PipelineReporting`). To start with, use the files supplied with the
-Example_ data.
+The sphinxreport report requires a :file:`conf.py` and
+:file:`sphinxreport.ini` file (see :ref:`PipelineReporting`). To start
+with, use the files supplied with the Example_ data.
 
 Input
 -----
@@ -89,25 +94,28 @@ Input
 Reads
 +++++
 
-Reads are imported by placing :term:`bam` formatted files are linking to files in the :term:`working directory`.
+Reads are imported by placing :term:`bam` formatted files are linking
+to files in the :term:`working directory`.
 
 The default file format assumes the following convention:
 
    <sample>-<condition>-<replicate>.<suffix>
 
-``sample`` and ``condition`` make up an :term:`experiment`, while ``replicate`` denotes
-the :term:`replicate` within an :term:`experiment`.
+``sample`` and ``condition`` make up an :term:`experiment`, while
+``replicate`` denotes the :term:`replicate` within an
+:term:`experiment`.
 
 Genesets
 ++++++++
 
-Genesets are imported by placing :term:`gtf` formatted files in the :term:`working directory`.
+Genesets are imported by placing :term:`gtf` formatted files in the
+:term:`working directory`.
 
 Design matrices
 +++++++++++++++
 
-Design matrices are imported by placing :term:`tsv` formatted files into the :term:`working directory`.
-The file has four columns::
+Design matrices are imported by placing :term:`tsv` formatted files
+into the :term:`working directory`.  The file has four columns::
 
       track   include group   pair
       CW-CD14-R1      0       CD14    1
@@ -135,11 +143,12 @@ Optional inputs
 Requirements
 ------------
 
-The pipeline requires the results from :doc:`pipeline_annotations`. Set the configuration variable 
+The pipeline requires the results from
+:doc:`pipeline_annotations`. Set the configuration variable
 :py:data:`annotations_database` and :py:data:`annotations_dir`.
 
-On top of the default CGAT setup, the pipeline requires the following software to be in the 
-path:
+On top of the default CGAT setup, the pipeline requires the following
+software to be in the path:
 
 +--------------------+-------------------+------------------------------------------------+
 |*Program*           |*Version*          |*Purpose*                                       |
@@ -166,20 +175,20 @@ Pipeline output
 FPKM values
 -----------
 
-The directory :file:`fpkm.dir` contains the output of running cufflinks against each 
-set of reads for each geneset. 
+The directory :file:`fpkm.dir` contains the output of running
+cufflinks against each set of reads for each geneset.
 
-The syntax of the output files is ``<geneset>_<track>.cufflinks``. The FPKM values are
-uploaded into tables as ``<geneset>_<track>_fpkm`` for per-transcript FPKM values and 
-``<geneset>_<track>_genefpkm`` for per-gene FPKM values.
+The syntax of the output files is ``<geneset>_<track>.cufflinks``. The
+FPKM values are uploaded into tables as ``<geneset>_<track>_fpkm`` for
+per-transcript FPKM values and ``<geneset>_<track>_genefpkm`` for
+per-gene FPKM values.
 
 Differential gene expression results
 -------------------------------------
 
-Differential expression is estimated for different genesets
-with a variety of methods. Results are stored per method in 
-subdirectories such as :file:`deseq.dir`, :file:`edger.dir`
-or :file:`cuffdiff.dir`.
+Differential expression is estimated for different genesets with a
+variety of methods. Results are stored per method in subdirectories
+such as :file:`deseq.dir`, :file:`edger.dir` or :file:`cuffdiff.dir`.
 
 The syntax of the output files is ``<design>_<geneset>_...``.
 
@@ -213,18 +222,22 @@ The syntax of the output files is ``<design>_<geneset>_...``.
        status of test. Values are 
        OK: test ok, FAIL: test failed, NOCALL: no test (insufficient data, etc.).
 
-The results are uploaded into the database as tables called ``<design>_<geneset>_<method>_<level>_<section>``.
+The results are uploaded into the database as tables called
+``<design>_<geneset>_<method>_<level>_<section>``.
 
-Level denotes the biological entity that the differential analysis was performed on.
-Level can be one of ``cds``,``isoform``,``tss`` and ``gene``. The later should always be present.
+Level denotes the biological entity that the differential analysis was
+performed on.  Level can be one of ``cds``,``isoform``,``tss`` and
+``gene``. The later should always be present.
 
-Section is ``diff`` for differential expression results (:file:`.diff`` files) and ``levels`` for expression levels.
+Section is ``diff`` for differential expression results
+(:file:`.diff`` files) and ``levels`` for expression levels.
 
 
 Example
 =======
 
-Example data is available at http://www.cgat.org/~andreas/sample_data/pipeline_rnaseqdiffexpression.tgz.
+Example data is available at
+http://www.cgat.org/~andreas/sample_data/pipeline_rnaseqdiffexpression.tgz.
 To run the example, simply unpack and untar::
 
    wget http://www.cgat.org/~andreas/sample_data/pipeline_rnaseqdiffexpression.tgz
@@ -232,7 +245,8 @@ To run the example, simply unpack and untar::
    cd pipeline_rnaseq
    python <srcdir>/pipeline_rnaseq.py make full
 
-.. note:: 
+.. note::
+
    For the pipeline to run, install the :doc:`pipeline_annotations` as well.
 
 Glossary
@@ -269,44 +283,28 @@ Code
 from ruffus import *
 
 import CGAT.Experiment as E
-import logging as L
 import CGAT.Database as Database
-import CGAT.CSV as CSV
 
 import sys
 import os
 import re
-import shutil
 import itertools
-import math
 import glob
-import time
-import gzip
 import collections
-import random
-
-import numpy
 import sqlite3
 import CGAT.GTF as GTF
 import CGAT.IOTools as IOTools
-import CGAT.IndexedFasta as IndexedFasta
-import CGAT.Tophat as Tophat
 from rpy2.robjects import r as R
 import rpy2.robjects as ro
-import rpy2.robjects.vectors as rovectors
-from rpy2.rinterface import RRuntimeError
 
 import CGAT.Expression as Expression
 
 import CGATPipelines.PipelineGeneset as PipelineGeneset
-import CGATPipelines.PipelineMapping as PipelineMapping
 import CGATPipelines.PipelineRnaseq as PipelineRnaseq
-import CGATPipelines.PipelineMappingQC as PipelineMappingQC
-import CGAT.Stats as Stats
 
 # levels of cuffdiff analysis
 # (no promotor and splice -> no lfold column)
-CUFFDIFF_LEVELS = ("gene", "cds", "isoform", "tss" )
+CUFFDIFF_LEVELS = ("gene", "cds", "isoform", "tss")
 
 ###################################################
 ###################################################
@@ -331,17 +329,17 @@ PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],
 ###################################################################
 import CGATPipelines.PipelineTracks as PipelineTracks
 
+Sample = PipelineTracks.AutoSample
+
 # collect sra nd fastq.gz tracks
-TRACKS = PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
-    glob.glob( "*.bam" ), "(\S+).bam" )
+TRACKS = PipelineTracks.Tracks(Sample).loadFromDirectory( 
+    glob.glob("*.bam"), "(\S+).bam")
 
-ALL = PipelineTracks.Sample3()
-EXPERIMENTS = PipelineTracks.Aggregate( TRACKS, labels = ("condition", "tissue" ) )
-CONDITIONS = PipelineTracks.Aggregate( TRACKS, labels = ("condition", ) )
-TISSUES = PipelineTracks.Aggregate( TRACKS, labels = ("tissue", ) )
+# group by experiment (assume that last field is a replicate identifier)
+EXPERIMENTS = PipelineTracks.Aggregate(TRACKS, labels=("condition", "tissue"))
 
-GENESETS = PipelineTracks.Tracks( PipelineTracks.Sample ).loadFromDirectory( 
-    glob.glob( "*.gtf.gz" ), "(\S+).gtf.gz" )
+GENESETS = PipelineTracks.Tracks(Sample).loadFromDirectory( 
+    glob.glob("*.gtf.gz"), "(\S+).gtf.gz")
 
 ###################################################################
 ###################################################################
@@ -419,70 +417,19 @@ def loadGeneSetGeneInformation( infile, outfile ):
     PipelineGeneset.loadGeneStats( infile, outfile )
 
 #########################################################################
-#########################################################################
-#########################################################################
 @follows( mkdir( "fpkm.dir"  ) )
 @files( [ (x, os.path.join( "fpkm.dir",y)) for x,y in TARGETS_FPKM ] )
 def runCufflinks(infiles, outfile):
-    '''estimate expression levels in each set.
-    '''
+    '''estimate expression levels in each set using cufflinks.'''
+    PipelineRnaseq.runCufflinks( infiles, outfile )
 
-    gtffile, bamfile = infiles
-    to_cluster = True
- 
-    job_options= "-pe dedicated %i -R y" % PARAMS["cufflinks_threads"]
-
-    track = os.path.basename( P.snip( gtffile, ".gtf.gz" ) )
-    
-    tmpfilename = P.getTempFilename( "." )
-    if os.path.exists( tmpfilename ):
-        os.unlink( tmpfilename )
-
-    gtffile = os.path.abspath( gtffile )
-    bamfile = os.path.abspath( bamfile )
-    outfile = os.path.abspath( outfile )
-
-    # note: cufflinks adds \0 bytes to gtf file - replace with '.'
-    # increase max-bundle-length to 4.5Mb due to Galnt-2 in mm9 with a 4.3Mb intron.
-    statement = '''mkdir %(tmpfilename)s; 
-    cd %(tmpfilename)s; 
-    cufflinks --label %(track)s      
-              --GTF <(gunzip < %(gtffile)s)
-              --num-threads %(cufflinks_threads)i
-              --frag-bias-correct %(bowtie_index_dir)s/%(genome)s.fa
-              --library-type %(cufflinks_library_type)s
-              %(cufflinks_options)s
-              %(bamfile)s 
-    >& %(outfile)s;
-    perl -p -e "s/\\0/./g" < transcripts.gtf | gzip > %(outfile)s.gtf.gz;
-    gzip < isoforms.fpkm_tracking > %(outfile)s.fpkm_tracking.gz;
-    gzip < genes.fpkm_tracking > %(outfile)s.genes_tracking.gz;
-    '''
-
-    P.run()
-
-    shutil.rmtree( tmpfilename )
-
-#########################################################################
-#########################################################################
 #########################################################################
 @transform( runCufflinks,
             suffix(".cufflinks"), 
             ".load")
 def loadCufflinks( infile, outfile ):
     '''load expression level measurements.'''
-
-    track = P.snip( outfile, ".load" )
-    P.load( infile + ".genes_tracking.gz",
-            outfile = track + "_genefpkm.load",
-            options = "--index=gene_id --ignore-column=tracking_id --ignore-column=class_code --ignore-column=nearest_ref_id" )
-
-    track = P.snip( outfile, ".load" )
-    P.load( infile + ".fpkm_tracking.gz",
-            outfile = track + "_fpkm.load",
-            options = "--index=tracking_id --ignore-column=nearest_ref_id --rename-column=tracking_id:transcript_id" )
-
-    P.touch( outfile )
+    PipelineRnaseq.loadCufflinks( infile, outfile )
 
 #########################################################################
 #########################################################################
@@ -512,6 +459,9 @@ def runCuffdiff( infiles, outfile ):
                             fdr = PARAMS["cuffdiff_fdr"],
                             mask_file = mask_file )
 
+#########################################################################
+#########################################################################
+#########################################################################
 @transform( runCuffdiff, 
             suffix(".diff"), 
             "_cuffdiff.load" )
@@ -834,6 +784,31 @@ def buildGeneLevelReadCounts( infiles, outfile ):
             "_gene_counts.load" )
 def loadGeneLevelReadCounts( infile, outfile ):
     P.load( infile, outfile, options="--index=gene_id" )
+
+#########################################################################
+#########################################################################
+#########################################################################
+@collate(buildGeneLevelReadCounts, 
+         regex("gene_counts.dir/(.+)_vs_(.+).tsv.gz"),
+         r"gene_counts.dir/\2.gene_counts.tsv.gz")
+def aggregateGeneLevelReadCounts(infiles,outfile):
+    ''' build a matrix of counts with genes and tracks dimensions '''
+
+    infiles = " ".join(infiles)
+    # use anysense unique counts, needs to parameterized
+    # for stranded/unstranded rnaseq data
+    statement = '''python %(scriptsdir)s/combine_tables.py
+                                            --columns=1
+                                            --take=%(counting_type)s
+                                            --use-file-prefix
+                                            --regex-filename='(.+)_vs.+.tsv.gz'
+                                            --log=%(outfile)s.log
+                                             %(infiles)s 
+                  | sed 's/geneid/gene_id/'
+                  | gzip > %(outfile)s '''
+
+    P.run()
+
     
 #########################################################################
 #########################################################################
@@ -927,6 +902,7 @@ def buildTranscriptLevelReadCounts( infiles, outfile):
 def loadTranscriptLevelReadCounts( infile, outfile ):
     P.load( infile, outfile, options="--index=transcript_id" )
 
+
 #########################################################################
 #########################################################################
 #########################################################################
@@ -972,6 +948,7 @@ def buildFeatureCounts(infiles, outfile):
                     rm %(annotations_tmp)s '''
 
     P.run()
+
 #########################################################################
 #########################################################################
 #########################################################################
@@ -981,15 +958,13 @@ def buildFeatureCounts(infiles, outfile):
 def aggregateFeatureCounts(infiles,outfile):
     ''' build a matrix of counts with genes and tracks dimensions '''
 
-
     infiles = " ".join(infiles)
     statement = '''python %(scriptsdir)s/combine_tables.py
-                                            -c 1
-                                            -k 3
-                                            
+                                            --columns=1
+                                            --take=3
                                             --use-file-prefix
                                             --regex-filename='(.+)_vs.+.tsv.gz'
-                                            -L %(outfile)s.log
+                                            --log=%(outfile)s.log
                                              %(infiles)s 
                   | sed 's/geneid/gene_id/'
                   | gzip > %(outfile)s '''
@@ -999,12 +974,64 @@ def aggregateFeatureCounts(infiles,outfile):
 #########################################################################
 #########################################################################
 #########################################################################
-@transform(aggregateFeatureCounts, suffix(".tsv.gz"),
+@transform(aggregateFeatureCounts, 
+           suffix(".tsv.gz"),
            ".load")
 def loadFeatureCounts(infile, outfile):
     P.load(infile,outfile, "-i gene_id")
 
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( aggregateFeatureCounts,
+            suffix(".tsv.gz"),
+            "_stats.tsv" )
+def summarizeFeatureCountsAll( infile, outfile ):
+    '''perform summarization of read counts'''
 
+    prefix = P.snip(outfile, ".tsv")
+    job_options = "-l mem_free=32G"
+    statement = '''python %(scriptsdir)s/runExpression.py
+              --method=summary
+              --filename-tags=%(infile)s
+              --output-filename-pattern=%(prefix)s_
+              --log=%(outfile)s.log
+              > %(outfile)s'''
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( "design*.tsv",
+            regex( "(.*).tsv" ),
+            add_inputs( aggregateFeatureCounts ),
+            r"feature_counts.dir/\1_stats.tsv" )
+def summarizeFeatureCountsPerDesign( infiles, outfile ):
+    '''perform summarization of read counts within experiments.
+    '''
+
+    design_file, counts_file = infiles    
+    prefix = P.snip(outfile, ".tsv")
+    statement = '''python %(scriptsdir)s/runExpression.py
+              --method=summary
+              --filename-design=%(design_file)s
+              --filename-tags=%(counts_file)s
+              --output-filename-pattern=%(prefix)s_
+              --log=%(outfile)s.log
+              > %(outfile)s'''
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform( (summarizeFeatureCountsAll, summarizeFeatureCountsPerDesign), 
+            suffix("_stats.tsv"), "_stats.load" )
+def loadTagCountSummary( infile, outfile ):
+    '''load windows summary.'''
+    P.load(infile, outfile )
+    P.load( P.snip(infile, ".tsv")+ "_correlation.tsv",
+            P.snip( outfile, "_stats.load") + "_correlation.load",
+            options = "--first-column=track")
 
 #########################################################################
 #IMS: switch exon counts to feature counts
@@ -1037,6 +1064,10 @@ def runDESeq( infiles, outfile ):
               --fdr=%(deseq_fdr)f
               --deseq-fit-type=%(deseq_fit_type)s
               --deseq-dispersion-method=%(deseq_dispersion_method)s
+              --deseq-sharing-mode=%(deseq_sharing_mode)s
+              --filter-min-counts-per-row=%(tags_filter_min_counts_per_row)i
+              --filter-min-counts-per-sample=%(tags_filter_min_counts_per_sample)i
+              --filter-percentile-rowsums=%(tags_filter_percentile_rowsums)i
               > %(outfile)s.log '''
 
     P.run()
@@ -1083,7 +1114,6 @@ def loadDESeqStats( infile, outfile ):
 #########################################################################
 @follows( aggregateFeatureCounts, mkdir("edger.dir") )
 @files( [ (x, os.path.join( "edger.dir", y)) for x, y in TARGETS_DE ] )
-
 def runEdgeR( infiles, outfile ):
     '''perform differential expression analysis using edger.'''
 
@@ -1099,6 +1129,9 @@ def runEdgeR( infiles, outfile ):
               --output-filename-pattern=%(track)s_
               --outfile=%(outfile)s
               --fdr=%(edger_fdr)f
+              --filter-min-counts-per-row=%(tags_filter_min_counts_per_row)i
+              --filter-min-counts-per-sample=%(tags_filter_min_counts_per_sample)i
+              --filter-percentile-rowsums=%(tags_filter_percentile_rowsums)i
               > %(outfile)s.log '''
 
     P.run()
@@ -1152,8 +1185,18 @@ mapToTargets = { 'cuffdiff': loadCuffdiffStats,
                  }
 TARGETS_DIFFEXPRESSION = [ mapToTargets[x] for x in P.asList( PARAMS["methods"] ) ]
 
+
 @follows( *TARGETS_DIFFEXPRESSION )
 def diff_expression(): pass
+
+#########################################################################
+@follows( diff_expression )
+@merge( "*_stats.tsv", "de_stats.load" )
+def loadDEStats( infiles, outfile ):
+    '''load DE stats into table.'''
+    P.concatenateAndLoad( infiles, outfile,
+                          missing_value = 0,
+                          regex_filename = "(.*)_stats.tsv")
 
 ###################################################################
 ###################################################################
@@ -1192,7 +1235,9 @@ def plotRNASEQDEData( infile, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-@follows( plotRNASEQTagData, plotRNASEQDEData )
+@follows( plotRNASEQTagData, plotRNASEQDEData, 
+          loadTagCountSummary,
+          loadDEStats )
 def qc(): pass
 
 ###################################################################

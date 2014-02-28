@@ -215,7 +215,7 @@ def main():
     parser.add_option ( "--filename-input", dest="filename_input", type="string",
                        help="read GO category assignments from a flatfile [default=%default]." )
 
-    parser.add_option ( "--sample", dest="sample", type="int",
+    parser.add_option ( "--sample-size", dest="sample", type="int",
                         help="do sampling (with # samples) [default=%default]." )
 
     parser.add_option ( "--filename-output-pattern", "--output-filename-pattern", 
@@ -371,8 +371,8 @@ def main():
 
     E.info( "found %i ontologies: %s" % (len(options.ontology), options.ontology))
 
-    outfile_summary = options.stdout
-    outfile_summary.write( "\t".join( (
+    summary = []
+    summary.append( "\t".join( (
                 "genelist",
                 "ontology",
                 "significant",
@@ -388,6 +388,7 @@ def main():
                 "nbackground_counts",
                 "psample_assignments",
                 "pbackground_assignments") ) + "\n" )
+
 
     #############################################################
     ## get go categories for genes
@@ -559,11 +560,17 @@ def main():
             #############################################################
             ## calculate fdr for each hypothesis
             if options.fdr:
-                fdrs, samples, method  = computeFDRs( go_results, options, test_ontology )
+                fdrs, samples, method  = computeFDRs( go_results, 
+                                                      foreground,
+                                                      background,
+                                                      options, 
+                                                      test_ontology,
+                                                      gene2go,
+                                                      go2info)
                 for x,v in enumerate(pairs):
                     v[1].mQValue = fdrs[v[0]][0]
             else:
-                fdrs, samples, method = {}, None
+                fdrs, samples, method = {}, {}, None
                 
             msgs.append( "fdr=%s" % method)
 
@@ -659,24 +666,23 @@ def main():
             if options.output_filename_pattern:
                 outfile.close()
 
-            if outfile_summary:
-                outfile_summary.write( "\t".join( map(str, ( \
-                                genelist_name,
-                                test_ontology,
-                                nselected,
-                                options.threshold,
-                                ngenes,
-                                ncategories,
-                                nmaps,
-                                len(foreground),
-                                len(go_results.mSampleGenes),
-                                nbackground,
-                                len(go_results.mBackgroundGenes),
-                                go_results.mSampleCountsTotal,
-                                go_results.mBackgroundCountsTotal,
-                                IOTools.prettyPercent( len(go_results.mSampleGenes) , len(foreground), "%5.2f" ),
-                                IOTools.prettyPercent( len(go_results.mBackgroundGenes), nbackground, "%5.2f" ),
-                                ",".join( msgs) ) ) ) + "\n" )
+            summary.append( "\t".join( map(str, ( \
+                                                genelist_name,
+                                                  test_ontology,
+                                                  nselected,
+                                                  options.threshold,
+                                                  ngenes,
+                                                  ncategories,
+                                                  nmaps,
+                                                  len(foreground),
+                                                  len(go_results.mSampleGenes),
+                                                  nbackground,
+                                                  len(go_results.mBackgroundGenes),
+                                                  go_results.mSampleCountsTotal,
+                                                  go_results.mBackgroundCountsTotal,
+                                                  IOTools.prettyPercent( len(go_results.mSampleGenes) , len(foreground), "%5.2f" ),
+                                                  IOTools.prettyPercent( len(go_results.mBackgroundGenes), nbackground, "%5.2f" ),
+                                                  ",".join( msgs) ) ) ) + "\n" )
 
             #############################################################
             #############################################################
@@ -689,10 +695,11 @@ def main():
 
             outputResults( outfile, pairs, go2info, options, 
                            fdrs = fdrs, 
+                           samples = samples,
                            gene2go = gene2go,
                            foreground = foreground,
                            gene2name = gene2name )
-
+            
             if options.output_filename_pattern:
                 outfile.close()
 
@@ -725,6 +732,11 @@ def main():
                                       test_ontology,
                                       go2info,
                                       options )
+
+    outfile_summary = options.stdout
+    outfile_summary.write( "".join( summary) )
+
+
 
     E.Stop()
 

@@ -75,7 +75,7 @@ exons:        exon table output
 
 """ % sys.argv[0]
 
-import alignlib
+import alignlib_lite
 import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.IndexedFasta as IndexedFasta
@@ -234,10 +234,10 @@ def main( argv = None ):
 
         elif options.format == "map":
 
-            map_prediction2genome = alignlib.makeAlignmentSet()
+            map_prediction2genome = alignlib_lite.makeAlignmentSet()
             
             for cd in cds:
-                alignlib.addDiagonal2Alignment( map_prediction2genome,
+                alignlib_lite.addDiagonal2Alignment( map_prediction2genome,
                                                cd.mPeptideFrom + 1,
                                                cd.mPeptideTo,
                                                (cd.mGenomeFrom - offset) - cd.mPeptideFrom )
@@ -245,7 +245,7 @@ def main( argv = None ):
             print string.join( map(str, (entry.mPredictionId,
                                          entry.mSbjctToken,
                                          entry.mSbjctStrand,
-                                         alignlib.AlignmentFormatEmissions( map_prediction2genome ))), "\t")
+                                         alignlib_lite.AlignmentFormatEmissions( map_prediction2genome ))), "\t")
 
         elif options.format == "intron-fasta":
             rank = 0

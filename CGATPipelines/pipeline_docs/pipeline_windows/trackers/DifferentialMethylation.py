@@ -25,6 +25,38 @@ class TrackerEdgeRSummary( ProjectTracker ):
     def __call__(self, track ):
         return self.getAll( "SELECT sample, * FROM %(track)s_edger_summary" )
 
+class TrackerDESeqSpikeIn( TrackerMatrices ):
+    pass
+
+class TrackerDESeqPower( ProjectTracker, MultipleTableTrackerEdgeList ):
+    pattern = '(.*)_power_deseq'
+    row = 'fdr'
+    column = 'power'
+    value = 'intervals'
+
+class TrackerDESeqSpikeInPercent( ProjectTracker ):
+    pattern = "(.*)_deseq_spike"
+    slices = (0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0)
+
+    def __call__(self, track, slice ):
+        data = self.get( """SELECT expression, fold, percent
+                            FROM %(track)s_deseq_spike
+                            WHERE fdr = %(slice)s
+                            ORDER BY expression, fold""" )
+        result = odict()
+        for expression, fold, value in data:
+            e, f = "%5.2f" % expression, "%5.2f" % fold
+            try:
+                result[e][f] = value
+            except KeyError:
+                result[e] = odict()
+                result[e][f] = value
+
+        return result
+
+class TrackerEdgeRSpikeInPercent( TrackerDESeqSpikeInPercent ):
+    pattern = "(.*)_edger_spike"
+
 # ##############################################################
 # ##############################################################
 # ##############################################################

@@ -12,7 +12,8 @@ Purpose
 
 The output from bedtools genomecov is converted to a set of statistics
 for each contig that is output. Statistics output are the mean and sd
-of coverage for each contig.
+of coverage for each contig. There is also the option to output a matrix
+that represents a histogram of coverage over each contig.
 
 Usage
 -----
@@ -62,6 +63,17 @@ def main( argv = None ):
     parser = optparse.OptionParser( version = "%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
                                     usage = globals()["__doc__"] )
 
+    parser.add_option("--bin", dest="bin", action="store_true",
+                       help="output average in bins across the interval"  )
+    parser.add_option( "-n", "--bin-number", dest="bin_number", type = int,
+                       help="pattern to write coverage bins to" )
+    parser.add_option( "-o", "--output-filename-prefix", dest="output_filename_prefix",
+                       help="number of bins for histogram"  )
+
+    parser.set_defaults(
+        bin= False
+        , bin_number=10)
+
     ## add common options (-h/--help, ...) and parse command line 
     (options, args) = E.Start( parser, argv = argv )
 
@@ -76,9 +88,18 @@ def main( argv = None ):
     E.info("read %i contigs" % len(coverage_result.keys()))
         
     options.stdout.write("contig\tcov_mean\tcov_sd\n")
+    if options.bin:
+        outf = open(options.output_filename_prefix + ".binned", "w")
     for contig, coverage in coverage_result.iteritems():
         coverage = map(float, coverage)
         options.stdout.write("%s\t%s\t%s\n" % (contig, str(np.mean(coverage)), str(np.std(coverage))))
+        if options.bin:
+            bins = np.linspace(0, max(coverage), options.bin_number)
+            hist = np.histogram(coverage, bins = bins)
+            print hist
+
+#            outf.write(contig + "\t" + "\t".join(map(str, list(bin_means))) + "\n")
+#    outf.close()
 
     ## write footer and output benchmark information.
     E.Stop()

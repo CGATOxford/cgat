@@ -1,23 +1,32 @@
 
 language: python
 
+env:
+  global:
+    - CGAT_TASK_STEPSIZE=91
+  matrix:
+    - CGAT_TASK_ID=1
+    - CGAT_TASK_ID=92
+    - CGAT_TASK_ID=183
+    - CGAT_TASK_ID=274
+
 python:
   - "2.7"
 
-before_install:
-  - chmod +x setup-DEBs.sh
-  - sudo ./setup-DEBs.sh
-
-install:
-  - chmod +x setup-DEBs.sh
-  - sudo ./setup-CGAT.sh
-
 script: 
-  - source $HOME/CGAT/virtualenv-1.10.1/cgat-venv/bin/activate
-  - nosetests -v tests/test_scripts.py
+  - sudo ./install-CGAT-tools.sh --travis
 
 notifications:
   email:
     - sebastian.luna.valero@gmail.com
     - andreas.heger@gmail.com
-
+    - david.sims@dpag.ox.ac.uk
+    - stephen.sansom@dpag.ox.ac.uk
+    - ian.sudbery@dpag.ox.ac.uk
+    - jethro.johnson@dpag.ox.ac.uk
+    - antonio.berlanga@dpag.ox.ac.uk
+    - katherine.fawcett@dpag.ox.ac.uk
+    - thomas.smith2@dpag.ox.ac.uk
+    - michael.morgan@dpag.ox.ac.uk
+    - xiaoming.hu@dpag.ox.ac.uk
+    - nicholas.ilott@NDM.OX.AC.UK

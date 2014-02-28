@@ -1,5 +1,4 @@
-"""
-=================
+"""=================
 Interval pipeline
 =================
 
@@ -8,8 +7,9 @@ Interval pipeline
 :Date: |today|
 :Tags: Python
 
-The interval pipeline takes a several set of :term:`bed` formatted genomic intervals 
-and annotates them.
+The interval pipeline takes a several set of :term:`bed` formatted
+genomic intervals and annotates them. The intervals are expected to
+be non-overlapping, which the pipeline checks.
 
 It performs the following analyses:
    * Peak location
@@ -19,17 +19,18 @@ It performs the following analyses:
       * requires a set of known motifs
    * Overlap with genomic context.
    * Aggregate transcript/gene profiles
-   * 
 
 Usage
 =====
 
-See :ref:`PipelineSettingUp` and :ref:`PipelineRunning` on general information how to use CGAT pipelines.
+See :ref:`PipelineSettingUp` and :ref:`PipelineRunning` on general
+information how to use CGAT pipelines.
 
 Configuration
 -------------
 
-The pipeline requires a configured :file:`pipeline.ini` file. The pipeline looks for a configuration file in several places:
+The pipeline requires a configured :file:`pipeline.ini` file. The
+pipeline looks for a configuration file in several places:
 
    1. The default configuration in the :term:`code directory`.
    2. A shared configuration file :file:`../pipeline.ini`.
@@ -40,21 +41,22 @@ override a shared configuration setting and a default configuration
 setting.
 
 Configuration files follow the ini format (see the python
-`ConfigParser <http://docs.python.org/library/configparser.html>` documentation).
-The configuration file is organized by section and the variables are documented within 
-the file. In order to get a local configuration file in the current directory, type::
+`ConfigParser <http://docs.python.org/library/configparser.html>`
+documentation).  The configuration file is organized by section and
+the variables are documented within the file. In order to get a local
+configuration file in the current directory, type::
 
     python <codedir>/pipeline_chipseq.py config
 
-The following sections and parameters probably should be changed from the default 
-values:
+The following sections and parameters probably should be changed from
+the default values:
 
 .. todo::
    describe important parameters
 
-The sphinxreport report requires a :file:`conf.py` and :file:`sphinxreport.ini` file 
-(see :ref:`PipelineReporting`). To start with, use the files supplied with the
-Example_ data.
+The sphinxreport report requires a :file:`conf.py` and
+:file:`sphinxreport.ini` file (see :ref:`PipelineReporting`). To start
+with, use the files supplied with the Example_ data.
 
 
 Input
@@ -63,34 +65,39 @@ Input
 Intervals
 +++++++++
 
-Input are :term:`bed`-formatted files of intervals. Intervals should be at least 
-bed4 formatted, i.e., each interval should be labelled (uniquely).
+Input are :term:`bed`-formatted files of intervals. Intervals should
+be at least bed4 formatted, i.e., each interval should be labelled
+(uniquely).
 
 Optional inputs
 +++++++++++++++
 
-Optinally, peaks can be supplied as :term:`bed` formatted files. These peak files
-will then be processed in the same way as peaks called within the pipeline. Use the
-option ``tracks_extra`` to declare any additional tracks.
+Optinally, peaks can be supplied as :term:`bed` formatted files. These
+peak files will then be processed in the same way as peaks called
+within the pipeline. Use the option ``tracks_extra`` to declare any
+additional tracks.
 
-Additional peak files can be associated with one of the :term:`bam` files created
-by the pipeline. This permits counting the number of tags inside peaks, finding the
-peak summit, etc. In order to associated a peak file with a :term:`bam` formatted
-file, define a section in the pipeline.ini file. For example::
+Additional peak files can be associated with one of the :term:`bam`
+files created by the pipeline. This permits counting the number of
+tags inside peaks, finding the peak summit, etc. In order to
+associated a peak file with a :term:`bam` formatted file, define a
+section in the pipeline.ini file. For example::
 
 
    [mycalls.bed]
    track=tissue-sample-agg
 
-will process the file ``mycalls.bed`` exactly the same way as the track ``tissue-sample-agg``.
-Replicates can be specified explicitely::
+will process the file ``mycalls.bed`` exactly the same way as the
+track ``tissue-sample-agg``.  Replicates can be specified
+explicitely::
 
    [mycalls.bed]
    replicates=tissue1-sample1-R1,tissue1-sample1-R2
 
-will associate the file ``mycalls.bed`` with the replicates ``tissue1-sample1-R1`` 
-and ``tissue1-sample1-R2``. Note that globs don't work for this yet, all
-replicates have to be specified explicitely.
+will associate the file ``mycalls.bed`` with the replicates
+``tissue1-sample1-R1`` and ``tissue1-sample1-R2``. Note that globs
+don't work for this yet, all replicates have to be specified
+explicitely.
 
 Reference motifs
 ++++++++++++++++
@@ -107,11 +114,11 @@ Requirements
 The pipeline requires the information from the following pipelines:
 
 :doc:`pipeline_annotations`
-   set the configuration variable :py:data:`annotations_database` and 
-   :py:data:`annotations_dir`.
+   set the configuration variable :py:data:`annotations_database`
+   and :py:data:`annotations_dir`.
 
-On top of the default CGAT setup, the pipeline requires the following software to be in the 
-path:
+On top of the default CGAT setup, the pipeline requires the following
+software to be in the path:
 
 +--------------------+-------------------+------------------------------------------------+
 |*Program*           |*Version*          |*Purpose*                                       |
@@ -128,16 +135,24 @@ database :file:`csvdb`.
 Example
 =======
 
-Example data is available at http://www.cgat.org/~andreas/sample_data/pipeline_chipseq.tgz.
-To run the example, simply unpack and untar::
+Example data is available at
+http://www.cgat.org/~andreas/sample_data/pipeline_chipseq.tgz.  To run
+the example, simply unpack and untar::
 
    wget http://www.cgat.org/~andreas/sample_data/pipeline_chipseq.tgz
    tar -xvzf pipeline_chipseq.tgz
    cd pipeline_chipseq
    python <srcdir>/pipeline_chipseq.py make full
 
-.. note:: 
+.. note::
+
    For the pipeline to run, install the :doc:`pipeline_annotations` as well.
+
+Change Log
+==========
+
+26.2.2014 Andreas Heger
+    added tag counting in intervals.
 
 Glossary
 ========
@@ -154,43 +169,27 @@ Code
 
 """
 import sys
-import tempfile
-import optparse
 import shutil
-import itertools
-import csv
-import math
-import random
 import re
 import glob
 import os
-import shutil
-import collections
+import itertools
 
 import CGAT.Experiment as E
 import logging as L
-import CGAT.Database as Database
 from ruffus import *
-import csv
 import sqlite3
-import CGAT.IndexedFasta as IndexedFasta
-import CGAT.IndexedGenome as IndexedGenome
-import CGAT.FastaIterator as FastaIterator
-import CGAT.Genomics as Genomics
 import CGAT.IOTools as IOTools
-import CGAT.GTF as GTF
 import CGAT.Bed as Bed
 import CGAT.MatrixTools as MatrixTools
 import pysam
 import numpy
-import gzip
+import pybedtools
 import xml.etree.ElementTree
-
 import PipelineChipseq as PipelineChipseq
 import PipelineMotifs as PipelineMotifs
-import PipelineGeneset as PGeneset
+import PipelineWindows as PipelineWindows
 import CGATPipelines.PipelineTracks as PipelineTracks
-import CGATPipelines.PipelineMapping as PipelineMapping
 
 ###################################################
 ###################################################
@@ -228,7 +227,7 @@ TRACKS_BEDFILES = ["%s.bed.gz" % x for x in TRACKS]
 ###################################################################
 # if conf.py exists: execute to change the above assignmentsn
 if os.path.exists("pipeline_conf.py"):
-    L.info( "reading additional configuration from pipeline_conf.py" )
+    L.info("reading additional configuration from pipeline_conf.py")
     execfile("pipeline_conf.py")
 
 ###################################################################
@@ -271,7 +270,7 @@ def getAssociatedBAMFiles( track ):
 
     '''
     fn = track.asFile()
-    bamfiles = glob.glob( "%s.bam" % fn )
+    bamfiles = glob.glob("%s.bam" % fn)
 
     if bamfiles == []:
         if "bams_%s" % fn.lower() in PARAMS:
@@ -300,7 +299,6 @@ def getAssociatedBAMFiles( track ):
     if len(bamfiles) != len(offsets):
         raise ValueError("number of BAM files %s is not the same as number of offsets: %s" % (str(bamfiles), str(offsets)))
 
-
     return bamfiles, offsets
 
 ###################################################################
@@ -326,45 +324,46 @@ def connect():
 ## General preparation tasks
 ###################################################################
 
-############################################################
-############################################################
-############################################################
-@transform( TRACKS_BEDFILES,
-            suffix(".bed.gz"),
-            "_intervals.load" )
-def loadIntervals( infile, outfile ):
-    '''load intervals from :term:`bed` formatted files into database.
-    
-    These :term:`bed` formatted intervals are derived by 
-    merging/intersecting the various tracks or have been
-    placed explicitely into the directory.
 
-    Also, if a :term:`bam` file is associated with a :term:`bed`
+############################################################
+############################################################
+############################################################
+@transform(TRACKS_BEDFILES,
+           suffix(".bed.gz"),
+           "_intervals.load")
+def loadIntervals(infile, outfile):
+    '''load intervals from :term:`bed` formatted files into
+    the database.
+
+    If a :term:`bam` file is associated with a :term:`bed`
     file, re-evaluate the intervals by counting reads within
     the interval. In contrast to the initial pipeline, the
-    genome is not binned. 
+    genome is not binned.
 
        nprobes: number of reads in interval
        peakcenter: position with maximum number of reads in interval
        avgval: average coverage within interval
-
-    If *replicates* is true, only replicates will be considered
-    for the counting. Otherwise the counts aggregate both replicates
-    and conditions.
     '''
 
     bedfile = infile
 
     tmpfile = P.getTempFile(".")
 
-    headers = ("avgval","disttostart","genelist","length","peakcenter","peakval","position","interval_id","npeaks","nprobes", "contig","start","end","score" )
+    headers = ("avgval", "disttostart",
+               "genelist", "length",
+               "peakcenter", "peakval",
+               "position", "interval_id",
+               "npeaks", "nprobes",
+               "contig", "start", "end", "score")
 
     tmpfile.write( "\t".join(headers) + "\n" )
 
-    avgval,contig,disttostart,end,genelist,length,peakcenter,peakval,position,start,interval_id,npeaks,nprobes = \
-        0,"",0,0,"",0,0,0,0,0,0,0,0
+    (avgval, contig, disttostart, end, genelist,
+     length, peakcenter, peakval, position,
+     start, interval_id, npeaks, nprobes) = \
+        0, "", 0, 0, "", 0, 0, 0, 0, 0, 0, 0, 0
 
-    track = Sample( filename = P.snip( infile, ".bed.gz") )
+    track = Sample(filename = P.snip( infile, ".bed.gz"))
 
     bamfiles, offsets = getAssociatedBAMFiles( track )
 
@@ -374,22 +373,32 @@ def loadIntervals( infile, outfile ):
         E.info( "%s: no bamfiles associated" % (track))
 
     # open all bamfiles
-    samfiles = [ pysam.Samfile( fn,  "rb" ) for fn in bamfiles ]
+    samfiles = [pysam.Samfile(fn, "rb") for fn in bamfiles]
 
     c = E.Counter()
 
+    intervals = pybedtools.BedTool(infile)
+    merged = intervals.merge(n=True)
+    if len(intervals) != len(merged):
+        raise ValueError(
+            'pipeline_intervals expects non-overlapping intervals '
+            '%i in input, %i after merging' % (len(intervals),
+                                               len(merged)))
+    
     # count tags
-    for bed in Bed.iterator( IOTools.openFile(infile, "r") ): 
+    for bed in Bed.iterator(IOTools.openFile(infile, "r")): 
 
         c.input += 1
 
         if "name" not in bed:
             bed.name = c.input
 
-        # The fifth field of a bed file can be used to supply a score. Our iterator returns 
-        # the optional fields as a "fields array". The first of these is the interval name, 
-        # and the second the score. The score may be more is better or less is better.
-        if len(bed.fields)>1:
+        # The fifth field of a bed file can be used to supply a
+        # score. Our iterator returns the optional fields as a "fields
+        # array". The first of these is the interval name, and the
+        # second the score. The score may be more is better or less is
+        # better.
+        if len(bed.fields) > 1:
             value = bed.fields[1]
             if value != "":
                 score = value
@@ -400,23 +409,22 @@ def loadIntervals( infile, outfile ):
             
         if samfiles:
             npeaks, peakcenter, length, avgval, peakval, nprobes = \
-                PipelineChipseq.countPeaks( bed.contig, bed.start, bed.end, samfiles, offsets )
-
-            # nreads can be 0 if the intervals overlap only slightly
-            # and due to the binning, no reads are actually in the overlap region.
-            # However, most of these intervals should be small and have already be deleted via 
-            # the merge_min_interval_length cutoff.
-            # do not output intervals without reads.
+                PipelineChipseq.countPeaks(bed.contig,
+                                           bed.start,
+                                           bed.end,
+                                           samfiles,
+                                           offsets)
             if nprobes == 0:
                 c.skipped_reads += 1
 
         else:
-            npeaks, peakcenter, length, avgval, peakval, nprobes = ( 1, 
-                                                                     bed.start + (bed.end - bed.start) // 2, 
-                                                                     bed.end - bed.start, 
-                                                                     1, 
-                                                                     1,
-                                                                     1 )
+            npeaks, peakcenter, length, avgval, peakval, nprobes = \
+                (1,
+                 bed.start + (bed.end - bed.start) // 2,
+                 bed.end - bed.start,
+                 1,
+                 1,
+                 1)
             
         c.output += 1
         tmpfile.write( "\t".join( map( str, (avgval,disttostart,genelist,length,
@@ -1558,6 +1566,54 @@ def runGATOnGeneAnnotations( infiles, outfile ):
 
     P.run()
 
+###################################################################
+###################################################################
+###################################################################
+@follows( mkdir( "gat_sets.dir" ) )
+@merge( TRACKS_BEDFILES,
+        "gat_sets.dir/gat_sets.tsv.gz" ,
+        os.path.join( PARAMS["annotations_dir"],
+                      PARAMS_ANNOTATIONS["interface_mapability_filtered_bed"] % PARAMS["gat_mapability"] ),
+        os.path.join( PARAMS["annotations_dir"],
+                      PARAMS_ANNOTATIONS["interface_gc_profile_bed"]) )
+def runGATOnSets( infiles, outfile, workspacefile, isochorefile ):
+    '''run gat on intervals against each other.'''
+
+    job_options = "-l mem_free=4G -pe dedicated 4 -R y"    
+
+    to_cluster = True
+                
+    segments = os.path.join( "gat_sets.dir", "segments.bed")
+    annotations = os.path.join( "gat_sets.dir", "annotations.bed")
+
+    infiles = " ".join(infiles)
+    statement = '''
+    for x in %(infiles)s; do printf "track name=%%s\\n" `basename $x` >> %(segments)s; zcat $x >> %(segments)s; done'''
+    
+    P.run()
+
+    shutil.copyfile( segments, annotations )
+
+    statement = '''gat-run.py
+         --num-threads=4
+         --segments=%(segments)s
+         --annotations=%(annotations)s
+         --workspace=%(workspacefile)s
+         --num-samples=%(gat_num_samples)i
+         --force
+         --output-filename-pattern=%(outfile)s.%%s
+         -v 5
+         --log=%(outfile)s.log
+         %(gat_sets_options)s
+         | gzip
+         > %(outfile)s'''
+
+    P.run()
+
+###################################################################
+###################################################################
+###################################################################
+
 @transform( (runGATOnGenomicContext,
               runGATOnGenomicAnnotations,
               runGATOnGeneAnnotations,
@@ -1651,6 +1707,80 @@ def summarizeGAT( infiles, outfile ):
     
 @follows( loadGat )
 def gat(): pass
+
+
+###################################################################
+###################################################################
+###################################################################
+@follows(mkdir('tags.dir'))
+@transform(TRACKS_BEDFILES,
+           regex('(.*).bed.gz'),
+           r"tags.dir/\1.bed.gz")
+def prepareTags(infile, outfile):
+    '''prepare tag files from bam files for counting
+    '''
+
+    track = Sample(filename=P.snip(infile, ".bed.gz"))
+    bamfiles, offsets = getAssociatedBAMFiles(track)
+    if len(bamfiles) != 1:
+        raise NotImplementedError(
+            'tag counting needs exactly one associated bam files')
+
+    PipelineWindows.convertReadsToIntervals(
+        bamfiles[0],
+        outfile,
+        filtering_quality=PARAMS.get('filtering_quality', None),
+        filtering_dedup='filtering_dedup' in PARAMS,
+        filtering_dedup_method=PARAMS.get('filtering_dedup_method',
+                                          'picard'))
+
+
+# replace with combinatorics later
+@follows(prepareTags)
+@files([(('%s.bed.gz' % x, 'tags.dir/%s.bed.gz' % y),
+         ('tags.dir/%s_vs_%s.tsv.gz' % (x, y)))
+        for x, y in itertools.product(TRACKS, repeat=2)])
+def computeReadCountsInIntervals(infiles, outfile):
+    '''compute a table of read counts of each BAM-file
+    with respect to all interval sets.'''
+    bedfile, tagfile = infiles
+    PipelineWindows.countReadsWithinWindows(tagfile,
+                                            bedfile,
+                                            outfile,
+                                            counting_method='midpoint')
+
+
+@follows(mkdir('counts.dir'))
+@collate(computeReadCountsInIntervals,
+         regex('tags.dir/(.*)_vs_(.*).tsv.gz'),
+         r"counts.dir/\1.tsv.gz")
+def aggregateReadCounts(infiles, outfile):
+    '''aggregate tag counts into single files
+    per interval set.
+    '''
+    PipelineWindows.aggregateWindowsReadCounts(infiles,
+                                               outfile,
+                                               regex='_vs_([^.]*)\..*')
+
+
+#########################################################################
+#########################################################################
+#########################################################################
+@transform(aggregateReadCounts,
+           suffix(".tsv.gz"),
+           "_stats.tsv")
+def summarizeReadCounts(infile, outfile):
+    '''perform summarization of read counts'''
+
+    prefix = P.snip(outfile, ".tsv")
+    job_options = "-l mem_free=32G"
+    statement = '''python %(scriptsdir)s/runExpression.py
+              --method=summary
+              --filename-tags=%(infile)s
+              --output-filename-pattern=%(prefix)s_
+              --log=%(outfile)s.log
+              > %(outfile)s'''
+    P.run()
 
 
 ############################################################

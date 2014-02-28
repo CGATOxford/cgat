@@ -8,7 +8,7 @@ This method counts CAPseq reads overlapping the entire gene model (exons and int
 
 .. report:: macs_replicated_overlapped_genes.overlappedGenesCapseqProfile
    :render: gallery-plot
-   :tracker: overlapped_genes/*.capseq_profile.png
+   :glob: overlapped_genes/*.capseq_profile.png
    :layout: column-2
 
    Density of CAPseq reads over genes overlapped by >90% by NMIs
