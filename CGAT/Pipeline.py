@@ -503,7 +503,7 @@ def concatenateAndLoad( infiles,
     load_options,options = [], []
 
     if regex_filename:
-        options.append( '--regex-filename="%s"' % regex_filename )
+        options.append( "--regex-filename='%s'" % regex_filename )
 
     if header:
         load_options.append( "--header=%s" % header )
