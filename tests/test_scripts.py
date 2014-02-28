@@ -12,10 +12,10 @@ To permit the parallelization of running tests, tests can be run in
 chunks (tasks). The script will look for the following environment variables:
 
 CGAT_TASK_ID
-   The starting number of this task
+   The starting number of this task starting at 1
 
 CGAT_TASK_STEPSIZE
-   The number of tests to run within this chunck
+   The number of tests to run within a chunk
 
 """
 
@@ -171,7 +171,7 @@ def test_scripts():
 
     try:
         starting_test_number, test_increment = \
-            (int(starting_test_number),
+            (int(starting_test_number) - 1,
              int(test_increment))
         scriptdirs = scriptdirs[starting_test_number:
                                 starting_test_number + test_increment]
