@@ -50,9 +50,6 @@ Command line options
 
 import os
 import sys
-import re
-import optparse
-import itertools
 import tempfile
 import shutil
 import subprocess
@@ -60,8 +57,14 @@ import subprocess
 import CGAT.Experiment as E
 import pysam
 import CGAT.IOTools as IOTools
+
 # for merging pairs
-import bam2bed
+try:
+    import pyximport
+    pyximport.install(build_in_temp=False)
+    import _bam2bed
+except ImportError:
+    import CGAT._bam2bed as _bam2bed
 
 class SpanWriter(object):
     '''output values within spans.
@@ -272,12 +275,12 @@ def main( argv = None ):
     if options.shift > 0 or options.extend > 0 or options.merge_pairs:
 
         if options.merge_pairs:
-            E.info( "merging pairs to temporary file" )
-            counter = bam2bed._bam2bed.merge_pairs( samfile, 
-                                                    outfile,
-                                                    min_insert_size = options.min_insert_size,
-                                                    max_insert_size = options.max_insert_size,
-                                                    bed_format = 3)
+            E.info("merging pairs to temporary file")
+            counter = _bam2bed.merge_pairs(samfile,
+                                           outfile,
+                                           min_insert_size=options.min_insert_size,
+                                           max_insert_size=options.max_insert_size,
+                                           bed_format=3)
         else:
             # create bed file with shifted tags
             shift, extend = options.shift, options.extend
