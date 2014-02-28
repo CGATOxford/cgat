@@ -51,74 +51,68 @@ DIRECTORIES = ('scripts',
                'CGAT',
                'CGATPipelines')
 
-def main(argv = None):
-    """script main.
+def check_import(directory):
 
-    parses command line options in sys.argv, unless *argv* is given.
-    """
+    files = glob.glob(os.path.join(directory, "*.py"))
+    files.sort()
+        
+    c = E.Counter()
 
-    if not argv:
-        argv = sys.argv
+    #import IndexedGenome
+    #files = ('IndexedGenome.py',)
 
-    # setup command line parser
-    parser = E.OptionParser(version="%prog version: $Id",
-                            usage=globals()["__doc__"])
+    sys.stderr.write(str(sys.path) + "\n")
+    for filename in files:
+        sys.stderr.write("importing %s\n" % filename)
+        c.input += 1
+        prefix, suffix = os.path.splitext(filename)
 
-    parser.set_defaults(
-    )
+        dirname, basename = os.path.split(prefix)
 
-    ## add common options (-h/--help, ...) and parse command line 
-    (options, args) = E.Start(parser, argv=argv)
+        if os.path.exists(prefix + ".pyc"):
+            os.remove(prefix + ".pyc")
 
-    totals = E.Counter()
+        pyxfile = os.path.join(dirname, "_") + basename + "x"
+        # ignore script with pyximport for now, something does not work
+        if os.path.exists(pyxfile):
+            c.skipped_pyx += 1
+            continue
 
-    for directory in DIRECTORIES:
+        success = False
+        try:
+            imp.load_source(basename, os.path.join(directory,filename))
+            c.success += 1
+            success = True
+            sys.stderr.write("PASS %s\n" % basename)
+            sys.stderr.flush()
+        except ImportError, msg:
+            c.import_fail += 1
+            sys.stderr.write("FAIL %s\n%s\n" % (basename, msg))
+            sys.stderr.flush()
+            traceback.print_exc()
+        except Exception, msg:
+            c.other_fail += 1
+            sys.stderr.write("FAIL %s\n%s\n" % (basename, msg))
+            sys.stderr.flush()
+            traceback.print_exc()
+            
+        c.output += 1
 
+    sys.stderr.write('%s: %s\n' % (os.path.dirname(directory), c))
+
+
+def test_imports():
+    '''test importing'''
+
+    # add scripts directories to path.  imp.load_source does not import
+    # modules that are in the same directory as the module being
+    # loaded from source. This causes a problem in the scripts
+    # directory where some scripts import function from other
+    # scripts.
+
+    for directory in ('scripts',):
         sys.path.insert(0, os.path.abspath(directory))
 
-        files = glob.glob(os.path.join(directory, "*.py"))
-        files.sort()
-
-        c = E.Counter()
-
-        for f in files:
-            # if f != "pipeline_ancestral_repeats.py" : continue
-            E.debug( "importing %s" % f )
-            c.input += 1
-            prefix, suffix = os.path.splitext(f)
-
-            dirname, basename = os.path.split(prefix)
-
-            if os.path.exists( prefix + ".pyc"):
-                os.remove( prefix + ".pyc" )
-
-            success = False
-            try:
-                __import__(basename, globals(), locals() )
-                c.success += 1
-                success = True
-                options.stdout.write("PASS %s\n" % basename )
-                options.stdout.flush()
-            except ImportError, msg:
-                c.import_fail += 1
-                options.stdout.write( "FAIL %s\n%s\n" % (basename, msg) )
-                options.stdout.flush()
-                traceback.print_exc()
-            except Exception, msg:
-                c.other_fail += 1
-                options.stdout.write( "FAIL %s\n%s\n" % (basename, msg))
-                options.stdout.flush()
-                traceback.print_exc()
-
-            c.output += 1
-            
-        E.info('%s: %s' % (directory, c))
-        totals += c
-
-    E.info('%s: %s' % ('totals', c))
-
-    ## write footer and output benchmark information.
-    E.Stop()
-
-if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
+    for directory in DIRECTORIES:
+        check_import.description = directory
+        yield(check_import, os.path.abspath(directory))
