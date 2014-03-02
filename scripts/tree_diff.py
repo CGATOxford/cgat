@@ -110,7 +110,7 @@ def main(argv=None):
                 code = "="
                 nsame += 1
             else:
-                code = "<>"
+                code = "!="
                 ndiff += 1
             options.stdout.write("%s\t%i\t%i\n" % (code, x, y))
             ntotal += 1

@@ -51,11 +51,12 @@ DIRECTORIES = ('scripts',
                'CGAT',
                'CGATPipelines')
 
+
 def check_import(directory):
 
     files = glob.glob(os.path.join(directory, "*.py"))
     files.sort()
-        
+
     c = E.Counter()
 
     #import IndexedGenome
@@ -80,7 +81,7 @@ def check_import(directory):
 
         success = False
         try:
-            imp.load_source(basename, os.path.join(directory,filename))
+            imp.load_source(basename, os.path.join(directory, filename))
             c.success += 1
             success = True
             sys.stderr.write("PASS %s\n" % basename)
@@ -95,7 +96,7 @@ def check_import(directory):
             sys.stderr.write("FAIL %s\n%s\n" % (basename, msg))
             sys.stderr.flush()
             traceback.print_exc()
-            
+
         c.output += 1
 
     sys.stderr.write('%s: %s\n' % (os.path.dirname(directory), c))

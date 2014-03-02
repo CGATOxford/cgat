@@ -543,7 +543,7 @@ def Count(data):
 
     last_c = None
     for c in data:
-        if last_c <> c:
+        if last_c != c:
             if last_c:
                 counts.append((t, last_c))
             last_c = c

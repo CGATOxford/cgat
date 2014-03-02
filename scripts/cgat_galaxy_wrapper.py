@@ -70,7 +70,7 @@ class CGATBase():
         we have galaxy's temp path as opt.temp_dir so don't really need isolation
         sometimes stdout is needed as the output - ugly hacks to deal with potentially vast artifacts
         """
-        assert cl <> None, 'PicardBase runCL needs a command line as cl'
+        assert cl != None, 'PicardBase runCL needs a command line as cl'
         process = subprocess.Popen(cl, shell=True)
         rval = process.wait()
 

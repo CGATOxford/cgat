@@ -1,5 +1,5 @@
-################################################################################
-#   Gene prediction pipeline 
+##########################################################################
+#   Gene prediction pipeline
 #
 #   $Id: Masker_test.py 2784 2009-09-10 11:41:14Z andreas $
 #
@@ -18,11 +18,12 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
+##########################################################################
 """unit testing module for the Tree.py class."""
 
 import Masker
 import unittest
+
 
 class SegCheck(unittest.TestCase):
 
@@ -30,23 +31,23 @@ class SegCheck(unittest.TestCase):
 
     def testEmpty(self):
         """test empty input."""
-        self.assertEqual( self.mMasker(""), "" )
+        self.assertEqual(self.mMasker(""), "")
 
     def testProtein(self):
         """test protein input."""
-        self.assertEqual( self.mMasker( \
-                "ACDEFGHIKLWWWWWWWWWWWWWWwwwwwwwwwwwacdefghikl"), 
-                "ACDEFGHIKLXXXXXXXXXXXXXXxxxxxxxxxxxacdefghikl" )
+        self.assertEqual(self.mMasker(
+            "ACDEFGHIKLWWWWWWWWWWWWWWwwwwwwwwwwwacdefghikl"),
+            "ACDEFGHIKLXXXXXXXXXXXXXXxxxxxxxxxxxacdefghikl")
 
     def testCoding(self):
         """test coding sequence input."""
-        self.assertEqual( self.mMasker( \
-                "GCCTGCGACGAGTTCGGCCACATCAAGCTGTGGTGGTGGTGGTGGTGGTGGTGGTGGTGGTGGTGGTGGTGGTGGTGGTGGTGGTGGtggtggtggtggtggtgggcctgcgacgagttcggccacatcaagctg"), 
-                "GCCTGCGACGAGTTCGGCCACATCAAGCTGNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNnnnnnnnnnnnnnnnnnngcctgcgacgagttcggccacatcaagctg")
+        self.assertEqual(self.mMasker(
+            "GCCTGCGACGAGTTCGGCCACATCAAGCTGTGGTGGTGGTGGTGGTGGTGGTGGTGGTGGTGGTGGTGGTGGTGGTGGTGGTGGTGGtggtggtggtggtggtgggcctgcgacgagttcggccacatcaagctg"),
+            "GCCTGCGACGAGTTCGGCCACATCAAGCTGNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNnnnnnnnnnnnnnnnnnngcctgcgacgagttcggccacatcaagctg")
 
 
 class BiasCheck(SegCheck):
     mMasker = Masker.MaskerBias()
 
 if __name__ == "__main__":
-        unittest.main()
+    unittest.main()

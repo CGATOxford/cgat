@@ -143,7 +143,7 @@ def main(argv=None):
 
         file = open(filename, "r")
 
-        lines = filter(lambda x: x[0] <> "#", file)
+        lines = filter(lambda x: x[0] != "#", file)
 
         if len(lines) == 0:
             continue

@@ -1201,7 +1201,7 @@ def pairwiseIntervals(infile, outfile):
     statement = '''echo "track" > %(outfile)s; echo "overlap" >> %(outfile)s;'''
     P.run()
     for track in TRACKS:
-        if (str(track) <> in_track):
+        if (str(track) != in_track):
             statement = '''echo %(track)s >> %(outfile)s; intersectBed -a %(infile)s -b intervals/%(track)s.merged.cleaned.bed -u | wc -l >> %(outfile)s; '''
             P.run()
     statement = '''sed -i '{N;s/\\n/\\t/}' %(outfile)s; '''
@@ -1234,7 +1234,7 @@ def uniqueIntervals(infile, outfile):
     P.run()
     in_track = P.snip(os.path.basename(infile), ".merged.cleaned.bed")
     for track in TRACKS:
-        if str(track) <> in_track:
+        if str(track) != in_track:
             statement = '''intersectBed -a %(outfile)s -b intervals/%(track)s.merged.cleaned.bed -v > %(tmpfilename)s; mv %(tmpfilename)s %(outfile)s '''
             P.run()
 
@@ -1303,7 +1303,7 @@ def uniqueReplicatedIntervals(infile, outfile):
     in_track = P.snip(os.path.basename(infile), ".replicated.bed")
     for track in EXPERIMENTS:
         track = str(track).replace("-agg", "")
-        if track <> in_track:
+        if track != in_track:
             statement = '''intersectBed -a %(outfile)s -b replicated_intervals/%(track)s.replicated.bed -v > %(tmpfilename)s; mv %(tmpfilename)s %(outfile)s '''
             P.run()
 

@@ -271,7 +271,7 @@ class Tree(Bio.Nexus.Trees.Tree):
                 treeline += 'a_tree'
 
             treeline += ' = '
-            if self.weight <> 1:
+            if self.weight != 1:
                 treeline += '[&W%s] ' % str(round(float(self.weight), 3))
             if self.rooted:
                 treeline += '[&R] '

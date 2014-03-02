@@ -100,7 +100,7 @@ def main(argv=None):
     vals = []
 
     # retrieve histogram
-    lines = filter(lambda x: x[0] <> "#", sys.stdin.readlines())
+    lines = filter(lambda x: x[0] != "#", sys.stdin.readlines())
 
     headers = lines[0][:-1].split("\t")
     del lines[0]

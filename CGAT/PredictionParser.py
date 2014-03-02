@@ -964,7 +964,7 @@ class PredictionParserGenewise(PredictionParser):
 
             # a sanity check
             if entry.mQueryFrom != entry.mMapPeptide2Translation.getRowFrom():
-                print "## PARSING ERROR: wrong start at %s vs %s: %i <> %i" %\
+                print "## PARSING ERROR: wrong start at %s vs %s: %i != %i" %\
                       (entry.mQueryToken, entry.mSbjctToken,
                        entry.mQueryFrom,
                        entry.mMapPeptide2Translation.getRowFrom())
@@ -976,7 +976,7 @@ class PredictionParserGenewise(PredictionParser):
                 sys.exit(1)
             if entry.mQueryTo != entry.mMapPeptide2Translation.getRowTo() and \
                     entry.mMapPeptide2Genome[-1][0] != "G":
-                print "## PARSING ERROR: wrong end at %s vs %s: %i <> %i" %\
+                print "## PARSING ERROR: wrong end at %s vs %s: %i != %i" %\
                     (entry.mQueryToken, entry.mSbjctToken,
                      entry.mQueryTo,
                      entry.mMapPeptide2Translation.getRowTo())

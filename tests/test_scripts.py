@@ -41,7 +41,7 @@ def check_main(script):
     # do a textual check for now
     # path, basename = os.path.split(script)
     # pyxfile = os.path.join( path, "_") + basename + "x"
-    # # ignore script with pyximport for now, something does not work
+    # ignore script with pyximport for now, something does not work
     # if not os.path.exists( pyxfile ):
     #     with warnings.catch_warnings() as w:
     #         warnings.simplefilter("ignore")
@@ -62,6 +62,8 @@ def check_main(script):
 # List of tests to perform.
 #########################################
 # The fields are:
+
+
 def check_script(test_name, script, stdin,
                  options, outputs,
                  references, workingdir):
@@ -73,12 +75,12 @@ def check_script(test_name, script, stdin,
     # 4. List of output files to collect
     # 5. List of reference files
     '''
-    
+
     tmpdir = tempfile.mkdtemp()
 
     stdout = os.path.join(tmpdir, 'stdout')
-    if stdin: 
-        if stdin.endswith( ".gz"):
+    if stdin:
+        if stdin.endswith(".gz"):
             # zcat on osX requires .Z suffix
             stdin = 'gunzip < %s/%s |' % (os.path.abspath(workingdir), stdin)
         else:
@@ -87,49 +89,50 @@ def check_script(test_name, script, stdin,
         stdin = ""
 
     if options:
-        options = re.sub( "%TMP%", tmpdir, options )
-        options = re.sub( "<TMP>", tmpdir, options )
-        options = re.sub( "%DIR%", os.path.abspath(workingdir), options )
-        options = re.sub( "<DIR>", os.path.abspath(workingdir), options )
+        options = re.sub("%TMP%", tmpdir, options)
+        options = re.sub("<TMP>", tmpdir, options)
+        options = re.sub("%DIR%", os.path.abspath(workingdir), options)
+        options = re.sub("<DIR>", os.path.abspath(workingdir), options)
     else:
         options = ""
 
-    options = re.sub("\n", "", options )
-        
-    # use /bin/bash in order to enable "<( )" syntax in shells 
-    statement = ( "/bin/bash -c '%(stdin)s python %(script)s "
-                  " %(options)s" 
-                  " > %(stdout)s'" ) % locals()
+    options = re.sub("\n", "", options)
 
-    retval = subprocess.call( statement, 
-                              shell = True,
-                              cwd = tmpdir )
+    # use /bin/bash in order to enable "<( )" syntax in shells
+    statement = ("/bin/bash -c '%(stdin)s python %(script)s "
+                 " %(options)s"
+                 " > %(stdout)s'") % locals()
+
+    retval = subprocess.call(statement,
+                             shell=True,
+                             cwd=tmpdir)
     assert retval == 0
 
     # for version tests, do not compare output
     if test_name == "version":
         return
-    
+
     # compare line by line, ignoring comments
-    for output, reference in zip( outputs, references ):
-        if output == "stdout": 
+    for output, reference in zip(outputs, references):
+        if output == "stdout":
             output = stdout
         else:
-            output = os.path.join( tmpdir, output )
+            output = os.path.join(tmpdir, output)
 
-        if not os.path.exists( output ): 
-            raise OSError( "output file '%s'  does not exist" % output )
-                
-        reference = os.path.join( workingdir, reference)
-        if not os.path.exists( reference):
+        if not os.path.exists(output):
+            raise OSError("output file '%s'  does not exist" % output)
+
+        reference = os.path.join(workingdir, reference)
+        if not os.path.exists(reference):
             raise OSError("reference file '%s' does not exist (%s)" %
                           (reference, tmpdir))
 
         for a, b in zip(_read(output), _read(reference)):
-            assert_equal( a, b, "files %s and %s are not the same" %
-                          (output, reference) )
+            assert_equal(a, b, "files %s and %s are not the same" %
+                         (output, reference))
 
     shutil.rmtree(tmpdir)
+
 
 def test_scripts():
     '''yield list of scripts to test.'''
@@ -192,7 +195,7 @@ def test_scripts():
             continue
 
         script_tests = yaml.load(open(fn))
-        
+
         for test, values in script_tests.items():
             check_script.description = os.path.join(scriptdir, test)
 

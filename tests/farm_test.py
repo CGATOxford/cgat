@@ -1,4 +1,4 @@
-################################################################################
+##########################################################################
 #
 #   MRC FGU Computational Genomics Group
 #
@@ -19,7 +19,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
+##########################################################################
 '''
 farm_test.py - tests for :ref:`farm.py`
 =======================================
@@ -62,7 +62,7 @@ import time
 
 
 if __name__ == "__main__":
-    queue="test.q"
+    queue = "test.q"
 
     datafile = "tmp.data"
     scriptfile = "tmp.scriptfile"
@@ -73,13 +73,13 @@ if __name__ == "__main__":
     num_parts = 20
     max_wait = 4
 
-    outfile = open( datafile, "w")
+    outfile = open(datafile, "w")
     outfile.write("id\twait\n")
-    for x in range(0,num_parts):
-        outfile.write( "%i\t%i\n" % (x, random.randint( 0, max_wait ) ) )
+    for x in range(0, num_parts):
+        outfile.write("%i\t%i\n" % (x, random.randint(0, max_wait)))
     outfile.close()
 
-    outfile = open( scriptfile, "w")
+    outfile = open(scriptfile, "w")
     outfile.write("""import sys,time
     logfile=open("my.log", "w")
     print"id\twaited"
@@ -97,7 +97,6 @@ if __name__ == "__main__":
     outfile.close()
 
     cmd = "farm.py --cluster-priority=-10 --cluster-queue=%s --cluster-num-jobs=%i --split-at-column=1 --input-header --output-header --log=%s python %s --log=my.log < %s > %s" %\
-                   (queue, num_jobs, logfile, scriptfile, datafile, resultfile)
+        (queue, num_jobs, logfile, scriptfile, datafile, resultfile)
     print cmd
-    os.system( cmd )
-
+    os.system(cmd)

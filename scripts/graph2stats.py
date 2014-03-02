@@ -125,7 +125,7 @@ def main(argv=None):
             float, options.range(split(",")))
 
     # retrieve data
-    lines = filter(lambda x: x[0] <> "#", sys.stdin.readlines())
+    lines = filter(lambda x: x[0] != "#", sys.stdin.readlines())
 
     vals = {}
 

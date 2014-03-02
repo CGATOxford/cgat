@@ -798,7 +798,7 @@ sequences will be aligned to the cds sequences. This produces better coordinates
                 if ee[-1].mPeptideTo != map_p2c.getColTo():
 
                     E.debug("%s" % str(ee[-1]))
-                    E.warn("%s of length %i: peptide and exon do not correspond: %i <> %i" %
+                    E.warn("%s of length %i: peptide and exon do not correspond: %i != %i" %
                            (key, len(input[key]), ee[-1].mPeptideTo, map_peptide2cds[key].getColTo()))
                     ndifferences += 1
                     d = ee[-1].mPeptideTo - map_peptide2cds[key].getColTo()

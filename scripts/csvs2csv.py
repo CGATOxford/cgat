@@ -170,7 +170,7 @@ def main(argv=None):
 
         if os.path.exists(filename):
             file = open(filename, "r")
-            lines = filter(lambda x: x[0] <> "#", file)
+            lines = filter(lambda x: x[0] != "#", file)
 
         else:
             lines = []

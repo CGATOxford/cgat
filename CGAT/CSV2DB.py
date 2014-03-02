@@ -198,7 +198,7 @@ def createTable(dbhandle, error, options, rows=None, headers=None,
             else:
                 raise ValueError("column '%s' without header " % h)
         hh = columns_to_rename.get(hh, hh)
-        hh = re.sub( '''['"]''', "", hh)
+        hh = re.sub('''['"]''', "", hh)
         hh = re.sub("[,;.:\-\+/ ()%?]", "_", hh)
         if hh[0] in "0123456789":
             hh = "_" + hh

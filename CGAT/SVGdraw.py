@@ -80,7 +80,7 @@ use_dom_implementation = 0
 
 
 import exceptions
-if use_dom_implementation <> 0:
+if use_dom_implementation != 0:
     try:
         from xml.dom import implementation
         from xml.dom.ext import PrettyPrint
@@ -351,7 +351,7 @@ class tspan(SVGelement):
 
     def __init__(self, text=None, **args):
         SVGelement.__init__(self, 'tspan', **args)
-        if self.text <> None:
+        if self.text != None:
             self.text = text
 
     def __repr__(self):
@@ -439,23 +439,23 @@ class rect(SVGelement):
 
     def __init__(self, x=None, y=None, width=None, height=None, fill=None, stroke=None, stroke_width=None, **args):
         if width == None or height == None:
-            if width <> None:
+            if width != None:
                 raise ValueError, 'height is required'
-            if height <> None:
+            if height != None:
                 raise ValueError, 'width is required'
             else:
                 raise ValueError, 'both height and width are required'
         SVGelement.__init__(
             self, 'rect', {'width': width, 'height': height}, **args)
-        if x <> None:
+        if x != None:
             self.attributes['x'] = x
-        if y <> None:
+        if y != None:
             self.attributes['y'] = y
-        if fill <> None:
+        if fill != None:
             self.attributes['fill'] = fill
-        if stroke <> None:
+        if stroke != None:
             self.attributes['stroke'] = stroke
-        if stroke_width <> None:
+        if stroke_width != None:
             self.attributes['stroke-width'] = stroke_width
 
 
@@ -468,22 +468,22 @@ class ellipse(SVGelement):
 
     def __init__(self, cx=None, cy=None, rx=None, ry=None, fill=None, stroke=None, stroke_width=None, **args):
         if rx == None or ry == None:
-            if rx <> None:
+            if rx != None:
                 raise ValueError, 'rx is required'
-            if ry <> None:
+            if ry != None:
                 raise ValueError, 'ry is required'
             else:
                 raise ValueError, 'both rx and ry are required'
         SVGelement.__init__(self, 'ellipse', {'rx': rx, 'ry': ry}, **args)
-        if cx <> None:
+        if cx != None:
             self.attributes['cx'] = cx
-        if cy <> None:
+        if cy != None:
             self.attributes['cy'] = cy
-        if fill <> None:
+        if fill != None:
             self.attributes['fill'] = fill
-        if stroke <> None:
+        if stroke != None:
             self.attributes['stroke'] = stroke
-        if stroke_width <> None:
+        if stroke_width != None:
             self.attributes['stroke-width'] = stroke_width
 
 
@@ -498,15 +498,15 @@ class circle(SVGelement):
         if r == None:
             raise ValueError, 'r is required'
         SVGelement.__init__(self, 'circle', {'r': r}, **args)
-        if cx <> None:
+        if cx != None:
             self.attributes['cx'] = cx
-        if cy <> None:
+        if cy != None:
             self.attributes['cy'] = cy
-        if fill <> None:
+        if fill != None:
             self.attributes['fill'] = fill
-        if stroke <> None:
+        if stroke != None:
             self.attributes['stroke'] = stroke
-        if stroke_width <> None:
+        if stroke_width != None:
             self.attributes['stroke-width'] = stroke_width
 
 
@@ -531,17 +531,17 @@ class line(SVGelement):
 
     def __init__(self, x1=None, y1=None, x2=None, y2=None, stroke=None, stroke_width=None, **args):
         SVGelement.__init__(self, 'line', **args)
-        if x1 <> None:
+        if x1 != None:
             self.attributes['x1'] = x1
-        if y1 <> None:
+        if y1 != None:
             self.attributes['y1'] = y1
-        if x2 <> None:
+        if x2 != None:
             self.attributes['x2'] = x2
-        if y2 <> None:
+        if y2 != None:
             self.attributes['y2'] = y2
-        if stroke_width <> None:
+        if stroke_width != None:
             self.attributes['stroke-width'] = stroke_width
-        if stroke <> None:
+        if stroke != None:
             self.attributes['stroke'] = stroke
 
 
@@ -555,11 +555,11 @@ class polyline(SVGelement):
     def __init__(self, points, fill=None, stroke=None, stroke_width=None, **args):
         SVGelement.__init__(
             self, 'polyline', {'points': _xypointlist(points)}, **args)
-        if fill <> None:
+        if fill != None:
             self.attributes['fill'] = fill
-        if stroke_width <> None:
+        if stroke_width != None:
             self.attributes['stroke-width'] = stroke_width
-        if stroke <> None:
+        if stroke != None:
             self.attributes['stroke'] = stroke
 
 
@@ -573,11 +573,11 @@ class polygon(SVGelement):
     def __init__(self, points, fill=None, stroke=None, stroke_width=None, **args):
         SVGelement.__init__(
             self, 'polygon', {'points': _xypointlist(points)}, **args)
-        if fill <> None:
+        if fill != None:
             self.attributes['fill'] = fill
-        if stroke_width <> None:
+        if stroke_width != None:
             self.attributes['stroke-width'] = stroke_width
-        if stroke <> None:
+        if stroke != None:
             self.attributes['stroke'] = stroke
 
 
@@ -590,13 +590,13 @@ class path(SVGelement):
 
     def __init__(self, pathdata, fill=None, stroke=None, stroke_width=None, id=None, **args):
         SVGelement.__init__(self, 'path', {'d': str(pathdata)}, **args)
-        if stroke <> None:
+        if stroke != None:
             self.attributes['stroke'] = stroke
-        if fill <> None:
+        if fill != None:
             self.attributes['fill'] = fill
-        if stroke_width <> None:
+        if stroke_width != None:
             self.attributes['stroke-width'] = stroke_width
-        if id <> None:
+        if id != None:
             self.attributes['id'] = id
 
 
@@ -609,19 +609,19 @@ class text(SVGelement):
 
     def __init__(self, x=None, y=None, text=None, font_size=None, font_family=None, text_anchor=None, font_style=None, **args):
         SVGelement.__init__(self, 'text', **args)
-        if x <> None:
+        if x != None:
             self.attributes['x'] = x
-        if y <> None:
+        if y != None:
             self.attributes['y'] = y
-        if font_size <> None:
+        if font_size != None:
             self.attributes['font-size'] = font_size
-        if font_family <> None:
+        if font_family != None:
             self.attributes['font-family'] = font_family
-        if font_style <> None:
+        if font_style != None:
             self.attributes['font-style'] = font_style
-        if text <> None:
+        if text != None:
             self.text = text
-        if text_anchor <> None:
+        if text_anchor != None:
             self.attributes['text-anchor'] = text_anchor
 
 
@@ -634,7 +634,7 @@ class textpath(SVGelement):
 
     def __init__(self, link, text=None, **args):
         SVGelement.__init__(self, 'textPath', {'xlink:href': link}, **args)
-        if text <> None:
+        if text != None:
             self.text = text
 
 
@@ -649,15 +649,15 @@ class pattern(SVGelement):
 
     def __init__(self, x=None, y=None, width=None, height=None, patternUnits=None, **args):
         SVGelement.__init__(self, 'pattern', **args)
-        if x <> None:
+        if x != None:
             self.attributes['x'] = x
-        if y <> None:
+        if y != None:
             self.attributes['y'] = y
-        if width <> None:
+        if width != None:
             self.attributes['width'] = width
-        if height <> None:
+        if height != None:
             self.attributes['height'] = height
-        if patternUnits <> None:
+        if patternUnits != None:
             self.attributes['patternUnits'] = patternUnits
 
 
@@ -671,7 +671,7 @@ class title(SVGelement):
 
     def __init__(self, text=None, **args):
         SVGelement.__init__(self, 'title', **args)
-        if text <> None:
+        if text != None:
             self.text = text
 
 
@@ -685,7 +685,7 @@ class description(SVGelement):
 
     def __init__(self, text=None, **args):
         SVGelement.__init__(self, 'desc', **args)
-        if text <> None:
+        if text != None:
             self.text = text
 
 
@@ -699,15 +699,15 @@ class lineargradient(SVGelement):
 
     def __init__(self, x1=None, y1=None, x2=None, y2=None, id=None, **args):
         SVGelement.__init__(self, 'linearGradient', **args)
-        if x1 <> None:
+        if x1 != None:
             self.attributes['x1'] = x1
-        if y1 <> None:
+        if y1 != None:
             self.attributes['y1'] = y1
-        if x2 <> None:
+        if x2 != None:
             self.attributes['x2'] = x2
-        if y2 <> None:
+        if y2 != None:
             self.attributes['y2'] = y2
-        if id <> None:
+        if id != None:
             self.attributes['id'] = id
 
 
@@ -721,17 +721,17 @@ class radialgradient(SVGelement):
 
     def __init__(self, cx=None, cy=None, r=None, fx=None, fy=None, id=None, **args):
         SVGelement.__init__(self, 'radialGradient', **args)
-        if cx <> None:
+        if cx != None:
             self.attributes['cx'] = cx
-        if cy <> None:
+        if cy != None:
             self.attributes['cy'] = cy
-        if r <> None:
+        if r != None:
             self.attributes['r'] = r
-        if fx <> None:
+        if fx != None:
             self.attributes['fx'] = fx
-        if fy <> None:
+        if fy != None:
             self.attributes['fy'] = fy
-        if id <> None:
+        if id != None:
             self.attributes['id'] = id
 
 
@@ -744,7 +744,7 @@ class stop(SVGelement):
 
     def __init__(self, offset, stop_color=None, **args):
         SVGelement.__init__(self, 'stop', {'offset': offset}, **args)
-        if stop_color <> None:
+        if stop_color != None:
             self.attributes['stop-color'] = stop_color
 
 
@@ -768,17 +768,17 @@ class image(SVGelement):
 
     def __init__(self, url, x=None, y=None, width=None, height=None, **args):
         if width == None or height == None:
-            if width <> None:
+            if width != None:
                 raise ValueError, 'height is required'
-            if height <> None:
+            if height != None:
                 raise ValueError, 'width is required'
             else:
                 raise ValueError, 'both height and width are required'
         SVGelement.__init__(
             self, 'image', {'xlink:href': url, 'width': width, 'height': height}, **args)
-        if x <> None:
+        if x != None:
             self.attributes['x'] = x
-        if y <> None:
+        if y != None:
             self.attributes['y'] = y
 
 
@@ -803,17 +803,17 @@ class marker(SVGelement):
 
     def __init__(self, id=None, viewBox=None, refx=None, refy=None, markerWidth=None, markerHeight=None, **args):
         SVGelement.__init__(self, 'marker', **args)
-        if id <> None:
+        if id != None:
             self.attributes['id'] = id
-        if viewBox <> None:
+        if viewBox != None:
             self.attributes['viewBox'] = _viewboxlist(viewBox)
-        if refx <> None:
+        if refx != None:
             self.attributes['refX'] = refx
-        if refy <> None:
+        if refy != None:
             self.attributes['refY'] = refy
-        if markerWidth <> None:
+        if markerWidth != None:
             self.attributes['markerWidth'] = markerWidth
-        if markerHeight <> None:
+        if markerHeight != None:
             self.attributes['markerHeight'] = markerHeight
 
 
@@ -827,7 +827,7 @@ class group(SVGelement):
 
     def __init__(self, id=None, **args):
         SVGelement.__init__(self, 'g', **args)
-        if id <> None:
+        if id != None:
             self.attributes['id'] = id
 
 
@@ -843,9 +843,9 @@ class symbol(SVGelement):
 
     def __init__(self, id=None, viewBox=None, **args):
         SVGelement.__init__(self, 'symbol', **args)
-        if id <> None:
+        if id != None:
             self.attributes['id'] = id
-        if viewBox <> None:
+        if viewBox != None:
             self.attributes['viewBox'] = _viewboxlist(viewBox)
 
 
@@ -882,14 +882,14 @@ class use(SVGelement):
 
     def __init__(self, link, x=None, y=None, width=None, height=None, **args):
         SVGelement.__init__(self, 'use', {'xlink:href': link}, **args)
-        if x <> None:
+        if x != None:
             self.attributes['x'] = x
-        if y <> None:
+        if y != None:
             self.attributes['y'] = y
 
-        if width <> None:
+        if width != None:
             self.attributes['width'] = width
-        if height <> None:
+        if height != None:
             self.attributes['height'] = height
 
 
@@ -913,7 +913,7 @@ class view(SVGelement):
 
     def __init__(self, id=None, **args):
         SVGelement.__init__(self, 'view', **args)
-        if id <> None:
+        if id != None:
             self.attributes['id'] = id
 
 
@@ -940,11 +940,11 @@ class animate(SVGelement):
     def __init__(self, attribute, fr=None, to=None, dur=None, **args):
         SVGelement.__init__(
             self, 'animate', {'attributeName': attribute}, **args)
-        if fr <> None:
+        if fr != None:
             self.attributes['from'] = fr
-        if to <> None:
+        if to != None:
             self.attributes['to'] = to
-        if dur <> None:
+        if dur != None:
             self.attributes['dur'] = dur
 
 
@@ -957,9 +957,9 @@ class animateMotion(SVGelement):
 
     def __init__(self, pathdata, dur, **args):
         SVGelement.__init__(self, 'animateMotion', **args)
-        if pathdata <> None:
+        if pathdata != None:
             self.attributes['path'] = str(pathdata)
-        if dur <> None:
+        if dur != None:
             self.attributes['dur'] = dur
 
 
@@ -974,13 +974,13 @@ class animateTransform(SVGelement):
         SVGelement.__init__(
             self, 'animateTransform', {'attributeName': 'transform'}, **args)
         # As far as I know the attributeName is always transform
-        if type <> None:
+        if type != None:
             self.attributes['type'] = type
-        if fr <> None:
+        if fr != None:
             self.attributes['from'] = fr
-        if to <> None:
+        if to != None:
             self.attributes['to'] = to
-        if dur <> None:
+        if dur != None:
             self.attributes['dur'] = dur
 
 
@@ -994,13 +994,13 @@ class animateColor(SVGelement):
     def __init__(self, attribute, type=None, fr=None, to=None, dur=None, **args):
         SVGelement.__init__(
             self, 'animateColor', {'attributeName': attribute}, **args)
-        if type <> None:
+        if type != None:
             self.attributes['type'] = type
-        if fr <> None:
+        if fr != None:
             self.attributes['from'] = fr
-        if to <> None:
+        if to != None:
             self.attributes['to'] = to
-        if dur <> None:
+        if dur != None:
             self.attributes['dur'] = dur
 
 
@@ -1013,9 +1013,9 @@ class set(SVGelement):
 
     def __init__(self, attribute, to=None, dur=None, **args):
         SVGelement.__init__(self, 'set', {'attributeName': attribute}, **args)
-        if to <> None:
+        if to != None:
             self.attributes['to'] = to
-        if dur <> None:
+        if dur != None:
             self.attributes['dur'] = dur
 
 
@@ -1038,11 +1038,11 @@ class svg(SVGelement):
 
     def __init__(self, viewBox=None, width=None, height=None, **args):
         SVGelement.__init__(self, 'svg', **args)
-        if viewBox <> None:
+        if viewBox != None:
             self.attributes['viewBox'] = _viewboxlist(viewBox)
-        if width <> None:
+        if width != None:
             self.attributes['width'] = width
-        if height <> None:
+        if height != None:
             self.attributes['height'] = height
         self.namespace = "http://www.w3.org/2000/svg"
 

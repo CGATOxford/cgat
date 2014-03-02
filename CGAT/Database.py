@@ -176,7 +176,7 @@ class Database:
         errno = self.dbhandle.errno()
         if errno != 0:
             print """mysql error %i: %s!
-%s""" % ( errno, self.dbhandle.error(), statement)
+%s""" % (errno, self.dbhandle.error(), statement)
             traceback.print_stack(file=sys.stdout)
             sys.exit(1)
 

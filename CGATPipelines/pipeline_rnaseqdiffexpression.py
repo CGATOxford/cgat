@@ -204,9 +204,9 @@ The syntax of the output files is ``<design>_<geneset>_...``.
        name of the treatment
     control_name    
        name of the control
-    <>_mean  
+    !=_mean  
        mean expression value of treatment/control
-    <>_std   
+    !=_std   
        standard deviation of treatment/control
     pvalue  
        pvalue of test

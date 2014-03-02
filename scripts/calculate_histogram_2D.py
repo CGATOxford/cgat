@@ -104,7 +104,7 @@ def main(argv=None):
     vals = []
 
     # retrieve histogram
-    lines = filter(lambda x: x[0] <> "#", sys.stdin.readlines())
+    lines = filter(lambda x: x[0] != "#", sys.stdin.readlines())
 
     if options.titles:
         data = string.split(lines[0][:-1], "\t")

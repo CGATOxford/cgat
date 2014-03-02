@@ -103,7 +103,7 @@ def main(argv=None):
         vals = []
 
         # retrieve histogram
-        lines = filter(lambda x: x[0] <> "#", sys.stdin.readlines())
+        lines = filter(lambda x: x[0] != "#", sys.stdin.readlines())
 
         # check if first line contains a header
         d = string.split(lines[0][:-1], "\t")[0]

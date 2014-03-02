@@ -166,7 +166,7 @@ def CreateMatrix(matrix_string):
 
         data = map(string.atoi, rx.split(line)[2:])
 
-        if len(data) <> len(old_labels):
+        if len(data) != len(old_labels):
             continue
 
         for col in range(0, len(old_labels)):

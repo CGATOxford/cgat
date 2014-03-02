@@ -192,7 +192,7 @@ def main(argv=None):
         sys.exit(0)
 
     # retrieve histogram
-    lines = filter(lambda x: x[0] <> "#", sys.stdin.readlines())
+    lines = filter(lambda x: x[0] != "#", sys.stdin.readlines())
 
     outfile = sys.stdout
 
