@@ -44,7 +44,7 @@ import optparse
 """Wrapper for adaptive codon bias program
 """
 
-import Experiment as E
+from CGAT import Experiment as E
 
 
 class CAIError(Exception):

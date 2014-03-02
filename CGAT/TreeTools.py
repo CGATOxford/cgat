@@ -24,7 +24,7 @@ import Bio
 from Bio.Nexus.Nexus import Nexus
 from Bio.Nexus.Trees import Tree
 
-import Tree
+from CGAT import Tree as Tree
 import sys
 import string
 import re
@@ -32,7 +32,7 @@ import StringIO
 
 from types import *
 
-import Intervalls
+from CGAT import Intervalls as Intervalls
 
 # --------------------------------------------------------
 

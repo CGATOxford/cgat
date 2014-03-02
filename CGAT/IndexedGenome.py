@@ -33,7 +33,7 @@ Code
 ----
 
 '''
-import NCL as ncl
+from CGAT import NCL as ncl
 from bx.intervals.intersection import Intersecter, Interval
 
 

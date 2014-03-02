@@ -40,7 +40,7 @@ import re
 import collections
 import itertools
 
-import IOTools
+from CGAT import IOTools as IOTools
 
 
 class CuffCompareValues:

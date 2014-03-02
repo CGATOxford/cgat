@@ -38,8 +38,8 @@ import numpy
 import bisect
 import itertools
 
-import NCL as ncl
-import IOTools
+from CGAT import NCL as ncl
+from CGAT import IOTools as IOTools
 
 Headers = [
     "contig", "start", "end",

@@ -39,10 +39,10 @@ import re
 import optparse
 import collections
 
-import Experiment as E
-import IOTools
-import Genomics
-import NCL as ncl
+from CGAT import Experiment as E
+from CGAT import IOTools as IOTools
+from CGAT import Genomics as Genomics
+from CGAT import NCL as ncl
 
 Variant = collections.namedtuple("Variant",
                                  "pos, reference, genotype")

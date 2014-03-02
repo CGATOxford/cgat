@@ -49,9 +49,9 @@ from types import *
 
 # raise NotImplementedError("incomplete")
 
-import Experiment
-import TreeTools
-import MatrixTools
+from CGAT import Experiment as Experiment
+from CGAT import TreeTools as TreeTools
+from CGAT import MatrixTools as MatrixTools
 
 
 class Error(Exception):

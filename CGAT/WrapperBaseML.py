@@ -31,7 +31,7 @@ import re
 import tempfile
 import subprocess
 
-import Genomics
+from CGAT import Genomics as Genomics
 
 
 class Error(Exception):

@@ -49,14 +49,14 @@ import traceback
 
 from types import *
 
-import Experiment
+from CGAT import Experiment as Experiment
 import Bio.Nexus.Trees
-import TreeTools
-import IOTools
-import Tree
-import Mali
-import Genomics
-import RateEstimation
+from CGAT import TreeTools as TreeTools
+from CGAT import IOTools as IOTools
+from CGAT import Tree as Tree
+from CGAT import Mali as Mali
+from CGAT import Genomics as Genomics
+from CGAT import RateEstimation as RateEstimation
 
 
 class Error(Exception):

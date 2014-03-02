@@ -37,7 +37,7 @@ import string
 import re
 import types
 # Tools to analyze synteny
-import Genomics
+from CGAT import Genomics as Genomics
 
 ###################################################################
 

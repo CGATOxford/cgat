@@ -44,8 +44,8 @@ import subprocess
 """Wrapper for BlastZ.
 """
 
-import Genomics
-import Experiment as E
+from CGAT import Genomics as Genomics
+from CGAT import Experiment as E
 
 
 class BlastZError(Exception):

@@ -48,7 +48,7 @@ except ImportError:
 """Wrapper for Clustal based on Biopython
 """
 
-import Genomics
+from CGAT import Genomics as Genomics
 
 
 class Clustal:

@@ -37,7 +37,7 @@ import os
 import sys
 import string
 import tempfile
-import PredictionParser
+from CGAT import PredictionParser as PredictionParser
 
 
 class PredictionFileIterator:

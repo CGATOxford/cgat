@@ -49,7 +49,7 @@ try:
 except ImportError:
     pass
 
-import AString
+from CGAT import AString as AString
 import Bio.Alphabet
 
 # For caching genome files: remember last one read

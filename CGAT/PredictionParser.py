@@ -37,8 +37,8 @@ import getopt
 import tempfile
 import copy
 
-import Genomics
-import GTF
+from CGAT import Genomics as Genomics
+from CGAT import GTF as GTF
 try:
     import alignlib_lite
 except ImportError:

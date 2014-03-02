@@ -50,11 +50,11 @@ import scipy
 import scipy.stats
 import scipy.special
 import numpy
-import Stats as Stats
-import Database as Database
-import Experiment as E
-import IOTools as IOTools
-import CSV as CSV
+from CGAT import Stats as Stats
+from CGAT import Database as Database
+from CGAT import Experiment as E
+from CGAT import IOTools as IOTools
+from CGAT import CSV as CSV
 
 from rpy2.robjects import r as R
 

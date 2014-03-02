@@ -61,9 +61,9 @@ import shutil
 import subprocess
 import tempfile
 
-import Experiment as E
-import IOTools
-import IndexedFasta
+from CGAT import Experiment as E
+from CGAT import IOTools as IOTools
+from CGAT import IndexedFasta as IndexedFasta
 
 # for zinba
 from rpy2.robjects import r as R

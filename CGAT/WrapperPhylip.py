@@ -47,9 +47,9 @@ from types import *
 """Wrapper for CodeML
 """
 
-import Experiment
-import TreeTools
-import MatlabTools
+from CGAT import Experiment as Experiment
+from CGAT import TreeTools as TreeTools
+from CGAT import MatlabTools as MatlabTools
 
 
 class Error(Exception):

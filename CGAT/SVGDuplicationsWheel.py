@@ -76,10 +76,10 @@ Output: the svg formatted file is writtent to standard output. Comment lines
 start with a '#'. You can remove this by setting -v 0 or --verbose=0.
 """
 
-import Experiment
-import IOTools
-import SVGdraw
-import TreeTools
+from CGAT import Experiment as Experiment
+from CGAT import IOTools as IOTools
+from CGAT import SVGdraw as SVGdraw
+from CGAT import TreeTools as TreeTools
 
 # some definitions for the layout of the picture
 BLACK = (0, 0, 0)

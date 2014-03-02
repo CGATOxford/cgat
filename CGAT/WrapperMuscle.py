@@ -47,8 +47,8 @@ from types import *
 """Wrapper for Muscle
 """
 
-import Experiment
-import Mali
+from CGAT import Experiment as Experiment
+from CGAT import Mali as Mali
 
 
 class Error(Exception):

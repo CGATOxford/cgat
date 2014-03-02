@@ -46,8 +46,8 @@ import math
 import hashlib
 import base64
 
-import Genomics
-import IOTools
+from CGAT import Genomics as Genomics
+from CGAT import IOTools as IOTools
 
 import Bio.Alphabet.IUPAC
 

@@ -41,9 +41,9 @@ import string
 import re
 import random
 
-import Experiment as E
-import Genomics
-import FastaIterator
+from CGAT import Experiment as E
+from CGAT import Genomics as Genomics
+from CGAT import FastaIterator as FastaIterator
 import cStringIO as StringIO
 
 # Class for calling masking programs.

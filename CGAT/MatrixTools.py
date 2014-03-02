@@ -39,7 +39,7 @@ import string
 import collections
 import numpy
 import pandas
-import IOTools
+from CGAT import IOTools as IOTools
 
 
 class Matrix:

@@ -44,8 +44,8 @@ import optparse
 """Wrapper for adaptive codon bias program
 """
 
-import Experiment
-import FastaIterator
+from CGAT import Experiment as Experiment
+from CGAT import FastaIterator as FastaIterator
 
 
 class ENCError(Exception):

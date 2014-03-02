@@ -47,10 +47,10 @@ from types import *
 """Wrapper for NJTree
 """
 
-import Experiment as E
-import Mali
-import IOTools
-import TreeTools
+from CGAT import Experiment as E
+from CGAT import Mali as Mali
+from CGAT import IOTools as IOTools
+from CGAT import TreeTools as TreeTools
 
 
 class Error(Exception):

@@ -38,8 +38,6 @@ import math
 import Bio.Nexus
 import Bio.Nexus.Nodes
 import Bio.Nexus.Trees
-import TreeTools
-
 
 def updateNexus(nexus):
     """change trees in nexus object to trees from here.

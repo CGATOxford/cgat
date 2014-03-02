@@ -47,9 +47,9 @@ from types import *
 """Wrapper for CodeSlr
 """
 
-import Experiment
-import Mali
-import TreeTools
+from CGAT import Experiment as Experiment
+from CGAT import Mali as Mali
+from CGAT import TreeTools as TreeTools
 
 
 class Error(Exception):

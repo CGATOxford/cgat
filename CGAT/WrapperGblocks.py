@@ -42,7 +42,7 @@ import tempfile
 """Wrapper for Gblocks
 """
 
-import Genomics
+from CGAT import Genomics as Genomics
 
 
 class Gblocks:

@@ -47,11 +47,11 @@ import bisect
 """ program $Id: SVGTree.py 2784 2009-09-10 11:41:14Z andreas $
 class to plot a phylogenetic tree as an SVG file.
 """
-import Experiment
-import IOTools
-import SVGdraw
-import TreeTools
-import Tree
+from CGAT import Experiment as Experiment
+from CGAT import IOTools as IOTools
+from CGAT import SVGdraw as SVGdraw
+from CGAT import TreeTools as TreeTools
+from CGAT import Tree as Tree
 
 # some definitions for the layout of the picture
 BLACK = (0, 0, 0)

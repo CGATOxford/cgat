@@ -43,7 +43,7 @@ import subprocess
 """Wrapper for Dialign.
 """
 
-import Genomics
+from CGAT import Genomics as Genomics
 
 
 class Dialign:

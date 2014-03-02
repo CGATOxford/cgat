@@ -67,8 +67,8 @@ This is version $Id: ProfileLibraryCompass.py 2781 2009-09-10 11:33:14Z andreas 
 #--------------------------------------------------------
 # import of user libraries
 #--------------------------------------------------------
-import Experiment
-import Mali
+from CGAT import Experiment as Experiment
+from CGAT import Mali as Mali
 from ProfileLibrary import ProfileLibrary
 
 

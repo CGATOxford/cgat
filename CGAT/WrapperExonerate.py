@@ -44,9 +44,9 @@ import optparse
 """Wrapper for Exonerate
 """
 
-import Experiment as E
-import PredictionParser
-import Genomics
+from CGAT import Experiment as E
+from CGAT import PredictionParser as PredictionParser
+from CGAT import Genomics as Genomics
 
 
 class ExonerateError(Exception):

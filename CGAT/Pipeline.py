@@ -55,7 +55,7 @@ import shutil
 import glob
 import gzip
 import ConfigParser
-import Database
+from CGAT import Database as Database
 
 # talking to a cluster
 try:
@@ -78,8 +78,8 @@ from multiprocessing.pool import ThreadPool
 task.Pool = ThreadPool
 
 import logging as L
-import Experiment as E
-import IOTools
+from CGAT import Experiment as E
+from CGAT import IOTools as IOTools
 
 # global options and arguments
 GLOBAL_OPTIONS, GLOBAL_ARGS = None, None
@@ -119,7 +119,7 @@ PARAMS = {
 
 # path until parameter sharing is resolved between CGAT module
 # and the pipelines module.
-import Local
+from CGAT import Local as Local
 Local.PARAMS = PARAMS
 
 hostname = os.uname()[0]

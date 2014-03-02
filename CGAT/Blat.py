@@ -42,8 +42,8 @@ try:
 except ImportError:
     pass
 
-import Components
-import Experiment as E
+from CGAT import Components as Components
+from CGAT import Experiment as E
 
 
 class Error(Exception):

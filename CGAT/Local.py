@@ -42,7 +42,7 @@ import os
 import sys
 import re
 import shutil
-import Experiment as E
+from CGAT import Experiment as E
 
 PROJECT_ROOT = '/ifs/projects'
 

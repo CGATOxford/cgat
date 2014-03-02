@@ -37,9 +37,9 @@ import re
 import collections
 import math
 
-import Experiment as E
-import Genomics
-import FastaIterator
+from CGAT import Experiment as E
+from CGAT import Genomics as Genomics
+from CGAT import FastaIterator as FastaIterator
 import numpy
 
 

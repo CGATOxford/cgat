@@ -86,9 +86,9 @@ import re
 import optparse
 import sys
 import os
-import IOTools
+from CGAT import IOTools as IOTools
 from collections import OrderedDict as odict
-import Experiment as E
+from CGAT import Experiment as E
 
 ##########################################################################
 ##########################################################################

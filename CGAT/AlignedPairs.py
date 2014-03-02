@@ -37,10 +37,10 @@ try:
 except ImportError:
     pass
 
-import WrapperDialign
-import WrapperDBA
-import WrapperBlastZ
-import Genomics
+from CGAT import WrapperDialign as WrapperDialign
+from CGAT import WrapperDBA as WrapperDBA
+from CGAT import WrapperBlastZ as WrapperBlastZ
+from CGAT import Genomics as Genomics
 
 # Wrapper for clustal needs to be updated
 # import WrapperClustal

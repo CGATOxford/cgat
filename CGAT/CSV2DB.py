@@ -63,9 +63,9 @@ import tempfile
 import subprocess
 import types
 
-import Experiment as E
+from CGAT import Experiment as E
 import csv
-import CSV as CSV
+from CGAT import CSV as CSV
 import sqlite3
 
 

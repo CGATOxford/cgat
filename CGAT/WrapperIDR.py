@@ -68,8 +68,8 @@ import shutil
 import subprocess
 import collections
 
-import Experiment as E
-import IOTools
+from CGAT import Experiment as E
+from CGAT import IOTools as IOTools
 
 # for zinba
 from rpy2.robjects import r as R

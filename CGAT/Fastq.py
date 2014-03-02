@@ -35,7 +35,7 @@ Code
 '''
 
 from math import log
-import CGAT.Experiment as E
+from CGAT import Experiment as E
 # see http://en.wikipedia.org/wiki/FASTQ_format
 # ranges are conservative - they are open-ended
 RANGES = {

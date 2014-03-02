@@ -37,7 +37,7 @@ import getopt
 import tempfile
 import copy
 
-import Genomics
+from CGAT import Genomics as Genomics
 import alignlib_lite
 
 # number of nucleotides to ignore for counting stop-codons

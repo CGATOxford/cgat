@@ -6,7 +6,7 @@ Mostly inherits from GTF.
 
 '''
 
-import GTF
+from CGAT import GTF as GTF
 import itertools
 
 

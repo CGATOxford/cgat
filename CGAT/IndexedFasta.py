@@ -56,7 +56,7 @@ import random
 import zlib
 import gzip
 import cStringIO
-import Experiment as E
+from CGAT import Experiment as E
 from AString import AString
 import pysam
 

@@ -16,11 +16,11 @@ import re
 import copy
 import types
 import collections
-import Intervals
-import Genomics
-import IndexedGenome
+from CGAT import Intervals as Intervals
+from CGAT import Genomics as Genomics
+from CGAT import IndexedGenome as IndexedGenome
 import pysam
-import IOTools
+from CGAT import IOTools as IOTools
 
 
 class Error(Exception):
