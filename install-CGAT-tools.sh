@@ -245,6 +245,9 @@ if [ "$OS" == "travis" ] ; then
    cd $INIT_DIR
    export PYTHONPATH=$PYTHONPATH:$INIT_DIR
 
+   # bx-python
+   export C_INCLUDE_PATH=/home/travis/virtualenv/python2.7/local/lib/python2.7/site-packages/numpy/core/include
+
    python setup.py develop
 
    # run nosetests
