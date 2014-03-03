@@ -427,12 +427,13 @@ class MastMotifLocation(Mast):
 
     def __call__(self, track, slice=None):
 
-        data = numpy.array ( self.getValues( """SELECT (i.peakcenter - (m.start + (m.end - m.start) / 2)) / 
-                                          500.0
-                                 FROM %(track)s_mast as m, %(track)s_intervals as i 
-                                 WHERE i.interval_id = m.id AND motif = '%(slice)s'
-                                 AND m.nmatches = 1"""
-                                             % locals()), numpy.float)
+        data = numpy.array(self.getValues(
+            """SELECT (i.peakcenter -
+            (m.start + (m.end - m.start) / 2)) / 500.0
+            FROM %(track)s_mast as m, %(track)s_intervals as i
+            WHERE i.interval_id = m.id AND motif = '%(slice)s'
+            AND m.nmatches = 1"""
+            % locals()), numpy.float)
 
         data[data < -1.0] = -1.0
         data[data > 1.0] = 1.0

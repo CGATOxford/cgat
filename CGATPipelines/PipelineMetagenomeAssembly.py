@@ -1,32 +1,23 @@
-'''
-classes and utility functions for pipeline_genomeassembly.py
+'''classes and utility functions for pipeline_genomeassembly.py
 
 Different assembly tools will use different inputs. Some can take
-fasta files whereas others will take fastq and in either case can 
-be paired-end (in the same or different files) or single end
+fasta files whereas others will take fastq and in either case can be
+paired-end (in the same or different files) or single end
+
 '''
 
-import sys
-import re
 import os
-import tempfile
 import collections
 import shutil
-import gzip
-import sqlite3
 
 import CGAT.IOTools as IOTools
 import CGAT.Pipeline as P
 import CGAT.Experiment as E
-import CGATPipelines.PipelineMapping as PipelineMapping
 import CGAT.FastaIterator as FastaIterator
 import CGAT.Fastq as Fastq
 import glob
-import collections
-import CGATPipelines.PipelineTracks as PipelineTracks
 import CGAT.Metaphlan as Metaphlan
 import numpy as np
-import shutil
 
 
 class Format:
@@ -650,8 +641,14 @@ class SGA(Idba):
                           --log=%(outdir)s/%(track)s.contigs.log \
                           -a sga > %(outdir)s/%(track)s.contigs.fa"
 
-        statement = '''%s''' % "; ".join([preprocess_statement
-                                          , index_statement, correction_statement, filter_statement, overlap_statement, assembly_statement, move_statement, "rm -rf %(tempdir)s"]) % locals()
+        statement = "; ".join([preprocess_statement,
+                               index_statement,
+                               correction_statement,
+                               filter_statement,
+                               overlap_statement,
+                               assembly_statement,
+                               move_statement,
+                               "rm -rf %(tempdir)s"]) % locals()
 
         return statement
 

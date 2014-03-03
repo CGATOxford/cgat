@@ -35,12 +35,11 @@ Command line options
 '''
 
 import os
-import sys
-import re
-import optparse
 import glob
 import traceback
 import imp
+
+from nose.tools import ok_
 
 import CGAT.Experiment as E
 
@@ -52,6 +51,18 @@ DIRECTORIES = ('scripts',
                'CGATPipelines')
 
 
+# Scripts to exclude as they fail imports.
+EXCLUDE = (
+    # The following fail because of pybedtools
+    # compilation fails. Reason why it triggers
+    # recompilation or why it fails is unknown
+    # (it seems using C compiler for C++ code).
+    'pipeline_intervals',
+    'bam2transcriptContribution',
+    'beds2counts',
+    'fasta2bed')
+
+
 def check_import(directory):
 
     files = glob.glob(os.path.join(directory, "*.py"))
@@ -59,16 +70,20 @@ def check_import(directory):
 
     c = E.Counter()
 
-    #import IndexedGenome
-    #files = ('IndexedGenome.py',)
+    outfile = open('test_import.log', 'wa')
+    outfile.write('testing %s' % directory)
 
-    sys.stderr.write(str(sys.path) + "\n")
     for filename in files:
-        sys.stderr.write("importing %s\n" % filename)
+
         c.input += 1
+
         prefix, suffix = os.path.splitext(filename)
 
         dirname, basename = os.path.split(prefix)
+
+        if basename in EXCLUDE:
+            c.skipped += 1
+            continue
 
         if os.path.exists(prefix + ".pyc"):
             os.remove(prefix + ".pyc")
@@ -79,40 +94,48 @@ def check_import(directory):
             c.skipped_pyx += 1
             continue
 
-        success = False
         try:
             imp.load_source(basename, os.path.join(directory, filename))
             c.success += 1
-            success = True
-            sys.stderr.write("PASS %s\n" % basename)
-            sys.stderr.flush()
+            outfile.write("PASS %s\n" % basename)
+            outfile.flush()
         except ImportError, msg:
+            c.fail += 1
             c.import_fail += 1
-            sys.stderr.write("FAIL %s\n%s\n" % (basename, msg))
-            sys.stderr.flush()
-            traceback.print_exc()
+            outfile.write("FAIL %s\n%s\n" % (basename, msg))
+            outfile.flush()
+            traceback.print_exc(file=outfile)
         except Exception, msg:
+            c.fail += 1
             c.other_fail += 1
-            sys.stderr.write("FAIL %s\n%s\n" % (basename, msg))
-            sys.stderr.flush()
-            traceback.print_exc()
+            outfile.write("FAIL %s\n%s\n" % (basename, msg))
+            outfile.flush()
+            traceback.print_exc(file=outfile)
 
         c.output += 1
 
-    sys.stderr.write('%s: %s\n' % (os.path.dirname(directory), c))
+    outfile.write('%s: %s\n' % (os.path.dirname(directory), c))
+    outfile.close()
+
+    ok_(c.fail == 0, '%i scripts/modules could not be imported' % c.fail)
 
 
 def test_imports():
-    '''test importing'''
+    '''test importing
 
-    # add scripts directories to path.  imp.load_source does not import
-    # modules that are in the same directory as the module being
-    # loaded from source. This causes a problem in the scripts
-    # directory where some scripts import function from other
-    # scripts.
+    Relative imports will cause a failure because
+    imp.load_source does not import modules that are in the same
+    directory as the module being loaded from source.
 
-    for directory in ('scripts',):
-        sys.path.insert(0, os.path.abspath(directory))
+
+    A solution is to use the . syntax::
+    
+        from . import XXX
+
+    '''
+
+    #for directory in ('scripts',):
+    #    sys.path.insert(0, os.path.abspath(directory))
 
     for directory in DIRECTORIES:
         check_import.description = directory

@@ -36,11 +36,12 @@ class RepeatsMastEValueVersusPeakValueAndDistance(Motifs.Mast):
     def __call__(self, track, slice=None):
 
         field = "peakval"
-        statement =  """SELECT m.evalue, i.%(field)s, r.pover1 
-                                 FROM %(track)s_mast as m, %(track)s_intervals as i, %(track)s_repeats as r
-                                 WHERE i.interval_id = m.id AND motif = '%(slice)s' AND
-                                       i.interval_id = r.gene_id 
-                                 ORDER BY i.%(field)s DESC""" % locals()
+        statement = """SELECT m.evalue, i.%(field)s, r.pover1
+        FROM %(track)s_mast as m,
+             %(track)s_intervals as i, %(track)s_repeats as r
+        WHERE i.interval_id = m.id AND motif = '%(slice)s' AND
+        i.interval_id = r.gene_id
+        ORDER BY i.%(field)s DESC""" % locals()
 
         data = [(x[2], x[1], math.log(x[0]))
                 for x in self.get(statement % locals())]

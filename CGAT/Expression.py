@@ -297,12 +297,13 @@ class SAM(object):
         kwargs = {}
         # kwargs set to replicate excel SAM
         if use_excel_sam:
-            kwargs.update( { "control" : R('''samControl( lambda = 0.5, n.delta = %(ndelta)s ) ''' % locals()),
-                             "med": True,
-                             "var.equal": True})
+            kwargs.update({"control":
+                           R('''samControl( lambda = 0.5, n.delta = %(ndelta)s ) ''' % locals()),
+                           "med": True,
+                           "var.equal": True})
         else:
-            kwargs.update( { "control" : R('''samControl( n.delta = %(ndelta)s ) ''' % locals()) },
-                           )
+            kwargs.update({"control":
+                           R('''samControl( n.delta = %(ndelta)s ) ''' % locals()) },)
 
         # the option B needs to be not set if wilc.stat is chosen
 
@@ -311,7 +312,7 @@ class SAM(object):
             kwargs["B"] = npermutations
         elif method == "wilc":
             kwargs["method"] = R('''wilc.stat''')
-        elif metod == "cat":
+        elif method == "cat":
             kwargs["method"] = R('''cat.stat''')
         else:
             raise ValueError("unknown statistic `%s`" % method)
@@ -348,7 +349,7 @@ class SAM(object):
         fdr_values = [fdr_data(*x) for x in t]
 
         # find d cutoff
-        if fdr != None and fdr > 0:
+        if fdr is not None and fdr > 0:
             s = numpy.matrix(R.findDelta(a, fdr))
             try:
                 cutoffs = [cutoff_data(*numpy.array(x).reshape(-1,))
@@ -386,7 +387,7 @@ class SAM(object):
 
         siggenes = {}
         significant_genes = set()
-        if cutoff != None:
+        if cutoff is not None:
             E.debug("using cutoff %s" % str(cutoff))
 
             summary = R('''summary( a, %f )''' % cutoff.delta)
@@ -422,7 +423,8 @@ class SAM(object):
             E.debug("no cutoff found - no significant genes.")
 
         genes = []
-        for probeset, treatment, control in zip(probesets, zip(*treatments), zip(*controls)):
+        for probeset, treatment, control in zip(
+                probesets, zip(*treatments), zip(*controls)):
 
             mean1, mean2 = numpy.mean(treatment), numpy.mean(control)
 
@@ -494,19 +496,19 @@ def loadTagData(tags_filename, design_filename):
 
     E.info("loading tag data from %s" % tags_filename)
 
-    R( '''counts_table = read.delim( '%(tags_filename)s', 
-                                     header = TRUE,
-                                     row.names = 1,
-                                     stringsAsFactors = TRUE,
-                                     comment.char = '#' )''' % locals() )
+    R('''counts_table = read.delim( '%(tags_filename)s',
+    header = TRUE,
+    row.names = 1,
+    stringsAsFactors = TRUE,
+    comment.char = '#' )''' % locals() )
 
     E.info("read data: %i observations for %i samples" %
            tuple(R('''dim(counts_table)''')))
     E.debug( "sample names: %s" % R('''colnames(counts_table)'''))
 
     # Load comparisons from file
-    R('''pheno = read.delim( '%(design_filename)s', 
-                             header = TRUE, 
+    R('''pheno = read.delim( '%(design_filename)s',
+                             header = TRUE,
                              stringsAsFactors = TRUE,
                              comment.char = '#')''' % locals() )
 
@@ -849,9 +851,10 @@ def runEdgeR(outfile,
     results = []
     counts = E.Counter()
 
-    for interval, data, padj in zip( R('''rownames(lrt$table)'''),
-                                     zip( *R('''lrt$table''')),
-                                     R('''padj''')) :
+    for interval, data, padj in zip(
+            R('''rownames(lrt$table)'''),
+            zip(*R('''lrt$table''')),
+            R('''padj''')):
         d = rtype._make(data)
 
         counts.input += 1
@@ -1021,10 +1024,9 @@ def deseqParseResults(control_name, treatment_name, fdr, vsd=False):
           This data field is not part of DESeq proper, but has been added
           in this module in the runDESeq() method.
 
-    Here, 'conditionA' is 'control' and 'conditionB' is 'treatment' such that
-    a foldChange of 2 means that treatment is twice upregulated compared to control.
-
-
+    Here, 'conditionA' is 'control' and 'conditionB' is 'treatment'
+    such that a foldChange of 2 means that treatment is twice
+    upregulated compared to control.
 
     Returns a list of results.
 
@@ -1132,40 +1134,55 @@ def runDESeq(outfile,
 
        Solid lines are for the raw variances (biological noise).
 
-       On top of the variance, there is shot noise, i.e., the Poissonean variance inherent to the
-       process of counting reads. The amount of shot noise depends on the size factor, and hence, for
-       each sample, a dotted line in the colour of its condition is plotted above the solid line. The dotted
-       line is the base variance, i.e., the full variance, scaled down to base level by the size factors. The
-       vertical distance between solid and dotted lines is the shot noise.
-       The solid black line is a density estimate of the base means: Only were there is an appreciable
-       number of base mean values, the variance estimates can be expected to be accurate.
-       It is instructive to observe at which count level the biological noise starts to dominate the shot
-       noise. At low counts, where shot noise dominates, higher sequencing depth (larger library size)
-       will improve the signal-to-noise ratio while for high counts, where the biological noise dominates,
-       only additional biological replicates will help.
+       On top of the variance, there is shot noise, i.e., the
+       Poissonean variance inherent to the process of counting
+       reads. The amount of shot noise depends on the size factor, and
+       hence, for each sample, a dotted line in the colour of its
+       condition is plotted above the solid line. The dotted line is
+       the base variance, i.e., the full variance, scaled down to base
+       level by the size factors. The vertical distance between solid
+       and dotted lines is the shot noise.  The solid black line is a
+       density estimate of the base means: Only were there is an
+       appreciable number of base mean values, the variance estimates
+       can be expected to be accurate.  It is instructive to observe
+       at which count level the biological noise starts to dominate
+       the shot noise. At low counts, where shot noise dominates,
+       higher sequencing depth (larger library size) will improve the
+       signal-to-noise ratio while for high counts, where the
+       biological noise dominates, only additional biological
+       replicates will help.
 
    fit.png
 
-       One should check whether the base variance functions seem to follow the empirical variance
-       well. To this end, two diagnostic functions are provided. The function varianceFitDiagnostics
-       returns, for a speci?ed condition, a data frame with four columns: the mean base level for each
-       gene, the base variance as estimated from the count values of this gene only, and the ?tted base
-       variance, i.e., the predicted value from the local ?t through the base variance estimates from
-       all genes. As one typically has few replicates, the single-gene estimate of the base variance can
-       deviate wildly from the ?tted value. To see whether this might be too wild, the cumulative prob-
-       ability for this ratio of single-gene estimate to ?tted value is calculated from the ?2 distribution,
-       as explained in the paper.      
+       One should check whether the base variance functions seem to
+       follow the empirical variance well. To this end, two diagnostic
+       functions are provided. The function varianceFitDiagnostics
+       returns, for a speci?ed condition, a data frame with four
+       columns: the mean base level for each gene, the base variance
+       as estimated from the count values of this gene only, and the
+       ?tted base variance, i.e., the predicted value from the local
+       ?t through the base variance estimates from all genes. As one
+       typically has few replicates, the single-gene estimate of the
+       base variance can deviate wildly from the ?tted value. To see
+       whether this might be too wild, the cumulative prob- ability
+       for this ratio of single-gene estimate to ?tted value is
+       calculated from the ?2 distribution, as explained in the paper.
 
        We may now plot the per-gene estimates of the base variance against the base levels and draw
        a line with the ?t from the local regression
 
-    residuals.png
-       Another way to study the diagnostic data is to check whether the probabilities in the fourth
-       column of the diagnostics data frame are uniform, as they should be. One may simply look at the
-       histogram of diagForGB$pchisq but a more convenient way is the function residualsEcdfPlot,
-       which show empirical cumulative density functions (ECDF) strati?ed by base level.
+    residuals.png 
+    
+       Another way to study the diagnostic data is to check whether
+       the probabilities in the fourth column of the diagnostics data
+       frame are uniform, as they should be. One may simply look at
+       the histogram of diagForGB$pchisq but a more convenient way is
+       the function residualsEcdfPlot, which show empirical cumulative
+       density functions (ECDF) strati?ed by base level.
 
-    The output is treatment and control. Fold change values are computed as treatment divided by control.
+    The output is treatment and control. Fold change values are
+    computed as treatment divided by control.
+
     '''
 
     # load library

@@ -1,7 +1,6 @@
 from ChipseqReport import *
 
 import Motifs
-import TSS
 
 ###########################################################################
 ###########################################################################
@@ -15,10 +14,10 @@ class MotifsAndTSS(Motifs.Mast):
 
     def __call__(self, track, slice=None):
 
-        statement =  """SELECT COUNT(i.interval_id)
-                                 FROM %(track)s_mast as m, %(track)s_intervals as i, %(track)s_tss as d
-                                 WHERE i.interval_id = m.id AND motif = '%(slice)s' AND
-                                       i.interval_id = d.gene_id AND %%s""" % locals()
+        statement = """SELECT COUNT(i.interval_id)
+        FROM %(track)s_mast as m, %(track)s_intervals as i, %(track)s_tss as d
+        WHERE i.interval_id = m.id AND motif = '%(slice)s' AND
+        i.interval_id = d.gene_id AND %%s""" % locals()
 
         data = []
         data.append(("overlapping with motif", self.getValue(
@@ -43,10 +42,10 @@ class MotifsOverlappingTSS(Motifs.Mast):
 
     def __call__(self, track, slice=None):
 
-        statement =  """SELECT COUNT(i.interval_id)
-                                 FROM %(track)s_mast as m, %(track)s_intervals as i, %(track)s_tss as d
-                                 WHERE i.interval_id = m.id AND motif = '%(slice)s' AND
-                                       i.interval_id = d.gene_id AND %%s""" % locals()
+        statement = """SELECT COUNT(i.interval_id)
+        FROM %(track)s_mast as m, %(track)s_intervals as i, %(track)s_tss as d
+        WHERE i.interval_id = m.id AND motif = '%(slice)s' AND
+        i.interval_id = d.gene_id AND %%s""" % locals()
 
         data = []
         data.append(
@@ -67,10 +66,10 @@ class MotifsNonOverlappingTSS(Motifs.Mast):
 
     def __call__(self, track, slice=None):
 
-        statement =  """SELECT COUNT(i.interval_id)
-                                 FROM %(track)s_mast as m, %(track)s_intervals as i, %(track)s_tss as d
-                                 WHERE i.interval_id = m.id AND motif = '%(slice)s' AND
-                                       i.interval_id = d.gene_id AND %%s""" % locals()
+        statement = """SELECT COUNT(i.interval_id)
+        FROM %(track)s_mast as m, %(track)s_intervals as i, %(track)s_tss as d
+        WHERE i.interval_id = m.id AND motif = '%(slice)s' AND
+        i.interval_id = d.gene_id AND %%s""" % locals()
 
         data = []
         data.append(
@@ -94,13 +93,13 @@ class MastEValueVersusPeakValueAndDistance(Motifs.Mast):
     def __call__(self, track, slice=None):
 
         field = "peakval"
-        statement =  """SELECT i.%(field)s, d.closest_dist, m.evalue
-                                 FROM %(track)s_mast as m, %(track)s_intervals as i, %(track)s_tss as d
-                                 WHERE motif = '%(slice)s' AND 
-                                       m.id = i.interval_id AND 
-                                       m.id = d.gene_id AND 
-                                       d.is_overlap = 0 
-                                 ORDER BY i.%(field)s DESC""" % locals()
+        statement = """SELECT i.%(field)s, d.closest_dist, m.evalue
+        FROM %(track)s_mast as m, %(track)s_intervals as i, %(track)s_tss as d
+        WHERE motif = '%(slice)s' AND 
+        m.id = i.interval_id AND 
+        m.id = d.gene_id AND 
+        d.is_overlap = 0 
+        ORDER BY i.%(field)s DESC""" % locals()
 
         data = [(math.log(x[1]), math.log(x[2]), math.log(x[0]))
                 for x in self.get(statement % locals()) if x[0] > 00 and x[1] > 0 and x[2] > 0]

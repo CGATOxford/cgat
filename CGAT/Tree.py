@@ -29,15 +29,12 @@ Tree.py - A derivation of the tree class from Biopython
 :Tags: Python
 
 """
-import sys
-import string
-import re
-import os
 import math
 
 import Bio.Nexus
 import Bio.Nexus.Nodes
 import Bio.Nexus.Trees
+
 
 def updateNexus(nexus):
     """change trees in nexus object to trees from here.

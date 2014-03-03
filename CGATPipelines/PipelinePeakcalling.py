@@ -2490,9 +2490,9 @@ def removeBackground(sample_bedgraph, input_bedgraph, outfile):
 
 
 def removeEmptyBins(infile, outfile):
-    statement =  ''' cat %(infile)s
-                     | awk '$4!=0 {print $1"\t"$2"\t"$3"\t"$4}'
-                     > %(outfile)s '''
+    statement = '''cat %(infile)s
+    | awk '$4!=0 {print $1"\t"$2"\t"$3"\t"$4}'
+    > %(outfile)s '''
     P.run()
 
 

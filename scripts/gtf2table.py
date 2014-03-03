@@ -32,7 +32,7 @@ binding-pattern
    CDS, Introns, 3' UTR, 3' flank.
 
 classifier
-   classify transcripts according to genomic annotation 
+   classify transcripts according to genomic annotation
    Requires a :term:`gff` file with genomic annotations
    (see :doc:`gtf2gff`.)
 
@@ -846,8 +846,8 @@ class Classifier(_gtf2table.Counter):
 
     """classify transcripts based on a reference annotation.
 
-    This assumes the input is a genome annotation derived from an ENSEMBL gtf file
-    created with gff2gtf.py.
+    This assumes the input is a genome annotation derived from an
+    ENSEMBL gtf file created with gff2gtf.py.
 
     A transcript is classified as (threshold = self.mThresholdMinCoverage)
 
@@ -866,6 +866,7 @@ class Classifier(_gtf2table.Counter):
     associated:   in flank of a protein coding gene, but not in exons or introns
                   (note that this changed from previous releases, where flank referred 
                   to any feature).
+
     """
 
     header = ["is_known", "is_unknown", "is_ambiguous",

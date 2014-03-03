@@ -84,7 +84,7 @@ Options:
 import CGAT.Experiment as E
 import CGAT.PredictionParser as PredictionParser
 
-from predict_genes import PredictorExonerate
+from CGAT.Predictor2 import PredictorExonerate
 
 parser = E.OptionParser(
     version="%prog version: $Id: gpipe/liftover_predictions.py 2781 2009-09-10 11:33:14Z andreas $")

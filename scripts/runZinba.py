@@ -229,12 +229,12 @@ def main(argv=None):
     if not os.path.exists(os.path.join(tmpdir, "basecount")):
         E.info("computing counts")
 
-        R( '''basealigncount( inputfile='%(filename_sample)s',
-                          outputfile='%(tmpdir)s/basecount',
-                          extension=%(fragment_size)i,
-                          filetype='bed',
-                          twoBitFile='%(bit_filename)s' )
-                          '''  % locals() )
+        R('''basealigncount(inputfile='%(filename_sample)s',
+        outputfile='%(tmpdir)s/basecount',
+        extension=%(fragment_size)i,
+        filetype='bed',
+        twoBitFile='%(bit_filename)s' )
+        ''' % locals())
     else:
         E.info("using existing counts")
 
@@ -246,10 +246,10 @@ def main(argv=None):
 
         E.info("computing window counts only - saving results in %s" % outdir)
         R('''buildwindowdata(
-                     seq='%(filename_sample)s', 
+                     seq='%(filename_sample)s',
                      align='%(mappability_dir)s',
-                     input='%(filename_control)s', 
-                     twoBit='%(bit_filename)s', 
+                     input='%(filename_control)s',
+                     twoBit='%(bit_filename)s',
                      winSize=%(winSize)i,
                      offset=%(offset)i,
                      cnvWinSize=%(cnvWinSize)i,
@@ -269,12 +269,12 @@ def main(argv=None):
                 filelist='%(filelist)s',
                 formula=NULL,formulaE=NULL,formulaZ=NULL,
                 outfile='%(filename_output)s',
-                seq='%(filename_sample)s', 
-                input='%(filename_control)s', 
+                seq='%(filename_sample)s',
+                input='%(filename_control)s',
                 filetype='bed',  
                 align='%(mappability_dir)s',
-                twoBit='%(bit_filename)s', 
-                extension=%(fragment_size)s, 
+                twoBit='%(bit_filename)s',
+                extension=%(fragment_size)s,
                 winSize=%(winSize)i,
                 offset=%(offset)i,
                 cnvWinSize=%(cnvWinSize)i,
@@ -321,7 +321,7 @@ def main(argv=None):
         print(formulaE)
         cat("Zero-inflated formula is:\n\t")
         print(formulaE)
-        ''' % locals() )
+        ''' % locals())
 
         E.info("predicting peaks")
 
@@ -381,51 +381,51 @@ def main(argv=None):
             if not os.path.exists(filename_basecounts_contig):
                 E.info("computing counts")
 
-                R( '''basealigncount( inputfile='%(filename_sample_contig)s',
+                R('''basealigncount( inputfile='%(filename_sample_contig)s',
                                   outputfile='%(filename_basecounts_contig)s',
                                   extension=%(fragment_size)i,
                                   filetype='bed',
                                   twoBitFile='%(bit_filename)s' )
-                                  '''  % locals() )
+                                  ''' % locals())
             else:
                 E.info("using existing counts")
 
             # run zinba, do not build window data
-            R( '''zinba( refinepeaks=1,
-                     seq='%(filename_sample_contig)s',
-                     input='%(filename_control_contig)s',
-                     filetype='bed',
-                     align='%(mappability_dir)s',
-                     twoBit='%(bit_filename)s',
-                     outfile='%(filename_output_contig)s',
-                     extension=%(fragment_size)s,
-                     basecountfile='%(filename_basecounts_contig)s',
-                     numProc=%(threads)i,
-                     threshold=%(fdr_threshold)f,
-                     broad=FALSE,
-                     printFullOut=0,
-                     interaction=FALSE,
-                     mode='peaks',
-                     FDR=TRUE) '''  % locals() )
+            R('''zinba( refinepeaks=1,
+            seq='%(filename_sample_contig)s',
+            input='%(filename_control_contig)s',
+            filetype='bed',
+            align='%(mappability_dir)s',
+            twoBit='%(bit_filename)s',
+            outfile='%(filename_output_contig)s',
+            extension=%(fragment_size)s,
+            basecountfile='%(filename_basecounts_contig)s',
+            numProc=%(threads)i,
+            threshold=%(fdr_threshold)f,
+            broad=FALSE,
+            printFullOut=0,
+            interaction=FALSE,
+            mode='peaks',
+            FDR=TRUE) ''' % locals())
     elif options.action == "full":
 
         # run zinba, do not build window data
-        R( '''zinba( refinepeaks=1,
-                     seq='%(filename_sample)s',
-                     input='%(filename_control)s',
-                     filetype='bed',
-                     align='%(mappability_dir)s',
-                     twoBit='%(bit_filename)s',
-                     outfile='%(filename_output)s',
-                     extension=%(fragment_size)s,
-                     basecountfile='%(tmpdir)s/basecount',
-                     numProc=%(threads)i,
-                     threshold=%(fdr_threshold)f,
-                     broad=FALSE,
-                     printFullOut=0,
-                     interaction=FALSE,
-                     mode='peaks',
-                     FDR=TRUE) '''  % locals() )
+        R('''zinba( refinepeaks=1,
+        seq='%(filename_sample)s',
+        input='%(filename_control)s',
+        filetype='bed',
+        align='%(mappability_dir)s',
+        twoBit='%(bit_filename)s',
+        outfile='%(filename_output)s',
+        extension=%(fragment_size)s,
+        basecountfile='%(tmpdir)s/basecount',
+        numProc=%(threads)i,
+        threshold=%(fdr_threshold)f,
+        broad=FALSE,
+        printFullOut=0,
+        interaction=FALSE,
+        mode='peaks',
+        FDR=TRUE) ''' % locals())
 
     if not (options.tempdir or options.keep_temp):
         shutil.rmtree(tmpdir)

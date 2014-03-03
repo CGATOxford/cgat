@@ -58,15 +58,7 @@ Code
 '''
 import os
 import sys
-import string
 import re
-import getopt
-import time
-import sets
-import optparse
-import math
-import tempfile
-import copy
 
 from types import *
 
@@ -79,15 +71,9 @@ analyse orthology sets.
 import CGAT.Experiment as E
 import CGAT.TreeTools as TreeTools
 import CGAT.Tree as Tree
-import CGAT.SVGTree as SVGTree
-import CGAT.SVGdraw as SVGdraw
 import CGAT.IOTools as IOTools
 import CGAT.Stats as Stats
-import scipy
-import scipy.stats
-import CGAT.Histogram as Histogram
-
-import analyze_orthology_multiple as TreeReconciliation
+import CGAT.TreeReconciliation as TreeReconciliation
 
 
 def printCounts(heights_per_species, relheights_per_species,
@@ -96,7 +82,8 @@ def printCounts(heights_per_species, relheights_per_species,
                 prefix_header, prefix_row):
     """print counts for each section."""
 
-    def printHeightsPerTree(values, section, options, prefix_header, prefix_row):
+    def printHeightsPerTree(values, section, options, prefix_header,
+                            prefix_row):
 
         if not values:
             return
@@ -112,7 +99,8 @@ def printCounts(heights_per_species, relheights_per_species,
                                       str(s),
                                       ",".join(map(lambda x: options.format_branch_length % x, values))))
 
-    def printHeightsPerSpecies(values, section, options, prefix_header, prefix_row):
+    def printHeightsPerSpecies(values, section, options, prefix_header,
+                               prefix_row):
 
         if not values:
             return
@@ -152,7 +140,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(
@@ -504,7 +492,7 @@ def main(argv=None):
                                                                  extract_species,
                                                                  method="median")
 
-        if reference_height == None:
+        if reference_height is None:
             if options.loglevel >= 1:
                 options.stdlog.write(
                     "# tree %s: reference height not computable or 0 - skipped.\n" % gene_tree.name)

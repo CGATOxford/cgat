@@ -20,8 +20,7 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##########################################################################
-'''
-Pipeline.py - Tools for ruffus pipelines
+'''Pipeline.py - Tools for ruffus pipelines
 ========================================
 
 :Author: Andreas Heger
@@ -29,9 +28,8 @@ Pipeline.py - Tools for ruffus pipelines
 :Date: |today|
 :Tags: Python
 
-The :mod:`Pipeline` module contains various utility functions
-for interfacing CGAT ruffus pipelines with databases and the 
-cluster.
+The :mod:`Pipeline` module contains various utility functions for
+interfacing CGAT ruffus pipelines with databases and the cluster.
 
 API
 ----
@@ -45,12 +43,9 @@ import optparse
 import stat
 import tempfile
 import time
-import random
 import inspect
 import types
-import multiprocessing
 import logging
-import collections
 import shutil
 import glob
 import gzip
@@ -106,15 +101,15 @@ if not os.path.exists(SCRIPTS_DIR):
 PARAMS = {
     'scriptsdir': SCRIPTS_DIR,
     'toolsdir': SCRIPTS_DIR,
-    'cmd-farm' : """python %s/farm.py 
-                --method=drmaa 
-                --cluster-priority=-10 
-		--cluster-queue=all.q 
-		--cluster-num-jobs=100 
+    'cmd-farm': """python %s/farm.py
+                --method=drmaa
+                --cluster-priority=-10
+                --cluster-queue=all.q
+                --cluster-num-jobs=100
                 --bashrc=%s/bashrc.cgat
-		--cluster-options="" """ % (SCRIPTS_DIR, SCRIPTS_DIR),
-    'cmd-sql' : """sqlite3 -header -csv -separator $'\\t' """,
-    'cmd-run' : """%s/run.py""" % SCRIPTS_DIR
+                --cluster-options="" """ % (SCRIPTS_DIR, SCRIPTS_DIR),
+    'cmd-sql': """sqlite3 -header -csv -separator $'\\t' """,
+    'cmd-run': """%s/run.py""" % SCRIPTS_DIR
 }
 
 # path until parameter sharing is resolved between CGAT module
@@ -151,9 +146,8 @@ def getParameters(filenames=["pipeline.ini", ],
                   default_ini=True):
     '''read a config file and return as a dictionary.
 
-    Sections and keys are combined with an underscore. If
-    a key without section does not exist, it will be added 
-    plain.
+    Sections and keys are combined with an underscore. If a key
+    without section does not exist, it will be added plain.
 
     For example::
 
@@ -172,6 +166,7 @@ def getParameters(filenames=["pipeline.ini", ],
 
     If default_ini is set, the default initialization file
     will be read from 'CGATPipelines/configuration/pipeline.ini'
+
     '''
 
     global CONFIG
@@ -220,8 +215,8 @@ def substituteParameters(**kwargs):
     Options in ``**kwargs`` substitute default
     values in PARAMS.
 
-    Finally, task specific configuration values 
-    are inserted.
+    Finally, task specific configuration values are inserted.
+
     '''
 
     # build parameter dictionary
@@ -258,7 +253,7 @@ def checkFiles(filenames):
 
 def which(filename):
 
-    if not os.environ.has_key('PATH') or os.environ['PATH'] == '':
+    if 'PATH' not in os.environ or os.environ['PATH'] == '':
         p = os.defpath
     else:
         p = os.environ['PATH']
@@ -398,7 +393,6 @@ def isEmpty(filename):
     by opening it.
     '''
     if filename.endswith(".gz"):
-        n = 0
         with gzip.open(filename) as inf:
             return len(inf.read(10)) == 0
     else:
@@ -527,9 +521,9 @@ def load(infile,
         ignore_pipe_errors = True
 
     statement.append('''
-    python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
-              %(options)s 
-              --table=%(tablename)s 
+    python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+              %(options)s
+              --table=%(tablename)s
     > %(outfile)s
     ''')
 
@@ -567,7 +561,7 @@ def concatenateAndLoad(infiles,
     if not cat:
         cat = "track"
 
-    if has_titles == False:
+    if has_titles is False:
         no_titles = "--no-titles"
     else:
         no_titles = ""
@@ -604,12 +598,12 @@ def mergeAndLoad(infiles,
     merged.
 
     *columns* denotes the columns to be taken. By default, the first
-    two columns are taken with the first being the key. Filenames are 
+    two columns are taken with the first being the key. Filenames are
     stored in a ``track`` column. Directory names are chopped off.
 
     If *columns* is set to None, all columns will be taken. Here,
     column names will receive a prefix (*prefixes*). If *prefixes* is
-    None, the filename will be added as a prefix. 
+    None, the filename will be added as a prefix.
 
     If *prefixes* is a list, the respective prefix will be added to
     each column. The length of *prefixes* and *infiles* need to be the
@@ -621,6 +615,7 @@ def mergeAndLoad(infiles,
     supplied regular expression.
 
     *options* are passed on to ``csv2db.py``.
+
     '''
     if len(infiles) == 0:
         raise ValueError("no files for merging")
@@ -669,7 +664,7 @@ def mergeAndLoad(infiles,
                 %(transform)s
                 | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
                       --index=track
-                      --table=%(tablename)s 
+                      --table=%(tablename)s
                       %(options)s
                 > %(outfile)s
             """
@@ -694,7 +689,7 @@ def createView(dbhandle, tables, tablename, outfile, view_type="TABLE",
                  "context_stats", "track",
                  "picard_stats_alignment_summary_metrics", "track" )
 
-    view_type 
+    view_type
        type of view. If a view is to be created across multiple database,
        use "TABLE", otherwise, use "VIEW"
 
@@ -865,8 +860,6 @@ def buildStatement(**kwargs):
     '''build statement from kwargs.
 
     Options in PARAMS are added, but kwargs take precedence.
-
-    If outfile is in kwargs, 
     '''
 
     if "statement" not in kwargs:
@@ -884,7 +877,8 @@ def buildStatement(**kwargs):
         raise ValueError("Error when creating command: %s, statement = %s" % (
             msg, kwargs.get("statement")))
 
-    # add bash as prefix to allow advanced shell syntax like 'wc -l <( gunzip < x.gz)'
+    # add bash as prefix to allow advanced shell syntax like 'wc -l <(
+    # gunzip < x.gz)'
     # executable option to call() does not work. Note that there will be an extra
     # indirection.
     statement = " ".join(re.sub("\t+", " ", statement).split("\n")).strip()
@@ -1148,7 +1142,7 @@ def run(**kwargs):
         jt.outputPath = ":" + stdout_path
         jt.errorPath = ":" + stderr_path
 
-        if "job_array" in options and options["job_array"] != None:
+        if "job_array" in options and options["job_array"] is not None:
             # run an array job
             start, end, increment = options.get("job_array")
             L.debug("starting an array job: %i-%i,%i" %

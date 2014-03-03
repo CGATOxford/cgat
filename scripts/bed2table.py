@@ -1,5 +1,4 @@
-'''
-bed2table.py - annotate intervals
+'''bed2table.py - annotate intervals
 =================================
 
 :Author: Andreas Heger
@@ -14,21 +13,22 @@ This script takes a bed-formatted file as input and annotates each interval.
 Possible annotators are (see option '--counter'):
 
 overlap
-    compute overlap with intervals in other bed file. If the other bed 
+    compute overlap with intervals in other bed file. If the other bed
     file contains tracks, the overlap is computed per track.
 
 peaks
-    compute peak location in intervals. Requires one or more bam-files. This
-    counter can also count within an secondary set of bam-files (--control-bam-file)
-    and add this to the output.
+
+    compute peak location in intervals. Requires one or more
+    bam-files. This counter can also count within an secondary set of
+    bam-files (--control-bam-file) and add this to the output.
 
 composition-na
     compute nucleotide frequencies in intervals.
 
 composition-cpg
-    compute CpG densities and nucleotide frequencies in intervals. 
+    compute CpG densities and nucleotide frequencies in intervals.
 
-classifier-chipseq 
+classifier-chipseq
    classify chipseq intervals. Requires a :term:`gff`
    file with genomic annotations (see :doc:`gtf2gff`.)
 
@@ -49,30 +49,26 @@ Command line options
 ---------------------
 
 '''
-import os
 import sys
-import string
-import re
-import optparse
-import math
-import time
-import tempfile
-import subprocess
-import types
-import bisect
-import array
 import collections
 import CGAT.GTF as GTF
 import CGAT.Bed as Bed
+import CGAT.IOTools as IOTools
 import CGAT.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.SequenceProperties as SequenceProperties
 import CGAT.Intervals as Intervals
 import numpy
-import CGAT.IndexedGenome as IndexedGenome
 import pysam
 
-import gtf2table
+# The following is a patch. Long term the shared
+# methods in gtf2table need to be exported to
+# a separate module.
+try:
+    from . import gtf2table
+# ValueError: Attempted relative import in non-package
+except ValueError:
+    import gtf2table
 
 
 class Counter(object):
@@ -107,7 +103,8 @@ class CounterOverlap(Counter):
 
     def __init__(self, filename, *args, **kwargs):
 
-        assert filename != None, "please supply filename for CounterOverlap"
+        assert filename is not None,\
+            "please supply filename for CounterOverlap"
 
         Counter.__init__(self, *args, **kwargs)
 
@@ -115,8 +112,9 @@ class CounterOverlap(Counter):
 
         E.info("reading intervals from %s" % self.filename)
 
-        self.index = Bed.readAndIndex(IOTools.openFile(self.filename, "r"),
-                                      per_track=True)
+        self.index = Bed.readAndIndex(
+            IOTools.openFile(self.filename, "r"),
+            per_track=True)
 
         E.info("read intervals for %s tracks" % len(self.index))
 
@@ -137,8 +135,9 @@ class CounterOverlap(Counter):
                 overlaps = []
 
             results.append((len(overlaps),
-                            Intervals.calculateOverlap([(bed.start, bed.end), ],
-                                                       Intervals.combine(overlaps))))
+                            Intervals.calculateOverlap(
+                                [(bed.start, bed.end), ],
+                                Intervals.combine(overlaps))))
 
         self.data = results
 
@@ -173,8 +172,9 @@ class CounterPeaks(Counter):
 
         assert len(offsets) == 0 or len(bamfiles) == len(
             offsets), "number of bamfiles not the same as number of offsets"
-        assert len(control_offsets) == 0 or len(control_bamfiles) == len(
-            control_offsets), "number of control bamfiles not the same as number of offsets"
+        assert len(control_offsets) == 0 or \
+            len(control_bamfiles) == len(control_offsets), \
+            "number of control bamfiles not the same as number of offsets"
 
         self.bamfiles = bamfiles
         self.offsets = offsets
@@ -216,7 +216,6 @@ class CounterPeaks(Counter):
 
                 for read in samfile.fetch(contig, xstart, xend):
                     nreads += 1
-                    pos = read.pos
                     # some reads are assigned to a contig and position, but
                     # are flagged as unmapped - these might not have an alen
                     # attribute.
@@ -258,7 +257,8 @@ class CounterPeaks(Counter):
         # such that it is a valid peak in the middle
         peakcenter = start + peaks[npeaks // 2]
 
-        return CounterPeaksResult(length, nreads, avgval, peakval, npeaks, peakcenter)
+        return CounterPeaksResult(length, nreads, avgval, 
+                                  peakval, npeaks, peakcenter)
 
     def count(self, bed):
         '''count reads per position.
@@ -305,11 +305,12 @@ class CounterCompositionCpG(CounterCompositionNucleotides):
 
     '''compute CpG frequencies as well as nucleotide frequencies.
 
-    Note that CpG density is calculated across the merged exons
-    of a transcript. Thus, there might be difference between the CpG 
-    on a genomic level and on the transrcipt level depending on how
-    many genomic CpG are lost across an intron-exon boundary or how
-    many transcript CpG are created by exon fusion.
+    Note that CpG density is calculated across the merged exons of a
+    transcript. Thus, there might be difference between the CpG on a
+    genomic level and on the transrcipt level depending on how many
+    genomic CpG are lost across an intron-exon boundary or how many
+    transcript CpG are created by exon fusion.
+
     '''
 
     headers = SequenceProperties.SequencePropertiesCpg().getHeaders()
@@ -334,14 +335,13 @@ class CounterCompositionCpG(CounterCompositionNucleotides):
 
 # ------------------------------------------------------------------------
 class ClassifierChIPSeq(gtf2table.Classifier):
-
     """classify ChIPSeq intervals based on a reference annotation.
 
-    This assumes the input is a genome annotation derived from an ENSEMBL gtf file
-    created with gff2gtf.py.
+    This assumes the input is a genome annotation derived from an
+    ENSEMBL gtf file created with gff2gtf.py.
 
-    In contrast to transcripts, the intervals are fuzzy. Hence the classification
-    is based on a mixture of full/partial overlap.
+    In contrast to transcripts, the intervals are fuzzy. Hence the
+    classification is based on a mixture of full/partial overlap.
 
     An interval is classified as:
 
@@ -350,22 +350,23 @@ class ClassifierChIPSeq(gtf2table.Classifier):
     utr
        mostly part of UTR. These are intervals fully within the UTR of a gene.
     intergenic
-       mostly intergenic. These are intervals fully within the intergenic region
-       and more than 1kb from the closest exon.
+       mostly intergenic. These are intervals fully within the
+       intergenic region and more than 1kb from the closest exon.
     upstream
-       not any of the above and partly upstream of a gene. These are intervals 
-       that might overlap part of the UTR or the 1kb segment before to the 5'-terminal 
-       exon of a gene.
+       not any of the above and partly upstream of a gene. These are
+       intervals that might overlap part of the UTR or the 1kb segment
+       before to the 5'-terminal exon of a gene.
     downstream
-       not any of the abore and partly downstream of a gene. These are intervals 
-       that might overlap part of the UTR or the 1kb segment after to the 3'-terminal 
-       exon of a gene.
+       not any of the abore and partly downstream of a gene. These are
+       intervals that might overlap part of the UTR or the 1kb segment
+       after to the 3'-terminal exon of a gene.
     intronic
-       not any of the above and partly intronic. Note that these could also include
-       promotors of short alternative transcripts that skip one or more of the first
-       exons.
+       not any of the above and partly intronic. Note that these could
+       also include promotors of short alternative transcripts that
+       skip one or more of the first exons.
     ambiguous
        none of the above
+
     """
 
     header = ["is_cds", "is_utr", "is_upstream", "is_downstream",
@@ -455,7 +456,8 @@ class ClassifierChIPSeq(gtf2table.Classifier):
 
 
 def main(argv=None):
-    if argv == None:
+
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(
@@ -590,7 +592,7 @@ def main(argv=None):
 
     for bed in Bed.iterator(options.stdin):
 
-        if extra_fields == None:
+        if extra_fields is None:
 
             # output explicitely given headers
             if bed_headers:

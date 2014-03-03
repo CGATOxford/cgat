@@ -590,7 +590,8 @@ def FilterConflicts(old_predictions, new_predictions, removed_predictions,
 
     for this_prediction in old_predictions:
         try:
-            this_query_peptide, this_query_status, this_query_gene, this_query_transcript = \
+            (this_query_peptide, this_query_status, this_query_gene,
+             this_query_transcript) = \
                 re.split("\s+", this_prediction.mQueryToken)
         except ValueError:
             this_query_gene = None
@@ -600,16 +601,19 @@ def FilterConflicts(old_predictions, new_predictions, removed_predictions,
             last_query_gene = this_query_gene
             continue
 
-        overlap = min(last_prediction.mSbjctGenomeTo, this_prediction.mSbjctGenomeTo) - \
+        overlap = min(last_prediction.mSbjctGenomeTo,
+                      this_prediction.mSbjctGenomeTo) -\
             max(last_prediction.mSbjctGenomeFrom,
                 this_prediction.mSbjctGenomeFrom)
-        union   = max(last_prediction.mSbjctGenomeTo, this_prediction.mSbjctGenomeTo) - \
+        union = max(last_prediction.mSbjctGenomeTo,
+                    this_prediction.mSbjctGenomeTo) -\
             min(last_prediction.mSbjctGenomeFrom,
                 this_prediction.mSbjctGenomeFrom)
 
         # resolve overlap between different genes
         if overlap > 0 and \
-                (last_query_gene != this_query_gene or last_query_gene == None):
+                (last_query_gene != this_query_gene or
+                 last_query_gene is None):
 
             noverlaps += 1
             relative_overlap = 100 * overlap / union

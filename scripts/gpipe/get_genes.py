@@ -683,13 +683,13 @@ def main(argv=None):
                 param_tablename_genes = "%s.genes" % (schema)
                 param_tablename_quality = "%s.quality" % (schema)
                 param_tablename_cds = "%s.cds" % (schema)
-                statement =  """SELECT p.* FROM %s AS p
+                statement = """SELECT p.* FROM %s AS p
                 WHERE sbjct_token='%s' AND sbjct_strand='%s' AND OVERLAP(sbjct_genome_from, sbjct_genome_to, %s, %s) > 0
                 ORDER BY sbjct_genome_from
                 """ % (param_tablename_predictions, sbjct_token, sbjct_strand, range_from, range_to )
             elif param_tablename_reference:
                 param_tablename_quality = None
-                statement =  """SELECT p.* FROM %s AS p
+                statement = """SELECT p.* FROM %s AS p
                 WHERE sbjct_token='%s' AND sbjct_strand='%s' AND OVERLAP(sbjct_genome_from, sbjct_genome_to, %s, %s) > 0
                 ORDER BY sbjct_genome_from
                 """ % (param_tablename_reference, sbjct_token, sbjct_strand, range_from, range_to )
