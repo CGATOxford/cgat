@@ -259,7 +259,7 @@ class MultipleFastaIterator:
                  regex_identifier=None,
                  format="auto"):
 
-        if type(filenames) == types.StringType:
+        if isinstance(filenames, str):
             self.filenames = [filenames]
         else:
             self.filenames = filenames

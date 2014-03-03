@@ -773,7 +773,7 @@ def snip(filename, extension=None, alt_extension=None, path=False):
     else:
         root, ext = os.path.splitext(filename)
 
-    if path == True:
+    if path is True:
         snipped = os.path.basename(root)
     else:
         snipped = root

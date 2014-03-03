@@ -244,7 +244,7 @@ def main(argv=None):
                                 '\t'.join([str(new_map)] + data[9:]) + '\n')
                             noutput += 1
 
-        # options.multiple == False
+        # options.multiple is False
         else:
 
             if map_query != None:

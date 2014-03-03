@@ -213,8 +213,8 @@ def readIntervalsFromGFF(filename_gff, source, feature,
 
     ninput = 0
 
-    if format == None:
-        if type(filename_gff) == types.StringType:
+    if format is None:
+        if isinstance(filename_gff, str):
             fn = filename_gff
             if fn.endswith(".gtf") or fn.endswith(".gtf.gz"):
                 format = "gtf"
@@ -228,7 +228,7 @@ def readIntervalsFromGFF(filename_gff, source, feature,
     if format in ("gtf", "gff"):
         infile = None
         # read data without value
-        if type(filename_gff) == types.StringType:
+        if isinstance(filename_gff, str):
             E.info("loading data from %s for source '%s' and feature '%s'" %
                    (filename_gff, source, feature))
 

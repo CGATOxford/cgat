@@ -177,7 +177,7 @@ def createTable(dbhandle, error, options, rows=None, headers=None,
         present[hh] = 1
         take.append(h)
 
-        if map_column2type[h] == types.IntType:
+        if isinstance(map_column2type[h], int):
             max_value = max_values[h]
             if h > 2147483647:
                 t = "BIGINT DEFAULT '0'"
@@ -186,14 +186,14 @@ def createTable(dbhandle, error, options, rows=None, headers=None,
             else:
                 t = "SMALLINT DEFAULT '0'"
 
-        elif map_column2type[h] == types.FloatType:
+        elif isinstance(map_column2type[h], float):
             t = "FLOAT DEFAULT '0'"
         else:
             t = "TEXT"
 
         # remove special characters from column names
         if hh == "":
-            if first_column != None and header_index == 0:
+            if first_column is not None and header_index == 0:
                 hh = first_column
             else:
                 raise ValueError("column '%s' without header " % h)

@@ -126,7 +126,7 @@ def getRangesFromExons(exons, both_strands=False, contig_sizes=None):
     """convert a list of exons into a dictionary of ranges.
     """
 
-    if both_strands == True and contig_sizes == None:
+    if both_strands is True and contig_sizes == None:
         raise ValueError(
             "supply contig_sizes, if ranges are to computed on both strands.")
 

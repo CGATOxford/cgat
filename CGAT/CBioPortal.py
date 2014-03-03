@@ -773,7 +773,7 @@ class CBioPortal():
                 if (altered > 0):
                     case_altered = True
 
-            if case_altered == True:
+            if case_altered is True:
                 cases_altered += 1.0
 
         return cases_altered * 100 / len(case_list)

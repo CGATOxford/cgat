@@ -229,7 +229,7 @@ def guessFormat(infile, max_lines=10000, raises=True):
 
     if len(quals) == 1:
         return list(quals)[0]
-    elif raises == False:
+    elif raises is False:
         return quals
     else:
         raise ValueError(
@@ -247,7 +247,7 @@ def getOffset(format, raises=True):
         offsets = set([RANGES[f][0] for f in format])
         if len(offsets) == 1:
             return list(offsets)[0]
-        elif raises == False:
+        elif raises is False:
             return min(offsets)
         else:
             raise ValueError(

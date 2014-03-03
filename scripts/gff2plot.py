@@ -147,7 +147,7 @@ def enterParams(o, params):
     """
     r = {}
     for p in params:
-        if type(p) == types.TupleType:
+        if isinstance(p, tuple):
             p, f = p
         else:
             f = str

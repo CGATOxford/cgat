@@ -373,7 +373,8 @@ class Mali:
                     id, 0, self.countCharacters(line[:-1]), line[:-1])
             return True
 
-        if type(infile) == types.ListType or type(infile) == types.TupleType:
+        if isinstance(infile, list) or \
+           isinstance(infile, tuple):
             lines = infile
         else:
             lines = infile.readlines()
@@ -1286,7 +1287,8 @@ class SequenceCollection(Mali):
 
         pattern_parse_ranges = re.compile("(\S+)/(\d+)-(\d+)")
 
-        if type(infile) == types.ListType or type(infile) == types.TupleType:
+        if isinstance(infile, list) or \
+           isinstance(infile, tuple):
             lines = infile
         else:
             lines = infile.readlines()

@@ -85,7 +85,7 @@ def WriteChanges(genome1, genome2, changed, options):
         is_preferred2, pref2, codon2 = changes[1]
 
         # check, if thought out correctly
-        if is_preferred1 != False and is_preferred2 != True:
+        if is_preferred1 and not is_preferred2:
             raise "preferred/unpreferred mixed up."
 
         percent_difference = abs(pref2 - pref1) / (pref1 + pref2) * 200.0

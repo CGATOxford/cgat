@@ -1286,7 +1286,7 @@ class FilterIntrons(Filter):
             last_s = match.mSbjctBlockStarts[0]
             for q, s, b in zip(match.mQueryBlockStarts[1:], match.mSbjctBlockStarts[1:], match.mBlockSizes[1:]):
                 if last_s - s >= self.mIntronSize:
-                    is_confirmed == False
+                    is_confirmed is False
                     # positions of exon boundaries on genome in alignment
                     # coordinates
                     pos1, pos2 = last_s - 1 - \

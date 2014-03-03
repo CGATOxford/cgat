@@ -92,7 +92,7 @@ def index_file(filenames, db_name):
     outfile_index = open(db_name + ".idx", "w")
     outfile_fasta = open(db_name + ".fasta", "w")
 
-    if type(filenames) == types.StringType:
+    if isinstance(filenames, str):
         filenames = [filenames]
 
     identifiers = {}

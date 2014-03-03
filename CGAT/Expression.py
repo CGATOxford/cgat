@@ -2087,10 +2087,10 @@ def filterTagDataPandas(counts_table,
         percentile = float(filter_percentile_rowsums) / 100.0
         sum_counts = counts_table.sum(1)
         take = sum_counts > sum_counts.quantile(percentile)
-        E.info("percentile filtering at level %f: keep=%i, discard=%i" % (filter_percentile_rowsums,
-                                                                          sum(take ==
-                                                                              True),
-                                                                          sum(take=False)))
+        E.info("percentile filtering at level %f: keep=%i, discard=%i" %
+               (filter_percentile_rowsums,
+                sum(take is True),
+                sum(take=False)))
         counts_table = counts_table[take]
 
     return counts_table

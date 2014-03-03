@@ -210,8 +210,6 @@ class MaskerSeg (Masker):
     mOptions = "12 2.2 2.5 -x"
 
 
-
-
 # --------------------------------------------------------------------------
 class TranscriptPredictor(E.Experiment):
 

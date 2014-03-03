@@ -825,7 +825,7 @@ def Reroot(tree, taxa):
         # no rerooting, if all or no taxa within tree
         return tree.root
     elif len(nodes) > 1:
-        # if more than two nodes (i.e, if all_true == True)
+        # if more than two nodes (i.e, if all_true is True)
         nchildren = GetNumChildren(tree)
         nodes.sort(lambda x, y: cmp(nchildren[x], nchildren[y]))
         nodes.reverse()

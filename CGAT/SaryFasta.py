@@ -35,16 +35,11 @@ python SaryFasta.py [options] name [ files ]
 
 import os
 import sys
-import array
 import string
 import re
-import types
-import optparse
-import time
-import struct
 import hashlib
 import base64
-import shutil
+import gzip
 import subprocess
 import glob
 import random
@@ -111,7 +106,7 @@ def createDatabase(db, filenames,
     outfile_src = open(fn, "w")
     files_to_index.append(fn)
 
-    if type(filenames) == types.StringType:
+    if isinstance(filenames, str):
         filenames = [filenames]
 
     identifiers = {}

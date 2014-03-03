@@ -2188,14 +2188,11 @@ def setupSpeciesTrees(species_tree_lines, options):
     return species_nexus
 
 
-
-
 # ------------------------------------------------------------------------
 # ------------------------------------------------------------------------
 # ------------------------------------------------------------------------
-
-
-def annotateDuplicationEvents(best, gene_tree, species_nexus, best_nodes, counts_duplications, duplications,
+def annotateDuplicationEvents(best, gene_tree, species_nexus, best_nodes,
+                              counts_duplications, duplications,
                               min_distance, max_distance, distance_to_root,
                               extract_species, extract_quality,
                               map_id2location={}):
@@ -2406,16 +2403,6 @@ def annotateDuplicationEvents(best, gene_tree, species_nexus, best_nodes, counts
     duplications.append(d)
 
     return True
-
-# ------------------------------------------------------------------------
-# ------------------------------------------------------------------------
-# ------------------------------------------------------------------------
-
-
-
-# ------------------------------------------------------------------------
-# ------------------------------------------------------------------------
-# ------------------------------------------------------------------------
 
 
 def readSpeciesTrees(options):

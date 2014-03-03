@@ -133,7 +133,7 @@ class Chain:
         return(tr, qr)
 
     def get_regions(self, gapped):
-        if gapped == True:
+        if gapped is True:
             treg, qreg = self.tgr, self.qgr
         else:
             treg, qreg = self.tugr, self.qugr
@@ -203,7 +203,7 @@ class ChainCounter():
         return(s)
 
     def _wrap_basic_stats(self, s, tabbed=False):
-        if tabbed == False:
+        if tabbed is False:
             r = ''.join(
                 ["Mean:", s[0], ", median:", s[1], ", max:", s[2], ", min:", s[3], "\n"])
         else:
@@ -237,7 +237,7 @@ class CounterPerChromosome(ChainCounter):
         self.container = Bitsets_Container()
         self.gapped = gapped
         self.cov = 0
-        if self.gapped == True:
+        if self.gapped is True:
             self.name = "gapped"
         else:
             self.name = "ungapped"
@@ -355,7 +355,7 @@ class CounterOfGappedChainLengths(ChainCounter):
         self.tcls, self.qcls = [], []
         self.stats = {}
         self.gapped = gapped
-        if self.gapped == True:
+        if self.gapped is True:
             self.name = "gapped"
         else:
             self.name = "ungapped"
@@ -533,7 +533,7 @@ def main(argv=None):
     counters.append(CounterOfGappedChainLengths(gapped=True))
     counters.append(CounterOfGappedChainLengths(gapped=False))
 
-    if options.identity == True:
+    if options.identity is True:
         if options.targetgenome == 0 or options.querygenome == 0:
             raise Exception(
                 "Target and query database must be specified with the \"-e\" flag")
@@ -541,7 +541,7 @@ def main(argv=None):
         q_db_path = os.path.join(options.dbpath, options.querygenome)
         counters.append(CounterPercentIdentify(t_db_path, q_db_path))
 
-    if options.errors == True:
+    if options.errors is True:
         if options.targetgenome == 0 or options.querygenome == 0:
             raise Exception(
                 "Target and query database must be specified with the \"-e\" flag")
@@ -559,7 +559,7 @@ def main(argv=None):
 
     for counter in counters:
         counter.report(options)
-        if options.report == True:
+        if options.report is True:
             counter.tabbed_report(options, E)
 
     options.stdout.write("\n********** chain2stats report ends **********\n\n")

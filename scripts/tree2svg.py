@@ -386,7 +386,7 @@ def main():
     if options.font_size_tips != None:
         plot.setFontSize(options.font_size_tips)
 
-    if options.plot_ruler == False:
+    if options.plot_ruler is False:
         plot.setRulerElements([])
 
     if options.show_branchlengths:

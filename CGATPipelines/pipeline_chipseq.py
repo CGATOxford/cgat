@@ -514,7 +514,7 @@ def prepareBAMForPeakCalling(infiles, outfile):
 ############################################################
 ############################################################
 ############################################################
-if PARAMS["calling_normalize"] == True:
+if PARAMS["calling_normalize"] is True:
     '''Normalise the number of reads in a set of prepared bam files.
 
     The minimum number of reads in a prepared bam file is calculated and this

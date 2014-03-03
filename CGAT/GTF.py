@@ -155,7 +155,7 @@ class Entry:
     def getAttributeField(self, full=True):
         aa = []
         for k, v in self.attributes.items():
-            if type(v) == types.StringType:
+            if isinstance(v, str):
                 aa.append('%s "%s"' % (k, v))
             else:
                 aa.append('%s %s' % (k, str(v)))
@@ -167,7 +167,7 @@ class Entry:
         else:
             return "; ".join(aa)
 
-        return attributes
+        return self.attributes
 
     def __cmp__(self, other):
         # note: does compare by strand as well!
@@ -177,7 +177,7 @@ class Entry:
     def __str__(self):
 
         def _todot(val):
-            if val == None:
+            if val is None:
                 return "."
             else:
                 return str(val)
@@ -339,7 +339,7 @@ def asRanges(gffs, feature=None):
     The returned intervals are sorted.
     """
 
-    if type(feature) == types.StringType:
+    if isinstance(feature, str):
         gg = filter(lambda x: x.feature == feature, gffs)
     elif feature:
         gg = filter(lambda x: x.feature in feature, gffs)

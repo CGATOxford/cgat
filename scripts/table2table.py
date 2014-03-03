@@ -780,13 +780,13 @@ def main(argv=None):
                 if method == "upper-bound":
                     for c in options.columns:
                         for r in range(nrows):
-                            if type(table[c][r]) == types.FloatType and \
+                            if isinstance(table[c][r], float) and \
                                     table[c][r] > boundary:
                                 table[c][r] = new_value
                 else:
                     for c in options.columns:
                         for r in range(nrows):
-                            if type(table[c][r]) == types.FloatType and \
+                            if isinstance(table[c][r], float) and \
                                     table[c][r] < boundary:
                                 table[c][r] = new_value
 
@@ -804,7 +804,7 @@ def main(argv=None):
                 qvalues = map(
                     str, Stats.adjustPValues(pvalues, method=options.fdr_method))
 
-                if options.fdr_add_column == None:
+                if options.fdr_add_column is None:
                     x = 0
                     for c in options.columns:
                         table[c] = qvalues[x:x + nrows]
@@ -830,7 +830,9 @@ def main(argv=None):
                 other_table_name = options.parameters[0]
                 del options.parameters[0]
                 other_fields, other_table = CSV.ReadTable(
-                    open(other_table_name, "r"), with_header=options.has_headers, as_rows=False)
+                    open(other_table_name, "r"),
+                    with_header=options.has_headers,
+                    as_rows=False)
 
                 # convert all values to float
                 for c in options.columns:
@@ -843,8 +845,8 @@ def main(argv=None):
                 # set 0s to 1 in the other matrix
                 for c in options.columns:
                     for r in range(nrows):
-                        if type(table[c][r]) == types.FloatType and \
-                                type(other_table[c][r]) == types.FloatType and \
+                        if isinstance(table[c][r], float) and \
+                                isinstance(other_table[c][r], float) and \
                                 other_table[c][r] != 0:
                             table[c][r] /= other_table[c][r]
                         else:
@@ -853,7 +855,7 @@ def main(argv=None):
         # convert back
         for c in options.columns:
             for r in range(nrows):
-                if type(table[c][r]) == types.FloatType:
+                if isinstance(table[c][r], float):
                     table[c][r] = options.format % table[c][r]
 
         options.stdout.write("\t".join(fields) + "\n")

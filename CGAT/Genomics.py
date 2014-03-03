@@ -2176,10 +2176,10 @@ INTRON_TYPES = (("U2-GT/AG", "GT", "AG"),
 def GetIntronType(sequence, both_strands=False):
     """return intron type for an intronic sequence.
 
-    If both_strands == True, both strands are checked.
+    If both_strands is True, both strands are checked.
     """
 
-    if both_strands == False:
+    if both_strands is False:
         for name, prime5, prime3 in INTRON_TYPES:
             if sequence[:len(prime5)].upper() == prime5 and \
                     sequence[-len(prime3):].upper() == prime3:

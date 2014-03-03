@@ -40,7 +40,7 @@ def ConvertDictionary(d, map={}):
 
     for k, vv in d.items():
 
-        if vv == None:
+        if vv is None:
             continue
         v = vv.strip()
         try:
@@ -97,14 +97,14 @@ def GetMapColumn2Type(rows, ignore_empty=False, get_max_values=False):
 
             is_full[h] = True
 
-            if type(row[h]) == types.IntType:
+            if isinstance(row[h], int):
                 t = types.IntType
                 if h not in max_values:
                     max_values[h] = int(row[h])
                 else:
                     max_values[h] = max(h, int(row[h]))
 
-            elif type(row[h]) == types.FloatType:
+            elif isinstance(row[h], float):
                 t = types.FloatType
             else:
                 continue
@@ -227,7 +227,7 @@ def ReadTable(lines,
     If remove_incomplete, incomplete rows are simply ignored.
     """
 
-    if type(lines) == types.FileType:
+    if isinstance(lines, file):
         lines = lines.readlines()
 
     lines = filter(lambda x: x[0] != "#", lines)

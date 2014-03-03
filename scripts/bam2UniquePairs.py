@@ -101,7 +101,7 @@ def main(argv=None):
                     b = True
                     best_map[key] = 1
 
-            if u == True or b == True:
+            if u is True or b is True:
                 uORb_map[key] = 1
 
             properly_paired += 1
