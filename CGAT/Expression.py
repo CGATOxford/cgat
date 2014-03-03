@@ -1671,13 +1671,15 @@ def loadCuffdiff(infile, outfile):
         headers = "gene_id\t" + "\t".join([x for x in samples])
         outf.write(headers + "\n")
 
+        E.debug("Number of genes = %s " % len(genes))
+
         for gene in genes.iterkeys():
             outf.write(gene + "\t")
             x = 0
             while x < len(samples) - 1:
                 outf.write(genes[gene][samples[x]] + "\t")
                 x += 1
-                outf.write(genes[gene][samples[len(samples) - 1]] + "\n")
+            outf.write(genes[gene][samples[len(samples) - 1]] + "\n")
 
         outf.close()
 
@@ -1690,7 +1692,7 @@ def loadCuffdiff(infile, outfile):
                      " >> %(outfile)s.log")
         P.run()
 
-        os.unlink(tmpf)
+        # os.unlink(tmpf)
 
     # build convenience table with tracks
     tablename = prefix + "_isoform_levels"
