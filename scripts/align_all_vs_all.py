@@ -51,7 +51,7 @@ import CGAT.FastaIterator as FastaIterator
 
 def main(argv=None):
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(version="%prog version: $Id: align_all_vs_all.py 2782 2009-09-10 11:40:29Z andreas $",

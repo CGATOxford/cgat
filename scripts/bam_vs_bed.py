@@ -92,17 +92,17 @@ def main(argv=None):
     filename_bam = options.filename_bam
     filename_bed = options.filename_bed
 
-    if filename_bam == None and filename_bed == None:
+    if filename_bam is None and filename_bed is None:
         if len(args) != 2:
             raise ValueError(
                 "please supply a bam and a bed file or two bed-files.")
 
         filename_bam, filename_bed = args
 
-    if filename_bed == None:
+    if filename_bed is None:
         raise ValueError("please supply a bed file to compare to.")
 
-    if filename_bam == None:
+    if filename_bam is None:
         raise ValueError("please supply a bam file to compare with.")
 
     E.info("intersecting the two files")

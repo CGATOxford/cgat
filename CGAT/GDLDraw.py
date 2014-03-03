@@ -66,7 +66,7 @@ class Node:
 
         statement = ' title: "%s" ' % self.mTitle
 
-        if self.mLabel != None:
+        if self.mLabel is not None:
             statement += ' label: "%s" ' % self.mLabel
 
         if self.mShape:

@@ -93,7 +93,7 @@ def processSequence(key, description_rest, sequence, options, mask_regions=None)
                                  (global_file_id, chunk_size, global_written2file, written, lsequence, first_res, last_res))
 
         # check if we need to open a new sequence file:
-        if global_outfile == None:
+        if global_outfile is None:
             global_file_id += 1
             global_outfile = open(options.output_pattern % global_file_id, "w")
 
@@ -126,7 +126,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(

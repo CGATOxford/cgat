@@ -23,8 +23,7 @@ import pysam
 import sqlite3
 from rpy2.robjects import r as R
 
-P.getParameters(
-    "pipeline.ini")
+P.getParameters(["pipeline.ini"])
 
 PARAMS = P.PARAMS
 

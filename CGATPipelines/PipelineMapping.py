@@ -113,7 +113,7 @@ def getSequencingInformation(track):
                           (second_pair, first_pair))
         second_length = getReadLength(second_pair)
 
-    return SequenceInformation._make((second_pair != None,
+    return SequenceInformation._make((second_pair is not None,
                                       first_pair, second_pair,
                                       getReadLength(first_pair),
                                       second_length,
@@ -151,11 +151,11 @@ def mergeAndFilterGTF(infile, outfile, logfile,
     contigs = set(IndexedFasta.IndexedFasta(genome).getContigs())
 
     #
-    if remove_contigs != None:
+    if remove_contigs is not None:
         rx_contigs = re.compile(remove_contigs)
         E.info("removing contigs %s" % remove_contigs)
 
-    if rna_file != None:
+    if rna_file is not None:
         if not os.path.exists(rna_file):
             E.warn("file '%s' to remove repetetive rna does not exist" %
                    rna_file)

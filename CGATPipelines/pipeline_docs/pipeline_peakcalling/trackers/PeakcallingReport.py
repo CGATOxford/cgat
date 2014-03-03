@@ -95,7 +95,7 @@ MAP_TRACKS = {
 def selectTracks(all_tracks, subset):
     '''select tracks from *all_tracks* according to *subset*.
     '''
-    if subset == None:
+    if subset is None:
         return MAP_TRACKS["default"]
     elif "all" in subset:
         return sorted(all_tracks)

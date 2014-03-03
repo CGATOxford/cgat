@@ -122,7 +122,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(
@@ -256,7 +256,7 @@ def main(argv=None):
                     options.headers = map(lambda x: data[x], options.columns)
                     del lines[0]
 
-                if options.aggregate_column != None:
+                if options.aggregate_column is not None:
                     print "category\t%s" % string.join(options.headers, "\t")
 
             vals = [[] for x in range(len(options.columns))]
@@ -276,7 +276,7 @@ def main(argv=None):
                     except ValueError:
                         continue
 
-                    if options.aggregate_column != None:
+                    if options.aggregate_column is not None:
 
                         if last_aggregate != data[options.aggregate_column]:
 
@@ -290,10 +290,10 @@ def main(argv=None):
                     if options.scale:
                         val *= options.scale
 
-                    if options.max_value != None and val > options.max_value:
+                    if options.max_value is not None and val > options.max_value:
                         val = options.max_value
 
-                    if options.min_value != None and val < options.min_value:
+                    if options.min_value is not None and val < options.min_value:
                         val = options.min_value
 
                     vals[c].append(val)

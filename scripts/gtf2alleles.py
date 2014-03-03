@@ -746,7 +746,7 @@ def buildAlleles(transcript,
             cds_first_stop = -1
             lpeptide, lcds = len(peptide), len(cds)
 
-        if peptide == None and nframeshifts == 0:
+        if peptide is None and nframeshifts == 0:
             E.warn(
                 "transcript %s is knockout, though there are no indels - must be nonsense mutation" % (transcript_id))
 

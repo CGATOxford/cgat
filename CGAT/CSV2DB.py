@@ -311,7 +311,7 @@ def run(infile, options):
         quick_import_statement = "sqlite3 -header -csv -separator '\t' %s '.import %%s %s'" % (
             options.database, options.tablename)
 
-    if options.header != None:
+    if options.header is not None:
         options.header = [x.strip() for x in options.header.split(",")]
 
     if options.utf:

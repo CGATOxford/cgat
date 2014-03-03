@@ -58,7 +58,7 @@ class MappingStatus(Status):
         WHERE track = '%(track)s'
         AND pairs_total > 0""")
 
-        if value == None:
+        if value is None:
             return "NA", 0
 
         if value >= 0.8:

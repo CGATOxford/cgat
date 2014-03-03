@@ -415,7 +415,7 @@ def createDatabase(db, iterator,
 
         index_name = db + ".cdx"
 
-        if write_chunks and random_access_points == None or random_access_points <= 0:
+        if write_chunks and random_access_points is None or random_access_points <= 0:
             raise ValueError("specify chunksize in --random-access-points")
 
     else:
@@ -433,7 +433,7 @@ def createDatabase(db, iterator,
     outfile_index = open(index_name, "w")
     if compression == "dictzip":
         import dictzip
-        if random_access_points == None or random_access_points <= 0:
+        if random_access_points is None or random_access_points <= 0:
             raise ValueError(
                 "specify dictzip chunksize in --random-access-points")
         outfile_fasta = dictzip.open(

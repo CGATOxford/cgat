@@ -92,7 +92,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(
@@ -154,7 +154,7 @@ def main(argv=None):
             outfile = options.stdout
         elif options.output_filename_pattern:
             ntree += 1
-            if outfile != None:
+            if outfile is not None:
                 outfile.close()
             outfile = open(options.output_filename_pattern % ntree, "w")
         else:

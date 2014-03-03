@@ -403,12 +403,12 @@ def buildUTRExtension(infile, outfile):
         if strand == "-":
             start5, end5, start3, end3 = start3, end3, start5, end5
 
-        if start5 == None:
+        if start5 is None:
             start5, end5, l5 = "", "", ""
         else:
             l5 = end5 - start5
 
-        if start3 == None:
+        if start3 is None:
             start3, end3, l3 = "", "", ""
         else:
             l3 = end3 - start3
@@ -462,7 +462,7 @@ def buildUTRExtension(infile, outfile):
         # note that None counts as 0 in min/max.
         for i, d in enumerate(zip(old_coordinates, new_coordinates)):
             if i % 2 == 0:
-                v = [z for z in d if z != None]
+                v = [z for z in d if z is not None]
                 if v:
                     max_coordinates.append(min(v))
                 else:

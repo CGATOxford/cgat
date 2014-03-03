@@ -86,7 +86,7 @@ def runIDR(options, peakfile1, peakfile2):
     batch-consistency-analysis.r
     '''
 
-    if options.half_width != None:
+    if options.half_width is not None:
         R.assign("half.width", options.half_width)
     else:
         R('''half.width = NULL''')

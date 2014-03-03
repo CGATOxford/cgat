@@ -364,7 +364,7 @@ def GetIntronPositions(seq, gap_char="-"):
 
         last_char = x
 
-        if last_upper == None:
+        if last_upper is None:
             transitions.append(x)
         elif seq[x] in string.uppercase and not last_upper:
             transitions.append(x)
@@ -787,11 +787,11 @@ def ClusterMatrixClosestDistance(identifiers,
             if matrix_compatibility[x][m] > param_clustering_max_compatibility:
                 continue
 
-            if best == None or matrix_identity[x][m] > best:
+            if best is None or matrix_identity[x][m] > best:
                 best = matrix_identity[x][m]
                 best_m = m
 
-        if best != None:
+        if best is not None:
             if param_loglevel >= 2:
                 print "# assigning %s to %s: pid=%5.2f, cov=%5.2f, cmp=%5.2f" % (id, identifiers[best_m],
                                                                                  matrix_identity[
@@ -1005,7 +1005,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     try:

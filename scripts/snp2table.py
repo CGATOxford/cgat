@@ -507,11 +507,11 @@ class BaseAnnotatorSpliceSites(BaseAnnotator):
                     new_splice_name, new_prime5, new_prime3 = self.hasSpliceMotif(
                         new_seq5, new_seq3)
 
-                    if splice_name == None and new_splice_name == None:
+                    if splice_name is None and new_splice_name is None:
                         code = "U"
-                    elif new_splice_name == None:
+                    elif new_splice_name is None:
                         code = "D"
-                    elif splice_name == None:
+                    elif splice_name is None:
                         code = "C"
                     elif splice_name == new_splice_name:
                         code = "S"

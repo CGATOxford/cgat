@@ -106,7 +106,7 @@ class ExternalGraph:
         """
 
         if self.mIsOpen:
-            if weight != None:
+            if weight is not None:
                 self.mInputFile.write(
                     "%s\t%s\t%s\n" % (map(str, (node1, node2, weight))))
             else:

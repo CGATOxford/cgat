@@ -61,7 +61,7 @@ def parseIdentifier(id, options):
 
 def buildIdentifier(schema, transcript, gene, quality, options):
 
-    if transcript == None:
+    if transcript is None:
         return options.separator.join((schema, gene))
     else:
         return options.separator.join((schema, transcript, gene, quality))
@@ -144,7 +144,7 @@ def getMergers(tree, map_strain2species, options):
                         this_node_set = None
                         break
 
-            if this_node_set == None:
+            if this_node_set is None:
                 genes[node_id] = None
                 return
 
@@ -451,7 +451,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(version="%prog version: $Id: tree_strain2species.py 2782 2009-09-10 11:40:29Z andreas $",

@@ -122,7 +122,7 @@ def main(argv=None):
                 if options.chop:
                     r = r[:-1]
                 if r not in take:
-                    if unpaired_file == None:
+                    if unpaired_file is None:
                         continue
                     else:
                         unpaired_file.write("\n".join(l) + "\n")

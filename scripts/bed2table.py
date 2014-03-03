@@ -519,7 +519,7 @@ def main(argv=None):
 
     (options, args) = E.Start(parser)
 
-    if options.bed_headers != None:
+    if options.bed_headers is not None:
         bed_headers = [x.strip() for x in options.bed_headers.split(",")]
         if len(bed_headers) < 3:
             raise ValueError("a bed file needs at least three columns")

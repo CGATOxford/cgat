@@ -272,7 +272,7 @@ def maskSequences(sequences, masker=None):
         # run dust
         masked_seq = masker_object.maskSequences(
             [x.upper() for x in sequences])
-    elif masker == None:
+    elif masker is None:
         masked_seq = [x.upper() for x in sequences]
     else:
         raise ValueError("unknown masker %s" % masker)

@@ -87,14 +87,14 @@ def readTable(lines,
 
     # delete columns with colour information/legend
     to_delete = []
-    if row_names != None:
+    if row_names is not None:
         legend = []
         if take_columns == "all":
             to_delete.append(row_names)
     else:
         legend = None
 
-    if colours != None:
+    if colours is not None:
         if take_columns == "all":
             to_delete.append(colours)
 
@@ -114,10 +114,10 @@ def readTable(lines,
         if not data or not [x for x in data if x != ""]:
             continue
         outfile.write(string.join(map(lambda x: data[x], take), "\t") + "\n")
-        if row_names != None:
+        if row_names is not None:
             legend.append(data[row_names])
 
-        if colours != None:
+        if colours is not None:
             c.append(data[colours])
 
     outfile.close()
@@ -170,7 +170,7 @@ def FuncScatterDiagonal(data):
 
 def main(argv=None):
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(
@@ -415,7 +415,7 @@ def main(argv=None):
         else:
             extra_options = ""
 
-        if options.legend != None and len(legend):
+        if options.legend is not None and len(legend):
             extra_options += ", legend=c('%s')" % "','".join(legend)
 
         if options.labels:

@@ -315,7 +315,7 @@ def cropGFF(gffs, options):
 
 def main(argv=None):
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(
@@ -604,7 +604,7 @@ def main(argv=None):
             return id
 
         if options.sanitize == "genome":
-            if genome_fasta == None:
+            if genome_fasta is None:
                 raise ValueError(
                     "please specify --genome-file= when using --sanitize=genome")
             f = genome_fasta.getToken

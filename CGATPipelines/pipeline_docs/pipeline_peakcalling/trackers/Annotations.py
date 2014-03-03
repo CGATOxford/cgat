@@ -54,7 +54,7 @@ class AnnotationsAssociated(PeakcallingReport.DefaultTracker, AnnotationSlicer):
         if slice and "." in slice:
             slice, subset = slice.split(".")
             return self.mSelectMixture % locals()
-        elif slice == "all" or slice == None:
+        elif slice == "all" or slice is None:
             return self.mSelectAll % locals()
         else:
             return self.mSelectSubset % locals()
@@ -84,7 +84,7 @@ class Annotations(PeakcallingReport.DefaultTracker, AnnotationSlicer):
         select = self.select
         table = self.table
 
-        if slice == "all" or slice == None:
+        if slice == "all" or slice is None:
             data = self.getFirstRow(
                 "%(select)s FROM %(track)s_%(table)s WHERE %(where)s" % locals())
         else:

@@ -174,7 +174,7 @@ def frequencies2logodds(counts, background_frequencies=None):
 
     motif_width, nalphabet = counts.shape
 
-    if background_frequencies == None:
+    if background_frequencies is None:
         # use uniform background
         f = 1.0 / nalphabet
         background_frequencies = [f] * nalphabet
@@ -250,7 +250,7 @@ def sequences2motif(outfile, sequences, background_frequencies=None, format="MAS
     lalphabet = len(alphabet)
     char2index = dict([(y, x) for x, y in enumerate(alphabet)])
 
-    if background_frequencies == None:
+    if background_frequencies is None:
         # use uniform background
         f = 1.0 / lalphabet
         background_frequencies = [f] * lalphabet

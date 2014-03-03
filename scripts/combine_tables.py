@@ -93,7 +93,7 @@ def concatenateTables(outfile, options, args):
 
     rx = re.compile(options.regex_filename)
 
-    if options.headers == None or options.headers == "auto":
+    if options.headers is None or options.headers == "auto":
         row_headers = [
             [y for y in rx.search(x).groups()] for x in options.filenames]
     else:

@@ -328,7 +328,7 @@ def buildAlleles(sequence, variants, reference_start=0, phased=True):
     allele1 = list(sequence.lower())
     allele2 = list(sequence.lower())
 
-    if reference_start == None:
+    if reference_start is None:
         feature_start = 0
     else:
         feature_start = reference_start

@@ -678,7 +678,7 @@ def Start(parser=None,
     if not no_parsing:
         (global_options, global_args) = parser.parse_args(argv[1:])
 
-    if global_options.random_seed != None:
+    if global_options.random_seed is not None:
         random.seed(global_options.random_seed)
 
     if add_pipe_options:

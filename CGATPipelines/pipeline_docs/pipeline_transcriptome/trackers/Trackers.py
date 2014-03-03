@@ -65,7 +65,7 @@ class DefaultSlicer:
                 subset = subset[0]
 
         all_slices = trackers_default_slices + trackers_derived_slices.keys()
-        if subset == None or subset == "default":
+        if subset is None or subset == "default":
             return trackers_default_slices
         elif subset == "complete":
             return all_slices
@@ -115,7 +115,7 @@ class AnnotationsAssociated(DefaultSlicer, TrackerSQL):
         where = self.mWhere
         if not table or not columns:
             raise NotImplementedError
-        if slice != None and "." in slice:
+        if slice is not None and "." in slice:
             slice, subset = slice.split(".")
             if subset in trackers_derived_slices and track != trackers_derived_slices[subset]:
                 return None
@@ -126,7 +126,7 @@ class AnnotationsAssociated(DefaultSlicer, TrackerSQL):
                 return self.mSelectSlice % locals()
             else:
                 return None
-        elif slice == "all" or slice == None:
+        elif slice == "all" or slice is None:
             return self.mSelectAll % locals()
         else:
             return self.mSelectSubset % locals()
@@ -151,7 +151,7 @@ class TranscriptLengths(DefaultSlicer, TrackerSQL):
 
         table = sqlalchemy.Table(
             "%s_annotation" % track, self.metadata, autoload=True)
-        if slice == None or slice == "all":
+        if slice is None or slice == "all":
             data = [x[0]
                     for x in self.execute(sqlalchemy.select(columns=[table.c.exons_sum, ]))]
         elif slice == "linc":
@@ -195,7 +195,7 @@ class Annotations(DefaultSlicer, TrackerSQL):
                         FROM %(track)s_annotation AS a, %(track)s_%(slice)s AS s WHERE %(where)s AND a.gene_id = s.gene_id""" % locals() )
             else:
                 return []
-        elif slice == "all" or slice == None:
+        elif slice == "all" or slice is None:
             data = self.getFirstRow(
                 "%(select)s FROM %(track)s_annotation WHERE %(where)s" % locals())
         else:
@@ -991,7 +991,7 @@ class Overlaps(TrackerSQL):
         if slice == "None":
             slice == "all"
         tablename = self.mTableName % slice
-        if self.mColumn == None:
+        if self.mColumn is None:
             raise NotImplementedError("mColumn not set in derived class.")
         column = self.mColumn
         data = self.get( "SELECT set2, %(column)s1 FROM %(tablename)s WHERE set1 = '%(track)s'" ) +\
@@ -1119,7 +1119,7 @@ class SharedGenes(TrackerSQL):
 
 #         select = self.mSelect % self.mTableName
 #         order = self.mOrder
-#         if slice == "all" or slice == None:
+#         if slice == "all" or slice is None:
 #             data = list( self.execute( """%s AND track = '%s' ORDER BY %s""" % (select, track, order)).fetchone() )
 #         else:
 #             slice, subset, workspace = slice.split(":")
@@ -1139,7 +1139,7 @@ class SharedGenes(TrackerSQL):
 
 #         select = self.mSelect % self.mTableName
 
-#         if slice == "all" or slice == None:
+#         if slice == "all" or slice is None:
 #             data = self.getFirstRow( """%s AND track = '%s'""" % (select, track, order))
 #         else:
 #             slice, subset, workspace = slice.split(":")
@@ -1360,7 +1360,7 @@ class GO(TrackerSQL):
 
         select = self.mSelect % self.mTableName
         order = self.mOrder
-        if slice == "all" or slice == None:
+        if slice == "all" or slice is None:
             data = list(self.execute(
                 """%s AND track = '%s' ORDER BY %s""" % (select, track, order)).fetchone() )
         else:
@@ -1382,7 +1382,7 @@ class GOSummary(GO):
 
         select = self.mSelect % self.mTableName
 
-        if slice == "all" or slice == None:
+        if slice == "all" or slice is None:
             data = self.getFirstRow(
                 """%s AND track = '%s'""" % (select, track, order))
         else:

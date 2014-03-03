@@ -47,7 +47,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(version="%prog version: $Id: rename_links.py 2782 2009-09-10 11:40:29Z andreas $",
@@ -74,7 +74,7 @@ def main(argv=None):
 
     (options, args) = E.Start(parser)
 
-    if options.old_pattern == None or options.new_pattern == None:
+    if options.old_pattern is None or options.new_pattern is None:
         raise "please specify both an old and a new pattern."
 
     rx_old = re.compile(options.old_pattern)

@@ -341,7 +341,7 @@ def main(argv=None):
             n = None
             for t in iterator:
                 if t.pos - end > 1 or n != t.n:
-                    if start != None:
+                    if start is not None:
                         yield start, end, n
                     start = t.pos
                     end = t.pos

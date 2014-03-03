@@ -2661,10 +2661,10 @@ class CounterDistanceGenes(CounterDistance):
                     any3 = "na"
 
             # record the shortest distance
-            if self.mDistance3 == None or self.mDistance5 == None:
-                if self.mDistance3 == None:
+            if self.mDistance3 is None or self.mDistance5 is None:
+                if self.mDistance3 is None:
                     closest_id, closest_dist, closest_strand = self.mData5.gene_id, self.mDistance5, self.strand5
-                elif self.mDistance5 == None:
+                elif self.mDistance5 is None:
                     closest_id, closest_dist, closest_strand = self.mData3.gene_id, self.mDistance3, self.strand3
                 else:
                     closest_id, closest_dist, closest_strand = "na", "na", "na"
@@ -3497,7 +3497,7 @@ class CounterBigwigCounts(_gtf2table.Counter):
         l = 0
         for start, end in segments:
             d = self.mBigwigFile.summarize(contig, start, end, end - start)
-            if t != None:
+            if t is not None:
                 t = numpy.append(t, d.sum_data)
                 valid = numpy.append(valid, d.valid_count)
             else:

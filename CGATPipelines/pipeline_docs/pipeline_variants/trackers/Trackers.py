@@ -17,7 +17,7 @@ class StrainTracker(VariantsTracker):
 
         tracks = VariantsTracker.getTracks(self)
 
-        if subset == None:
+        if subset is None:
             return ["all"] + tracks
         else:
             return tracks
@@ -192,7 +192,7 @@ class SubstitutionMatrixNucleotides(VariantsTracker):
     # def getSlices( self, subset = None):
     # if subset == "all": return ["all"]
     # else: return ["A","B","C","D", "G","I","M","N","P","R","S","U","V","X"]
-    #     if subset == None:
+    #     if subset is None:
     #         return []
     #     else:
     #         return subset

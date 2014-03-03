@@ -44,12 +44,8 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
-import string
 import re
-import optparse
-import math
 
 import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
@@ -57,18 +53,17 @@ import CGAT.Mali as Mali
 import CGAT.Exons as Exons
 import CGAT.WrapperMuscle as WrapperMuscle
 import CGAT.Intervals as Intervals
-from peptides2cds import getMapPeptide2Cds
+from CGAT.Peptides2Cds import getMapPeptide2Cds
 import alignlib_lite
-import CGAT.GTF as GTF
 import CGAT.IOTools as IOTools
 
 
 def buildGeneMap(identifiers, separator="|"):
     """build map of predictions to genes.
 
-    Use an identifier syntax of species|transcript|gene.
-    If none is given, all transcripts are assumed to be 
-    from their own gene.
+    Use an identifier syntax of species|transcript|gene.  If none is
+    given, all transcripts are assumed to be from their own gene.
+
     """
 
     map_id2gene, map_gene2ids = {}, {}
@@ -538,7 +533,7 @@ def writeToFile(mali, section, options, is_aligned=True):
 
 def main(argv=None):
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(

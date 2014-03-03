@@ -40,7 +40,7 @@ class AnnotatorDistance(TrackerSQL):
 
         select = self.mSelect % self.mTableName
         order = self.mOrder
-        if slice == "all" or slice == None:
+        if slice == "all" or slice is None:
             data = list(self.execute(
                 """%s AND track = '%s' ORDER BY %s""" % (select, track, order)).fetchone() )
         else:
@@ -87,7 +87,7 @@ class AnnotatorDistanceSummary(AnnotatorDistance):
 
         select = self.mSelect % self.mTableName
 
-        if slice == "all" or slice == None:
+        if slice == "all" or slice is None:
             data = self.getFirstRow(
                 """%s AND track = '%s'""" % (select, track, order))
         else:

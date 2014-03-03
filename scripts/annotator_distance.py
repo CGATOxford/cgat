@@ -384,7 +384,7 @@ class CountingResults(object):
         The method needs to be called after :meth:update.
         """
 
-        assert self.mStats != None, "updateFDR called before calling update."
+        assert self.mStats is not None, "updateFDR called before calling update."
 
         for label in self.mLabels:
             pvalue = self.mStats[label].pvalue
@@ -402,8 +402,8 @@ class CountingResults(object):
         """update stats from given counts.
         """
 
-        assert self.mObservedCounts != None, "update called without observed counts."
-        assert self.mSimulatedCounts != None, "update called without simulated counts."
+        assert self.mObservedCounts is not None, "update called without observed counts."
+        assert self.mSimulatedCounts is not None, "update called without simulated counts."
 
         self.mStats = {}
 

@@ -666,7 +666,7 @@ def makeAnnotatorROIGO(roi_class, outfile, gofile, workspace, overlap=None):
                                          outfile,
                                          overlap=overlap)
 
-    if segments == None:
+    if segments is None:
         E.info("no segments for roi_class `%s` and overlap `%s` - no computation." % (roi_class,
                                                                                       overlap))
         return

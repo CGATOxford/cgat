@@ -646,11 +646,11 @@ class GOOboXmlHandler (ContentHandler):
                     parent, self.goid, relationship="parent_of")
 
         # and not self.name.has_key(self.goid):
-        elif name == "name" and not self.obsolete and not self.goid == None and self.goNode.name == None:
+        elif name == "name" and not self.obsolete and not self.goid is None and self.goNode.name is None:
             self.goNode.setName(self.cdata.strip())
 
         # and not self.name.has_key(self.goid):
-        elif name == "defstr" and not self.obsolete and not self.goid == None:
+        elif name == "defstr" and not self.obsolete and not self.goid is None:
             self.goNode.setDescription(self.cdata.strip())
 
         elif name == "term" and self.obsolete and self.namespace == self.elementNamespace:
@@ -935,7 +935,7 @@ class GOGraph(networkx.DiGraph):
 
         self.namespace = namespace
 
-        if GOOboXmlFileName != None:
+        if GOOboXmlFileName is not None:
             self.parseOboXml(GOOboXmlFileName)
 
     # Parses the given OBO XML file and creates a GOGraph
@@ -1114,7 +1114,7 @@ def readPValues(infile, synonyms={}):
             else:
                 parser = _parse3
             continue
-        if parser == None:
+        if parser is None:
             raise ValueError(
                 "don't know how to parse this file at line %s" % line)
 
@@ -1536,7 +1536,7 @@ def main(argv):
         options.ontology = map_ontology2namespace.keys()
 
     #########################################
-    if options.filename_pvalues == None:
+    if options.filename_pvalues is None:
         E.info("reading pvalues from stdin")
         all_term2pvalue, all_term2log2fold = readPValues(options.stdin)
     else:
@@ -1642,7 +1642,7 @@ def main(argv):
                                                           term2pvalue, go2info,
                                                           options)
 
-            if matrix == None:
+            if matrix is None:
                 E.warn("%s: no output" % test_ontology)
                 continue
 

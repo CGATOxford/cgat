@@ -232,8 +232,8 @@ def main(argv=None):
                          remove_contigs=options.remove_contigs,
                          colour_mismatches=options.colour_mismatches,
                          ignore_mismatches=options.ignore_mismatches,
-                         ignore_transcripts=transcripts_samfile == None,
-                         ignore_junctions=junctions_samfile == None)
+                         ignore_transcripts=transcripts_samfile is None,
+                         ignore_junctions=junctions_samfile is None)
 
     if options.filename_stats:
         outf = IOTools.openFile(options.filename_stats, "w")

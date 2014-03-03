@@ -215,7 +215,7 @@ class GzipFile:
         return '<gzip ' + s[1:-1] + ' ' + hex(id(self)) + '>'
 
     def _init_write(self, filename):
-        if filename != None and filename[-3:] != '.gz' and filename[-3:] != '.dz':
+        if filename is not None and filename[-3:] != '.gz' and filename[-3:] != '.dz':
             if self.dictzip:
                 filename = filename + '.dz'
             else:

@@ -695,7 +695,7 @@ def iterator_target_overlap(infile, merge_distance):
 
         match = infile.next()
 
-        if match == None:
+        if match is None:
             break
 
         if match.mSbjctId != last_sbjct_id or match.mSbjctFrom >= (end + merge_distance):
@@ -736,7 +736,7 @@ def iterator_query_overlap(infile, merge_distance):
 
         match = infile.next()
 
-        if match == None:
+        if match is None:
             break
 
         if match.mQueryId != last_query_id or match.mQueryFrom >= (end + merge_distance):

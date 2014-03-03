@@ -287,7 +287,7 @@ class SVGRuler:
 
         value_range = max_value - min_value
 
-        if value_increment == None:
+        if value_increment is None:
             # quick fix for kaks
 
             if value_range > 1:
@@ -481,7 +481,7 @@ class BranchDecoratorHorizontalDistributions(SVGTree.BranchDecoratorHorizontal):
             colours.append(self.mMapType2Colour[cc[0]])
 
         min_value = min(map(lambda x: min(x), values))
-        if self.mMaxDistance == None:
+        if self.mMaxDistance is None:
             max_value = max(map(lambda x: numpy.median(x), values)) * 4
         elif self.mMaxDistance == 0.0:
             max_value = min(
@@ -1103,7 +1103,7 @@ def printBestNodes(best_nodes, options, prefix_header, prefix_row):
 
     for best in best_nodes:
 
-        if best == None:
+        if best is None:
             continue
         if best.mType == "Leaf":
             continue
@@ -1311,7 +1311,7 @@ def printSVGGeneTree(tree, options, extract_species):
     node_types = {}
     for best in best_nodes:
 
-        if best == None:
+        if best is None:
             continue
         if best.mType == "Leaf":
             continue
@@ -3034,7 +3034,7 @@ local-dups: print locally duplicated genes in each cluster. Local duplications a
                                                   extract_species,
                                                   method="median")
 
-            if reference_height == None:
+            if reference_height is None:
                 if options.loglevel >= 1:
                     options.stdlog.write(
                         "# tree %s: reference height not computable or 0 - skipped.\n" % gene_tree.name)
@@ -3201,7 +3201,7 @@ local-dups: print locally duplicated genes in each cluster. Local duplications a
 
             for best in best_nodes:
 
-                if best == None:
+                if best is None:
                     continue
                 if best.mType == "Leaf":
                     continue

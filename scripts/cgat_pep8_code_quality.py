@@ -33,11 +33,10 @@ Command line options
 
 '''
 
-import subprocess
 import collections
-import re
 import sys
 import CGAT.Experiment as E
+import CGAT.Style
 
 DATA = collections.namedtuple('DATA', 'count code description')
 
@@ -49,34 +48,6 @@ expressions = (
     ('CGAT', 'CGAT/*.py'),
     ('CGATPipelines', 'CGATPipelines/*.py'),
     ('trackers', 'CGATPipelines/pipeline_docs/*/trackers/*.py'))
-
-
-def runPep8(expr):
-    '''run pep8 on files matching the glob expression
-    *expr*
-    '''
-
-    args = ['/ifs/devel/andreas/python/bin/pep8',
-            '--statistics',
-            '--quiet',
-            expr]
-
-    args = ' '.join(args)
-    # pep8 returns unix error if there are errors
-    try:
-        output = subprocess.check_output(args, shell=True)
-    except subprocess.CalledProcessError, msg:
-        output = msg.output
-
-    # count python files
-    nchecked = len([x for x in output.split('\n') if x.endswith('.py')])
-
-    # parse data
-    # Output is '120 W123 Description'
-    lines = [x for x in output.split('\n') if not x.endswith('.py')]
-    data = [DATA(*re.split(' +', x, 2)) for x in lines if x]
-
-    return nchecked, data
 
 
 def main(argv=None):
@@ -98,7 +69,7 @@ def main(argv=None):
     rows = []
     labels = {}
     for label, expr in expressions:
-        nchecked, data = runPep8(expr)
+        nchecked, data = CGAT.Style.runPep8(expr)
         rows.append((label, nchecked, data))
         labels.update(dict([(x.code, x.description) for x in data]))
 

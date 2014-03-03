@@ -277,9 +277,9 @@ def pslMap(options):
         ninput += 1
 
         # if no filter on qx or tx, use full segment
-        if qx == None:
+        if qx is None:
             qx = [(match.mQueryFrom, match.mQueryTo, 0)]
-        elif tx == None:
+        elif tx is None:
             tx = [(match.mSbjctFrom, match.mSbjctTo, 0)]
 
         # if no overlap: return
@@ -871,7 +871,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(
@@ -967,13 +967,13 @@ def main(argv=None):
     else:
         sbjct_fasta = None
 
-    if "add-sequence" in options.methods and (sbjct_fasta == None or query_fasta == None):
+    if "add-sequence" in options.methods and (sbjct_fasta is None or query_fasta is None):
         raise ValueError(
             "please supply both indexed query and target/genome sequence data.")
 
     iterator = Blat.iterator(options.stdin)
 
-    if options.header != None or options.header != "none":
+    if options.header is not None or options.header != "none":
         if options.header == "table":
             options.stdout.write("\t".join(Blat.FIELDS) + "\n")
         elif options.header == "full":

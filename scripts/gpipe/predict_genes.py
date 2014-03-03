@@ -1222,7 +1222,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(
@@ -1475,7 +1475,7 @@ def main(argv=None):
                         min_bracket_to, region_id, region_nr, region_max_nr))
 
                 if sbjct_sequence == "":
-                    if last_sbjct_sequence == None:
+                    if last_sbjct_sequence is None:
                         try:
                             sbjct_sequence = fasta.getSequence(
                                 sbjct_token, sbjct_strand, sbjct_from, sbjct_to)
@@ -1683,7 +1683,7 @@ def main(argv=None):
                                                           sbjct_to))
 
                 if sbjct_sequence == "":
-                    if last_sbjct_sequence == None:
+                    if last_sbjct_sequence is None:
                         sbjct_sequence = fasta.getSequence(sbjct_token, sbjct_strand,
                                                            sbjct_from, sbjct_to)
                     else:

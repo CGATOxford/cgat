@@ -71,7 +71,7 @@ MAP_TRACKS = {
 def selectTracks(subset):
     '''select tracks from *all_tracks* according to *subset*.
     '''
-    if subset == None or subset == "default":
+    if subset is None or subset == "default":
         return MAP_TRACKS["default"]
     elif subset in MAP_TRACKS:
         return MAP_TRACKS[subset]

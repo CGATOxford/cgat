@@ -13,7 +13,7 @@ class ReadsContributingToTranscriptsSummary(TrackerSQL):
 
     def __call__(self, track, slice=None):
 
-        if slice == None:
+        if slice is None:
             return self.getRow("SELECT * FROM %(track)s_summary")
         elif slice == "alignments":
             return self.getRow("SELECT aligments_in_transcripts, spliced_alignments_in_transcripts, total_alignments, total_spliced_alignments FROM %(track)s_summary")

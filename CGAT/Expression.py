@@ -813,7 +813,7 @@ def runEdgeR(outfile,
         R('''fit = glmFit( countsTable, design )''')
     else:
         # fitting model to each tag
-        if dispersion == None:
+        if dispersion is None:
             raise ValueError("no replicates and no dispersion")
         E.warn("no replicates - using a fixed dispersion value")
         R('''fit = glmFit( countsTable, design, dispersion = %f )''' %
@@ -1866,7 +1866,7 @@ def outputTagSummary(filename_tags,
 
     E.info("loading tag data from %s" % filename_tags)
 
-    if filename_design != None:
+    if filename_design is not None:
         # load all tag data
         loadTagData(filename_tags, filename_design)
 
@@ -2109,7 +2109,7 @@ def outputSpikeIns(filename_tags,
 
     E.info("loading tag data from %s" % filename_tags)
 
-    if filename_design != None:
+    if filename_design is not None:
         # load all tag data
         counts_table, design_table = loadTagDataPandas(
             filename_tags, filename_design)

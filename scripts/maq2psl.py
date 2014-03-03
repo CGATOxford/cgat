@@ -76,7 +76,7 @@ def iterator_segments(infile, segment_length):
 def match_smaller(iter1, iter2, matchfun1, matchfun2=None):
     """output pairs where iter1 <= iter2."""
 
-    if matchfun2 == None:
+    if matchfun2 is None:
         matchfun2 = matchfun1
     value2 = iter2.next()
     key2 = matchfun2(value2)
@@ -102,7 +102,7 @@ def matchby_comparison(iter1, iter2, matchfun1, matchfun2=None):
     The two input streams need to be sorted by increasing key value.
     """
 
-    if matchfun2 == None:
+    if matchfun2 is None:
         matchfun2 = matchfun1
     groups1 = itertools.groupby(iter1, matchfun1)
     groups2 = itertools.groupby(iter2, matchfun2)
@@ -128,7 +128,7 @@ def matchby_sequence(iter1, iter2, matchfun1, matchfun2=None):
     increasing, and all componets should be present.
     """
 
-    if matchfun2 == None:
+    if matchfun2 is None:
         matchfun2 = matchfun1
     groups1 = itertools.groupby(iter1, matchfun1)
     groups2 = itertools.groupby(iter2, matchfun2)
@@ -147,7 +147,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(version="%prog version: $Id: maq2psl.py 2781 2009-09-10 11:33:14Z andreas $",

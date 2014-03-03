@@ -224,7 +224,7 @@ def readMatrix(infile,
             if headers:
                 row_headers.append(data[0])
 
-            if missing == None:
+            if missing is None:
                 try:
                     data = map(lambda x: float(data[x]), take)
                 except ValueError, msg:

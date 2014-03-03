@@ -17,14 +17,14 @@ class TrackerEffects(VariantsTracker):
     mPattern = "_effects$"
 
     def getPrefix(self, slice):
-        if slice == None or slice == "all":
+        if slice is None or slice == "all":
             prefix = ""
         else:
             prefix = "%s_" % slice
         return prefix
 
     def getSlices(self, subset=None):
-        if subset == None:
+        if subset is None:
             return []
         elif "separate" in subset:
             return ("all", "splice", "cds")

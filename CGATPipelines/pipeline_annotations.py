@@ -1380,7 +1380,7 @@ def buildMapableRegions(infiles, outfile):
 
         for window_start in xrange(0, size, window_size):
             values = bw.get(contig, window_start, window_start + window_size)
-            if values == None:
+            if values is None:
                 continue
 
             for this_start, this_end, value in values:
@@ -1389,10 +1389,10 @@ def buildMapableRegions(infiles, outfile):
                         yield start, this_start
                     start = None
                 else:
-                    if start == None:
+                    if start is None:
                         start = this_start
 
-        if start != None:
+        if start is not None:
             yield start, this_end
 
     outf = IOTools.openFile(outfile, "w")
@@ -1401,7 +1401,7 @@ def buildMapableRegions(infiles, outfile):
 
         last_start, last_end = None, None
         for start, end in _iter_mapable_regions(bw, contig, size):
-            if last_start == None:
+            if last_start is None:
                 last_start, last_end = start, end
             if start - last_end >= max_distance:
                 outf.write("%s\t%i\t%i\n" % (contig, last_start, last_end))
@@ -1409,7 +1409,7 @@ def buildMapableRegions(infiles, outfile):
 
             last_end = end
 
-        if last_start != None:
+        if last_start is not None:
             outf.write("%s\t%i\t%i\n" % (contig, last_start, last_end))
 
     outf.close()

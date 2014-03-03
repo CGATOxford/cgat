@@ -31,7 +31,7 @@ class MappingStatus(Status):
 
         value = self.getValue(
             "SELECT reads_mapped/CAST( reads_in AS FLOAT) from view_mapping WHERE track = '%(track)s'")
-        if value == None:
+        if value is None:
             value, status = 0, "NA"
         elif value >= 0.6:
             status = "PASS"

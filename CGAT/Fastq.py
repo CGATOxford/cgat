@@ -74,7 +74,7 @@ class Record:
 
     def toPhred(self):
         '''return qualities as a list of phred-scores.'''
-        assert self.format != None, "format needs to be set for conversion"
+        assert self.format is not None, "format needs to be set for conversion"
         if self.format == "sanger":
             return [ord(x) - 33 for x in self.quals]
         elif self.format == "illumina-1.8":

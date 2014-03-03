@@ -494,7 +494,7 @@ def processScript(script_name, outfile, options):
 
     for option in PARSER.option_list:
         # ignore options added by optparse
-        if option.dest == None:
+        if option.dest is None:
             continue
 
         # ignore benchmarking options

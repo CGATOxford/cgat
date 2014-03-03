@@ -52,7 +52,7 @@ class ParsingError(Error):
 
 def toDot(v):
     '''convert value to '.' if None'''
-    if v == None:
+    if v is None:
         return "."
     else:
         return str(v)
@@ -510,7 +510,7 @@ def joined_iterator(gffs, group_field=None):
     last_group_id = None
     matches = []
 
-    if group_field == None:
+    if group_field is None:
         group_function = lambda x: x.attributes
     elif group_field == "gene_id":
         group_function = lambda x: x.gene_id

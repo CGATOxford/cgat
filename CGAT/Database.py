@@ -314,7 +314,7 @@ def executewait(dbhandle, statement, error=None, retries=-1, wait=5):
 
     Returns a cursor object.
     '''
-    if error == None:
+    if error is None:
         error = Exception
 
     cc = dbhandle.cursor()

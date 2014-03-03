@@ -354,7 +354,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     try:
@@ -396,7 +396,7 @@ def main(argv=None):
         sys.exit(2)
 
     baseml = WrapperBaseML.BaseML()
-    if param_fixed_alpha != None:
+    if param_fixed_alpha is not None:
         baseml.SetOption("alpha", param_fixed_alpha)
         baseml.SetOption("fix_alpha", 1)
 

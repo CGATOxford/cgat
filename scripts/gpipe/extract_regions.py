@@ -391,7 +391,7 @@ def ProcessPredictions(dbhandle, schema, options, prediction_ids, taboo_regions=
                 fragments.append(str(genomic_sequence))
                 max_sbjct_genome_to = sbjct_genome_to
             else:
-                if last_token != None:
+                if last_token is not None:
                     output_sbjct_genome_from = min_sbjct_genome_from
                     output_sbjct_genome_to = max_sbjct_genome_to
                     output_genomic_sequence = "".join(fragments)
@@ -495,7 +495,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(

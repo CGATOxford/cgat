@@ -318,17 +318,17 @@ def runGOFromFiles(outfile,
 
     to_cluster = True
 
-    if ontology_file == None:
+    if ontology_file is None:
         ontology_file = PARAMS.get("go_ontology", None)
 
     options = []
     if ontology_file:
         options.append("--filename-ontology=%(ontology_file)s" % locals())
 
-    if bg_file != None:
+    if bg_file is not None:
         options.append("--background=%(bg_file)s" % locals())
 
-    if samples != None:
+    if samples is not None:
         options.append("--fdr")
         options.append("--sample=%(samples)i" % locals())
         options.append("--qvalue-method=empirical")

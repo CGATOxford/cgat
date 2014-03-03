@@ -95,11 +95,11 @@ def filterJoiningTranscripts(links, options):
         weight = float(weight)
         ninput += 1
 
-        if options.min_weight != None and weight < options.min_weight:
+        if options.min_weight is not None and weight < options.min_weight:
             nskipped += 1
             continue
 
-        if options.max_weight != None and weight > options.max_weight:
+        if options.max_weight is not None and weight > options.max_weight:
             nskipped += 1
             continue
 
@@ -366,7 +366,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(

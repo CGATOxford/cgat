@@ -856,7 +856,7 @@ def GetSubsets(tree, node=None, with_decoration=True):
     """return subsets below a certain node including
     their height (distance from leaves) and branchlength
     """
-    if node == None:
+    if node is None:
         node = tree.root
 
     if with_decoration:
@@ -954,7 +954,7 @@ def Tree2Graph(tree):
     """return tree as a list of edges in a graph."""
     links = []
     for node_id1, node1 in tree.chain.items():
-        if node1.prev != None:
+        if node1.prev is not None:
             links.append((node_id1, node1.prev, node1.get_data().branchlength))
     return links
 
@@ -1530,7 +1530,7 @@ def ReconciliateByRio(gene_tree, species_tree,
                                 node_types[g] = NodeTypeInconsistentTranscripts(
                                     map_N2node_id[M[g]], g)
 
-                if node_types[g] == None:
+                if node_types[g] is None:
                     if len(species1) == len(species2) and len(species1) == 1:
                         # lineage specific duplication: only one species is
                         # involved
@@ -1619,7 +1619,7 @@ def GetParentNodeWhereTrue(node_id, tree, stop_function):
 
     node = tree.node(node_id)
     distance = 0
-    while node.prev != None:
+    while node.prev is not None:
 
         if stop_function(node_id):
             return node_id, distance
@@ -1711,7 +1711,7 @@ def getPattern(tree, nodes, map_taxon2position):
     pattern = ["0"] * len(map_taxon2position)
     for n in nodes:
         t = tree.node(n).get_data().taxon
-        if t != None:
+        if t is not None:
             pattern[map_taxon2position[t]] = "1"
     return "".join(pattern)
 

@@ -151,7 +151,7 @@ def main(argv=None):
     # do sth
     ninput, nskipped, noutput = 0, 0, 0
 
-    if options.arrangements == None:
+    if options.arrangements is None:
         options.arrangements = [
             "DR%s" % x for x in range(0, 15)] + ["ER%s" % x for x in range(0, 15)]
     else:

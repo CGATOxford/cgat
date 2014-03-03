@@ -89,7 +89,7 @@ def main():
 
         match = iterator.next()
 
-        if match == None:
+        if match is None:
             break
 
         ninput += 1

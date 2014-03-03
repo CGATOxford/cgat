@@ -48,7 +48,7 @@ class Fasta:
 
         Returns (None, None) if no more data is there.
         """
-        while self.mLastLine != None:
+        while self.mLastLine is not None:
             if self.mLastLine[0] == ">":
                 break
             self.mLastLine = self.mFile.readline()

@@ -995,7 +995,7 @@ def loadMACS(infile, outfile, bamfile, tablename=None):
 
     # filter peaks
     shift = getPeakShiftFromMacs(infile)
-    assert shift != None, "could not determine peak shift from MACS file %s" % infile
+    assert shift is not None, "could not determine peak shift from MACS file %s" % infile
 
     E.info("%s: found peak shift of %i" % (track, shift))
 
@@ -1061,7 +1061,7 @@ def loadMACS(infile, outfile, bamfile, tablename=None):
         E.warn("%s: no peaks found" % track)
 
     # load data into table
-    if tablename == None:
+    if tablename is None:
         tablename = "%s_macs_intervals" % track
     statement = '''python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
                        --allow-empty
@@ -1341,7 +1341,7 @@ def loadZinba(infile, outfile, bamfile,
     else:
         # filter peaks
         shift = getPeakShiftFromZinba(infile)
-        assert shift != None, "could not determine peak shift from Zinba file %s" % infile
+        assert shift is not None, "could not determine peak shift from Zinba file %s" % infile
 
         E.info("%s: found peak shift of %i" % (track, shift))
 
@@ -1413,7 +1413,7 @@ def loadZinba(infile, outfile, bamfile,
         E.warn("%s: no peaks found" % track)
 
     # load data into table
-    if tablename == None:
+    if tablename is None:
         tablename = "%s_intervals" % track
 
     statement = '''

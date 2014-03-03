@@ -77,7 +77,7 @@ def doMultiple(options):
         else:
             val = data[0]
             if val != last_val:
-                if last_val != None:
+                if last_val is not None:
                     hists.append((last_val, this_hist))
                 this_hist = [0] * ncols
                 last_val = val
@@ -85,7 +85,7 @@ def doMultiple(options):
             for x in range(ncols):
                 this_hist[x] += int(data[x + 1])
 
-    if last_val != None:
+    if last_val is not None:
         hists.append((last_val, this_hist))
 
     if not headers:
@@ -168,7 +168,7 @@ def main(argv=None):
             if not options.bin or last_value != data[1]:
                 values.append((true_positives, predicted, data[1]))
         else:
-            if last_value != None and last_value != data[1]:
+            if last_value is not None and last_value != data[1]:
                 values.append((true_positives, predicted, last_value))
 
         predicted += 1
@@ -184,7 +184,7 @@ def main(argv=None):
     if true_positives == 0:
         raise ValueError("# no true positives!")
 
-    if options.positives == None:
+    if options.positives is None:
         if options.false_negatives:
             positives = float(predicted)
         else:

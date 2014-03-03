@@ -371,7 +371,7 @@ class Sample(object):
         If *represenation* is None, the representation will be set to
         the library default (asFile()).
         '''
-        if representation == None or representation == "asFile":
+        if representation is None or representation == "asFile":
             cls.__repr__ = cls.asFile
         elif representation == "asTable":
             cls.__repr__ = cls.asTable

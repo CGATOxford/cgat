@@ -258,7 +258,7 @@ class getCDSPositionTestPos(unittest.TestCase):
                     self.assertEqual(result.cds_seq_start, framed_length % 3)
                     self.assertEqual(
                         result.cds_seq_end, framed_length % 3 + min(size, size + y, self.mExonSize - y))
-                    if result.nc_end != None:
+                    if result.nc_end is not None:
                         self.assertEqual(
                             result.cds_end - result.cds_start + (result.nc_end - result.nc_start), size)
                         self.assertEqual(

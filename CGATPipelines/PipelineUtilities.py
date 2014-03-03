@@ -174,12 +174,12 @@ def biomart_iterator(attributes,
                      path="/biomart/martservice",
                      archive=False)
 
-    if filters != None:
+    if filters is not None:
         filter_names = R.StrVector(filters)
     else:
         filter_names = ""
 
-    if values != None:
+    if values is not None:
         filter_values = values
     else:
         filter_values = ""

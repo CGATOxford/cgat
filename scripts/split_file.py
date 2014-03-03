@@ -114,7 +114,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     try:
@@ -174,7 +174,7 @@ def main(argv=None):
     found = set()
     ninput, noutput = 0, 0
 
-    if param_split_column != None:
+    if param_split_column is not None:
 
         header = None
         files = {}

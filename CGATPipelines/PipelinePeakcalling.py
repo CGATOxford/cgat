@@ -1397,7 +1397,7 @@ def loadMACS(infile, outfile, bamfile, controlfile=None):
     ###############################################################
     # load peaks
     shift = getPeakShiftFromMacs(infile)
-    assert shift != None, "could not determine peak shift from MACS file %s" % infile
+    assert shift is not None, "could not determine peak shift from MACS file %s" % infile
 
     E.info("%s: found peak shift of %i" % (track, shift))
 
@@ -1587,7 +1587,7 @@ def loadMACS2(infile, outfile, bamfile, controlfile=None):
     ###############################################################
     # load peaks
     shift = getPeakShiftFromMacs(infile)
-    assert shift != None, "could not determine peak shift from MACS file %s" % infile
+    assert shift is not None, "could not determine peak shift from MACS file %s" % infile
 
     E.info("%s: found peak shift of %i" % (track, shift))
 
@@ -1739,7 +1739,7 @@ def loadZinba(infile, outfile, bamfile,
 
         # filter peaks
         offset = getPeakShiftFromZinba(infile)
-        assert offset != None, "could not determine peak shift from Zinba file %s" % infile
+        assert offset is not None, "could not determine peak shift from Zinba file %s" % infile
 
         E.info("%s: found peak shift of %i" % (track, offset))
 
@@ -2171,7 +2171,7 @@ def runPeakRangerCCAT(infile, outfile, controlfile):
 
     job_options = "-l mem_free=8G"
 
-    assert controlfile != None, "peakranger requires a control"
+    assert controlfile is not None, "peakranger requires a control"
 
     statement = '''peakranger ccat
               --data %(infile)s 
@@ -2206,7 +2206,7 @@ def runSPP(infile, outfile, controlfile):
 
     job_options = "-pe dedicated %i -R y" % PARAMS["spp_threads"]
 
-    assert controlfile != None, "spp requires a control"
+    assert controlfile is not None, "spp requires a control"
 
     statement = '''
     python %(scriptsdir)s/WrapperSPP.py

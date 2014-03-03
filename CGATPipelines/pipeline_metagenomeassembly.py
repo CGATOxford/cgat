@@ -1,5 +1,4 @@
-"""
-=============================
+"""=============================
 Metagenome assembly pipeline
 =============================
 
@@ -8,57 +7,65 @@ Metagenome assembly pipeline
 :Date: |today|
 :Tags: Python
 
-The metagenome assembly pipeline takes reads from one or more NGS experiments and
-assembles into contigs / scaffolds. Genes present on contigs are predicted using ORF
-perdiction software.
+The metagenome assembly pipeline takes reads from one or more NGS
+experiments and assembles into contigs / scaffolds. Genes present on
+contigs are predicted using ORF perdiction software.
 
 Overview
 ========
 
-The pipeline assumes the data derive from multiple tissues/conditions (:term:`experiment`) 
-with one or more biological and/or technical replicates (:term:`replicate`). A :term:`replicate`
-within each :term:`experiment` is a :term:`track`.
+The pipeline assumes the data derive from multiple tissues/conditions
+(:term:`experiment`) with one or more biological and/or technical
+replicates (:term:`replicate`). A :term:`replicate` within each
+:term:`experiment` is a :term:`track`.
 
 Assembly stategy
 ----------------
 
-While there exist many tools for assembling reads from single genomes, only recently has 
-software been specifically developed (or extended) to allow for the assembly of metagenomes.
-The major factor affecting the ability to assemble a metagenome is the diversity of the sample.
-Accurate assembly of long contigs is difficult in the presence of many species at differential
-abundances. This is in constrast to single genome assembly where reads are (or should be) uniformly
-sampled across the genome.
+While there exist many tools for assembling reads from single genomes,
+only recently has software been specifically developed (or extended)
+to allow for the assembly of metagenomes.  The major factor affecting
+the ability to assemble a metagenome is the diversity of the sample.
+Accurate assembly of long contigs is difficult in the presence of many
+species at differential abundances. This is in constrast to single
+genome assembly where reads are (or should be) uniformly sampled
+across the genome.
 
 This pieline therefore uses a range of available software for the assembly of metagenomes.
 
 Considerations
 --------------
 
-Metagenomics is a young and rapidly developing field. There is, as yet, no gold standard for 
-assembly. It is likely that the presence of multiple, highly related species will lead to 
-the assembly of schimeric contigs i.e. contigs derived from more than one species. It is 
-generally considered that longer K-mer lengths used in the construction of the de-bruijn
-graph (for de-bruijn graph assemblers) will result in fewer chimeras. Nevertheless, longer
-k-mers may also result in more, short contigs being produced as a result of a neccessity for
-a greater overlap between nodes in the graph. The length of k-mer chosen is also dependent on
-the length of reads that you are trying to assemble - longer reads means you can use longer
-k-mers. Which k-mer to use in the assembly process is therefore dependent on the data used
-and the expected complexity of the sample. We make no effort here to advise on k-mer length.
+Metagenomics is a young and rapidly developing field. There is, as
+yet, no gold standard for assembly. It is likely that the presence of
+multiple, highly related species will lead to the assembly of
+schimeric contigs i.e. contigs derived from more than one species. It
+is generally considered that longer K-mer lengths used in the
+construction of the de-bruijn graph (for de-bruijn graph assemblers)
+will result in fewer chimeras. Nevertheless, longer k-mers may also
+result in more, short contigs being produced as a result of a
+neccessity for a greater overlap between nodes in the graph. The
+length of k-mer chosen is also dependent on the length of reads that
+you are trying to assemble - longer reads means you can use longer
+k-mers. Which k-mer to use in the assembly process is therefore
+dependent on the data used and the expected complexity of the
+sample. We make no effort here to advise on k-mer length.
 
   
 Usage
 =====
 
-See :ref:`PipelineSettingUp` and :ref:`PipelineRunning` on general information how to use CGAT pipelines.
+See :ref:`PipelineSettingUp` and :ref:`PipelineRunning` on general
+information how to use CGAT pipelines.
 
 Configuration
 -------------
 
 The pipeline requires a configured :file:`pipeline.ini` file. 
 
-The sphinxreport report requires a :file:`conf.py` and :file:`sphinxreport.ini` file 
-(see :ref:`PipelineDocumenation`). To start with, use the files supplied with the
-:ref:`Example` data.
+The sphinxreport report requires a :file:`conf.py` and
+:file:`sphinxreport.ini` file (see :ref:`PipelineDocumenation`). To
+start with, use the files supplied with the :ref:`Example` data.
 
 Input
 -----
@@ -66,15 +73,17 @@ Input
 Reads
 +++++
 
-Reads are imported by placing files are linking to files in the :term:`working directory`.
+Reads are imported by placing files are linking to files in the
+:term:`working directory`.
 
 The default file format assumes the following convention:
 
    <sample>-<condition>-<replicate>.<suffix>
 
-``sample`` and ``condition`` make up an :term:`experiment`, while ``replicate`` denotes
-the :term:`replicate` within an :term:`experiment`. The ``suffix`` determines the file type.
-The following suffixes/file types are possible:
+``sample`` and ``condition`` make up an :term:`experiment`, while
+``replicate`` denotes the :term:`replicate` within an
+:term:`experiment`. The ``suffix`` determines the file type.  The
+following suffixes/file types are possible:
 
 fastq.gz
    Single-end reads in fastq format.
@@ -93,8 +102,8 @@ Optional inputs
 Requirements
 ------------
 
-On top of the default CGAT setup, the pipeline requires the following software to be in the 
-path:
+On top of the default CGAT setup, the pipeline requires the following
+software to be in the path:
 
 +--------------------+-------------------+------------------------------------------------+
 |*Program*           |*Version*          |*Purpose*                                       |
@@ -194,7 +203,7 @@ import CGAT.Fastq as Fastq
 # load options from the config file
 import CGAT.Pipeline as P
 P.getParameters(
-    "pipeline.ini")
+    ["pipeline.ini"])
 
 
 PARAMS = P.PARAMS
@@ -219,8 +228,10 @@ TISSUES = PipelineTracks.Aggregate(TRACKS, labels=("tissue", ))
 ###################################################################
 # Global flags
 ###################################################################
-ASSEMBLERS = P.asList(PARAMS["assemblers"])
-MAPPER = PARAMS["coverage_mapper"]
+# AH: added default values for assemblers and coverage_mapper
+# to allow import of pipeline script
+ASSEMBLERS = P.asList(PARAMS.get("assemblers", ""))
+MAPPER = PARAMS.get("coverage_mapper", 'bwa')
 BOWTIE = MAPPER == "bowtie"
 BOWTIE2 = MAPPER == "bowtie2"
 BWA = MAPPER == "bwa"
@@ -256,6 +267,10 @@ def pool_out(infiles):
     return outfile name dependent on
     input pairedness
     '''
+    # AH: patch required when importing pipeline
+    if len(infiles) == 0:
+        return ""
+
     out = {"separate": "1",
            False: ""}
     inf = infiles[0]
@@ -266,18 +281,20 @@ def pool_out(infiles):
     outname = "pooled_reads.dir/agg-agg-agg.%s" % format
     return outname
 
+
 ############################################################
-
-
-@active_if(PARAMS["pool_reads"])
+@active_if('pool_reads' in PARAMS and PARAMS["pool_reads"])
 @follows(mkdir("pooled_reads.dir"))
 # bit of a hack
-@merge(SEQUENCEFILES, pool_out([x for x in glob.glob("*R*.fast*") if not x.endswith(".2.gz") and not x.endswith(".2")]))
+@merge(SEQUENCEFILES, pool_out([x for x in glob.glob("*R*.fast*")
+                                if not x.endswith(".2.gz")
+                                and not x.endswith(".2")]))
 def poolReadsAcrossConditions(infiles, outfile):
     '''
     pool reads across conditions
     '''
-    statement = PipelineMetagenomeAssembly.pool_reads(infiles, outfile)
+    statement = PipelineMetagenomeAssembly.pool_reads(infiles,
+                                                      outfile)
     P.run()
 
 ###################################################################
@@ -623,7 +640,9 @@ index_suffix = {"bowtie": ".ebwt", "bowtie2": ".bt2", "bwa": ".bwt"}
 ###################################################################
 
 
-@transform(buildPresentSpeciesMultiFasta, suffix(".gz"), ".gz%s" % index_suffix[PARAMS["known_species_aligner"]])
+@transform(buildPresentSpeciesMultiFasta,
+           suffix(".gz"),
+           ".gz%s" % index_suffix[PARAMS.get("known_species_aligner", "bwa")])
 def buildIndexOnPresentSpecies(infile, outfile):
     '''
     build index for the known species genomes
@@ -659,7 +678,7 @@ def mapReadsAgainstKnownSpecies(infiles, outfile):
     elif index_suffix[PARAMS["known_species_aligner"]].endswith(".ebwt"):
         bowtie_index_dir = os.path.dirname(outfile)
         bowtie_options = PARAMS["known_species_bowtie_options"]
-        infile, reffile = infiles[0],  os.path.join(
+        infile, reffile = infiles[0], os.path.join(
             bowtie_index_dir, genome) + ".fa.gz"
         m = PipelineMapping.Bowtie(
             executable=P.substituteParameters(**locals())["known_species_executable"])
@@ -667,7 +686,7 @@ def mapReadsAgainstKnownSpecies(infiles, outfile):
     elif index_suffix[PARAMS["known_species_aligner"]].endswith(".bt2"):
         bowtie2_index_dir = os.path.dirname(outfile)
         bowtie2_options = PARAMS["known_species_bowtie2_options"]
-        infile, reffile = infiles[0],  os.path.join(
+        infile, reffile = infiles[0], os.path.join(
             bowtie2_index_dir, genome) + ".fa.gz"
         m = PipelineMapping.Bowtie2(
             executable=P.substituteParameters(**locals())["known_species_executable"])
@@ -941,8 +960,12 @@ def functional_profile():
 ###################################################################
 # Have reads been pooled
 ###################################################################
-SEQUENCE_TARGETS = {1: (poolReadsAcrossConditions, regex("(\S+)/(\S+).(fasta$|fasta.gz|fasta.1.gz|fastq$|fastq.gz|fastq.1.gz)"),
-                        "2.contigs.fa"), 0: (SEQUENCEFILES, SEQUENCEFILES_REGEX, "1.contigs.fa"), "": (SEQUENCEFILES, SEQUENCEFILES_REGEX, "1.contigs.fa")}
+SEQUENCE_TARGETS = {
+    1: (poolReadsAcrossConditions,
+        regex("(\S+)/(\S+).(fasta$|fasta.gz|fasta.1.gz|fastq$|fastq.gz|fastq.1.gz)"),
+        "2.contigs.fa"),
+    0: (SEQUENCEFILES, SEQUENCEFILES_REGEX, "1.contigs.fa"),
+    "": (SEQUENCEFILES, SEQUENCEFILES_REGEX, "1.contigs.fa")}
 
 ###################################################################
 ###################################################################
@@ -953,7 +976,10 @@ SEQUENCE_TARGETS = {1: (poolReadsAcrossConditions, regex("(\S+)/(\S+).(fasta$|fa
 
 @active_if("metavelvet" in ASSEMBLERS)
 @follows(mkdir("metavelvet.dir"))
-@transform(SEQUENCE_TARGETS[PARAMS["pool_reads"]][0], SEQUENCE_TARGETS[PARAMS["pool_reads"]][1], r"metavelvet.dir/\%s" % SEQUENCE_TARGETS[PARAMS["pool_reads"]][2])
+@transform(SEQUENCE_TARGETS[PARAMS.get("pool_reads", "")][0],
+           SEQUENCE_TARGETS[PARAMS.get("pool_reads", "")][1],
+           r"metavelvet.dir/\%s" %
+           SEQUENCE_TARGETS[PARAMS.get("pool_reads", "")][2])
 def runMetavelvet(infile, outfile):
     '''
     run meta-velvet on each track
@@ -1032,7 +1058,10 @@ IDBA_TARGETS = {1: (preprocessIdba, regex("(\S+)/(\S+).fa"), "2.contigs.fa"), 0:
 
 @active_if("idba" in ASSEMBLERS)
 @follows(mkdir("idba.dir"))
-@transform(IDBA_TARGETS[PARAMS["pool_reads"]][0], IDBA_TARGETS[PARAMS["pool_reads"]][1], r"idba.dir/\%s" % IDBA_TARGETS[PARAMS["pool_reads"]][2])
+@transform(IDBA_TARGETS[PARAMS.get("pool_reads", "")][0],
+           IDBA_TARGETS[PARAMS.get("pool_reads", "")][1],
+           r"idba.dir/\%s" %
+           IDBA_TARGETS[PARAMS.get("pool_reads", "")][2])
 def runIdba(infile, outfile):
     '''
     run idba on each track
@@ -1076,7 +1105,10 @@ def loadIdbaStats(infile, outfile):
 
 @active_if("ray" in ASSEMBLERS)
 @follows(mkdir("ray.dir"))
-@transform(SEQUENCE_TARGETS[PARAMS["pool_reads"]][0], SEQUENCE_TARGETS[PARAMS["pool_reads"]][1], r"ray.dir/\%s" % SEQUENCE_TARGETS[PARAMS["pool_reads"]][2])
+@transform(SEQUENCE_TARGETS[PARAMS.get("pool_reads", "")][0],
+           SEQUENCE_TARGETS[PARAMS.get("pool_reads", "")][1],
+           r"ray.dir/\%s" %
+           SEQUENCE_TARGETS[PARAMS.get("pool_reads", "")][2])
 def runRay(infile, outfile):
     '''
     run Ray on each track
@@ -1093,7 +1125,10 @@ def runRay(infile, outfile):
 
 @active_if("sga" in ASSEMBLERS)
 @follows(mkdir("sga.dir"))
-@transform(SEQUENCE_TARGETS[PARAMS["pool_reads"]][0], SEQUENCE_TARGETS[PARAMS["pool_reads"]][1], r"sga.dir/\%s" % SEQUENCE_TARGETS[PARAMS["pool_reads"]][2])
+@transform(SEQUENCE_TARGETS[PARAMS.get("pool_reads", "")][0],
+           SEQUENCE_TARGETS[PARAMS.get("pool_reads", "")][1],
+           r"sga.dir/\%s" %
+           SEQUENCE_TARGETS[PARAMS.get("pool_reads", "")][2])
 def runSGA(infile, outfile):
     '''
     run SGA on each track
@@ -1110,7 +1145,10 @@ def runSGA(infile, outfile):
 
 @active_if("soapdenovo" in ASSEMBLERS)
 @follows(mkdir("soapdenovo.dir"))
-@transform(SEQUENCE_TARGETS[PARAMS["pool_reads"]][0], SEQUENCE_TARGETS[PARAMS["pool_reads"]][1], r"soapdenovo.dir/\%s.cfg" % SEQUENCE_TARGETS[PARAMS["pool_reads"]][2])
+@transform(SEQUENCE_TARGETS[PARAMS.get("pool_reads", "")][0],
+           SEQUENCE_TARGETS[PARAMS.get("pool_reads", "")][1],
+           r"soapdenovo.dir/\%s" %
+           SEQUENCE_TARGETS[PARAMS.get("pool_reads", "")][2])
 def buildSoapdenovoConfig(infile, outfile):
     '''
     run SGA on each track

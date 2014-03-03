@@ -292,7 +292,7 @@ def getIntronicRegions(dbhandle, schema, options, prediction_ids, contigs):
     regions = []
 
     def processChunk(gene_id, contig, strand, frame, regions):
-        if gene_id == None:
+        if gene_id is None:
             return
 
         start = min(map(lambda x: x[0], regions))
@@ -337,7 +337,7 @@ def getExonicRegions(dbhandle, schema, options, prediction_ids, contigs):
     regions = []
 
     def processChunk(gene_id, contig, strand, frame, regions):
-        if gene_id == None:
+        if gene_id is None:
             return
 
         for start, end in Intervals.combineIntervals(regions):
@@ -372,7 +372,7 @@ def getExonsThirdCodons(dbhandle, schema, options, prediction_ids, contigs):
 
     def processChunk(prediction_id, gene_id, contig, strand, regions):
 
-        if gene_id == None:
+        if gene_id is None:
             return
 
         # re-arrange positions on negative strand
@@ -455,7 +455,7 @@ def getIntergenicRegions(dbhandle, schema, options, prediction_ids, contigs):
     regions = []
 
     def processChunk(contig, regions):
-        if contig == None:
+        if contig is None:
             return
 
         start = 0
@@ -667,7 +667,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(

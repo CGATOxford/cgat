@@ -79,7 +79,7 @@ def MapIdentifiers(seqs, pattern):
 
 def main(argv=None):
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(version="%prog version: $Id: diff_fasta.py 2781 2009-09-10 11:33:14Z andreas $",

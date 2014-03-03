@@ -16,21 +16,10 @@ Importing a script/module is a pre-requisite for building
 documentation with sphinx. A script/module that can not be imported
 will fail within sphinx.
 
-Usage
------
+This script is best run within nosetests::
 
-Example::
+   nosetests tests/test_import.py
 
-   python test_import.py
-
-Type::
-
-   python cgat_import_extensions.py --help
-
-for command line help.
-
-Command line options
---------------------
 
 '''
 
@@ -60,7 +49,10 @@ EXCLUDE = (
     'pipeline_intervals',
     'bam2transcriptContribution',
     'beds2counts',
-    'fasta2bed')
+    'fasta2bed',
+    # The following fail because of pyximport
+    # problems
+    'bed2table',)
 
 
 def check_import(directory):
@@ -70,12 +62,13 @@ def check_import(directory):
 
     c = E.Counter()
 
-    outfile = open('test_import.log', 'wa')
+    outfile = open('test_import.log', 'a')
     outfile.write('testing %s' % directory)
 
     for filename in files:
 
         c.input += 1
+        # outfile.write('testing %s\n' % filename)
 
         prefix, suffix = os.path.splitext(filename)
 
@@ -114,7 +107,7 @@ def check_import(directory):
 
         c.output += 1
 
-    outfile.write('%s: %s\n' % (os.path.dirname(directory), c))
+    outfile.write('completed %s: %s\n' % (os.path.dirname(directory), c))
     outfile.close()
 
     ok_(c.fail == 0, '%i scripts/modules could not be imported' % c.fail)
@@ -126,17 +119,10 @@ def test_imports():
     Relative imports will cause a failure because
     imp.load_source does not import modules that are in the same
     directory as the module being loaded from source.
-
-
-    A solution is to use the . syntax::
-    
-        from . import XXX
-
     '''
-
-    #for directory in ('scripts',):
-    #    sys.path.insert(0, os.path.abspath(directory))
 
     for directory in DIRECTORIES:
         check_import.description = directory
         yield(check_import, os.path.abspath(directory))
+
+

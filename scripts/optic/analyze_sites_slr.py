@@ -255,7 +255,7 @@ def ProcessResult(result, options, mali=None, prefix=None, p_value=None):
                                                                   xcol,
                                                                   Genomics.TranslateDNA2Protein(segment).upper()))
 
-            if p_value != None:
+            if p_value is not None:
                 pp_value = p_value
             else:
                 pp_value = "na"
@@ -309,7 +309,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(
@@ -490,7 +490,7 @@ def main(argv=None):
             for row in table:
 
                 id = row[fprefix]
-                if fsignificance != None:
+                if fsignificance is not None:
                     p_value = row[fsignificance]
                 else:
                     p_value = None

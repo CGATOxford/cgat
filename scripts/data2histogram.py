@@ -129,7 +129,7 @@ def main(argv=None):
         options.headers = options.headers.split(",")
 
     if options.on_the_fly:
-        if options.min_value == None or options.max_value == None or options.bin_size == None:
+        if options.min_value is None or options.max_value is None or options.bin_size is None:
             raise "please supply columns, min-value, max-value and bin-size for on-the-fly computation."
 
         # try to glean titles from table:

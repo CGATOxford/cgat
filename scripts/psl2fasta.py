@@ -67,7 +67,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(version="%prog version: $Id: psl2fasta.py 2781 2009-09-10 11:33:14Z andreas $",

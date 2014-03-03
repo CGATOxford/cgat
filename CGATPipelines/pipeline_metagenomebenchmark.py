@@ -108,12 +108,15 @@ import CGATPipelines.PipelineMetagenomeAssembly as PipelineMetagenomeAssembly
 # load options from the config file
 import CGAT.Pipeline as P
 P.getParameters(
-    "pipeline.ini")
+    ["pipeline.ini"])
 
 PARAMS = P.PARAMS
 
 SEQUENCE_FILES = glob.glob("*.fastq.1.gz*") + glob.glob("*.fastq.gz")
-GENOMES = glob.glob(os.path.join(PARAMS["genomes_genomesdir"], "*.fna"))
+# Setting default setting for genomes_genomesdir to allow
+# import of pipeline
+GENOMES = glob.glob(os.path.join(PARAMS.get("genomes_genomesdir", ""),
+                                 "*.fna"))
 CONTIGS = glob.glob("*.fa")
 ALIGNMENTS = glob.glob("*.bam")
 
@@ -152,12 +155,16 @@ def buildGiAccessionNumbers(infiles, outfile):
         outf.write(open(inf).readline().split("|")[1] + "\n")
     outf.close()
 
-######################################################
-######################################################
-######################################################
 
-
-@merge([buildGiAccessionNumbers] + [os.path.join(PARAMS["taxonomy_taxdir"], x) for x in ["ncbi.map", "gi_taxid_nucl.dmp.gz", "ncbi.lvl", "nodes.dmp"]], "taxonomy.dir/gi2taxa.tsv")
+######################################################
+######################################################
+######################################################
+# AH: added default for taxonomy_taxdir
+@merge([buildGiAccessionNumbers] +
+       [os.path.join(PARAMS.get("taxonomy_taxdir", ""), x)
+        for x in ["ncbi.map", "gi_taxid_nucl.dmp.gz",
+                  "ncbi.lvl", "nodes.dmp"]],
+       "taxonomy.dir/gi2taxa.tsv")
 def buildGi2Taxa(infiles, outfile):
     '''
     associate each input genome gi identifier to
@@ -230,8 +237,9 @@ def loadTrueTaxonomicAbundances(infile, outfile):
 ###################################################
 
 
+# AH: added default for results_resultsdir
 @follows(mkdir("taxonomy.dir"))
-@transform(glob.glob(os.path.join(os.path.join(PARAMS["results_resultsdir"], "metaphlan.dir"), "*.relab")), regex("(\S+)/(\S+).relab"), r"taxonomy.dir/metaphlan_\2.taxonomy.relab.load")
+@transform(glob.glob(os.path.join(os.path.join(PARAMS.get("results_resultsdir", ""), "metaphlan.dir"), "*.relab")), regex("(\S+)/(\S+).relab"), r"taxonomy.dir/metaphlan_\2.taxonomy.relab.load")
 def loadEstimatedTaxonomicRelativeAbundances(infile, outfile):
     '''
     load metaphlan taxonomic abundance estimations
@@ -400,9 +408,13 @@ def taxonomy():
 ###################################################
 
 
-@active_if("idba" in PARAMS["assemblers"])
+# AH: default value for results_resultsdir
+@active_if("assemblers" in PARAMS and "idba" in PARAMS["assemblers"])
 @follows(mkdir("lengths.dir"))
-@merge(glob.glob(os.path.join(PARAMS["results_resultsdir"], "idba.dir/*lengths.tsv")), "lengths.dir/idba_length_comparison.pdf")
+@merge(glob.glob(os.path.join(
+    PARAMS.get("results_resultsdir", ""),
+    "idba.dir/*lengths.tsv")),
+    "lengths.dir/idba_length_comparison.pdf")
 def compareIdbaLengthDistributions(infiles, outfile):
     '''
     plot the CDF for different assemblies
@@ -430,9 +442,13 @@ def compareIdbaLengthDistributions(infiles, outfile):
 ###################################################
 
 
-@active_if("idba" in PARAMS["assemblers"])
+# AH: added default for results_resultsdir
+@active_if("assemblers" in PARAMS and "idba" in PARAMS["assemblers"])
 @follows(mkdir("lengths.dir"))
-@merge(glob.glob(os.path.join(PARAMS["results_resultsdir"], "idba.dir/*lengths.tsv")), "lengths.dir/idba_length_comparison.stats")
+@merge(glob.glob(os.path.join(
+    PARAMS.get("results_resultsdir", ""),
+    "idba.dir/*lengths.tsv")),
+    "lengths.dir/idba_length_comparison.stats")
 def IdbaLengthDistributionStats(infiles, outfile):
     '''
     run ks test on different distributions
@@ -464,7 +480,8 @@ def IdbaLengthDistributionStats(infiles, outfile):
 ###################################################
 ###################################################
 COVERAGE_FILES = glob.glob(
-    os.path.join(PARAMS["results_resultsdir"], "*/*.coverage.load"))
+    os.path.join(PARAMS.get("results_resultsdir", ""),
+                 "*/*.coverage.load"))
 
 
 @follows(mkdir("contig_stats.dir"))
@@ -650,7 +667,10 @@ def buildAlignmentSizes(infiles, outfile):
 
 
 @follows(mkdir("genome_stats.dir"))
-@transform(glob.glob(os.path.join(PARAMS["genomes_genomesdir"], "*.fna")), regex("(\S+)/(\S+).fna"), r"genome_stats.dir/\2.size")
+@transform(glob.glob(
+    os.path.join(PARAMS.get("genomes_genomesdir", ""), "*.fna")),
+    regex("(\S+)/(\S+).fna"),
+    r"genome_stats.dir/\2.size")
 def collectGenomeSizes(infile, outfile):
     '''
     output the genome sizes for each genome

@@ -1495,7 +1495,7 @@ def buildPrunedGeneSet(infiles, outfile):
     c = E.Counter()
     for gtf in inf:
         c.input += 1
-        if keep == None or gtf.transcript_id in keep:
+        if keep is None or gtf.transcript_id in keep:
             c.kept += 1
             outf1.write("%s\n" % str(gtf))
         else:

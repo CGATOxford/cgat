@@ -118,7 +118,7 @@ class ENC:
 
         while 1:
             f = i.next()
-            if f == None:
+            if f is None:
                 break
 
             file = open(self.mFilenameTempInput, "w")

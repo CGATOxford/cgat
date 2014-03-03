@@ -72,7 +72,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(version="%prog version: $Id: data2phylocontrasts.py 2782 2009-09-10 11:40:29Z andreas $",
@@ -301,7 +301,7 @@ def main(argv=None):
                 options.stdout.write(
                     "node_id\tvariance\t%s\n" % "\t".join(headers))
                 for node_id in range(max_index):
-                    if variances[node_id] == None:
+                    if variances[node_id] is None:
                         continue
                     options.stdout.write("%s\t%s\t%s\n" % (node_id,
                                                            options.value_format % variances[

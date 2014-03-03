@@ -201,7 +201,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(
@@ -469,12 +469,12 @@ def main(argv=None):
                         if not lrt.mPassed:
                             s = set()
 
-                        if row_consistent == None:
+                        if row_consistent is None:
                             row_consistent = s
                         else:
                             row_consistent = row_consistent.intersection(s)
 
-                        if consistent_cols[x] == None:
+                        if consistent_cols[x] is None:
                             consistent_cols[x] = s
                         else:
                             consistent_cols[x] = consistent_cols[
@@ -514,12 +514,12 @@ def main(argv=None):
                 for analysis in options.analysis:
 
                     s = consistent_cols[x]
-                    if s == None:
+                    if s is None:
                         s = set()
 
                     options.stdout.write("\t%i" % (len(s)))
 
-                    if row_consistent == None:
+                    if row_consistent is None:
                         row_consistent = s
                     else:
                         row_consistent = row_consistent.intersection(s)

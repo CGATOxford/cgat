@@ -807,7 +807,7 @@ def buildWindowsFoldChangesPerInput(infile, outfile):
     map_track2input = mapTrack2Input(columns)
     take_tracks = [x for x, y in enumerate(columns) if y in map_track2input]
     take_input = [x for x, y in enumerate(
-        columns) if y in map_track2input.values() and y != None]
+        columns) if y in map_track2input.values() and y is not None]
 
     # build data frame
     dataframe = pandas.DataFrame(
@@ -828,7 +828,7 @@ def buildWindowsFoldChangesPerInput(infile, outfile):
     ratios = {}
     for column in dataframe.columns:
         i = map_track2input[column]
-        if i != None:
+        if i is not None:
             # ratios[column] = float(sum(dataframe_input[i])) / sum( dataframe[column] )
             ratios[column] = dataframe_input[
                 i].median() / dataframe[column].median()
@@ -836,7 +836,7 @@ def buildWindowsFoldChangesPerInput(infile, outfile):
             ratios[column] = None
 
     for column in dataframe.columns:
-        if ratios[column] != None:
+        if ratios[column] is not None:
             # normalize by input
             dataframe[column] *= ratios[column] / \
                 dataframe_input[map_track2input[column]]

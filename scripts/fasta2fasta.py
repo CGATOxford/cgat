@@ -156,7 +156,7 @@ def getCodons(sequence, gap_chars="-."):
 
 
 def main(argv=None):
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(version="%prog version: $Id: fasta2fasta.py 2782 2009-09-10 11:40:29Z andreas $",

@@ -416,7 +416,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(
@@ -656,7 +656,7 @@ def main(argv=None):
     elif options.expand_table:
         readAndExpandTable(options.stdin, options)
 
-    elif options.collapse_table != None:
+    elif options.collapse_table is not None:
         readAndCollapseTable(options.stdin, options, options.collapse_table)
 
     elif "grep" in options.methods:

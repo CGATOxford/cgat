@@ -453,7 +453,7 @@ else:
 ############################################################
 
 
-@files(input == None, "regions.mask")
+@files(input is None, "regions.mask")
 def makeMask(infile, outfile):
     '''Make a mask for filtering reads if required.
     '''
@@ -1198,7 +1198,7 @@ def buildPeakShapeTable(infile, outfile):
 
     # get peak shift
     shift = PipelineChipseq.getPeakShift(track)
-    if shift == None:
+    if shift is None:
         E.warn("could not get peak shift for track %s" % track)
         return
 
@@ -1323,7 +1323,7 @@ def exportBigwig(infile, outfile):
     track = re.sub(".(call|genome).bam", "", infile)
 
     shift = PipelineChipseq.getPeakShift(track)
-    if shift == None:
+    if shift is None:
         E.warn("no shift found for %s - using 0" % track)
         shift = 0
         extend = 0

@@ -183,7 +183,7 @@ class SNPMotifs(SNPSlicer):
                 motif_positions = (d[-1],)
 
             for p in motif_positions:
-                if p == None:
+                if p is None:
                     continue
                 if p <= snp_position < p + motif_width:
                     found.append(d[:-1])

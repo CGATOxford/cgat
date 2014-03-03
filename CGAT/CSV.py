@@ -336,7 +336,7 @@ def GroupTable(table,
     for row in table:
         if row[group_column] != last_value:
 
-            if last_value != None:
+            if last_value is not None:
                 new_table.append(
                     __DoGroup(rows, group_column, group_function, missing_value))
 
@@ -345,7 +345,7 @@ def GroupTable(table,
 
         rows.append(row)
 
-    if last_value != None:
+    if last_value is not None:
         new_table.append(
             __DoGroup(rows, group_column, group_function, missing_value))
 

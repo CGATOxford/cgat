@@ -118,7 +118,7 @@ class AdaptiveCAIResult:
                     continue
                 else:
                     data = re.split("\s", line.strip())
-                    if iteration == None:
+                    if iteration is None:
                         continue
                     if final_weights:
                         for d in data:

@@ -14,7 +14,7 @@ class TranscriptConstruction(TrackerSQL):
 
     def __call__(self, track, slice=None):
 
-        if slice == None:
+        if slice is None:
             complete = self.getValue(
                 """SELECT COUNT(*) FROM %(track)s_accepted_chr19_class WHERE class = 'complete'""")
             fragments = self.getValue(

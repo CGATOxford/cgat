@@ -157,7 +157,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser.add_option("-i", "--priority", dest="priority", type="string",
@@ -299,7 +299,7 @@ def main(argv=None):
 
     ninput, noutput, nfiltered_ds = 0, 0, 0
 
-    do_filter_ds = options.tablename_kaks and options.method == "filter" and options.filter_ds != None
+    do_filter_ds = options.tablename_kaks and options.method == "filter" and options.filter_ds is not None
 
     if do_filter_ds and options.loglevel >= 1:
         options.stdlog.write(

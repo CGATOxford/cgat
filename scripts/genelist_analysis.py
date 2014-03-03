@@ -316,7 +316,7 @@ def main(argv=None):
 
     # set the default background for those tests without explicit background
     for key in gene_lists.keys():
-        if gene_lists[key][1] == None:
+        if gene_lists[key][1] is None:
             gene_lists[key] = (gene_lists[key][0], bg)
 
     # check for inconsistencies

@@ -586,8 +586,10 @@ def readBackedPhasing(infiles, outfile):
 # Genes of interest
 
 
-@active_if(PARAMS["annotation_add_genes_of_interest"] == 1)
-@transform((annotateVariantsSNPsift, readBackedPhasing), regex(r"variants/((\S+Multiplex\S+|\S+Single\S+).haplotypeCaller.snpsift|(\S+Trio\S+).haplotypeCaller.rbp).vcf"), r"variants/\1.genes.vcf")
+@active_if("annotation_add_genes_of_interest" in PARAMS and
+           PARAMS["annotation_add_genes_of_interest"] == 1)
+@transform((annotateVariantsSNPsift, readBackedPhasing),
+           regex(r"variants/((\S+Multiplex\S+|\S+Single\S+).haplotypeCaller.snpsift|(\S+Trio\S+).haplotypeCaller.rbp).vcf"), r"variants/\1.genes.vcf")
 def findGenes(infile, outfile):
     '''Adds expression "GENE_OF_INTEREST" to the FILTER column of the vcf if variant is within a gene of interest as defined in the ini file'''
     to_cluster = USECLUSTER
@@ -605,7 +607,10 @@ CALIBRATION = {0: (annotateVariantsSNPsift, readBackedPhasing),
                1: findGenes}
 
 
-@transform(CALIBRATION[PARAMS["annotation_add_genes_of_interest"]], regex(r"variants/((\S+Multiplex\S+|\S+Single\S+).haplotypeCaller.snpsift|(\S+Trio\S+).haplotypeCaller.rbp|(\S+).genes).vcf"), r"variants/\1.table")
+# set default value for annotation_add_genes_of_interest
+@transform(CALIBRATION[PARAMS.get("annotation_add_genes_of_interest", 0)],
+           regex(r"variants/((\S+Multiplex\S+|\S+Single\S+).haplotypeCaller.snpsift|(\S+Trio\S+).haplotypeCaller.rbp|(\S+).genes).vcf"),
+           r"variants/\1.table")
 def vcfToTable(infile, outfile):
     '''Convert vcf to tab-delimited file'''
     to_cluster = USECLUSTER

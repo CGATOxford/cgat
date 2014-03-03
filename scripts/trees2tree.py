@@ -73,7 +73,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(version="%prog version: $Id: trees2tree.py 2782 2009-09-10 11:40:29Z andreas $",
@@ -234,7 +234,7 @@ def main(argv=None):
                         xtree.node(n).data.branchlength = float(
                             xtree.node(n).data.branchlength) / ntotals[n]
                     else:
-                        if options.error_branchlength != None:
+                        if options.error_branchlength is not None:
                             xtree.node(
                                 n).data.branchlength = options.error_branchlength
                             if options.loglevel >= 1:
@@ -261,7 +261,7 @@ def main(argv=None):
                     elif options.method == "median":
                         node.data.branchlength = scipy.median(values[n])
                 else:
-                    if options.error_branchlength != None:
+                    if options.error_branchlength is not None:
                         node.data.branchlength = options.error_branchlength
                         if options.loglevel >= 1:
                             options.stdlog.write(

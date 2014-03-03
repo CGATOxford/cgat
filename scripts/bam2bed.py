@@ -154,7 +154,7 @@ def main(argv=None):
 
     options.bed_format = int(options.bed_format)
 
-    if options.merge_pairs != None:
+    if options.merge_pairs is not None:
         counter = _bam2bed.merge_pairs(samfile,
                                        options.stdout,
                                        min_insert_size=options.min_insert_size,
@@ -164,7 +164,7 @@ def main(argv=None):
         options.stdlog.write("category\tcounts\n%s\n" % counter.asTable())
 
     else:
-        if options.region != None:
+        if options.region is not None:
             if args[0] == "-":
                 raise ValueError("can't use region with a file from stdin")
             it = samfile.fetch(region=options.region)

@@ -17,7 +17,7 @@ class TrackerEffects(VariantsTracker):
     mPattern = "_effects$"
 
     def getPrefix(self, slice):
-        if slice == None or slice == "all":
+        if slice is None or slice == "all":
             prefix = ""
         else:
             prefix = "%s_" % slice
@@ -25,7 +25,7 @@ class TrackerEffects(VariantsTracker):
 
     def getSlices(self, subset=None):
 
-        if subset == None:
+        if subset is None:
             return []
         elif "separate" in subset:
             return ("all", "splice", "cds")
@@ -408,7 +408,7 @@ class TrackerVariants(VariantsTracker):
         if not self.column:
             raise NotImplementedError
 
-        if self.aggregate == None or self.aggregate == "transcript":
+        if self.aggregate is None or self.aggregate == "transcript":
             statement = 'SELECT %(column)s, COUNT(*) FROM %(track)s_effects_cds GROUP BY %(column)s'
         elif self.aggregate == "position":
             statement = 'SELECT %(column)s, COUNT(DISTINCT snp_position) FROM %(track)s_effects_cds GROUP BY %(column)s'

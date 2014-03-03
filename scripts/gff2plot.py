@@ -185,7 +185,7 @@ def normalizeValuesByWindows(data, window_size=None):
     for x, value in new_values:
 
         if last_x != x:
-            if last_x != None:
+            if last_x is not None:
                 xvals.append(last_x)
                 yvals.append(numpy.mean(values))
             values = []
@@ -231,7 +231,7 @@ def addPlot(ax, track, contig, nplotted,
 
         # make sure that the extent of the image and the plot coincide by
         # using extent
-        if nsubplots != None:
+        if nsubplots is not None:
             y_width = float(y_max - y_min) / nsubplots
             extent = (min(xvals), max(xvals), y_min + y_width *
                       nsubplotted, y_min + y_width * (nsubplotted + 1))
@@ -481,7 +481,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(
@@ -605,7 +605,7 @@ def main(argv=None):
     legend = None
     for contig in contigs:
         figure, l = plotContig(contig, tracks, options,
-                               plot_legend=legend == None,
+                               plot_legend=legend is None,
                                extra_features=extra_features)
         figures.append(figure)
         if l:

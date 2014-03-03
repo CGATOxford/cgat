@@ -24,7 +24,7 @@ class AnnotatorSlicer(object):
         statement += " AND track = '%(track)s' " % locals()
         order = self.order
 
-        if slice == "all" or slice == None:
+        if slice == "all" or slice is None:
             statement += " ORDER BY %(order)s""" % locals()
         elif slice:
             statement += """ AND slice = '%(slice)s' ORDER BY %(order)s""" % locals()
