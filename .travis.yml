@@ -9,12 +9,13 @@ env:
     - CGAT_TASK_ID=92
     - CGAT_TASK_ID=183
     - CGAT_TASK_ID=274
+    - TEST_IMPORT=1
 
 python:
   - "2.7"
 
 script: 
-  - sudo ./install-CGAT-tools.sh --travis
+  - ./install-CGAT-tools.sh --travis
 
 notifications:
   email:
