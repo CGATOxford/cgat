@@ -30,3 +30,4 @@ threadpool>=1.2.7
 web.py>=0.37
 weblogo>=3.0
 xlwt>=0.7.4
+pep8>=1.4.0
