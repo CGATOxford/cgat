@@ -421,10 +421,12 @@ class BWA( Mapper ):
     which removes reads that don't have tag X0:i:1 (i.e. have > 1 best hit)
     '''
 
-    def __init__(self, remove_unique = False, *args, **kwargs):
+    def __init__(self, remove_unique = False, align_stats = False, dedup = False, *args, **kwargs):
         Mapper.__init__(self, *args, **kwargs)
 
         self.remove_unique = remove_unique
+        self.align_stats = align_stats
+        self.dedup = dedup
     
     def mapper( self, infiles, outfile ):
         '''build mapping statement on infiles.'''
@@ -513,6 +515,22 @@ class BWA( Mapper ):
                 %(strip_cmd)s
                 | samtools sort - %(outf)s 2>>%(outfile)s.bwa.log;
                 samtools index %(outfile)s;''' % locals()
+
+        if self.align_stats:
+            statement += '''cat %(outfile)s 
+                         | python %%(scriptsdir)s/bam2bam.py -v 0 --set-sequence --sam
+                         | CollectMultipleMetrics 
+                                       INPUT=/dev/stdin 
+                                       REFERENCE_SEQUENCE=%%(bwa_index_dir)s/%%(genome)s.fa
+                                       ASSUME_SORTED=true 
+                                       OUTPUT=%(outf)s.picard_stats 
+                                       VALIDATION_STRINGENCY=SILENT 
+                       >& %(outf)s.picard_stats ;''' % locals()
+
+        if self.dedup:
+            statement += '''MarkDuplicates INPUT=%(outfile)s ASSUME_SORTED=true METRICS_FILE=%(outfile)s.duplicate_metrics OUTPUT=%(tmpdir)s/%(track)s.deduped.bam REMOVE_DUPLICATES=true VALIDATION_STRINGENCY=SILENT ;''' % locals()
+            statement += '''rm -f %(outfile)s %(outfile)s.bai; mv %(tmpdir)s/%(track)s.deduped.bam %(outfile)s ;''' % locals()
+            statement += '''samtools index %(outfile)s ;''' % locals()
 
         return statement
 

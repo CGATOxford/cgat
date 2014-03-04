@@ -70,6 +70,23 @@ quality information the plots below will contain meaningless values.
 
    quality score distribution
 
+The following table presents an overview of the insert size metrics
+for each :term:`track`.  See the 
+`Picard metrics <http://picard.sourceforge.net/picard-metric-definitions.shtml#InsertSizeMetrics>`_
+for a definition of the field contents.
+(note: only applicable for paired-end data).
+
+.. report:: Mapping.PicardInsertSizeMetrics
+   :render: table
+
+   Insert size summary
+
+.. report:: Mapping.PicardInsertSizeHistogram
+   :render: line-plot
+   :as-lines:
+
+   Insert size distribution
+
 Coverages
 =========
 

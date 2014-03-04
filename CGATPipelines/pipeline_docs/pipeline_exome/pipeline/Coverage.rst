@@ -9,16 +9,6 @@ The following table present an overview of the sequencing depth acheived for eac
 
 .. report:: Coverage.CoverageSummary
    :render: table
-   :tracks: coverage_stats
-   :slices: features, covered, mean_cov, median_cov
+   :slices: track, MEAN_TARGET_COVERAGE, PCT_TARGET_BASES_2X, PCT_TARGET_BASES_10X, PCT_TARGET_BASES_20X, PCT_TARGET_BASES_30X
 
    Coverage Summary
-
-.. report:: Coverage.CoveragePlot
-   :render: line-plot
-   :transform: histogram
-   :tf-range: 0,500,20
-   :slices: cov_mean
-
-   Coverage Summary
-
