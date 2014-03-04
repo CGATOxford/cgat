@@ -148,20 +148,13 @@ code
 ##########################################################
 ##########################################################
 
-# load modules                                                                                                                                                                                                                               
+# load modules
 from ruffus import *
-import CGAT.Experiment as E
+
 import logging as L
-import CGAT.Database as Database
-import CGAT.CSV as CSV
 import numpy as np
-import fnmatch
 import sqlite3
-import CGATPipelines.PipelineMappingQC as PipelineMappingQC
-import CGAT.GTF as GTF
-import CGAT.IOTools as IOTools
 import gzip
-import CGATPipelines.PipelineRnaseq as PipelineRnaseq
 import sys
 import os
 import re
@@ -174,41 +167,51 @@ import gzip
 import collections
 import random
 from rpy2.robjects import r as R
+
+import CGAT.Experiment as E
+import CGAT.Pipeline as P
+
+import CGAT.Database as Database
+import CGAT.CSV as CSV
+import CGATPipelines.PipelineMappingQC as PipelineMappingQC
+import CGAT.GTF as GTF
+import CGAT.IOTools as IOTools
+import CGATPipelines.PipelineRnaseq as PipelineRnaseq
 import CGAT.Expression as Expression
 import CGAT.IndexedGenome as IndexedGenome
 import CGATPipelines.PipelineLncRNA as PipelineLncRNA
 
-import CGAT.Pipeline as P
-
 # get parameters
-P.getParameters( 
-    ["%s.ini" % __file__[:-len(".py")]
-     ,"pipeline.ini"],
-    defaults = {"annotations_annotations_dir": "",
-                "genesets_abinitio_coding": "pruned.gtf.gz",
-                "genesets_abinitio_lncrna": "pruned.gtf.gz",
-                "genesets_reference": "reference.gtf.gz",
-                "genesets_refcoding": "refcoding.gtf.gz",
-                "genesets_previous": ""})
+P.getParameters(
+    ["%s.ini" % __file__[:-len(".py")], "pipeline.ini"],
+    defaults={"annotations_annotations_dir": "",
+              "genesets_abinitio_coding": "pruned.gtf.gz",
+              "genesets_abinitio_lncrna": "pruned.gtf.gz",
+              "genesets_reference": "reference.gtf.gz",
+              "genesets_refcoding": "refcoding.gtf.gz",
+              "genesets_previous": ""})
 
 PARAMS = P.PARAMS
-PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_annotations_dir"],
-                                       "pipeline_annotations.py" )
+PARAMS_ANNOTATIONS = P.peekParameters(PARAMS["annotations_annotations_dir"],
+                                      "pipeline_annotations.py")
 PREVIOUS = P.asList(PARAMS["genesets_previous"])
 
 #########################################################################
 #########################################################################
 #########################################################################
+
+
 def connect():
     '''connect to database.
 
     This method also attaches to helper databases.
     '''
 
-    dbh = sqlite3.connect( PARAMS["database"] )
-    statement = '''ATTACH DATABASE '%s' as annotations''' % (PARAMS["annotations_annotations_database"])
+    dbh = sqlite3.connect(PARAMS["database"])
+    statement = '''ATTACH DATABASE '%s' as annotations''' % (
+        PARAMS["annotations_annotations_database"])
     cc = dbh.cursor()
-    cc.execute( statement )
+    cc.execute(statement)
     cc.close()
 
     return dbh
@@ -216,6 +219,8 @@ def connect():
 #########################################################################
 #########################################################################
 #########################################################################
+
+
 def Rconnect():
     '''
     connect to a database through R
@@ -229,15 +234,19 @@ def Rconnect():
 #########################################################################
 #########################################################################
 #########################################################################
+
+
 def filenameToTablename(filename):
     '''
     converts filename containing "." to tablename where "." converted to "_"
     '''
-    return filename.replace(".", "_" )
+    return filename.replace(".", "_")
 
 #########################################################################
 #########################################################################
 #########################################################################
+
+
 def updateFile(filename):
     '''                                                                                                                                                                                                                                      
     create empty file for updating purposes                                                                                                                                                                                                  
@@ -250,6 +259,8 @@ def updateFile(filename):
 #########################################################################
 #########################################################################
 #########################################################################
+
+
 def tabSplit(line):
     '''
     generic split by newline and tab for reading tsv files
@@ -259,19 +270,20 @@ def tabSplit(line):
 #########################################################################
 #########################################################################
 #########################################################################
+
+
 @follows(mkdir("gtfs"))
-@merge( [PARAMS["genesets_abinitio_coding"], PARAMS["genesets_reference"]]
-       , os.path.join("gtfs", P.snip(PARAMS["genesets_abinitio_coding"], ".gtf.gz") + "_coding.gtf.gz") )
+@merge([PARAMS["genesets_abinitio_coding"], PARAMS["genesets_reference"]], os.path.join("gtfs", P.snip(PARAMS["genesets_abinitio_coding"], ".gtf.gz") + "_coding.gtf.gz"))
 def buildCodingGeneSet(infiles, outfile):
     '''
     takes the output from cuffcompare of a transcript
     assembly and filters for annotated protein coding
     genes. 
-    
+
     NB "pruned" refers to nomenclature in the transcript
     building pipeline - transcripts that appear in at least
     two samples.
-    
+
     Because an abinitio assembly will often contain
     fragments of known transcripts and describe them as 
     novel, the default behaviour is to produce a set that
@@ -284,6 +296,8 @@ def buildCodingGeneSet(infiles, outfile):
 ##########################################################
 ##########################################################
 ##########################################################
+
+
 @follows(buildCodingGeneSet)
 @transform(PARAMS["genesets_refcoding"], regex(r"(\S+).gtf.gz"), add_inputs(buildCodingGeneSet), r"gtfs/\1.gtf.gz")
 def buildRefcodingGeneSet(infiles, outfile):
@@ -291,11 +305,13 @@ def buildRefcodingGeneSet(infiles, outfile):
     builds a refcoding geneset based on the genes that are present in
     the abinitio assembly
     '''
-    PipelineLncRNA.buildRefcodingGeneSet(infiles[1], infiles[0], outfile )
+    PipelineLncRNA.buildRefcodingGeneSet(infiles[1], infiles[0], outfile)
 
 ##########################################################
 ##########################################################
 ##########################################################
+
+
 @follows(mkdir("gtfs"))
 @files(PARAMS["genesets_reference"], "gtfs/refnoncoding.gtf.gz")
 def buildRefnoncodingGeneSet(infile, outfile):
@@ -314,28 +330,34 @@ def buildRefnoncodingGeneSet(infile, outfile):
 ##########################################################
 ##########################################################
 ##########################################################
-@follows(mkdir("gtfs"))
-@merge( (PARAMS["genesets_abinitio_lncrna"], PARAMS["genesets_reference"], buildRefnoncodingGeneSet,
-         os.path.join(PARAMS["annotations_annotations_dir"], PARAMS_ANNOTATIONS["interface_pseudogenes_gtf"] ),
-         os.path.join(PARAMS["annotations_annotations_dir"], PARAMS_ANNOTATIONS["interface_numts_gtf"] ),
-         ), "gtfs/lncrna.gtf.gz" )
 
+
+@follows(mkdir("gtfs"))
+@merge((PARAMS["genesets_abinitio_lncrna"], PARAMS["genesets_reference"], buildRefnoncodingGeneSet,
+        os.path.join(PARAMS["annotations_annotations_dir"],
+                     PARAMS_ANNOTATIONS["interface_pseudogenes_gtf"]),
+        os.path.join(PARAMS["annotations_annotations_dir"],
+                     PARAMS_ANNOTATIONS["interface_numts_gtf"]),
+        ), "gtfs/lncrna.gtf.gz")
 def buildLncRNAGeneSet(infiles, outfile):
     '''
     build lncRNA gene set. 
-    
+
     This is a set of transcripts in the abinitio set that
     do not overlap at any protein coding or pseudogene transcripts
     or additional biotypes from ensembl that are unwanted
     (exons) in a reference gene set.
-    
+
     Transcripts need to have a length of at least 200 bp.
     '''
-    PipelineLncRNA.buildLncRNAGeneSet( infiles[0], infiles[1], infiles[2], infiles[3], infiles[4], outfile, PARAMS["lncrna_min_length"] )        
-               
+    PipelineLncRNA.buildLncRNAGeneSet(infiles[0], infiles[1], infiles[2], infiles[
+                                      3], infiles[4], outfile, PARAMS["lncrna_min_length"])
+
 ##########################################################################
 ##########################################################################
 ##########################################################################
+
+
 @transform(buildLncRNAGeneSet, suffix(".gtf.gz"), "_flag.gtf.gz")
 def flagExonStatus(infile, outfile):
     '''
@@ -347,6 +369,8 @@ def flagExonStatus(infile, outfile):
 ##########################################################################
 ##########################################################################
 ##########################################################################
+
+
 @follows(flagExonStatus)
 @transform(PREVIOUS, regex(r"(\S+)/(\S+).gtf.gz"), r"\2.gtf.gz")
 def renameTranscriptsInPreviousSets(infile, outfile):
@@ -381,9 +405,7 @@ def renameTranscriptsInPreviousSets(infile, outfile):
 ##########################################################################
 ##########################################################################
 if PARAMS["genesets_previous"]:
-    @transform(flagExonStatus, regex(r"(\S+)_flag.gtf.gz")
-               , add_inputs( renameTranscriptsInPreviousSets )
-               , r"\1_filtered.gtf.gz")
+    @transform(flagExonStatus, regex(r"(\S+)_flag.gtf.gz"), add_inputs(renameTranscriptsInPreviousSets), r"\1_filtered.gtf.gz")
     def buildFilteredLncRNAGeneSet(infiles, outfile):
         '''
         Creates a filtered lncRNA geneset. 
@@ -391,12 +413,15 @@ if PARAMS["genesets_previous"]:
         unless it has been seen previously i.e. it overlaps
         a previously identified lncRNA
         '''
-        PipelineLncRNA.buildFilteredLncRNAGeneSet(infiles[0], outfile, infiles[1:len(infiles)])
+        PipelineLncRNA.buildFilteredLncRNAGeneSet(
+            infiles[0], outfile, infiles[1:len(infiles)])
 else:
-    E.info("no previous lncRNA set provided: Using refnoncoding set")
-    @transform(flagExonStatus, regex(r"(\S+)_flag.gtf.gz")
-               , r"\1_filtered.gtf.gz")
-     
+
+    # Writing the following to log will cause all subsequent log messages
+    # to be empty.
+    # L.info("no previous lncRNA set provided: Using refnoncoding set")
+
+    @transform(flagExonStatus, regex(r"(\S+)_flag.gtf.gz"), r"\1_filtered.gtf.gz")
     def buildFilteredLncRNAGeneSet(infile, outfile):
         '''
         will just filter out single exon lncRNA
@@ -407,17 +432,22 @@ else:
 ##########################################################################
 ##########################################################################
 ##########################################################################
-@transform(buildFilteredLncRNAGeneSet, suffix(".gtf.gz"),add_inputs(PARAMS["genesets_refcoding"]), ".class.gtf.gz")
+
+
+@transform(buildFilteredLncRNAGeneSet, suffix(".gtf.gz"), add_inputs(PARAMS["genesets_refcoding"]), ".class.gtf.gz")
 def classifyFilteredLncRNA(infiles, outfile):
     '''
     classifies all lincRNA before cpc filtering to define any classes that
     are represented in the coding set that are  filtered
     '''
-    PipelineLncRNA.classifyLncRNAGenes(infiles[0], infiles[1], outfile, dist = PARAMS["lncrna_dist"])
+    PipelineLncRNA.classifyLncRNAGenes(
+        infiles[0], infiles[1], outfile, dist=PARAMS["lncrna_dist"])
 
 ##########################################################################
 ##########################################################################
 ##########################################################################
+
+
 @follows(mkdir("fasta"))
 @transform(buildFilteredLncRNAGeneSet, regex(r"gtfs/(\S+).gtf.gz"), r"fasta/\1.fasta")
 def buildLncRNAFasta(infile, outfile):
@@ -425,13 +455,16 @@ def buildLncRNAFasta(infile, outfile):
     create fasta file from lncRNA geneset for testing coding
     potential of transcripts
     '''
-    genome = os.path.join(PARAMS["general_genomedir"], PARAMS["genome"] + ".fasta")
+    genome = os.path.join(
+        PARAMS["general_genomedir"], PARAMS["genome"] + ".fasta")
     statement = '''zcat %(infile)s | python %(scriptsdir)s/gff2fasta.py --genome-file=%(genome)s --log=%(outfile)s.log --is-gtf > %(outfile)s'''
     P.run()
 
 ##########################################################################
 ##########################################################################
 ##########################################################################
+
+
 @transform(buildLncRNAFasta, regex(r"fasta/(\S+).fasta"), r"cpc/\1_cpc.result")
 def runCPC(infile, outfile):
     '''
@@ -448,21 +481,26 @@ def runCPC(infile, outfile):
 ##########################################################################
 ##########################################################################
 ##########################################################################
+
+
 @follows(runCPC)
-@transform(runCPC, regex("cpc/(\S+).result"), r"\1.load")       
+@transform(runCPC, regex("cpc/(\S+).result"), r"\1.load")
 def loadCPCResults(infile, outfile):
     '''
     load the results of the cpc analysis
     '''
-#    inf = os.path.join("cpc", infile)                                               Jethro - removed line
+# inf = os.path.join("cpc", infile)
+# Jethro - removed line
     tablename = filenameToTablename(os.path.basename(infile))
     statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s --log=%(outfile)s.log 
-                   --header=transcript_id,feature,C_NC,CP_score --index=transcript_id < %(infile)s > %(outfile)s'''   # Jethro - changed < %(inf)s > to < %(infile)s > 
+                   --header=transcript_id,feature,C_NC,CP_score --index=transcript_id < %(infile)s > %(outfile)s'''   # Jethro - changed < %(inf)s > to < %(infile)s >
     P.run()
 
 ##########################################################################
 ##########################################################################
 ##########################################################################
+
+
 @follows(loadCPCResults)
 @transform(buildFilteredLncRNAGeneSet, regex(r"(\S+)_filtered.gtf.gz"), r"\1_final.gtf.gz")
 def buildFinalLncRNAGeneSet(infile, outfile):
@@ -472,13 +510,16 @@ def buildFinalLncRNAGeneSet(infile, outfile):
     multi-exonic/previously seen single exon transcripts
     display low evidence for coding potential
     '''
-    
+
     # filter based on coding potential
-    PipelineLncRNA.buildFinalLncRNAGeneSet(infile, "lncrna_filtered_cpc_result", outfile, PARAMS["filtering_cpc"])
+    PipelineLncRNA.buildFinalLncRNAGeneSet(
+        infile, "lncrna_filtered_cpc_result", outfile, PARAMS["filtering_cpc"])
 
 ##########################################################################
 ##########################################################################
 ##########################################################################
+
+
 @transform([buildCodingGeneSet, buildFinalLncRNAGeneSet, buildRefcodingGeneSet], regex(r"(\S+)/(\S+).gtf.gz"), r"\2.stats")
 def buildGeneSetStats(infile, outfile):
     '''
@@ -495,26 +536,16 @@ def buildGeneSetStats(infile, outfile):
     in the coding and lncRNA genesets
     '''
     outf = open(outfile, "w")
-    outf.write("\t".join(["no_transcripts"
-                , "no_genes"
-                , "no_exons_per_transcript"
-                , "no_exons_per_gene"
-                , "no_single_exon_transcripts"
-                , "no_multi_exon_transcripts"
-                , "no_single_exon_genes"
-                , "no_multi_exon_genes"]) + "\n")
-    outf.write("\t".join(map(str, [PipelineLncRNA.CounterTranscripts(infile).count()
-                          , PipelineLncRNA.CounterGenes(infile).count()
-                          , PipelineLncRNA.CounterExonsPerTranscript(infile).count()
-                          , PipelineLncRNA.CounterExonsPerGene(infile).count()
-                          , PipelineLncRNA.CounterSingleExonTranscripts(infile).count()
-                          , PipelineLncRNA.CounterMultiExonTranscripts(infile).count()
-                          , PipelineLncRNA.CounterSingleExonGenes(infile).count()
-                          , PipelineLncRNA.CounterMultiExonGenes(infile).count()])))
+    outf.write("\t".join(["no_transcripts", "no_genes", "no_exons_per_transcript", "no_exons_per_gene",
+               "no_single_exon_transcripts", "no_multi_exon_transcripts", "no_single_exon_genes", "no_multi_exon_genes"]) + "\n")
+    outf.write("\t".join(map(str, [PipelineLncRNA.CounterTranscripts(infile).count(), PipelineLncRNA.CounterGenes(infile).count(), PipelineLncRNA.CounterExonsPerTranscript(infile).count(), PipelineLncRNA.CounterExonsPerGene(infile).count(
+    ), PipelineLncRNA.CounterSingleExonTranscripts(infile).count(), PipelineLncRNA.CounterMultiExonTranscripts(infile).count(), PipelineLncRNA.CounterSingleExonGenes(infile).count(), PipelineLncRNA.CounterMultiExonGenes(infile).count()])))
 
 ##########################################################################
 ##########################################################################
 ##########################################################################
+
+
 @transform(buildGeneSetStats, suffix(".stats"), ".load")
 def loadGeneSetStats(infile, outfile):
     '''
@@ -527,13 +558,14 @@ def loadGeneSetStats(infile, outfile):
 ##########################################################################
 ##########################################################################
 ##########################################################################
-@transform(buildFinalLncRNAGeneSet, regex(r"(\S+).gtf.gz")
-           , add_inputs(PARAMS["genesets_refcoding"]), r"\1.class.gtf.gz")
+
+
+@transform(buildFinalLncRNAGeneSet, regex(r"(\S+).gtf.gz"), add_inputs(PARAMS["genesets_refcoding"]), r"\1.class.gtf.gz")
 def classifyLncRNA(infiles, outfile):
     '''
-    
+
     Classify lncRNA realtive to protein coding loci
-    
+
     Classify lincRNA in terms of their relationship to 
     protein coding genes - creates indices for intervals on the 
     fly - mayb should be creating additional annotations:
@@ -555,26 +587,31 @@ def classifyLncRNA(infiles, outfile):
     antisense_intronic
        overlaps protein coding intron on opposite strand
     '''
-    
-    PipelineLncRNA.classifyLncRNAGenes(infiles[0], infiles[1], outfile, dist = PARAMS["lncrna_dist"])
+
+    PipelineLncRNA.classifyLncRNAGenes(
+        infiles[0], infiles[1], outfile, dist=PARAMS["lncrna_dist"])
 
 ##########################################################################
 ##########################################################################
 ##########################################################################
+
+
 @transform(classifyLncRNA, suffix(".gtf.gz"), ".load")
 def loadLncRNAClass(infile, outfile):
     '''
     load the lncRNA classifications
     '''
-    tablename = os.path.basename(filenameToTablename(P.snip(infile, ".gtf.gz")))
-    
+    tablename = os.path.basename(
+        filenameToTablename(P.snip(infile, ".gtf.gz")))
+
     to_cluster = False
     # just load each transcript with its classification
     temp = P.getTempFile()
     for transcript in GTF.transcript_iterator(GTF.iterator(IOTools.openFile(infile))):
-        temp.write("%s\t%s\t%s\n" % (transcript[0].transcript_id, transcript[0].gene_id, transcript[0].source))
+        temp.write("%s\t%s\t%s\n" % (
+            transcript[0].transcript_id, transcript[0].gene_id, transcript[0].source))
     temp.close()
-        
+
     inf = temp.name
     statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s --log=%(outfile)s.log --header=transcript_id,gene_id,class < %(inf)s > %(outfile)s'''
     P.run()
@@ -582,6 +619,8 @@ def loadLncRNAClass(infile, outfile):
 ##########################################################################
 ##########################################################################
 ##########################################################################
+
+
 @merge([buildCodingGeneSet, classifyLncRNA], "gtfs/transcripts.gtf.gz")
 def buildFullGeneSet(infiles, outfile):
     '''
@@ -589,26 +628,193 @@ def buildFullGeneSet(infiles, outfile):
     differential expression analysis and comparisons
     between protein coding and lncRNA transcripts
     '''
-    # change the source to be in keeping with classification 
+    # change the source to be in keeping with classification
     # of transcripts - f coming from cufflinks assembly
-
     infs = " ".join(infiles)
     statement = '''zcat %(infs)s | sed "s/Cufflinks/protein_coding/g"
-                   | python %(scriptsdir)s/gtf2gtf.py --sort=gene --log=%(outfile)s.log | gzip  > %(outfile)s''' 
+                   | python %(scriptsdir)s/gtf2gtf.py --sort=gene --log=%(outfile)s.log | gzip  > %(outfile)s'''
+    P.run()
+
+##########################################################################
+##########################################################################
+##########################################################################
+
+
+@follows(mkdir("./phyloCSF"))
+@transform(buildFinalLncRNAGeneSet,
+           regex("(.+)/(.+)_final.gtf.gz"),
+           r"./phyloCSF/\2.bed.gz")
+def convertGTFToBed12(infile, outfile):
+    """
+    Transform the lncrna_final.gtf.gz into lncrna_final.bed
+    """
+    PipelineLncRNA.gtfToBed12(infile, outfile, "transcript")
+
+
+# AH: added default empty location for phyloCSF_location_axt to allow
+# import of pipeline script
+@follows(mkdir("./phyloCSF"))
+@merge(os.path.join(PARAMS.get("phyloCSF_location_axt", ""), "*.axt.gz"),
+       "./phyloCSF/filtered_alignment.maf.gz")
+def createMAFAlignment(infiles, outfile):
+    """
+    Takes all .axt files in the input directory, filters them to remove
+    files based on supplied regular expressions, converts to a single maf file
+    using axtToMaf, filters maf alignments under a specified length.
+    """
+    outfile = P.snip(outfile, ".gz")
+    axt_dir = PARAMS["phyloCSF_location_axt"]
+    to_ignore = re.compile(PARAMS["phyloCSF_ignore"])
+
+    axt_files = []
+    for axt_file in os.listdir(axt_dir):
+        if axt_file.endswith("net.axt.gz") and not to_ignore.search(axt_file):
+            axt_files.append(os.path.join(axt_dir, axt_file))
+    axt_files = (" ").join(sorted(axt_files))
+
+    E.info("axt files from which MAF alignment will be created: %s" %
+           axt_files)
+
+    target_genome = PARAMS["phyloCSF_target_genome"]
+    target_contigs = os.path.join(PARAMS["annotations_annotations_dir"],
+                                  PARAMS_ANNOTATIONS["interface_contigs"])
+    query_genome = PARAMS["phyloCSF_query_genome"]
+    query_contigs = os.path.join(PARAMS["phyloCSF_query_assembly"],
+                                 PARAMS_ANNOTATIONS["interface_contigs"])
+
+    tmpf1 = P.getTempFilename("./phyloCSF")
+    tmpf2 = P.getTempFilename("./phyloCSF")
+    to_cluster = False
+    # concatenate axt files, then remove headers
+    statement = ("zcat %(axt_files)s"
+                 " > %(tmpf1)s;"
+                 " axtToMaf "
+                 "  -tPrefix=%(target_genome)s."
+                 "  -qPrefix=%(query_genome)s."
+                 "  %(tmpf1)s"
+                 "  %(target_contigs)s"
+                 "  %(query_contigs)s"
+                 "  %(tmpf2)s")
+    P.run()
+
+    E.info("Temporary axt file created %s" % os.path.abspath(tmpf1))
+    E.info("Temporary maf file created %s" % os.path.abspath(tmpf2))
+
+    removed = P.snip(outfile, ".maf") + "_removed.maf"
+    to_cluster = False
+    filtered = PipelineLncRNA.filterMAF(tmpf2,
+                                        outfile,
+                                        removed,
+                                        PARAMS["phyloCSF_filter_alignments"])
+    E.info("%s blocks were ignored in MAF alignment"
+           " because length of target alignment was too short" % filtered[0])
+    E.info("%s blocks were output to filtered MAF alignment" % filtered[1])
+
+    os.unlink(tmpf1)
+    os.unlink(tmpf2)
+    to_cluster = False
+    statement = ("gzip %(outfile)s;"
+                 " gzip %(removed)s")
+    P.run()
+
+
+@merge([convertGTFToBed12, createMAFAlignment],
+       "./phyloCSF/lncrna_transcripts.fasta.gz")
+def extractLncRNAFastaAlignments(infiles, outfile):
+    """
+    Recieves a MAF file containing pairwise alignments and a gtf12 file
+    containing intervals. Outputs a single fasta file containing aligned
+    sequence for each interval.
+    """
+    bed_file, maf_file = infiles
+    maf_tmp = P.getTempFilename("./phyloCSF")
+    to_cluster = False
+    statement = ("gunzip -c %(maf_file)s > %(maf_tmp)s")
+    P.run()
+
+    target_genome = PARAMS["genome"]
+    query_genome = PARAMS["phyloCSF_query_genome"]
+
+    genome_file = os.path.join(PARAMS["genomedir"], PARAMS["genome"])
+
+    gene_models = PipelineLncRNA.extractMAFGeneBlocks(bed_file,
+                                                      maf_tmp,
+                                                      genome_file,
+                                                      outfile,
+                                                      target_genome,
+                                                      query_genome,
+                                                      keep_gaps=False)
+    E.info("%i gene_models extracted" % gene_models)
+    os.unlink(maf_tmp)
+
+
+@follows(mkdir("./phyloCSF/lncrna_fasta"))
+@split(extractLncRNAFastaAlignments, "./phyloCSF/lncrna_fasta/*.fasta")
+def splitLncRNAFasta(infile, outfiles):
+    out_dir = "./phyloCSF/lncrna_fasta"
+
+    name_dict = {}
+    for mapping in PARAMS["phyloCSF_map_species_names"].split(","):
+        pair = mapping.split(":")
+        key = ">" + pair[0]
+        value = ">" + pair[1]
+        name_dict[key] = value
+    E.info("Name mapping: %s" % name_dict)
+
+    PipelineLncRNA.splitAlignedFasta(infile, out_dir, name_dict)
+
+
+@transform(splitLncRNAFasta, suffix(".fasta"), ".phyloCSF")
+def runLncRNAPhyloCSF(infile, outfile):
+    phylogeny = PARAMS["phyloCSF_phylogeny"]
+    n_frames = int(PARAMS["phyloCSF_n_frames"])
+    if PARAMS["phyloCSF_options"]:
+        options = PARAMS["phyloCSF_options"]
+    else:
+        options = ""
+
+    species = []
+    for mapping in PARAMS["phyloCSF_map_species_names"].split(","):
+        species.append(mapping.split(":")[1])
+    species = ",".join(species)
+
+    to_cluster = True
+    statement = ("PhyloCSF %(phylogeny)s"
+                 "  %(infile)s"
+                 "  --frames=%(n_frames)s"
+                 "  --species=%(species)s"
+                 " %(options)s"
+                 " > %(outfile)s")
+    P.run()
+
+
+@merge(runLncRNAPhyloCSF, "lncRNA_phyloCSF.tsv")
+def mergeLncRNAPhyloCSF(infiles, outfile):
+    file_name = " ".join([x for x in infiles])
+    statement = '''
+                python %(scriptsdir)s/combine_tables.py
+                 --no-titles
+                 --cat=CAT
+                 --missing=0
+                 --log=%(outfile)s.log
+                 %(file_names)s
+                > %(outfile)s
+                 '''
     P.run()
 
 ##########################################################################
 ##########################################################################
 ##########################################################################
 # targets
-@follows(buildCodingGeneSet
-         , buildRefnoncodingGeneSet
-         , buildFinalLncRNAGeneSet
-         , loadGeneSetStats
-         , loadLncRNAClass
-         , classifyLncRNA
-         , buildFullGeneSet)
+
+
+@follows(buildCodingGeneSet, buildRefnoncodingGeneSet, buildFinalLncRNAGeneSet, loadGeneSetStats, loadLncRNAClass, classifyLncRNA, buildFullGeneSet)
 def GeneSets():
+    pass
+
+
+@follows(mergeLncRNAPhyloCSF)
+def phyloCSF():
     pass
 
 
@@ -619,31 +825,36 @@ def CodingPotential():
 ##########################################################################
 ##########################################################################
 
-@follows(GeneSets
-         ,CodingPotential)
+
+@follows(GeneSets, CodingPotential)
 def full():
     pass
 
 ##########################################################################
 ##########################################################################
 ##########################################################################
-@follows( mkdir( "report" ) )
+
+
+@follows(mkdir("report"))
 def build_report():
     '''build report from scratch.'''
 
-    E.info( "starting documentation build process from scratch" )
-    P.run_report( clean = True )
+    E.info("starting documentation build process from scratch")
+    P.run_report(clean=True)
 
-@follows( mkdir( "report" ) )
+
+@follows(mkdir("report"))
 def update_report():
     '''update report.'''
 
-    E.info( "updating documentation" )
-    P.run_report( clean = False )
+    E.info("updating documentation")
+    P.run_report(clean=False)
 
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 @follows(update_report)
 def publish():
     '''publish files.'''
@@ -654,13 +865,11 @@ def publish():
     web_dir = PARAMS["web_dir"]
 
     if not os.path.exists(os.path.join(web_dir), "lncrna_final.class.gtf.gz"):
-        os.symlink("lncrna_final.class.gtf.gz", os.path.abspath(os.path.join(os.path.join(web_dir), "lncrna_final.class.gtf.gz")))
+        os.symlink("lncrna_final.class.gtf.gz", os.path.abspath(
+            os.path.join(os.path.join(web_dir), "lncrna_final.class.gtf.gz")))
 
 ##########################################################################
 ##########################################################################
 ##########################################################################
-if __name__== "__main__":
-    sys.exit( P.main(sys.argv) )
-
-
-
+if __name__ == "__main__":
+    sys.exit(P.main(sys.argv))

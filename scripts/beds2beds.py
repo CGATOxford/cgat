@@ -56,7 +56,7 @@ for command line help.
 Command line options
 --------------------
 
-""" 
+"""
 
 import os
 import sys
@@ -72,31 +72,36 @@ import numpy
 import pysam
 import CGAT.Intervals as Intervals
 
-def isContainedInAll( contig, start, end, bedfiles ):
+
+def isContainedInAll(contig, start, end, bedfiles):
 
     for bedfile in bedfiles:
         try:
-            if len(list(bedfile.fetch( contig, start, end ))) == 0:
+            if len(list(bedfile.fetch(contig, start, end))) == 0:
                 return False
+        except KeyError:
+            return False
         except ValueError:
             return False
 
     return True
 
-def isContainedInOne( contig, start, end, bedfiles ):
+
+def isContainedInOne(contig, start, end, bedfiles):
 
     for bedfile in bedfiles:
         try:
-            if len(list(bedfile.fetch( contig, start, end ))) > 0:
+            if len(list(bedfile.fetch(contig, start, end))) > 0:
                 return True
         except ValueError:
             pass
 
     return False
 
-def combineMergedIntervals( bedfiles ):
+
+def combineMergedIntervals(bedfiles):
     '''combine intervals in a collection of bed files.
-    
+
     Overlapping intervals between tracks are merged.
 
     Algorithm:
@@ -106,29 +111,30 @@ def combineMergedIntervals( bedfiles ):
     3. report all intervals that overlap with an interval in each track.
 
     '''
-    
+
     # get all intervals
-    data_per_contig = collections.defaultdict( list )
+    data_per_contig = collections.defaultdict(list)
     for bedfile in bedfiles:
         for contig in bedfile.contigs:
             i = []
-            for bed in bedfile.fetch( contig, parser = pysam.asBed() ):
-                i.append( (bed.start, bed.end) )
-            data_per_contig[contig].extend( i )
-    
+            for bed in bedfile.fetch(contig, parser=pysam.asBed()):
+                i.append((bed.start, bed.end))
+            data_per_contig[contig].extend(i)
+
     # merge intervals
     for contig in data_per_contig.keys():
-        data_per_contig[contig] = Intervals.combine( data_per_contig[contig] )
+        data_per_contig[contig] = Intervals.combine(data_per_contig[contig])
 
     # filter intervals - take only those present in all bedfiles
     for contig, data in data_per_contig.iteritems():
         for start, end in data:
-            if isContainedInAll( contig, start, end, bedfiles ):
+            if isContainedInAll(contig, start, end, bedfiles):
                 yield contig, start, end
 
-def combineUnmergedIntervals( foreground, background ):
+
+def combineUnmergedIntervals(foreground, background):
     '''combine intervals in a collection of bed files.
-    
+
     Only intervals in the first track are reported.
 
     Algorithm:
@@ -138,130 +144,138 @@ def combineUnmergedIntervals( foreground, background ):
 
     intervals = []
     c = 0
-    for bed in foreground.fetch( parser = pysam.asBed() ):
+    for bed in foreground.fetch(parser=pysam.asBed()):
         c += 1
-        if isContainedInAll( bed.contig, bed.start, bed.end, background ):
+        if isContainedInAll(bed.contig, bed.start, bed.end, background):
             yield bed
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if not argv: argv = sys.argv
+    if not argv:
+        argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser( version = "%prog version: $Id: diff_bed.py 2866 2010-03-03 10:18:49Z andreas $", usage = globals()["__doc__"] )
+    parser = E.OptionParser(
+        version="%prog version: $Id: diff_bed.py 2866 2010-03-03 10:18:49Z andreas $", usage=globals()["__doc__"])
 
     parser.add_option("-e", "--exclusive", dest="exclusive", action="store_true",
                       help="Intervals reported will be merged across the positive set"
                            " and do not overlap any interval in any of the other sets"
-                           " [default=%default]." )
+                           " [default=%default].")
 
     parser.add_option("-p", "--pattern-id", dest="pattern_id", type="string",
-                      help="pattern to convert a filename to an id [default=%default]." )
+                      help="pattern to convert a filename to an id [default=%default].")
 
-    parser.add_option( "-m", "--method", dest="method", type="choice",
-                       choices = ("merged-combinations", 
-                                  "unmerged-combinations" ),
-                       help = "method to perform [default=%default]" )
-    
+    parser.add_option("-m", "--method", dest="method", type="choice",
+                      choices=("merged-combinations",
+                               "unmerged-combinations"),
+                      help = "method to perform [default=%default]")
+
     parser.set_defaults(
-        pattern_id = "(.*).bed.gz",
-        exclusive = False,
-        method = "merged-combinations",
-        )
+        pattern_id="(.*).bed.gz",
+        exclusive=False,
+        method="merged-combinations",
+    )
 
-    ## add common options (-h/--help, ...) and parse command line 
-    (options, args) = E.Start( parser, argv = argv, add_output_options = True )
+    # add common options (-h/--help, ...) and parse command line
+    (options, args) = E.Start(parser, argv=argv, add_output_options=True)
 
     if len(args) < 2:
-        raise ValueError( "at least two arguments required" )
+        raise ValueError("at least two arguments required")
 
     tags, bedfiles = [], []
     for infile in args:
-        bedfiles.append( pysam.Tabixfile( infile, "r" ) )
-        tags.append( re.search( options.pattern_id, infile ).groups()[0] )
+        bedfiles.append(pysam.Tabixfile(infile, "r"))
+        tags.append(re.search(options.pattern_id, infile).groups()[0])
 
     indices = range(len(bedfiles))
     is_exclusive = options.exclusive
 
     if options.method == "merged-combinations":
 
-        if is_exclusive: start = 1    
-        else: start = 2
+        if is_exclusive:
+            start = 1
+        else:
+            start = 2
 
-        options.stdout.write( "combination\twithout\tcounts\n" )
+        options.stdout.write("combination\twithout\tcounts\n")
 
-        for ncombinants in range( start, len(bedfiles) + 1):
-            for combination in itertools.combinations( indices, ncombinants ):
-                other = [ x for x in indices if x not in combination ]
-                tag = ":".join( [ tags[x] for x in combination ] )
-                E.debug( "combination %s started" % tag)
-                E.debug( "other: %s" % ":".join( [tags[x] for x in other]) )
-                other_bed = [ bedfiles[x] for x in other ]
-                outf = IOTools.openFile( E.getOutputFile( tag ), "w", create_dir = True)
+        for ncombinants in range(start, len(bedfiles) + 1):
+            for combination in itertools.combinations(indices, ncombinants):
+                other = [x for x in indices if x not in combination]
+                tag = ":".join([tags[x] for x in combination])
+                E.debug("combination %s started" % tag)
+                E.debug("other: %s" % ":".join([tags[x] for x in other]))
+                other_bed = [bedfiles[x] for x in other]
+                outf = IOTools.openFile(
+                    E.getOutputFile(tag), "w", create_dir=True)
                 c = E.Counter()
-                for contig, start, end in combineMergedIntervals( [bedfiles[x] for x in combination ] ):
+                for contig, start, end in combineMergedIntervals([bedfiles[x] for x in combination]):
                     c.found += 1
-                    if is_exclusive and isContainedInOne( contig, start, end, other_bed ):
+                    if is_exclusive and isContainedInOne(contig, start, end, other_bed):
                         c.removed += 1
                         continue
                     c.output += 1
-                    outf.write( "%s\t%i\t%i\n" % (contig, start, end ) )
+                    outf.write("%s\t%i\t%i\n" % (contig, start, end))
 
                 outf.close()
-                E.info( "combination %s finished: %s" % (tag, c))
-                
-                options.stdout.write( "%s\t%s\t%i\n" % (
-                        ":".join( [tags[x] for x in combination] ), 
-                        ":".join( [tags[x] for x in other] ), 
-                        c.output ) )
+                E.info("combination %s finished: %s" % (tag, c))
+
+                options.stdout.write("%s\t%s\t%i\n" % (
+                    ":".join([tags[x] for x in combination]),
+                    ":".join([tags[x] for x in other]),
+                    c.output))
 
     elif options.method == "unmerged-combinations":
-        options.stdout.write( "track\tcombination\twithout\tcounts\n" )
+        options.stdout.write("track\tcombination\twithout\tcounts\n")
 
         for foreground in indices:
 
             start = 0
 
-            background = [x for x in indices if x != foreground ]            
-            for ncombinants in range( 0, len(background) + 1 ):
-                for combination in itertools.combinations( background, ncombinants ):
-                    other = [ x for x in background if x not in combination ]
-                    combination_bed = [ bedfiles[x] for x in combination ] 
-                    other_bed = [ bedfiles[x] for x in other ]
-                    tag = ":".join( [tags[foreground]] + [ tags[x] for x in combination ] )
+            background = [x for x in indices if x != foreground]
+            for ncombinants in range(0, len(background) + 1):
+                for combination in itertools.combinations(background, ncombinants):
+                    other = [x for x in background if x not in combination]
+                    combination_bed = [bedfiles[x] for x in combination]
+                    other_bed = [bedfiles[x] for x in other]
+                    tag = ":".join([tags[foreground]] + [tags[x]
+                                   for x in combination])
 
-                    E.debug( "fg=%i, combination=%s, other=%s" % (foreground, combination, other) )
-                    E.debug( "combination %s started" % tag)
-                    E.debug( "other: %s" % ":".join( [tags[x] for x in other]) )
+                    E.debug("fg=%i, combination=%s, other=%s" %
+                            (foreground, combination, other))
+                    E.debug("combination %s started" % tag)
+                    E.debug("other: %s" % ":".join([tags[x] for x in other]))
 
-                    outf = IOTools.openFile( E.getOutputFile( tag ), "w", create_dir = True)
+                    outf = IOTools.openFile(
+                        E.getOutputFile(tag), "w", create_dir=True)
                     c = E.Counter()
                     for bed in combineUnmergedIntervals(
-                        bedfiles[foreground],
-                        combination_bed ):
+                            bedfiles[foreground],
+                            combination_bed):
                         c.found += 1
-                        if is_exclusive and isContainedInOne( bed.contig, bed.start, bed.end, other_bed ):
+                        if is_exclusive and isContainedInOne(bed.contig, bed.start, bed.end, other_bed):
                             c.removed += 1
                             continue
                         c.output += 1
-                        outf.write( "%s\n" % str(bed))
+                        outf.write("%s\n" % str(bed))
 
                     outf.close()
-                    E.info( "combination %s finished: %s" % (tag, c))
+                    E.info("combination %s finished: %s" % (tag, c))
 
-                    options.stdout.write( "%s\t%s\t%s\t%i\n" % (
-                            tags[foreground],
-                            ":".join( [tags[x] for x in combination] ), 
-                            ":".join( [tags[x] for x in other] ), 
-                            c.output ) )
-
+                    options.stdout.write("%s\t%s\t%s\t%i\n" % (
+                        tags[foreground],
+                        ":".join([tags[x] for x in combination]),
+                        ":".join([tags[x] for x in other]),
+                        c.output))
 
     E.Stop()
 
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
+    sys.exit(main(sys.argv))

@@ -48,52 +48,57 @@ import CGAT.Experiment as E
 import alignlib_lite
 import CGAT.FastaIterator as FastaIterator
 
-def main( argv = None ):
-    
-    if argv == None: argv = sys.argv
 
-    parser = E.OptionParser( version = "%prog version: $Id: align_all_vs_all.py 2782 2009-09-10 11:40:29Z andreas $",
-                             usage = globals()["__doc__"] )
+def main(argv=None):
+
+    if argv is None:
+        argv = sys.argv
+
+    parser = E.OptionParser(version="%prog version: $Id: align_all_vs_all.py 2782 2009-09-10 11:40:29Z andreas $",
+                            usage=globals()["__doc__"])
 
     parser.add_option("-s", "--sequences", dest="filename_sequences", type="string",
-                      help="input file with sequences"  )
+                      help="input file with sequences")
 
     parser.set_defaults(
-        filename_sequences = None,
-        gop = -10.0,
-        gep = -1.0,
-        )
+        filename_sequences=None,
+        gop=-10.0,
+        gep=-1.0,
+    )
 
-    (options, args) = E.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start(parser, add_pipe_options=True)
 
     if options.filename_sequences:
         infile = open(options.filename_sequences, "r")
     else:
         infile = sys.stdin
 
-    parser = FastaIterator.FastaIterator( infile )
+    parser = FastaIterator.FastaIterator(infile)
 
     sequences = []
     while 1:
         cur_record = iterator.next()
-        
-        if cur_record is None: break
-        sequences.append( (cur_record.title, alignlib_lite.py_makeSequence(re.sub( " ", "", cur_record.sequence)) ) )
-    
+
+        if cur_record is None:
+            break
+        sequences.append((cur_record.title, alignlib_lite.py_makeSequence(
+            re.sub(" ", "", cur_record.sequence))))
+
     if options.filename_sequences:
         infile.close()
 
-    alignator = alignlib_lite.py_makeAlignatorFullDP( options.gop, options.gep )
+    alignator = alignlib_lite.py_makeAlignatorFullDP(options.gop, options.gep)
     map_a2b = alignlib_lite.py_makeAlignataVector()
     nsequences = len(sequences)
-    
-    for x in range(0,nsequences-1):
-        for y in range(x+1, nsequences):
-            alignator.Align( sequences[x][1], sequences[y][1], map_a2b)
 
-            row_ali, col_ali = alignlib_lite.py_writeAlignataCompressed( map_a2b )
-            
-            options.stdout.write( "%s\t%s\t%i\t%i\t%i\t%s\t%i\t%i\t%s\t%i\t%i\t%i\t%i\n" % (\
+    for x in range(0, nsequences - 1):
+        for y in range(x + 1, nsequences):
+            alignator.Align(sequences[x][1], sequences[y][1], map_a2b)
+
+            row_ali, col_ali = alignlib_lite.py_writeAlignataCompressed(
+                map_a2b)
+
+            options.stdout.write("%s\t%s\t%i\t%i\t%i\t%s\t%i\t%i\t%s\t%i\t%i\t%i\t%i\n" % (
                 sequences[x][0], sequences[y][0],
                 map_a2b.getScore(),
                 map_a2b.getRowFrom(),
@@ -103,12 +108,13 @@ def main( argv = None ):
                 map_a2b.getColTo(),
                 col_ali,
                 map_a2b.getScore(),
-                100 * alignlib_lite.py_calculatePercentIdentity( map_a2b, sequences[x][1], sequences[y][1]),
+                100 *
+                alignlib_lite.py_calculatePercentIdentity(
+                    map_a2b, sequences[x][1], sequences[y][1]),
                 sequences[x][1].getLength(),
-                sequences[y][1].getLength() ))
-            
+                sequences[y][1].getLength()))
 
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit(main( sys.argv ) )
+    sys.exit(main(sys.argv))

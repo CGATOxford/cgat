@@ -104,29 +104,31 @@ import CGAT.Bed as Bed
 ###################################################
 ###################################################
 ###################################################
-## Pipeline configuration
+# Pipeline configuration
 ###################################################
 
 # load options from the config file
 import CGAT.Pipeline as P
-P.getParameters( 
+P.getParameters(
     ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
      "../pipeline.ini",
-     "pipeline.ini" ] )
+     "pipeline.ini"])
 
 PARAMS = P.PARAMS
-PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],
-                                       "pipeline_annotations.py" )
+PARAMS_ANNOTATIONS = P.peekParameters(PARAMS["annotations_dir"],
+                                      "pipeline_annotations.py")
 
 ###################################################################
 ###################################################################
-## Helper functions mapping tracks to conditions, etc
+# Helper functions mapping tracks to conditions, etc
 ###################################################################
 import CGATPipelines.PipelineGeneset as PipelineGeneset
 
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 def connect():
     '''connect to database.
 
@@ -135,10 +137,11 @@ def connect():
     Returns a database connection.
     '''
 
-    dbh = sqlite3.connect( PARAMS["database"] )
-    statement = '''ATTACH DATABASE '%s' as annotations''' % (PARAMS["annotations_database"])
+    dbh = sqlite3.connect(PARAMS["database"])
+    statement = '''ATTACH DATABASE '%s' as annotations''' % (
+        PARAMS["annotations_database"])
     cc = dbh.cursor()
-    cc.execute( statement )
+    cc.execute(statement)
     cc.close()
 
     return dbh
@@ -146,15 +149,16 @@ def connect():
 ###################################################################
 ###################################################################
 ###################################################################
-## worker tasks
+# worker tasks
 ###################################################################
 
-@merge( (os.path.join( PARAMS['annotations_dir'],
-                       PARAMS_ANNOTATIONS['interface_tss_bed']),
-         os.path.join( PARAMS['annotations_dir'],
-                       PARAMS_ANNOTATIONS['interface_contigs'])),
-        'tata.bed.gz' )
-def findTATABox( infiles, outfile ):
+
+@merge((os.path.join(PARAMS['annotations_dir'],
+                     PARAMS_ANNOTATIONS['interface_tss_bed']),
+        os.path.join(PARAMS['annotations_dir'],
+                     PARAMS_ANNOTATIONS['interface_contigs'])),
+       'tata.bed.gz')
+def findTATABox(infiles, outfile):
     '''find TATA box in promotors. There are several matrices to choose from:
 
     M00216 V$TATA_C Retroviral TATA box
@@ -162,9 +166,9 @@ def findTATABox( infiles, outfile ):
     M00311 V$ATATA_B Avian C-type TATA box
     M00320 V$MTATA_B Muscle TATA box
     '''
-    
+
     # 1. create fasta file - look for TATA box
-    # 
+    #
     bedfile, genomefile = infiles
 
     statement = '''
@@ -179,9 +183,9 @@ def findTATABox( infiles, outfile ):
        --log=%(outfile)s.log
     > %(outfile)s.fasta
     '''
-       
+
     P.run()
-    
+
     match_executable = '/ifs/data/biobase/transfac/match/bin/match_linux64'
     match_matrix = '/ifs/data/biobase/transfac/dat/matrix.dat'
     match_profile = 'minFP_good.prf'
@@ -199,7 +203,7 @@ prf to minimize sum of both errors - derived from minSUM.prf
 '''
 
     with IOTools.openFile(match_profile, "w") as outf:
-        outf.write( prf )
+        outf.write(prf)
 
     # -u : uniq - only one best match per sequence
     statement = '''
@@ -214,92 +218,100 @@ prf to minimize sum of both errors - derived from minSUM.prf
     P.run()
 
     transcript2pos = {}
-    for entry in FastaIterator.iterate( IOTools.openFile( outfile + ".fasta" )):
-        transcript_id, contig, start, end, strand = re.match( "(\S+)\s+(\S+):(\d+)..(\d+)\s+\((\S)\)", entry.title ).groups()
-        transcript2pos[transcript_id] = (contig, int(start), int(end), strand )
+    for entry in FastaIterator.iterate(IOTools.openFile(outfile + ".fasta")):
+        transcript_id, contig, start, end, strand = re.match(
+            "(\S+)\s+(\S+):(\d+)..(\d+)\s+\((\S)\)", entry.title).groups()
+        transcript2pos[transcript_id] = (contig, int(start), int(end), strand)
 
-    MATCH = collections.namedtuple( "MATCH", "pid transfac_id pos strand core_similarity matrix_similarity sequence" )
-    def _grouper( infile ):
+    MATCH = collections.namedtuple(
+        "MATCH", "pid transfac_id pos strand core_similarity matrix_similarity sequence")
+
+    def _grouper(infile):
         r = []
         keep = False
         for line in infile:
-            if line.startswith("Inspecting sequence ID"): 
+            if line.startswith("Inspecting sequence ID"):
                 keep = True
-                if r: yield pid, r
+                if r:
+                    yield pid, r
                 r = []
-                pid = re.match( "Inspecting sequence ID\s+(\S+)", line ).groups()[0]
+                pid = re.match(
+                    "Inspecting sequence ID\s+(\S+)", line).groups()[0]
                 continue
-            elif line.startswith(" Total"): break
+            elif line.startswith(" Total"):
+                break
 
-            if not keep: continue
-            if line[:-1].strip() == "": continue
-            transfac_id, v, core_similarity, matrix_similarity, sequence = [ x.strip() for x in line[:-1].split("|")]
-            pos, strand = re.match( "(\d+) \((\S)\)", v ).groups()
-            r.append( MATCH._make( (pid, transfac_id, int(pos), strand,
-                                    float(core_similarity), float(matrix_similarity), sequence ) ) )
+            if not keep:
+                continue
+            if line[:-1].strip() == "":
+                continue
+            transfac_id, v, core_similarity, matrix_similarity, sequence = [
+                x.strip() for x in line[:-1].split("|")]
+            pos, strand = re.match("(\d+) \((\S)\)", v).groups()
+            r.append(MATCH._make((pid, transfac_id, int(pos), strand,
+                                  float(core_similarity), float(matrix_similarity), sequence)))
 
-                                    
         yield pid, r
-        
+
     offset = PARAMS["tata_search_upstream"]
 
-    outf = IOTools.openFile( outfile + ".table.gz", "w" )
-    outf.write("\t".join( ("transcript_id", "strand",
-                           "start", "end",
-                           "relative_start", "relative_end",
-                           "transfac_id",
-                           "core_similarity",
-                           "matrix_similarity",
-                           "sequence") ) + "\n" )
+    outf = IOTools.openFile(outfile + ".table.gz", "w")
+    outf.write("\t".join(("transcript_id", "strand",
+                          "start", "end",
+                          "relative_start", "relative_end",
+                          "transfac_id",
+                          "core_similarity",
+                          "matrix_similarity",
+                          "sequence")) + "\n")
 
-    bedf = IOTools.openFile( outfile, "w" )
+    bedf = IOTools.openFile(outfile, "w")
 
     c = E.Counter()
     found = set()
-    for transcript_id, matches in _grouper( IOTools.openFile(outfile + ".match") ):
+    for transcript_id, matches in _grouper(IOTools.openFile(outfile + ".match")):
         contig, seq_start, seq_end, strand = transcript2pos[transcript_id]
         c.promotor_with_matches += 1
         nmatches = 0
-        found.add( transcript_id) 
+        found.add(transcript_id)
         for match in matches:
 
             c.matches_total += 1
-            lmatch = len( match.sequence )
-            if match.strand == "-": 
+            lmatch = len(match.sequence)
+            if match.strand == "-":
                 c.matches_wrong_strand += 1
                 continue
 
             # get genomic location of match
             if strand == "+":
-                genome_start = seq_start + match.pos 
+                genome_start = seq_start + match.pos
             else:
                 genome_start = seq_end - match.pos - lmatch
-            
+
             genome_end = genome_start + lmatch
 
             # get relative location of match
             if strand == "+":
                 tss_start = seq_start + offset
-                relative_start = genome_start - tss_start 
+                relative_start = genome_start - tss_start
             else:
                 tss_start = seq_end - offset
                 relative_start = tss_start - genome_end
-                
+
             relative_end = relative_start + lmatch
-            
-            outf.write( "\t".join( map(str, (
-                            transcript_id, strand,
-                            genome_start, genome_end,
-                            relative_start, relative_end,
-                            match.transfac_id,
-                            match.core_similarity,
-                            match.matrix_similarity,
-                            match.sequence ) ) ) + "\n" )
+
+            outf.write("\t".join(map(str, (
+                transcript_id, strand,
+                genome_start, genome_end,
+                relative_start, relative_end,
+                match.transfac_id,
+                match.core_similarity,
+                match.matrix_similarity,
+                match.sequence))) + "\n")
             c.matches_output += 1
             nmatches += 1
 
-            bedf.write( "\t".join( map(str, (contig, genome_start, genome_end, transcript_id, strand,
-                                             match.matrix_similarity) )) + "\n" )
+            bedf.write("\t".join(map(str, (contig, genome_start, genome_end, transcript_id, strand,
+                                           match.matrix_similarity))) + "\n")
 
         if nmatches == 0:
             c.promotor_filtered += 1
@@ -307,36 +319,40 @@ prf to minimize sum of both errors - derived from minSUM.prf
             c.promotor_output += 1
 
     c.promotor_total = len(transcript2pos)
-    c.promotor_without_matches = len(set( transcript2pos.keys() ).difference( found ))
+    c.promotor_without_matches = len(
+        set(transcript2pos.keys()).difference(found))
 
     outf.close()
     bedf.close()
 
-    with IOTools.openFile( outfile + ".summary", "w" ) as outf:
-        outf.write ("category\tcounts\n" )
-        outf.write( c.asTable() + "\n" )
-    
-    E.info( c )
+    with IOTools.openFile(outfile + ".summary", "w") as outf:
+        outf.write("category\tcounts\n")
+        outf.write(c.asTable() + "\n")
 
-@transform( findTATABox, suffix(".bed.gz"), ".load" )
-def loadTATABox( infile, outfile ):
+    E.info(c)
+
+
+@transform(findTATABox, suffix(".bed.gz"), ".load")
+def loadTATABox(infile, outfile):
     '''load TATA box information.'''
-    
-    P.load( infile + ".table.gz", outfile, "--index=transcript_id" )
+
+    P.load(infile + ".table.gz", outfile, "--index=transcript_id")
 
 ###################################################################
 ###################################################################
 ###################################################################
-## 
+##
 ###################################################################
 
 ############################################################
 ############################################################
 ############################################################
-## 
+##
 ############################################################
-@merge( None, "cpg.bed.gz" )
-def collectCpGIslands( infile, outfile ):
+
+
+@merge(None, "cpg.bed.gz")
+def collectCpGIslands(infile, outfile):
     '''select repeats from UCSC and write to *outfile* in gff format.
     '''
 
@@ -344,53 +360,58 @@ def collectCpGIslands( infile, outfile ):
 
     # Repeats are either stored in a single ``rmsk`` table (hg19) or in
     # individual ``rmsk`` tables (mm9) like chr1_rmsk, chr2_rmsk, ....
-    # In order to do a single statement, the ucsc mysql database is 
+    # In order to do a single statement, the ucsc mysql database is
     # queried for tables that end in rmsk.
     cc = dbhandle.cursor()
     table = "cpgIslandExt"
     sql = """SELECT chrom, chromStart, chromEnd, name, obsExp
                FROM %(table)s
-    """ % locals() 
-    E.debug( "executing sql statement: %s" % sql )
-    cc.execute( sql )
-    outf = IOTools.openFile( outfile, "w" )
+    """ % locals()
+    E.debug("executing sql statement: %s" % sql)
+    cc.execute(sql)
+    outf = IOTools.openFile(outfile, "w")
     for data in cc.fetchall():
-        outf.write( "\t".join( map(str, data) ) + "\n" )
+        outf.write("\t".join(map(str, data)) + "\n")
 
     outf.close()
 
 ############################################################
 ############################################################
 ############################################################
-## 
+##
 ############################################################
-@merge( (collectCpGIslands,
-         os.path.join( PARAMS['annotations_dir'],
-                       PARAMS_ANNOTATIONS['interface_tss_bed']) ),
-        "cpg.tsv.gz" )
-def annotateCpGIslands( infiles, outfile ):
+
+
+@merge((collectCpGIslands,
+        os.path.join(PARAMS['annotations_dir'],
+                     PARAMS_ANNOTATIONS['interface_tss_bed'])),
+       "cpg.tsv.gz")
+def annotateCpGIslands(infiles, outfile):
     '''annotate transcript by absence/presence of CpG islands
     '''
     cpgfile, tssfile = infiles
-    cpg = Bed.readAndIndex( IOTools.openFile( cpgfile ) )
-    
+    cpg = Bed.readAndIndex(IOTools.openFile(cpgfile))
+
     extension_upstream = PARAMS["cpg_search_upstream"]
     extension_downstream = PARAMS["cpg_search_downstream"]
 
     c = E.Counter()
-    outf = IOTools.openFile( outfile, "w" )
-    outf.write("transcript_id\tstrand\tstart\tend\trelative_start\trelative_end\n" )
+    outf = IOTools.openFile(outfile, "w")
+    outf.write(
+        "transcript_id\tstrand\tstart\tend\trelative_start\trelative_end\n")
 
-    for tss in Bed.iterator(IOTools.openFile( tssfile ) ):
+    for tss in Bed.iterator(IOTools.openFile(tssfile)):
         c.tss_total += 1
 
         if tss.strand == "+":
-            start, end = tss.start - extension_upstream, tss.start + extension_downstream
+            start, end = tss.start - \
+                extension_upstream, tss.start + extension_downstream
         else:
-            start, end = tss.end - extension_downstream, tss.end + extension_upstream
+            start, end = tss.end - \
+                extension_downstream, tss.end + extension_upstream
 
         try:
-            matches = list(cpg[tss.contig].find( start, end ))
+            matches = list(cpg[tss.contig].find(start, end))
         except KeyError:
             c.promotor_without_matches += 1
             continue
@@ -408,74 +429,79 @@ def annotateCpGIslands( infiles, outfile ):
 
             # get relative location of match
             if tss.strand == "+":
-                relative_start = genome_start - tss.start 
+                relative_start = genome_start - tss.start
             else:
                 relative_start = tss.end - genome_end
-            
+
             relative_end = relative_start + l
 
-            outf.write( "\t".join( map(str, (
-                            tss.name, tss.strand,
-                            genome_start, genome_end,
-                            relative_start, relative_end ))) + "\n" )
+            outf.write("\t".join(map(str, (
+                tss.name, tss.strand,
+                genome_start, genome_end,
+                relative_start, relative_end))) + "\n")
             c.matches_output += 1
 
     outf.close()
-            
-    with IOTools.openFile( outfile + ".summary", "w" ) as outf:
-        outf.write ("category\tcounts\n" )
-        outf.write( c.asTable() + "\n" )
-    
-    E.info( c )
 
-@transform( annotateCpGIslands, suffix(".tsv.gz"), ".load" )
-def loadCpGIslands( infile, outfile ):
+    with IOTools.openFile(outfile + ".summary", "w") as outf:
+        outf.write("category\tcounts\n")
+        outf.write(c.asTable() + "\n")
+
+    E.info(c)
+
+
+@transform(annotateCpGIslands, suffix(".tsv.gz"), ".load")
+def loadCpGIslands(infile, outfile):
     '''load CpG Islands information.'''
-    
-    P.load( infile, outfile, "--index=transcript_id" )
 
-@merge( (loadTATABox, loadCpGIslands), "promotorinfo_transcripts.load" )
-def loadTranscriptSummary( infile, outfile ):
+    P.load(infile, outfile, "--index=transcript_id")
+
+
+@merge((loadTATABox, loadCpGIslands), "promotorinfo_transcripts.load")
+def loadTranscriptSummary(infile, outfile):
     '''summarize binding information per transcript.'''
 
     dbh = connect()
 
-    table = P.toTable( outfile )
+    table = P.toTable(outfile)
 
     cc = dbh.cursor()
     # sqlite can not do full outer join
     cc.execute( """DROP TABLE IF EXISTS %(table)s""" % locals() )
 
-    transcripts = [ x[0] for x in cc.execute( "SELECT DISTINCT(transcript_id) FROM annotations.transcript_info" ).fetchall() ]
+    transcripts = [x[0] for x in cc.execute(
+        "SELECT DISTINCT(transcript_id) FROM annotations.transcript_info").fetchall()]
 
     tmpf = P.getTempFile()
 
-    tables = ("tata", "cpg" )
+    tables = ("tata", "cpg")
     titles = tables
 
     vals = []
     for table in tables:
-        t = set([ x[0] for x in cc.execute( "SELECT DISTINCT(transcript_id) FROM %(table)s" % locals()).fetchall() ])
-        vals.append( t )
-        
-    tmpf.write("transcript_id\t%s\n" % "\t".join( titles ) )
-    
+        t = set([x[0] for x in cc.execute(
+            "SELECT DISTINCT(transcript_id) FROM %(table)s" % locals()).fetchall()])
+        vals.append(t)
+
+    tmpf.write("transcript_id\t%s\n" % "\t".join(titles))
+
     for transcript_id in transcripts:
-        tmpf.write( "%s\t%s\n" % (transcript_id,
-                                  "\t".join( [ str(int(transcript_id in v)) for v in vals ] ) ) )
-        
+        tmpf.write("%s\t%s\n" % (transcript_id,
+                                 "\t".join([str(int(transcript_id in v)) for v in vals])))
+
     tmpf.close()
 
-    P.load( tmpf.name, outfile )
-    os.unlink( tmpf.name )
+    P.load(tmpf.name, outfile)
+    os.unlink(tmpf.name)
 
-@merge( loadTranscriptSummary, "promotorinfo_genes.load" )
-def loadGeneSummary( infile, outfile ):
+
+@merge(loadTranscriptSummary, "promotorinfo_genes.load")
+def loadGeneSummary(infile, outfile):
     '''summarize binding information per gene.'''
 
     dbh = connect()
 
-    table = P.toTable( outfile )
+    table = P.toTable(outfile)
 
     cc = dbh.cursor()
     cc.execute( """DROP TABLE IF EXISTS %(table)s """ % locals() )
@@ -487,63 +513,74 @@ def loadGeneSummary( infile, outfile ):
                    GROUP BY gene_id""" % locals())
     cc.close()
 
-    P.touch( outfile )
+    P.touch(outfile)
 
-@merge( loadGeneSummary, PARAMS["interface_promotor_ontology"] )
-def buildGeneOntology( infile, outfile ):
+
+@merge(loadGeneSummary, PARAMS["interface_promotor_ontology"])
+def buildGeneOntology(infile, outfile):
     '''create an output file akin to GO ontology files to be
     used with GO.py
     '''
-    
-    table = P.toTable( infile )
-    columns = ("cpg", "tata" )
+
+    table = P.toTable(infile)
+    columns = ("cpg", "tata")
     dbh = connect()
     cc = dbh.cursor()
 
-    outf = IOTools.openFile( outfile, "w" )
-    outf.write( "go_type\tgene_id\tgo_id\tdescription\tevidence\n" )
+    outf = IOTools.openFile(outfile, "w")
+    outf.write("go_type\tgene_id\tgo_id\tdescription\tevidence\n")
 
     i = 1
     for c in columns:
-        cc.execute( "SELECT DISTINCT gene_id FROM %(table)s WHERE %(c)s" % locals() )
-        outf.write( "".join( ["promotor\t%s\tGO:%07i\twith_%s\tNA\n" % (x[0],i,c) for x in cc ] ) )
+        cc.execute(
+            "SELECT DISTINCT gene_id FROM %(table)s WHERE %(c)s" % locals())
+        outf.write(
+            "".join(["promotor\t%s\tGO:%07i\twith_%s\tNA\n" % (x[0], i, c) for x in cc]))
         i += 1
-        cc.execute( "SELECT DISTINCT gene_id FROM %(table)s WHERE %(c)s = 0" % locals() )
-        outf.write( "".join( ["promotor\t%s\tGO:%07i\twithout_%s\tNA\n" % (x[0],i,c) for x in cc ] ) )
+        cc.execute(
+            "SELECT DISTINCT gene_id FROM %(table)s WHERE %(c)s = 0" % locals())
+        outf.write(
+            "".join(["promotor\t%s\tGO:%07i\twithout_%s\tNA\n" % (x[0], i, c) for x in cc]))
         i += 1
 
     outf.close()
 
-@follows( loadTranscriptSummary, loadGeneSummary, buildGeneOntology )
-def full(): pass
+
+@follows(loadTranscriptSummary, loadGeneSummary, buildGeneOntology)
+def full():
+    pass
 
 ###################################################################
 ###################################################################
 ###################################################################
-## primary targets
+# primary targets
 ###################################################################
-@follows( mkdir( "report" ) )
+
+
+@follows(mkdir("report"))
 def build_report():
     '''build report from scratch.'''
 
-    E.info( "starting report build process from scratch" )
-    P.run_report( clean = True )
+    E.info("starting report build process from scratch")
+    P.run_report(clean=True)
 
-@follows( mkdir( "report" ) )
+
+@follows(mkdir("report"))
 def update_report():
     '''update report.'''
 
-    E.info( "updating report" )
-    P.run_report( clean = False )
+    E.info("updating report")
+    P.run_report(clean=False)
 
-@follows( update_report )
+
+@follows(update_report)
 def publish_report():
     '''publish report.'''
 
-    E.info( "publishing report" )
+    E.info("publishing report")
     P.publish_report()
 
-if __name__== "__main__":
+if __name__ == "__main__":
 
     # P.checkFiles( ("genome.fasta", "genome.idx" ) )
-    sys.exit( P.main(sys.argv) )
+    sys.exit(P.main(sys.argv))

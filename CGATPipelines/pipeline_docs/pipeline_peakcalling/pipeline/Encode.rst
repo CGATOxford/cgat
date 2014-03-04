@@ -30,7 +30,7 @@ Diagnostic plots
 
 .. report:: Tracker.TrackerImages
    :render: gallery-plot
-   :tracker: export/quality/*.pdf
+   :glob: export/quality/*.pdf
    	     
    Diagnostic plots for all tracks
 

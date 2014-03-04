@@ -1,4 +1,4 @@
-################################################################################
+##########################################################################
 #
 #   MRC FGU Computational Genomics Group
 #
@@ -19,7 +19,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
+##########################################################################
 '''
 gpipe/exonerate2regions.py - 
 ======================================================
@@ -63,7 +63,7 @@ import re
 import getopt
 import time
 
-USAGE="""python %s [OPTIONS] < exonerate_output > filtered
+USAGE = """python %s [OPTIONS] < exonerate_output > filtered
 
 Version: $Id: gpipe/exonerate2regions.py 1799 2008-03-28 11:44:19Z andreas $
 
@@ -87,7 +87,7 @@ import CGAT.Genomics as Genomics
 import CGAT.Intervalls as Intervalls
 import CGAT.PredictionParser as PredictionParser
 
-HEADER="""# QUERY:        1  query
+HEADER = """# QUERY:        1  query
 # QFROM:        2  query first residue
 # QTO:          3  query last residue
 # QSTR:         4  query strand
@@ -109,37 +109,38 @@ HEADER="""# QUERY:        1  query
 # NPER:         20 number of removed permuted exons
 # EXONS:        21 list of exons"""
 
-SHORT_HEADER_SUMMARY="""#s\tQUERY\tQFROM\tQTO\tQSTR\tQLEN\tSBJCT\tSFROM\tSTO\tSSTR\tSLEN\tSCORE\tCQUERY\tNGAPS\tNFR\tNINTRON\tNSPLIT\tPIDE\tPSIM\tNSEGS\tNPER\tEXONS"""
-SHORT_HEADER_ENTRY="""#e\tQUERY\tQFROM\tQTO\tQSTR\tQLEN\tSBJCT\tSFROM\tSTO\tSSTR\tSLEN\tSCORE\tCQUERY\tNGAPS\tNFR\tNINTRON\tNSPLIT\tPIDE\tPSIM"""
+SHORT_HEADER_SUMMARY = """#s\tQUERY\tQFROM\tQTO\tQSTR\tQLEN\tSBJCT\tSFROM\tSTO\tSSTR\tSLEN\tSCORE\tCQUERY\tNGAPS\tNFR\tNINTRON\tNSPLIT\tPIDE\tPSIM\tNSEGS\tNPER\tEXONS"""
+SHORT_HEADER_ENTRY = """#e\tQUERY\tQFROM\tQTO\tQSTR\tQLEN\tSBJCT\tSFROM\tSTO\tSSTR\tSLEN\tSCORE\tCQUERY\tNGAPS\tNFR\tNINTRON\tNSPLIT\tPIDE\tPSIM"""
 
 param_stop_codons = ("TAG", "TAA", "TGA")
 
 param_loglevel = 1
 
-## maximum intron size
+# maximum intron size
 param_max_intron = 50000
 
-## check for stop codons within exons
+# check for stop codons within exons
 param_border_stop_codon = 3
 
-## correct genomic offset
+# correct genomic offset
 param_correct_offset = None
 
 param_format = "exonerate"
 
-param_long_options=["verbose=", "help", "genome=", "peptides=",
-                    "min-score=", "correct-offset", "format=",
-                    "max-intron=", "force-contiguous", "dump",
-                    "version"]
+param_long_options = ["verbose=", "help", "genome=", "peptides=",
+                      "min-score=", "correct-offset", "format=",
+                      "max-intron=", "force-contiguous", "dump",
+                      "version"]
 
-param_short_options="v:hg:p:e:o:c:s:of:i:cd"
+param_short_options = "v:hg:p:e:o:c:s:of:i:cd"
 
 param_filename_peptides = None
 param_filename_genome = None
 param_force_contiguous = 0
 param_just_dump = 0
 
-def RemoveExonPermutationsFromFront( segments ):
+
+def RemoveExonPermutationsFromFront(segments):
     """remove exon permutations from the front.
 
     Only permutations are removed, that are completely out of sync
@@ -147,20 +148,22 @@ def RemoveExonPermutationsFromFront( segments ):
     correspond to conflicting starting points and both should be
     checked by genewise.
     """
-    
-    if len(segments) <= 1: return segments
-    
+
+    if len(segments) <= 1:
+        return segments
+
     first_index = 0
 
-    while first_index+1 < len(segments):
-        if segments[first_index].mQueryFrom < segments[first_index+1].mQueryTo:
+    while first_index + 1 < len(segments):
+        if segments[first_index].mQueryFrom < segments[first_index + 1].mQueryTo:
             break
 
         first_index += 1
 
     return segments[first_index:]
 
-def RemoveExonPermutationsFromBack( segments ):
+
+def RemoveExonPermutationsFromBack(segments):
     """remove exon permutations from the back
 
     Only permutations are removed, that are completely out of sync
@@ -168,9 +171,10 @@ def RemoveExonPermutationsFromBack( segments ):
     correspond to conflicting starting points and both should be
     checked by genewise.
     """
-    
-    if len(segments) <= 1: return segments
-    
+
+    if len(segments) <= 1:
+        return segments
+
     first_index = len(segments) - 1
 
     while first_index - 1 > 0:
@@ -179,10 +183,12 @@ def RemoveExonPermutationsFromBack( segments ):
 
         first_index -= 1
 
-    return segments[:first_index+1]
+    return segments[:first_index + 1]
 
-##------------------------------------------------------------
-def ProcessSegments( segments ):
+# ------------------------------------------------------------
+
+
+def ProcessSegments(segments):
     """process a set of segments for a given query.
 
     1. Resolve exon permutations
@@ -190,84 +196,87 @@ def ProcessSegments( segments ):
     Exon permutations are streches, were the peptide fragment is
     not aligned in the right order to genomic DNA. This is not
     crucial here, as we are interested only in the genomic region.
-    
+
     However, we do not want to extend genomic stretches due
     to spurious matches. Thus, delete exon permutations at
     the beginning and the end and only take the core.
-    
+
     """
 
-    ## resolve exon permutations from the front
+    # resolve exon permutations from the front
     ntotal_segments = len(segments)
 
     if len(segments) > 1:
         segments = RemoveExonPermutationsFromFront(segments)
         segments = RemoveExonPermutationsFromBack(segments)
 
-    ## combine segments
+    # combine segments
     s = segments[0]
 
-    parts = [ (s.mQueryFrom, s.mQueryTo) ]
-    
+    parts = [(s.mQueryFrom, s.mQueryTo)]
+
     for x in segments[1:]:
-        parts.append( (x.mQueryFrom, x.mQueryTo) )
+        parts.append((x.mQueryFrom, x.mQueryTo))
         s.mQueryFrom = min(x.mQueryFrom, s.mQueryFrom)
         s.mQueryTo = max(x.mQueryTo, s.mQueryTo)
         s.mSbjctGenomeFrom = min(x.mSbjctGenomeFrom, s.mSbjctGenomeFrom)
         s.mSbjctGenomeTo = max(x.mSbjctGenomeTo, s.mSbjctGenomeTo)
         s.mNIntrons += x.mNIntrons + 1
         s.mPercentIdentity += x.mPercentIdentity
-        s.mPercentSimilarity += x.mPercentSimilarity        
+        s.mPercentSimilarity += x.mPercentSimilarity
 
     s.mSbjctFrom = 0
-    s.mSbjctTo = 0        
+    s.mSbjctTo = 0
     s.mAlignmentString = ""
     s.mPercentIdentity /= len(segments)
-    s.mPercentSimilarity /= len(segments)    
+    s.mPercentSimilarity /= len(segments)
 
-    new_intervalls = Intervalls.CombineIntervallsLarge( parts )
-    ## calculate covered region
-    covered = reduce( lambda x, y : x + y, map(lambda x: x[1] - x[0] + 1, new_intervalls))
-    
+    new_intervalls = Intervalls.CombineIntervallsLarge(parts)
+    # calculate covered region
+    covered = reduce(
+        lambda x, y: x + y, map(lambda x: x[1] - x[0] + 1, new_intervalls))
+
     s.mQueryCoverage = 100 * covered / s.mQueryLength
 
     return [s]
 
-##------------------------------------------------------------
-def ProcessChunk( entries ):
-    
+# ------------------------------------------------------------
+
+
+def ProcessChunk(entries):
+
     if param_loglevel >= 1:
         print "# received %i entries." % (len(entries))
 
-    ## array with predictions after segments have been merged
+    # array with predictions after segments have been merged
     predictions = []
 
     if len(entries) > 0:
 
-        ## sort entries by genomic region
-        entries.sort( lambda x, y: cmp( ( x.mQueryToken, x.mSbjctToken, x.mSbjctStrand, x.mSbjctGenomeFrom),
-                                        ( y.mQueryToken, y.mSbjctToken, y.mSbjctStrand, y.mSbjctGenomeFrom) ) )
+        # sort entries by genomic region
+        entries.sort(lambda x, y: cmp((x.mQueryToken, x.mSbjctToken, x.mSbjctStrand, x.mSbjctGenomeFrom),
+                                      (y.mQueryToken, y.mSbjctToken, y.mSbjctStrand, y.mSbjctGenomeFrom)))
 
-        ## array with distinct segmental regions
+        # array with distinct segmental regions
         segments = []
 
         last_entry = entries[0]
-        segments.append( last_entry )
+        segments.append(last_entry)
 
         for entry in entries[1:]:
 
             is_new_chunk = 0
-            ## check, if we are within the same "gene"
-            ## same gene is:
-            ##      * same query, same chromosome, same strand
-            ##      * gap not longer than param_max_intron
+            # check, if we are within the same "gene"
+            # same gene is:
+            # * same query, same chromosome, same strand
+            # * gap not longer than param_max_intron
             if last_entry.mSbjctToken != entry.mSbjctToken or \
                last_entry.mSbjctStrand != entry.mSbjctStrand or \
                last_entry.mQueryToken != entry.mQueryToken or \
                (entry.mSbjctGenomeFrom - last_entry.mSbjctGenomeTo) > param_max_intron:
 
                 is_new_chunk = 1
-                
+
             else:
                 if last_entry.mQueryTo > entry.mQueryFrom:
                     if param_force_contiguous:
@@ -276,48 +285,51 @@ def ProcessChunk( entries ):
                         if param_loglevel >= 1:
                             print "# WARNING: exon permutation in alignment between %s and %s" %\
                                   (entry.mQueryToken, entry.mSbjctToken)
-                    
+
             if is_new_chunk:
                 if param_loglevel >= 3:
                     print SHORT_HEADER_ENTRY
-                
-                predictions += ProcessSegments( segments )
+
+                predictions += ProcessSegments(segments)
                 segments = []
 
-            segments.append( entry )
+            segments.append(entry)
             last_entry = entry
 
-        predictions += ProcessSegments( segments )
-        
+        predictions += ProcessSegments(segments)
+
     if param_loglevel >= 1:
         print "# number of predictions: %i" % len(predictions)
 
     for prediction in predictions:
         prediction.Write()
 
-##------------------------------------------------------------
+# ------------------------------------------------------------
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv is None:
+        argv = sys.argv
 
     try:
-        optlist, args = getopt.getopt(sys.argv[1:], param_short_options, param_long_options)
+        optlist, args = getopt.getopt(
+            sys.argv[1:], param_short_options, param_long_options)
     except getopt.error, msg:
         print USAGE, msg
         sys.exit(2)
 
-    for o,a in optlist:
-        if o in ( "-v", "--verbose" ):
+    for o, a in optlist:
+        if o in ("-v", "--verbose"):
             param_loglevel = int(a)
-        elif o in ( "-h", "--help" ):
+        elif o in ("-h", "--help"):
             print USAGE
             sys.exit(0)
-        elif o in ( "--version", ):
+        elif o in ("--version", ):
             print "version="
             sys.exit(0)
         elif o in ("-g", "--genome"):
@@ -344,14 +356,16 @@ def main( argv = None ):
 
     # read complete genomic sequence
     if param_filename_genome:
-        forward_sequences, reverse_sequences = Genomics.ReadGenomicSequences( open(param_filename_genome, "r"))
+        forward_sequences, reverse_sequences = Genomics.ReadGenomicSequences(
+            open(param_filename_genome, "r"))
     else:
         forward_sequences = None
         reverse_sequences = None
-        
+
     # read peptide sequences
     if param_filename_peptides:
-        peptide_sequences = Genomics.ReadPeptideSequences( open(param_filename_peptides, "r") )
+        peptide_sequences = Genomics.ReadPeptideSequences(
+            open(param_filename_peptides, "r"))
     else:
         peptide_sequences = {}
 
@@ -360,7 +374,7 @@ def main( argv = None ):
     if param_loglevel >= 2:
         print SHORT_HEADER_SUMMARY
 
-    ## aligned entries from exonerate
+    # aligned entries from exonerate
     entries = []
 
     parser = PredictionParser.PredictionParserExonerate()
@@ -368,15 +382,18 @@ def main( argv = None ):
     if param_format == "exonerate":
         for line in sys.stdin:
 
-            if line[0] == "#": continue
-            if line[:3] != "diy": continue
+            if line[0] == "#":
+                continue
+            if line[:3] != "diy":
+                continue
 
-            data = string.split( line[:-1], "\t")
+            data = string.split(line[:-1], "\t")
 
             query_token = data[1]
 
-            ## parser has to go inside, because GetBestMatch returns reference copy
-            result = parser.Parse( [line,] )
+            # parser has to go inside, because GetBestMatch returns reference
+            # copy
+            result = parser.Parse([line, ])
             if not result:
                 print "# ERROR: parsing line", line[:-1]
                 continue
@@ -384,7 +401,7 @@ def main( argv = None ):
 
             query_key = re.match("(\S+)", entry.mQueryToken).groups()[0]
 
-            if forward_sequences and forward_sequences.has_key( entry.mSbjctToken ):
+            if forward_sequences and forward_sequences.has_key(entry.mSbjctToken):
                 if entry.mSbjctStrand == "+":
                     genomic_sequence = forward_sequences[entry.mSbjctToken]
                 else:
@@ -393,53 +410,54 @@ def main( argv = None ):
                 genomic_sequence = None
 
             if genomic_sequence:
-                entry.SetTranslation( genomic_sequence )
-                
+                entry.SetTranslation(genomic_sequence)
+
             if param_correct_offset:
                 data = string.split(entry.mSbjctToken, "_")
                 if len(data) >= 3:
-                    ## truncate sbjct_token
-                    entry.mSbjctToken = string.join( data[:-2], "_")
-                    sbjct_offset_positive_from, sbjct_offset_negative_from = map(int, data[-2:])
+                    # truncate sbjct_token
+                    entry.mSbjctToken = string.join(data[:-2], "_")
+                    sbjct_offset_positive_from, sbjct_offset_negative_from = map(
+                        int, data[-2:])
 
                     if entry.mSbjctStrand == "+":
-                        sbjct_offset_from = sbjct_offset_positive_from                    
+                        sbjct_offset_from = sbjct_offset_positive_from
                     else:
                         sbjct_offset_from = sbjct_offset_negative_from
                 else:
                     raise "parsing error for offset: key = %s" % entry.mSbjctToken
 
                 entry.mSbjctGenomeFrom += sbjct_offset_from
-                entry.mSbjctGenomeTo += sbjct_offset_from        
-
+                entry.mSbjctGenomeTo += sbjct_offset_from
 
             if param_just_dump:
                 print str(entry)
             else:
                 if param_loglevel >= 1:
                     print "# received\t%s" % str(entry)
-                
-                entries.append( entry )
+
+                entries.append(entry)
 
         ProcessChunk(entries)
-        
+
     elif param_format == "predictions":
 
         last_sbjct_token = None
-        
+
         for line in sys.stdin:
-            if line[0] == "#": continue
-        
-            entry = PredictionParser.PredictionParserEntry( expand = 0 )
+            if line[0] == "#":
+                continue
+
+            entry = PredictionParser.PredictionParserEntry(expand=0)
             try:
-                entry.Read( line )
+                entry.Read(line)
             except ValueError:
                 print "# warning: parsing error in line %s" % line[:-1]
                 continue
 
             if last_sbjct_token != entry.mSbjctToken:
                 if entries:
-                    ProcessChunk( entries )
+                    ProcessChunk(entries)
                 entries = []
                 last_sbjct_token = entry.mSbjctToken
 
@@ -448,12 +466,10 @@ def main( argv = None ):
             else:
                 entries.append(entry)
 
-        ProcessChunk( entries )
+        ProcessChunk(entries)
 
     print E.GetFooter()
-    
 
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

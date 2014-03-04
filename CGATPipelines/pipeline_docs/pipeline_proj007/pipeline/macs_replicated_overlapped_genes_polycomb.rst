@@ -17,7 +17,7 @@ Intersection
 
 .. report:: macs_replicated_overlapped_genes.overlappedGenesH3K27Venn
    :render: gallery-plot
-   :tracker: plots/*overlapped.genes*H3K27Me3*.png
+   :glob: plots/*overlapped.genes*H3K27Me3*.png
    :layout: column-2
 
    Intersection of H3K27Me3 intervals and genes >90% covered by NMIs  

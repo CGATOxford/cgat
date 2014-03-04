@@ -1,4 +1,4 @@
-################################################################################
+##########################################################################
 #
 #   MRC FGU Computational Genomics Group
 #
@@ -19,7 +19,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
+##########################################################################
 '''
 optic/export_clade_data.py - 
 ======================================================
@@ -73,7 +73,7 @@ import CGAT.IOTools as IOTools
 import pgdb
 import CGAT.Regions as Regions
 
-USAGE="""python %s [OPTIONS] 
+USAGE = """python %s [OPTIONS] 
 
 Version: $Id: optic/export_clade_data.py 2781 2009-09-10 11:33:14Z andreas $
 
@@ -81,7 +81,8 @@ extract data from clades.
 
 """ % sys.argv[0]
 
-def getMembersOfGroups( dbhandle, groups, options ):
+
+def getMembersOfGroups(dbhandle, groups, options):
 
     statement = """
 SELECT malis.schema, malis.gene_id, malis.alignment 
@@ -92,65 +93,64 @@ WHERE
 malis.cluster_id = members.cluster_id AND 
 malis.gene_id = members.gene_id AND
 malis.schema = members.schema AND
-members.group_id = '%(group_id)s'""" 
+members.group_id = '%(group_id)s'"""
 
     result = []
     params = {
         'malis': options.table_name_malis,
-        'members': options.table_name_members }
+        'members': options.table_name_members}
     for schema, group_id in groups:
         params["schema"] = schema
         params["group_id"] = str(group_id)
         cc = dbhandle.cursor()
-        cc.execute(statement % params )
+        cc.execute(statement % params)
         result += cc.fetchall()
         cc.close()
-        
+
     return result
 
 
-def main( argv = None ):
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv is None:
+        argv = sys.argv
 
-    parser = E.OptionParser( version = "%prog version: $Id: optic/export_clade_data.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser(
+        version="%prog version: $Id: optic/export_clade_data.py 2781 2009-09-10 11:33:14Z andreas $", usage=globals()["__doc__"])
 
     parser.add_option("-g", "--filename-groups", dest="filename_groups", type="string",
-                      help="filename with orthologous groups to extract."  )
+                      help="filename with orthologous groups to extract.")
 
     parser.set_defaults(
-        table_name_malis = "malis_genes_aa",
-        table_name_members = "groups_members",
-        mode = "sequences",
-        filename_groups = None,
-        output_format = "fasta",
-        separator = "|",
-        )
+        table_name_malis="malis_genes_aa",
+        table_name_members="groups_members",
+        mode="sequences",
+        filename_groups=None,
+        output_format="fasta",
+        separator="|",
+    )
 
-    (options, args) = E.Start( parser, add_psql_options = True )
+    (options, args) = E.Start(parser, add_psql_options=True)
 
-    ## database handle for connecting to postgres
-    dbhandle = pgdb.connect( options.psql_connection )
+    # database handle for connecting to postgres
+    dbhandle = pgdb.connect(options.psql_connection)
 
     if options.filename_groups:
-        data, errors = IOTools.ReadList( open(options.filename_groups, "r" ) )
-        groups = map( lambda x: x.split( options.separator)[:2], data )
-        
-        result = getMembersOfGroups( dbhandle, groups, options )
-        
-        
+        data, errors = IOTools.ReadList(open(options.filename_groups, "r"))
+        groups = map(lambda x: x.split(options.separator)[:2], data)
+
+        result = getMembersOfGroups(dbhandle, groups, options)
+
     if options.output_format == "fasta":
         for schema, gene_id, sequence in result:
             options.stdlog.write(">%s%s%s\n%s\n" % (schema, options.separator,
-                                                    gene_id, re.sub("-", "", sequence) ) )
-
+                                                    gene_id, re.sub("-", "", sequence)))
 
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

@@ -31,7 +31,7 @@ Command line options
 --------------------
 
 '''
-USAGE="""python run.py [OPTIONS] 
+USAGE = """python run.py [OPTIONS] 
 
 generic wrapper around a command-line. 
 
@@ -51,33 +51,34 @@ import subprocess
 import CGAT.Experiment as E
 
 
-def main( argv = None ):
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv is None:
+        argv = sys.argv
 
-    parser = E.OptionParser( version = "%prog version: $Id: run.py 2782 2009-09-10 11:40:29Z andreas $", 
-                                    usage = globals()["__doc__"] )
+    parser = E.OptionParser(version="%prog version: $Id: run.py 2782 2009-09-10 11:40:29Z andreas $",
+                            usage=globals()["__doc__"])
 
-    ## stop parsing options at the first argument
+    # stop parsing options at the first argument
     parser.disable_interspersed_args()
 
-    (options, args) = E.Start( parser, 
-                               add_pipe_options = True )
-    
+    (options, args) = E.Start(parser,
+                              add_pipe_options=True)
+
     if len(args) > 0:
-        
+
         cmd = args[0]
         if len(args) > 1:
-            cmd += " '" + "' '".join(args[1:]) + "'" 
-    
-        s = subprocess.Popen( cmd,
-                              shell = True,
-                              cwd = os.getcwd(),
-                              close_fds = True)                              
+            cmd += " '" + "' '".join(args[1:]) + "'"
+
+        s = subprocess.Popen(cmd,
+                             shell=True,
+                             cwd=os.getcwd(),
+                             close_fds=True)
 
         (out, err) = s.communicate()
         returncode = s.returncode
@@ -86,9 +87,8 @@ def main( argv = None ):
 
     E.Stop()
 
-    sys.exit( returncode )
+    sys.exit(returncode)
 
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

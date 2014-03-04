@@ -1,4 +1,4 @@
-################################################################################
+##########################################################################
 #
 #   MRC FGU Computational Genomics Group
 #
@@ -19,7 +19,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
+##########################################################################
 '''
 optic/evaluate_trees.py - 
 ======================================================
@@ -69,7 +69,7 @@ import optparse
 from Bio.Nexus import Nexus
 from Bio.Nexus.Nodes import Node
 
-USAGE="""python %s [OPTIONS] < tree.in > tree.out
+USAGE = """python %s [OPTIONS] < tree.in > tree.out
 
 Version: $Id: optic/evaluate_trees.py 2781 2009-09-10 11:33:14Z andreas $
 
@@ -87,46 +87,49 @@ import CGAT.BlastAlignments as BlastAlignments
 import CGAT.Genomics as Genomics
 import CGAT.TreeTools as TreeTools
 
-##------------------------------------------------------------------------
+# ------------------------------------------------------------------------
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv is None:
+        argv = sys.argv
 
-    parser = E.OptionParser( version = "%prog version: $Id: optic/evaluate_trees.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser(
+        version="%prog version: $Id: optic/evaluate_trees.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-r", "--reference=", dest="filename_reference_tree",
-                      help="filename with reference tree.", type="string" )
-    
-    parser.set_defaults(
-        filename_reference_tree = None
-        )
+                      help="filename with reference tree.", type="string")
 
-    (options, args) = E.Start( parser )
+    parser.set_defaults(
+        filename_reference_tree=None
+    )
+
+    (options, args) = E.Start(parser)
 
     if not options.filename_reference_tree:
         print "please supply reference tree."
 
-    if options.loglevel >= 1:    
+    if options.loglevel >= 1:
         print "# reading reference tree."
 
-    nexus = TreeTools.Newick2Nexus( open(options.filename_reference_tree, "r") )
+    nexus = TreeTools.Newick2Nexus(open(options.filename_reference_tree, "r"))
     reference_tree = nexus.trees[0]
 
     if options.loglevel >= 1:
-        print "# reading sample trees."    
-    
-    nexus2 = TreeTools.Newick2Nexus( sys.stdin )
+        print "# reading sample trees."
+
+    nexus2 = TreeTools.Newick2Nexus(sys.stdin)
 
     ntotal, nok, nfailed = 0, 0, 0
     ntopology, ntaxa, nleaves = 0, 0, 0
     for t in nexus2.trees:
         ntotal += 1
-        is_ok, reason = TreeTools.IsCompatible( reference_tree, t )
+        is_ok, reason = TreeTools.IsCompatible(reference_tree, t)
         if is_ok:
             nok += 1
         else:
@@ -139,10 +142,9 @@ def main( argv = None ):
                 nleaves += 1
 
     print "# total=%i, compatible=%i, failed=%i, topology=%i, taxa=%i, leaves=%i" %\
-          (ntotal, nok, nfailed, ntopology, ntaxa, nleaves )
-    
+          (ntotal, nok, nfailed, ntopology, ntaxa, nleaves)
+
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

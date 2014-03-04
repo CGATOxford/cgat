@@ -8,8 +8,8 @@ import numpy as np
 
 class GenomeCoverage(TrackerSQL):
 
-    def __call__(self, track, slice = None):
-        
+    def __call__(self, track, slice=None):
+
         result = collections.defaultdict(list)
         cols = ["observed", "expected"]
         for col in cols:

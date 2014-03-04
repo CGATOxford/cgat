@@ -46,7 +46,7 @@ import os
 import getopt
 import time
 
-param_long_options = ["missing=", "headers=", "titles", "normalize", 
+param_long_options = ["missing=", "headers=", "titles", "normalize",
                       "format=", "format-bin=", "format-value=", "sort=", "help",
                       "version"]
 param_short_options = "v:ht:m:h:s:f:"
@@ -67,35 +67,36 @@ param_sort = None
 import CGAT.Experiment as E
 import CGAT.Histogram as Histogram
 
-##---------------------------------------------------------------------------------------------------------        
+# ------------------------------------------------------------------------
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv is None:
+        argv = sys.argv
 
     try:
         optlist, args = getopt.getopt(sys.argv[1:],
                                       param_short_options,
                                       param_long_options)
-                                      
 
     except getopt.error, msg:
         print globals()["__doc__"], msg
         sys.exit(1)
 
-    for o,a in optlist:
-        if o in ( "--help",):
+    for o, a in optlist:
+        if o in ("--help",):
             print globals()["__doc__"]
             sys.exit(0)
-        elif o in ( "--version", ):
+        elif o in ("--version", ):
             print "version="
             sys.exit(0)
         elif o in ("-h", "--headers"):
-            param_headers = string.split( a, "," )
+            param_headers = string.split(a, ",")
         elif o in ("-n", "--normalize"):
             param_normalize = 1
         elif o in ("-m", "--missing"):
@@ -114,7 +115,7 @@ def main( argv = None ):
             if a in ("numerical", "alphabetic"):
                 param_sort = a
             else:
-                param_sort = string.split( a, "," )
+                param_sort = string.split(a, ",")
 
     if len(args) < 1:
         print globals()["__doc__"], "please specify at one histogram."
@@ -123,18 +124,18 @@ def main( argv = None ):
     param_filenames = args
 
     print E.GetHeader()
-    print E.GetParams()    
+    print E.GetParams()
 
     histograms = []
 
-    ## first
-    headers = ['bin',]
+    # first
+    headers = ['bin', ]
     if param_headers and headers != "auto":
-        headers = [param_headers[0],]
+        headers = [param_headers[0], ]
         del param_headers[0]
-        
+
     for x in range(len(param_filenames)):
-        
+
         filename = param_filenames[x]
         if not os.path.exists(filename):
             print "# skipped because file not present: %s" % filename
@@ -142,86 +143,86 @@ def main( argv = None ):
 
         file = open(filename, "r")
 
-        lines = filter( lambda x: x[0] <> "#", file)
-        
+        lines = filter(lambda x: x[0] != "#", file)
+
         if len(lines) == 0:
             continue
 
         if param_titles:
             h = lines[0][:-1].split("\t")[1:]
             del lines[0]
-                
+
         if param_headers == "auto":
-            headers.append( os.path.basename( filename ) )
+            headers.append(os.path.basename(filename))
         elif param_headers:
-            headers.append( param_headers[x] )
+            headers.append(param_headers[x])
         elif param_titles:
             headers += h
 
-        data = map( lambda x: map(string.atof, string.split(x[:-1], "\t")), lines)
+        data = map(
+            lambda x: map(string.atof, string.split(x[:-1], "\t")), lines)
 
-        ## add empty data point for empty histograms
-        if len(data) == 0: data = [ (0,0) ] 
-        
-        histograms.append( data )
+        # add empty data point for empty histograms
+        if len(data) == 0:
+            data = [(0, 0)]
 
-    ## sort the whole thing:
+        histograms.append(data)
+
+    # sort the whole thing:
     if param_sort:
         sort_order = []
 
         if param_sort == "numerical":
-            t = zip( map(int, headers[1:]), range( 1, len(headers) + 1) )
+            t = zip(map(int, headers[1:]), range(1, len(headers) + 1))
             t.sort()
 
             for tt in t:
-                sort_order.append( headers[tt[1]] )
+                sort_order.append(headers[tt[1]])
 
         elif param_sort == "alphabetical":
-            t = zip( headers[1:], range( 1, len(headers) + 1) )
+            t = zip(headers[1:], range(1, len(headers) + 1))
             t.sort()
 
             for tt in t:
-                sort_order.append( headers[tt[1]] )
+                sort_order.append(headers[tt[1]])
         else:
             sort_order = param_sort
 
-        ## map header to old position
+        # map header to old position
         map_header2pos = {}
         for x in range(1, len(headers)):
             map_header2pos[headers[x]] = x
 
         order = []
         for x in sort_order:
-            if x in map_header2pos:                
-                order.append( map_header2pos[x] )
+            if x in map_header2pos:
+                order.append(map_header2pos[x])
 
         new_headers = [headers[0]]
         new_histograms = []
 
         for x in order:
-            new_headers.append( headers[x] )
-            new_histograms.append( histograms[x-1] )
+            new_headers.append(headers[x])
+            new_histograms.append(histograms[x - 1])
 
         histograms = new_histograms
         headers = new_headers
-        
-    combined_histogram = Histogram.Combine( histograms, param_missing_value )
+
+    combined_histogram = Histogram.Combine(histograms, param_missing_value)
 
     if headers:
         print "\t".join(headers)
 
     if param_normalize:
-        combined_histogram = Histogram.Normalize( combined_histogram )
+        combined_histogram = Histogram.Normalize(combined_histogram)
 
-    Histogram.Print( combined_histogram,
-                     format_bin=param_format_bin,
-                     format_value=param_format_value,
-                     )
+    Histogram.Print(combined_histogram,
+                    format_bin=param_format_bin,
+                    format_value=param_format_value,
+                    )
 
     print E.GetFooter()
 
 
-
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

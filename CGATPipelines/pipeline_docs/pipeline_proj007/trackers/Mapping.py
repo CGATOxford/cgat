@@ -1,24 +1,34 @@
-import os, sys, re, types, itertools
+import os
+import sys
+import re
+import types
+import itertools
 
 from SphinxReport.Tracker import *
 from SphinxReport.odict import OrderedDict as odict
 from cpgReport import *
 
-##################################################################################
-class MappingSummary( cpgTracker, SingleTableTrackerRows ):
+##########################################################################
+
+
+class MappingSummary(cpgTracker, SingleTableTrackerRows):
     table = "bam_stats"
 
-##################################################################################
-class MappingFlagsMismatches( cpgTracker, SingleTableTrackerHistogram ):
+##########################################################################
+
+
+class MappingFlagsMismatches(cpgTracker, SingleTableTrackerHistogram):
     table = "bam_stats_nm"
     column = "nm"
 
-##################################################################################
-class PicardAlignPerc( cpgTracker ):
+##########################################################################
+
+
+class PicardAlignPerc(cpgTracker):
 
     mPattern = "picard_align_stats"
 
-    def __call__(self, track, slice = None ):
+    def __call__(self, track, slice=None):
         statement = '''SELECT pas.TRACK as sample, total_reads as Total, 
                        round(pct_pf_reads_aligned*100,2) as Mapped, 
                        round(pds.percent_duplication*100,2) as Duplicates,
@@ -27,14 +37,16 @@ class PicardAlignPerc( cpgTracker ):
                        round(((pas.pf_reads_aligned - pds.unpaired_read_duplicates+0.0) / (total_reads+0.0))*100,2) as Unique_reads
                        FROM picard_align_stats pas, picard_duplicate_stats pds
                        where pas.track=pds.track;'''
-        return self.getAll( statement )
+        return self.getAll(statement)
 
-##################################################################################
-class PicardAlignCount( cpgTracker ):
+##########################################################################
+
+
+class PicardAlignCount(cpgTracker):
 
     mPattern = "picard_align_stats"
 
-    def __call__(self, track, slice = None ):
+    def __call__(self, track, slice=None):
         statement = '''SELECT pas.track as sample, pas.total_reads as Total, 
                        pas.pf_reads_aligned as Mapped, 
                        pds.unpaired_read_duplicates as Duplicates,
@@ -42,17 +54,20 @@ class PicardAlignCount( cpgTracker ):
                        pas.pf_reads_aligned-pds.unpaired_read_duplicates as Unique_reads
                        FROM picard_align_stats pas, picard_duplicate_stats pds
                        where pas.track=pds.track;'''
-        data = self.getAll( statement )
+        data = self.getAll(statement)
         return data
 
-##################################################################################
-class PicardAlignPlot( cpgTracker ):
+##########################################################################
+
+
+class PicardAlignPlot(cpgTracker):
 
     mPattern = "picard_align_stats"
-    def getTracks( self):
+
+    def getTracks(self):
         return self.getValues("select distinct track from picard_align_stats")
 
-    def __call__(self, track, slice = None ):
+    def __call__(self, track, slice=None):
 
         statement = '''SELECT pas.total_reads as Total, 
                        pas.pf_reads_aligned as Mapped, 
@@ -61,7 +76,5 @@ class PicardAlignPlot( cpgTracker ):
                        pas.pf_reads_aligned-pds.unpaired_read_duplicates as Unique_reads
                        FROM picard_align_stats pas, picard_duplicate_stats pds
                        where pas.track=pds.track and pas.track="%(track)s";'''
-        data = self.getRow( statement )
+        data = self.getRow(statement)
         return data
-
-

@@ -131,42 +131,48 @@ from ruffus import *
 ###################################################################
 ###################################################################
 ###################################################################
-## Pipeline configuration
+# Pipeline configuration
 import CGAT.Pipeline as P
-P.getParameters( "pipeline.ini" )
+P.getParameters(["pipeline.ini"])
 PARAMS = P.PARAMS
 USECLUSTER = True
 
 ###################################################################
 ###################################################################
 ###################################################################
-## Count raw reads
-@transform( "*.fastq.1.gz", regex(r"(\S+).fastq.1.gz"), r"\1.nreads" )
-def countReads( infile, outfile ):
+# Count raw reads
+
+
+@transform("*.fastq.1.gz", regex(r"(\S+).fastq.1.gz"), r"\1.nreads")
+def countReads(infile, outfile):
     '''count number of reads in input files.'''
     to_cluster = True
     m = PipelineMapping.Counter()
-    statement = m.build( (infile,), outfile ) 
+    statement = m.build((infile,), outfile)
     P.run()
 
 ###################################################################
+
+
 @merge(countReads, "raw_read_counts.txt")
-def mergeReadCounts( infiles, outfile ):
+def mergeReadCounts(infiles, outfile):
     '''Merge counts from all file and load into database'''
     outf = open(outfile, "w")
     outf.write("track\tnreads\n")
     for infile in infiles:
-        track = P.snip( os.path.basename(infile), ".nreads" )
+        track = P.snip(os.path.basename(infile), ".nreads")
         rc = open(infile, "r")
         line1 = rc.readline()
         rc.close()
         header, nreads = line1.split()
         outf.write("%(track)s\t%(nreads)s\n" % locals())
     outf.close()
-    
+
 ###################################################################
+
+
 @transform(mergeReadCounts, regex(r"raw_read_counts.txt"), "raw_read_counts.load")
-def loadReadCounts( infile, outfile ):
+def loadReadCounts(infile, outfile):
     '''load read counts into database'''
     statement = """cat %(infile)s | python %(scriptsdir)s/csv2db.py 
                          --database=%(database)s
@@ -174,14 +180,16 @@ def loadReadCounts( infile, outfile ):
                          --index=track
                  > %(outfile)s; """
     P.run()
-    
+
 ###################################################################
 ###################################################################
 ###################################################################
-## Section 1: MAP READS TO GENE TRAP VECTOR
+# Section 1: MAP READS TO GENE TRAP VECTOR
+
+
 @follows(mkdir("blast"))
-@transform( "*.fastq.*.gz", regex( r"(\S+).fastq.(\S+).gz"), r"blast/\1.\2.fasta" )
-def convertToFasta( infile, outfile ):
+@transform("*.fastq.*.gz", regex(r"(\S+).fastq.(\S+).gz"), r"blast/\1.\2.fasta")
+def convertToFasta(infile, outfile):
     '''Convert fastq to fasta using fastx toolkit'''
     to_cluster = True
     qual_score_offset = PARAMS["blast_qual_score_offset"]
@@ -189,8 +197,10 @@ def convertToFasta( infile, outfile ):
     P.run()
 
 ###################################################################
-@transform( convertToFasta, regex( r"(\S+).fasta"), r"\1.blast" )
-def runBlast( infile, outfile ):
+
+
+@transform(convertToFasta, regex(r"(\S+).fasta"), r"\1.blast")
+def runBlast(infile, outfile):
     '''map reads to gene trap vector with blast'''
     to_cluster = True
     blast_db = PARAMS["blast_db"]
@@ -199,58 +209,65 @@ def runBlast( infile, outfile ):
     P.run()
 
 ###################################################################
-@transform( runBlast, regex( r"(\S+).blast"), r"\1.blast.load" )
-def loadBlast( infile, outfile ):
+
+
+@transform(runBlast, regex(r"(\S+).blast"), r"\1.blast.load")
+def loadBlast(infile, outfile):
     '''load blast results into database'''
-    P.load( infile, outfile, "--index=query_nid --index=pid --index=query_ali" )
+    P.load(infile, outfile, "--index=query_nid --index=pid --index=query_ali")
 
 
 ###################################################################
 ###################################################################
 ###################################################################
-## Section2: Identify reads containing expected mm Pax2 sequence at the start of read1
+# Section2: Identify reads containing expected mm Pax2 sequence at the
+# start of read1
 @follows(mkdir("grep"))
-@transform( "*.fastq.1.gz", regex( r"(\S+).fastq.1.gz"), r"grep/\1.match" )
-def grepPrimers( infile, outfile):
+@transform("*.fastq.1.gz", regex(r"(\S+).fastq.1.gz"), r"grep/\1.match")
+def grepPrimers(infile, outfile):
     '''count occurences of decreasing primer substrings at start of reads '''
     to_cluster = False
     primer = "a"
-    if infile.find("_b.") > 0: primer = "b"
+    if infile.find("_b.") > 0:
+        primer = "b"
     if primer == "a":
         primer_seq = PARAMS["grep_primer_a"]
     else:
         primer_seq = PARAMS["grep_primer_b"]
-    
-    for i in range(len(primer_seq),5,-1):
+
+    for i in range(len(primer_seq), 5, -1):
         primer_subseq = primer_seq[:i]
         statement = '''echo "%(primer_subseq)s" >> %(outfile)s; zcat %(infile)s | grep ^%(primer_subseq)s | wc -l >> %(outfile)s;'''
         P.run()
-        
-    #reformat out file
+
+    # reformat out file
     statement = '''echo "Total reads" >> %(outfile)s; echo `zcat %(infile)s |  wc -l` / 4 | bc >> %(outfile)s;
                    sed -i '{N;s/\\n/\\t/}' %(outfile)s; '''
     P.run()
 
 ###################################################################
+
+
 @follows(mkdir("filtered"))
-@transform( "*.fastq.1.gz", regex( r"(\S+).fastq.1.gz"), (r"filtered/\1.reconciled.fastq.1.gz",r"filtered/\1.reconciled.fastq.2.gz") )
-def filterReadsByPrimerMatch( infile, outfiles):
+@transform("*.fastq.1.gz", regex(r"(\S+).fastq.1.gz"), (r"filtered/\1.reconciled.fastq.1.gz", r"filtered/\1.reconciled.fastq.2.gz"))
+def filterReadsByPrimerMatch(infile, outfiles):
     '''Filter out reads where the start of read 1 does not match primer sequence (14bp)'''
     to_cluster = True
     primer = "a"
-    if infile.find("_b.") > 0: primer = "b"
+    if infile.find("_b.") > 0:
+        primer = "b"
     if primer == "a":
         primer_seq = PARAMS["grep_primer_a"]
     else:
         primer_seq = PARAMS["grep_primer_b"]
     grep_filter_length = PARAMS["grep_filter_length"]
     primer_subseq = primer_seq[:grep_filter_length]
-    
-    track =  P.snip( os.path.basename(infile), ".fastq.1.gz" )
+
+    track = P.snip(os.path.basename(infile), ".fastq.1.gz")
     infile2 = track + ".fastq.2.gz"
     outfile1, outfile2 = outfiles
     tempfile = "filtered/" + track + ".filtered.fastq.1.gz"
-    
+
     # filter by primer match
     fastq_in = open(infile, "r")
     fastq_out = open(tempfile, "wb")
@@ -262,29 +279,32 @@ def filterReadsByPrimerMatch( infile, outfiles):
             fastq_out.writeln(read.qual)
     fastq_in.close()
     fastq_out.close()
-            
+
     # reconcile read pairs
     statement = '''python %(scriptsdir)s/fastqs2fastq.py --method=reconcile %(tempfile)s %(infile2)s --output-pattern=filtered/%(track)s.reconciled.fastq.%%i.gz'''
     P.run()
 
 ###################################################################
-@follows( mkdir("filtered") )
-@transform( "*.fastq.1.gz", regex( r"(\S+).fastq.1.gz"), r"filtered/\1.cutadapt.read1.fastq.gz" )
-def trimGeneTrapVectorRead1( infile, outfile ):
+
+
+@follows(mkdir("filtered"))
+@transform("*.fastq.1.gz", regex(r"(\S+).fastq.1.gz"), r"filtered/\1.cutadapt.read1.fastq.gz")
+def trimGeneTrapVectorRead1(infile, outfile):
     '''trim primer sequence from 5` end of read1 to identify enriched fragments containing gene traps '''
     to_cluster = True
-    track =  P.snip( os.path.basename(infile), ".fastq.1.gz" )
+    track = P.snip(os.path.basename(infile), ".fastq.1.gz")
     primer = "a"
-    if infile.find("_b.") > 0: primer = "b"
+    if infile.find("_b.") > 0:
+        primer = "b"
     if primer == "a":
         primer_seq = PARAMS["trim_primer_seq_a"]
     else:
         primer_seq = PARAMS["trim_primer_seq_b"]
     trim_options = PARAMS["trim_options"]
-    
+
     #contaminant_file = PARAMS["trim_contaminants"]
     #adaptors = []
-    #for entry in FastaIterator.FastaIterator( IOTools.openFile( contaminant_file ) ):
+    # for entry in FastaIterator.FastaIterator( IOTools.openFile( contaminant_file ) ):
     #    adaptors.append( "-a %s" % entry.sequence )
     #adaptors= " ".join(adaptors)
 
@@ -296,20 +316,22 @@ def trimGeneTrapVectorRead1( infile, outfile ):
                        %(infile)s
                        &> filtered/%(track)s.cutadapt.read1.log;'''
     P.run()
-    
+
 ###################################################################
-@follows( mkdir("filtered") )
-@transform( "*.fastq.2.gz", regex( r"(\S+).fastq.2.gz"), r"filtered/\1.cutadapt.read2.fastq.gz" )
-def trimGeneTrapVectorRead2( infile, outfile ):
+
+
+@follows(mkdir("filtered"))
+@transform("*.fastq.2.gz", regex(r"(\S+).fastq.2.gz"), r"filtered/\1.cutadapt.read2.fastq.gz")
+def trimGeneTrapVectorRead2(infile, outfile):
     '''trim primer sequence from 3` end read2 to enable alignment '''
     to_cluster = True
-    
-    track =  P.snip( os.path.basename(infile), ".fastq.2.gz" )
+
+    track = P.snip(os.path.basename(infile), ".fastq.2.gz")
     adaptor_seq = PARAMS["trim_pax2_exon3"]
     trim_options = PARAMS["trim_options"]
     adaptor_rc = adaptor_seq[::-1]
     adaptor_seq = adaptor_seq.translate(string.maketrans("ACTGN", "TGACN"))
-    
+
     statement = '''cutadapt -a %(adaptor_seq)s -a %(adaptor_rc)s
                        %(trim_options)s
                        --too-short-output=filtered/%(track)s.tooshort.read2.fastq.gz
@@ -317,47 +339,56 @@ def trimGeneTrapVectorRead2( infile, outfile ):
                        %(infile)s
                        &> filtered/%(track)s.cutadapt.read2.log;'''
     P.run()
-    
+
 ###################################################################
-@collate( (trimGeneTrapVectorRead1, trimGeneTrapVectorRead2), regex(r"(\S+).cutadapt.read(\S+).fastq.gz"), (r"\1.cutadapt.reconciled.read1.fastq.gz",r"\1.cutadapt.reconciled.read2.fastq.gz") )
-def reconcileReadPairs( infiles, outfiles ):
+
+
+@collate((trimGeneTrapVectorRead1, trimGeneTrapVectorRead2), regex(r"(\S+).cutadapt.read(\S+).fastq.gz"), (r"\1.cutadapt.reconciled.read1.fastq.gz", r"\1.cutadapt.reconciled.read2.fastq.gz"))
+def reconcileReadPairs(infiles, outfiles):
     '''Remove read2 if read1 did not contain match to gene trap'''
     to_cluster = True
     read1, read2 = infiles
     out1, out2 = outfiles
-    track =  P.snip( os.path.basename(read1), ".cutadapt.read1.fastq.gz" )
+    track = P.snip(os.path.basename(read1), ".cutadapt.read1.fastq.gz")
     # reconcile read pairs
     statement = '''python %(scriptsdir)s/fastqs2fastq.py --method=reconcile %(read1)s %(read2)s --output-pattern=filtered/%(track)s.cutadapt.reconciled.read%%i.fastq.gz'''
     P.run()
 
 ###################################################################
-@transform( reconcileReadPairs, regex(r"filtered/(\S+).cutadapt.reconciled.read1.fastq.gz"), r"filtered/\1.cutadapt.reconciled.read1.nreads" )
-def countTaggedReads( infiles, outfile ):
+
+
+@transform(reconcileReadPairs, regex(r"filtered/(\S+).cutadapt.reconciled.read1.fastq.gz"), r"filtered/\1.cutadapt.reconciled.read1.nreads")
+def countTaggedReads(infiles, outfile):
     '''count number of reads in input files.'''
     to_cluster = True
     read1, read2 = infiles
     m = PipelineMapping.Counter()
-    statement = m.build( (read1,), outfile ) 
+    statement = m.build((read1,), outfile)
     P.run()
 
 ###################################################################
+
+
 @merge(countTaggedReads, "tagged_read_counts.txt")
-def mergeTaggedReadCounts( infiles, outfile ):
+def mergeTaggedReadCounts(infiles, outfile):
     '''Merge counts from all file and load into database'''
     outf = open(outfile, "w")
     outf.write("track\tnreads\n")
     for infile in infiles:
-        track = P.snip( os.path.basename(infile), ".cutadapt.reconciled.read1.nreads" )
+        track = P.snip(
+            os.path.basename(infile), ".cutadapt.reconciled.read1.nreads")
         rc = open(infile, "r")
         line1 = rc.readline()
         rc.close()
         header, nreads = line1.split()
         outf.write("%(track)s\t%(nreads)s\n" % locals())
     outf.close()
-    
+
 ###################################################################
+
+
 @transform(mergeTaggedReadCounts, regex(r"tagged_read_counts.txt"), "tagged_read_counts.load")
-def loadTaggedReadCounts( infile, outfile ):
+def loadTaggedReadCounts(infile, outfile):
     '''load read counts into database'''
     statement = """cat %(infile)s | python %(scriptsdir)s/csv2db.py 
                          --database=%(database)s
@@ -365,62 +396,71 @@ def loadTaggedReadCounts( infile, outfile ):
                          --index=track
                  > %(outfile)s; """
     P.run()
-        
+
 ###################################################################
-## align read 2 against transcriptome
+# align read 2 against transcriptome
+
+
 @follows(reconcileReadPairs, mkdir("transcriptome"))
-@transform( "filtered/*.cutadapt.reconciled.read2.fastq.gz",regex( r"filtered/(\S+).cutadapt.reconciled.read2.fastq.gz"), r"transcriptome/\1.read2.bam" )
-def alignReadsToTranscriptome( infile, outfile ):
+@transform("filtered/*.cutadapt.reconciled.read2.fastq.gz", regex(r"filtered/(\S+).cutadapt.reconciled.read2.fastq.gz"), r"transcriptome/\1.read2.bam")
+def alignReadsToTranscriptome(infile, outfile):
     '''map reads to transcriptome with bowtie'''
     to_cluster = True
-    track = P.snip( os.path.basename(outfile), ".bam" )
-    job_options= "-pe dedicated %i -R y" % PARAMS["bowtie_threads"]
+    track = P.snip(os.path.basename(outfile), ".bam")
+    job_options = "-pe dedicated %i -R y" % PARAMS["bowtie_threads"]
     m = PipelineMapping.Bowtie()
     reffile = PARAMS["bowtie_transcriptome"]
     bowtie_options = PARAMS["bowtie_options"]
-    statement = m.build( (infile,), outfile ) 
+    statement = m.build((infile,), outfile)
     P.run()
 
 ###################################################################
 ###################################################################
-## align read2 against genome using tophat using pipeline_mapping.py
-## use tophat directory
-## python %(scriptsdir)s/pipeline_mapping.py -v 5 -p 10 make full
+# align read2 against genome using tophat using pipeline_mapping.py
+# use tophat directory
+# python %(scriptsdir)s/pipeline_mapping.py -v 5 -p 10 make full
 ###################################################################
 ###################################################################
 
 ###################################################################
-## Alignment stats
-@transform( "tophat/tophat.dir/*.bam", suffix(".bam"), ".alignstats" )
-def buildPicardAlignStats( infile, outfile ):
+# Alignment stats
+
+
+@transform("tophat/tophat.dir/*.bam", suffix(".bam"), ".alignstats")
+def buildPicardAlignStats(infile, outfile):
     '''Gather BAM file alignment statistics using Picard '''
     to_cluster = True
-    track = P.snip( os.path.basename(infile), ".bam" )
-    statement = '''CollectAlignmentSummaryMetrics INPUT=%(infile)s REFERENCE_SEQUENCE=%%(picard_genome)s ASSUME_SORTED=true OUTPUT=%(outfile)s VALIDATION_STRINGENCY=SILENT ''' % locals()
+    track = P.snip(os.path.basename(infile), ".bam")
+    statement = '''CollectAlignmentSummaryMetrics INPUT=%(infile)s REFERENCE_SEQUENCE=%%(picard_genome)s ASSUME_SORTED=true OUTPUT=%(outfile)s VALIDATION_STRINGENCY=SILENT ''' % locals(
+    )
     P.run()
 
 ############################################################
-@merge( buildPicardAlignStats, "tophat/tophat.dir/picard_align_stats.load" )
-def loadPicardAlignStats( infiles, outfile ):
+
+
+@merge(buildPicardAlignStats, "tophat/tophat.dir/picard_align_stats.load")
+def loadPicardAlignStats(infiles, outfile):
     '''Merge Picard alignment stats into single table and load into SQLite.'''
     # Join data for all tracks into single file
     outf = open("tophat/tophat.dir/picard_align_stats.tsv", "w")
     first = True
     for f in infiles:
-        track = P.snip( os.path.basename(f), ".alignstats" )
-        if not os.path.exists( f ): 
-            E.warn( "File %s missing" % f )
+        track = P.snip(os.path.basename(f), ".alignstats")
+        if not os.path.exists(f):
+            E.warn("File %s missing" % f)
             continue
-        lines = [ x for x in open( f, "r").readlines() if not x.startswith("#") and x.strip() ]
-        if first: outf.write( "%s\t%s" % ("track", lines[0] ) )
+        lines = [
+            x for x in open(f, "r").readlines() if not x.startswith("#") and x.strip()]
+        if first:
+            outf.write("%s\t%s" % ("track", lines[0]))
         first = False
         for i in range(1, len(lines)):
-            outf.write( "%s\t%s" % (track,lines[i] ))
+            outf.write("%s\t%s" % (track, lines[i]))
     outf.close()
     tmpfilename = outf.name
 
     # Load into database
-    tablename = P.toTable( outfile )
+    tablename = P.toTable(outfile)
     statement = '''cat %(tmpfilename)s
                 | python %(scriptsdir)s/csv2db.py
                       --index=track
@@ -429,46 +469,54 @@ def loadPicardAlignStats( infiles, outfile ):
     P.run()
 
 #########################################################################
-@transform( "tophat/tophat.dir/*.bam", suffix( ".bam"), ".dedup.stats")
+
+
+@transform("tophat/tophat.dir/*.bam", suffix(".bam"), ".dedup.stats")
 def dupStats(infile, outfile):
     '''Remove duplicate alignments from BAM files.'''
     to_cluster = USECLUSTER
-    track = P.snip( infile, ".bam" )
+    track = P.snip(infile, ".bam")
     statement = '''MarkDuplicates INPUT=%(infile)s ASSUME_SORTED=true OUTPUT=/dev/null 
                    METRICS_FILE=%(outfile)s VALIDATION_STRINGENCY=SILENT; ''' % locals()
     P.run()
 
 #########################################################################
-@merge( dupStats, "tophat/tophat.dir/picard_duplicate_stats.load" )
-def loadPicardDuplicateStats( infiles, outfile ):
+
+
+@merge(dupStats, "tophat/tophat.dir/picard_duplicate_stats.load")
+def loadPicardDuplicateStats(infiles, outfile):
     '''Merge Picard duplicate stats into single table and load into SQLite.'''
     # Join data for all tracks into single file
-    outf = open('tophat/tophat.dir/dupstats.txt','w')
+    outf = open('tophat/tophat.dir/dupstats.txt', 'w')
     first = True
     for f in infiles:
-        track = P.snip( os.path.basename(f), ".dedup.stats" )
+        track = P.snip(os.path.basename(f), ".dedup.stats")
         statfile = f
-        lines = [ x for x in open( statfile, "r").readlines() if not x.startswith("#") and x.strip() ]
-        if first: outf.write( "%s\t%s" % ("track", lines[0] ) )
+        lines = [x for x in open(
+            statfile, "r").readlines() if not x.startswith("#") and x.strip()]
+        if first:
+            outf.write("%s\t%s" % ("track", lines[0]))
         first = False
-        outf.write( "%s\t%s" % (track,lines[1] ))
+        outf.write("%s\t%s" % (track, lines[1]))
     outf.close()
     tmpfilename = outf.name
 
     # Load into database
-    tablename = P.toTable( outfile )
+    tablename = P.toTable(outfile)
     statement = '''cat %(tmpfilename)s
                     | python %(scriptsdir)s/csv2db.py
                           --index=track
                           --table=%(tablename)s 
                     > %(outfile)s '''
     P.run()
-                
+
 ###################################################################
-## quantify reads over transcripts
+# quantify reads over transcripts
+
+
 @follows(mkdir("htseq-counts"))
-@transform("tophat/tophat.dir/*.bam", regex(r"tophat/tophat.dir/(\S+).bam"), r"htseq-counts/\1.htseq-counts.gz" )
-def quantitateWithHTSeq(infile,outfile):
+@transform("tophat/tophat.dir/*.bam", regex(r"tophat/tophat.dir/(\S+).bam"), r"htseq-counts/\1.htseq-counts.gz")
+def quantitateWithHTSeq(infile, outfile):
     '''Use htseq script to count reads overlapping genes'''
     gtf = PARAMS["htseq_gtf"]
     options = PARAMS["htseq_options"]
@@ -482,8 +530,10 @@ def quantitateWithHTSeq(infile,outfile):
     P.run()
 
 ###################################################################
+
+
 @merge(quantitateWithHTSeq, r"htseq-counts/agg-agg-agg.tsv.gz")
-def combineSampleCounts(infiles,outfile):
+def combineSampleCounts(infiles, outfile):
     '''Merge the genecounts for all samples'''
     to_cluster = True
     inlist = " ".join(infiles)
@@ -498,13 +548,14 @@ def combineSampleCounts(infiles,outfile):
     P.run()
 
 ###################################################################
-@follows( convertToFasta,
-          runBlast,
-          loadBlast )
+
+
+@follows(convertToFasta,
+         runBlast,
+         loadBlast)
 def blast():
     '''run the pipeline'''
     pass
 
-if __name__== "__main__":
-    sys.exit( P.main(sys.argv) )
-    
+if __name__ == "__main__":
+    sys.exit(P.main(sys.argv))

@@ -1,41 +1,50 @@
-import os, sys, re, types
+import os
+import sys
+import re
+import types
 from VariantsReport import *
 
 #####################################################
 #####################################################
 #####################################################
-class TrackerEffects( VariantsTracker ):
-    
+
+
+class TrackerEffects(VariantsTracker):
+
     # minimum number of truncated codons
     min_truncated = 5
 
     mPattern = "_effects$"
 
-    def getPrefix( self, slice ):
-        if slice == None or slice == "all": prefix = ""
-        else: prefix = "%s_" % slice
+    def getPrefix(self, slice):
+        if slice is None or slice == "all":
+            prefix = ""
+        else:
+            prefix = "%s_" % slice
         return prefix
-    
-    def getSlices(self, subset = None ):
-        if subset == None:
-            return []            
+
+    def getSlices(self, subset=None):
+        if subset is None:
+            return []
         elif "separate" in subset:
-            return ("all", "splice", "cds" )
+            return ("all", "splice", "cds")
         return subset
 
 
 #####################################################
 #####################################################
 #####################################################
-class RecurrentVariants( TrackerEffects ):
+class RecurrentVariants(TrackerEffects):
+
     '''output a list of variants which occur in >1 sample'''
 
     mPattern = "^annotations$"
 
-    def __call__(self, track, slice = None ):
+    def __call__(self, track, slice=None):
 
-        headers = ("chromosome", "position", "genotype", "reference", "Variant_type", "code", "samples")
-                
+        headers = ("chromosome", "position", "genotype",
+                   "reference", "Variant_type", "code", "samples")
+
         statement = '''
         SELECT * FROM (SELECT
             a.chromosome,
@@ -51,20 +60,23 @@ class RecurrentVariants( TrackerEffects ):
         WHERE samples >1
         ''' % self.members(locals())
 
-        return odict( zip( headers, zip(*self.get( statement ))) )
+        return odict(zip(headers, zip(*self.get(statement))))
 
 #####################################################
 #####################################################
 #####################################################
-class RecurrentEffects( TrackerEffects ):
+
+
+class RecurrentEffects(TrackerEffects):
+
     '''output a list of genes which are disrupted in >1 sample'''
 
     mPattern = "^effects_genes$"
 
-    def __call__(self, track, slice = None ):
+    def __call__(self, track, slice=None):
 
         headers = ("gene_id", "gene_name", "samples")
-                
+
         statement = '''
         SELECT * FROM (SELECT
             i.gene_id,
@@ -80,6 +92,4 @@ class RecurrentEffects( TrackerEffects ):
         WHERE samples >1
         ''' % self.members(locals())
 
-        return odict( zip( headers, zip(*self.get( statement ))) )
-
-
+        return odict(zip(headers, zip(*self.get(statement))))

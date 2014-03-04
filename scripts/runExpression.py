@@ -63,7 +63,9 @@ Command line options
 
 import math
 import numpy
-import sys, os, optparse
+import sys
+import os
+import optparse
 import collections
 import itertools
 
@@ -81,7 +83,9 @@ try:
 except ImportError:
     import Experiment as E
     import Pipeline as P
-    import Database,IOTools,Stats
+    import Database
+    import IOTools
+    import Stats
     import Expression
 
 import sqlite3
@@ -92,156 +96,190 @@ except IOError:
     pass
 
 
-def main( argv = None ):
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if not argv: argv = sys.argv
+    if not argv:
+        argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser( version = "%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
-                                    usage = globals()["__doc__"] )
+    parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+                            usage=globals()["__doc__"])
 
     parser.add_option("-t", "--filename-tags", dest="input_filename_tags", type="string",
-                      help="input file with tag counts [default=%default]."  )
+                      help="input file with tag counts [default=%default].")
 
     parser.add_option("-d", "--filename-design", dest="input_filename_design", type="string",
-                      help="input file with experimental design [default=%default]."  )
+                      help="input file with experimental design [default=%default].")
 
     parser.add_option("-o", "--outfile", dest="output_filename", type="string",
-                      help="output filename [default=%default]."  )
+                      help="output filename [default=%default].")
 
     parser.add_option("-m", "--method", dest="method", type="choice",
-                      choices = ("deseq", "edger", "cuffdiff", "summary", "dump" ),
-                      help="differential expression method to apply [default=%default]."  )
+                      choices=(
+                          "deseq", "edger", "cuffdiff", "mock", "summary", "dump", "spike"),
+                      help="differential expression method to apply [default=%default].")
 
-    parser.add_option( "--deseq-dispersion-method", dest="deseq_dispersion_method", type="choice",
-                      choices = ("pooled", "per-condition", "blind"),
-                      help="dispersion method for deseq [default=%default]."  )
+    parser.add_option("--deseq-dispersion-method", dest="deseq_dispersion_method", type="choice",
+                      choices=("pooled", "per-condition", "blind"),
+                      help="dispersion method for deseq [default=%default].")
 
-    parser.add_option( "--deseq-fit-type", dest="deseq_fit_type", type="choice",
-                      choices = ("parametric", "local"),
-                      help="fit type for deseq [default=%default]."  )
+    parser.add_option("--deseq-fit-type", dest="deseq_fit_type", type="choice",
+                      choices=("parametric", "local"),
+                      help="fit type for deseq [default=%default].")
 
-    parser.add_option( "--deseq-sharing-mode", dest="deseq_sharing_mode", type="choice",
-                      choices = ("maximum", "fit-only", "gene-est-only"),
-                      help="deseq sharing mode [default=%default]."  )
+    parser.add_option("--deseq-sharing-mode", dest="deseq_sharing_mode", type="choice",
+                      choices=("maximum", "fit-only", "gene-est-only"),
+                      help="deseq sharing mode [default=%default].")
 
     parser.add_option("-f", "--fdr", dest="fdr", type="float",
-                      help="fdr to apply [default=%default]."  )
+                      help="fdr to apply [default=%default].")
+
+    parser.add_option("-p", "--pseudo-counts", dest="pseudo_counts", type="float",
+                      help="pseudocounts to add for mock analyis [default=%default].")
 
     parser.add_option("-R", "--save-R", dest="save_r_environment", type="string",
-                      help="save R environment [default=%default]."  )
+                      help="save R environment [default=%default].")
 
-    parser.add_option("-r","--reference-group", dest="ref_group", type="string",
+    parser.add_option("-r", "--reference-group", dest="ref_group", type="string",
                       help="Group to use as reference to compute fold changes against [default=$default]")
 
-    parser.add_option( "--filter-min-counts-per-row", dest="filter_min_counts_per_row", type="int",
-                      help="remove rows with less than this number of counts in total [default=%default]."  )
+    parser.add_option("--filter-min-counts-per-row", dest="filter_min_counts_per_row", type="int",
+                      help="remove rows with less than this number of counts in total [default=%default].")
 
-    parser.add_option( "--filter-min-counts-per-sample", dest="filter_min_counts_per_sample", type="int",
-                      help="remove samples with less than this number of counts in total [default=%default]."  )
+    parser.add_option("--filter-min-counts-per-sample", dest="filter_min_counts_per_sample", type="int",
+                      help="remove samples with a maximum count per sample of "
+                      "less than this numer   [default=%default].")
 
-    parser.add_option( "--filter-percentile-rowsums", dest="filter_percentile_rowsums", type="int",
-                      help="remove percent of rows with lowest total counts [default=%default]."  )
+    parser.add_option("--filter-percentile-rowsums", dest="filter_percentile_rowsums", type="int",
+                      help="remove percent of rows with lowest total counts [default=%default].")
 
     parser.set_defaults(
-        input_filename_tags = "-",
-        input_filename_design = None,
-        output_filename = sys.stdout,
-        method = "deseq",
-        fdr = 0.1,
-        deseq_dispersion_method = "pooled",
-        deseq_fit_type = "local",
-        deseq_sharing_mode = "maximum",
-        ref_group = None,
-        save_r_environment = None,
-        filter_min_counts_per_row = 1,
-        filter_min_counts_per_sample = 10,
-        filter_percentile_rowsums = 0,
-        )
+        input_filename_tags="-",
+        input_filename_design=None,
+        output_filename=sys.stdout,
+        method="deseq",
+        fdr=0.1,
+        deseq_dispersion_method="pooled",
+        deseq_fit_type="parametric",
+        deseq_sharing_mode="maximum",
+        ref_group=None,
+        save_r_environment=None,
+        filter_min_counts_per_row=1,
+        filter_min_counts_per_sample=10,
+        filter_percentile_rowsums=0,
+        pseudo_counts=0,
+        spike_foldchange_max=4.0,
+        spike_expression_max=5.0,
+        spike_expression_bin_width=0.5,
+        spike_foldchange_bin_width=0.5,
+        spike_max_counts_per_bin=50,
+    )
 
-    ## add common options (-h/--help, ...) and parse command line 
-    (options, args) = E.Start( parser, argv = argv, add_output_options = True )
+    # add common options (-h/--help, ...) and parse command line
+    (options, args) = E.Start(parser, argv=argv, add_output_options=True)
 
     if options.input_filename_tags == "-":
         fh = P.getTempFile()
-        fh.write( "".join( [ x for x in options.stdin ] ) )
+        fh.write("".join([x for x in options.stdin]))
         fh.close()
         options.input_filename_tags = fh.name
     else:
         fh = None
 
     # load tag data and filter
-    if options.method in ("deseq", "edger"):
-        assert options.input_filename_tags and os.path.exists(options.input_filename_tags)
-        assert options.input_filename_design and os.path.exists(options.input_filename_design)
+    if options.method in ("deseq", "edger", "mock"):
+        assert options.input_filename_tags and os.path.exists(
+            options.input_filename_tags)
+        assert options.input_filename_design and os.path.exists(
+            options.input_filename_design)
 
-        Expression.loadTagData( options.input_filename_tags, 
-                                options.input_filename_design )
-            
-        nobservations, nsamples = Expression.filterTagData(                                  
-            filter_min_counts_per_row = options.filter_min_counts_per_row,
-            filter_min_counts_per_sample = options.filter_min_counts_per_sample,
-            filter_percentile_rowsums = options.filter_percentile_rowsums )
-        
+        Expression.loadTagData(options.input_filename_tags,
+                               options.input_filename_design)
+
+        nobservations, nsamples = Expression.filterTagData(
+            filter_min_counts_per_row=options.filter_min_counts_per_row,
+            filter_min_counts_per_sample=options.filter_min_counts_per_sample,
+            filter_percentile_rowsums=options.filter_percentile_rowsums)
+
         if nobservations == 0:
-            E.warn( "no observations - no output" )
+            E.warn("no observations - no output")
             return
-        
+
         if nsamples == 0:
-            E.warn( "no samples remain after filtering - no output" )
+            E.warn("no samples remain after filtering - no output")
             return
 
         sample_names = R('''colnames(countsTable)''')
-        E.info( "%i samples to test at %i observations: %s" % ( nsamples, nobservations,
-                                                                ",".join( sample_names)))
+        E.info("%i samples to test at %i observations: %s" % (nsamples, nobservations,
+                                                              ",".join(sample_names)))
 
     try:
         if options.method == "deseq":
-            Expression.runDESeq( outfile = options.output_filename,
-                                 outfile_prefix = options.output_filename_pattern,
-                                 fdr = options.fdr,
-                                 dispersion_method = options.deseq_dispersion_method,
-                                 fit_type = options.deseq_fit_type,
-                                 sharing_mode = options.deseq_sharing_mode,
-                                 ref_group = options.ref_group,
-                                 )
+            Expression.runDESeq(outfile=options.output_filename,
+                                outfile_prefix=options.output_filename_pattern,
+                                fdr=options.fdr,
+                                dispersion_method=options.deseq_dispersion_method,
+                                fit_type=options.deseq_fit_type,
+                                sharing_mode=options.deseq_sharing_mode,
+                                ref_group=options.ref_group,
+                                )
 
         elif options.method == "edger":
-            Expression.runEdgeR( outfile = options.output_filename,
-                                 outfile_prefix = options.output_filename_pattern,
-                                 fdr = options.fdr,
-                                 ref_group = options.ref_group)
+            Expression.runEdgeR(outfile=options.output_filename,
+                                outfile_prefix=options.output_filename_pattern,
+                                fdr=options.fdr,
+                                ref_group=options.ref_group)
+
+        elif options.method == "mock":
+            Expression.runMockAnalysis(outfile=options.output_filename,
+                                       outfile_prefix=options.output_filename_pattern,
+                                       ref_group=options.ref_group,
+                                       pseudo_counts=options.pseudo_counts,
+                                       )
 
         elif options.method == "summary":
-            Expression.outputTagSummary( options.input_filename_tags,
-                                         options.stdout,
-                                         options.output_filename_pattern,
-                                         filename_design = options.input_filename_design
-                                         )
+            Expression.outputTagSummary(options.input_filename_tags,
+                                        options.stdout,
+                                        options.output_filename_pattern,
+                                        filename_design=options.input_filename_design
+                                        )
 
         elif options.method == "dump":
-            assert options.input_filename_tags and os.path.exists(options.input_filename_tags)
-            Expression.dumpTagData( options.input_filename_tags,
-                                    options.input_filename_design,
-                                    outfile = options.stdout )
+            assert options.input_filename_tags and os.path.exists(
+                options.input_filename_tags)
+            Expression.dumpTagData(options.input_filename_tags,
+                                   options.input_filename_design,
+                                   outfile=options.stdout)
+
+        elif options.method == "spike":
+            Expression.outputSpikeIns(options.input_filename_tags,
+                                      options.stdout,
+                                      options.output_filename_pattern,
+                                      filename_design=options.input_filename_design,
+                                      foldchange_max=options.spike_foldchange_max,
+                                      expression_max=options.spike_expression_max,
+                                      max_counts_per_bin=options.spike_max_counts_per_bin,
+                                      expression_bin_width=options.spike_expression_bin_width,
+                                      foldchange_bin_width=options.spike_foldchange_bin_width,
+                                      )
 
     except rpy2.rinterface.RRuntimeError, msg:
         if options.save_r_environment:
             E.info("saving R image to %s" % options.save_r_environment)
-            R['save.image']( options.save_r_environment )
+            R['save.image'](options.save_r_environment)
         raise
 
-    if fh and os.path.exists( fh.name): os.unlink( fh.name )
+    if fh and os.path.exists(fh.name):
+        os.unlink(fh.name)
 
     if options.save_r_environment:
-        R['save.image']( options.save_r_environment )
+        R['save.image'](options.save_r_environment)
 
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-    
+    sys.exit(main(sys.argv))

@@ -58,73 +58,76 @@ import CGAT.IndexedFasta as IndexedFasta
 import CGAT.IOTools as IOTools
 
 
-def main( argv = None ):
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv is None:
+        argv = sys.argv
 
-    parser = E.OptionParser( version = "%prog version: $Id: bed2annotator2tsv.py 2885 2010-04-07 08:46:50Z andreas $", 
-                             usage = globals()["__doc__"])
-    
-    parser.add_option( "-g", "--genome-file", dest="genome_file", type="string",
-                       help="filename with genome."  )
+    parser = E.OptionParser(version="%prog version: $Id: bed2annotator2tsv.py 2885 2010-04-07 08:46:50Z andreas $",
+                            usage=globals()["__doc__"])
 
-    parser.add_option( "-f", "--features", dest="features", type="string", 
-                       help="feature to collect [default=None]."  )
+    parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
+                      help="filename with genome.")
 
-    parser.add_option( "-i", "--files", dest="files", action="append",
-                       help="use multiple annotations [default=None]."  )
+    parser.add_option("-f", "--features", dest="features", type="string",
+                      help="feature to collect [default=None].")
 
-    parser.add_option(  "-a", "--annotations", dest="annotations", type="string", 
-                       help="aggregate name for annotations if only single file is provided from STDIN [default=None]."  )
+    parser.add_option("-i", "--files", dest="files", action="append",
+                      help="use multiple annotations [default=None].")
 
-    parser.add_option(  "--input-filename-map", dest="input_filename_map", type="string", 
-                       help="filename with a map of gene_ids to categories [default=None]."  )
+    parser.add_option("-a", "--annotations", dest="annotations", type="string",
+                      help="aggregate name for annotations if only single file is provided from STDIN [default=None].")
 
-    parser.add_option( "-l", "--max-length", dest="max_length", type="string", 
-                       help="maximum segment length [default=None]."  )
+    parser.add_option("--input-filename-map", dest="input_filename_map", type="string",
+                      help="filename with a map of gene_ids to categories [default=None].")
 
-    parser.add_option( "-m", "--merge", dest="merge", action="store_true",
-                       help="merge overlapping bed segments [default=%default]."  )
+    parser.add_option("-l", "--max-length", dest="max_length", type="string",
+                      help="maximum segment length [default=None].")
 
-    parser.add_option( "-s", "--section", dest="section", type="choice", 
-                       choices=("segments", "annotations", "workspace" ),
-                       help="annotator section [default=None]."  )
+    parser.add_option("-m", "--merge", dest="merge", action="store_true",
+                      help="merge overlapping bed segments [default=%default].")
 
-    parser.add_option( "--subset", dest="subsets", type="string", action="append",
-                       help="add filenames to delimit subsets within the gff files. The syntax is filename.gff,label,filename.ids [default=None]."  )
+    parser.add_option("-s", "--section", dest="section", type="choice",
+                      choices=("segments", "annotations", "workspace"),
+                      help="annotator section [default=None].")
+
+    parser.add_option("--subset", dest="subsets", type="string", action="append",
+                      help="add filenames to delimit subsets within the gff files. The syntax is filename.gff,label,filename.ids [default=None].")
 
     parser.set_defaults(
-        genome_file = None,
-        feature = None,
-        remove_random = True,
-        section = "segments",
-        annotations = "annotations",
-        max_length = 100000,
-        files = [],
-        subsets = [],
-        input_filename_map = None,
-        merge = False,
-        )
+        genome_file=None,
+        feature=None,
+        remove_random=True,
+        section="segments",
+        annotations="annotations",
+        max_length=100000,
+        files=[],
+        subsets=[],
+        input_filename_map=None,
+        merge=False,
+    )
 
-    (options, args) = E.Start( parser )
+    (options, args) = E.Start(parser)
 
     options.files += args
-    if len(options.files) == 0: options.files.append("-")
-    options.files = list( itertools.chain( *[ re.split( "[,; ]+", x) for x in options.files ] ) )
+    if len(options.files) == 0:
+        options.files.append("-")
+    options.files = list(
+        itertools.chain(*[re.split("[,; ]+", x) for x in options.files]))
 
     if options.subsets:
-        subsets = collections.defaultdict( list )
-        for s in options.subsets: 
-            filename_gff,label,filename_ids = s.split( "," )
-            subsets[filename_gff].append( (label,filename_ids) )
+        subsets = collections.defaultdict(list)
+        for s in options.subsets:
+            filename_gff, label, filename_ids = s.split(",")
+            subsets[filename_gff].append((label, filename_ids))
         options.subsets = subsets
 
     if options.genome_file:
-        fasta = IndexedFasta.IndexedFasta( options.genome_file )
+        fasta = IndexedFasta.IndexedFasta(options.genome_file)
     else:
         fasta = None
 
@@ -146,7 +149,8 @@ def main( argv = None ):
 
     if options.section in ("annotations"):
         contigs = set()
-        it = itertools.groupby( Bed.iterator( options.stdin ), key=lambda x: x.track["name"])
+        it = itertools.groupby(
+            Bed.iterator(options.stdin), key=lambda x: x.track["name"])
 
         map_track2segments = {}
         for track, beds in it:
@@ -156,31 +160,35 @@ def main( argv = None ):
 
             beds = list(beds)
 
-            if options.merge: beds = Bed.merge( beds )
+            if options.merge:
+                beds = Bed.merge(beds)
 
             for bed in beds:
                 contig, start, end = bed.contig, bed.start, bed.end
 
-                if options.remove_random and "random" in contig: continue
-                
+                if options.remove_random and "random" in contig:
+                    continue
+
                 if max_length > 0 and end - start > max_length:
                     ndiscarded += 1
                     continue
 
                 contigs.add(contig)
-                map_track2segments[track].append( nsegments )
-                options.stdout.write( "%s\t%i\t%s\t(%i,%i)\n" % (prefix, nsegments, contig, start, end ) )
+                map_track2segments[track].append(nsegments)
+                options.stdout.write(
+                    "%s\t%i\t%s\t(%i,%i)\n" % (prefix, nsegments, contig, start, end))
                 nsegments += 1
-                
-            options.stdout.write("##Ann\t%s\t%s\n" % (track, "\t".join( ["%i" % x for x in range(first_segment, nsegments) ] ) ) )
-            E.info( "track %s: annotated with %i segments" % (track, nsegments - first_segment) )
+
+            options.stdout.write("##Ann\t%s\t%s\n" % (
+                track, "\t".join(["%i" % x for x in range(first_segment, nsegments)])))
+            E.info("track %s: annotated with %i segments" %
+                   (track, nsegments - first_segment))
 
         ncontigs = len(contigs)
-        E.info( "ninput=%i, ntracks=%i, ncontigs=%i, nsegments=%i, ndiscarded=%i" % (ninput, ntracks, ncontigs, nsegments, ndiscarded))
+        E.info("ninput=%i, ntracks=%i, ncontigs=%i, nsegments=%i, ndiscarded=%i" %
+               (ninput, ntracks, ncontigs, nsegments, ndiscarded))
 
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
-
+    sys.exit(main(sys.argv))

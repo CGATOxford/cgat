@@ -54,20 +54,21 @@ import sqlite3
 
 csv.field_size_limit(sys.maxint)
 
-def main( argv = sys.argv ):
+
+def main(argv=sys.argv):
 
     parser = CSV2DB.buildParser()
 
-    (options, args) = E.Start( parser, argv = argv, add_psql_options = True )
+    (options, args) = E.Start(parser, argv=argv, add_psql_options=True)
 
     if options.from_zipped:
         import gzip
-        infile = gzip.GzipFile( fileobj= options.stdin, mode='r')
+        infile = gzip.GzipFile(fileobj=options.stdin, mode='r')
 
     else:
         infile = options.stdin
 
-    CSV2DB.run( infile, options )
+    CSV2DB.run(infile, options)
 
     E.Stop()
 

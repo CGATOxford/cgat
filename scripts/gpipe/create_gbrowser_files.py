@@ -1,4 +1,4 @@
-################################################################################
+##########################################################################
 #
 #   MRC FGU Computational Genomics Group
 #
@@ -19,7 +19,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
+##########################################################################
 '''
 gpipe/create_gbrowser_files.py - 
 ======================================================
@@ -74,8 +74,9 @@ Default options will create the files in the devel section.
 
 a = """"""
 
-def GetContigNames( dbhandle, tablename, max_size = 0, order_by_rand = False):
-    
+
+def GetContigNames(dbhandle, tablename, max_size=0, order_by_rand=False):
+
     genome_lengths = {}
 
     statement = "SELECT DISTINCT(sbjct_token) FROM %s" % tablename
@@ -92,15 +93,15 @@ def GetContigNames( dbhandle, tablename, max_size = 0, order_by_rand = False):
         result = None
 
     if order_by_rand:
-        random.shuffle( result )
+        random.shuffle(result)
 
     if max_size:
         return result[:max_size]
     else:
         return result
 
-TEMPLATE_HEADER=\
-"""
+TEMPLATE_HEADER =\
+    """
 [GENERAL]
 description   = %(description)s
 db_adaptor    = Bio::DB::GFF
@@ -192,8 +193,8 @@ bump density  = 100
 link          = %(url_gene)s$name
 """
 
-TEMPLATE_TRACKS_DEVEL=\
-"""
+TEMPLATE_TRACKS_DEVEL =\
+    """
 ################## TRACK CONFIGURATION ####################
 # the remainder of the sections configure individual tracks
 ###########################################################
@@ -425,8 +426,8 @@ translation    = 6frame
 key            = 6-frame translation
 """
 
-TEMPLATE_TRACKS_RELEASE=\
-"""
+TEMPLATE_TRACKS_RELEASE =\
+    """
 ################## TRACK CONFIGURATION ####################
 # the remainder of the sections configure individual tracks
 ###########################################################
@@ -658,8 +659,8 @@ translation    = 6frame
 key            = 6-frame translation
 """
 
-TEMPLATE_REPEATS=\
-"""
+TEMPLATE_REPEATS =\
+    """
 [CompTE]
 feature      = mobile_element:CompTE
 glyph        = segments
@@ -694,8 +695,8 @@ fgcolor      = blue
 citation     = please contact Casey Bergman for more information.
 """
 
-TEMPLATE_TRNAS=\
-"""
+TEMPLATE_TRNAS =\
+    """
 [TRNA]
 feature = processed_transcript:TRNA_ATT
 glyph        = segments
@@ -708,8 +709,8 @@ fgcolor      = blue
 citation     = please contact Casey Bergman for more information.
 """
 
-TEMPLATE_ORTHOLOGY=\
-"""
+TEMPLATE_ORTHOLOGY =\
+    """
 [%s]
 feature      = ortho_%s
 glyph        = span
@@ -728,78 +729,80 @@ citation     = Orthologs between %s and %s. The code presents the gene/transcrip
 # name, database, DroSpeGe, Eisen
 
 FLY_DATA = (
-    ( "Dyakuba", "dyak_vs_dmel7", "dyak", "yakuba" ),
-    ( "Dmelanogaster", "dmel_vs_dmel4", "dmel", "melanogaster"),
-    ( "Dpseudoobscura", "dpse_vs_dmel8", "dpse", "pseudoobscura"),
-    ( "Dvirilis", "dvir_vs_dmel6", "dvir", "virilis" ),
-    ( "Dmojavensis", "dmoj_vs_dmel6", "dmoj", "mojavensis" ),
-    ( "Dananassae", "dana_vs_dmel6", "dana", "ananassae" ),
-    ( "Dgrimshawi", "dgri_vs_dmel5", "dgri", "grimshawi" ),
-    ( "Dsimulans", "dsim_vs_dmel6", "dsim", "simulans" ),
-    ( "Derecta", "dere_vs_dmel6", "dere", "erecta" ),
-    ( "Dsechellia", "dsec_vs_dmel3", "dsec", "sechellia" ), 
-    ( "Dpersimilis", "dper_vs_dmel3", "dper", "persimilis" ),
-    ( "Dwillistoni", "dwil_vs_dmel1", "dwil", "willistoni" ),
+    ("Dyakuba", "dyak_vs_dmel7", "dyak", "yakuba"),
+    ("Dmelanogaster", "dmel_vs_dmel4", "dmel", "melanogaster"),
+    ("Dpseudoobscura", "dpse_vs_dmel8", "dpse", "pseudoobscura"),
+    ("Dvirilis", "dvir_vs_dmel6", "dvir", "virilis"),
+    ("Dmojavensis", "dmoj_vs_dmel6", "dmoj", "mojavensis"),
+    ("Dananassae", "dana_vs_dmel6", "dana", "ananassae"),
+    ("Dgrimshawi", "dgri_vs_dmel5", "dgri", "grimshawi"),
+    ("Dsimulans", "dsim_vs_dmel6", "dsim", "simulans"),
+    ("Derecta", "dere_vs_dmel6", "dere", "erecta"),
+    ("Dsechellia", "dsec_vs_dmel3", "dsec", "sechellia"),
+    ("Dpersimilis", "dper_vs_dmel3", "dper", "persimilis"),
+    ("Dwillistoni", "dwil_vs_dmel1", "dwil", "willistoni"),
 )
 
 WORM_DATA = (
-    ( "Celegans",  "ww_cele1", "", ""),
-    ( "Cbriggsae", "ww_cbri2", "", ""),
-    ( "Cfour",     "ww_cfou2", "", ""),
-    ( "Cremanei",  "ww_crem2", "", ""),    
-    )
+    ("Celegans",  "ww_cele1", "", ""),
+    ("Cbriggsae", "ww_cbri2", "", ""),
+    ("Cfour",     "ww_cfou2", "", ""),
+    ("Cremanei",  "ww_crem2", "", ""),
+)
 
 
-def main( argv = None ):
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv is None:
+        argv = sys.argv
 
-    parser = E.OptionParser( version = "%prog version: $Id: gpipe/create_gbrowser_files.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser(
+        version="%prog version: $Id: gpipe/create_gbrowser_files.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-t", "--target-dir", dest="target", type="string",
-                      help="target directory.", metavar = "FILE"  )
+                      help="target directory.", metavar="FILE")
     parser.add_option("-d", "--database", dest="database", type="string",
-                      help="database.", metavar = "FILE"  )
+                      help="database.", metavar="FILE")
     parser.add_option("-u", "--url", dest="", type="string",
-                      help="gr.", metavar = "FILE"  )
+                      help="gr.", metavar="FILE")
     parser.add_option("-r", "--release", dest="release", type="string",
-                      help="release [%default]."  )
+                      help="release [%default].")
     parser.add_option("-s", "--style", dest="style", type="choice",
-                      choices=("devel", "release") )
+                      choices=("devel", "release"))
     parser.add_option("-c", "--contrib", dest="contrib", type="string",
                       help="additional tracks with contributed data [repeats]")
     parser.add_option("-p", "--project", dest="project", type="choice",
                       choices=("flies", "worms", "mammals"),
                       help="project to add")
-        
-    
-    parser.set_defaults (
-        connection = "db:andreas",
-        target= "/var/www/conf/gbrowse-devel.conf",
-        database = "gbrowser_devel_%s",
-        release = "1v5",
+
+    parser.set_defaults(
+        connection="db:andreas",
+        target="/var/www/conf/gbrowse-devel.conf",
+        database="gbrowser_devel_%s",
+        release="1v5",
         style="devel",
-        contrib = "",
-        url_server = "http://genserv.anat.ox.ac.uk",
-        url_gene = "http://genserv.anat.ox.ac.uk%s/clades/%s/queryForGene?name=",
+        contrib="",
+        url_server="http://genserv.anat.ox.ac.uk",
+        url_gene="http://genserv.anat.ox.ac.uk%s/clades/%s/queryForGene?name=",
     )
 
-    (options, args) = E.Start( parser, add_psql_options = True)
+    (options, args) = E.Start(parser, add_psql_options=True)
 
-    if options.contrib: options.contrib = options.contrib.lower().split(",")
-    
-    dbhandle = pgdb.connect( options.psql_connection )
+    if options.contrib:
+        options.contrib = options.contrib.lower().split(",")
 
-    if options.style=="release":
+    dbhandle = pgdb.connect(options.psql_connection)
+
+    if options.style == "release":
         style_code = ""
     else:
         style_code = "/devel"
 
-    ## selection of data and contig prefix
+    # selection of data and contig prefix
     use_prefix = False
     if options.project == "flies":
         data = FLY_DATA
@@ -807,88 +810,88 @@ def main( argv = None ):
         if options.contrib:
             contrib = options.contrib
         else:
-            contrib = ["repeats",]
+            contrib = ["repeats", ]
         options.url_gene = options.url_gene % (style_code, "flies")
         clade = "flies"
-        
+
     elif options.project == "worms":
         data = WORM_DATA
         contrib = None
         options.url_gene = options.url_gene % (style_code, "worms")
         clade = "worms"
-        
+
     for name, schema, map2drospege, map2eisen in data:
 
-        filename ="%s/%s.conf" % (options.target, name)
+        filename = "%s/%s.conf" % (options.target, name)
 
         if options.loglevel >= 1:
             print "setting up %s" % filename
             sys.stdout.flush()
-            
-        outfile = open( filename, "w" )
+
+        outfile = open(filename, "w")
 
         database = options.database % schema
 
-        contig_names = GetContigNames( dbhandle, "%s.%s" % (schema, "predictions"),
-                                       max_size = 30,
-                                       order_by_rand = True)
-        
+        contig_names = GetContigNames(dbhandle, "%s.%s" % (schema, "predictions"),
+                                      max_size=30,
+                                      order_by_rand=True)
+
         if contig_names:
-            ## patch to add species prefix
+            # patch to add species prefix
             if use_prefix:
                 prefix = re.sub("vs_.*", "", schema)
-                if not re.match( prefix, contig_names[0]):
-                    contig_names = map( lambda x: prefix + x, contig_names )
-            
+                if not re.match(prefix, contig_names[0]):
+                    contig_names = map(lambda x: prefix + x, contig_names)
+
             contig_names.sort()
-            
-            contig_names = " ".join( contig_names )
+
+            contig_names = " ".join(contig_names)
         else:
             contig_names = ""
 
         params = {
-            "release" : options.release,
-            "description" : name,
+            "release": options.release,
+            "description": name,
             "database": database,
             "examples": contig_names,
             "map2drospege": map2drospege,
             "map2eisen": map2eisen,
-            "url_gene" : options.url_gene,
-            "url_server" : options.url_server,
-            "clade" : clade,
-            }
+            "url_gene": options.url_gene,
+            "url_server": options.url_server,
+            "clade": clade,
+        }
 
-        outfile.write( TEMPLATE_HEADER % params )
+        outfile.write(TEMPLATE_HEADER % params)
         if options.style == "devel":
-            outfile.write( TEMPLATE_TRACKS_DEVEL % params )
+            outfile.write(TEMPLATE_TRACKS_DEVEL % params)
         elif options.style == "release":
-            outfile.write( TEMPLATE_TRACKS_RELEASE % params )
-            
+            outfile.write(TEMPLATE_TRACKS_RELEASE % params)
+
         for name2, schema2, map2dropsege2, map2eisen2 in data:
 
-            if schema == schema2: continue
+            if schema == schema2:
+                continue
 
-            outfile.write( TEMPLATE_ORTHOLOGY % (\
+            outfile.write(TEMPLATE_ORTHOLOGY % (
                 "Orthology%s" % name2,
                 schema2,
                 name2,
                 name2,
                 name,
-                name2) )
+                name2))
 
             outfile.write("\n")
 
         if contrib:
             for con in options.contrib:
                 if con == "repeats":
-                    outfile.write( TEMPLATE_REPEATS )
+                    outfile.write(TEMPLATE_REPEATS)
                 elif con == "trnas":
-                    outfile.write( TEMPLATE_TRNAS )
-                    
+                    outfile.write(TEMPLATE_TRNAS)
+
         outfile.close()
 
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

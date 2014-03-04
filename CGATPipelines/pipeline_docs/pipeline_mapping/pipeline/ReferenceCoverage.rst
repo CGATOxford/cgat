@@ -23,6 +23,7 @@ preserve strand only half the reads will be used to calculate coverage.
 .. report:: Reference.TranscriptCoverage
    :render: table
    :transform: stats
+   :force:
 
    Percent :term:`model coverage` of transcripts in the reference gene set.
 
@@ -32,6 +33,7 @@ preserve strand only half the reads will be used to calculate coverage.
    :tf-aggregate: normalized-total
    :tf-bins: arange(0,101,1.0)
    :as-lines:
+   :layout: column-3
 
    Percent :term:`model coverage` of transcripts in the reference gene set.
 
@@ -50,6 +52,7 @@ preserve strand only half the reads will be used to calculate coverage.
 .. report:: Reference.GeneCoverage
    :render: table
    :transform: stats
+   :force:
 
    Percent :term:`model coverage` of genes in the reference gene set.
 
@@ -59,6 +62,7 @@ preserve strand only half the reads will be used to calculate coverage.
    :tf-aggregate: normalized-total
    :tf-bins: arange(0,101,1.0)
    :as-lines:
+   :layout: column-3
 
    Percent :term:`model coverage` of genes in the reference gene set.
    This plot is cumulative.
@@ -72,6 +76,7 @@ Libraries without strand information should have a peak at about 1.0.
 .. report:: Reference.ReadDirectionality
    :render: line-plot
    :transform: histogram
+   :slices: transcript
    :logscale: x
    :tf-aggregate: normalized-total
    :tf-range: ,,0.1

@@ -41,8 +41,8 @@ import optparse
 import math
 import tempfile
 
-## patch for old python installations
-if sys.version_info < (2,4):
+# patch for old python installations
+if sys.version_info < (2, 4):
     from sets import *
     set = Set
 
@@ -56,51 +56,57 @@ Check graph for completeness.
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 
-def writeSet( outfile, outset ):
+
+def writeSet(outfile, outset):
     """write set to file."""
     outlist = list(outset)
     outlist.sort()
-    for x in outlist: outfile.write( "%s\n" % x )
+    for x in outlist:
+        outfile.write("%s\n" % x)
 
-def writeInfo( outfile, vertices, nlinks, nlines, nerrors, ncomments, is_sorted ):
-    
+
+def writeInfo(outfile, vertices, nlinks, nlines, nerrors, ncomments, is_sorted):
+
     all = set(vertices.keys())
-    queries = set(filter( lambda x: vertices[x] & 1, all) )
-    sbjcts  = set(filter( lambda x: vertices[x] & 2, all) )
-    ## count only those as missed self, that do have queries.
-    missed_self = set(filter( lambda x: vertices[x] & 4 == 0, all) ).intersection( queries )
+    queries = set(filter(lambda x: vertices[x] & 1, all))
+    sbjcts = set(filter(lambda x: vertices[x] & 2, all))
+    # count only those as missed self, that do have queries.
+    missed_self = set(
+        filter(lambda x: vertices[x] & 4 == 0, all)).intersection(queries)
 
-    missed_queries = all.difference( queries)
-    missed_sbjcts =  all.difference( sbjcts )
+    missed_queries = all.difference(queries)
+    missed_sbjcts = all.difference(sbjcts)
 
     if is_sorted:
-        sorted= "yes"
+        sorted = "yes"
     else:
         sorted = "no"
 
-    outfile.write( "\t".join( map(str, (len(queries), len(sbjcts),
-                                               len(queries.union( sbjcts ) ),
-                                               nlinks,
-                                               nlines, nerrors, ncomments,
-                                               sorted,
-                                               len(all),
-                                               len(missed_queries),
-                                               len(missed_sbjcts),
-                                               len(missed_self) ) ) ) + "\n") 
+    outfile.write("\t".join(map(str, (len(queries), len(sbjcts),
+                                      len(queries.union(sbjcts)),
+                                      nlinks,
+                                      nlines, nerrors, ncomments,
+                                      sorted,
+                                      len(all),
+                                      len(missed_queries),
+                                      len(missed_sbjcts),
+                                      len(missed_self)))) + "\n")
     outfile.flush()
 
     return missed_queries, missed_sbjcts, missed_self
-    
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv is None:
+        argv = sys.argv
 
-    parser = E.OptionParser( version = "%prog version: $Id: graph_check.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser(
+        version="%prog version: $Id: graph_check.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option("--filename-missing", dest="filename_missing", type="string",
                       help="missing entries.")
@@ -117,48 +123,54 @@ def main( argv = None ):
     parser.add_option("-o", "--filename-output-pattern", dest="filename_output_pattern", type="string",
                       help="filenames for output (should contain one %s for one section).")
     parser.add_option("-s", "--sort-order", dest="sort_order", type="choice",
-                      choices=("numeric", "alphanumeric" ),
+                      choices=("numeric", "alphanumeric"),
                       help="sort order - if numeric, vertices are cast to int.")
 
     parser.set_defaults(
-        filename_vertices = None,
-        report_step1 = 100000,
-        report_step2 = 10000,
-        filename_output_pattern = "%s",
-        subsets = False,
-        num_fields = 11,
-        sort_order = "alphanumeric",
-        )
+        filename_vertices=None,
+        report_step1=100000,
+        report_step2=10000,
+        filename_output_pattern="%s",
+        subsets=False,
+        num_fields=11,
+        sort_order="alphanumeric",
+    )
 
-    (options, args) = E.Start( parser )
+    (options, args) = E.Start(parser)
 
     if options.loglevel >= 1:
-        options.stdlog.write("# output goes to:\n" )
-        options.stdlog.write("# errors: %s\n" % options.filename_output_pattern % "errors" )
-        options.stdlog.write("# missed query: %s\n" % options.filename_output_pattern % "missed_queries" )
-        options.stdlog.write("# missed sbjct: %s\n" % options.filename_output_pattern % "missed_sbjcts" )
-        options.stdlog.write("# missed self: %s\n" % options.filename_output_pattern % "missed_self" )                
-        
-    outfile_errors = open( options.filename_output_pattern % "errors", "w" )
+        options.stdlog.write("# output goes to:\n")
+        options.stdlog.write("# errors: %s\n" %
+                             options.filename_output_pattern % "errors")
+        options.stdlog.write("# missed query: %s\n" %
+                             options.filename_output_pattern % "missed_queries")
+        options.stdlog.write("# missed sbjct: %s\n" %
+                             options.filename_output_pattern % "missed_sbjcts")
+        options.stdlog.write("# missed self: %s\n" %
+                             options.filename_output_pattern % "missed_self")
+
+    outfile_errors = open(options.filename_output_pattern % "errors", "w")
 
     if options.sort_order == "numeric":
         f = int
     else:
-        f= str
+        f = str
 
     if options.filename_vertices:
-        vv, errors = IOTools.ReadList( open( options.filename_vertices, "r" ), map_function = f )
+        vv, errors = IOTools.ReadList(
+            open(options.filename_vertices, "r"), map_function=f)
         vertices = {}
-        ## use flags for vertices
-        ## 1st bit: is query: 1
-        ## 2nd bit: is sbjct: 2
-        ## 3rd bit: has self: 4
+        # use flags for vertices
+        # 1st bit: is query: 1
+        # 2nd bit: is sbjct: 2
+        # 3rd bit: has self: 4
         for v in vv:
             vertices[v] = 0
     else:
         raise "for the time being, specify a vertex file."
 
-    options.stdout.write( "nqueries\tnsbjcts\tnvertices\tnlinks\tnlines\tnerrors\tncomments\tis_sorted\tnexpected\tnmissed_queries\tnmissed_sbjcts\tnmissed_self\n" )
+    options.stdout.write(
+        "nqueries\tnsbjcts\tnvertices\tnlinks\tnlines\tnerrors\tncomments\tis_sorted\tnexpected\tnmissed_queries\tnmissed_sbjcts\tnmissed_self\n")
 
     ncomments, nlinks, nerrors, nlines = 0, 0, 0, 0
 
@@ -166,7 +178,6 @@ def main( argv = None ):
 
     last = None
 
-    
     for line in sys.stdin:
 
         nlines += 1
@@ -180,45 +191,52 @@ def main( argv = None ):
 
         if len(data) != options.num_fields:
             nerrors += 1
-            outfile_errors.write( line )
+            outfile_errors.write(line)
             outfile_errors.flush()
             continue
 
         q, s = f(data[0]), f(data[1])
 
-        if q == s: vertices[q] |= 4
+        if q == s:
+            vertices[q] |= 4
         vertices[q] |= 1
         vertices[s] |= 2
 
         if last and last > q:
             is_sorted = False
-            outfile_errors.write("# sort inconsistency between %s and %s at line %i\n" % ( last, q, nlines) )
+            outfile_errors.write(
+                "# sort inconsistency between %s and %s at line %i\n" % (last, q, nlines))
             outfile_errors.flush()
             if options.loglevel >= 1:
-                options.stdlog.write("# sort inconsistency between %s and %s at line %i\n" % ( last, q, nlines) )
+                options.stdlog.write(
+                    "# sort inconsistency between %s and %s at line %i\n" % (last, q, nlines))
                 options.stdlog.flush()
-                
+
         if options.report_step1 and nlines % options.report_step1 == 0:
-            writeInfo( options.stdlog, vertices, nlinks, nlines, nerrors, ncomments, is_sorted )
-            
+            writeInfo(options.stdlog, vertices, nlinks,
+                      nlines, nerrors, ncomments, is_sorted)
+
         last = q
 
-    missed_queries, missed_sbjcts, missed_self = writeInfo( options.stdout, vertices, nlinks, nlines, nerrors, ncomments, is_sorted )
+    missed_queries, missed_sbjcts, missed_self = writeInfo(
+        options.stdout, vertices, nlinks, nlines, nerrors, ncomments, is_sorted)
 
     if nerrors == 0:
-        os.remove( options.filename_output_pattern % "errors" )
+        os.remove(options.filename_output_pattern % "errors")
 
     if missed_queries:
-        writeSet( open( options.filename_output_pattern % "missed_queries", "w" ), missed_queries )
+        writeSet(open(options.filename_output_pattern %
+                 "missed_queries", "w"), missed_queries)
 
     if missed_sbjcts:
-        writeSet( open( options.filename_output_pattern % "missed_sbjcts", "w" ), missed_sbjcts )
+        writeSet(open(options.filename_output_pattern %
+                 "missed_sbjcts", "w"), missed_sbjcts)
 
-    if missed_self:        
-        writeSet( open( options.filename_output_pattern % "missed_self", "w" ), missed_self )
+    if missed_self:
+        writeSet(open(options.filename_output_pattern %
+                 "missed_self", "w"), missed_self)
 
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

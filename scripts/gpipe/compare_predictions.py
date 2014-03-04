@@ -1,4 +1,4 @@
-################################################################################
+##########################################################################
 #
 #   MRC FGU Computational Genomics Group
 #
@@ -19,7 +19,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
+##########################################################################
 '''
 gpipe/compare_predictions.py - 
 ======================================================
@@ -63,7 +63,7 @@ import re
 import getopt
 import math
 
-USAGE="""python %s [OPTIONS] < exonerate_output > filtered
+USAGE = """python %s [OPTIONS] < exonerate_output > filtered
 
 Version: $Id: gpipe/compare_predictions.py 1799 2008-03-28 11:44:19Z andreas $
 
@@ -82,10 +82,11 @@ Options:
 -q, --quality-pide=             quality threshold (pide) for exons.
 """ % sys.argv[0]
 
-param_long_options=["verbose=", "help", "table-reference=", "table-target=", "version"]
-param_short_options="v:hR:T:"
+param_long_options = [
+    "verbose=", "help", "table-reference=", "table-target=", "version"]
+param_short_options = "v:hR:T:"
 
-import alignlib
+import alignlib_lite
 import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.PredictionParser as PredictionParser
@@ -102,29 +103,32 @@ param_gep = -2.0
 param_tablename_predictions_reference = None
 param_tablename_predictions_target = None
 
-##------------------------------------------------------------
+# ------------------------------------------------------------
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv is None:
+        argv = sys.argv
 
     try:
-        optlist, args = getopt.getopt(sys.argv[1:], param_short_options, param_long_options)
+        optlist, args = getopt.getopt(
+            sys.argv[1:], param_short_options, param_long_options)
     except getopt.error, msg:
         print USAGE, msg
         sys.exit(2)
 
-    for o,a in optlist:
-        if o in ( "-v", "--verbose" ):
+    for o, a in optlist:
+        if o in ("-v", "--verbose"):
             param_loglevel = int(a)
-        elif o in ( "--version", ):
+        elif o in ("--version", ):
             print "version="
             sys.exit(0)
-        elif o in ( "-h", "--help" ):
+        elif o in ("-h", "--help"):
             print USAGE
             sys.exit(0)
         elif o in ("-R", "--table-reference"):
@@ -139,7 +143,7 @@ def main( argv = None ):
     print E.GetHeader()
     print E.GetParams()
 
-    dbhandle = pgdb.connect( param_connection )
+    dbhandle = pgdb.connect(param_connection)
 
     statement = """
     SELECT
@@ -173,7 +177,7 @@ def main( argv = None ):
     """
 
     cr = dbhandle.cursor()
-    cr.execute( statement % param_tablename_predictions_reference )
+    cr.execute(statement % param_tablename_predictions_reference)
 
     statement = """
     SELECT
@@ -208,37 +212,38 @@ def main( argv = None ):
     OVERLAP( %i, %i, p.sbjct_genome_from, sbjct_genome_to) > 0 
     """
 
-    alignator = alignlib.makeAlignatorDPFull( alignlib.ALIGNMENT_LOCAL, param_gop, param_gep )
-    map_reference2target = alignlib.makeAlignmentVector()    
+    alignator = alignlib_lite.makeAlignatorDPFull(
+        alignlib_lite.ALIGNMENT_LOCAL, param_gop, param_gep)
+    map_reference2target = alignlib_lite.makeAlignmentVector()
     assignment_id = 0
-    
+
     for line in cr.fetchall():
 
         reference = PredictionParser.PredictionParserEntry()
-        reference.FillFromTable( line )
+        reference.FillFromTable(line)
 
         ct = dbhandle.cursor()
-        ct.execute( statement % (param_tablename_predictions_target,
-                    reference.mSbjctToken, reference.mSbjctStrand,
-                    reference.mSbjctGenomeFrom, reference.mSbjctGenomeTo ))
+        ct.execute(statement % (param_tablename_predictions_target,
+                                reference.mSbjctToken, reference.mSbjctStrand,
+                                reference.mSbjctGenomeFrom, reference.mSbjctGenomeTo))
 
-        reference_exons = Exons.Alignment2Exons( reference.mMapPeptide2Genome,
-                                                 0, 
-                                                 reference.mSbjctFrom)
+        reference_exons = Exons.Alignment2Exons(reference.mMapPeptide2Genome,
+                                                0,
+                                                reference.mSbjctFrom)
 
         for line2 in ct.fetchall():
             target = PredictionParser.PredictionParserEntry()
-            target.FillFromTable( line2 )
+            target.FillFromTable(line2)
 
-            target_exons = Exons.Alignment2Exons( target.mMapPeptide2Genome,
-                                                  0, 
-                                                  target.mSbjctFrom)
+            target_exons = Exons.Alignment2Exons(target.mMapPeptide2Genome,
+                                                 0,
+                                                 target.mSbjctFrom)
 
-            ## check for exon overlap
+            # check for exon overlap
             rr, tt = 0, 0
             overlap = 0
             while rr < len(reference_exons) and tt < len(target_exons):
-                
+
                 r = reference_exons[rr]
                 t = target_exons[tt]
                 if r.mGenomeTo < t.mGenomeFrom:
@@ -247,44 +252,52 @@ def main( argv = None ):
                 elif t.mGenomeTo < r.mGenomeFrom:
                     tt += 1
                     continue
-                overlap += ( min(r.mGenomeTo, t.mGenomeTo) - max(r.mGenomeFrom, t.mGenomeFrom))
+                overlap += (min(r.mGenomeTo, t.mGenomeTo) -
+                            max(r.mGenomeFrom, t.mGenomeFrom))
                 rr += 1
                 tt += 1
-                
+
             if overlap == 0:
                 continue
-            
-            map_reference2target.clear()
-            row = alignlib.makeSequence(reference.mTranslation)
-            col = alignlib.makeSequence(target.mTranslation)
-            alignator.align( map_reference2target, row, col )
 
-            f = alignlib.AlignmentFormatEmissions( map_reference2target )
+            map_reference2target.clear()
+            row = alignlib_lite.makeSequence(reference.mTranslation)
+            col = alignlib_lite.makeSequence(target.mTranslation)
+            alignator.align(map_reference2target, row, col)
+
+            f = alignlib_lite.AlignmentFormatEmissions(map_reference2target)
             row_ali, col_ali = f.mRowAlignment, f.mColAlignment
-            pidentity = 100.0 * alignlib.calculatePercentIdentity( map_reference2target, row, col )
-            psimilarity = 100.0 * alignlib.calculatePercentSimilarity( map_reference2target )        
+            pidentity = 100.0 * \
+                alignlib_lite.calculatePercentIdentity(
+                    map_reference2target, row, col)
+            psimilarity = 100.0 * \
+                alignlib_lite.calculatePercentSimilarity(map_reference2target)
 
             union = max( reference.mSbjctGenomeTo, target.mSbjctGenomeTo) - \
-                    min( reference.mSbjctGenomeFrom, target.mSbjctGenomeFrom )
+                min(reference.mSbjctGenomeFrom, target.mSbjctGenomeFrom)
             inter = min( reference.mSbjctGenomeTo, target.mSbjctGenomeTo) - \
-                    max( reference.mSbjctGenomeFrom, target.mSbjctGenomeFrom )
-            
+                max(reference.mSbjctGenomeFrom, target.mSbjctGenomeFrom)
+
             assignment_id += 1
-            
-            print string.join( map(str, (
+
+            print string.join(map(str, (
                 assignment_id,
                 reference.mPredictionId,
                 target.mPredictionId,
                 0, 0,
                 overlap,
-                "%5.2f" % (100.0 * float(overlap) / float(min(len(reference.mTranslation), len(target.mTranslation)) * 3)),
-                "%5.2f" % (100.0 * float(overlap) / float(max(len(reference.mTranslation), len(target.mTranslation)) * 3)),
+                "%5.2f" % (
+                    100.0 * float(overlap) / float(min(len(reference.mTranslation), len(target.mTranslation)) * 3)),
+                "%5.2f" % (
+                    100.0 * float(overlap) / float(max(len(reference.mTranslation), len(target.mTranslation)) * 3)),
                 "%5.2f" % (100.0 * float(inter) / float(union)),
-                "%5.2f" % (100.0 * float(inter) / float(reference.mSbjctGenomeTo - reference.mSbjctGenomeFrom)),
-                "%5.2f" % (100.0 * float(inter) / float(target.mSbjctGenomeTo - target.mSbjctGenomeFrom)),
+                "%5.2f" % (
+                    100.0 * float(inter) / float(reference.mSbjctGenomeTo - reference.mSbjctGenomeFrom)),
+                "%5.2f" % (
+                    100.0 * float(inter) / float(target.mSbjctGenomeTo - target.mSbjctGenomeFrom)),
                 reference.mNIntrons - target.mNIntrons,
                 reference.mSbjctGenomeFrom - target.mSbjctGenomeFrom,
-                reference.mSbjctGenomeTo - target.mSbjctGenomeTo,                
+                reference.mSbjctGenomeTo - target.mSbjctGenomeTo,
                 map_reference2target.getScore(),
                 map_reference2target.getRowFrom(),
                 map_reference2target.getRowTo(),
@@ -296,22 +309,14 @@ def main( argv = None ):
                 "%5.2f" % psimilarity,
                 map_reference2target.getNumGaps(),
                 row.getLength(),
-                col.getLength()) ), "\t" )
+                col.getLength())), "\t")
 
         ct.close()
-        
+
     cr.close()
 
     print E.GetFooter()
-        
-        
 
-        
-
-    
-
-    
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

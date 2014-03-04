@@ -1,4 +1,4 @@
-################################################################################
+##########################################################################
 #
 #   MRC FGU Computational Genomics Group
 #
@@ -19,7 +19,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
+##########################################################################
 '''
 GDLDraw.py - 
 ======================================================
@@ -33,19 +33,21 @@ Code
 ----
 
 '''
+
+
 class Node:
 
     def __init__(self, title,
-                 label = None,
-                 colour = None,
-                 info1 = None,
-                 info2 = None,
-                 vertical_order = None,
-                 horizontal_order = None,
-                 shape = None,
-                 height = None,
-                 width = None,
-                 location = None):
+                 label=None,
+                 colour=None,
+                 info1=None,
+                 info2=None,
+                 vertical_order=None,
+                 horizontal_order=None,
+                 shape=None,
+                 height=None,
+                 width=None,
+                 location=None):
 
         self.mLabel = label
         self.mTitle = title
@@ -57,104 +59,113 @@ class Node:
         self.mShape = shape
         self.mHeight = height
         self.mWidth = width
-        self.mLocation   = location
+        self.mLocation = location
 
-    def Write( self, outfile ):
+    def Write(self, outfile):
         """write node to outputfile."""
 
         statement = ' title: "%s" ' % self.mTitle
-        
-        if self.mLabel != None:
+
+        if self.mLabel is not None:
             statement += ' label: "%s" ' % self.mLabel
 
-        if self.mShape: statement += ' shape: %s ' % self.mShape
-        if self.mInfo1: statement += ' info1: "%s" ' % self.mInfo1
-        if self.mInfo2: statement += ' info2: "%s" ' % self.mInfo2        
-        if self.mVerticalOrder: statement += ' vertical_order: %i ' % self.mVerticalOrder
-        if self.mHorizontalOrder: statement += ' horizontal_order: %i ' % self.mHorizontalOrder        
-        if self.mColour: statement += ' color: %s ' % self.mColour    
-        if self.mHeight: statement += ' height: %i ' % self.mHeight
-        if self.mWidth: statement += ' width: %i ' % self.mWidth        
-        if self.mLocation: statement += ' loc: { x: %i y: %i } ' % self.mLocation
-        
-        outfile.write( '\tnode: { ' + statement + '}\n')
+        if self.mShape:
+            statement += ' shape: %s ' % self.mShape
+        if self.mInfo1:
+            statement += ' info1: "%s" ' % self.mInfo1
+        if self.mInfo2:
+            statement += ' info2: "%s" ' % self.mInfo2
+        if self.mVerticalOrder:
+            statement += ' vertical_order: %i ' % self.mVerticalOrder
+        if self.mHorizontalOrder:
+            statement += ' horizontal_order: %i ' % self.mHorizontalOrder
+        if self.mColour:
+            statement += ' color: %s ' % self.mColour
+        if self.mHeight:
+            statement += ' height: %i ' % self.mHeight
+        if self.mWidth:
+            statement += ' width: %i ' % self.mWidth
+        if self.mLocation:
+            statement += ' loc: { x: %i y: %i } ' % self.mLocation
 
-##---------------------------------------------------------------------------
+        outfile.write('\tnode: { ' + statement + '}\n')
+
+# ---------------------------------------------------------------------------
+
+
 class Edge:
-    
-    def __init__( self, source_name, target_name,
-                  colour = None,
-                  line_style = None,
-                  type = 'edge',
-                  priority = None,
-                  edge_class = None):
-        
+
+    def __init__(self, source_name, target_name,
+                 colour=None,
+                 line_style=None,
+                 type='edge',
+                 priority=None,
+                 edge_class=None):
+
         self.sourceName = source_name
         self.mTargetName = target_name
-        self.mType       = type
-        self.mColour     = colour
-        self.mLineStyle  = line_style
-        self.mPriority   = priority
-        self.mEdgeClass  = edge_class
-                  
-    def Write( self, outfile ):
+        self.mType = type
+        self.mColour = colour
+        self.mLineStyle = line_style
+        self.mPriority = priority
+        self.mEdgeClass = edge_class
+
+    def Write(self, outfile):
         """write node to outputfile."""
 
-        statement = ' sourcename: "%s" targetname: "%s" ' % (self.sourceName, self.mTargetName)
-        if self.mColour: statement += ' color: %s' % self.mColour
-        if self.mLineStyle: statement += ' linestyle: %s' % self.mLineStyle
-        if self.mPriority: statement += ' priority: %i' % self.mPriority
-        if self.mEdgeClass: statement += ' class: %i' % self.mEdgeClass                
-        
-        outfile.write( '\t%s: { ' % self.mType + statement + '}\n')
-        
-##-------------------------------------------------------------------------------
+        statement = ' sourcename: "%s" targetname: "%s" ' % (
+            self.sourceName, self.mTargetName)
+        if self.mColour:
+            statement += ' color: %s' % self.mColour
+        if self.mLineStyle:
+            statement += ' linestyle: %s' % self.mLineStyle
+        if self.mPriority:
+            statement += ' priority: %i' % self.mPriority
+        if self.mEdgeClass:
+            statement += ' class: %i' % self.mEdgeClass
+
+        outfile.write('\t%s: { ' % self.mType + statement + '}\n')
+
+# ------------------------------------------------------------------------
+
+
 class Graph:
 
     COLOURS = ('black', 'blue', 'red', 'green', 'yellow', 'cyan', 'magenta',
-               'darkblue','lightblue','aquamarine','darkred','lightred','khaki',
-               'darkgreen','lightgreen','purple','darkyellow','lightyellow','yellowgreen',
-               'darkmagenta','lightmagenta','pink','darkcyan','lightcyan','orange',
-               'gold','lilac','orchid','darkgrey','lightgrey','turquoise','white')
+               'darkblue', 'lightblue', 'aquamarine', 'darkred', 'lightred', 'khaki',
+               'darkgreen', 'lightgreen', 'purple', 'darkyellow', 'lightyellow', 'yellowgreen',
+               'darkmagenta', 'lightmagenta', 'pink', 'darkcyan', 'lightcyan', 'orange',
+               'gold', 'lilac', 'orchid', 'darkgrey', 'lightgrey', 'turquoise', 'white')
 
-    def __init__(self, format = None):
+    def __init__(self, format=None):
         self.mFormat = format
         self.mEdges = []
         self.mNodes = []
 
-    def Write( self, outfile ):
+    def Write(self, outfile):
         """write graph to outputfile."""
-        outfile.write( 'graph: {\n')
+        outfile.write('graph: {\n')
         if self.mFormat:
-            outfile.write( self.mFormat + "\n" )
+            outfile.write(self.mFormat + "\n")
 
         for node in self.mNodes:
-            node.Write( outfile )
+            node.Write(outfile)
         for edge in self.mEdges:
-            edge.Write( outfile )
+            edge.Write(outfile)
 
-        outfile.write( '}\n' )
+        outfile.write('}\n')
 
-    def AddNode ( self, node ):
+    def AddNode(self, node):
         self.mNodes.append(node)
 
-    def AddEdge(self,edge):
+    def AddEdge(self, edge):
         self.mEdges.append(edge)
-        
-    def Read( self, infile ):
+
+    def Read(self, infile):
         """read graph from inputfile."""
 
         self.mNodes = []
         self.mEdges = []
-        
+
         for line in infile.readlines():
             pass
-        
-    
-
-
-
-
-
-
-

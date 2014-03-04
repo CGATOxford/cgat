@@ -81,6 +81,13 @@ can not be include into another directive such as ``.. toctree``.
 Referring to other reports
 --------------------------
 
+.. note::
+
+   The following below still works, but is obsolete. Instead
+   edit your :file:`pipeline.ini` file to include the intersphinx
+   mapping targets.
+
+
 The intersphinx_ extension permits referring to other
 sphinxreport documents. To use this extension you will need to modify
 your :file:`conf.py` configuration file. For example::

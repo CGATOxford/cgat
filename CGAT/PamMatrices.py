@@ -1,4 +1,4 @@
-################################################################################
+##########################################################################
 #
 #   MRC FGU Computational Genomics Group
 #
@@ -19,7 +19,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
+##########################################################################
 '''
 PamMatrices.py - 
 ======================================================
@@ -36,8 +36,8 @@ Code
 import string
 import re
 
-##-------------------------------------------------------------------------------------------------------------
-## data section
+# ------------------------------------------------------------------------
+# data section
 
 # translate pam matrix
 new_labels = "ACDEFGHIKLMNPQRSTVWY"
@@ -97,34 +97,35 @@ Val V     7    4    4    4    4    4    4    4    5    4   15   10    4   10    
 """
 
 
-##-------------------------------------------------------------------------------------------------------------
-def ExponentiateMatrix( matrix ):
+# ------------------------------------------------------------------------
+def ExponentiateMatrix(matrix):
 
     l = len(matrix)
     new_matrix = []
     for row in range(0, l):
         new_matrix.append([0.0] * l)
 
-        for col in range(0,l):
+        for col in range(0, l):
             v = 0
-            for x in range(0,l):
+            for x in range(0, l):
                 v = v + matrix[row][x] * matrix[col][x]
             new_matrix[row][col] = v
     return new_matrix
 
-def NormalizeMatrix( matrix ):
 
-    l = len(matrix)    
+def NormalizeMatrix(matrix):
+
+    l = len(matrix)
     # normalize matrix:
-    for row in range(0,l):
+    for row in range(0, l):
         total = 0.0
-        for col in range(0,l):
+        for col in range(0, l):
             total += matrix[row][col]
-        for col in range(0,l):
+        for col in range(0, l):
             matrix[row][col] = float(matrix[row][col]) / total
 
 
-def MultiplyMatrices( matrix_a, matrix_b ):
+def MultiplyMatrices(matrix_a, matrix_b):
 
     l = len(matrix_b)
     m = len(matrix_a[0])
@@ -132,69 +133,73 @@ def MultiplyMatrices( matrix_a, matrix_b ):
     for row in range(0, l):
         new_matrix.append([0.0] * l)
 
-        for col in range(0,m):
+        for col in range(0, m):
             v = 0
-            for x in range(0,m):
+            for x in range(0, m):
                 v = v + matrix_a[row][x] * matrix_b[x][col]
             new_matrix[row][col] = v
     return new_matrix
 
-def PrintMatrix( matrix ):
-    
+
+def PrintMatrix(matrix):
+
     # print matrix
-    for row in range(0,len(matrix)):
-        print new_labels[row], string.join(map(lambda x: "%6.4f " % x,matrix[row]), "")
+    for row in range(0, len(matrix)):
+        print new_labels[row], string.join(map(lambda x: "%6.4f " % x, matrix[row]), "")
 
 
-def CreateMatrix( matrix_string ):
+def CreateMatrix(matrix_string):
 
     new_indices = {}
-    for x in range(0,len(new_labels)):
+    for x in range(0, len(new_labels)):
         new_indices[new_labels[x]] = x
 
     # create matrix
     matrix = []
-    for i in range(0,len(new_labels)):
+    for i in range(0, len(new_labels)):
         matrix.append([0.0] * len(new_labels))
 
-    rx = re.compile("\s+") 
+    rx = re.compile("\s+")
 
     row = 0
     for line in string.split(pam1, "\n")[3:]:
 
         data = map(string.atoi, rx.split(line)[2:])
 
-        if len(data) <> len(old_labels):
+        if len(data) != len(old_labels):
             continue
 
-        for col in range(0,len(old_labels)):
-            #exchange row and col
-            matrix[new_indices[old_labels[col]]][new_indices[old_labels[row]]] = data[col]
+        for col in range(0, len(old_labels)):
+            # exchange row and col
+            matrix[new_indices[old_labels[col]]][
+                new_indices[old_labels[row]]] = data[col]
 
-        row = row + 1    
+        row = row + 1
 
     return matrix
+
 
 def GetIdentityMatrix():
 
     matrix = []
-    for i in range(0,len(new_labels)):
+    for i in range(0, len(new_labels)):
         matrix.append([0.0] * len(new_labels))
 
-    for i in range(0,len(new_labels)):
+    for i in range(0, len(new_labels)):
         matrix[i][i] = 1.0
-        
+
     return matrix
 
-def GetMatrix( matrix_number ):
 
-    current_matrix = CreateMatrix( pam1 )
-    NormalizeMatrix( current_matrix )
+def GetMatrix(matrix_number):
+
+    current_matrix = CreateMatrix(pam1)
+    NormalizeMatrix(current_matrix)
 
     result_matrix = GetIdentityMatrix()
 
     x = matrix_number
-    
+
     while x > 0:
         if x & 1:
             result_matrix = MultiplyMatrices(result_matrix, current_matrix)
@@ -202,16 +207,9 @@ def GetMatrix( matrix_number ):
         current_matrix = ExponentiateMatrix(current_matrix)
 
     return result_matrix
-##-------------------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------
 
 if __name__ == '__main__':
-    
-    matrix = GetMatrix( 100 )
-    PrintMatrix( matrix )
 
-
-
-
-
-
-
+    matrix = GetMatrix(100)
+    PrintMatrix(matrix)

@@ -100,6 +100,28 @@ the supplied :doc:`scripts/index_fasta` script or using the samtools_
 Pipeline usage
 ==============
 
-We use a light-weigth workflow system called ruffus_, but others
+We use a light-weight workflow system called ruffus_, but others
 are equally possible such as galaxy_ (see :ref:`GalaxyInstallation`).
+These tools allow CGAT tools to run in an automated fashion. 
+
+Using unix pipes, CGAT tools can also be easily run in a parallel
+fashion. For example, we have a script called `farm.py` (not part
+of the CGAT collection, but within the CGAT repository), that allows
+to split input data and run separate chunks on our compute
+cluster. Below is a simple example of running the command::
+
+   zcat geneset.gtf.gz 
+   | cgat gtf2table --counter=length --log=log |
+   gzip > out.tsv.gz
+
+in parallel on the cluster, running one job per chromosome::
+
+   zcat geneset.gtf.gz 
+   | farm.py --split-at-column=1
+           "cgat gtf2table --counter=length --log=log"
+   | gzip 
+   > out.tsv.gz
+
+
+
 

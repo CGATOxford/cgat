@@ -1,4 +1,10 @@
-import os, sys, re, types, itertools, math, sqlite3
+import os
+import sys
+import re
+import types
+import itertools
+import math
+import sqlite3
 
 from SphinxReport.Tracker import *
 from SphinxReport.Utils import PARAMS as P
@@ -9,12 +15,43 @@ from RnaseqDiffExpressionReport import *
 ##############################################################
 ##############################################################
 ##############################################################
-class TrackerDESeqFit( Tracker ):
-    method = "deseq"
-    tracks = [ x.asFile() for x in DESIGNS ]
-    slices = [ x.asTable() for x in GENESETS ]
 
-    def __call__(self, track, slice = None ):
+
+class DESummary(ProjectTracker, SingleTableTrackerRows):
+    table = "de_stats"
+    fields = ("track", "design", "treatment_name", "control_name")
+
+
+class TrackerDESeqSizeFactors(ProjectTracker):
+    pattern = "(.*)_deseq_size_factors"
+
+    def __call__(self, track):
+        return self.getAll("SELECT sample, * FROM %(track)s_deseq_size_factors")
+
+
+class TrackerDESeqSummary(ProjectTracker):
+    pattern = "(.*)_deseq_summary"
+
+    def __call__(self, track):
+        return self.getAll("SELECT sample, * FROM %(track)s_deseq_summary")
+
+
+class TrackerEdgeRSummary(ProjectTracker):
+    pattern = "(.*)_edger_summary"
+
+    def __call__(self, track):
+        return self.getAll("SELECT sample, * FROM %(track)s_edger_summary")
+
+
+##############################################################
+##############################################################
+##############################################################
+class TrackerDESeqFit(Tracker):
+    method = "deseq"
+    tracks = [x.asFile() for x in DESIGNS]
+    slices = [x.asTable() for x in GENESETS]
+
+    def __call__(self, track, slice=None):
         design = track
         level = "gene"
         geneset = slice
@@ -23,7 +60,8 @@ class TrackerDESeqFit( Tracker ):
         filename = "%(method)s.dir/%(design)s_%(geneset)s_%(method)s_%(level)s_fit_%(track)s.png" % locals()
 
         # fitting information will not exist if there are no replicates
-        if not os.path.exists( filename ): return None
+        if not os.path.exists(filename):
+            return None
 
         rst_text = '''
 %(level)s %(track)s %(geneset)s
@@ -35,32 +73,38 @@ class TrackerDESeqFit( Tracker ):
 
 ''' % locals()
 
-        return odict( (("text", rst_text),) )
+        return odict((("text", rst_text),))
 
 ##############################################################
 ##############################################################
 ##############################################################
-class TrackerDESummaryDESeq( RnaseqTracker, SingleTableTrackerRows ):
+
+
+class TrackerDESummaryDESeq(ProjectTracker, SingleTableTrackerRows):
     table = "deseq_stats"
-    fields = ("level", "geneset", "treatment_name", "control_name", "design" )
+    fields = ("level", "geneset", "treatment_name", "control_name", "design")
 
-class TrackerDESummaryEdgeR( RnaseqTracker, SingleTableTrackerRows ):
+
+class TrackerDESummaryEdgeR(ProjectTracker, SingleTableTrackerRows):
     table = "edger_stats"
-    fields = ("level", "geneset", "treatment_name", "control_name" ,"design")
+    fields = ("level", "geneset", "treatment_name", "control_name", "design")
 
-class TrackerDESummaryCuffdiff( RnaseqTracker, SingleTableTrackerRows ):
+
+class TrackerDESummaryCuffdiff(ProjectTracker, SingleTableTrackerRows):
     table = "cuffdiff_stats"
-    fields = ("level", "geneset", "treatment_name", "control_name", "design" )
+    fields = ("level", "geneset", "treatment_name", "control_name", "design")
 
 ##############################################################
 ##############################################################
 ##############################################################
-class TrackerDESummaryPlots( Tracker ):
 
-    tracks = [ x.asFile() for x in DESIGNS ]
-    slices = [ x.asFile() for x in GENESETS ]
 
-    def __call__(self, track, slice = None ):
+class TrackerDESummaryPlots(Tracker):
+
+    tracks = [x.asFile() for x in DESIGNS]
+    slices = [x.asFile() for x in GENESETS]
+
+    def __call__(self, track, slice=None):
         design = track
         geneset = slice
         method = self.method
@@ -69,13 +113,14 @@ class TrackerDESummaryPlots( Tracker ):
 
         for level in self.levels:
             for fn in (
-                "%(method)s.dir/%(design)s_%(geneset)s_%(method)s_%(level)s_heatmap.png",
-                "%(method)s.dir/%(design)s_%(geneset)s_%(method)s_%(level)s_scvplot.png",
-                "%(method)s.dir/%(design)s_%(geneset)s_%(method)s_%(level)s_pvalue_vs_length.png" ):
+                    "%(method)s.dir/%(design)s_%(geneset)s_%(method)s_%(level)s_heatmap.png",
+                    "%(method)s.dir/%(design)s_%(geneset)s_%(method)s_%(level)s_scvplot.png",
+                    "%(method)s.dir/%(design)s_%(geneset)s_%(method)s_%(level)s_pvalue_vs_length.png"):
                 f = fn % locals()
-                if not os.path.exists(f): continue
-                rst_text.append( ".. figure:: %(f)s" % locals() )
-                
+                if not os.path.exists(f):
+                    continue
+                rst_text.append(".. figure:: %(f)s" % locals())
+
         if rst_text:
             rst_text = '''
 %(design)s %(geneset)s
@@ -85,29 +130,34 @@ class TrackerDESummaryPlots( Tracker ):
         else:
             rst_text = ""
 
-        return odict( (("text", rst_text),) )
+        return odict((("text", rst_text),))
 
-class TrackerDESummaryPlotsDESeq(TrackerDESummaryPlots ):
+
+class TrackerDESummaryPlotsDESeq(TrackerDESummaryPlots):
     method = "deseq"
     levels = ("gene",)
 
-class TrackerDESummaryPlotsEdgeR(TrackerDESummaryPlots ):
+
+class TrackerDESummaryPlotsEdgeR(TrackerDESummaryPlots):
     method = "edger"
     levels = ("gene",)
 
-class TrackerDESummaryPlotsCuffdiff(TrackerDESummaryPlots ):
+
+class TrackerDESummaryPlotsCuffdiff(TrackerDESummaryPlots):
     method = "cuffdiff"
     levels = CUFFDIFF_LEVELS
 
 ################################################################
 ################################################################
 ################################################################
-class TrackerDifferentialExpression( Tracker ):
 
-    tracks = [ x.asFile() for x in GENESETS ]
-    slices = [ x.asFile() for x in DESIGNS ]
 
-    def __call__(self, track, slice = None ):
+class TrackerDifferentialExpression(Tracker):
+
+    tracks = [x.asFile() for x in GENESETS]
+    slices = [x.asFile() for x in DESIGNS]
+
+    def __call__(self, track, slice=None):
 
         method = self.method
         design = slice
@@ -115,9 +165,10 @@ class TrackerDifferentialExpression( Tracker ):
         geneset = track
 
         for level in self.levels:
-            for x,y in itertools.combinations( EXPERIMENTS, 2 ):
+            for x, y in itertools.combinations(EXPERIMENTS, 2):
                 filename = "%(method)s.dir/%(design)s_%(geneset)s_%(level)s_%(x)s_vs_%(y)s_significance.png" % locals()
-                if not os.path.exists( filename ): continue
+                if not os.path.exists(filename):
+                    continue
 
                 rst_text.append('''
 %(design)s %(geneset)s %(level)s %(x)s vs %(y)s 
@@ -126,14 +177,16 @@ class TrackerDifferentialExpression( Tracker ):
 .. figure:: %(filename)s
 
 ''' % locals())
-                            
-        return odict( (("text", "\n".join( rst_text)),) )
 
-class TrackerDEPairwiseDESeq( TrackerDifferentialExpression ):
+        return odict((("text", "\n".join(rst_text)),))
+
+
+class TrackerDEPairwiseDESeq(TrackerDifferentialExpression):
     method = "deseq"
     levels = ("gene",)
-    
-class TrackerDEPairwiseCuffdiff( TrackerDifferentialExpression ):
+
+
+class TrackerDEPairwiseCuffdiff(TrackerDifferentialExpression):
     method = "cuffdiff"
     levels = CUFFDIFF_LEVELS
 
@@ -143,48 +196,54 @@ class TrackerDEPairwiseCuffdiff( TrackerDifferentialExpression ):
 #############################################################
 ##
 #############################################################
-class DifferentialExpressionComparison( RnaseqTracker ):
+class DifferentialExpressionComparison(ProjectTracker):
 
-    tracks = list( itertools.combinations( ("deseq", "cuffdiff", "edger"), 3 ))
- 
-    slices = [ "%s_%s" % (y,x.asFile()) for x,y in itertools.product(GENESETS,DESIGNS) ]
+    tracks = ["%s_%s" % (y, x.asFile())
+              for x, y in itertools.product(GENESETS, DESIGNS)]
 
-class DifferentialExpressionOverlap( DifferentialExpressionComparison ):
 
-    def __call__(self, track, slice = None ):
-       
-        pair1, pair2, pair3 = track
-        
+class DifferentialExpressionOverlap(DifferentialExpressionComparison):
 
-        a = self.get('''SELECT test_id FROM %(slice)s_%(pair1)s_gene_diff WHERE significant = 1''')
-        b = self.get('''SELECT test_id FROM %(slice)s_%(pair2)s_gene_diff WHERE significant = 1''')
-        c = self.get('''SELECT test_id FROM %(slice)s_%(pair3)s_gene_diff WHERE significant = 1''')
+    '''number of features differentially expressed
+    in all sets.
+    '''
 
-        a = set(map(str,a))
-        b = set(map(str,b))
-        c = set(map(str,c))
+    def __call__(self, track, slice=None):
 
-        return odict( ( (pair1, len(a)),
-                        (pair2, len(b)),
-                        (pair3, len(c)),
-                        ("shared", len(a.intersection(b).intersection(c)) ) ) )
-        
+        pair1, pair2, pair3 = "deseq", "cuffdiff", "edger"
 
-class DifferentialExpressionCorrelationPValueCuffdiffDeseq( DifferentialExpressionComparison ):
+        a = self.get(
+            '''SELECT test_id FROM %(track)s_%(pair1)s_gene_diff WHERE significant = 1''')
+        b = self.get(
+            '''SELECT test_id FROM %(track)s_%(pair2)s_gene_diff WHERE significant = 1''')
+        c = self.get(
+            '''SELECT test_id FROM %(track)s_%(pair3)s_gene_diff WHERE significant = 1''')
+
+        a = set(map(str, a))
+        b = set(map(str, b))
+        c = set(map(str, c))
+
+        return odict(((pair1, len(a)),
+                      (pair2, len(b)),
+                      (pair3, len(c)),
+                      ("shared", len(a.intersection(b).intersection(c)))))
+
+
+class DifferentialExpressionCorrelationPValueCuffdiffDeseq(DifferentialExpressionComparison):
+
     '''fold change estimates per gene set.
     '''
 
     def getPairs(self, track):
-        self.pair1, self.pair2 = track[0], track[1]   
+        self.pair1, self.pair2 = track[0], track[1]
         return self.pair1, self.pair2
 
+    def __call__(self, track, slice=None):
 
-    def __call__(self, track, slice = None ):
-        
         pair1, pair2 = self.getPairs(track)
         dbh = sqlite3.connect("csvdb")
         cc = dbh.cursor()
-        pvalues = {pair1:[], pair2: []}
+        pvalues = {pair1: [], pair2: []}
         for pvals in cc.execute("""
                    SELECT a.pvalue, b.pvalue
                           FROM %s_%s_gene_diff AS a, 
@@ -201,34 +260,39 @@ class DifferentialExpressionCorrelationPValueCuffdiffDeseq( DifferentialExpressi
 
         return pvalues
 
-class DifferentialExpressionCorrelationPValueCuffdiffEdger( DifferentialExpressionCorrelationPValueCuffdiffDeseq ):
-    '''fold change estimates per gene set.'''
-    
-    def getPairs(self, track):
-        self.pair1, self.pair2 = track[1], track[2]   
-        return self.pair1, self.pair2
 
-class DifferentialExpressionCorrelationPValueDeseqEdger(DifferentialExpressionCorrelationPValueCuffdiffDeseq ):
+class DifferentialExpressionCorrelationPValueCuffdiffEdger(DifferentialExpressionCorrelationPValueCuffdiffDeseq):
+
     '''fold change estimates per gene set.'''
-    
+
     def getPairs(self, track):
-        self.pair1, self.pair2 = track[0], track[2]   
+        self.pair1, self.pair2 = track[1], track[2]
         return self.pair1, self.pair2
 
 
-class DifferentialExpressionCorrelationFoldChangeCuffdiffDeseq( DifferentialExpressionComparison ):
+class DifferentialExpressionCorrelationPValueDeseqEdger(DifferentialExpressionCorrelationPValueCuffdiffDeseq):
+
     '''fold change estimates per gene set.'''
-    
+
     def getPairs(self, track):
-        self.pair1, self.pair2 = track[0], track[1]   
+        self.pair1, self.pair2 = track[0], track[2]
         return self.pair1, self.pair2
 
-    def __call__(self, track, slice = None ):
-        
+
+class DifferentialExpressionCorrelationFoldChangeCuffdiffDeseq(DifferentialExpressionComparison):
+
+    '''fold change estimates per gene set.'''
+
+    def getPairs(self, track):
+        self.pair1, self.pair2 = track[0], track[1]
+        return self.pair1, self.pair2
+
+    def __call__(self, track, slice=None):
+
         pair1, pair2 = self.getPairs(track)
         dbh = sqlite3.connect("csvdb")
         cc = dbh.cursor()
-        fold_changes = {pair1:[], pair2: []}
+        fold_changes = {pair1: [], pair2: []}
         for folds in cc.execute("""
                    SELECT a.l2fold, b.l2fold
                           FROM %s_%s_gene_diff AS a, 
@@ -245,18 +309,22 @@ class DifferentialExpressionCorrelationFoldChangeCuffdiffDeseq( DifferentialExpr
 
         return fold_changes
 
-class DifferentialExpressionCorrelationFoldChangeCuffdiffEdger( DifferentialExpressionCorrelationFoldChangeCuffdiffDeseq ):
+
+class DifferentialExpressionCorrelationFoldChangeCuffdiffEdger(DifferentialExpressionCorrelationFoldChangeCuffdiffDeseq):
+
     '''fold change estimates per gene set.'''
-    
+
     def getPairs(self, track):
-        self.pair1, self.pair2 = track[1], track[2]   
+        self.pair1, self.pair2 = track[1], track[2]
         return self.pair1, self.pair2
 
-class DifferentialExpressionCorrelationFoldChangeDeseqEdger( DifferentialExpressionCorrelationFoldChangeCuffdiffDeseq ):
+
+class DifferentialExpressionCorrelationFoldChangeDeseqEdger(DifferentialExpressionCorrelationFoldChangeCuffdiffDeseq):
+
     '''fold change estimates per gene set.'''
-    
+
     def getPairs(self, track):
-        self.pair1, self.pair2 = track[0], track[2]   
+        self.pair1, self.pair2 = track[0], track[2]
         return self.pair1, self.pair2
 
 #############################################################
@@ -264,11 +332,14 @@ class DifferentialExpressionCorrelationFoldChangeDeseqEdger( DifferentialExpress
 #############################################################
 ##
 #############################################################
-class VolcanoTracker( RnaseqTracker ):
+
+
+class VolcanoTracker(ProjectTracker):
+
     '''insert volcano plots.'''
-    tracks = [ x.asFile() for x in GENESETS ]
-    
-    def __call__(self, track, slice = None ):
+    tracks = [x.asFile() for x in GENESETS]
+
+    def __call__(self, track, slice=None):
 
         # disabled - takes potentially a lot of time
         return None
@@ -281,15 +352,18 @@ class VolcanoTracker( RnaseqTracker ):
                                           l2fold IS NOT NULL AND 
                                           max_fpkm > 0""" )
         if data:
-            data["pvalue"] = [ -math.log10( x + 0.00001 ) for x in data["pvalue"] ]
-            data["max_fpkm"] = [ math.log10( x + 0.00001 ) for x in data["max_fpkm"] ]
+            data["pvalue"] = [-math.log10(x + 0.00001) for x in data["pvalue"]]
+            data["max_fpkm"] = [math.log10(x + 0.00001)
+                                for x in data["max_fpkm"]]
         return data
-                   
-class VolcanoPlotCuffdiff( VolcanoTracker ):
+
+
+class VolcanoPlotCuffdiff(VolcanoTracker):
     method = "cuffdiff"
     slices = CUFFDIFF_LEVELS
 
-class VolcanoPlotDESeq( VolcanoTracker ):
+
+class VolcanoPlotDESeq(VolcanoTracker):
     method = "deseq"
     slices = ("gene",)
 
@@ -298,22 +372,25 @@ class VolcanoPlotDESeq( VolcanoTracker ):
 #############################################################
 ##
 #############################################################
-class ExonCounts( RnaseqTracker ):
+
+
+class ExonCounts(ProjectTracker):
+
     '''get unnormalized read counts in the exons for a gene.
-    
+
     The gene name is given as the slice.'''
 
     pattern = "(.*)_exon_counts"
 
-    def __call__(self, track, options = None ):
-        
-        if not options: raise ValueError( 'tracker requires gene_id' )
+    def __call__(self, track, options=None):
+
+        if not options:
+            raise ValueError('tracker requires gene_id')
 
         data = self.getAll('''SELECT gene_id, * FROM 
                        %(track)s_exon_counts
                        WHERE gene_id = '%(options)s' ''' )
-        
-        if data: del data["gene_id"]
-        return data
 
-    
+        if data:
+            del data["gene_id"]
+        return data

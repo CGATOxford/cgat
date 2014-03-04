@@ -40,7 +40,7 @@ import tempfile
 import time
 import popen2
 
-USAGE="""python %s [OPTIONS] < graph.in > graph.out
+USAGE = """python %s [OPTIONS] < graph.in > graph.out
 
 Version: $Id: graph_blast2pairs.py 2782 2009-09-10 11:40:29Z andreas $
 
@@ -77,9 +77,9 @@ gapless-score                   = score of alignment without the gaps
 reset-evalue                    = reset evalue based on bitscore
 """ % sys.argv[0]
 
-param_long_options = ["help", "verbose=", "method=", "lambda=", "k=", "self-scores=", 
+param_long_options = ["help", "verbose=", "method=", "lambda=", "k=", "self-scores=",
                       "expected=", "append", "evalue-to-log",
-                      "effective-length=", "version" ]
+                      "effective-length=", "version"]
 
 param_short_options = "hv:m:f:o:a"
 
@@ -105,37 +105,41 @@ param_effective_length = None
 
 param_min_evalue = 1e-200
 
-def CalculateGapScore( ali, gop, gep ):
+
+def CalculateGapScore(ali, gop, gep):
 
     s = 0.0
-    data = re.split( "[+-]", ali[1:])
+    data = re.split("[+-]", ali[1:])
     for x in data[1:-1:2]:
         s += gop + int(x) * gep
     return s
 
-##-------------------------------------------------------------------------------
+# ------------------------------------------------------------------------
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv is None:
+        argv = sys.argv
 
     try:
-        optlist, args = getopt.getopt(sys.argv[1:], param_short_options, param_long_options)
+        optlist, args = getopt.getopt(
+            sys.argv[1:], param_short_options, param_long_options)
     except getopt.error, msg:
         print USAGE, msg
         sys.exit(2)
 
-    for o,a in optlist:
-        if o in ( "-v", "--verbose" ):
+    for o, a in optlist:
+        if o in ("-v", "--verbose"):
             param_loglevel = int(a)
-        elif o in ( "--version", ):
+        elif o in ("--version", ):
             print "version="
             sys.exit(0)
-        elif o in ( "-h", "--help" ):
+        elif o in ("-h", "--help"):
             print USAGE
             sys.exit(0)
         elif o in ("-m", "--method"):
@@ -156,7 +160,7 @@ def main( argv = None ):
             param_effective_length = int(a)
         elif o == "--min-evalue":
             param_min_evalue = float(a)
-            
+
     if param_loglevel >= 1:
         print E.GetHeader()
         print E.GetParams()
@@ -164,58 +168,69 @@ def main( argv = None ):
     if param_filename_self_scores:
         self_scores = {}
         for line in open(param_filename_self_scores, "r"):
-            if line[0] == "#": continue
+            if line[0] == "#":
+                continue
             d = line[:-1].split("\t")[:2]
-            if d[0] not in self_scores: self_scores[d[0]] = 0.0
-            self_scores[d[0]] = max( self_scores[d[0]], float(d[1]))
+            if d[0] not in self_scores:
+                self_scores[d[0]] = 0.0
+            self_scores[d[0]] = max(self_scores[d[0]], float(d[1]))
 
     if param_method == "kimura":
         a = 0
-        f = lambda x: x < 0.85 and 0.0000001 - math.log( 1.0 - x - 0.2 * x * x ) or 5.2030
+        f = lambda x: x < 0.85 and 0.0000001 - \
+            math.log(1.0 - x - 0.2 * x * x) or 5.2030
 
     elif param_method == "bitscore":
-        a = 1        
+        a = 1
         lK = math.log(param_K)
         l2 = math.log(2)
         f = lambda x: (param_lambda * x - lK) / l2
-        
+
     elif param_method in ("normalize-product", "normalize-product-distance",
                           "normalize-max", "normalize-max-distance"):
         a = 2
         if param_method == "normalize-product":
-            f = lambda x,y,z: x * x / self_scores[y] / self_scores[z]
-        elif param_method == "normalize-product-distance":            
-            f = lambda x,y,z: max( 0.0, 1.0 - x * x / self_scores[y] / self_scores[z])
+            f = lambda x, y, z: x * x / self_scores[y] / self_scores[z]
+        elif param_method == "normalize-product-distance":
+            f = lambda x, y, z: max(
+                0.0, 1.0 - x * x / self_scores[y] / self_scores[z])
         elif param_method == "normalize-max":
-            f = lambda x,y,z: max( x / self_scores[y], x / self_scores[z])
-        elif param_method == "normalize-max-distance":            
-            f = lambda x,y,z: max( 0.0, 1.0 - max( x / self_scores[y], x / self_scores[z]))
-            
+            f = lambda x, y, z: max(x / self_scores[y], x / self_scores[z])
+        elif param_method == "normalize-max-distance":
+            f = lambda x, y, z: max(
+                0.0, 1.0 - max(x / self_scores[y], x / self_scores[z]))
+
     elif param_method == "normalize-scoredist-avg":
         a = 3
-        f = lambda x,y,z,l: max(0.0, -100.0 * math.log( (x - param_expected * l) / ( (self_scores[y] + self_scores[z]) * 0.5 - param_expected * l ) ))
+        f = lambda x, y, z, l: max(
+            0.0, -100.0 * math.log((x - param_expected * l) / ((self_scores[y] + self_scores[z]) * 0.5 - param_expected * l)))
 
     elif param_method == "scoredist-avg":
         a = 4
-        f = lambda x,y,z,l: max(0.0, -100.0 * math.log( (x - param_expected * l) / ( (self_scores[y] + self_scores[z]) * 0.5 - param_expected * l ) ))
+        f = lambda x, y, z, l: max(
+            0.0, -100.0 * math.log((x - param_expected * l) / ((self_scores[y] + self_scores[z]) * 0.5 - param_expected * l)))
 
     elif param_method == "scoredist-min":
         a = 4
-        f = lambda x,y,z,l: max(0.0, -100.0 * math.log( (x - param_expected * l) / ( min(self_scores[y], self_scores[z]) - param_expected * l ) ))
+        f = lambda x, y, z, l: max(
+            0.0, -100.0 * math.log((x - param_expected * l) / (min(self_scores[y], self_scores[z]) - param_expected * l)))
     elif param_method == "gapless-score":
         a = 5
-        f = lambda x,a,b: x - CalculateGapScore( a, param_gop, param_gep ) - CalculateGapScore( b, param_gop, param_gep)
+        f = lambda x, a, b: x - \
+            CalculateGapScore(a, param_gop, param_gep) - \
+            CalculateGapScore(b, param_gop, param_gep)
     elif param_method == "reset-evalue":
         a = 6
         if param_evalue_to_log:
-            # this way is less likely to underflow (2^-s might be zero for large s)
+            # this way is less likely to underflow (2^-s might be zero for
+            # large s)
             me = math.log(param_min_evalue)
             l2 = math.log(2)
             le = math.log(param_effective_length)
-            f = lambda s,m,n: max(me, -s * l2 + math.log(m) + le)
+            f = lambda s, m, n: max(me, -s * l2 + math.log(m) + le)
         else:
-            f = lambda s,m,n: max(param_min_evalue, math.pow(2,-s) * m * n)
-            
+            f = lambda s, m, n: max(param_min_evalue, math.pow(2, -s) * m * n)
+
         param_evalue_to_log = False
     else:
         raise "unknown method %s" % param_method
@@ -224,29 +239,33 @@ def main( argv = None ):
 
     for line in sys.stdin:
 
-        if line[0] == "#": continue
+        if line[0] == "#":
+            continue
 
         link = BlastAlignments.Link()
-        link.Read( line )
+        link.Read(line)
         ninput += 1
 
         try:
             if a == 0:
-                new_val = f( (100.0 - link.mPercentIdentity) / 100.0 )
+                new_val = f((100.0 - link.mPercentIdentity) / 100.0)
             elif a == 1:
-                new_val = f( link.score )
+                new_val = f(link.score)
             elif a == 2:
-                ## note: used to be evalue
-                new_val = f( link.mBitScore, link.mQueryToken, link.mSbjctToken )
+                # note: used to be evalue
+                new_val = f(link.mBitScore, link.mQueryToken, link.mSbjctToken)
             elif a == 3:
-                new_val = f( link.mEvalue, link.mQueryToken, link.mSbjctToken, max(link.mQueryTo - link.mQueryFrom, link.mSbjctTo - link.mSbjctFrom) + 1 )
+                new_val = f(link.mEvalue, link.mQueryToken, link.mSbjctToken, max(
+                    link.mQueryTo - link.mQueryFrom, link.mSbjctTo - link.mSbjctFrom) + 1)
             elif a == 4:
-                new_val = f( link.score, link.mQueryToken, link.mSbjctToken, max(link.mQueryTo - link.mQueryFrom, link.mSbjctTo - link.mSbjctFrom) + 1 )
+                new_val = f(link.score, link.mQueryToken, link.mSbjctToken, max(
+                    link.mQueryTo - link.mQueryFrom, link.mSbjctTo - link.mSbjctFrom) + 1)
             elif a == 5:
-                new_val = int(f( link.score, link.mQueryAli, link.mSbjctAli))
+                new_val = int(f(link.score, link.mQueryAli, link.mSbjctAli))
             elif a == 6:
-                new_val = f( link.mBitScore, link.mQueryLength, param_effective_length)
-                
+                new_val = f(
+                    link.mBitScore, link.mQueryLength, param_effective_length)
+
         except KeyError:
             if param_loglevel >= 2:
                 print "# Key error in line", line[:-1]
@@ -254,8 +273,8 @@ def main( argv = None ):
             continue
 
         if param_evalue_to_log:
-            link.mEvalue = math.log( link.mEvalue )
-        
+            link.mEvalue = math.log(link.mEvalue)
+
         if param_append:
             print str(link) + "\t" + str(new_val)
         else:
@@ -264,17 +283,15 @@ def main( argv = None ):
             elif a in (5,):
                 link.score = new_val
             print str(link)
-            
-        noutput += 1
-            
-    print "# ninput=%i, noutput=%i, nskipped=%i, failed=%i" % (\
-        ninput, noutput, nskipped, nfailed )
 
-    if param_loglevel >= 1:    
+        noutput += 1
+
+    print "# ninput=%i, noutput=%i, nskipped=%i, failed=%i" % (
+        ninput, noutput, nskipped, nfailed)
+
+    if param_loglevel >= 1:
         print E.GetFooter()
 
 
-
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

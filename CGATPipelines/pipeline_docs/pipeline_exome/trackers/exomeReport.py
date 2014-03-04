@@ -1,11 +1,16 @@
-import os, sys, re, types, itertools, glob
+import os
+import sys
+import re
+import types
+import itertools
+import glob
 
 from SphinxReport.Tracker import *
 from collections import OrderedDict as odict
 
 # get from config file
-UCSC_DATABASE="hg19"
-EXPORTDIR="export"
+UCSC_DATABASE = "hg19"
+EXPORTDIR = "export"
 
 ###################################################################
 ###################################################################
@@ -14,23 +19,24 @@ EXPORTDIR="export"
 # Run configuration script
 
 from SphinxReport.Utils import PARAMS as P
-EXPORTDIR=P['exome_exportdir']
-DATADIR=P['exome_datadir']
-DATABASE=P['exome_backend']
+EXPORTDIR = P.get('exome_exportdir', P.get('exportdir', 'export'))
+DATADIR = P.get('exome_datadir', P.get('datadir', '.'))
+DATABASE = P.get('exome_backend', P.get('sql_backend', 'sqlite:///./csvdb'))
 
-TRACKS = ['WTCHG_10997_01','WTCHG_10997_02']
+TRACKS = ['WTCHG_10997_01', 'WTCHG_10997_02']
 
 
 ###########################################################################
-def splitLocus( locus ):
+def splitLocus(locus):
     if ".." in locus:
-        contig, start, end = re.match("(\S+):(\d+)\.\.(\d+)", locus ).groups()
+        contig, start, end = re.match("(\S+):(\d+)\.\.(\d+)", locus).groups()
     elif "-" in locus:
-        contig, start, end = re.match("(\S+):(\d+)\-(\d+)", locus ).groups()
-        
+        contig, start, end = re.match("(\S+):(\d+)\-(\d+)", locus).groups()
+
     return contig, int(start), int(end)
 
-def linkToUCSC( contig, start, end ):
+
+def linkToUCSC(contig, start, end):
     '''build URL for UCSC.'''
 
     ucsc_database = UCSC_DATABASE
@@ -40,22 +46,23 @@ def linkToUCSC( contig, start, end ):
 
 ###########################################################################
 
-class ExomeTracker( TrackerSQL ):
-    '''Define convenience tracks for plots'''
-    def __init__(self, *args, **kwargs ):
-        TrackerSQL.__init__(self, *args, backend = DATABASE, **kwargs )
 
-class SingleTableHistogram( TrackerSQL ):
+class ExomeTracker(TrackerSQL):
+
+    '''Define convenience tracks for plots'''
+
+    def __init__(self, *args, **kwargs):
+        TrackerSQL.__init__(self, *args, backend=DATABASE, **kwargs)
+
+
+class SingleTableHistogram(TrackerSQL):
     columns = None
     table = None
     group_by = None
 
-    def __init__(self, *args, **kwargs ):
-        TrackerSQL.__init__(self, *args, **kwargs )
+    def __init__(self, *args, **kwargs):
+        TrackerSQL.__init__(self, *args, **kwargs)
 
-
-    def __call__(self, track, slice = None ):
-        data = self.getAll( "SELECT %(group_by)s, %(columns)s FROM %(table)s" )
+    def __call__(self, track, slice=None):
+        data = self.getAll("SELECT %(group_by)s, %(columns)s FROM %(table)s")
         return data
-
-

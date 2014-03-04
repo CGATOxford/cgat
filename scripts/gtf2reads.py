@@ -75,7 +75,8 @@ import numpy
 import numpy.random
 import random
 
-def getMutatedSequence( sequence, divergence ):
+
+def getMutatedSequence(sequence, divergence):
     """sample number of events from a Poisson distribution.
 
     This is a very hacky, simple mutator that does not take into account
@@ -84,99 +85,102 @@ def getMutatedSequence( sequence, divergence ):
     """
 
     lsequence = len(sequence)
-    nmutate = numpy.random.poisson( float(lsequence) * divergence )
+    nmutate = numpy.random.poisson(float(lsequence) * divergence)
     sequence = list(sequence.upper())
 
     for pos in random.sample(xrange(lsequence), nmutate):
         c = sequence[pos]
         x = c
-        while x == c: x = random.choice( "ACGT" )
+        while x == c:
+            x = random.choice("ACGT")
         sequence[pos] = x
 
     return "".join(sequence)
 
-##------------------------------------------------------------
+# ------------------------------------------------------------
+
+
 def main():
 
-    parser = E.OptionParser( version = "%prog version: $Id: gtf2reads.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser(
+        version="%prog version: $Id: gtf2reads.py 2781 2009-09-10 11:33:14Z andreas $", usage=globals()["__doc__"])
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
-                      help="filename with genome [default=%default]."  )
+                      help="filename with genome [default=%default].")
 
-    parser.add_option( "-p", "--output-filename-pattern", dest="output_filename_pattern", type="string" ,
-                       help="OUTPUT filename with histogram information on aggregate coverages [%default].")
+    parser.add_option("-p", "--output-filename-pattern", dest="output_filename_pattern", type="string",
+                      help="OUTPUT filename with histogram information on aggregate coverages [%default].")
 
-    parser.add_option( "--read-length-mean", dest="read_length_mean", type="float",
-                      help="simulation parameter [default=%default]."  )
+    parser.add_option("--read-length-mean", dest="read_length_mean", type="float",
+                      help="simulation parameter [default=%default].")
 
-    parser.add_option( "--read-length-std", dest="read_length_stddev", type="float",
-                      help="simulation parameter [default=%default]."  )
+    parser.add_option("--read-length-std", dest="read_length_stddev", type="float",
+                      help="simulation parameter [default=%default].")
 
-    parser.add_option( "--coverage-mean", dest="coverage_mean", type="float",
-                      help="simulation parameter [default=%default]."  )
+    parser.add_option("--coverage-mean", dest="coverage_mean", type="float",
+                      help="simulation parameter [default=%default].")
 
-    parser.add_option( "--coverage-std", dest="coverage_stddev", type="float",
-                      help="simulation parameter [default=%default]."  )
+    parser.add_option("--coverage-std", dest="coverage_stddev", type="float",
+                      help="simulation parameter [default=%default].")
 
-    parser.add_option( "--ds-mean", dest="ds_mean", type="float",
-                      help="simulation parameter [default=%default]."  )
+    parser.add_option("--ds-mean", dest="ds_mean", type="float",
+                      help="simulation parameter [default=%default].")
 
-    parser.add_option( "--ds-std", dest="ds_stddev", type="float",
-                      help="simulation parameter [default=%default]."  )
+    parser.add_option("--ds-std", dest="ds_stddev", type="float",
+                      help="simulation parameter [default=%default].")
 
-    parser.add_option( "--error-mean", dest="error_mean", type="float",
-                      help="simulation parameter [default=%default]."  )
+    parser.add_option("--error-mean", dest="error_mean", type="float",
+                      help="simulation parameter [default=%default].")
 
-    parser.add_option( "--error-std", dest="error_stddev", type="float",
-                      help="simulation parameter [default=%default]."  )
+    parser.add_option("--error-std", dest="error_stddev", type="float",
+                      help="simulation parameter [default=%default].")
 
-    parser.add_option( "--min-read-length", dest="min_read_length", type="int",
-                      help="minimum read length [default=%default]."  )
+    parser.add_option("--min-read-length", dest="min_read_length", type="int",
+                      help="minimum read length [default=%default].")
 
-    parser.add_option( "--sample-size", dest="sample_size", type="int",
-                      help="randomly sample from selected transcripts [default=%default]."  )
+    parser.add_option("--sample-size", dest="sample_size", type="int",
+                      help="randomly sample from selected transcripts [default=%default].")
 
-    parser.add_option( "--test", dest="test", type="int",
-                      help="test with # first entries [default=%default]."  )
+    parser.add_option("--test", dest="test", type="int",
+                      help="test with # first entries [default=%default].")
 
-    parser.add_option( "--mode", dest="mode", type="choice",
-                       choices=("genes", "transcripts" ),
-                       help="use genes or transcripts [default=%default]."  )
-
-
+    parser.add_option("--mode", dest="mode", type="choice",
+                      choices=("genes", "transcripts"),
+                      help="use genes or transcripts [default=%default].")
 
     parser.set_defaults(
-        genome_file = None,
-        read_length_mean = 200.0,
-        read_length_stddev = 20.0,
-        coverage_mean = 2.0,
-        coverage_stddev = 1.0,
-        ds_mean = None,
-        ds_stddev = None,
-        error_mean = None,
-        error_stddev = None,
-        min_read_length = 50,
-        test = None,
-        mode = "transcripts",
-        output_filename_pattern = None,
-        output_format_id = "%010i",
-        sample_size = 0,
-        )
+        genome_file=None,
+        read_length_mean=200.0,
+        read_length_stddev=20.0,
+        coverage_mean=2.0,
+        coverage_stddev=1.0,
+        ds_mean=None,
+        ds_stddev=None,
+        error_mean=None,
+        error_stddev=None,
+        min_read_length=50,
+        test=None,
+        mode="transcripts",
+        output_filename_pattern=None,
+        output_format_id="%010i",
+        sample_size=0,
+    )
 
-    (options, args) = E.Start( parser )
-    
-    assert options.genome_file, "please supply an indexed genome." 
+    (options, args) = E.Start(parser)
+
+    assert options.genome_file, "please supply an indexed genome."
 
     if options.output_filename_pattern:
-        outfile_stats = open( options.output_filename_pattern % "stats", "w" )
-        outfile_stats.write( "id\tlen\tnreads\tlen_mean\tlen_std\tcov_mean\tcov_std\n" )
-        outfile_map = open( options.output_filename_pattern % "map", "w" )
-        outfile_map.write( "id\ttranscript\n" )
+        outfile_stats = open(options.output_filename_pattern % "stats", "w")
+        outfile_stats.write(
+            "id\tlen\tnreads\tlen_mean\tlen_std\tcov_mean\tcov_std\n")
+        outfile_map = open(options.output_filename_pattern % "map", "w")
+        outfile_map.write("id\ttranscript\n")
     else:
         outfile_stats = None
         outfile_map = None
 
-    genome = IndexedFasta.IndexedFasta( options.genome_file )
+    genome = IndexedFasta.IndexedFasta(options.genome_file)
 
     ninput, noutput, nskipped = 0, 0, 0
 
@@ -185,15 +189,17 @@ def main():
     total_error_pids = []
 
     if options.mode == "transcripts":
-        iterator = GTF.transcript_iterator( GTF.iterator_filtered( GTF.iterator(options.stdin), feature="exon" ))
+        iterator = GTF.transcript_iterator(
+            GTF.iterator_filtered(GTF.iterator(options.stdin), feature="exon"))
         getId = lambda x: x.transcript_id
     elif options.mode == "genes":
-        iterator = GTF.flat_gene_iterator( GTF.iterator_filtered( GTF.iterator(options.stdin), feature="exon" ))
+        iterator = GTF.flat_gene_iterator(
+            GTF.iterator_filtered(GTF.iterator(options.stdin), feature="exon"))
         getId = lambda x: x.gene_id
 
     if options.sample_size:
-        iterator = Iterators.sample( iterator ) 
-        
+        iterator = Iterators.sample(iterator)
+
     if options.ds_mean:
         do_mutate = True
         pid_calc = SequencePairProperties.SequencePairPropertiesPID()
@@ -211,107 +217,118 @@ def main():
         id = getId(gtfs[0])
 
         try:
-            sequence = GTF.toSequence( gtfs, genome )
+            sequence = GTF.toSequence(gtfs, genome)
         except KeyError, msg:
             if options.loglevel >= 2:
-                options.stdlog.write( "# skipping %s: %s\n" % (id, msg))
+                options.stdlog.write("# skipping %s: %s\n" % (id, msg))
             nskipped += 1
             continue
 
         lsequence = len(sequence)
-        
+
         if lsequence <= options.min_read_length * 2:
             if options.loglevel >= 2:
-                options.stdlog.write( "# skipping %s - sequence is too short: %i\n" % (id, lsequence) )
+                options.stdlog.write(
+                    "# skipping %s - sequence is too short: %i\n" % (id, lsequence))
             nskipped += 1
             continue
 
         ninput += 1
 
         if do_mutate:
-            new_sequence = getMutatedSequence( sequence, options.ds_mean )
-            pid_calc.loadPair( sequence, new_sequence)
-            pid = pid_calc.mPID 
-            total_pids.append( pid )
+            new_sequence = getMutatedSequence(sequence, options.ds_mean)
+            pid_calc.loadPair(sequence, new_sequence)
+            pid = pid_calc.mPID
+            total_pids.append(pid)
             sequence = new_sequence
         else:
             pid = 100.0
 
         if options.loglevel >= 2:
-            options.stdlog.write("# processing %s - len=%i\n" % (id, lsequence) )
+            options.stdlog.write(
+                "# processing %s - len=%i\n" % (id, lsequence))
             options.stdlog.flush()
 
         total_len += lsequence
-        lvsequence = lsequence * random.gauss( options.coverage_mean, options.coverage_stddev )
-        
+        lvsequence = lsequence * \
+            random.gauss(options.coverage_mean, options.coverage_stddev)
+
         covered = 0
-        counts = numpy.zeros( lsequence )
+        counts = numpy.zeros(lsequence)
         nreads = 0
 
         error_pids, read_lengths = [], []
-        
+
         while covered < lvsequence:
-            
-            read_length = int(random.gauss( options.read_length_mean, options.read_length_stddev ))
-            positive = random.randint(0,1)
+
+            read_length = int(
+                random.gauss(options.read_length_mean, options.read_length_stddev))
+            positive = random.randint(0, 1)
 
             if positive:
-                start = random.randint(0,lsequence)
-                end = min( lsequence, start + read_length )
+                start = random.randint(0, lsequence)
+                end = min(lsequence, start + read_length)
             else:
-                end = random.randint(0,lsequence)
+                end = random.randint(0, lsequence)
                 start = max(0, end - read_length)
-                
+
             read_length = end - start
             if read_length < options.min_read_length:
                 continue
-            
+
             segment = sequence[start:end]
 
             if not positive:
-                segment = Genomics.complement( segment )
+                segment = Genomics.complement(segment)
 
             noutput += 1
 
             if do_error:
-                new_segment = getMutatedSequence( segment, options.error_mean )
-                pid_calc.loadPair( segment, new_segment)
-                pid = pid_calc.mPID 
-                error_pids.append( pid )
+                new_segment = getMutatedSequence(segment, options.error_mean)
+                pid_calc.loadPair(segment, new_segment)
+                pid = pid_calc.mPID
+                error_pids.append(pid)
                 segment = new_segment
             else:
                 pid = 100.0
-                
-            options.stdout.write( ">%s\n%s\n" % (options.output_format_id % noutput, segment ) )
-            
-            if outfile_map:
-                outfile_map.write( "%s\t%s\n" % (id, options.output_format_id % noutput) )
 
-            for x in range(start,end):
+            options.stdout.write(
+                ">%s\n%s\n" % (options.output_format_id % noutput, segment))
+
+            if outfile_map:
+                outfile_map.write(
+                    "%s\t%s\n" % (id, options.output_format_id % noutput))
+
+            for x in range(start, end):
                 counts[x] += 1
 
             nreads += 1
 
             covered += read_length
             read_lengths.append(read_length)
-            
-        if options.loglevel >= 2:
-            options.stdout.write( "# transcript %s: len=%i, nreads=%i, len_mean=%.2f, len_std=%.2f, cov_mean=%.2f, cov_stddev=%.2f\n" % (id, 
-                                                                                                                                         lsequence,
-                                                                                                                                         nreads, 
-                                                                                                                                         numpy.mean( read_lengths ),
-                                                                                                                                         numpy.std( read_lengths ),
-                                                                                                                                         numpy.mean( counts ),
-                                                                                                                                         numpy.std( counts) ))
-        if outfile_stats:
-            outfile_stats.write( "%s\t%i\t%i\t%.2f\t%.2f\t%.2f\t%.2f\n" % (id, 
-                                                                           lsequence,
-                                                                           nreads, 
-                                                                           numpy.mean( read_lengths ),
-                                                                           numpy.std( read_lengths ),
-                                                                           numpy.mean( counts ),
-                                                                           numpy.std( counts) ))
 
+        if options.loglevel >= 2:
+            options.stdout.write("# transcript %s: len=%i, nreads=%i, len_mean=%.2f, len_std=%.2f, cov_mean=%.2f, cov_stddev=%.2f\n" % (id,
+                                                                                                                                        lsequence,
+                                                                                                                                        nreads,
+                                                                                                                                        numpy.mean(
+                                                                                                                                            read_lengths),
+                                                                                                                                        numpy.std(
+                                                                                                                                            read_lengths),
+                                                                                                                                        numpy.mean(
+                                                                                                                                            counts),
+                                                                                                                                        numpy.std(counts)))
+        if outfile_stats:
+            outfile_stats.write("%s\t%i\t%i\t%.2f\t%.2f\t%.2f\t%.2f\n" % (id,
+                                                                          lsequence,
+                                                                          nreads,
+                                                                          numpy.mean(
+                                                                              read_lengths),
+                                                                          numpy.std(
+                                                                              read_lengths),
+                                                                          numpy.mean(
+                                                                              counts),
+                                                                          numpy.std(counts)))
 
         total_counts += list(counts)
         total_read_lengths += read_lengths
@@ -324,30 +341,32 @@ def main():
             break
 
     if options.loglevel >= 1:
-        output = ["len=%i, nreads=%i" % ( total_len,
-                                          noutput ) ]
-        output.append( "len_mean=%.2f, len_std=%.2f, cov_mean=%.2f, cov_stddev=%.2f" % ( 
-                numpy.mean( total_read_lengths ),
-                numpy.std( total_read_lengths ),
-                numpy.mean( total_counts ),
-                numpy.std( total_counts) ))
+        output = ["len=%i, nreads=%i" % (total_len,
+                                         noutput)]
+        output.append("len_mean=%.2f, len_std=%.2f, cov_mean=%.2f, cov_stddev=%.2f" % (
+            numpy.mean(total_read_lengths),
+            numpy.std(total_read_lengths),
+            numpy.mean(total_counts),
+            numpy.std(total_counts)))
 
-        no_uncovered = [ x for x in total_counts if x > 0 ]
+        no_uncovered = [x for x in total_counts if x > 0]
 
-        output.append( "cov0_mean=%.2f, cov0_stddev=%.2f" % (numpy.mean( no_uncovered ),
-                                                             numpy.std( no_uncovered ) ) )
+        output.append("cov0_mean=%.2f, cov0_stddev=%.2f" % (numpy.mean(no_uncovered),
+                                                            numpy.std(no_uncovered)))
 
         if do_mutate:
-            output.append( "pid_mean=%.2f, pid_std=%.2f" % (numpy.mean( total_pids ), numpy.std( total_pids ) ))
+            output.append("pid_mean=%.2f, pid_std=%.2f" %
+                          (numpy.mean(total_pids), numpy.std(total_pids)))
 
         if do_error:
-            output.append( "pid_error_mean=%.2f, pid_error_std=%.2f" % (numpy.mean( total_error_pids ), numpy.std( total_error_pids ) ))
-            
-            
-        options.stdlog.write( "# effective: %s\n" % ", ".join( output ))
+            output.append("pid_error_mean=%.2f, pid_error_std=%.2f" %
+                          (numpy.mean(total_error_pids), numpy.std(total_error_pids)))
+
+        options.stdlog.write("# effective: %s\n" % ", ".join(output))
 
     if options.loglevel >= 1:
-        options.stdlog.write( "# ninput=%i, noutput=%i, nskipped=%i\n" % (ninput, noutput, nskipped ) )
+        options.stdlog.write(
+            "# ninput=%i, noutput=%i, nskipped=%i\n" % (ninput, noutput, nskipped))
 
     E.Stop()
 

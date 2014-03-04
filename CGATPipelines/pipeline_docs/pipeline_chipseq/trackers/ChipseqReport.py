@@ -1,32 +1,39 @@
-import os, sys, re, types, itertools, glob
+import os
+import sys
+import re
+import types
+import itertools
+import glob
 import matplotlib.pyplot as plt
 import numpy
 import numpy.ma
-import Stats
-import Histogram
 import sqlalchemy
+import collections
+from collections import OrderedDict as odict
 
+import CGAT.Stats as Stats
+import CGAT.IOTools as IOTools
 from SphinxReport.Tracker import *
 from SphinxReport.Utils import PARAMS as P
-from SphinxReport.odict import OrderedDict as odict
+
 
 ###################################################################
 ###################################################################
-## parameterization
+# parameterization
 
-EXPORTDIR=P['chipseq_exportdir']
-DATADIR=P['chipseq_datadir']
-DATABASE=P['chipseq_backend']
+EXPORTDIR = P['chipseq_exportdir']
+DATADIR = P['chipseq_datadir']
+DATABASE = P['chipseq_backend']
 
 ###################################################################
 # cf. pipeline_chipseq.py
 # This should be automatically gleaned from pipeline_chipseq.py
 ###################################################################
-import Pipeline
-PARAMS_PIPELINE = Pipeline.peekParameters( ".",
-                                           "pipeline_chipseq.py" )
+import CGAT.Pipeline as Pipeline
+PARAMS_PIPELINE = Pipeline.peekParameters(".",
+                                          "pipeline_chipseq.py")
 
-import PipelineTracks
+import CGATPipelines.PipelineTracks as PipelineTracks
 
 Sample = PipelineTracks.Sample3
 
@@ -34,19 +41,19 @@ suffixes = ["export.txt.gz",
             "sra",
             "fastq.gz",
             "fastq.1.gz",
-            "csfasta.gz" ]
+            "csfasta.gz"]
 
-TRACKS = sum( itertools.chain( [ PipelineTracks.Tracks( Sample ).loadFromDirectory( 
-        [ x for x in glob.glob( "%s/*.%s" % (DATADIR, s) ) if "input" not in x ],
-        "%s/(\S+).%s" % (DATADIR, s) ) for s in suffixes ] ), 
-              PipelineTracks.Tracks( Sample ) )
+TRACKS = sum(itertools.chain([PipelineTracks.Tracks(Sample).loadFromDirectory(
+    [x for x in glob.glob("%s/*.%s" % (DATADIR, s)) if "input" not in x],
+    "%s/(\S+).%s" % (DATADIR, s)) for s in suffixes]),
+    PipelineTracks.Tracks(Sample))
 
-Sample.setDefault( "asTable" )
+Sample.setDefault("asTable")
 
-ALL = PipelineTracks.Aggregate( TRACKS )
-EXPERIMENTS = PipelineTracks.Aggregate( TRACKS, labels = ("condition", "tissue" ) )
-CONDITIONS = PipelineTracks.Aggregate( TRACKS, labels = ("condition", ) )
-TISSUES = PipelineTracks.Aggregate( TRACKS, labels = ("tissue", ) )
+ALL = PipelineTracks.Aggregate(TRACKS)
+EXPERIMENTS = PipelineTracks.Aggregate(TRACKS, labels=("condition", "tissue"))
+CONDITIONS = PipelineTracks.Aggregate(TRACKS, labels=("condition", ))
+TISSUES = PipelineTracks.Aggregate(TRACKS, labels=("tissue", ))
 
 ############################################################################
 # The folllowing need to be parameterized in a config file
@@ -62,17 +69,17 @@ else:
     MOTIFS = None
 
 ###########################################################################
-## shorthand
+# shorthand
 # use list to convert trackers to strings
 MAP_TRACKS = {
-    'master' : map( str, list(EXPERIMENTS) + list( CONDITIONS )),
-    'replicates' : map( str, list(TRACKS) ),
-    'default' : map(str, list(EXPERIMENTS)),
-    'experiments' : map( str, list(EXPERIMENTS)),
-    'conditions' : map( str, list(CONDITIONS)),
-    'tissues' : map(str, list(TISSUES)),
-    'merged' : map(str, list(EXPERIMENTS)), 
-    }
+    'master': map(str, list(EXPERIMENTS) + list(CONDITIONS)),
+    'replicates': map(str, list(TRACKS)),
+    'default': map(str, list(EXPERIMENTS)),
+    'experiments': map(str, list(EXPERIMENTS)),
+    'conditions': map(str, list(CONDITIONS)),
+    'tissues': map(str, list(TISSUES)),
+    'merged': map(str, list(EXPERIMENTS)),
+}
 
 # MAP_TRACKS = { "default":
 #                    [ "%s_%s" % x for x in itertools.product( TISSUES, CONDITIONS ) ] +\
@@ -88,56 +95,64 @@ MAP_TRACKS = {
 
 ###########################################################################
 
-def selectTracks( all_tracks, subset ):
+
+def selectTracks(all_tracks, subset):
     '''select tracks from *all_tracks* according to *subset*.
     '''
-    if subset == None:
+    if subset is None:
         return MAP_TRACKS["default"]
-    elif "all" in subset: 
+    elif "all" in subset:
         return sorted(all_tracks)
 
     for key, tracks in MAP_TRACKS.iteritems():
-        if key in subset: return tracks
-        
+        if key in subset:
+            return tracks
+
     # user specified tracks
     tracks = subset
 
     all_tracks = set(all_tracks)
-    tracks = [ x for x in tracks if x in all_tracks ]
+    tracks = [x for x in tracks if x in all_tracks]
 
     return tracks
 
-def getReplicates( track ):
-    '''return replicates for a track.'''
-    
 
-def linkToUCSC( contig, start, end ):
+def getReplicates(track):
+    '''return replicates for a track.'''
+
+
+def linkToUCSC(contig, start, end):
     '''build URL for UCSC.'''
 
     link = "`%(contig)s:%(start)i..%(end)i <http://genome.ucsc.edu/cgi-bin/hgTracks?db=hg18&position=%(contig)s:%(start)i..%(end)i>`_" \
-          % locals()
+        % locals()
     return link
 
 ###########################################################################
 ###########################################################################
 ###########################################################################
-## Trackers
+# Trackers
 ###########################################################################
-class ChipseqTracker( TrackerSQL ):
-    '''Define convenience tracks for plots'''
-    def __init__(self, *args, **kwargs ):
-        TrackerSQL.__init__(self, *args, backend = DATABASE, **kwargs )
 
-    def getTracks( self, subset = None):
+
+class ChipseqTracker(TrackerSQL):
+
+    '''Define convenience tracks for plots'''
+
+    def __init__(self, *args, **kwargs):
+        TrackerSQL.__init__(self, *args, backend=DATABASE, **kwargs)
+
+    def getTracks(self, subset=None):
         if subset:
             for key, tracks in MAP_TRACKS.iteritems():
-                if key in subset: return tracks
+                if key in subset:
+                    return tracks
 
-        return TrackerSQL.getTracks( self )
+        return TrackerSQL.getTracks(self)
 
-class DefaultTracker( ChipseqTracker ):
+
+class DefaultTracker(ChipseqTracker):
+
     '''Define convenience tracks for plots'''
     # def __init__(self, *args, **kwargs ):
     #     ChipseqTracker.__init__(self, *args, **kwargs)
-
-

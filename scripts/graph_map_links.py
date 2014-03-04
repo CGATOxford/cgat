@@ -10,9 +10,10 @@ graph_map_links.py -
 Purpose
 -------
 
-.. todo::
-   
-   describe purpose of the script.
+Map blast links.
+
+If ``--map-identity`` is set, only identifiers will be updated.
+Otherwise, the alignments will be combined.
 
 Usage
 -----
@@ -42,88 +43,85 @@ import popen2
 import optparse
 import hashlib
 
-USAGE="""python %s [OPTIONS] < graph.in > graph.out
-
-Version: $Id: graph_map_links.py 2782 2009-09-10 11:40:29Z andreas $
-
-Map blast links.
-
-Options:
--h, --help                      print this message.
--v, --verbose=                  loglevel.
--q, --map-query=                map to use for query
--s, --map-sbjct=                map to use for sbjct
--m, --multiple                  write multiple matches
--k, --keep-unmapped             keep entries not mapped
--i, --identity-map              mapping is done by identities
-""" % sys.argv[0]
 
 import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
 import CGAT.BlastAlignments as BlastAlignments
 
-def ReadIdentityMap( infile):
+
+def readIdentityMap(infile):
     """read identity map.
 
     multiple entries can either be separated over several lines
     or concatenated by semicolon in the same line.
     """
-    
+
     m = {}
     for line in infile:
 
-        if line[0] == "#": continue
+        if line[0] == "#":
+            continue
         olds, news = map(lambda x: x.split(";"), line[:-1].split("\t")[:2])
 
         for old in olds:
-            if old not in m: m[old] = []
+            if old not in m:
+                m[old] = []
             for new in news:
-                m[old].append( new )
+                m[old].append(new)
     return m
 
-##-------------------------------------------------------------------------------
+# ------------------------------------------------------------------------
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv is None:
+        argv = sys.argv
 
-    parser = E.OptionParser( version = "%prog version: $Id: graph_map_links.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser(
+        version="%prog version: $Id: graph_map_links.py 2782 2009-09-10 11:40:29Z andreas $")
 
     parser.add_option("-q", "--map-query", dest="filename_map_query", type="string",
-                      help="filename with queries to map." )
+                      help="filename with queries to map.")
+
     parser.add_option("-s", "--map-sbjct", dest="filename_map_sbjct", type="string",
-                      help="filename with queries to map." )
+                      help="filename with sbjcts to map.")
+
     parser.add_option("-m", "--multiple", dest="multiple", action="store_true",
-                      help="map multiple options." )
+                      help="map multiple options [%default].")
+
     parser.add_option("-k", "--keep-unmapped", dest="keep_unmapped", action="store_true",
-                      help="keep unmapped entries." )
+                      help="keep unmapped entries [%default].")
+
     parser.add_option("-i", "--map-identity", dest="map_identity", action="store_true",
-                      help="use identity maps (only identifier change)." )
+                      help="map by identifier [%default].")
+
     parser.add_option("-n", "--non-redundant", dest="non_redundant", action="store_true",
-                      help="write only unique links (requires a lot of memory for large graphs).")
-    parser.set_defaults( \
-        filename_map_query = None,
-        filename_map_sbjct = None,
-        multiple = False,
-        keep_unmapped = False,
-        map_identity = False,
-        report_step = 1000000,
-        non_redundant = False)
-        
-    (options, args) = E.Start( parser )
+                      help="write only unique links (requires a lot of memory for large graphs) [%default]")
+
+    parser.set_defaults(
+        filename_map_query=None,
+        filename_map_sbjct=None,
+        multiple=False,
+        keep_unmapped=False,
+        map_identity=False,
+        report_step=1000000,
+        non_redundant=False)
+
+    (options, args) = E.Start(parser)
 
     if options.filename_map_query:
-        infile = open(options.filename_map_query, "r")        
+        infile = IOTools.openFile(options.filename_map_query, "r")
         if options.map_identity:
-            map_query = ReadIdentityMap( infile )
+            map_query = readIdentityMap(infile)
         else:
-            map_query = BlastAlignments.ReadMap( infile, options.multiple )
+            map_query = BlastAlignments.ReadMap(infile, options.multiple)
         infile.close()
-        if options.loglevel >= 1:
-            print "# read maps for %i queries." % len(map_query)
+        E.info('read maps for %i queries' % len(map_query))
     else:
         map_query = None
 
@@ -131,14 +129,13 @@ def main( argv = None ):
         if options.filename_map_sbjct == options.filename_map_query:
             map_sbjct = map_query
         else:
-            infile = open(options.filename_map_sbjct, "r")                
+            infile = IOTools.openFile(options.filename_map_sbjct, "r")
             if options.map_identity:
-                map_sbjct = ReadIdentityMap( infile )            
+                map_sbjct = readIdentityMap(infile)
             else:
-                map_sbjct = BlastAlignments.ReadMap( open(options.filename_map_sbjct, "r"), options.multiple)
+                map_sbjct = BlastAlignments.ReadMap(infile, options.multiple)
             infile.close()
-        if options.loglevel >= 1:
-            print "# read maps for %i sbjcts." % len(map_sbjct)
+        E.info('read maps for %i sbjcts' % len(map_sbjct))
     else:
         map_sbjct = None
 
@@ -151,142 +148,146 @@ def main( argv = None ):
     nsame, nmapped = 0, 0
 
     printed = {}
-    
-    map = BlastAlignments.Map()
 
-    for line in sys.stdin:
-        
-        if line[0] == "#": continue
+    alignment = BlastAlignments.Map()
+
+    for line in options.stdin:
+
+        if line[0] == "#":
+            continue
 
         data = line[:-1].split("\t")
 
-        map.Read( line )
+        alignment.Read(line)
         skip = False
         ninput += 1
 
-        if options.loglevel >= 2:
-            print "#", str(map)
+        E.debug(str(map))
 
         if options.loglevel >= 2 and ninput % options.report_step == 0:
-            sys.stderr.write( "# progress: ninput=%i, noutput=%i, nhash=%i\n" % (ninput, noutput, len(printed)) )
-        
+            options.stderr.write(
+                "# progress: ninput=%i, noutput=%i, nhash=%i\n" % (ninput, noutput, len(printed)))
+
         if options.multiple:
             skip = False
-            if map_query != None:
-                if map.mQueryToken in map_query:
-                    mq = map_query[map.mQueryToken]
+            if map_query is not None:
+                if alignment.mQueryToken in map_query:
+                    mq = map_query[alignment.mQueryToken]
                 else:
                     skip = True
             else:
-                mq = [ None ]                                
+                mq = [None]
 
-            if map_sbjct != None:                
-                if map.mSbjctToken in map_sbjct:
-                    ms = map_sbjct[map.mSbjctToken]
+            if map_sbjct is not None:
+                if alignment.mSbjctToken in map_sbjct:
+                    ms = map_sbjct[alignment.mSbjctToken]
                 else:
                     skip = True
             else:
-                ms = [ None ]
-                
+                ms = [None]
+
             if skip:
                 nskipped += 1
                 continue
-            
+
             if options.map_identity:
 
-                ## only if non_redundant is set, do global comparison
-                if not options.non_redundant: printed = {}
-                            
-                new_map = map.GetClone()
-                do_redundant = len(mq) > 1 or len(ms) > 1                
+                # only if non_redundant is set, do global comparison
+                if not options.non_redundant:
+                    printed = {}
+
+                new_map = alignment.GetClone()
+                do_redundant = len(mq) > 1 or len(ms) > 1
                 for q in mq:
                     for s in ms:
-  
+
                         new_map.mQueryToken = q
                         new_map.mSbjctToken = s
 
-                        ## check for non-redundant links for 1:many or many:many mappings
+                        # check for non-redundant links for 1:many or many:many
+                        # mappings
                         if do_redundant:
                             key = "%s-%i-%i-%s-%i-%i" % (new_map.mQueryToken, new_map.mQueryFrom, new_map.mQueryTo,
                                                          new_map.mSbjctToken, new_map.mSbjctFrom, new_map.mSbjctTo)
-                        
+
                             # hash key to save space
                             hkey = hashlib.md5(key).digest()
 
-                            if hkey in printed: continue
-                            
+                            if hkey in printed:
+                                continue
+
                             printed[hkey] = 1
 
-                        print string.join( [str(new_map)]+ data[9:], "\t")
+                        options.stdout.write(
+                            '\t'.join([str(new_map)] + data[9:]) + '\n')
                         noutput += 1
-                        if new_map.mQueryToken == map.mQueryToken and \
-                           new_map.mSbjctToken == map.mSbjctToken:
+                        if new_map.mQueryToken == alignment.mQueryToken and \
+                                new_map.mSbjctToken == alignment.mSbjctToken:
                             nsame += 1
                         else:
                             nmapped += 1
-                        
+
             else:
                 for q in mq:
                     for s in ms:
-                        new_map = map.GetClone()
+                        new_map = alignment.GetClone()
 
-                        if options.loglevel >= 2:
-                            print "#", str(q)
-                            print "#", str(s)
+                        E.debug(str(q))
+                        E.debug(str(s))
 
-                        is_ok = new_map.MapAlignment( q, s )
+                        is_ok = new_map.MapAlignment(q, s)
 
                         if not is_ok:
                             nfailed += 1
                         else:
-                            print string.join( [str(new_map)]+ data[9:], "\t")
+                            options.stdout.write(
+                                '\t'.join([str(new_map)] + data[9:]) + '\n')
                             noutput += 1
+
+        # options.multiple is False
         else:
 
-            if map_query != None:
-                if map.mQueryToken in map_query:
-                    mq = map_query[map.mQueryToken ]
+            if map_query is not None:
+                if alignment.mQueryToken in map_query:
+                    mq = map_query[alignment.mQueryToken]
                 else:
                     mq = None
                     skip = True
             else:
                 mq = None
 
-            if map_sbjct != None:
-                if map.mSbjctToken in map_sbjct:
-                    ms = map_sbjct[map.mSbjctToken ]
+            if map_sbjct is not None:
+                if alignment.mSbjctToken in map_sbjct:
+                    ms = map_sbjct[alignment.mSbjctToken]
                 else:
                     ms = None
                     skip = True
             else:
                 ms = None
-                
+
             if skip and not options.keep_unmapped:
                 nskipped += 1
                 continue
 
-            if options.loglevel >= 2:
-                print "#", str(mq)
-                print "#", str(ms)
+            E.debug(str(mq))
+            E.debug(str(ms))
 
             if mq or ms:
-                is_ok = map.MapAlignment( mq, ms )
+                is_ok = alignment.MapAlignment(mq, ms)
             else:
                 is_ok = True
 
             if not is_ok:
                 nfailed += 1
             else:
-                print string.join( [str(map)]+ data[9:], "\t")
+                options.stdout.write(
+                    '\t'.join([str(alignment)] + data[9:]) + '\n')
                 noutput += 1
 
-    print "# ninput=%i, noutput=%i, nskipped=%i, nfailed=%i, nsame=%i, nmapped=%i" % (\
-        ninput, noutput, nskipped, nfailed, nsame, nmapped )
-    
+    E.info('ninput=%i, noutput=%i, nskipped=%i, nfailed=%i, nsame=%i, nmapped=%i' %
+           (ninput, noutput, nskipped, nfailed, nsame, nmapped))
+
     E.Stop()
 
-
-
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

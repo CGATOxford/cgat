@@ -44,29 +44,31 @@ import CGAT.IOTools as IOTools
 import CGAT.Blat as Blat
 import CGAT.GTF as GTF
 
+
 def main():
 
-    parser = E.OptionParser( version = "%prog version: $Id: psl2gff.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"] )
+    parser = E.OptionParser(
+        version="%prog version: $Id: psl2gff.py 2781 2009-09-10 11:33:14Z andreas $", usage=globals()["__doc__"])
 
     parser.add_option("-a", "--as-gtf", dest="as_gtf", action="store_true",
-                      help="output as gtf."  )
+                      help="output as gtf.")
 
     parser.add_option("-s", "--filename-strand", dest="filename_strand", type="string",
-                      help="set strand information according to file [default=%DEFAULT]."  )
+                      help="set strand information according to file [default=%DEFAULT].")
 
-    parser.set_defaults( as_gtf = False,
-                         filename_strand = None,
-                         test = None )
-    
-    (options, args) = E.Start( parser, add_pipe_options = True )
+    parser.set_defaults(as_gtf=False,
+                        filename_strand=None,
+                        test=None)
+
+    (options, args) = E.Start(parser, add_pipe_options=True)
 
     ####################################
     if options.filename_strand:
-        map_id2strand = IOTools.readMap( open(options.filename_strand,"r")) 
+        map_id2strand = IOTools.readMap(open(options.filename_strand, "r"))
     else:
         map_id2strand = {}
 
-    iterator = Blat.BlatIterator( sys.stdin )
+    iterator = Blat.BlatIterator(sys.stdin)
 
     ninput, noutput, nskipped = 0, 0, 0
 
@@ -81,13 +83,14 @@ def main():
     ids = {}
 
     while 1:
-        
+
         if options.test and ninput >= options.test:
             break
 
         match = iterator.next()
-        
-        if match == None: break
+
+        if match is None:
+            break
 
         ninput += 1
 
@@ -105,7 +108,7 @@ def main():
         else:
             gff.contig = match.mSbjctId
             gff.clearAttributes()
-            gff.addAttribute( "gene_id", id )
+            gff.addAttribute("gene_id", id)
 
         if id in map_id2strand:
             gff.strand = map_id2strand[id]
@@ -113,14 +116,14 @@ def main():
             gff.strand = match.strand
 
         for qstart, sstart, size in match.getBlocks():
-            
+
             gff.start = sstart
             gff.end = sstart + size
-            options.stdout.write( str( gff ) + "\n" )
-        
+            options.stdout.write(str(gff) + "\n")
+
         noutput += 1
 
-    E.info("ninput=%i, noutput=%i, nskipped=%i" % (ninput, noutput, nskipped) )
+    E.info("ninput=%i, noutput=%i, nskipped=%i" % (ninput, noutput, nskipped))
 
     E.Stop()
 

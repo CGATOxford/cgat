@@ -114,7 +114,7 @@ over the gene model. Start R and type::
 This set of commands will produce the figure shown.
 
 
-.. image:: ../plots/nfkb_profile.pdf
+.. image:: ../plots/nfkb_profile.png
 
 
 This plot displays the predominance of NFKB binding at transcription start sites of protein coding genes. 

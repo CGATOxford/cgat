@@ -1,18 +1,26 @@
-import os, sys, re, types, itertools
+import os
+import sys
+import re
+import types
+import itertools
 import IOTools
 from SphinxReport.Tracker import *
 from SphinxReport.odict import OrderedDict as odict
 
-##################################################################################
-class trackSummary( SingleTableTrackerRows ):
+##########################################################################
+
+
+class trackSummary(SingleTableTrackerRows):
     table = "genelist_stats"
 
-##################################################################################
-class orthologyGroupCounts( TrackerSQL ):
+##########################################################################
+
+
+class orthologyGroupCounts(TrackerSQL):
 
     mPattern = "ortholog_groups_with_feature"
 
-    def __call__(self, track, slice = None ):
+    def __call__(self, track, slice=None):
         statement = '''SELECT species_count , count(set_id) as genes
                        FROM ortholog_groups_with_feature
                        GROUP BY species_count
@@ -21,76 +29,86 @@ class orthologyGroupCounts( TrackerSQL ):
                        (select count(distinct set_id) as groups from ortholog_groups) a,
                        (select count(set_id) as with_feature from ortholog_groups_with_feature) b
                        ORDER BY species_count desc;'''
-        return self.getAll( statement )
+        return self.getAll(statement)
 
-##################################################################################
-class conservedGenesAllSpecies( TrackerSQL ):
+##########################################################################
+
+
+class conservedGenesAllSpecies(TrackerSQL):
 
     mPattern = "ortholog_groups_with_feature"
 
-    def __call__(self, track, slice = None ):
+    def __call__(self, track, slice=None):
         statement = '''SELECT set_id, gene_names
                        FROM ortholog_groups_with_feature
                        WHERE species_count=7;'''
-        return self.getAll( statement )
+        return self.getAll(statement)
 
-##################################################################################
-class pairwiseStats( TrackerSQL ):
+##########################################################################
+
+
+class pairwiseStats(TrackerSQL):
 
     mPattern = "pairwise_ortholog_overlaps_pval"
 
-    def __call__(self, track, slice = None ):
+    def __call__(self, track, slice=None):
         statement = '''SELECT species_pair, conserved_genes, conserved_genes_with_nmi_species1, 
                        conserved_genes_with_nmi_species2, conserved_nmis, abs(p_value) as pvalue
                        FROM pairwise_ortholog_overlaps_pval;'''
-        return self.getAll( statement )        
+        return self.getAll(statement)
 
-##################################################################################
-class pairwiseHeatmap( Tracker ):
+##########################################################################
+
+
+class pairwiseHeatmap(Tracker):
 
     def getTracks(self):
-        return [ "ortholog_pairs_with_feature.matrix", ]
-        
-    def __call__(self, track, slice = None ):
+        return ["ortholog_pairs_with_feature.matrix", ]
+
+    def __call__(self, track, slice=None):
         fn = "ortholog_pairs_with_feature.matrix"
-        if not os.path.exists( fn ): 
+        if not os.path.exists(fn):
             return
-            
-        x = IOTools.openFile( fn )
-        matrix, rownames, colnames = IOTools.readMatrix( x )
-        return odict( (('matrix', matrix),
-                       ('rows', rownames),
-                       ('columns', colnames)) )
 
-##################################################################################
-class pairwiseHeatmap2( Tracker ):
+        x = IOTools.openFile(fn)
+        matrix, rownames, colnames = IOTools.readMatrix(x)
+        return odict((('matrix', matrix),
+                      ('rows', rownames),
+                      ('columns', colnames)))
+
+##########################################################################
+
+
+class pairwiseHeatmap2(Tracker):
 
     def getTracks(self):
-        return [ "ortholog_pairs_with_feature.matrix2", ]
-        
-    def __call__(self, track, slice = None ):
+        return ["ortholog_pairs_with_feature.matrix2", ]
+
+    def __call__(self, track, slice=None):
         fn = "ortholog_pairs_with_feature.matrix2"
-        if not os.path.exists( fn ): 
+        if not os.path.exists(fn):
             return
-            
-        x = IOTools.openFile( fn )
-        matrix, rownames, colnames = IOTools.readMatrix( x )
-        return odict( (('matrix', matrix),
-                       ('rows', rownames),
-                       ('columns', colnames)) )
-                       
-##################################################################################
-class pairwiseTable( Tracker ):
+
+        x = IOTools.openFile(fn)
+        matrix, rownames, colnames = IOTools.readMatrix(x)
+        return odict((('matrix', matrix),
+                      ('rows', rownames),
+                      ('columns', colnames)))
+
+##########################################################################
+
+
+class pairwiseTable(Tracker):
 
     def getTracks(self):
-        return [ "ortholog_pairs_with_feature.matrix", ]
-        
-    def __call__(self, track, slice = None ):
+        return ["ortholog_pairs_with_feature.matrix", ]
+
+    def __call__(self, track, slice=None):
         fn = "ortholog_pairs_with_feature.matrix"
-        if not os.path.exists( fn ): 
+        if not os.path.exists(fn):
             return
-            
-        x = open( fn )
+
+        x = open(fn)
         data = odict()
         for line in x:
             temp = line.split()
@@ -99,18 +117,20 @@ class pairwiseTable( Tracker ):
             data[name] = scores
         return data
 
-##################################################################################
-class pairwiseTable2( Tracker ):
+##########################################################################
+
+
+class pairwiseTable2(Tracker):
 
     def getTracks(self):
-        return [ "ortholog_pairs_with_feature.matrix2", ]
-        
-    def __call__(self, track, slice = None ):
+        return ["ortholog_pairs_with_feature.matrix2", ]
+
+    def __call__(self, track, slice=None):
         fn = "ortholog_pairs_with_feature.matrix2"
-        if not os.path.exists( fn ): 
+        if not os.path.exists(fn):
             return
-            
-        x = open( fn )
+
+        x = open(fn)
         data = odict()
         for line in x:
             temp = line.split()
@@ -118,14 +138,15 @@ class pairwiseTable2( Tracker ):
             scores = temp[1:]
             data[name] = scores
         return data
-                                            
-##################################################################################
-class threewayVenn( TrackerSQL ):
+
+##########################################################################
+
+
+class threewayVenn(TrackerSQL):
 
     mPattern = "triple_ortholog_stats"
 
-    def __call__(self, track, slice = None ):
+    def __call__(self, track, slice=None):
         statement = '''SELECT species_list, conserved_nmis
                        FROM triple_ortholog_stats'''
-        return self.getAll( statement )
-                
+        return self.getAll(statement)

@@ -40,45 +40,47 @@ import subprocess
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if not argv: argv = sys.argv
+    if not argv:
+        argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser( version = "%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
-                                    usage = globals()["__doc__"] )
+    parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+                            usage=globals()["__doc__"])
 
     parser.add_option("-p", "--path", dest="path", type="string",
-                      help="path to scan for files [%default]"  )
+                      help="path to scan for files [%default]")
 
     parser.add_option("-d", "--destination", dest="destination", type="string",
-                      help="path to deposit files into [%defaul]"  )
+                      help="path to deposit files into [%defaul]")
 
-    parser.set_defaults( path = '/ifs/projects/sftp',
-                         url = 'http://www.cgat.org/downloads/',
-                         dest = '/ifs/projects/overview' )
+    parser.set_defaults(path='/ifs/projects/sftp',
+                        url='http://www.cgat.org/downloads/',
+                        dest='/ifs/projects/overview')
 
-    ## add common options (-h/--help, ...) and parse command line 
-    (options, args) = E.Start( parser, argv = argv )
+    # add common options (-h/--help, ...) and parse command line
+    (options, args) = E.Start(parser, argv=argv)
 
     statement = "find %s -name 'index.html'" % options.path
 
-    process = subprocess.Popen(  statement,
-                                 shell = True,
-                                 stdin = subprocess.PIPE,
-                                 stdout = subprocess.PIPE,
-                                 stderr = subprocess.PIPE )
+    process = subprocess.Popen(statement,
+                               shell=True,
+                               stdin=subprocess.PIPE,
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
 
     stdout, stderr = process.communicate()
 
     files = stdout.split('\n')
     files.sort()
 
-    outfile = IOTools.openFile( os.path.join( options.dest, "index.html" ), "w" )
+    outfile = IOTools.openFile(os.path.join(options.dest, "index.html"), "w")
 
     outfile.write( '''
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
@@ -116,28 +118,31 @@ do not make this page available on the world wide web.
 
 <table class="sortable">\n''' )
 
-    outfile.write( '''<tr><th>Project</th><th>Report</th><th>Title</th></tr>\n''' )
+    outfile.write(
+        '''<tr><th>Project</th><th>Report</th><th>Title</th></tr>\n''' )
 
     for f in files:
-        if f == '': continue
+        if f == '':
+            continue
 
-        proj = re.search( '(proj\d+)', f ).groups()[0]
-        relpath = re.sub( '.*proj\d+/', '', f )
-        report = re.sub( '^[^/]*/', '', os.path.dirname( relpath ) )
+        proj = re.search('(proj\d+)', f).groups()[0]
+        relpath = re.sub('.*proj\d+/', '', f)
+        report = re.sub('^[^/]*/', '', os.path.dirname(relpath))
 
-        lines = IOTools.openFile( f ).readlines()
-        titles = [ x for x in lines if "<title>" in x ]
+        lines = IOTools.openFile(f).readlines()
+        titles = [x for x in lines if "<title>" in x]
         if titles:
-            title = re.search( "<title>(.*)</title>", titles[0] ).groups()[0]
+            title = re.search("<title>(.*)</title>", titles[0]).groups()[0]
         else:
             title = "NA"
 
         if title.endswith("documentation"):
             title = title[:-len("documentation")]
 
-        url = os.path.join( options.url, relpath )
-        outfile.write( '<tr><td>%(proj)s</td><td><a HREF="%(url)s">%(report)s</td><td>%(title)s</td></tr>\n' % locals() )
-                              
+        url = os.path.join(options.url, relpath)
+        outfile.write(
+            '<tr><td>%(proj)s</td><td><a HREF="%(url)s">%(report)s</td><td>%(title)s</td></tr>\n' % locals())
+
     outfile.write( '''
 </table>
 
@@ -163,10 +168,9 @@ do not make this page available on the world wide web.
 
     outfile.close()
 
-    E.info( 'created output file %s' % outfile.name)
-    ## write footer and output benchmark information.
+    E.info('created output file %s' % outfile.name)
+    # write footer and output benchmark information.
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

@@ -162,19 +162,19 @@ import rpy2.robjects as ro
 #########################################################################
 #########################################################################
 # load options from the config file
-P.getParameters( ["%s/pipeline.ini" % os.path.splitext(__file__)[0], 
-                  "../pipeline.ini", 
-                  "pipeline.ini" ] )
+P.getParameters(["%s/pipeline.ini" % os.path.splitext(__file__)[0],
+                 "../pipeline.ini",
+                 "pipeline.ini"])
 
 PARAMS = P.PARAMS
 
-PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],
-                                       "pipeline_annotations.py" )
+PARAMS_ANNOTATIONS = P.peekParameters(PARAMS["annotations_dir"],
+                                      "pipeline_annotations.py")
 
 ###################################################################
 ###################################################################
 ###################################################################
-## Helper functions mapping tracks to conditions, etc
+# Helper functions mapping tracks to conditions, etc
 ###################################################################
 # load all tracks - exclude input/control tracks
 Sample = PipelineTracks.Sample3
@@ -183,19 +183,19 @@ suffixes = ["export.txt.gz",
             "sra",
             "fastq.gz",
             "cfastq.1.gz",
-            "csfasta.gz" ]
+            "csfasta.gz"]
 
-TRACKS = sum( itertools.chain( [ PipelineTracks.Tracks( Sample ).loadFromDirectory( 
-        [ x for x in glob.glob( "*.%s" % s ) if PARAMS["tracks_control"] not in x ],
-        "(\S+).%s" % s ) for s in suffixes ] ), 
-              PipelineTracks.Tracks( Sample ) )
+TRACKS = sum(itertools.chain([PipelineTracks.Tracks(Sample).loadFromDirectory(
+    [x for x in glob.glob("*.%s" % s) if PARAMS["tracks_control"] not in x],
+    "(\S+).%s" % s) for s in suffixes]),
+    PipelineTracks.Tracks(Sample))
 
 ###################################################################
 ###################################################################
 ###################################################################
 # if conf.py exists: execute to change the above assignmentsn
 if os.path.exists("pipeline_conf.py"):
-    L.info( "reading additional configuration from pipeline_conf.py" )
+    L.info("reading additional configuration from pipeline_conf.py")
     execfile("pipeline_conf.py")
 
 ###################################################################
@@ -204,25 +204,28 @@ if os.path.exists("pipeline_conf.py"):
 # define aggregates
 ###################################################################
 # aggregate per experiment
-EXPERIMENTS = PipelineTracks.Aggregate( TRACKS, labels = ("condition", "tissue") )
+EXPERIMENTS = PipelineTracks.Aggregate(TRACKS, labels=("condition", "tissue"))
 # aggregate per condition
-CONDITIONS = PipelineTracks.Aggregate( TRACKS, labels = ("condition",) )
+CONDITIONS = PipelineTracks.Aggregate(TRACKS, labels=("condition",))
 # aggregate per tissue
-TISSUES = PipelineTracks.Aggregate( TRACKS, labels = ("tissue",) )
+TISSUES = PipelineTracks.Aggregate(TRACKS, labels=("tissue",))
 
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 def connect():
     '''connect to database.
 
     This method also attaches to helper databases.
     '''
 
-    dbh = sqlite3.connect( PARAMS["database"] )
-    statement = '''ATTACH DATABASE '%s' as annotations''' % (PARAMS["annotations_database"])
+    dbh = sqlite3.connect(PARAMS["database"])
+    statement = '''ATTACH DATABASE '%s' as annotations''' % (
+        PARAMS["annotations_database"])
     cc = dbh.cursor()
-    cc.execute( statement )
+    cc.execute(statement)
     cc.close()
 
     return dbh
@@ -230,11 +233,13 @@ def connect():
 ###################################################################
 ###################################################################
 ###################################################################
-## TRIM READS
-## this should go elsewhere, the readqc pipeline?
+# TRIM READS
+# this should go elsewhere, the readqc pipeline?
+
+
 @follows(mkdir("trim"))
-@transform( "*.gz", regex( r"(\S+).gz"), r"trim/\1.gz" )
-def trimReads( infile, outfile ):
+@transform("*.gz", regex(r"(\S+).gz"), r"trim/\1.gz")
+def trimReads(infile, outfile):
     '''trim reads with FastX'''
     to_cluster = True
     first_base = PARAMS["trim_first_base"]
@@ -246,42 +251,48 @@ def trimReads( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@transform( ("*.fastq.1.gz", 
-             "*.fastq.gz",
-             "*.sra"),
-             regex( r"(\S+).(fastq.1.gz|fastq.gz|sra)"),
-             r"\1.dir")
-def makeTrackDirectories( infile, outfile ):
+
+
+@transform(("*.fastq.1.gz",
+            "*.fastq.gz",
+            "*.sra"),
+           regex(r"(\S+).(fastq.1.gz|fastq.gz|sra)"),
+           r"\1.dir")
+def makeTrackDirectories(infile, outfile):
     '''make track directories.'''
-    os.mkdir( outfile )
-    os.mkdir( os.path.join( outfile, "bam" ) )
+    os.mkdir(outfile)
+    os.mkdir(os.path.join(outfile, "bam"))
 
 #########################################################################
 #########################################################################
 #########################################################################
-## Map reads to genome using BWA
-@follows( makeTrackDirectories, mkdir( PARAMS["exportdir"] ) )
-@transform( ("*.fastq.1.gz", 
-             "*.fastq.gz",
-             "*.sra"),
-             regex( r"(\S+).(fastq.1.gz|fastq.gz|sra)"),
-             r"\1.dir/\1.genome.bam")
+# Map reads to genome using BWA
+
+
+@follows(makeTrackDirectories, mkdir(PARAMS["exportdir"]))
+@transform(("*.fastq.1.gz",
+            "*.fastq.gz",
+            "*.sra"),
+           regex(r"(\S+).(fastq.1.gz|fastq.gz|sra)"),
+           r"\1.dir/\1.genome.bam")
 def mapReads(infiles, outfile):
     '''Map reads to the genome using BWA '''
     to_cluster = True
-    job_options= "-pe dedicated %i -R y" % PARAMS["bwa_threads"]
+    job_options = "-pe dedicated %i -R y" % PARAMS["bwa_threads"]
     m = PipelineMapping.BWA()
-    statement = m.build((infiles,), outfile) 
+    statement = m.build((infiles,), outfile)
     P.run()
 
 #########################################################################
 #########################################################################
 #########################################################################
 #@transform( "*CD4*/bam/*.genome.bam",
-@transform( mapReads,
-            suffix(".genome.bam"),
-            ".prep.bam" )
-def prepareBAMs( infile, outfile ):
+
+
+@transform(mapReads,
+           suffix(".genome.bam"),
+           ".prep.bam")
+def prepareBAMs(infile, outfile):
     '''filter bam files for medip-seq analysis.
 
     Optional steps include:
@@ -291,14 +302,14 @@ def prepareBAMs( infile, outfile ):
 
     '''
     to_cluster = True
-    track = P.snip( outfile, ".bam" )
+    track = P.snip(outfile, ".bam")
 
     tmpdir = P.getTempFilename()
-    
+
     current_file = infile
 
     nfiles = 0
-    statement = [ "mkdir %(tmpdir)s" ]
+    statement = ["mkdir %(tmpdir)s"]
 
     if "filtering_quality" in PARAMS and PARAMS["filtering_quality"] > 0:
         next_file = "%(tmpdir)s/bam_%(nfiles)i.bam" % locals()
@@ -314,7 +325,7 @@ def prepareBAMs( infile, outfile ):
         next_file = "%(tmpdir)s/bam_%(nfiles)i.bam" % locals()
 
         dedup_method = PARAMS["filtering_dedup_method"]
-        
+
         if dedup_method == 'samtools':
             statement.append( '''samtools rmdup - - ''' )
 
@@ -329,80 +340,90 @@ def prepareBAMs( infile, outfile ):
         nfiles += 1
         current_file = next_file
 
-    statement.append( "mv %%(current_file)s %(outfile)s" % locals() )
-    statement.append( "rm -rf %(tmpdir)s" )
-    statement.append( "samtools index %(outfile)s" )
+    statement.append("mv %%(current_file)s %(outfile)s" % locals())
+    statement.append("rm -rf %(tmpdir)s")
+    statement.append("samtools index %(outfile)s")
 
-    statement = " ; ".join( statement )
+    statement = " ; ".join(statement)
 
     P.run()
 
-    os.unlink( tmpdir )
+    os.unlink(tmpdir)
 
 #########################################################################
 #########################################################################
 #########################################################################
-@merge( prepareBAMs, "picard_duplicates.load" )
-def loadPicardDuplicateStats( infiles, outfile ):
+
+
+@merge(prepareBAMs, "picard_duplicates.load")
+def loadPicardDuplicateStats(infiles, outfile):
     '''Merge Picard duplicate stats into single table and load into SQLite.
     '''
-    PipelineMappingQC.loadPicardDuplicateStats( infiles, outfile )
+    PipelineMappingQC.loadPicardDuplicateStats(infiles, outfile)
 
 #########################################################################
 #########################################################################
 #########################################################################
-@transform( (mapReads, prepareBAMs), 
-            suffix(".bam"),
-            ".picard_stats")
-def buildPicardAlignmentStats( infile, outfile ):
+
+
+@transform((mapReads, prepareBAMs),
+           suffix(".bam"),
+           ".picard_stats")
+def buildPicardAlignmentStats(infile, outfile):
     '''Gather BAM file alignment statistics using Picard '''
 
-    PipelineMappingQC.buildPicardAlignmentStats( infile, outfile, 
-                                                 os.path.join( PARAMS["bwa_index_dir"],
-                                                               PARAMS["genome"] + ".fa" ) )
+    PipelineMappingQC.buildPicardAlignmentStats(infile, outfile,
+                                                os.path.join(PARAMS["bwa_index_dir"],
+                                                             PARAMS["genome"] + ".fa"))
 
 ############################################################
 ############################################################
 ############################################################
-@merge( buildPicardAlignmentStats, "picard_stats.load" )
-def loadPicardAlignmentStats( infiles, outfile ):
+
+
+@merge(buildPicardAlignmentStats, "picard_stats.load")
+def loadPicardAlignmentStats(infiles, outfile):
     '''Merge Picard alignment stats into single table and load into SQLite.'''
 
-    PipelineMappingQC.loadPicardAlignmentStats( infiles, outfile )
-    
+    PipelineMappingQC.loadPicardAlignmentStats(infiles, outfile)
+
 #########################################################################
 #########################################################################
 #########################################################################
-@transform( (mapReads, prepareBAMs), 
-            suffix(".bam"),
-            ".gcstats" )
-def buildPicardGCStats( infile, outfile ):
+
+
+@transform((mapReads, prepareBAMs),
+           suffix(".bam"),
+           ".gcstats")
+def buildPicardGCStats(infile, outfile):
     '''Gather BAM file GC bias stats using Picard '''
-    PipelineMappingQC.buildPicardGCStats( infile, outfile, 
-                                                 os.path.join( PARAMS["bwa_index_dir"],
-                                                               PARAMS["genome"] + ".fa" ) )
+    PipelineMappingQC.buildPicardGCStats(infile, outfile,
+                                         os.path.join(PARAMS["bwa_index_dir"],
+                                                      PARAMS["genome"] + ".fa"))
 
 
 #########################################################################
 #########################################################################
 #########################################################################
-@merge( buildPicardGCStats, "picard_gcbias_stats.load" )
-def loadPicardGCStats( infiles, outfile ):
+@merge(buildPicardGCStats, "picard_gcbias_stats.load")
+def loadPicardGCStats(infiles, outfile):
     '''Merge Picard insert size stats into single table and load into SQLite.'''
-    
-    tablename = P.toTable( outfile )
+
+    tablename = P.toTable(outfile)
     outf = P.getTempFile()
 
     first = True
     for f in infiles:
-        track = P.snip( os.path.basename(f), ".gcstats" )
-        if not os.path.exists( f ): 
-            E.warn( "File %s missing" % f )
+        track = P.snip(os.path.basename(f), ".gcstats")
+        if not os.path.exists(f):
+            E.warn("File %s missing" % f)
             continue
-        lines = [ x for x in open( f, "r").readlines() if not x.startswith("#") and x.strip() ]
-        if first: outf.write( "%s\t%s" % ("track", lines[0] ) )
+        lines = [
+            x for x in open(f, "r").readlines() if not x.startswith("#") and x.strip()]
+        if first:
+            outf.write("%s\t%s" % ("track", lines[0]))
         first = False
-        outf.write( "%s\t%s" % (track,lines[1] ))
+        outf.write("%s\t%s" % (track, lines[1]))
     outf.close()
     tmpfilename = outf.name
 
@@ -414,32 +435,38 @@ def loadPicardGCStats( infiles, outfile ):
                    > %(outfile)s '''
     P.run()
 
-    os.unlink( tmpfilename )
+    os.unlink(tmpfilename)
 
 #########################################################################
 #########################################################################
 #########################################################################
-@transform( (mapReads, prepareBAMs),
-            suffix(".bam"),
-            ".readstats" )
-def buildBAMStats( infile, outfile ):
+
+
+@transform((mapReads, prepareBAMs),
+           suffix(".bam"),
+           ".readstats")
+def buildBAMStats(infile, outfile):
     '''Count number of reads mapped, duplicates, etc. '''
-    PipelineMappingQC.buildBAMStats( infile, outfile )
+    PipelineMappingQC.buildBAMStats(infile, outfile)
 
 #########################################################################
 #########################################################################
 #########################################################################
-@merge( buildBAMStats, "bam_stats.load" )
-def loadBAMStats( infiles, outfile ):
+
+
+@merge(buildBAMStats, "bam_stats.load")
+def loadBAMStats(infiles, outfile):
     '''Import bam statistics into SQLite'''
-    PipelineMappingQC.loadBAMStats( infiles, outfile )
+    PipelineMappingQC.loadBAMStats(infiles, outfile)
 
 #########################################################################
 #########################################################################
 #########################################################################
-## Methylation analysis
-@transform( prepareBAMs, suffix(".bam"), ".medips")
-def runMEDIPS( infile, outfile ):
+# Methylation analysis
+
+
+@transform(prepareBAMs, suffix(".bam"), ".medips")
+def runMEDIPS(infile, outfile):
     '''run MEDIPS analysis - 
     outputs methylation profiles.
     '''
@@ -475,13 +502,15 @@ def runMEDIPS( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@transform( runMEDIPS, suffix(".medips"), "_medips.load")
-def loadMEDIPS( infile, outfile ):
+
+
+@transform(runMEDIPS, suffix(".medips"), "_medips.load")
+def loadMEDIPS(infile, outfile):
     '''load medips results'''
 
-    table_prefix = re.sub( "_prep", "", P.toTable( outfile ))
-    
-    table = table_prefix + "_coveredpos" 
+    table_prefix = re.sub("_prep", "", P.toTable(outfile))
+
+    table = table_prefix + "_coveredpos"
 
     statement = """
     cat %(infile)s_saturation_coveredpos.csv
@@ -495,19 +524,21 @@ def loadMEDIPS( infile, outfile ):
            --header=coverage,ncovered,pcovered
     >> %(outfile)s
     """
-    
+
     P.run()
 
 #########################################################################
 #########################################################################
 #########################################################################
-@transform( prepareBAMs, suffix(".bam"), ".covered.bed.gz" )
-def buildCoverageBed( infile, outfile ):
+
+
+@transform(prepareBAMs, suffix(".bam"), ".covered.bed.gz")
+def buildCoverageBed(infile, outfile):
     '''build bed file with regions covered by reads.
 
     Intervals containing only few reads (tiling_min_reads) are removed.
     '''
-    
+
     to_cluster = True
 
     statement = '''
@@ -537,16 +568,19 @@ def buildCoverageBed( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@transform( prepareBAMs, 
-            suffix(".bam"), 
-            add_inputs( os.path.join( PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_cpg_bed"] ) ),
-            ".cpg_coverage.gz" )
-def buildCpGCoverage( infiles, outfile ):
+
+
+@transform(prepareBAMs,
+           suffix(".bam"),
+           add_inputs(os.path.join(
+               PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_cpg_bed"])),
+           ".cpg_coverage.gz")
+def buildCpGCoverage(infiles, outfile):
     '''count number times certain CpG are covered by reads.
 
     Reads are processed in the same way as by buildCoverageBed.
     '''
-    
+
     infile, cpg_file = infiles
     to_cluster = True
 
@@ -571,21 +605,25 @@ def buildCpGCoverage( infiles, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@merge( buildCpGCoverage, "cpg_coverage.load" )
-def loadCpGCoverage( infiles, outfile ):
+
+
+@merge(buildCpGCoverage, "cpg_coverage.load")
+def loadCpGCoverage(infiles, outfile):
     '''load cpg coverag data.'''
-    P.mergeAndLoad( infiles, outfile, regex="/(.*).prep.cpg_coverage.gz",
-                    row_wise = False )
+    P.mergeAndLoad(infiles, outfile, regex="/(.*).prep.cpg_coverage.gz",
+                   row_wise=False)
 
 #########################################################################
 #########################################################################
 #########################################################################
-@merge( buildCoverageBed, "tiles_variable_width.bed.gz" )
-def buildVariableWidthTiles( infiles, outfile ):
+
+
+@merge(buildCoverageBed, "tiles_variable_width.bed.gz")
+def buildVariableWidthTiles(infiles, outfile):
     '''bed file with intervals that are covered by reads in any of the experiments.
     '''
-    
-    infiles = " ".join( infiles )
+
+    infiles = " ".join(infiles)
     to_cluster = True
 
     statement = '''
@@ -603,9 +641,11 @@ def buildVariableWidthTiles( infiles, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-## Run DESeq to identify differentially methylated regions
-@files( (( None, "tiles_fixednonovl.bed.gz"),) )
-def buildNonoverlappingFixedWidthTiles( infile, outfile ):
+# Run DESeq to identify differentially methylated regions
+
+
+@files(((None, "tiles_fixednonovl.bed.gz"),))
+def buildNonoverlappingFixedWidthTiles(infile, outfile):
     '''Build bed file segmenting entire genome using window x and shift y'''
 
     shift = PARAMS["tiling_nonoverlapping_window"]
@@ -619,8 +659,9 @@ def buildNonoverlappingFixedWidthTiles( infile, outfile ):
                 > %(outfile)s'''
     P.run()
 
-@files( (( None, "tiles_fixedovl.bed.gz"),) )
-def buildOverlappingFixedWidthTiles( infile, outfile ):
+
+@files(((None, "tiles_fixedovl.bed.gz"),))
+def buildOverlappingFixedWidthTiles(infile, outfile):
     '''Build bed file segmenting entire genome using window x and shift y'''
     assert PARAMS["tiling_overlapping_window"] % 2 == 0
     shift = PARAMS["tiling_overlapping_window"] // 2
@@ -635,21 +676,24 @@ def buildOverlappingFixedWidthTiles( infile, outfile ):
                 > %(outfile)s'''
     P.run()
 
-@transform( (buildNonoverlappingFixedWidthTiles,
-             buildOverlappingFixedWidthTiles,
-             buildVariableWidthTiles ), 
-            suffix(".bed.gz"), 
-            ".bed.gz")
-def buildTiles( infile, outfile ):
+
+@transform((buildNonoverlappingFixedWidthTiles,
+            buildOverlappingFixedWidthTiles,
+            buildVariableWidthTiles),
+           suffix(".bed.gz"),
+           ".bed.gz")
+def buildTiles(infile, outfile):
     pass
 
 #########################################################################
 #########################################################################
 #########################################################################
-@transform( buildTiles,
-            suffix(".bed.gz"),
-            ".stats")
-def buildTileStats( infile, outfile ):
+
+
+@transform(buildTiles,
+           suffix(".bed.gz"),
+           ".stats")
+def buildTileStats(infile, outfile):
     '''compute tiling window size statistics from bed file.'''
 
     use_cluster = True
@@ -670,19 +714,22 @@ def buildTileStats( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@transform( buildTiles,
-            suffix(".bed.gz"), 
-            ".bigbed")
-def buildBigBed( infile, outfile ):
+
+
+@transform(buildTiles,
+           suffix(".bed.gz"),
+           ".bigbed")
+def buildBigBed(infile, outfile):
     '''bed file with intervals that are covered by reads in any of the experiments.
     '''
-    
+
     to_cluster = True
     to_cluster = False
 
     tmpfile = P.getTempFilename()
 
-    contig_sizes = os.path.join( PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_contigs"] )
+    contig_sizes = os.path.join(
+        PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_contigs"])
 
     statement = '''
     zcat %(infile)s > %(tmpfile)s;
@@ -691,12 +738,16 @@ def buildBigBed( infile, outfile ):
     '''
     P.run()
 
-    try: os.unlink( tmpfile )
-    except OSError: pass
+    try:
+        os.unlink(tmpfile)
+    except OSError:
+        pass
 
 #########################################################################
 # add_inputs( buildGenomeTilingBed ),
-def buildTiledReadCounts( infiles, outfile ):
+
+
+def buildTiledReadCounts(infiles, outfile):
     '''compute coverage of genome with reads.'''
 
     to_cluster = True
@@ -724,47 +775,53 @@ def buildTiledReadCounts( infiles, outfile ):
     | coverageBed -a stdin -b %(tiles)s 
     | sort -k1,1 -k2,2n
     | gzip > %(outfile)s '''
-    
+
     P.run()
 
-@transform( prepareBAMs,
-            suffix(".bam"), 
-            add_inputs( buildVariableWidthTiles ),
-            r".variablewidth.tilecounts.bed.gz" )
-def buildTiledReadCountsVariableWidth(infiles, outfile ):
+
+@transform(prepareBAMs,
+           suffix(".bam"),
+           add_inputs(buildVariableWidthTiles),
+           r".variablewidth.tilecounts.bed.gz")
+def buildTiledReadCountsVariableWidth(infiles, outfile):
     '''build read counds for variable width windows.'''
-    buildTiledReadCounts( infiles, outfile )
+    buildTiledReadCounts(infiles, outfile)
 
-@transform( prepareBAMs,
-            suffix(".bam"), 
-            add_inputs( buildNonoverlappingFixedWidthTiles ),
-            r".fixedwidthnoovl.tilecounts.bed.gz" )
-def buildTiledReadCountsFixedWidthNoOverlap(infiles, outfile ): 
+
+@transform(prepareBAMs,
+           suffix(".bam"),
+           add_inputs(buildNonoverlappingFixedWidthTiles),
+           r".fixedwidthnoovl.tilecounts.bed.gz")
+def buildTiledReadCountsFixedWidthNoOverlap(infiles, outfile):
     '''build read counds for fixed width windows.'''
-    buildTiledReadCounts( infiles, outfile )
+    buildTiledReadCounts(infiles, outfile)
 
-@transform( prepareBAMs,
-            suffix(".bam"), 
-            add_inputs( buildOverlappingFixedWidthTiles ),
-            r".fixedwidthovl.tilecounts.bed.gz" )
-def buildTiledReadCountsFixedWidthOverlap(infiles, outfile ):
+
+@transform(prepareBAMs,
+           suffix(".bam"),
+           add_inputs(buildOverlappingFixedWidthTiles),
+           r".fixedwidthovl.tilecounts.bed.gz")
+def buildTiledReadCountsFixedWidthOverlap(infiles, outfile):
     '''build read counds for fixed width windows.'''
-    buildTiledReadCounts( infiles, outfile )
+    buildTiledReadCounts(infiles, outfile)
 
-@transform( (buildTiledReadCountsVariableWidth,
-             buildTiledReadCountsFixedWidthNoOverlap,
-             buildTiledReadCountsFixedWidthOverlap),
-            suffix(".bed.gz"),
-            ".bed.gz" )
-def buildAllTiledReadCounts( infile, outfile ):
+
+@transform((buildTiledReadCountsVariableWidth,
+            buildTiledReadCountsFixedWidthNoOverlap,
+            buildTiledReadCountsFixedWidthOverlap),
+           suffix(".bed.gz"),
+           ".bed.gz")
+def buildAllTiledReadCounts(infile, outfile):
     pass
 
 #########################################################################
-@follows( mkdir( "diff_methylation" ) )
-@collate( buildAllTiledReadCounts,
-          regex( ".*\.([^.]+).tilecounts.bed.gz"),
-          r"diff_methylation/\1.counts.tsv.gz")
-def aggregateTiledReadCounts( infiles, outfile ):
+
+
+@follows(mkdir("diff_methylation"))
+@collate(buildAllTiledReadCounts,
+         regex(".*\.([^.]+).tilecounts.bed.gz"),
+         r"diff_methylation/\1.counts.tsv.gz")
+def aggregateTiledReadCounts(infiles, outfile):
     '''aggregate tag counts for each window.
 
     coverageBed outputs the following columns:
@@ -785,57 +842,64 @@ def aggregateTiledReadCounts( infiles, outfile ):
 
     Tiles with no counts will not be output.
     '''
-    
+
     to_cluster = True
 
-    src = " ".join( [ '''<( zcat %s | awk '{printf("%%s:%%i-%%i\\t%%i\\n", $1,$2,$3,$4 );}' ) ''' % x for x in infiles] )
-    tmpfile = P.getTempFilename( "." )
+    src = " ".join(
+        [ '''<( zcat %s | awk '{printf("%%s:%%i-%%i\\t%%i\\n", $1,$2,$3,$4 );}' ) ''' % x for x in infiles] )
+    tmpfile = P.getTempFilename(".")
     statement = '''paste %(src)s > %(tmpfile)s'''
     P.run()
-    
-    tracks = [ re.sub( "\..*", '', os.path.basename(x) ) for x in infiles ]
 
-    outf = IOTools.openFile( outfile, "w")
-    outf.write( "interval_id\t%s\n" % "\t".join( tracks ) )
-    
-    for line in open( tmpfile, "r" ):
+    tracks = [re.sub("\..*", '', os.path.basename(x)) for x in infiles]
+
+    outf = IOTools.openFile(outfile, "w")
+    outf.write("interval_id\t%s\n" % "\t".join(tracks))
+
+    for line in open(tmpfile, "r"):
         data = line[:-1].split("\t")
-        genes = list(set([ data[x] for x in range(0,len(data), 2 ) ]))
-        values = [ int(data[x]) for x in range(1,len(data), 2 ) ]
-        if sum(values) == 0: continue
-        assert len(genes) == 1, "paste command failed, wrong number of genes per line: '%s'" % line
-        outf.write( "%s\t%s\n" % (genes[0], "\t".join(map(str, values) ) ) )
-    
+        genes = list(set([data[x] for x in range(0, len(data), 2)]))
+        values = [int(data[x]) for x in range(1, len(data), 2)]
+        if sum(values) == 0:
+            continue
+        assert len(
+            genes) == 1, "paste command failed, wrong number of genes per line: '%s'" % line
+        outf.write("%s\t%s\n" % (genes[0], "\t".join(map(str, values))))
+
     outf.close()
 
     os.unlink(tmpfile)
 
 #########################################################################
-def loadMethylationData( infile, design_file ):
+
+
+def loadMethylationData(infile, design_file):
     '''load methylation data for deseq/edger analysis.
-    
+
     This method creates various R objects:
 
     countsTable : data frame with counts. 
     groups : vector with groups
 
     '''
-    
-    E.info( "reading data")
+
+    E.info("reading data")
     R( '''counts_table = read.delim( '%(infile)s', header = TRUE, 
                                                    row.names = 1, 
                                                    stringsAsFactors = TRUE )''' % locals() )
 
-    E.info( "read data: %i observations for %i samples" % tuple(R('''dim(counts_table)''')))
+    E.info("read data: %i observations for %i samples" %
+           tuple(R('''dim(counts_table)''')))
 
     # Load comparisons from file
-    R('''pheno = read.delim( '%(design_file)s', header = TRUE, stringsAsFactors = TRUE )''' % locals() )
+    R('''pheno = read.delim( '%(design_file)s', header = TRUE, stringsAsFactors = TRUE )''' %
+      locals())
 
     # Make sample names R-like - substitute - for . and add the .prep suffix
     R('''pheno[,1] = gsub('-', '.', pheno[,1]) ''')
-    
-    # Ensure pheno rows match count columns 
-    R('''pheno2 = pheno[match(colnames(counts_table),pheno[,1]),,drop=FALSE]''' ) 
+
+    # Ensure pheno rows match count columns
+    R('''pheno2 = pheno[match(colnames(counts_table),pheno[,1]),,drop=FALSE]''' )
 
     # Subset data & set conditions
     R('''includedSamples <- pheno2$include == '1' ''')
@@ -847,18 +911,21 @@ def loadMethylationData( infile, design_file ):
     R('''countsTable <- counts_table[ , includedSamples ]''')
     R('''groups <- factor(pheno2$group[ includedSamples ])''')
     R('''pairs = factor(pheno2$pair[ includedSamples ])''')
-    
+
     groups = R('''levels(groups)''')
     pairs = R('''levels(pairs)''')
 
-    E.info( "filtered data: %i observations for %i samples" % tuple( R('''dim(countsTable)''') ) )
-    
+    E.info("filtered data: %i observations for %i samples" %
+           tuple( R('''dim(countsTable)''') ) )
+
     return groups, pairs
 
 #########################################################################
 #########################################################################
 #########################################################################
-def runDE( infiles, outfile, method ):
+
+
+def runDE(infiles, outfile, method):
     '''run DESeq or EdgeR.
 
     The job is split into smaller sections. The order of the input 
@@ -866,12 +933,13 @@ def runDE( infiles, outfile, method ):
     '''
 
     to_cluster = True
-    
-    infile, design_file = infiles
-    design = P.snip( os.path.basename(design_file), ".tsv")
-    tiling = P.snip( os.path.basename( infile ), ".counts.tsv.gz" )
 
-    outdir = os.path.join( PARAMS["exportdir"], "diff_methylation", "%s_%s_%s_" % (tiling, design, method ) )
+    infile, design_file = infiles
+    design = P.snip(os.path.basename(design_file), ".tsv")
+    tiling = P.snip(os.path.basename(infile), ".counts.tsv.gz")
+
+    outdir = os.path.join(
+        PARAMS["exportdir"], "diff_methylation", "%s_%s_%s_" % (tiling, design, method))
 
     statement = '''zcat %(infile)s 
               | perl %(scriptsdir)s/randomize_lines.pl -h
@@ -899,44 +967,48 @@ def runDE( infiles, outfile, method ):
     P.run()
 
 
-@follows( aggregateTiledReadCounts, mkdir( os.path.join( PARAMS["exportdir"], "diff_methylation")) )
-@files( [ ( (data, design), 
-            "diff_methylation/%s_%s.deseq.gz" % (P.snip(os.path.basename(data),".counts.tsv.gz"),
-                                   P.snip(os.path.basename(design),".tsv" ) ) ) \
-              for data, design in itertools.product( 
-                                               glob.glob("diff_methylation/*.counts.tsv.gz"),
-                                               P.asList(PARAMS["deseq_designs"]) ) ] )
-def runDESeq( infiles, outfile ):
+@follows(aggregateTiledReadCounts, mkdir(os.path.join(PARAMS["exportdir"], "diff_methylation")))
+@files([((data, design),
+         "diff_methylation/%s_%s.deseq.gz" % (P.snip(os.path.basename(data), ".counts.tsv.gz"),
+                                              P.snip(os.path.basename(design), ".tsv")))
+        for data, design in itertools.product(
+            glob.glob("diff_methylation/*.counts.tsv.gz"),
+            P.asList(PARAMS["deseq_designs"]))])
+def runDESeq(infiles, outfile):
     '''estimate differential expression using DESeq.
 
     The final output is a table. It is slightly edited such that
     it contains a similar output and similar fdr compared to cuffdiff.
     '''
 
-    runDE( infiles, outfile, "deseq" )
+    runDE(infiles, outfile, "deseq")
 
 #########################################################################
 #########################################################################
 #########################################################################
-@follows( aggregateTiledReadCounts, mkdir( os.path.join( PARAMS["exportdir"], "diff_methylation")) )
-@files( [ ( (data, design), 
-            "diff_methylation/%s_%s.edger.gz" % (P.snip(os.path.basename(data),".counts.tsv.gz"),
-                                                 P.snip(os.path.basename(design),".tsv" ) ) ) \
-              for data, design in itertools.product( 
-                                               glob.glob("diff_methylation/*.counts.tsv.gz"),
-                                               P.asList(PARAMS["deseq_designs"]) ) ] )
-def runEdgeR( infiles, outfile ):
+
+
+@follows(aggregateTiledReadCounts, mkdir(os.path.join(PARAMS["exportdir"], "diff_methylation")))
+@files([((data, design),
+         "diff_methylation/%s_%s.edger.gz" % (P.snip(os.path.basename(data), ".counts.tsv.gz"),
+                                              P.snip(os.path.basename(design), ".tsv")))
+        for data, design in itertools.product(
+            glob.glob("diff_methylation/*.counts.tsv.gz"),
+            P.asList(PARAMS["deseq_designs"]))])
+def runEdgeR(infiles, outfile):
     '''estimate differential methylation using EdgeR
-    
+
     This method applies a paired test. The analysis follows
     the example in chapter 11 of the EdgeR manual.
     '''
 
-    runDE( infiles, outfile, "edger" )
+    runDE(infiles, outfile, "edger")
 
 #########################################################################
-@transform( (runDESeq, runEdgeR), suffix(".gz"), ".merged.gz" )
-def mergeDMRWindows( infile, outfile ):
+
+
+@transform((runDESeq, runEdgeR), suffix(".gz"), ".merged.gz")
+def mergeDMRWindows(infile, outfile):
     '''merge overlapping windows.'''
 
     to_cluster = True
@@ -954,33 +1026,41 @@ def mergeDMRWindows( infile, outfile ):
     P.run()
 
 #########################################################################
+
+
 @jobs_limit(1)
-@transform( mergeDMRWindows, suffix(".merged.gz"), ".load" )
-def loadDMRWindows( infile, outfile ):
+@transform(mergeDMRWindows, suffix(".merged.gz"), ".load")
+def loadDMRWindows(infile, outfile):
     '''merge overlapping windows.'''
-    P.load( infile, outfile, options = "--quick" )
+    P.load(infile, outfile, options="--quick")
 
 #########################################################################
-@collate( loadDMRWindows, regex( "(\S+)[.](\S+).load" ), r"\2_stats.tsv" )
-def buildDMRStats( infiles, outfile ):
+
+
+@collate(loadDMRWindows, regex("(\S+)[.](\S+).load"), r"\2_stats.tsv")
+def buildDMRStats(infiles, outfile):
     '''compute differential methylation stats.'''
-    tablenames = [P.toTable( x ) for x in infiles ] 
-    method = P.snip( outfile, "_stats.tsv" )
-    PipelineMedip.buildDMRStats( tablenames, method, outfile )
+    tablenames = [P.toTable(x) for x in infiles]
+    method = P.snip(outfile, "_stats.tsv")
+    PipelineMedip.buildDMRStats(tablenames, method, outfile)
 
 #########################################################################
-@transform( buildDMRStats, suffix(".tsv"), ".load" )
-def loadDMRStats( infile, outfile ):
+
+
+@transform(buildDMRStats, suffix(".tsv"), ".load")
+def loadDMRStats(infile, outfile):
     '''load DMR stats into table.'''
-    P.load( infile, outfile )
+    P.load(infile, outfile)
 
 #########################################################################
 #########################################################################
 #########################################################################
-@transform( mergeDMRWindows,
-            suffix(".merged.gz"),
-            ".stats")
-def buildDMRWindowStats( infile, outfile ):
+
+
+@transform(mergeDMRWindows,
+           suffix(".merged.gz"),
+           ".stats")
+def buildDMRWindowStats(infile, outfile):
     '''compute tiling window size statistics from bed file.'''
 
     to_cluster = True
@@ -1002,15 +1082,17 @@ def buildDMRWindowStats( infile, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@merge( (buildTileStats, buildDMRWindowStats),
-        "tileinfo.load" )
-def loadTileStats( infiles, outfile ):
+
+
+@merge((buildTileStats, buildDMRWindowStats),
+       "tileinfo.load")
+def loadTileStats(infiles, outfile):
     '''load tiling stats into database.'''
     prefix = P.snip(outfile, ".load")
 
-    files = " ".join( [ "%s.stats.tsv" % x for x in infiles ] )
+    files = " ".join(["%s.stats.tsv" % x for x in infiles])
 
-    tablename = P.snip( outfile, ".load" ) + "_stats" 
+    tablename = P.snip(outfile, ".load") + "_stats"
 
     statement = """
     python %(scriptsdir)s/combine_tables.py 
@@ -1023,11 +1105,11 @@ def loadTileStats( infiles, outfile ):
            --table=%(tablename)s 
     > %(outfile)s"""
     P.run()
-   
-    files = " ".join( [ "%s.hist.tsv" % x for x in infiles ] )
 
-    tablename = P.snip( outfile, ".load" ) + "_hist" 
-    
+    files = " ".join(["%s.hist.tsv" % x for x in infiles])
+
+    tablename = P.snip(outfile, ".load") + "_hist"
+
     statement = """
     python %(scriptsdir)s/combine_tables.py 
            --regex-filename="(.*).stats.hist.tsv" 
@@ -1046,15 +1128,15 @@ def loadTileStats( infiles, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@transform( mergeDMRWindows, regex(  "(.*)\.(.*).merged.gz"), r"\1_\2.dmr.bed.gz" )
-def buildDMRBed( infile, outfile ):
+@transform(mergeDMRWindows, regex("(.*)\.(.*).merged.gz"), r"\1_\2.dmr.bed.gz")
+def buildDMRBed(infile, outfile):
     '''output bed6 file with differentially methylated regions.
 
     Overlapping/book-ended entries are merged.
 
     The score is the average log fold change.
     '''
-    
+
     to_cluster = True
 
     statement = '''zcat %(infile)s
@@ -1062,24 +1144,25 @@ def buildDMRBed( infile, outfile ):
     | awk '$5 == "1" {printf("%%s\\t%%i\\t%%i\\t%%i\\t%%f\\n", $1,$2,$3,++a,$4)}'
     | gzip > %(outfile)s'''
 
-#    | mergeBed -i stdin -scores mean 
+#    | mergeBed -i stdin -scores mean
 
     P.run()
 
-@merge( buildDMRBed, "dmr_overlap.tsv.gz" )
-def computeDMROverlap( infiles, outfile ):
+
+@merge(buildDMRBed, "dmr_overlap.tsv.gz")
+def computeDMROverlap(infiles, outfile):
     '''compute overlap between bed sets.'''
-    
+
     to_cluster = True
 
-    if os.path.exists(outfile): 
+    if os.path.exists(outfile):
         # note: update does not work due to quoting
-        os.rename( outfile, "orig." + outfile )
+        os.rename(outfile, "orig." + outfile)
         options = "--update=orig.%s" % outfile
     else:
         options = ""
-    
-    infiles = " ".join( infiles )
+
+    infiles = " ".join(infiles)
 
     # note: need to quote track names
     statement = '''
@@ -1097,73 +1180,90 @@ def computeDMROverlap( infiles, outfile ):
 #########################################################################
 #########################################################################
 #########################################################################
-@transform( mergeDMRWindows, regex(  "(.*)\.(.*).merged.gz"), r"\1_\2.bed.gz" )
-def buildMRBed( infile, outfile ):
+
+
+@transform(mergeDMRWindows, regex("(.*)\.(.*).merged.gz"), r"\1_\2.bed.gz")
+def buildMRBed(infile, outfile):
     '''output bed6 file with methylated regions.
 
     All regions are output, even the insignificant ones.
 
     The score is the log fold change.
     '''
-    
-    outf = IOTools.openFile( outfile, "w" )
+
+    outf = IOTools.openFile(outfile, "w")
     c = E.Counter()
-    for row in csv.DictReader( IOTools.openFile( infile ),
-                               dialect = "excel-tab" ):
+    for row in csv.DictReader(IOTools.openFile(infile),
+                              dialect="excel-tab"):
         c.input += 1
 
-        contig, start, end = re.match("(.*):(\d+)-(\d+)", row["interval_id"] ).groups()
+        contig, start, end = re.match(
+            "(.*):(\d+)-(\d+)", row["interval_id"]).groups()
         c.output += 1
-        outf.write( "\t".join( (contig, start, end, str(c.input), row["lfold"] ) ) + "\n" )
-        
+        outf.write(
+            "\t".join((contig, start, end, str(c.input), row["lfold"])) + "\n")
+
     outf.close()
-    
-    E.info( "%s" % str(c) )
+
+    E.info("%s" % str(c))
 
 #########################################################################
 #########################################################################
 #########################################################################
-@follows( loadPicardDuplicateStats,
-          loadPicardAlignmentStats,
-          loadPicardGCStats,
-          loadBAMStats )
-def mapping(): pass
 
-@follows( aggregateTiledReadCounts,
-          loadDMRStats,
-          buildDMRBed,
-          computeDMROverlap)
-def callDMRs(): pass
 
-@follows( mapping, callDMRs) 
-def full(): pass
+@follows(loadPicardDuplicateStats,
+         loadPicardAlignmentStats,
+         loadPicardGCStats,
+         loadBAMStats)
+def mapping():
+    pass
+
+
+@follows(aggregateTiledReadCounts,
+         loadDMRStats,
+         buildDMRBed,
+         computeDMROverlap)
+def callDMRs():
+    pass
+
+
+@follows(mapping, callDMRs)
+def full():
+    pass
 
 ###################################################################
 ###################################################################
 ###################################################################
-@follows( mkdir( "report" ) )
+
+
+@follows(mkdir("report"))
 def build_report():
     '''build report from scratch.'''
 
-    E.info( "starting documentation build process from scratch" )
-    P.run_report( clean = True )
+    E.info("starting documentation build process from scratch")
+    P.run_report(clean=True)
 
 ###################################################################
 ###################################################################
 ###################################################################
-@follows( mkdir( "report" ) )
+
+
+@follows(mkdir("report"))
 def update_report():
     '''update report.'''
 
-    E.info( "updating documentation" )
-    P.run_report( clean = False )
+    E.info("updating documentation")
+    P.run_report(clean=False)
 
 ###################################################################
 ###################################################################
 ###################################################################
-@follows( mkdir( "%s/bamfiles" % PARAMS["web_dir"]), 
-          mkdir("%s/medips" % PARAMS["web_dir"]),
-          )
+
+
+@follows(mkdir("%s/bamfiles" % PARAMS["web_dir"]),
+         mkdir("%s/medips" % PARAMS["web_dir"]),
+         )
 def publish():
     '''publish files.'''
 
@@ -1175,38 +1275,39 @@ def publish():
     project_id = P.getProjectId()
 
     ucsc_urls = {
-        "bam": 
-        """track type=bam name="%(track)s" bigDataUrl=http://www.cgat.org/downloads/%(project_id)s/%(dirname)s/%(filename)s""" ,
+        "bam":
+        """track type=bam name="%(track)s" bigDataUrl=http://www.cgat.org/downloads/%(project_id)s/%(dirname)s/%(filename)s""",
         "bigwig":
-        """track type=bigWig name="%(track)s" bigDataUrl=http://www.cgat.org/downloads/%(project_id)s/%(dirname)s/%(filename)s""" ,
-        }
-        
+        """track type=bigWig name="%(track)s" bigDataUrl=http://www.cgat.org/downloads/%(project_id)s/%(dirname)s/%(filename)s""",
+    }
+
     # directory, files
     exportfiles = (
-        ( "bamfiles", glob.glob( "*/*.genome.bam" ) + glob.glob( "*/*.genome.bam.bai" ), "bam" ),
-        ( "bamfiles", glob.glob( "*/*.prep.bam" ) + glob.glob( "*/*.prep.bam.bai" ), "bam" ),
-        ( "medips", glob.glob( "*/*.bigwig" ), "bigwig"),
-        )
-    
+        ("bamfiles", glob.glob("*/*.genome.bam") +
+         glob.glob("*/*.genome.bam.bai"), "bam"),
+        ("bamfiles", glob.glob("*/*.prep.bam") +
+         glob.glob("*/*.prep.bam.bai"), "bam"),
+        ("medips", glob.glob("*/*.bigwig"), "bigwig"),
+    )
+
     ucsc_files = []
 
     for targetdir, filenames, datatype in exportfiles:
         for src in filenames:
             filename = os.path.basename(src)
             dest = "%s/%s/%s" % (web_dir, targetdir, filename)
-            suffix = os.path.splitext( src )
-            if suffix in ucsc_urls: ucsc_files.append( ( datatype, targetdir, filename ) )
-            dest = os.path.abspath( dest )
-            if not os.path.exists( dest ):
-                os.symlink( os.path.abspath(src), dest )
+            suffix = os.path.splitext(src)
+            if suffix in ucsc_urls:
+                ucsc_files.append((datatype, targetdir, filename))
+            dest = os.path.abspath(dest)
+            if not os.path.exists(dest):
+                os.symlink(os.path.abspath(src), dest)
 
     # output ucsc links
     for ucsctype, dirname, filename in ucsc_files:
-        filename = os.path.basename( filename )
-        track = P.snip( filename, ucsctype )
+        filename = os.path.basename(filename)
+        track = P.snip(filename, ucsctype)
         print ucsc_urls[ucsctype] % locals()
 
-if __name__== "__main__":
-    sys.exit( P.main(sys.argv) )
-
-
+if __name__ == "__main__":
+    sys.exit(P.main(sys.argv))

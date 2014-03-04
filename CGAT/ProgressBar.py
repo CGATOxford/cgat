@@ -1,4 +1,4 @@
-################################################################################
+##########################################################################
 #
 #   MRC FGU Computational Genomics Group
 #
@@ -19,7 +19,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
+##########################################################################
 '''
 ProgressBar.py - 
 ======================================================
@@ -33,17 +33,22 @@ Code
 ----
 
 '''
-import sys, os, string, time
+import sys
+import os
+import string
+import time
+
 
 class ProgressBar:
+
     """progress bar class
 
     adapted from Randy Pargman (2002)
     see http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/168639
     """
-    
-    def __init__(self, minValue = 0, maxValue = 10, totalWidth=12):
-        
+
+    def __init__(self, minValue=0, maxValue=10, totalWidth=12):
+
         self.progBar = "[]"   # This holds the progress bar string
         self._old_pbar = ""
         self.min = minValue
@@ -53,10 +58,12 @@ class ProgressBar:
         self.amount = 0       # When amount == max, we are 100% done
         self.updateAmount(0)  # Build progress bar string
 
-    def updateAmount(self, newAmount = 0):
+    def updateAmount(self, newAmount=0):
 
-        if newAmount < self.min: newAmount = self.min
-        if newAmount > self.max: newAmount = self.max
+        if newAmount < self.min:
+            newAmount = self.min
+        if newAmount > self.max:
+            newAmount = self.max
         self.amount = newAmount
 
         # Figure out the new percent done, round to an integer
@@ -71,7 +78,8 @@ class ProgressBar:
         numHashes = int(round(numHashes))
 
         # build a progress bar with hashes and spaces
-        self.progBar = "[" + '#'*numHashes + ' '*(allFull-numHashes) + "]"
+        self.progBar = "[" + '#' * numHashes + \
+            ' ' * (allFull - numHashes) + "]"
 
         # figure out where to put the percentage, roughly centered
         percentPlace = (len(self.progBar) / 2) - len(str(percentDone))
@@ -79,7 +87,7 @@ class ProgressBar:
 
         # slice the percentage into the bar
         self.progBar = self.progBar[0:percentPlace] + percentString + \
-                       self.progBar[percentPlace+len(percentString):]
+            self.progBar[percentPlace + len(percentString):]
 
     def draw(self):
         # draw progress bar - but only if it has changed
@@ -95,11 +103,10 @@ class ProgressBar:
 
 if __name__ == "__main__":
 
-    mi, ma= 0, 100
-    bar = ProgressBar( 0, 100, 20 )
+    mi, ma = 0, 100
+    bar = ProgressBar(0, 100, 20)
 
     for x in range(mi, ma):
         time.sleep(1)
-        bar.updateAmount( x )
+        bar.updateAmount(x)
         bar.draw()
-        

@@ -272,91 +272,100 @@ import CGAT.Genomics as Genomics
 import CGAT.Intervals as Intervals
 import CGAT.IOTools as IOTools
 
-def addSegment( feature, start, end, template, options ):
+
+def addSegment(feature, start, end, template, options):
     """add a generic segment of type *feature*.
     """
-    if start >= end: return 0
+    if start >= end:
+        return 0
 
     entry = GTF.Entry()
 
-    if type(template) == types.TupleType:
-        entry.copy( template[0] )        
+    if isinstance(template, tuple):
+        entry.copy(template[0])
         entry.clearAttributes()
-        entry.addAttribute( "downstream_gene_id", template[1].gene_id )
+        entry.addAttribute("downstream_gene_id", template[1].gene_id)
     else:
-        entry.copy( template )
+        entry.copy(template)
         entry.clearAttributes()
 
     entry.start, entry.end = start, end
     entry.feature = feature
     if feature not in ("exon", "CDS", "UTR", "UTR3", "UTR5"):
         entry.score = "."
-    options.stdout.write( str(entry) + "\n" )
+    options.stdout.write(str(entry) + "\n")
 
     return 1
 
-def addFlank( start, end, template, options ):
+
+def addFlank(start, end, template, options):
     """add a flank.
-    """    
-    is_positive = Genomics.IsPositiveStrand( template.strand )
+    """
+    is_positive = Genomics.IsPositiveStrand(template.strand)
     is_before = end <= template.start
     if (is_before and is_positive) or (not is_before and not is_positive):
         name = "5flank"
     else:
         name = "3flank"
-            
-    return addSegment( name, start, end, template, options )
 
-def addIntergenicSegment( last, this, fasta, options ):
+    return addSegment(name, start, end, template, options)
+
+
+def addIntergenicSegment(last, this, fasta, options):
     """add an intergenic segment between last and this.
 
     At telomeres, either can be None.
     """
-    if not this and not last: return 0
-        
+    if not this and not last:
+        return 0
+
     nadded = 0
     if not this:
         # last telomere
         try:
-            lcontig = fasta.getLength( last.contig )
+            lcontig = fasta.getLength(last.contig)
         except KeyError, msg:
             if options.ignore_missing:
                 return nadded
             else:
                 raise KeyError, msg
-        flank = min( last.end + options.flank, lcontig )
-        nadded += addFlank( last.end, flank, last, options )
-        nadded += addSegment( "telomeric", flank, lcontig, last, options )
+        flank = min(last.end + options.flank, lcontig)
+        nadded += addFlank(last.end, flank, last, options)
+        nadded += addSegment("telomeric", flank, lcontig, last, options)
     elif not last:
         # first telomere
-        flank = max(0, this.start - options.flank )
-        nadded += addSegment( "telomeric", 0, flank, this, options )
-        nadded += addFlank( flank, this.start, this, options )
+        flank = max(0, this.start - options.flank)
+        nadded += addSegment("telomeric", 0, flank, this, options)
+        nadded += addFlank(flank, this.start, this, options)
     else:
         # intergenic region
         d = this.start - last.end
         flank = options.flank
         if d > flank * 2:
-            nadded += addFlank( last.end, last.end + flank, last, options )
-            nadded += addSegment( "intergenic", last.end + flank, this.start - flank, (last,this), options )
-            nadded += addFlank( this.start - flank, this.start, this, options )
+            nadded += addFlank(last.end, last.end + flank, last, options)
+            nadded += addSegment("intergenic", last.end +
+                                 flank, this.start - flank, (last, this), options)
+            nadded += addFlank(this.start - flank, this.start, this, options)
         else:
             # add short flank between two genes. If they can not agree
             # on the directionality, "flank" is used.
-            is_positive1 = Genomics.IsPositiveStrand( last.strand ) 
-            is_positive2 = Genomics.IsPositiveStrand( this.strand )
+            is_positive1 = Genomics.IsPositiveStrand(last.strand)
+            is_positive2 = Genomics.IsPositiveStrand(this.strand)
             if is_positive1 and not is_positive2:
                 key = "3flank"
             elif not is_positive1 and is_positive2:
                 key = "5flank"
             else:
                 key = "flank"
-            nadded += addSegment( key, last.end, this.start, (last,this), options )
+            nadded += addSegment(key, last.end, this.start,
+                                 (last, this), options)
 
     return nadded
 
-##-----------------------------------------------------------------------------
-def buildTerritories( iterator, fasta, method, options ):
+# -----------------------------------------------------------------------------
+
+
+def buildTerritories(iterator, fasta, method, options):
     """build gene territories. 
 
     Exons in a gene are merged and the resulting 
@@ -379,19 +388,19 @@ def buildTerritories( iterator, fasta, method, options ):
     last_contig = None
     gff = None
 
-    def _iterator( iterator ):
+    def _iterator(iterator):
         """yield gene plus the locations of the end of the previous gene and start of next gene"""
 
         last_end, prev_end = 0, 0
         last_contig = None
         last = None
-        for matches in GTF.iterator_overlaps( iterator ):
+        for matches in GTF.iterator_overlaps(iterator):
 
-            this_start = min( [ x.start for x in matches ] )
-            this_end = max( [ x.end for x in matches ] )
+            this_start = min([x.start for x in matches])
+            this_end = max([x.end for x in matches])
 
             if method == "tss":
-                # restrict to tss 
+                # restrict to tss
                 if matches[0].strand == "+":
                     this_end = this_start + 1
                 else:
@@ -399,9 +408,9 @@ def buildTerritories( iterator, fasta, method, options ):
 
             this_contig = matches[0].contig
 
-            if last_contig != this_contig: 
+            if last_contig != this_contig:
                 if last:
-                    yield prev_end, last, fasta.getLength( last_contig )
+                    yield prev_end, last, fasta.getLength(last_contig)
                 last_end, prev_end = 0, 0
             else:
                 yield prev_end, last, this_start
@@ -410,19 +419,19 @@ def buildTerritories( iterator, fasta, method, options ):
             last_end = this_end
             last = matches
             last_contig = this_contig
-            
+
         if last:
-            yield prev_end, last, fasta.getLength( last_contig )
+            yield prev_end, last, fasta.getLength(last_contig)
 
-    for last_end, matches, next_start in _iterator( iterator ):
+    for last_end, matches, next_start in _iterator(iterator):
 
-        gff = GTF.Entry().copy( matches[0] )
+        gff = GTF.Entry().copy(matches[0])
 
-        start = min( [ x.start for x in matches ] )
-        end = max( [ x.end for x in matches ] )
+        start = min([x.start for x in matches])
+        end = max([x.end for x in matches])
 
         if method == "tss":
-            # restrict to tss 
+            # restrict to tss
             if matches[0].strand == "+":
                 end = start + 1
             else:
@@ -440,23 +449,26 @@ def buildTerritories( iterator, fasta, method, options ):
         else:
             end += options.radius
 
-        gff.gene_id = ":".join( set( [x.gene_id for x in matches ] ) )
+        gff.gene_id = ":".join(set([x.gene_id for x in matches]))
         gff.transcript_id = gff.gene_id
         gff.start, gff.end = start, end
 
         nsegments = len(matches)
-        if nsegments > 1: 
-            gff.addAttribute("ambiguous", nsegments )
+        if nsegments > 1:
+            gff.addAttribute("ambiguous", nsegments)
             nambiguous += 1
 
         assert gff.start < gff.end, "invalid segment: %s" % str(gff)
-        options.stdout.write( str(gff) + "\n" )
+        options.stdout.write(str(gff) + "\n")
         noutput += 1
 
-    E.info( "ninput=%i, noutput=%i, nambiguous=%i" % (ninput, noutput, nambiguous ))
+    E.info("ninput=%i, noutput=%i, nambiguous=%i" %
+           (ninput, noutput, nambiguous))
 
-##-----------------------------------------------------------------------------
-def annotateGenome( iterator, fasta, options ):
+# -----------------------------------------------------------------------------
+
+
+def annotateGenome(iterator, fasta, options):
     """perform a full segmentation of the genome (UTR, exon, intron ...)
     """
 
@@ -467,30 +479,36 @@ def annotateGenome( iterator, fasta, options ):
     for this in iterator:
         ninput += 1
 
-        E.debug( "last=%s" % str(last))
-        E.debug( "this=%s" % str(this))
-        E.debug( "is_ambiguous=%s" % str(is_ambiguous))
+        E.debug("last=%s" % str(last))
+        E.debug("this=%s" % str(this))
+        E.debug("is_ambiguous=%s" % str(is_ambiguous))
 
         if last and last.contig == this.contig:
             # check if file is sorted correctly
-            assert last.start <= this.start, "input file needs to be sorted by contig, start" 
+            assert last.start <= this.start, "input file needs to be sorted by contig, start"
             if last.end <= this.start:
                 if not is_ambiguous:
                     if last.gene_id != this.gene_id:
-                        nadded += addIntergenicSegment( last, this, fasta, options )
+                        nadded += addIntergenicSegment(last,
+                                                       this, fasta, options)
                     else:
-                        d = this.start - last.end  
+                        d = this.start - last.end
                         if d >= options.min_intron_length:
-                            nadded += addSegment( "intronic", last.end, this.start, last, options )
+                            nadded += addSegment("intronic",
+                                                 last.end, this.start, last, options)
                         elif d <= options.max_frameshift_length:
-                            nframeshifts += addSegment( "frameshift", last.end, this.start, last, options )
+                            nframeshifts += addSegment("frameshift",
+                                                       last.end, this.start, last, options)
                         else:
-                            nunknown += addSegment( "unknown", last.end, this.start, last, options )
+                            nunknown += addSegment("unknown",
+                                                   last.end, this.start, last, options)
                 else:
                     if last.feature == this.feature and last.gene_id == this.gene_id:
-                        nambiguous += addSegment( last.feature, last.end, this.start, last, options )
+                        nambiguous += addSegment(last.feature,
+                                                 last.end, this.start, last, options)
                     else:
-                        nambiguous += addSegment( "ambiguous", last.end, this.start, last, options )
+                        nambiguous += addSegment("ambiguous",
+                                                 last.end, this.start, last, options)
                     is_ambiguous = False
                 last = this
             elif last.end > this.start:
@@ -499,122 +517,134 @@ def annotateGenome( iterator, fasta, options ):
                     is_ambiguous = True
                 last.end = this.end
         else:
-            nadded += addIntergenicSegment( last, None, fasta, options )
-            nadded += addIntergenicSegment( None, this, fasta, options )
+            nadded += addIntergenicSegment(last, None, fasta, options)
+            nadded += addIntergenicSegment(None, this, fasta, options)
             last = this
 
-        options.stdout.write( "%s\n" % str(this) )
+        options.stdout.write("%s\n" % str(this))
         noutput += 1
-            
-    if options.loglevel >= 1:
-        options.stdlog.write( "# ninput=%i, noutput=%i, nadded=%i, nambiguous=%i, nframeshifts=%i, nunknown=%i\n" % (ninput, noutput, nadded, nambiguous, nframeshifts, nunknown) )
 
-def annotateExons( iterator, fasta, options ):
+    if options.loglevel >= 1:
+        options.stdlog.write("# ninput=%i, noutput=%i, nadded=%i, nambiguous=%i, nframeshifts=%i, nunknown=%i\n" % (
+            ninput, noutput, nadded, nambiguous, nframeshifts, nunknown))
+
+
+def annotateExons(iterator, fasta, options):
     """annotate exons within iterator."""
 
-    gene_iterator = GTF.gene_iterator( iterator )
+    gene_iterator = GTF.gene_iterator(iterator)
 
     ninput, noutput, noverlapping = 0, 0, 0
 
     for this in gene_iterator:
         ninput += 1
-        intervals = collections.defaultdict( list )
+        intervals = collections.defaultdict(list)
         ntranscripts = len(this)
 
-        is_negative_strand = Genomics.IsNegativeStrand( this[0][0].strand )
+        is_negative_strand = Genomics.IsNegativeStrand(this[0][0].strand)
 
         for exons in this:
             # make sure these are sorted correctly
-            exons.sort( key=lambda x: x.start )
-            if is_negative_strand: exons.reverse()
+            exons.sort(key=lambda x: x.start)
+            if is_negative_strand:
+                exons.reverse()
 
             nexons = len(exons)
             for i, e in enumerate(exons):
-                intervals[ (e.start, e.end) ].append( (i+1,nexons) )
+                intervals[(e.start, e.end)].append((i + 1, nexons))
 
         gtf = GTF.Entry()
-        gtf.fromGTF( this[0][0], this[0][0].gene_id, this[0][0].gene_id )
-        gtf.addAttribute( "ntranscripts", ntranscripts )        
+        gtf.fromGTF(this[0][0], this[0][0].gene_id, this[0][0].gene_id)
+        gtf.addAttribute("ntranscripts", ntranscripts)
 
         gtfs = []
         for r, pos in intervals.iteritems():
 
             g = GTF.Entry().copy(gtf)
             g.start, g.end = r
-            g.addAttribute( "nused", len(pos) )
-            g.addAttribute( "pos", ",".join( ["%i:%i" % x for x in pos ] ) )
-            gtfs.append( g )
-        
-        gtfs.sort( key=lambda x: x.start )
-        
-        for g in gtfs:
-            options.stdout.write( "%s\n" % str(g) )
+            g.addAttribute("nused", len(pos))
+            g.addAttribute("pos", ",".join(["%i:%i" % x for x in pos]))
+            gtfs.append(g)
 
-        # check for exon overlap    
-        intervals = [ (g.start, g.end) for g in gtfs ]
+        gtfs.sort(key=lambda x: x.start)
+
+        for g in gtfs:
+            options.stdout.write("%s\n" % str(g))
+
+        # check for exon overlap
+        intervals = [(g.start, g.end) for g in gtfs]
         nbefore = len(intervals)
-        nafter = len( Intervals.combine( intervals ) )
-        if nafter != nbefore: noverlapping += 1
+        nafter = len(Intervals.combine(intervals))
+        if nafter != nbefore:
+            noverlapping += 1
 
         noutput += 1
-            
-    if options.loglevel >= 1:
-        options.stdlog.write( "# ninput=%i, noutput=%i, noverlapping=%i\n" % (ninput, noutput, noverlapping) )
 
-def annotatePromoters( iterator, fasta, options ):
+    if options.loglevel >= 1:
+        options.stdlog.write(
+            "# ninput=%i, noutput=%i, noverlapping=%i\n" % (ninput, noutput, noverlapping))
+
+
+def annotatePromoters(iterator, fasta, options):
     """annotate promoters within iterator.
 
     Entries specied with ``--restrict-source`` are annotated.
     """
 
-    gene_iterator = GTF.gene_iterator( iterator )
+    gene_iterator = GTF.gene_iterator(iterator)
 
     ngenes, ntranscripts, npromotors = 0, 0, 0
 
     for gene in gene_iterator:
         ngenes += 1
-        is_negative_strand = Genomics.IsNegativeStrand( gene[0][0].strand )
-        lcontig = fasta.getLength( gene[0][0].contig )
+        is_negative_strand = Genomics.IsNegativeStrand(gene[0][0].strand)
+        lcontig = fasta.getLength(gene[0][0].contig)
         promotors = []
         transcript_ids = []
         for transcript in gene:
 
             ntranscripts += 1
-            mi, ma = min( [x.start for x in transcript ] ), max( [x.end for x in transcript ] )
-            transcript_ids.append( transcript[0].transcript_id )
+            mi, ma = min([x.start for x in transcript]), max(
+                [x.end for x in transcript])
+            transcript_ids.append(transcript[0].transcript_id)
             # if tss is directly at start/end of contig, the tss will be within an exon.
             # otherwise, it is outside an exon.
             if is_negative_strand:
-                promotors.append( (min( lcontig-options.promotor, ma), min(lcontig, ma + options.promotor)) )
+                promotors.append(
+                    (min(lcontig - options.promotor, ma), min(lcontig, ma + options.promotor)))
             else:
-                promotors.append( (max(0,mi - options.promotor), max(options.promotor,mi)) )
+                promotors.append(
+                    (max(0, mi - options.promotor), max(options.promotor, mi)))
 
         if options.merge_promotors:
-            # merge the promotors (and rename - as sort order might have changed)
-            promotors = Intervals.combine( promotors )
-            transcript_ids = ["%i" % (x+1) for x in range(len(promotors) )]
-            
+            # merge the promotors (and rename - as sort order might have
+            # changed)
+            promotors = Intervals.combine(promotors)
+            transcript_ids = ["%i" % (x + 1) for x in range(len(promotors))]
+
         gtf = GTF.Entry()
-        gtf.fromGTF( gene[0][0], gene[0][0].gene_id, gene[0][0].gene_id )
+        gtf.fromGTF(gene[0][0], gene[0][0].gene_id, gene[0][0].gene_id)
         gtf.source = "promotor"
 
         x = 0
         for start, end in promotors:
             gtf.start, gtf.end = start, end
             gtf.transcript_id = transcript_ids[x]
-            options.stdout.write( "%s\n" % str(gtf) )
+            options.stdout.write("%s\n" % str(gtf))
             npromotors += 1
             x += 1
 
-    E.info( "ngenes=%i, ntranscripts=%i, npromotors=%i" % (ngenes, ntranscripts, npromotors) )
+    E.info("ngenes=%i, ntranscripts=%i, npromotors=%i" %
+           (ngenes, ntranscripts, npromotors))
 
-def annotateRegulons( iterator, fasta, tss, options ):
+
+def annotateRegulons(iterator, fasta, tss, options):
     """annotate regulons within iterator.
 
     Entries specied with ``--restrict-source`` are annotated.
     """
 
-    gene_iterator = GTF.gene_iterator( iterator )
+    gene_iterator = GTF.gene_iterator(iterator)
 
     ngenes, ntranscripts, nregulons = 0, 0, 0
 
@@ -622,14 +652,15 @@ def annotateRegulons( iterator, fasta, tss, options ):
 
     for gene in gene_iterator:
         ngenes += 1
-        is_negative_strand = Genomics.IsNegativeStrand( gene[0][0].strand )
-        lcontig = fasta.getLength( gene[0][0].contig )
+        is_negative_strand = Genomics.IsNegativeStrand(gene[0][0].strand)
+        lcontig = fasta.getLength(gene[0][0].contig)
         regulons = []
         transcript_ids = []
         for transcript in gene:
 
             ntranscripts += 1
-            mi, ma = min( [x.start for x in transcript ] ), max( [x.end for x in transcript ] )
+            mi, ma = min([x.start for x in transcript]), max(
+                [x.end for x in transcript])
             if tss:
                 # add range to both sides of tss
                 if is_negative_strand:
@@ -643,42 +674,46 @@ def annotateRegulons( iterator, fasta, tss, options ):
                 else:
                     interval = ma - options.upstream, ma + options.downstream
 
-            interval = ( min( lcontig, max( 0, interval[0] ) ),
-                         min( lcontig, max( 0, interval[1] ) ) )
-            
-            regulons.append( interval )
-            transcript_ids.append( transcript[0].transcript_id )
+            interval = (min(lcontig, max(0, interval[0])),
+                        min(lcontig, max(0, interval[1])))
+
+            regulons.append(interval)
+            transcript_ids.append(transcript[0].transcript_id)
 
         if options.merge_promotors:
-            # merge the regulons (and rename - as sort order might have changed)
-            regulons = Intervals.combine( regulons )
-            transcript_ids = ["%i" % (x+1) for x in range(len(regulons) )]
-            
+            # merge the regulons (and rename - as sort order might have
+            # changed)
+            regulons = Intervals.combine(regulons)
+            transcript_ids = ["%i" % (x + 1) for x in range(len(regulons))]
+
         gtf = GTF.Entry()
-        gtf.fromGTF( gene[0][0], gene[0][0].gene_id, gene[0][0].gene_id )
+        gtf.fromGTF(gene[0][0], gene[0][0].gene_id, gene[0][0].gene_id)
         gtf.source = "regulon"
 
         x = 0
         for start, end in regulons:
             gtf.start, gtf.end = start, end
             gtf.transcript_id = transcript_ids[x]
-            options.stdout.write( "%s\n" % str(gtf) )
+            options.stdout.write("%s\n" % str(gtf))
             nregulons += 1
             x += 1
 
-    E.info( "ngenes=%i, ntranscripts=%i, nregulons=%i" % (ngenes, ntranscripts, nregulons) )
+    E.info("ngenes=%i, ntranscripts=%i, nregulons=%i" %
+           (ngenes, ntranscripts, nregulons))
 
 ####################################################################
 ####################################################################
 ####################################################################
-def annotateGREATDomains( iterator, fasta, options ):
+
+
+def annotateGREATDomains(iterator, fasta, options):
     """build great domains
 
     extend from TSS a basal region.
 
     """
 
-    gene_iterator = GTF.gene_iterator( iterator )
+    gene_iterator = GTF.gene_iterator(iterator)
 
     counter = E.Counter()
 
@@ -694,50 +729,51 @@ def annotateGREATDomains( iterator, fasta, options ):
     # of options.upstream + options.downstream
     for gene in gene_iterator:
         counter.genes += 1
-        is_negative_strand = Genomics.IsNegativeStrand( gene[0][0].strand )
+        is_negative_strand = Genomics.IsNegativeStrand(gene[0][0].strand)
 
-        lcontig = fasta.getLength( gene[0][0].contig )
+        lcontig = fasta.getLength(gene[0][0].contig)
         regulons = []
         transcript_ids = []
 
         # collect every basal region per transcript
         for transcript in gene:
             counter.transcripts += 1
-            mi, ma = min( [x.start for x in transcript ] ), max( [x.end for x in transcript ] )
+            mi, ma = min([x.start for x in transcript]), max(
+                [x.end for x in transcript])
             # add range to both sides of tss
             if is_negative_strand:
                 interval = ma - options.downstream, ma + options.upstream
             else:
                 interval = mi - options.upstream, mi + options.downstream
 
-            interval = ( min( lcontig, max( 0, interval[0] ) ),
-                         min( lcontig, max( 0, interval[1] ) ) )
-            
-            regulons.append( interval )
-            transcript_ids.append( transcript[0].transcript_id )
+            interval = (min(lcontig, max(0, interval[0])),
+                        min(lcontig, max(0, interval[1])))
 
-        # take first/last entry 
-        start, end = min( x[0] for x in regulons), max(x[1] for x in regulons )
-        
+            regulons.append(interval)
+            transcript_ids.append(transcript[0].transcript_id)
+
+        # take first/last entry
+        start, end = min(x[0] for x in regulons), max(x[1] for x in regulons)
+
         gtf = GTF.Entry()
-        gtf.fromGTF( gene[0][0], gene[0][0].gene_id, gene[0][0].gene_id )
+        gtf.fromGTF(gene[0][0], gene[0][0].gene_id, gene[0][0].gene_id)
         gtf.source = "greatdomain"
         gtf.start, gtf.end = start, end
-        regions.append( gtf )
+        regions.append(gtf)
 
-    regions.sort( key = lambda x: (x.contig, x.start ) )
+    regions.sort(key=lambda x: (x.contig, x.start))
 
-    outf = IOTools.openFile( "test.gff", "w")
+    outf = IOTools.openFile("test.gff", "w")
     for x in regions:
-        outf.write( str(x) + "\n" )
+        outf.write(str(x) + "\n")
     outf.close()
 
     ####################################################################
     # extend basal regions
-    regions.sort( key = lambda x: (x.contig, x.start ) )
+    regions.sort(key=lambda x: (x.contig, x.start))
 
     # iterate within groups of overlapping basal regions
-    groups = list( GTF.iterator_overlaps( iter(regions) ))
+    groups = list(GTF.iterator_overlaps(iter(regions)))
     counter.groups = len(groups)
 
     last_end = 0
@@ -746,21 +782,23 @@ def annotateGREATDomains( iterator, fasta, options ):
     for region_id, group in enumerate(groups):
 
         # collect basal intervals in group
-        intervals = [ (x.start, x.end) for x in group ]
+        intervals = [(x.start, x.end) for x in group]
 
-        def overlapsBasalRegion( pos ):
-            for start,end in intervals:
-                if start == pos or end == pos: continue
+        def overlapsBasalRegion(pos):
+            for start, end in intervals:
+                if start == pos or end == pos:
+                    continue
                 if start <= pos < end:
                     return True
-                if start > pos: return False
+                if start > pos:
+                    return False
             return False
 
         # deal with boundary cases - end of contig
         if region_id < len(groups) - 1:
-            nxt = groups[region_id+1]
+            nxt = groups[region_id + 1]
             if nxt[0].contig == group[0].contig:
-                next_start = min( [x.start for x in nxt] )
+                next_start = min([x.start for x in nxt])
             else:
                 next_start = fasta.getLength(group[0].contig)
                 reset = True
@@ -772,25 +810,25 @@ def annotateGREATDomains( iterator, fasta, options ):
         # next_start = basal_extension of next group
 
         # extend region to previous/next group
-        # always extend dowstream, but upstream only extend if basal region of an interval is not already 
+        # always extend dowstream, but upstream only extend if basal region of an interval is not already
         # overlapping another basal region within the group
         save_end = 0
         for gtf in group:
             save_end = max(save_end, gtf.end)
             if gtf.strand == "+":
-                if not overlapsBasalRegion( gtf.start ):
-                    gtf.start = max( gtf.start - radius, last_end )
-                # always extend downstream    
-                gtf.end = min( gtf.end + radius, next_start )
+                if not overlapsBasalRegion(gtf.start):
+                    gtf.start = max(gtf.start - radius, last_end)
+                # always extend downstream
+                gtf.end = min(gtf.end + radius, next_start)
             else:
                 # always extend downstream
-                gtf.start = max( gtf.start - radius, last_end )
-                if not overlapsBasalRegion( gtf.end ):
-                    gtf.end = min( gtf.end + radius, next_start )
-            outfile.write( str(gtf) + "\n" )
+                gtf.start = max(gtf.start - radius, last_end)
+                if not overlapsBasalRegion(gtf.end):
+                    gtf.end = min(gtf.end + radius, next_start)
+            outfile.write(str(gtf) + "\n")
             counter.regulons += 1
 
-        if len(group) > 1: 
+        if len(group) > 1:
             counter.overlaps += len(group)
         else:
             counter.nonoverlaps += 1
@@ -800,60 +838,67 @@ def annotateGREATDomains( iterator, fasta, options ):
             reset = False
         else:
             last_end = save_end
-        
-    E.info( "%s" % str(counter) )
 
-def annotateTTS( iterator, fasta, options ):
+    E.info("%s" % str(counter))
+
+
+def annotateTTS(iterator, fasta, options):
     """annotate termination sites within iterator.
 
     Entries specified with ``--restrict-source are annotated``.
     """
 
-    gene_iterator = GTF.gene_iterator( iterator )
+    gene_iterator = GTF.gene_iterator(iterator)
 
     ngenes, ntranscripts, npromotors = 0, 0, 0
 
     for gene in gene_iterator:
         ngenes += 1
-        is_negative_strand = Genomics.IsNegativeStrand( gene[0][0].strand )
-        lcontig = fasta.getLength( gene[0][0].contig )
+        is_negative_strand = Genomics.IsNegativeStrand(gene[0][0].strand)
+        lcontig = fasta.getLength(gene[0][0].contig)
         tts = []
         transcript_ids = []
         for transcript in gene:
 
             ntranscripts += 1
-            mi, ma = min( [x.start for x in transcript ] ), max( [x.end for x in transcript ] )
-            transcript_ids.append( transcript[0].transcript_id )
+            mi, ma = min([x.start for x in transcript]), max(
+                [x.end for x in transcript])
+            transcript_ids.append(transcript[0].transcript_id)
             # if tts is directly at start/end of contig, the tss will be within an exon.
             # otherwise, it is outside an exon.
             if is_negative_strand:
                 #tss.append( (min( lcontig-options.promotor, ma), min(lcontig, ma + options.promotor)) )
-                tts.append( (max(0, mi-options.promotor), max(options.promotor,mi)) )
+                tts.append(
+                    (max(0, mi - options.promotor), max(options.promotor, mi)))
             else:
                 #tss.append( (max(0,mi - options.promotor), max(options.promotor,mi)) )
-                tts.append( (min(ma,lcontig-options.promotor), min(lcontig,ma + options.promotor)) )
+                tts.append(
+                    (min(ma, lcontig - options.promotor), min(lcontig, ma + options.promotor)))
 
         if options.merge_promotors:
-            # merge the promotors (and rename - as sort order might have changed)
-            tts = Intervals.combine( tts )
-            transcript_ids = ["%i" % (x+1) for x in range(len(tts) )]
-            
+            # merge the promotors (and rename - as sort order might have
+            # changed)
+            tts = Intervals.combine(tts)
+            transcript_ids = ["%i" % (x + 1) for x in range(len(tts))]
+
         gtf = GTF.Entry()
-        gtf.fromGTF( gene[0][0], gene[0][0].gene_id, gene[0][0].gene_id )
+        gtf.fromGTF(gene[0][0], gene[0][0].gene_id, gene[0][0].gene_id)
         gtf.source = "tts"
 
         x = 0
         for start, end in tts:
             gtf.start, gtf.end = start, end
             gtf.transcript_id = transcript_ids[x]
-            options.stdout.write( "%s\n" % str(gtf) )
+            options.stdout.write("%s\n" % str(gtf))
             npromotors += 1
             x += 1
 
     if options.loglevel >= 1:
-        options.stdlog.write( "# ngenes=%i, ntranscripts=%i, ntss=%i\n" % (ngenes, ntranscripts, npromotors) )
+        options.stdlog.write(
+            "# ngenes=%i, ntranscripts=%i, ntss=%i\n" % (ngenes, ntranscripts, npromotors))
 
-def annotateGenes( iterator, fasta, options ):
+
+def annotateGenes(iterator, fasta, options):
     """annotate gene structures
 
     This method outputs intervals for first/middle/last exon/intron, UTRs and flanking regions.
@@ -863,21 +908,21 @@ def annotateGenes( iterator, fasta, options ):
     genes.
     """
 
-    gene_iterator = GTF.gene_iterator( iterator )
+    gene_iterator = GTF.gene_iterator(iterator)
 
     ngenes, ntranscripts, nskipped = 0, 0, 0
 
     results = []
-    increment =  options.increment
+    increment = options.increment
 
     introns_detail = "introns" in options.detail
     exons_detail = "exons" in options.detail
 
     for gene in gene_iterator:
         ngenes += 1
-        is_negative_strand = Genomics.IsNegativeStrand( gene[0][0].strand )
+        is_negative_strand = Genomics.IsNegativeStrand(gene[0][0].strand)
         try:
-            lcontig = fasta.getLength( gene[0][0].contig )
+            lcontig = fasta.getLength(gene[0][0].contig)
         except KeyError:
             nskipped += 1
             continue
@@ -886,7 +931,7 @@ def annotateGenes( iterator, fasta, options ):
 
         for transcript in gene:
 
-            def _add( interval, anno ):
+            def _add(interval, anno):
                 gtf = GTF.Entry()
                 gtf.contig = transcript[0].contig
                 gtf.gene_id = transcript[0].gene_id
@@ -894,168 +939,175 @@ def annotateGenes( iterator, fasta, options ):
                 gtf.strand = transcript[0].strand
                 gtf.feature = anno
                 gtf.start, gtf.end = interval
-                results.append( gtf )
+                results.append(gtf)
 
             ntranscripts += 1
 
-            exons = [ (x.start, x.end) for x in transcript if x.feature == "exon" ]
-            if len(exons) == 0: nskipped += 1
-            
+            exons = [(x.start, x.end)
+                     for x in transcript if x.feature == "exon"]
+            if len(exons) == 0:
+                nskipped += 1
+
             exons.sort()
             introns = []
             end = exons[0][1]
             for exon in exons[1:]:
-                introns.append( (end, exon[0]) )
+                introns.append((end, exon[0]))
                 end = exon[1]
 
             # add flank
             start, end = exons[0][0], exons[-1][1]
             upstream, downstream = [], []
-            for x in xrange( 0, options.flank, increment ):
-                upstream.append( (start - increment, start) )
+            for x in xrange(0, options.flank, increment):
+                upstream.append((start - increment, start))
                 start -= increment
-                downstream.append( (end, end + increment) )  
+                downstream.append((end, end + increment))
                 end += increment
 
             # remove out-of-bounds coordinates
-            upstream = [ x for x in upstream if x[0] >= 0]
-            downstream = [ x for x in downstream if x[1] <= lcontig ]
+            upstream = [x for x in upstream if x[0] >= 0]
+            downstream = [x for x in downstream if x[1] <= lcontig]
 
             if is_negative_strand:
                 exons.reverse()
                 introns.reverse()
                 upstream, downstream = downstream, upstream
-            
+
             # add exons
             if exons_detail:
-                _add( exons[0], "first_exon" )
+                _add(exons[0], "first_exon")
                 if len(exons) > 1:
-                    _add( exons[-1], "last_exon" )
+                    _add(exons[-1], "last_exon")
                 for e in exons[1:-1]:
-                    _add( e, "middle_exon" )
+                    _add(e, "middle_exon")
             else:
                 for e in exons:
-                    _add( e, "exon" )
+                    _add(e, "exon")
 
             # add introns
             if introns_detail:
                 if len(introns) > 0:
-                    _add( introns[0], "first_intron" )
+                    _add(introns[0], "first_intron")
                 if len(introns) > 1:
-                    _add( introns[-1], "last_intron" )
+                    _add(introns[-1], "last_intron")
                 for i in introns[1:-1]:
-                    _add( i, "middle_intron" )
+                    _add(i, "middle_intron")
             else:
                 for i in introns:
-                    _add( i, "intron" )
+                    _add(i, "intron")
 
-            for x, u in enumerate( upstream ):
-                _add(u, "upstream_%i" % (increment * (x+1) ) )
+            for x, u in enumerate(upstream):
+                _add(u, "upstream_%i" % (increment * (x + 1)))
 
-            for x, u in enumerate( downstream ):
-                _add(u, "downstream_%i" % (increment * (x+1) ) )
-                
-            results.sort( key = lambda x: x.feature )
+            for x, u in enumerate(downstream):
+                _add(u, "downstream_%i" % (increment * (x + 1)))
+
+            results.sort(key=lambda x: x.feature)
 
         cache = []
-        for key, vals in itertools.groupby( results, key = lambda x: x.feature  ):
+        for key, vals in itertools.groupby(results, key=lambda x: x.feature):
             v = list(vals)
-            intervals = [(x.start, x.end) for x in v ]
-            intervals = Intervals.combine( intervals )
-            
+            intervals = [(x.start, x.end) for x in v]
+            intervals = Intervals.combine(intervals)
+
             for start, end in intervals:
                 r = GTF.Entry()
-                r.copy( v[0] )
+                r.copy(v[0])
                 r.start, r.end = start, end
-                cache.append( r )
+                cache.append(r)
 
-        cache.sort( key = lambda x: x.start )
+        cache.sort(key=lambda x: x.start)
         for r in cache:
-            options.stdout.write( "%s\n" % str(r))
-                
-    E.info( "ngenes=%i, ntranscripts=%i, nskipped=%i\n" % (ngenes, ntranscripts, nskipped) )
+            options.stdout.write("%s\n" % str(r))
 
-##------------------------------------------------------------
-def main( argv = None ):
+    E.info("ngenes=%i, ntranscripts=%i, nskipped=%i\n" %
+           (ngenes, ntranscripts, nskipped))
 
-    if not argv: argv = sys.argv
+# ------------------------------------------------------------
 
-    parser = E.OptionParser( version = "%prog version: $Id: gtf2gff.py 2861 2010-02-23 17:36:32Z andreas $", usage = globals()["__doc__"] )
+
+def main(argv=None):
+
+    if not argv:
+        argv = sys.argv
+
+    parser = E.OptionParser(
+        version="%prog version: $Id: gtf2gff.py 2861 2010-02-23 17:36:32Z andreas $", usage=globals()["__doc__"])
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
-                      help="filename with genome [default=%default]."  )
+                      help="filename with genome [default=%default].")
 
     parser.add_option("-i", "--ignore-missing", dest="ignore_missing", action="store_true",
-                      help="Ignore transcripts on contigs that are not in the genome-file [default=%default]."  )
+                      help="Ignore transcripts on contigs that are not in the genome-file [default=%default].")
 
     parser.add_option("-s", "--restrict-source", dest="restrict_source", type="choice",
                       choices=("protein_coding", "pseudogene", "lncRNA"),
-                      help="restrict input by source [default=%default]."  )
+                      help="restrict input by source [default=%default].")
 
     parser.add_option("-m", "--method", dest="method", type="choice",
-                      choices=("full", "genome", "exons", 
-                               "promotors", "tts", 
-                               "regulons", "tts-regulons", 
+                      choices=("full", "genome", "exons",
+                               "promotors", "tts",
+                               "regulons", "tts-regulons",
                                "genes",
                                "territories", "tss-territories",
                                "great-domains",
                                ),
-                      help="method for defining segments [default=%default]."  )
+                      help="method for defining segments [default=%default].")
 
     parser.add_option("-r", "--radius", dest="radius", type="int",
-                      help="radius of a territory [default=%default]."  )
+                      help="radius of a territory [default=%default].")
 
     parser.add_option("-f", "--flank", dest="flank", type="int",
-                      help="size of the flanking region next to a gene [default=%default]."  )
+                      help="size of the flanking region next to a gene [default=%default].")
 
-    parser.add_option( "--increment", dest="increment", type="int",
-                       help="size of increment in flank in genestructure annotation [default=%default]."  )
+    parser.add_option("--increment", dest="increment", type="int",
+                      help="size of increment in flank in genestructure annotation [default=%default].")
 
     parser.add_option("-p", "--promotor", dest="promotor", type="int",
-                      help="size of a promotor region [default=%default]."  )
+                      help="size of a promotor region [default=%default].")
 
     parser.add_option("-u", "--upstream", dest="upstream", type="int",
-                      help="size of region upstream of tss [default=%default]."  )
+                      help="size of region upstream of tss [default=%default].")
 
     parser.add_option("-d", "--downstream", dest="downstream", type="int",
-                      help="size of region downstream of tss [default=%default]."  )
+                      help="size of region downstream of tss [default=%default].")
 
-    parser.add_option( "--detail", dest="detail", type="choice",
-                       choices = ("introns+exons", "exons", "introns" ),
-                       help="level of detail for gene structure annotation [default=%default]."  )
+    parser.add_option("--detail", dest="detail", type="choice",
+                      choices=("introns+exons", "exons", "introns"),
+                      help="level of detail for gene structure annotation [default=%default].")
 
-    parser.add_option( "--merge-promotors", dest="merge_promotors", action="store_true",
-                       help="merge promotors [default=%default]."  )
+    parser.add_option("--merge-promotors", dest="merge_promotors", action="store_true",
+                      help="merge promotors [default=%default].")
 
-    parser.add_option( "--min-intron-length", dest="min_intron_length", type="int",
-                      help="minimum intron length. If the distance between two consecutive exons is smaller, the region will be marked 'unknown' [default=%default]."  )
+    parser.add_option("--min-intron-length", dest="min_intron_length", type="int",
+                      help="minimum intron length. If the distance between two consecutive exons is smaller, the region will be marked 'unknown' [default=%default].")
 
     parser.add_option("-o", "--sort", dest="sort", action="store_true",
                       help="sort input before processing. Otherwise, the input is assumed "
-                      "to be sorted [default=%default]."  )
+                      "to be sorted [default=%default].")
 
     parser.set_defaults(
-        genome_file = None,
-        flank = 1000,
-        increment = 1000,
-        max_frameshift_length = 4,
-        min_intron_length = 30,
-        ignore_missing = False,
-        restrict_source = None,
-        method = "genome",
-        radius = 50000,
-        promotor = 5000,
-        merge_promotors = False,
-        upstream = 5000,
-        downstream = 5000,
-        detail = "exons",
-        sort = False,
-        )
+        genome_file=None,
+        flank=1000,
+        increment=1000,
+        max_frameshift_length=4,
+        min_intron_length=30,
+        ignore_missing=False,
+        restrict_source=None,
+        method="genome",
+        radius=50000,
+        promotor=5000,
+        merge_promotors=False,
+        upstream=5000,
+        downstream=5000,
+        detail="exons",
+        sort=False,
+    )
 
-    (options, args) = E.Start( parser )
-    
+    (options, args) = E.Start(parser)
+
     if options.genome_file:
-        fasta = IndexedFasta.IndexedFasta( options.genome_file )
+        fasta = IndexedFasta.IndexedFasta(options.genome_file)
     else:
         raise ValueError("please specify a --genome-file")
 
@@ -1063,8 +1115,8 @@ def main( argv = None ):
         iterator = GTF.iterator(options.stdin)
 
     elif options.restrict_source:
-        iterator = GTF.iterator_filtered( GTF.iterator(options.stdin), 
-                                          source = options.restrict_source )
+        iterator = GTF.iterator_filtered(GTF.iterator(options.stdin),
+                                         source=options.restrict_source)
 
     # elif options.method in ("promotors", "tts", "regulons"):
     #     iterator = GTF.iterator_filtered( GTF.iterator(options.stdin), source = "protein_coding")
@@ -1072,32 +1124,30 @@ def main( argv = None ):
     #     iterator = GTF.iterator(options.stdin)
 
     if options.sort:
-        iterator = GTF.iterator_sorted( iterator, sort_order = "position" )
+        iterator = GTF.iterator_sorted(iterator, sort_order="position")
 
     if options.method == "full" or options.method == "genome":
-        segmentor = annotateGenome( iterator, fasta, options )
+        segmentor = annotateGenome(iterator, fasta, options)
     elif options.method == "territories":
-        segmentor = buildTerritories( iterator, fasta, 'gene', options )
+        segmentor = buildTerritories(iterator, fasta, 'gene', options)
     elif options.method == "tss-territories":
-        segmentor = buildTerritories( iterator, fasta, 'tss', options )
+        segmentor = buildTerritories(iterator, fasta, 'tss', options)
     elif options.method == "exons":
-        segmentor = annotateExons( iterator, fasta, options )
+        segmentor = annotateExons(iterator, fasta, options)
     elif options.method == "promotors":
-        segmentor = annotatePromoters( iterator, fasta, options )
+        segmentor = annotatePromoters(iterator, fasta, options)
     elif options.method == "regulons":
-        segmentor = annotateRegulons( iterator, fasta, True, options )
+        segmentor = annotateRegulons(iterator, fasta, True, options)
     elif options.method == "tts-regulons":
-        segmentor = annotateRegulons( iterator, fasta, False, options )
+        segmentor = annotateRegulons(iterator, fasta, False, options)
     elif options.method == "tts":
-        segmentor = annotateTTS( iterator, fasta, options )
+        segmentor = annotateTTS(iterator, fasta, options)
     elif options.method == "genes":
-        segmentor = annotateGenes( iterator, fasta, options )
+        segmentor = annotateGenes(iterator, fasta, options)
     elif options.method == "great-domains":
-        segmentor = annotateGREATDomains( iterator, fasta, options )
-
+        segmentor = annotateGREATDomains(iterator, fasta, options)
 
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

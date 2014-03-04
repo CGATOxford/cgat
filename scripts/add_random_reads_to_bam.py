@@ -47,47 +47,50 @@ import CGAT.GTF as GTF
 import CGAT.IOTools as IOTools
 import CGAT.IndexedFasta as IndexedFasta
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if not argv: argv = sys.argv
+    if not argv:
+        argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser( version = "%prog version: $Id: snp2table.py 2861 2010-02-23 17:36:32Z davids $", usage = globals()["__doc__"] )
+    parser = E.OptionParser(
+        version="%prog version: $Id: snp2table.py 2861 2010-02-23 17:36:32Z davids $", usage=globals()["__doc__"])
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
-                      help="filename with Samtools indexed genome [default=%default]."  )
+                      help="filename with Samtools indexed genome [default=%default].")
     parser.add_option("-b", "--bam-file", dest="bam_file", type="string",
-                      help="filename of bam to add reads to [default=%default]."  )
+                      help="filename of bam to add reads to [default=%default].")
     parser.add_option("-i", "--insert-size", dest="isize", type="string",
-                      help="Insert size [default=%default]."  )
+                      help="Insert size [default=%default].")
     parser.add_option("-s", "--insert-sd", dest="isd", type="string",
-                      help="Insert size standard deviation [default=%default]."  )
+                      help="Insert size standard deviation [default=%default].")
     parser.add_option("-r", "--nreads", dest="nreads", type="string",
-                      help="Number of random reads to add [default=%default]."  )
+                      help="Number of random reads to add [default=%default].")
     parser.add_option("-l", "--readlength", dest="readlength", type="string",
-                      help="length of reads to generate [default=%default]."  )
+                      help="length of reads to generate [default=%default].")
     parser.add_option("-o", "--output", dest="output_file", type="string",
-                      help="output filename  [default=%default]."  )
+                      help="output filename  [default=%default].")
 
     parser.set_defaults(
-        genome_file = None,
-        bam_file = None,
+        genome_file=None,
+        bam_file=None,
         isize=250,
         isd=20,
         nreads=10000,
         readlength=50,
-        output_file = None,
-        )
+        output_file=None,
+    )
 
-    ## add common options (-h/--help, ...) and parse command line 
-    (options, args) = E.Start( parser, argv = argv )
+    # add common options (-h/--help, ...) and parse command line
+    (options, args) = E.Start(parser, argv=argv)
 
     # Generate random reads and add to bam
-    track = P.snip(os.path.basename(options.bam_file),".bam")
+    track = P.snip(os.path.basename(options.bam_file), ".bam")
     readlen = options.readlength
     isize = options.isize
     isd = options.isd
@@ -114,9 +117,8 @@ def main( argv = None ):
                    samtools index %(out)s;'''
     P.run()
 
-    ## write footer and output benchmark information.
+    # write footer and output benchmark information.
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

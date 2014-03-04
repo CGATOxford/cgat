@@ -86,12 +86,13 @@ import CGAT.TreeTools as TreeTools
 import CGAT.IOTools as IOTools
 import CGAT.WrapperPhylip as WrapperPhylip
 
-def Process( lines, other_trees, options, map_old2new, ntree):
 
-    nexus = TreeTools.Newick2Nexus( map(lambda x: x[:-1], lines) )
+def Process(lines, other_trees, options, map_old2new, ntree):
+
+    nexus = TreeTools.Newick2Nexus(map(lambda x: x[:-1], lines))
 
     if options.loglevel >= 1:
-        options.stdlog.write( "# read %i trees.\n" % len(nexus.trees))
+        options.stdlog.write("# read %i trees.\n" % len(nexus.trees))
 
     nskipped = 0
     ntotal = len(nexus.trees)
@@ -104,19 +105,20 @@ def Process( lines, other_trees, options, map_old2new, ntree):
 
     index = 0
 
-    ## default: do not output internal node names
+    # default: do not output internal node names
     write_all_taxa = False
-    
+
     for tree in nexus.trees:
 
         if options.outgroup:
-            tree.root_with_outgroup( options.outgroup )
+            tree.root_with_outgroup(options.outgroup)
 
         for method in options.methods:
 
-            if options.loglevel >=3:
-                options.stdlog.write("# applying method %s to tree %i.\n" % (method, index))
-                
+            if options.loglevel >= 3:
+                options.stdlog.write(
+                    "# applying method %s to tree %i.\n" % (method, index))
+
             if method == "midpoint-root":
                 tree.root_midpoint()
 
@@ -125,71 +127,74 @@ def Process( lines, other_trees, options, map_old2new, ntree):
 
             elif method == "unroot":
                 TreeTools.Unroot(tree)
-                
-            elif method=="phylip":
-                if not phylip_executable:
-                    phylip_executable=options.parameters[0]
-                    del options.parameters[0]
-                    phylip_options = re.split("@", options.parameters[0] )
-                    del options.parameters[0]
-                    
-                    phylip = WrapperPhylip.Phylip()
-                    phylip.setProgram( phylip_executable )
-                    phylip.setOptions( phylip_options )
 
-                phylip.setTree( tree )
+            elif method == "phylip":
+                if not phylip_executable:
+                    phylip_executable = options.parameters[0]
+                    del options.parameters[0]
+                    phylip_options = re.split("@", options.parameters[0])
+                    del options.parameters[0]
+
+                    phylip = WrapperPhylip.Phylip()
+                    phylip.setProgram(phylip_executable)
+                    phylip.setOptions(phylip_options)
+
+                phylip.setTree(tree)
 
                 result = phylip.run()
 
                 nexus.trees[index] = result.mNexus.trees[0]
-                
+
             elif method == "normalize":
                 if options.value == 0:
                     v = 0
                     for n in tree.chain.keys():
-                        v = max( v, tree.node(n).data.branchlength )
+                        v = max(v, tree.node(n).data.branchlength)
                 else:
                     v = options.value
 
                 for n in tree.chain.keys():
-                    tree.node(n).data.branchlength /= float( options.value )
-                    
+                    tree.node(n).data.branchlength /= float(options.value)
+
             elif method == "divide-by-tree":
 
                 if len(other_trees) > 1:
                     other_tree = other_trees[ntree]
                 else:
                     other_tree = other_trees[0]
-                    
-                ## the trees have to be exactly the same!!
+
+                # the trees have to be exactly the same!!
                 if options.loglevel >= 2:
                     print tree.display()
                     print other_tree.display()
 
-                if not tree.is_identical( other_tree ):
+                if not tree.is_identical(other_tree):
                     nskipped += 1
                     continue
 
-                ## even if the trees are the same (in topology), the node numbering might not be
-                ## the same. Thus build a map of node ids.
-                map_a2b = TreeTools.GetNodeMap( tree, other_tree )
+                # even if the trees are the same (in topology), the node numbering might not be
+                # the same. Thus build a map of node ids.
+                map_a2b = TreeTools.GetNodeMap(tree, other_tree)
 
                 for n in tree.chain.keys():
                     try:
-                        tree.node(n).data.branchlength /= float( other_tree.node(map_a2b[n]).data.branchlength )
+                        tree.node(
+                            n).data.branchlength /= float(other_tree.node(map_a2b[n]).data.branchlength)
                     except ZeroDivisionError:
-                        options.stdlog.write("# Warning: branch for nodes %i and %i in tree-pair %i: divide by zero\n" %\
-                                             ( n, map_a2b[n], ntree ))
+                        options.stdlog.write("# Warning: branch for nodes %i and %i in tree-pair %i: divide by zero\n" %
+                                             (n, map_a2b[n], ntree))
                         continue
 
             elif method == "rename":
                 if not map_old2new:
-                    
-                    map_old2new = IOTools.ReadMap( open(options.parameters[0], "r"), columns=(0,1) )
+
+                    map_old2new = IOTools.ReadMap(
+                        open(options.parameters[0], "r"), columns=(0, 1))
 
                     if options.invert_map:
-                        map_old2new = IOTools.getInvertedDictionary( map_old2new, make_unique = True)
-                        
+                        map_old2new = IOTools.getInvertedDictionary(
+                            map_old2new, make_unique=True)
+
                     del options.parameters[0]
 
                 unknown = []
@@ -198,21 +203,22 @@ def Process( lines, other_trees, options, map_old2new, ntree):
                         try:
                             node.data.taxon = map_old2new[node.data.taxon]
                         except KeyError:
-                            unknown.append( node.data.taxon )
+                            unknown.append(node.data.taxon)
 
                 for taxon in unknown:
-                    tree.prune( taxon )
+                    tree.prune(taxon)
 
-            ## reformat terminals
+            # reformat terminals
             elif method == "extract-with-pattern":
-                
+
                 if not extract_pattern:
                     extract_pattern = re.compile(options.parameters[0])
                     del options.parameters[0]
-                
+
                 for n in tree.get_terminals():
-                    node = tree.node( n )
-                    node.data.taxon = extract_pattern.search( node.data.taxon ).groups()[0]
+                    node = tree.node(n)
+                    node.data.taxon = extract_pattern.search(
+                        node.data.taxon).groups()[0]
 
             elif method == "set-uniform-branchlength":
                 for n in tree.chain.keys():
@@ -222,25 +228,26 @@ def Process( lines, other_trees, options, map_old2new, ntree):
                 # build a map of identifiers
                 options.write_map = True
                 for n in tree.get_terminals():
-                    node = tree.node( n )
+                    node = tree.node(n)
                     if node.data.taxon not in map_old2new:
-                        new = options.template_identifier % (len(map_old2new) + 1)
-                        map_old2new[node.data.taxon] = new                        
+                        new = options.template_identifier % (
+                            len(map_old2new) + 1)
+                        map_old2new[node.data.taxon] = new
                     node.data.taxon = map_old2new[node.data.taxon]
 
             elif method == "remove-pattern":
-                if species2remove == None:
+                if species2remove is None:
                     species2remove = re.compile(options.parameters[0])
                     del options.parameters
                 taxa = []
                 for n in tree.get_terminals():
                     t = tree.node(n).data.taxon
                     skip = False
-                    if species2remove.search( t ):
+                    if species2remove.search(t):
                         continue
                     if not skip:
                         taxa.append(t)
-                TreeTools.PruneTree( tree, taxa )
+                TreeTools.PruneTree(tree, taxa)
 
             elif method == "add-node-names":
 
@@ -252,43 +259,44 @@ def Process( lines, other_trees, options, map_old2new, ntree):
                         inode += 1
 
             elif method == "newick2nhx":
-                ## convert names to species names
+                # convert names to species names
                 for n in tree.get_terminals():
                     t = tree.node(n).data.taxon
                     d = t.split("|")
                     if len(d) >= 2:
                         tree.node(n).data.species = d[0]
-                        
+
         index += 1
         ntree += 1
 
     if options.output_format == "nh":
-        options.stdout.write(TreeTools.Nexus2Newick( nexus, write_all_taxa = True,
-                                                     with_branchlengths = options.with_branchlengths) + "\n" )
+        options.stdout.write(TreeTools.Nexus2Newick(nexus, write_all_taxa=True,
+                                                    with_branchlengths=options.with_branchlengths) + "\n")
     else:
         for tree in nexus.trees:
-            tree.writeToFile( options.stdout, format = options.output_format )
+            tree.writeToFile(options.stdout, format=options.output_format)
 
     return ntotal, nskipped, ntree
 
 
-def main( argv = None ):
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv is None:
+        argv = sys.argv
 
-    parser = E.OptionParser( version = "%prog version: $Id: tree2tree.py 2782 2009-09-10 11:40:29Z andreas $",
-                                    usage = globals()["__doc__"] )
+    parser = E.OptionParser(version="%prog version: $Id: tree2tree.py 2782 2009-09-10 11:40:29Z andreas $",
+                            usage=globals()["__doc__"])
 
     parser.add_option("-d", "--value", dest="value", type="float",
-                      help="normalizing value."  )
+                      help="normalizing value.")
     parser.add_option("-m", "--method", dest="methods", type="string",
                       help="""methods to apply [normalize|divide-by-tree|divide-by-tree|rename|set-uniform-branch-length|extract-with-pattern|build-map|remove-pattern|unroot|midpoint-root|balanced-root|add-node-names"""  )
     parser.add_option("-2", "--filename-tree2", dest="filename_tree2", type="string",
-                      help="filename with second tree."  )
+                      help="filename with second tree.")
     parser.add_option("-o", "--outgroup", dest="outgroup", type="string",
                       help="reroot with outgroup before processing.")
     parser.add_option("-p", "--parameters", dest="parameters", type="string",
@@ -302,34 +310,34 @@ def main( argv = None ):
                       choices=("max-branch-length",),
                       help="filter trees")
     parser.add_option("--output-format", dest="output_format", type="choice",
-                      choices=( "nh", "nhx" ),
+                      choices=("nh", "nhx"),
                       help=("output format for trees."))
     parser.add_option("-b", "--no-branch-lengths", dest="with_branchlengths", action="store_false",
                       help="""do not write branchlengths. Per default, 0 branch lengths are added.""")
 
     parser.set_defaults(
-        value = 0,
-        methods = "",
-        filename_tree2 = None,
-        outgroup = None,
-        parameters = "",
+        value=0,
+        methods="",
+        filename_tree2=None,
+        outgroup=None,
+        parameters="",
         template_identifier="ID%06i",
-        write_map = False,
-        invert_map = False,
-        filter = None,
-        output_format = "nh",
-        with_branchlengths = True,
-        )
+        write_map=False,
+        invert_map=False,
+        filter=None,
+        output_format="nh",
+        with_branchlengths=True,
+    )
 
-    (options, args) = E.Start( parser, add_pipe_options = True )
+    (options, args) = E.Start(parser, add_pipe_options=True)
 
     options.methods = options.methods.split(",")
-    options.parameters = options.parameters.split(",")    
+    options.parameters = options.parameters.split(",")
 
     other_trees = []
-    ## read other trees
+    # read other trees
     if options.filename_tree2:
-        other_nexus = TreeTools.Newick2Nexus( open(options.filename_tree2, "r") )
+        other_nexus = TreeTools.Newick2Nexus(open(options.filename_tree2, "r"))
         if len(other_nexus.trees) > 0:
             other_trees = other_nexus.trees
         else:
@@ -342,15 +350,15 @@ def main( argv = None ):
 
     if options.filter:
 
-        nexus = TreeTools.Newick2Nexus( lines )
-        
+        nexus = TreeTools.Newick2Nexus(lines)
+
         new_trees = []
 
         value = float(options.parameters[0])
         del options.parameters[0]
 
-        ## decision functions: return true, if tree
-        ## is to be skipped
+        # decision functions: return true, if tree
+        # is to be skipped
         if options.filter == "max-branch-length":
             f = lambda x: x >= value
 
@@ -364,31 +372,34 @@ def main( argv = None ):
             else:
                 new_trees.append(tree)
                 ntree += 1
-                
+
         nexus.trees = new_trees
 
-        options.stdout.write(TreeTools.Nexus2Newick( nexus, with_names = True ) + "\n" )
-        
+        options.stdout.write(
+            TreeTools.Nexus2Newick(nexus, with_names=True) + "\n")
+
     else:
 
-        ## iterate over chunks
-        chunks = filter( lambda x: lines[x][0] == ">", range(len(lines)))
+        # iterate over chunks
+        chunks = filter(lambda x: lines[x][0] == ">", range(len(lines)))
 
         map_old2new = {}
 
         if chunks:
-            for c in range(len(chunks)-1):
-                a, b = chunks[c], chunks[c+1]
-                options.stdout.write( lines[a] )
+            for c in range(len(chunks) - 1):
+                a, b = chunks[c], chunks[c + 1]
+                options.stdout.write(lines[a])
                 a += 1
-                Process( lines[a:b], other_trees, options, map_old2new,ntree )
+                Process(lines[a:b], other_trees, options, map_old2new, ntree)
 
-            options.stdout.write( lines[chunks[-1]] )
-            t, s, ntree = Process( lines[chunks[-1]+1:], other_trees, options, map_old2new, ntree )
+            options.stdout.write(lines[chunks[-1]])
+            t, s, ntree = Process(
+                lines[chunks[-1] + 1:], other_trees, options, map_old2new, ntree)
             ntotal += t
             nskipped += s
         else:
-            ntotal, nskipped, ntree = Process( lines, other_trees, options, map_old2new,ntree )
+            ntotal, nskipped, ntree = Process(
+                lines, other_trees, options, map_old2new, ntree)
 
         if options.write_map:
             p = options.parameters[0]
@@ -397,17 +408,16 @@ def main( argv = None ):
             else:
                 outfile = options.stdout
 
-            outfile.write("old\tnew\n")            
+            outfile.write("old\tnew\n")
             for old_id, new_id in map_old2new.items():
-                outfile.write("%s\t%s\n" % (old_id, new_id) )
+                outfile.write("%s\t%s\n" % (old_id, new_id))
             if p:
                 outfile.close()
 
     if options.loglevel >= 1:
-        options.stdlog.write( "# ntotal=%i, nskipped=%i\n" % (ntotal, nskipped))
-        
+        options.stdlog.write("# ntotal=%i, nskipped=%i\n" % (ntotal, nskipped))
+
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

@@ -46,17 +46,19 @@ import CGAT.CSV as CSV
 import CGAT.IOTools as IOTools
 
 
-def main( argv = None ):
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv is None:
+        argv = sys.argv
 
-    parser = E.OptionParser( version = "%prog version: $Id: vcfstats_sqlite.py 0001 2011-04-13 davids $", usage = globals()["__doc__"])
+    parser = E.OptionParser(
+        version="%prog version: $Id: vcfstats_sqlite.py 0001 2011-04-13 davids $", usage=globals()["__doc__"])
 
-    (options, args) = E.Start( parser )
+    (options, args) = E.Start(parser)
 
     options.filenames = args
 
@@ -64,7 +66,7 @@ def main( argv = None ):
         options.stdout.write("# Error: no vcf-stats files specified/found.")
         sys.exit(1)
 
-    E.info( "Parsing %i file(s)" % len(options.filenames) )
+    E.info("Parsing %i file(s)" % len(options.filenames))
 
     # set up output files
     vcf_file = open('vcfstats.txt', 'w')
@@ -72,62 +74,64 @@ def main( argv = None ):
     snp_file = open('snpstats.txt', 'w')
     shared_file = open('sharedstats.txt', 'w')
 
-    for fileno,filename in enumerate(options.filenames):
+    for fileno, filename in enumerate(options.filenames):
 
-        prefix = os.path.basename( filename )
-        trackname = prefix.replace(".vcfstats","")
+        prefix = os.path.basename(filename)
+        trackname = prefix.replace(".vcfstats", "")
 
         if os.path.exists(filename):
-            lines = [ x for x in IOTools.openFile(filename, "r").readlines()]
+            lines = [x for x in IOTools.openFile(filename, "r").readlines()]
         else:
             lines = []
 
         if len(lines) == 0:
-            options.stdout.write("# Error: empty vcf-stats file found: $(filename)s")
+            options.stdout.write(
+                "# Error: empty vcf-stats file found: $(filename)s")
             sys.exit(1)
         else:
-            E.info( "File %i contains %i lines" % (fileno,len(lines)) )
+            E.info("File %i contains %i lines" % (fileno, len(lines)))
             vcf_stats = dict(track=trackname)
             snp_stats = dict(track=trackname)
             indel_stats = dict()
-            shared_stats = dict() 
+            shared_stats = dict()
             all_vars = False
             indels = False
             snps = False
-            shared = False 
+            shared = False
             for i, line in enumerate(lines):
                 line = line.strip()
-                if line.find("'all'") > -1: 
+                if line.find("'all'") > -1:
                     all_vars = True
                     E.info("Found 'all'")
                     continue
 
                 if all_vars:
-                    if line.find("=>") > -1: 
+                    if line.find("=>") > -1:
                         fields = line.split("=>")
-                        key = fields[0].strip().replace("'","").replace(">","_")
-                        val = fields[1].strip().replace(",","")
-                    else: 
+                        key = fields[0].strip().replace(
+                            "'", "").replace(">", "_")
+                        val = fields[1].strip().replace(",", "")
+                    else:
                         key = "NA"
                         val = "NA"
-                    if key=="indel" and val=="{":
+                    if key == "indel" and val == "{":
                         indels = True
                         E.info("Found 'indels'")
                         continue
-                    elif key=="snp" and val=="{":
+                    elif key == "snp" and val == "{":
                         snps = True
                         E.info("Found 'SNPs'")
                         continue
-                    elif key=="shared" and val=="{":
+                    elif key == "shared" and val == "{":
                         shared = True
                         E.info("Found 'Shared'")
                         continue
 
                     if indels:
                         if line.find("}") > -1:
-                           indels = False
-                           E.info("Processed 'indels'")
-                           continue
+                            indels = False
+                            E.info("Processed 'indels'")
+                            continue
                         else:
                             indel_stats[key] = val
                     elif snps:
@@ -145,10 +149,11 @@ def main( argv = None ):
                         else:
                             shared_stats[key] = val
                     elif key != "NA":
-                        vcf_stats[key] = val 
-            
+                        vcf_stats[key] = val
+
             # Ensure all keys are present
-            allkeys = ["nalt_1","nalt_2","nalt_3","nalt_4","nalt_5","track","count","snp_count","indel_count"]
+            allkeys = ["nalt_1", "nalt_2", "nalt_3", "nalt_4",
+                       "nalt_5", "track", "count", "snp_count", "indel_count"]
             for k in allkeys:
                 if vcf_stats.has_key(k):
                     continue
@@ -161,48 +166,49 @@ def main( argv = None ):
                 # Ensure keys are sorted
                 srt = vcf_stats.keys()
                 srt.sort()
-                sep=""
+                sep = ""
                 for k in srt:
-                    vcf_file.write("%s%s" % (sep,k))
-                    sep="\t"
+                    vcf_file.write("%s%s" % (sep, k))
+                    sep = "\t"
                 vcf_file.write("\n")
 
                 indel_file.write("track\tindel_length\tindel_count\n")
                 shared_file.write("track\tno_samples\tvar_count\n")
 
-                sep=""
+                sep = ""
                 for k in snp_stats.iterkeys():
-                    snp_file.write("%s%s" % (sep,k))
-                    sep="\t"
+                    snp_file.write("%s%s" % (sep, k))
+                    sep = "\t"
                 snp_file.write("\n")
 
             # Write data
-            sep=""
+            sep = ""
             srt = vcf_stats.keys()
             srt.sort()
             for k in srt:
-                vcf_file.write("%s%s" % (sep,vcf_stats[k]))
-                sep="\t"
+                vcf_file.write("%s%s" % (sep, vcf_stats[k]))
+                sep = "\t"
             vcf_file.write("\n")
 
-
             # Check all indel lengths are covered
-            r = range(-20,20,1)
+            r = range(-20, 20, 1)
             for i in r:
                 if indel_stats.has_key(str(i)):
                     continue
                 else:
-                    indel_stats[i]="0"
+                    indel_stats[i] = "0"
             for k in indel_stats.iterkeys():
-                indel_file.write("%s\t%s\t%s\n" % (trackname,k,indel_stats[k]))
- 
-            for k in shared_stats.iterkeys():
-                shared_file.write("%s\t%s\t%s\n" % (trackname,k,shared_stats[k]))
+                indel_file.write("%s\t%s\t%s\n" %
+                                 (trackname, k, indel_stats[k]))
 
-            sep=""
+            for k in shared_stats.iterkeys():
+                shared_file.write("%s\t%s\t%s\n" %
+                                  (trackname, k, shared_stats[k]))
+
+            sep = ""
             for k in snp_stats.iterkeys():
-                snp_file.write("%s%s" % (sep,snp_stats[k]))
-                sep="\t"
+                snp_file.write("%s%s" % (sep, snp_stats[k]))
+                sep = "\t"
             snp_file.write("\n")
 
     # close files
@@ -215,5 +221,4 @@ def main( argv = None ):
 
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

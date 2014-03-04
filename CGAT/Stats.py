@@ -1,4 +1,4 @@
-################################################################################
+##########################################################################
 #
 #   MRC FGU Computational Genomics Group
 #
@@ -19,7 +19,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
+##########################################################################
 '''
 Stats.py - 
 ======================================================
@@ -45,26 +45,32 @@ import rpy2.robjects as ro
 import rpy2.robjects.numpy2ri
 rpy2.robjects.numpy2ri.activate()
 
-def getSignificance( pvalue, thresholds=[0.05, 0.01, 0.001] ):
+
+def getSignificance(pvalue, thresholds=[0.05, 0.01, 0.001]):
     """return cartoon of significance of a p-Value."""
     n = 0
     for x in thresholds:
-        if pvalue > x: return "*" * n
+        if pvalue > x:
+            return "*" * n
         n += 1
     return "*" * n
 
+
 class Result(object):
+
     '''allow both member and dictionary access.'''
-    slots=("_data")
+    slots = ("_data")
+
     def __init__(self):
         object.__setattr__(self, "_data", dict())
-    def fromR( self, take, r_result ):
+
+    def fromR(self, take, r_result):
         '''convert from an *r_result* dictionary using map *take*.
 
         *take* is a list of tuples mapping a field to the corresponding
         field in *r_result*.
         '''
-        for x,y in take:
+        for x, y in take:
             if y:
                 self._data[x] = r_result.rx(y)[0][0]
             else:
@@ -76,35 +82,53 @@ class Result(object):
             #     self._data[x] = r_result[x]
 
         return self
+
     def __getattr__(self, key):
         if not key.startswith("_"):
-            try: return object.__getattribute__(self,"_data")[key]
-            except KeyError: pass
-        return getattr( self._data, key )
-    def keys(self): return self._data.keys()
-    def values(self): return self._data.values()
-    def __iter__(self): return self._data.__iter__()
-    def __len__(self): return self._data.__len__()
+            try:
+                return object.__getattribute__(self, "_data")[key]
+            except KeyError:
+                pass
+        return getattr(self._data, key)
+
+    def keys(self):
+        return self._data.keys()
+
+    def values(self):
+        return self._data.values()
+
+    def __iter__(self):
+        return self._data.__iter__()
+
+    def __len__(self):
+        return self._data.__len__()
+
     def __str__(self):
         return str(self._data)
-    def __contains__(self,key):
+
+    def __contains__(self, key):
         return key in self._data
-    def __getitem__(self, key ):
+
+    def __getitem__(self, key):
         return self._data[key]
-    def __delitem__(self, key ):
+
+    def __delitem__(self, key):
         del self._data[key]
-    def __setitem__(self, key, value ):
+
+    def __setitem__(self, key, value):
         self._data[key] = value
+
     def __setattr__(self, key, value):
         if not key.startswith("_"):
             self._data[key] = value
         else:
-            object.__setattr__(self,key,value)
+            object.__setattr__(self, key, value)
+
     def __getstate__(self):
         # required for correct pickling/unpickling
-        return object.__getattribute__(self,"_data")
-            
-    def __setstate__(self,d):
+        return object.__getattribute__(self, "_data")
+
+    def __setstate__(self, d):
         # required for correct unpickling, otherwise
         # maximum recursion threshold will be reached
         object.__setattr__(self, "_data", d)
@@ -112,34 +136,38 @@ class Result(object):
 #################################################################
 #################################################################
 #################################################################
-## Perform log likelihood test
+# Perform log likelihood test
+
+
 class LogLikelihoodTest:
 
     def __init__(self):
         pass
 
-def doLogLikelihoodTest( complex_ll, complex_np,
-                         simple_ll, simple_np,
-                         significance_threshold = 0.05):
+
+def doLogLikelihoodTest(complex_ll, complex_np,
+                        simple_ll, simple_np,
+                        significance_threshold=0.05):
     """perform log-likelihood test between model1 and model2.
     """
 
-    assert complex_ll >= simple_ll, "log likelihood of complex model smaller than for simple model: %f > %f" % (complex_ll, simple_ll)
+    assert complex_ll >= simple_ll, "log likelihood of complex model smaller than for simple model: %f > %f" % (
+        complex_ll, simple_ll)
 
     chi = 2 * (complex_ll - simple_ll)
     df = complex_np - simple_np
 
     if df <= 0:
         raise ValueError, "difference of degrees of freedom not larger than 0"
-    
-    p = scipy.stats.chisqprob( chi, df )
-    
+
+    p = scipy.stats.chisqprob(chi, df)
+
     l = LogLikelihoodTest()
-    
+
     l.mComplexLogLikelihood = complex_ll
-    l.mSimpleLogLikelihood = simple_ll    
+    l.mSimpleLogLikelihood = simple_ll
     l.mComplexNumParameters = complex_np
-    l.mSimpleNumParameters = simple_np    
+    l.mSimpleNumParameters = simple_np
     l.mSignificanceThreshold = significance_threshold
     l.mProbability = p
     l.mChiSquaredValue = chi
@@ -149,19 +177,23 @@ def doLogLikelihoodTest( complex_ll, complex_np,
         l.mPassed = True
     else:
         l.mPassed = False
-        
+
     return l
 
 #################################################################
 #################################################################
 #################################################################
+
+
 class BinomialTest:
+
     def __init__(self):
         pass
 
-def doBinomialTest( p, sample_size, observed, significance_threshold = 0.05):
+
+def doBinomialTest(p, sample_size, observed, significance_threshold=0.05):
     """perform a binomial test. 
-    
+
     Given are p: the probability of the NULL hypothesis, the sample_size
     and the number of observed counts.
     """
@@ -170,11 +202,15 @@ def doBinomialTest( p, sample_size, observed, significance_threshold = 0.05):
 #################################################################
 #################################################################
 #################################################################
+
+
 class ChiSquaredTest:
+
     def __init__(self):
         pass
 
-def doChiSquaredTest( matrix, significance_threshold = 0.05 ):
+
+def doChiSquaredTest(matrix, significance_threshold=0.05):
     '''perform chi-squared test on a matrix.
 
     The observed/expected values are in rows, the categories are in columns, for
@@ -199,52 +235,56 @@ def doChiSquaredTest( matrix, significance_threshold = 0.05 ):
     nrows, ncols = matrix.shape
 
     if nrows != 2:
-        raise NotImplementedError( "chi-square currently only implemented for 2xn tables." )
-    
+        raise NotImplementedError(
+            "chi-square currently only implemented for 2xn tables.")
+
     n = 0
     for x in range(ncols):
-        if matrix[1][x] < 1: 
-            raise ValueError( "matrix contains expected counts < 1" )
-        if matrix[1][x] < 5: n +=1
+        if matrix[1][x] < 1:
+            raise ValueError("matrix contains expected counts < 1")
+        if matrix[1][x] < 5:
+            n += 1
     if 100.0 * n / ncols > 20.0:
-        raise ValueError( "more than 20% of expected categories are less than 5" )
+        raise ValueError(
+            "more than 20% of expected categories are less than 5")
 
-    row_sums = [ sum(matrix[x,:]) for x in range( nrows ) ]
-    col_sums = [ sum(matrix[:,x]) for x in range( ncols ) ]
+    row_sums = [sum(matrix[x, :]) for x in range(nrows)]
+    col_sums = [sum(matrix[:, x]) for x in range(ncols)]
     sample_size = float(sum(row_sums))
     chi = 0.0
 
-    df = (nrows - 1) * (ncols -1 )
-    ## Yates correction applies for a 2x2 table only (df==1)
-    if df == 1: 
+    df = (nrows - 1) * (ncols - 1)
+    # Yates correction applies for a 2x2 table only (df==1)
+    if df == 1:
         correction = 0.5 * 0.5
     else:
         correction = 0
-        
+
     for x in range(nrows):
         for y in range(ncols):
             expected = row_sums[x] * col_sums[y] / sample_size
             # compute difference and apply Yates correction
-            d = abs(matrix[x,y] - expected) - correction
-            chi += (d * d ) / expected
+            d = abs(matrix[x, y] - expected) - correction
+            chi += (d * d) / expected
 
     result = ChiSquaredTest()
 
-    result.mProbability = scipy.stats.chisqprob( chi, df )
+    result.mProbability = scipy.stats.chisqprob(chi, df)
     result.mDegreesFreedom = df
     result.mChiSquaredValue = chi
     result.mPassed = result.mProbability < significance_threshold
-    result.mSignificance = getSignificance( result.mProbability )
+    result.mSignificance = getSignificance(result.mProbability)
     result.mSampleSize = sample_size
-    result.mPhi = math.sqrt( result.mChiSquaredValue / result.mSampleSize )
+    result.mPhi = math.sqrt(result.mChiSquaredValue / result.mSampleSize)
     return result
 
-def doPearsonChiSquaredTest( p, sample_size, observed, significance_threshold = 0.05):
+
+def doPearsonChiSquaredTest(p, sample_size, observed, significance_threshold=0.05):
     """perform a pearson chi squared test.
-    
+
     Given are p: the probability of the NULL hypothesis, the sample_size
     and the number of observed counts.
-    
+
     For large sample sizes, this test is a continuous approximation to
     the binomial test.
     """
@@ -255,13 +295,13 @@ def doPearsonChiSquaredTest( p, sample_size, observed, significance_threshold = 
 
     result = ChiSquaredTest()
 
-    result.mProbability = scipy.stats.chisqprob( chi, df )
+    result.mProbability = scipy.stats.chisqprob(chi, df)
     result.mDegreesFreedom = df
     result.mChiSquaredValue = chi
     result.mPassed = result.mProbability < significance_threshold
-    result.mSignificance = getSignificance( result.mProbability )
+    result.mSignificance = getSignificance(result.mProbability)
     result.mSampleSize = sample_size
-    result.mPhi = math.sqrt( result.mChiSquaredValue / result.mSampleSize )
+    result.mPhi = math.sqrt(result.mChiSquaredValue / result.mSampleSize)
     result.mObserved = observed
     result.mExpected = e
     return result
@@ -269,9 +309,11 @@ def doPearsonChiSquaredTest( p, sample_size, observed, significance_threshold = 
 #################################################################
 #################################################################
 #################################################################
-## Convenience functions and objects for statistical analysis
+# Convenience functions and objects for statistical analysis
+
 
 class DistributionalParameters:
+
     """a collection of distributional parameters. Available properties
     are:
 
@@ -279,43 +321,45 @@ class DistributionalParameters:
 
     This method is deprecated - use :class:`Summary` instead.
     """
-    def __init__(self, values = None, format = "%6.4f", mode="float"):
+
+    def __init__(self, values=None, format="%6.4f", mode="float"):
 
         self.mMean, self.mMedian, self.mMin, self.mMax, self.mSampleStd, self.mSum, self.mCounts, self.mQ1, self.mQ3 = \
-                    (0, 0, 0, 0, 0, 0, 0, 0, 0)
-        
-        if values != None and len(values) > 0: self.updateProperties( values )
+            (0, 0, 0, 0, 0, 0, 0, 0, 0)
+
+        if values is not None and len(values) > 0:
+            self.updateProperties(values)
         self.mFormat = format
         self.mMode = mode
         self.mNErrors = 0
 
-    def updateProperties( self, values):
+    def updateProperties(self, values):
         """update properties.
 
         If values is an vector of strings, each entry will be converted
         to float. Entries that can not be converted are ignored.
         """
-        values = [x for x in values if x != None ]
+        values = [x for x in values if x is not None]
 
         if len(values) == 0:
-            raise ValueError( "no data for statistics" )
+            raise ValueError("no data for statistics")
 
-        ## convert
+        # convert
         self.mNErrors = 0
         if type(values[0]) not in (types.IntType, types.FloatType):
             n = []
             for x in values:
                 try:
-                    n.append( float(x) )
+                    n.append(float(x))
                 except ValueError:
                     self.mNErrors += 1
         else:
             n = values
 
         if len(n) == 0:
-            raise ValueError( "no data for statistics" )
+            raise ValueError("no data for statistics")
 
-        ## use a non-sort algorithm later.
+        # use a non-sort algorithm later.
         n.sort()
         self.mQ1 = n[len(n) / 4]
         self.mQ3 = n[len(n) * 3 / 4]
@@ -323,50 +367,59 @@ class DistributionalParameters:
         self.mCounts = len(n)
         self.mMin = min(n)
         self.mMax = max(n)
-        self.mMean = scipy.mean( n )
-        self.mMedian = scipy.median( n )
-        self.mSampleStd = scipy.std( n )
-        self.mSum = reduce( lambda x, y: x+y, n )
+        self.mMean = scipy.mean(n)
+        self.mMedian = scipy.median(n)
+        self.mSampleStd = scipy.std(n)
+        self.mSum = reduce(lambda x, y: x + y, n)
 
-    def getZScore( self, value ):
+    def getZScore(self, value):
         """return zscore for value."""
         if self.mSampleStd > 0:
             return (value - self.mMean) / self.mSampleStd
         else:
             return 0
 
-    def setFormat( self, format ):
+    def setFormat(self, format):
         """set number format."""
         self.mFormat = format
 
-    def getHeaders( self ):
+    def getHeaders(self):
         """returns header of column separated values."""
         return ("nval", "min", "max", "mean", "median", "stddev", "sum", "q1", "q3")
 
-    def getHeader( self ):
+    def getHeader(self):
         """returns header of column separated values."""
-        return "\t".join( self.getHeaders())
+        return "\t".join(self.getHeaders())
 
     def items(self):
-        return [ (x, self.__getitem__(x)) for x in self.getHeaders() ]
+        return [(x, self.__getitem__(x)) for x in self.getHeaders()]
 
-    def __getitem__( self, key ):
-        
-        if key == "nval": return self.mCounts
-        if key == "min": return self.mMin
-        if key == "max": return self.mMax
-        if key == "mean": return self.mMean
-        if key == "median": return self.mMedian
-        if key == "stddev": return self.mSampleStd
-        if key == "sum": return self.mSum
-        if key == "q1": return self.mQ1
-        if key == "q3": return self.mQ3                
+    def __getitem__(self, key):
+
+        if key == "nval":
+            return self.mCounts
+        if key == "min":
+            return self.mMin
+        if key == "max":
+            return self.mMax
+        if key == "mean":
+            return self.mMean
+        if key == "median":
+            return self.mMedian
+        if key == "stddev":
+            return self.mSampleStd
+        if key == "sum":
+            return self.mSum
+        if key == "q1":
+            return self.mQ1
+        if key == "q3":
+            return self.mQ3
 
         raise KeyError, key
-        
-    def __str__( self ):
+
+    def __str__(self):
         """return string representation of data."""
-        
+
         if self.mMode == "int":
             format_vals = "%i"
             format_median = "%.1f"
@@ -374,29 +427,32 @@ class DistributionalParameters:
             format_vals = self.mFormat
             format_median = self.mFormat
 
-        return "\t".join( ( "%i" % self.mCounts,
-                            format_vals % self.mMin,
-                            format_vals % self.mMax,
-                            self.mFormat % self.mMean,
-                            format_median % self.mMedian,
-                            self.mFormat % self.mSampleStd,                                      
-                            format_vals % self.mSum,
-                            format_vals % self.mQ1,
-                            format_vals % self.mQ3,                            
-                            ) )
+        return "\t".join(("%i" % self.mCounts,
+                          format_vals % self.mMin,
+                          format_vals % self.mMax,
+                          self.mFormat % self.mMean,
+                          format_median % self.mMedian,
+                          self.mFormat % self.mSampleStd,
+                          format_vals % self.mSum,
+                          format_vals % self.mQ1,
+                          format_vals % self.mQ3,
+                          ))
 
-class Summary( Result ):
+
+class Summary(Result):
+
     """a collection of distributional parameters. Available properties
     are:
 
     mean, median, min, max, samplestd, sum, counts
     """
 
-    fields = ("nval", "min", "max", "mean", "median", "stddev", "sum", "q1", "q3")
+    fields = ("nval", "min", "max", "mean",
+              "median", "stddev", "sum", "q1", "q3")
 
-    def __init__(self, values = None, 
-                 format = "%6.4f", mode="float",
-                 allow_empty = True ):
+    def __init__(self, values=None,
+                 format="%6.4f", mode="float",
+                 allow_empty=True):
 
         Result.__init__(self)
         self._format = format
@@ -404,15 +460,17 @@ class Summary( Result ):
 
         # note that this determintes the order of the fields at output
         self.counts, self.min, self.max, self.mean, self.median, self.samplestd, self.sum, self.q1, self.q3 = \
-                    (0, 0, 0, 0, 0, 0, 0, 0, 0)
-        
-        if values != None:
+            (0, 0, 0, 0, 0, 0, 0, 0, 0)
 
-            values = [x for x in values if x != None ]
+        if values is not None:
+
+            values = [x for x in values if x is not None]
 
             if len(values) == 0:
-                if allow_empty: return
-                else: raise ValueError( "no data for statistics" )
+                if allow_empty:
+                    return
+                else:
+                    raise ValueError("no data for statistics")
 
             # convert
             self._nerrors = 0
@@ -420,39 +478,39 @@ class Summary( Result ):
                 n = []
                 for x in values:
                     try:
-                        n.append( float(x) )
+                        n.append(float(x))
                     except ValueError:
                         self._nerrors += 1
             else:
                 n = values
 
-            ## use a non-sort algorithm?
+            # use a non-sort algorithm?
             n.sort()
             if len(n):
                 self.q1 = n[len(n) / 4]
                 self.q3 = n[len(n) * 3 / 4]
             else:
-                self.q1 = self.q3 = 0 
+                self.q1 = self.q3 = 0
 
             self.counts = len(n)
             self.min = min(n)
             self.max = max(n)
-            self.mean = scipy.mean( n )
-            self.median = scipy.median( n )
-            self.samplestd = scipy.std( n )
-            self.sum = reduce( lambda x, y: x+y, n )
+            self.mean = scipy.mean(n)
+            self.median = scipy.median(n)
+            self.samplestd = scipy.std(n)
+            self.sum = reduce(lambda x, y: x + y, n)
 
-    def getHeaders( self ):
+    def getHeaders(self):
         """returns header of column separated values."""
         return self.fields
 
-    def getHeader( self ):
+    def getHeader(self):
         """returns header of column separated values."""
-        return "\t".join( self.getHeaders())
+        return "\t".join(self.getHeaders())
 
-    def __str__( self ):
+    def __str__(self):
         """return string representation of data."""
-        
+
         if self._mode == "int":
             format_vals = "%i"
             format_median = "%.1f"
@@ -460,18 +518,19 @@ class Summary( Result ):
             format_vals = self._format
             format_median = self._format
 
-        return "\t".join( ( "%i" % self.counts,
-                            format_vals % self.min,
-                            format_vals % self.max,
-                            self._format % self.mean,
-                            format_median % self.median,
-                            self._format % self.samplestd,                                      
-                            format_vals % self.sum,
-                            format_vals % self.q1,
-                            format_vals % self.q3,                            
-                            ) )
+        return "\t".join(("%i" % self.counts,
+                          format_vals % self.min,
+                          format_vals % self.max,
+                          self._format % self.mean,
+                          format_median % self.median,
+                          self._format % self.samplestd,
+                          format_vals % self.sum,
+                          format_vals % self.q1,
+                          format_vals % self.q3,
+                          ))
 
-def adjustPValues( pvalues, method ):
+
+def adjustPValues(pvalues, method):
     '''adjust P-Values for multiple testing using
     the p.adjust() method in R.
 
@@ -479,37 +538,40 @@ def adjustPValues( pvalues, method ):
 
     c("holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "none")
     '''
-    return R.p_adjust( pvalues, method )
+    return R.p_adjust(pvalues, method)
 
-def smoothPValues( pvalues,
-                   vlambda=numpy.arange(0,0.95,0.05),
-                   smooth_df = 3,
-                   smooth_log_pi0 = False):
+
+def smoothPValues(pvalues,
+                  vlambda=numpy.arange(0, 0.95, 0.05),
+                  smooth_df=3,
+                  smooth_log_pi0=False):
 
     if min(pvalues) < 0 or max(pvalues) > 1:
-        raise ValueError( "p-values out of range" )
+        raise ValueError("p-values out of range")
 
     if len(vlambda) > 1 and len(vlambda) < 4:
-        raise ValueError(" If length of vlambda greater than 1, you need at least 4 values." )
+        raise ValueError(
+            " If length of vlambda greater than 1, you need at least 4 values.")
 
     if len(vlambda) > 1 and (min(vlambda) < 0 or max(vlambda) >= 1):
-        raise ValueError( "vlambda must be within [0, 1).")
+        raise ValueError("vlambda must be within [0, 1).")
 
     m = len(pvalues)
 
-    pi0 = numpy.zeros( len(vlambda), numpy.float )
+    pi0 = numpy.zeros(len(vlambda), numpy.float)
 
-    for i in range( len(vlambda) ):
-        pi0[i] = numpy.mean( [x >= vlambda[i] for x in pvalues ]) / (1.0 -vlambda[i] )
+    for i in range(len(vlambda)):
+        pi0[i] = numpy.mean([x >= vlambda[i]
+                            for x in pvalues]) / (1.0 - vlambda[i])
 
-    R.assign( "pi0", pi0)
-    R.assign( "vlambda", vlambda)
+    R.assign("pi0", pi0)
+    R.assign("vlambda", vlambda)
     print "pi0=", pi0
-    
+
     if smooth_log_pi0:
         pi0 = math.log(pi0)
 
-    R.assign( "smooth_df", smooth_df)
+    R.assign("smooth_df", smooth_df)
 
     spi0 = R("""spi0 <- smooth.spline(vlambda,pi0, df = smooth_df)""")
     pi0 = R("""pi0 <- predict( spi0, x = max(vlambda) )$y""")
@@ -520,49 +582,52 @@ def smoothPValues( pvalues,
 
     return pi0
 
-def getPi0( pvalues, 
-            vlambda=numpy.arange(0,0.95,0.05), 
-            pi0_method="smoother",
-            smooth_df = 3,
-            smooth_log_pi0 = False):
+
+def getPi0(pvalues,
+           vlambda=numpy.arange(0, 0.95, 0.05),
+           pi0_method="smoother",
+           smooth_df=3,
+           smooth_log_pi0=False):
     '''used within nubiscan.'''
-    
+
     if min(pvalues) < 0 or max(pvalues) > 1:
-        raise ValueError( "p-values out of range" )
+        raise ValueError("p-values out of range")
 
     if len(vlambda) > 1 and len(vlambda) < 4:
-        raise ValueError(" If length of vlambda greater than 1, you need at least 4 values." )
+        raise ValueError(
+            " If length of vlambda greater than 1, you need at least 4 values.")
 
     if len(vlambda) > 1 and (min(vlambda) < 0 or max(vlambda) >= 1):
-        raise ValueError( "vlambda must be within [0, 1).")
+        raise ValueError("vlambda must be within [0, 1).")
 
     m = len(pvalues)
 
      # these next few functions are the various ways to estimate pi0
-    if len(vlambda)==1: 
+    if len(vlambda) == 1:
         vlambda = vlambda[0]
-        if  vlambda < 0 or vlambda >=1 :
-            raise ValueError( "vlambda must be within [0, 1).")
+        if vlambda < 0 or vlambda >= 1:
+            raise ValueError("vlambda must be within [0, 1).")
 
-        pi0 = numpy.mean( [ x >= vlambda for x in pvalues ] ) / (1.0 - vlambda)
+        pi0 = numpy.mean([x >= vlambda for x in pvalues]) / (1.0 - vlambda)
         pi0 = min(pi0, 1.0)
-        R.assign( "pi0", pi0)
-        
+        R.assign("pi0", pi0)
+
     else:
-        
-        pi0 = numpy.zeros( len(vlambda), numpy.float )
 
-        for i in range( len(vlambda) ):
-            pi0[i] = numpy.mean( [x >= vlambda[i] for x in pvalues ]) / (1.0 -vlambda[i] )
+        pi0 = numpy.zeros(len(vlambda), numpy.float)
 
-        R.assign( "pi0", pi0)
-        R.assign( "vlambda", vlambda)
+        for i in range(len(vlambda)):
+            pi0[i] = numpy.mean([x >= vlambda[i]
+                                for x in pvalues]) / (1.0 - vlambda[i])
 
-        if pi0_method=="smoother":
+        R.assign("pi0", pi0)
+        R.assign("vlambda", vlambda)
+
+        if pi0_method == "smoother":
             if smooth_log_pi0:
                 pi0 = math.log(pi0)
-                
-            R.assign( "smooth_df", smooth_df)
+
+            R.assign("smooth_df", smooth_df)
 
             spi0 = R("""spi0 <- smooth.spline(vlambda,pi0, df = smooth_df)""")
             pi0 = R("""pi0 <- predict( spi0, x = max(vlambda) )$y""")
@@ -570,14 +635,14 @@ def getPi0( pvalues,
             if smooth_log_pi0:
                 pi0 = math.exp(pi0)
 
-        elif pi0_method=="bootstrap":
+        elif pi0_method == "bootstrap":
 
             minpi0 = min(pi0)
 
-            mse = numpy.zeros( len(vlambda), numpy.float )
-            pi0_boot = numpy.zeros( len(vlambda), numpy.float )
+            mse = numpy.zeros(len(vlambda), numpy.float)
+            pi0_boot = numpy.zeros(len(vlambda), numpy.float)
 
-            R.assign( "pvalues", pvalues)
+            R.assign("pvalues", pvalues)
             pi0 = R("""
             m <- length(pvalues)
             minpi0 <- min(pi0)
@@ -594,21 +659,24 @@ def getPi0( pvalues,
             }
             pi0 <- min(pi0[mse==min(mse)])""")
         else:
-            raise ValueError( "'pi0_method' must be one of 'smoother' or 'bootstrap'.")
+            raise ValueError(
+                "'pi0_method' must be one of 'smoother' or 'bootstrap'.")
 
-        pi0 = min(pi0,1.0)
+        pi0 = min(pi0, 1.0)
 
     if pi0 <= 0:
-        raise ValueError( "The estimated pi0 <= 0. Check that you have valid p-values or use another vlambda method." )
+        raise ValueError(
+            "The estimated pi0 <= 0. Check that you have valid p-values or use another vlambda method.")
 
     return pi0
 
 
 class FDRResult:
+
     def __init__(self):
         pass
 
-    def plot(self, hardcopy = None):
+    def plot(self, hardcopy=None):
 
         if hardcopy:
             R.png(hardcopy, width=1024, height=768, type="cairo")
@@ -616,10 +684,10 @@ class FDRResult:
         R.require('qvalue')
 
         # build a qobj
-        R.assign( "pval", self.mPValues )
-        R.assign( "pi0", self.mPi0 )
-        R.assign( "qval", self.mQValues )
-        R.assign( "lambda", self.mLambda )
+        R.assign("pval", self.mPValues)
+        R.assign("pi0", self.mPi0)
+        R.assign("qval", self.mQValues)
+        R.assign("lambda", self.mLambda)
         R("""qobj <-list( pi0=pi0, qvalues=qval, pvalues=pval, lambda=lambda)""")
         R(""" class(qobj) <- "qvalue" """)
 
@@ -628,85 +696,89 @@ class FDRResult:
         if hardcopy:
             R.dev_off()
 
-def doFDR(pvalues, 
+
+def doFDR(pvalues,
           vlambda=None,
-          pi0_method="smoother", 
-          fdr_level=None, 
+          pi0_method="smoother",
+          fdr_level=None,
           robust=False,
-          smooth_df = 3,
-          smooth_log_pi0 = False,
-          plot = False ):
+          smooth_df=3,
+          smooth_log_pi0=False,
+          plot=False):
     """modeled after code taken from http://genomics.princeton.edu/storeylab/qvalue/linux.html.
 
     I did not like the error handling so I translated most to python.
-    
+
     Compute FDR after method by Storey et al. (2002).
     """
 
     # set to default of qvalue method
-    if vlambda == None: vlambda = numpy.arange(0,0.95,0.05)
+    if vlambda is None:
+        vlambda = numpy.arange(0, 0.95, 0.05)
 
     if min(pvalues) < 0 or max(pvalues) > 1:
-        raise ValueError( "p-values out of range" )
+        raise ValueError("p-values out of range")
 
     if type(vlambda) == float:
         vlambda = (vlambda, )
 
     if len(vlambda) > 1 and len(vlambda) < 4:
-        raise ValueError(" If length of vlambda greater than 1, you need at least 4 values." )
+        raise ValueError(
+            " If length of vlambda greater than 1, you need at least 4 values.")
 
     if len(vlambda) > 1 and (min(vlambda) < 0 or max(vlambda) >= 1):
-        raise ValueError( "vlambda must be within [0, 1).")
+        raise ValueError("vlambda must be within [0, 1).")
 
     m = len(pvalues)
 
      # these next few functions are the various ways to estimate pi0
-    if len(vlambda)==1: 
+    if len(vlambda) == 1:
         vlambda = vlambda[0]
-        if  vlambda < 0 or vlambda >=1 :
-            raise ValueError( "vlambda must be within [0, 1).")
+        if vlambda < 0 or vlambda >= 1:
+            raise ValueError("vlambda must be within [0, 1).")
 
-        pi0 = numpy.mean( [ x >= vlambda for x in pvalues ] ) / (1.0 - vlambda)
+        pi0 = numpy.mean([x >= vlambda for x in pvalues]) / (1.0 - vlambda)
         pi0 = min(pi0, 1.0)
-        R.assign( "pi0", pi0)
+        R.assign("pi0", pi0)
     else:
-        pi0 = numpy.zeros( len(vlambda), numpy.float )
+        pi0 = numpy.zeros(len(vlambda), numpy.float)
 
-        for i in range( len(vlambda) ):
-            pi0[i] = numpy.mean( [x >= vlambda[i] for x in pvalues ]) / (1.0 -vlambda[i] )
+        for i in range(len(vlambda)):
+            pi0[i] = numpy.mean([x >= vlambda[i]
+                                for x in pvalues]) / (1.0 - vlambda[i])
 
-        R.assign( "pi0", pi0)
-        R.assign( "vlambda", vlambda)
+        R.assign("pi0", pi0)
+        R.assign("vlambda", vlambda)
 
-        if pi0_method=="smoother":
+        if pi0_method == "smoother":
             if smooth_log_pi0:
                 pi0 = math.log(pi0)
-                
-            R.assign( "smooth_df", smooth_df)
+
+            R.assign("smooth_df", smooth_df)
             spi0 = R("""spi0 <- smooth.spline(vlambda,pi0, df = smooth_df)""")
             if plot:
                 import matplotlib.pyplot as plt
                 plt.figure()
-                plt.plot( vlambda, pi0 )
-                x2 = numpy.arange( 0, 1, 0.001 )
-                R.assign( "x2", x2)
+                plt.plot(vlambda, pi0)
+                x2 = numpy.arange(0, 1, 0.001)
+                R.assign("x2", x2)
                 y2 = R("""y2 <- predict( spi0, x = x2 )$y""")
-                plt.plot( x2, y2 )
+                plt.plot(x2, y2)
                 plt.show()
-            
+
             pi0 = R("""pi0 <- predict( spi0, x = max(vlambda) )$y""")[0]
 
             if smooth_log_pi0:
                 pi0 = math.exp(pi0)
 
-        elif pi0_method=="bootstrap":
+        elif pi0_method == "bootstrap":
 
             minpi0 = min(pi0)
 
-            mse = numpy.zeros( len(vlambda), numpy.float )
-            pi0_boot = numpy.zeros( len(vlambda), numpy.float )
+            mse = numpy.zeros(len(vlambda), numpy.float)
+            pi0_boot = numpy.zeros(len(vlambda), numpy.float)
 
-            R.assign( "pvalues", pvalues)
+            R.assign("pvalues", pvalues)
             pi0 = R("""
             m <- length(pvalues)
             minpi0 <- min(pi0)
@@ -723,24 +795,26 @@ def doFDR(pvalues,
             }
             pi0 <- min(pi0[mse==min(mse)])""")[0]
         else:
-            raise ValueError( "'pi0_method' must be one of 'smoother' or 'bootstrap'.")
+            raise ValueError(
+                "'pi0_method' must be one of 'smoother' or 'bootstrap'.")
 
-        pi0 = min(pi0,1.0)
-        R.assign( "pi0", pi0 )
+        pi0 = min(pi0, 1.0)
+        R.assign("pi0", pi0)
 
     if pi0 <= 0:
-        raise ValueError( "The estimated pi0 (%f) <= 0. Check that you have valid p-values or use another vlambda method." % pi0)
+        raise ValueError(
+            "The estimated pi0 (%f) <= 0. Check that you have valid p-values or use another vlambda method." % pi0)
 
-    if fdr_level != None and (fdr_level <= 0 or fdr_level > 1):
-        raise ValueError( "'fdr_level' must be within (0, 1].")
+    if fdr_level is not None and (fdr_level <= 0 or fdr_level > 1):
+        raise ValueError("'fdr_level' must be within (0, 1].")
 
     # The estimated q-values calculated here
     #u = numpy.argsort( p )
 
     # change by Alan
     # ranking function which returns number of observations less than or equal
-    ro.globalenv['pvalues'] = ro.FloatVector( pvalues )
-    R.assign( "robust", robust )
+    ro.globalenv['pvalues'] = ro.FloatVector(pvalues)
+    R.assign("robust", robust)
     qvalues = R("""u <- order(pvalues)
     qvalues.rank <- function(x) 
 {
@@ -781,166 +855,180 @@ qvalues
     result = FDRResult()
     result.mQValues = qvalues
 
-    if fdr_level != None:
-        result.mPassed = [ x <= fdr_level for x in result.mQValues ]
+    if fdr_level is not None:
+        result.mPassed = [x <= fdr_level for x in result.mQValues]
     else:
-        result.mPassed = [ False for x in result.mQValues ]
-        
+        result.mPassed = [False for x in result.mQValues]
+
     result.mPValues = pvalues
     result.mPi0 = pi0
     result.mLambda = vlambda
 
     return result
 
-def doFDRPython(pvalues, 
+
+def doFDRPython(pvalues,
                 vlambda=None,
-                pi0_method="smoother", 
-                fdr_level=None, 
+                pi0_method="smoother",
+                fdr_level=None,
                 robust=False,
-                smooth_df = 3,
-                smooth_log_pi0 = False,
-                pi0 = None,
-                plot = False ):
+                smooth_df=3,
+                smooth_log_pi0=False,
+                pi0=None,
+                plot=False):
     """modeled after code taken from http://genomics.princeton.edu/storeylab/qvalue/linux.html.
 
     I did not like the error handling so I translated most to python.
-    
+
     Compute FDR after method by Storey et al. (2002).
     """
 
     if min(pvalues) < 0 or max(pvalues) > 1:
-        raise ValueError( "p-values out of range" )
+        raise ValueError("p-values out of range")
 
     # set to default of qvalue method
-    if vlambda == None: vlambda = numpy.arange(0,0.95,0.05)
+    if vlambda is None:
+        vlambda = numpy.arange(0, 0.95, 0.05)
 
     m = len(pvalues)
-    pvalues = numpy.array( pvalues, dtype = numpy.float )
+    pvalues = numpy.array(pvalues, dtype=numpy.float)
 
-    if pi0 == None:
+    if pi0 is None:
         if type(vlambda) == float:
             vlambda = (vlambda,)
 
         if len(vlambda) > 1 and len(vlambda) < 4:
-            raise ValueError(" if length of vlambda greater than 1, you need at least 4 values." )
+            raise ValueError(
+                " if length of vlambda greater than 1, you need at least 4 values.")
 
         if len(vlambda) > 1 and (min(vlambda) < 0 or max(vlambda) >= 1):
-            raise ValueError( "vlambda must be within [0, 1).")
+            raise ValueError("vlambda must be within [0, 1).")
 
         # estimate pi0
-        if len(vlambda)==1: 
+        if len(vlambda) == 1:
             vlambda = vlambda[0]
-            if  vlambda < 0 or vlambda >=1 :
-                raise ValueError( "vlambda must be within [0, 1).")
+            if vlambda < 0 or vlambda >= 1:
+                raise ValueError("vlambda must be within [0, 1).")
 
-            pi0 = numpy.mean( [ x >= vlambda for x in pvalues ] ) / (1.0 - vlambda)
+            pi0 = numpy.mean([x >= vlambda for x in pvalues]) / (1.0 - vlambda)
             pi0 = min(pi0, 1.0)
         else:
 
-            pi0 = numpy.zeros( len(vlambda), numpy.float )
+            pi0 = numpy.zeros(len(vlambda), numpy.float)
 
-            for i in range( len(vlambda) ):
-                pi0[i] = numpy.mean( [x >= vlambda[i] for x in pvalues ]) / (1.0 - vlambda[i] )
+            for i in range(len(vlambda)):
+                pi0[i] = numpy.mean([x >= vlambda[i]
+                                    for x in pvalues]) / (1.0 - vlambda[i])
 
-            if pi0_method=="smoother":
+            if pi0_method == "smoother":
 
-                if smooth_log_pi0: pi0 = math.log(pi0)
+                if smooth_log_pi0:
+                    pi0 = math.log(pi0)
 
-                tck = scipy.interpolate.splrep( vlambda,
-                                                pi0, 
-                                                k = smooth_df,
-                                                s = 10000 )
-                
+                tck = scipy.interpolate.splrep(vlambda,
+                                               pi0,
+                                               k=smooth_df,
+                                               s=10000)
+
                 if plot:
                     import matplotlib.pyplot as plt
                     plt.figure()
-                    plt.plot( vlambda, pi0 )
-                    x2 = numpy.arange( 0, 1, 0.001 )
-                    y2 = scipy.interpolate.splev( x2, tck )
-                    plt.plot( x2, y2 )
+                    plt.plot(vlambda, pi0)
+                    x2 = numpy.arange(0, 1, 0.001)
+                    y2 = scipy.interpolate.splev(x2, tck)
+                    plt.plot(x2, y2)
                     plt.show()
-                
-                pi0 = scipy.interpolate.splev( max(vlambda), tck )
-                if smooth_log_pi0: pi0 = math.exp(pi0)
 
-            elif pi0_method=="bootstrap":
+                pi0 = scipy.interpolate.splev(max(vlambda), tck)
+                if smooth_log_pi0:
+                    pi0 = math.exp(pi0)
+
+            elif pi0_method == "bootstrap":
 
                 minpi0 = min(pi0)
 
-                mse = numpy.zeros( len(vlambda), numpy.float )
-                pi0_boot = numpy.zeros( len(vlambda), numpy.float )
+                mse = numpy.zeros(len(vlambda), numpy.float)
+                pi0_boot = numpy.zeros(len(vlambda), numpy.float)
 
                 for i in xrange(100):
                     # sample pvalues
-                    idx_boot = numpy.random.random_integers( 0, m-1, m) 
+                    idx_boot = numpy.random.random_integers(0, m - 1, m)
                     pvalues_boot = pvalues[idx_boot]
 
-                    for x in xrange( len(vlambda )):
+                    for x in xrange(len(vlambda)):
                         # compute number of pvalues larger than lambda[x]
-                        pi0_boot[x] = numpy.mean( pvalues_boot > vlambda[x]) / (1.0 - vlambda[x]) 
+                        pi0_boot[x] = numpy.mean(
+                            pvalues_boot > vlambda[x]) / (1.0 - vlambda[x])
                     mse += (pi0_boot - minpi0) ** 2
-                pi0 = min( pi0[mse==min(mse)] )
+                pi0 = min(pi0[mse == min(mse)])
             else:
-                raise ValueError( "'pi0_method' must be one of 'smoother' or 'bootstrap'.")
+                raise ValueError(
+                    "'pi0_method' must be one of 'smoother' or 'bootstrap'.")
 
-            pi0 = min(pi0,1.0)
-    
+            pi0 = min(pi0, 1.0)
+
     if pi0 <= 0:
-        raise ValueError( "The estimated pi0 <= 0. Check that you have valid p-values or use another vlambda method." )
+        raise ValueError(
+            "The estimated pi0 <= 0. Check that you have valid p-values or use another vlambda method.")
 
-    if fdr_level != None and (fdr_level <= 0 or fdr_level > 1):
-        raise ValueError( "'fdr_level' must be within (0, 1].")
+    if fdr_level is not None and (fdr_level <= 0 or fdr_level > 1):
+        raise ValueError("'fdr_level' must be within (0, 1].")
 
     # compute qvalues
-    idx = numpy.argsort( pvalues )
+    idx = numpy.argsort(pvalues)
     # monotonically decreasing bins, so that bins[i-1] > x >=  bins[i]
-    bins = numpy.unique( pvalues )[::-1]
+    bins = numpy.unique(pvalues)[::-1]
 
     # v[i] = number of observations less than or equal to pvalue[i]
     # could this be done more elegantly?
-    val2bin = len(bins) - numpy.digitize( pvalues, bins )
-    v = numpy.zeros( m, dtype = numpy.int )
+    val2bin = len(bins) - numpy.digitize(pvalues, bins)
+    v = numpy.zeros(m, dtype=numpy.int)
     lastbin = None
-    for x in xrange( m-1, -1, -1 ):
+    for x in xrange(m - 1, -1, -1):
         bin = val2bin[idx[x]]
-        if bin != lastbin: c = x
-        v[idx[x]] = c+1
+        if bin != lastbin:
+            c = x
+        v[idx[x]] = c + 1
         lastbin = bin
 
     qvalues = pvalues * pi0 * m / v
     if robust:
-        qvalues /= ( 1.0 - ( 1.0 - pvalues)**m )
+        qvalues /= (1.0 - (1.0 - pvalues) ** m)
 
     # bound qvalues by 1 and make them monotonic
-    qvalues[idx[m-1]] = min(qvalues[idx[m-1]],1.0)
-    for i in xrange(m-2,-1,-1):
-        qvalues[idx[i]] = min(min(qvalues[idx[i]],qvalues[idx[i+1]]),1.0)
+    qvalues[idx[m - 1]] = min(qvalues[idx[m - 1]], 1.0)
+    for i in xrange(m - 2, -1, -1):
+        qvalues[idx[i]] = min(min(qvalues[idx[i]], qvalues[idx[i + 1]]), 1.0)
 
     result = FDRResult()
     result.mQValues = qvalues
 
-    if fdr_level != None:
-        result.mPassed = [ x <= fdr_level for x in result.mQValues ]
+    if fdr_level is not None:
+        result.mPassed = [x <= fdr_level for x in result.mQValues]
     else:
-        result.mPassed = [ False for x in result.mQValues ]
-        
+        result.mPassed = [False for x in result.mQValues]
+
     result.mPValues = pvalues
     result.mPi0 = pi0
     result.mLambda = vlambda
-    
+
     result.xvalues = qvalues
-    
+
     return result
 
 #################################################################
 #################################################################
 #################################################################
+
+
 class CorrelationTest:
+
     '''coefficient is r, not r squared'''
-    def __init__(self, 
-                 r_result = None, 
-                 s_result = None,
-                 method = None):
+
+    def __init__(self,
+                 r_result=None,
+                 s_result=None,
+                 method=None):
         self.mPValue = None
         self.mMethod = None
 
@@ -963,65 +1051,69 @@ class CorrelationTest:
             self.mAlternative = "na"
             self.mMethod = "na"
 
-        if method: self.mMethod = method
+        if method:
+            self.mMethod = method
 
-        if self.mPValue != None:
-            self.mSignificance = getSignificance( self.mPValue )
+        if self.mPValue is not None:
+            self.mSignificance = getSignificance(self.mPValue)
 
     def __str__(self):
-        return "\t".join( (
+        return "\t".join((
             "%6.4f" % self.mCoefficient,
             "%e" % self.mPValue,
             self.mSignificance,
             "%i" % self.mNObservations,
             self.mMethod,
-            self.mAlternative ) )
+            self.mAlternative))
 
     @classmethod
     def getHeaders(cls):
-        return ("coeff", "pvalue", "significance", "observations", "method", "alternative" )
-    
-def filterMasked( xvals, yvals, missing = ("na", "Nan", None, ""), dtype = numpy.float ):
+        return ("coeff", "pvalue", "significance", "observations", "method", "alternative")
+
+
+def filterMasked(xvals, yvals, missing=("na", "Nan", None, ""), dtype = numpy.float):
     """convert xvals and yvals to numpy array skipping pairs with
     one or more missing values."""
-    xmask = [ i in missing for i in xvals ]
-    ymask = [ i in missing for i in yvals ]
-    return (numpy.array( [xvals[i] for i in range(len(xvals)) if not xmask[i]], dtype = dtype  ),
-            numpy.array( [yvals[i] for i in range(len(yvals)) if not ymask[i]], dtype = dtype) )
+    xmask = [i in missing for i in xvals]
+    ymask = [i in missing for i in yvals]
+    return (numpy.array([xvals[i] for i in range(len(xvals)) if not xmask[i]], dtype=dtype),
+            numpy.array([yvals[i] for i in range(len(yvals)) if not ymask[i]], dtype=dtype))
 
-def doCorrelationTest( xvals, yvals ):
+
+def doCorrelationTest(xvals, yvals):
     """compute correlation between x and y.
 
     Raises a value-error if there are not enough observations.
     """
 
     if len(xvals) <= 1 or len(yvals) <= 1:
-        raise ValueError( "can not compute correlation with no data" )
+        raise ValueError("can not compute correlation with no data")
     if len(xvals) != len(yvals):
-        raise ValueError( "data vectors have unequal length" )
-    
+        raise ValueError("data vectors have unequal length")
+
 #     try:
 #         result = CorrelationTest( r_result = R.cor_test( xvals, yvals, na_action="na_omit" ) )
 #     except rpy.RPyException, msg:
 #         raise ValueError( msg )
 
-    x, y = filterMasked( xvals, yvals )
+    x, y = filterMasked(xvals, yvals)
 
-    result = CorrelationTest( s_result = scipy.stats.pearsonr( x, y ),
-                              method = "pearson" )
+    result = CorrelationTest(s_result=scipy.stats.pearsonr(x, y),
+                             method="pearson")
     result.mNObservations = len(x)
 
     return result
 
-def getPooledVariance( data ):
+
+def getPooledVariance(data):
     """return pooled variance from a
     list of tuples (sample_size, variance)."""
     t, var = 0, 0
-    
+
     for n, s in data:
         t += n
-        var += (n-1) * s
-    
+        var += (n - 1) * s
+
     assert t > len(data), "sample size smaller than samples combined"
 
     return var / float(t - len(data))
@@ -1029,9 +1121,11 @@ def getPooledVariance( data ):
 ###################################################################
 ###################################################################
 ###################################################################
-## compute ROC curves from sorted values
+# compute ROC curves from sorted values
 ###################################################################
-def computeROC( values ):
+
+
+def computeROC(values):
     '''return a roc curve for *values*. Values
     is a sorted list of (value, bool) pairs.
 
@@ -1040,22 +1134,22 @@ def computeROC( values ):
     returns a list of (FPR,TPR) tuples.
     '''
     roc = []
-    
-    npositives = len( [x for x in values if x[1] ] )
-    if npositives == 0: 
-        raise ValueError( "no positives among values" )
+
+    npositives = len([x for x in values if x[1]])
+    if npositives == 0:
+        raise ValueError("no positives among values")
 
     ntotal = len(values)
 
     last_value, last_fpr = None, None
     tp, fp = 0, 0
-    tn, fn = ntotal - npositives, npositives 
+    tn, fn = ntotal - npositives, npositives
 
     for value, is_positive in values:
-        if is_positive: 
+        if is_positive:
             tp += 1
             fn -= 1
-        else: 
+        else:
             fp += 1
             tn -= 1
 
@@ -1070,33 +1164,41 @@ def computeROC( values ):
                 fpr = float(fp) / (fp + tn)
             except ZeroDivisionError:
                 fpr = 0
-                
+
             if last_fpr != fpr:
-                roc.append( (fpr,tpr) )
+                roc.append((fpr, tpr))
                 last_fpr = fpr
 
         last_values = value
 
     return roc
 
+
 class TTest:
-    def __init__(self): pass
+
+    def __init__(self):
+        pass
+
 
 class WelchTTest:
-    def __init__(self): pass
 
-PairedTTest = collections.namedtuple( "PairedTTest", "statistic pvalue" )
+    def __init__(self):
+        pass
 
-def doPairedTTest( vals1, vals2) :
+PairedTTest = collections.namedtuple("PairedTTest", "statistic pvalue")
+
+
+def doPairedTTest(vals1, vals2):
     '''perform paired t-test.
 
     vals1 and vals2 need to contain the same number of elements.
     '''
-    return PairedTTest._make( scipy.stats.ttest_rel( vals1, vals2 ) )
+    return PairedTTest._make(scipy.stats.ttest_rel(vals1, vals2))
 
-def doWelchsTTest(n1, mean1, std1, 
+
+def doWelchsTTest(n1, mean1, std1,
                   n2, mean2, std2,
-                  alpha = 0.05 ):
+                  alpha=0.05):
     '''Welch''s approximate t-test for the difference of two means of
     heteroscedasctic populations.
 
@@ -1117,25 +1219,26 @@ def doWelchsTTest(n1, mean1, std1,
             standard deviation of sample 1
         std2 : float
             standard deviation of sample 2
-            
+
     returns a WelchTTest
     '''
     if std1 == 0 and std2 == 0:
-        raise ValueError( 'standard deviations are 0.')
+        raise ValueError('standard deviations are 0.')
 
     # convert standard deviation to sample variance
-    svar1 = std1**2 * n1 / float(n1-1)
-    svar2 = std2**2 * n2 / float(n2-1)
+    svar1 = std1 ** 2 * n1 / float(n1 - 1)
+    svar2 = std2 ** 2 * n2 / float(n2 - 1)
 
     # compute df and test statistic
-    df = ((svar1/n1 + svar2/n2)**2) / ( ((svar1/n1)**2)/(n1-1) + ((svar2/n2)**2)/(n2-1))
-    denom = numpy.sqrt(svar1/n1+svar2/n2)
+    df = ((svar1 / n1 + svar2 / n2) ** 2) / \
+        (((svar1 / n1) ** 2) / (n1 - 1) + ((svar2 / n2) ** 2) / (n2 - 1))
+    denom = numpy.sqrt(svar1 / n1 + svar2 / n2)
     z = abs(mean1 - mean2) / denom
 
     # do the test
-    pvalue = 2 * scipy.stats.t.sf(z,df)
+    pvalue = 2 * scipy.stats.t.sf(z, df)
     result = WelchTTest()
-    result.mPValue = pvalue 
+    result.mPValue = pvalue
     result.mDegreesFreedom = df
     result.mZ = z
     result.mMean1 = mean1
@@ -1143,8 +1246,8 @@ def doWelchsTTest(n1, mean1, std1,
     result.mSampleVariance1 = svar1
     result.mSampleVariance2 = svar2
     result.mDifference = mean1 - mean2
-    result.mZLower = scipy.stats.t.ppf( alpha, df )
-    result.mZUpper = scipy.stats.t.ppf( 1.0-alpha, df )
+    result.mZLower = scipy.stats.t.ppf(alpha, df)
+    result.mZUpper = scipy.stats.t.ppf(1.0 - alpha, df)
     result.mDifferenceLower = result.mZLower * denom
     result.mDifferenceUpper = result.mZUpper * denom
 
@@ -1153,19 +1256,21 @@ def doWelchsTTest(n1, mean1, std1,
 ###################################################################
 ###################################################################
 ###################################################################
-## 
+##
 ###################################################################
-def getAreaUnderCurve( xvalues, yvalues ):
+
+
+def getAreaUnderCurve(xvalues, yvalues):
     '''compute area under curve from a set of discrete x,y coordinates
     using trapezoids.
-    
+
     This is only as accurate as the density of points.
     '''
 
     assert len(xvalues) == len(yvalues)
     last_x, last_y = xvalues[0], yvalues[0]
     auc = 0
-    for x,y in zip(xvalues, yvalues)[1:]:
+    for x, y in zip(xvalues, yvalues)[1:]:
         dx = x - last_x
         assert not dx <= 0, "x not increasing: %f >= %f" % (last_x, x)
         dy = abs(last_y - y)
@@ -1173,15 +1278,17 @@ def getAreaUnderCurve( xvalues, yvalues ):
         # rectangle plus triangle
         auc += dx * my + dx * dy / 2
         last_x, last_y = x, y
-        
+
     return auc
 
 ###################################################################
 ###################################################################
 ###################################################################
-## 
+##
 ###################################################################
-def getSensitivityRecall( values ):
+
+
+def getSensitivityRecall(values):
     '''return sensitivity/selectivity.
 
     Values is a sorted list of (value, bool) pairs.
@@ -1196,33 +1303,35 @@ def getSensitivityRecall( values ):
     total = float(len(values))
     for value, is_positive in values:
         npredicted += 1.0
-        if is_positive > 0: npositives += 1.0
+        if is_positive > 0:
+            npositives += 1.0
         if value != l:
-            result.append( (value, npositives / npredicted, npredicted / total ) )
+            result.append((value, npositives / npredicted, npredicted / total))
         l = value
     if l:
-        result.append( (l, npositives / npredicted, npredicted/total ) )
+        result.append((l, npositives / npredicted, npredicted / total))
 
     return result
 
 ###################################################################
 ###################################################################
 ###################################################################
-## 
+##
 ###################################################################
-ROCResult = collections.namedtuple( "ROCResult", 
-                                    "value pred tp fp tn fn tpr fpr tnr fnr rtpr rfnr" ) 
+ROCResult = collections.namedtuple("ROCResult",
+                                   "value pred tp fp tn fn tpr fpr tnr fnr rtpr rfnr")
 
-def getPerformance( values, 
-                    skip_redundant = True,
-                    false_negatives = False,
-                    bin_by_value = True,
-                    monotonous = False,
-                    multiple = False,
-                    increasing = True,
-                    total_positives = None,
-                    total_false_negatives = None,
-                    ):
+
+def getPerformance(values,
+                   skip_redundant=True,
+                   false_negatives=False,
+                   bin_by_value=True,
+                   monotonous=False,
+                   multiple=False,
+                   increasing=True,
+                   total_positives=None,
+                   total_false_negatives=None,
+                   ):
     '''compute performance estimates for a list of ``(score, flag)``
     tuples in *values*.
 
@@ -1245,30 +1354,31 @@ def getPerformance( values,
     predicted = 0
 
     last_value = None
-    
+
     binned_values = []
 
     for value, flag in values:
         if not bin_by_value:
             if last_value != value:
-                binned_values.append( (true_positives, predicted, value) )
+                binned_values.append((true_positives, predicted, value))
         else:
-            if last_value != None and last_value != value:
-                binned_values.append( (true_positives, predicted, last_value) )
+            if last_value is not None and last_value != value:
+                binned_values.append((true_positives, predicted, last_value))
 
         predicted += 1
 
-        if flag: true_positives += 1
+        if flag:
+            true_positives += 1
 
         last_value = value
 
-    binned_values.append( (true_positives, predicted, last_value) )
-    binned_values.append( (true_positives, predicted, value) )
+    binned_values.append((true_positives, predicted, last_value))
+    binned_values.append((true_positives, predicted, value))
 
     if true_positives == 0:
         raise ValueError("# no true positives!")
-        
-    if total_positives == None:
+
+    if total_positives is None:
         if total_false_negatives:
             positives = float(predicted)
         else:
@@ -1295,11 +1405,11 @@ def getPerformance( values,
             false_positives = predicted - true_positives
 
         tpr = float(true_positives) / predicted
-        fpr = float(false_positives) / (true_positives + false_negatives )
+        fpr = float(false_positives) / (true_positives + false_negatives)
         fnr = float(false_negatives) / positives
         tnr = 0
 
-        # relative rates 
+        # relative rates
         rfpr = float(false_positives) / predicted
         rfnr = float(false_negatives) / predicted
 
@@ -1308,17 +1418,17 @@ def getPerformance( values,
 
         if skip_redundant and true_positives == last_positives:
             continue
-        
+
         if (predicted > 0):
-            result.append( ROCResult._make( 
-                    (value,
-                     predicted,
-                     true_positives,
-                     false_positives,
-                     true_negatives,
-                     false_negatives,
-                     tpr, fpr, tnr, fnr,
-                     rfpr, rfnr ) ) )
+            result.append(ROCResult._make(
+                (value,
+                 predicted,
+                 true_positives,
+                 false_positives,
+                 true_negatives,
+                 false_negatives,
+                 tpr, fpr, tnr, fnr,
+                 rfpr, rfnr)))
 
         last_positives = true_positives
         last_tpr = tpr
@@ -1328,18 +1438,20 @@ def getPerformance( values,
 ###################################################################
 ###################################################################
 ###################################################################
-## 
+##
 ###################################################################
-def doMannWhitneyUTest( xvals, yvals ):
+
+
+def doMannWhitneyUTest(xvals, yvals):
     '''apply the Mann-Whitney U test to test for the difference of medians.'''
 
-    r_result = R.wilcox_test( xvals, yvals, paired = False )
+    r_result = R.wilcox_test(xvals, yvals, paired=False)
 
-    result = Result().fromR( 
-        ( ("pvalue", 'p.value'),
-          ('alternative', None),
-          ('method', None ) ), 
-        r_result )
+    result = Result().fromR(
+        (("pvalue", 'p.value'),
+         ('alternative', None),
+         ('method', None)),
+        r_result)
 
     return result
 
@@ -1347,11 +1459,11 @@ def doMannWhitneyUTest( xvals, yvals ):
 ###################################################################
 ###################################################################
 ###################################################################
-## adjust P-Value
+# adjust P-Value
 ###################################################################
-def adjustPValues( pvalues, method = 'fdr', n = None ):
+def adjustPValues(pvalues, method='fdr', n=None):
     '''returns an array of adjusted pvalues
-    
+
     Reimplementation of p.adjust in the R package.
 
     p: numeric vector of p-values (possibly with 'NA's).  Any other
@@ -1361,19 +1473,21 @@ def adjustPValues( pvalues, method = 'fdr', n = None ):
 
     n: number of comparisons, must be at least 'length(p)'; only set
     this (to non-default) when you know what you are doing
-    
+
     For more information, see the documentation of the
     p.adjust method in R.
     '''
 
-    if n == None: n = len(pvalues)
+    if n is None:
+        n = len(pvalues)
 
-    if method == "fdr": method = "BH"
+    if method == "fdr":
+        method = "BH"
 
     # optional, remove NA values
-    p = numpy.array( pvalues, dtype = numpy.float )
+    p = numpy.array(pvalues, dtype=numpy.float)
     lp = len(p)
-    
+
     assert n <= lp
 
     if n <= 1:
@@ -1381,20 +1495,20 @@ def adjustPValues( pvalues, method = 'fdr', n = None ):
     if n == 2 and method == "hommel":
         method = "hochberg"
     if method == "bonferroni":
-        p0 = n * p 
+        p0 = n * p
     elif method == "holm":
-        i = numpy.arange( lp )
-        o = numpy.argsort( p )
-        ro = numpy.argsort( o )
-        m = numpy.maximum.accumulate( (n - i) * p[o] )
+        i = numpy.arange(lp)
+        o = numpy.argsort(p)
+        ro = numpy.argsort(o)
+        m = numpy.maximum.accumulate((n - i) * p[o])
         p0 = m[ro]
     elif method == "hommel":
     #     if (n > lp) p <- c(p, rep.int(1, n - lp))
-        i = numpy.arange( n )
-        o = numpy.argsort( p )
+        i = numpy.arange(n)
+        o = numpy.argsort(p)
         p = p[o]
-        ro = numpy.argsort( o )
-        raise NotImplementedError( "hommel method not fully implemented" )
+        ro = numpy.argsort(o)
+        raise NotImplementedError("hommel method not fully implemented")
     #     q <- pa <- rep.int(min(n * p/i), n)
     #     for (j in (n - 1):2) {
     #         ij <- seq_len(n - j + 1)
@@ -1406,26 +1520,25 @@ def adjustPValues( pvalues, method = 'fdr', n = None ):
     #     }
     #     pmax(pa, p)[if (lp < n) ro[1:lp] else ro]
     elif method == "hochberg":
-        i = numpy.arange( 0, lp)[::-1] 
-        o = numpy.argsort(1-p)
-        ro = numpy.argsort( o )
-        m = numpy.minimum.accumulate( (n - i) * p[o] )
+        i = numpy.arange(0, lp)[::-1]
+        o = numpy.argsort(1 - p)
+        ro = numpy.argsort(o)
+        m = numpy.minimum.accumulate((n - i) * p[o])
         p0 = m[ro]
     elif method == "BH":
-        i = numpy.arange( 1, lp + 1)[::-1] 
-        o = numpy.argsort(1-p)
-        ro = numpy.argsort( o )
-        m = numpy.minimum.accumulate( float(n) / i * p[o] )
+        i = numpy.arange(1, lp + 1)[::-1]
+        o = numpy.argsort(1 - p)
+        ro = numpy.argsort(o)
+        m = numpy.minimum.accumulate(float(n) / i * p[o])
         p0 = m[ro]
     elif method == "BY":
-        i = numpy.arange( 1, lp + 1)[::-1] 
-        o = numpy.argsort(1-p)
-        ro = numpy.argsort( o )
-        q = numpy.sum( 1.0 / numpy.arange( 1, n + 1) )
-        m = numpy.minimum.accumulate( q * float(n) / i * p[o])
+        i = numpy.arange(1, lp + 1)[::-1]
+        o = numpy.argsort(1 - p)
+        ro = numpy.argsort(o)
+        q = numpy.sum(1.0 / numpy.arange(1, n + 1))
+        m = numpy.minimum.accumulate(q * float(n) / i * p[o])
         p0 = m[ro]
     elif method == "none":
         p0 = p
 
-    return numpy.minimum( p0, numpy.ones( len(p0) ) )
-
+    return numpy.minimum(p0, numpy.ones(len(p0)))

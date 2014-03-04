@@ -1,17 +1,18 @@
-import os, sys, re, types, itertools, math, numpy
-
 from ChipseqReport import *
 
-class MappingStatus( Status ):
+
+class MappingStatus(Status):
+
     '''status information for mapping stage.'''
 
-    def getTracks(self ):
-        d = self.get( "SELECT DISTINCT track FROM bam_stats WHERE track LIKE '%%.genome'" )
-        return tuple( [re.sub(".genome", "", x[0]) for x in d ] )
+    def getTracks(self):
+        d = self.get(
+            "SELECT DISTINCT track FROM bam_stats WHERE track LIKE '%%.genome'")
+        return tuple([re.sub(".genome", "", x[0]) for x in d])
 
-    def testMapping( self, track ):
+    def testMapping(self, track):
         '''proportion of reads mapped.
-        
+
         PASS : >=60% reads mapped
         WARN : >=40% reads mapped
         FAIL : < 40% reads mapped
@@ -20,13 +21,16 @@ class MappingStatus( Status ):
         value = self.getValue( """SELECT reads_mapped/CAST( reads_total AS FLOAT) 
                                          FROM bam_stats 
                                          WHERE track = '%(track)s.genome'""" )
-        if value >= 0.6: status= "PASS"
-        elif value >= 0.4: status= "WARNING"
-        else: status= "FAIL"
+        if value >= 0.6:
+            status = "PASS"
+        elif value >= 0.4:
+            status = "WARNING"
+        else:
+            status = "FAIL"
 
         return status, "%5.2f%%" % (100.0 * value)
 
-    def testPairing( self, track ):
+    def testPairing(self, track):
         '''proportion of reads mapped.
 
         PASS : >=95% reads in proper pairs
@@ -38,8 +42,11 @@ class MappingStatus( Status ):
         value = self.getValue( """SELECT proper_pair/CAST( mapped AS FLOAT) 
                                          FROM bam_stats 
                                          WHERE track = '%(track)s.genome'""" )
-        if value >= 0.95: status= "PASS"
-        elif value >= 0.8: status= "WARNING"
-        else: status= "FAIL"
+        if value >= 0.95:
+            status = "PASS"
+        elif value >= 0.8:
+            status = "WARNING"
+        else:
+            status = "FAIL"
 
         return status, "%5.2f%%" % (100.0 * value)

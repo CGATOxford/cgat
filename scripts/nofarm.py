@@ -52,26 +52,27 @@ import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import threadpool
 
-##--------------------------------------------------------------------
+# --------------------------------------------------------------------
+
+
 def main():
 
     parser = farm.getOptionParser()
 
-    (options, args) = E.Start( parser, 
-                                        add_cluster_options = True )
-
+    (options, args) = E.Start(parser,
+                              add_cluster_options=True)
 
     cmd = args[0]
     if len(args) > 1:
-        cmd += " '" + "' '".join(args[1:]) + "'" 
+        cmd += " '" + "' '".join(args[1:]) + "'"
 
-    cmd = re.sub( "%DIR%", "", cmd )
-    retcode = subprocess.call( cmd,
-                               shell = True,
-                               stdin = sys.stdin,
-                               stdout = sys.stdout,
-                               cwd = os.getcwd(),
-                               close_fds = True)                              
+    cmd = re.sub("%DIR%", "", cmd)
+    retcode = subprocess.call(cmd,
+                              shell=True,
+                              stdin=sys.stdin,
+                              stdout=sys.stdout,
+                              cwd=os.getcwd(),
+                              close_fds=True)
     E.Stop()
 
 if __name__ == '__main__':

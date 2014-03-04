@@ -45,64 +45,67 @@ import CGAT.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
 
 
-def main( argv = None ):
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv is None:
+        argv = sys.argv
 
-    parser = E.OptionParser( version = "%prog version: $Id: extractseq.py 2861 2010-02-23 17:36:32Z andreas $")
+    parser = E.OptionParser(
+        version="%prog version: $Id: extractseq.py 2861 2010-02-23 17:36:32Z andreas $")
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
-                      help="pattern to look for sequence filename."  )
+                      help="pattern to look for sequence filename.")
 
     parser.add_option("-d", "--identifier", dest="identifier", type="string",
-                      help="identifier(s)."  )
+                      help="identifier(s).")
 
     parser.add_option("-o", "--output-coordinate-format", dest="output_coordinate_format", type="choice",
-                      choices=("full", "long" ),
+                      choices=("full", "long"),
                       help="""output format of coordinates. Output format is contig:strand:from:to in zero based
 /forward/reverse strand coordinates in open/closed notation. 'long' includes the contig length as fifth field"""  )
 
-    parser.add_option( "--input-format", dest="input_format", type="choice",
-                       choices=("list", "id-compressed" ),
-                       help="input format." )
+    parser.add_option("--input-format", dest="input_format", type="choice",
+                      choices=("list", "id-compressed"),
+                      help="input format.")
 
-    parser.add_option( "-i", "--input-coordinate-format", dest="input_coordinate_format", type="choice",
-                       choices=( "zero-both", "zero-forward" ),
-                       help="coordinate format." )
+    parser.add_option("-i", "--input-coordinate-format", dest="input_coordinate_format", type="choice",
+                      choices=("zero-both", "zero-forward"),
+                      help="coordinate format.")
 
     parser.add_option("-e", "--extend-region", dest="extend_region", type="int",
-                      help="regions are extended by this margin at either end."  )
+                      help="regions are extended by this margin at either end.")
 
     parser.add_option("-r", "--shorten-region", dest="shorten_region", type="int",
-                      help="regions are shortened by this margin at either end."  )
+                      help="regions are shortened by this margin at either end.")
 
     parser.set_defaults(
-        genome_file = None,
+        genome_file=None,
         identifier=None,
-        input_coordinate_format= "zero-both",
-        output_coordinate_format = "full",
-        input_format = "list",
-        extend_region = 0,
-        shorten_region = 0,
-        )
+        input_coordinate_format="zero-both",
+        output_coordinate_format="full",
+        input_format="list",
+        extend_region=0,
+        shorten_region=0,
+    )
 
-    (options, args) = E.Start( parser )
+    (options, args) = E.Start(parser)
 
-    fasta = IndexedFasta.IndexedFasta( options.genome_file )
+    fasta = IndexedFasta.IndexedFasta(options.genome_file)
 
     lines = []
     if options.identifier:
         lines += map(lambda x: x.split(":"), options.identifier.split(","))
 
     if args:
-        lines += map(lambda x: x.split(":"), args)        
-    
+        lines += map(lambda x: x.split(":"), args)
+
     if len(lines) == 0:
-        lines = map( lambda x: x[:-1].split("\t"), (filter(lambda x: x[0] != "#", options.stdin.readlines())))
+        lines = map(lambda x: x[
+                    :-1].split("\t"), (filter(lambda x: x[0] != "#", options.stdin.readlines())))
 
     ninput, nskipped, noutput = 0, 0, 0
     for data in lines:
@@ -117,7 +120,8 @@ def main( argv = None ):
             id = None
         elif options.input_format == "id-compressed":
             id = data[0]
-            sbjct_token, sbjct_strand, sbjct_from, sbjct_to = data[1].split(":")
+            sbjct_token, sbjct_strand, sbjct_from, sbjct_to = data[
+                1].split(":")
 
         ninput += 1
 
@@ -127,13 +131,13 @@ def main( argv = None ):
             E.warn("skipping line %s" % data)
             nskipped += 1
             continue
-        
+
         sbjct_from -= (options.extend_region - options.shorten_region)
-        sbjct_from = max( 0, sbjct_from )
-        lcontig = fasta.getLength( sbjct_token ) 
+        sbjct_from = max(0, sbjct_from)
+        lcontig = fasta.getLength(sbjct_token)
         if sbjct_to != 0:
-            sbjct_to   += (options.extend_region - options.shorten_region)
-            sbjct_to = min(sbjct_to, lcontig )
+            sbjct_to += (options.extend_region - options.shorten_region)
+            sbjct_to = min(sbjct_to, lcontig)
         else:
             sbjct_to = lcontig
 
@@ -141,27 +145,27 @@ def main( argv = None ):
             nskipped += 1
             continue
 
-        sequence = fasta.getSequence( sbjct_token, sbjct_strand,
-                                      sbjct_from, sbjct_to,
-                                      converter = IndexedFasta.getConverter( options.input_coordinate_format ) )
+        sequence = fasta.getSequence(sbjct_token, sbjct_strand,
+                                     sbjct_from, sbjct_to,
+                                     converter=IndexedFasta.getConverter(options.input_coordinate_format))
 
         if options.output_coordinate_format == "full":
             coordinates = "%s:%s:%i:%i" % (sbjct_token,
                                            sbjct_strand,
                                            sbjct_from,
                                            sbjct_to)
-            
+
         elif options.output_coordinate_format == "long":
             coordinates = "%s:%s:%i:%i:%i" % (sbjct_token,
                                               sbjct_strand,
                                               sbjct_from,
                                               sbjct_to,
-                                              lcontig )
-            
+                                              lcontig)
+
         if id:
-            options.stdout.write( ">%s %s\n%s\n" % (id, coordinates, sequence ) )            
+            options.stdout.write(">%s %s\n%s\n" % (id, coordinates, sequence))
         else:
-            options.stdout.write( ">%s\n%s\n" % (coordinates, sequence ) )
+            options.stdout.write(">%s\n%s\n" % (coordinates, sequence))
 
         noutput += 1
 
@@ -170,5 +174,4 @@ def main( argv = None ):
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

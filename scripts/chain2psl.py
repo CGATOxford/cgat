@@ -42,7 +42,7 @@ for command line help.
 Command line options
 --------------------
 
-""" 
+"""
 
 import os
 import sys
@@ -53,106 +53,112 @@ import CGAT.Experiment as E
 import CGAT.Blat as Blat
 import alignlib_lite
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if not argv: argv = sys.argv
+    if not argv:
+        argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser( version = "%prog version: $Id: chain2psl.py 2899 2010-04-13 14:37:37Z andreas $", 
-                                    usage = globals()["__doc__"] )
+    parser = E.OptionParser(version="%prog version: $Id: chain2psl.py 2899 2010-04-13 14:37:37Z andreas $",
+                            usage=globals()["__doc__"])
 
-    ## add common options (-h/--help, ...) and parse command line 
-    (options, args) = E.Start( parser, argv = argv )
+    # add common options (-h/--help, ...) and parse command line
+    (options, args) = E.Start(parser, argv=argv)
 
-    ## do sth
+    # do sth
     ninput, nskipped, noutput = 0, 0, 0
 
     psl = None
 
-    def chain_iterator( infile ):
+    def chain_iterator(infile):
         lines = []
         for line in options.stdin:
-            
-            if line.startswith("#"): continue
-            if line.strip() == "": continue
+
+            if line.startswith("#"):
+                continue
+            if line.strip() == "":
+                continue
             if line.startswith("chain"):
-                if lines: yield lines
+                if lines:
+                    yield lines
                 lines = []
-            lines.append( line )
-            
+            lines.append(line)
+
         yield lines
 
     for lines in chain_iterator(options.stdin):
-        
+
         ninput += 1
         psl = Blat.Match()
 
-        ( _, 
-          _, 
-          psl.mSbjctId,
-          target_length,
-          target_strand,
-          target_start,
-          target_end,
-          psl.mQueryId,
-          query_length,
-          query_strand,
-          query_start, 
-          query_end,
-          alignment_id ) = lines[0][:-1].split()
-        
-        ( psl.mQueryStart, psl.mQueryEnd, psl.mQueryLength,
-          psl.mSbjctStart, psl.mSbjctEnd, psl.mSbjctLength ) = \
-        [ int(x) for x in 
-          (query_start, 
-           query_end,
-           query_length,
-           target_start, 
-           target_end,
-           target_length) ]
+        (_,
+         _,
+         psl.mSbjctId,
+         target_length,
+         target_strand,
+         target_start,
+         target_end,
+         psl.mQueryId,
+         query_length,
+         query_strand,
+         query_start,
+         query_end,
+         alignment_id) = lines[0][:-1].split()
+
+        (psl.mQueryStart, psl.mQueryEnd, psl.mQueryLength,
+         psl.mSbjctStart, psl.mSbjctEnd, psl.mSbjctLength ) = \
+            [int(x) for x in
+             (query_start,
+              query_end,
+              query_length,
+              target_start,
+              target_end,
+              target_length)]
 
         map_query2target = alignlib_lite.py_makeAlignmentBlocks()
-        
+
         qstart, tstart = psl.mQueryStart, psl.mSbjctStart
-        
+
         for line in lines[1:-1]:
-            size, dt, dq = [int(x) for x in line[:-1].split() ]
-            map_query2target.addDiagonal( qstart,
-                                          qstart + size,
-                                          tstart - qstart )
+            size, dt, dq = [int(x) for x in line[:-1].split()]
+            map_query2target.addDiagonal(qstart,
+                                         qstart + size,
+                                         tstart - qstart)
             qstart += size + dq
             tstart += size + dt
 
         size = int(lines[-1][:-1])
 
-        map_query2target.addDiagonal( qstart,
-                                      qstart + size,
-                                      tstart - qstart )
+        map_query2target.addDiagonal(qstart,
+                                     qstart + size,
+                                     tstart - qstart)
 
-        psl.fromMap( map_query2target )
+        psl.fromMap(map_query2target)
 
         # sort out strand
         # target_strand is always positive
-        assert( target_strand == "+" )
+        assert(target_strand == "+")
 
         # if query strand is negative
-        if query_strand == "-": 
+        if query_strand == "-":
             # invert both query and target
             psl.switchTargetStrand()
             # manually invert the query coordinates
-            psl.mQueryFrom, psl.mQueryTo = psl.mQueryLength - psl.mQueryTo, psl.mQueryLength - psl.mQueryFrom
+            psl.mQueryFrom, psl.mQueryTo = psl.mQueryLength - \
+                psl.mQueryTo, psl.mQueryLength - psl.mQueryFrom
 
-        options.stdout.write("%s\n" % psl )
+        options.stdout.write("%s\n" % psl)
         noutput += 1
 
-    E.info( "ninput=%i, noutput=%i, nskipped=%i" % (ninput, noutput,nskipped) )
+    E.info("ninput=%i, noutput=%i, nskipped=%i" % (ninput, noutput, nskipped))
 
-    ## write footer and output benchmark information.
+    # write footer and output benchmark information.
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
+    sys.exit(main(sys.argv))

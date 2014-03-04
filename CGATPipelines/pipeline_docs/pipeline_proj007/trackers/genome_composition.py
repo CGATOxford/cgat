@@ -1,4 +1,8 @@
-import os, sys, re, types, itertools
+import os
+import sys
+import re
+import types
+import itertools
 import matplotlib.pyplot as plt
 import numpy
 import numpy.ma
@@ -9,13 +13,16 @@ from SphinxReport.Tracker import *
 from cpgReport import *
 from SphinxReport.odict import OrderedDict as odict
 
-##################################################################################
+##########################################################################
+
+
 class genomeCompostionSummary(cpgTracker):
+
     """Average GC content and CpG density in the genome """
 
     mPattern = "bam_stats"
 
-    def __call__(self, track, slice = None ):
+    def __call__(self, track, slice=None):
 
         data = self.getFirstRow( """SELECT round(sum(length*pGC)/sum(length),3) as mean_GC,
                                     round(sum(length*CpG_ObsExp)/sum(length),3) as mean_CpG_ObsExp,
@@ -28,17 +35,20 @@ class genomeCompostionSummary(cpgTracker):
                                     AND id not like 'chrZ%%'
                                     AND id not like 'chrM%%'
                                     AND id not like '%%random%%' """ )
-        mColumns = [ "GC content", "CpG Obs/Exp" , "CpG density" ]
+        mColumns = ["GC content", "CpG Obs/Exp", "CpG density"]
 
-        return odict( zip(mColumns, data) )
+        return odict(zip(mColumns, data))
 
-##################################################################################
+##########################################################################
+
+
 class genomeCompostionPerContig(cpgTracker):
+
     """Average GC content and CpG density per Contig """
 
     mPattern = "bam_stats"
 
-    def __call__(self, track, slice = None ):
+    def __call__(self, track, slice=None):
 
         data = self.getAll( """SELECT g.id as Contig, g.length, m.mappable_bases, a.repeat_length, 
                                g.pGC as GC_content, g.pCpG as CpG_density, g.CpG_ObsExp
@@ -48,13 +58,16 @@ class genomeCompostionPerContig(cpgTracker):
                                ORDER BY g.length desc LIMIT 100""" )
         return data
 
-##################################################################################
+##########################################################################
+
+
 class allTranscriptsByBiotype(cpgTracker):
+
     """Number of Ensembl transcripts by biotype"""
 
     mPattern = "bam_stats"
 
-    def __call__(self, track, slice = None ):
+    def __call__(self, track, slice=None):
 
         data = self.getAll( """SELECT gene_biotype, count(transcript_id) as transcripts
                                FROM annotations.transcript_info
@@ -62,18 +75,19 @@ class allTranscriptsByBiotype(cpgTracker):
                                ORDER BY transcripts desc """ )
         return data
 
-##################################################################################
+##########################################################################
+
+
 class allGenesByBiotype(cpgTracker):
+
     """Number of Ensembl genes by biotype"""
 
     mPattern = "bam_stats"
 
-    def __call__(self, track, slice = None ):
+    def __call__(self, track, slice=None):
 
         data = self.getAll( """SELECT gene_biotype, count(distinct gene_id) as genes
                                FROM transcript_info
                                GROUP BY gene_biotype
                                ORDER BY genes desc """ )
         return data
-
-

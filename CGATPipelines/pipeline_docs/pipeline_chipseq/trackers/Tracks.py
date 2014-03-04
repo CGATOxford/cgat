@@ -1,33 +1,26 @@
 '''Trackers for analysing chromatin tracks.'''
 
-import os, sys, re, types, itertools, glob
-import matplotlib.pyplot as plt
-import numpy, scipy.stats
-import numpy.ma
-import Stats
-import Histogram
-import ChipseqReport
+from ChipseqReport import *
 
 
-from SphinxReport.Tracker import *
-
-class TrackerTracks( TrackerSQL ):
+class TrackerTracks(TrackerSQL):
 
     mPattern = "_tracks$"
 
-    def getTracks( self, subset = None ):
-        return [ x for x in TrackerSQL.getTracks( self, subset) if "annotator" not in x]
+    def getTracks(self, subset=None):
+        return [x for x in TrackerSQL.getTracks(self, subset) if "annotator" not in x]
 
-    def getSlices( self, subset ):
-        return self.getValues("SELECT DISTINCT set2 FROM ucsc_overlap" )
+    def getSlices(self, subset):
+        return self.getValues("SELECT DISTINCT set2 FROM ucsc_overlap")
 
 
-class TracksPeakval( TrackerTracks ):
+class TracksPeakval(TrackerTracks):
+
     '''return peakval for intervals overlapping and non-overlapping
     a track.'''
 
-    def __call__(self, track, slice ):
-        
+    def __call__(self, track, slice):
+
         result = odict()
         result["overlapping"] = self.getValues( '''
         SELECT i.peakval FROM 
@@ -42,5 +35,5 @@ class TracksPeakval( TrackerTracks ):
         %(track)s_tracks AS t
         WHERE t.gene_id = i.interval_id 
         AND t.%(slice)s_nover = 0''' % locals())
-        
+
         return result

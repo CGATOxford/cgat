@@ -31,17 +31,19 @@ try:
 except IOError:
     pass
 
+
 def connectToUCSC():
     '''connect to UCSC mysql database.'''
-    dbhandle = MySQLdb.Connect( host = PARAMS["ucsc_host"],
-                                user = PARAMS["ucsc_user"] )
+    dbhandle = MySQLdb.Connect(host=PARAMS["ucsc_host"],
+                               user=PARAMS["ucsc_user"])
 
     cc = dbhandle.cursor()
-    cc.execute( "USE %s " %  PARAMS["ucsc_database"] )
+    cc.execute("USE %s " % PARAMS["ucsc_database"])
 
     return dbhandle
 
-def importRefSeqFromUCSC( infile, outfile, remove_duplicates = True ):
+
+def importRefSeqFromUCSC(infile, outfile, remove_duplicates=True):
     '''import gene set from UCSC database
     based on refseq mappings.
 
@@ -58,20 +60,20 @@ def importRefSeqFromUCSC( infile, outfile, remove_duplicates = True ):
     '''
 
     import MySQLdb
-    dbhandle = MySQLdb.Connect( host = PARAMS["ucsc_host"],
-                                user = PARAMS["ucsc_user"] )
-        
+    dbhandle = MySQLdb.Connect(host=PARAMS["ucsc_host"],
+                               user=PARAMS["ucsc_user"])
+
     cc = dbhandle.cursor()
-    cc.execute( "USE %s " %  PARAMS["ucsc_database"] )
-        
+    cc.execute("USE %s " % PARAMS["ucsc_database"])
+
     duplicates = set()
 
     if remove_duplicates:
         cc.execute( """SELECT name, COUNT(*) AS c FROM refGene 
                         WHERE chrom NOT LIKE '%_random'
                         GROUP BY name HAVING c > 1""" )
-        duplicates = set( [x[0] for x in cc.fetchall() ] )
-        E.info( "removing %i duplicates" % len(duplicates ) )
+        duplicates = set([x[0] for x in cc.fetchall()])
+        E.info("removing %i duplicates" % len(duplicates))
 
     # these are forward strand coordinates
     statement = '''
@@ -83,27 +85,28 @@ def importRefSeqFromUCSC( infile, outfile, remove_duplicates = True ):
               AND chrom NOT LIKE '%_random'
         ORDER by chrom, cdsStart 
         '''
-    
+
     outf = gzip.open(outfile, "w")
-    
+
     cc = dbhandle.cursor()
     cc.execute(statement)
 
-    SQLResult = collections.namedtuple('Result', 
-        '''transcript_id, gene_id, gene_name, gene_id2, description,
+    SQLResult = collections.namedtuple('Result',
+                                       '''transcript_id, gene_id, gene_name, gene_id2, description,
         protein_id, contig, strand, start, end, 
         nexons, starts, ends, frames''')
 
     counts = E.Counter()
     counts.duplicates = len(duplicates)
 
-    for r in map( SQLResult._make, cc.fetchall() ):
+    for r in map(SQLResult._make, cc.fetchall()):
 
-        if r.transcript_id in duplicates: continue
+        if r.transcript_id in duplicates:
+            continue
 
-        starts = map( int, r.starts.split(",")[:-1])
-        ends = map( int, r.ends.split(",")[:-1])
-        frames = map( int, r.frames.split(",")[:-1])
+        starts = map(int, r.starts.split(",")[:-1])
+        ends = map(int, r.ends.split(",")[:-1])
+        frames = map(int, r.frames.split(",")[:-1])
 
         gtf = GTF.Entry()
         gtf.contig = r.contig
@@ -111,9 +114,9 @@ def importRefSeqFromUCSC( infile, outfile, remove_duplicates = True ):
         gtf.strand = r.strand
         gtf.gene_id = r.gene_id
         gtf.transcript_id = r.transcript_id
-        gtf.addAttribute( "protein_id", r.protein_id )
-        gtf.addAttribute( "transcript_name", r.transcript_id )
-        gtf.addAttribute( "gene_name", r.gene_name )
+        gtf.addAttribute("protein_id", r.protein_id)
+        gtf.addAttribute("transcript_name", r.transcript_id)
+        gtf.addAttribute("gene_name", r.gene_name)
 
         assert len(starts) == len(ends) == len(frames)
 
@@ -124,35 +127,37 @@ def importRefSeqFromUCSC( infile, outfile, remove_duplicates = True ):
 
         counts.transcripts += 1
         i = 0
-        for start, end, frame in zip( starts, ends, frames ):
+        for start, end, frame in zip(starts, ends, frames):
             gtf.feature = "exon"
             counts.exons += 1
             i += 1
             gtf.addAttribute("exon_number", i)
             # frame of utr exons is set to -1 in UCSC
             gtf.start, gtf.end, gtf.frame = start, end, "."
-            outf.write( "%s\n" % str(gtf))
-            
-            cds_start, cds_end = max( r.start, start), min( r.end, end)
-            if cds_start >= cds_end: 
+            outf.write("%s\n" % str(gtf))
+
+            cds_start, cds_end = max(r.start, start), min(r.end, end)
+            if cds_start >= cds_end:
                 # UTR exons have no CDS
                 # do not expect any in UCSC
                 continue
             gtf.feature = "CDS"
             # invert the frame
-            frame = (3 - frame % 3 ) % 3
+            frame = (3 - frame % 3) % 3
             gtf.start, gtf.end, gtf.frame = cds_start, cds_end, frame
-            outf.write( "%s\n" % str(gtf))
+            outf.write("%s\n" % str(gtf))
 
     outf.close()
-    
+
     E.info("%s" % str(counts))
 
 ############################################################
 ############################################################
 ############################################################
-def annotateGenome( infile, outfile, 
-                    only_proteincoding = False ):
+
+
+def annotateGenome(infile, outfile,
+                   only_proteincoding=False):
     '''annotate genomic regions with reference gene set.
 
     *infile* is an ENSEMBL gtf file.
@@ -170,8 +175,10 @@ def annotateGenome( infile, outfile,
     to_cluster = True
     method = "genome"
 
-    if only_proteincoding: filter_cmd = ''' awk '$2 == "protein_coding"' '''
-    else: filter_cmd = "cat"
+    if only_proteincoding:
+        filter_cmd = ''' awk '$2 == "protein_coding"' '''
+    else:
+        filter_cmd = "cat"
 
     statement = """
             gunzip 
@@ -193,8 +200,10 @@ def annotateGenome( infile, outfile,
 ############################################################
 ############################################################
 ############################################################
-def annotateGeneStructure( infile, outfile, 
-                    only_proteincoding = False ):
+
+
+def annotateGeneStructure(infile, outfile,
+                          only_proteincoding=False):
     '''annotate genomic regions with reference gene set.
 
     *infile* is an ENSEMBL gtf file.
@@ -210,8 +219,10 @@ def annotateGeneStructure( infile, outfile,
 
     to_cluster = True
 
-    if only_proteincoding: filter_cmd = ''' awk '$2 == "protein_coding"' '''
-    else: filter_cmd = "cat"
+    if only_proteincoding:
+        filter_cmd = ''' awk '$2 == "protein_coding"' '''
+    else:
+        filter_cmd = "cat"
 
     method = "genes"
 
@@ -238,7 +249,9 @@ def annotateGeneStructure( infile, outfile,
 ############################################################
 ############################################################
 ############################################################
-def buildFlatGeneSet( infile, outfile ):
+
+
+def buildFlatGeneSet(infile, outfile):
     '''build a flattened gene set.
 
     All transcripts in a gene are merged into a single transcript. 
@@ -271,7 +284,9 @@ def buildFlatGeneSet( infile, outfile ):
 # Doesn't filter miscellaneous contigs from mm10
 # Function called from pipeline_kamilah, pipeline_snps
 # pipeline_polyphen
-def buildProteinCodingGenes( infile, outfile ):
+
+
+def buildProteinCodingGenes(infile, outfile):
     '''build a collection of exons from the protein-coding
     section of the ENSEMBL gene set. 
 
@@ -308,7 +323,9 @@ def buildProteinCodingGenes( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-def loadGeneInformation( infile, outfile, only_proteincoding = False ):
+
+
+def loadGeneInformation(infile, outfile, only_proteincoding=False):
     '''load gene information gleaned from the attributes
     in the gene set gtf file.
 
@@ -316,17 +333,19 @@ def loadGeneInformation( infile, outfile, only_proteincoding = False ):
 
     '''
 
-    table = outfile[:-len(".load")]
+    table = P.toTable(outfile)
 
-    if only_proteincoding: filter_cmd = ''' awk '$2 == "protein_coding"' '''
-    else: filter_cmd = "cat"
+    if only_proteincoding:
+        filter_cmd = ''' awk '$2 == "protein_coding"' '''
+    else:
+        filter_cmd = "cat"
 
     statement = '''
     gunzip < %(infile)s 
     | %(filter_cmd)s 
     | python %(scriptsdir)s/gtf2gtf.py --sort=gene
     | python %(scriptsdir)s/gtf2tsv.py --full --only-attributes -v 0
-    | python %(toolsdir)s/csv_cut.py --remove exon_number transcript_id transcript_name protein_id
+    | python %(toolsdir)s/csv_cut.py --remove exon_id transcript_id transcript_name protein_id exon_number
     | %(scriptsdir)s/hsort 1 | uniq 
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
               --index=gene_id 
@@ -340,19 +359,22 @@ def loadGeneInformation( infile, outfile, only_proteincoding = False ):
 ############################################################
 ############################################################
 ############################################################
-def loadTranscriptInformation( infile, outfile,
-                                 only_proteincoding = False ):
-                                 
+
+
+def loadTranscriptInformation(infile, outfile,
+                              only_proteincoding=False):
     '''load the transcript set.
 
     *infile* is an ENSEMBL gtf file.
     '''
     to_cluster = True
 
-    table = outfile[:-len(".load")]
+    table = P.toTable(outfile)
 
-    if only_proteincoding: filter_cmd = ''' awk '$2 == "protein_coding"' '''
-    else: filter_cmd = "cat"
+    if only_proteincoding:
+        filter_cmd = ''' awk '$2 == "protein_coding"' '''
+    else:
+        filter_cmd = "cat"
 
     statement = '''gunzip 
     < %(infile)s 
@@ -360,7 +382,7 @@ def loadTranscriptInformation( infile, outfile,
     | awk '$3 == "CDS"' 
     | python %(scriptsdir)s/gtf2gtf.py --sort=gene
     | python %(scriptsdir)s/gtf2tsv.py --full --only-attributes -v 0
-    | python %(toolsdir)s/csv_cut.py --remove exon_number 
+    | python %(toolsdir)s/csv_cut.py --remove exon_id exon_number 
     | %(scriptsdir)s/hsort 1 | uniq 
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
               --index=transcript_id 
@@ -376,9 +398,11 @@ def loadTranscriptInformation( infile, outfile,
 ############################################################
 ############################################################
 ############################################################
-def buildCDNAFasta( infile, outfile ):
+
+
+def buildCDNAFasta(infile, outfile):
     '''load ENSEMBL cdna FASTA file
-    
+
     *infile* is an ENSEMBL cdna file.
     '''
     dbname = outfile[:-len(".fasta")]
@@ -397,7 +421,9 @@ def buildCDNAFasta( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-def buildPeptideFasta( infile, outfile ):
+
+
+def buildPeptideFasta(infile, outfile):
     '''create ENSEMBL peptide file
 
     *infile* is an ENSEMBL .pep.all.fa.gz file.
@@ -418,12 +444,14 @@ def buildPeptideFasta( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-def loadPeptideSequences( infile, outfile ):
+
+
+def loadPeptideSequences(infile, outfile):
     '''load ENSEMBL peptide file into database
 
     *infile* is an ENSEMBL .pep.all.fa.gz file.
     '''
-    table = P.toTable( outfile )
+    table = P.toTable(outfile)
 
     statement = '''gunzip 
     < %(infile)s
@@ -441,9 +469,9 @@ def loadPeptideSequences( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-def buildCDSFasta( infile, outfile ):
+def buildCDSFasta(infile, outfile):
     '''load ENSEMBL cdna FASTA file
-    
+
     *infile* is an ENSEMBL cdna file.
     '''
 
@@ -463,16 +491,16 @@ def buildCDSFasta( infile, outfile ):
 
     tmpfile = P.getTempFile(".")
 
-    dbhandle = sqlite3.connect( PARAMS["database"] )
+    dbhandle = sqlite3.connect(PARAMS["database"])
     cc = dbhandle.cursor()
     tmpfile.write("protein_id\ttranscript_id\n")
-    tmpfile.write( "\n".join( 
-            [ "%s\t%s" % x for x in \
-                  cc.execute("SELECT DISTINCT protein_id,transcript_id FROM transcript_info") ]))
-    tmpfile.write( "\n" )
+    tmpfile.write("\n".join(
+        ["%s\t%s" % x for x in
+         cc.execute("SELECT DISTINCT protein_id,transcript_id FROM transcript_info")]))
+    tmpfile.write("\n")
 
     tmpfile.close()
-    
+
     tmpfilename = tmpfile.name
 
     statement = '''
@@ -488,12 +516,14 @@ def buildCDSFasta( infile, outfile ):
     '''
 
     P.run()
-    os.unlink( tmpfilename )
+    os.unlink(tmpfilename)
 
 ############################################################
 ############################################################
 ############################################################
-def loadGeneStats( infile, outfile ):
+
+
+def loadGeneStats(infile, outfile):
     '''load gene statistics to database.
 
     The *infile* is the *outfile* from :meth:`buildGenes`
@@ -502,7 +532,7 @@ def loadGeneStats( infile, outfile ):
     # ?do not run on cluster - 32/64 bit incompatible
     to_cluster = True
 
-    table = outfile[:-len(".load")]
+    table = P.toTable(outfile)
 
     statement = '''
     gunzip < %(infile)s |\
@@ -522,7 +552,9 @@ def loadGeneStats( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-def buildExons( infile, outfile ):
+
+
+def buildExons(infile, outfile):
     '''build a collection of transcripts from the ENSEMBL gene set.
 
     Only the exon portion is kept.
@@ -542,7 +574,7 @@ def buildExons( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-def buildCodingExons( infile, outfile ):
+def buildCodingExons(infile, outfile):
     '''build a collection of transcripts from the protein-coding portion of the ENSEMBL gene set.
 
     All exons are kept
@@ -562,7 +594,9 @@ def buildCodingExons( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-def buildNonCodingExons( infile, outfile ):
+
+
+def buildNonCodingExons(infile, outfile):
     '''build a collection of transcripts from the non-coding portion of the ENSEMBL gene set.
 
     All exons are kept
@@ -583,7 +617,9 @@ def buildNonCodingExons( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-def buildLincRNAExons( infile, outfile ):
+
+
+def buildLincRNAExons(infile, outfile):
     '''build a collection of transcripts from the LincRNA portion of the ENSEMBL gene set. All exons are kept '''
 
     to_cluster = True
@@ -596,11 +632,13 @@ def buildLincRNAExons( infile, outfile ):
     | gzip > %(outfile)s
     '''
     P.run()
-    
+
 ############################################################
 ############################################################
 ############################################################
-def buildCDS( infile, outfile ):
+
+
+def buildCDS(infile, outfile):
     '''build a collection of transcripts from the protein-coding
     section of the ENSEMBL gene set.
 
@@ -623,11 +661,13 @@ def buildCDS( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-def loadTranscripts( infile, outfile ):
+
+
+def loadTranscripts(infile, outfile):
     '''load the transcript set into the database.
     '''
-    table = outfile[:-len(".load")]
-    
+    table = P.toTable(outfile)
+
     statement = '''
     gunzip < %(infile)s 
     | python %(scriptsdir)s/gtf2tsv.py
@@ -641,11 +681,13 @@ def loadTranscripts( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-def loadTranscript2Gene( infile, outfile ):
+
+
+def loadTranscript2Gene(infile, outfile):
     '''build and load a map of transcript to gene from gtf file
     '''
-    table = outfile[:-len(".load")]
-    
+    table = P.toTable(outfile)
+
     statement = '''
     gunzip < %(infile)s
     | python %(scriptsdir)s/gtf2tsv.py --map transcript2gene -v 0
@@ -659,7 +701,9 @@ def loadTranscript2Gene( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-def loadTranscriptStats( infile, outfile ):
+
+
+def loadTranscriptStats(infile, outfile):
     '''load gene statistics to database.
 
     The *infile* is the *outfile* from :meth:`buildTranscripts`
@@ -667,7 +711,7 @@ def loadTranscriptStats( infile, outfile ):
 
     to_cluster = True
 
-    table = outfile[:-len(".load")]
+    table = P.toTable(outfile)
 
     statement = '''
     gunzip < %(infile)s |\
@@ -689,7 +733,9 @@ def loadTranscriptStats( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-def loadProteinStats( infile, outfile ):
+
+
+def loadProteinStats(infile, outfile):
     '''load protein statistics to database.
 
     The *infile* is an ENSEMBL peptide file.
@@ -697,7 +743,7 @@ def loadProteinStats( infile, outfile ):
 
     to_cluster = True
 
-    table = outfile[:-len(".load")]
+    table = P.toTable(outfile)
 
     statement = '''
     gunzip < %(infile)s |
@@ -723,7 +769,9 @@ def loadProteinStats( infile, outfile ):
 # Function does not appear to be called from any script in
 # the existing src directory
 # Doesn't filter miscellaneous contigs from mm10
-def buildPromotorRegions( infile, outfile ):
+
+
+def buildPromotorRegions(infile, outfile):
     '''annotate promotor regions from reference gene set.'''
     statement = """
         gunzip < %(infile)s |\
@@ -741,7 +789,9 @@ def buildPromotorRegions( infile, outfile ):
 # Function does not appear to be called from any script in
 # the existing src directory
 # Doesn't filter miscellaneous contigs from mm10
-def buildTSSRegions( infile, outfile ):
+
+
+def buildTSSRegions(infile, outfile):
     '''annotate transcription start sites from reference gene set.
 
     Similar to promotors, except that the witdth is set to 1.
@@ -756,7 +806,9 @@ def buildTSSRegions( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-def buildOverlapWithEnsembl( infile, outfile, filename_bed ):
+
+
+def buildOverlapWithEnsembl(infile, outfile, filename_bed):
     '''compute overlap of genes in ``infile`` with intervals
     in ``filename_bed`` and load into database.
 
@@ -782,7 +834,9 @@ def buildOverlapWithEnsembl( infile, outfile, filename_bed ):
 ############################################################
 ############################################################
 ############################################################
-def compareGeneSets( infiles, outfile ):
+
+
+def compareGeneSets(infiles, outfile):
     '''compute overlap of genes, exons and transcripts in ``infiles`` 
 
     ``infiles`` are protein coding gene sets.
@@ -801,7 +855,7 @@ def compareGeneSets( infiles, outfile ):
 ############################################################
 ############################################################
 ############################################################
-def buildPseudogenes( infiles, outfile ):
+def buildPseudogenes(infiles, outfile):
     '''annotate genomic regions with reference gene set.
 
     *infile* is an ENSEMBL gtf file.
@@ -809,7 +863,7 @@ def buildPseudogenes( infiles, outfile ):
     This task selects all pseudogenic transcripts in a single file.
 
     Pseudogenes are:
-    
+
     * gene_type or transcript_type contains the phrase "pseudo". This taken from
       the database.
 
@@ -821,7 +875,7 @@ def buildPseudogenes( infiles, outfile ):
 
     infile_gtf, infile_peptides_fasta = infiles
 
-    tmpfile1 = P.getTempFilename( ".")
+    tmpfile1 = P.getTempFilename(".")
 
     statement = '''
     zcat %(infile_gtf)s 
@@ -835,10 +889,10 @@ def buildPseudogenes( infiles, outfile ):
 
     P.run()
 
-    if P.isEmpty( tmpfile1 ):
-        E.warn( "no pseudogenes found" )
-        os.unlink( tmpfile1 )
-        P.touch( outfile )
+    if P.isEmpty(tmpfile1):
+        E.warn("no pseudogenes found")
+        os.unlink(tmpfile1)
+        P.touch(outfile)
         return
 
     statement = '''
@@ -858,67 +912,69 @@ def buildPseudogenes( infiles, outfile ):
 
     P.run()
 
-    os.unlink( tmpfile1 )
+    os.unlink(tmpfile1)
 
-    inf = IOTools.openFile( "%s.links.gz" % outfile )
+    inf = IOTools.openFile("%s.links.gz" % outfile)
     best_matches = {}
     for line in inf:
         peptide_id, transcript_id, score = line[:-1].split("\t")
         score = int(score)
         if transcript_id in best_matches and best_matches[transcript_id][0] > score:
             continue
-        best_matches[ transcript_id ] = (score, peptide_id )
-        
+        best_matches[transcript_id] = (score, peptide_id)
+
     inf.close()
 
-    E.info( "found %i best links" % len(best_matches) )
+    E.info("found %i best links" % len(best_matches))
     new_pseudos = set(best_matches.keys())
-    
-    dbhandle = sqlite3.connect( PARAMS["database"] )
+
+    dbhandle = sqlite3.connect(PARAMS["database"])
     cc = dbhandle.cursor()
     known_pseudos = set([ x[0] for x in cc.execute("""SELECT DISTINCT transcript_id 
                               FROM transcript_info 
                                WHERE transcript_biotype like '%pseudo%' OR
                                      gene_biotype like '%pseudo%' """ ) ])
 
-    E.info( "pseudo processed=%i, known pseudos=%i, intersection=%i" % (
-            ( len(new_pseudos), len(known_pseudos), len( new_pseudos.intersection( known_pseudos) ) ) ) )
-    
-    all_pseudos = new_pseudos.union( known_pseudos )
+    E.info("pseudo processed=%i, known pseudos=%i, intersection=%i" % (
+        (len(new_pseudos), len(known_pseudos), len(new_pseudos.intersection(known_pseudos)))))
+
+    all_pseudos = new_pseudos.union(known_pseudos)
 
     c = E.Counter()
 
-    outf = IOTools.openFile( outfile, "w" )
-    inf = GTF.iterator( IOTools.openFile( infile_gtf ) )
+    outf = IOTools.openFile(outfile, "w")
+    inf = GTF.iterator(IOTools.openFile(infile_gtf))
     for gtf in inf:
         c.input += 1
         if gtf.transcript_id not in all_pseudos:
             continue
         c.output += 1
-        outf.write( "%s\n" % gtf )
+        outf.write("%s\n" % gtf)
     outf.close()
-        
-    E.info( "exons: %s" % str(c))
 
-def buildNUMTs( infile, outfile ):
+    E.info("exons: %s" % str(c))
+
+
+def buildNUMTs(infile, outfile):
     '''build annotation with nuclear mitochondrial sequences.
-    
+
     map mitochondrial chromosome against genome using
     exonerate
     '''
     if not PARAMS["numts_mitochrom"]:
-        E.info( "skipping numts creation" )
+        E.info("skipping numts creation")
         P.touch(outfile)
         return
 
-    fasta = IndexedFasta.IndexedFasta( os.path.join(PARAMS["genome_dir"], PARAMS["genome"]))
+    fasta = IndexedFasta.IndexedFasta(
+        os.path.join(PARAMS["genome_dir"], PARAMS["genome"]))
 
     if PARAMS["numts_mitochrom"] not in fasta:
-        E.warn( "mitochondrial genome %s not found" % PARAMS["numts_mitochrom"] )
+        E.warn("mitochondrial genome %s not found" % PARAMS["numts_mitochrom"])
         P.touch(outfile)
         return
 
-    tmpfile_mito = P.getTempFilename( ".")
+    tmpfile_mito = P.getTempFilename(".")
 
     statement = '''
     python %(scriptsdir)s/index_fasta.py 
@@ -929,20 +985,20 @@ def buildNUMTs( infile, outfile ):
     '''
 
     P.run()
-    
-    if P.isEmpty( tmpfile_mito ):
-        E.warn( "mitochondrial genome empty." )
-        os.unlink( tmpfile_mito )
-        P.touch( outfile )
+
+    if P.isEmpty(tmpfile_mito):
+        E.warn("mitochondrial genome empty.")
+        os.unlink(tmpfile_mito)
+        P.touch(outfile)
         return
 
-    format = ("qi", "qS", "qab", "qae", 
-              "ti", "tS", "tab", "tae", 
+    format = ("qi", "qS", "qab", "qae",
+              "ti", "tS", "tab", "tae",
               "s",
-              "pi", 
+              "pi",
               "C")
-    
-    format = "\\\\t".join( ["%%%s" % x for x in format] )
+
+    format = "\\\\t".join(["%%%s" % x for x in format])
 
     # collect all results
     min_score = 100
@@ -965,21 +1021,21 @@ def buildNUMTs( infile, outfile ):
     P.run()
 
     # convert to gtf
-    inf = IOTools.openFile( "%s.links.gz" % outfile )
-    outf = IOTools.openFile( outfile, "w" )
+    inf = IOTools.openFile("%s.links.gz" % outfile)
+    outf = IOTools.openFile(outfile, "w")
 
     min_score = PARAMS["numts_score"]
-    
+
     c = E.Counter()
 
     for line in inf:
         (query_contig, query_strand, query_start, query_end,
          target_contig, target_strand, target_start, target_end,
-         score, pid, alignment ) = line[:-1].split("\t")
+         score, pid, alignment) = line[:-1].split("\t")
 
         c.input += 1
         score = int(score)
-        if score < min_score: 
+        if score < min_score:
             c.skipped += 1
             continue
 
@@ -988,23 +1044,24 @@ def buildNUMTs( infile, outfile ):
 
         gff = GTF.Entry()
         gff.contig = target_contig
-        gff.start, gff.end = int( target_start), int(target_end)
+        gff.start, gff.end = int(target_start), int(target_end)
         assert gff.start < gff.end
 
         gff.strand = target_strand
         gff.score = int(score)
         gff.feature = "numts"
-        gff.gene_id = "%s:%s-%s" % (query_contig,query_start,query_end)
-        gff.transcript_id = "%s:%s-%s" % (query_contig,query_start,query_end)
+        gff.gene_id = "%s:%s-%s" % (query_contig, query_start, query_end)
+        gff.transcript_id = "%s:%s-%s" % (query_contig, query_start, query_end)
         outf.write("%s\n" % str(gff))
         c.output += 1
-        
+
     inf.close()
     outf.close()
 
     E.info("filtering numts: %s" % str(c))
-    
-def sortGTF( infile, outfile,order = "contig+gene" ):
+
+
+def sortGTF(infile, outfile, order="contig+gene"):
     '''sort a gtf file - the sorting is performed on the cluster.
 
     Ssee gtf2gtf.py for valid options for order.
@@ -1018,7 +1075,7 @@ def sortGTF( infile, outfile,order = "contig+gene" ):
     else:
         # wastefull
         uncompress = "cat"
-        
+
     if outfile.endswith(".gz"):
         compress = "gzip"
     else:
@@ -1030,9 +1087,9 @@ def sortGTF( infile, outfile,order = "contig+gene" ):
     | %(compress)s > %(outfile)s'''
 
     P.run()
-    
 
-def buildGenomicFunctionalAnnotation( gtffile, dbh, outfiles ):
+
+def buildGenomicFunctionalAnnotation(gtffile, dbh, outfiles):
     '''output a bed file with genomic regions with functional annotations.
 
     The regions for each gene are given in the gtf file.
@@ -1046,7 +1103,7 @@ def buildGenomicFunctionalAnnotation( gtffile, dbh, outfiles ):
     The output file contains annotations for both GO and GOSlim. These
     are prefixed by ``go:`` and ``goslim:``.
     '''
-    
+
     to_cluster = True
 
     territories_file = gtffile
@@ -1054,16 +1111,16 @@ def buildGenomicFunctionalAnnotation( gtffile, dbh, outfiles ):
     outfile_bed, outfile_tsv = outfiles
 
     gene2region = {}
-    for gtf in GTF.iterator( IOTools.openFile( gtffile, "r")):
+    for gtf in GTF.iterator(IOTools.openFile(gtffile, "r")):
         gid = gtf.gene_id.split(":")
         for g in gid:
             gene2region[g] = (gtf.contig, gtf.start, gtf.end, gtf.strand)
 
-    #IMS: connect is not in this module. dbh needs to be passed from caller    
+    # IMS: connect is not in this module. dbh needs to be passed from caller
     #dbh = connect()
     cc = dbh.cursor()
-    
-    outf = P.getTempFile( "." )
+
+    outf = P.getTempFile(".")
     c = E.Counter()
     term2description = {}
     for db in ('go', 'goslim'):
@@ -1073,7 +1130,8 @@ def buildGenomicFunctionalAnnotation( gtffile, dbh, outfiles ):
             except KeyError:
                 c.notfound += 1
                 continue
-            outf.write( "\t".join( map(str, (contig, start, end, "%s:%s" % (db, go_id), 1, strand))  ) + "\n" )
+            outf.write(
+                "\t".join(map(str, (contig, start, end, "%s:%s" % (db, go_id), 1, strand))) + "\n")
             term2description["%s:%s" % (db, go_id)] = description
     outf.close()
     tmpfname = outf.name
@@ -1081,9 +1139,8 @@ def buildGenomicFunctionalAnnotation( gtffile, dbh, outfiles ):
 
     P.run()
 
-    outf = IOTools.openFile( outfile_tsv, "w" )
-    outf.write("term\tdescription\n" )
+    outf = IOTools.openFile(outfile_tsv, "w")
+    outf.write("term\tdescription\n")
     for term, description in term2description.iteritems():
         outf.write("%s\t%s\n" % (term, description))
     outf.close()
-

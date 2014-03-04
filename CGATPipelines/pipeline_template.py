@@ -99,29 +99,31 @@ import CGAT.Database as Database
 ###################################################
 ###################################################
 ###################################################
-## Pipeline configuration
+# Pipeline configuration
 ###################################################
 
 # load options from the config file
 import CGAT.Pipeline as P
-P.getParameters( 
+P.getParameters(
     ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
      "../pipeline.ini",
-     "pipeline.ini" ] )
+     "pipeline.ini"])
 
 PARAMS = P.PARAMS
-PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],
-                                       "pipeline_annotations.py" )
+PARAMS_ANNOTATIONS = P.peekParameters(PARAMS["annotations_dir"],
+                                      "pipeline_annotations.py")
 
 ###################################################################
 ###################################################################
-## Helper functions mapping tracks to conditions, etc
+# Helper functions mapping tracks to conditions, etc
 ###################################################################
 import CGATPipelines.PipelineTracks as PipelineTracks
 
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 def connect():
     '''connect to database.
 
@@ -130,10 +132,11 @@ def connect():
     Returns a database connection.
     '''
 
-    dbh = sqlite3.connect( PARAMS["database"] )
-    statement = '''ATTACH DATABASE '%s' as annotations''' % (PARAMS["annotations_database"])
+    dbh = sqlite3.connect(PARAMS["database"])
+    statement = '''ATTACH DATABASE '%s' as annotations''' % (
+        PARAMS["annotations_database"])
     cc = dbh.cursor()
-    cc.execute( statement )
+    cc.execute(statement)
     cc.close()
 
     return dbh
@@ -141,37 +144,40 @@ def connect():
 ###################################################################
 ###################################################################
 ###################################################################
-## worker tasks
+# worker tasks
 ###################################################################
 
 ###################################################################
 ###################################################################
 ###################################################################
-## primary targets
+# primary targets
 ###################################################################
 
-@follows( mkdir( "report" ) )
+
+@follows(mkdir("report"))
 def build_report():
     '''build report from scratch.'''
 
-    E.info( "starting report build process from scratch" )
-    P.run_report( clean = True )
+    E.info("starting report build process from scratch")
+    P.run_report(clean=True)
 
-@follows( mkdir( "report" ) )
+
+@follows(mkdir("report"))
 def update_report():
     '''update report.'''
 
-    E.info( "updating report" )
-    P.run_report( clean = False )
+    E.info("updating report")
+    P.run_report(clean=False)
 
-@follows( update_report )
+
+@follows(update_report)
 def publish_report():
     '''publish report.'''
 
-    E.info( "publishing report" )
+    E.info("publishing report")
     P.publish_report()
 
-if __name__== "__main__":
+if __name__ == "__main__":
 
     # P.checkFiles( ("genome.fasta", "genome.idx" ) )
-    sys.exit( P.main(sys.argv) )
+    sys.exit(P.main(sys.argv))

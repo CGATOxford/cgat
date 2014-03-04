@@ -1,4 +1,4 @@
-################################################################################
+##########################################################################
 #
 #   MRC FGU Computational Genomics Group
 #
@@ -19,7 +19,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
+##########################################################################
 '''
 WrapperClustal.py - 
 ======================================================
@@ -33,7 +33,11 @@ Code
 ----
 
 '''
-import os, sys, string, re, tempfile
+import os
+import sys
+import string
+import re
+import tempfile
 
 try:
     from Bio.Clustalw import MultipleAlignCL
@@ -44,52 +48,54 @@ except ImportError:
 """Wrapper for Clustal based on Biopython
 """
 
-import Genomics
+from CGAT import Genomics as Genomics
+
 
 class Clustal:
 
     mOptions = ""
-    
-    def __init__( self, options = ""):
+
+    def __init__(self, options=""):
         self.mOptions = options
 
-    def Align( self, s1, s2, result ):
+    def Align(self, s1, s2, result):
 
         result.clear()
 
         handle_tmpfile1, filename_tmpfile1 = tempfile.mkstemp()
-        handle_tmpfile2, filename_tmpfile2 = tempfile.mkstemp()        
-        os.write( handle_tmpfile1, ">s1\n%s\n" % (s1))
-        os.write( handle_tmpfile1, ">s2\n%s\n" % (s2))
-        os.close( handle_tmpfile1 )
-        os.close( handle_tmpfile2 )
-        cline = MultipleAlignCL( filename_tmpfile1 )
-        cline.set_output( filename_tmpfile2 )
-                  
+        handle_tmpfile2, filename_tmpfile2 = tempfile.mkstemp()
+        os.write(handle_tmpfile1, ">s1\n%s\n" % (s1))
+        os.write(handle_tmpfile1, ">s2\n%s\n" % (s2))
+        os.close(handle_tmpfile1)
+        os.close(handle_tmpfile2)
+        cline = MultipleAlignCL(filename_tmpfile1)
+        cline.set_output(filename_tmpfile2)
+
         align = do_alignment(cline)
-                  
+
         seqs = align.get_all_seqs()
-        if len(seqs) != 2: return result
-        
+        if len(seqs) != 2:
+            return result
+
         a1 = seqs[0].seq.tostring()
         a2 = seqs[1].seq.tostring()
 
         x1 = 0
         x2 = 0
         for pos in range(len(a1)):
-            
+
             if a1[pos] not in "Nn-" and a2[pos] not in "Nn-":
-                result.addPair( x1, x2, 0 )
+                result.addPair(x1, x2, 0)
                 x1 += 1
                 x2 += 1
                 continue
-            
-            if a1[pos] != "-": x1 += 1
-            if a2[pos] != "-": x2 += 1            
 
-            
-        os.remove( filename_tmpfile1 )
-        os.remove( filename_tmpfile2 )
-            
+            if a1[pos] != "-":
+                x1 += 1
+            if a2[pos] != "-":
+                x2 += 1
+
+        os.remove(filename_tmpfile1)
+        os.remove(filename_tmpfile2)
+
         return result
-

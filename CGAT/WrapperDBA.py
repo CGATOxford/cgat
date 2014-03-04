@@ -1,4 +1,4 @@
-################################################################################
+##########################################################################
 #
 #   MRC FGU Computational Genomics Group
 #
@@ -19,7 +19,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
+##########################################################################
 '''
 WrapperDBA.py - 
 ======================================================
@@ -33,49 +33,54 @@ Code
 ----
 
 '''
-import os, sys, string, re, tempfile, subprocess
+import os
+import sys
+import string
+import re
+import tempfile
+import subprocess
 
 """Wrapper for DBA.
 """
 
-import Genomics
+from CGAT import Genomics as Genomics
+
 
 class DBA:
 
     mOptions = ""
     mExecutable = "dba -quiet -nomatchn -align "
     mEnvironment = "WISECONFIGDIR=/net/cpp-group/src/wise2.2.0/wisecfg; export WISECONFIGDIR;"
-    
-    def __init__( self, options = ""):
+
+    def __init__(self, options=""):
         self.mOptions = options
 
-    def Align( self, s1, s2, result ):
+    def Align(self, s1, s2, result):
 
         result.clear()
-        
+
         handle_tmpfile1, filename_tmpfile1 = tempfile.mkstemp()
         handle_tmpfile2, filename_tmpfile2 = tempfile.mkstemp()
-        os.write( handle_tmpfile1, ">s1\n%s\n" % (s1))
-        os.close( handle_tmpfile1 )
-        os.write( handle_tmpfile2, ">s2\n%s\n" % (s2))
-        os.close( handle_tmpfile2 )
+        os.write(handle_tmpfile1, ">s1\n%s\n" % (s1))
+        os.close(handle_tmpfile1)
+        os.write(handle_tmpfile2, ">s2\n%s\n" % (s2))
+        os.close(handle_tmpfile2)
 
-        statement = string.join( ( "(",
-                                   self.mEnvironment, 
-                                   self.mExecutable,
-                                   self.mOptions,
-                                   filename_tmpfile1,
-                                   filename_tmpfile2,
-                                   ")" ),
-                                 " ")
+        statement = string.join(("(",
+                                 self.mEnvironment,
+                                 self.mExecutable,
+                                 self.mOptions,
+                                 filename_tmpfile1,
+                                 filename_tmpfile2,
+                                 ")"),
+                                " ")
 
-        
-        p = subprocess.Popen( statement , 
-                              shell=True, 
-                              stdin=subprocess.PIPE, 
-                              stdout=subprocess.PIPE, 
-                              stderr=subprocess.PIPE, 
-                              close_fds=True)
+        p = subprocess.Popen(statement,
+                             shell=True,
+                             stdin=subprocess.PIPE,
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE,
+                             close_fds=True)
 
         (file_stdout, file_stdin, file_stderr) = (p.stdin, p.stdout, p.stderr)
 
@@ -89,23 +94,14 @@ class DBA:
             raise "Error while executing statement %s" % statement
 
         for line in lines:
-            data = re.split("\s+", line[:-1] )
-            if len(data) != 6: continue
-            x1 = int(data[1]) 
+            data = re.split("\s+", line[:-1])
+            if len(data) != 6:
+                continue
+            x1 = int(data[1])
             x2 = int(data[4])
-            result.addPair( x1, x2, 0 )
+            result.addPair(x1, x2, 0)
 
-        os.remove( filename_tmpfile1 )
-        os.remove( filename_tmpfile2 )
-        
+        os.remove(filename_tmpfile1)
+        os.remove(filename_tmpfile2)
+
         return result
-                          
-            
-        
-                                 
-        
-        
-        
-        
-    
-        

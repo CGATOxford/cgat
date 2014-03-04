@@ -94,16 +94,16 @@ from ruffus import *
 ###################################################
 ###################################################
 ###################################################
-## Pipeline configuration
+# Pipeline configuration
 ###################################################
 
 # load options from the config file
 import CGAT.Pipeline as P
-P.getParameters( 
+P.getParameters(
     ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
      "../pipeline.ini",
-     "pipeline.ini" ],
-    defaults = { "maps" : "" } )
+     "pipeline.ini"],
+    defaults={"maps": ""})
 PARAMS = P.PARAMS
 
 ###################################################################
@@ -111,55 +111,62 @@ PARAMS = P.PARAMS
 ###################################################################
 ##
 ###################################################################
-if os.path.exists("pipeline_conf.py"): 
-    L.info( "reading additional configuration from pipeline_conf.py" )
+if os.path.exists("pipeline_conf.py"):
+    L.info("reading additional configuration from pipeline_conf.py")
     execfile("pipeline_conf.py")
 
 PARAMS = P.getParameters()
 
 ###################################################################
 ###################################################################
-## Helper functions mapping tracks to conditions, etc
+# Helper functions mapping tracks to conditions, etc
 ###################################################################
 import CGATPipelines.PipelineTracks as PipelineTracks
 
 ###################################################################
-def extractGenomes( filename ):
+
+
+def extractGenomes(filename):
     '''extract the two genomes from a chain filename.
     It also decapitalizes them.
     '''
-    return [ x[0].lower() + x[1:] for x in re.match("(\S+)To([^.]+)", filename ).groups() ]
+    return [x[0].lower() + x[1:] for x in re.match("(\S+)To([^.]+)", filename).groups()]
 
-def writeContigSizes( genome, outfile ):
+
+def writeContigSizes(genome, outfile):
     '''write contig sizes to outfile for UCSC tools.
     '''
 
-    outf = IOTools.openFile( outfile, "w")
-    fasta= IndexedFasta.IndexedFasta( os.path.join( PARAMS["genome_dir"], genome ) )
-    for contig, size in fasta.getContigSizes( with_synonyms = False ).iteritems():
-        outf.write( "%s\t%i\n" % (contig, size ) )
+    outf = IOTools.openFile(outfile, "w")
+    fasta = IndexedFasta.IndexedFasta(
+        os.path.join(PARAMS["genome_dir"], genome))
+    for contig, size in fasta.getContigSizes(with_synonyms=False).iteritems():
+        outf.write("%s\t%i\n" % (contig, size))
     outf.close()
 
-@follows( mkdir( "export" ) )
+
+@follows(mkdir("export"))
 def prepare():
     pass
 
 ####################################################################
 ####################################################################
 ####################################################################
-## 
+##
 ####################################################################
+
+
 @follows(prepare)
-@transform( "*.chain.gz", suffix(".chain.gz"), ".psl.gz" )
-def convertChainToPsl( infile, outfile ):
+@transform("*.chain.gz", suffix(".chain.gz"), ".psl.gz")
+def convertChainToPsl(infile, outfile):
     '''convert a chain file to a psl file.
     '''
 
     to_cluster = False
-    
-    target, query = extractGenomes( infile )
-    
-    E.debug( "query=%s, target=%s" % (query,target))
+
+    target, query = extractGenomes(infile)
+
+    E.debug("query=%s, target=%s" % (query, target))
 
     statement = '''gunzip
     < %(infile)s 
@@ -172,28 +179,28 @@ def convertChainToPsl( infile, outfile ):
 
     P.run()
 
-##################################################################################
-##################################################################################
-##################################################################################
-## extracting alignments from maf files
-##################################################################################
+##########################################################################
+##########################################################################
+##########################################################################
+# extracting alignments from maf files
+##########################################################################
 if "maf_dir" in PARAMS and "maf_tracks" in PARAMS:
-    @files( [ ( ("%s/*.maf.gz" % PARAMS["maf_dir"]) 
-                , "%sTo%s.raw.psl.gz" % (PARAMS["%s_label" % track], PARAMS["maf_master"])
-                , track) for track in P.asList(PARAMS["maf_tracks"]) ] )
+    @files([(("%s/*.maf.gz" % PARAMS["maf_dir"]), "%sTo%s.raw.psl.gz" % (PARAMS["%s_label" % track], PARAMS["maf_master"]), track) for track in P.asList(PARAMS["maf_tracks"])])
     def extractPairwiseAlignmentSingleFile(infiles, outfile, track):
         '''build pairwise genomic aligment from maf files.'''
 
-        try: os.remove( outfile )
-        except OSError: pass
+        try:
+            os.remove(outfile)
+        except OSError:
+            pass
 
-        genomefile = PARAMS["%s_genome" % track ]
+        genomefile = PARAMS["%s_genome" % track]
 
         to_cluster = True
 
         for infile in infiles:
 
-            E.info( "adding %s" % infile )
+            E.info("adding %s" % infile)
 
             statement = '''gunzip < %(infile)s 
                  | python %(scriptsdir)s/maf2psl.py 
@@ -211,10 +218,8 @@ if "maf_dir" in PARAMS and "maf_tracks" in PARAMS:
                  '''
             P.run()
 
-    @transform( extractPairwiseAlignmentSingleFile
-                , suffix(".raw.psl.gz")
-                , ".psl.gz" )
-    def buildGenomeAlignmentFromSingleFile( infile, outfile ):
+    @transform(extractPairwiseAlignmentSingleFile, suffix(".raw.psl.gz"), ".psl.gz")
+    def buildGenomeAlignmentFromSingleFile(infile, outfile):
         '''remove non-unique alignments in genomic infile.'''
 
         to_cluster = True
@@ -233,15 +238,15 @@ if "maf_dir" in PARAMS and "maf_tracks" in PARAMS:
              '''
         P.run()
 
-    @follows( mkdir( ("%s.dir" % track for track in P.asList(PARAMS["maf_tracks"]) ) ) )
-    @files( [ (infile, "%s.dir/%s" % (track, os.path.basename(infile)), track) \
-                  for infile, track in itertools.product( 
-                glob.glob("%s/*.maf.gz" % PARAMS["maf_dir"]),  P.asList(PARAMS["maf_tracks"])) ] )
+    @follows(mkdir(("%s.dir" % track for track in P.asList(PARAMS["maf_tracks"]))))
+    @files([(infile, "%s.dir/%s" % (track, os.path.basename(infile)), track)
+            for infile, track in itertools.product(
+                glob.glob("%s/*.maf.gz" % PARAMS["maf_dir"]),  P.asList(PARAMS["maf_tracks"]))])
     def extractPairwiseAlignment(infile, outfile, track):
         '''build pairwise genomic aligment from maf files.'''
 
-        genomefile = PARAMS["%s_genome" % track ]
-        query=PARAMS["%s_label" % track]
+        genomefile = PARAMS["%s_genome" % track]
+        query = PARAMS["%s_label" % track]
 
         to_cluster = True
 
@@ -262,10 +267,10 @@ if "maf_dir" in PARAMS and "maf_tracks" in PARAMS:
         P.run()
 
     @follows(prepare)
-    @collate( extractPairwiseAlignment,
-              regex(r"^(\S+).dir.*" ),
-              r"\1To%s.psl.gz" % PARAMS["maf_master"])
-    def buildGenomeAlignment( infiles, outfile ):
+    @collate(extractPairwiseAlignment,
+             regex(r"^(\S+).dir.*"),
+             r"\1To%s.psl.gz" % PARAMS["maf_master"])
+    def buildGenomeAlignment(infiles, outfile):
         '''remove non-unique alignments in genomic infile.'''
 
         to_cluster = True
@@ -291,24 +296,26 @@ else:
     def buildGenomeAlignment():
         pass
 
-@follows( buildGenomeAlignment, convertChainToPsl )
-@files( [ (None, x + ".over.psl.gz", x) for x in P.asList(PARAMS["maps"]) ] )
-def buildIndirectMaps( infile, outfile, track ):
+
+@follows(buildGenomeAlignment, convertChainToPsl)
+@files([(None, x + ".over.psl.gz", x) for x in P.asList(PARAMS["maps"])])
+def buildIndirectMaps(infile, outfile, track):
     '''build a map between query and target, linking
     via intermediate targets.'''
 
     to_cluster = True
-    
+
     path = P.asList(PARAMS["%s_path" % track])
 
-    E.info( "path=%s" % str(path))
+    E.info("path=%s" % str(path))
 
     statement = []
 
     for stage, part in enumerate(path):
         filename = part + ".over.psl.gz"
-        if not os.path.exists( filename ):
-            raise ValueError( "required file %s for %s (stage %i) not exist." % (filename, outfile, stage ))
+        if not os.path.exists(filename):
+            raise ValueError(
+                "required file %s for %s (stage %i) not exist." % (filename, outfile, stage))
 
         if stage == 0:
             statement.append( '''gunzip < %(filename)s''' % locals() )
@@ -317,21 +324,23 @@ def buildIndirectMaps( infile, outfile, track ):
                pslMap stdin <(gunzip < %(filename)s) stdout
             ''' % locals() )
 
-    statement.append( "gzip" )
-    
-    statement = " | ".join( statement ) + " > %(outfile)s " % locals()
+    statement.append("gzip")
 
-    P.run() 
+    statement = " | ".join(statement) + " > %(outfile)s " % locals()
 
-##################################################################################
-##################################################################################
-##################################################################################
-## 
-##################################################################################
-@transform( buildIndirectMaps, 
-            regex( r"(.*).psl.gz") ,
-            r"export/\1.chain.gz" )
-def convertPslToChain( infile, outfile ):
+    P.run()
+
+##########################################################################
+##########################################################################
+##########################################################################
+##
+##########################################################################
+
+
+@transform(buildIndirectMaps,
+           regex(r"(.*).psl.gz"),
+           r"export/\1.chain.gz")
+def convertPslToChain(infile, outfile):
     '''convert a psl to a chain file.
 
     see http://genomewiki.ucsc.edu/index.php/Minimal_Steps_For_LiftOver
@@ -339,13 +348,13 @@ def convertPslToChain( infile, outfile ):
 
     to_cluster = True
 
-    target, query = extractGenomes( infile )
-    
-    tmpfilename1 = P.getTempFilename( ".")
-    tmpfilename2 = P.getTempFilename( ".")
+    target, query = extractGenomes(infile)
 
-    writeContigSizes( target, tmpfilename1 )
-    writeContigSizes( query, tmpfilename2 )
+    tmpfilename1 = P.getTempFilename(".")
+    tmpfilename2 = P.getTempFilename(".")
+
+    writeContigSizes(target, tmpfilename1)
+    writeContigSizes(query, tmpfilename2)
 
     statement = '''gunzip
     < %(infile)s
@@ -362,42 +371,46 @@ def convertPslToChain( infile, outfile ):
     > %(outfile)s'''
     P.run()
 
-    os.unlink( tmpfilename1 )
-    os.unlink( tmpfilename2 )
+    os.unlink(tmpfilename1)
+    os.unlink(tmpfilename2)
 
-##################################################################################
-##################################################################################
-##################################################################################
-## 
-##################################################################################
-@transform( (buildGenomeAlignment, convertChainToPsl, buildIndirectMaps), 
-            suffix(".psl.gz"),
-            ".psl.stats")
-def buildPslStats( infile, outfile ):
+##########################################################################
+##########################################################################
+##########################################################################
+##
+##########################################################################
+
+
+@transform((buildGenomeAlignment, convertChainToPsl, buildIndirectMaps),
+           suffix(".psl.gz"),
+           ".psl.stats")
+def buildPslStats(infile, outfile):
     '''compute alignment coverage statistics in chain files
     '''
-    
+
     to_cluster = True
 
     statement = '''
     gunzip < %(infile)s 
     | python %(scriptsdir)s/psl2stats.py --log=%(outfile)s.log
     > %(outfile)s'''
-    
+
     P.run()
 
-##################################################################################
-##################################################################################
-##################################################################################
-## 
-##################################################################################
-@transform( convertPslToChain,
-            suffix(".chain.gz"),
-            ".chain.stats")
-def buildChainStats( infile, outfile ):
+##########################################################################
+##########################################################################
+##########################################################################
+##
+##########################################################################
+
+
+@transform(convertPslToChain,
+           suffix(".chain.gz"),
+           ".chain.stats")
+def buildChainStats(infile, outfile):
     '''compute alignment coverage statistics in chain files
     '''
-    
+
     to_cluster = True
 
     statement = '''
@@ -405,48 +418,52 @@ def buildChainStats( infile, outfile ):
     | python %(scriptsdir)s/chain2psl.py --log=%(outfile)s.log
     | python %(scriptsdir)s/psl2stats.py --log=%(outfile)s.log
     > %(outfile)s'''
-    
+
     P.run()
 
-##################################################################################
-##################################################################################
-##################################################################################
-## 
-##################################################################################
-@follows( buildIndirectMaps, 
-          convertPslToChain, 
-          buildPslStats,
-          buildChainStats )
+##########################################################################
+##########################################################################
+##########################################################################
+##
+##########################################################################
+
+
+@follows(buildIndirectMaps,
+         convertPslToChain,
+         buildPslStats,
+         buildChainStats)
 def full():
     pass
 
 ###################################################################
 ###################################################################
 ###################################################################
-## primary targets
+# primary targets
 ###################################################################
 
-@follows( mkdir( "report" ) )
+
+@follows(mkdir("report"))
 def build_report():
     '''build report from scratch.'''
 
-    E.info( "starting report build process from scratch" )
-    P.run_report( clean = True )
+    E.info("starting report build process from scratch")
+    P.run_report(clean=True)
 
-@follows( mkdir( "report" ) )
+
+@follows(mkdir("report"))
 def update_report():
     '''update report.'''
 
-    E.info( "updating report" )
-    P.run_report( clean = False )
+    E.info("updating report")
+    P.run_report(clean=False)
 
-@follows( update_report )
+
+@follows(update_report)
 def publish_report():
     '''publish report.'''
 
-    E.info( "publishing report" )
+    E.info("publishing report")
     P.publish_report()
 
-if __name__== "__main__":
-    sys.exit( P.main(sys.argv) )
-
+if __name__ == "__main__":
+    sys.exit(P.main(sys.argv))

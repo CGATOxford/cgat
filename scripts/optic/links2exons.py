@@ -1,4 +1,4 @@
-################################################################################
+##########################################################################
 #
 #   MRC FGU Computational Genomics Group
 #
@@ -19,7 +19,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
+##########################################################################
 '''
 optic/links2exons.py - 
 ======================================================
@@ -63,7 +63,7 @@ import re
 import getopt
 import tempfile
 
-USAGE="""python %s [OPTIONS] < orthologs > genes
+USAGE = """python %s [OPTIONS] < orthologs > genes
 
 Version: $Id: optic/links2exons.py 1799 2008-03-28 11:44:19Z andreas $
 
@@ -81,60 +81,64 @@ Options:
 import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.Exons as Exons
-import alignlib
+import alignlib_lite
 import CGAT.BlastAlignments as BlastAlignments
 
-param_long_options=["verbose=", "help",
-                    "cds=", "map=", "version"]
+param_long_options = ["verbose=", "help",
+                      "cds=", "map=", "version"]
 
-param_short_options="v:hc:m:"
+param_short_options = "v:hc:m:"
 
 param_loglevel = 2
 
-param_report_step=100000
+param_report_step = 100000
 
 param_filename_cds = None
 param_expand = False
 
-def ScaleAlignment( alignment, factor ):
+
+def ScaleAlignment(alignment, factor):
     """scale alignment string."""
 
     data = re.split("[+-]", alignment[1:])
-    
-    data = map( lambda x: int(x) * factor, data )
-    signs = [ "+", "-" ] * (1 + len(data) / 2)
-    
+
+    data = map(lambda x: int(x) * factor, data)
+    signs = ["+", "-"] * (1 + len(data) / 2)
+
     if alignment[0] == "+":
         del signs[-1]
     else:
         del signs[0]
 
-    s = map( lambda x,y: "%s%i" % (x,y), signs, data)
+    s = map(lambda x, y: "%s%i" % (x, y), signs, data)
     return string.join(s, "")
 
-##------------------------------------------------------------
+# ------------------------------------------------------------
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv is None:
+        argv = sys.argv
 
     try:
-        optlist, args = getopt.getopt(sys.argv[1:], param_short_options, param_long_options)
+        optlist, args = getopt.getopt(
+            sys.argv[1:], param_short_options, param_long_options)
     except getopt.error, msg:
         print USAGE, msg
         sys.exit(2)
 
-    for o,a in optlist:
-        if o in ( "-v", "--verbose" ):
+    for o, a in optlist:
+        if o in ("-v", "--verbose"):
             param_loglevel = int(a)
-        elif o in ( "-h", "--help" ):
+        elif o in ("-h", "--help"):
             print USAGE
             sys.exit(0)
-        elif o in ( "--version", ):
+        elif o in ("--version", ):
             print "version="
             sys.exit(0)
         elif o == "--cds":
@@ -154,7 +158,7 @@ def main( argv = None ):
         print "# reading exon boundaries."
         sys.stdout.flush()
 
-    cds = Exons.ReadExonBoundaries( open(param_filename_cds, "r") )
+    cds = Exons.ReadExonBoundaries(open(param_filename_cds, "r"))
 
     if param_loglevel >= 1:
         print "# read %i cds" % (len(cds))
@@ -162,59 +166,66 @@ def main( argv = None ):
 
     ninput, npairs, nskipped = 0, 0, 0
 
-    map_row2col = alignlib.makeAlignmentVector()
-    tmp_map_row2col = alignlib.makeAlignmentVector()    
-    
+    map_row2col = alignlib_lite.makeAlignmentVector()
+    tmp_map_row2col = alignlib_lite.makeAlignmentVector()
+
     for line in sys.stdin:
-        if line[0] == "#": continue
+        if line[0] == "#":
+            continue
         ninput += 1
         link = BlastAlignments.Link()
 
         link.Read(line)
-        
-        if link.mQueryToken == link.mSbjctToken: continue
-        
+
+        if link.mQueryToken == link.mSbjctToken:
+            continue
+
         if link.mQueryToken in cds and \
-               link.mSbjctToken in cds:
-            
-            ## expand to codons
+                link.mSbjctToken in cds:
+
+            # expand to codons
             if param_expand:
                 link.mQueryFrom = (link.mQueryFrom - 1) * 3 + 1
-                link.mSbjctFrom = (link.mSbjctFrom - 1) * 3 + 1        
-                link.mQueryAli = ScaleAlignment( link.mQueryAli, 3 )
-                link.mSbjctAli = ScaleAlignment( link.mSbjctAli, 3 )            
+                link.mSbjctFrom = (link.mSbjctFrom - 1) * 3 + 1
+                link.mQueryAli = ScaleAlignment(link.mQueryAli, 3)
+                link.mSbjctAli = ScaleAlignment(link.mSbjctAli, 3)
 
             map_row2col.clear()
-            alignlib.AlignmentFormatExplicit( 
+            alignlib_lite.AlignmentFormatExplicit(
                 link.mQueryFrom, link.mQueryAli,
-                link.mSbjctFrom, link.mSbjctAli ).copy( map_row2col )
+                link.mSbjctFrom, link.mSbjctAli).copy(map_row2col)
 
-            ## test all combinations, the alignment might be a suboptimal alignment in case
-            ## of repeats.
+            # test all combinations, the alignment might be a suboptimal alignment in case
+            # of repeats.
             for e1 in cds[link.mQueryToken]:
                 for e2 in cds[link.mSbjctToken]:
                     tmp_map_row2col.clear()
                     if param_expand:
-                        alignlib.copyAlignment( tmp_map_row2col, map_row2col,
-                                               e1.mPeptideFrom + 1, e1.mPeptideTo,
-                                               e2.mPeptideFrom + 1, e2.mPeptideTo,                                               
-                                               )
+                        alignlib_lite.copyAlignment(tmp_map_row2col, map_row2col,
+                                                    e1.mPeptideFrom +
+                                                    1, e1.mPeptideTo,
+                                                    e2.mPeptideFrom +
+                                                    1, e2.mPeptideTo,
+                                                    )
                     else:
-                        alignlib.copyAlignment( tmp_map_row2col, map_row2col,
-                                               e1.mPeptideFrom / 3 + 1, e1.mPeptideTo / 3 + 1,
-                                               e2.mPeptideFrom / 3 + 1, e2.mPeptideTo / 3 + 1)
+                        alignlib_lite.copyAlignment(tmp_map_row2col, map_row2col,
+                                                    e1.mPeptideFrom / 3 +
+                                                    1, e1.mPeptideTo / 3 + 1,
+                                                    e2.mPeptideFrom / 3 + 1, e2.mPeptideTo / 3 + 1)
 
-                    ## in case of split codons, there is an alignment of length 1. Skip that.
+                    # in case of split codons, there is an alignment of length
+                    # 1. Skip that.
                     if tmp_map_row2col.getLength() > 1:
-                        
-                        print string.join( map(str, (link.mQueryToken, e1.mRank,
-                                                     link.mSbjctToken, e2.mRank,
-                                                     link.mEvalue,
-                                                     alignlib.AlignmentFormatEmissions( tmp_map_row2col ))), "\t" )
-                        
+
+                        print string.join(map(str, (link.mQueryToken, e1.mRank,
+                                                    link.mSbjctToken, e2.mRank,
+                                                    link.mEvalue,
+                                                    alignlib_lite.AlignmentFormatEmissions(tmp_map_row2col))), "\t")
+
                         npairs += 1
         else:
-            if param_loglevel >= 2: print "# SKIPPED: %s" % str(link)
+            if param_loglevel >= 2:
+                print "# SKIPPED: %s" % str(link)
             nskipped += 1
 
         if (ninput % param_report_step) == 0:
@@ -222,11 +233,10 @@ def main( argv = None ):
                 print "# ninput=%i, noutput=%i, nskipped=%i" % (ninput, npairs, nskipped)
             sys.stdout.flush()
 
-    if param_loglevel >= 1:            
+    if param_loglevel >= 1:
         print "# ninput=%i, noutput=%i, nskipped=%i" % (ninput, npairs, nskipped)
-    
+
     print E.GetFooter()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

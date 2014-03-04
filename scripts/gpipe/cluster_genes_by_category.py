@@ -1,4 +1,4 @@
-################################################################################
+##########################################################################
 #
 #   MRC FGU Computational Genomics Group
 #
@@ -19,7 +19,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
+##########################################################################
 '''
 gpipe/cluster_genes_by_category.py - 
 ======================================================
@@ -63,7 +63,7 @@ import re
 import getopt
 import tempfile
 
-USAGE="""python %s [OPTIONS] < exonerate_output > filtered
+USAGE = """python %s [OPTIONS] < exonerate_output > filtered
 
 Version: $Id: gpipe/cluster_genes_by_category.py 14 2005-08-09 15:24:07Z andreas $
 
@@ -82,11 +82,11 @@ import CGAT.Genomics as Genomics
 
 param_loglevel = 2
 
-param_long_options=["verbose=", "help",
-                    "go=", "regions=",
-                    "distance=",
-                    "version"]
-param_short_options="v:hg:d:r:"
+param_long_options = ["verbose=", "help",
+                      "go=", "regions=",
+                      "distance=",
+                      "version"]
+param_short_options = "v:hg:d:r:"
 
 param_filename_go = None
 param_filename_regions = None
@@ -94,29 +94,31 @@ param_filename_regions = None
 param_distance = 1000000
 
 
-##------------------------------------------------------------
+# ------------------------------------------------------------
 
-def main( argv = None ):
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv is None:
+        argv = sys.argv
 
     try:
-        optlist, args = getopt.getopt(sys.argv[1:], param_short_options, param_long_options)
+        optlist, args = getopt.getopt(
+            sys.argv[1:], param_short_options, param_long_options)
     except getopt.error, msg:
         print USAGE, msg
         sys.exit(2)
-        
-    for o,a in optlist:
-        if o in ( "-v", "--verbose" ):
+
+    for o, a in optlist:
+        if o in ("-v", "--verbose"):
             param_loglevel = int(a)
-        elif o in ( "--version", ):
+        elif o in ("--version", ):
             print "version="
             sys.exit(0)
-        elif o in ( "-h", "--help" ):
+        elif o in ("-h", "--help"):
             print USAGE
             sys.exit(0)
         elif o in ("-g", "--go"):
@@ -125,63 +127,64 @@ def main( argv = None ):
             param_distance = int(a)
         elif o in ("-r", "--regions"):
             param_filename_regions = a
-            
 
     print E.GetHeader()
     print E.GetParams()
 
     queries = {}
     for line in sys.stdin:
-        if line[0] == "#": continue
+        if line[0] == "#":
+            continue
         queries[line[:-1].split("\t")[0]] = 1
 
     if param_loglevel >= 1:
         print "# read %i queries" % len(queries)
-        
-    if param_filename_go:
-        go = Genomics.ReadGo( open(param_filename_go, "r"))
-        
-    if param_filename_regions:
-        locations = Genomics.ReadLocationsGFF( open(param_filename_regions, "r"))
 
-    ## compile a list of genes in the same go category. Save location
+    if param_filename_go:
+        go = Genomics.ReadGo(open(param_filename_go, "r"))
+
+    if param_filename_regions:
+        locations = Genomics.ReadLocationsGFF(
+            open(param_filename_regions, "r"))
+
+    # compile a list of genes in the same go category. Save location
     map_go2genes = {}
     for gene_id in go:
         for assignment in go[gene_id]:
-            if assignment.mGoid not in map_go2genes: map_go2genes[assignment.mGoid] = []
+            if assignment.mGoid not in map_go2genes:
+                map_go2genes[assignment.mGoid] = []
             if gene_id not in locations:
                 continue
-            map_go2genes[assignment.mGoid].append( locations[gene_id] )
+            map_go2genes[assignment.mGoid].append(locations[gene_id])
 
     for goid in map_go2genes:
         geneids = map_go2genes[goid]
         print "goid=", goid, "geneids=", len(geneids)
-        geneids.sort( lambda x, y: cmp( \
-                      (x.mSbjctToken, x.mSbjctStrand, x.mSbjctGenomeFrom),
-                      (y.mSbjctToken, y.mSbjctStrand, y.mSbjctGenomeFrom) ) )
-
+        geneids.sort(lambda x, y: cmp(
+            (x.mSbjctToken, x.mSbjctStrand, x.mSbjctGenomeFrom),
+            (y.mSbjctToken, y.mSbjctStrand, y.mSbjctGenomeFrom)))
 
         last = None
         for this in geneids:
             if last and \
                last.mSbjctToken == this.mSbjctToken and \
                last.mSbjctStrand == this.mSbjctStrand and \
-               abs( min(last.mSbjctGenomeTo, this.mSbjctGenomeTo) - \
+               abs(min(last.mSbjctGenomeTo, this.mSbjctGenomeTo) -
                     max(last.mSbjctGenomeFrom, this.mSbjctGenomeFrom)) < param_distance:
                 print "# removed duplicate:", str(last)
                 print "# ", last.mQueryToken
                 print string.join(map(str, go[last.mQueryToken]), "\n")
-                print "# ", this.mQueryToken                
-                print string.join(map(str, go[this.mQueryToken]), "\n")                
+                print "# ", this.mQueryToken
+                print string.join(map(str, go[this.mQueryToken]), "\n")
             else:
                 print str(last)
-                
+
             last = this
-            
-        if last: print str(last)
-        
-    print E.GetFooter()    
+
+        if last:
+            print str(last)
+
+    print E.GetFooter()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

@@ -1,4 +1,4 @@
-################################################################################
+##########################################################################
 #
 #   MRC FGU Computational Genomics Group
 #
@@ -19,7 +19,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
+##########################################################################
 '''
 gpipe/exons2map.py - 
 ======================================================
@@ -61,7 +61,7 @@ import string
 import re
 import getopt
 
-USAGE="""python %s [OPTIONS] < psl > predictions
+USAGE = """python %s [OPTIONS] < psl > predictions
 
 Convert exon list to a map of prediction to genome.
 
@@ -77,8 +77,8 @@ Options:
 """ % sys.argv[0]
 
 
-param_long_options=["verbose=", "help", "contigs=", "version"]
-param_short_options="v:hc:"
+param_long_options = ["verbose=", "help", "contigs=", "version"]
+param_short_options = "v:hc:"
 
 param_trans = None
 
@@ -87,35 +87,36 @@ param_filename_contigs = None
 import CGAT.Experiment as E
 import CGAT.PredictionParser as PredictionParser
 import CGAT.Exons as Exons
-import alignlib
+import alignlib_lite
 
 
-def main( argv = None ):
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv is None:
+        argv = sys.argv
 
     try:
-        optlist, args = getopt.getopt(sys.argv[1:], param_short_options, param_long_options)
+        optlist, args = getopt.getopt(
+            sys.argv[1:], param_short_options, param_long_options)
     except getopt.error, msg:
         print USAGE, msg
         sys.exit(2)
 
-    for o,a in optlist:
-        if o in ( "-v", "--verbose" ):
+    for o, a in optlist:
+        if o in ("-v", "--verbose"):
             param_loglevel = int(a)
-        elif o in ( "--version", ):
+        elif o in ("--version", ):
             print "version="
             sys.exit(0)
-        elif o in ( "-h", "--help" ):
+        elif o in ("-h", "--help"):
             print USAGE
             sys.exit(0)
-        elif o in ( "-c", "--contigs" ):
+        elif o in ("-c", "--contigs"):
             param_filename_contigs = a
-            
 
     print E.GetHeader()
     print E.GetParams()
@@ -124,61 +125,63 @@ def main( argv = None ):
 
     contig_sizes = {}
     if param_filename_contigs:
-        
-        infile = open( param_filename_contigs, "r" )
+
+        infile = open(param_filename_contigs, "r")
         for line in infile:
-            if line[0] == "#": continue
+            if line[0] == "#":
+                continue
 
             sbjct_token, size = line[:-1].split("\t")[:2]
             contig_sizes[sbjct_token] = int(size)
-    
-    map_prediction2genome = alignlib.makeAlignmentSet()
+
+    map_prediction2genome = alignlib_lite.makeAlignmentSet()
     nexons, npairs = 0, 0
-    
+
     for line in sys.stdin:
-        
-        if line[0] == "#": continue
-            
+
+        if line[0] == "#":
+            continue
+
         this_exon = Exons.Exon()
         this_exon.Read(line)
 
         if this_exon.mSbjctStrand == "-":
-            this_exon.InvertGenomicCoordinates( contig_sizes[this_exon.mSbjctToken] )
-                
+            this_exon.InvertGenomicCoordinates(
+                contig_sizes[this_exon.mSbjctToken])
+
         nexons += 1
-        
+
         if last_exon.mQueryToken != this_exon.mQueryToken:
 
             if last_exon.mQueryToken:
-                f = alignlib.AlignmentFormatEmissions( map_prediction2genome )
-                print string.join( map(str, (last_exon.mQueryToken,
-                                             last_exon.mSbjctToken,
-                                             last_exon.mSbjctStrand,
-                                             f)), "\t" )
+                f = alignlib_lite.AlignmentFormatEmissions(
+                    map_prediction2genome)
+                print string.join(map(str, (last_exon.mQueryToken,
+                                            last_exon.mSbjctToken,
+                                            last_exon.mSbjctStrand,
+                                            f)), "\t")
 
-                npairs += 1                
+                npairs += 1
             map_prediction2genome.clear()
-            
-        alignlib.addDiagonal2Alignment( map_prediction2genome,
-                                       this_exon.mPeptideFrom + 1,
-                                       this_exon.mPeptideTo + 1,
-                                       this_exon.mGenomeFrom  - this_exon.mPeptideFrom)
+
+        alignlib_lite.addDiagonal2Alignment(map_prediction2genome,
+                                            this_exon.mPeptideFrom + 1,
+                                            this_exon.mPeptideTo + 1,
+                                            this_exon.mGenomeFrom - this_exon.mPeptideFrom)
 
         last_exon = this_exon
-        
-    f = alignlib.AlignmentFormatEmissions( map_prediction2genome )    
-    print string.join( map(str, (last_exon.mQueryToken, 
-                                 last_exon.mSbjctToken,
-                                 last_exon.mSbjctStrand,
-                                 f)), "\t" )
+
+    f = alignlib_lite.AlignmentFormatEmissions(map_prediction2genome)
+    print string.join(map(str, (last_exon.mQueryToken,
+                                last_exon.mSbjctToken,
+                                last_exon.mSbjctStrand,
+                                f)), "\t")
     npairs += 1
 
     print "# nexons=%i, npairs=%i" % (nexons, npairs)
-    
+
     print E.GetFooter()
 
-    
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

@@ -1,5 +1,5 @@
-################################################################################
-#   Gene prediction pipeline 
+##########################################################################
+#   Gene prediction pipeline
 #
 #   $Id: Tree_test.py 2784 2009-09-10 11:41:14Z andreas $
 #
@@ -18,11 +18,12 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
+##########################################################################
 """unit testing module for the Tree.py class."""
 
 from Tree import Tree
 import unittest
+
 
 class MidPointRootingCheck(unittest.TestCase):
 
@@ -40,63 +41,65 @@ class MidPointRootingCheck(unittest.TestCase):
         "(((((A:0.10670,B:0.35050):0.03480,C:0.13720):0.23850,D:0.31120):0.12570,E:0.38110):0.04180,F:0.79130);",
         "(ID000001:0.83310,(((ID000005:0.10670,ID000004:0.35050):0.03480,ID000006:0.13720):0.23850,ID000003:0.31120):0.12570,ID000002:0.38110);",
     ]
-    
+
     def testLength(self):
         """midpoint rooting."""
         for tree in self.trees:
-            
-            t = Tree( tree )
-            
+
+            t = Tree(tree)
+
             t.root_midpoint()
             # test 1: only two children for root
             s = t.node(t.root).succ
-            self.assertEqual( len(s), 2 )
+            self.assertEqual(len(s), 2)
 
-            # calculate tree length on either side of tree        
-            d2leaves = [ 0 ] * (max( t.chain.keys() ) + 1)
-            def dist2leaves( node_id ):
+            # calculate tree length on either side of tree
+            d2leaves = [0] * (max(t.chain.keys()) + 1)
+
+            def dist2leaves(node_id):
                 node = t.node(node_id)
                 if node.succ:
-                    d2leaves[node_id] = max( [d2leaves[s] + t.node(s).data.branchlength for s in node.succ ] )
+                    d2leaves[node_id] = max(
+                        [d2leaves[s] + t.node(s).data.branchlength for s in node.succ])
 
-            t.dfs( t.root, post_function = dist2leaves )
+            t.dfs(t.root, post_function=dist2leaves)
 
             d1 = d2leaves[s[0]] + t.node(s[0]).data.branchlength
             d2 = d2leaves[s[1]] + t.node(s[1]).data.branchlength
             # test 2: distance to children equal on both sides
-            self.assertAlmostEqual( d1, d2, 5,
-                                    "assertion error: %s != %s for tree %s -> %s" % \
-                                    (str(d1), str(d2),
-                                     tree, t.to_string( branchlengths_only=True ) ))
+            self.assertAlmostEqual(d1, d2, 5,
+                                   "assertion error: %s != %s for tree %s -> %s" %
+                                   (str(d1), str(d2),
+                                    tree, t.to_string(branchlengths_only=True)))
 
     def testNegativeBranchLengths(self):
         for tree in self.trees:
-            
-            t = Tree( tree )
+
+            t = Tree(tree)
 
             t.root_midpoint()
 
             for n, node in t.chain.items():
-                self.failIf( node.data.branchlength < 0,
-                             "assertion error: negative branchlength for tree %s -> %s" %\
-                             (tree, t.to_string( branchlengths_only = True )) )
-        
-    def testTruncate(self):
-        
-        t = Tree( "(A:1,((B:1,C:1):1,D:1):1,(E:1,F:1):1);" )
-        t.truncate( 7, "E+F" )
-        result = t.to_string(branchlengths_only = True,
-                             branchlength_format = "%i",
-                             format="nh")
-        self.assertEqual( result, "(A:1,((B:1,C:1):1,D:1):1,E+F:1);" )
+                self.failIf(node.data.branchlength < 0,
+                            "assertion error: negative branchlength for tree %s -> %s" %
+                            (tree, t.to_string(branchlengths_only=True)))
 
-        t = Tree( "(A:1,((B:1,C:1):1,D:1):1,(E:1,F:1):1);" )
-        t.truncate( 8 )
-        result = t.to_string(branchlengths_only = True,
-                             branchlength_format = "%i",
+    def testTruncate(self):
+
+        t = Tree("(A:1,((B:1,C:1):1,D:1):1,(E:1,F:1):1);")
+        t.truncate(7, "E+F")
+        result = t.to_string(branchlengths_only=True,
+                             branchlength_format="%i",
                              format="nh")
-        self.assertEqual( result, "(A:1,((B:1,C:1):1,D:1):1,F:1);" )
-        
+        self.assertEqual(result, "(A:1,((B:1,C:1):1,D:1):1,E+F:1);")
+
+        t = Tree("(A:1,((B:1,C:1):1,D:1):1,(E:1,F:1):1);")
+        t.truncate(8)
+        result = t.to_string(branchlengths_only=True,
+                             branchlength_format="%i",
+                             format="nh")
+        self.assertEqual(result, "(A:1,((B:1,C:1):1,D:1):1,F:1);")
+
 
 if __name__ == "__main__":
-        unittest.main()
+    unittest.main()

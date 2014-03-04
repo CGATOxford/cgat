@@ -31,7 +31,7 @@ Command line options
 --------------------
 
 '''
-USAGE="""convert a multiply aligned genomic segment to predictions.
+USAGE = """convert a multiply aligned genomic segment to predictions.
 
 lower case characters are exons, upper-case characters are introns.
 Introns of a size smaller than 6 are frameshifts.
@@ -50,7 +50,8 @@ import CGAT.Genomics as Genomics
 import CGAT.Mali as Mali
 import CGAT.IOTools as IOTools
 
-def processCodon( codon ):
+
+def processCodon(codon):
     """process a codon.
 
     A codon is a list of residues belonging to a codon.
@@ -60,7 +61,7 @@ def processCodon( codon ):
     max_d = 0
     max_x = 0
     for x in range(1, len(codon)):
-        d = codon[x][0] - codon[x-1][0]
+        d = codon[x][0] - codon[x - 1][0]
         if d > max_d:
             max_d = d
             max_x = x
@@ -69,45 +70,48 @@ def processCodon( codon ):
         # process introns
         frame = max_x % 3
         if frame:
-            alignment.append( ["S", 0, frame] )
-        alignment.append( ["5", 0, 2] )
-        alignment.append( ["I", 0, max_d - 5] )
-        alignment.append( ["3", 0, 2] )        
+            alignment.append(["S", 0, frame])
+        alignment.append(["5", 0, 2])
+        alignment.append(["I", 0, max_d - 5])
+        alignment.append(["3", 0, 2])
         if frame:
-            alignment.append( ["S", 1, 3-frame] )
+            alignment.append(["S", 1, 3 - frame])
 
     elif max_d == 1 and len(codon) == 3:
-        alignment.append( ["M", 1, 3] )
+        alignment.append(["M", 1, 3])
 
     elif len(codon) < 3:
-        alignment.append( ["F", 1, len(codon) ] )
+        alignment.append(["F", 1, len(codon)])
 
     elif len(codon) == 3:
         d = codon[-1][0] - codon[0][0] + 1
-        alignment.append( ["F", 1, d] )
+        alignment.append(["F", 1, d])
     else:
-        raise "untreated"        
-    
+        raise "untreated"
+
     # print codon, alignment
 
     return alignment
 
-##------------------------------------------------------------------------
-##------------------------------------------------------------------------
-##------------------------------------------------------------------------
-def getAlignedColumns( mali, exons ):
+# ------------------------------------------------------------------------
+# ------------------------------------------------------------------------
+# ------------------------------------------------------------------------
+
+
+def getAlignedColumns(mali, exons):
 
     # columns that are aligned, maps to the aligned residue in master
     aligned_columns = {}
-    # residues in master sequence that are aligned and exonic, maps to the aligned exonic residue
+    # residues in master sequence that are aligned and exonic, maps to the
+    # aligned exonic residue
     aligned_exons = {}
-    
+
     if options.master:
-        
+
         try:
             s = mali[options.master]
         except KeyError:
-            raise KeyError("master sequence %s not found in mali." % s )
+            raise KeyError("master sequence %s not found in mali." % s)
 
         n = 0
         r = 0
@@ -117,47 +121,49 @@ def getAlignedColumns( mali, exons ):
                 continue
 
             r += 1
-            aligned_columns[ x ] = r
-            
+            aligned_columns[x] = r
+
             if c in string.uppercase:
                 continue
-            
-            aligned_exons[ x ] = n
+
+            aligned_exons[x] = n
             n += 1
     else:
         raise "please specify a master to define frames."
-    
+
     return aligned_columns, aligned_exons
 
-##------------------------------------------------------------
+# ------------------------------------------------------------
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv is None:
+        argv = sys.argv
 
-    parser = E.OptionParser( version = "%prog version: $Id: mali2predictions.py 2781 2009-09-10 11:33:14Z andreas $",
-                                    usage = globals()["__doc__"] )
+    parser = E.OptionParser(version="%prog version: $Id: mali2predictions.py 2781 2009-09-10 11:33:14Z andreas $",
+                            usage=globals()["__doc__"])
 
-    parser.add_option( "-g", "--genome-file", dest="genome_file", type="string",
-                       help="filename with genome."  )
+    parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
+                      help="filename with genome.")
 
-    parser.add_option( "-l", "--filename-locations", dest="filename_locations", type="string",
-                       help="filename with locations"  )
+    parser.add_option("-l", "--filename-locations", dest="filename_locations", type="string",
+                      help="filename with locations")
 
-    parser.add_option( "-m", "--master", dest="master", type="string",
-                       help="the master determines the frame."  )
+    parser.add_option("-m", "--master", dest="master", type="string",
+                      help="the master determines the frame.")
 
     parser.set_defaults(
-        filename_locations = None,
-        gap_chars = "-.",
-        master = None
-        )
-    
-    (options, args) = E.Start( parser, add_pipe_options = True )
+        filename_locations=None,
+        gap_chars="-.",
+        master=None
+    )
+
+    (options, args) = E.Start(parser, add_pipe_options=True)
 
     if len(args) > 0:
         print USAGE, "no arguments required."
@@ -165,28 +171,29 @@ def main( argv = None ):
 
     mali = Mali.Mali()
 
-    mali.readFromFile( sys.stdin )
+    mali.readFromFile(sys.stdin)
 
     identifiers = mali.getIdentifiers()
 
-    aligned_columns, aligned_exons = getAlignedColumns( mali, options )
+    aligned_columns, aligned_exons = getAlignedColumns(mali, options)
 
     map_id2location = {}
 
     if options.filename_locations:
-        map_id2location = IOTools.ReadMap( open(options.filename_locations, "r") )
-        
-    options.stdout.write( Prediction.Prediction().getHeader() + "\n" )
+        map_id2location = IOTools.ReadMap(
+            open(options.filename_locations, "r"))
+
+    options.stdout.write(Prediction.Prediction().getHeader() + "\n")
 
     nid = 1
-    
+
     for identifier in identifiers:
 
         if options.loglevel >= 2:
-            options.stdlog.write("# processing %s\n" % (identifier) )
+            options.stdlog.write("# processing %s\n" % (identifier))
 
-        entry = mali.getEntry( identifier )
-        
+        entry = mali.getEntry(identifier)
+
         sequence = entry.mString
         if sequence[0] not in string.lowercase:
             raise "all sequences should start with an exon."
@@ -214,8 +221,8 @@ def main( argv = None ):
                 continue
 
             if is_exon:
-                master_residue = aligned_exons[column]                
-                codon.append( (n, master_residue) )
+                master_residue = aligned_exons[column]
+                codon.append((n, master_residue))
 
             n += 1
 
@@ -225,26 +232,26 @@ def main( argv = None ):
                 # it spans more than one codons in the master.
                 # Gaps in the master that are a multiple of 3 are ignored
                 d = master_residue - last_master_residue - 1
-                
+
                 if master_residue % 3 == 2 or (d % 3 != 0 and d > 0):
-                    
+
                     if last_codon:
                         d = codon[0][0] - last_codon[-1][0] - 1
                         if d > 0:
                             # add in-frame introns
                             if d > 10:
-                                alignment.append( ["5", 0, 2] )
-                                alignment.append( ["I", 0, d - 4] )
-                                alignment.append( ["3", 0, 2] )                                
+                                alignment.append(["5", 0, 2])
+                                alignment.append(["I", 0, d - 4])
+                                alignment.append(["3", 0, 2])
                             else:
                                 raise "untreated case"
-                        
-                    alignment += processCodon( codon )
+
+                    alignment += processCodon(codon)
                     last_codon = codon
                     codon = []
-                    
+
             last_master_residue = master_residue
-            
+
         last = alignment[0]
         new_alignment = []
         for this in alignment[1:]:
@@ -252,34 +259,36 @@ def main( argv = None ):
                 last[1] += this[1]
                 last[2] += this[2]
                 continue
-            
-            new_alignment.append( last )
+
+            new_alignment.append(last)
             last = this
-            
+
         new_alignment.append(last)
 
         if options.loglevel >= 4:
             options.stdlog.write("# output=%s\n" % (str(new_alignment)))
 
-        assert( new_alignment[-1][2] % 3 == 0)
+        assert(new_alignment[-1][2] % 3 == 0)
 
-        lalignment = sum( map( lambda x: x[2], new_alignment ) )
-        
+        lalignment = sum(map(lambda x: x[2], new_alignment))
+
         prediction = Prediction.Prediction()
-        
+
         prediction.mQueryToken = identifier
-        
-        genomic_sequence = re.sub("[%s]" % options.gap_chars, "", mali[identifier])
+
+        genomic_sequence = re.sub(
+            "[%s]" % options.gap_chars, "", mali[identifier])
 
         prediction.mPredictionId = nid
         nid += 1
-        
+
         if identifier in map_id2location:
 
-            prediction.mSbjctToken, prediction.mSbjctStrand, sfrom, sto = map_id2location[identifier].split(":")[:4]
+            prediction.mSbjctToken, prediction.mSbjctStrand, sfrom, sto = map_id2location[
+                identifier].split(":")[:4]
 
             prediction.mSbjctGenomeFrom = int(sfrom) + entry.mFrom
-            prediction.mSbjctGenomeTo = int(sto)            
+            prediction.mSbjctGenomeTo = int(sto)
 
         else:
             prediction.mSbjctToken = "unk"
@@ -291,26 +300,25 @@ def main( argv = None ):
         prediction.mPercentSimilarity = 100
 
         prediction.mQueryLength = prediction.mQueryTo
-        
-        prediction.mSbjctGenomeTo = prediction.mSbjctGenomeFrom + lalignment
-            
-        prediction.mMapPeptide2Genome = new_alignment
-        prediction.mAlignmentString = string.join( map( \
-                                      lambda x: string.join(map(str, x), " "),
-                                      prediction.mMapPeptide2Genome), " ")
 
-        prediction.mMapPeptide2Translation, prediction.mTranslation = Genomics.Alignment2PeptideAlignment( \
-               prediction.mMapPeptide2Genome, 0, 0, genomic_sequence )
+        prediction.mSbjctGenomeTo = prediction.mSbjctGenomeFrom + lalignment
+
+        prediction.mMapPeptide2Genome = new_alignment
+        prediction.mAlignmentString = string.join(map(
+            lambda x: string.join(map(str, x), " "),
+            prediction.mMapPeptide2Genome), " ")
+
+        prediction.mMapPeptide2Translation, prediction.mTranslation = Genomics.Alignment2PeptideAlignment(
+            prediction.mMapPeptide2Genome, 0, 0, genomic_sequence)
 
         (prediction.mNIntrons, prediction.mNFrameShifts, prediction.mNGaps, prediction.mNSplits, prediction.mNStopCodons, disruptions) = \
-                          Genomics.CountGeneFeatures( 0,
-                                                      prediction.mMapPeptide2Genome,
-                                                      genomic_sequence )
-        
-        options.stdout.write( str(prediction) + "\n" )
-    
+            Genomics.CountGeneFeatures(0,
+                                       prediction.mMapPeptide2Genome,
+                                       genomic_sequence)
+
+        options.stdout.write(str(prediction) + "\n")
+
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

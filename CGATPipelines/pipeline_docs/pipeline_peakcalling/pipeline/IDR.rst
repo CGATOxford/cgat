@@ -38,7 +38,7 @@ these peaks.
 
 .. report:: Tracker.TrackerImages
    :render: gallery-plot
-   :tracker: export/idr/*.pdf
+   :glob: export/idr/*.pdf
    	     
    IDR diagnostic plots for all tracks
 

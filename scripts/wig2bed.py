@@ -32,7 +32,7 @@ For example::
 Command line options
 --------------------
 
-'''   
+'''
 
 import sys
 import re
@@ -54,31 +54,34 @@ import bx
 import bx.bbi.bigwig_file
 
 # block iterator for bigwig data
-def block_iterator( infile, contig, size, chunk_size = 10000000 ):
-    
-    for x in range( 0, size, chunk_size ):
-        iterator = infile.get( contig, x, x+chunk_size )
-        if iterator == None: 
+
+
+def block_iterator(infile, contig, size, chunk_size=10000000):
+
+    for x in range(0, size, chunk_size):
+        iterator = infile.get(contig, x, x + chunk_size)
+        if iterator is None:
             raise StopIteration
         for v in iterator:
             yield v
 
-def applyThreshold( infile, fasta, threshold, max_distance = 0 ):
+
+def applyThreshold(infile, fasta, threshold, max_distance=0):
     '''apply threshold to a wig file writing a
     bed-formatted file as output.'''
-    
+
     c = E.Counter()
 
-    for contig, size in fasta.getContigSizes( with_synonyms = False ).items():
+    for contig, size in fasta.getContigSizes(with_synonyms=False).items():
         c.contigs += 1
 
-        E.debug( "processing %s" % contig )
+        E.debug("processing %s" % contig)
 
         last_start, last_end = -1, 0
 
-        for start, end, value in block_iterator( infile, contig, size ):
+        for start, end, value in block_iterator(infile, contig, size):
             d = start - last_end
-            if (d > 0 or value < threshold): 
+            if (d > 0 or value < threshold):
                 if last_start >= 0:
                     yield contig, last_start, last_end
                     c.intervals += 1
@@ -94,101 +97,116 @@ def applyThreshold( infile, fasta, threshold, max_distance = 0 ):
 
         c.output += 1
 
-    E.info( str(c) )
+    E.info(str(c))
 
-def getBigwigSummary( bigwig_file ):
+
+def getBigwigSummary(bigwig_file):
     '''return summary of bigwig contents.
 
     This method uses the bigWigInfo UCSC utility
     '''
-    
-    results = E.run( "bigWigInfo %(bigwig_file)s" % locals(), return_stdout = True )
 
-    data = [ x.split( ":") for x in results.split( "\n" ) if x != "" ]
-    fields = [ x[0] for x in data]
-    Results = collections.namedtuple( "BigwigInfo", fields )
-    def conv( v ):
-        return IOTools.str2val( re.sub( ",", "", v.strip()) )
+    results = E.run("bigWigInfo %(bigwig_file)s" %
+                    locals(), return_stdout=True)
 
-    results = Results( *[ conv(x[1]) for x in data] )
+    data = [x.split(":") for x in results.split("\n") if x != ""]
+    fields = [x[0] for x in data]
+    Results = collections.namedtuple("BigwigInfo", fields)
+
+    def conv(v):
+        return IOTools.str2val(re.sub(",", "", v.strip()))
+
+    results = Results(*[conv(x[1]) for x in data])
     return results
 
-def main( argv = sys.argv ):
 
-    parser = E.OptionParser( version = "%prog version: $Id: bed2bed.py 2861 2010-02-23 17:36:32Z andreas $", 
-                                    usage = globals()["__doc__"] )
+def main(argv=sys.argv):
 
-    parser.add_option( "-m", "--method", dest="methods", type="choice", action="append",
-                       choices=("threshold", "stddev-above-mean", "multiple-of-mean"),
-                       help="method to apply [default=%default]"  )
+    parser = E.OptionParser(version="%prog version: $Id: bed2bed.py 2861 2010-02-23 17:36:32Z andreas $",
+                            usage=globals()["__doc__"])
+
+    parser.add_option("-m", "--method", dest="methods", type="choice", action="append",
+                      choices=(
+                          "threshold", "stddev-above-mean", "multiple-of-mean"),
+                      help="method to apply [default=%default]")
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
-                      help="filename with genome."  )
+                      help="filename with genome.")
 
     parser.add_option("-t", "--threshold", dest="threshold", type="float",
-                      help="threshold to apply [default=%default]"  )
+                      help="threshold to apply [default=%default]")
 
     parser.add_option("-i", "--bigwig-file", dest="bigwig_file", type="string", metavar="bigwig",
-                      help="filename with bigwig information [default=%default]."  )
+                      help="filename with bigwig information [default=%default].")
 
-    parser.add_option("-b", "--bigwig", dest="bigwig", action = "store_true",
-                      help="input is bigwig [default=%default]."  )
+    parser.add_option("-b", "--bigwig", dest="bigwig", action="store_true",
+                      help="input is bigwig [default=%default].")
 
-    parser.set_defaults( methods = [],
-                         genome_file = None,
-                         threshold = 10,
-                         bigwig = False,
-                         max_distance = 0)
-    
-    (options, args) = E.Start( parser, add_pipe_options = True )
+    parser.set_defaults(methods=[],
+                        genome_file=None,
+                        threshold=10,
+                        bigwig=False,
+                        max_distance=0)
+
+    (options, args) = E.Start(parser, add_pipe_options=True)
 
     if options.bigwig_file:
-        bigwig_file = bx.bbi.bigwig_file.BigWigFile( open(options.bigwig_file ) )
+        bigwig_file = bx.bbi.bigwig_file.BigWigFile(open(options.bigwig_file))
     else:
         bigwig_file = None
 
     if options.genome_file:
-        genome_fasta = IndexedFasta.IndexedFasta( options.genome_file )
+        genome_fasta = IndexedFasta.IndexedFasta(options.genome_file)
         contigs = genome_fasta.getContigSizes()
 
     for method in options.methods:
-        if method ==  "threshold":
-            if not contigs: raise ValueError("please supply contig sizes" )
-            if not bigwig_file: raise NotImplementedError( "threshold not implemented for wig files")
-            processor = applyThreshold( bigwig_file, 
-                                        genome_fasta, 
-                                        threshold = options.threshold,
-                                        max_distance = options.max_distance )
-        elif method ==  "stddev-above-mean":
-            if not contigs: raise ValueError("please supply contig sizes" )
-            if not bigwig_file: raise NotImplementedError( "threshold not implemented for wig files")
-            summary = getBigwigSummary( options.bigwig_file )
+        if method == "threshold":
+            if not contigs:
+                raise ValueError("please supply contig sizes")
+            if not bigwig_file:
+                raise NotImplementedError(
+                    "threshold not implemented for wig files")
+            processor = applyThreshold(bigwig_file,
+                                       genome_fasta,
+                                       threshold=options.threshold,
+                                       max_distance=options.max_distance)
+        elif method == "stddev-above-mean":
+            if not contigs:
+                raise ValueError("please supply contig sizes")
+            if not bigwig_file:
+                raise NotImplementedError(
+                    "threshold not implemented for wig files")
+            summary = getBigwigSummary(options.bigwig_file)
             threshold = summary.mean + options.threshold * summary.std
-            E.info( "applying threshold %f: mean=%f, std=%f" % (threshold, summary.mean, summary.std) )
-            processor = applyThreshold( bigwig_file, 
-                                        genome_fasta, 
-                                        threshold = threshold,
-                                        max_distance = options.max_distance )
+            E.info("applying threshold %f: mean=%f, std=%f" %
+                   (threshold, summary.mean, summary.std))
+            processor = applyThreshold(bigwig_file,
+                                       genome_fasta,
+                                       threshold=threshold,
+                                       max_distance=options.max_distance)
 
-        elif method ==  "multiple-of-mean":
-            if not contigs: raise ValueError("please supply contig sizes" )
-            if not bigwig_file: raise NotImplementedError( "threshold not implemented for wig files")
-            summary = getBigwigSummary( options.bigwig_file )
-            threshold = summary.mean * options.threshold 
-            E.info( "applying threshold %f: mean=%f, std=%f" % (threshold, summary.mean, summary.std) )
-            processor = applyThreshold( bigwig_file, 
-                                        genome_fasta, 
-                                        threshold = threshold,
-                                        max_distance = options.max_distance )
-
+        elif method == "multiple-of-mean":
+            if not contigs:
+                raise ValueError("please supply contig sizes")
+            if not bigwig_file:
+                raise NotImplementedError(
+                    "threshold not implemented for wig files")
+            summary = getBigwigSummary(options.bigwig_file)
+            threshold = summary.mean * options.threshold
+            E.info("applying threshold %f: mean=%f, std=%f" %
+                   (threshold, summary.mean, summary.std))
+            processor = applyThreshold(bigwig_file,
+                                       genome_fasta,
+                                       threshold=threshold,
+                                       max_distance=options.max_distance)
 
     outfile = options.stdout
-    
-    outfile.write( "".join( [ "%s\t%i\t%i\n" % x for x in processor ] ) )
-    outfile.write( "\n" )
+
+    outfile.write("".join(["%s\t%i\t%i\n" % x for x in processor]))
+    outfile.write("\n")
 
     E.Stop()
 
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv ) )
+    sys.exit(main(sys.argv))

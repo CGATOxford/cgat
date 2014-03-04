@@ -1,6 +1,35 @@
-
 version:
     stdin: null
     outputs: [stdout]
     references: []
     options: --version
+
+
+genelists_BH:
+    stdin: null
+    outputs: [stdout]
+    references: [genelists_BH.tsv.gz]
+    options: >
+            --filename-input=%DIR%/go.tsv.gz 
+            --genes=%DIR%/genelists.tsv.gz 
+            --minimum-counts=10 -
+            --filename-ontology=%DIR%/ontology.obo 
+            --fdr
+            --qvalue-method=BH 
+            --filename-gene2name=%DIR%/gene2name.tsv 
+
+genelists_empirical:
+    stdin: null
+    outputs: [stdout]
+    references: [genelists_empirical.tsv.gz]
+    options: >
+            --filename-input=%DIR%/go.tsv.gz 
+            --genes=%DIR%/genelists.tsv.gz 
+            --minimum-counts=10 -
+            --filename-ontology=%DIR%/ontology.obo 
+            --fdr
+            --sample=10
+            --qvalue-method=empirical
+            --filename-gene2name=%DIR%/gene2name.tsv 
+            --random-seed=1
+

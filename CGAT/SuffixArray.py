@@ -1,4 +1,4 @@
-################################################################################
+##########################################################################
 #
 #   MRC FGU Computational Genomics Group
 #
@@ -19,7 +19,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
+##########################################################################
 '''
 SuffixArray.py - sarry frontend
 ===============================
@@ -34,18 +34,19 @@ Code
 
 '''
 
-import os, string, sys
+import os
+import string
+import sys
 
-ParamExecutableLookup   = "sary"
+ParamExecutableLookup = "sary"
 
-def Search( pattern, suffix_arrays ):
+
+def Search(pattern, suffix_arrays):
 
     matches = []
 
     for suffix_array in suffix_arrays:
         statement = "%s %s %s" % (ParamExecutableLookup, pattern, suffix_array)
-        matches += map( lambda x: x[:-1], os.popen( statement ).readlines())
-        
-    return matches
-    
+        matches += map(lambda x: x[:-1], os.popen(statement).readlines())
 
+    return matches

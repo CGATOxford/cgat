@@ -1,4 +1,4 @@
-################################################################################
+##########################################################################
 #
 #   MRC FGU Computational Genomics Group
 #
@@ -19,7 +19,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
+##########################################################################
 '''
 IOTools - tools for I/O operations
 ==================================
@@ -34,17 +34,29 @@ Code
 
 '''
 
-import string, re, sys, os, collections, types, glob, stat, gzip, subprocess, itertools
+import string
+import re
+import sys
+import os
+import collections
+import types
+import glob
+import stat
+import gzip
+import subprocess
+import itertools
 
 import numpy
 import numpy.ma
 
 ########################################################################
-def readMap( infile,
-             columns = (0,1),
-             map_functions = (str, str),
-             both_directions=False,
-             has_header = False):
+
+
+def readMap(infile,
+            columns=(0, 1),
+            map_functions = (str, str),
+            both_directions=False,
+            has_header = False):
     """read a map (pairs of values) from infile.
     returns a hash.
 
@@ -62,36 +74,42 @@ def readMap( infile,
         key_column, value_column = columns
 
     key_function, value_function = map_functions
-    
+
     for l in infile:
-        if l[0] == "#": continue
+        if l[0] == "#":
+            continue
         n += 1
 
-        if has_header and n == 1: continue
-        
+        if has_header and n == 1:
+            continue
+
         d = l[:-1].split("\t")
-        if len(d) < 2: continue
+        if len(d) < 2:
+            continue
         key = key_function(d[key_column])
         if value_column:
             val = value_function(d[value_column])
         else:
-            val = tuple(map( value_function, [d[x] for x in range(1, len(d))] ))
-            
+            val = tuple(map(value_function, [d[x] for x in range(1, len(d))]))
+
         m[key] = val
-        if val not in r: r[val] = []
+        if val not in r:
+            r[val] = []
         r[val].append(key)
-        
+
     if both_directions:
         return m, r
     else:
         return m
 
 ########################################################################
-def readList( infile, 
-              column = 0, 
-              map_function = str, 
-              map_category = {}, 
-              with_title = False ):
+
+
+def readList(infile,
+             column=0,
+             map_function=str,
+             map_category={},
+             with_title=False):
     """read a list of values from infile.
 
     Use map_function to convert values.
@@ -103,7 +121,8 @@ def readList( infile,
     errors = []
     title = None
     for l in infile:
-        if l[0] == "#": continue
+        if l[0] == "#":
+            continue
         if with_title and not title:
             title = l[:-1].split("\t")[column]
             continue
@@ -112,17 +131,20 @@ def readList( infile,
             d = map_function(l[:-1].split("\t")[column])
         except ValueError:
             continue
-        
-        if map_category: d = map_category[d]
+
+        if map_category:
+            d = map_category[d]
         m.append(d)
-        
+
     if with_title:
         return title, m
     else:
         return m
 
 ########################################################################
-def ReadList( infile, column = 0, map_function = str, map_category = {} ):
+
+
+def ReadList(infile, column=0, map_function=str, map_category={}):
     """read a list of values from infile.
 
     Use map_function to convert values.
@@ -132,28 +154,32 @@ def ReadList( infile, column = 0, map_function = str, map_category = {} ):
     m = []
     errors = []
     for l in infile:
-        if l[0] == "#": continue
+        if l[0] == "#":
+            continue
         try:
             d = map_function(l[:-1].split("\t")[column])
         except ValueError:
             continue
         try:
-            if map_category: d = map_category[d]
+            if map_category:
+                d = map_category[d]
 
         except KeyError:
-            errors.append( d )
+            errors.append(d)
             continue
         m.append(d)
-        
+
     return m, errors
 
 ########################################################################
-def readMultiMap( infile,
-                  columns = (0,1),
-                  map_functions = (str, str),
-                  both_directions=False,
-                  has_header = False,
-                  dtype = dict ):
+
+
+def readMultiMap(infile,
+                 columns=(0, 1),
+                 map_functions = (str, str),
+                 both_directions=False,
+                 has_header = False,
+                 dtype = dict):
     """read a map (pairs of values) from infile.
     returns a hash. 
 
@@ -165,38 +191,44 @@ def readMultiMap( infile,
     r = dtype()
     n = 0
     for l in infile:
-        if l[0] == "#": continue
+        if l[0] == "#":
+            continue
         n += 1
-        
-        if has_header and n == 1: continue
-        
+
+        if has_header and n == 1:
+            continue
+
         d = l[:-1].split("\t")
         try:
             key = map_functions[0](d[columns[0]])
             val = map_functions[1](d[columns[1]])
         except (ValueError, IndexError), msg:
-            raise ValueError( "parsing error in line %s: %s" % (l[:-1], msg) )
-            
-        if key not in m: m[key] = []
+            raise ValueError("parsing error in line %s: %s" % (l[:-1], msg))
+
+        if key not in m:
+            m[key] = []
         m[key].append(val)
-        if val not in r: r[val] = []
+        if val not in r:
+            r[val] = []
         r[val].append(key)
-        
+
     if both_directions:
         return m, r
     else:
         return m
 
 ########################################################################
-## Read a table
-def readTable( file,
-               separator = "\t",
-               numeric_type = numpy.float,
-               take = "all",
-               headers = True,
-               truncate = None,
-               cumulate_out_of_range = True,
-               ):
+# Read a table
+
+
+def readTable(file,
+              separator="\t",
+              numeric_type=numpy.float,
+              take="all",
+              headers=True,
+              truncate=None,
+              cumulate_out_of_range=True,
+              ):
     """read a table of values. There probably is a routine for this in Numpy, which
     I haven't found yet.
 
@@ -204,24 +236,25 @@ def readTable( file,
     contain the cumulative values of bins out of range.
     """
 
-    lines = filter( lambda x: x[0] != "#", file.readlines())
+    lines = filter(lambda x: x[0] != "#", file.readlines())
 
     if len(lines) == 0:
-          return None, []
+        return None, []
 
     if take == "all":
         num_cols = len(string.split(lines[0][:-1], "\t"))
-        take = range( 0, num_cols)        
+        take = range(0, num_cols)
     else:
         num_cols = len(take)
 
     if headers:
         headers = lines[0][:-1].split("\t")
-        headers = map( lambda x: headers[x], take )        
+        headers = map(lambda x: headers[x], take)
         del lines[0]
 
     num_rows = len(lines)
-    matrix = numpy.ma.masked_array( numpy.zeros( (num_rows, num_cols), numeric_type ) )
+    matrix = numpy.ma.masked_array(
+        numpy.zeros((num_rows, num_cols), numeric_type))
 
     if truncate:
         min_row, max_row = truncate
@@ -231,35 +264,35 @@ def readTable( file,
     max_data = None
     for l in lines:
         data = l[:-1].split("\t")
-        data = map( lambda x: data[x], take)
-        
-        ## try conversion. Unparseable fields set to missing_value
+        data = map(lambda x: data[x], take)
+
+        # try conversion. Unparseable fields set to missing_value
         for x in range(len(data)):
             try:
                 data[x] = float(data[x])
             except ValueError:
                 data[x] = numpy.ma.masked
 
-        if truncate != None:
+        if truncate is not None:
             if data[0] < min_row:
                 if cumulate_out_of_range:
-                    for x in range(1,num_cols):
+                    for x in range(1, num_cols):
                         min_data[x] += data[x]
                 continue
             elif data[0] >= max_row:
-                if max_data == None:
+                if max_data is None:
                     max_data = [0] * num_cols
                     max_data[0] = max_row
-                for x in range(1,num_cols):
+                for x in range(1, num_cols):
                     try:
                         max_data[x] += data[x]
                     except TypeError:
                         # missing values cause type errors
                         continue
                 continue
-            elif min_row != None:
+            elif min_row is not None:
                 if cumulate_out_of_range:
-                    for x in range(0,num_cols):
+                    for x in range(0, num_cols):
                         try:
                             min_data[x] += data[x]
                         except TypeError:
@@ -270,26 +303,28 @@ def readTable( file,
                 data = min_data
                 min_row = None
 
-        ## copy values into matrix
-        ## this is a bit clumsy, but missing values
-        ## cause an error otherwise
+        # copy values into matrix
+        # this is a bit clumsy, but missing values
+        # cause an error otherwise
         for x in range(len(data)):
-            matrix[nrow,x] = data[x]
-            
+            matrix[nrow, x] = data[x]
+
         nrow += 1
 
-    if truncate != None:
-        if cumulate_out_of_range:                
-            if max_data != None:
+    if truncate is not None:
+        if cumulate_out_of_range:
+            if max_data is not None:
                 matrix[nrow] = max_data
-                
+
         # truncate matrix
-        matrix = matrix[ 0:nrow+1, 0:num_cols]
+        matrix = matrix[0:nrow + 1, 0:num_cols]
 
     return matrix, headers
 
 ########################################################################
-def writeTable( outfile, table, columns = None, fillvalue = "" ):
+
+
+def writeTable(outfile, table, columns=None, fillvalue=""):
     '''write a table to outfile.
 
     If table is a dictionary, output columnwise. If *columns* is a list,
@@ -297,54 +332,60 @@ def writeTable( outfile, table, columns = None, fillvalue = "" ):
     '''
 
     if type(table) == dict:
-        if columns == None:
+        if columns is None:
             columns = table.keys()
-        outfile.write( "\t".join( columns )+ "\n" )
+        outfile.write("\t".join(columns) + "\n")
         # get data
-        data = [ table[x] for x in columns ]
+        data = [table[x] for x in columns]
         # transpose
-        data = list( itertools.izip_longest( *data, fillvalue = fillvalue ) )
-        
+        data = list(itertools.izip_longest(*data, fillvalue=fillvalue))
+
         for d in data:
-            outfile.write( "\t".join( map(str, d)) + "\n" )
-    
+            outfile.write("\t".join(map(str, d)) + "\n")
+
     else:
         raise NotImplementedError
 
 ########################################################################
-def readMatrix( infile, dtype = numpy.float ):
+
+
+def readMatrix(infile, dtype=numpy.float):
     '''read a numpy matrix from infile.
 
     return tuple of matrix, row_headers, col_headers
     '''
 
-    lines = [ l for l in infile.readlines() if not l.startswith("#") ]
+    lines = [l for l in infile.readlines() if not l.startswith("#")]
     nrows = len(lines) - 1
     col_headers = lines[0][:-1].split("\t")[1:]
     ncols = len(col_headers)
-    matrix = numpy.zeros( (nrows, ncols), dtype = dtype )
+    matrix = numpy.zeros((nrows, ncols), dtype=dtype)
     row_headers = []
 
     for row, l in enumerate(lines[1:]):
         data = l[:-1].split("\t")
-        row_headers.append( data[0] )
-        matrix[row] = numpy.array(data[1:], dtype = dtype)
-        
+        row_headers.append(data[0])
+        matrix[row] = numpy.array(data[1:], dtype=dtype)
+
     return matrix, row_headers, col_headers
 
 ########################################################################
-def writeMatrix( outfile, matrix, row_headers, col_headers, row_header = "" ):
+
+
+def writeMatrix(outfile, matrix, row_headers, col_headers, row_header=""):
     '''write a numpy matrix to outfile.
 
     *row_header* gives the title of the rows
     '''
-    
-    outfile.write( "%s\t%s\n" % (row_header, "\t".join( col_headers)))
+
+    outfile.write("%s\t%s\n" % (row_header, "\t".join(col_headers)))
     for x, row in enumerate(matrix):
-        outfile.write("%s\t%s\n" % (row_headers[x], "\t".join(map(str, row))) )
+        outfile.write("%s\t%s\n" % (row_headers[x], "\t".join(map(str, row))))
 
 ########################################################################
-def getInvertedDictionary( dict, make_unique = False ):
+
+
+def getInvertedDictionary(dict, make_unique=False):
     """returns an inverted dictionary with keys and values swapped.
     """
     inv = {}
@@ -355,10 +396,12 @@ def getInvertedDictionary( dict, make_unique = False ):
         for k, v in dict.iteritems():
             inv.setdefault(v, []).append(k)
     return inv
-    
+
 ########################################################################
-## Read a sequence from a fasta file
-def readSequence( file ):
+# Read a sequence from a fasta file
+
+
+def readSequence(file):
     """read sequence from a fasta file.
 
     returns a tuple with description and sequence
@@ -369,32 +412,37 @@ def readSequence( file ):
         if line[0] == ">":
             description = line[1:-1]
             continue
-        elif line[0] == "#" :
+        elif line[0] == "#":
             continue
         else:
-            s.append(re.sub("\s", "", line[:-1] ))
-    
+            s.append(re.sub("\s", "", line[:-1]))
+
     return description, "".join(s)
 
-def getFirstLine( filename ):
-    f = open(filename, 'rU')    # U is to open it with Universal newline support
+
+def getFirstLine(filename):
+    # U is to open it with Universal newline support
+    f = open(filename, 'rU')
     line = f.readline()
     f.close()
     return line
 
-def getLastLine( filename, nlines = 1, read_size = 1024 ):
+
+def getLastLine(filename, nlines=1, read_size=1024):
     """return last line of a file.
     """
 
-    f = open(filename, 'rU')    # U is to open it with Universal newline support
+    # U is to open it with Universal newline support
+    f = open(filename, 'rU')
     offset = read_size
     f.seek(0, 2)
     file_size = f.tell()
-    if file_size == 0: return ""
+    if file_size == 0:
+        return ""
     while 1:
         if file_size < offset:
             offset = file_size
-        f.seek(-1*offset, 2)
+        f.seek(-1 * offset, 2)
         read_str = f.read(offset)
         # Remove newline at the end
         if read_str[offset - 1] == '\n':
@@ -407,7 +455,8 @@ def getLastLine( filename, nlines = 1, read_size = 1024 ):
         offset += read_size
     f.close()
 
-def getNumLines( filename, ignore_comments = True ):
+
+def getNumLines(filename, ignore_comments=True):
     '''get number of lines in filename.'''
 
     if ignore_comments:
@@ -417,31 +466,51 @@ def getNumLines( filename, ignore_comments = True ):
 
     # the implementation below seems to fastest
     # see https://gist.github.com/0ac760859e614cd03652
-    # and http://stackoverflow.com/questions/845058/how-to-get-line-count-cheaply-in-python
+    # and
+    # http://stackoverflow.com/questions/845058/how-to-get-line-count-cheaply-in-python
     if filename.endswith(".gz"):
         cmd = "zcat %(filename)s %(filter_cmd)s | wc -l" % locals()
     else:
-         cmd = "cat %(filename)s %(filter_cmd)s | wc -l" % locals()
+        cmd = "cat %(filename)s %(filter_cmd)s | wc -l" % locals()
 
-    out = subprocess.Popen( cmd,
-                            shell = True,
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.STDOUT
-                            ).communicate()[0]
+    out = subprocess.Popen(cmd,
+                           shell=True,
+                           stdout=subprocess.PIPE,
+                           stderr=subprocess.STDOUT
+                           ).communicate()[0]
     return int(out.partition(b' ')[0])
 
-def ReadMap( *args, **kwargs ):
-    """compatibility - see readMap."""
-    return readMap( *args, **kwargs )
 
-def isEmpty( filename ):
+def ReadMap(*args, **kwargs):
+    """compatibility - see readMap."""
+    return readMap(*args, **kwargs)
+
+
+def isEmpty(filename):
     '''return True if file exists and is empty.
 
     raises OSError if file does not exist
     '''
-    return os.stat( filename )[stat.ST_SIZE] == 0
-    
+    return os.stat(filename)[stat.ST_SIZE] == 0
+
+
+def isComplete(filename):
+    '''return True if file exists and is complete.
+
+    A file in complete if its last line starts
+    with '# job finished'
+    '''
+    if filename.endswith(".gz"):
+        raise NotImplementedError(
+            'isComplete not implemented for compressed files')
+    if isEmpty(filename):
+        return False
+    lastline = getLastLine(filename)
+    return lastline.startswith("# job finished")
+
+
 class FilePool:
+
     """manage a pool of output files
 
     This class will keep a large number of files open. To
@@ -458,13 +527,13 @@ class FilePool:
     This class is inefficient if the number of files is larger than
     :attr:`maxopen` and calls to `write` do not group keys together.
     """
-    
+
     maxopen = 5000
 
     def __init__(self,
-                 output_pattern = None,
-                 header = None,
-                 force = True ):
+                 output_pattern=None,
+                 header=None,
+                 force=True):
 
         self.mFiles = {}
         self.mOutputPattern = output_pattern
@@ -472,16 +541,16 @@ class FilePool:
         self.open = open
 
         if output_pattern:
-            _, ext = os.path.splitext( output_pattern )
+            _, ext = os.path.splitext(output_pattern)
             if ext.lower() in (".gz", ".z"):
                 self.open = gzip.open
 
         self.mCounts = collections.defaultdict(int)
         self.mHeader = header
         if force and output_pattern:
-            for f in glob.glob(re.sub( "%s", "*", output_pattern)):
-                os.remove( f )
-            
+            for f in glob.glob(re.sub("%s", "*", output_pattern)):
+                os.remove(f)
+
     def __del__(self):
         """close all open files."""
         for file in self.mFiles.values():
@@ -510,110 +579,119 @@ class FilePool:
     def __iter__(self):
         return self.mCounts.__iter__()
 
-    def getFile( self, identifier ):
+    def getFile(self, identifier):
         return identifier
 
-    def getFilename( self, identifier ):
+    def getFilename(self, identifier):
         """get filename for an identifier."""
 
         if self.mOutputPattern:
-            return re.sub( "%s", str(identifier), self.mOutputPattern )
+            return re.sub("%s", str(identifier), self.mOutputPattern)
         else:
             return identifier
-        
-    def setHeader( self, header ):
+
+    def setHeader(self, header):
         self.mHeader = header
 
-    def openFile( self, filename, mode = "w" ):
+    def openFile(self, filename, mode="w"):
         """open file.
-        
+
         If file is in a new directory, create directories.
         """
         if mode in ("w", "a"):
             dirname = os.path.dirname(filename)
-            if dirname and not os.path.exists( dirname ):
-                os.makedirs( dirname )
-                
-        return self.open(filename, mode)
-        
-    def write( self, identifier, line ):
+            if dirname and not os.path.exists(dirname):
+                os.makedirs(dirname)
 
-        filename = self.getFilename( identifier )
-        
+        return self.open(filename, mode)
+
+    def write(self, identifier, line):
+
+        filename = self.getFilename(identifier)
+
         if filename not in self.mFiles:
-            
+
             if self.maxopen and len(self.mFiles) > self.maxopen:
-                for f in self.mFiles.values(): f.close()
+                for f in self.mFiles.values():
+                    f.close()
                 self.mFiles = {}
-                
-            self.mFiles[filename] = self.openFile( filename, "a" )
-            if self.mHeader: self.mFiles[filename].write(self.mHeader)
+
+            self.mFiles[filename] = self.openFile(filename, "a")
+            if self.mHeader:
+                self.mFiles[filename].write(self.mHeader)
 
         try:
-            self.mFiles[filename].write( line )
+            self.mFiles[filename].write(line)
         except ValueError, msg:
-            raise ValueError( "error while writing to %s: msg=%s" % (filename, msg))
+            raise ValueError(
+                "error while writing to %s: msg=%s" % (filename, msg))
         self.mCounts[filename] += 1
 
-    def deleteFiles( self, min_size = 0 ):
+    def deleteFiles(self, min_size=0):
         """delete all files below a minimum size."""
 
         ndeleted = 0
         for filename, counts in self.mCounts.items():
             if counts < min_size:
-                os.remove( filename )
+                os.remove(filename)
                 ndeleted += 1
-                
+
         return ndeleted
 
-class FilePoolMemory( FilePool ):
+
+class FilePoolMemory(FilePool):
+
     """manage a pool of output files
 
     The data is cached in memory before writing to disk.
     """
-    
+
     maxopen = 5000
 
-    def __init__(self, *args, **kwargs ):
-        FilePool.__init__(self, *args, **kwargs )
+    def __init__(self, *args, **kwargs):
+        FilePool.__init__(self, *args, **kwargs)
 
-        self.data = collections.defaultdict( list )
+        self.data = collections.defaultdict(list)
         self.isClosed = False
 
     def __del__(self):
         """close all open files.
         """
-        if not self.isClosed: 
+        if not self.isClosed:
             self.close()
 
     def close(self):
         """close all open files.
         writes the data to disk.
         """
-        if self.isClosed: 
-            raise IOError( "write on closed FilePool in close()" )
+        if self.isClosed:
+            raise IOError("write on closed FilePool in close()")
 
         for filename, data in self.data.iteritems():
-            f = self.openFile( filename, "a" )
-            if self.mHeader: f.write(self.mHeader)
-            f.write( "".join( data ) )
+            f = self.openFile(filename, "a")
+            if self.mHeader:
+                f.write(self.mHeader)
+            f.write("".join(data))
             f.close()
 
         self.isClosed = True
 
-    def write( self, identifier, line ):
+    def write(self, identifier, line):
 
-        filename = self.getFilename( identifier )
+        filename = self.getFilename(identifier)
         self.data[filename].append(line)
         self.mCounts[filename] += 1
 
-def val2str( val, format = "%5.2f", na = "na" ):
+
+def val2str(val, format="%5.2f", na="na"):
     '''return formatted value.
-    
+
     If value does not fit format string, return "na"
     '''
-    if type(val) == int: return format % val
-    elif type(val) == float: return format % val
+    if type(val) == int:
+        return format % val
+    elif type(val) == float:
+        return format % val
 
     try:
         x = format % val
@@ -621,42 +699,50 @@ def val2str( val, format = "%5.2f", na = "na" ):
         x = na
     return x
 
-def str2val( val, format = "%5.2f", na = "na" ):
+
+def str2val(val, format="%5.2f", na="na"):
     '''guess type of value.'''
     try:
-        x = int( val )
+        x = int(val)
     except ValueError:
         try:
-            x = float( val )
+            x = float(val)
         except ValueError:
             return val
     return x
 
-def prettyFloat( val, format = "%5.2f" ):
-    """deprecated, use val2str"""
-    return val2str( val, format )
 
-def prettyPercent( numerator, denominator, format = "%5.2f", na="na" ):
+def prettyFloat(val, format="%5.2f"):
+    """deprecated, use val2str"""
+    return val2str(val, format)
+
+
+def prettyPercent(numerator, denominator, format="%5.2f", na="na"):
     """output a percent value or "na" if not defined"""
     try:
-        x = format % (100.0 * numerator / denominator )
+        x = format % (100.0 * numerator / denominator)
     except (ValueError, ZeroDivisionError):
         x = "na"
     return x
 
-def prettyString( val ):
-    '''output val or na if val == None'''
-    if val != None: return val
-    else: return "na"
+
+def prettyString(val):
+    '''output val or na if val is None'''
+    if val is not None:
+        return val
+    else:
+        return "na"
+
 
 class nested_dict(collections.defaultdict):
+
     """Auto-vivifying nested dictionaries.
- 
+
     For example::
 
       nd= nested_dict()
       nd["mouse"]["chr1"]["+"] = 311 
-    
+
    """
 
     def __init__(self):
@@ -673,6 +759,7 @@ class nested_dict(collections.defaultdict):
                     yield (key,) + keykey, value
             else:
                 yield (key,), value
+
 
 def flatten(l, ltypes=(list, tuple)):
     '''flatten a nested list/tuple.'''
@@ -696,7 +783,7 @@ def which(program):
 
     from post at http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
     """
-    
+
     def is_exe(fpath):
         return os.path.exists(fpath) and os.access(fpath, os.X_OK)
 
@@ -712,38 +799,42 @@ def which(program):
 
     return None
 
-def convertValue( value, list_detection = False ):
+
+def convertValue(value, list_detection=False):
     '''convert a value to int, float or str.'''
     rx_int = re.compile("^\s*[+-]*[0-9]+\s*$")
     rx_float = re.compile("^\s*[+-]*[0-9.]+[.+\-eE][+-]*[0-9.]*\s*$")
 
-    if value == None: return value
+    if value is None:
+        return value
 
     if list_detection and "," in value:
         values = []
         for value in value.split(","):
-            if rx_int.match( value ):
-                values.append( int(value) )
-            elif rx_float.match( value ):
-                values.append( float(value) )
+            if rx_int.match(value):
+                values.append(int(value))
+            elif rx_float.match(value):
+                values.append(float(value))
             else:
                 values.append(value)
         return values
     else:
-        if rx_int.match( value ):
+        if rx_int.match(value):
             return int(value)
-        elif rx_float.match( value ):
+        elif rx_float.match(value):
             return float(value)
         return value
 
-def iterate_tabular( infile, sep="\t" ):
+
+def iterate_tabular(infile, sep="\t"):
     '''iterate over infile skipping comments.'''
     for line in infile:
-        if line.startswith("#"): continue
+        if line.startswith("#"):
+            continue
         yield line[:-1].split(sep)
-    
 
-def openFile( filename, mode = "r", create_dir = False ):
+
+def openFile(filename, mode="r", create_dir=False):
     '''open file in *filename* with mode *mode*.
 
     If *create* is set, the directory containing filename
@@ -758,39 +849,34 @@ def openFile( filename, mode = "r", create_dir = False ):
 
     returns a file or file-like object.
     '''
-    
-    _, ext = os.path.splitext( filename )
+
+    _, ext = os.path.splitext(filename)
 
     if create_dir:
-        dirname = os.path.dirname( filename )
-        if dirname and not os.path.exists( dirname ):
-            os.makedirs( dirname )
-            
+        dirname = os.path.dirname(filename)
+        if dirname and not os.path.exists(dirname):
+            os.makedirs(dirname)
+
     if ext.lower() in (".gz", ".z"):
-        return gzip.open( filename, mode )
+        return gzip.open(filename, mode)
     else:
-        return open( filename, mode )
+        return open(filename, mode)
 
 
-def iterate( infile ):
+def iterate(infile):
     '''iterate over infile and return a namedtuple according to 
     first row.'''
 
     n = 0
     for line in infile:
-        if line.startswith("#"): continue
+        if line.startswith("#"):
+            continue
         n += 1
-        if n == 1: 
+        if n == 1:
             header = line[:-1].split()
-            DATA = collections.namedtuple( "DATA", header )
+            DATA = collections.namedtuple("DATA", header)
             continue
 
-        print DATA
-        print line[:-1].split()
-        result = DATA( *line[:-1].split() )
+        result = DATA(*line[:-1].split())
 
         yield result
-
-
-
-

@@ -2,7 +2,7 @@
 cgat_script_template.py - template for CGAT scripts
 ====================================================
 
-:Author: 
+:Author:
 :Release: $Id$
 :Date: |today|
 :Tags: Python
@@ -15,7 +15,7 @@ Usage
 
 Example::
 
-   python cgat_script_template.py 
+   python cgat_script_template.py
 
 Type::
 
@@ -35,27 +35,28 @@ import optparse
 
 import CGAT.Experiment as E
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv is None:
+        argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser( version = "%prog version: $Id$", 
-                             usage = globals()["__doc__"] )
+    parser = E.OptionParser(version="%prog version: $Id$",
+                            usage=globals()["__doc__"])
 
     parser.add_option("-t", "--test", dest="test", type="string",
-                      help="supply help"  )
+                      help="supply help")
 
-    ## add common options (-h/--help, ...) and parse command line 
-    (options, args) = E.Start( parser, argv = argv )
+    # add common options (-h/--help, ...) and parse command line
+    (options, args) = E.Start(parser, argv=argv)
 
-    ## write footer and output benchmark information.
+    # write footer and output benchmark information.
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

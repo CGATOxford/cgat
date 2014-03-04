@@ -164,23 +164,23 @@ import CGAT.Stats as Stats
 ###################################################
 ###################################################
 ###################################################
-## Pipeline configuration
+# Pipeline configuration
 ###################################################
 
 # load options from the config file
 import CGAT.Pipeline as P
-P.getParameters( 
+P.getParameters(
     ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
      "../pipeline.ini",
-     "pipeline.ini" ],
-    defaults = {
-        'annotations_dir' : "",
-        'paired_end' : False } )
+     "pipeline.ini"],
+    defaults={
+        'annotations_dir': "",
+        'paired_end': False})
 
 PARAMS = P.PARAMS
 
-PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],
-                                       "pipeline_annotations.py" )
+PARAMS_ANNOTATIONS = P.peekParameters(PARAMS["annotations_dir"],
+                                      "pipeline_annotations.py")
 
 ###################################################################
 ###################################################################
@@ -192,23 +192,24 @@ if "cufflinks_test_options" in PARAMS:
     for option in options:
         if option == "--pre-mrna-fraction" \
                 or option == "--small-anchor-fraction" \
-                or option == "--max-multiread-fraction": 
-            cufflinks_options[option]=[0, 0.5, 0.75, 1]
+                or option == "--max-multiread-fraction":
+            cufflinks_options[option] = [0, 0.5, 0.75, 1]
         elif option == "--min-isoform-fraction":
-            cufflinks_options[option]=[0.05, 0.1, 0.5, 1]
+            cufflinks_options[option] = [0.05, 0.1, 0.5, 1]
         elif option == "--junc-alpha":
-            cufflinks_options[option]=[0.001, 0.01, 0.1]
+            cufflinks_options[option] = [0.001, 0.01, 0.1]
         elif option == "--min-frags-per-transfrag":
-            cufflinks_options[option]=[1, 5, 10]
+            cufflinks_options[option] = [1, 5, 10]
         elif option == "--overhang-tolerance":
-            cufflinks_options[option]=[0,2,5,8]
+            cufflinks_options[option] = [0, 2, 5, 8]
         elif option == "--overlap-radius":
-            cufflinks_options[option]=[50, 100, 200]
+            cufflinks_options[option] = [50, 100, 200]
         else:
-            raise ValueError("pipeline_cufflinks_optimization does not support parameter %s" % option)
+            raise ValueError(
+                "pipeline_cufflinks_optimization does not support parameter %s" % option)
 
 if len(cufflinks_options) == 0:
-    raise ValueError( "no options to optimize specified" )
+    raise ValueError("no options to optimize specified")
 
 #####################
 # get input tracks
@@ -229,16 +230,19 @@ for x in itertools.product(*cufflinks_options.values()):
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 def connect():
     '''connect to database.
 
     This method also attaches to helper databases.
     '''
 
-    dbh = sqlite3.connect( PARAMS["database"] )
-    statement = '''ATTACH DATABASE '%s' as annotations''' % (PARAMS["annotations_database"])
+    dbh = sqlite3.connect(PARAMS["database"])
+    statement = '''ATTACH DATABASE '%s' as annotations''' % (
+        PARAMS["annotations_database"])
     cc = dbh.cursor()
-    cc.execute( statement )
+    cc.execute(statement)
     cc.close()
 
     return dbh
@@ -246,11 +250,13 @@ def connect():
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 def updateFile(filename):
     '''
     create empty file for updating purposes
     '''
-    
+
     outf = open(filename, "w")
     outf.write("file created for ruffus update")
     outf.close()
@@ -258,17 +264,21 @@ def updateFile(filename):
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 def options_generator(cufflinks_options):
     '''
     returns a generator for dealing with the cufflinks parameters
     for directory names and .ini file creation
     '''
     for option_values in itertools.product(*cufflinks_options.values()):
-        yield " ".join(map(str,reduce(operator.add, zip(cufflinks_options.keys(), list(option_values)))))
+        yield " ".join(map(str, reduce(operator.add, zip(cufflinks_options.keys(), list(option_values)))))
 
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 def getDirectoryNames(options_generator):
     '''
     get the names for the directories
@@ -280,29 +290,34 @@ def getDirectoryNames(options_generator):
 # produce list of directories
 ##############################
 
-DIRECTORIES=[x for x in getDirectoryNames(options_generator(cufflinks_options))]
+DIRECTORIES = [x for x in getDirectoryNames(
+    options_generator(cufflinks_options))]
 
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 def getLogFileNames(options_generator):
     '''
     get filenames for log files
     '''
     for options in options_generator:
         yield "_".join(options.split(" ")).replace("--", "") + ".log"
-        
+
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 @transform(TRACKS, suffix(".bam"), ".%s.bam" % PARAMS["chromosome"])
 def reduceBamToChr19(infile, outfile):
     '''
     reduce the dataset for parameter testing.
     '''
     bam = pysam.Samfile(infile, "rb")
-    outbam = pysam.Samfile(outfile, "wb", template = bam)
-    for alignment in bam.fetch( PARAMS["chromosome"]):
+    outbam = pysam.Samfile(outfile, "wb", template=bam)
+    for alignment in bam.fetch(PARAMS["chromosome"]):
         outbam.write(alignment)
     bam.close()
     outbam.close()
@@ -310,16 +325,20 @@ def reduceBamToChr19(infile, outfile):
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 @transform(reduceBamToChr19, suffix(".bam"), ".bam.bai")
 def indexBam(infile, outfile):
     '''
     index the reduced bam file
     '''
     pysam.index(infile)
-    
+
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 @follows(indexBam, mkdir([directory for directory in getDirectoryNames(options_generator(cufflinks_options))]))
 @split(indexBam, [logfile for logfile in getLogFileNames(options_generator(cufflinks_options))])
 def createLogFiles(infile, outfiles):
@@ -332,6 +351,8 @@ def createLogFiles(infile, outfiles):
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 @follows(createLogFiles)
 @transform(indexBam, suffix(".bai"), add_inputs([logfile for logfile in getLogFileNames(options_generator(cufflinks_options))]), ".log")
 def linkBamToWorkingDirs(infiles, outfile):
@@ -346,14 +367,16 @@ def linkBamToWorkingDirs(infiles, outfile):
 
     for directory in directories:
         os.symlink(os.path.abspath(bamfile), os.path.join(directory, bamfile))
-        os.symlink(os.path.abspath(indexfile), os.path.join(directory, indexfile))
+        os.symlink(
+            os.path.abspath(indexfile), os.path.join(directory, indexfile))
     updateFile(outfile)
-    
+
 ###################################################################
 ###################################################################
 ###################################################################
-@transform(createLogFiles, regex(r"(\S+).log")
-           , r"\1/pipeline.ini")
+
+
+@transform(createLogFiles, regex(r"(\S+).log"), r"\1/pipeline.ini")
 def createConfigFiles(infile, outfile):
     '''
     create all of the relevant .ini files in each working
@@ -363,12 +386,13 @@ def createConfigFiles(infile, outfile):
     cuff_opts = P.snip(infile, ".log").split("_")
     cuff_options = []
     for opt in cuff_opts:
-        if len(opt)>6: # not ideal to do my length but all I can think of at the moment
+        # not ideal to do my length but all I can think of at the moment
+        if len(opt) > 6:
             cuff_options.append("--" + opt)
         else:
             cuff_options.append(opt)
     cuff_options = " ".join(cuff_options)
-    
+
     options = PARAMS["cufflinks_options"]
     # directory for output config
     outdir = P.snip(infile, ".log")
@@ -379,7 +403,8 @@ def createConfigFiles(infile, outfile):
     for line in open("pipeline.ini").readlines():
         lines.append(line)
         if line.find("[cufflinks]") != -1:
-            outf.write( "[cufflinks]\n\n# general cufflinks options\n\noptions=%s %s   \n" % (options,cuff_options) )
+            outf.write("[cufflinks]\n\n# general cufflinks options\n\noptions=%s %s   \n" % (
+                options, cuff_options))
         elif "[cufflinks]\n" in lines and "[cuffdiff\n]" not in lines:
             if line.find("options=") != -1:
                 continue
@@ -392,9 +417,10 @@ def createConfigFiles(infile, outfile):
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 @follows(createLogFiles)
-@files([os.path.join(PARAMS["pipeline_rnaseqtranscripts_dir"], x) for x in ["conf.py", "sphinxreport.ini"]]
-           , [os.path.join(directoryname, y) for directoryname, y in itertools.product (getDirectoryNames(options_generator(cufflinks_options)), ["conf.py", "sphinxreport.ini"])])
+@files([os.path.join(PARAMS["pipeline_rnaseqtranscripts_dir"], x) for x in ["conf.py", "sphinxreport.ini"]], [os.path.join(directoryname, y) for directoryname, y in itertools.product(getDirectoryNames(options_generator(cufflinks_options)), ["conf.py", "sphinxreport.ini"])])
 def linkToPipelineRnaseqTranscriptsConfigFiles(infiles, outfiles):
     '''
     produces links to the configuration files for report building
@@ -406,10 +432,12 @@ def linkToPipelineRnaseqTranscriptsConfigFiles(infiles, outfiles):
             os.symlink(infiles[1], outfile)
         else:
             raise ValueError("cannot find outfile %s" % outfile)
-        
+
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 @follows(linkBamToWorkingDirs, linkToPipelineRnaseqTranscriptsConfigFiles)
 @transform(createConfigFiles, regex(r"(\S+)pipeline.ini"), r"\1report.log")
 def executePipelineRnaseqTranscripts(infile, outfile):
@@ -429,9 +457,10 @@ def executePipelineRnaseqTranscripts(infile, outfile):
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 @follows(executePipelineRnaseqTranscripts)
-@transform(os.path.join(DIRECTORIES[0], "reference.gtf.gz")
-           , regex(r"(\S+).gtf.gz"), "reference.%s.gtf.gz" % PARAMS["chromosome"])
+@transform(os.path.join(DIRECTORIES[0], "reference.gtf.gz"), regex(r"(\S+).gtf.gz"), "reference.%s.gtf.gz" % PARAMS["chromosome"])
 def filterReferenceGtfForChr19(infile, outfile):
     '''
     for reporting purposes get the chr19 filtered reference gtf file;
@@ -445,10 +474,10 @@ def filterReferenceGtfForChr19(infile, outfile):
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 @follows(executePipelineRnaseqTranscripts)
-@split([os.path.join(directory, "abinitio_lincrna.gtf.gz") for directory in getDirectoryNames(options_generator(cufflinks_options))]
-           , regex(r"(\S+).gtf.gz")
-           , r"\1.*_exon.gtf.gz")
+@split([os.path.join(directory, "abinitio_lincrna.gtf.gz") for directory in getDirectoryNames(options_generator(cufflinks_options))], regex(r"(\S+).gtf.gz"), r"\1.*_exon.gtf.gz")
 def splitMultiAndSingleExonLincRna(infile, outfiles):
     '''
     pulls out the multi-exonic and the single exonic lincRNA transcripts
@@ -456,17 +485,17 @@ def splitMultiAndSingleExonLincRna(infile, outfiles):
     '''
 
     inf = gzip.open(infile)
-    multi = gzip.open( P.snip(infile, ".gtf.gz") + ".multi_exon.gtf.gz", "w") 
-    single = gzip.open(  P.snip(infile, ".gtf.gz") + ".single_exon.gtf.gz", "w") 
+    multi = gzip.open(P.snip(infile, ".gtf.gz") + ".multi_exon.gtf.gz", "w")
+    single = gzip.open(P.snip(infile, ".gtf.gz") + ".single_exon.gtf.gz", "w")
 
     for entry in GTF.transcript_iterator(GTF.iterator(inf)):
-        if len(entry) >1:
+        if len(entry) > 1:
             for exon in entry:
-                multi.write("\t".join(map(str,[exon.contig, exon.source,exon.feature, exon.start, exon.end, ".", exon.strand, "."])) 
+                multi.write("\t".join(map(str, [exon.contig, exon.source, exon.feature, exon.start, exon.end, ".", exon.strand, "."]))
                             + "\t" + exon.attributes + "\n")
         elif len(entry) == 1:
             for exon in entry:
-                single.write("\t".join(map(str,[exon.contig, exon.source,exon.feature, exon.start, exon.end, ".", exon.strand, "."]))
+                single.write("\t".join(map(str, [exon.contig, exon.source, exon.feature, exon.start, exon.end, ".", exon.strand, "."]))
                              + "\t" + exon.attributes + "\n")
 
     for outfile in outfiles:
@@ -478,15 +507,17 @@ def splitMultiAndSingleExonLincRna(infile, outfiles):
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 @follows(executePipelineRnaseqTranscripts)
-@transform([os.path.join(directory, "abinitio_lincrna.gtf.gz") for directory in getDirectoryNames(options_generator(cufflinks_options))]
-           , regex(r"(\S+).gtf.gz"), r"\1.count")
+@transform([os.path.join(directory, "abinitio_lincrna.gtf.gz") for directory in getDirectoryNames(options_generator(cufflinks_options))], regex(r"(\S+).gtf.gz"), r"\1.count")
 def countMultiAndSingleExonLincRna(infile, outfile):
     '''
     outputs the transcript and gene counts for lincRNA transcripts
     '''
     outf = open(outfile, "w")
-    outf.write("no_multi_exon_transcripts\tno_single_exon_transcripts\tproportion_single\n")
+    outf.write(
+        "no_multi_exon_transcripts\tno_single_exon_transcripts\tproportion_single\n")
     inf = GTF.iterator(IOTools.openFile(infile))
     c_multi = 0
     c_single = 0
@@ -495,14 +526,16 @@ def countMultiAndSingleExonLincRna(infile, outfile):
             c_multi += 1
         elif len(gtfs) == 1:
             c_single += 1
-    outf.write( "\t".join( map(str, [c_multi, c_single, float(c_single)/(c_multi + c_single)]) ) )
+    outf.write(
+        "\t".join(map(str, [c_multi, c_single, float(c_single) / (c_multi + c_single)])))
 
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 @follows(executePipelineRnaseqTranscripts)
-@transform([os.path.join(directory, P.snip(bam, ".bam") + ".%s.bam" % PARAMS["chromosome"]) for directory, bam in itertools.product(getDirectoryNames(options_generator(cufflinks_options)), TRACKS)]
-           , suffix(".accepted.%s.bam" % PARAMS["chromosome"]), ".summary")
+@transform([os.path.join(directory, P.snip(bam, ".bam") + ".%s.bam" % PARAMS["chromosome"]) for directory, bam in itertools.product(getDirectoryNames(options_generator(cufflinks_options)), TRACKS)], suffix(".accepted.%s.bam" % PARAMS["chromosome"]), ".summary")
 def summariseReadsContributingToTranscripts(infile, outfile):
     '''
     for each run of the pipeline and for each track, count the proportion
@@ -515,9 +548,10 @@ def summariseReadsContributingToTranscripts(infile, outfile):
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 @follows(executePipelineRnaseqTranscripts, splitMultiAndSingleExonLincRna)
-@transform([os.path.join(directory, "abinitio_lincrna.multi_exon.gtf.gz") for directory in getDirectoryNames(options_generator(cufflinks_options))]
-           , suffix(".gtf.gz"), ".stats")
+@transform([os.path.join(directory, "abinitio_lincrna.multi_exon.gtf.gz") for directory in getDirectoryNames(options_generator(cufflinks_options))], suffix(".gtf.gz"), ".stats")
 def summariseExonCountsAndLengthOfMultiExonicLincRNA(infile, outfile):
     '''
     summarizes some basic statistics on the length and number of exons 
@@ -527,14 +561,17 @@ def summariseExonCountsAndLengthOfMultiExonicLincRNA(infile, outfile):
     outf.write("transcript_id\tno_exons\ttranscriptlength\n")
     inf = GTF.iterator(IOTools.openFile(infile))
     for gtfs in GTF.transcript_iterator(inf):
-        outf.write("\t".join( (gtfs[0].transcript_id, str(len(gtfs)), str(sum([x.end - x.start for x in gtfs])) ) ) + "\n")
+        outf.write("\t".join((gtfs[0].transcript_id, str(len(gtfs)), str(
+            sum([x.end - x.start for x in gtfs])))) + "\n")
     outf.close()
 
 ###################################################################
 # report building
-# the data that is generated in each subdirectory is collated into 
+# the data that is generated in each subdirectory is collated into
 # a central database in the working directory
 ###################################################################
+
+
 @transform(countMultiAndSingleExonLincRna, regex(r"(\S+).count"), r"\1.load")
 def loadCountSingleAndMultiExonLincRNA(infile, outfile):
     '''
@@ -543,10 +580,12 @@ def loadCountSingleAndMultiExonLincRNA(infile, outfile):
     tablename = P.toTable(outfile.replace("/", "_")) + ".count"
     statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s --log=%(outfile)s.log < %(infile)s > %(outfile)s'''
     P.run()
-    
+
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 @transform(summariseReadsContributingToTranscripts, regex(r"(\S+).summary"), r"\1.summary.load")
 def loadSummariseReadsContributingToTranscripts(infile, outfile):
     '''
@@ -559,6 +598,8 @@ def loadSummariseReadsContributingToTranscripts(infile, outfile):
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 @transform(summariseExonCountsAndLengthOfMultiExonicLincRNA, regex(r"(\S+).stats"), r"\1.load")
 def loadNumberExonsLengthSummaryStats(infile, outfile):
     '''
@@ -585,6 +626,8 @@ def loadNumberExonsLengthSummaryStats(infile, outfile):
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 @files(loadNumberExonsLengthSummaryStats, "NumberExonsLength.tsv")
 def outputAllNumberExonsLengthSummaryStats(infiles, outfile):
     '''
@@ -593,18 +636,24 @@ def outputAllNumberExonsLengthSummaryStats(infiles, outfile):
     '''
     dbh = connect()
     cc = dbh.cursor()
-    tablenames = [P.snip(x, ".load").replace(".", "_").replace("/", "_").replace("-", "_") + "_stats" for x in infiles]
+    tablenames = [P.snip(x, ".load").replace(".", "_").replace(
+        "/", "_").replace("-", "_") + "_stats" for x in infiles]
     outf = open(outfile, "w")
     outf.write("\t".join(["track", "no_exons", "transcript_length"]) + "\n")
     for table in tablenames:
-        length = cc.execute("SELECT avg(transcriptlength) FROM %s" % table).fetchone()
-        no_exons = cc.execute("SELECT avg(no_exons) FROM %s" % table).fetchone()
-        outf.write( table + "\t" + "\t".join(map(str, (no_exons[0], length[0]))) + "\n" )
+        length = cc.execute(
+            "SELECT avg(transcriptlength) FROM %s" % table).fetchone()
+        no_exons = cc.execute(
+            "SELECT avg(no_exons) FROM %s" % table).fetchone()
+        outf.write(
+            table + "\t" + "\t".join(map(str, (no_exons[0], length[0]))) + "\n")
     outf.close()
 
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 @files(loadCountSingleAndMultiExonLincRNA, "MultiSingleLincRNACounts.tsv")
 def outputAllMultiAndSingleExonLincRNACounts(infiles, outfile):
     '''
@@ -612,19 +661,26 @@ def outputAllMultiAndSingleExonLincRNACounts(infiles, outfile):
     '''
     dbh = connect()
     cc = dbh.cursor()
-    tablenames = [P.snip(x, ".load").replace(".", "_").replace("/", "_").replace("-", "_") + "_count" for x in infiles]
+    tablenames = [P.snip(x, ".load").replace(".", "_").replace(
+        "/", "_").replace("-", "_") + "_count" for x in infiles]
     outf = open(outfile, "w")
     outf.write("multi_exon_count\tsingle_exon_count\tproportion_single\n")
     for table in tablenames:
-        multi = cc.execute("SELECT no_multi_exon_transcripts FROM %s" % table).fetchone()
-        single = cc.execute("SELECT no_single_exon_transcripts FROM %s" % table).fetchone()
-        proportion = cc.execute("SELECT proportion_single FROM %s" % table).fetchone()
-        outf.write( "\t".join(map(str, (multi[0], single[0], proportion[0]))) + "\n" )
+        multi = cc.execute(
+            "SELECT no_multi_exon_transcripts FROM %s" % table).fetchone()
+        single = cc.execute(
+            "SELECT no_single_exon_transcripts FROM %s" % table).fetchone()
+        proportion = cc.execute(
+            "SELECT proportion_single FROM %s" % table).fetchone()
+        outf.write(
+            "\t".join(map(str, (multi[0], single[0], proportion[0]))) + "\n")
     outf.close()
 
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 @files(loadSummariseReadsContributingToTranscripts, "ReadsToTranscripts.tsv")
 def outputReadsContributingToTranscripts(infiles, outfile):
     '''
@@ -632,35 +688,43 @@ def outputReadsContributingToTranscripts(infiles, outfile):
     '''
     dbh = connect()
     cc = dbh.cursor()
-    tablenames = [P.snip(x, ".load").replace(".", "_").replace("/", "_").replace("-", "_") for x in infiles]
+    tablenames = [P.snip(x, ".load").replace(".", "_").replace(
+        "/", "_").replace("-", "_") for x in infiles]
     outf = open(outfile, "w")
     outf.write("proportion_reads_to_transcripts\n")
     for table in tablenames:
-        proportion = cc.execute("SELECT percent_spliced_alignments_in_transcripts FROM %s" % table).fetchone()
-        outf.write( str(proportion[0]) + "\n" )
+        proportion = cc.execute(
+            "SELECT percent_spliced_alignments_in_transcripts FROM %s" % table).fetchone()
+        outf.write(str(proportion[0]) + "\n")
     outf.close()
 
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 @files([outputAllNumberExonsLengthSummaryStats, outputAllMultiAndSingleExonLincRNACounts, outputReadsContributingToTranscripts], "All_stats_combined.tsv")
 def buildAllStats(infiles, outfile):
     '''
     paste stats together
     '''
-    statement = '''paste %s > %s''' % (" ".join([infile for infile in infiles]), outfile)
+    statement = '''paste %s > %s''' % (
+        " ".join([infile for infile in infiles]), outfile)
     P.run()
 
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 @transform(buildAllStats, suffix(".tsv"), ".ranked")
 def addRanksToAllStats(infile, outfile):
     '''
     rank each track by each variable
     '''
     # NB reverse the ranks as they go from lowest to highest
-    R('''data <- read.table("%s", header = T, stringsAsFactors = F) ''' % infile)
+    R('''data <- read.table("%s", header = T, stringsAsFactors = F) ''' %
+      infile)
     R('''data$rank_no_exons <- rev(rank(data$no_exons, ties.method = "min"))''')
     R('''data$rank_transcript_length <- rev(rank(data$transcript_length, ties.method = "min"))''')
     R('''data$rank_multi_exon_count <- rev(rank(data$multi_exon_count, ties.method = "min"))''')
@@ -668,11 +732,14 @@ def addRanksToAllStats(infile, outfile):
     R('''data$rank_proportion_reads_to_transcripts <- rev(rank(data$proportion_reads_to_transcripts, ties.method = "min"))''')
     R('''data$rank_sum <- apply(cbind(data$rank_no_exons, data$rank_transcript_length, data$rank_multi_exon_count, data$rank_proportion_single, data$rank_proportion_reads_to_transcripts), 1, sum)''')
     R('''data$rank_all <- rank(data$rank_sum)''')
-    R('''write.table(data[order(data$rank_sum),], file = "%s", row.names = F, sep = "\t")''' % outfile)
+    R('''write.table(data[order(data$rank_sum),], file = "%s", row.names = F, sep = "\t")''' %
+      outfile)
 
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 @transform(addRanksToAllStats, suffix(".ranked"), ".load")
 def loadRankedAllStats(infile, outfile):
     '''
@@ -686,13 +753,14 @@ def loadRankedAllStats(infile, outfile):
 ## TARGETS ##
 #############
 
-@follows(loadNumberExonsLengthSummaryStats
-         , loadSummariseReadsContributingToTranscripts
-         , loadCountSingleAndMultiExonLincRNA)
+
+@follows(loadNumberExonsLengthSummaryStats, loadSummariseReadsContributingToTranscripts, loadCountSingleAndMultiExonLincRNA)
 def summary():
     pass
 
 #------------------------------------------------------------------
+
+
 @follows(loadRankedAllStats)
 def rankData():
     pass
@@ -700,49 +768,39 @@ def rankData():
 ###################################################################
 ###################################################################
 ###################################################################
-@follows(summary
-         , rankData)
+
+
+@follows(summary, rankData)
 def full():
     pass
 
 ###################################################################
 ###################################################################
 ###################################################################
-@follows( mkdir( "report" ) )
+
+
+@follows(mkdir("report"))
 def build_report():
     '''build report from scratch.'''
 
-    E.info( "starting documentation build process from scratch" )
-    P.run_report( clean = True )
+    E.info("starting documentation build process from scratch")
+    P.run_report(clean=True)
 
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 @follows(build_report)
 def publish():
     '''publish files.'''
     # publish web pages
-    patterns = [ (re.compile( "/ifs/projects/proj012/report/html" ),
-                  "http://www.cgat.org/downloads/KW0ok5WWly/report" ),
-                 ]
+    patterns = [(re.compile("/ifs/projects/proj012/report/html"),
+                 "http://www.cgat.org/downloads/KW0ok5WWly/report"),
+                ]
 
-    P.publish_report( patterns = patterns )
-
-
-if __name__== "__main__":
-    sys.exit( P.main(sys.argv) )
-
-    
-
-     
-        
+    P.publish_report(patterns=patterns)
 
 
-         
-    
-    
-    
-    
-
-    
-
+if __name__ == "__main__":
+    sys.exit(P.main(sys.argv))

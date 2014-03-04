@@ -18,7 +18,9 @@ import socket
 import os.path as op
 import os
 
+
 class IGV(object):
+
     r"""
     Simple wrapper to the IGV (http://www.broadinstitute.org/software/igv/home)
     socket interface (http://www.broadinstitute.org/software/igv/PortCommands)
@@ -76,6 +78,7 @@ class IGV(object):
     """
     _socket = None
     _path = None
+
     def __init__(self, host='127.0.0.1', port=60151, snapshot_dir='/tmp/igv'):
         self.host = host
         self.port = port
@@ -87,12 +90,13 @@ class IGV(object):
     def start(cls, jnlp="igv.jnlp", url="http://www.broadinstitute.org/igv/projects/current/"):
         import subprocess
         p = subprocess.Popen("/usr/bin/javaws -Xnosplash %s%s" % (url, jnlp),
-                shell=True, stdout=subprocess.PIPE)
+                             shell=True, stdout=subprocess.PIPE)
         p.wait()
         return p.returncode
 
     def connect(self):
-        if self._socket: self._socket.close()
+        if self._socket:
+            self._socket.close()
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._socket.connect((self.host, self.port))
 
@@ -112,12 +116,12 @@ class IGV(object):
         readGroup.
         """
         assert option in ("base", "position", "strand", "quality", "sample",
-                         "readGroup")
+                          "readGroup")
         return self.send('sort ' + option)
 
-
     def set_path(self, snapshot_dir):
-        if snapshot_dir == self._path: return
+        if snapshot_dir == self._path:
+            return
         if not op.exists(snapshot_dir):
             os.makedirs(snapshot_dir)
 
@@ -153,4 +157,3 @@ class IGV(object):
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
-

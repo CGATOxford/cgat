@@ -1,4 +1,8 @@
-import os, sys, re, types, itertools
+import os
+import sys
+import re
+import types
+import itertools
 import matplotlib.pyplot as plt
 import numpy
 import numpy.ma
@@ -8,14 +12,17 @@ from cpgReport import *
 from SphinxReport.Tracker import *
 from SphinxReport.odict import OrderedDict as odict
 
-##################################################################################
-##################################################################################
+##########################################################################
+##########################################################################
+
+
 class genesWithNMItranscript(cpgTracker):
+
     ''''''
     ANNOTATIONS_NAME = P['annotations_name']
-    mPattern = "_replicated_"+ANNOTATIONS_NAME+"_transcript_tss_distance$"
+    mPattern = "_replicated_" + ANNOTATIONS_NAME + "_transcript_tss_distance$"
 
-    def __call__(self, track, slice = None ):
+    def __call__(self, track, slice=None):
         query = '''SELECT a.nmi_genes, c.cgi_genes, b.total_genes, 
                    round((a.nmi_genes+0.0)/b.total_genes, 2) as fraction_nmi, 
                    round((c.cgi_genes+0.0)/b.total_genes, 2) as fraction_cgi
@@ -42,13 +49,16 @@ class genesWithNMItranscript(cpgTracker):
         data = self.getAll(query)
         return data
 
-##################################################################################
+##########################################################################
+
+
 class genesWithNMIGene(cpgTracker):
+
     ''''''
     ANNOTATIONS_NAME = P['annotations_name']
-    mPattern = "_replicated_"+ANNOTATIONS_NAME+"_gene_tss_distance$"
+    mPattern = "_replicated_" + ANNOTATIONS_NAME + "_gene_tss_distance$"
 
-    def __call__(self, track, slice = None ):
+    def __call__(self, track, slice=None):
         query = '''SELECT a.nmi_genes, b.total_genes, round((a.nmi_genes+0.0)/b.total_genes, 2) as fraction_nmi
                    FROM (
                    SELECT count(distinct t.gene_id) as nmi_genes
@@ -64,4 +74,3 @@ class genesWithNMIGene(cpgTracker):
                    WHERE gene_biotype='protein_coding') b'''
         data = self.getAll(query)
         return data
-        

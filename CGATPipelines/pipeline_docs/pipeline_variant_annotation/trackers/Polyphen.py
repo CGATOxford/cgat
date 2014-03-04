@@ -1,15 +1,23 @@
-import os, sys, re, types, math, itertools
+import os
+import sys
+import re
+import types
+import math
+import itertools
 from VariantsReport import *
 
-class PolyphenHitsHumanDiv( VariantsTracker ):
+
+class PolyphenHitsHumanDiv(VariantsTracker):
+
     '''output a genelist of genes with deleterious variants from Polyphen'''
 
     mPattern = "^annotations$"
 
-    def __call__(self, track, slice = None ):
+    def __call__(self, track, slice=None):
 
-        headers = ("Track", "gene_id", "gene_name", "transcript_id", "chromosome", "position", "reference_base", "genotype", "variant_type", "consensus_quality", "rms_mapping_quality", "Ref Amino acid", "Var amino acid","prediction", "pph2_class")
-               
+        headers = ("Track", "gene_id", "gene_name", "transcript_id", "chromosome", "position", "reference_base", "genotype",
+                   "variant_type", "consensus_quality", "rms_mapping_quality", "Ref Amino acid", "Var amino acid", "prediction", "pph2_class")
+
         statement = '''
         SELECT distinct
             a.track,
@@ -38,19 +46,22 @@ class PolyphenHitsHumanDiv( VariantsTracker ):
         ORDER By a.track, i.gene_id
         '''
 
-        data = self.getAll( statement )
+        data = self.getAll(statement)
         return data
 
-class PolyphenHitsHumanVar( VariantsTracker ):
+
+class PolyphenHitsHumanVar(VariantsTracker):
+
     '''output a genelist of genes with deleterious variants from Polyphen'''
 
     mPattern = "^annotations$"
 
-    def __call__(self, track, slice = None ):
+    def __call__(self, track, slice=None):
 
-        headers = ("Track", "gene_id", "gene_name", "transcript_id", "chromosome", "position", "reference_base", "genotype", "variant_type", "consensus_quality", "rms_mapping_quality", "Ref Amino acid", "Var amino acid","prediction", "pph2_class")
-        
-        #field = self.getPrefix(slice) + "stop_min"        
+        headers = ("Track", "gene_id", "gene_name", "transcript_id", "chromosome", "position", "reference_base", "genotype",
+                   "variant_type", "consensus_quality", "rms_mapping_quality", "Ref Amino acid", "Var amino acid", "prediction", "pph2_class")
+
+        #field = self.getPrefix(slice) + "stop_min"
         statement = '''
         SELECT distinct
             a.track,
@@ -79,6 +90,4 @@ class PolyphenHitsHumanVar( VariantsTracker ):
         ORDER By a.track, i.gene_id
         ''' % self.members(locals())
 
-        return odict( zip( headers, zip(*self.get( statement ))) )
-
-
+        return odict(zip(headers, zip(*self.get(statement))))

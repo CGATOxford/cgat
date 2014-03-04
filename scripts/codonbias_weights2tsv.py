@@ -40,7 +40,8 @@ import CGAT.Experiment as E
 import CGAT.CSV as CSV
 import CGAT.Genomics as Genomics
 
-def WriteHeader( options ):
+
+def WriteHeader(options):
     if options.is_frequencies:
         cat = "frequency"
     else:
@@ -56,23 +57,25 @@ def WriteHeader( options ):
 species1\tspecies2\taa\tcodon1\tweight1\tcodon2\tweight2\tdifference
 """ % (cat, cat, cat))
 
-def WriteOutput( output, options ):
+
+def WriteOutput(output, options):
     """sort output."""
 
     if options.global_sort:
         output.sort()
 
     for o in output:
-        options.stdout.write( "%s\t%s\t%s\t%s\t%f\t%s\t%f\t%5.2f\t%s\n" % o[1])
+        options.stdout.write("%s\t%s\t%s\t%s\t%f\t%s\t%f\t%5.2f\t%s\n" % o[1])
 
-def WriteChanges( genome1, genome2, changed, options ):
+
+def WriteChanges(genome1, genome2, changed, options):
     """write changed preference codons
     """
 
     output = []
-    
+
     for aa, changes in changed.items():
-        ## change will be from -> to
+        # change will be from -> to
         changes.sort()
 
         if len(changes) != 2:
@@ -82,28 +85,31 @@ def WriteChanges( genome1, genome2, changed, options ):
         is_preferred2, pref2, codon2 = changes[1]
 
         # check, if thought out correctly
-        if is_preferred1 != False and is_preferred2 != True:
+        if is_preferred1 and not is_preferred2:
             raise "preferred/unpreferred mixed up."
 
-        percent_difference = abs(pref2-pref1) / (pref1 + pref2) * 200.0
+        percent_difference = abs(pref2 - pref1) / (pref1 + pref2) * 200.0
 
         code = "*" * (int(percent_difference) / 10)
 
         if options.sort == "percent-difference":
-            output.append( (-percent_difference, (genome1, genome2, aa, codon1, pref2, codon2, pref1, percent_difference, code ) ) )
+            output.append((-percent_difference, (genome1, genome2, aa,
+                          codon1, pref2, codon2, pref1, percent_difference, code)))
         elif options.sort == "aa":
-            output.append( (aa, (genome1, genome2, aa, codon1, pref2, codon2, pref1, percent_difference, code ) ) )
+            output.append(
+                (aa, (genome1, genome2, aa, codon1, pref2, codon2, pref1, percent_difference, code)))
 
         output.sort()
-        
+
     return output
 
-def WriteOverviewWeights( fields, table, options ):
+
+def WriteOverviewWeights(fields, table, options):
 
     output = []
     WriteHeader(options)
-    for x in range(1, len(fields)-1):
-        for y in range(x+1, len(fields)):
+    for x in range(1, len(fields) - 1):
+        for y in range(x + 1, len(fields)):
             changed = {}
 
             for c in table:
@@ -113,102 +119,107 @@ def WriteOverviewWeights( fields, table, options ):
                 t1 = w1 == 1.0 and w2 != 1.0
                 t2 = w1 != 1.0 and w2 == 1.0
                 if t1 or t2:
-                    aa = Genomics.MapCodon2AA( codon )
-                    if aa not in changed: changed[aa] = []
+                    aa = Genomics.MapCodon2AA(codon)
+                    if aa not in changed:
+                        changed[aa] = []
                     if t1:
-                        changed[aa].append( (t1, w2, codon) )
+                        changed[aa].append((t1, w2, codon))
                     else:
-                        changed[aa].append( (t1, w1, codon) )
+                        changed[aa].append((t1, w1, codon))
 
-            output += WriteChanged( fields[x], fields[y], changes, options )            
+            output += WriteChanged(fields[x], fields[y], changes, options)
 
-    WriteOutput( output, options)
-    
-def WriteOverviewFrequencies( fields, table, options ):
+    WriteOutput(output, options)
+
+
+def WriteOverviewFrequencies(fields, table, options):
 
     WriteHeader(options)
     output = []
-    
-    for x in range(1, len(fields)-1):
-        for y in range(x+1, len(fields)):
+
+    for x in range(1, len(fields) - 1):
+        for y in range(x + 1, len(fields)):
             frequencies = {}
 
-            ## collect frequencies per amino acid
+            # collect frequencies per amino acid
             for c in table:
                 codon = c[0]
                 f1 = c[x]
                 f2 = c[y]
-                aa = Genomics.MapCodon2AA( codon )
-                if aa not in frequencies: frequencies[aa] = []
-                    
-                frequencies[aa].append( (codon, f1, f2) )
+                aa = Genomics.MapCodon2AA(codon)
+                if aa not in frequencies:
+                    frequencies[aa] = []
+
+                frequencies[aa].append((codon, f1, f2))
 
             changed = {}
-            
-            ## sort for both genomes, and check if preference has changed
+
+            # sort for both genomes, and check if preference has changed
             for aa, codons in frequencies.items():
-                codons.sort( lambda x, y: cmp(x[1], y[1]) )
+                codons.sort(lambda x, y: cmp(x[1], y[1]))
                 pref_codon1 = codons[-1]
-                codons.sort( lambda x, y: cmp(x[2], y[2]) )                
+                codons.sort(lambda x, y: cmp(x[2], y[2]))
                 pref_codon2 = codons[-1]
 
                 if pref_codon1 == pref_codon2:
                     continue
                 else:
-                    changed[aa] = [ (True, pref_codon1[2], pref_codon1[0]),
-                                    (False, pref_codon2[1], pref_codon2[0]) ]
-                    
-            output += WriteChanges( fields[x], fields[y], changed, options )            
+                    changed[aa] = [(True, pref_codon1[2], pref_codon1[0]),
+                                   (False, pref_codon2[1], pref_codon2[0])]
 
-    WriteOutput( output, options )
+            output += WriteChanges(fields[x], fields[y], changed, options)
 
-def main( argv = None ):
+    WriteOutput(output, options)
+
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
-    
-    parser = E.OptionParser( version = "%prog version: $Id: codonbias_weights2tsv.py 2781 2009-09-10 11:33:14Z andreas $")
+    if argv is None:
+        argv = sys.argv
 
-    parser.add_option( "--methods", dest="methods", type="string",
+    parser = E.OptionParser(
+        version="%prog version: $Id: codonbias_weights2tsv.py 2781 2009-09-10 11:33:14Z andreas $")
+
+    parser.add_option("--methods", dest="methods", type="string",
                       help="methods to apply.")
 
-    parser.add_option( "--is-frequencies", dest="is_frequencies", action="store_true",
+    parser.add_option("--is-frequencies", dest="is_frequencies", action="store_true",
                       help="data is frequencies (default: weights).")
 
-    parser.add_option( "-s", "--sort", dest="sort", type="choice",
-                       choices=("percent-difference", "aa"),
-                       help="sort order of output table.")
+    parser.add_option("-s", "--sort", dest="sort", type="choice",
+                      choices=("percent-difference", "aa"),
+                      help="sort order of output table.")
 
-    parser.add_option( "-g", "--global-sort", dest="global_sort", action="store_true",
-                       help="globally sort results (otherwise: by species pair).")
+    parser.add_option("-g", "--global-sort", dest="global_sort", action="store_true",
+                      help="globally sort results (otherwise: by species pair).")
 
-    parser.set_defaults( \
-       methods = "",
-       is_frequencies = False,
-       sort = "percent-difference",
-       global_sort= False,
-       )
+    parser.set_defaults(
+        methods="",
+        is_frequencies=False,
+        sort="percent-difference",
+        global_sort=False,
+    )
 
-    (options, args) = E.Start( parser )
+    (options, args) = E.Start(parser)
     if options.methods:
         options.methods = options.methods.split(",")
 
     fields, table = CSV.ReadTable(sys.stdin)
 
-    ## convert weights to floats
-    table = CSV.getConvertedTable( table, range( 1, len(fields) ) )
+    # convert weights to floats
+    table = CSV.getConvertedTable(table, range(1, len(fields)))
 
     for method in options.methods:
 
         if method == "overview":
             if options.is_frequencies:
-                WriteOverviewFrequencies( fields, table, options )
+                WriteOverviewFrequencies(fields, table, options)
             else:
-                WriteOverviewWeights( fields, table, options )            
+                WriteOverviewWeights(fields, table, options)
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-        
+    sys.exit(main(sys.argv))

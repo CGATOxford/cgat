@@ -1,4 +1,4 @@
-################################################################################
+##########################################################################
 #
 #   MRC FGU Computational Genomics Group
 #
@@ -19,7 +19,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
+##########################################################################
 '''
 optic/filter_paralogous_links.py - 
 ======================================================
@@ -63,7 +63,7 @@ import re
 import getopt
 import tempfile
 
-USAGE="""python %s [OPTIONS] < orthologs > genes
+USAGE = """python %s [OPTIONS] < orthologs > genes
 
 Version: $Id: optic/filter_paralogous_links.py 1799 2008-03-28 11:44:19Z andreas $
 
@@ -93,24 +93,24 @@ Options:
 import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.Exons as Exons
-import alignlib
+import alignlib_lite
 import CGAT.BlastAlignments as BlastAlignments
 
-param_long_options=["verbose=", "help",
-                    "cds=",
-                    "write-exons=", "write-introns=",
-                    "extend-introns=", "only-best", "mask",
-                    "min-intron-length=", "max-intron-length=",
-                    "boundaries-max-missed=",
-                    "boundaries-max-slippage=",
-                    "boundaries-allow-missed=",
-                    "missing-max-missing=", "missing-min-present=",
-                    "disable-check-exon-number",
-                    "report-step=",
-                    "compress", "version" ]
-                    
+param_long_options = ["verbose=", "help",
+                      "cds=",
+                      "write-exons=", "write-introns=",
+                      "extend-introns=", "only-best", "mask",
+                      "min-intron-length=", "max-intron-length=",
+                      "boundaries-max-missed=",
+                      "boundaries-max-slippage=",
+                      "boundaries-allow-missed=",
+                      "missing-max-missing=", "missing-min-present=",
+                      "disable-check-exon-number",
+                      "report-step=",
+                      "compress", "version"]
 
-param_short_options="v:hg:"
+
+param_short_options = "v:hg:"
 
 param_loglevel = 2
 
@@ -123,34 +123,34 @@ param_filename_map2 = None
 param_filename_transcripts1 = None
 param_filename_transcripts2 = None
 
-## maximum number of gaps for ortholog pairs
+# maximum number of gaps for ortholog pairs
 param_max_gaps = 10
 
-param_report_step=100000
+param_report_step = 100000
 
-## whether or not to check number of introns
+# whether or not to check number of introns
 param_check_exon_number = 1
 
-## whether or not to check number of introns
+# whether or not to check number of introns
 param_check_exon_boundaries = 1
 
-## allowable margin for exon boundaries to vary.
+# allowable margin for exon boundaries to vary.
 param_boundaries_max_slippage = 3
 
-## allowable number of exon boundaries that are wrong
+# allowable number of exon boundaries that are wrong
 param_boundaries_max_missed = 0
 
-## above this number of exon boundiares, some boundaries may be missed:
+# above this number of exon boundiares, some boundaries may be missed:
 param_boundaries_allow_missed = 0
 
-## 
+##
 param_boundaries_require_found = 1
 
 param_compress = 0
 
-## allowable 
+# allowable
 
-## flags of output
+# flags of output
 param_write_introns = ("")
 param_write_exons = ("")
 
@@ -168,54 +168,64 @@ param_max_intron_length = None
 param_missing_min_present = 0
 param_missing_max_missing = 0
 
-## keep smatrix global, so that data does not get deleted when object goes out of scope!
-global_substitution_matrix = None 
+# keep smatrix global, so that data does not get deleted when object goes
+# out of scope!
+global_substitution_matrix = None
 
 param_min_score_sw = 50
 
 
-##------------------------------------------------------------
-def UniquifyList( o ):
+# ------------------------------------------------------------
+def UniquifyList(o):
     o.sort()
     n = []
     l = None
     for x in o:
-        if x != l: n.append( x )
+        if x != l:
+            n.append(x)
         l = x
     return n
 
-##------------------------------------------------------------
-def IsParalogLink( link, cds1, cds2 ):
+# ------------------------------------------------------------
+
+
+def IsParalogLink(link, cds1, cds2):
     """sort out ortholog relationships between
     transcripts of orthologous genes.
 
     """
 
-    map_a2b = alignlib.makeAlignmentVector()
-    alignlib.AlignmentFormatEmissions(
+    map_a2b = alignlib_lite.makeAlignmentVector()
+    alignlib_lite.AlignmentFormatEmissions(
         link.mQueryFrom, link.mQueryAli,
-        link.mSbjctFrom, link.mSbjctAli ).copy( map_a2b )
+        link.mSbjctFrom, link.mSbjctAli).copy(map_a2b)
 
     if link.mQueryLength < (map_a2b.getRowTo() - map_a2b.getRowFrom() + 1) or \
        link.mSbjctLength < (map_a2b.getColTo() - map_a2b.getColFrom() + 1):
         print "ERRONEOUS LINK: %s" % str(link)
         raise "length discrepancy"
 
-    coverage_a = 100.0 * (map_a2b.getRowTo() - map_a2b.getRowFrom() + 1) / link.mQueryLength
-    coverage_b = 100.0 * (map_a2b.getColTo() - map_a2b.getColFrom() + 1) / link.mSbjctLength
+    coverage_a = 100.0 * \
+        (map_a2b.getRowTo() - map_a2b.getRowFrom() + 1) / link.mQueryLength
+    coverage_b = 100.0 * \
+        (map_a2b.getColTo() - map_a2b.getColFrom() + 1) / link.mSbjctLength
 
-    ## check exon boundaries, look at starts, skip first exon
-    def MyMap( a, x):
-        if x < a.getRowFrom(): return 0
+    # check exon boundaries, look at starts, skip first exon
+    def MyMap(a, x):
+        if x < a.getRowFrom():
+            return 0
         while x <= a.getRowTo():
-            c = a.mapRowToCol( x ) 
-            if c: return c
+            c = a.mapRowToCol(x)
+            if c:
+                return c
             x += 1
         else:
             return 0
-    
-    mapped_boundaries    = UniquifyList(map( lambda x: MyMap(map_a2b, x.mPeptideFrom / 3 + 1) , cds1[1:]))
-    reference_boundaries = UniquifyList(map( lambda x: x.mPeptideFrom / 3 + 1, cds2[1:]))
+
+    mapped_boundaries = UniquifyList(
+        map(lambda x: MyMap(map_a2b, x.mPeptideFrom / 3 + 1), cds1[1:]))
+    reference_boundaries = UniquifyList(
+        map(lambda x: x.mPeptideFrom / 3 + 1, cds2[1:]))
 
     nmissed = 0
     nfound = 0
@@ -229,12 +239,12 @@ def IsParalogLink( link, cds1, cds2 ):
     else:
         mmore = mapped_boundaries
         mless = reference_boundaries
-    
-    ## check if exon boundaries are ok
+
+    # check if exon boundaries are ok
     for x in mless:
         is_ok = 0
         for c in mmore:
-            if abs(x-c) < param_boundaries_max_slippage:
+            if abs(x - c) < param_boundaries_max_slippage:
                 is_ok = 1
                 break
         if is_ok:
@@ -242,8 +252,8 @@ def IsParalogLink( link, cds1, cds2 ):
         else:
             nmissed += 1
 
-    ## set is_ok for dependent on exon boundaries
-    ## in single exon cases, require a check of coverage
+    # set is_ok for dependent on exon boundaries
+    # in single exon cases, require a check of coverage
     is_ok = False
     check_coverage = False
     if both_single_exon or one_single_exon:
@@ -256,14 +266,14 @@ def IsParalogLink( link, cds1, cds2 ):
             is_ok = nmissed <= 1
         elif nmin > 2:
             is_ok = nfound >= 2
-            
+
     cc = min(coverage_a, coverage_b)
 
     if param_loglevel >= 3:
         print "# nquery=", len(cds1), "nsbjct=", len(cds2), "nmin=", nmin, "nmissed=", nmissed, "nfound=", nfound, \
               "is_ok=", is_ok, "check_cov=", check_coverage, \
               "min_cov=", cc, coverage_a, coverage_b, \
-              "mapped=", mapped_boundaries, "reference=",reference_boundaries
+              "mapped=", mapped_boundaries, "reference=", reference_boundaries
 
     if not is_ok:
         return True, "different exon boundaries"
@@ -273,29 +283,32 @@ def IsParalogLink( link, cds1, cds2 ):
 
     return False, None
 
-##------------------------------------------------------------
+# ------------------------------------------------------------
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv is None:
+        argv = sys.argv
 
     try:
-        optlist, args = getopt.getopt(sys.argv[1:], param_short_options, param_long_options)
+        optlist, args = getopt.getopt(
+            sys.argv[1:], param_short_options, param_long_options)
     except getopt.error, msg:
         print USAGE, msg
         sys.exit(2)
 
-    for o,a in optlist:
-        if o in ( "-v", "--verbose" ):
+    for o, a in optlist:
+        if o in ("-v", "--verbose"):
             param_loglevel = int(a)
-        elif o in ( "--version", ):
+        elif o in ("--version", ):
             print "version="
             sys.exit(0)
-        elif o in ( "-h", "--help" ):
+        elif o in ("-h", "--help"):
             print USAGE
             sys.exit(0)
         elif o == "--cds":
@@ -335,7 +348,6 @@ def main( argv = None ):
         elif o == "--report-step":
             param_report_step = int(a)
 
-
     if len(args) > 0:
         print USAGE, "no arguments required."
         sys.exit(2)
@@ -348,38 +360,42 @@ def main( argv = None ):
         print "# reading exon boundaries."
         sys.stdout.flush()
 
-    cds = Exons.ReadExonBoundaries( open(param_filename_cds, "r") )
+    cds = Exons.ReadExonBoundaries(open(param_filename_cds, "r"))
 
     if param_loglevel >= 1:
         print "# read %i cds" % (len(cds))
         sys.stdout.flush()
 
     ninput, npairs, nskipped = 0, 0, 0
-    
+
     for line in sys.stdin:
-        if line[0] == "#": continue
+        if line[0] == "#":
+            continue
         if line[0] == ">":
             print line[:-1]
             continue
-        
+
         ninput += 1
         link = BlastAlignments.Link()
 
         link.Read(line)
-        
-        if link.mQueryToken == link.mSbjctToken: continue
-        
+
+        if link.mQueryToken == link.mSbjctToken:
+            continue
+
         keep = 1
         if link.mQueryToken in cds and link.mSbjctToken in cds:
-            is_paralog, reason = IsParalogLink( link, cds[link.mQueryToken], cds[link.mSbjctToken] )
+            is_paralog, reason = IsParalogLink(
+                link, cds[link.mQueryToken], cds[link.mSbjctToken])
             if is_paralog:
                 keep = 0
                 if param_loglevel >= 2:
                     print "# DISCARDED because %s: %s" % (reason, str(link))
         else:
-            if param_loglevel >= 2: print "# SKIPPED: %s" % str(link)
+            if param_loglevel >= 2:
+                print "# SKIPPED: %s" % str(link)
             nskipped += 1
-            
+
         if keep:
             print str(link)
             npairs += 1
@@ -389,11 +405,10 @@ def main( argv = None ):
                 print "# ninput=%i, noutput=%i, nskipped=%i" % (ninput, npairs, nskipped)
             sys.stdout.flush()
 
-    if param_loglevel >= 1:            
+    if param_loglevel >= 1:
         print "# ninput=%i, noutput=%i, nskipped=%i" % (ninput, npairs, nskipped)
-    
+
     print E.GetFooter()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

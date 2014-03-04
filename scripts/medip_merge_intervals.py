@@ -77,38 +77,41 @@ import collections
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 
-DATA = collections.namedtuple( "DATA", "contig start end treatment_name  treatment_mean  treatment_std   control_name    control_mean    control_std     pvalue  qvalue  l2fold  fold    significant     status nintervals")
+DATA = collections.namedtuple(
+    "DATA", "contig start end treatment_name  treatment_mean  treatment_std   control_name    control_mean    control_std     pvalue  qvalue  l2fold  fold    significant     status nintervals")
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if not argv: argv = sys.argv
+    if not argv:
+        argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser( version = "%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
-                                    usage = globals()["__doc__"] )
+    parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+                            usage=globals()["__doc__"])
 
     parser.add_option("-o", "--min-overlap", dest="min_overlap", type="int",
-                      help="minimum overlap"  )
+                      help="minimum overlap")
 
     parser.add_option("-w", "--pattern-window", dest="pattern_window", type="string",
-                      help="regular expression to extract window coordinates from test id [%default]"  )
+                      help="regular expression to extract window coordinates from test id [%default]")
 
-    parser.add_option("-i", "--invert", dest="invert", action = "store_true",
-                      help="invert treatment/control such that significant windows in control are reported as treatment [%default]"  )
+    parser.add_option("-i", "--invert", dest="invert", action="store_true",
+                      help="invert direction of fold change [%default]")
 
-    parser.set_defaults( min_overlap = 10,
-                         invert = False,
-                         pattern_window = "(\S+):(\d+)-(\d+)"),
-    
-    ## add common options (-h/--help, ...) and parse command line 
-    (options, args) = E.Start( parser, argv = argv, add_output_options = True )
+    parser.set_defaults(min_overlap=10,
+                        invert=False,
+                        pattern_window="(\S+):(\d+)-(\d+)"),
 
-    outfiles = IOTools.FilePool( options.output_filename_pattern )
-    
+    # add common options (-h/--help, ...) and parse command line
+    (options, args) = E.Start(parser, argv=argv, add_output_options=True)
+
+    outfiles = IOTools.FilePool(options.output_filename_pattern)
+
     if options.invert:
         test_f = lambda l2fold: l2fold < 0
     else:
@@ -117,65 +120,66 @@ def main( argv = None ):
     def read():
 
         rx_window = re.compile(options.pattern_window)
-        # filter any of the DESeq/EdgeR message that end up at the top of the output file
+        # filter any of the DESeq/EdgeR message that end up at the top of the
+        # output file
 
-        for data in IOTools.iterate( options.stdin ):
+        for data in IOTools.iterate(options.stdin):
 
-            contig, start, end = rx_window.match( data.test_id ).groups()
-            start, end = map( int, (start, end ) )
+            contig, start, end = rx_window.match(data.test_id).groups()
+            start, end = map(int, (start, end))
 
-            yield DATA._make( (contig, start, end,
-                               data.treatment_name, 
-                               float(data.treatment_mean), 
-                               float(data.treatment_std),
-                               data.control_name, 
-                               float(data.control_mean), 
-                               float(data.control_std),     
-                               float(data.pvalue), 
-                               float(data.qvalue), 
-                               float(data.l2fold), 
-                               float(data.fold),
-                               int(data.significant), 
-                               data.status,
-                               0) )
-            
-            
-    def grouper( data, distance = 10 ):
+            yield DATA._make((contig, start, end,
+                              data.treatment_name,
+                              float(data.treatment_mean),
+                              float(data.treatment_std),
+                              data.control_name,
+                              float(data.control_mean),
+                              float(data.control_std),
+                              float(data.pvalue),
+                              float(data.qvalue),
+                              float(data.l2fold),
+                              float(data.fold),
+                              int(data.significant),
+                              data.status,
+                              0))
+
+    def grouper(data, distance=10):
 
         last = data.next()
         entries = [last]
-        
+
         while 1:
             d = data.next()
-            if d == None: break
+            if d is None:
+                break
             if d.contig == last.contig and d.start < last.start:
-                raise ValueError( "error not sorted by start" )
+                raise ValueError("error not sorted by start")
 
-            if ( (d.contig != last.contig) or
-                 (d.start - last.end > distance) or
-                 (d.status != last.status) or
-                 (d.significant != last.significant) or
-                 (d.l2fold * last.l2fold < 0) ):
+            if ((d.contig != last.contig) or
+                    (d.start - last.end > distance) or
+                    (d.status != last.status) or
+                    (d.significant != last.significant) or
+                    (d.l2fold * last.l2fold < 0)):
                 yield entries
                 entries = []
-             
-            entries.append( d )
+
+            entries.append(d)
             last = d
 
-        yield entries        
+        yield entries
 
     counter = E.Counter()
 
-    options.stdout.write( "\t".join( DATA._fields ) + "\n" )
+    options.stdout.write("\t".join(DATA._fields) + "\n")
 
     # set of all sample names - used to create empty files
     samples = set()
 
     # need to sort by coordinate
-    all_data = list( read() )
-    all_data.sort( key = lambda x: (x.contig, x.start) )
+    all_data = list(read())
+    all_data.sort(key=lambda x: (x.contig, x.start))
 
-    for group in grouper( iter(all_data), distance = options.min_overlap ):
+    for group in grouper(iter(all_data), distance=options.min_overlap):
 
         start, end = group[0].start, group[-1].end
         assert start < end, 'start > end: %s' % str(group)
@@ -185,54 +189,53 @@ def main( argv = None ):
         g = group[0]
 
         if g.l2fold < 0:
-            l2fold = max( [x.l2fold for x in group ] )
-            fold = max( [x.fold for x in group ] )
+            l2fold = max([x.l2fold for x in group])
+            fold = max([x.fold for x in group])
         else:
-            l2fold = min( [x.l2fold for x in group ] )
-            fold = min( [x.fold for x in group ] )
+            l2fold = min([x.l2fold for x in group])
+            fold = min([x.fold for x in group])
 
-        outdata = DATA._make( ( g.contig, start, end,
-                                g.treatment_name, 
-                                sum( [x.treatment_mean for x in group ] ) / n,
-                                max( [x.treatment_std for x in group ] ),
-                                g.control_name, 
-                                sum( [x.control_mean for x in group ] ) / n,
-                                max( [x.control_std for x in group ] ),
-                                max( [x.pvalue for x in group ] ),
-                                max( [x.qvalue for x in group ] ),
-                                l2fold,
-                                fold,
-                                g.significant,
-                                g.status,
-                                int(n)) )
-                              
-        samples.add( g.treatment_name )
-        samples.add( g.control_name )
+        outdata = DATA._make((g.contig, start, end,
+                              g.treatment_name,
+                              sum([x.treatment_mean for x in group]) / n,
+                              max([x.treatment_std for x in group]),
+                              g.control_name,
+                              sum([x.control_mean for x in group]) / n,
+                              max([x.control_std for x in group]),
+                              max([x.pvalue for x in group]),
+                              max([x.qvalue for x in group]),
+                              l2fold,
+                              fold,
+                              g.significant,
+                              g.status,
+                              int(n)))
+
+        samples.add(g.treatment_name)
+        samples.add(g.control_name)
         if g.significant:
             if test_f(g.l2fold):
                 # treatment lower methylation than control
-                outfiles.write( g.treatment_name, "%s\t%i\t%i\t%s\t%f\n" % (g.contig, g.start, g.end, 
-                                                                            g.treatment_name,
-                                                                            sum( [x.treatment_mean for x in group ] ) / n ) )
-            
+                outfiles.write(g.treatment_name, "%s\t%i\t%i\t%s\t%f\n" % (g.contig, g.start, g.end,
+                                                                           g.treatment_name,
+                                                                           sum([x.treatment_mean for x in group]) / n))
+
             else:
-                outfiles.write( g.control_name, "%s\t%i\t%i\t%s\t%f\n" % (g.contig, g.start, g.end, 
-                                                                          g.control_name,
-                                                                          sum( [x.control_mean for x in group ] ) / n ) )
-                
-        options.stdout.write("\t".join( map(str, outdata) ) + "\n" )
+                outfiles.write(g.control_name, "%s\t%i\t%i\t%s\t%f\n" % (g.contig, g.start, g.end,
+                                                                         g.control_name,
+                                                                         sum([x.control_mean for x in group]) / n))
+
+        options.stdout.write("\t".join(map(str, outdata)) + "\n")
 
         counter.output += 1
 
     for sample in samples:
-        outfiles.write( sample, "")
+        outfiles.write(sample, "")
 
     outfiles.close()
-    E.info( "%s" % counter )
+    E.info("%s" % counter)
 
-    ## write footer and output benchmark information.
+    # write footer and output benchmark information.
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

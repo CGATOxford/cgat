@@ -39,32 +39,34 @@ import CGAT.FastaIterator as FastaIterator
 
 import CGAT.Experiment as E
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv is None:
+        argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser( version = "%prog version: $Id$", 
-                             usage = globals()["__doc__"] )
+    parser = E.OptionParser(version="%prog version: $Id$",
+                            usage=globals()["__doc__"])
 
     parser.add_option("-n", dest="N", type="int",
                       help="e.g N50 - the length at which 50% of contigs are equal or above")
     parser.add_option("-f", "--filter-length", dest="filter_length", type="int",
                       help="calculate stats on contigs longer than -f")
 
-    parser.set_defaults(N = 50,
-                        filter_length = 0)
+    parser.set_defaults(N=50,
+                        filter_length=0)
 
-    ## add common options (-h/--help, ...) and parse command line 
-    (options, args) = E.Start( parser, argv = argv )
-    
+    # add common options (-h/--help, ...) and parse command line
+    (options, args) = E.Start(parser, argv=argv)
+
     f = options.filter_length
 
-    # iterate over the contigs/scaffolds and return stats                                                                                                                                                                                              
+    # iterate over the contigs/scaffolds and return stats
     number_of_contigs = 0
 
     N = options.N
@@ -81,22 +83,24 @@ def main( argv = None ):
     median_length = np.median(contig_lengths)
     max_length = max(contig_lengths)
 
-    # iterate over contigs/scaffolds sorted by longest                                                                                                                                                                                               
-    # and caculate the NX                                                                                                                                                                                                                    
+    # iterate over contigs/scaffolds sorted by longest
+    # and caculate the NX
     index = 0
     cum_length = 0
     total_length = sum(contig_lengths)
-    for length in sorted(contig_lengths, reverse = True):
-        while cum_length <= total_length*(float(N)/100):
+    for length in sorted(contig_lengths, reverse=True):
+        while cum_length <= total_length * (float(N) / 100):
             index += 1
             cum_length += length
 
-    # output the results                                                                                                                                                                                                                     
-    options.stdout.write("nscaffolds\tscaffold_length\tN%i\tmedian_length\tmean_length\tmax_length\n" % N)
-    options.stdout.write("%s\t%s\t%s\t%s\t%s\t%s\n" % (number_of_contigs, total_length, sorted(contig_lengths, reverse = True)[index], str(median_length), str(mean_length), str(max_length)))
+    # output the results
+    options.stdout.write(
+        "nscaffolds\tscaffold_length\tN%i\tmedian_length\tmean_length\tmax_length\n" % N)
+    options.stdout.write("%s\t%s\t%s\t%s\t%s\t%s\n" % (number_of_contigs, total_length, sorted(
+        contig_lengths, reverse=True)[index], str(median_length), str(mean_length), str(max_length)))
 
-    ## write footer and output benchmark information.
+    # write footer and output benchmark information.
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
+    sys.exit(main(sys.argv))

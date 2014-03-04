@@ -1,4 +1,4 @@
-################################################################################
+##########################################################################
 #
 #   MRC FGU Computational Genomics Group
 #
@@ -19,7 +19,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
+##########################################################################
 '''
 gpipe/filter_fasta.py - select sequences in a fasta file
 ==================================================
@@ -71,17 +71,19 @@ import CGAT.IOTools as IOTools
 import CGAT.Genomics as Genomics
 import CGAT.FastaIterator as FastaIterator
 
-## Class for calling masking programs.
-class Masker :
-    
+# Class for calling masking programs.
+
+
+class Masker:
+
     mLogLevel = 0
     mExecutable = None
-    mOptions=""
+    mOptions = ""
 
     def __init__(self):
         pass
 
-    def __call__( self, peptide_sequence ):
+    def __call__(self, peptide_sequence):
         """mask peptide sequence
         """
         Masker.__init__(self)
@@ -90,89 +92,96 @@ class Masker :
         os.write(outfile, ">test\n%s\n" % (peptide_sequence))
         os.close(outfile)
 
-        statement = string.join( map(str, (
+        statement = string.join(map(str, (
             self.mExecutable,
             filename_peptide,
             self.mOptions
-            )), " " )
+        )), " ")
 
         if self.mLogLevel >= 3:
             print "# statement: %s" % statement
             sys.stdout.flush()
 
-        s = subprocess.Popen( statement,
-                              shell = True,
-                              stdout = subprocess.PIPE,
-                              stderr = subprocess.PIPE,
-                              close_fds = True)                              
+        s = subprocess.Popen(statement,
+                             shell=True,
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE,
+                             close_fds=True)
 
         (out, err) = s.communicate()
 
         if s.returncode != 0:
-            raise "Error in running %s \n%s\nTemporary directory" % (self.mExecutable, err)
+            raise "Error in running %s \n%s\nTemporary directory" % (
+                self.mExecutable, err)
 
-        os.remove( filename_peptide ) 
-        
-        masked_sequence = re.sub("\s", "", string.join(out.split("\n")[1:], ""))
-        
+        os.remove(filename_peptide)
+
+        masked_sequence = re.sub(
+            "\s", "", string.join(out.split("\n")[1:], ""))
+
         return masked_sequence
 
-class MaskerBias (Masker): 
+
+class MaskerBias (Masker):
 
     mLogLevel = 0
     mExecutable = "biasdb.pl"
-    mOptions=""
-    
+    mOptions = ""
+
+
 class MaskerSeg (Masker):
 
     mLogLevel = 0
     mExecutable = "seg"
-    mOptions="12 2.2 2.5 -x"
+    mOptions = "12 2.2 2.5 -x"
 
-##------------------------------------------------------------
+# ------------------------------------------------------------
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv is None:
+        argv = sys.argv
 
-    parser = E.OptionParser( version = "%prog version: $Id: gpipe/filter_fasta.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser(
+        version="%prog version: $Id: gpipe/filter_fasta.py 2782 2009-09-10 11:40:29Z andreas $", usage=globals()["__doc__"])
 
     parser.add_option("-m", "--method", dest="method", type="choice",
-                      choices=("longest-transcript", "ids", "quality" ),
+                      choices=("longest-transcript", "ids", "quality"),
                       help="""method to apply to sequences ["longest-transcript", "ids", "quality"]."""  )
-    
+
     parser.add_option("-p", "--parameters", dest="parameters", type="string",
-                      help="parameter stack for methods that require one."  )
+                      help="parameter stack for methods that require one.")
 
     parser.add_option("-t", "--type", dest="type", type="choice",
-                      choices = ("aa", "na"),
-                      help="sequence type (aa or na)."  )
+                      choices=("aa", "na"),
+                      help="sequence type (aa or na).")
 
     parser.set_defaults(
-        methods = "",
-        parameters = "",
-        type = "na",
-        aa_mask_chars = "xX",
-        aa_mask_char = "x",
-        na_mask_chars = "nN",
-        na_mask_char = "n",
-        gap_chars = "-.",
-        gap_char = "-",
+        methods="",
+        parameters="",
+        type="na",
+        aa_mask_chars="xX",
+        aa_mask_char="x",
+        na_mask_chars="nN",
+        na_mask_char="n",
+        gap_chars="-.",
+        gap_char="-",
         template_identifier="ID%06i",
-        separator = "|",
-        )
+        separator="|",
+    )
 
-    (options, args) = E.Start( parser )
+    (options, args) = E.Start(parser)
     options.parameters = options.parameters.split(",")
 
-    iterator = FastaIterator.FastaIterator( sys.stdin )    
+    iterator = FastaIterator.FastaIterator(sys.stdin)
 
     if options.method == "quality":
-        filter_quality = set( options.parameters )
+        filter_quality = set(options.parameters)
     else:
         filter_quality = None
 
@@ -191,23 +200,23 @@ def main( argv = None ):
             id = re.split(" ", cur_record.title)[0]
             species, transcript, gene, quality = id.split(options.separator)
 
-            if quality not in filter_quality: 
+            if quality not in filter_quality:
                 nskipped += 1
                 continue
 
-        sequences.append( cur_record )
+        sequences.append(cur_record)
 
     take = None
-    
+
     if options.method == "longest-transcript":
 
         take = []
         lengths = []
         for x in range(len(sequences)):
-            l = len(re.sub( " ", "", sequences[x].sequence))
+            l = len(re.sub(" ", "", sequences[x].sequence))
             id = re.split(" ", sequences[x].title)[0]
             species, transcript, gene = id.split(options.separator)[:3]
-            lengths.append( (species, gene, -l, x) )
+            lengths.append((species, gene, -l, x))
 
         lengths.sort()
 
@@ -223,7 +232,7 @@ def main( argv = None ):
     elif options.method == "ids":
 
         take = []
-        ids, nerrors = IOTools.ReadList( open(options.parameters[0], "r"))
+        ids, nerrors = IOTools.ReadList(open(options.parameters[0], "r"))
         del options.parameters[0]
 
         ids = set(ids)
@@ -231,23 +240,23 @@ def main( argv = None ):
         for x in range(len(sequences)):
             id = re.split(" ", sequences[x].title)[0]
             if id in ids:
-                take.append( x )
+                take.append(x)
 
-    if take != None:
-        sequences = map( lambda x: sequences[x], take)        
-            
+    if take is not None:
+        sequences = map(lambda x: sequences[x], take)
+
     noutput = len(sequences)
 
     for sequence in sequences:
-        options.stdout.write( ">%s\n%s\n" % (sequence.title,  sequence.sequence ) )
+        options.stdout.write(
+            ">%s\n%s\n" % (sequence.title,  sequence.sequence))
 
     if options.loglevel >= 1:
-        options.stdlog.write( "# ninput=%i, noutput=%i, nskipped=%i\n" % (ninput, noutput, nskipped ))
-        
+        options.stdlog.write(
+            "# ninput=%i, noutput=%i, nskipped=%i\n" % (ninput, noutput, nskipped))
+
     E.Stop()
-    
-    
+
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

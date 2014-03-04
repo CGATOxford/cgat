@@ -149,30 +149,32 @@ import CGATPipelines.PipelineMapping as PipelineMapping
 ###################################################
 ###################################################
 ###################################################
-## Pipeline configuration
+# Pipeline configuration
 ###################################################
 
 # load options from the config file
 import CGAT.Pipeline as P
-P.getParameters( 
+P.getParameters(
     ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
      "../pipeline.ini",
-     "pipeline.ini" ] )
+     "pipeline.ini"])
 
 PARAMS = P.PARAMS
-PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],
-                                       "pipeline_annotations.py" )
+PARAMS_ANNOTATIONS = P.peekParameters(PARAMS["annotations_dir"],
+                                      "pipeline_annotations.py")
 
-USECLUSTER=True
+USECLUSTER = True
 ###################################################################
 ###################################################################
-## Helper functions mapping tracks to conditions, etc
+# Helper functions mapping tracks to conditions, etc
 ###################################################################
 import CGATPipelines.PipelineTracks as PipelineTracks
 
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 def connect():
     '''connect to database.
 
@@ -181,10 +183,11 @@ def connect():
     Returns a database connection.
     '''
 
-    dbh = sqlite3.connect( PARAMS["database"] )
-    statement = '''ATTACH DATABASE '%s' as annotations''' % (PARAMS["annotations_database"])
+    dbh = sqlite3.connect(PARAMS["database"])
+    statement = '''ATTACH DATABASE '%s' as annotations''' % (
+        PARAMS["annotations_database"])
     cc = dbh.cursor()
-    cc.execute( statement )
+    cc.execute(statement)
     cc.close()
 
     return dbh
@@ -192,26 +195,30 @@ def connect():
 ###################################################################
 ###################################################################
 ###################################################################
-## worker tasks
+# worker tasks
 ###################################################################
-@files(None,("ensGene.txt","ensGtp.txt","mcl","refGene_sorted.txt","blast_human"))
-def prepare_directory(infiles,outfiles):
+
+
+@files(None, ("ensGene.txt", "ensGtp.txt", "mcl", "refGene_sorted.txt", "blast_human"))
+def prepare_directory(infiles, outfiles):
     ''' Prepares the directory neccesary for the pipeline. Links 
      the required annotation files and blast databases '''
-    
+
     tophat_fusion_path = PARAMS['tophatfusion_installpath']
-    annotations_path = os.path.join(tophat_fusion_path,'bin','annotation')
+    annotations_path = os.path.join(tophat_fusion_path, 'bin', 'annotation')
 
     for file in os.listdir(annotations_path):
         if not os.path.exists(file):
-            E.info('Linking file %(annotations_path)s/%(file)s -> %(file)s' % locals())
+            E.info(
+                'Linking file %(annotations_path)s/%(file)s -> %(file)s' % locals())
             os.symlink('%(annotations_path)s/%(file)s' % locals(), file)
         else:
             E.info('File %s already exists, no need to link' % file)
 
     if not os.path.exists('blast_human'):
-        E.info('Linking blast_db from %s -> blast_human' % PARAMS['blast_dbpath'])
-        os.symlink(PARAMS['blast_dbpath'],'blast_human')
+        E.info('Linking blast_db from %s -> blast_human' %
+               PARAMS['blast_dbpath'])
+        os.symlink(PARAMS['blast_dbpath'], 'blast_human')
     else:
         E.info('blast_human directory already exists, no need to link')
 
@@ -219,22 +226,22 @@ def prepare_directory(infiles,outfiles):
 ##################################################################
 
 
-@transform(("*.fastq.1.gz", 
-             "*.fastq.gz",
-             "*.sra",
-             "*.csfasta.gz",
-             "*.csfasta.F3.gz",
-             ),
-            regex( r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz|csfasta.F3.gz)"), 
-            r"tophat_\1/accepted_hits.sam" )
-def mapReadsWithTophatFusion( infiles, outfile ):
+@transform(("*.fastq.1.gz",
+            "*.fastq.gz",
+            "*.sra",
+            "*.csfasta.gz",
+            "*.csfasta.F3.gz",
+            ),
+           regex(r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz|csfasta.F3.gz)"),
+           r"tophat_\1/accepted_hits.sam")
+def mapReadsWithTophatFusion(infiles, outfile):
     '''map reads from .fastq or .sra files and find candidate fusions
 
     A list with known splice junctions expect from rnaseq pipeline
     '''
-    
-    job_options= "-pe dedicated %i -R y" % PARAMS["tophat_threads"]
-    
+
+    job_options = "-pe dedicated %i -R y" % PARAMS["tophat_threads"]
+
     if "--butterfly-search" in PARAMS["tophat_options"]:
         # for butterfly search - require insane amount of
         # RAM.
@@ -244,14 +251,15 @@ def mapReadsWithTophatFusion( infiles, outfile ):
     m = PipelineMapping.TopHat_fusion()
     infile = infiles
 
-    #if a file of reference junctions, as generated by the rnaseq pipline,
-    #has been specified in the ini, then pass this to tophat-fusion
-    if not PARAMS['tophatfusion_reference_junctions']==None:
+    # if a file of reference junctions, as generated by the rnaseq pipline,
+    # has been specified in the ini, then pass this to tophat-fusion
+    if not PARAMS['tophatfusion_reference_junctions'] is None:
         reffile = PARAMS['tophatfusion_reference_junctions']
-        tophat_options = PARAMS["tophat_options"] + " --raw-juncs %(reffile)s" % locals()
+        tophat_options = PARAMS["tophat_options"] + \
+            " --raw-juncs %(reffile)s" % locals()
 
     tophatfusion_options = PARAMS["tophatfusion_options"]
-    statement = m.build( (infile,), outfile ) 
+    statement = m.build((infile,), outfile)
     P.run()
 
 
@@ -259,14 +267,15 @@ def mapReadsWithTophatFusion( infiles, outfile ):
 ###################################################################
 
 @follows(prepare_directory)
-@merge(mapReadsWithTophatFusion,'export/tophatfusion_out/result.html')
-def postprocessTopHatFusion(infiles,outfile):
+@merge(mapReadsWithTophatFusion, 'export/tophatfusion_out/result.html')
+def postprocessTopHatFusion(infiles, outfile):
     ''' Uses tophat-fusion-post to postprocess and filter all of the
         tophat-fusion output into one report. Slow as it is not 
         cluster aware and spawns a large number of blast tasks'''
 
     to_cluster = USECLUSTER
-    job_options = ' -l mem_free=50G -pe dedicated %i -R y' % PARAMS["tophatfusion_postthreads"]
+    job_options = ' -l mem_free=50G -pe dedicated %i -R y' % PARAMS[
+        "tophatfusion_postthreads"]
     statement = '''
                   module load bio/tophatfusion;
                   tophat-fusion-post -p %(tophatfusion_postthreads)s
@@ -276,34 +285,35 @@ def postprocessTopHatFusion(infiles,outfile):
                 '''
 
     P.run()
-    
-    #put the results in the export directory.
 
-    #if the export directory doesn't exist, create it
+    # put the results in the export directory.
+
+    # if the export directory doesn't exist, create it
     if not os.path.exists('export'):
         os.mkdir('export')
 
-    #otherwise if it does, then delete any out directory that is 
-    #already there.
+    # otherwise if it does, then delete any out directory that is
+    # already there.
     elif os.path.exists('export/tophatfusion_out') and os.path.isdir('export/tophatfusion_out'):
         shutil.rmtree('export/tophatfusion.out')
 
-    shutil.move('tophatfusion_out','export')
+    shutil.move('tophatfusion_out', 'export')
 
 #################################################################
 #################################################################
+
 
 @follows(postprocessTopHatFusion)
 @transform(mapReadsWithTophatFusion,
            suffix("accepted_hits.sam"),
            "junctions.bed.gz")
-def doCleanUp(infile,outfile):
+def doCleanUp(infile, outfile):
     ''' Does the clean-up that should have been done at the end of 
      the tophat run  but wasn't because the files were needed by 
      tophat-fusion-post '''
 
     to_cluster = USECLUSTER
-    indir = P.snip(infile,'accepted_hits.sam')
+    indir = P.snip(infile, 'accepted_hits.sam')
     juncfile = indir + 'junctions.bed'
     statement = "gzip %(juncfile)s" % locals()
     P.run()
@@ -311,14 +321,15 @@ def doCleanUp(infile,outfile):
 ################################################################
 ################################################################
 
+
 @transform(PARAMS['rnaseqdir'] + "/*.exon_counts.tsv.gz",
            suffix(".exon_counts.tsv.gz"),
            r"edgeR_output/\1_edgeR_GLM_analysis.tsv")
-def edgeR_analysis(infile,outfile):
+def edgeR_analysis(infile, outfile):
     ''' Runs the edgeR GLM analysis script using each of the input
     files as the exon counts, and each of the *design.tsv*  as the
     designs. 
-    
+
     Options to the script are stored in the ini. 
     '''
 
@@ -327,11 +338,11 @@ def edgeR_analysis(infile,outfile):
     R_script_dir = PARAMS['R_scriptdir']
     R_args = PARAM['R_args']
     edgeR_args = ['edgeR_args']
-    baseName = snip(infile,".exon_counts.tsv.gz") + "_"
+    baseName = snip(infile, ".exon_counts.tsv.gz") + "_"
 
     if not os.path.exists('edgeR_output'):
         os.mkdir('edgeR_output')
-   
+
     for design in glob.iglob(PARAMS['edgeR_design']):
 
         statement = ''' %(R_path)s CMD BATCH %(R_args)s
@@ -346,11 +357,12 @@ def edgeR_analysis(infile,outfile):
 ###############################################################
 ###############################################################
 
+
 @transform(edgeR_analysis,
            suffix("edgeR_GLM_analysis.tsv"),
            ".edgeR.GLM.diff.load")
-def loadEdgeRResults(infile,outfile):
-    
+def loadEdgeRResults(infile, outfile):
+
     tableName = P.toTable(outfile)
     statement = ''' python %(scriptsdir)s/csv2db.py
                             --table=%(tableName)s
@@ -361,34 +373,40 @@ def loadEdgeRResults(infile,outfile):
 ###################################################################
 ###################################################################
 ###################################################################
-## primary targets
+# primary targets
 ###################################################################
-@follows(loadEdgeRResults )
-@follows( doCleanUp )
-def full(): pass
 
-@follows( mkdir( "report" ) )
+
+@follows(loadEdgeRResults)
+@follows(doCleanUp)
+def full():
+    pass
+
+
+@follows(mkdir("report"))
 def build_report():
     '''build report from scratch.'''
 
-    E.info( "starting report build process from scratch" )
-    P.run_report( clean = True )
+    E.info("starting report build process from scratch")
+    P.run_report(clean=True)
 
-@follows( mkdir( "report" ) )
+
+@follows(mkdir("report"))
 def update_report():
     '''update report.'''
 
-    E.info( "updating report" )
-    P.run_report( clean = False )
+    E.info("updating report")
+    P.run_report(clean=False)
 
-@follows( update_report )
+
+@follows(update_report)
 def publish_report():
     '''publish report.'''
 
-    E.info( "publishing report" )
+    E.info("publishing report")
     P.publish_report()
 
-if __name__== "__main__":
+if __name__ == "__main__":
 
     # P.checkFiles( ("genome.fasta", "genome.idx" ) )
-    sys.exit( P.main(sys.argv) )
+    sys.exit(P.main(sys.argv))

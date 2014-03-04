@@ -43,12 +43,16 @@ for a definition of the field contents.
 .. report:: Mapping.PicardSummary
    :render: interleaved-bar-plot
    :slices: PCT_PF_READS_ALIGNED,STRAND_BALANCE
+   :layout: row
+   :split-at: 10
 
    Percentage quantities
 
 .. report:: Mapping.PicardSummary
    :render: interleaved-bar-plot
    :slices: PF_READS_ALIGNED,PF_HQ_ALIGNED_READS
+   :layout: row
+   :split-at: 10
 
    Percentage quantities
 
@@ -60,6 +64,7 @@ quality information the plots below will contain meaningless values.
    :render: line-plot
    :as-lines:
    :yrange: 0,
+   :layout: row
 
    mean quality score by cycle
 
@@ -67,6 +72,7 @@ quality information the plots below will contain meaningless values.
    :render: line-plot
    :as-lines:
    :yrange: 0,
+   :layout: row
 
    quality score distribution
 

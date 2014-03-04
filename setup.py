@@ -2,6 +2,7 @@ import glob
 import sys
 import os
 import subprocess
+import re
 
 ########################################################################
 #######################################################################
@@ -40,8 +41,9 @@ except ImportError:
     ez_setup.use_setuptools()
 
 from setuptools import setup, find_packages, Extension
-major, minor = map(int, setuptools.__version__.split(".")[:2])
-if major < 1 or (major == 1 and minor < 1):
+
+from distutils.version import LooseVersion, StrictVersion
+if LooseVersion( setuptools.__version__ ) < LooseVersion( '1.1' ):
     raise ImportError("the CGAT code collection requires setuptools 1.1 higher")
 
 from Cython.Distutils import build_ext
@@ -100,16 +102,68 @@ if major==3:
 if (major==2 and minor1<7) or major<2:
     raise SystemExit("""CGAT requires Python 2.7 or later.""")
 
+#####################################################################
+#####################################################################
+## Code to install dependencies from a repository
+#####################################################################
+## Modified from http://stackoverflow.com/a/9125399
+#####################################################################
+def which(program):
+    """
+    Detect whether or not a program is installed.
+    Thanks to http://stackoverflow.com/a/377028/70191
+    """
+    def is_exe(fpath):
+        return os.path.exists(fpath) and os.access(fpath, os.X_OK)
 
-dependencies = open( "requires.txt" ).readlines() 
-dependencies = [x[:-1] for x in dependencies if x.startswith("#")]
+    fpath, _ = os.path.split(program)
+    if fpath:
+        if is_exe(program):
+            return program
+    else:
+        for path in os.environ['PATH'].split(os.pathsep):
+            exe_file = os.path.join(path, program)
+            if is_exe(exe_file):
+                return exe_file
+
+    return None
+
+REPO_REQUIREMENT = re.compile(r'^-e (?P<link>(?P<vcs>git|svn|hg|bzr).+#egg=(?P<package>.+)-(?P<version>\d(?:\.\d)*))$')
+HTTPS_REQUIREMENT = re.compile(r'^-e (?P<link>.*).+#(?P<package>.+)-(?P<version>\d(?:\.\d)*)$')
+install_requires = []
+dependency_links = []
+
+for requirement in (l.strip() for l in open('requires.txt') if not l.startswith("#")):
+    match = REPO_REQUIREMENT.match(requirement)
+    if match:
+        assert which(match.group('vcs')) is not None, \
+            "VCS '%(vcs)s' must be installed in order to install %(link)s" % match.groupdict()
+        install_requires.append("%(package)s==%(version)s" % match.groupdict())
+        dependency_links.append(match.group('link'))
+        continue
+
+    if requirement.startswith("https"):
+        install_requires.append(requirement)
+        continue
+
+    match = HTTPS_REQUIREMENT.match(requirement)
+    if match:
+        install_requires.append("%(package)s>=%(version)s" % match.groupdict())
+        dependency_links.append(match.group('link'))
+        continue
+
+    install_requires.append(requirement)
 
 if major==2:
-    dependencies.extend( [ 'web.py>=0.37',
-                           'xlwt>=0.7.4', 
-                           'matplotlib-venn>=0.5' ] )
+    install_requires.extend( [ 'web.py>=0.37',
+                               'xlwt>=0.7.4', 
+                               'matplotlib-venn>=0.5' ] )
 elif major==3:
     pass
+
+
+import os
+import re
 
 if INSTALL_CGAT_CODE_COLLECTION:
     cgat_packages= find_packages( exclude=["CGATPipelines*", "scripts*"])
@@ -223,7 +277,8 @@ setup(## package information
         },
 
     ## dependencies
-    install_requires=dependencies,
+    install_requires=install_requires,
+    dependency_links=dependency_links,
     ## extension modules
     ext_modules=[Components, NCL, Nubiscan] + script_extensions,
     cmdclass = {'build_ext': build_ext},

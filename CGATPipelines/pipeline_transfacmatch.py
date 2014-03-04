@@ -160,23 +160,23 @@ import CGATPipelines.PipelineTransfacMatch as PipelineTransfacMatch
 use_cluster = True
 
 import CGAT.Pipeline as P
-P.getParameters( 
+P.getParameters(
     ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
      "../pipeline.ini",
-     "pipeline.ini" ] )
+     "pipeline.ini"])
 PARAMS = P.PARAMS
 
 ################################################
 # helper functions mapping input files
 ################################################
 
-INPUT_FILE=None
+INPUT_FILE = None
 # input intervals / gtf entries
 INPUT_FORMATS = ("*.gtf.gz", "*.bed.gz")
 REGEX_FORMATS = regex(r"(\S+).(gtf.gz|bed.gz)")
 for x in INPUT_FORMATS:
     input_file = glob.glob(x)
-    if len( input_file ) != 0:
+    if len(input_file) != 0:
         INPUT_FILE = input_file[0]
 
 # foreground and background sets
@@ -189,16 +189,19 @@ TRACK_BACKGROUND = [P.snip(x, ".background.tsv") for x in INPUT_BACKGROUND]
 #########################################################################
 #########################################################################
 #########################################################################
+
+
 def connect():
     '''connect to database.
 
     This method also attaches to helper databases.
     '''
 
-    dbh = sqlite3.connect( PARAMS["database"] )
-    statement = '''ATTACH DATABASE '%s' as annotations''' % (PARAMS["annotations_database"])
+    dbh = sqlite3.connect(PARAMS["database"])
+    statement = '''ATTACH DATABASE '%s' as annotations''' % (
+        PARAMS["annotations_database"])
     cc = dbh.cursor()
-    cc.execute( statement )
+    cc.execute(statement)
     cc.close()
 
     return dbh
@@ -207,16 +210,20 @@ def connect():
 #########################################################################
 #########################################################################
 #########################################################################
+
+
 def filenameToTablename(filename):
     '''
     converts filename containing "." to tablename where "." converted to "_"
     '''
-    return filename.replace(".", "_" )
+    return filename.replace(".", "_")
 
 # P.touch()
 #########################################################################
 #########################################################################
 #########################################################################
+
+
 def sentinelFile(filename):
     '''
     create empty file for updating purposes
@@ -228,10 +235,10 @@ def sentinelFile(filename):
 #########################################################################
 #########################################################################
 #########################################################################
+
+
 @follows(mkdir("fasta.dir"))
-@transform( INPUT_FILE
-           , REGEX_FORMATS
-           , r"fasta.dir/\1.fasta")
+@transform(INPUT_FILE, REGEX_FORMATS, r"fasta.dir/\1.fasta")
 def buildIntervalsFasta(infile, outfile):
     '''
     build fasta file from intervals. Alternatively
@@ -257,13 +264,11 @@ def buildIntervalsFasta(infile, outfile):
         concatenate = "cat"
         for gene in GTF.merged_gene_iterator(GTF.iterator(IOTools.openFile(infile))):
             if gene.strand == "+":
-                temp.write("%s\t%s\t%s\t%s\t%s\t%s\n" % (gene.contig, str(gene.start - upstream)
-                                                             , str(gene.start + downstream), gene.gene_id
-                                                             , ".", gene.strand))
+                temp.write("%s\t%s\t%s\t%s\t%s\t%s\n" % (gene.contig, str(
+                    gene.start - upstream), str(gene.start + downstream), gene.gene_id, ".", gene.strand))
             elif gene.strand == "-":
-                temp.write("%s\t%s\t%s\t%s\t%s\t%s\n" % (gene.contig, str(gene.end - downstream)
-                                                             , str(gene.end + upstream), gene.gene_id
-                                                             , ".", gene.strand))
+                temp.write("%s\t%s\t%s\t%s\t%s\t%s\n" % (gene.contig, str(
+                    gene.end - downstream), str(gene.end + upstream), gene.gene_id, ".", gene.strand))
         temp.close()
         inf = temp.name
     else:
@@ -276,13 +281,15 @@ def buildIntervalsFasta(infile, outfile):
                    --genome=%(genomedir)s/%(genome)s 
                    --log=%(outfile)s.log > %(outfile)s'''
     P.run()
-    
+
     if infile.endswith(".gtf.gz"):
         os.remove(inf)
 
-###########    
+###########
 # target
 ###########
+
+
 @follows(buildIntervalsFasta)
 def Fasta():
     pass
@@ -295,21 +302,23 @@ def Fasta():
 #########################################################################
 #########################################################################
 #########################################################################
+
+
 @follows(mkdir("GC_content.dir"), buildIntervalsFasta)
-@transform(INPUT_BACKGROUND + INPUT_FOREGROUND
-           , regex(r"(\S+).tsv")
-           , add_inputs(buildIntervalsFasta)
-           , r"GC_content.dir/\1.gc.tsv")
+@transform(INPUT_BACKGROUND + INPUT_FOREGROUND, regex(r"(\S+).tsv"), add_inputs(buildIntervalsFasta), r"GC_content.dir/\1.gc.tsv")
 def calculateGCContent(infiles, outfile):
     '''
     calculate the GC content across foreground and 
     background sets
     '''
-    PipelineTransfacMatch.calculateCpGComposition(infiles[0], infiles[1], outfile)
+    PipelineTransfacMatch.calculateCpGComposition(
+        infiles[0], infiles[1], outfile)
 
 #########################################################################
 #########################################################################
 #########################################################################
+
+
 @transform(calculateGCContent, suffix(".tsv"), ".load")
 def loadGCContent(infile, outfile):
     '''
@@ -337,30 +346,26 @@ if PARAMS["CpG_match_background"]:
         - this requires that the background set is sufficiently
         large
         '''
-        track = re.match("GC_content.dir/(.+)\.(?:background|foreground)\.gc\.load", infiles[0]).groups()[0]
+        track = re.match(
+            "GC_content.dir/(.+)\.(?:background|foreground)\.gc\.load", infiles[0]).groups()[0]
         input_background = "%s.background.tsv" % track
         input_foreground = "%s.foreground.tsv" % track
-        
-        PipelineTransfacMatch.matchBackgroundForCpGComposition( infiles
-                                                                , input_background
-                                                                , input_foreground
-                                                                , PARAMS["database"]
-                                                                , outfile )
+
+        PipelineTransfacMatch.matchBackgroundForCpGComposition(
+            infiles, input_background, input_foreground, PARAMS["database"], outfile)
 
     ###############################################
     ###############################################
     ###############################################
-    @transform(matchBackgroundForCpGComposition
-               , regex(r"(\S+).tsv")
-               , add_inputs(buildIntervalsFasta)
-               , r"\1.gc.tsv")
+    @transform(matchBackgroundForCpGComposition, regex(r"(\S+).tsv"), add_inputs(buildIntervalsFasta), r"\1.gc.tsv")
     def calculateCpGcomposition(infiles, outfile):
         '''
         calculate the GC content for the CpG matched data
         Should be the same as the CpG content of the foreground
         set
         '''
-        PipelineTransfacMatch.calculateCpGComposition(infiles[0], infiles[1], outfile)
+        PipelineTransfacMatch.calculateCpGComposition(
+            infiles[0], infiles[1], outfile)
 
     ###############################################
     ###############################################
@@ -370,7 +375,8 @@ if PARAMS["CpG_match_background"]:
         '''
         load the CpG compostion of matched background set
         '''
-        tablename = filenameToTablename(P.snip(os.path.basename(outfile), ".load"))
+        tablename = filenameToTablename(
+            P.snip(os.path.basename(outfile), ".load"))
         statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s 
                        --log=%(outfile)s.log
                        %(csv2db_options)s
@@ -392,10 +398,10 @@ else:
 #########################################################################
 #########################################################################
 #########################################################################
+
+
 @follows(mkdir("match.dir"))
-@merge([buildIntervalsFasta
-        , PARAMS["transfac_matrix"]
-        , PARAMS["transfac_profile"]], "match.dir/match.result")
+@merge([buildIntervalsFasta, PARAMS["transfac_matrix"], PARAMS["transfac_profile"]], "match.dir/match.result")
 def runMatch(infiles, outfile):
     '''
     run transfac(R) match
@@ -405,13 +411,15 @@ def runMatch(infiles, outfile):
     mxprf = PARAMS["transfac_profile"]
     match_executable = "/ifs/data/biobase/transfac/match/bin/match_linux64"
     out = outfile
-    
+
     statement = '''%(match_executable)s %(mxlib)s %(seq)s %(out)s %(mxprf)s'''
     P.run()
-    
+
 #########################################################################
 #########################################################################
 #########################################################################
+
+
 @transform(runMatch, suffix(".result"), ".load")
 def loadMatchResults(infile, outfile):
     '''
@@ -419,15 +427,11 @@ def loadMatchResults(infile, outfile):
     sqlite database
     '''
     temp = P.getTempFile()
-    temp.write("seq_id\tmatrix_id\tposition\tstrand\tcore_score\tmatrix_score\tsequence\n")
+    temp.write(
+        "seq_id\tmatrix_id\tposition\tstrand\tcore_score\tmatrix_score\tsequence\n")
     for details in PipelineTransfacMatch.match_iterator(infile):
-        temp.write( "\t".join( map( str,[  details.seq_id
-                                       , details.matrix_id 
-                                       , details.position
-                                       , details.strand
-                                       , details.core_score 
-                                       , details.matrix_score
-                                       , details.sequence  ] ) ) + "\n" )
+        temp.write("\t".join(map(str, [details.seq_id, details.matrix_id, details.position,
+                   details.strand, details.core_score, details.matrix_score, details.sequence])) + "\n")
     inf = temp.name
     tablename = filenameToTablename(os.path.basename(infile))
     statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s
@@ -441,6 +445,8 @@ def loadMatchResults(infile, outfile):
 #########################################################################
 #########################################################################
 #########################################################################
+
+
 @transform(loadMatchResults, suffix(".load"), ".metrics")
 def buildMatchMetrics(infile, outfile):
     '''
@@ -452,12 +458,16 @@ def buildMatchMetrics(infile, outfile):
        * Maximal number of TF motifs found per sequence
 
     '''
-    tablename = filenameToTablename(os.path.basename(P.snip(infile, ".load"))) + "_result"
-    PipelineTransfacMatch.frequencyMetrics(PARAMS["database"], tablename, outfile)
+    tablename = filenameToTablename(
+        os.path.basename(P.snip(infile, ".load"))) + "_result"
+    PipelineTransfacMatch.frequencyMetrics(
+        PARAMS["database"], tablename, outfile)
 
 #########################################################################
 #########################################################################
 #########################################################################
+
+
 @transform(buildMatchMetrics, suffix(""), ".load")
 def loadMatchMetrics(infile, outfile):
     '''
@@ -474,6 +484,8 @@ def loadMatchMetrics(infile, outfile):
 ###########
 # target
 ###########
+
+
 @follows(loadMatchMetrics)
 def Match():
     pass
@@ -481,14 +493,14 @@ def Match():
 #########################################################################
 #########################################################################
 #########################################################################
-# The next section deals with testing for significant enrichment 
+# The next section deals with testing for significant enrichment
 # between a foreground set of sequences and a background set
 #########################################################################
 #########################################################################
 #########################################################################
 if PARAMS["CpG_match_background"]:
     @follows(loadMatchResults, loadMatchedCpGComposition, mkdir("match_test.dir"))
-    @collate([matchBackgroundForCpGComposition,calculateGCContent],
+    @collate([matchBackgroundForCpGComposition, calculateGCContent],
              regex(".+/(.+)\.(?:foreground.gc|cpg_matched.background)\.tsv"),
              r"match_test.dir/\1.cpg.matched.significance")
     def estimateEnrichmentOfTFBS(infiles, outfile):
@@ -499,21 +511,18 @@ if PARAMS["CpG_match_background"]:
         # required files
         match_table = "match_result"
 
-        #we don't know which order the foreground and backgorund will come in
-        background = [infile for infile in infiles if re.search("background",infile)][0]
-        foreground = ["%s.foreground.tsv" % re.match(".+/(.+)\.foreground\.gc\.tsv", infile).groups()[0] 
+        # we don't know which order the foreground and backgorund will come in
+        background = [
+            infile for infile in infiles if re.search("background", infile)][0]
+        foreground = ["%s.foreground.tsv" % re.match(".+/(.+)\.foreground\.gc\.tsv", infile).groups()[0]
                       for infile in infiles if re.search("foreground", infile)][0]
         # run significance testing
-        PipelineTransfacMatch.testSignificanceOfMatrices( background
-                                                          , foreground
-                                                          , PARAMS["database"]
-                                                          , match_table
-                                                          , outfile )
+        PipelineTransfacMatch.testSignificanceOfMatrices(
+            background, foreground, PARAMS["database"], match_table, outfile)
 
-else:    
+else:
     @follows(loadMatchResults, mkdir("match_test.dir"))
-    @collate(INPUT_BACKGROUND + INPUT_FOREGROUND, regex("(.+)\.(?:foreground|background)\.tsv")
-           , r"match_test.dir/\1.significance")
+    @collate(INPUT_BACKGROUND + INPUT_FOREGROUND, regex("(.+)\.(?:foreground|background)\.tsv"), r"match_test.dir/\1.significance")
     def estimateEnrichmentOfTFBS(infiles, outfile):
         '''
         estimate the significance of trnascription factors that are associated with
@@ -522,20 +531,21 @@ else:
         # required files
         match_table = "match_result"
 
-        #we don't know which order the foreground and backgorund will come in
-        background = [infile for infile in infiles if re.search("background",infile)][0]
-        foreground = [infile for infile in infiles if re.search("foreground",infile)][0]
+        # we don't know which order the foreground and backgorund will come in
+        background = [
+            infile for infile in infiles if re.search("background", infile)][0]
+        foreground = [
+            infile for infile in infiles if re.search("foreground", infile)][0]
 
         # run significance testing
-        PipelineTransfacMatch.testSignificanceOfMatrices( background
-                                                          , foreground
-                                                          , PARAMS["database"]
-                                                          , match_table
-                                                          , outfile )
+        PipelineTransfacMatch.testSignificanceOfMatrices(
+            background, foreground, PARAMS["database"], match_table, outfile)
 
 #########################################################################
 #########################################################################
 #########################################################################
+
+
 @transform(estimateEnrichmentOfTFBS, suffix(".significance"), ".load")
 def loadEnrichmentOfTFBS(infile, outfile):
     '''
@@ -548,10 +558,11 @@ def loadEnrichmentOfTFBS(infile, outfile):
                   %(csv2db_options)s
                   < %(infile)s > %(outfile)s'''
     P.run()
-    
+
 ##############
 # target
 ##############
+
 
 @posttask(touch_file("complete.flag"))
 @follows(loadEnrichmentOfTFBS)
@@ -559,15 +570,12 @@ def Significance():
     pass
 
 
-@follows(Fasta
-         , Match
-         , Significance
-         , GC)
+@follows(Fasta, Match, Significance, GC)
 def full():
     pass
 
 #########################################################################
 #########################################################################
 #########################################################################
-if __name__== "__main__":
-    sys.exit( P.main(sys.argv) )
+if __name__ == "__main__":
+    sys.exit(P.main(sys.argv))

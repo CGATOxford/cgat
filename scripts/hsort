@@ -15,10 +15,11 @@ hlines=$1;
 shift;
 
 awk  -v hlines=${hlines} "BEGIN {take=-hlines; cmd=sprintf(\"sort $* \"); } \
+     /^#\/\// {has_end_tag=1; next; } \
      /^[#@]/ { print; next; } \
      take >= 0 { print | cmd; next } \
      { print; ++take; next } 
-     END{ close(cmd); }"
+     END{ close(cmd); if (has_end_tag) {printf(\"#//\n\");} }"
     
 
 

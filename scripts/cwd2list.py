@@ -42,21 +42,22 @@ import datetime
 
 import CGAT.Experiment as E
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv is None:
+        argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser( version = "%prog version: $Id$", 
-                             usage = globals()["__doc__"] )
+    parser = E.OptionParser(version="%prog version: $Id$",
+                            usage=globals()["__doc__"])
 
-
-    ## add common options (-h/--help, ...) and parse command line 
-    (options, args) = E.Start( parser, argv = argv )
+    # add common options (-h/--help, ...) and parse command line
+    (options, args) = E.Start(parser, argv=argv)
 
     dir2files = {}
     for root, directory, files in os.walk("."):
@@ -71,9 +72,8 @@ def main( argv = None ):
             path = os.path.join(directory, file)
             outf.write(path + "\n")
 
-    ## write footer and output benchmark information.
+    # write footer and output benchmark information.
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

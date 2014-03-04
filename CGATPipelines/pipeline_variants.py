@@ -150,78 +150,85 @@ import rpy2.robjects.numpy2ri
 ###################################################
 ###################################################
 ###################################################
-## Pipeline configuration
+# Pipeline configuration
 ###################################################
 
 # load options from the config file
 import CGAT.Pipeline as P
-P.getParameters( 
+P.getParameters(
     ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
      "../pipeline.ini",
-     "pipeline.ini" ] )
+     "pipeline.ini"])
 
 PARAMS = P.PARAMS
-PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],
-                                       "pipeline_annotations.py" )
+PARAMS_ANNOTATIONS = P.peekParameters(PARAMS["annotations_dir"],
+                                      "pipeline_annotations.py")
 
 ###################################################################
 ###################################################################
-## Helper functions mapping tracks to conditions, etc
+# Helper functions mapping tracks to conditions, etc
 ###################################################################
 import CGATPipelines.PipelineTracks as PipelineTracks
 
-## need to be refactored
+# need to be refactored
 
 SEPARATOR = "|"
 
 ###################################################################
 ###################################################################
-## Helper functions mapping tracks to conditions, etc
+# Helper functions mapping tracks to conditions, etc
 ###################################################################
 import CGATPipelines.PipelineTracks as PipelineTracks
 
-class TracksVCF (PipelineTracks.Tracks ):
-    def load( self, filename, exclude = None ):
+
+class TracksVCF (PipelineTracks.Tracks):
+
+    def load(self, filename, exclude=None):
         '''load tracks from a vcf file.'''
         tracks = []
         v = pysam.VCF()
-        v.setversion( 40 )
-        
-        if not os.path.exists( filename):
+        v.setversion(40)
+
+        if not os.path.exists(filename):
             self.tracks = tracks
             return self
-        v.connect( filename )
+        v.connect(filename)
 
-        if exclude: to_exclude = [ re.compile(x) for x in exclude]
-        
+        if exclude:
+            to_exclude = [re.compile(x) for x in exclude]
+
         for sample in v.getsamples():
             if exclude:
                 for x in to_exclude:
-                    if x.search( sample ): 
+                    if x.search(sample):
                         skip = True
                         break
-                if skip: continue
+                if skip:
+                    continue
 
-            tracks.append( self.factory( sample ) )
+            tracks.append(self.factory(sample))
 
         self.tracks = tracks
         return self
 
-TRACKS = TracksVCF( PipelineTracks.Sample ).load( "variants.vcf.gz" )
+TRACKS = TracksVCF(PipelineTracks.Sample).load("variants.vcf.gz")
 
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 def connect():
     '''connect to database.
 
     This method also attaches to helper databases.
     '''
 
-    dbh = sqlite3.connect( PARAMS["database"] )
-    statement = '''ATTACH DATABASE '%s' as annotations''' % (PARAMS["annotations_database"])
+    dbh = sqlite3.connect(PARAMS["database"])
+    statement = '''ATTACH DATABASE '%s' as annotations''' % (
+        PARAMS["annotations_database"])
     cc = dbh.cursor()
-    cc.execute( statement )
+    cc.execute(statement)
     cc.close()
 
     return dbh
@@ -234,7 +241,7 @@ def connect():
 
 #     statement = '''gunzip < %(infile)s
 #     | python %(scriptsdir)s/snp2counts.py
-#             --genome-file=genome 
+#             --genome-file=genome
 #             --module=contig-counts
 #     > %(outfile)s
 #     '''
@@ -244,19 +251,19 @@ def connect():
 ###################################################################
 ###################################################################
 ###################################################################
-## Geneset
+# Geneset
 ###################################################################
 if "refseq_filename_gtf" in PARAMS:
-    @split( (PARAMS["refseq_filename_gtf"], 
-             PARAMS["refseq_filename_pep"], 
-             PARAMS["refseq_filename_cdna"],
-             PARAMS["refseq_filename_map"],
-             PARAMS["refseq_filename_ensembl"],
-             ),
-            (PARAMS["ensembl_filename_gtf"],
-             PARAMS["ensembl_filename_pep"],
-             PARAMS["ensembl_filename_cdna"] ) )
-    def importRefseq(infiles, outfiles ):
+    @split((PARAMS["refseq_filename_gtf"],
+            PARAMS["refseq_filename_pep"],
+            PARAMS["refseq_filename_cdna"],
+            PARAMS["refseq_filename_map"],
+            PARAMS["refseq_filename_ensembl"],
+            ),
+           (PARAMS["ensembl_filename_gtf"],
+            PARAMS["ensembl_filename_pep"],
+            PARAMS["ensembl_filename_cdna"]))
+    def importRefseq(infiles, outfiles):
         '''convert a refseq gtf formatted file into an ensembl like
         gtf file.
 
@@ -270,7 +277,7 @@ if "refseq_filename_gtf" in PARAMS:
         gtf.gz, pep.fa.gz, cdna.fa.gz from the UCSC
 
         It also requires:
-        
+
         * link.tsv.gz from the UCSC (table refLink)
            to add peptide identifiers and gene numbers.
         * ccdsinfo.tsv.gz from the UCSC (table ccdsInfo)
@@ -326,44 +333,46 @@ if "refseq_filename_gtf" in PARAMS:
         if not os.path.exists(outfile_gtf):
             P.run()
 
-        for infile, outfile in ( (infile_pep, outfile_pep),
-                                 (infile_cdna, outfile_cdna)):
+        for infile, outfile in ((infile_pep, outfile_pep),
+                                (infile_cdna, outfile_cdna)):
             # remove numerical suffixes from identifiers
             statement = '''gunzip < %(infile)s
             | perl -p -e "s/\.\d+//g" 
             | gzip 
             > %(outfile)s'''
-            if not os.path.exists( outfile ):
+            if not os.path.exists(outfile):
                 P.run()
 
-        table = "ensembl2refseq"            
+        table = "ensembl2refseq"
         # use ENSEMBL mapping
         if 0:
             outf = open(tmpfilename1, "w")
 
-            reader = CSV.DictReader( IOTools.openFile(infile_ensembl), dialect="excel-tab" )
+            reader = CSV.DictReader(
+                IOTools.openFile(infile_ensembl), dialect="excel-tab")
             c = E.Counter()
 
-            outf.write("gene_id\ttranscript_id\trefseq_transcript_id\trefseq_protein_id\tccds_id\n")
+            outf.write(
+                "gene_id\ttranscript_id\trefseq_transcript_id\trefseq_protein_id\tccds_id\n")
 
             for row in reader:
                 c.input += 1
                 gene_id, transcript_id, refseq_transcript_id, refseq_protein_id, ccds_id = \
-                    [ x.strip() for x in 
-                      (row["Ensembl Gene ID"],
-                       row["Ensembl Transcript ID"],
-                       row["RefSeq DNA ID"],
-                       row["RefSeq Protein ID"],
-                       row["CCDS ID"],
-                       ) ]
+                    [x.strip() for x in
+                     (row["Ensembl Gene ID"],
+                      row["Ensembl Transcript ID"],
+                      row["RefSeq DNA ID"],
+                      row["RefSeq Protein ID"],
+                      row["CCDS ID"],
+                      )]
 
                 if not (transcript_id and gene_id and refseq_transcript_id and refseq_protein_id):
                     c.skipped += 1
                     continue
 
                 c.output += 1
-                outf.write( "%s\t%s\t%s\t%s\t%s\n" %
-                            (gene_id, transcript_id, refseq_transcript_id, refseq_protein_id, ccds_id))
+                outf.write("%s\t%s\t%s\t%s\t%s\n" %
+                           (gene_id, transcript_id, refseq_transcript_id, refseq_protein_id, ccds_id))
             outf.close()
 
             statement = '''cat < %(tmpfilename1)s
@@ -377,8 +386,7 @@ if "refseq_filename_gtf" in PARAMS:
             > refseq.load'''
 
             P.run()
-            E.info( "%s" % str(c))
-
+            E.info("%s" % str(c))
 
         # use UCSC mapping
         statement = '''gunzip < %(infile_map)s
@@ -394,20 +402,20 @@ if "refseq_filename_gtf" in PARAMS:
 
         P.run()
 
-        os.unlink( tmpfilename1 )
-        os.unlink( tmpfilename2 )
+        os.unlink(tmpfilename1)
+        os.unlink(tmpfilename2)
 
 if "refseq_filename_gtf" in PARAMS:
-    @split( (PARAMS["refseq_filename_gtf"], 
-             PARAMS["refseq_filename_pep"], 
-             PARAMS["refseq_filename_cdna"],
-             PARAMS["refseq_filename_map"],
-             ),
-            (PARAMS["ensembl_filename_gtf"],
-             PARAMS["ensembl_filename_pep"],
-             PARAMS["ensembl_filename_cdna"],
-             "refseq.load" ) )
-    def importRefseqFromUCSC(infiles, outfiles ):
+    @split((PARAMS["refseq_filename_gtf"],
+            PARAMS["refseq_filename_pep"],
+            PARAMS["refseq_filename_cdna"],
+            PARAMS["refseq_filename_map"],
+            ),
+           (PARAMS["ensembl_filename_gtf"],
+            PARAMS["ensembl_filename_pep"],
+            PARAMS["ensembl_filename_cdna"],
+            "refseq.load"))
+    def importRefseqFromUCSC(infiles, outfiles):
         '''convert a refseq gtf formatted file into an ensembl like
         gtf file.
 
@@ -421,7 +429,7 @@ if "refseq_filename_gtf" in PARAMS:
         gtf.gz, pep.fa.gz, cdna.fa.gz from the UCSC
 
         It also requires:
-        
+
         * link.tsv.gz from the UCSC (table refLink)
            to add peptide identifiers and gene numbers.
         * ccdsinfo.tsv.gz from the UCSC (table ccdsInfo)
@@ -433,40 +441,41 @@ if "refseq_filename_gtf" in PARAMS:
           not add it.
         '''
 
-
         infile_gtf, infile_pep, infile_cdna, infile_map = infiles
         outfile_gtf, outfile_pep, outfile_cdna, outfile_load = outfiles
 
-        if not os.path.exists( outfile_gtf ):
-            PipelineUCSC.importRefSeqFromUCSC( infile_gtf, outfile_gtf, remove_duplicates = True )
+        if not os.path.exists(outfile_gtf):
+            PipelineUCSC.importRefSeqFromUCSC(
+                infile_gtf, outfile_gtf, remove_duplicates=True)
 
-        for infile, outfile in ( (infile_pep, outfile_pep),
-                                 (infile_cdna, outfile_cdna)):
+        for infile, outfile in ((infile_pep, outfile_pep),
+                                (infile_cdna, outfile_cdna)):
             # remove numerical suffixes from identifiers
             statement = '''gunzip < %(infile)s
             | perl -p -e "s/\.\d+//g" 
             | gzip 
             > %(outfile)s'''
-            if not os.path.exists( outfile ):
+            if not os.path.exists(outfile):
                 P.run()
 
-        # table = "ensembl2refseq"            
+        # table = "ensembl2refseq"
 
-        # # use UCSC mapping
+        # use UCSC mapping
         # statement = '''gunzip < %(infile_map)s
         #     | perl -p -i -e "s/\.\d+//g"
-        #     | awk 'BEGIN {printf("ccds_id\\tsrc_db\\tttranscript_id\\tprotein_id\\n")} 
+        #     | awk 'BEGIN {printf("ccds_id\\tsrc_db\\tttranscript_id\\tprotein_id\\n")}
         #            /^ccds/ {next} {print}'
-        #     |python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
-        #        --index=ccds_id 
-        #        --index=transcript_id 
-        #        --index=protein_id 
+        #     |python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+        #        --index=ccds_id
+        #        --index=transcript_id
+        #        --index=protein_id
         #        --table=%(table)s
         #     > %(outfile_load)s'''
         # P.run()
 
-@files( "%s.fasta" % PARAMS["genome"], "%s.fa" % PARAMS["genome"])
-def indexGenome( infile, outfile ):
+
+@files("%s.fasta" % PARAMS["genome"], "%s.fa" % PARAMS["genome"])
+def indexGenome(infile, outfile):
     '''index the genome for samtools.
 
     Samtools does not like long lines, so create a new file
@@ -476,20 +485,22 @@ def indexGenome( infile, outfile ):
     # statement = '''fold %(infile)s | perl -p -e "s/chr//" > %(outfile)s'''
     statement = '''fold %(infile)s > %(outfile)s'''
     P.run()
-    
-    pysam.faidx( outfile )
+
+    pysam.faidx(outfile)
 
 ######################################################################
 ######################################################################
 ######################################################################
-@files( ((None, "pseudogenes.load" ),) )
-def importPseudogenes( infile, outfile ):
+
+
+@files(((None, "pseudogenes.load"),))
+def importPseudogenes(infile, outfile):
     '''import pseudogene data from pseudogenes.org'''
 
-    tmpfile = "pseudogenes.tsv" 
+    tmpfile = "pseudogenes.tsv"
 
     # download
-    if not os.path.exists( tmpfile + ".gz"):    
+    if not os.path.exists(tmpfile + ".gz"):
         statement = '''
         wget -O %(tmpfile)s http://tables.pseudogene.org/dump.cgi?table=Mouse56;
         gzip %(tmpfile)s
@@ -497,7 +508,7 @@ def importPseudogenes( infile, outfile ):
 
         P.run()
 
-    tablename = P.toTable( outfile )
+    tablename = P.toTable(outfile)
 
     statement = '''
     zcat %(tmpfile)s.gz
@@ -513,113 +524,117 @@ def importPseudogenes( infile, outfile ):
 ######################################################################
 ######################################################################
 ######################################################################
-@files( ((None, "mgi.import"),))
-def importMGI( infile, outfile ):
+
+
+@files(((None, "mgi.import"),))
+def importMGI(infile, outfile):
     '''create via BIOMART'''
 
-    filename = "mgi_biomart.tsv" 
+    filename = "mgi_biomart.tsv"
 
     if False:
         R.library("biomaRt")
 
         columns = {
 
-            "marker_symbol_107" : "marker_symbol", 
-            "marker_name_107" : "marker_name",
-            "mgi_allele_id_att" : "allele_id",
-            "allele_symbol_101" : "allele_symbol", 
-            "allele_name_101" : "allele_name", 
-            "allele_type_101" : "allele_type", 
-            "phenotype_id_106_att" : "phenotype_id",
-            "ensembl_gene_id_103" : "gene_id" }
+            "marker_symbol_107": "marker_symbol",
+            "marker_name_107": "marker_name",
+            "mgi_allele_id_att": "allele_id",
+            "allele_symbol_101": "allele_symbol",
+            "allele_name_101": "allele_name",
+            "allele_type_101": "allele_type",
+            "phenotype_id_106_att": "phenotype_id",
+            "ensembl_gene_id_103": "gene_id"}
 
         keys = columns.keys()
 
         mgi = R.useMart(biomart="biomart", dataset="markers")
-        result = R.getBM( attributes=keys, mart=mgi )
+        result = R.getBM(attributes=keys, mart=mgi)
 
-        outf = open( filename, "w" )
-        outf.write( "\t".join( [columns[x] for x in keys ] ) + "\n" )
+        outf = open(filename, "w")
+        outf.write("\t".join([columns[x] for x in keys]) + "\n")
 
-        for data in zip( *[ result[x] for x in keys] ):
-            outf.write( "\t".join( map(str, data) ) + "\n" )
+        for data in zip(*[result[x] for x in keys]):
+            outf.write("\t".join(map(str, data)) + "\n")
 
         outf.close()
 
-    if not os.path.exists( filename ):
-        
+    if not os.path.exists(filename):
+
         # associations need to be downloaded individually
 
         R.library("biomaRt")
 
         columns = {
-            "mgi_marker_id_att" : "marker_id", 
-            "marker_name_107" : "marker_name",
-            "mgi_allele_id_att" : "allele_id",
-            "allele_symbol_101" : "allele_symbol", 
-            "allele_name_101" : "allele_name", 
-            "allele_type_101" : "allele_type", 
-            "phenotype_id_106_att" : "phenotype_id",
-            "ensembl_gene_id_103" : "gene_id" }
+            "mgi_marker_id_att": "marker_id",
+            "marker_name_107": "marker_name",
+            "mgi_allele_id_att": "allele_id",
+            "allele_symbol_101": "allele_symbol",
+            "allele_name_101": "allele_name",
+            "allele_type_101": "allele_type",
+            "phenotype_id_106_att": "phenotype_id",
+            "ensembl_gene_id_103": "gene_id"}
 
-        def downloadData( filename, columns ):
+        def downloadData(filename, columns):
             '''download data via biomart into filename.
                translate column headers.'''
 
-            if os.path.exists( filename): return
+            if os.path.exists(filename):
+                return
 
-            E.info( "downloading data for %s" % filename )
+            E.info("downloading data for %s" % filename)
 
             keys = columns.keys()
 
             mgi = R.useMart(biomart="biomart", dataset="markers")
-            result = R.getBM( attributes=keys, 
-                              mart=mgi )
+            result = R.getBM(attributes=keys,
+                             mart=mgi)
 
             if len(result.rx(keys[0])) == 0:
-                raise ValueError("no data for %s: using keys=%s" % (filename, keys) )
+                raise ValueError(
+                    "no data for %s: using keys=%s" % (filename, keys))
 
-            outf = open( filename, "w" )
-            outf.write( "\t".join( [columns[x] for x in keys ] ) + "\n" )
-            
-            for data in zip( *[ result.rx(x) for x in keys] ):
-                outf.write( "\t".join( map(str, data) ) + "\n" )
+            outf = open(filename, "w")
+            outf.write("\t".join([columns[x] for x in keys]) + "\n")
+
+            for data in zip(*[result.rx(x) for x in keys]):
+                outf.write("\t".join(map(str, data)) + "\n")
 
             outf.close()
 
-        downloadData( "mgi_marker2allele.tsv",
-                      { "mgi_marker_id_att" : "marker_id", 
-                        "mgi_allele_id_att" : "allele_id" } )
+        downloadData("mgi_marker2allele.tsv",
+                     {"mgi_marker_id_att": "marker_id",
+                      "mgi_allele_id_att": "allele_id"})
 
-        downloadData( "mgi_allele2phenotype.tsv",
-                      { "mgi_allele_id_att" : "allele_id",
-                        "phenotype_id_106_att" : "phenotype_id" } )
+        downloadData("mgi_allele2phenotype.tsv",
+                     {"mgi_allele_id_att": "allele_id",
+                      "phenotype_id_106_att": "phenotype_id"})
 
-        downloadData( "mgi_marker2gene.tsv",
-                      { "mgi_marker_id_att" : "marker_id", 
-                        "ensembl_gene_id_103" : "gene_id" } )
+        downloadData("mgi_marker2gene.tsv",
+                     {"mgi_marker_id_att": "marker_id",
+                      "ensembl_gene_id_103": "gene_id"})
 
-        downloadData( "mgi_markers.tsv",
-                      { "mgi_marker_id_att" : "marker_id", 
-                        "marker_symbol_107" : "symbol",
-                        "marker_name_107" : "name",         
-                        "marker_type_107": "type",         
-                        } )
+        downloadData("mgi_markers.tsv",
+                     {"mgi_marker_id_att": "marker_id",
+                      "marker_symbol_107": "symbol",
+                      "marker_name_107": "name",
+                      "marker_type_107": "type",
+                      })
 
-        downloadData( "mgi_alleles.tsv",
-                      { "mgi_allele_id_att" : "allele_id",
-                        "allele_symbol_101" : "symbol",
-                        "allele_name_101" : "name",
-                        "allele_type_101" : "type"
-                        } )
+        downloadData("mgi_alleles.tsv",
+                     {"mgi_allele_id_att": "allele_id",
+                      "allele_symbol_101": "symbol",
+                      "allele_name_101": "name",
+                      "allele_type_101": "type"
+                      })
 
-        downloadData( "mgi_phenotypes.tsv",
-                      { "phenotype_id_106_att" : "phenotype_id" ,
-                        "term_106": "term" } )
+        downloadData("mgi_phenotypes.tsv",
+                     {"phenotype_id_106_att": "phenotype_id",
+                      "term_106": "term"})
 
         for filename in glob.glob("mgi_*.tsv"):
             tablename = filename[:-len(".tsv")]
-            E.info( "loading %s" % tablename )
+            E.info("loading %s" % tablename)
 
             # remove duplicate rows
             # remove rows where only the first field is set
@@ -641,76 +656,70 @@ def importMGI( infile, outfile ):
 
             P.run()
 
-        
-@merge( None, "gene2omim.load")
-def loadGene2Omim( infile, outfile ):
+
+@merge(None, "gene2omim.load")
+def loadGene2Omim(infile, outfile):
     '''download gene id - OMIM associations via BIOMART.
 
     Missing numerical entries are set to 0 (from -2147483648). 
     '''
 
-    tablename = P.toTable( outfile )
+    tablename = P.toTable(outfile)
 
     columns = {
-        "ensembl_gene_id" : "gene_id",
-        "mim_gene_accession" : "mim_gene_id",
-        "mim_morbid_accession" : "mim_morbid_id",
-        "mim_morbid_description" : "mim_morbid_description",
-        }
+        "ensembl_gene_id": "gene_id",
+        "mim_gene_accession": "mim_gene_id",
+        "mim_morbid_accession": "mim_morbid_id",
+        "mim_morbid_description": "mim_morbid_description",
+    }
 
-    data = PBiomart.biomart_iterator( columns.keys()
-                                      , biomart = "ensembl"
-                                      , dataset = "hsapiens_gene_ensembl" )
+    data = PBiomart.biomart_iterator(
+        columns.keys(), biomart="ensembl", dataset="hsapiens_gene_ensembl")
 
-    def transform_data( data ):
+    def transform_data(data):
         for result in data:
             for x in ("mim_gene_accession", "mim_morbid_accession"):
                 result[x] = ("", result[x])[result[x] >= 0]
-            result["mim_morbid_description"] = result["mim_morbid_description"].strip()
+            result["mim_morbid_description"] = result[
+                "mim_morbid_description"].strip()
             yield result
 
-    PDatabase.importFromIterator( outfile
-                                  , tablename
-                                  , transform_data(data)
-                                  , columns = columns 
-                                  , indices = ("gene_id", ) )
+    PDatabase.importFromIterator(
+        outfile, tablename, transform_data(data), columns=columns, indices=("gene_id", ))
 
-@merge( None, "orthologs.load" )
-def loadHumanOrthologs( infile, outfile ):
+
+@merge(None, "orthologs.load")
+def loadHumanOrthologs(infile, outfile):
     '''download human2mouse orthologs
     '''
 
-    tablename = P.toTable( outfile )
+    tablename = P.toTable(outfile)
 
     if "orthology_species" in PARAMS:
         # we are within human, create a set of default 1:1 orthologs
         species = PARAMS["orthology_species"]
         columns = {
-            "ensembl_gene_id" : "hs_gene_id",
-            "%s_ensembl_gene" % species : "gene_id",
-            "%s_orthology_type" % species : "orthology_type",
-            "%s_homolog_ds" % species : "ds",
-            }
+            "ensembl_gene_id": "hs_gene_id",
+            "%s_ensembl_gene" % species: "gene_id",
+            "%s_orthology_type" % species: "orthology_type",
+            "%s_homolog_ds" % species: "ds",
+        }
 
-        data = PBiomart.biomart_iterator( columns.keys()
-                                          , biomart = "ensembl"
-                                          , dataset = "hsapiens_gene_ensembl" )
+        data = PBiomart.biomart_iterator(
+            columns.keys(), biomart="ensembl", dataset="hsapiens_gene_ensembl")
 
-        PDatabase.importFromIterator( outfile
-                                      , tablename
-                                      , data
-                                      , columns = columns 
-                                      , indices = ("hs_gene_id", "gene_id", ) )
-        
+        PDatabase.importFromIterator(
+            outfile, tablename, data, columns=columns, indices=("hs_gene_id", "gene_id", ))
+
     else:
         # we are within human, create a set of default 1:1 orthologs
         columns = {
-            "ensembl_gene_id" : "hs_gene_id",
+            "ensembl_gene_id": "hs_gene_id",
             "gene_id": "gene_id",
-            "orthology_type" : "orthology_type",
-            "ds" : "ds",
-            }
-        
+            "orthology_type": "orthology_type",
+            "ds": "ds",
+        }
+
         dbh = connect()
 
         statement = '''CREATE TABLE %(tablename)s AS 
@@ -720,17 +729,20 @@ def loadHumanOrthologs( infile, outfile ):
                               0 AS ds 
                        FROM annotations.gene_info'''
 
-        Database.executewait( dbh, "DROP TABLE IF EXISTS %(tablename)s" % locals() )
-        Database.executewait( dbh, statement % locals() )
-        Database.executewait( dbh, "CREATE INDEX %(tablename)s_index1 ON %(tablename)s (hs_gene_id)" % locals() )
-        Database.executewait( dbh, "CREATE INDEX %(tablename)s_index2 ON %(tablename)s (hs_gene_id)" % locals() )
-        
-    P.touch( outfile )
-    
+        Database.executewait(
+            dbh, "DROP TABLE IF EXISTS %(tablename)s" % locals())
+        Database.executewait(dbh, statement % locals())
+        Database.executewait(
+            dbh, "CREATE INDEX %(tablename)s_index1 ON %(tablename)s (hs_gene_id)" % locals())
+        Database.executewait(
+            dbh, "CREATE INDEX %(tablename)s_index2 ON %(tablename)s (hs_gene_id)" % locals())
+
+    P.touch(outfile)
+
 ###################################################################
 ###################################################################
 ###################################################################
-## MAIN PIPELINE
+# MAIN PIPELINE
 ###################################################################
 ###################################################################
 ###################################################################
@@ -738,8 +750,10 @@ def loadHumanOrthologs( infile, outfile ):
 ############################################################
 ############################################################
 ############################################################
-@merge( None, "seleno.list")
-def buildSelenoList( infile, outfile ):
+
+
+@merge(None, "seleno.list")
+def buildSelenoList(infile, outfile):
     '''export a list of seleno cysteine transcripts.'''
 
     dbhandle = connect()
@@ -751,22 +765,24 @@ def buildSelenoList( infile, outfile ):
     WHERE p.protein_id = t.protein_id AND
          p.nU > 0
     '''
-    outf = open(outfile, "w" )
+    outf = open(outfile, "w")
     outf.write("transcript_id\n")
-    outf.write("\n".join( [x[0] for x in cc.execute( statement) ] ) + "\n" )
+    outf.write("\n".join([x[0] for x in cc.execute(statement)]) + "\n")
     outf.close()
 
 ###################################################################
 ###################################################################
 ###################################################################
-## Targets for prepare
+# Targets for prepare
 ###################################################################
 
 ###################################################################
 ###################################################################
 ###################################################################
-@files( ( (PARAMS["ensembl_ensembl2uniprot"], "ensembl2uniprot.load" ), ) )
-def loadEnsembl2Uniprot( infile, outfile ):
+
+
+@files(((PARAMS["ensembl_ensembl2uniprot"], "ensembl2uniprot.load"), ))
+def loadEnsembl2Uniprot(infile, outfile):
     '''load mapping from ENSEMBL transcripts ids to
     uniprot ids.
 
@@ -778,8 +794,8 @@ def loadEnsembl2Uniprot( infile, outfile ):
     Uniprot Accession
     Uniport/Trembl Accession
     '''
-    
-    table = P.toTable( outfile )
+
+    table = P.toTable(outfile)
 
     statement = '''gunzip 
     < %(infile)s
@@ -802,11 +818,11 @@ def loadEnsembl2Uniprot( infile, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-@files( os.path.join( PARAMS["annotations_dir"],
-                      PARAMS_ANNOTATIONS["interface_geneset_all_gtf"]), 
-                      "annotations_bases.fasta" )
-def buildBaseAnnotations( infile, outfile ):
-    """build base annotations"""       
+@files(os.path.join(PARAMS["annotations_dir"],
+                    PARAMS_ANNOTATIONS["interface_geneset_all_gtf"]),
+       "annotations_bases.fasta")
+def buildBaseAnnotations(infile, outfile):
+    """build base annotations"""
 
     to_cluster = True
 
@@ -828,14 +844,16 @@ def buildBaseAnnotations( infile, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-@files( os.path.join( PARAMS["annotations_dir"],
-                      PARAMS_ANNOTATIONS["interface_geneset_all_gtf"]),
-        "annotations_exons.gtf" )
-def buildExonAnnotations( infile, outfile ):
+
+
+@files(os.path.join(PARAMS["annotations_dir"],
+                    PARAMS_ANNOTATIONS["interface_geneset_all_gtf"]),
+       "annotations_exons.gtf")
+def buildExonAnnotations(infile, outfile):
     """build exon annotations"""
 
     to_cluster = True
-    
+
     statement = """
         gunzip < %(infile)s 
         | awk '$3 == "CDS"' 
@@ -853,10 +871,12 @@ def buildExonAnnotations( infile, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-@files( os.path.join( PARAMS["annotations_dir"],
-                      PARAMS_ANNOTATIONS["interface_geneset_all_gtf"]),
-        "annotations_genes.gtf" )
-def buildGeneAnnotations( infile, outfile ):
+
+
+@files(os.path.join(PARAMS["annotations_dir"],
+                    PARAMS_ANNOTATIONS["interface_geneset_all_gtf"]),
+       "annotations_genes.gtf")
+def buildGeneAnnotations(infile, outfile):
     """build gene annotations.
 
     Merge exons per gene within the reference set. The
@@ -876,11 +896,13 @@ def buildGeneAnnotations( infile, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-@files( buildGeneAnnotations, "annotations_genes.counts" )
-def makeGeneCounts( infile, outfile ):
+
+
+@files(buildGeneAnnotations, "annotations_genes.counts")
+def makeGeneCounts(infile, outfile):
     """coun gene exon statistics.
     """
-    
+
     statement = """
     cat < %(infile)s |\
     python %(scriptsdir)s/gtf2table.py \
@@ -888,19 +910,21 @@ def makeGeneCounts( infile, outfile ):
         --counter=length \
         --log=%(outfile)s.log \
     > %(outfile)s
-    """ 
+    """
     P.run()
 
 ###################################################################
 ###################################################################
 ###################################################################
-@follows( buildBaseAnnotations, buildExonAnnotations)
-@files( [ ("variants.vcf.gz", "%s.annotations.gz" % x, x ) for x in TRACKS ] )
-def buildAnnotations( infile, outfile, sample ):
+
+
+@follows(buildBaseAnnotations, buildExonAnnotations)
+@files([("variants.vcf.gz", "%s.annotations.gz" % x, x) for x in TRACKS])
+def buildAnnotations(infile, outfile, sample):
     """annotate snps with gene set."""
 
     to_cluster = True
-    
+
     bases = "annotations_bases"
 
     statement = """
@@ -912,19 +936,21 @@ def buildAnnotations( infile, outfile, sample ):
         --filename-annotations=%(bases)s 
         --log=%(outfile)s.log 
     | gzip > %(outfile)s
-    """ 
+    """
     P.run()
 
 ###################################################################
 ###################################################################
 ###################################################################
-@transform( buildAnnotations,
-            suffix('.annotations.gz'), 
-            '_annotations.load' )
-def loadAnnotations( infile, outfile ):
+
+
+@transform(buildAnnotations,
+           suffix('.annotations.gz'),
+           '_annotations.load')
+def loadAnnotations(infile, outfile):
     '''load annotations'''
 
-    tablename = P.toTable( outfile )
+    tablename = P.toTable(outfile)
 
     statement = '''gunzip 
     < %(infile)s
@@ -941,12 +967,14 @@ def loadAnnotations( infile, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-@transform( buildAnnotations,
-            suffix('.annotations.gz'), 
-            '_annotations.summary' )
-def summarizeAnnotations( infile, outfile ):
+
+
+@transform(buildAnnotations,
+           suffix('.annotations.gz'),
+           '_annotations.summary')
+def summarizeAnnotations(infile, outfile):
     '''compute summary stats for annotation files.'''
-    
+
     to_cluster = True
 
     # count substitutions for each category
@@ -967,13 +995,15 @@ def summarizeAnnotations( infile, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-@transform( summarizeAnnotations,
-            suffix('_annotations.summary'), 
-            '_annotations_summary.load' )
-def loadAnnotationsSummary( infile, outfile ):
+
+
+@transform(summarizeAnnotations,
+           suffix('_annotations.summary'),
+           '_annotations_summary.load')
+def loadAnnotationsSummary(infile, outfile):
     '''load annotations'''
 
-    tablename = P.toTable( outfile )
+    tablename = P.toTable(outfile)
 
     statement = '''cat
     < %(infile)s
@@ -987,18 +1017,19 @@ def loadAnnotationsSummary( infile, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-@follows( buildSelenoList )
-@files( [ ("variants.vcf.gz", "%s.effects.gz" % x, x ) for x in TRACKS ] )
-def buildEffects( infile, outfile, sample ):
+
+
+@follows(buildSelenoList)
+@files([("variants.vcf.gz", "%s.effects.gz" % x, x) for x in TRACKS])
+def buildEffects(infile, outfile, sample):
     """annotate snps with gene set."""
 
     to_cluster = True
-    
+
     seleno = "seleno.list"
 
-    transcripts = os.path.join( PARAMS["annotations_dir"],
-                                PARAMS_ANNOTATIONS["interface_geneset_cds_gtf" ] )
-
+    transcripts = os.path.join(PARAMS["annotations_dir"],
+                               PARAMS_ANNOTATIONS["interface_geneset_cds_gtf"])
 
     statement = """
     python %(scriptsdir)s/snp2counts.py 
@@ -1013,16 +1044,18 @@ def buildEffects( infile, outfile, sample ):
         --log=%(outfile)s.log 
     | gzip 
     > %(outfile)s
-    """ 
+    """
     P.run()
 
 ###################################################################
 ###################################################################
 ###################################################################
-@transform(  buildEffects, 
-             suffix(".effects.gz"), 
-             "_effects.load" )
-def loadEffects( infile, outfile ):
+
+
+@transform(buildEffects,
+           suffix(".effects.gz"),
+           "_effects.load")
+def loadEffects(infile, outfile):
     '''load transcript effects into tables.'''
 
     root = infile[:-len(".effects.gz")]
@@ -1037,7 +1070,7 @@ def loadEffects( infile, outfile ):
     P.run()
 
     for suffix in ("cds", "intron", "splicing", "translation"):
-        
+
         statement = '''
         gunzip 
         < %(infile)s.%(suffix)s.gz
@@ -1054,23 +1087,26 @@ def loadEffects( infile, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-@merge(  buildEffects, "effects.load" )
-def mergeEffects( infiles, outfile ):
+
+
+@merge(buildEffects, "effects.load")
+def mergeEffects(infiles, outfile):
     '''load transcript effects into single table.'''
 
-    tablename = P.toTable( outfile )
-    outf = IOTools.openFile('effects.tsv.gz','w')
+    tablename = P.toTable(outfile)
+    outf = IOTools.openFile('effects.tsv.gz', 'w')
     first = True
     for f in infiles:
-        track = P.snip( os.path.basename(f), ".effects.gz" )
-        if not os.path.exists( f ): 
-            E.warn( "File %s missing" % f )
+        track = P.snip(os.path.basename(f), ".effects.gz")
+        if not os.path.exists(f):
+            E.warn("File %s missing" % f)
             continue
-        lines = [ x for x in gzip.open( f, "r").readlines() ]
-        if first: outf.write( "%s\t%s" % ("track", lines[0] ) )
+        lines = [x for x in gzip.open(f, "r").readlines()]
+        if first:
+            outf.write("%s\t%s" % ("track", lines[0]))
         first = False
         for i in range(1, len(lines)):
-            outf.write( "%s\t%s" % (track,lines[i] ))
+            outf.write("%s\t%s" % (track, lines[i]))
     outf.close()
     tmpfilename = outf.name
 
@@ -1083,22 +1119,23 @@ def mergeEffects( infiles, outfile ):
 
     for suffix in ("cds", "intron", "splicing", "translation"):
 
-        outf = IOTools.openFile('effects_'+suffix+'.tsv.gz','w')
+        outf = IOTools.openFile('effects_' + suffix + '.tsv.gz', 'w')
         first = True
         for f in infiles:
-            track = P.snip( os.path.basename(f), ".effects.gz" )
-            statfile = P.snip(f, ".gz" )  + suffix + ".gz"
-            if not os.path.exists( statfile ): 
-                E.warn( "File %s missing" % statfile )
+            track = P.snip(os.path.basename(f), ".effects.gz")
+            statfile = P.snip(f, ".gz") + suffix + ".gz"
+            if not os.path.exists(statfile):
+                E.warn("File %s missing" % statfile)
                 continue
-            lines = [ x for x in gzip.open( statfile, "r").readlines() ]
-            if first: outf.write( "%s\t%s" % ("track", lines[0] ) )
+            lines = [x for x in gzip.open(statfile, "r").readlines()]
+            if first:
+                outf.write("%s\t%s" % ("track", lines[0]))
             first = False
             for i in range(1, len(lines)):
-                outf.write( "%s\t%s" % (track,lines[i] ))
+                outf.write("%s\t%s" % (track, lines[i]))
         outf.close()
         tmpfilename = outf.name
-        
+
         statement = '''zcat %(tmpfilename)s 
                        | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
                            --allow-empty
@@ -1112,17 +1149,19 @@ def mergeEffects( infiles, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-@follows (buildSelenoList)
-@files( [ ("variants.vcf.gz", "%s.alleles" % x, x ) for x in TRACKS ] )
-def buildAlleles( infile, outfile, sample ):
+
+
+@follows(buildSelenoList)
+@files([("variants.vcf.gz", "%s.alleles" % x, x) for x in TRACKS])
+def buildAlleles(infile, outfile, sample):
     """annotate snps with gene set."""
 
     to_cluster = True
 
     seleno = "seleno.list"
 
-    transcripts = os.path.join( PARAMS["annotations_dir"],
-                                PARAMS_ANNOTATIONS["interface_geneset_cds_gtf" ] )
+    transcripts = os.path.join(PARAMS["annotations_dir"],
+                               PARAMS_ANNOTATIONS["interface_geneset_cds_gtf"])
 
     statement = """zcat %(transcripts)s 
     | python %(scriptsdir)s/gtf2alleles.py 
@@ -1132,19 +1171,21 @@ def buildAlleles( infile, outfile, sample ):
         --filename-vcf=%(infile)s
         --vcf-sample=%(sample)s
     > %(outfile)s
-    """ 
+    """
     P.run()
 
 ###################################################################
 ###################################################################
 ###################################################################
-@transform(  buildAlleles, 
-             suffix(".alleles"), 
-             "_alleles.load" )
-def loadAlleles( infile, outfile ):
+
+
+@transform(buildAlleles,
+           suffix(".alleles"),
+           "_alleles.load")
+def loadAlleles(infile, outfile):
     '''load allele.'''
 
-    tablename = outfile[:-len(".load")] 
+    tablename = outfile[:-len(".load")]
 
     statement = '''gunzip
     < %(infile)s.table.gz
@@ -1162,10 +1203,12 @@ def loadAlleles( infile, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-@transform(loadAlleles, 
+
+
+@transform(loadAlleles,
            suffix("_alleles.load"),
-           "_alleles_transcripts.load" )
-def summarizeAllelesPerTranscript( infile, outfile ):
+           "_alleles_transcripts.load")
+def summarizeAllelesPerTranscript(infile, outfile):
     '''summarize effects on a per-gene level.
 
     The following fields are exclusive:
@@ -1187,11 +1230,11 @@ def summarizeAllelesPerTranscript( infile, outfile ):
     allele, such that ``is_nmd_affected``, ``is_affected`` and ``has_wildtype`` 
     are all true.
     '''
-    
+
     tablename = outfile[:-len(".load")]
     track = infile[:-len("_alleles.load")]
 
-    dbhandle =  connect()
+    dbhandle = connect()
 
     statement = '''
     CREATE TABLE %(tablename)s AS
@@ -1216,20 +1259,23 @@ def summarizeAllelesPerTranscript( infile, outfile ):
     FROM %(track)s_alleles AS a
     GROUP BY transcript_id
     ''' % locals()
-    
-    Database.executewait( dbhandle, "DROP TABLE IF EXISTS %(tablename)s" % locals() )
-    Database.executewait( dbhandle, statement )
-    Database.executewait( dbhandle, "CREATE INDEX %(tablename)s_transcript_id ON %(tablename)s (transcript_id)" % locals())
-    Database.executewait( dbhandle, "UPDATE %(tablename)s SET is_knockout = is_nmd_knockout" % locals())
+
+    Database.executewait(
+        dbhandle, "DROP TABLE IF EXISTS %(tablename)s" % locals())
+    Database.executewait(dbhandle, statement)
+    Database.executewait(
+        dbhandle, "CREATE INDEX %(tablename)s_transcript_id ON %(tablename)s (transcript_id)" % locals())
+    Database.executewait(
+        dbhandle, "UPDATE %(tablename)s SET is_knockout = is_nmd_knockout" % locals())
     Database.executewait( dbhandle, '''UPDATE %(tablename)s SET is_truncated = 
                                        is_splice_truncated OR is_stop_truncated OR 
                                        (is_splice_affected AND is_stop_affected) OR 
                                        (is_splice_affected AND is_nmd_affected) OR 
                                        (is_stop_affected AND is_nmd_affected)
                                        ''' % locals())
-    Database.executewait( dbhandle, 'UPDATE %(tablename)s SET is_affected ='
-                          '(is_nmd_affected OR is_splice_affected OR is_stop_affected) AND NOT'
-                          '(is_knockout or is_truncated)'% locals())
+    Database.executewait(dbhandle, 'UPDATE %(tablename)s SET is_affected ='
+                         '(is_nmd_affected OR is_splice_affected OR is_stop_affected) AND NOT'
+                         '(is_knockout or is_truncated)' % locals())
     dbhandle.commit()
 
     P.touch(outfile)
@@ -1237,12 +1283,14 @@ def summarizeAllelesPerTranscript( infile, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-@transform(summarizeAllelesPerTranscript, 
+
+
+@transform(summarizeAllelesPerTranscript,
            suffix("_alleles_transcripts.load"),
-           "_alleles_genes.load" )
-def summarizeAllelesPerGene( infile, outfile ):
+           "_alleles_genes.load")
+def summarizeAllelesPerGene(infile, outfile):
     '''summarize effects on a per-gene level.'''
-    
+
     tablename = outfile[:-len(".load")]
     track = infile[:-len(".load")]
 
@@ -1272,40 +1320,44 @@ def summarizeAllelesPerGene( infile, outfile ):
     WHERE i.transcript_id = a.transcript_id
     GROUP BY i.gene_id
     ''' % locals()
-    
-    Database.executewait( dbhandle, "DROP TABLE IF EXISTS %(tablename)s" % locals() )
-    Database.executewait( dbhandle, statement )
-    Database.executewait( dbhandle, "CREATE INDEX %(tablename)s_gene_id ON %(tablename)s (gene_id)" % locals())
-    Database.executewait( dbhandle, "UPDATE %(tablename)s SET is_knockout = is_nmd_knockout" % locals())
+
+    Database.executewait(
+        dbhandle, "DROP TABLE IF EXISTS %(tablename)s" % locals())
+    Database.executewait(dbhandle, statement)
+    Database.executewait(
+        dbhandle, "CREATE INDEX %(tablename)s_gene_id ON %(tablename)s (gene_id)" % locals())
+    Database.executewait(
+        dbhandle, "UPDATE %(tablename)s SET is_knockout = is_nmd_knockout" % locals())
     Database.executewait( dbhandle, '''UPDATE %(tablename)s SET is_truncated = 
                                        is_splice_truncated OR is_stop_truncated OR 
                                        (is_splice_affected + is_stop_affected >= ntranscripts)  
                           ''' % locals())
-    Database.executewait( dbhandle, 'UPDATE %(tablename)s SET is_affected ='
-                          '(is_nmd_affected OR is_splice_affected OR is_stop_affected) AND NOT'
-                          '(is_knockout or is_truncated)'% locals())
+    Database.executewait(dbhandle, 'UPDATE %(tablename)s SET is_affected ='
+                         '(is_nmd_affected OR is_splice_affected OR is_stop_affected) AND NOT'
+                         '(is_knockout or is_truncated)' % locals())
 
     dbhandle.commit()
 
     P.touch(outfile)
 
-@merge(summarizeAllelesPerGene, 
-       "summary_alleles_genes.load" )
-def combineSummaryAllelesPerGene( infiles, outfile ):
-    
+
+@merge(summarizeAllelesPerGene,
+       "summary_alleles_genes.load")
+def combineSummaryAllelesPerGene(infiles, outfile):
+
     dbhandle = connect()
 
-    tracks = [ x[:-len("_alleles_genes.load")] for x in infiles ]
-    
-    tablename_prefix = P.toTable( outfile )
+    tracks = [x[:-len("_alleles_genes.load")] for x in infiles]
 
-    fields = ", ".join( ["%s INT" % x for x in tracks] )
+    tablename_prefix = P.toTable(outfile)
+
+    fields = ", ".join(["%s INT" % x for x in tracks])
 
     statement_create = '''
     CREATE TABLE %(tablename)s 
            ( gene_id TEXT,
              total INT,
-             %(fields)s )''' 
+             %(fields)s )'''
 
     statement_insert = '''
     INSERT INTO %(tablename)s
@@ -1314,49 +1366,54 @@ def combineSummaryAllelesPerGene( infiles, outfile ):
 
     statement_allgenes = "SELECT DISTINCT gene_id FROM gene_info"
 
-    for field in ("is_knockout", "is_truncated" ):
+    for field in ("is_knockout", "is_truncated"):
 
-        tablename = "%s_%s" % (tablename_prefix, field )
-        E.info( "creating %s" % tablename )
+        tablename = "%s_%s" % (tablename_prefix, field)
+        E.info("creating %s" % tablename)
 
-        all_genes = dict( [ (x[0],set()) 
-                            for x in Database.executewait( dbhandle, statement_allgenes % locals() )] )
+        all_genes = dict([(x[0], set())
+                          for x in Database.executewait(dbhandle, statement_allgenes % locals())])
 
-        Database.executewait( dbhandle, "DROP TABLE IF EXISTS %(tablename)s" % locals() )
-        Database.executewait( dbhandle, statement_create % locals() )
-        
+        Database.executewait(
+            dbhandle, "DROP TABLE IF EXISTS %(tablename)s" % locals())
+        Database.executewait(dbhandle, statement_create % locals())
+
         for track in tracks:
             statement = """SELECT gene_id 
                            FROM %(track)s_alleles_genes
                            WHERE %(field)s"""
-            
-            genes = [x[0] for x in Database.executewait( dbhandle, statement % locals() )]
-            
+
+            genes = [x[0]
+                     for x in Database.executewait(dbhandle, statement % locals())]
+
             for gene in genes:
-                all_genes[gene].add( track )
-                
+                all_genes[gene].add(track)
+
         for gene_id, data in all_genes.iteritems():
             matrix = [0] * len(tracks)
-            for x, track in enumerate(tracks): 
-                if track in data: matrix[x] = 1
+            for x, track in enumerate(tracks):
+                if track in data:
+                    matrix[x] = 1
             total = sum(matrix)
-            matrix = ",".join( [str(x) for x in matrix ] )
-            Database.executewait( dbhandle, statement_insert % locals() )
+            matrix = ",".join([str(x) for x in matrix])
+            Database.executewait(dbhandle, statement_insert % locals())
 
-        Database.executewait( dbhandle,
-                              "CREATE INDEX %(tablename)s_index1 on %(tablename)s (gene_id)" % locals())
+        Database.executewait(dbhandle,
+                             "CREATE INDEX %(tablename)s_index1 on %(tablename)s (gene_id)" % locals())
 
-    P.touch( outfile )
+    P.touch(outfile)
 
 ###################################################################
 ###################################################################
 ###################################################################
-@transform(loadEffects, 
+
+
+@transform(loadEffects,
            suffix("_effects.load"),
-           "_effects_genes.load" )
-def summarizeEffectsPerGene( infile, outfile ):
+           "_effects_genes.load")
+def summarizeEffectsPerGene(infile, outfile):
     '''summarize effects on a per-gene level.'''
-    
+
     tablename = outfile[:-len(".load")]
     track = infile[:-len("_effects.load")]
 
@@ -1382,24 +1439,26 @@ def summarizeEffectsPerGene( infile, outfile ):
     WHERE i.transcript_id = e.transcript_id
     GROUP BY i.gene_id
     ''' % locals()
-    
-    Database.executewait( dbhandle, "DROP TABLE IF EXISTS %(tablename)s" % locals() )
-    Database.executewait( dbhandle, statement )
-    Database.executewait( dbhandle, "CREATE INDEX %(tablename)s_gene_id ON %(tablename)s (gene_id)" % locals())
+
+    Database.executewait(
+        dbhandle, "DROP TABLE IF EXISTS %(tablename)s" % locals())
+    Database.executewait(dbhandle, statement)
+    Database.executewait(
+        dbhandle, "CREATE INDEX %(tablename)s_gene_id ON %(tablename)s (gene_id)" % locals())
     dbhandle.commit()
 
     P.touch(outfile)
-    
+
 
 ###################################################################
-@follows( buildGeneAnnotations )
-@files_re(  glob.glob( '*.pileup.gz'),
-            '(.*).pileup.gz', 
-            [r'\1.pileup.gz', "annotations_genes.gtf" ],
-            r'\1.genecounts.gz' )
-def makeSNPCountsPerGene( infiles, outfile ):
+@follows(buildGeneAnnotations)
+@files_re(glob.glob('*.pileup.gz'),
+          '(.*).pileup.gz',
+          [r'\1.pileup.gz', "annotations_genes.gtf"],
+          r'\1.genecounts.gz')
+def makeSNPCountsPerGene(infiles, outfile):
     """count snps within genes"""
-    
+
     infile_snps, infile_genes = infiles
 
     statement = """
@@ -1410,13 +1469,15 @@ def makeSNPCountsPerGene( infiles, outfile ):
         --filename-exons=%(ensembl_filename_gtf)s \
         --log=%(outfile)s.log |\
     gzip > %(outfile)s
-    """ 
+    """
     P.run()
 
 ############################################################################
-@follows( mkdir( os.path.join( PARAMS["scratchdir"], "malis.dir" ) ) )
-@merge( buildAlleles, "malis.map" )
-def setupMultipleAlignment( infiles, outfile ):
+
+
+@follows(mkdir(os.path.join(PARAMS["scratchdir"], "malis.dir")))
+@merge(buildAlleles, "malis.map")
+def setupMultipleAlignment(infiles, outfile):
     '''prepare input files for multiple alignment computations.
 
     This script does some id-mapping to resolve coordinates.
@@ -1425,7 +1486,7 @@ def setupMultipleAlignment( infiles, outfile ):
     Gene_id's will be suffixed with the allele_id. This ensures
     that exons of a gene with multiple transcipts will be resolved
     correctly with consistent coordinates. 
- 
+
     From an alignment point of view, the two alleles of the genes will be treated
     independently, but transcripts within a gene  will be merged correctly at exon 
     boundaries, again on a per-allele basis.
@@ -1434,13 +1495,16 @@ def setupMultipleAlignment( infiles, outfile ):
     the transcript.
     '''
 
-    targetdir = os.path.join( PARAMS["scratchdir"], "malis.dir" )
+    targetdir = os.path.join(PARAMS["scratchdir"], "malis.dir")
 
-    filepool_gtf = IOTools.FilePoolMemory( "%(targetdir)s/cluster_%%s.dir/cluster_%%s.gtf" % locals() )
-    filepool_pep = IOTools.FilePoolMemory( "%(targetdir)s/cluster_%%s.dir/cluster_%%s_pep.fasta" % locals() )
-    filepool_cds = IOTools.FilePoolMemory( "%(targetdir)s/cluster_%%s.dir/cluster_%%s_cds.fasta" % locals() )
+    filepool_gtf = IOTools.FilePoolMemory(
+        "%(targetdir)s/cluster_%%s.dir/cluster_%%s.gtf" % locals())
+    filepool_pep = IOTools.FilePoolMemory(
+        "%(targetdir)s/cluster_%%s.dir/cluster_%%s_pep.fasta" % locals())
+    filepool_cds = IOTools.FilePoolMemory(
+        "%(targetdir)s/cluster_%%s.dir/cluster_%%s_cds.fasta" % locals())
 
-    outf = open( outfile, "w")
+    outf = open(outfile, "w")
     outf.write("id\tgroup_id\n")
 
     map_gene2group = {}
@@ -1449,43 +1513,50 @@ def setupMultipleAlignment( infiles, outfile ):
     counts = E.Counter()
     for infile in infiles:
         track = infile[:-len(".alleles")]
-        E.info( "adding track %s" % track )
+        E.info("adding track %s" % track)
 
-        reader = CSV.DictReader( open(infile+".table","rU"), dialect="excel-tab" )
+        reader = CSV.DictReader(
+            open(infile + ".table", "rU"), dialect="excel-tab")
         for row in reader:
             counts.input += 1
-            gene_id, allele_id,transcript_id = row["gene_id"], row["allele_id"], row["transcript_id"]
+            gene_id, allele_id, transcript_id = row[
+                "gene_id"], row["allele_id"], row["transcript_id"]
             if gene_id not in map_gene2group:
                 map_gene2group[gene_id] = len(map_gene2group)
             group_id = map_gene2group[gene_id]
-            new_gene_id = "-".join( (gene_id, allele_id))
-            if row["is_wildtype"] == "1": code = "WT"
-            if row["is_nmd_knockout"] == "1": 
+            new_gene_id = "-".join((gene_id, allele_id))
+            if row["is_wildtype"] == "1":
+                code = "WT"
+            if row["is_nmd_knockout"] == "1":
                 counts.nmd_knockouts += 1
                 continue
 
-            else: code = "VA"
-            seq_id = SEPARATOR.join( (track, transcript_id, new_gene_id ))
+            else:
+                code = "VA"
+            seq_id = SEPARATOR.join((track, transcript_id, new_gene_id))
             map_seqid2code[seq_id] = code
-            seq_id = SEPARATOR.join( (seq_id, code))
-            outf.write( "%s\t%i\n" % (seq_id, group_id))
-            filepool_pep.write( str(group_id), ">%s\n%s\n" % (seq_id, row["peptide"] ) )
-            filepool_cds.write( str(group_id), ">%s\n%s\n" % (seq_id, row["cds"] ) )
+            seq_id = SEPARATOR.join((seq_id, code))
+            outf.write("%s\t%i\n" % (seq_id, group_id))
+            filepool_pep.write(str(group_id), ">%s\n%s\n" %
+                               (seq_id, row["peptide"]))
+            filepool_cds.write(str(group_id), ">%s\n%s\n" %
+                               (seq_id, row["cds"]))
             counts.written += 1
 
-        with open(infile+".gtf") as inf:
-            for gtf in GTF.iterator( inf ): 
+        with open(infile + ".gtf") as inf:
+            for gtf in GTF.iterator(inf):
                 group_id = map_gene2group[gtf.gene_id]
-                new_gene_id = "-".join( (gtf.gene_id, gtf["allele_id"]))
-                seq_id = SEPARATOR.join( (track, gtf.transcript_id, new_gene_id ))
-                seq_id = SEPARATOR.join( (seq_id, map_seqid2code[seq_id]))
+                new_gene_id = "-".join((gtf.gene_id, gtf["allele_id"]))
+                seq_id = SEPARATOR.join(
+                    (track, gtf.transcript_id, new_gene_id))
+                seq_id = SEPARATOR.join((seq_id, map_seqid2code[seq_id]))
                 gtf.transcript_id = seq_id
-                filepool_gtf.write( group_id, str(gtf) + "\n")
+                filepool_gtf.write(group_id, str(gtf) + "\n")
 
         x += 1
         # if x > 2: break
 
-    E.info( "writing data" )
+    E.info("writing data")
     filepool_gtf.close()
     filepool_pep.close()
     filepool_cds.close()
@@ -1493,12 +1564,13 @@ def setupMultipleAlignment( infiles, outfile ):
     counts.ngroups = len(map_gene2group)
     counts.nsequences = len(map_seqid2code)
 
-    E.info( "%s\n" % (str(counts)) )
+    E.info("%s\n" % (str(counts)))
 
-@transform( os.path.join( PARAMS["scratchdir"], "malis.dir", "*", "*.gtf"), 
-            suffix(".gtf"), 
-            ".mali")
-def buildMultipleAlignments( infile, outfile ):
+
+@transform(os.path.join(PARAMS["scratchdir"], "malis.dir", "*", "*.gtf"),
+           suffix(".gtf"),
+           ".mali")
+def buildMultipleAlignments(infile, outfile):
     '''build multiple alignments.'''
 
     track = infile[:-len(".gtf")]
@@ -1524,8 +1596,9 @@ def buildMultipleAlignments( infile, outfile ):
 
     P.run()
 
-@merge( buildMultipleAlignments, "variants" )
-def buildMultipleAlignmentVariantColumns( infile, outfile ):
+
+@merge(buildMultipleAlignments, "variants")
+def buildMultipleAlignmentVariantColumns(infile, outfile):
     '''build multiple alignments.'''
 
     track = infile[:-len(".gtf")]
@@ -1551,8 +1624,9 @@ def buildMultipleAlignmentVariantColumns( infile, outfile ):
 
     P.run()
 
-@merge( buildMultipleAlignments, "malis.result" )
-def mergeMultipleAlignments( infiles, outfile ):
+
+@merge(buildMultipleAlignments, "malis.result")
+def mergeMultipleAlignments(infiles, outfile):
     '''collect multiple alignment results into files that
     are compatible with OPTIC.
     '''
@@ -1562,23 +1636,26 @@ def mergeMultipleAlignments( infiles, outfile ):
 
         counter = E.Counter()
 
-        E.info("processing %s into %s" % (section, outfilename ))
-        outf = gzip.open( outfilename, "w" )
-        outf.write("cluster_id\tspecies\ttranscript_id\tgene_id\tcode\tsequence\n")
+        E.info("processing %s into %s" % (section, outfilename))
+        outf = gzip.open(outfilename, "w")
+        outf.write(
+            "cluster_id\tspecies\ttranscript_id\tgene_id\tcode\tsequence\n")
         for infile in infiles:
             counter.input += 1
-            dirname, filename = os.path.split( infile )
-            cluster_id = re.match("cluster_(\d+).mali", filename ).groups()[0]
-            infilename = os.path.join( dirname, "cluster_%s_%s.fasta" % (cluster_id, section))
+            dirname, filename = os.path.split(infile)
+            cluster_id = re.match("cluster_(\d+).mali", filename).groups()[0]
+            infilename = os.path.join(
+                dirname, "cluster_%s_%s.fasta" % (cluster_id, section))
             # E.debug( "adding %s - %s from %s" % (filename, cluster_id, infilename) )
             if not os.path.exists(infilename):
                 counter.missing += 1
-                E.warn("multiple alignment %s missing" % infilename )
+                E.warn("multiple alignment %s missing" % infilename)
                 continue
-            for entry in FastaIterator.FastaIterator( open( infilename, "r")):
+            for entry in FastaIterator.FastaIterator(open(infilename, "r")):
                 parts = entry.title.split(SEPARATOR)
                 if len(parts) == 4:
-                    species, transcript_id, gene_id, code = entry.title.split(SEPARATOR)
+                    species, transcript_id, gene_id, code = entry.title.split(
+                        SEPARATOR)
                 elif len(parts) == 2:
                     species, gene_id = entry.title.split(SEPARATOR)
                     transcipt_id = gene_id
@@ -1587,25 +1664,26 @@ def mergeMultipleAlignments( infiles, outfile ):
                 gene_id, allele_id = gene_id.split("-")
                 transcript_id += "-" + allele_id
 
-                outf.write( "\t".join(map(str,
-                                          (cluster_id,
-                                           species,
-                                           transcript_id,
-                                           gene_id,
-                                           code,
-                                           entry.sequence))) + "\n")
+                outf.write("\t".join(map(str,
+                                         (cluster_id,
+                                          species,
+                                          transcript_id,
+                                          gene_id,
+                                          code,
+                                          entry.sequence))) + "\n")
             counter.output += 1
 
         outf.close()
-        E.info( "%s: %s" % (outfilename, str(counter)))
+        E.info("%s: %s" % (outfilename, str(counter)))
 
     P.touch(outfile)
 
-@merge( '*_pileup.load', 
-        "genome.maf.gz" )
-def buildMAF( infiles, outfile ):
 
-    tracks = " ".join( ["--track=%s" % x[:-len(".load")] for x in infiles] )
+@merge('*_pileup.load',
+       "genome.maf.gz")
+def buildMAF(infiles, outfile):
+
+    tracks = " ".join(["--track=%s" % x[:-len(".load")] for x in infiles])
 
     statement = '''
     gunzip 
@@ -1621,32 +1699,34 @@ def buildMAF( infiles, outfile ):
           --pattern='\(\\\\\\S+\)_pileup'
           --log=%(outfile)s.log" | gzip
     > %(outfile)s
-    ''' 
+    '''
 
     P.run()
 
 ###################################################################
 ###################################################################
 ###################################################################
-@merge(summarizeAllelesPerGene, 
-       ( "export/nmd_knockouts.tsv.gz",
-         "export/nmd_knockouts_summary.tsv.gz",
-         ) )
-def exportKnockoutLists( infiles, outfiles ):
+
+
+@merge(summarizeAllelesPerGene,
+       ("export/nmd_knockouts.tsv.gz",
+        "export/nmd_knockouts_summary.tsv.gz",
+        ))
+def exportKnockoutLists(infiles, outfiles):
 
     dbhandle = connect()
 
-    outf = gzip.open( outfiles[0], "w")
-    
+    outf = gzip.open(outfiles[0], "w")
+
     headers = ("strain",
-               "gene_id", 
-               "gene_name", 
-               "ntranscripts", 
+               "gene_id",
+               "gene_name",
+               "ntranscripts",
                "contig",
                "strand",
                "stops-start",
-               "stops-end" )
-    
+               "stops-end")
+
     outf.write("%s\n" % "\t".join(headers))
 
     for infile in infiles:
@@ -1666,50 +1746,55 @@ def exportKnockoutLists( infiles, outfiles ):
                             annotations.transcript_info AS i
                         WHERE g.gene_id = i.gene_id AND g.is_nmd_knockout
         ''' % locals()
-        
-        outf.write( "\n".join( ["\t".join(map(str,x)) \
-                                    for x in Database.executewait( dbhandle, statement ).fetchall() ] ) + "\n" )
+
+        outf.write("\n".join(["\t".join(map(str, x))
+                              for x in Database.executewait(dbhandle, statement).fetchall()]) + "\n")
 
     outf.close()
 
-    headers = ( "gene_id", 
-                "gene_name", 
-                "nmd_knockout_total",
-                "strains" )
+    headers = ("gene_id",
+               "gene_name",
+               "nmd_knockout_total",
+               "strains")
 
-    outf = gzip.open( outfiles[1], "w")    
+    outf = gzip.open(outfiles[1], "w")
     outf.write("%s\n" % "\t".join(headers))
 
-    columns = ["%s_nmd_knockout" % t for t in TRACKS ]
-    fields = ",".join( columns )
+    columns = ["%s_nmd_knockout" % t for t in TRACKS]
+    fields = ",".join(columns)
 
     statement = '''
         SELECT DISTINCT gene_id, gene_name, nmd_knockout_total, %(fields)s 
         FROM view_genes WHERE nmd_knockout_total > 0
         ''' % locals()
-        
-    data = list(dbhandle.execute( statement ))
 
-    d = dict(zip( ["gene_id", "gene_name", "nmd_knockout_total" ] + columns, zip(*data )))
+    data = list(dbhandle.execute(statement))
+
+    d = dict(
+        zip(["gene_id", "gene_name", "nmd_knockout_total"] + columns, zip(*data)))
 
     c = []
     for x in range(len(d["gene_id"])):
         s = []
         for t in TRACKS:
-            if d["%s_nmd_knockout" % t][x] != 0: s.append( t )
-        c.append( ",".join(s) )
+            if d["%s_nmd_knockout" % t][x] != 0:
+                s.append(t)
+        c.append(",".join(s))
 
-    for t in TRACKS: del d["%s_nmd_knockout" % t]
-    
-    for d,strains in zip(data,c):
-        outf.write( "\t".join( map(str, d[:3]) ) + "\t%s\n" % strains )
+    for t in TRACKS:
+        del d["%s_nmd_knockout" % t]
+
+    for d, strains in zip(data, c):
+        outf.write("\t".join(map(str, d[:3])) + "\t%s\n" % strains)
     outf.close()
 
 ###################################################################
 ###################################################################
 ###################################################################
-@merge( loadEffects, "polyphen.input" )
-def buildPolyphenInput( infiles, outfile ):
+
+
+@merge(loadEffects, "polyphen.input")
+def buildPolyphenInput(infiles, outfile):
     '''build polyphen input file.
 
     SNPS across all species are aggregated into a single
@@ -1731,7 +1816,7 @@ def buildPolyphenInput( infiles, outfile ):
     be different for the same SNP depending on the transcript,
     its effect needs to be predicted twice.
     '''
-    
+
     statement = '''SELECT
         transcript_id,
         cds_start,
@@ -1752,27 +1837,29 @@ def buildPolyphenInput( infiles, outfile ):
     infiles.sort()
 
     # uniprot mapping:
-    #map_transcript2id = dict( 
-    #cc.execute( "SELECT transcript_id, trembl_acc FROM ensembl2uniprot WHERE trembl_acc IS NOT NULL").fetchall() )
+    # map_transcript2id = dict(
+    # cc.execute( "SELECT transcript_id, trembl_acc FROM ensembl2uniprot WHERE
+    # trembl_acc IS NOT NULL").fetchall() )
 
     # ensembl mapping
     map_transcript2id = dict(
-        cc.execute( "SELECT transcript_id, protein_id FROM annotations.transcript_info WHERE protein_id IS NOT NULL").fetchall() )
+        cc.execute("SELECT transcript_id, protein_id FROM annotations.transcript_info WHERE protein_id IS NOT NULL").fetchall())
 
     total_counts = E.Counter()
     notfound, found = set(), set()
 
-    outf_map = open( outfile + ".map", "w" )
-    outf_map.write( "snp_id\ttrack\ttranscript_id\tprotein_id\tprotein_pos\tlocus_id\tcontig\tpos\tphase\n" )
-    
-    outf = open( outfile, "w" )
-    
+    outf_map = open(outfile + ".map", "w")
+    outf_map.write(
+        "snp_id\ttrack\ttranscript_id\tprotein_id\tprotein_pos\tlocus_id\tcontig\tpos\tphase\n")
+
+    outf = open(outfile, "w")
+
     snps = {}
     locus_ids = {}
 
     for infile in infiles:
 
-        table = P.toTable( infile ) 
+        table = P.toTable(infile)
         track = table[:-len("_effects")]
         cc.execute(statement % locals())
 
@@ -1784,80 +1871,84 @@ def buildPolyphenInput( infiles, outfile ):
             counts.input += 1
 
             if transcript_id not in map_transcript2id:
-                notfound.add( transcript_id )
+                notfound.add(transcript_id)
                 counts.not_found += 1
                 continue
 
             if "," in variant_codons:
                 counts.heterozygous += 1
                 continue
-            
-            for phase in range(0,3):
-                if orig_na[phase].lower() != variant_na[phase].lower(): 
+
+            for phase in range(0, 3):
+                if orig_na[phase].lower() != variant_na[phase].lower():
                     break
 
             pid = map_transcript2id[transcript_id]
             # one-based coordinates
             peptide_pos = int(math.floor(cds_start / 3.0)) + 1
-            key = "%s-%i-%s" % (pid, peptide_pos,variant_codons)
+            key = "%s-%i-%s" % (pid, peptide_pos, variant_codons)
 
-            if key in snps: 
+            if key in snps:
                 snp_id = snps[key]
             else:
                 snp_id = len(snps)
                 snps[key] = snp_id
-                outf.write( "snp%010i\t%s\t%i\t%s\t%s\n" % \
-                                (snp_id,
-                                 pid,
-                                 peptide_pos,
-                                 orig_codons,
-                                 variant_codons,
-                                 ) )
-                counts.output += 1                
+                outf.write("snp%010i\t%s\t%i\t%s\t%s\n" %
+                           (snp_id,
+                            pid,
+                            peptide_pos,
+                            orig_codons,
+                            variant_codons,
+                            ))
+                counts.output += 1
 
-            locus_key = "%s-%i-%s" % (contig,pos,variant_codons)
+            locus_key = "%s-%i-%s" % (contig, pos, variant_codons)
             if locus_key not in locus_ids:
                 locus_ids[locus_key] = len(locus_ids)
-            
-            # use 0-based coordinates throughout, including peptide pos
-            outf_map.write( "snp%010i\t%s\t%s\t%s\t%i\tloc%010i\t%s\t%i\t%i\n" % \
-                                (snp_id, 
-                                 track,
-                                 transcript_id,
-                                 pid,
-                                 peptide_pos-1,
-                                 locus_ids[locus_key],
-                                 contig, 
-                                 pos,
-                                 phase) )
 
-            found.add( transcript_id )
+            # use 0-based coordinates throughout, including peptide pos
+            outf_map.write("snp%010i\t%s\t%s\t%s\t%i\tloc%010i\t%s\t%i\t%i\n" %
+                           (snp_id,
+                            track,
+                            transcript_id,
+                            pid,
+                            peptide_pos - 1,
+                            locus_ids[locus_key],
+                            contig,
+                            pos,
+                            phase))
+
+            found.add(transcript_id)
 
         total_counts += counts
 
-        E.info( "%s: %s" % (table, str(counts) ))
+        E.info("%s: %s" % (table, str(counts)))
 
     outf.close()
     outf_map.close()
 
-    E.info( "%s: transcripts: %s found, %i not found" % (table,
-                                                         len(found),
-                                                         len(notfound)))
+    E.info("%s: transcripts: %s found, %i not found" % (table,
+                                                        len(found),
+                                                        len(notfound)))
 
-    E.info( "total=%s, snp_ids=%i, locus_ids=%i" % (str(total_counts), len(snps), len(locus_ids) ))
+    E.info("total=%s, snp_ids=%i, locus_ids=%i" %
+           (str(total_counts), len(snps), len(locus_ids)))
     if notfound:
-        E.warn( "%i transcripts had SNPS that were ignored because there was no uniprot accession" % len(notfound))
-        E.warn( "notfound: %s" % ",".join( notfound))
+        E.warn("%i transcripts had SNPS that were ignored because there was no uniprot accession" %
+               len(notfound))
+        E.warn("notfound: %s" % ",".join(notfound))
 
     statement = '''sort -k2,2 -k3,3n %(outfile)s > %(outfile)s.tmp; mv %(outfile)s.tmp %(outfile)s'''
 
-    P.run( )
+    P.run()
 
 ###################################################################
 ###################################################################
 ###################################################################
-@transform( buildPolyphenInput, suffix(".input"), ".features")
-def buildPolyphenFeatures( infile, outfile ):
+
+
+@transform(buildPolyphenInput, suffix(".input"), ".features")
+def buildPolyphenFeatures(infile, outfile):
     '''run polyphen on the cluster.
 
     To do this, first send uniref to all nodes:
@@ -1866,28 +1957,28 @@ def buildPolyphenFeatures( infile, outfile ):
            --collection=andreas 
            /net/cpp-group/tools/polyphen-2.0.18/nrdb/uniref100*.{pin,psd,psi,phr,psq,pal}
     '''
-    
-    nsnps = len([ x for x in open(infile)])
+
+    nsnps = len([x for x in open(infile)])
 
     to_cluster = True
-    stepsize = max( int(nsnps / 200000.0), 1000 )
-    job_array=(0, nsnps, stepsize)
-    E.info("running array jobs on %i snps" % nsnps )
+    stepsize = max(int(nsnps / 200000.0), 1000)
+    job_array = (0, nsnps, stepsize)
+    E.info("running array jobs on %i snps" % nsnps)
 
     scratchdir = os.path.join(os.path.abspath("."), "scratch")
     try:
-        os.mkdir( scratchdir )
+        os.mkdir(scratchdir)
     except OSError:
         pass
 
     resultsdir = outfile + ".dir"
     try:
-        os.mkdir( resultsdir )
+        os.mkdir(resultsdir)
     except OSError:
         pass
 
-    filename_peptides = os.path.join( PARAMS["annotations_dir"],
-                             PARAMS_ANNOTATIONS["interface_peptides_fasta"] )
+    filename_peptides = os.path.join(PARAMS["annotations_dir"],
+                                     PARAMS_ANNOTATIONS["interface_peptides_fasta"])
 
     statement = '''
     %(polyphen_home)s/bin/run_pph.pl
@@ -1899,7 +1990,7 @@ def buildPolyphenFeatures( infile, outfile ):
     P.run()
 
     to_cluster = False
-    job_array=None
+    job_array = None
 
     statement = '''find %(resultsdir)s -name "*.err.*" -exec cat {} \; > %(outfile)s.log'''
     P.run()
@@ -1913,10 +2004,12 @@ def buildPolyphenFeatures( infile, outfile ):
 # do not run in parallel. run_weka.pl creates a $testfile
 # that is not unique. run_weka.pl and pph2arff.pl could either
 # be patched or the following jobs run in sequence.
-@jobs_limit( 1 )
-@files( [ ( buildPolyphenFeatures, "polyphen_%s.output.gz" % x, x ) \
-              for x in P.asList( PARAMS["polyphen_models"] ) ] )
-def runPolyphen( infile, outfile, model ):
+
+
+@jobs_limit(1)
+@files([(buildPolyphenFeatures, "polyphen_%s.output.gz" % x, x)
+        for x in P.asList(PARAMS["polyphen_models"])])
+def runPolyphen(infile, outfile, model):
     '''run POLYPHEN on feature tables to classify SNPs.
     '''
 
@@ -1935,17 +2028,19 @@ def runPolyphen( infile, outfile, model ):
     > %(outfile)s 
     2> %(outfile)s.log
     '''
-    
+
     P.run()
 
 ###################################################################
 ###################################################################
 ###################################################################
-@transform( buildPolyphenInput, suffix(".input"), "_map.load" )
-def loadPolyphenMap( infile, outfile ):
+
+
+@transform(buildPolyphenInput, suffix(".input"), "_map.load")
+def loadPolyphenMap(infile, outfile):
     '''load polyphen input data.'''
 
-    table = P.toTable( outfile )
+    table = P.toTable(outfile)
     statement = '''
    python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --index=snp_id 
@@ -1962,11 +2057,13 @@ def loadPolyphenMap( infile, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-@transform( runPolyphen, suffix(".output.gz"), ".load")
-def loadPolyphen( infile, outfile ):
+
+
+@transform(runPolyphen, suffix(".output.gz"), ".load")
+def loadPolyphen(infile, outfile):
     '''load polyphen results.'''
-    
-    table = P.toTable( outfile )
+
+    table = P.toTable(outfile)
 
     statement = '''
     gunzip 
@@ -1984,8 +2081,10 @@ def loadPolyphen( infile, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-@transform( loadPolyphen, suffix(".load"), ".genestats")
-def analysePolyphen( infile, outfile ):
+
+
+@transform(loadPolyphen, suffix(".load"), ".genestats")
+def analysePolyphen(infile, outfile):
     '''compute enrichment of SNPs within genes
     and deleterious SNPs within SNPs within genes.
 
@@ -1993,8 +2092,8 @@ def analysePolyphen( infile, outfile ):
     len: enrichment of snps within genes
     com: enrichment of deleterious snps within gene
     '''
-    
-    table = P.toTable( infile )
+
+    table = P.toTable(infile)
     tablename_map = "polyphen_map"
 
     dbhandle = connect()
@@ -2023,49 +2122,55 @@ def analysePolyphen( infile, outfile ):
                    GROUP BY i.gene_id'''
     gene_ids = cc.execute(statement).fetchall()
 
-    total_nsnps = sum( [ x[1] for x in data ] )
-    total_ndel = sum( [ x[2] for x in data ] )
-    total_length = sum( [ x[1] for x in gene_ids ] )
+    total_nsnps = sum([x[1] for x in data])
+    total_ndel = sum([x[2] for x in data])
+    total_length = sum([x[1] for x in gene_ids])
     del_p = float(total_ndel) / total_nsnps
     len_p = float(total_nsnps) / total_length
     com_p = float(total_ndel) / total_length
 
-    E.info( "del: background probability: %i/%i = %f" % (total_ndel, total_nsnps, del_p ) )
-    E.info( "len: background probability: %i/%i = %f" % (total_nsnps, total_length, len_p ) )
-    E.info( "com: background probability: %i/%i = %f" % (total_ndel, total_length, com_p ) )
+    E.info("del: background probability: %i/%i = %f" %
+           (total_ndel, total_nsnps, del_p))
+    E.info("len: background probability: %i/%i = %f" %
+           (total_nsnps, total_length, len_p))
+    E.info("com: background probability: %i/%i = %f" %
+           (total_ndel, total_length, com_p))
 
-    outf = open( outfile, "w" )
-    outf.write( "\t".join( ("gene_id", "code", 
-                            "length", "nsnps", "ndel", 
-                            "del_p", "del_pvalue", "del_qvalue", 
-                            "len_p", "len_pvalue", "len_qvalue",
-                            "com_p", "com_pvalue", "com_qvalue", ) ) + "\n" )
+    outf = open(outfile, "w")
+    outf.write("\t".join(("gene_id", "code",
+                          "length", "nsnps", "ndel",
+                          "del_p", "del_pvalue", "del_qvalue",
+                          "len_p", "len_pvalue", "len_qvalue",
+                          "com_p", "com_pvalue", "com_qvalue", )) + "\n")
 
     del_pvalues, len_pvalues, com_pvalues = [], [], []
     for gene_id, nsnps, ndel, length in data:
 
         # use -1, because I need P( x >= X)
-        # sf = 1 - cdf and cdf = P( x <= X ), thus sf = 1 - P( x <= X ) = P (x > X ).
-        del_pvalues.append( scipy.stats.binom.sf( ndel - 1, nsnps, del_p ) ) 
-        len_pvalues.append( scipy.stats.binom.sf( nsnps - 1, int(round(length)), len_p ) )
-        com_pvalues.append( scipy.stats.binom.sf( ndel - 1, int(round(length)), com_p ) )
+        # sf = 1 - cdf and cdf = P( x <= X ), thus sf = 1 - P( x <= X ) = P (x
+        # > X ).
+        del_pvalues.append(scipy.stats.binom.sf(ndel - 1, nsnps, del_p))
+        len_pvalues.append(
+            scipy.stats.binom.sf(nsnps - 1, int(round(length)), len_p))
+        com_pvalues.append(
+            scipy.stats.binom.sf(ndel - 1, int(round(length)), com_p))
 
     if len(del_pvalues) > 10:
-        del_qvalues = Stats.doFDR( del_pvalues ).mQValues
+        del_qvalues = Stats.doFDR(del_pvalues).mQValues
     else:
-        E.warn("no FDR computed for del" )
+        E.warn("no FDR computed for del")
         del_qvalues = del_pvalues
 
     if len(len_pvalues) > 10:
-        len_qvalues = Stats.doFDR( len_pvalues ).mQValues
+        len_qvalues = Stats.doFDR(len_pvalues).mQValues
     else:
-        E.warn("no FDR computed for del" )
+        E.warn("no FDR computed for del")
         len_qvalues = len_pvalues
 
     if len(com_pvalues) > 10:
-        com_q = Stats.doFDR( com_pvalues ).mQValues
+        com_q = Stats.doFDR(com_pvalues).mQValues
     else:
-        E.warn("no FDR computed for com" )
+        E.warn("no FDR computed for com")
         com_qvalues = com_pvalues
 
     fdr = PARAMS["polyphen_fdr"]
@@ -2073,8 +2178,8 @@ def analysePolyphen( infile, outfile ):
     found = set()
 
     for a, del_pvalue, del_qvalue, len_pvalue, len_qvalue, com_pvalue, com_qvalue in \
-            zip(data, 
-                del_pvalues, del_qvalues, 
+            zip(data,
+                del_pvalues, del_qvalues,
                 len_pvalues, len_qvalues,
                 com_pvalues, com_qvalues,
                 ):
@@ -2084,54 +2189,58 @@ def analysePolyphen( infile, outfile ):
         del_p = float(ndel) / nsnps
         len_p = float(nsnps) / length
 
-        code = "".join( [ str(int(x < fdr)) for x in (del_qvalue, len_qvalue, com_qvalue) ] )
+        code = "".join([str(int(x < fdr))
+                       for x in (del_qvalue, len_qvalue, com_qvalue)])
 
-        outf.write( "\t".join( (gene_id,
-                                code,
-                                "%i" % int(round(length)),
-                                "%i" % int(nsnps),
-                                "%i" % int(ndel),
-                                "%6.4f" % del_p,
-                                "%6.4g" % del_pvalue,
-                                "%6.4g" % del_qvalue,
-                                "%6.4f" % len_p,
-                                "%6.4g" % len_pvalue,
-                                "%6.4g" % len_qvalue,
-                                "%6.4f" % com_p,
-                                "%6.4g" % com_pvalue,
-                                "%6.4g" % com_qvalue,
-                                ) ) + "\n" )
+        outf.write("\t".join((gene_id,
+                              code,
+                              "%i" % int(round(length)),
+                              "%i" % int(nsnps),
+                              "%i" % int(ndel),
+                              "%6.4f" % del_p,
+                              "%6.4g" % del_pvalue,
+                              "%6.4g" % del_qvalue,
+                              "%6.4f" % len_p,
+                              "%6.4g" % len_pvalue,
+                              "%6.4g" % len_qvalue,
+                              "%6.4f" % com_p,
+                              "%6.4g" % com_pvalue,
+                              "%6.4g" % com_qvalue,
+                              )) + "\n")
 
     # add missing genes:
     code = "---"
     for gene_id, length in gene_ids:
-        if gene_id in found: continue
-        outf.write( "\t".join( (gene_id,
-                                code,
-                                "%i" % int(round(length)),
-                                "%i" % 0,
-                                "%i" % 0,
-                                "%6.4f" % 0,
-                                "%6.4g" % 1,
-                                "%6.4g" % 1,
-                                "%6.4f" % 0,
-                                "%6.4g" % 1,
-                                "%6.4g" % 1,
-                                "%6.4f" % 0,
-                                "%6.4g" % 1,
-                                "%6.4g" % 1,
-                                ) ) + "\n" )
+        if gene_id in found:
+            continue
+        outf.write("\t".join((gene_id,
+                              code,
+                              "%i" % int(round(length)),
+                              "%i" % 0,
+                              "%i" % 0,
+                              "%6.4f" % 0,
+                              "%6.4g" % 1,
+                              "%6.4g" % 1,
+                              "%6.4f" % 0,
+                              "%6.4g" % 1,
+                              "%6.4g" % 1,
+                              "%6.4f" % 0,
+                              "%6.4g" % 1,
+                              "%6.4g" % 1,
+                              )) + "\n")
 
     outf.close()
-    
+
 ###################################################################
 ###################################################################
 ###################################################################
-@transform( analysePolyphen, suffix(".genestats"), "_genestats.load")
-def loadPolyphenAnalysis( infile, outfile ):
+
+
+@transform(analysePolyphen, suffix(".genestats"), "_genestats.load")
+def loadPolyphenAnalysis(infile, outfile):
     '''load polyphen analysis results.'''
-    
-    table = P.toTable( outfile )
+
+    table = P.toTable(outfile)
 
     statement = '''
     cat < %(infile)s
@@ -2184,7 +2293,7 @@ def loadPolyphenAnalysis( infile, outfile ):
 #     '''run PANTHER analysis.
 #     '''
 
-#     # to_cluster = True
+# to_cluster = True
 
 #     filename_snps, filename_scores = infiles
 
@@ -2198,7 +2307,7 @@ def loadPolyphenAnalysis( infile, outfile ):
 #                  $1,$2,$3,$4,$5);}'
 #     < %(filename_snps)s > %(tmpfilename_snps)s
 #     '''
-#     # P.run()
+# P.run()
 
 #     statement = '''
 #     (PERL5LIB=%(panther_home)s/lib:$PERL5LIB;
@@ -2248,13 +2357,9 @@ def loadPolyphenAnalysis( infile, outfile ):
 ###################################################################
 ###################################################################
 ###################################################################
-@split( loadPolyphenMap, ("counts_shared.matrix"
-                          , "counts_segregation.matrix"
-                          , "counts_pid.matrix"
-                          , "counts_distance.matrix"
-                          , "counts.tree"
-                          ) )
-def buildSharedSNPMatrix( infiles, outfiles ):
+@split(loadPolyphenMap, ("counts_shared.matrix", "counts_segregation.matrix", "counts_pid.matrix", "counts_distance.matrix", "counts.tree"
+                         ))
+def buildSharedSNPMatrix(infiles, outfiles):
     '''build matrix of shared coding nonsynonymous SNPs.
 
     Counts are per locus id.
@@ -2263,79 +2368,82 @@ def buildSharedSNPMatrix( infiles, outfiles ):
     and thus do not reflect the real divergence.
 
     '''
-    
+
     dbhandle = connect()
     cc = dbhandle.cursor()
 
-    segregating_sites = cc.execute('SELECT COUNT( DISTINCT locus_id) FROM polyphen_map').fetchone()[0]
-    
+    segregating_sites = cc.execute(
+        'SELECT COUNT( DISTINCT locus_id) FROM polyphen_map').fetchone()[0]
+
     statement = '''SELECT DISTINCT locus_id, track FROM polyphen_map ORDER BY locus_id'''
     cc.execute(statement)
 
-    matrix = collections.defaultdict( int )
-    for k, vals in itertools.groupby( cc, key = lambda x: x[0] ):
-        tracks = [x[1] for x in list(vals)] 
+    matrix = collections.defaultdict(int)
+    for k, vals in itertools.groupby(cc, key=lambda x: x[0]):
+        tracks = [x[1] for x in list(vals)]
         for t1 in tracks:
-            matrix[(t1,t1)] += 1
+            matrix[(t1, t1)] += 1
         if len(tracks) > 1:
-            for t1, t2 in itertools.combinations( tracks, 2):
-                matrix[(t1,t2)] += 1
-                matrix[(t2,t1)] += 1
+            for t1, t2 in itertools.combinations(tracks, 2):
+                matrix[(t1, t2)] += 1
+                matrix[(t2, t1)] += 1
 
-    all_tracks = set( [ x[0] for x in matrix.keys()] + [x[1] for x in matrix.keys() ] )
+    all_tracks = set([x[0] for x in matrix.keys()] + [x[1]
+                     for x in matrix.keys()])
 
-    
     # output matrix with shared SNPs.
-    outf = open(outfiles[0],"w")
-    outf.write( "track\t%s\n" % "\t".join(all_tracks))
+    outf = open(outfiles[0], "w")
+    outf.write("track\t%s\n" % "\t".join(all_tracks))
     for track1 in all_tracks:
-        outf.write( "%s" % track1)
+        outf.write("%s" % track1)
         for track2 in all_tracks:
-            outf.write("\t%i" % matrix[(track1,track2)])
+            outf.write("\t%i" % matrix[(track1, track2)])
         outf.write("\n")
     outf.close()
 
-
-    # output matrix with shared segregating sites as 
+    # output matrix with shared segregating sites as
     # distance matrix
-    outf = open(outfiles[1],"w")
-    outf.write( "track\t%s\n" % "\t".join(all_tracks))
+    outf = open(outfiles[1], "w")
+    outf.write("track\t%s\n" % "\t".join(all_tracks))
     for track1 in all_tracks:
-        outf.write( "%s" % track1)
+        outf.write("%s" % track1)
         for track2 in all_tracks:
             if track1 == track2:
                 outf.write("\t%i" % 0)
             else:
-                outf.write("\t%i" % (segregating_sites - matrix[(track1,track2)]))
+                outf.write("\t%i" %
+                           (segregating_sites - matrix[(track1, track2)]))
         outf.write("\n")
     outf.close()
 
     # output matrix as percent identity matrix
-    # percent identity is given as 
+    # percent identity is given as
     # segregating sites - sites where strains differ = segregating_sites - (matrix[i,i] + matrix[j,j] - 2 * matrix[i,j])
     # simplifies to:
     # segsites - matrix[i,i] -matrix[j,j] +
     # divided by the total number of segregating sites
-    outf = open(outfiles[2],"w")
-    outf.write( "track\t%s\n" % "\t".join(all_tracks))
+    outf = open(outfiles[2], "w")
+    outf.write("track\t%s\n" % "\t".join(all_tracks))
     pids = {}
     for track1 in all_tracks:
-        outf.write( "%s" % track1)
+        outf.write("%s" % track1)
         for track2 in all_tracks:
-            a = segregating_sites - (matrix[(track1,track1)] + matrix[(track2,track2)] - 2 * matrix[(track1,track2)])
-            pid = 100.0 *  a/ segregating_sites
+            a = segregating_sites - \
+                (matrix[(track1, track1)] + matrix[(track2, track2)] -
+                 2 * matrix[(track1, track2)])
+            pid = 100.0 * a / segregating_sites
             outf.write("\t%6.4f" % pid)
-            pids[(track1,track2)] = pid
+            pids[(track1, track2)] = pid
         outf.write("\n")
     outf.close()
 
     # distance matrix
-    outf = open(outfiles[3],"w")
-    outf.write( "track\t%s\n" % "\t".join(all_tracks))
+    outf = open(outfiles[3], "w")
+    outf.write("track\t%s\n" % "\t".join(all_tracks))
     for track1 in all_tracks:
-        outf.write( "%s" % track1)
+        outf.write("%s" % track1)
         for track2 in all_tracks:
-            val = 100.0 - pids[(track1,track2)]
+            val = 100.0 - pids[(track1, track2)]
             outf.write("\t%6.4f" % val)
         outf.write("\n")
     outf.close()
@@ -2355,28 +2463,32 @@ def buildSharedSNPMatrix( infiles, outfiles ):
 ###################################################################
 ###################################################################
 ###################################################################
-## Enrichment analysis
+# Enrichment analysis
 ###################################################################
-@files( ((None, "workspace_genomic.bed", "genomic" ),
-         (None, "workspace_cds.bed", "cds" ),
-         ) )
-def buildQTLWorkspaces( infile, outfile, workspace ):
-    PEnrichment.buildWorkSpace( outfile, workspace )
 
-@files( (("%s.fasta" % PARAMS["genome"], "workspace_isochores.bed.gz" ), ) )
-def buildEnrichmentIsochores( infile, outfile ):
-    PEnrichment.buildIsochoresGC( infile, outfile )
 
-@follows( mkdir( "enrichment.dir"), loadPolyphen, loadPolyphenMap )
-@transform( "*_effects.load", 
-            regex("(.*)_effects.load"), 
-            r"enrichment.dir/\1.deleterious.bed.gz" )
-def buildDeleteriousSNPs( infile, outfile ):
+@files(((None, "workspace_genomic.bed", "genomic"),
+        (None, "workspace_cds.bed", "cds"),
+        ))
+def buildQTLWorkspaces(infile, outfile, workspace):
+    PEnrichment.buildWorkSpace(outfile, workspace)
+
+
+@files((("%s.fasta" % PARAMS["genome"], "workspace_isochores.bed.gz"), ))
+def buildEnrichmentIsochores(infile, outfile):
+    PEnrichment.buildIsochoresGC(infile, outfile)
+
+
+@follows(mkdir("enrichment.dir"), loadPolyphen, loadPolyphenMap)
+@transform("*_effects.load",
+           regex("(.*)_effects.load"),
+           r"enrichment.dir/\1.deleterious.bed.gz")
+def buildDeleteriousSNPs(infile, outfile):
 
     track = infile[:-len("_effects.load")]
-    
+
     outf = gzip.open(outfile, "w")
-    outf.write( "track name=%s.deleterious\n" % track )
+    outf.write("track name=%s.deleterious\n" % track)
 
     dbhandle = connect()
     cc = dbhandle.cursor()
@@ -2391,22 +2503,23 @@ def buildDeleteriousSNPs( infile, outfile ):
                           ''' % locals()
 
     cc.execute(statement)
-    
+
     for contig, pos in cc:
-        outf.write( "%s\t%i\t%i\n" % (contig, pos, pos+1) )
-        
+        outf.write("%s\t%i\t%i\n" % (contig, pos, pos + 1))
+
     outf.close()
 
-@follows( mkdir( "enrichment.dir"), loadPolyphen, loadPolyphenMap )
-@transform( "*_effects.load", 
-            regex("(.*)_effects.load"), 
-            r"enrichment.dir/\1.benign.bed.gz" )
-def buildBenignSNPs( infile, outfile ):
+
+@follows(mkdir("enrichment.dir"), loadPolyphen, loadPolyphenMap)
+@transform("*_effects.load",
+           regex("(.*)_effects.load"),
+           r"enrichment.dir/\1.benign.bed.gz")
+def buildBenignSNPs(infile, outfile):
 
     track = infile[:-len("_effects.load")]
-    
+
     outf = gzip.open(outfile, "w")
-    outf.write( "track name=%s.benign\n" % track )
+    outf.write("track name=%s.benign\n" % track)
 
     dbhandle = connect()
     cc = dbhandle.cursor()
@@ -2421,18 +2534,19 @@ def buildBenignSNPs( infile, outfile ):
                           ''' % locals()
 
     cc.execute(statement)
-    
+
     for contig, pos in cc:
-        outf.write( "%s\t%i\t%i\n" % (contig, pos, pos+1) )
-        
+        outf.write("%s\t%i\t%i\n" % (contig, pos, pos + 1))
+
     outf.close()
 
-@merge( (buildBenignSNPs, buildDeleteriousSNPs), 
-        ("enrichment.dir/all.benign.bed.gz",
-         "enrichment.dir/all.deleterious.bed.gz",
-         "enrichment.dir/all.ambiguous.bed.gz", ),
-        )
-def mergeSNPs( infiles, outfiles ):
+
+@merge((buildBenignSNPs, buildDeleteriousSNPs),
+       ("enrichment.dir/all.benign.bed.gz",
+        "enrichment.dir/all.deleterious.bed.gz",
+        "enrichment.dir/all.ambiguous.bed.gz", ),
+       )
+def mergeSNPs(infiles, outfiles):
 
     tmp1 = P.getTempFilename()
     tmp2 = P.getTempFilename()
@@ -2456,7 +2570,7 @@ def mergeSNPs( infiles, outfiles ):
                    | awk 'BEGIN {printf("track name=all.ambiguous\\n");} {print}' 
                    > enrichment.dir/all.ambiguous.bed'''
     P.run()
-    
+
     statement = '''intersectBed -v -a %(tmp1)s -b enrichment.dir/all.ambiguous.bed
                    | awk 'BEGIN {printf("track name=all.benign\\n");} {print}' 
                    | gzip
@@ -2474,14 +2588,13 @@ def mergeSNPs( infiles, outfiles ):
     statement = '''gzip enrichment.dir/all.ambiguous.bed'''
     P.run()
 
-    os.unlink( tmp1 )
-    os.unlink( tmp2 )
-    
+    os.unlink(tmp1)
+    os.unlink(tmp2)
 
 
-@merge( (buildBenignSNPs, buildDeleteriousSNPs), 
-        "enrichment.dir/isochores.bed" )
-def buildSNPDensityIsochores( infile, outfile ):
+@merge((buildBenignSNPs, buildDeleteriousSNPs),
+       "enrichment.dir/isochores.bed")
+def buildSNPDensityIsochores(infile, outfile):
     '''build isochores with SNP density.'''
 
     statement = '''
@@ -2499,16 +2612,16 @@ def buildSNPDensityIsochores( infile, outfile ):
                 | uniq > tmp2.bed
     '''
     P.run()
- 
 
-@merge([ "/net/cpp-compute/backup/andreas/projects/mousestrains/data/qtl/jonathans/qtl_merged.bed", 
-         "/net/cpp-compute/backup/andreas/projects/mousestrains/data/qtl/jonathans/qtl_full.bed", 
-         "/net/cpp-compute/backup/andreas/projects/mousestrains/data/qtl/jonathans/qtl_rest.bed", 
-         ], "qtl.summary.tsv")
-def QTLSummary( infiles, outfile ):
+
+@merge(["/net/cpp-compute/backup/andreas/projects/mousestrains/data/qtl/jonathans/qtl_merged.bed",
+        "/net/cpp-compute/backup/andreas/projects/mousestrains/data/qtl/jonathans/qtl_full.bed",
+        "/net/cpp-compute/backup/andreas/projects/mousestrains/data/qtl/jonathans/qtl_rest.bed",
+        ], "qtl.summary.tsv")
+def QTLSummary(infiles, outfile):
 
     for infile in infiles:
-        basename = os.path.basename( infile )
+        basename = os.path.basename(infile)
         statement = '''
         python %(scriptsdir)s/bed2gff.py
         < %(infile)s
@@ -2519,26 +2632,27 @@ def QTLSummary( infiles, outfile ):
         > %(outfile)s
         '''
         P.run()
-        
-@follows( buildQTLWorkspaces )
-@merge( (buildDeleteriousSNPs, buildBenignSNPs, mergeSNPs), "qtl.table" )
-def runGATOnQTLs( infiles, outfile ):
+
+
+@follows(buildQTLWorkspaces)
+@merge((buildDeleteriousSNPs, buildBenignSNPs, mergeSNPs), "qtl.table")
+def runGATOnQTLs(infiles, outfile):
     '''run enrichment analysisusing the qtl definitions from
     Jonathan Flint's group.
     '''
 
-    segments = IOTools.flatten( infiles )
-    
-    workspaces = [ "workspace_cds.bed", ]
+    segments = IOTools.flatten(infiles)
 
-    annotations = [ "/net/cpp-compute/backup/andreas/projects/mousestrains/data/qtl/jonathans/qtl_merged.bed", 
-                    "/net/cpp-compute/backup/andreas/projects/mousestrains/data/qtl/jonathans/qtl_full.bed", 
-                    "/net/cpp-compute/backup/andreas/projects/mousestrains/data/qtl/jonathans/qtl_rest.bed", 
-                    ]
+    workspaces = ["workspace_cds.bed", ]
 
-    workspaces = " ".join( [ "--workspace-file=%s" % x for x in workspaces ] )
-    annotations = " ".join( [ "--annotation-file=%s" % x for x in annotations ] )
-    segments = " ".join( [ "--segment-file=%s" % x for x in segments ] )
+    annotations = ["/net/cpp-compute/backup/andreas/projects/mousestrains/data/qtl/jonathans/qtl_merged.bed",
+                   "/net/cpp-compute/backup/andreas/projects/mousestrains/data/qtl/jonathans/qtl_full.bed",
+                   "/net/cpp-compute/backup/andreas/projects/mousestrains/data/qtl/jonathans/qtl_rest.bed",
+                   ]
+
+    workspaces = " ".join(["--workspace-file=%s" % x for x in workspaces])
+    annotations = " ".join(["--annotation-file=%s" % x for x in annotations])
+    segments = " ".join(["--segment-file=%s" % x for x in segments])
 
     to_cluster = True
     job_options = "-l mem_free=8000M"
@@ -2556,25 +2670,26 @@ def runGATOnQTLs( infiles, outfile ):
     '''
     P.run()
 
-@follows( buildQTLWorkspaces )
-@merge( mergeSNPs, "qtl_small.table" )
-def runGATOnQTLsSmall( infiles, outfile ):
+
+@follows(buildQTLWorkspaces)
+@merge(mergeSNPs, "qtl_small.table")
+def runGATOnQTLsSmall(infiles, outfile):
     '''run enrichment analysisusing the qtl definitions from
     Jonathan Flint's group.
     '''
 
-    segments = IOTools.flatten( infiles )
-    
-    workspaces = [ "workspace_cds.bed", ]
+    segments = IOTools.flatten(infiles)
 
-    annotations = [ "/net/cpp-compute/backup/andreas/projects/mousestrains/data/qtl/jonathans/qtl_merged.bed", 
-                    "/net/cpp-compute/backup/andreas/projects/mousestrains/data/qtl/jonathans/qtl_full.bed", 
-                    "/net/cpp-compute/backup/andreas/projects/mousestrains/data/qtl/jonathans/qtl_rest.bed", 
-                    ]
+    workspaces = ["workspace_cds.bed", ]
 
-    workspaces = " ".join( [ "--workspace-file=%s" % x for x in workspaces ] )
-    annotations = " ".join( [ "--annotation-file=%s" % x for x in annotations ] )
-    segments = " ".join( [ "--segment-file=%s" % x for x in segments ] )
+    annotations = ["/net/cpp-compute/backup/andreas/projects/mousestrains/data/qtl/jonathans/qtl_merged.bed",
+                   "/net/cpp-compute/backup/andreas/projects/mousestrains/data/qtl/jonathans/qtl_full.bed",
+                   "/net/cpp-compute/backup/andreas/projects/mousestrains/data/qtl/jonathans/qtl_rest.bed",
+                   ]
+
+    workspaces = " ".join(["--workspace-file=%s" % x for x in workspaces])
+    annotations = " ".join(["--annotation-file=%s" % x for x in annotations])
+    segments = " ".join(["--segment-file=%s" % x for x in segments])
 
     to_cluster = True
     job_options = "-l mem_free=8000M"
@@ -2592,10 +2707,11 @@ def runGATOnQTLsSmall( infiles, outfile ):
     '''
     P.run()
 
-@transform( (runGATOnQTLs, ), suffix(".table"), ".load") 
-def loadGATOnQTLs( infile, outfile ):
-    
-    table = P.toTable( outfile )
+
+@transform((runGATOnQTLs, ), suffix(".table"), ".load")
+def loadGATOnQTLs(infile, outfile):
+
+    table = P.toTable(outfile)
 
     statement = '''
     cat < %(infile)s
@@ -2607,11 +2723,11 @@ def loadGATOnQTLs( infile, outfile ):
     '''
     P.run()
 
-    stat_files = glob.glob( "enrichment.dir/stats_*.tsv" )
-    
+    stat_files = glob.glob("enrichment.dir/stats_*.tsv")
+
     for stat_file in stat_files:
         basename = os.path.basename(stat_file)
-        table = os.path.splitext( basename )[0]
+        table = os.path.splitext(basename)[0]
         statement = '''
         cat < %(stat_file)s
         |python %(scriptsdir)s/csv2db.py %(csv2db_options)s
@@ -2621,15 +2737,17 @@ def loadGATOnQTLs( infile, outfile ):
     >> %(outfile)s
     '''
         P.run()
-        
+
 ###################################################################
 ###################################################################
 ###################################################################
-## gene list analyses
+# gene list analyses
 ###################################################################
 ############################################################
-@files( ( (importMGI, "assignments.mgi"),) )
-def createMGI( infile, outfile ):
+
+
+@files(((importMGI, "assignments.mgi"),))
+def createMGI(infile, outfile):
     '''get GO assignments from MGI'''
 
     dbhandle = connect()
@@ -2643,18 +2761,17 @@ def createMGI( infile, outfile ):
                  WHERE m2g.marker_id = m2a.marker_id AND 
                        a2p.allele_id = m2a.allele_id AND 
                        p.phenotype_id = a2p.phenotype_id
-                ''' 
+                '''
     cc = dbhandle.cursor()
     data = cc.execute(statement).fetchall()
-    
+
     outf = open(outfile, "w")
-    outf.write( "\n".join( [ "\t".join(x) for x in data ] ) + "\n" )
+    outf.write("\n".join(["\t".join(x) for x in data]) + "\n")
     outf.close()
 
 
-
 ####################################################################
-def buildGeneMatrix( tracks, analysis, statement, outfile ):
+def buildGeneMatrix(tracks, analysis, statement, outfile):
     '''build a gene matrix.
 
     A gene matrix is an n x m matrix for n genes and m gene lists.
@@ -2665,40 +2782,46 @@ def buildGeneMatrix( tracks, analysis, statement, outfile ):
     dbhandle = connect()
     cc = dbhandle.cursor()
 
-    all_genes = [ x[0] for x in cc.execute( '''SELECT DISTINCT gene_id FROM annotations.gene_info''' % locals() )]
+    all_genes = [x[0] for x in cc.execute(
+        '''SELECT DISTINCT gene_id FROM annotations.gene_info''' % locals() )]
 
-    gene2row = dict( [(x[1],x[0]) for x in enumerate( all_genes ) ] )
-    matrix = numpy.zeros( (len(all_genes), len( analysis ) * len(tracks) ), numpy.int )
+    gene2row = dict([(x[1], x[0]) for x in enumerate(all_genes)])
+    matrix = numpy.zeros(
+        (len(all_genes), len(analysis) * len(tracks)), numpy.int)
 
     col = 0
     for track in tracks:
-        
+
         for label, field_where in analysis:
-            genes = [ x[0] for x in cc.execute( statement % locals() ) ]
+            genes = [x[0] for x in cc.execute(statement % locals())]
             for gene_id in genes:
                 matrix[gene2row[gene_id]][col] = 1
             col += 1
-            
-    outf = open( outfile, "w")
-    outf.write( "gene_id\t%s\n" % "\t".join( "%s_%s" % (x,y[0]) for x,y in itertools.product( tracks, analysis) ) )
+
+    outf = open(outfile, "w")
+    outf.write("gene_id\t%s\n" % "\t".join("%s_%s" %
+               (x, y[0]) for x, y in itertools.product(tracks, analysis)))
     for gene_id in all_genes:
-        outf.write( "%s\t%s\n" % (gene_id, "\t".join( map(str, matrix[gene2row[gene_id]] ) ) ) )
+        outf.write("%s\t%s\n" %
+                   (gene_id, "\t".join(map(str, matrix[gene2row[gene_id]]))))
     outf.close()
 
 ####################################################################
-@merge(summarizeAllelesPerGene, "effects.genematrix" )
-def buildGeneMatrixEffects( infiles, outfile ):
+
+
+@merge(summarizeAllelesPerGene, "effects.genematrix")
+def buildGeneMatrixEffects(infiles, outfile):
     '''build gene matrix with consequences data.
 
     Note that this analysis is confounded by gene length.
     '''
 
-    analysis = ( ("benign", "benign" ),
-                 ( "probablydamaging", "probablydamaging" ),
-                 ( "possiblydamaging", "possiblydamaging" ),
-                 ( "unknown", "unknown") )
-    
-    tracks = [ x[:-len("_alleles_genes.load")] for x in infiles ]
+    analysis = (("benign", "benign"),
+                ("probablydamaging", "probablydamaging"),
+                ("possiblydamaging", "possiblydamaging"),
+                ("unknown", "unknown"))
+
+    tracks = [x[:-len("_alleles_genes.load")] for x in infiles]
 
     statement = '''
             SELECT DISTINCT i.gene_id 
@@ -2712,11 +2835,13 @@ def buildGeneMatrixEffects( infiles, outfile ):
             map.transcript_id = i.transcript_id AND
             prediction = '%(field_where)s' '''
 
-    buildGeneMatrix( tracks, analysis, statement, outfile )
+    buildGeneMatrix(tracks, analysis, statement, outfile)
 
 ####################################################################
-@merge(summarizeAllelesPerGene, "alleles.genematrix" )
-def buildGeneMatrixAlleles( infiles, outfile ):
+
+
+@merge(summarizeAllelesPerGene, "alleles.genematrix")
+def buildGeneMatrixAlleles(infiles, outfile):
     '''build gene matrix from alleles results
 
     ``options`` is a tuple of (``track``, ``analysis``, ``ontology``)
@@ -2739,13 +2864,13 @@ def buildGeneMatrixAlleles( infiles, outfile ):
 
     '''
 
-    analysis = ( ( "stoptruncated", "e.is_truncated" ),
-                 ( "nmdknockout", "e.is_nmd_knockout" ),
-                 ( "splicetruncated", "e.is_splice_truncated" ),
-                 ( "knockout", "(e.is_nmd_knockout or e.is_truncated or e.is_splice_truncated)" ) )
+    analysis = (("stoptruncated", "e.is_truncated"),
+                ("nmdknockout", "e.is_nmd_knockout"),
+                ("splicetruncated", "e.is_splice_truncated"),
+                ("knockout", "(e.is_nmd_knockout or e.is_truncated or e.is_splice_truncated)"))
 
-    tracks = [ x[:-len("_alleles_genes.load")] for x in infiles ]
-    
+    tracks = [x[:-len("_alleles_genes.load")] for x in infiles]
+
     statement = '''
             SELECT DISTINCT e.gene_id 
             FROM
@@ -2754,11 +2879,13 @@ def buildGeneMatrixAlleles( infiles, outfile ):
                 %(field_where)s
             '''
 
-    buildGeneMatrix( tracks, analysis, statement, outfile )
+    buildGeneMatrix(tracks, analysis, statement, outfile)
 
 ####################################################################
-@merge(summarizeEffectsPerGene, "consequences.genematrix" )
-def buildGeneMatrixConsequences( infiles, outfile ):
+
+
+@merge(summarizeEffectsPerGene, "consequences.genematrix")
+def buildGeneMatrixConsequences(infiles, outfile):
     '''build gene matrix from effecs results
 
     nmdknockouttranscript
@@ -2774,11 +2901,11 @@ def buildGeneMatrixConsequences( infiles, outfile ):
     For example, NMD transcripts are only multiple exon transcripts.
     '''
 
-    analysis = ( ( "nmdknockouttranscript", "e.nmd_knockout > 0" ),
-                 ( "nmdaffectedtranscript", "e.nmd_affected > 0" ),
-                 ( "nmdknockoutgenes", "e.nmd_knockout = e.ntranscripts" ) )
+    analysis = (("nmdknockouttranscript", "e.nmd_knockout > 0"),
+                ("nmdaffectedtranscript", "e.nmd_affected > 0"),
+                ("nmdknockoutgenes", "e.nmd_knockout = e.ntranscripts"))
 
-    tracks = [ x[:-len("_effects_genes.load")] for x in infiles ]
+    tracks = [x[:-len("_effects_genes.load")] for x in infiles]
 
     statement = '''
             SELECT DISTINCT e.gene_id 
@@ -2788,21 +2915,22 @@ def buildGeneMatrixConsequences( infiles, outfile ):
                 %(field_where)s
             '''
 
-    
-    buildGeneMatrix( tracks, analysis, statement, outfile )
+    buildGeneMatrix(tracks, analysis, statement, outfile)
 
 ####################################################################
-@follows( buildGeneMatrixConsequences,
-          buildGeneMatrixAlleles,
-          buildGeneMatrixEffects )
-@files( [ ((x,y), "%s_vs_%s.gla" % (re.sub(".genematrix", "", x), \
-                                    re.sub("assignments.", "", y) ) )\
-              for x,y in \
-              itertools.product( \
-            glob.glob("*.genematrix" ),
-            glob.glob("assignments.*") ) 
-          if not y.endswith(".log") ] )
-def runGeneListAnalysis( infiles, outfile):
+
+
+@follows(buildGeneMatrixConsequences,
+         buildGeneMatrixAlleles,
+         buildGeneMatrixEffects)
+@files([((x, y), "%s_vs_%s.gla" % (re.sub(".genematrix", "", x),
+                                   re.sub("assignments.", "", y)))
+        for x, y in
+        itertools.product(
+            glob.glob("*.genematrix"),
+            glob.glob("assignments.*"))
+        if not y.endswith(".log")])
+def runGeneListAnalysis(infiles, outfile):
     '''run a gene list analysis.'''
 
     genematrix, assignments = infiles
@@ -2825,14 +2953,16 @@ def runGeneListAnalysis( infiles, outfile):
     < %(genematrix)s
     > %(outfile)s
     '''
-    
+
     P.run()
 
 ###########################################################################
-@transform( runGeneListAnalysis, suffix(".gla"), "_gla.load" )
-def loadGeneListAnalysis( infile, outfile ):
+
+
+@transform(runGeneListAnalysis, suffix(".gla"), "_gla.load")
+def loadGeneListAnalysis(infile, outfile):
     '''load gene list analysis results.'''
-    table = P.toTable( outfile )
+    table = P.toTable(outfile)
 
     statement = '''
     cat < %(infile)s
@@ -2877,11 +3007,11 @@ def loadGeneListAnalysis( infile, outfile ):
 
 #     dbhandle = sqlite3.connect( PARAMS["database"] )
 
-#     statement = '''SELECT track, geneset, annotationset, category, min(pover,punder) 
+#     statement = '''SELECT track, geneset, annotationset, category, min(pover,punder)
 #                    FROM alleles_go'''
 #     cc = dbhandle.cursor()
 #     data = cc.execute(statement).fetchall()
-    
+
 #     pvalues = [ x[4] for x in data ]
 #     E.info( "analysing %i pvalues" % len(pvalues ))
 
@@ -2891,7 +3021,7 @@ def loadGeneListAnalysis( infile, outfile ):
 #     for d, qvalue in zip( data, fdr.mQValues ):
 #         if qvalue > 0.05: continue
 #         print data, qvalue
-    
+
 #     Database.executewait( dbhandle, '''ALTER TABLE %(table)s ADD COLUMN is_coding FLOAT''' % locals())
 
 ###################################################################
@@ -2901,62 +3031,78 @@ def loadGeneListAnalysis( infile, outfile ):
 ###################################################################
 ###################################################################
 
-@follows( loadHumanOrthologs,
-          loadGene2Omim )
+
+@follows(loadHumanOrthologs,
+         loadGene2Omim)
 def prepare():
     pass
 
-@follows( buildEffects, loadEffects, mergeEffects, summarizeEffectsPerGene )
-def consequences(): pass
 
-@follows( buildAlleles, loadAlleles,
-          summarizeAllelesPerTranscript,
-          summarizeAllelesPerGene,
-          combineSummaryAllelesPerGene )
-def alleles(): pass
+@follows(buildEffects, loadEffects, mergeEffects, summarizeEffectsPerGene)
+def consequences():
+    pass
 
-@follows( loadPolyphen, loadPolyphenMap, loadPolyphenAnalysis )
-def effects(): pass
 
-@follows( loadAnnotations, loadAnnotationsSummary)
-def annotations(): pass
+@follows(buildAlleles, loadAlleles,
+         summarizeAllelesPerTranscript,
+         summarizeAllelesPerGene,
+         combineSummaryAllelesPerGene)
+def alleles():
+    pass
 
-@follows( consequences, effects, alleles, annotations )
-def full(): pass
 
-@follows( buildQTLWorkspaces, 
-          runGATOnQTLs, 
-          runGATOnQTLsSmall)
-def qtl(): pass
+@follows(loadPolyphen, loadPolyphenMap, loadPolyphenAnalysis)
+def effects():
+    pass
 
-@follows( buildGeneMatrixConsequences,
-          buildGeneMatrixAlleles,
-          buildGeneMatrixEffects,
-          runGeneListAnalysis,
-          loadGeneListAnalysis,
-          )
-def go(): pass
 
-@files( [ (None, "clone.log" ),] )
-def clone( infile, outfile):
+@follows(loadAnnotations, loadAnnotationsSummary)
+def annotations():
+    pass
+
+
+@follows(consequences, effects, alleles, annotations)
+def full():
+    pass
+
+
+@follows(buildQTLWorkspaces,
+         runGATOnQTLs,
+         runGATOnQTLsSmall)
+def qtl():
+    pass
+
+
+@follows(buildGeneMatrixConsequences,
+         buildGeneMatrixAlleles,
+         buildGeneMatrixEffects,
+         runGeneListAnalysis,
+         loadGeneListAnalysis,
+         )
+def go():
+    pass
+
+
+@files([(None, "clone.log"), ])
+def clone(infile, outfile):
     '''clone a pipeline using symbolic links.'''
 
     src_dir, level = sys.argv[-2:]
-    
-    if not os.path.exists( src_dir ):
-        raise IOError( "directory '%s' does not exist" % src_dir )
 
-    if not os.path.exists( os.path.join( src_dir, "pipeline.ini" )):
-        raise IOError( "directory '%s' is not a pipeline" % src_dir )
-    
+    if not os.path.exists(src_dir):
+        raise IOError("directory '%s' does not exist" % src_dir)
+
+    if not os.path.exists(os.path.join(src_dir, "pipeline.ini")):
+        raise IOError("directory '%s' is not a pipeline" % src_dir)
+
     if level in ("data", ):
-        P.execute( "ln -fs %(src_dir)s/*.pileup.* . ")
-        P.execute( "ln -fs %(src_dir)s/genome.* . ")
-        
+        P.execute("ln -fs %(src_dir)s/*.pileup.* . ")
+        P.execute("ln -fs %(src_dir)s/genome.* . ")
+
 
 ###################################################################
-@merge( (alleles, prepare),  "genes.views" )
-def createViewGenes( infile, outfile ):
+@merge((alleles, prepare),  "genes.views")
+def createViewGenes(infile, outfile):
     '''create view in database for genes.
 
     This view aggregates all information on a per-gene
@@ -2965,11 +3111,13 @@ def createViewGenes( infile, outfile ):
 
     # can not create views across multiple database, so use table
     view_type = "TABLE"
-    
-    dbhandle = connect()
-    Database.executewait( dbhandle, "DROP %(view_type)s IF EXISTS view_genes" % locals() )
 
-    knockouts = ",".join( ["nmd.%s AS %s_nmd_knockout" % (track, track) for track in TRACKS ] )
+    dbhandle = connect()
+    Database.executewait(
+        dbhandle, "DROP %(view_type)s IF EXISTS view_genes" % locals())
+
+    knockouts = ",".join(
+        ["nmd.%s AS %s_nmd_knockout" % (track, track) for track in TRACKS])
 
     statement = '''
     CREATE %(view_type)s view_genes AS
@@ -2990,28 +3138,30 @@ def createViewGenes( infile, outfile ):
     LEFT JOIN gene2omim as omim ON omim.gene_id = human_ortho.hs_gene_id
     '''
 
-    Database.executewait( dbhandle, statement % locals() )
+    Database.executewait(dbhandle, statement % locals())
 
-@follows( createViewGenes )
+
+@follows(createViewGenes)
 def views():
     pass
 
-@follows( mkdir( "report" ) )
+
+@follows(mkdir("report"))
 def build_report():
     '''build report from scratch.'''
 
-    E.info( "starting documentation build process from scratch" )
-    P.run_report( clean = True )
+    E.info("starting documentation build process from scratch")
+    P.run_report(clean=True)
 
-@follows( mkdir( "report" ) )
+
+@follows(mkdir("report"))
 def update_report():
     '''update report.'''
 
-    E.info( "updating documentation" )
-    P.run_report( clean = False )
+    E.info("updating documentation")
+    P.run_report(clean=False)
 
-if __name__== "__main__":
+if __name__ == "__main__":
 
     # P.checkFiles( ("genome.fasta", "genome.idx" ) )
-    sys.exit( P.main(sys.argv) )
-
+    sys.exit(P.main(sys.argv))

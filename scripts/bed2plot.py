@@ -46,53 +46,55 @@ import CGAT.Bed as Bed
 
 import CGAT.Experiment as E
 
-def main( argv = sys.argv ):
+
+def main(argv=sys.argv):
 
     # setup command line parser
-    parser = E.OptionParser( version = "%prog version: $Id$", usage = globals()["__doc__"] )
+    parser = E.OptionParser(
+        version="%prog version: $Id$", usage=globals()["__doc__"])
 
-    parser.add_option( "-m", "--method", dest="method", type="choice",
-                       choices = ("igv",),
-                       help = "method to create plots with [%default]" )
+    parser.add_option("-m", "--method", dest="method", type="choice",
+                      choices=("igv",),
+                      help = "method to create plots with [%default]")
 
-    parser.add_option( "-d", "--snapshot-dir", dest="snapshotdir", type = "string",
-                       help = "directory to save snapshots in [%default]" )
+    parser.add_option("-d", "--snapshot-dir", dest="snapshotdir", type="string",
+                      help="directory to save snapshots in [%default]")
 
-    parser.add_option( "-f", "--format", dest="format", type="choice",
-                       choices = ("png", "eps", "svg"),
-                       help = "output file format [%default]" )
+    parser.add_option("-f", "--format", dest="format", type="choice",
+                      choices=("png", "eps", "svg"),
+                      help = "output file format [%default]")
 
-    parser.add_option( "-o", "--host", dest="host", type = "string",
-                       help = "host that IGV is running on [%default]" )
+    parser.add_option("-o", "--host", dest="host", type="string",
+                      help="host that IGV is running on [%default]")
 
-    parser.add_option( "-p", "--port", dest="port", type = "int",
-                       help = "port that IGV listens at [%default]" )
+    parser.add_option("-p", "--port", dest="port", type="int",
+                      help="port that IGV listens at [%default]")
 
-    parser.add_option( "-e", "--extend", dest="extend", type = "int",
-                       help = "extend each interval by a number of bases [%default]" )
+    parser.add_option("-e", "--extend", dest="extend", type="int",
+                      help="extend each interval by a number of bases [%default]")
 
-    parser.add_option( "-x", "--expand", dest="expand", type = "float",
-                       help = "expand each region by a certain factor [%default]" )
+    parser.add_option("-x", "--expand", dest="expand", type="float",
+                      help="expand each region by a certain factor [%default]")
 
     parser.set_defaults(
-        method = "igv",
-        host = '127.0.0.1',
-        port = 61111,
-        snapshotdir = os.getcwd(),
-        extend = 0,
-        format = "png",
-        expand = 1.0,
-        )
+        method="igv",
+        host='127.0.0.1',
+        port=61111,
+        snapshotdir=os.getcwd(),
+        extend=0,
+        format="png",
+        expand=1.0,
+    )
 
-    ## add common options (-h/--help, ...) and parse command line 
-    (options, args) = E.Start( parser, argv = argv )
+    # add common options (-h/--help, ...) and parse command line
+    (options, args) = E.Start(parser, argv=argv)
 
-    E.info( "connection to session on %s:%s" % (options.host, options.port) )
+    E.info("connection to session on %s:%s" % (options.host, options.port))
 
-    E.info( "saving images in %s" % options.snapshotdir)
-    igv = IGV.IGV( host = options.host,
-                   port = options.port,
-                   snapshot_dir = os.path.abspath( options.snapshotdir ) )
+    E.info("saving images in %s" % options.snapshotdir)
+    igv = IGV.IGV(host=options.host,
+                  port=options.port,
+                  snapshot_dir=os.path.abspath(options.snapshotdir))
 
     c = E.Counter()
     for bed in Bed.iterator(options.stdin):
@@ -101,28 +103,29 @@ def main( argv = sys.argv ):
 
         # IGV can not deal with white-space in filenames
         name = re.sub("\s", "_", bed.name)
-        
-        E.info( "going to %s:%i-%i for %s" % (bed.contig, bed.start, bed.end, name))
+
+        E.info("going to %s:%i-%i for %s" %
+               (bed.contig, bed.start, bed.end, name))
 
         start, end = bed.start, bed.end
         extend = options.extend
         if options.expand:
             d = end - start
-            extend = max( extend, (options.expand * d - d) // 2 )
+            extend = max(extend, (options.expand * d - d) // 2)
 
         start -= extend
         end += extend
 
-        igv.go( "%s:%i-%i" % (bed.contig, start, end ))
+        igv.go("%s:%i-%i" % (bed.contig, start, end))
 
         fn = "%s.%s" % (name, options.format)
-        E.info( "writing snapshot to '%s'" % fn )
-        igv.save( fn )
-    
-        c.snapshots +=1 
+        E.info("writing snapshot to '%s'" % fn)
+        igv.save(fn)
 
-    E.info( c )
+        c.snapshots += 1
+
+    E.info(c)
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main() )
+    sys.exit(main())

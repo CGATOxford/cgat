@@ -1,4 +1,4 @@
-################################################################################
+##########################################################################
 #
 #   MRC FGU Computational Genomics Group
 #
@@ -19,7 +19,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
+##########################################################################
 '''
 gpipe/select_transcripts_per_gene.py - 
 ======================================================
@@ -78,82 +78,90 @@ import CGAT.Exons as Exons
 
 import pgdb
 
-def Write( outfile, gene_id, qualities, priority ):
+
+def Write(outfile, gene_id, qualities, priority):
     """write best quality for gene.
     """
 
-    qq = map( lambda x: x[0], qualities)
+    qq = map(lambda x: x[0], qualities)
 
     best = None
     for x in priority:
         if x in qq:
             best = x
             break
-    
+
     if best:
         # select best transcript (=highest score):
         s = []
         for quality, id, index in qualities:
-            if x == best: s.append( (index,id) )
-            
+            if x == best:
+                s.append((index, id))
+
         s.sort()
         best_id = s[-1][1]
-            
-        outfile.write( "%s\t%i\t%s\t%s\n" % (str(gene_id), len(qualities), best_id, best) )
-    else:
-        outfile.write( "%s\t%i\t%s\t%s\n" % (str(gene_id), len(qualities), "", "") )
-        
 
-def main( argv = None ):
+        outfile.write("%s\t%i\t%s\t%s\n" %
+                      (str(gene_id), len(qualities), best_id, best))
+    else:
+        outfile.write("%s\t%i\t%s\t%s\n" %
+                      (str(gene_id), len(qualities), "", ""))
+
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv is None:
+        argv = sys.argv
 
-    parser = E.OptionParser( version = "%prog version: $Id: gpipe/select_transcripts_per_gene.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser(
+        version="%prog version: $Id: gpipe/select_transcripts_per_gene.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-i", "--priority", dest="priority", type="string",
-                      help="quality priority."  )
-    parser.add_option("-q", "--table-quality", dest="tablename_quality", type ="string",
+                      help="quality priority.")
+    parser.add_option("-q", "--table-quality", dest="tablename_quality", type="string",
                       help="table with quality information.")
-    parser.add_option("-g", "--table-genes", dest="tablename_genes", type ="string",
+    parser.add_option("-g", "--table-genes", dest="tablename_genes", type="string",
                       help="table with gene information.")
-    parser.add_option("-p", "--table-predictions", dest="tablename_predictions", type ="string",
+    parser.add_option("-p", "--table-predictions", dest="tablename_predictions", type="string",
                       help="table with prediction information.")
-    parser.add_option("-k", "--table-kaks", dest="tablename_kaks", type ="string",
+    parser.add_option("-k", "--table-kaks", dest="tablename_kaks", type="string",
                       help="table with kaks information.")
-    parser.add_option("-f", "--infile-transcripts", dest="filename_input", type ="string",
+    parser.add_option("-f", "--infile-transcripts", dest="filename_input", type="string",
                       help="table with transcript information.")
 
     parser.set_defaults(
-        priority = "CG,PG,SG,RG,CP,PP,SP,RP,CF,PF,SF,UG,UP,UF,BF,UK",
-        sort = "CG,PG,SG,RG,CP,PP,SP,RP,CF,PF,SF,UG,UP,UF,BF,UK",
-        table_genes = None,
-        table_quality = None,
-        table_predictions = None,
-        table_kaks = None,
-        filename_input = None,
-        separator = "|",
-        )
+        priority="CG,PG,SG,RG,CP,PP,SP,RP,CF,PF,SF,UG,UP,UF,BF,UK",
+        sort="CG,PG,SG,RG,CP,PP,SP,RP,CF,PF,SF,UG,UP,UF,BF,UK",
+        table_genes=None,
+        table_quality=None,
+        table_predictions=None,
+        table_kaks=None,
+        filename_input=None,
+        separator="|",
+    )
 
-    (options, args) = E.Start( parser, add_psql_options = True )
+    (options, args) = E.Start(parser, add_psql_options=True)
 
-    if options.priority: options.priority = options.priority.split(",")
+    if options.priority:
+        options.priority = options.priority.split(",")
 
     if options.filename_input:
-        infile = open(options.filename_input,"r")
-        
+        infile = open(options.filename_input, "r")
+
         rows = []
         for line in infile:
-            if line[0] == "#": continue
+            if line[0] == "#":
+                continue
             data = line[:-1].split("\t")
-            s,t,g,q = data[0].split( options.separator )
-            rows.append( (g, t, q, 1.0) )
-            
+            s, t, g, q = data[0].split(options.separator)
+            rows.append((g, t, q, 1.0))
+
         infile.close()
-        
+
     else:
         if not options.tablename_genes:
             raise "please specify a table with gene information."
@@ -162,13 +170,13 @@ def main( argv = None ):
         if not options.tablename_predictions:
             raise "please specify a table with prediction information."
         if not options.tablename_kaks:
-            raise "please specify a table with kaks information."            
+            raise "please specify a table with kaks information."
 
-        dbhandle = pgdb.connect( options.psql_connection )
+        dbhandle = pgdb.connect(options.psql_connection)
 
         data = []
 
-        ## get data for queries
+        # get data for queries
         statement = """
         SELECT g.gene_id, g.prediction_id, q.class, k.ds
         FROM %s AS g, %s as q, %s AS p, %s AS k
@@ -189,22 +197,21 @@ def main( argv = None ):
         sys.stdout.flush()
 
     last_gene, last_id, last_quality, last_score = rows[0]
-    qualities = [ (last_quality,last_id,last_score),]
-    
+    qualities = [(last_quality, last_id, last_score), ]
+
     for this_gene, this_id, this_quality, this_score in rows[1:]:
-        
+
         if this_gene != last_gene:
-            Write( sys.stdout, last_gene, qualities, options.priority )
+            Write(sys.stdout, last_gene, qualities, options.priority)
             qualities = []
 
-        qualities.append( (this_quality, this_id, this_score) )
-        
+        qualities.append((this_quality, this_id, this_score))
+
         last_gene = this_gene
 
-    Write( sys.stdout, last_gene, qualities, options.priority )    
+    Write(sys.stdout, last_gene, qualities, options.priority)
 
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

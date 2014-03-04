@@ -1,4 +1,4 @@
-################################################################################
+##########################################################################
 #
 #   MRC FGU Computational Genomics Group
 #
@@ -19,7 +19,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
+##########################################################################
 '''
 AString.py - a compact string of characters
 ===========================================
@@ -35,8 +35,11 @@ Code
 '''
 import array
 
-##------------------------------------------------------------
+# ------------------------------------------------------------
+
+
 class AString:
+
     """an array posing as a sequence.
 
     This class conserves memory as it uses only 1 byte per letter,
@@ -51,56 +54,56 @@ class AString:
        using :class:array.array directly. Only use sparingly for
        heavy computations.
     """
-    
+
     def __init__(self, *args):
-        self.mArray = array.array("c", *args )
+        self.mArray = array.array("c", *args)
 
-    def __getitem__(self, *args ):
-        return self.mArray.__getitem__( *args )
+    def __getitem__(self, *args):
+        return self.mArray.__getitem__(*args)
 
-    def upper( self ):
+    def upper(self):
         """return upper case version."""
-        return AString( self.mArray.tostring().upper() )
-    
+        return AString(self.mArray.tostring().upper())
+
     def lower(self):
         """return lower case version."""
-        return AString( self.mArray.tostring().lower() )
+        return AString(self.mArray.tostring().lower())
 
-    def insert( self, *args ):
-        self.mArray.insert( *args )
-        
-    def index( self, *args ):
-        return self.mArray.index( *args )
+    def insert(self, *args):
+        self.mArray.insert(*args)
 
-    def count( self, *args ):
-        return self.mArray.count( *args )
+    def index(self, *args):
+        return self.mArray.index(*args)
 
-    def reverse( self, *args ):
-        self.mArray.reverse( *args )
+    def count(self, *args):
+        return self.mArray.count(*args)
 
-    def extend( self, *args ):
-        self.mArray.extend( *args )
+    def reverse(self, *args):
+        self.mArray.reverse(*args)
 
-    def remove( self, *args ):
-        self.mArray.remove( *args )
+    def extend(self, *args):
+        self.mArray.extend(*args)
 
-    def fromstring( self, *args ):
-        self.mArray.fromstring( *args )
+    def remove(self, *args):
+        self.mArray.remove(*args)
 
-    def tostring( self, *args ):
-        return self.mArray.tostring( *args )
+    def fromstring(self, *args):
+        self.mArray.fromstring(*args)
 
-    def __getslice__( self, *args):
+    def tostring(self, *args):
+        return self.mArray.tostring(*args)
+
+    def __getslice__(self, *args):
         """return slice as a string."""
         return self.mArray.__getslice__(*args).tostring()
 
-    def __setslice__( self, start, end, sub):
+    def __setslice__(self, start, end, sub):
         """set slice start:end from a string sub."""
         return self.mArray.__setslice__(start, end,
-                                        array.array("c", sub ))
+                                        array.array("c", sub))
 
     def __str__(self):
         return self.mArray.tostring()
 
     def __getattr__(self, name):
-        return getattr( self.mArray, name)
+        return getattr(self.mArray, name)

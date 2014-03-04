@@ -14,12 +14,34 @@ CountResult = collections.namedtuple( "Counts", "upstream upstream_utr cds downs
 
 class RangeCounter:
     
-    def __init__(self, *args, **kwargs ):
-        pass
+    def __init__(self, countfiles, 
+                 controlfiles = None, 
+                 control_factor = None, 
+                 *args, **kwargs ):
+
+        self.countfiles = countfiles
+        self.controlfiles = controlfiles
+        self.control_factor = control_factor 
+        if self.control_factor == None:
+            if self.controlfiles != None:
+                # count number of tags in each file for normalization purposes
+                self.norm_fg, self.norm_bg = [], []
+                for f in self.countfiles:
+                    E.debug( "computing read total for %s" % f )
+                    self.norm_fg.append( self.getTotal( f ) )
+                for f in self.controlfiles:
+                    E.debug( "computing read total for %s" % f )
+                    self.norm_bg.append( self.getTotal( f ) )
+                fg = sum( self.norm_fg )
+                bg = sum( self.norm_bg )
+                self.control_factor = float( fg ) / float( bg )
+                E.info( "normalization: fg=%i, bg=%f, factor=%f" % (fg, bg, self.control_factor) )
 
     def setup( self, ranges ):
         self.counts = numpy.zeros( Intervals.getLength( ranges ) )
-        
+        if self.controlfiles:
+            self.counts_bg = numpy.zeros( Intervals.getLength( ranges ) )
+
     def getCounts( self, contig, ranges, length = 0 ):
         '''count from a set of ranges.
 
@@ -28,8 +50,11 @@ class RangeCounter:
         '''
 
         self.setup( ranges )
-        self.count( contig, ranges )
+        self.count( self.counts, self.countfiles, contig, ranges )
+        if self.controlfiles:
+            self.count( self.counts_bg, self.controlfiles, contig, ranges )
 
+        # subsample for length
         if length > 0:
             lnormed = float(length)
             lunnormed = float(len(self.counts))
@@ -48,15 +73,23 @@ class RangeCounter:
                 
             assert len(take) == length, "size of arrays unequal: %i != %i from %i" % (len(take), length, lunnormed)
 
-            return self.counts[take]
-        else:
-            return self.counts
+            self.counts = self.counts[take]
+            if self.controlfiles:
+                self.counts_bg = self.counts_bg[take]
+
+        if self.controlfiles:
+            # scale background 
+            self.counts += 1
+            self.counts_bg += 1
+            self.counts = numpy.array( self.counts, dtype=float) * \
+                self.control_factor / self.counts_bg
+
+        return self.counts
 
 class RangeCounterBAM(RangeCounter):
     '''count densities using bam files.
     '''
-    def __init__(self, samfiles,
-                 *args, **kwargs ):
+    def __init__(self, *args, **kwargs ):
         '''
         :param samfiles: list of :term:`bam` formatted files
         :param shifts: list of read shifts
@@ -67,9 +100,8 @@ class RangeCounterBAM(RangeCounter):
         '''
 
         RangeCounter.__init__(self, *args, **kwargs )
-        self.samfiles = samfiles
 
-    def count(self, contig, ranges ):
+    def count(self, counts, files, contig, ranges ):
 
         if len(ranges) == 0: return
 
@@ -84,11 +116,9 @@ class RangeCounterBAM(RangeCounter):
         cdef int pos
         cdef int length
 
-        counts = self.counts
-
         cdef Samfile samfile
 
-        for samfile in self.samfiles:
+        for samfile in files:
 
             current_offset = 0
 
@@ -107,7 +137,8 @@ class RangeCounterBAMShift(RangeCounterBAM):
 
     Before counting, reads are shifted and extended by a fixed amount.
     '''
-    def __init__(self, samfiles, shifts, extends, 
+    def __init__(self, countfiles, shifts, extends, 
+                 controlfiles = None,
                  *args, **kwargs ):
         '''
         :param samfiles: list of :term:`bam` formatted files
@@ -115,11 +146,12 @@ class RangeCounterBAMShift(RangeCounterBAM):
         :param extends: list of read extensions
         '''
 
-        RangeCounterBAM.__init__(self, samfiles, *args, **kwargs )
+        RangeCounterBAM.__init__(self, countfiles,
+                                 controlfiles = controlfiles, *args, **kwargs)
 
         self.shifts, self.extends = [], []
 
-        for x in xrange(max( (len(shifts), len(extends), len(samfiles)) )):
+        for x in xrange(max( (len(shifts), len(extends), len(countfiles)) )):
             if x >= len(shifts):
                 shift = 0
             else:
@@ -136,7 +168,7 @@ class RangeCounterBAMShift(RangeCounterBAM):
             self.shifts.append( shift )
             self.extends.append( extend )
 
-    def count(self, contig, ranges ):
+    def count(self, counts, files, contig, ranges ):
 
         if len(ranges) == 0: return
 
@@ -150,8 +182,6 @@ class RangeCounterBAMShift(RangeCounterBAM):
         cdef int work_offset
         cdef int pos
         cdef int length
-
-        counts = self.counts
 
         # shifting:
         # forward strand reads:
@@ -173,7 +203,7 @@ class RangeCounterBAMShift(RangeCounterBAM):
         cdef int shift
         cdef Samfile samfile
 
-        for samfile, shift, extend in zip( self.samfiles, self.shifts, self.extends):
+        for samfile, shift, extend in zip( files, self.shifts, self.extends):
 
             current_offset = 0
             shift_extend = shift + extend
@@ -203,9 +233,10 @@ class RangeCounterBAMMerge(RangeCounterBAM):
 
     Reads are not shifted.
     '''
-    def __init__(self, samfiles,
+    def __init__(self, countfiles,
                  merge_pairs, 
                  min_insert_size, max_insert_size, 
+                 controlfiles = None,
                  *args, **kwargs ):
         '''
         :param samfiles: list of :term:`bam` formatted files
@@ -213,14 +244,14 @@ class RangeCounterBAMMerge(RangeCounterBAM):
         :param max_insert_size: remove paired reads with insert size above this threshold
         '''
 
-        RangeCounterBAM.__init__(self, samfiles,
+        RangeCounterBAM.__init__(self, countfiles,
+                                 controlfiles = controlfiles,
                                  *args, **kwargs )
-        self.samfiles = samfiles
         self.merge_pairs = merge_pairs
         self.min_insert_size = min_insert_size
         self.max_insert_size = max_insert_size
 
-    def count(self, contig, ranges ):
+    def count(self, counts, files, contig, ranges ):
 
         if len(ranges) == 0: return
 
@@ -234,13 +265,11 @@ class RangeCounterBAMMerge(RangeCounterBAM):
         cdef int pos
         cdef int length
 
-        counts = self.counts
-
         cdef Samfile samfile
         cdef int min_insert_size = self.min_insert_size
         cdef int max_insert_size = self.max_insert_size
 
-        for samfile in self.samfiles:
+        for samfile in files:
 
             current_offset = 0
 
@@ -284,7 +313,7 @@ class RangeCounterBAMBaseAccuracy(RangeCounterBAM):
 
         RangeCounterBAM.__init__(self, *args, **kwargs )
 
-    def count(self, contig, ranges ):
+    def count(self, counts, files, contig, ranges ):
 
         if len(ranges) == 0: return
 
@@ -298,11 +327,9 @@ class RangeCounterBAMBaseAccuracy(RangeCounterBAM):
         cdef int pos
         cdef int length
         
-        counts = self.counts
-
         cdef Samfile samfile
 
-        for samfile in self.samfiles:
+        for samfile in files:
 
             current_offset = 0
 
@@ -326,11 +353,16 @@ class RangeCounterBAMBaseAccuracy(RangeCounterBAM):
 
 class RangeCounterBed(RangeCounter):
 
-    def __init__(self, bedfiles, *args, **kwargs ):
+    def __init__(self, *args, **kwargs ):
         RangeCounter.__init__(self, *args, **kwargs )
-        self.bedfiles = bedfiles
-        
-    def count(self, contig, ranges ):
+                
+    def getTotal( self, bedfile ):
+        '''return total number of tags in bedfile.'''
+        cdef int total = 0
+        for x in bedfile.fetch(): total += 1
+        return total
+
+    def count(self, counts, files, contig, ranges ):
         
         # collect pileup profile in region bounded by start and end.
         cdef int i
@@ -338,37 +370,35 @@ class RangeCounterBed(RangeCounter):
 
         if len(ranges) == 0: return
 
-        counts = self.counts
-
         cdef int length
         cdef int current_offset
         cdef int interval_width
 
-        for bedfile in self.bedfiles:
+        for bedfile in files:
             current_offset = 0
 
             for start, end in ranges:
                 length = end - start
                 try:
-
                     for bed in bedfile.fetch( contig, max(0, start), end, parser = pysam.asBed() ):
                         # truncate to range of interest
                         rstart = max(0, bed.start - start) + current_offset
                         rend = min( length, bed.end - start) + current_offset
                         for i from rstart <= i < rend: counts[i] += 1
-                except ValueError:
+                except (ValueError, KeyError):
                     # contig not present
                     pass
 
                 current_offset += length
 
+        
+
 class RangeCounterBigWig(RangeCounter):
 
-    def __init__(self, wigfiles, *args, **kwargs ):
+    def __init__(self, *args, **kwargs ):
         RangeCounter.__init__(self, *args, **kwargs )
-        self.wigfiles = wigfiles
         
-    def count(self, contig, ranges ):
+    def count(self, counts, files, contig, ranges ):
         
         # collect pileup profile in region bounded by start and end.
         cdef int i
@@ -376,11 +406,10 @@ class RangeCounterBigWig(RangeCounter):
 
         if len(ranges) == 0: return
 
-        counts = self.counts
         cdef int length
         cdef int current_offset
 
-        for wigfile in self.wigfiles:
+        for wigfile in files:
 
             current_offset = 0
             for start, end in ranges:
@@ -397,10 +426,32 @@ class RangeCounterBigWig(RangeCounter):
                 current_offset += length
 
 class IntervalsCounter:
+    '''aggregate reads/intervals within a certain arrangement of
+    intervals (sections). Sections are defined by a transcript-model 
+    and might be configurations such as upstream/exon/downstream, 
+    exon/intron, etc.
+
+    Derived class should provide a ``self.count()`` method that accepts
+    a list of intervals within a transcript and gene model,
+    collects counts within some configuration based on the
+    transcript structure and then calls ``self.aggregate()`` to
+    aggregate these counts.
     
+    The base class provides normalization and book keeping methods
+    for the aggregation process.
+    '''
+
     format = "%i"
 
-    def __init__(self, normalization = None, *args, **kwargs ):
+    def __init__(self, counter, 
+                 normalization = None, 
+                 outfile_profiles = None,
+                 *args, **kwargs ):
+        '''counter is an object to provide counts in a list of regions
+        scaled to a common size.
+        '''
+
+        self.counter = counter
 
         # normalization method to use before aggregation
         self.normalization = normalization        
@@ -417,19 +468,40 @@ class IntervalsCounter:
         # number of aggregates skipped due to shape mismatch
         # (happens if region extends beyound start/end of contig
         self.nskipped = 0
-        
 
-    def add( self, field, length ):
-        self.counts.append( 0 )
-        self.lengths.append( [] )
-        self.fields.append( field )
-        self.nbins.append( length )
-        if self.normalization in ("max", "sum", "total-max", "total-sum" ):
+        # for keeping totals without aggregation
+        self.outfile_profiles = outfile_profiles
+
+    def add(self, field, length):
+        '''add a new region to counter.
+
+        The region is named *field* and has length *length*.
+
+        '''
+        self.counts.append(0)
+        self.lengths.append([])
+        self.fields.append(field)
+        self.nbins.append(length)
+        if self.normalization in ("max", "sum", "total-max", "total-sum"):
             self.dtype = numpy.float
         else:
             self.dtype = numpy.int
 
-        self.aggregate_counts.append( numpy.zeros( length, dtype = self.dtype ) )
+        self.aggregate_counts.append(numpy.zeros(length, dtype = self.dtype))
+
+    def setOutputProfiles(self, outfile_profiles):
+        if outfile_profiles:
+            self.outfile_profiles = outfile_profiles
+            sum_counts = sum( [len(x) for x in self.aggregate_counts] )
+            self.outfile_profiles.write("\t%s\n" % ("\t".join(map(str, range(sum_counts))) ) )
+
+    def getNumBins( self ):
+        '''returns the number of bins in this counter.'''
+        return sum(self.nbins )
+
+    def closeOutputProfiles( self ):
+        if self.outfile_profiles:
+            self.outfile_profiles.close()
 
     def setNormalization( self, normalization ):
         self.normalization = normalization
@@ -444,6 +516,10 @@ class IntervalsCounter:
         for x,c in enumerate(self.aggregate_counts):
             self.aggregate_counts[x] = numpy.zeros( len(c), dtype = self.dtype ) 
 
+    def addName( self, name ):
+        '''record name currently being processed.'''
+        self.transcript_names.append( name )
+
     def addLengths( self, *lengths ):
         '''add interval lengths to this counter.'''
 
@@ -452,6 +528,10 @@ class IntervalsCounter:
 
     def aggregate( self, *counts ):
 
+        # save for outputting
+        self.last_counts = counts
+
+        # normalization across all regions
         if self.normalization == "total-max":
             norm = float(max( [max(c) for c in counts if len(c) > 0] ))
         elif self.normalization == "total-sum":
@@ -466,65 +546,75 @@ class IntervalsCounter:
             if len(c) == 0: continue
             
             if norm > 0:
+                # apply uniform normalization
                 cc = c / norm
             elif self.normalization == "max":
+                # normalize by max count per region
                 m = max(c)
                 if m == 0: continue
                 cc = c / m
             elif self.normalization == "sum":
+                # normalize by sum counts per region
                 m = sum(c)
                 if m == 0: continue
                 cc = c / m
             else:
+                # no normalization
                 cc = c
 
             try:
                 agg += cc
             except ValueError:
                 self.nskipped += 1
-            
-    def buildMatrix( self, normalize = None ):
-        '''build single matrix with all counts.
+
+    def getProfile(self,
+                   normalize=None,
+                   background_region=10):
+        '''return meta gene profile.
+
+        apply various normalization methods.
+
+        area
+           Normalize by total area under curve of
+           the complete profile.
+
+        counts
+           Normalize each segment individually by
+           the number of regions included.
         
-        cols = intervals counted (exons, introns) )
-        rows = number of bins in intervals (every 10b / 10kb = 1000 bins)
+        background
+           Apply background normalization to complete
+           profile.
+
         '''
-        max_counts = max( [len(x) for x in self.aggregate_counts] )
-
-        matrix = numpy.concatenate( list(itertools.chain.from_iterable( 
-                [ (x, [0] * (max_counts - len(x))) for x in self.aggregate_counts ] )))
+        if normalize is None or normalize == "none":
+            profile = numpy.concatenate(self.aggregate_counts)
         
-        matrix.shape = (len(self.aggregate_counts), max_counts )
+        elif normalize in ("area", "background"):
+            profile = numpy.concatenate(self.aggregate_counts)
+            profile = numpy.array(profile, dtype=numpy.float)
+            
+            if normalize == "area":
+                background = profile.sum()
+                
+            elif normalize == "background":
+                # take counts at either end of profile
+                background_counts = numpy.concatenate( 
+                    [profile[:background_region],
+                     profile[-background_region:]])
+                # compute mean()
+                background = numpy.mean(background_counts)
 
-        # normalize
-        if normalize == "area":
-            matrix = numpy.array( matrix, dtype = numpy.float )
-            total = matrix.sum()
-            matrix /= total
+            profile /= background
+
         elif normalize == "counts":
-            matrix = numpy.array( matrix, dtype = numpy.float )
-            for x in range( len(self.counts)):
-                matrix[x,:] /= self.counts[x]
+            profile = numpy.concatenate(
+                [numpy.array(x, dtype=numpy.float) / y
+                 for x, y in zip(self.aggregate_counts,
+                                 self.counts)])
 
-        return matrix
+        return profile
 
-    def writeMatrix( self, outfile, normalize = None ):
-        '''write aggregate counts to *outfile*.
-
-        Output format by default is a tab-separated table.
-        '''
-        outfile.write("bin\t%s\n" % "\t".join(self.fields) )        
-
-        matrix = self.buildMatrix( normalize )
-        
-        if normalize and normalize != "none":
-            format = "%f"
-        else:
-            format = self.format
-
-        for row, cols in enumerate(matrix.transpose()):
-            outfile.write( "%i\t%s\n" % (row, "\t".join( [ format % x for x in cols ] ) ))
-            
     def writeLengthStats( self, outfile ):
         '''output length stats to outfile.'''
         
@@ -532,9 +622,35 @@ class IntervalsCounter:
         for field,l in zip(self.fields, self.lengths):
             outfile.write( "%s\t%s\n" % (field, str(Stats.Summary( l))))
 
+    def update( self, gtf ):
+        
+        counted = self.count( gtf )
+
+        if counted and self.outfile_profiles:
+            name = gtf[0].transcript_id
+            self.outfile_profiles.write("%s\t%s\n" % (name,
+                                        "\t".join( [ "\t".join( map(str, x) ) for x in self.last_counts ] ) ) )
+        
+        return counted
+
     def __str__(self):
         return "%s=%s" % (self.name, ",".join( [str(sum(x)) for x in self.aggregate_counts]) )
 
+class UnsegmentedCounter( IntervalsCounter ):
+    '''clone a segmented counter as a single
+    unsegmented counter.
+    '''
+    
+    name = None
+    
+    def __init__(self, counter, 
+                 *args,
+                 **kwargs ):
+        IntervalsCounter.__init__(self, counter, *args, **kwargs)
+
+        self.name = counter.name
+        self.add( 'all', counter.getNumBins() )
+        
 class GeneCounter( IntervalsCounter ):
     '''count reads in exons and upstream/downstream of genes/transcripts.
     
@@ -553,9 +669,8 @@ class GeneCounter( IntervalsCounter ):
                  *args,
                  **kwargs ):
 
-        IntervalsCounter.__init__(self, *args, **kwargs )
+        IntervalsCounter.__init__(self, counter, *args, **kwargs )
 
-        self.counter = counter
         self.extension_upstream = extension_upstream
         self.extension_downstream = extension_downstream 
         self.resolution_exons = resolution_exons
@@ -589,18 +704,28 @@ class GeneCounter( IntervalsCounter ):
             E.debug("scale flanks")
 
         if gtf[0].strand == "-":
-            downstream = [ ( max(0, exon_start - self.extension_downstream), exon_start ), ] 
-            upstream = [ ( exon_end, exon_end + self.extension_upstream ), ]
+            downstream = [( max(0, exon_start - self.extension_downstream),
+                            exon_start ),] 
+            upstream = [( exon_end,
+                          exon_end + self.extension_upstream),]
         else:
-            upstream = [ ( max(0, exon_start - self.extension_upstream), exon_start ), ] 
-            downstream = [ ( exon_end, exon_end + self.extension_downstream ), ]
+            upstream = [(max(0, exon_start - self.extension_upstream),
+                         exon_start ),] 
+            downstream = [(exon_end,
+                           exon_end + self.extension_downstream ),]
 
         E.debug("counting exons" )
-        self.counts_exons = self.counter.getCounts( contig, exons, self.resolution_exons  )
+        self.counts_exons = self.counter.getCounts(contig,
+                                                   exons,
+                                                   self.resolution_exons)
         E.debug("counting upstream" )
-        self.counts_upstream = self.counter.getCounts( contig, upstream, self.resolution_upstream ) 
+        self.counts_upstream = self.counter.getCounts(contig, 
+                                                      upstream,
+                                                      self.resolution_upstream) 
         E.debug("counting downstream" )
-        self.counts_downstream = self.counter.getCounts( contig, downstream, self.resolution_downstream )
+        self.counts_downstream = self.counter.getCounts(contig,
+                                                        downstream,
+                                                        self.resolution_downstream)
 
         E.debug("counting finished" )
 
@@ -630,7 +755,8 @@ class GeneCounterWithIntrons( IntervalsCounter ):
     
     name = "geneprofilewithintrons"
     
-    def __init__(self, counter, 
+    def __init__(self, 
+                 counter,
                  int resolution_upstream,
                  int resolution_exons,
                  int resolution_introns,  #Tim 16 May. 2013. for introns
@@ -641,9 +767,8 @@ class GeneCounterWithIntrons( IntervalsCounter ):
                  *args,
                  **kwargs ):
 
-        IntervalsCounter.__init__(self, *args, **kwargs )
+        IntervalsCounter.__init__(self, counter, *args, **kwargs )
 
-        self.counter = counter
         self.extension_upstream = extension_upstream
         self.extension_downstream = extension_downstream 
         self.resolution_exons = resolution_exons
@@ -728,47 +853,58 @@ class GeneCounterWithIntrons( IntervalsCounter ):
 
 
 class GeneCounterAbsoluteDistanceFromThreePrimeEnd( IntervalsCounter ):
-    '''count reads in exons of genes/transcripts from the three prime polyA tail,
-    without shrinking or lengthening the gene as it would in other genecounter mode
-    in this script.
-    i.e. Only count the reads that fall on the exons of the (virtual maximal) mNRA transcript. 
-    Note that the distance is relative to TTS (three prime polyA tail) on the mNRA 
-    transcript, insteads of on the genomic assembly is used for the counting and plotting.
+    '''count reads in exons of genes/transcripts from the three prime
+    polyA tail, without shrinking or lengthening the gene as it would
+    in other genecounter mode in this script.  
+
+    In other words, only count the reads that fall on the exons of the
+    (virtual maximal) mNRA transcript.  Note that the distance is
+    relative to TTS (three prime polyA tail) on the mNRA transcript,
+    insteads of on the genomic assembly is used for the counting and
+    plotting.
     
-    For mRNA with multiple exons, the exons are first stiched together into one 
-    piece of mRNA (the virtual maximal transcript for each gene). Subsequently, the mNRA is being 
-    used for counting. This is the (only) proper way to avoid counting in introns, which screw up the 
-    actual genebody coverage profile. And this only works with --base-accuracy option, 
-    because otherwise spliced reads will be considered as covering the entire intron, or 
-    spliced out introns will be counted as covered by reads.
-    (this option imply the --base-accuracy option). 
+    For mRNA with multiple exons, the exons are first stiched together
+    into one piece of mRNA (the virtual maximal transcript for each
+    gene). Subsequently, the mNRA is being used for counting. This is
+    the (only) proper way to avoid counting in introns, which screw up
+    the actual genebody coverage profile. And this only works with
+    --base-accuracy option, because otherwise spliced reads will be
+    considered as covering the entire intron, or spliced out introns
+    will be counted as covered by reads.  (this option imply the
+    --base-accuracy option).
     
-    Also count reads in introns (in exctly the same manner as if they are exons described above ) 
-    of genes/transcripts from the three prime polyA tail.
+    Also count reads in introns (in exctly the same manner as if they
+    are exons described above ) of genes/transcripts from the three
+    prime polyA tail.
     
+    Note:
+
+    * Both protein coding transcripts, and non coding
+    transcripts are counted.  i.e. both those with a CDS, and those
+    without a CDS are counted.
     
-    NOTE:
-    (*) Both protein coding transcripts, and non coding transcripts are counted.
-    i.e. both those with a CDS, and those without a CDS are counted.
+    * Only genes/transcripts with total length longer than the
+    --extension-exons-absolute-distance-topolya is counted (i.e. those
+    genes/transcripts shorter than this is omitted because they will
+    only contribute to the last len(gene) base pair of the graph, thus
+    end-up ploting a graph appears to have three prime bias even when
+    there is no three prime bias at all.
     
-    (*) Only genes/transcripts with total length longer than the 
-    --extension-exons-absolute-distance-topolya is counted 
-    (i.e. those genes/transcripts shorter than this is omitted because they will only 
-    contribute to the last len(gene) base pair of the graph, thus end-up ploting a 
-    graph appears to have three prime bias even when there is no three prime bias at all.
-    
-    There is one alternative way of dealing with this issue: is to count the number of times 
-    a nucleotide is being visited, and normalize against the counts curve with the visits counting 
-    curve. However, under current architecture of the counter, it seems hard to support this method.
-    Assumeing you get enough number of genes longer than 4000b (in hg19) to plot the three 
-    prime bias to satisfactory quality, it seems not really worth the effort to implement 
-    the alternative way, 
-    
+    There is one alternative way of dealing with this issue: is to
+    count the number of times a nucleotide is being visited, and
+    normalize against the counts curve with the visits counting
+    curve. However, under current architecture of the counter, it
+    seems hard to support this method.  Assumeing you get enough
+    number of genes longer than 4000b (in hg19) to plot the three
+    prime bias to satisfactory quality, it seems not really worth the
+    effort to implement the alternative way,
+
     '''
     
     name = "geneprofileabsolutedistancefromthreeprimeend"   #Tim 31th Aug 2013
     
-    def __init__(self, counter, 
+    def __init__(self, 
+                 counter,
                  int resolution_upstream,
                  int resolution_downstream,
                  int resolution_exons_absolute_distance_topolya,
@@ -790,9 +926,8 @@ class GeneCounterAbsoluteDistanceFromThreePrimeEnd( IntervalsCounter ):
                  *args,
                  **kwargs ):
 
-        IntervalsCounter.__init__(self, *args, **kwargs )
+        IntervalsCounter.__init__(self, counter, *args, **kwargs )
 
-        self.counter = counter
         self.extension_upstream = extension_upstream
         self.extension_downstream = extension_downstream 
         self.resolution_upstream = resolution_upstream
@@ -929,6 +1064,9 @@ class GeneCounterAbsoluteDistanceFromThreePrimeEnd( IntervalsCounter ):
 
         contig = gtf[0].contig 
         exons = GTF.asRanges( gtf, "exon" )
+        # skip genes without exons
+        if len(exons) == 0: return 0
+
         introns = Intervals.complement(exons) #Tim 31th Aug 2013
         
         if len(exons) == 0:
@@ -1009,8 +1147,6 @@ class GeneCounterAbsoluteDistanceFromThreePrimeEnd( IntervalsCounter ):
 
         return 1
 
-
-
 class UTRCounter( IntervalsCounter ):
     '''counts reads in 3'UTR and 5'UTR in addition
     to the extension outside.'''
@@ -1028,9 +1164,8 @@ class UTRCounter( IntervalsCounter ):
                  *args,
                  **kwargs ):
 
-        IntervalsCounter.__init__(self, *args, **kwargs )
+        IntervalsCounter.__init__(self, counter, *args, **kwargs )
 
-        self.counter = counter
         self.extension_upstream = extension_upstream
         self.extension_downstream = extension_downstream 
         self.resolution_cds = resolution_cds
@@ -1051,14 +1186,17 @@ class UTRCounter( IntervalsCounter ):
     def count( self, gtf ):
         '''build ranges to be analyzed from a gene model.
 
-        Returns a tuple with ranges for cds, upstream_utr, downstream_utr, upstream, downstream.
+        Returns a tuple with ranges for cds, upstream_utr,
+        downstream_utr, upstream, downstream.
         '''
 
         contig = gtf[0].contig 
         exons = GTF.asRanges( gtf, "exon" )
+        # skip genes without exons
+        if len(exons) == 0: return 0
         exon_start, exon_end = exons[0][0], exons[-1][1]
         self.cds = GTF.asRanges( gtf, "CDS" )
-
+        # skip genes without CDS
         if len(self.cds) == 0: return 0
 
         cds_start, cds_end = self.cds[0][0], self.cds[-1][1]
@@ -1155,9 +1293,8 @@ class MidpointCounter( GeneCounter ):
                  *args,
                  **kwargs ):
 
-        IntervalsCounter.__init__(self, *args, **kwargs )
+        IntervalsCounter.__init__(self, counter, *args, **kwargs )
 
-        self.counter = counter
         self.extension_upstream = extension_upstream
         self.extension_downstream = extension_downstream 
         self.resolution_upstream = resolution_upstream
@@ -1177,6 +1314,8 @@ class MidpointCounter( GeneCounter ):
 
         contig = gtf[0].contig 
         exons = GTF.asRanges( gtf, "exon" )
+        # skip genes without exons
+        if len(exons) == 0: return 0
         exon_start, exon_end = exons[0][0], exons[-1][1]
         midpoint = (exon_end - exon_start) // 2 + exon_start
 
@@ -1217,9 +1356,8 @@ class TSSCounter( IntervalsCounter ):
     name = "tssprofile"
     
     def __init__(self, counter, extension_out = 0, extension_in = 0, *args, **kwargs):
-        IntervalsCounter.__init__(self, *args, **kwargs )
+        IntervalsCounter.__init__(self, counter, *args, **kwargs )
 
-        self.counter = counter
         self.extension_out = extension_out
         self.extension_in = extension_in 
 
@@ -1232,6 +1370,9 @@ class TSSCounter( IntervalsCounter ):
 
         contig, strand = gtf[0].contig, gtf[0].strand
         exons = GTF.asRanges( gtf, "exon" )
+        # skip genes without exons
+        if len(exons) == 0: return 0
+
         self.tss, self.tts = exons[0][0], exons[-1][1]
 
         # no max(0, ...) here as these ranges need to have always the same length
@@ -1259,26 +1400,27 @@ class TSSCounter( IntervalsCounter ):
 
         return 1
 
-def count( counters,
-           gtf_iterator):
-    '''
+def countFromGTF( counters,
+                  gtf_iterator):
+    '''compute counts using counters for
+    transcripts in gtf_iterator.
     '''
 
     c = E.Counter()
     counts = [0] * len(counters)
 
-    iterations = 0
     E.info("starting counting" )
 
     for iteration, gtf in enumerate(gtf_iterator):
-        E.debug( "processing %s" % (gtf[0].gene_id))
+        name = gtf[0].transcript_id
+        E.debug( "processing %s" % (name))
 
         gtf.sort( key = lambda x: x.start )
         c.input += 1
         for x, counter in enumerate(counters):
-            counter.count( gtf )
+            counter.update( gtf )
             counts[x] += 1
-            
+
         if iteration % 100 == 0:
             E.debug( "iteration %i: counts=%s" % (iteration, ",".join( map( str, counters) ) ))
 
@@ -1286,6 +1428,29 @@ def count( counters,
     return
 
 
+def countFromCounts( counters,
+                     all_counts ):
+    '''collect counts from dataframe all_counts
+    for counters.
+    '''
+
+    c = E.Counter()
+    counts = [0] * len(counters)
+
+    E.info("starting counting" )
+
+    for iteration, x in enumerate(all_counts.iterrows()):
+        c.input += 1
+        name, read_counts = x
+        for x, counter in enumerate(counters):
+            counter.aggregate( numpy.array(read_counts) )
+            counts[x] += 1
+
+        if iteration % 100 == 0:
+            E.debug( "iteration %i: counts=%s" % (iteration, ",".join( map( str, counters) ) ))
+
+    E.info( "counts per counter: %s: %s" % (str(c), ",".join( map(str,counts)))) 
+    return
 
         
     

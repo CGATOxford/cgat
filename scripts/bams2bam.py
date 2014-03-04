@@ -76,97 +76,100 @@ try:
 except ImportError:
     import CGAT._bams2bam as _bams2bam
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if not argv: argv = sys.argv
+    if not argv:
+        argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser( version = "%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
-                                    usage = globals()["__doc__"] )
+    parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+                            usage=globals()["__doc__"])
 
-    parser.add_option( "-g", "--filename-gtf", dest="filename_gtf", type="string",
-                       help = "filename with gene models in gtf format [%default]" )
+    parser.add_option("-g", "--filename-gtf", dest="filename_gtf", type="string",
+                      help="filename with gene models in gtf format [%default]")
 
-    parser.add_option( "-m", "--filename-mismapped", dest="filename_mismapped", type="string",
-                       help = "output bam file for mismapped reads [%default]" )
+    parser.add_option("-m", "--filename-mismapped", dest="filename_mismapped", type="string",
+                      help="output bam file for mismapped reads [%default]")
 
-    parser.add_option( "-j", "--filename-junctions", dest="filename_junctions", type="string",
-                       help = "bam file with reads mapped across junctions [%default]" )
+    parser.add_option("-j", "--filename-junctions", dest="filename_junctions", type="string",
+                      help="bam file with reads mapped across junctions [%default]")
 
-    parser.add_option( "-r", "--filename-regions", dest="filename_regions", type="string",
-                       help = "filename with regions to remove in bed format [%default]" )
+    parser.add_option("-r", "--filename-regions", dest="filename_regions", type="string",
+                      help="filename with regions to remove in bed format [%default]")
 
-    parser.add_option( "-t", "--filename-transcriptome", dest="filename_transcriptome", type="string",
-                       help = "bam file with reads mapped against transcripts [%default]" )
+    parser.add_option("-t", "--filename-transcriptome", dest="filename_transcriptome", type="string",
+                      help="bam file with reads mapped against transcripts [%default]")
 
-    parser.add_option( "-p", "--filename-map", dest="filename_map", type="string",
-                       help = "filename mapping transcript numbers (used by --filename-transciptome) to transcript names (used by --filename-gtf) [%default]" )
+    parser.add_option("-p", "--filename-map", dest="filename_map", type="string",
+                      help="filename mapping transcript numbers (used by --filename-transciptome) to transcript names (used by --filename-gtf) [%default]")
 
-    parser.add_option( "-s", "--filename-stats", dest="filename_stats", type="string",
-                       help = "filename to output stats to [%default]" )
+    parser.add_option("-s", "--filename-stats", dest="filename_stats", type="string",
+                      help="filename to output stats to [%default]")
 
-    parser.add_option( "-o", "--colour", dest="colour_mismatches", action="store_true",
-                       help = "mismatches will use colour differences (CM tag) [%default]" )
+    parser.add_option("-o", "--colour", dest="colour_mismatches", action="store_true",
+                      help="mismatches will use colour differences (CM tag) [%default]")
 
-    parser.add_option( "-i", "--ignore-mismatches", dest="ignore_mismatches", action="store_true",
-                       help = "ignore mismatches [%default]" )
+    parser.add_option("-i", "--ignore-mismatches", dest="ignore_mismatches", action="store_true",
+                      help="ignore mismatches [%default]")
 
-    parser.add_option( "-c", "--remove-contigs", dest="remove_contigs", type="string",
-                       help = "','-separated list of contigs to remove [%default]" )
+    parser.add_option("-c", "--remove-contigs", dest="remove_contigs", type="string",
+                      help="','-separated list of contigs to remove [%default]")
 
-    parser.add_option( "-f", "--force", dest="force", action = "store_true",
-                       help = "force overwriting of existing files [%default]" )
+    parser.add_option("-f", "--force", dest="force", action="store_true",
+                      help="force overwriting of existing files [%default]")
 
-    parser.add_option( "-u", "--unique", dest="unique", action = "store_true",
-                       help = "remove reads not matching uniquely [%default]" )
+    parser.add_option("-u", "--unique", dest="unique", action="store_true",
+                      help="remove reads not matching uniquely [%default]")
 
-    parser.add_option( "--sam", dest="output_sam", action="store_true",
-                       help = "output in sam format [%default]" )
+    parser.add_option("--sam", dest="output_sam", action="store_true",
+                      help="output in sam format [%default]")
 
     parser.set_defaults(
-        filename_gtf = None,
-        filename_mismapped = None,
-        filename_junctions = None,
-        filename_transcriptome = None,
-        filename_map = None,
-        remove_contigs = None,
-        force = False,
-        unique = False,
-        colour_mismatches = False,
-        ignore_mismatches = False,
-        output_sam = False,
-        filename_table = None,
-        )
+        filename_gtf=None,
+        filename_mismapped=None,
+        filename_junctions=None,
+        filename_transcriptome=None,
+        filename_map=None,
+        remove_contigs=None,
+        force=False,
+        unique=False,
+        colour_mismatches=False,
+        ignore_mismatches=False,
+        output_sam=False,
+        filename_table=None,
+    )
 
-    ## add common options (-h/--help, ...) and parse command line 
-    (options, args) = E.Start( parser, argv = argv )
+    # add common options (-h/--help, ...) and parse command line
+    (options, args) = E.Start(parser, argv=argv)
 
     if len(args) != 1:
-        raise ValueError( "please supply one bam file" )
+        raise ValueError("please supply one bam file")
 
     bamfile_genome = args[0]
-    genome_samfile = pysam.Samfile( bamfile_genome, "rb" )
+    genome_samfile = pysam.Samfile(bamfile_genome, "rb")
 
     if options.remove_contigs:
         options.remove_contigs = options.remove_contigs.split(",")
 
     if options.filename_map:
-        E.info( "reading map" )
-        id_map = IOTools.readMap( IOTools.openFile( options.filename_map), has_header = True )
-	id_map = dict( [ (y,x) for x,y in id_map.iteritems() ])
+        E.info("reading map")
+        id_map = IOTools.readMap(
+            IOTools.openFile(options.filename_map), has_header=True)
+        id_map = dict([(y, x) for x, y in id_map.iteritems()])
     else:
         id_map = None
-        
+
     transcripts = {}
     if options.filename_gtf:
-        E.info( "indexing geneset" )
+        E.info("indexing geneset")
         mapped, missed = 0, 0
-        for gtf in GTF.transcript_iterator( GTF.iterator( IOTools.openFile(options.filename_gtf) )):
-            gtf.sort( key = lambda x: x.start )
+        for gtf in GTF.transcript_iterator(GTF.iterator(IOTools.openFile(options.filename_gtf))):
+            gtf.sort(key=lambda x: x.start)
             transcript_id = gtf[0].transcript_id
             if id_map:
                 try:
@@ -177,75 +180,76 @@ def main( argv = None ):
                     continue
             transcripts[transcript_id] = gtf
 
-        E.info( "read %i transcripts from geneset (%i mapped, %i missed)" % (len(transcripts), mapped, missed) )
+        E.info("read %i transcripts from geneset (%i mapped, %i missed)" %
+               (len(transcripts), mapped, missed))
 
     regions_to_remove = None
     if options.filename_regions:
-        E.info( "indexing regions" )
+        E.info("indexing regions")
         regions_to_remove = IndexedGenome.Simple()
-        for bed in Bed.iterator( IOTools.openFile( options.filename_regions )):
-            regions_to_remove.add( bed.contig, bed.start, bed.end )
-        E.info( "read %i regions" % len(regions_to_remove) )
+        for bed in Bed.iterator(IOTools.openFile(options.filename_regions)):
+            regions_to_remove.add(bed.contig, bed.start, bed.end)
+        E.info("read %i regions" % len(regions_to_remove))
 
     if options.filename_transcriptome:
-        transcripts_samfile = pysam.Samfile( options.filename_transcriptome, 
-                                             "rb" )
+        transcripts_samfile = pysam.Samfile(options.filename_transcriptome,
+                                            "rb")
     else:
         transcripts_samfile = None
 
-    if not options.force and os.path.exists( bamfile_output ):
-        raise IOError( "output file %s already exists" % bamfile_output )
+    if not options.force and os.path.exists(bamfile_output):
+        raise IOError("output file %s already exists" % bamfile_output)
 
     if options.output_sam:
-        output_samfile = pysam.Samfile( "-", "wh", template = genome_samfile )
+        output_samfile = pysam.Samfile("-", "wh", template=genome_samfile)
     else:
-        output_samfile = pysam.Samfile( "-", "wb", template = genome_samfile )
+        output_samfile = pysam.Samfile("-", "wb", template=genome_samfile)
 
     if options.filename_mismapped:
-        if not options.force and os.path.exists( options.filename_mismapped ):
-            raise IOError( "output file %s already exists" % options.filename_mismapped )
-        output_mismapped = pysam.Samfile( options.filename_mismapped, 
-                                          "wb", 
-                                          template = genome_samfile )
+        if not options.force and os.path.exists(options.filename_mismapped):
+            raise IOError("output file %s already exists" %
+                          options.filename_mismapped)
+        output_mismapped = pysam.Samfile(options.filename_mismapped,
+                                         "wb",
+                                         template=genome_samfile)
     else:
         output_mismapped = None
 
     if options.filename_junctions:
-        junctions_samfile = pysam.Samfile( options.filename_junctions, 
-                                           "rb" )
+        junctions_samfile = pysam.Samfile(options.filename_junctions,
+                                          "rb")
     else:
         junctions_samfile = None
 
-    c = _bams2bam.filter( genome_samfile, 
-                          output_samfile, 
-                          output_mismapped,
-                          transcripts_samfile,
-                          junctions_samfile,
-                          transcripts,
-                          regions = regions_to_remove,
-                          unique = options.unique,
-                          remove_contigs = options.remove_contigs,
-                          colour_mismatches = options.colour_mismatches,
-                          ignore_mismatches = options.ignore_mismatches,
-                          ignore_transcripts = transcripts_samfile == None,
-                          ignore_junctions = junctions_samfile == None)
+    c = _bams2bam.filter(genome_samfile,
+                         output_samfile,
+                         output_mismapped,
+                         transcripts_samfile,
+                         junctions_samfile,
+                         transcripts,
+                         regions=regions_to_remove,
+                         unique=options.unique,
+                         remove_contigs=options.remove_contigs,
+                         colour_mismatches=options.colour_mismatches,
+                         ignore_mismatches=options.ignore_mismatches,
+                         ignore_transcripts=transcripts_samfile is None,
+                         ignore_junctions=junctions_samfile is None)
 
     if options.filename_stats:
-        outf = IOTools.openFile( options.filename_stats, "w" )
-        outf.write( "category\tcounts\n%s\n" % c.asTable() )
+        outf = IOTools.openFile(options.filename_stats, "w")
+        outf.write("category\tcounts\n%s\n" % c.asTable())
         outf.close()
 
     if options.filename_transcriptome:
         transcripts_samfile.close()
-    
+
     genome_samfile.close()
     output_samfile.close()
     if output_mismapped:
         output_mismapped.close()
 
-    ## write footer and output benchmark information.
+    # write footer and output benchmark information.
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

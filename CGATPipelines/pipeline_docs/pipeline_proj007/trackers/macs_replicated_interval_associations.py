@@ -1,4 +1,8 @@
-import os, sys, re, types, itertools
+import os
+import sys
+import re
+import types
+import itertools
 import matplotlib.pyplot as plt
 import numpy
 import numpy.ma
@@ -10,16 +14,19 @@ from SphinxReport.Tracker import *
 from SphinxReport.odict import OrderedDict as odict
 from macs_annotations import *
 
-##################################################################################
+##########################################################################
+
+
 class replicatedAssociationsHierarchy(cpgTracker):
+
     """ """
 
     pattern = "(.*)_replicated_intervals$"
-    
-    def __call__(self, track, slice = None ):
+
+    def __call__(self, track, slice=None):
 
         ANNOTATIONS_NAME = P['annotations_name']
-        statement =  """SELECT count(distinct interval_id) as NMIs, feature_class
+        statement = """SELECT count(distinct interval_id) as NMIs, feature_class
                         FROM (
                         SELECT interval_id,
                         CASE WHEN coding_tss > 0  THEN 'Protein-coding gene TSS'
@@ -83,16 +90,19 @@ class replicatedAssociationsHierarchy(cpgTracker):
         data = self.getAll(statement)
         return data
 
-##################################################################################
+##########################################################################
+
+
 class replicatedAssociationsHierarchy3(cpgTracker):
+
     """ """
 
     pattern = "(.*)_replicated_intervals$"
-    
-    def __call__(self, track, slice = None ):
+
+    def __call__(self, track, slice=None):
 
         ANNOTATIONS_NAME = P['annotations_name']
-        statement =  """SELECT count(distinct interval_id) as NMIs, feature_class
+        statement = """SELECT count(distinct interval_id) as NMIs, feature_class
                         FROM (
                         SELECT interval_id,
                         CASE WHEN coding_tss > 0  THEN 'Protein-coding gene TSS'
@@ -135,17 +145,20 @@ class replicatedAssociationsHierarchy3(cpgTracker):
                         order by feature_class asc;""" % locals()
         data = self.getAll(statement)
         return data
-        
-##################################################################################
+
+##########################################################################
+
+
 class replicatedAssociationsHierarchy2(cpgTracker):
+
     """ """
 
     pattern = "(.*)_replicated_intervals$"
-    
-    def __call__(self, track, slice = None ):
+
+    def __call__(self, track, slice=None):
 
         ANNOTATIONS_NAME = P['annotations_name']
-        statement =  """SELECT count(distinct interval_id) as NMIs, feature_class
+        statement = """SELECT count(distinct interval_id) as NMIs, feature_class
                         FROM (
                         SELECT interval_id,
                         CASE WHEN coding_tss > 0  THEN 'Protein-coding gene TSS'
@@ -168,45 +181,44 @@ class replicatedAssociationsHierarchy2(cpgTracker):
                         order by feature_class asc;""" % locals()
         data = self.getAll(statement)
         return data
-        
 
-##################################################################################
+
+##########################################################################
 class replicatedAssociations(cpgTracker):
+
     """ """
 
     pattern = "(.*)_replicated_intervals$"
-    
-    def __call__(self, track, slice = None ):
+
+    def __call__(self, track, slice=None):
         ANNOTATIONS_NAME = P['annotations_name']
-        try: 
-            data1 = self.getValue( """SELECT count(distinct gene_id) as intervals
+        try:
+            data1 = self.getValue("""SELECT count(distinct gene_id) as intervals
                                         FROM %(track)s_replicated_%(ANNOTATIONS_NAME)s_overlap
                                         where (genes_nover>0 OR downstream_flank_nover>0 OR upstream_flank_nover>0)""" % locals() )
         except:
             data1 = "0"
-        try: 
-            data2 = self.getValue( """SELECT count(distinct gene_id) as intervals
+        try:
+            data2 = self.getValue("""SELECT count(distinct gene_id) as intervals
                                        FROM %(track)s_replicated_%(ANNOTATIONS_NAME)s_noncoding_tss_distance
                                        where closest_dist < 1000""" % locals() )
         except:
             data2 = "0"
         try:
-            data3 = self.getValue( """SELECT distinct count(distinct interval_id) as intervals, "enhancer" as feature_class 
+            data3 = self.getValue("""SELECT distinct count(distinct interval_id) as intervals, "enhancer" as feature_class 
                                        FROM %(track)s_replicated_h3k4me1_intervals""" % locals() )
         except:
             data3 = "0"
         try:
-            data4 = self.getValue( """SELECT count(distinct gene_id) as intervals
+            data4 = self.getValue("""SELECT count(distinct gene_id) as intervals
                                         FROM %(track)s_replicated_rnaseq_tss_distance
                                         where closest_dist < 1000""" % locals() )
         except:
             data4 = "0"
-        try: 
-            data5 = self.getValue( """SELECT count(distinct gene_id) as intervals
+        try:
+            data5 = self.getValue("""SELECT count(distinct gene_id) as intervals
                                         FROM %(track)s_replicated_lncrna_tss_distance
                                         where closest_dist < 1000""" % locals() )
         except:
             data5 = "0"
-        return odict( zip(("Protein-coding TSS","Non-coding TSS","H3K4Me1 Enhancer", "RNAseq transcript", "lincRNA TSS"), (data1, data2, data3, data4, data5)) )
-        
-        
+        return odict(zip(("Protein-coding TSS", "Non-coding TSS", "H3K4Me1 Enhancer", "RNAseq transcript", "lincRNA TSS"), (data1, data2, data3, data4, data5)))

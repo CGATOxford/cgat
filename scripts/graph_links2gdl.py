@@ -84,7 +84,7 @@ FORMAT_EDGE = '''
          edge.arrowstyle: none
          edge.thickness: 1
 '''
-         
+
 FORMAT_NODE = """
         node.shape      : circle
         node.height     : 32
@@ -105,8 +105,9 @@ FORMAT_NODE_BIPARTITE = """
         node.bordercolor:  black
 """
 
-def PrintNodes( nodes, labels, colours):
-    
+
+def PrintNodes(nodes, labels, colours):
+
     for id in nodes.keys():
 
         if labels.has_key(id):
@@ -118,125 +119,129 @@ def PrintNodes( nodes, labels, colours):
             colour = colours[id]
         else:
             colour = None
-            
+
         if colour:
-            print '\tnode: { label: "%s" title: "%s" info1: "%s" info2: "%s" color: %s}' % (id,id,label,id,colour)
+            print '\tnode: { label: "%s" title: "%s" info1: "%s" info2: "%s" color: %s}' % (id, id, label, id, colour)
         else:
-            print '\tnode: { label: "%s" title: "%s" info1: "%s" info2: "%s" }' % (id,id,label,id)            
-            
-    
+            print '\tnode: { label: "%s" title: "%s" info1: "%s" info2: "%s" }' % (id, id, label, id)
 
-##---------------------------------------------------------------------------------------------------------
 
-def main( argv = None ):
+# ------------------------------------------------------------------------
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv is None:
+        argv = sys.argv
 
     #--------------------------------------------------------
     # command line parsing options
-    parser = E.OptionParser( version = "%prog version: $Id: graph_links2gdl.py 2782 2009-09-10 11:40:29Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser(
+        version="%prog version: $Id: graph_links2gdl.py 2782 2009-09-10 11:40:29Z andreas $", usage=globals()["__doc__"])
 
     parser.add_option("-c", "--filename-components", dest="filename_components", type="string",
-                      help="filename with component information." )
+                      help="filename with component information.")
     parser.add_option("-o", "--component", dest="component", type="string",
-                      help="restrict output to component." )
+                      help="restrict output to component.")
     parser.add_option("-s", "--filename-node-colours", dest="filename_node_colours", type="string",
-                      help="filename with node colours." )
+                      help="filename with node colours.")
     parser.add_option("-l", "--filename-node-labels", dest="filename_node_labels", type="string",
-                      help="filename with node labels." )
+                      help="filename with node labels.")
     parser.add_option("-w", "--weights", dest="weights", action="store_true",
-                      help="use weights." )
-    parser.add_option( "--edge-colour", dest="edge_colour", type="choice",
-                       choices=("heat", "jet", ),
-                       help="colour edges." )
-    parser.add_option( "--format-node", dest="filename_node_format", type="string",
-                       help="filename with node formats." )
-    parser.add_option( "--format-edge", dest="filename_edge_format", type="string",
-                       help="filename with edge formats." )
-    parser.add_option( "--format-graph", dest="filename_graph_format", type="string",
-                       help="filename with graph format." )
-    parser.add_option( "--no-titles", dest="titles", action="store_false",
-                       help="do not output titles." )
-    parser.add_option( "--weight-range", dest="weight_range", type="string",
-                       help="weight range. Comma separated values or 'auto'")
+                      help="use weights.")
+    parser.add_option("--edge-colour", dest="edge_colour", type="choice",
+                      choices=("heat", "jet", ),
+                      help="colour edges.")
+    parser.add_option("--format-node", dest="filename_node_format", type="string",
+                      help="filename with node formats.")
+    parser.add_option("--format-edge", dest="filename_edge_format", type="string",
+                      help="filename with edge formats.")
+    parser.add_option("--format-graph", dest="filename_graph_format", type="string",
+                      help="filename with graph format.")
+    parser.add_option("--no-titles", dest="titles", action="store_false",
+                      help="do not output titles.")
+    parser.add_option("--weight-range", dest="weight_range", type="string",
+                      help="weight range. Comma separated values or 'auto'")
 
-    parser.add_option( "--add-edge-labels", dest="add_edge_labels", action="store_true",
-                       help="add edge labels to edges." )
-                       
+    parser.add_option("--add-edge-labels", dest="add_edge_labels", action="store_true",
+                      help="add edge labels to edges.")
+
     parser.set_defaults(
-        min_weight = 0.0,
-        max_weight = 1.0,
-        num_colours = 100,
-        min_colour = 16,
-        filename_components = None,
-        component = None,
-        filename_subset = None,
-        colours = None,
-        filename_labels  = None,
-        weights = False,
-        edge_colour = None,
-        default_edge_colour = "18",
-        filename_format_graph = None,
-        filename_format_edge = None,
-        filename_format_node = None,
-        filename_format_bipartite = None,
-        titles = True,
-        edge_labels = True,
-        column_edge_weight = 3,
-        column_edge_colour = 3,
-        weight_range = "auto",
-        add_edge_labels = False,
-        )
+        min_weight=0.0,
+        max_weight=1.0,
+        num_colours=100,
+        min_colour=16,
+        filename_components=None,
+        component=None,
+        filename_subset=None,
+        colours=None,
+        filename_labels=None,
+        weights=False,
+        edge_colour=None,
+        default_edge_colour="18",
+        filename_format_graph=None,
+        filename_format_edge=None,
+        filename_format_node=None,
+        filename_format_bipartite=None,
+        titles=True,
+        edge_labels=True,
+        column_edge_weight=3,
+        column_edge_colour=3,
+        weight_range="auto",
+        add_edge_labels=False,
+    )
 
-    (options, args) = E.Start( parser )
+    (options, args) = E.Start(parser)
 
     options.column_edge_weight -= 1
-    options.column_edge_colour -= 1    
+    options.column_edge_colour -= 1
 
     components = None
-    ## read components
+    # read components
     if options.filename_components:
-        lines = open(options.filename_components,"r").readlines()
+        lines = open(options.filename_components, "r").readlines()
         components = {}
         for line in lines:
             id, cid = string.split(line[:-1], "\t")
             components[id] = cid
 
     if options.filename_subset:
-        lines = open(options.filename_subset,"r").readlines()        
-        subset= {}
+        lines = open(options.filename_subset, "r").readlines()
+        subset = {}
         for line in lines:
             id = string.split(line[:-1], "\t")[0]
             subset[id] = 1
-        
-    colours = {}            
+
+    colours = {}
     if options.filename_node_colours:
         infile = open(options.filename_node_colours, "r")
         while 1:
             line = infile.readline()
-            if not line: break
-            if line[0] == "#": continue
+            if not line:
+                break
+            if line[0] == "#":
+                continue
             id, colour = string.split(line[:-1], "\t")[:2]
             colours[id] = colour
         infile.close()
-    
+
     labels = {}
     if options.filename_labels:
         infile = open(options.filename_labels, "r")
         while 1:
             line = infile.readline()
-            if not line: break
-            if line[0] == "#": continue            
+            if not line:
+                break
+            if line[0] == "#":
+                continue
             id, label = string.split(line[:-1], "\t")[:2]
             if labels.has_key(id):
                 labels[id] += "," + label
             else:
                 labels[id] = label
-                
+
         infile.close()
 
     if options.weight_range == "auto":
@@ -245,19 +250,20 @@ def main( argv = None ):
 
         for line in lines:
 
-            if line[0] == "#": continue
+            if line[0] == "#":
+                continue
             try:
                 v = float(line[:-1].split("\t")[2])
             except ValueError:
                 continue
             except IndexError:
                 continue
-            
-            if mi == None: 
+
+            if mi is None:
                 mi = v
             else:
                 mi = min(v, mi)
-            if ma == None:
+            if ma is None:
                 ma = v
             else:
                 ma = max(v, ma)
@@ -265,87 +271,97 @@ def main( argv = None ):
         options.min_weight = mi
         options.max_weight = ma
         if options.loglevel >= 1:
-            options.stdlog.write("# using automatic weight range from %f to %f\n" % (options.min_weight, options.max_weight) )
+            options.stdlog.write("# using automatic weight range from %f to %f\n" % (
+                options.min_weight, options.max_weight))
     else:
         lines = sys.stdin
-        options.min_weight, options.max_weight = map(float, options.weight_range.split(","))
+        options.min_weight, options.max_weight = map(
+            float, options.weight_range.split(","))
 
-    options.stdout.write( "graph: {\n" )
-    
+    options.stdout.write("graph: {\n")
+
     if options.filename_format_graph:
-        options.stdout.write( string.join(open(options.filename_format_graph, "r").readlines() ) )
+        options.stdout.write(
+            string.join(open(options.filename_format_graph, "r").readlines()))
     else:
-        options.stdout.write( FORMAT_GRAPH )
+        options.stdout.write(FORMAT_GRAPH)
 
         if options.add_edge_labels:
-            options.stdout.write( "display_edge_labels: yes\n" )
-        
+            options.stdout.write("display_edge_labels: yes\n")
+
     left_nodes = {}
     right_nodes = {}
     touched = {}        # remove repeats (several links between the same nids)
 
-    if options.edge_colour :
+    if options.edge_colour:
         import matplotlib
         import pylab
 
-        colour_map = pylab.get_cmap( options.edge_colour )
-        
+        colour_map = pylab.get_cmap(options.edge_colour)
+
         if options.edge_colour == "jet":
-            
+
             # for some reason I had problems with aisee colour indices > 128. Thus,
             # I suggest staying below 128.
-            step_size = (options.max_weight - options.min_weight) / float(options.num_colours+1)
-            increment = 1.0 / float(options.num_colours+1)
+            step_size = (options.max_weight - options.min_weight) / \
+                float(options.num_colours + 1)
+            increment = 1.0 / float(options.num_colours + 1)
             v, vv = options.min_weight, 0.0
-            for x in range( options.min_colour, options.min_colour + options.num_colours + 1):
-                rgba = colour_map( vv )
-                r, g, b = map( lambda x: int(x * 255.0), rgba[:3] )
-                options.stdout.write( "         colorentry %i: %03i %03i %03i // weight = %f\n" %\
-                                          (x,r,g,b,v ) )
+            for x in range(options.min_colour, options.min_colour + options.num_colours + 1):
+                rgba = colour_map(vv)
+                r, g, b = map(lambda x: int(x * 255.0), rgba[:3])
+                options.stdout.write("         colorentry %i: %03i %03i %03i // weight = %f\n" %
+                                     (x, r, g, b, v))
                 v += step_size
                 vv += increment
 
-            colour_scale = options.num_colours / (options.max_weight - options.min_weight ) 
-            def calc_colour_index( x ):
-                v = min( options.max_weight, float(x))
-                v = max( options.min_weight, v ) - options.min_weight
-                v = min( options.num_colours - 1, int( v * colour_scale )) + options.min_colour
-                return str( v )
+            colour_scale = options.num_colours / \
+                (options.max_weight - options.min_weight)
+
+            def calc_colour_index(x):
+                v = min(options.max_weight, float(x))
+                v = max(options.min_weight, v) - options.min_weight
+                v = min(options.num_colours - 1, int(v * colour_scale)) + \
+                    options.min_colour
+                return str(v)
 
             colour_conversion = calc_colour_index
 
             # save legend
-            a=pylab.outerproduct(pylab.arange(options.min_weight,options.max_weight,step_size),1)
-            pylab.figure(figsize=(10,5))
-            pylab.imshow(a,cmap=colour_map,origin="lower")
+            a = pylab.outerproduct(
+                pylab.arange(options.min_weight, options.max_weight, step_size), 1)
+            pylab.figure(figsize=(10, 5))
+            pylab.imshow(a, cmap=colour_map, origin="lower")
             pylab.colorbar()
-            pylab.savefig("legend.png",dpi=100,facecolor='gray')
+            pylab.savefig("legend.png", dpi=100, facecolor='gray')
         else:
             raise "unknown colour scheme", options.colour_scheme
 
-
     if options.filename_format_edge:
-        options.stdout.write( string.join(open(options.filename_format_edge, "r").readlines()) )
+        options.stdout.write(
+            string.join(open(options.filename_format_edge, "r").readlines()))
     else:
-        options.stdout.write( FORMAT_EDGE )
+        options.stdout.write(FORMAT_EDGE)
 
     first = True
     for line in lines:
 
-        if line[0] == "#": continue
+        if line[0] == "#":
+            continue
 
         if first:
             first = False
-            if options.titles: continue
+            if options.titles:
+                continue
 
         try:
             weight = 1.0
             colour = options.default_edge_colour
-            
+
             x = string.split(line[:-1], "\t")
 
             id1, id2 = x[:2]
-            
+
             if options.edge_colour:
                 colour = colour_conversion(x[options.column_edge_colour])
             if options.edge_labels:
@@ -354,16 +370,17 @@ def main( argv = None ):
         except ValueError:
             continue
 
-        ## patch for PFAM domains
+        # patch for PFAM domains
         ## id1, id2 = map(string.atoi, string.split(line[:-1], "\t")[:2])
 
-        if id1 == id2: continue
-        
+        if id1 == id2:
+            continue
+
         if options.filename_subset:
             if not subset.has_key(id1) or not subset.has_key(id2):
                 continue
 
-        if options.component != None:
+        if options.component is not None:
             if not components.has_key(id1):
                 continue
             if not components.has_key(id2):
@@ -377,53 +394,46 @@ def main( argv = None ):
         else:
             left_nodes[id1] = 1
             left_nodes[id2] = 1
-            
+
         if id1 < id2:
-            key = "%s-%s" % (id1,id2)
+            key = "%s-%s" % (id1, id2)
         else:
-            key = "%s-%s" % (id2,id1)          
-  
+            key = "%s-%s" % (id2, id1)
+
         if touched.has_key(key):
             continue
         touched[key] = 1
-            
-        edge_attributes = [ 'color: %s' % colour ]
-        if options.add_edge_labels:
-            edge_attributes.append( 'label: "%s"' % weight )
 
-        options.stdout.write('\tedge: { thickness: 3 sourcename: "%s" targetname: "%s" %s}\n' % (id1, id2, " ".join(edge_attributes)) )
+        edge_attributes = ['color: %s' % colour]
+        if options.add_edge_labels:
+            edge_attributes.append('label: "%s"' % weight)
+
+        options.stdout.write('\tedge: { thickness: 3 sourcename: "%s" targetname: "%s" %s}\n' % (
+            id1, id2, " ".join(edge_attributes)))
 
     # sort nodes according to key
 
     if options.filename_format_node:
-        options.stdout.write( "".join(open(options.filename_format_node, "r").readlines()))
+        options.stdout.write(
+            "".join(open(options.filename_format_node, "r").readlines()))
     else:
-        options.stdout.write( FORMAT_NODE )
+        options.stdout.write(FORMAT_NODE)
 
-    PrintNodes( left_nodes, labels, colours)
+    PrintNodes(left_nodes, labels, colours)
 
     if options.filename_format_bipartite:
         if options.format_bipartite == "default":
-            options.stdout.write( FORMAT_BIPARTITE )
+            options.stdout.write(FORMAT_BIPARTITE)
         else:
-            options.stdout.write( "".join(open(options.filename_format_bipartite, "r").readlines()))
-            
-        PrintNodes( right_nodes, labels, colours)
-            
-    options.stdout.write ("}\n" )
-    
+            options.stdout.write(
+                "".join(open(options.filename_format_bipartite, "r").readlines()))
+
+        PrintNodes(right_nodes, labels, colours)
+
+    options.stdout.write("}\n")
+
     E.Stop()
-
-    
-
-
-
-
-
-
-
 
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

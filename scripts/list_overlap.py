@@ -61,6 +61,7 @@ import os.path as op
 import scipy.stats as ss
 import CGAT.Experiment as E
 
+
 def hypergeom(m, n, n1, n2, p=False):
     """
 >>> hypergeom(1, 1000, 1000, 1000) # has to be shared.
@@ -85,10 +86,12 @@ True
 4.516176321800458e-11
 
 """
-    if m <= 0: return 1.0
+    if m <= 0:
+        return 1.0
     mmin = m - 1
     mmax = min(n1, n2)
     return ss.hypergeom.cdf(mmax, n, n1, n2) - ss.hypergeom.cdf(mmin, n, n1, n2)
+
 
 def with_genes(fftot, ffa, ffb, asfile=True):
     """
@@ -102,7 +105,7 @@ def with_genes(fftot, ffa, ffb, asfile=True):
         fb = frozenset(f.strip() for f in open(ffb) if f.strip())
     else:
         fa, fb, ftot = frozenset(ffa), frozenset(ffb), frozenset(fftot)
-    
+
     n1, n2 = len(fa), len(fb)
     m = len(fa.intersection(fb))
     n = len(ftot)
@@ -117,13 +120,13 @@ def with_genes(fftot, ffa, ffb, asfile=True):
         print "B : %-32s:%-5i" % ("set B", n2)
         print "total : %-32s:%-5i" % ("total", n)
         print "shared: %-32s:%-5i" % (' ', m)
-   
+
     return hypergeom(m, n, n1, n2)
 
 
 def main():
     p = E.OptionParser(__doc__,
-                       version = "%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $", )
+                       version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $", )
     opts, args = p.parse_args()
     if (len(args) not in (3, 4)):
         sys.exit(not p.print_help())
@@ -137,17 +140,15 @@ def main():
         args = map(long, args)
         m, n, n1, n2 = args
         result = hypergeom(m, n, n1, n2)
-        #print type(result)
+        # print type(result)
         print result
     else:
         tot_genes, a_genes, b_genes = map(str.strip, args)
         print with_genes(tot_genes, a_genes, b_genes)
 
 
-
 if __name__ == "__main__":
     #import doctest
-    #if doctest.testmod(optionflags=doctest.ELLIPSIS).failed == 0:
+    # if doctest.testmod(optionflags=doctest.ELLIPSIS).failed == 0:
     #    main()
     main()
-

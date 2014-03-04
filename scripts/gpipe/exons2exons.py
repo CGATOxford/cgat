@@ -1,4 +1,4 @@
-################################################################################
+##########################################################################
 #
 #   MRC FGU Computational Genomics Group
 #
@@ -19,7 +19,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
+##########################################################################
 '''
 gpipe/exons2exons.py - 
 ======================================================
@@ -61,7 +61,7 @@ import string
 import re
 import optparse
 
-USAGE="""python %s [OPTIONS] < exons.in > exons.out
+USAGE = """python %s [OPTIONS] < exons.in > exons.out
 
 Modify an exon list. Methods to apply are:
 
@@ -76,63 +76,66 @@ import CGAT.Exons as Exons
 import CGAT.IndexedFasta as IndexedFasta
 
 
-def main( argv = None ):
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv is None:
+        argv = sys.argv
 
-    parser = E.OptionParser( version = "%prog version: $Id: gpipe/exons2exons.py 2781 2009-09-10 11:33:14Z andreas $", usage = globals()["__doc__"])
+    parser = E.OptionParser(
+        version="%prog version: $Id: gpipe/exons2exons.py 2781 2009-09-10 11:33:14Z andreas $", usage=globals()["__doc__"])
 
     parser.add_option("-m", "--method", dest="method",
                       help="method to apply.", type="choice",
-                      choices = ("remove-stop",))
+                      choices=("remove-stop",))
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
-                      help="filename with genomic data (indexed)." )
+                      help="filename with genomic data (indexed).")
 
     parser.add_option("--forward-coordinates", dest="forward_coordinates", action="store_true",
-                      help="work in forward coordinates." )
-
+                      help="work in forward coordinates.")
 
     parser.set_defaults(
-        method = None,
-        forward_coordinates = False,
-        genome_file = None )
+        method=None,
+        forward_coordinates=False,
+        genome_file=None)
 
-    (options, args) = E.Start( parser )
-    
+    (options, args) = E.Start(parser)
 
     if options.method == "remove-stop" and not options.genome_file:
         raise "please supply genome file for method %s" % options.method
-    
+
     if options.genome_file:
-        fasta = IndexedFasta.IndexedFasta( options.genome_file ) 
+        fasta = IndexedFasta.IndexedFasta(options.genome_file)
         contig_sizes = fasta.getContigSizes()
-        exons = Exons.ReadExonBoundaries( sys.stdin,
-                                          contig_sizes = contig_sizes )
+        exons = Exons.ReadExonBoundaries(sys.stdin,
+                                         contig_sizes=contig_sizes)
     else:
-        exons = Exons.ReadExonBoundaries( sys.stdin )        
+        exons = Exons.ReadExonBoundaries(sys.stdin)
 
     ninput, noutput, nremoved_stops, nremoved_exons = 0, 0, 0, 0
     for id, ee in exons.items():
 
         if options.loglevel >= 3:
             for e in ee:
-                options.stdlog.write("# %s\n" % str(e) )
-                
-        if options.method == "remove-stop":        
+                options.stdlog.write("# %s\n" % str(e))
+
+        if options.method == "remove-stop":
             e = ee[-1]
             d = min(3, e.mPeptideTo - e.mPeptideFrom)
             if d < 3:
-                codon2 = fasta.getSequence( e.mSbjctToken, e.mSbjctStrand, e.mGenomeTo-d, e.mGenomeTo )
+                codon2 = fasta.getSequence(
+                    e.mSbjctToken, e.mSbjctStrand, e.mGenomeTo - d, e.mGenomeTo)
                 prev_e = ee[-2]
-                codon1 = fasta.getSequence( prev_e.mSbjctToken, prev_e.mSbjctStrand, prev_e.mGenomeTo-(3-d), prev_e.mGenomeTo )
-                codon = codon1+codon2
+                codon1 = fasta.getSequence(
+                    prev_e.mSbjctToken, prev_e.mSbjctStrand, prev_e.mGenomeTo - (3 - d), prev_e.mGenomeTo)
+                codon = codon1 + codon2
             else:
-                codon = fasta.getSequence( e.mSbjctToken, e.mSbjctStrand, e.mGenomeTo-d, e.mGenomeTo )
+                codon = fasta.getSequence(
+                    e.mSbjctToken, e.mSbjctStrand, e.mGenomeTo - d, e.mGenomeTo)
 
             if codon.upper() in Genomics.StopCodons:
 
@@ -141,7 +144,7 @@ def main( argv = None ):
                     d = 3 - d
                     del ee[-1]
                     e = ee[-1]
-                    
+
                 e.mGenomeTo -= d
                 e.mPeptideTo -= d
                 nremoved_stops += 1
@@ -150,26 +153,26 @@ def main( argv = None ):
                     nremoved_exons += 1
                     del ee[-1]
                     e = ee[-1]
-                
+
             assert(e.mGenomeTo > e.mGenomeFrom)
             assert(e.mPeptideTo > e.mPeptideFrom)
-        
+
         if options.forward_coordinates:
 
             l = contig_sizes[ee[0].mSbjctToken]
             for e in ee:
-                e.InvertGenomicCoordinates( l )
-                
+                e.InvertGenomicCoordinates(l)
+
         for e in ee:
-            options.stdout.write(str(e) + "\n" )
-            
+            options.stdout.write(str(e) + "\n")
+
         noutput += 1
 
     if options.loglevel >= 1:
-        options.stdlog.write("# ninput=%i, noutput=%i, nremoved_stops=%i, nremoved_exons=%i\n" % (ninput, noutput, nremoved_stops, nremoved_exons) )
-    
+        options.stdlog.write("# ninput=%i, noutput=%i, nremoved_stops=%i, nremoved_exons=%i\n" % (
+            ninput, noutput, nremoved_stops, nremoved_exons))
+
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

@@ -1,4 +1,4 @@
-################################################################################
+##########################################################################
 #
 #   MRC FGU Computational Genomics Group
 #
@@ -19,7 +19,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
+##########################################################################
 '''
 gi2parents.py
 =============================================
@@ -56,37 +56,42 @@ Code
 
 '''
 
-import os, sys, re, optparse
+import os
+import sys
+import re
+import optparse
 import CGAT.IOTools as IOTools
 import CGAT.Experiment as E
 import gzip
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if not argv: argv = sys.argv
+    if not argv:
+        argv = sys.argv
 
     # setup command line parser
-    parser = optparse.OptionParser( version = "%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
-                                    usage = globals()["__doc__"] )
+    parser = optparse.OptionParser(version="%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+                                   usage=globals()["__doc__"])
 
     parser.add_option("-g", "--gi-accessions", dest="gi_accessions", type="string",
-                      help="list of gi accession numbers"  )
+                      help="list of gi accession numbers")
     parser.add_option("-m", "--ncbi-map", dest="ncbi_map", type="string",
-                      help="ncbi.map file downloaded from the MEGAN website"  )
+                      help="ncbi.map file downloaded from the MEGAN website")
     parser.add_option("-n", "--nucl-map", dest="nucl_map", type="string",
-                      help="gi mapping to tax id downloaded from ncbi website"  )
+                      help="gi mapping to tax id downloaded from ncbi website")
     parser.add_option("-c", "--taxa-code", dest="taxa_code", type="string",
                       help="code for different levels of the taxonomy downloaded from the MEGAN website")
     parser.add_option("-t", "--tree", dest="tree", type="string",
                       help="description of parents in the taxonomy")
 
-    ## add common options (-h/--help, ...) and parse command line 
-    (options, args) = E.Start( parser, argv = argv )
-    
+    # add common options (-h/--help, ...) and parse command line
+    (options, args) = E.Start(parser, argv=argv)
+
     E.info("reading gi accession numbers")
     gi_accessions = set()
     for line in open(options.gi_accessions).readlines():
@@ -98,9 +103,10 @@ def main( argv = None ):
     c_gi = 0
     for line in IOTools.openFile(options.nucl_map).readlines():
         data = line[:-1].split("\t")
-        if data[0] not in gi_accessions: continue 
+        if data[0] not in gi_accessions:
+            continue
         else:
-            c_gi+=1
+            c_gi += 1
             gi2taxid[data[0]] = data[1]
     E.info("built gi2taxid for %i gi accession numbers" % c_gi)
 
@@ -129,7 +135,8 @@ def main( argv = None ):
     E.info("built taxid2parentmap")
 
     E.info("retrieving parents for each gi accession number")
-    options.stdout.write("gi\tsub_species\tspecies\tgenus\tfamily\torder\tclass\tphylum\n")
+    options.stdout.write(
+        "gi\tsub_species\tspecies\tgenus\tfamily\torder\tclass\tphylum\n")
     for gi, taxid in gi2taxid.iteritems():
         # this will be the sub species id
         # walk through the parents
@@ -140,7 +147,8 @@ def main( argv = None ):
             parent_name = taxid2name[parent_taxid][0]
             parent_code = taxid2name[parent_taxid][1]
             # ignore codes that we are not  interested in
-            if parent_code not in code2taxa.keys(): continue
+            if parent_code not in code2taxa.keys():
+                continue
             parent_taxa = code2taxa[parent_code]
             parents[parent_taxa] = parent_name
             taxid = parent_taxid
@@ -171,10 +179,11 @@ def main( argv = None ):
             species = "NA"
         else:
             species = parents["species"]
-        options.stdout.write("\t".join([gi, sub_species.replace(" ", "_"), species.replace(" ", "_"), genus, family, order, _class, phylum]) + "\n")
-  
-    ## write footer and output benchmark information.
+        options.stdout.write("\t".join([gi, sub_species.replace(" ", "_"), species.replace(
+            " ", "_"), genus, family, order, _class, phylum]) + "\n")
+
+    # write footer and output benchmark information.
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
+    sys.exit(main(sys.argv))

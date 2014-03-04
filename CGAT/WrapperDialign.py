@@ -1,4 +1,4 @@
-################################################################################
+##########################################################################
 #
 #   MRC FGU Computational Genomics Group
 #
@@ -19,7 +19,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
+##########################################################################
 '''
 WrapperDialign.py - 
 ======================================================
@@ -33,41 +33,47 @@ Code
 ----
 
 '''
-import os, sys, string, re, tempfile, subprocess
+import os
+import sys
+import string
+import re
+import tempfile
+import subprocess
 
 """Wrapper for Dialign.
 """
 
-import Genomics
+from CGAT import Genomics as Genomics
+
 
 class Dialign:
 
     mOptions = ""
     mExecutable = "dialign -stdo "
     mEnvironment = "DIALIGN2_DIR=/net/cpp-group/legacy/bin/dialign2_dir; export DIALIGN2_DIR;"
-    
-    def __init__( self, options ):
+
+    def __init__(self, options):
         self.mOptions = options
 
-    def Align( self, s1, s2, result ):
+    def Align(self, s1, s2, result):
 
         result.clear()
-        
+
         handle_tmpfile, filename_tmpfile = tempfile.mkstemp()
-        os.write( handle_tmpfile, ">s1\n%s\n" % (s1))
-        os.write( handle_tmpfile, ">s2\n%s\n" % (s2))
-        os.close( handle_tmpfile )
+        os.write(handle_tmpfile, ">s1\n%s\n" % (s1))
+        os.write(handle_tmpfile, ">s2\n%s\n" % (s2))
+        os.close(handle_tmpfile)
 
-        statement = string.join( ( "(", self.mEnvironment, 
-                                   self.mExecutable, self.mOptions, filename_tmpfile, ")" ),
-                                 " ")
+        statement = string.join(("(", self.mEnvironment,
+                                 self.mExecutable, self.mOptions, filename_tmpfile, ")"),
+                                " ")
 
-        p = subprocess.Popen( statement , 
-                              shell=True, 
-                              stdin=subprocess.PIPE, 
-                              stdout=subprocess.PIPE, 
-                              stderr=subprocess.PIPE, 
-                              close_fds=True)
+        p = subprocess.Popen(statement,
+                             shell=True,
+                             stdin=subprocess.PIPE,
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE,
+                             close_fds=True)
 
         (file_stdout, file_stdin, file_stderr) = (p.stdin, p.stdout, p.stderr)
         file_stdin.close()
@@ -75,18 +81,19 @@ class Dialign:
         lines_stderr = file_stderr.readlines()
         exit_code = file_stdout.close()
         file_stderr.close()
-        
+
         if exit_code:
             raise "Error while executing statement %s" % statement
 
         r = None
         for x in range(len(lines)):
-            if re.search( "Alignment \(FASTA format\):", lines[x]):
-                r = Genomics.ParseFasta2Hash( lines[x+2:])
+            if re.search("Alignment \(FASTA format\):", lines[x]):
+                r = Genomics.ParseFasta2Hash(lines[x + 2:])
                 break
 
-        if not r: return None
-        
+        if not r:
+            return None
+
         a1 = r['s1']
         a2 = r['s2']
 
@@ -94,25 +101,16 @@ class Dialign:
         x2 = 1
         for pos in range(len(a1)):
             if a1[pos] in string.uppercase and a2[pos] in string.uppercase:
-                result.addPairExplicit( x1, x2, 0 )
+                result.addPairExplicit(x1, x2, 0)
                 x1 += 1
                 x2 += 1
                 continue
-            
-            if a1[pos] != "-": x1 += 1
-            if a2[pos] != "-": x2 += 1            
 
+            if a1[pos] != "-":
+                x1 += 1
+            if a2[pos] != "-":
+                x2 += 1
 
-        os.remove( filename_tmpfile )
-        
+        os.remove(filename_tmpfile)
+
         return result
-                          
-            
-        
-                                 
-        
-        
-        
-        
-    
-        

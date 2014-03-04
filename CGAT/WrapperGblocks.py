@@ -1,4 +1,4 @@
-################################################################################
+##########################################################################
 #
 #   MRC FGU Computational Genomics Group
 #
@@ -19,7 +19,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
+##########################################################################
 '''
 WrapperGblocks.py - 
 ======================================================
@@ -33,40 +33,45 @@ Code
 ----
 
 '''
-import os, sys, string, re, tempfile
+import os
+import sys
+import string
+import re
+import tempfile
 
 """Wrapper for Gblocks
 """
 
-import Genomics
+from CGAT import Genomics as Genomics
+
 
 class Gblocks:
 
     mOptions = ""
     mExecutable = "Gblocks %s -t d"
     mEnvironment = ""
-    
-    def __init__( self, options = ""):
+
+    def __init__(self, options=""):
         self.mOptions = options
 
-    def GetBlocks( self, s1, s2 ):
+    def GetBlocks(self, s1, s2):
         """the strings have to be already aligned!!!"""
-        
+
         handle_tmpfile, filename_tmpfile = tempfile.mkstemp()
-        os.write( handle_tmpfile, ">s1\n%s\n" % (s1))
-        os.write( handle_tmpfile, ">s2\n%s\n" % (s2))
-        os.close( handle_tmpfile )
+        os.write(handle_tmpfile, ">s1\n%s\n" % (s1))
+        os.write(handle_tmpfile, ">s2\n%s\n" % (s2))
+        os.close(handle_tmpfile)
 
-        statement = " ".join( "(", self.mEnvironment, 
-                              self.mExecutable % filename_tmpfile,
-                              self.mOptions, ")" )
+        statement = " ".join("(", self.mEnvironment,
+                             self.mExecutable % filename_tmpfile,
+                             self.mOptions, ")")
 
-        p = subprocess.Popen( statement , 
-                              shell=True, 
-                              stdin=subprocess.PIPE, 
-                              stdout=subprocess.PIPE, 
-                              stderr=subprocess.PIPE, 
-                              close_fds=True)
+        p = subprocess.Popen(statement,
+                             shell=True,
+                             stdin=subprocess.PIPE,
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE,
+                             close_fds=True)
 
         (file_stdout, file_stdin, file_stderr) = (p.stdin, p.stdout, p.stderr)
 
@@ -78,18 +83,18 @@ class Gblocks:
         if exit_code:
             raise ValueError("Error while executing statement %s" % statement)
 
-        if not os.path.exists( filename_tmpfile + "-gb"):
-            os.remove( filename_tmpfile )            
+        if not os.path.exists(filename_tmpfile + "-gb"):
+            os.remove(filename_tmpfile)
             return "", ""
-        
-        lines = open( filename_tmpfile + "-gb").readlines()
-        r = Genomics.ParseFasta2Hash( lines)
 
-        if not r: return "", ""
+        lines = open(filename_tmpfile + "-gb").readlines()
+        r = Genomics.ParseFasta2Hash(lines)
 
-        os.remove( filename_tmpfile )
-        os.remove( filename_tmpfile + "-gb" )
-        os.remove( filename_tmpfile + "-gb.htm")        
-        
+        if not r:
+            return "", ""
+
+        os.remove(filename_tmpfile)
+        os.remove(filename_tmpfile + "-gb")
+        os.remove(filename_tmpfile + "-gb.htm")
+
         return r['s1'], r['s2']
-

@@ -1,4 +1,4 @@
-################################################################################
+##########################################################################
 #
 #   MRC FGU Computational Genomics Group
 #
@@ -19,7 +19,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
+##########################################################################
 '''
 gpipe/patch_translations.py - 
 ======================================================
@@ -56,7 +56,7 @@ Code
 ----
 
 '''
-USAGE="""recalculated translations from a predictions file.
+USAGE = """recalculated translations from a predictions file.
 """
 
 import sys
@@ -70,27 +70,29 @@ import CGAT.PredictionParser as PredictionParser
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Genomics as Genomics
 
-##------------------------------------------------------------
+# ------------------------------------------------------------
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv is None:
+        argv = sys.argv
 
-    parser = E.OptionParser( version = "%prog version: $Id: gpipe/patch_translations.py 1841 2008-05-08 12:07:13Z andreas $",
-                                    usage = globals()["__doc__"] )
+    parser = E.OptionParser(version="%prog version: $Id: gpipe/patch_translations.py 1841 2008-05-08 12:07:13Z andreas $",
+                            usage=globals()["__doc__"])
 
-    parser.add_option( "-g", "--genome-file", dest="genome_file", type="string",
-                       help="filename with genome."  )
+    parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
+                      help="filename with genome.")
 
     parser.set_defaults(
-        genome_file = None,
-        )
-    
-    (options, args) = E.Start( parser, add_pipe_options = True )
+        genome_file=None,
+    )
+
+    (options, args) = E.Start(parser, add_pipe_options=True)
 
     if len(args) > 0:
         print USAGE, "no arguments required."
@@ -98,37 +100,35 @@ def main( argv = None ):
 
     entry = PredictionParser.PredictionParserEntry()
 
-    fasta = IndexedFasta.IndexedFasta( options.genome_file )
+    fasta = IndexedFasta.IndexedFasta(options.genome_file)
 
     ninput, noutput = 0, 0
     for line in sys.stdin:
         if line[0] == "#":
             print line[:-1]
             continue
-        
-        entry.Read( line )
-        
+
+        entry.Read(line)
+
         ninput += 1
-        
-        ## get genomic sequence
-        genomic_sequence = fasta.getSequence( entry.mSbjctToken,
-                                              entry.mSbjctStrand,
-                                              entry.mSbjctGenomeFrom,
-                                              entry.mSbjctGenomeTo )
 
-        entry.mMapPeptide2Translation, entry.mTranslation = Genomics.Alignment2PeptideAlignment( \
-               entry.mMapPeptide2Genome, entry.mQueryFrom, 0, genomic_sequence )
+        # get genomic sequence
+        genomic_sequence = fasta.getSequence(entry.mSbjctToken,
+                                             entry.mSbjctStrand,
+                                             entry.mSbjctGenomeFrom,
+                                             entry.mSbjctGenomeTo)
 
-        options.stdout.write( str(entry) + "\n" )
+        entry.mMapPeptide2Translation, entry.mTranslation = Genomics.Alignment2PeptideAlignment(
+            entry.mMapPeptide2Genome, entry.mQueryFrom, 0, genomic_sequence)
+
+        options.stdout.write(str(entry) + "\n")
 
         noutput += 1
 
     if options.loglevel >= 1:
         options.stdlog.write("# ninput=%i, noutput=%i\n" % (ninput, noutput))
-        
 
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

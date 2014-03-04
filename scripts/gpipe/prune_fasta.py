@@ -1,4 +1,4 @@
-################################################################################
+##########################################################################
 #
 #   MRC FGU Computational Genomics Group
 #
@@ -19,7 +19,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
+##########################################################################
 '''
 gpipe/prune_fasta.py - prune fasta sequences
 ======================================
@@ -81,62 +81,62 @@ import optparse
 param_stop_codons = ("TAG", "TAA", "TGA")
 param_remove_errors = 1
 
-def Write( description, sequence ):
+
+def Write(description, sequence):
 
     try:
-        start = int(re.search( "\[start_codon:(\d+)\]", description).groups()[0])
+        start = int(
+            re.search("\[start_codon:(\d+)\]", description).groups()[0])
     except AttributeError:
-        if param_remove_errors: return
+        if param_remove_errors:
+            return
         description += " :Error, start=0"
         start = 0
 
     print ">" + description
-    
+
     for stop in range(start, len(sequence), 3):
-        if sequence[stop:stop+3] in param_stop_codons:
+        if sequence[stop:stop + 3] in param_stop_codons:
             break
-        
+
     fragment = sequence[start:stop]
     print fragment
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if not argv: argv = sys.argv
+    if not argv:
+        argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser( version = "%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
-                                    usage = globals()["__doc__"] )
+    parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+                            usage=globals()["__doc__"])
 
-    ## add common options (-h/--help, ...) and parse command line 
-    (options, args) = E.Start( parser, argv = argv )
+    # add common options (-h/--help, ...) and parse command line
+    (options, args) = E.Start(parser, argv=argv)
 
     sequence = ""
     description = None
-    
+
     for line in options.stdin:
-        
+
         if line[0] == ">":
             if description:
-                Write( description, sequence )
+                Write(description, sequence)
             description = line[1:-1]
             sequence = ""
             continue
 
         sequence += line[:-1]
 
-    Write( description, sequence )
+    Write(description, sequence)
 
-    ## write footer and output benchmark information.
+    # write footer and output benchmark information.
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-    
-
-    
-            
-    
+    sys.exit(main(sys.argv))

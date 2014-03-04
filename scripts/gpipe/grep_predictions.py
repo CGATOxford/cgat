@@ -1,4 +1,4 @@
-################################################################################
+##########################################################################
 #
 #   MRC FGU Computational Genomics Group
 #
@@ -19,7 +19,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
+##########################################################################
 '''
 gpipe/grep_predictions.py - 
 ======================================================
@@ -63,7 +63,7 @@ import re
 import getopt
 import math
 
-USAGE="""python %s [OPTIONS] < exonerate_output > filtered
+USAGE = """python %s [OPTIONS] < exonerate_output > filtered
 
 Version: $Id: gpipe/grep_predictions.py 18 2005-08-09 15:32:24Z andreas $
 
@@ -77,8 +77,9 @@ Options:
 -o, --format=                   format [predictions|matches]
 """ % sys.argv[0]
 
-param_long_options=["verbose=", "help", "file=", "invert-match", "keys=", "format=", "version"]
-param_short_options="v:hf:k:"
+param_long_options = [
+    "verbose=", "help", "file=", "invert-match", "keys=", "format=", "version"]
+param_short_options = "v:hf:k:"
 
 param_keep = 1
 
@@ -88,29 +89,32 @@ param_format = "predictions"
 
 import CGAT.PredictionParser as PredictionParser
 
-##------------------------------------------------------------
+# ------------------------------------------------------------
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv is None:
+        argv = sys.argv
 
     try:
-        optlist, args = getopt.getopt(sys.argv[1:], param_short_options, param_long_options)
+        optlist, args = getopt.getopt(
+            sys.argv[1:], param_short_options, param_long_options)
     except getopt.error, msg:
         print USAGE, msg
         sys.exit(2)
 
-    for o,a in optlist:
-        if o in ( "-v", "--verbose" ):
+    for o, a in optlist:
+        if o in ("-v", "--verbose"):
             param_loglevel = int(a)
-        elif o in ( "--version", ):
+        elif o in ("--version", ):
             print "version="
             sys.exit(0)
-        elif o in ( "-h", "--help" ):
+        elif o in ("-h", "--help"):
             print USAGE
             sys.exit(0)
         elif o in ("-f", "--file"):
@@ -121,49 +125,52 @@ def main( argv = None ):
             param_keep = 0
         elif o in ("-o", "--format"):
             param_format = a
-        
+
     if len(args) > 0:
         print USAGE, "no arguments required."
         sys.exit(2)
 
     patterns = {}
     if param_filename:
-        infile = open( param_filename, "r" )
+        infile = open(param_filename, "r")
         for line in infile:
-            if line[0] == "#": continue
+            if line[0] == "#":
+                continue
             data = line[:-1].split("\t")
             patterns["%s_%s_%s_%s_%s" % tuple(data)] = 1
         infile.close()
 
     if param_filename_keys:
-        infile = open( param_filename_keys, "r" )
+        infile = open(param_filename_keys, "r")
         for line in infile:
-            if line[0] == "#": continue
+            if line[0] == "#":
+                continue
             patterns[line.strip()] = 1
         infile.close()
 
     if param_format == "predictions":
-        
+
         p = PredictionParser.PredictionParserEntry()
         for line in sys.stdin:
-            if line[0] == "#" : continue
+            if line[0] == "#":
+                continue
 
-            p.Read( line )
+            p.Read(line)
 
             key = "%s_%s_%s_%i_%i" % (p.mQueryToken, p.mSbjctToken,
                                       p.mSbjctStrand,
                                       p.mSbjctGenomeFrom, p.mSbjctGenomeTo)
-            
-            if patterns.has_key( key ):
+
+            if patterns.has_key(key):
                 keep = param_keep
             else:
                 keep = not param_keep
 
             if keep:
                 print line[:-1]
-                
+
     elif param_format == "matches":
-        
+
         keep = False
         for line in sys.stdin:
             if re.match("# START:", line):
@@ -172,12 +179,10 @@ def main( argv = None ):
                     keep = True
                 else:
                     keep = False
-                    
+
             if keep:
                 print line[:-1]
-        
-        
+
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

@@ -57,33 +57,34 @@ import CGAT.Pipeline as P
 #########################################################
 #########################################################
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if not argv: argv = sys.argv
+    if not argv:
+        argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser( version = "%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $", 
-                                    usage = globals()["__doc__"] )
+    parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+                            usage=globals()["__doc__"])
 
     parser.add_option("-b", "--bam-file", dest="bam_file", type="string",
-                      help="supply input bam file name"  )
-   
+                      help="supply input bam file name")
+
     parser.add_option("-g", "--gtf-file", dest="gtf_file", type="string",
-                      help="supply input gtf file name"  )
-   
-    parser.add_option("-o", "--outfile", dest = "outfile", type = "string",
+                      help="supply input gtf file name")
+
+    parser.add_option("-o", "--outfile", dest="outfile", type="string",
                       help="supply output file name")
 
-    parser.add_option("-G", "--reference-GTF", dest = "reference_gtf", type = "string",
+    parser.add_option("-G", "--reference-GTF", dest="reference_gtf", type="string",
                       help="supply reference gtf for context of reads not contributing to transcripts")
 
-
-    ## add common options (-h/--help, ...) and parse command line 
-    (options, args) = E.Start( parser, argv = argv )
+    # add common options (-h/--help, ...) and parse command line
+    (options, args) = E.Start(parser, argv=argv)
 
     ######################################################
     ######################################################
@@ -93,44 +94,43 @@ def main( argv = None ):
 
     # open outfile and prepare headers
     outf = open(options.outfile, "w")
-    outf.write("\t".join(["total alignments"
-                          , "aligments in transcripts"
-                          , "percent alignments in transcripts"
-                          , "total spliced alignments"
-                          , "spliced alignments in transcripts"
-                          , "percent spliced alignments in transcripts"]) + "\n")
+    outf.write("\t".join(["total alignments", "aligments in transcripts", "percent alignments in transcripts",
+               "total spliced alignments", "spliced alignments in transcripts", "percent spliced alignments in transcripts"]) + "\n")
 
     # calculate coverage over transcript file - NB split reads contribute twice to the transcript
     # use BedTool object
     pybedbamfile = pybedtools.BedTool(options.bam_file)
-    
-    # count alignments 
+
+    # count alignments
     E.info("counting total number of alignments and spliced alignments")
     total_alignments = 0
     spliced_alignments = 0
-    
+
     for alignment in pybedbamfile:
         cigar = alignment[5]
-        if cigar.find("N") != -1: # N signifies split read 
+        if cigar.find("N") != -1:  # N signifies split read
             total_alignments += 1
             spliced_alignments += 1
         else:
             total_alignments += 1
 
-    # merge the gtf file to avoid double counting of exons in different transcripts - converts to a bed file
+    # merge the gtf file to avoid double counting of exons in different
+    # transcripts - converts to a bed file
     gtffile = pybedtools.BedTool(options.gtf_file).merge()
 
-    E.info("computing coverage of aligments in %s over intervals in %s" % (options.bam_file, options.gtf_file))
+    E.info("computing coverage of aligments in %s over intervals in %s" %
+           (options.bam_file, options.gtf_file))
     cover = pybedbamfile.coverage(gtffile)
 
-    # make sure that the exons aren't being counted twice - shouldn't be because of merge
+    # make sure that the exons aren't being counted twice - shouldn't be
+    # because of merge
     E.info("counting reads contributing to transcripts")
     c = 0
     for entry in cover:
         coverage = int(entry[3])
         if coverage > 0:
-            c+=coverage
-        
+            c += coverage
+
     # sum the coverage across exons from all transcripts
     coverage_in_transcripts = c
 
@@ -142,14 +142,14 @@ def main( argv = None ):
 
     # count total number of spliced alignments
     # requires that the CIGAR string 'N' is present
-    
+
     # uses pysam to write out a bam file of the spliced reads only
     allreads = pysam.Samfile(options.bam_file)
     spliced_bamname = P.snip(options.bam_file, ".bam") + "_spliced_reads.bam"
-    
+
     # open file for outputting spliced alignments
     splicedreads = pysam.Samfile(spliced_bamname, "wb", template=allreads)
-    
+
     # cigar string in pysam for spliced alignment is (3, int)
     spliced = collections.defaultdict(list)
     for read in allreads:
@@ -162,7 +162,7 @@ def main( argv = None ):
         splicedreads.write(read)
     splicedreads.close()
     allreads.close()
-    
+
     # index splice reads bam file
     pysam.sort(spliced_bamname, P.snip(spliced_bamname, ".bam"))
     pysam.index(spliced_bamname)
@@ -181,46 +181,55 @@ def main( argv = None ):
     for entry in spliced_coverage:
         coverage = int(entry[3])
         if coverage > 0:
-            c+=coverage
-                
+            c += coverage
+
     spliced_coverage_in_transcripts = c
 
     # NOTE: the counting of spliced alignments is not accurate
 
-    spliced_coverage_in_transcripts =  float(spliced_coverage_in_transcripts)/2
-    
+    spliced_coverage_in_transcripts = float(
+        spliced_coverage_in_transcripts) / 2
+
     ###########################
     ## write out the results ##
     ###########################
 
     outf.write(str(int(total_alignments)) + "\t")
     # remove half of the coverage assigned to spliced reads
-    coverage_in_transcripts = (coverage_in_transcripts)-(spliced_coverage_in_transcripts)
-    outf.write(str(int(coverage_in_transcripts)-int(spliced_coverage_in_transcripts)) + "\t")
-    outf.write( str( int((coverage_in_transcripts/total_alignments) *100)) + "\t" )
+    coverage_in_transcripts = (
+        coverage_in_transcripts) - (spliced_coverage_in_transcripts)
+    outf.write(
+        str(int(coverage_in_transcripts) - int(spliced_coverage_in_transcripts)) + "\t")
+    outf.write(
+        str(int((coverage_in_transcripts / total_alignments) * 100)) + "\t")
 
     # write out spliced counts
     outf.write(str(int(spliced_alignments)) + "\t")
     outf.write(str(int(spliced_coverage_in_transcripts)) + "\t")
-    outf.write( str( int( (spliced_coverage_in_transcripts/spliced_alignments) *100)) )
+    outf.write(
+        str(int((spliced_coverage_in_transcripts / spliced_alignments) * 100)))
 
     outf.close()
 
     ############################
-    # contextualise those that 
+    # contextualise those that
     # don't fall in transcripts
     ############################
 
     if options.reference_gtf:
-        context_summary = open(P.snip(options.bam_file, ".bam") + ".excluded.context", "w")
+        context_summary = open(
+            P.snip(options.bam_file, ".bam") + ".excluded.context", "w")
         context_summary.write("\t".join(["Feature", "number"]) + "\n")
 
         # write out the read info as well
-        context_file = open(P.snip(options.bam_file, ".bam") + ".excluded", "w")
-    
+        context_file = open(
+            P.snip(options.bam_file, ".bam") + ".excluded", "w")
+
         context_dict = collections.defaultdict(int)
-        # intersect bam - write non-overlapping with transcripts - intersect with reference - write out
-        context = pybedbamfile.intersect(gtffile, v=True, bed=True).intersect(pybedtools.BedTool(options.reference_gtf), wb=True)
+        # intersect bam - write non-overlapping with transcripts - intersect
+        # with reference - write out
+        context = pybedbamfile.intersect(gtffile, v=True, bed=True).intersect(
+            pybedtools.BedTool(options.reference_gtf), wb=True)
         for entry in context:
             feature = entry[8]
             context_dict[feature] += 1
@@ -232,22 +241,9 @@ def main( argv = None ):
         context_file.close()
         context_summary.close()
 
-
-    ## write footer and output benchmark information.
+    # write footer and output benchmark information.
     E.Stop()
 
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
-
-
-
-
-    
-
-
-
-
-    
-
+    sys.exit(main(sys.argv))

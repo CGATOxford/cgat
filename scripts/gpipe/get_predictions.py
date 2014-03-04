@@ -1,4 +1,4 @@
-################################################################################
+##########################################################################
 #
 #   MRC FGU Computational Genomics Group
 #
@@ -19,7 +19,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
+##########################################################################
 '''
 gpipe/get_predictions.py - 
 ======================================================
@@ -79,10 +79,11 @@ retrieve predictions/exons
 
 import CGAT.Experiment as E
 
-def GetResult( dbhandle, keys, options ):
+
+def GetResult(dbhandle, keys, options):
 
     if "exon_from" in keys:
-        
+
         statement = """
         SELECT *
         FROM %(schema)s.exons AS e,
@@ -104,60 +105,62 @@ def GetResult( dbhandle, keys, options ):
     return results
 
 
-def main( argv = None ):
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv is None:
+        argv = sys.argv
 
-    parser = E.OptionParser( version = "%prog version: $Id: gpipe/get_predictions.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser(
+        version="%prog version: $Id: gpipe/get_predictions.py 2781 2009-09-10 11:33:14Z andreas $")
 
     parser.add_option("-s", "--schema", dest="schema", type="string",
-                      help="database schema to use."  )
+                      help="database schema to use.")
 
     parser.set_defaults(
-        schema = None,
-        method = "ranges",
-        result = "exons",
-        )
+        schema=None,
+        method="ranges",
+        result="exons",
+    )
 
-    (options, args) = E.Start( parser, add_psql_options = True )
+    (options, args) = E.Start(parser, add_psql_options=True)
 
-    dbhandle = pgdb.connect( options.psql_connection )
-    
-    keys = { 'schema' : options.schema }
+    dbhandle = pgdb.connect(options.psql_connection)
+
+    keys = {'schema': options.schema}
 
     ntested, nmissed = 0, 0
     if options.method == "ranges":
-    
+
         lines = filter(lambda x: x[0] != "#", sys.stdin.readlines())
-        
+
         for line in lines:
-            sbjct_token, sbjct_strand, range_from, range_to = line.split("\t")[:4]
+            sbjct_token, sbjct_strand, range_from, range_to = line.split(
+                "\t")[:4]
             range_from, range_to = map(int, (range_from, range_to))
 
             keys["sbjct_token"] = sbjct_token
             keys["sbjct_strand"] = sbjct_strand
             keys["exon_from"] = range_from
-            keys["exon_to" ] = range_to
+            keys["exon_to"] = range_to
 
             ntested += 1
-            result = GetResult( dbhandle, keys, options )
-            
+            result = GetResult(dbhandle, keys, options)
+
             if len(result) == 0:
                 nmissed += 1
                 continue
-            
+
             print "########################"
             print "# matches for:", line[:-1]
             for r in result:
                 print "\t".join(map(str, r))
-        
+
     print "# ntested=%i, nmissed=%i" % (ntested, nmissed)
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

@@ -1,4 +1,4 @@
-################################################################################
+##########################################################################
 #
 #   MRC FGU Computational Genomics Group
 #
@@ -19,7 +19,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
+##########################################################################
 '''
 gpipe/translate_forward2backward.py - 
 ======================================================
@@ -65,7 +65,7 @@ import tempfile
 import time
 import popen2
 
-USAGE="""python %s [OPTIONS] 
+USAGE = """python %s [OPTIONS] 
 
 Version: $Id: gpipe/translate_forward2backward.py 18 2005-08-09 15:32:24Z andreas $
 
@@ -76,42 +76,44 @@ Options:
 -v, --verbose=                  loglevel.
 """ % sys.argv[0]
 
-param_long_options=["verbose=", "help", 
-                    "bracket-increment=", "query-border=",
-                    "border-refinement=",
-                    "exit-identical", "min-score=", "method=",
-                    "recursive", "refinement","probe", "incremental",
-                    "exons=", "mask-probe", "format=",
-                    "probe-options=", "version"]
+param_long_options = ["verbose=", "help",
+                      "bracket-increment=", "query-border=",
+                      "border-refinement=",
+                      "exit-identical", "min-score=", "method=",
+                      "recursive", "refinement", "probe", "incremental",
+                      "exons=", "mask-probe", "format=",
+                      "probe-options=", "version"]
 
-param_short_options="v:hi:b:em:procx:af:"
+param_short_options = "v:hi:b:em:procx:af:"
 
-param_columns = (1,2,3,4)
+param_columns = (1, 2, 3, 4)
 
 param_filename_contigs = "contig_sizes"
 
 
-def main( argv = None ):
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv is None:
+        argv = sys.argv
 
     try:
-        optlist, args = getopt.getopt(sys.argv[1:], param_short_options, param_long_options)
+        optlist, args = getopt.getopt(
+            sys.argv[1:], param_short_options, param_long_options)
     except getopt.error, msg:
         print USAGE, msg
         sys.exit(2)
 
-    for o,a in optlist:
-        if o in ( "-v", "--verbose" ):
+    for o, a in optlist:
+        if o in ("-v", "--verbose"):
             param_loglevel = int(a)
-        elif o in ( "--version", ):
+        elif o in ("--version", ):
             print "version="
             sys.exit(0)
-        elif o in ( "-h", "--help" ):
+        elif o in ("-h", "--help"):
             print USAGE
             sys.exit(0)
         elif o in ("-b", "--query-border"):
@@ -119,22 +121,24 @@ def main( argv = None ):
 
     contig_sizes = {}
 
-    infile = open( param_filename_contigs, "r" )
+    infile = open(param_filename_contigs, "r")
     for line in infile:
-        if line[0] == "#": continue
+        if line[0] == "#":
+            continue
 
         sbjct_token, size, offset = line[:-1].split("\t")
         contig_sizes[sbjct_token] = int(size)
 
     for line in sys.stdin:
-        if line[0] == "#": continue
+        if line[0] == "#":
+            continue
 
-        data = line[:-1].split( "\t" )
-        sbjct_token, sbjct_strand, sbjct_from, sbjct_to = (\
-                     data[param_columns[0]],
-                     data[param_columns[1]],
-                     data[param_columns[2]],
-                     data[param_columns[3]] )
+        data = line[:-1].split("\t")
+        sbjct_token, sbjct_strand, sbjct_from, sbjct_to = (
+            data[param_columns[0]],
+            data[param_columns[1]],
+            data[param_columns[2]],
+            data[param_columns[3]])
 
         sbjct_from, sbjct_to = int(sbjct_from), int(sbjct_to)
 
@@ -144,22 +148,10 @@ def main( argv = None ):
                 sbjct_from, sbjct_to = size - sbjct_to, size - sbjct_from
 
             data[param_columns[2]] = sbjct_from
-            data[param_columns[3]] = sbjct_to            
-                       
+            data[param_columns[3]] = sbjct_to
+
         print string.join(map(str, data), "\t")
 
 
-
-
-
-
-
-
-
-        
-
-        
-
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
+    sys.exit(main(sys.argv))

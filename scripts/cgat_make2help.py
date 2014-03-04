@@ -44,79 +44,88 @@ import time
 import CGAT.Experiment as E
 from CGAT.Local import getMakefiles, getScripts, getModules
 
+
 class Parameter:
-    def __init__(self, name, comment, default_value = "na"):
+
+    def __init__(self, name, comment, default_value="na"):
         self.mName = name
         self.mComment = comment
         self.mDefaultValue = value
-        self.mValue = None        
+        self.mValue = None
 
-    def printPretty( self ):
+    def printPretty(self):
         lines = []
 
         if not self.mValue or self.mDefaultValue == self.mValue:
             value = "%s [default]" % self.mDefaultValue
         else:
-            value = "%s [default=%s]" % (self.mValue, self.mDefaultValue )
+            value = "%s [default=%s]" % (self.mValue, self.mDefaultValue)
 
-        lines.append( "%s = %s" % (self.mName, value) )
-        
+        lines.append("%s = %s" % (self.mName, value))
+
         if self.mComment:
-            lines.append( "" )
-            lines.append( "  " + "\n  ".join( self.mComment ) )
+            lines.append("")
+            lines.append("  " + "\n  ".join(self.mComment))
         return "\n".join(lines)
 
+
 class Target:
+
     def __init__(self, name, dependencies, comment, ):
         self.mName = name
         self.mComment = comment
         self.mDependencies = dependencies
 
-    def printPretty( self ):
+    def printPretty(self):
         lines = []
-        
-        lines.append( "%s" % self.mName )
+
+        lines.append("%s" % self.mName)
         if self.mDependencies:
-            lines.append( "" )
-            lines.append( "  depends on: %s" % self.mDependencies )
+            lines.append("")
+            lines.append("  depends on: %s" % self.mDependencies)
         if self.mComment:
-            lines.append( "" )
-            lines.append( "  " + "\n  ".join( self.mComment ) )
+            lines.append("")
+            lines.append("  " + "\n  ".join(self.mComment))
         return "\n".join(lines)
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv is None:
+        argv = sys.argv
 
-    parser = E.OptionParser( version = "%prog version: $Id: cgat_make2help.py 2781 2009-09-10 11:33:14Z andreas $")
+    parser = E.OptionParser(
+        version="%prog version: $Id: cgat_make2help.py 2781 2009-09-10 11:33:14Z andreas $")
 
-    parser.add_option( "-m", "--method", dest="method", type="choice",
-                       help="method to use [t-test=t-test]",
-                       choices=( "t-test", ) )
+    parser.add_option("-m", "--method", dest="method", type="choice",
+                      help="method to use [t-test=t-test]",
+                      choices=("t-test", ))
     parser.set_defaults(
         filename="Makefile",
-        )
-    
-    (options, args) = E.Start( parser,
-                                        quiet = True,
-                                        add_pipe_options = True )
+    )
 
-    src_dir = os.path.dirname( os.path.abspath( __file__  ) )
+    (options, args) = E.Start(parser,
+                              quiet=True,
+                              add_pipe_options=True)
 
-    makefiles = getMakefiles( (options.filename,), source_directory = src_dir, ignore_missing = True )
+    src_dir = os.path.dirname(os.path.abspath(__file__))
 
-    ## variables starting with "PARAM"
+    makefiles = getMakefiles(
+        (options.filename,), source_directory=src_dir, ignore_missing=True)
+
+    # variables starting with "PARAM"
     parameters = {}
-    ## main targets: no patterns or no dependencies
+    # main targets: no patterns or no dependencies
     targets = []
-    ## contain patterns and dependencies
+    # contain patterns and dependencies
     rules = []
 
-    options.stdout.write( "Help for makefile %s\n\n" % os.path.abspath( options.filename ) )
+    options.stdout.write("Help for makefile %s\n\n" %
+                         os.path.abspath(options.filename))
 
     options.stdout.write( """This file is organized in three sections.
 
@@ -135,106 +144,113 @@ def main( argv = None ):
 """)
 
     for makefile in makefiles:
-        
-        infile = open(makefile, "r" )
+
+        infile = open(makefile, "r")
         comment = []
         last_line = None
-        
+
         first = True
         for line in infile:
 
-            if last_line: 
+            if last_line:
                 line = last_line + line
                 last_line = None
 
-            if not re.sub( "\s+", "", line): 
+            if not re.sub("\s+", "", line):
                 first = False
                 continue
 
             if line[-2] == "\\":
                 last_line = line[:-2]
                 continue
-            
-            if line[0] == "\t": continue
 
-            if line[0] == "#":
-                l = re.sub( "^#+\s*", "", line[:-1] )
-                if l and not first:
-                    comment.append( l )
+            if line[0] == "\t":
                 continue
 
-            x = re.match("(PARAM_\S+[^?:])\s*\?*\s*=(.+)", line )
+            if line[0] == "#":
+                l = re.sub("^#+\s*", "", line[:-1])
+                if l and not first:
+                    comment.append(l)
+                continue
+
+            x = re.match("(PARAM_\S+[^?:])\s*\?*\s*=(.+)", line)
             if x:
-                param,value = x.groups()
+                param, value = x.groups()
                 if param not in parameters:
-                    p = Parameter( param, comment, value )
-                    parameters[param] = p 
+                    p = Parameter(param, comment, value)
+                    parameters[param] = p
                 else:
                     p = parameters[param]
                     p.mComment += comment
                     p.mDefaultValue = value
 
-            x = re.match("(PARAM_\S+[^?])\s*=(.+)", line )
+            x = re.match("(PARAM_\S+[^?])\s*=(.+)", line)
             if x:
-                param,value = x.groups()
+                param, value = x.groups()
                 if param not in parameters:
-                    p = Parameter( param, comment )
-                    parameters[param] = p 
+                    p = Parameter(param, comment)
+                    parameters[param] = p
                 else:
                     p = parameters[param]
                     p.mComment += comment
-                    
+
                 p.mValue = value
 
-            x = re.match( "(\S+)\s*:\s*(.*)", line )
+            x = re.match("(\S+)\s*:\s*(.*)", line)
             if x:
                 target, dependencies = x.groups()
-                if "=" in target or "=" in dependencies: continue
-                if target[0] in ".$": continue
-                if "hook" in target: continue
-                dependencies = re.sub( "\s+", " ", dependencies )
+                if "=" in target or "=" in dependencies:
+                    continue
+                if target[0] in ".$":
+                    continue
+                if "hook" in target:
+                    continue
+                dependencies = re.sub("\s+", " ", dependencies)
                 if "." in target:
-                    rules.append( Target( target, dependencies, comment ) )
+                    rules.append(Target(target, dependencies, comment))
                 else:
-                    targets.append( Target( target, dependencies, comment ) )
+                    targets.append(Target(target, dependencies, comment))
 
             comment = []
             first = False
 
         infile.close()
 
-    options.stdout.write("\n\n Section 1: Primary targets\n" )
-    options.stdout.write(" --------------------------\n\n" )
-    options.stdout.write(""" Primary targets are targets to be run by the users. Usually includes "all".\n\n""")
+    options.stdout.write("\n\n Section 1: Primary targets\n")
+    options.stdout.write(" --------------------------\n\n")
+    options.stdout.write(
+        """ Primary targets are targets to be run by the users. Usually includes "all".\n\n""")
 
     for x in targets:
-        options.stdout.write( x.printPretty() + "\n\n" )
+        options.stdout.write(x.printPretty() + "\n\n")
 
-    options.stdout.write("\n\n Section 2: Parameters\n" )
-    options.stdout.write(" --------------------------\n\n" )
-    options.stdout.write(""" A list of parameters defined in the makefile.\n\n""")
+    options.stdout.write("\n\n Section 2: Parameters\n")
+    options.stdout.write(" --------------------------\n\n")
+    options.stdout.write(
+        """ A list of parameters defined in the makefile.\n\n""")
 
     for x, y in sorted(parameters.items()):
-        options.stdout.write( y.printPretty() + "\n\n\n" )        
+        options.stdout.write(y.printPretty() + "\n\n\n")
 
     for x in targets:
-        options.stdout.write( x.printPretty() + "\n\n" )
+        options.stdout.write(x.printPretty() + "\n\n")
 
-    options.stdout.write("\n\n Section 3: Secondary targets and rules\n" )
-    options.stdout.write(" --------------------------\n\n" )
+    options.stdout.write("\n\n Section 3: Secondary targets and rules\n")
+    options.stdout.write(" --------------------------\n\n")
     options.stdout.write(""" Secondary targets are run by the pipeline.\n\n""")
 
     for x in rules:
-        options.stdout.write( x.printPretty() + "\n\n" )
-        
-    options.stdout.write("\n\n Section 4: Contents\n" )
-    options.stdout.write(" --------------------------\n\n" )
-    options.stdout.write(" This help was created by scanning the contents of the following makefiles.\n" )
+        options.stdout.write(x.printPretty() + "\n\n")
+
+    options.stdout.write("\n\n Section 4: Contents\n")
+    options.stdout.write(" --------------------------\n\n")
+    options.stdout.write(
+        " This help was created by scanning the contents of the following makefiles.\n")
 
     for makefile in makefiles:
-        options.stdout.write("    %s\n" % makefile )
-        
+        options.stdout.write("    %s\n" % makefile)
+
     E.Stop()
 
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
+    sys.exit(main(sys.argv))

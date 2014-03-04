@@ -1,5 +1,5 @@
 
-################################################################################
+##########################################################################
 #
 #   MRC FGU Computational Genomics Group
 #
@@ -20,7 +20,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-#################################################################################
+##########################################################################
 """
 ===================
 CAPseq pipeline
@@ -189,127 +189,147 @@ import rpy2.robjects as ro
 USECLUSTER = True
 
 import CGAT.Pipeline as P
-P.getParameters(  ["%s.ini" % os.path.splitext(__file__)[0],  "pipeline.ini" ] )
+P.getParameters(["%s.ini" % os.path.splitext(__file__)[0],  "pipeline.ini"])
 PARAMS = P.PARAMS
 
 ###################################################################
 ###################################################################
 ###################################################################
-## Helper functions mapping tracks to conditions, etc
+# Helper functions mapping tracks to conditions, etc
 ###################################################################
 # load all tracks - exclude input/control tracks
 Sample = PipelineTracks.Sample3
 
 #TRACKS = PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( [x for x in glob.glob( "*.fastq.gz" ) if PARAMS["tracks_control"] not in x], "(\S+).fastq.gz" )
-TRACKS = PipelineTracks.Tracks( Sample ).loadFromDirectory( 
-    [ x.replace("../","") for x in glob.glob( "*.export.txt.gz" ) if PARAMS["tracks_control"] not in x ],
-      "(\S+).export.txt.gz" ) +\
-      PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
-          [ x.replace("../","") for x in glob.glob( "*.sra" ) if PARAMS["tracks_control"] not in x ], 
-          "(\S+).sra" ) +\
-          PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
-              [x.replace("../","") for x in glob.glob( "*.fastq.gz" ) if PARAMS["tracks_control"] not in x], 
-              "(\S+).fastq.gz" ) +\
-              PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
-                  [x.replace("../","") for x in glob.glob( "*.fastq.1.gz" ) if PARAMS["tracks_control"] not in x], 
-                  "(\S+).fastq.1.gz" ) +\
-                  PipelineTracks.Tracks( PipelineTracks.Sample3 ).loadFromDirectory( 
-                      [ x.replace("../","") for x in glob.glob( "*.csfasta.gz" ) if PARAMS["track_control"] not in x], 
-                        "(\S+).csfasta.gz" )
-                                      
+TRACKS = PipelineTracks.Tracks(Sample).loadFromDirectory(
+    [x.replace("../", "")
+     for x in glob.glob("*.export.txt.gz") if PARAMS["tracks_control"] not in x],
+    "(\S+).export.txt.gz" ) +\
+    PipelineTracks.Tracks(PipelineTracks.Sample3).loadFromDirectory(
+        [x.replace("../", "")
+         for x in glob.glob("*.sra") if PARAMS["tracks_control"] not in x],
+        "(\S+).sra" ) +\
+    PipelineTracks.Tracks(PipelineTracks.Sample3).loadFromDirectory(
+        [x.replace("../", "")
+         for x in glob.glob("*.fastq.gz") if PARAMS["tracks_control"] not in x],
+        "(\S+).fastq.gz" ) +\
+    PipelineTracks.Tracks(PipelineTracks.Sample3).loadFromDirectory(
+        [x.replace("../", "")
+         for x in glob.glob("*.fastq.1.gz") if PARAMS["tracks_control"] not in x],
+        "(\S+).fastq.1.gz" ) +\
+    PipelineTracks.Tracks(PipelineTracks.Sample3).loadFromDirectory(
+        [x.replace("../", "")
+         for x in glob.glob("*.csfasta.gz") if PARAMS["track_control"] not in x],
+        "(\S+).csfasta.gz")
+
 for X in TRACKS:
     print "TRACK=", X, "\n"
 
 ###################################################################
 ###################################################################
 ###################################################################
-@transform( ("*.fastq.1.gz", "*.fastq.gz", "*.sra", "*.csfasta.gz" ),
-            regex( r"(\S+).(export.txt.gz|fastq.1.gz|fastq.gz|sra|csfasta.gz)"), 
-            r"\1.bam" )
-def buildBAM( infile, outfile ):
+
+
+@transform(("*.fastq.1.gz", "*.fastq.gz", "*.sra", "*.csfasta.gz"),
+           regex(r"(\S+).(export.txt.gz|fastq.1.gz|fastq.gz|sra|csfasta.gz)"),
+           r"\1.bam")
+def buildBAM(infile, outfile):
     '''map reads with bowtie'''
     to_cluster = True
-    track = P.snip( os.path.basename(outfile), ".bam" )
-    job_options= "-pe dedicated %i -R y" % PARAMS["bowtie_threads"]
+    track = P.snip(os.path.basename(outfile), ".bam")
+    job_options = "-pe dedicated %i -R y" % PARAMS["bowtie_threads"]
     m = PipelineMapping.Bowtie()
     reffile = PARAMS["samtools_genome"]
-    statement = m.build( (infile,), outfile ) 
+    statement = m.build((infile,), outfile)
     P.run()
-    
+
 #########################################################################
-@transform( buildBAM, suffix(".bam"), ".alignstats" )
-def buildPicardAlignStats( infile, outfile ):
+
+
+@transform(buildBAM, suffix(".bam"), ".alignstats")
+def buildPicardAlignStats(infile, outfile):
     '''Gather BAM file alignment statistics using Picard '''
     to_cluster = True
-    track = P.snip( os.path.basename(infile), ".bam" )
-    statement = '''CollectAlignmentSummaryMetrics INPUT=%(infile)s REFERENCE_SEQUENCE=%%(samtools_genome)s ASSUME_SORTED=true OUTPUT=%(outfile)s VALIDATION_STRINGENCY=SILENT ''' % locals()
+    track = P.snip(os.path.basename(infile), ".bam")
+    statement = '''CollectAlignmentSummaryMetrics INPUT=%(infile)s REFERENCE_SEQUENCE=%%(samtools_genome)s ASSUME_SORTED=true OUTPUT=%(outfile)s VALIDATION_STRINGENCY=SILENT ''' % locals(
+    )
     P.run()
 
 ############################################################
-@merge( buildPicardAlignStats, "picard_align_stats.load" )
-def loadPicardAlignStats( infiles, outfile ):
+
+
+@merge(buildPicardAlignStats, "picard_align_stats.load")
+def loadPicardAlignStats(infiles, outfile):
     '''Merge Picard alignment stats into single table and load into SQLite.'''
     # Join data for all tracks into single file
     outf = P.getTempFile()
     first = True
     for f in infiles:
-        track = P.snip( os.path.basename(f), ".alignstats" )
-        if not os.path.exists( f ): 
-            E.warn( "File %s missing" % f )
+        track = P.snip(os.path.basename(f), ".alignstats")
+        if not os.path.exists(f):
+            E.warn("File %s missing" % f)
             continue
-        lines = [ x for x in open( f, "r").readlines() if not x.startswith("#") and x.strip() ]
-        if first: outf.write( "%s\t%s" % ("track", lines[0] ) )
+        lines = [
+            x for x in open(f, "r").readlines() if not x.startswith("#") and x.strip()]
+        if first:
+            outf.write("%s\t%s" % ("track", lines[0]))
         first = False
         for i in range(1, len(lines)):
-            outf.write( "%s\t%s" % (track,lines[i] ))
+            outf.write("%s\t%s" % (track, lines[i]))
     outf.close()
     tmpfilename = outf.name
 
     # Load into database
-    tablename = P.toTable( outfile )
+    tablename = P.toTable(outfile)
     statement = '''cat %(tmpfilename)s
                 | python %(scriptsdir)s/csv2db.py
                       --index=track
                       --table=%(tablename)s 
                 > %(outfile)s'''
     P.run()
-    os.unlink( tmpfilename )
+    os.unlink(tmpfilename)
 
 #########################################################################
-@transform( buildBAM, suffix( ".bam"), ".dedup.bam")
+
+
+@transform(buildBAM, suffix(".bam"), ".dedup.bam")
 def dedup(infiles, outfile):
-        '''Remove duplicate alignments from BAM files.'''
-        to_cluster = USECLUSTER
-        track = P.snip( outfile, ".bam" )
-        statement = '''MarkDuplicates INPUT=%(infiles)s  ASSUME_SORTED=true OUTPUT=%(outfile)s 
+    '''Remove duplicate alignments from BAM files.'''
+    to_cluster = USECLUSTER
+    track = P.snip(outfile, ".bam")
+    statement = '''MarkDuplicates INPUT=%(infiles)s  ASSUME_SORTED=true OUTPUT=%(outfile)s 
                        METRICS_FILE=%(track)s.dupstats REMOVE_DUPLICATES=true 
                        VALIDATION_STRINGENCY=SILENT; 
                        samtools index %(outfile)s; ''' % locals()
-        P.run()
+    P.run()
 
 #########################################################################
-@merge( dedup, "picard_duplicate_stats.load" )
-def loadPicardDuplicateStats( infiles, outfile ):
+
+
+@merge(dedup, "picard_duplicate_stats.load")
+def loadPicardDuplicateStats(infiles, outfile):
     '''Merge Picard duplicate stats into single table and load into SQLite.'''
     # Join data for all tracks into single file
-    outf = open('dupstats.txt','w')
+    outf = open('dupstats.txt', 'w')
     first = True
     for f in infiles:
-        track = P.snip( os.path.basename(f), ".dedup.bam" )
-        statfile = P.snip(f, ".bam" )  + ".dupstats"
-        if not os.path.exists( statfile ): 
-            E.warn( "File %s missing" % statfile )
+        track = P.snip(os.path.basename(f), ".dedup.bam")
+        statfile = P.snip(f, ".bam") + ".dupstats"
+        if not os.path.exists(statfile):
+            E.warn("File %s missing" % statfile)
             continue
-        lines = [ x for x in open( statfile, "r").readlines() if not x.startswith("#") and x.strip() ]
-        if first: outf.write( "%s\t%s" % ("track", lines[0] ) )
+        lines = [x for x in open(
+            statfile, "r").readlines() if not x.startswith("#") and x.strip()]
+        if first:
+            outf.write("%s\t%s" % ("track", lines[0]))
         first = False
-        outf.write( "%s\t%s" % (track,lines[1] ))
+        outf.write("%s\t%s" % (track, lines[1]))
 
     outf.close()
     tmpfilename = outf.name
 
     # Load into database
-    tablename = P.toTable( outfile )
+    tablename = P.toTable(outfile)
     statement = '''cat %(tmpfilename)s
                 | python %(scriptsdir)s/csv2db.py
                       --index=track
@@ -318,61 +338,75 @@ def loadPicardDuplicateStats( infiles, outfile ):
     P.run()
 
 ############################################################
-############################################################    
 ############################################################
-@follows( dedup )
-@files( [ ("%s.dedup.bam" % x, "%s.macs" % x ) for x in TRACKS ] )
-def runMACSsolo( infile, outfile ):
+############################################################
+
+
+@follows(dedup)
+@files([("%s.dedup.bam" % x, "%s.macs" % x) for x in TRACKS])
+def runMACSsolo(infile, outfile):
     '''Run MACS for peak detection.'''
     to_cluster = USECLUSTER
-    track = P.snip( os.path.basename(infile), ".dedup.bam" )
+    track = P.snip(os.path.basename(infile), ".dedup.bam")
     statement = '''macs14 -t%(infile)s 
                           --name=%(track)s
                           --format=BAM
                           --wig -S
                           %(macs_options)s 
-                   >& %(outfile)s;''' 
-    P.run() 
-    
+                   >& %(outfile)s;'''
+    P.run()
+
 ############################################################
-@transform( runMACSsolo, regex(r"(\S+).macs"),
-            inputs( (r"\1.macs", r"\1.dedup.bam")), 
-            r"\1.macs.load" )
-def loadMACSsolo( infiles, outfile ):
+
+
+@transform(runMACSsolo, regex(r"(\S+).macs"),
+           inputs((r"\1.macs", r"\1.dedup.bam")),
+           r"\1.macs.load")
+def loadMACSsolo(infiles, outfile):
     infile, bamfile = infiles
-    PIntervals.loadMACS( infile, outfile, bamfile )
-    
+    PIntervals.loadMACS(infile, outfile, bamfile)
+
 ############################################################
-@merge( runMACSsolo, "macs_solo.summary" )
-def summarizeMACSsolo( infiles, outfile ):
+
+
+@merge(runMACSsolo, "macs_solo.summary")
+def summarizeMACSsolo(infiles, outfile):
     '''run MACS for peak detection.'''
-    PIntervals.summarizeMACSsolo( infiles, outfile )
+    PIntervals.summarizeMACSsolo(infiles, outfile)
 
 ############################################################
-@transform( summarizeMACSsolo, suffix(".summary"), "_summary.load" )
-def loadMACSsoloSummary( infile, outfile ):
+
+
+@transform(summarizeMACSsolo, suffix(".summary"), "_summary.load")
+def loadMACSsoloSummary(infile, outfile):
     '''load macs summary.'''
-    P.load( infile, outfile, "--index=track" )
+    P.load(infile, outfile, "--index=track")
 
 ############################################################
-@transform( loadMACSsolo, regex(r"(\S+).macs.load"), r"\1.macs.bed" )
-def exportIntervalsAsBedsolo( infile, outfile ):
+
+
+@transform(loadMACSsolo, regex(r"(\S+).macs.load"), r"\1.macs.bed")
+def exportIntervalsAsBedsolo(infile, outfile):
     '''Export list of intervals passing fold change threshold to file '''
     fc = PARAMS["intervals_min_fc"]
-    PIntervals.exportMacsIntervalsAsBed( infile, outfile, fc )
-    
+    PIntervals.exportMacsIntervalsAsBed(infile, outfile, fc)
+
 ############################################################
-############################################################ 
-############################################################ 
-@transform( dedup, regex(r"(\S+).dedup.bam"), r"\1.bw" )
-def bamToWig( infile, outfile ):
+############################################################
+############################################################
+
+
+@transform(dedup, regex(r"(\S+).dedup.bam"), r"\1.bw")
+def bamToWig(infile, outfile):
     ''' convert bam to bigwig '''
     statement = '''python %%(scriptsdir)s/bam2wiggle.py --output-format=bigwig %(infile)s %(outfile)s ''' % locals()
     P.run()
 
 ###################################################################
-@transform( dedup, regex(r"(\S+).dedup.bam"), r"\1.bed" )
-def bamToBed( infile, outfile ):
+
+
+@transform(dedup, regex(r"(\S+).dedup.bam"), r"\1.bed")
+def bamToBed(infile, outfile):
     ''' convert bam to bigwig '''
     statement = '''bamToBed -i %(infile)s > %(outfile)s; 
                    bgzip %(outfile)s;
@@ -380,31 +414,34 @@ def bamToBed( infile, outfile ):
     P.run()
 
 ###################################################################
-@follows( buildBAM, buildPicardAlignStats,
-          loadPicardAlignStats, dedup,
-          loadPicardDuplicateStats )
+
+
+@follows(buildBAM, buildPicardAlignStats,
+         loadPicardAlignStats, dedup,
+         loadPicardDuplicateStats)
 def align():
     '''align fastq files to genome using Bowtie and convert BAM to bigwig'''
     pass
 
-@follows( runMACSsolo, loadMACSsolo, summarizeMACSsolo, 
-          loadMACSsoloSummary, exportIntervalsAsBedsolo )
+
+@follows(runMACSsolo, loadMACSsolo, summarizeMACSsolo,
+         loadMACSsoloSummary, exportIntervalsAsBedsolo)
 def macs():
     '''align fastq files to genome using Bowtie and convert BAM to bigwig'''
     pass
 
-@follows( bamToWig, bamToBed )
+
+@follows(bamToWig, bamToBed)
 def convert():
     '''align fastq files to genome using Bowtie and convert BAM to bigwig'''
     pass
-    
-@follows( align, macs, convert )
+
+
+@follows(align, macs, convert)
 def full():
     '''align fastq files to genome using Bowtie and convert BAM to bigwig'''
     pass
 
 
-
-if __name__== "__main__":
-    sys.exit( P.main(sys.argv) )
-    
+if __name__ == "__main__":
+    sys.exit(P.main(sys.argv))

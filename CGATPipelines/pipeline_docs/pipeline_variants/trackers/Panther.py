@@ -1,22 +1,28 @@
-import os, sys, re, types
+import os
+import sys
+import re
+import types
 from VariantsReport import *
 
-class PantherTracker( VariantsTracker ):
+
+class PantherTracker(VariantsTracker):
 
     mPattern = "^panther$"
     mAsTables = True
 
-class PantherCounts( StrainTracker ):
+
+class PantherCounts(StrainTracker):
+
     '''returns overview of panther run.
     '''
 
     tablename = "panther"
     tablename_map = "polyphen_map"
 
-    def getSlices( self, subset = None ):
-        return ["snps", "proteins", "loci" ]
+    def getSlices(self, subset=None):
+        return ["snps", "proteins", "loci"]
 
-    def __call__(self, track, slice = None):
+    def __call__(self, track, slice=None):
 
         data = odict()
         if slice == "snps":
@@ -28,8 +34,10 @@ class PantherCounts( StrainTracker ):
         else:
             s = "*"
 
-        if track == "all": where = "1"
-        else: where = "map.track = '%(track)s'" % locals()
+        if track == "all":
+            where = "1"
+        else:
+            where = "map.track = '%(track)s'" % locals()
 
         data["total"] = self.getValue( '''SELECT COUNT(%(s)s) FROM %(tablename)s AS t, %(tablename_map)s as map
                                             WHERE map.snp_id = t.snp_id 
@@ -46,22 +54,26 @@ class PantherCounts( StrainTracker ):
 
         return data
 
-class PantherResults( StrainTracker ):
+
+class PantherResults(StrainTracker):
+
     '''returns overview of panther results.'''
 
     tablename = "panther"
     tablename_map = "polyphen_map"
-    pdeleterious = 0.5 
+    pdeleterious = 0.5
 
-    def __call__(self, track, slice = None):
+    def __call__(self, track, slice=None):
 
         data = odict()
 
         s = "DISTINCT locus_id"
 
-        if track == "all": where = "1"
-        else: where = "map.track = '%(track)s'" % locals()
-        
+        if track == "all":
+            where = "1"
+        else:
+            where = "map.track = '%(track)s'" % locals()
+
         data["deleterious"] = self.getValue( '''
         SELECT COUNT(%(s)s) 
         FROM %(tablename)s AS t, %(tablename_map)s as map
@@ -74,17 +86,15 @@ class PantherResults( StrainTracker ):
 
         return data
 
-class PantherDistribution( PantherTracker ):
+
+class PantherDistribution(PantherTracker):
+
     '''return distributions for various columns.'''
 
-    def getSlices( self, subset = None ):
-        return ("Pdeleterious", "Nic", "subPSEC" )
-    
-    def __call__(self, track, slice = None ):
-        
-        return odict( ( 
-                (slice, self.getValues( "SELECT %(slice)s FROM %(track)s WHERE message IS NULL" % locals () )), ) )
+    def getSlices(self, subset=None):
+        return ("Pdeleterious", "Nic", "subPSEC")
 
+    def __call__(self, track, slice=None):
 
-
-    
+        return odict((
+            (slice, self.getValues("SELECT %(slice)s FROM %(track)s WHERE message IS NULL" % locals())), ))

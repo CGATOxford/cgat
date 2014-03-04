@@ -1,10 +1,18 @@
-import os, sys, re, types, itertools, math, numpy
+import os
+import sys
+import re
+import types
+import itertools
+import math
+import numpy
 
 from RnaseqTranscriptsReport import *
 
-class TranscriptStatus( Status ):
+
+class TranscriptStatus(Status):
+
     '''status information on transcriptome building.'''
-    
+
     pattern = "(.*)_transcript_counts"
 
     # minimum percentage of bases covered by reads for a gene to
@@ -17,7 +25,7 @@ class TranscriptStatus( Status ):
     # reference gene set to use
     reference = "refcoding"
 
-    def testGeneCoverage( self, track ):
+    def testGeneCoverage(self, track):
         '''test coverage of known protein coding transcript models with reads.
 
         PASS: >= 20% of expressed genes >90% covered
@@ -29,23 +37,27 @@ class TranscriptStatus( Status ):
 
         Read directionality is ignored in this test.
         '''
-        
+
         values = self.getValues( """SELECT max(c.coverage_anysense_pcovered) FROM 
                                             %(track)s_transcript_counts as c,
                                             %(reference)s_transcript2gene as i
                                          WHERE c.coverage_anysense_nval > %(min_reads)i
                                    AND i.transcript_id = c.transcript_id 
                                    GROUP BY i.gene_id""" )
-        
-        value = float(len( [x for x in values if x >= self.min_coverage] )) / len(values)
-        
-        if value >= 0.2: status= "PASS"
-        elif value >= 0.1: status= "WARNING"
-        else: status= "FAIL"
+
+        value = float(
+            len([x for x in values if x >= self.min_coverage])) / len(values)
+
+        if value >= 0.2:
+            status = "PASS"
+        elif value >= 0.1:
+            status = "WARNING"
+        else:
+            status = "FAIL"
 
         return status, "%5.2f%%" % (100.0 * value)
-        
-    def testFragmentation( self, track ):
+
+    def testFragmentation(self, track):
         '''test transcript construction.
 
         A large number of fragments are an indicator that transcript
@@ -60,18 +72,23 @@ class TranscriptStatus( Status ):
         transcripts.
         '''
 
-        complete = self.getValue( """SELECT COUNT(*) FROM %(track)s_class WHERE class = 'complete'""" )
-        fragments = self.getValue( """SELECT COUNT(*) FROM %(track)s_class WHERE class like '%%fragment%%' """ )
+        complete = self.getValue(
+            """SELECT COUNT(*) FROM %(track)s_class WHERE class = 'complete'""" )
+        fragments = self.getValue(
+            """SELECT COUNT(*) FROM %(track)s_class WHERE class like '%%fragment%%' """ )
 
-        value = float(complete) / (complete + fragments )
+        value = float(complete) / (complete + fragments)
 
-        if value >= 0.25: status= "PASS"
-        elif value >= 0.1: status= "WARNING"
-        else: status= "FAIL"
+        if value >= 0.25:
+            status = "PASS"
+        elif value >= 0.1:
+            status = "WARNING"
+        else:
+            status = "FAIL"
 
         return status, "%5.2f%%" % (100.0 * value)
 
-    def testDirectionality( self, track ):
+    def testDirectionality(self, track):
         '''test proportion of antisense reads within known transcript models.
 
         PASS: <= 1% of reads are antisense
@@ -88,18 +105,17 @@ class TranscriptStatus( Status ):
                               FROM
                                   %(track)s_transcript_counts as c
                               WHERE c.coverage_anysense_nval > %(min_reads)i""" )
-        
+
         sense, antisense = values[0]
         value = float(antisense) / (sense + antisense)
 
-        if value >= 0.4: status = "NA"
-        elif value <= 0.05: status= "PASS"
-        elif value <= 0.10: status= "WARNING"
-        else: status= "FAIL"
+        if value >= 0.4:
+            status = "NA"
+        elif value <= 0.05:
+            status = "PASS"
+        elif value <= 0.10:
+            status = "WARNING"
+        else:
+            status = "FAIL"
 
         return status, "%5.2f%%" % (100.0 * value)
-
-
-
-
-

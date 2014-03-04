@@ -11,6 +11,7 @@ Taken from: http://rosettacode.org/wiki/Run-length_encoding#Python
 from itertools import groupby
 import array
 
+
 def encode(input_array):
     """encode array or string.
 
@@ -23,9 +24,10 @@ def encode(input_array):
     [(5, 'a'), (6, 'h'), (7, 'm'), (1, 'u'), (7, 'i'), (6, 'a')]
 
     """
-    return [(len(list(g)), k) for k,g in groupby(input_array)]
- 
-def decode(lst, typecode ):
+    return [(len(list(g)), k) for k, g in groupby(input_array)]
+
+
+def decode(lst, typecode):
     """decode to array
 
     >>> decode( [(4, 10), (4, 20)], typecode="i" )
@@ -35,36 +37,36 @@ def decode(lst, typecode ):
     array('c', 'aaaaahhhhhhmmmmmmmuiiiiiiiaaaaaa')
 
     """
-    a = array.array( typecode )
-    for n,c in lst: 
-        a.extend( array.array( typecode, (c,) * n ) )
+    a = array.array(typecode)
+    for n, c in lst:
+        a.extend(array.array(typecode, (c,) * n))
     return a
 
-def compress( input_string, bytes = 1 ):
+
+def compress(input_string, bytes=1):
     """return compressed stream."""
     r = []
-    for n,c in encode(input_array):
+    for n, c in encode(input_array):
         while n > 255:
             n -= 255
-            r.append( chr(255) ) 
-            r.append( ord(c) )
-        r.append( chr(n) ) 
-        r.append( ord(c) )
-    return "".join( r )
+            r.append(chr(255))
+            r.append(ord(c))
+        r.append(chr(n))
+        r.append(ord(c))
+    return "".join(r)
 
-def uncompress( stream ):
-    
-    n,r = None, []
+
+def uncompress(stream):
+
+    n, r = None, []
     for c in stream:
-        if n == None:
+        if n is None:
             n = c
         else:
-            r.append( n,c )
+            r.append(n, c)
             n = None
-    return decode( r )
-    
+    return decode(r)
+
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
- 
-
