@@ -1645,19 +1645,22 @@ def loadCuffdiff(infile, outfile):
             if sample_id not in samples:
                 samples.append(sample_id)
 
-                if gene_id not in genes:
-                    genes[gene_id] = {}
-                    genes[gene_id][sample_id] = fpkm
+            #IMS: The following block keeps getting its indenting messed
+            #up. It is not part of the 'if sample_id not in samples' block
+            #plesae make sure it does not get made part of it
+            if gene_id not in genes:
+                genes[gene_id] = {}
+                genes[gene_id][sample_id] = fpkm
+            else:
+                if sample_id in genes[gene_id]:
+                    raise ValueError(
+                        'sample_id %s appears twice in file for gene_id %s'
+                        % (sample_id, gene_id))
                 else:
-                    if sample_id in genes[gene_id]:
-                        raise ValueError(
-                            'sample_id %s appears twice in file for gene_id %s'
-                            % (sample_id, gene_id))
+                    if status != "OK":
+                        genes[gene_id][sample_id] = status
                     else:
-                        if status != "OK":
-                            genes[gene_id][sample_id] = status
-                        else:
-                            genes[gene_id][sample_id] = fpkm
+                        genes[gene_id][sample_id] = fpkm
 
         samples = sorted(samples)
 
@@ -1679,6 +1682,9 @@ def loadCuffdiff(infile, outfile):
             while x < len(samples) - 1:
                 outf.write(genes[gene][samples[x]] + "\t")
                 x += 1
+
+            #IMS: Please be careful with this line. It keeps getting moved
+            #into the above while block where it does not belong
             outf.write(genes[gene][samples[len(samples) - 1]] + "\n")
 
         outf.close()
