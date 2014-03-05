@@ -52,7 +52,7 @@ class ParsingError(Error):
 
 def toDot(v):
     '''convert value to '.' if None'''
-    if v is None:
+    if v == None:
         return "."
     else:
         return str(v)
@@ -157,6 +157,8 @@ class Entry:
         for k, v in self.attributes.items():
             if isinstance(v, str):
                 aa.append('%s "%s"' % (k, v))
+            elif isinstance(v, list) or isinstance(v, tuple):
+                aa.append('%s "%s"' % (k, " ".join(v)))
             else:
                 aa.append('%s %s' % (k, str(v)))
 
@@ -177,7 +179,7 @@ class Entry:
     def __str__(self):
 
         def _todot(val):
-            if val is None:
+            if val == None:
                 return "."
             else:
                 return str(val)
@@ -339,7 +341,7 @@ def asRanges(gffs, feature=None):
     The returned intervals are sorted.
     """
 
-    if isinstance(feature, str):
+    if type(feature) == types.StringType:
         gg = filter(lambda x: x.feature == feature, gffs)
     elif feature:
         gg = filter(lambda x: x.feature in feature, gffs)
@@ -510,7 +512,7 @@ def joined_iterator(gffs, group_field=None):
     last_group_id = None
     matches = []
 
-    if group_field is None:
+    if group_field == None:
         group_function = lambda x: x.attributes
     elif group_field == "gene_id":
         group_function = lambda x: x.gene_id

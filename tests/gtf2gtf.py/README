@@ -10,3 +10,14 @@ cat hg19.small.transcript_id.tsv | awk 'BEGIN {x = 1}; {print $0"\t"$1x; x++}' >
 ## Creating a map file for protein-ids
 cat hg19.small.gene_id.tsv | sed 's/G/P/' > hg19.small.protein_id.tsv
 
+## Creating a gtf file with duplicate gene_id and transcript_ids
+wget ftp://ftp.ncbi.nih.gov/genomes/Bacteria/Burkholderia_pseudomallei_K96243_uid57733/NC_006350.gff 
+wget ftp://ftp.ncbi.nih.gov/genomes/Bacteria/Burkholderia_pseudomallei_K96243_uid57733/NC_006351.gff
+head -n1000 NC_006350.gff | python /ifs/devel/toms/cgat/scripts/gff32gtf.py --method=hierarchy > NC_006350.gtf
+head -n1000 NC_006351.gff | python /ifs/devel/toms/cgat/scripts/gff32gtf.py --method=hierarchy > NC_006351.gtf
+cat NC_006350.gtf NC_006351.gtf > B_psuedomallei_combined_transcripts.gtf
+rm -rf NC_00635*
+
+# Link to hg19 chr19 gtf
+ln -s ../data/hg19.chr19.gtf.gz
+

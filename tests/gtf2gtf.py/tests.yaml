@@ -210,7 +210,11 @@ set_protein_to_transcript:
     options: --set-protein-to-transcript
 
 
-
+set_renumber_duplicates:
+    stdin: B_psuedomallei_combined_transcripts.gtf
+    outputs: [stdout]
+    references: [B_psuedomallei_combined_transcripts_no_duplicates.gtf]
+    options: --rename-duplicates
 
 
 
