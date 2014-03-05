@@ -1614,6 +1614,23 @@ def loadCuffdiff(infile, outfile):
         P.run()
 
     # Jethro - load tables of sample specific cuffdiff fpkm values into csvdb
+
+    #IMS: First read in lookup table for CuffDiff/Pipeline sample name conversion
+    inf = IOTools.openFile(os.path.join(indir, "read_groups.info"))
+    inf.readline()
+    sample_lookup = {}
+
+    for line in inf:
+        line = line.split("\t")
+        our_sample_name = P.snip(line[0])
+        our_sample_name = re.sub("-","_", our_sample_name)
+        cuffdiff_sample_name = "%s_%s" % (line[1], line[2])
+        sample_lookup[cuffdiff_sample_name] = our_sample_name
+
+    inf.close()
+
+
+                           
     for fn, level in (("cds.read_group_tracking", "cds"),
                       ("genes.read_group_tracking", "gene"),
                       ("isoforms.read_group_tracking", "isoform"),
@@ -1671,7 +1688,7 @@ def loadCuffdiff(infile, outfile):
         if len(samples) == 0:
             continue
 
-        headers = "gene_id\t" + "\t".join([x for x in samples])
+        headers = "gene_id\t" + "\t".join([sample_lookup[x] for x in samples])
         outf.write(headers + "\n")
 
         E.debug("Number of genes = %s " % len(genes))
