@@ -10,8 +10,8 @@ gtf2gtf.py - manipulate transcript models
 Purpose
 -------
 
-This script reads a gene set in :term:`gtf` format from stdin, applies some 
-transformation, and outputs a new gene set in :term:`gtf` format to stdout. 
+This script reads a gene set in :term:`gtf` format from stdin, applies some
+transformation, and outputs a new gene set in :term:`gtf` format to stdout.
 
 Options
 -------
@@ -24,7 +24,7 @@ categories:
 3. filtering gene sets
 4. setting/resetting fields within a gtf file
 
-Further options for working with gtf files are available in gff2gff.py, 
+Further options for working with gtf files are available in gff2gff.py,
 which can be run with the specification --is-gtf
 
 
@@ -32,14 +32,14 @@ Sort gene sets
 ++++++++++++++
 
 ``--sort``
-   Sorts entries in gtf file by one or more fields      
+   Sorts entries in gtf file by one or more fields
 
       +---------------+---------------------------------------+
-      | option        | order in which fields are sorted      | 
+      | option        | order in which fields are sorted      |
       +---------------|---------------------------------------+
       | gene          | gene_id, transcript_id, contig, start |
       +---------------+---------------------------------------+
-      | contig+gene   | contig, gene_id, transcript_id, start | 
+      | contig+gene   | contig, gene_id, transcript_id, start |
       +---------------+---------------------------------------+
       | transcript    | transcript_id, contig, start          |
       +---------------+---------------------------------------+
@@ -47,9 +47,9 @@ Sort gene sets
       +---------------+---------------------------------------+
       | position+gene | contig( gene_id, start )              |
       +---------------+---------------------------------------+
-      | gene+position | gene_id, contig, start                | 
+      | gene+position | gene_id, contig, start                |
       +---------------+---------------------------------------+
-   
+
    N.B. position+gene sorts by gene_id, start, then subsequently sorts
    flattened gene lists by contig, start
 
@@ -60,34 +60,34 @@ Manipulate gene-models
 Options that can be used to alter the features represented in a :term:`gtf`
 file. For further detail see command line options.
 
-Input gtfs need to be sorted so that features for a gene or transcript 
+Input gtfs need to be sorted so that features for a gene or transcript
 appear consecutively within the file. This can be achevied using ``--sort``.
 
 ``--merge-exons``
-    Merges overlapping exons for all transcripts of a gene, outputting the 
-    merged exons. Can be used in conjunction with ``--merge-exons-distance`` 
-    to set the minimum distance that may appear between two exons before 
+    Merges overlapping exons for all transcripts of a gene, outputting the
+    merged exons. Can be used in conjunction with ``--merge-exons-distance``
+    to set the minimum distance that may appear between two exons before
     they are merged.If ``--with-utr`` is set, the output interval will also
     contain UTR.
 
 ``--merge-transcripts``
     Merges all transcripts of a gene. Outputs contains a single interval that
-    spans the original gene (both introns and exons). If ``--with-utr`` is 
+    spans the original gene (both introns and exons). If ``--with-utr`` is
     set, the output interval will also contain UTR.
 
 ``--merge-genes``
-    Merges genes that have overlapping exons, outputting a single gene_id and 
-    transcript_id for all exons of overlapping genes. 
+    Merges genes that have overlapping exons, outputting a single gene_id and
+    transcript_id for all exons of overlapping genes.
     (Does not merge intervals on different strands)
-    
+
 ``--join-exons``
-    Joins together all exons of a transcript, outputting a single interval that 
+    Joins together all exons of a transcript, outputting a single interval that
     spans the original transcript (both introns and exons).
 
 ``--intersect-transcripts``
     Finds regions representing the intersect of all transcripts of a gene.
-    Output will contain intervals spanning only those bases covered by all 
-    transcripts. If ``--with-utr`` is set, the UTR will also be included in the 
+    Output will contain intervals spanning only those bases covered by all
+    transcripts. If ``--with-utr`` is set, the UTR will also be included in the
     intersect.
 
 ``--merge-introns``
@@ -96,16 +96,16 @@ appear consecutively within the file. This can be achevied using ``--sort``.
     the first and last intron, respectively.
 
 ``--exons2introns``
-    Merges overlapping introns for all transcripts of a gene, outputting the 
+    Merges overlapping introns for all transcripts of a gene, outputting the
     merged introns. Use ``--intron-min-length`` to ignore merged introns below a
     specified length. Use ``--intron-border`` to specify a number of residues to
-    remove at either end of output introns (residues are removed prior to 
+    remove at either end of output introns (residues are removed prior to
     filtering on size when used in conjunction with ``--intron-min-length``).
-    
-``--transcripts2genes``    
-    Currently it doesn't work... 
-    pysam.TabProxies.GTFProxy has no attribute 'gene_id'    
-    May be used in conjunction with ``--reset-strand``    
+
+``--transcripts2genes``
+    Currently it doesn't work...
+    pysam.TabProxies.GTFProxy has no attribute 'gene_id'
+    May be used in conjunction with ``--reset-strand``
 
 The option ``--permit-duplicates`` may be specified in order to
 allow gene-ids to be duplicated within the input :term:`gtf` file
@@ -121,26 +121,26 @@ Filter gene sets
 Options that can be used to filter :term:`gtf` files. For further
 detail see command line options.
 
-Input gtfs need to be sorted so that features for a gene or transcript 
+Input gtfs need to be sorted so that features for a gene or transcript
  appear consecutively within the file. This can be achevied using ``--sort``.
 
 ``--filter``
-    When filtering on the basis of 'gene-id' or 'transcript-id' a filename 
+    When filtering on the basis of 'gene-id' or 'transcript-id' a filename
     containing ids to be removed may provided using ``--apply``. Alternatively,
-    a random subsample of genes/transcripts may be retained using 
-    ``--sample-size``. Use ``--min-exons-length`` in conjunction with 
-    ``--sample-size`` to specify a minimum length for genes/transcripts to be 
+    a random subsample of genes/transcripts may be retained using
+    ``--sample-size``. Use ``--min-exons-length`` in conjunction with
+    ``--sample-size`` to specify a minimum length for genes/transcripts to be
     retained. Use ``--reset-strand`` to set strand to '.' in output.
 
-    Other filter options include longest-gene, longest-transcript, 
+    Other filter options include longest-gene, longest-transcript,
     or representative-transcript.
 
     When filtering on the basis of gene-id, transcript-id or longest-gene,
     ``--invert-filter`` may be used to invert the selection.
 
 ``--remove-overlapping``
-    Takes as argument a :term:`gff` formatted file. Any transcripts that 
-    intersect intervals in the supplied file are removed. 
+    Takes as argument a :term:`gff` formatted file. Any transcripts that
+    intersect intervals in the supplied file are removed.
     (Does not account for strand.)
 
 ``--remove-duplicates``
@@ -150,23 +150,22 @@ Input gtfs need to be sorted so that features for a gene or transcript
     Setting to 'ucsc', will remove any interval for which transcript-id contains
     '_dup'.
 
-                                                                                        
 
 Set/reset fields
 ++++++++++++++++
 
-Options for altering fields within :term:`gtf`. For further details see command 
+Options for altering fields within :term:`gtf`. For further details see command
  line options.
 
 ``--rename``
-    When a mapping file is provided using ``--apply``, renames either 
+    When a mapping file is provided using ``--apply``, renames either
     gene-id or transcript-id. Outputs a :term:`gtf` file with field renamed. Any
-    entry in input :term:`gtf` not appearing in mapping file is discarded. 
+    entry in input :term:`gtf` not appearing in mapping file is discarded.
 
 ``--add-protein-id``
     Takes as argument a file that maps transcript-id to protein-id and appends the
     protein-id provided to the attributes field.
-    Any entry ininput :term:`gtf` not appearing in mapping file is discarded. 
+    Any entry ininput :term:`gtf` not appearing in mapping file is discarded.
 
 ``--renumber-genes``
     Renumber genes from 1 using the pattern provided, e.g. ENSG%s
@@ -175,7 +174,7 @@ Options for altering fields within :term:`gtf`. For further details see command
     Renumber transcripts from 1 using the pattern provided, e.g. ENST%s
 
 ``--unset-genes``
-    Renumber genes from 1 using the pattern provided, e.g. ENSG%s. Transcripts 
+    Renumber genes from 1 using the pattern provided, e.g. ENSG%s. Transcripts
     with the same gene-id in input :term:`gtf` file will have different gene-ids
     in the output :term:`gtf` file.
 
@@ -190,11 +189,11 @@ Options for altering fields within :term:`gtf`. For further details see command
 
 ``--set-score-to-distance``
     Will reset the score field (field 6) of each feature in input :term:`gtf` to be
-    the distance from transcription start site to the start of the feature. 
+    the distance from transcription start site to the start of the feature.
     (Assumes input file is sorted by transcript-id)
 
-``--renuame-duplicates``                                                                                                 
-    Rename duplicate gene_ids and transcript_ids by addition of numerical suffix  
+``--rename-duplicates``                                              
+    Rename duplicate gene_ids and transcript_ids by addition of numerical suffix
 
 
 Usage
@@ -1039,55 +1038,52 @@ def main(argv=None):
             noutput += 1
 
     elif options.rename_duplicates:
-        
-        gene_ids=list()
-        transcript_ids=list()
-        gtfs=list()
-        lines=options.stdin.readlines()
-        
+
+        gene_ids = list()
+        transcript_ids = list()
+        gtfs = list()
+        lines = options.stdin.readlines()
+
         # edit to use GTF iterator (see below)
         #for gtf in GTF.iterator( options.stdin ):
             #if gtf.feature == "CDS":
                 #gene_ids.append(gtf.gene_id)
-                #transcript_ids.append(gtf.transcript_id)                  
+                #transcript_ids.append(gtf.transcript_id)
 
         for line in lines:
-            if line[0]!="#":
-                entry=GTF.Entry()
+            if not line[0] == "#":
+                entry = GTF.Entry()
                 entry.read(line)
                 gtfs.append(entry)
-                if entry.feature=="CDS":
+                if entry.feature == "CDS":
                     gene_ids.append(entry.gene_id)
-                    transcript_ids.append(entry.transcript_id)                  
+                    transcript_ids.append(entry.transcript_id)
 
-        dup_gene=[item for item in set(gene_ids) if gene_ids.count(item)>1]
-        dup_transcript=[item for item in set(transcript_ids) if transcript_ids.count(item)>1]
+        dup_gene = [item for item in set(gene_ids) if gene_ids.count(item) > 1]
+        dup_transcript = [item for item in set(transcript_ids) if transcript_ids.count(item) > 1]
 
-
-        if options.loglevel>=1:    
+        if options.loglevel >= 1:
             options.stdlog.write("# Number of duplicated gene_ids: %i \n" % len(dup_gene))
-            options.stdlog.write("# Number of duplicated transcript_ids: %i \n" % len(dup_transcript))        
+            options.stdlog.write("# Number of duplicated transcript_ids: %i \n" % len(dup_transcript))
 
-        gene_dict=dict(zip(dup_gene,([0]*len(dup_gene))))
-        transcript_dict=dict(zip(dup_transcript,([0]*len(dup_transcript))))
-        
+        gene_dict = dict(zip(dup_gene, ([0]*len(dup_gene))))
+        transcript_dict = dict(zip(dup_transcript, ([0]*len(dup_transcript))))
 
         for entry in gtfs:
-            if entry.feature=="CDS":
+            if entry.feature == "CDS":
                 if entry.gene_id in dup_gene:
-                    gene_dict[entry.gene_id]=gene_dict[entry.gene_id]+1
-                    entry.gene_id=(entry.gene_id + "." +
-                    str(gene_dict[entry.gene_id]))
-                    
-                if entry.transcript_id in dup_transcript:
-                    transcript_dict[entry.transcript_id]=transcript_dict[entry.transcript_id]+1
-                    entry.transcript_id=(entry.transcript_id + "." +
-                    str(transcript_dict[entry.transcript_id]))
-            att=entry.getAttributeField(full=False)
-            entry.clearAttributes()
-                
-            options.stdout.write("%s %s\n" % (str(entry), str(att)))
+                    gene_dict[entry.gene_id] = gene_dict[entry.gene_id]+1
+                    entry.gene_id = (entry.gene_id + "." + str(gene_dict[entry.gene_id]))
 
+                if entry.transcript_id in dup_transcript:
+                    transcript_dict[entry.transcript_id] = transcript_dict[entry.transcript_id]+1
+                    entry.transcript_id =
+                    (entry.transcript_id + "." + str(transcript_dict[entry.transcript_id]))
+
+            att = entry.getAttributeField(full=False)
+            entry.clearAttributes()
+
+            options.stdout.write("%s %s\n" % (str(entry), str(att)))
 
     else:
         for gffs in GTF.flat_gene_iterator(GTF.iterator(options.stdin), strict=options.strict):

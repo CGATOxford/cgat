@@ -10,7 +10,7 @@ PipelineMapping.py - Utility functions for mapping short reads
 Mapping reads is a common task in pipelines. Different pipelines
 combine different sources of input (:term:`fastq` files, :term:`sra` files)
 of different data (single end, paired end) with different mapping
-algorithms (bowtie, tophat, stampy). This module provides utility 
+algorithms (bowtie, tophat, stampy). This module provides utility
 functions to abstract some of these variations.
 
 The pipeline does not know what kind of data it gets (a :term:`sra` archive
@@ -55,12 +55,12 @@ import CGATPipelines.PipelineGeneset as PipelineGeneset
 import pysam
 
 SequenceInformation = collections.namedtuple("SequenceInformation",
-                                             """paired_end 
+                                             """paired_end
                                                  filename_first
                                                  filename_second
                                                  readlength_first
                                                  readlength_second
-                                                 is_colour""" )
+                                                 is_colour""")
 
 
 def getReadLengthFromFastq(filename):
@@ -286,7 +286,7 @@ def resetGTFAttributes(infile, genome, gene_ids, outfile):
 
     statement = '''
     cuffcompare -r <( gunzip < %(infile)s )
-         -T 
+         -T
          -s %(genome)s.fa
          -o %(tmpfile1)s
          <( gunzip < %(infile)s )
@@ -408,7 +408,7 @@ class Mapper(object):
     def preprocess(self, infiles, outfile):
         '''build preprocessing statement
 
-        Build a command line statement that extracts/converts 
+        Build a command line statement that extracts/converts
         various input formats to fastq formatted files.
 
         Mapping qualities are changed to solexa format.
@@ -438,19 +438,19 @@ class Mapper(object):
 
             if infile.endswith(".export.txt.gz"):
                 # single end illumina export
-                statement.append( """gunzip < %(infile)s 
+                statement.append("""gunzip < %(infile)s
                      | awk '$11 != "QC" || $10 ~ /(\d+):(\d+):(\d+)/ \
-                        { if ($1 != "") 
+                        { if ($1 != "")
                              { readname=sprintf( "%%%%s_%%%%s:%%%%s:%%%%s:%%%%s:%%%%s", $1,$2,$3,$4,$5,$6);}
                         else { readname=sprintf( "%%%%s:%%%%s:%%%%s:%%%%s:%%%%s", $1,$3,$4,$5,$6); }
                        printf("@%%%%s\\n%%%%s\\n+\\n%%%%s\\n",readname,$9,$10);}'
                      %(compress_cmd)s
-                     > %(tmpdir_fastq)s/%(track)s.fastq%(extension)s""" % locals() )
+                     > %(tmpdir_fastq)s/%(track)s.fastq%(extension)s""" % locals())
                 fastqfiles.append(
                     ("%s/%s.fastq%s" % (tmpdir_fastq, track, extension),))
             elif infile.endswith(".fa.gz"):
                 statement.append(
-                    '''gunzip < %(infile)s > %(tmpdir_fastq)s/%(track)s.fa''' % locals() )
+                    '''gunzip < %(infile)s > %(tmpdir_fastq)s/%(track)s.fa''' % locals())
                 fastqfiles.append(("%s/%s.fa" % (tmpdir_fastq, track),))
                 self.datatype = "fasta"
 
@@ -496,10 +496,10 @@ class Mapper(object):
                 format = Fastq.guessFormat(
                     IOTools.openFile(infile, "r"), raises=False)
                 if 'sanger' not in format and self.convert:
-                    statement.append(  """gunzip < %(infile)s 
+                    statement.append("""gunzip < %(infile)s
                                       | python %%(scriptsdir)s/fastq2fastq.py --change-format=sanger --guess-format=phred64 --log=%(outfile)s.log
                                       %(compress_cmd)s
-                                      > %(tmpdir_fastq)s/%(track)s.fastq%(extension)s""" % locals() )
+                                      > %(tmpdir_fastq)s/%(track)s.fastq%(extension)s""" % locals())
                     fastqfiles.append(
                         ("%s/%s.fastq%s" % (tmpdir_fastq, track, extension),))
                 else:
@@ -513,19 +513,19 @@ class Mapper(object):
                     quality = P.snip(infile, ".csfasta.gz") + ".qual.gz"
                     if not os.path.exists(quality):
                         raise ValueError("no quality file for %s" % infile)
-                    statement.append(  """gunzip < %(infile)s 
-                                          > %(tmpdir_fastq)s/%(track)s.csfasta%(extension)s""" % locals() )
-                    statement.append(  """gunzip < %(quality)s 
-                                          > %(tmpdir_fastq)s/%(track)s.qual%(extension)s""" % locals() )
+                    statement.append("""gunzip < %(infile)s
+                                          > %(tmpdir_fastq)s/%(track)s.csfasta%(extension)s""" % locals())
+                    statement.append("""gunzip < %(quality)s
+                                          > %(tmpdir_fastq)s/%(track)s.qual%(extension)s""" % locals())
                     fastqfiles.append(("%s/%s.csfasta%s" % (tmpdir_fastq, track, extension),
                                        "%s/%s.qual%s" % (tmpdir_fastq, track, extension)))
                     self.datatype = "solid"
                 else:
                     quality = P.snip(infile, ".csfasta.gz") + ".qual.gz"
 
-                    statement.append( """solid2fastq <(gunzip < %(infile)s) <(gunzip < %(quality)s)
+                    statement.append("""solid2fastq <(gunzip < %(infile)s) <(gunzip < %(quality)s)
                                       %(compress_cmd)s
-                                      > %(tmpdir_fastq)s/%(track)s.fastq%(extension)""" % locals() )
+                                      > %(tmpdir_fastq)s/%(track)s.fastq%(extension)""" % locals())
                     fastqfiles.append(
                         ("%s/%s.fastq%s" % (tmpdir_fastq, track, extension),))
 
@@ -541,9 +541,9 @@ class Mapper(object):
                         if not os.path.exists(fn + ".gz"):
                             raise ValueError(
                                 "expected file %s.gz missing" % fn)
-                        statement.append( """gunzip < %(fn)s.gz
+                        statement.append("""gunzip < %(fn)s.gz
                                           %(compress_cmd)s
-                                          > %(tmpdir_fastq)s/%(track)s.%(suffix)s%(extension)s""" % locals() )
+                                          > %(tmpdir_fastq)s/%(track)s.%(suffix)s%(extension)s""" % locals())
                         f.append(
                             "%(tmpdir_fastq)s/%(track)s.%(suffix)s%(extension)s" % locals())
                     fastqfiles.append(f)
@@ -551,9 +551,9 @@ class Mapper(object):
                 else:
                     quality = P.snip(infile, ".csfasta.gz") + ".qual.gz"
 
-                    statement.append( """solid2fastq <(gunzip < %(infile)s) <(gunzip < %(quality)s)
+                    statement.append("""solid2fastq <(gunzip < %(infile)s) <(gunzip < %(quality)s)
                                       %(compress_cmd)s
-                                      > %(tmpdir_fastq)s/%(track)s.fastq%(extension)s""" % locals() )
+                                      > %(tmpdir_fastq)s/%(track)s.fastq%(extension)s""" % locals())
                     fastqfiles.append(
                         ("%s/%s.fastq%s" % (tmpdir_fastq, track, extension),))
 
@@ -568,15 +568,15 @@ class Mapper(object):
                 format = Fastq.guessFormat(
                     IOTools.openFile(infile), raises=False)
                 if 'sanger' not in format:
-                    statement.append( """gunzip < %(infile)s 
+                    statement.append("""gunzip < %(infile)s
                                      | python %%(scriptsdir)s/fastq2fastq.py --change-format=sanger --guess-format=phred64 --log=%(outfile)s.log
                                      %(compress_cmd)s
                                      > %(tmpdir_fastq)s/%(track)s.1.fastq%(extension)s;
-                                     gunzip < %(infile2)s 
+                                     gunzip < %(infile2)s
                                      | python %%(scriptsdir)s/fastq2fastq.py --change-format=sanger --guess-format=phred64 --log=%(outfile)s.log
                                      %(compress_cmd)s
                                      > %(tmpdir_fastq)s/%(track)s.2.fastq%(extension)s
-                                 """ % locals() )
+                                 """ % locals())
                     fastqfiles.append(("%s/%s.1.fastq%s" % (tmpdir_fastq, track, extension),
                                        "%s/%s.2.fastq%s" % (tmpdir_fastq, track, extension)))
 
@@ -584,7 +584,7 @@ class Mapper(object):
                     E.debug("%s: assuming quality score format %s" %
                             (infile, format))
                     fastqfiles.append((infile,
-                                       infile2, ))
+                                       infile2,))
 
             else:
                 raise NotImplementedError("unknown file format %s" % infile)
@@ -656,10 +656,10 @@ class FastQc(Mapper):
                 track = os.path.basename(re.sub(".fastq.*", "", x))
                 if self.nogroup:
                     statement.append(
-                        '''fastqc --outdir=%%(exportdir)s/fastqc --nogroup %(x)s >& %(outfile)s;''' % locals() )
+                        '''fastqc --outdir=%%(exportdir)s/fastqc --nogroup %(x)s >& %(outfile)s;''' % locals())
                 else:
                     statement.append(
-                        '''fastqc --outdir=%%(exportdir)s/fastqc %(x)s >& %(outfile)s;''' % locals() )
+                        '''fastqc --outdir=%%(exportdir)s/fastqc %(x)s >& %(outfile)s;''' % locals())
         return " ".join(statement)
 
 
@@ -678,7 +678,7 @@ class Counter(Mapper):
         for f in infiles:
             x = " ".join(f)
             statement.append(
-                '''zcat %(x)s | awk '{n+=1;} END {printf("nreads\\t%%%%i\\n",n/4);}' >> %(outfile)s;''' % locals() )
+                '''zcat %(x)s | awk '{n+=1;} END {printf("nreads\\t%%%%i\\n",n/4);}' >> %(outfile)s;''' % locals())
         return " ".join(statement)
 
 
@@ -692,14 +692,14 @@ class BWA(Mapper):
     which removes reads that don't have tag X0:i:1 (i.e. have > 1 best hit)
     '''
 
-    def __init__(self, remove_unique = False, align_stats = False, dedup = False, *args, **kwargs):
+    def __init__(self, remove_unique=False, align_stats=False, dedup=False, *args, **kwargs):
         Mapper.__init__(self, *args, **kwargs)
 
         self.remove_unique = remove_unique
         self.align_stats = align_stats
         self.dedup = dedup
-    
-    def mapper( self, infiles, outfile ):
+
+    def mapper(self, infiles, outfile):
         '''build mapping statement on infiles.'''
 
         num_files = [len(x) for x in infiles]
@@ -735,11 +735,11 @@ class BWA(Mapper):
             infiles = ",".join([self.quoteFile(x[0]) for x in infiles])
 
             statement.append('''
-            bwa aln %%(bwa_aln_options)s -t %%(bwa_threads)i %(index_prefix)s %(infiles)s 
-            > %(tmpdir)s/%(track)s.sai 2>>%(outfile)s.bwa.log; 
-            bwa samse %%(bwa_index_dir)s/%%(genome)s %(tmpdir)s/%(track)s.sai %(infiles)s 
+            bwa aln %%(bwa_aln_options)s -t %%(bwa_threads)i %(index_prefix)s %(infiles)s
+            > %(tmpdir)s/%(track)s.sai 2>>%(outfile)s.bwa.log;
+            bwa samse %%(bwa_index_dir)s/%%(genome)s %(tmpdir)s/%(track)s.sai %(infiles)s
             > %(tmpdir)s/%(track)s.sam 2>>%(outfile)s.bwa.log;
-            ''' % locals() )
+            ''' % locals())
 
         elif nfiles == 2:
             track1 = track + ".1"
@@ -748,17 +748,17 @@ class BWA(Mapper):
             infiles2 = ",".join([self.quoteFile(x[1]) for x in infiles])
 
             statement.append('''
-            bwa aln %%(bwa_aln_options)s -t %%(bwa_threads)i %(index_prefix)s %(infiles1)s 
+            bwa aln %%(bwa_aln_options)s -t %%(bwa_threads)i %(index_prefix)s %(infiles1)s
             > %(tmpdir)s/%(track1)s.sai 2>>%(outfile)s.bwa.log; checkpoint;
-            bwa aln %%(bwa_aln_options)s -t %%(bwa_threads)i %(index_prefix)s %(infiles2)s 
+            bwa aln %%(bwa_aln_options)s -t %%(bwa_threads)i %(index_prefix)s %(infiles2)s
             > %(tmpdir)s/%(track2)s.sai 2>>%(outfile)s.bwa.log; checkpoint;
             bwa sampe %%(bwa_sampe_options)s %(index_prefix)s
-                      %(tmpdir)s/%(track1)s.sai 
-                      %(tmpdir)s/%(track2)s.sai 
-                      %(infiles1)s 
-                      %(infiles2)s 
+                      %(tmpdir)s/%(track1)s.sai
+                      %(tmpdir)s/%(track2)s.sai
+                      %(infiles1)s
+                      %(infiles2)s
             > %(tmpdir)s/%(track)s.sam 2>>%(outfile)s.bwa.log;
-            ''' % locals() )
+            ''' % locals())
         else:
             raise ValueError(
                 "unexpected number read files to map: %i " % nfiles)
@@ -783,21 +783,21 @@ class BWA(Mapper):
             strip_cmd = '| python %%(scriptsdir)s/bam2bam.py --strip=sequence --log=%(outfile)s.log' % locals()
 
         statement = '''
-                samtools view -uS %(tmpdir)s/%(track)s.sam 
+                samtools view -uS %(tmpdir)s/%(track)s.sam
                 %(unique_cmd)s
                 %(strip_cmd)s
                 | samtools sort - %(outf)s 2>>%(outfile)s.bwa.log;
                 samtools index %(outfile)s;''' % locals()
 
         if self.align_stats:
-            statement += '''cat %(outfile)s 
+            statement += '''cat %(outfile)s
                          | python %%(scriptsdir)s/bam2bam.py -v 0 --set-sequence --sam
-                         | CollectMultipleMetrics 
-                                       INPUT=/dev/stdin 
+                         | CollectMultipleMetrics
+                                       INPUT=/dev/stdin
                                        REFERENCE_SEQUENCE=%%(bwa_index_dir)s/%%(genome)s.fa
-                                       ASSUME_SORTED=true 
-                                       OUTPUT=%(outf)s.picard_stats 
-                                       VALIDATION_STRINGENCY=SILENT 
+                                       ASSUME_SORTED=true
+                                       OUTPUT=%(outf)s.picard_stats
+                                       VALIDATION_STRINGENCY=SILENT
                        >& %(outf)s.picard_stats ;''' % locals()
 
         if self.dedup:
@@ -850,18 +850,18 @@ class BWAMEM(BWA):
             infiles = ",".join([self.quoteFile(x[0]) for x in infiles])
 
             statement.append('''
-            bwa mem %%(bwa_mem_options)s -t %%(bwa_threads)i %(index_prefix)s %(infiles)s 
-            > %(tmpdir)s/%(track)s.sam 2>>%(outfile)s.bwa.log; 
-            ''' % locals() )
+            bwa mem %%(bwa_mem_options)s -t %%(bwa_threads)i %(index_prefix)s %(infiles)s
+            > %(tmpdir)s/%(track)s.sam 2>>%(outfile)s.bwa.log;
+            ''' % locals())
 
         elif nfiles == 2:
             infiles1 = ",".join([self.quoteFile(x[0]) for x in infiles])
             infiles2 = ",".join([self.quoteFile(x[1]) for x in infiles])
 
             statement.append('''
-            bwa mem %%(bwa_mem_options)s -t %%(bwa_threads)i %(index_prefix)s %(infiles1)s 
+            bwa mem %%(bwa_mem_options)s -t %%(bwa_threads)i %(index_prefix)s %(infiles1)s
             %(infiles2)s > %(tmpdir)s/%(track)s.sam 2>>%(outfile)s.bwa.log;
-            ''' % locals() )
+            ''' % locals())
         else:
             raise ValueError(
                 "unexpected number read files to map: %i " % nfiles)
@@ -914,11 +914,11 @@ class Stampy(BWA):
             infiles = ",".join([self.quoteFile(x[0]) for x in infiles])
 
             statement.append('''
-            %(executable)s -v 3 -g %%(stampy_index_dir)s/%%(genome)s -h %%(stampy_index_dir)s/%%(genome)s 
-                      --bwaoptions="-q10 %(bwa_index_prefix)s" 
-                      -M %(infiles)s 
+            %(executable)s -v 3 -g %%(stampy_index_dir)s/%%(genome)s -h %%(stampy_index_dir)s/%%(genome)s
+                      --bwaoptions="-q10 %(bwa_index_prefix)s"
+                      -M %(infiles)s
             > %(tmpdir)s/%(track)s.sam 2>%(outfile)s.log;
-            ''' % locals() )
+            ''' % locals())
 
         elif nfiles == 2:
             track1 = track + ".1"
@@ -927,11 +927,11 @@ class Stampy(BWA):
             infiles2 = ",".join([self.quoteFile(x[1]) for x in infiles])
 
             statement.append('''
-            %(executable)s -v 3 -g %%(stampy_index_dir)s/%%(genome)s -h %%(stampy_index_dir)s/%%(genome)s 
-                      --bwaoptions="-q10 %(bwa_index_prefix)s" 
-                      -M %(infiles1)s %(infiles2)s 
+            %(executable)s -v 3 -g %%(stampy_index_dir)s/%%(genome)s -h %%(stampy_index_dir)s/%%(genome)s
+                      --bwaoptions="-q10 %(bwa_index_prefix)s"
+                      -M %(infiles1)s %(infiles2)s
             > %(tmpdir)s/%(track)s.sam 2>%(outfile)s.log;
-            ''' % locals() )
+            ''' % locals())
         else:
             raise ValueError(
                 "unexpected number of read files to map: %i " % nfiles)
@@ -990,7 +990,7 @@ class Tophat(Mapper):
                    %(data_options)s
                    %%(tophat_options)s
                    %(index_prefix)s
-                   %(infiles)s 
+                   %(infiles)s
                    >> %(outfile)s.log 2>&1 ;
             ''' % locals()
 
@@ -1008,7 +1008,7 @@ class Tophat(Mapper):
                    %(data_options)s
                    %%(tophat_options)s
                    %(index_prefix)s
-                   %(infiles1)s %(infiles2)s 
+                   %(infiles1)s %(infiles2)s
                    >> %(outfile)s.log 2>&1 ;
             ''' % locals()
         elif nfiles == 4:
@@ -1028,8 +1028,8 @@ class Tophat(Mapper):
                    %(data_options)s
                    %%(tophat_options)s
                    %(index_prefix)s
-                   %(infiles1)s %(infiles2)s 
-                   %(infiles3)s %(infiles4)s 
+                   %(infiles1)s %(infiles2)s
+                   %(infiles3)s %(infiles4)s
                    >> %(outfile)s.log 2>&1 ;
             ''' % locals()
 
@@ -1047,9 +1047,9 @@ class Tophat(Mapper):
         tmpdir_tophat = self.tmpdir_tophat
 
         statement = '''
-            gzip < %(tmpdir_tophat)s/junctions.bed > %(track)s.junctions.bed.gz; 
+            gzip < %(tmpdir_tophat)s/junctions.bed > %(track)s.junctions.bed.gz;
             mv %(tmpdir_tophat)s/logs %(outfile)s.logs;
-            mv %(tmpdir_tophat)s/accepted_hits.bam %(outfile)s; 
+            mv %(tmpdir_tophat)s/accepted_hits.bam %(outfile)s;
             samtools index %(outfile)s;
             ''' % locals()
 
@@ -1105,15 +1105,15 @@ class TopHat_fusion(Mapper):
         if nfiles == 1:
             infiles = ",".join([x[0] for x in infiles])
             statement = '''
-           
+
             tophat2 --output-dir %(tmpdir_tophat)s
                    --num-threads %%(tophat_threads)i
-                   --library-type %%(tophat_library_type)s                  
+                   --library-type %%(tophat_library_type)s
                    %(data_options)s
                    %%(tophat_options)s
                    %%(tophatfusion_options)s
                    %(index_prefix)s
-                   %(infiles)s 
+                   %(infiles)s
                    >> %(outfile)s.log 2>&1 ;
             ''' % locals()
 
@@ -1124,7 +1124,7 @@ class TopHat_fusion(Mapper):
             infiles2 = ",".join([x[1] for x in infiles])
 
             statement = '''
-         
+
             tophat2 --output-dir %(tmpdir_tophat)s
                     --mate-inner-dist %%(tophat_mate_inner_dist)i
                     --num-threads %%(tophat_threads)i
@@ -1133,7 +1133,7 @@ class TopHat_fusion(Mapper):
                   %%(tophat_options)s
                   %%(tophatfusion_options)s
                    %(index_prefix)s
-                   %(infiles1)s %(infiles2)s 
+                   %(infiles1)s %(infiles2)s
                    >> %(outfile)s.log 2>&1 ;
             ''' % locals()
         elif nfiles == 4:
@@ -1146,7 +1146,7 @@ class TopHat_fusion(Mapper):
             infiles4 = ",".join([x[3] for x in infiles])
 
             statement = '''
-            
+
             tophat2 --output-dir %(tmpdir_tophat)s
                    --mate-inner-dist %%(tophat_mate_inner_dist)i
                    --num-threads %%(tophat_threads)i
@@ -1155,8 +1155,8 @@ class TopHat_fusion(Mapper):
                    %%(tophat_options)s
                    %%(tophatfusion_options)s
                    %(index_prefix)s
-                   %(infiles1)s %(infiles2)s 
-                   %(infiles3)s %(infiles4)s 
+                   %(infiles1)s %(infiles2)s
+                   %(infiles3)s %(infiles4)s
                    >> %(outfile)s.log 2>&1 ;
             ''' % locals()
 
@@ -1181,8 +1181,7 @@ class TopHat_fusion(Mapper):
         #    samtools index %(outfile)s;
         #    ''' % locals()
         statement = '''
-            mv -f %(tmpdir_tophat)s/* %(track)s/; 
-         
+            mv -f %(tmpdir_tophat)s/* %(track)s/;
             ''' % locals()
         return statement
 
@@ -1257,13 +1256,13 @@ class GSNAP(Mapper):
             raise ValueError("unexpected number reads to map: %i " % nfiles)
 
         statement = '''
-        %(executable)s 
+        %(executable)s
                --nthreads %%(gsnap_worker_threads)i
                --format=sam
                --db=%(index_prefix)s
                %%(gsnap_options)s
                %(files)s
-               > %(tmpdir)s/%(track)s.sam 
+               > %(tmpdir)s/%(track)s.sam
                2> %(outfile)s.log ;
         ''' % locals()
 
@@ -1285,10 +1284,10 @@ class GSNAP(Mapper):
             strip_cmd = '| python %%(scriptsdir)s/bam2bam.py --strip=sequence --log=%(outfile)s.log' % locals()
 
         statement = '''
-                samtools view -uS %(tmpdir)s/%(track)s.sam 
+                samtools view -uS %(tmpdir)s/%(track)s.sam
                 %(unique_cmd)s
                 %(strip_cmd)s
-                | samtools sort - %(outf)s 2>>%(outfile)s.log; 
+                | samtools sort - %(outf)s 2>>%(outfile)s.log;
                 samtools index %(outfile)s;''' % locals()
 
         return statement
@@ -1332,7 +1331,7 @@ class STAR(Mapper):
         if nfiles == 1:
             infiles = "<( zcat %s )" % " ".join([x[0] for x in infiles])
             statement = '''
-            %(executable)s 
+            %(executable)s
                    --runMode alignReads
                    --runThreadN %%(star_threads)i
                    --genomeLoad LoadAndRemove
@@ -1342,7 +1341,7 @@ class STAR(Mapper):
                    --outSAMunmapped Within
                    %%(star_options)s
                    --readFilesIn %(infiles)s
-                   > %(tmpdir)s/%(track)s.sam 
+                   > %(tmpdir)s/%(track)s.sam
                    2> %(outfile)s.log;
             ''' % locals()
 
@@ -1360,7 +1359,7 @@ class STAR(Mapper):
                 files = "%(infiles1)s %(infiles2)s" % locals()
 
             statement = '''
-            %(executable)s 
+            %(executable)s
                    --runMode alignReads
                    --runThreadN %%(star_threads)i
                    --genomeLoad LoadAndRemove
@@ -1370,7 +1369,7 @@ class STAR(Mapper):
                    --outSAMunmapped Within
                    %%(star_options)s
                    --readFilesIn %(files)s
-                   > %(tmpdir)s/%(track)s.sam 
+                   > %(tmpdir)s/%(track)s.sam
                    2> %(outfile)s.log;
             ''' % locals()
 
@@ -1403,7 +1402,7 @@ class STAR(Mapper):
                 samtools view -uS %(tmpdir)s/%(track)s.sam
                 %(unique_cmd)s
                 %(strip_cmd)s
-                | samtools sort - %(outf)s 2>>%(outfile)s.log; 
+                | samtools sort - %(outf)s 2>>%(outfile)s.log;
                 samtools index %(outfile)s;''' % locals()
 
         return statement
@@ -1500,7 +1499,7 @@ class Bowtie(Mapper):
                        %(data_options)s
                        %%(bowtie_options)s
                        %(index_prefix)s
-                       -1 %(infiles1)s -2 %(infiles2)s 
+                       -1 %(infiles1)s -2 %(infiles2)s
                        2>%(outfile)s.log
                | samtools import %%(reffile)s - %(tmpdir_fastq)s/out.bam 1>&2 2>> %(outfile)s.log;
             ''' % locals()
@@ -1616,7 +1615,7 @@ class BowtieTranscripts(Mapper):
                        %(data_options)s
                        %%(bowtie_options)s
                        %(index_prefix)s
-                       -1 %(infiles1)s -2 %(infiles2)s 
+                       -1 %(infiles1)s -2 %(infiles2)s
                        2>%(outfile)s.log
                | samtools import %%(reffile)s - %(tmpdir_fastq)s/out.bam 1>&2 2>> %(outfile)s.log;
             ''' % locals()
