@@ -24,7 +24,7 @@ import random
 import re
 
 
-from SequencePairProperties import *
+from CGAT.SequencePairProperties import *
 import unittest
 
 
@@ -71,16 +71,16 @@ class SequencePairPropertiesNATest(unittest.TestCase):
         self.assertEqual(c.mPercentGC, "100.00")
 
     def testCounts5(self):
-        seq1 = "G" * 20
-        seq2 = "A" * 20
+        seq1 = "G" * 20 + "A" * 10
+        seq2 = "C" * 20 + "T" * 10
 
         c = SequencePairPropertiesCountsNa()
         c.loadPair(seq1, seq2)
 
-        self.assertEqual(c.mNAligned, 20)
-        self.assertEqual(c.mPercentGC, "50.00")
+        self.assertEqual(c.mNAligned, 30)
+        self.assertEqual(c.mPercentGC, "66.67")
 
-    def testCounts5(self):
+    def testCounts6(self):
 
         a, b = [], []
         for x in range(0, 100):
@@ -88,9 +88,9 @@ class SequencePairPropertiesNATest(unittest.TestCase):
             b.append(random.choice("ACGT"))
         a, b = "".join(a), "".join(b)
 
-        gc = 100.0 * \
-            float(len(re.sub("[^GC]", "", a)) +
-                  len(re.sub("[^GC]", "", b))) / 100.0 / 2.0
+        gc = len([x for x, y in zip(a, b)
+                  if x in "CG" or y in "CG"])
+        gc = 100.0 * gc / len(a)
 
         c = SequencePairPropertiesCountsNa()
         c.loadPair(a, b)
