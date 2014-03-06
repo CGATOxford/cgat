@@ -46,8 +46,9 @@ dump
    Output the counts table after applying filtering.
 
 spike
-   Output a counts table with in-silico spike-ins.
-
+   Output a counts table with in-silico spike-ins. The spike-ins
+   can be used to empirically check the power of any of the testing
+   methods.
 
 Usage
 -----

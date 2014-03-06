@@ -2014,10 +2014,10 @@ def dumpTagData(filename_tags, filename_design, outfile):
     nobservations, nsamples = filterTagData()
 
     # output
-    R('''write.table( countsTable, 
+    R('''write.table( countsTable,
                       file='%(outfilename)s',
                       sep='\t',
-                      quote=FALSE)''' % locals() )
+                      quote=FALSE)''' % locals())
 
 #########################################################################
 #########################################################################
