@@ -850,7 +850,7 @@ class BWAMEM(BWA):
             infiles = ",".join([self.quoteFile(x[0]) for x in infiles])
 
             statement.append('''
-            bwa mem %%(mem_options)s -t %%(bwa_threads)i %(index_prefix)s %(infiles)s 
+            bwa mem %%(bwa_mem_options)s -t %%(bwa_threads)i %(index_prefix)s %(infiles)s 
             > %(tmpdir)s/%(track)s.sam 2>>%(outfile)s.bwa.log; 
             ''' % locals() )
 
@@ -859,7 +859,7 @@ class BWAMEM(BWA):
             infiles2 = ",".join([self.quoteFile(x[1]) for x in infiles])
 
             statement.append('''
-            bwa mem %%(mem_options)s -t %%(bwa_threads)i %(index_prefix)s %(infiles1)s 
+            bwa mem %%(bwa_mem_options)s -t %%(bwa_threads)i %(index_prefix)s %(infiles1)s 
             %(infiles2)s > %(tmpdir)s/%(track)s.sam 2>>%(outfile)s.bwa.log;
             ''' % locals() )
         else:
