@@ -1,5 +1,4 @@
-'''
-runExpression.py - wrap various differential expression tools
+'''runExpression.py - wrap various differential expression tools
 =============================================================
 
 :Author: Andreas Heger
@@ -10,90 +9,139 @@ runExpression.py - wrap various differential expression tools
 Purpose
 -------
 
-This script provides a convenience wrapper for differential expression analysis 
-for a variety of methods.
+This script provides a convenience wrapper for differential expression
+analysis for a variety of methods.
 
-Methods implemented are:
+The aim of this script is to provide a common tabular output format
+that is consistent between the different methods.
 
-   DESeq
-   EdgeR
+The script will call the selected method and output a variety of
+diagnostic plots. Generally, the analysis aims to follow published
+workflows for the individual method together with outputting diagnostic
+plots to spot any problems. The script will also preprocess count
+data to apply some common filtering methods.
 
-The aim of this script is to provide a common tabular output format that is consistent
-between the different methods. The columns in the output are:
+The methods implemented are:
 
-+--------------+------------------------------------------------------+
-|*Column name* |*Content*                                             |
-+--------------+------------------------------------------------------+
-|test_id       |Name of the test (gene name, ...                      |
-+--------------+------------------------------------------------------+
-|treatment_name|Name of the treatment condition                       |
-+--------------+------------------------------------------------------+
-|treatment_mean|Estimated expression value for treatment              |
-+--------------+------------------------------------------------------+
-|treatment_std |Standard deviation                                    |
-+--------------+------------------------------------------------------+
-|control_name  |Name of the control condition                         |
-+--------------+------------------------------------------------------+
-|control_mean  |Estimated expression value for control                |
-+--------------+------------------------------------------------------+
-|control_std   |Standard deviation                                    |
-+--------------+------------------------------------------------------+
-|pvalue        |The p value for rejecting the null hypothesis         |
-+--------------+------------------------------------------------------+
-|qvalue        |Multiple testing correction                           |
-+--------------+------------------------------------------------------+
-|l2fold        |log2 foldchange of treatment/control                  |
-+--------------+------------------------------------------------------+
-|fold          |foldchange of treatment/control                       |
-+--------------+------------------------------------------------------+
-|significant   |Flag, 1 if test called significant according to FDR   |
-+--------------+------------------------------------------------------+
-|status        |test status (OK|FAIL)                                 |
-+--------------+------------------------------------------------------+
+deseq
+   Application of DESeq
 
-The script will call each of the method and output a variety of diagnostic plots.
+edger
+   Application of EdgeR
+
+ttest
+   Application of Welch's ttest to FPKM values
+
+mock
+   A mock analysis. No differential analysis is performed,
+   but fold changes are computed and output.
+
+In addition, the script can process count data to output
+modified couns or summary statistics.
+
+summary
+   Output summary statistics from a counts table.
+
+dump
+   Output the counts table after applying filtering.
+
+spike
+   Output a counts table with in-silico spike-ins.
+
 
 Usage
 -----
+
+Input
++++++
+
+The input to this script is a table with of measurements reflecting
+expression levels. For the tag counting methods such as DESeq or
+EdgeR, these should be the raw counts, while for other methods such as
+ttest, these can be normalized values such as FPKM values.
+
+The script further requires a design table describing the tests to
+be performed. The design table has for columns::
+
+      track   include group   pair
+      CW-CD14-R1      0       CD14    1
+      CW-CD14-R2      0       CD14    1
+      CW-CD14-R3      1       CD14    1
+      CW-CD4-R1       1       CD4     1
+      FM-CD14-R1      1       CD14    2
+      FM-CD4-R2       0       CD4     2
+      FM-CD4-R3       0       CD4     2
+      FM-CD4-R4       0       CD4     2
+
+track
+     name of track - should correspond to column header in the counts
+     table.
+include
+     flag to indicate whether or not to include this data
+group
+     group indicator - experimental group
+pair
+     pair that sample belongs to (for paired tests) - set to 0 if the
+     design is not paired.
+
+Output
+++++++
+
+The script outputs a table with the following columns:
+
++------------------+------------------------------------------------------+
+|*Column name*     |*Content*                                             |
++------------------+------------------------------------------------------+
+|test_id           |Name of the test (gene name, ...                      |
++------------------+------------------------------------------------------+
+|treatment_name    |Name of the treatment condition                       |
++------------------+------------------------------------------------------+
+|treatment_mean    |Estimated expression value for treatment              |
++------------------+------------------------------------------------------+
+|treatment_std     |Standard deviation                                    |
++------------------+------------------------------------------------------+
+|control_name      |Name of the control condition                         |
++------------------+------------------------------------------------------+
+|control_mean      |Estimated expression value for control                |
++------------------+------------------------------------------------------+
+|control_std       |Standard deviation                                    |
++------------------+------------------------------------------------------+
+|pvalue            |The p value for rejecting the null hypothesis         |
++------------------+------------------------------------------------------+
+|qvalue            |Multiple testing correction                           |
++------------------+------------------------------------------------------+
+|l2fold            |log2 foldchange of treatment/control                  |
++------------------+------------------------------------------------------+
+|transformed_l2fold|a transformed log2 foldchange value.                  |
++------------------+------------------------------------------------------+
+|fold              |foldchange of treatment/control                       |
++------------------+------------------------------------------------------+
+|significant       |Flag, 1 if test called significant according to FDR   |
++------------------+------------------------------------------------------+
+|status            |test status (OK|FAIL)                                 |
++------------------+------------------------------------------------------+
+
+Additional plots and tables are generated and method specific.
 
 Command line options
 --------------------
 
 '''
 
-import math
-import numpy
 import sys
 import os
-import optparse
-import collections
-import itertools
 
 from rpy2.robjects import r as R
-import rpy2.robjects as ro
 import rpy2.robjects.numpy2ri
 
 try:
     import CGAT.Experiment as E
     import CGAT.Pipeline as P
-    import CGAT.Database as Database
-    import CGAT.IOTools as IOTools
-    import CGAT.Stats as Stats
     import CGAT.Expression as Expression
 except ImportError:
     import Experiment as E
     import Pipeline as P
-    import Database
-    import IOTools
-    import Stats
     import Expression
-
-import sqlite3
-
-try:
-    PARAMS = P.getParameters()
-except IOError:
-    pass
 
 
 def main(argv=None):
@@ -106,24 +154,32 @@ def main(argv=None):
         argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+    parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
-    parser.add_option("-t", "--filename-tags", dest="input_filename_tags", type="string",
+    parser.add_option("-t", "--filename-tags", dest="input_filename_tags",
+                      type="string",
                       help="input file with tag counts [default=%default].")
 
-    parser.add_option("-d", "--filename-design", dest="input_filename_design", type="string",
-                      help="input file with experimental design [default=%default].")
+    parser.add_option("-d", "--filename-design", dest="input_filename_design",
+                      type="string",
+                      help="input file with experimental design "
+                      "[default=%default].")
 
     parser.add_option("-o", "--outfile", dest="output_filename", type="string",
                       help="output filename [default=%default].")
 
     parser.add_option("-m", "--method", dest="method", type="choice",
                       choices=(
-                          "deseq", "edger", "cuffdiff", "mock", "summary", "dump", "spike"),
-                      help="differential expression method to apply [default=%default].")
+                          "deseq", "edger",
+                          "ttest",
+                          "mock", "summary", "dump", "spike"),
+                      help="differential expression method to apply "
+                      "[default=%default].")
 
-    parser.add_option("--deseq-dispersion-method", dest="deseq_dispersion_method", type="choice",
+    parser.add_option("--deseq-dispersion-method",
+                      dest="deseq_dispersion_method",
+                      type="choice",
                       choices=("pooled", "per-condition", "blind"),
                       help="dispersion method for deseq [default=%default].")
 
@@ -131,31 +187,46 @@ def main(argv=None):
                       choices=("parametric", "local"),
                       help="fit type for deseq [default=%default].")
 
-    parser.add_option("--deseq-sharing-mode", dest="deseq_sharing_mode", type="choice",
+    parser.add_option("--deseq-sharing-mode",
+                      dest="deseq_sharing_mode",
+                      type="choice",
                       choices=("maximum", "fit-only", "gene-est-only"),
                       help="deseq sharing mode [default=%default].")
 
     parser.add_option("-f", "--fdr", dest="fdr", type="float",
                       help="fdr to apply [default=%default].")
 
-    parser.add_option("-p", "--pseudo-counts", dest="pseudo_counts", type="float",
-                      help="pseudocounts to add for mock analyis [default=%default].")
+    parser.add_option("-p", "--pseudo-counts", dest="pseudo_counts",
+                      type="float",
+                      help="pseudocounts to add for mock analyis "
+                      "[default=%default].")
 
-    parser.add_option("-R", "--save-R", dest="save_r_environment", type="string",
+    parser.add_option("-R", "--save-R", dest="save_r_environment",
+                      type="string",
                       help="save R environment [default=%default].")
 
-    parser.add_option("-r", "--reference-group", dest="ref_group", type="string",
-                      help="Group to use as reference to compute fold changes against [default=$default]")
+    parser.add_option("-r", "--reference-group", dest="ref_group",
+                      type="string",
+                      help="Group to use as reference to compute "
+                      "fold changes against [default=$default]")
 
-    parser.add_option("--filter-min-counts-per-row", dest="filter_min_counts_per_row", type="int",
-                      help="remove rows with less than this number of counts in total [default=%default].")
+    parser.add_option("--filter-min-counts-per-row",
+                      dest="filter_min_counts_per_row",
+                      type="int",
+                      help="remove rows with less than this "
+                      "number of counts in total [default=%default].")
 
-    parser.add_option("--filter-min-counts-per-sample", dest="filter_min_counts_per_sample", type="int",
+    parser.add_option("--filter-min-counts-per-sample",
+                      dest="filter_min_counts_per_sample",
+                      type="int",
                       help="remove samples with a maximum count per sample of "
                       "less than this numer   [default=%default].")
 
-    parser.add_option("--filter-percentile-rowsums", dest="filter_percentile_rowsums", type="int",
-                      help="remove percent of rows with lowest total counts [default=%default].")
+    parser.add_option("--filter-percentile-rowsums",
+                      dest="filter_percentile_rowsums",
+                      type="int",
+                      help="remove percent of rows with "
+                      "lowest total counts [default=%default].")
 
     parser.set_defaults(
         input_filename_tags="-",
@@ -191,7 +262,7 @@ def main(argv=None):
         fh = None
 
     # load tag data and filter
-    if options.method in ("deseq", "edger", "mock"):
+    if options.method in ("deseq", "edger", "mock", "ttest"):
         assert options.input_filename_tags and os.path.exists(
             options.input_filename_tags)
         assert options.input_filename_design and os.path.exists(
@@ -214,39 +285,44 @@ def main(argv=None):
             return
 
         sample_names = R('''colnames(countsTable)''')
-        E.info("%i samples to test at %i observations: %s" % (nsamples, nobservations,
-                                                              ",".join(sample_names)))
+        E.info("%i samples to test at %i observations: %s" %
+               (nsamples, nobservations,
+                ",".join(sample_names)))
 
     try:
         if options.method == "deseq":
-            Expression.runDESeq(outfile=options.output_filename,
-                                outfile_prefix=options.output_filename_pattern,
-                                fdr=options.fdr,
-                                dispersion_method=options.deseq_dispersion_method,
-                                fit_type=options.deseq_fit_type,
-                                sharing_mode=options.deseq_sharing_mode,
-                                ref_group=options.ref_group,
-                                )
+            Expression.runDESeq(
+                outfile=options.output_filename,
+                outfile_prefix=options.output_filename_pattern,
+                fdr=options.fdr,
+                dispersion_method=options.deseq_dispersion_method,
+                fit_type=options.deseq_fit_type,
+                sharing_mode=options.deseq_sharing_mode,
+                ref_group=options.ref_group,
+            )
 
         elif options.method == "edger":
-            Expression.runEdgeR(outfile=options.output_filename,
-                                outfile_prefix=options.output_filename_pattern,
-                                fdr=options.fdr,
-                                ref_group=options.ref_group)
+            Expression.runEdgeR(
+                outfile=options.output_filename,
+                outfile_prefix=options.output_filename_pattern,
+                fdr=options.fdr,
+                ref_group=options.ref_group)
 
         elif options.method == "mock":
-            Expression.runMockAnalysis(outfile=options.output_filename,
-                                       outfile_prefix=options.output_filename_pattern,
-                                       ref_group=options.ref_group,
-                                       pseudo_counts=options.pseudo_counts,
-                                       )
+            Expression.runMockAnalysis(
+                outfile=options.output_filename,
+                outfile_prefix=options.output_filename_pattern,
+                ref_group=options.ref_group,
+                pseudo_counts=options.pseudo_counts,
+            )
 
         elif options.method == "summary":
-            Expression.outputTagSummary(options.input_filename_tags,
-                                        options.stdout,
-                                        options.output_filename_pattern,
-                                        filename_design=options.input_filename_design
-                                        )
+            Expression.outputTagSummary(
+                options.input_filename_tags,
+                options.stdout,
+                options.output_filename_pattern,
+                filename_design=options.input_filename_design
+            )
 
         elif options.method == "dump":
             assert options.input_filename_tags and os.path.exists(
@@ -256,18 +332,25 @@ def main(argv=None):
                                    outfile=options.stdout)
 
         elif options.method == "spike":
-            Expression.outputSpikeIns(options.input_filename_tags,
-                                      options.stdout,
-                                      options.output_filename_pattern,
-                                      filename_design=options.input_filename_design,
-                                      foldchange_max=options.spike_foldchange_max,
-                                      expression_max=options.spike_expression_max,
-                                      max_counts_per_bin=options.spike_max_counts_per_bin,
-                                      expression_bin_width=options.spike_expression_bin_width,
-                                      foldchange_bin_width=options.spike_foldchange_bin_width,
-                                      )
+            Expression.outputSpikeIns(
+                options.input_filename_tags,
+                options.stdout,
+                options.output_filename_pattern,
+                filename_design=options.input_filename_design,
+                foldchange_max=options.spike_foldchange_max,
+                expression_max=options.spike_expression_max,
+                max_counts_per_bin=options.spike_max_counts_per_bin,
+                expression_bin_width=options.spike_expression_bin_width,
+                foldchange_bin_width=options.spike_foldchange_bin_width,
+            )
 
-    except rpy2.rinterface.RRuntimeError, msg:
+        elif options.method == "ttest":
+            Expression.runTTest(
+                outfile=options.output_filename,
+                outfile_prefix=options.output_filename_pattern,
+                fdr=options.fdr)
+
+    except rpy2.rinterface.RRuntimeError:
         if options.save_r_environment:
             E.info("saving R image to %s" % options.save_r_environment)
             R['save.image'](options.save_r_environment)
