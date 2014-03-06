@@ -150,6 +150,7 @@ Input gtfs need to be sorted so that features for a gene or transcript
     Setting to 'ucsc', will remove any interval for which transcript-id contains
     '_dup'.
 
+                                                                                        
 
 Set/reset fields
 ++++++++++++++++
@@ -191,6 +192,9 @@ Options for altering fields within :term:`gtf`. For further details see command
     Will reset the score field (field 6) of each feature in input :term:`gtf` to be
     the distance from transcription start site to the start of the feature. 
     (Assumes input file is sorted by transcript-id)
+
+``--renuame-duplicates``                                                                                                 
+    Rename duplicate gene_ids and transcript_ids by addition of numerical suffix  
 
 
 Usage
@@ -397,6 +401,11 @@ def main(argv=None):
                       "removed. This is necessary to remove duplicate entries "
                       "that are next to each other in the sort order [%default]")
 
+    parser.add_option("--rename-duplicates", dest="rename_duplicates",
+                      action="store_true",
+                      help="rename duplicate gene_ids and transcript_ids by "
+                      "addition of a numerical suffix")
+
     parser.set_defaults(
         sort=None,
         merge_exons=False,
@@ -427,6 +436,7 @@ def main(argv=None):
         renumber_transcripts=None,
         strict=True,
         intersect_transcripts=False,
+        rename_duplicates=False,
     )
 
     (options, args) = E.Start(parser, argv=argv)
@@ -1027,6 +1037,58 @@ def main(argv=None):
                 nfeatures += 1
 
             noutput += 1
+
+    elif options.rename_duplicates:
+        
+        gene_ids=list()
+        transcript_ids=list()
+        gtfs=list()
+        lines=options.stdin.readlines()
+        
+        # edit to use GTF iterator (see below)
+        #for gtf in GTF.iterator( options.stdin ):
+            #if gtf.feature == "CDS":
+                #gene_ids.append(gtf.gene_id)
+                #transcript_ids.append(gtf.transcript_id)                  
+
+        for line in lines:
+            if line[0]!="#":
+                entry=GTF.Entry()
+                entry.read(line)
+                gtfs.append(entry)
+                if entry.feature=="CDS":
+                    gene_ids.append(entry.gene_id)
+                    transcript_ids.append(entry.transcript_id)                  
+
+        dup_gene=[item for item in set(gene_ids) if gene_ids.count(item)>1]
+        dup_transcript=[item for item in set(transcript_ids) if transcript_ids.count(item)>1]
+
+
+        if options.loglevel>=1:    
+            options.stdlog.write("# Number of duplicated gene_ids: %i \n" % len(dup_gene))
+            options.stdlog.write("# Number of duplicated transcript_ids: %i \n" % len(dup_transcript))        
+
+        gene_dict=dict(zip(dup_gene,([0]*len(dup_gene))))
+        transcript_dict=dict(zip(dup_transcript,([0]*len(dup_transcript))))
+        
+
+        for entry in gtfs:
+            if entry.feature=="CDS":
+                if entry.gene_id in dup_gene:
+                    gene_dict[entry.gene_id]=gene_dict[entry.gene_id]+1
+                    entry.gene_id=(entry.gene_id + "." +
+                    str(gene_dict[entry.gene_id]))
+                    
+                if entry.transcript_id in dup_transcript:
+                    transcript_dict[entry.transcript_id]=transcript_dict[entry.transcript_id]+1
+                    entry.transcript_id=(entry.transcript_id + "." +
+                    str(transcript_dict[entry.transcript_id]))
+            att=entry.getAttributeField(full=False)
+            entry.clearAttributes()
+                
+            options.stdout.write("%s %s\n" % (str(entry), str(att)))
+
+
     else:
         for gffs in GTF.flat_gene_iterator(GTF.iterator(options.stdin), strict=options.strict):
 
