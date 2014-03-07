@@ -1183,7 +1183,8 @@ def run(**kwargs):
             os.unlink(job_path)
         except OSError:
             L.warn(
-                "temporary job file %s not present for clean-up - ignored" % job_path)
+                ("temporary job file %s not present for "
+                 "clean-up - ignored") % job_path)
     else:
         statement = buildStatement(**options)
 
@@ -1196,12 +1197,15 @@ def run(**kwargs):
                     "advanced bash syntax combined with single quotes")
             statement = """/bin/bash -c '%s'""" % statement
 
-        process = subprocess.Popen(expandStatement(statement, ignore_pipe_errors=ignore_pipe_errors),
-                                   cwd=os.getcwd(),
-                                   shell=True,
-                                   stdin=subprocess.PIPE,
-                                   stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE)
+        process = subprocess.Popen(
+            expandStatement(
+                statement,
+                ignore_pipe_errors=ignore_pipe_errors),
+            cwd=os.getcwd(),
+            shell=True,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE)
 
         # process.stdin.close()
         stdout, stderr = process.communicate()
@@ -1236,8 +1240,9 @@ def submit(module, function, params=None,
     The function should reside in *module*. If *module* is
     not part of the PYTHONPATH, an absolute path can be given.
 
-    *infiles* and *output* are either a single filename or a list of 
+    *infiles* and *output* are either a single filename or a list of
     input/output filenames. Neither options supports yet nested lists.
+
     '''
 
     if type(infiles) in (list, tuple):
@@ -1363,9 +1368,9 @@ def peekParameters(workingdir, pipeline):
     '''peak configuration parameters from an external directory.
     '''
 
-    # attempt to locate directory with pipeline source code
-    # This is a patch as pipelines might be called within the repository directory
-    # or from an installed location
+    # Attempt to locate directory with pipeline source code. This is a
+    # patch as pipelines might be called within the repository
+    # directory or from an installed location
     dirname = os.path.dirname(__file__)
 
     # called without a directory, use current directory
@@ -1403,7 +1408,9 @@ def peekParameters(workingdir, pipeline):
 
     if process.returncode != 0:
         raise PipelineError(
-            "Child was terminated by signal %i: \nThe stderr was: \n%s\n" % (-process.returncode, stderr))
+            ("Child was terminated by signal %i: \n"
+             "The stderr was: \n%s\n") %
+            (-process.returncode, stderr))
 
     for line in stdout.split("\n"):
         if line.startswith("dump"):
@@ -1441,7 +1448,7 @@ def run_report(clean=True):
     # if there is no DISPLAY variable set, xvfb runs, but
     # exits with error when killing process. Thus, ignore return
     # value.
-    print os.getenv("DISPLAY"), "command=", xvfb_command
+    # print os.getenv("DISPLAY"), "command=", xvfb_command
     if not os.getenv("DISPLAY"):
         erase_return = "|| true"
     else:
@@ -1454,15 +1461,15 @@ def run_report(clean=True):
 
     statement = '''
     %(clean)s
-    ( export SPHINX_DOCSDIR=%(docdir)s; 
-      export SPHINX_THEMEDIR=%(themedir)s; 
+    (export SPHINX_DOCSDIR=%(docdir)s;
+    export SPHINX_THEMEDIR=%(themedir)s;
     %(xvfb_command)s
-    sphinxreport-build 
+    sphinxreport-build
            --num-jobs=%(report_threads)s
-           sphinx-build 
-                    -b html 
+           sphinx-build
+                    -b html
                     -d %(report_doctrees)s
-                    -c . 
+                    -c .
            %(docdir)s %(report_html)s
     >& report.log %(erase_return)s )
     '''
@@ -1503,10 +1510,11 @@ touch
    touch files only, do not run
 
 clone <source>
-   create a clone of a pipeline in <source> in the current directory. The cloning
-   process aims to use soft linking to files (not directories) as much as possible. 
-   Time stamps are preserved. Cloning is useful if a pipeline needs to be re-run
-   from a certain point but the original pipeline should be preserved.
+   create a clone of a pipeline in <source> in the current
+   directory. The cloning process aims to use soft linking to files
+   (not directories) as much as possible.  Time stamps are
+   preserved. Cloning is useful if a pipeline needs to be re-run from
+   a certain point but the original pipeline should be preserved.
 
 '''
 
@@ -1517,39 +1525,53 @@ def main(args=sys.argv):
     global GLOBAL_ARGS
     global GLOBAL_SESSION
 
-    parser = optparse.OptionParser(version="%prog version: $Id: Pipeline.py 2799 2009-10-22 13:40:13Z andreas $",
+    parser = optparse.OptionParser(version="%prog version: $Id$",
                                    usage=USAGE)
 
-    parser.add_option("--pipeline-action", dest="pipeline_action", type="choice",
+    parser.add_option("--pipeline-action", dest="pipeline_action",
+                      type="choice",
                       choices=(
                           "make", "show", "plot", "dump", "config", "clone"),
                       help="action to take [default=%default].")
 
-    parser.add_option("--pipeline-format", dest="pipeline_format", type="choice",
+    parser.add_option("--pipeline-format", dest="pipeline_format",
+                      type="choice",
                       choices=("dot", "jpg", "svg", "ps", "png"),
                       help="pipeline format [default=%default].")
 
-    parser.add_option("-n", "--dry-run", dest="dry_run", action="store_true",
-                      help="perform a dry run (do not execute any shell commands) [default=%default].")
+    parser.add_option("-n", "--dry-run", dest="dry_run",
+                      action="store_true",
+                      help="perform a dry run (do not execute any shell "
+                      "commands) [default=%default].")
 
-    parser.add_option("-f", "--force", dest="force", action="store_true",
-                      help="force running the pipeline even if there are uncommited changes "
+    parser.add_option("-f", "--force", dest="force",
+                      action="store_true",
+                      help="force running the pipeline even if there "
+                      "are uncommited changes "
                       "in the repository [default=%default].")
 
-    parser.add_option("-l", "--local", dest="without_cluster", action="store_true",
+    parser.add_option("-l", "--local", dest="without_cluster",
+                      action="store_true",
                       help="execute all jobs locally [default=%default].")
 
     parser.add_option("-p", "--multiprocess", dest="multiprocess", type="int",
-                      help="number of parallel processes to use (different from number of jobs to use for cluster jobs) [default=%default].")
+                      help="number of parallel processes to use (different "
+                      "from number of jobs to use for cluster jobs) "
+                      "[default=%default].")
 
-    parser.add_option("-t", "--tempdir", dest="tempdir", type="string",
+    parser.add_option("-t", "--tempdir", dest="tempdir",
+                      type="string",
                       help="temporary directory to use [default=%default].")
 
-    parser.add_option("-e", "--exceptions", dest="log_exceptions", action="store_true",
-                      help="echo exceptions immediately as they occur [default=%default].")
+    parser.add_option("-e", "--exceptions", dest="log_exceptions",
+                      action="store_true",
+                      help="echo exceptions immediately as they occur "
+                      "[default=%default].")
 
-    parser.add_option("-i", "--terminate", dest="terminate", action="store_true",
-                      help="terminate immediately at the first exception [default=%default].")
+    parser.add_option("-i", "--terminate", dest="terminate",
+                      action="store_true",
+                      help="terminate immediately at the first exception "
+                      "[default=%default].")
 
     parser.set_defaults(
         pipeline_action=None,
@@ -1582,7 +1604,9 @@ def main(args=sys.argv):
         if status["M"] or status["A"]:
             if not options.force:
                 raise ValueError(
-                    "uncommitted change in code repository at '%s'. Either commit or use --force" % PARAMS["scriptsdir"])
+                    ("uncommitted change in code "
+                     "repository at '%s'. Either commit or "
+                     "use --force") % PARAMS["scriptsdir"])
             else:
                 E.warn("uncommitted changes in code repository - ignored ")
         version = version[:-1]
@@ -1620,7 +1644,8 @@ def main(args=sys.argv):
                 GLOBAL_SESSION.initialize()
 
                 #
-                #   make sure we are not logging at the same time in different processes
+                #   make sure we are not logging at the same time in
+                #   different processes
                 #
                 #session_mutex = manager.Lock()
 
@@ -1628,7 +1653,7 @@ def main(args=sys.argv):
                 handler = logging.FileHandler(filename=options.logfile,
                                               mode="a")
                 handler.setFormatter(MultiLineFormatter(
-                    '%(asctime)s %(levelname)s %(module)s.%(funcName)s.%(lineno)d %(message)s'))
+                    '%(asctime)s %(levelname)self %(module)s.%(funcName)s.%(lineno)d %(message)s'))
                 logger = logging.getLogger()
                 logger.addHandler(handler)
 
@@ -1641,7 +1666,8 @@ def main(args=sys.argv):
                              logger=logger,
                              verbose=options.loglevel,
                              log_exceptions=options.log_exceptions,
-                             exceptions_terminate_immediately=options.exceptions_terminate_immediately,
+                             exceptions_terminate_immediately=
+                             options.exceptions_terminate_immediately,
                              )
 
                 L.info(E.GetFooter())
@@ -1650,23 +1676,28 @@ def main(args=sys.argv):
 
             elif options.pipeline_action == "show":
                 pipeline_printout(
-                    options.stdout, options.pipeline_targets, verbose=options.loglevel)
+                    options.stdout,
+                    options.pipeline_targets,
+                    verbose=options.loglevel)
 
             elif options.pipeline_action == "touch":
-                pipeline_run(options.pipeline_targets,
-                             touch_files_only=True,
-                             verbose=options.loglevel)
+                pipeline_run(
+                    options.pipeline_targets,
+                    touch_files_only=True,
+                    verbose=options.loglevel)
 
             elif options.pipeline_action == "svg":
-                pipeline_printout_graph(options.stdout,
-                                        options.pipeline_format,
-                                        options.pipeline_targets)
-
+                pipeline_printout_graph(
+                    options.stdout,
+                    options.pipeline_format,
+                    options.pipeline_targets)
+                
             elif options.pipeline_action == "plot":
                 outf, filename = tempfile.mkstemp()
-                pipeline_printout_graph(os.fdopen(outf, "w"),
-                                        options.pipeline_format,
-                                        options.pipeline_targets)
+                pipeline_printout_graph(
+                    os.fdopen(outf, "w"),
+                    options.pipeline_format,
+                    options.pipeline_targets)
                 execute("inkscape %s" % filename)
                 os.unlink(filename)
 
@@ -1720,19 +1751,4 @@ def main(args=sys.argv):
     E.Stop()
 
 if __name__ == "__main__":
-
     main()
-
-    #parser = optparse.OptionParser( version = "%prog version: $Id: Pipeline.py 2799 2009-10-22 13:40:13Z andreas $")
-
-    #(options, args) = E.Start( parser, add_cluster_options = True )
-
-    #global GLOBAL_OPTIONS
-    #global GLOBAL_ARGS
-    #GLOBAL_OPTIONS, GLOBAL_ARGS = options, args
-
-    #L.info("in main")
-
-    #run( **{"statement" : "printenv > test.out", "job_queue" : "server_jobs.q", "job_priority" : -10 } )
-    #run( **{"statement" : "printenv > test2.out", "job_queue" : "server_jobs.q", "job_priority" : -10 } )
-    #run( **{"statement" : "printenv > test3.out", "job_queue" : "server_jobs.q", "job_priority" : -10 } )

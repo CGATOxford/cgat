@@ -11,33 +11,20 @@ significantly different number of reads.
 +--------------------+------------------------------------------------------------+
 |method              |Method used for differential analysis                       |
 +--------------------+------------------------------------------------------------+
-|treatment           |Treatment name                                              |
+|geneset             |Geneset being analysed                                      |
 +--------------------+------------------------------------------------------------+
-|control             |Control name                                                |
+|level               |Object being assessed (transcript/gene)                     |
 +--------------------+------------------------------------------------------------+
-|up                  |Total number of up-regulated windows                        |
+|tested              |Number of tests run                                         |
 +--------------------+------------------------------------------------------------+
-|down                |Total number of down-regulated windows                      |
+|significant         |Number of significant tests                                 |
 +--------------------+------------------------------------------------------------+
-|tested              |Number of tested windows in total                           |
-+--------------------+------------------------------------------------------------+
-|significant         |Number of significant windows                               |
-+--------------------+------------------------------------------------------------+
-|fold2               |Number of significant windows with > 2-fold difference      |
-+--------------------+------------------------------------------------------------+
-|significant_down    |Number of down-regulated windows called significant         |
-+--------------------+------------------------------------------------------------+
-|significant_up      |Number of up-regulated windows called significant           |
-+--------------------+------------------------------------------------------------+
-|l2fold_down         |Number of down-regulated windows called significant with >  |
-|                    |2-fold difference                                           |
-+--------------------+------------------------------------------------------------+
-|l2fold_up           |Number of up-regulated windows called significant with >    |
-|                    |2-fold difference                                           |
+|twofold             |Number of tests with a two-fold change difference           |
 +--------------------+------------------------------------------------------------+
 
 .. report:: DifferentialExpression.DESummary
    :render: table
+   :slices: geneset,level,significant,twofold,tested
 
    Table with results of differential enrichment analysis.
 

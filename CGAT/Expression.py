@@ -1001,7 +1001,7 @@ def deseqPlotPCA(outfile, vsd):
     not informed by the experimental design.
     '''
     R.png(outfile)
-    R.plotPCA(vsd)
+    R('''plotPCA(vsd)''')
     R['dev.off']()
 
 
@@ -1263,7 +1263,7 @@ def runDESeq(outfile,
 
     # plot correlation heatmap of variance stabilized data
     deseqPlotCorrelationHeatmap(
-        '%sheatmap.png' % outfile_prefix,
+        '%scorrelation_heatmap.png' % outfile_prefix,
         vsd)
 
     # plot PCA
