@@ -52,7 +52,7 @@ class ParsingError(Error):
 
 def toDot(v):
     '''convert value to '.' if None'''
-    if v == None:
+    if v is None:
         return "."
     else:
         return str(v)
@@ -70,8 +70,8 @@ class Entry:
 
     """read/write gtf formatted entry.
 
-    The coordinates are kept internally in python coordinates (0-based, open-closed), but are
-    output as inclusive 1-based coordinates according to
+    The coordinates are kept internally in python coordinates (0-based, open-closed),
+    but are output as inclusive 1-based coordinates according to
 
     http://www.sanger.ac.uk/Software/formats/GFF/
     """
@@ -123,7 +123,7 @@ class Entry:
 
             d = map(lambda x: x.strip(), f.split(" "))
 
-            n, v = d[0], d[1]
+            n, v = d[0], " ".join(d[1:])
             if len(d) > 2:
                 v = d[1:]
 
@@ -336,12 +336,12 @@ def HalfIdentity(entry1, entry2, max_slippage=0):
 def asRanges(gffs, feature=None):
     """return ranges within a set of gffs.
 
-    Overlapping intervals are merged. 
+    Overlapping intervals are merged.
 
     The returned intervals are sorted.
     """
 
-    if type(feature) == types.StringType:
+    if isinstance(feature, basestring):
         gg = filter(lambda x: x.feature == feature, gffs)
     elif feature:
         gg = filter(lambda x: x.feature in feature, gffs)
