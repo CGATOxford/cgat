@@ -1652,6 +1652,23 @@ def loadCuffdiff(infile, outfile):
         P.run()
 
     # Jethro - load tables of sample specific cuffdiff fpkm values into csvdb
+
+    #IMS: First read in lookup table for CuffDiff/Pipeline sample name conversion
+    inf = IOTools.openFile(os.path.join(indir, "read_groups.info"))
+    inf.readline()
+    sample_lookup = {}
+
+    for line in inf:
+        line = line.split("\t")
+        our_sample_name = P.snip(line[0])
+        our_sample_name = re.sub("-","_", our_sample_name)
+        cuffdiff_sample_name = "%s_%s" % (line[1], line[2])
+        sample_lookup[cuffdiff_sample_name] = our_sample_name
+
+    inf.close()
+
+
+                           
     for fn, level in (("cds.read_group_tracking", "cds"),
                       ("genes.read_group_tracking", "gene"),
                       ("isoforms.read_group_tracking", "isoform"),
@@ -1683,19 +1700,22 @@ def loadCuffdiff(infile, outfile):
             if sample_id not in samples:
                 samples.append(sample_id)
 
-                if gene_id not in genes:
-                    genes[gene_id] = {}
-                    genes[gene_id][sample_id] = fpkm
+            #IMS: The following block keeps getting its indenting messed
+            #up. It is not part of the 'if sample_id not in samples' block
+            #plesae make sure it does not get made part of it
+            if gene_id not in genes:
+                genes[gene_id] = {}
+                genes[gene_id][sample_id] = fpkm
+            else:
+                if sample_id in genes[gene_id]:
+                    raise ValueError(
+                        'sample_id %s appears twice in file for gene_id %s'
+                        % (sample_id, gene_id))
                 else:
-                    if sample_id in genes[gene_id]:
-                        raise ValueError(
-                            'sample_id %s appears twice in file for gene_id %s'
-                            % (sample_id, gene_id))
+                    if status != "OK":
+                        genes[gene_id][sample_id] = status
                     else:
-                        if status != "OK":
-                            genes[gene_id][sample_id] = status
-                        else:
-                            genes[gene_id][sample_id] = fpkm
+                        genes[gene_id][sample_id] = fpkm
 
         samples = sorted(samples)
 
@@ -1706,7 +1726,7 @@ def loadCuffdiff(infile, outfile):
         if len(samples) == 0:
             continue
 
-        headers = "gene_id\t" + "\t".join([x for x in samples])
+        headers = "gene_id\t" + "\t".join([sample_lookup[x] for x in samples])
         outf.write(headers + "\n")
 
         for gene in genes.iterkeys():
@@ -1715,6 +1735,9 @@ def loadCuffdiff(infile, outfile):
             while x < len(samples) - 1:
                 outf.write(genes[gene][samples[x]] + "\t")
                 x += 1
+
+            #IMS: Please be careful with this line. It keeps getting moved
+            #into the above while block where it does not belong
             outf.write(genes[gene][samples[len(samples) - 1]] + "\n")
 
         outf.close()
