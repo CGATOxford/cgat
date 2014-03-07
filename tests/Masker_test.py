@@ -21,7 +21,7 @@
 ##########################################################################
 """unit testing module for the Tree.py class."""
 
-import Masker
+import CGAT.Masker as Masker
 import unittest
 
 
@@ -42,12 +42,20 @@ class SegCheck(unittest.TestCase):
     def testCoding(self):
         """test coding sequence input."""
         self.assertEqual(self.mMasker(
-            "GCCTGCGACGAGTTCGGCCACATCAAGCTGTGGTGGTGGTGGTGGTGGTGGTGGTGGTGGTGGTGGTGGTGGTGGTGGTGGTGGTGGtggtggtggtggtggtgggcctgcgacgagttcggccacatcaagctg"),
-            "GCCTGCGACGAGTTCGGCCACATCAAGCTGNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNnnnnnnnnnnnnnnnnnngcctgcgacgagttcggccacatcaagctg")
+            "GCCTGCGACGAGTTCGGCCACATCAAGCT"
+            "GTGGTGGTGGTGGTGGTGGTGGTGGTGGT"
+            "GGTGGTGGTGGTGGTGGTGGTGGTGGTGG"
+            "tggtggtggtggtggtgggcctgcgacga"
+            "gttcggccacatcaagctg"),
+            "GCCTGCGACGAGTTCGGCCACATCAAGCT"
+            "GNNNNNNNNNNNNNNNNNNNNNNNNNNNN"
+            "NNNNNNNNNNNNNNNNNNNNNNNNNNNNN"
+            "nnnnnnnnnnnnnnnnnngcctgcgacga"
+            "gttcggccacatcaagctg")
 
 
-class BiasCheck(SegCheck):
-    mMasker = Masker.MaskerBias()
+class DustMaskerCheck(unittest.TestCase):
+    mMasker = Masker.MaskerDustMasker()
 
 if __name__ == "__main__":
     unittest.main()

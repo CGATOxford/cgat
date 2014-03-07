@@ -21,7 +21,7 @@
 ##########################################################################
 """unit testing module for the Tree.py class."""
 
-from Tree import Tree
+from CGAT.Tree import Tree
 import unittest
 
 

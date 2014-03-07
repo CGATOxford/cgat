@@ -21,7 +21,7 @@
 ##########################################################################
 """unit testing module for the Tree.py class."""
 
-import Intervals
+import CGAT.Intervals as Intervals
 import unittest
 
 

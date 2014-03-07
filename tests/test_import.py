@@ -125,4 +125,3 @@ def test_imports():
         check_import.description = directory
         yield(check_import, os.path.abspath(directory))
 
-

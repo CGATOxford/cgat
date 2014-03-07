@@ -928,7 +928,8 @@ def openOutputFile(section, mode="w"):
         else:
             if not global_options.output_force and os.path.exists(fn):
                 raise OSError(
-                    "file %s already exists, use --force to overwrite existing files." % fn)
+                    ("file %s already exists, use --force to "
+                     "overwrite existing files.") % fn)
             if fn.endswith(".gz"):
                 return gzip.open(fn, mode)
             else:
