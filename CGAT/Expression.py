@@ -1445,18 +1445,14 @@ def plotTagStats(infile, design_file, outfile):
 
     R('''d = melt( log10(countsTable + 1), variable_name = 'sample' )''')
     R('''gp = ggplot(d)''')
-    R('''pp = gp + \
-    geom_density(aes(x=value,
-    group=sample
-    color=sample,
-    fill=sample),
-    alpha=I(1/3))''')
+    R('''pp = gp + geom_density(aes(x=value, group=sample,
+    color=sample, fill=sample), alpha=I(1/3))''')
 
     R.ggsave(outfile + ".densities.png")
     R['dev.off']()
 
     R('''gp = ggplot(d)''')
-    R('''pp = gp + \
+    R('''pp = gp +
     geom_boxplot(aes(x=sample,y=value,color=sample,fill=sample),
     size=0.3,
     alpha=I(1/3)) +
