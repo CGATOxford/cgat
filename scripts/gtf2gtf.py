@@ -1077,8 +1077,8 @@ def main(argv=None):
 
                 if entry.transcript_id in dup_transcript:
                     transcript_dict[entry.transcript_id] = transcript_dict[entry.transcript_id]+1
-                    entry.transcript_id =
-                    (entry.transcript_id + "." + str(transcript_dict[entry.transcript_id]))
+                    entry.transcript_id = (entry.transcript_id +
+                                           "." + str(transcript_dict[entry.transcript_id]))
 
             att = entry.getAttributeField(full=False)
             entry.clearAttributes()
