@@ -178,8 +178,10 @@ def joinTables(outfile, options, args):
     if options.prefixes:
         prefixes = [x.strip() for x in options.prefixes.split(",")]
         if len(prefixes) != len(options.filenames):
-            raise ValueError("number of prefixes (%i) and tables (%i) do not match" % (len(prefixes),
-                                                                                       len(options.filenames)))
+            raise ValueError(("number of prefixes (%i) and tables (%i) "
+                              "do not match") %
+                             (len(prefixes),
+                              len(options.filenames)))
     else:
         prefixes = None
 
@@ -305,7 +307,7 @@ def joinTables(outfile, options, args):
             else:
                 key = "-".join(row_keys)
 
-            if not keys.has_key(key):
+            if key not in keys:
                 sorted_keys.append(key)
                 keys[key] = 1
                 sizes[key] = 0
@@ -316,7 +318,8 @@ def joinTables(outfile, options, args):
             else:
                 max_size = max(len(data) - len(options.columns), max_size)
                 table[key] = [data[x]
-                              for x in range(0, len(data)) if x not in options.columns]
+                              for x in range(0, len(data))
+                              if x not in options.columns]
             n += 1
 
         # enter columns of "na" for empty tables.
@@ -354,7 +357,8 @@ def joinTables(outfile, options, args):
 
         order = range(0, len(tables) + 1)
 
-        if options.input_has_titles or (options.use_file_prefix or options.add_file_prefix):
+        if options.input_has_titles or \
+           (options.use_file_prefix or options.add_file_prefix):
 
             if options.sort:
                 sort_order = []
@@ -406,7 +410,7 @@ def joinTables(outfile, options, args):
 
                 max_size, table = tables[x - 1]
                 c = 0
-                if table.has_key(key):
+                if key in table:
                     outfile.write("\t")
                     outfile.write(string.join(table[key], "\t"))
                     c = len(table[key])
@@ -433,7 +437,7 @@ def joinTables(outfile, options, args):
 
                 max_size, table = tables[x]
                 c = 0
-                if table.has_key(key):
+                if key in table:
                     outfile.write("\t")
                     outfile.write("\t".join(table[key]))
                     c = len(table[key])
@@ -466,7 +470,9 @@ def main(argv=sys.argv):
                       help="add headers for files as a ,-separated list [%default].")
 
     parser.add_option("-c", "--columns", dest="columns", type="string",
-                      help="columns to use for joining. Multiple columns can be specified as a comma-separated list [default=%default].")
+                      help="columns to use for joining. Multiple columns "
+                      "can be specified as a comma-separated list "
+                      "[default=%default].")
 
     parser.add_option("-k", "--take", dest="take", type="string", action="append",
                       help="columns to take. If not set, all columns except for "

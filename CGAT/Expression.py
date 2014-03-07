@@ -32,7 +32,7 @@ Expression.py - wrap various differential expression tools
 Purpose
 -------
 
-This module provides tools for differential expression analysis 
+This module provides tools for differential expression analysis
 for a variety of methods.
 
 Methods implemented are:
@@ -40,10 +40,10 @@ Methods implemented are:
    DESeq
    EdgeR
    cuffdiff
+   ttest
 
-There is also a command line interface. Note that the module is incomplete
-as a stand-alone script as it requires to be executed in the context of
-an existing pipeline for parameterization.
+The aim of this module is to run these individual tools and
+output a table in a common format.
 
 Usage
 -----
@@ -66,6 +66,7 @@ import re
 import pandas
 
 from rpy2.robjects import r as R
+import rpy2.rinterface as rinterface
 import rpy2.robjects as ro
 import rpy2.robjects.numpy2ri
 
@@ -116,10 +117,12 @@ def buildProbeset2Gene(infile,
             len(set(result["probe_id"])),
             len(set(result["ensembl_id"]))))
 
-GeneExpressionResult = collections.namedtuple("GeneExpressionResult",
-                                              "test_id treatment_name treatment_mean treatment_std "
-                                              " control_name control_mean control_std "
-                                              " pvalue qvalue l2fold fold transformed_l2fold significant status")
+GeneExpressionResult = collections.namedtuple(
+    "GeneExpressionResult",
+    "test_id treatment_name treatment_mean treatment_std "
+    "control_name control_mean control_std "
+    "pvalue qvalue l2fold fold transformed_l2fold "
+    "significant status")
 
 
 def writeExpressionResults(outfile, result):
@@ -145,7 +148,8 @@ class WelchsTTest(object):
         nskipped = 0
         results = []
 
-        for probeset, treatment, control in zip(probesets, zip(*treatments), zip(*controls)):
+        for probeset, treatment, control in zip(
+                probesets, zip(*treatments), zip(*controls)):
 
             nval1, nval2 = len(treatment), len(control)
             mean1, mean2 = numpy.mean(treatment), numpy.mean(control)
@@ -186,7 +190,7 @@ class SAMR(object):
     *treatments* and *control* are arrays of
     arrays of expression values.
 
-    See 
+    See
 
     https://stat.ethz.ch/pipermail/bioconductor/2008-July/023251.html
 
@@ -197,7 +201,7 @@ class SAMR(object):
        var.equal = TRUE
        med = TRUE
 
-    .. note:: 
+    .. note::
         SAM requires log2 scaled expression levels.
     '''
 
@@ -248,15 +252,14 @@ class SAM(object):
     *treatments* and *control* are arrays of
     arrays of expression values.
 
-    See 
-
+    See
     https://stat.ethz.ch/pipermail/bioconductor/2008-July/023251.html
 
     for an explanation of the differences between siggens SAM
     and Excel SAM. To parameterize the FDR to excel sam, set the
     flag *use_excel_sam*.
 
-    .. note:: 
+    .. note::
         SAM requires log2 scaled expression levels.
 
     I ran into trouble using this library. I was not able to
@@ -500,21 +503,21 @@ def loadTagData(tags_filename, design_filename):
     header = TRUE,
     row.names = 1,
     stringsAsFactors = TRUE,
-    comment.char = '#' )''' % locals() )
+    comment.char = '#' )''' % locals())
 
     E.info("read data: %i observations for %i samples" %
            tuple(R('''dim(counts_table)''')))
-    E.debug( "sample names: %s" % R('''colnames(counts_table)'''))
+    E.debug("sample names: %s" % R('''colnames(counts_table)'''))
 
     # Load comparisons from file
     R('''pheno = read.delim( '%(design_filename)s',
                              header = TRUE,
                              stringsAsFactors = TRUE,
-                             comment.char = '#')''' % locals() )
+                             comment.char = '#')''' % locals())
 
     # Make sample names R-like - substitute - for .
     R('''pheno[,1] = gsub('-', '.', pheno[,1]) ''')
-    E.debug( "design names: %s" % R('''pheno[,1]'''))
+    E.debug("design names: %s" % R('''pheno[,1]'''))
 
     # Ensure pheno rows match count columns
     pheno = R(
@@ -526,14 +529,14 @@ def loadTagData(tags_filename, design_filename):
     # Subset data & set conditions
     R('''includedSamples <- !(is.na(pheno2$include) | pheno2$include == '0') ''')
     E.debug("included samples: %s" %
-            R('''colnames(counts_table)[includedSamples]''') )
+            R('''colnames(counts_table)[includedSamples]'''))
     R('''countsTable <- counts_table[ , includedSamples ]''')
     R('''groups <- factor(pheno2$group[ includedSamples ])''')
     R('''conds <- pheno2$group[ includedSamples ]''')
     R('''pairs = factor(pheno2$pair[ includedSamples ])''')
 
     E.info("filtered data: %i observations for %i samples" %
-           tuple( R('''dim(countsTable)''') ) )
+           tuple(R('''dim(countsTable)''')))
 
 
 def filterTagData(filter_min_counts_per_row=1,
@@ -553,13 +556,14 @@ def filterTagData(filter_min_counts_per_row=1,
     R( '''max_counts = apply(countsTable,1,max)''' )
     R( '''countsTable = countsTable[max_counts>%i,]''' %
        filter_min_counts_per_row)
-    E.info( "removed %i empty rows" % tuple( R('''sum(max_counts == 0)''') ) )
-    observations, samples = tuple( R('''dim(countsTable)'''))
+    E.info( "removed %i empty rows" %
+            tuple( R('''sum(max_counts == 0)''')))
+    observations, samples = tuple(R('''dim(countsTable)'''))
     E.info("trimmed data: %i observations for %i samples" %
            (observations, samples))
 
     # remove samples without data
-    R('''max_counts = apply(countsTable,2,max)''' )
+    R('''max_counts = apply(countsTable,2,max)''')
 
     empty_samples = tuple(
         R('''max_counts < %i''' % filter_min_counts_per_sample))
@@ -568,14 +572,16 @@ def filterTagData(filter_min_counts_per_row=1,
 
     if nempty_samples:
         E.warn("%i empty samples are being removed: %s" %
-               (nempty_samples, ",".join([sample_names[x] for x, y in enumerate(empty_samples) if y])))
+               (nempty_samples,
+                ",".join([sample_names[x]
+                          for x, y in enumerate(empty_samples) if y])))
         R('''countsTable <- countsTable[, max_counts >= %i]''' %
           filter_min_counts_per_sample)
         R('''groups <- groups[max_counts >= %i]''' %
           filter_min_counts_per_sample)
         R('''pairs <- pairs[max_counts >= %i]''' %
           filter_min_counts_per_sample)
-        observations, samples = tuple( R('''dim(countsTable)'''))
+        observations, samples = tuple(R('''dim(countsTable)'''))
 
     # percentile filtering
     if filter_percentile_rowsums > 0:
@@ -619,8 +625,9 @@ def groupTagData(ref_group=None):
     return groups, pairs, has_replicates, has_pairs
 
 
-def plotHeatmap(method="correlation"):
-    '''plot a heatmap from countsTable.
+def plotCorrelationHeatmap(method="correlation"):
+    '''plot a heatmap of correlations derived from
+    countsTable.
     '''
 
     if method == "correlation":
@@ -629,7 +636,7 @@ def plotHeatmap(method="correlation"):
         R('''dists <- dist( t(as.matrix(countsTable)), method = '%s' )''' %
           method)
 
-    R('''heatmap( as.matrix( dists ), symm=TRUE )''' )
+    R('''heatmap( as.matrix( dists ), symm=TRUE )''')
 
 
 def plotPairs():
@@ -703,7 +710,7 @@ def runEdgeR(outfile,
 
     # output heatmap plot
     R.png('%(outfile_prefix)sheatmap.png' % locals())
-    plotHeatmap()
+    plotCorrelationHeatmap()
     R['dev.off']()
 
     E.info('running EdgeR: groups=%s, pairs=%s, replicates=%s, pairs=%s' %
@@ -941,7 +948,7 @@ def deseqOutputSizeFactors(outfile):
             outf.write("%s\t%s\n" % (name, str(x)))
 
 
-def deseqPlotHeatmap(outfile):
+def deseqPlotCorrelationHeatmap(outfile, vsd):
     '''plot a heatmap
 
     Use variance stabilized data in object vsd.
@@ -949,13 +956,44 @@ def deseqPlotHeatmap(outfile):
     not informed by the experimental design.
     '''
 
-    R('''dists <- dist( t( exprs(vsd) ) )''')
+    dists = R.dist(R.t(R.exprs(vsd)))
     R.png(outfile)
-    R('''heatmap.2( as.matrix( dists ), trace='none', margin=c(10,10) )''' )
+    R['heatmap.2'](
+        R['as.matrix'](dists),
+        trace='none',
+        margin=ro.IntVector((10, 10)))
     R['dev.off']()
 
 
-def deseqPlotPCA(outfile):
+def deseqPlotGeneHeatmap(outfile,
+                         data,
+                         Rowv=False,
+                         Colv=False):
+    '''plot a heatmap of all genes
+
+    Use variance stabilized data in object vsd.
+    Should be 'blind', as then the transform is
+    not informed by the experimental design.
+    '''
+
+    R.png(outfile, width=500, height=2000)
+    hmcol = R.colorRampPalette(R['brewer.pal'](9, "GnBu"))(100)
+    R['heatmap.2'](
+        data,
+        col=hmcol,
+        trace="none",
+        dendrogram="none",
+        Rowv=Rowv,
+        Colv=Colv,
+        labRow=False,
+        margin=ro.IntVector((5, 5)),
+        lhei=ro.IntVector((1, 10)),
+        key=False)
+
+    R['dev.off']()
+
+
+def deseqPlotPCA(outfile, vsd):
     '''plot a PCA
 
     Use variance stabilized data in object vsd.
@@ -963,7 +1001,7 @@ def deseqPlotPCA(outfile):
     not informed by the experimental design.
     '''
     R.png(outfile)
-    R('''plotPCA( vsd )''')
+    R('''plotPCA(vsd)''')
     R['dev.off']()
 
 
@@ -1124,61 +1162,10 @@ def runDESeq(outfile,
 
     Results are stored in *outfile* and files prefixed by *outfile_prefix*.
 
+    The current analysis follows the analysis as outlined in version
+    1.14.0
+
     DESeq ignores any pair information in the design matrix.
-
-    Various plots are generate - annotation is from the manual (version 1.4)
-
-    SVCPlot:
-       squared coefficient of variation. Ratio of variance at base level to the
-       square of the base mean.
-
-       Solid lines are for the raw variances (biological noise).
-
-       On top of the variance, there is shot noise, i.e., the
-       Poissonean variance inherent to the process of counting
-       reads. The amount of shot noise depends on the size factor, and
-       hence, for each sample, a dotted line in the colour of its
-       condition is plotted above the solid line. The dotted line is
-       the base variance, i.e., the full variance, scaled down to base
-       level by the size factors. The vertical distance between solid
-       and dotted lines is the shot noise.  The solid black line is a
-       density estimate of the base means: Only were there is an
-       appreciable number of base mean values, the variance estimates
-       can be expected to be accurate.  It is instructive to observe
-       at which count level the biological noise starts to dominate
-       the shot noise. At low counts, where shot noise dominates,
-       higher sequencing depth (larger library size) will improve the
-       signal-to-noise ratio while for high counts, where the
-       biological noise dominates, only additional biological
-       replicates will help.
-
-   fit.png
-
-       One should check whether the base variance functions seem to
-       follow the empirical variance well. To this end, two diagnostic
-       functions are provided. The function varianceFitDiagnostics
-       returns, for a speci?ed condition, a data frame with four
-       columns: the mean base level for each gene, the base variance
-       as estimated from the count values of this gene only, and the
-       ?tted base variance, i.e., the predicted value from the local
-       ?t through the base variance estimates from all genes. As one
-       typically has few replicates, the single-gene estimate of the
-       base variance can deviate wildly from the ?tted value. To see
-       whether this might be too wild, the cumulative prob- ability
-       for this ratio of single-gene estimate to ?tted value is
-       calculated from the ?2 distribution, as explained in the paper.
-
-       We may now plot the per-gene estimates of the base variance against the base levels and draw
-       a line with the ?t from the local regression
-
-    residuals.png 
-    
-       Another way to study the diagnostic data is to check whether
-       the probabilities in the fourth column of the diagnostics data
-       frame are uniform, as they should be. One may simply look at
-       the histogram of diagForGB$pchisq but a more convenient way is
-       the function residualsEcdfPlot, which show empirical cumulative
-       density functions (ECDF) strati?ed by base level.
 
     The output is treatment and control. Fold change values are
     computed as treatment divided by control.
@@ -1188,6 +1175,7 @@ def runDESeq(outfile,
     # load library
     R('''suppressMessages(library('DESeq'))''')
     R('''suppressMessages(library('gplots'))''')
+    R('''suppressMessages(library('RColorBrewer'))''')
 
     groups, pairs, has_replicates, has_pairs = groupTagData(ref_group)
 
@@ -1199,7 +1187,7 @@ def runDESeq(outfile,
     # Estimate size factors
     R('''cds <- estimateSizeFactors( cds )''')
 
-    no_size_factors = R('''is.na(sum(sizeFactors(cds)))''' )[0]
+    no_size_factors = R('''is.na(sum(sizeFactors(cds)))''')[0]
     if no_size_factors:
         E.warn("no size factors - can not estimate - no output")
         return
@@ -1213,23 +1201,26 @@ def runDESeq(outfile,
 
     E.info("Dispersion method = %s, fit type =%s" %
            (dispersion_method, fit_type))
-    R('''cds <- estimateDispersions( cds, 
-                                     method='%(dispersion_method)s',
-                                     fitType='%(fit_type)s',
-                                     sharingMode='%(sharing_mode)s' )''' % locals())
+    R('''cds <- estimateDispersions( cds,
+    method='%(dispersion_method)s',
+    fitType='%(fit_type)s',
+    sharingMode='%(sharing_mode)s')''' % locals())
+
+    # bring into python namespace
+    cds = R('''cds''')
 
     # plot fit - if method == "pooled":
     if dispersion_method == "pooled":
-        R.png( '''%(outfile_prefix)sdispersion_estimates_pooled.png''' %
-               locals())
-        R('''plotDispEsts( cds )''')
+        R.png('''%sdispersion_estimates_pooled.png''' %
+              (outfile_prefix))
+        R.plotDispEsts(cds)
         R['dev.off']()
     else:
         dispersions = R('''ls(cds@fitInfo)''')
         for dispersion in dispersions:
-            R.png(
-                '''%(outfile_prefix)sdispersion_estimates_%(dispersion)s.png''' % locals() )
-        R('''plotDispEsts( cds, name = '%(dispersion)s' )''' % locals())
+            R.png('%sdispersion_estimates_%s.png' %
+                  (outfile_prefix, dispersion))
+        R.plotDispEsts(cds, name=dispersion)
         R['dev.off']()
 
     # plot size factors
@@ -1244,40 +1235,67 @@ def runDESeq(outfile,
     if dispersion_method not in ("blind",):
         # also do a blind dispersion estimate for
         # a variance stabilizing transform
-        R('''cds_blind <- estimateDispersions( cds, 
-                                         method='blind',
-                                         fitType='%(fit_type)s',
-                                         sharingMode='%(sharing_mode)s' )''' % locals())
+        R('''cds_blind <- estimateDispersions( cds,
+        method='blind',
+        fitType='%(fit_type)s',
+        sharingMode='%(sharing_mode)s')''' % locals())
     else:
         R('''cds_blind = cds''')
 
     # perform variance stabilization for log2 fold changes
-    R('''vsd = varianceStabilizingTransformation( cds_blind )''')
+    vsd = R('''vsd = varianceStabilizingTransformation(cds_blind)''')
 
-    # in DESeq versions > 1.6 the following can be used
-    # to output normalized data
-    # R('''write.table( counts(cds, normalized=TRUE), file='%(outfile_prefix)scounts.tsv.gz', sep='\t') ''' % locals())
-    # output counts
-    R('''write.table( counts(cds), file=gzfile('%(outfile_prefix)scounts.tsv.gz'), sep='\t') ''' %
-      locals())
+    # output normalized counts
+    R('''write.table(counts(cds, normalized=TRUE),
+    file=gzfile('%(outfile_prefix)scounts.tsv.gz'),
+    row.names=TRUE,
+    col.names=NA,
+    quote=FALSE,
+    sep='\t') ''' % locals())
 
-    # plot heatmap
-    deseqPlotHeatmap('%(outfile_prefix)sheatmap.png' % locals())
+    # output variance stabilized counts
+    R['write.table'](R.exprs(vsd),
+                     file=R.gzfile('%svsd.tsv.gz' % outfile_prefix),
+                     row_names=True,
+                     col_names=rinterface.NA_Logical,
+                     quote=False,
+                     sep='\t')
+
+    # plot correlation heatmap of variance stabilized data
+    deseqPlotCorrelationHeatmap(
+        '%scorrelation_heatmap.png' % outfile_prefix,
+        vsd)
 
     # plot PCA
-    deseqPlotPCA('%(outfile_prefix)spca.png' % locals())
+    deseqPlotPCA('%spca.png' % outfile_prefix,
+                 vsd)
 
-    for group in groups:
-        if has_replicates:
+    # plot gene heatmap for all genes - order by average expression
+    select = R.order(R.rowMeans(R.counts(cds)), decreasing=True)
+    deseqPlotGeneHeatmap(
+        '%sgene_heatmap.png' % outfile_prefix,
+        R['as.matrix'](R.exprs(vsd).rx(select, True)))
+
+    # plot heatmap of top 200 expressed genes
+    deseqPlotGeneHeatmap(
+        '%sgene_heatmap_top200.png' % outfile_prefix,
+        R['as.matrix'](R.exprs(vsd).rx(select[:200], True)))
+
+    # Currently disabled
+    #for group in groups:
+    #    if has_replicates:
             #R.png( '''%(outfile_prefix)s%(group)s_fit.png''' % locals() )
             #R('''diagForT <- varianceFitDiagnostics( cds, "%s" )''' % group )
-            #R('''smoothScatter( log10(diagForT$baseMean), log10(diagForT$baseVar) )''')
-            #R('''lines( log10(fittedBaseVar) ~ log10(baseMean), diagForT[ order(diagForT$baseMean), ], col="red" )''')
+            #R('''smoothScatter( log10(diagForT$baseMean),
+            #log10(diagForT$baseVar) )''')
+            #R('''lines( log10(fittedBaseVar) ~ log10(baseMean),
+            #diagForT[ order(diagForT$baseMean), ], col="red" )''')
             # R['dev.off']()
-            #R.png( '''%(outfile_prefix)s%(group)s_residuals.png''' % locals()  )
+            #R.png( '''%(outfile_prefix)s%(group)s_residuals.png''' %
+            # locals()  )
             #R('''residualsEcdfPlot( cds, "%s" )''' % group )
             # R['dev.off']()
-            pass
+    #        pass
 
     # Call diffential expression for all pairings of groups included in the
     # design
@@ -1288,14 +1306,16 @@ def runDESeq(outfile,
         gfix = "%s_vs_%s_" % (control, treatment)
 
         outfile_groups_prefix = outfile_prefix + gfix
-        E.info("calling differential expression for control=%s vs treatment=%s" %
+        E.info(("calling differential expression for "
+                "control=%s vs treatment=%s") %
                (control, treatment))
-        R('''res <- nbinomTest( cds, '%s', '%s' )''' % (control, treatment) )
+        res = R('''res = nbinomTest(cds, '%s', '%s')''' % (control, treatment))
 
         # Plot significance
-        R.png( '''%(outfile_groups_prefix)ssignificance.png''' % locals() )
-        R('''plot( res$baseMean, res$log2FoldChange, log="x", pch=20, cex=.1, 
-                        col = ifelse( res$padj < %(fdr)s, "red", "black" ) )''' % locals() )
+        R.png('''%(outfile_groups_prefix)ssignificance.png''' % locals())
+        R('''plot( res$baseMean, res$log2FoldChange, log="x",
+        pch=20, cex=.1,
+        col = ifelse( res$padj < %(fdr)s, "red", "black" ) )''' % locals())
         R['dev.off']()
 
         # Plot pvalues against rowsums
@@ -1306,26 +1326,42 @@ def runDESeq(outfile,
 
         # Get variance stabilized fold changes - note the reversal of
         # treatment/control
-        R('''vsd_l2f = (rowMeans( exprs(vsd)[,conditions(cds) == '%s', drop=FALSE] ) 
-                      - rowMeans( exprs(vsd)[,conditions(cds) == '%s', drop=FALSE] ))''' % (treatment, control))
+        R('''vsd_l2f =
+        (rowMeans(exprs(vsd)[,conditions(cds) == '%s', drop=FALSE])
+        - rowMeans( exprs(vsd)[,conditions(cds) == '%s', drop=FALSE]))''' %
+          (treatment, control))
 
         # Plot vsd correlation, see Figure 14 in the DESeq manual
         # if you also want to colour by expression level
-        R.png( '''%(outfile_groups_prefix)sfold_transformation.png''' %
-               locals())
-        R('''plot( res$log2FoldChange, vsd_l2f,
-                        pch=20, cex=.1, 
-                        col = ifelse( res$padj < %(fdr)s, "red", "black" ) )''' % locals() )
+        R.png('''%(outfile_groups_prefix)sfold_transformation.png''' %
+              locals())
+        R('''plot(
+        res$log2FoldChange, vsd_l2f,
+        pch=20, cex=.1,
+        col = ifelse( res$padj < %(fdr)s, "red", "black" ) )''' % locals())
         R['dev.off']()
 
+        # plot heatmap of differentially expressed genes
+        # plot gene heatmap for all genes - order by average expression
+        select = res.rx2('padj').ro < fdr
+        E.info('%s vs %s: plotting %i genes in heatmap' %
+               (treatment, control, len(select)))
+        data = R.exprs(vsd).rx(select, True)
+        order = R.order(R.rowMeans(data), decreasing=True)
+        deseqPlotGeneHeatmap(
+            '%sgene_heatmap.png' % outfile_groups_prefix,
+            R['as.matrix'](data.rx(order, True)),
+            Colv=False,
+            Rowv=True)
+
         # Plot pvalue histogram
-        R.png( '''%(outfile_groups_prefix)spvalue_histogram.png''' % locals() )
+        R.png('''%(outfile_groups_prefix)spvalue_histogram.png''' % locals())
         R('''pvalues = res$pval''')
         R('''hist(pvalues, breaks=50, col='skyblue' )''')
         R['dev.off']()
 
         # Plot diagnostic plots for FDR
-        R.png( '''%(outfile_groups_prefix)sfdr.png''' % locals() )
+        R.png('''%(outfile_groups_prefix)sfdr.png''' % locals())
         R('''orderInPlot = order(pvalues)''')
         R('''showInPlot = (pvalues[orderInPlot] < 0.08)''')
         # Jethro - previously plotting x = pvalues[orderInPlot][showInPlot]
@@ -1333,16 +1369,16 @@ def runDESeq(outfile,
         # which(showInPlot) doesn't... removing NA values
         R('''true.pvalues  <- pvalues[orderInPlot][showInPlot]''')
         R('''true.pvalues  <- true.pvalues[is.finite(true.pvalues)]''')
-        R('''plot( seq( along=which(showInPlot)), 
-                   true.pvalues, 
+        R('''plot( seq( along=which(showInPlot)),
+                   true.pvalues,
                    pch='.',
-                   xlab=expression( rank(p[i]) ), 
+                   xlab=expression( rank(p[i]) ),
                    ylab=expression( p[i] ) )''')
-        R('''abline( a=0,b=%(fdr)f/length(pvalues), col="red") ''' % locals() )
+        R('''abline( a=0,b=%(fdr)f/length(pvalues), col="red") ''' % locals())
         R['dev.off']()
 
         # Add log2 fold with variance stabilized l2fold value
-        R('''res$transformed_log2FoldChange = vsd_l2f''' )
+        R('''res$transformed_log2FoldChange = vsd_l2f''')
 
         # Parse results and parse to file
         results, counts = deseqParseResults(control,
@@ -1409,16 +1445,18 @@ def plotTagStats(infile, design_file, outfile):
 
     R('''d = melt( log10(countsTable + 1), variable_name = 'sample' )''')
     R('''gp = ggplot(d)''')
-    R('''pp = gp + \
-        geom_density(aes(x=value,group=sample,color=sample,fill=sample),alpha=I(1/3))''')
+    R('''pp = gp + geom_density(aes(x=value, group=sample,
+    color=sample, fill=sample), alpha=I(1/3))''')
 
     R.ggsave(outfile + ".densities.png")
     R['dev.off']()
 
     R('''gp = ggplot(d)''')
-    R('''pp = gp + \
-        geom_boxplot(aes(x=sample,y=value,color=sample,fill=sample),size=0.3,alpha=I(1/3)) + 
-        opts( axis.text.x = theme_text( angle=90, hjust=1, size=8 ) )''')
+    R('''pp = gp +
+    geom_boxplot(aes(x=sample,y=value,color=sample,fill=sample),
+    size=0.3,
+    alpha=I(1/3)) +
+    theme(axis.text.x = theme_text( angle=90, hjust=1, size=8 ) )''')
 
     R.ggsave(outfile + ".boxplots.png")
     R['dev.off']()
@@ -1677,7 +1715,7 @@ def loadCuffdiff(infile, outfile):
             while x < len(samples) - 1:
                 outf.write(genes[gene][samples[x]] + "\t")
                 x += 1
-                outf.write(genes[gene][samples[len(samples) - 1]] + "\n")
+            outf.write(genes[gene][samples[len(samples) - 1]] + "\n")
 
         outf.close()
 
@@ -1817,18 +1855,18 @@ def runMockAnalysis(outfile,
         # add pseudocounts to enable analysis of regions
         # that are absent/present
         if pseudo_counts:
-            R('''control_counts = control_counts + %f''' % pseudo_counts )
-            R('''treatment_counts = treatment_counts + %f''' % pseudo_counts )
+            R('''control_counts = control_counts + %f''' % pseudo_counts)
+            R('''treatment_counts = treatment_counts + %f''' % pseudo_counts)
 
         R('''fc = treatment_counts / control_counts''')
 
         results = []
 
         for identifier, treatment_count, control_count, foldchange in \
-                zip( R('''rownames( countsTable)'''),
-                     R('''treatment_counts'''),
-                     R('''control_counts'''),
-                     R('''fc''')):
+                zip(R('''rownames( countsTable)'''),
+                    R('''treatment_counts'''),
+                    R('''control_counts'''),
+                    R('''fc''')):
             try:
                 log2fold = math.log(foldchange)
             except ValueError:
@@ -1860,7 +1898,8 @@ def runMockAnalysis(outfile,
 
 
 def outputTagSummary(filename_tags,
-                     outfile, output_filename_pattern,
+                     outfile,
+                     output_filename_pattern,
                      filename_design=None):
     '''output summary values for a count table.'''
 
@@ -1875,16 +1914,16 @@ def outputTagSummary(filename_tags,
 
     else:
         # read complete table
-        R( '''countsTable = read.delim( '%(filename_tags)s', 
-                                         header = TRUE,
-                                         row.names = 1,
-                                         stringsAsFactors = TRUE,
-                                         comment.char = '#' )''' % locals() )
+        R('''countsTable = read.delim('%(filename_tags)s',
+        header = TRUE,
+        row.names = 1,
+        stringsAsFactors = TRUE,
+        comment.char = '#')''' % locals())
 
         nobservations, nsamples = tuple(R('''dim(countsTable)'''))
         E.info("read data: %i observations for %i samples" %
                (nobservations, nsamples))
-        E.debug( "sample names: %s" % R('''colnames(countsTable)'''))
+        E.debug("sample names: %s" % R('''colnames(countsTable)'''))
         R('''groups = factor(colnames( countsTable ))''')
 
     nrows, ncolumns = tuple(R('''dim(countsTable)'''))
@@ -1894,25 +1933,29 @@ def outputTagSummary(filename_tags,
     outfile.write("number of samples\t%i\t100\n" % nsamples)
 
     # Count windows with no data
-    R( '''max_counts = apply(countsTable,1,max)''' )
+    R('''max_counts = apply(countsTable,1,max)''')
 
     # output distribution of maximum number of counts per window
     outfilename = output_filename_pattern + "max_counts.tsv.gz"
     E.info("outputting maximum counts per window to %s" % outfilename)
-    R( '''write.table( table(max_counts), file='%(outfilename)s', sep="\t", row.names=FALSE, quote=FALSE)''' %
-       locals())
+    R('''write.table(table(max_counts),
+    file='%(outfilename)s',
+    sep="\t",
+    row.names=FALSE,
+    quote=FALSE)''' %
+      locals())
 
     # removing empty rows
     E.info("removing rows with no counts in any sample")
-    R( '''countsTable = countsTable[max_counts>0,]''')
+    R('''countsTable = countsTable[max_counts>0,]''')
 
     for x in range(0, 20):
-        nempty = tuple( R('''sum(max_counts <= %i)''' % x))[0]
+        nempty = tuple(R('''sum(max_counts <= %i)''' % x))[0]
         outfile.write("max per row<=%i\t%i\t%f\n" %
                       (x, nempty, 100.0 * nempty / nrows))
 
-    E.info( "removed %i empty rows" % tuple( R('''sum(max_counts == 0)''') ) )
-    observations, samples = tuple( R('''dim(countsTable)'''))
+    E.info("removed %i empty rows" % tuple(R('''sum(max_counts == 0)''')))
+    observations, samples = tuple(R('''dim(countsTable)'''))
     E.info("trimmed data: %i observations for %i samples" %
            (observations, samples))
 
@@ -1920,10 +1963,11 @@ def outputTagSummary(filename_tags,
     R('''correlations = cor(countsTable)''')
     outfilename = output_filename_pattern + "correlation.tsv"
     E.info("outputting sample correlations to %s" % outfilename)
-    R('''write.table( correlations, file='%(outfilename)s', sep="\t", 
-                      row.names=TRUE,
-                      col.names=NA, 
-                      quote=FALSE)''' % locals())
+    R('''write.table(correlations, file='%(outfilename)s',
+    sep="\t",
+    row.names=TRUE,
+    col.names=NA,
+    quote=FALSE)''' % locals())
 
     # output scatter plots
     outfilename = output_filename_pattern + "scatter.png"
@@ -1934,7 +1978,7 @@ def outputTagSummary(filename_tags,
     # output heatmap based on correlations
     outfilename = output_filename_pattern + "heatmap.svg"
     R.svg(outfilename)
-    plotHeatmap(method="correlation")
+    plotCorrelationHeatmap(method="correlation")
     R['dev.off']()
 
     # output PCA
@@ -1966,10 +2010,10 @@ def dumpTagData(filename_tags, filename_design, outfile):
     nobservations, nsamples = filterTagData()
 
     # output
-    R('''write.table( countsTable, 
+    R('''write.table( countsTable,
                       file='%(outfilename)s',
                       sep='\t',
-                      quote=FALSE)''' % locals() )
+                      quote=FALSE)''' % locals())
 
 #########################################################################
 #########################################################################
@@ -2075,7 +2119,10 @@ def filterTagDataPandas(counts_table,
 
     if nempty_samples:
         E.warn("%i empty samples are being removed: %s" %
-               (nempty_samples, ",".join([sample_names[x] for x, y in enumerate(empty_samples) if y])))
+               (nempty_samples,
+                ",".join([sample_names[x] for x, y in
+
+                          enumerate(empty_samples) if y])))
         raise NotImplementedError("removing empty samples needs to be done")
         # R('''countsTable <- countsTable[, max_counts >= %i]''' % filter_min_counts_per_sample)
         # R('''groups <- groups[max_counts >= %i]''' % filter_min_counts_per_sample)
@@ -2094,6 +2141,53 @@ def filterTagDataPandas(counts_table,
         counts_table = counts_table[take]
 
     return counts_table
+
+
+def runTTest(outfile,
+             outfile_prefix,
+             fdr,
+             ref_group=None):
+    '''apply a ttest on the data.
+
+    For the T-test it is best to use FPKM values as
+    this method does not perform any library normalization.
+    '''
+    groups, pairs, has_replicates, has_pairs = groupTagData(ref_group)
+
+    for combination in itertools.combinations(groups, 2):
+        control, treatment = combination
+        r = R('''r = apply(countsTable, 1,
+        function(x) { t.test(
+        x[groups == '%(treatment)s'],
+        x[groups == '%(control)s']) } )
+        ''' % locals())
+
+        results = []
+        for test_id, ttest in zip(r.names, r):
+            control_mean, treatment_mean = tuple(ttest.rx2('estimate'))
+            fold_change = treatment_mean / control_mean
+            pvalue = tuple(ttest.rx2('p.value'))[0]
+            significant = (0, 1)[pvalue < fdr]
+            results.append(GeneExpressionResult._make((test_id,
+                                                       treatment,
+                                                       treatment_mean,
+                                                       0,
+                                                       control,
+                                                       control_mean,
+                                                       0,
+                                                       pvalue,
+                                                       pvalue,
+                                                       numpy.log2(fold_change),
+                                                       fold_change,
+                                                       numpy.log2(fold_change),
+                                                       significant,
+                                                       "OK")))
+
+    if outfile == sys.stdout:
+        writeExpressionResults(outfile, results)
+    else:
+        with IOTools.openFile(outfile, "w") as outf:
+            writeExpressionResults(outf, results)
 
 
 def outputSpikeIns(filename_tags,
@@ -2187,10 +2281,11 @@ def outputSpikeIns(filename_tags,
                                                    l10average[idx],
                                                    l2fold[idx]))
 
-            outfile.write("spike%i\t%s\t%s\n" % (interval_id,
-                                                 "\t".join(
-                                                     map(str, list(group1[idx]))),
-                                                 "\t".join(map(str, list(group2[idx])))))
+            outfile.write("spike%i\t%s\t%s\n" %
+                          (interval_id,
+                           "\t".join(
+                               map(str, list(group1[idx]))),
+                           "\t".join(map(str, list(group2[idx])))))
             interval_id += 1
 
     outf_info.close()

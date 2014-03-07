@@ -1208,7 +1208,7 @@ def buildContigStats(infile, outfile):
     '''
     build contig stats:
     N50
-    Number of scaffolds 
+    Number of scaffolds
     Total scaffold length
     max length
     '''

@@ -130,7 +130,7 @@ into the :term:`working directory`.  The file has four columns::
 track
      name of track - should correspond to column header in *infile*
 include
-     flag to indicate whether or not to include this data  
+     flag to indicate whether or not to include this data
 group
      group indicator - experimental group
 pair
