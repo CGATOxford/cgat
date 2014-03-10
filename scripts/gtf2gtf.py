@@ -90,16 +90,18 @@ appear consecutively within the file. This can be achevied using ``--sort``.
     intersect.
 
 ``--merge-introns``
-    Merges the region spanned by introns for all transcripts of a gene.
-    Outputs a single interval that spans the region between the start and end of
-    the first and last intron, respectively.
+    Merges the region spanned by introns for all transcripts of a
+    gene.  Outputs a single interval that spans the region between the
+    start and end of the first and last intron, respectively.
 
 ``--exons2introns``
-    Merges overlapping introns for all transcripts of a gene, outputting the
-    merged introns. Use ``--intron-min-length`` to ignore merged introns below a
-    specified length. Use ``--intron-border`` to specify a number of residues to
-    remove at either end of output introns (residues are removed prior to
-    filtering on size when used in conjunction with ``--intron-min-length``).
+    Merges overlapping introns for all transcripts of a gene,
+    outputting the merged introns. Use ``--intron-min-length`` to
+    ignore merged introns below a specified length. Use
+    ``--intron-border`` to specify a number of residues to remove at
+    either end of output introns (residues are removed prior to
+    filtering on size when used in conjunction with
+    ``--intron-min-length``).
 
 ``--transcripts2genes``
     Currently it doesn't work...

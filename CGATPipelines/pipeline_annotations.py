@@ -766,15 +766,21 @@ def loadTranscriptSynonyms(infile, outfile):
         "refseq_mrna": "refseq_id",
     }
 
-    data = PipelineBiomart.biomart_iterator(columns.keys(),
-                                            biomart=PARAMS[
-                                                "ensembl_biomart_mart"],
-                                            dataset=PARAMS[
-                                                "ensembl_biomart_dataset"],
-                                            host=PARAMS["ensembl_biomart_host"])
+    data = PipelineBiomart.biomart_iterator(
+        columns.keys(),
+        biomart=PARAMS[
+            "ensembl_biomart_mart"],
+        dataset=PARAMS[
+            "ensembl_biomart_dataset"],
+        host=PARAMS["ensembl_biomart_host"])
 
-    PipelineDatabase.importFromIterator(outfile, tablename, data, columns=columns, indices=(
-        "transcript_id", "transcript_name", "refseq_id"))
+    PipelineDatabase.importFromIterator(
+        outfile,
+        tablename,
+        data,
+        columns=columns,
+        indices=(
+            "transcript_id", "transcript_name", "refseq_id"))
 
 
 ###################################################################
