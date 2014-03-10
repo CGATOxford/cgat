@@ -434,6 +434,49 @@ def loadCufflinks(infile, outfile):
     '''load expression level measurements.'''
     PipelineRnaseq.loadCufflinks(infile, outfile)
 
+
+@merge(runCufflinks,
+       "fpkm.dir/cufflinks_fpkm_genes.tsv.gz")
+def mergeCufflinksGeneFPKM(infile, outfile):
+    '''build aggregate table with cufflinks FPKM values.'''
+
+    statement = '''
+    python %(scriptsdir)s/combine_tables.py
+        --columns=1
+        --take=FPKM fpkm.dir/*.genes_tracking.gz
+    | perl -p -e "s/tracking_id/gene_id/"
+    | gzip
+    > %(outfile)s
+    '''
+    P.run()
+
+
+@merge(runCufflinks,
+       "fpkm.dir/cufflinks_fpkm_isoforms.tsv.gz")
+def mergeCufflinksIsoformFPKM(infile, outfile):
+    '''build aggregate table with cufflinks FPKM values.'''
+
+    statement = '''
+    python %(scriptsdir)s/combine_tables.py
+        --columns=1
+        --take=FPKM fpkm.dir/*.fpkm_tracking.gz
+    | perl -p -e "s/tracking_id/transcript_id/"
+    | gzip
+    > %(outfile)s
+    '''
+    P.run()
+
+
+@transform((mergeCufflinksGeneFPKM, mergeCufflinksIsoformFPKM),
+           suffix(".tsv.gz"),
+           ".load")
+def loadCufflinksFPKM(infile, outfile):
+    '''load fkpm data into table.'''
+
+    P.load(infile, outfile,
+           "--index=gene_id --index=transcript_id")
+
+
 #########################################################################
 #########################################################################
 #########################################################################
@@ -1106,7 +1149,6 @@ TARGETS_DE = [((x, y, glob.glob("*.bam"),
 def runDESeq(infiles, outfile):
     '''perform differential expression analysis using deseq.'''
 
-    to_cluster = True
     design_file, geneset_file, bamfiles, count_file = infiles
 
     track = P.snip(outfile, ".diff")
@@ -1181,8 +1223,6 @@ def loadDESeqStats(infile, outfile):
 def runEdgeR(infiles, outfile):
     '''perform differential expression analysis using edger.'''
 
-    to_cluster = True
-
     design_file, geneset_file, bamfiles, count_file = infiles
     track = P.snip(outfile, ".diff")
 
@@ -1248,7 +1288,9 @@ def loadEdgeRStats(infile, outfile):
 ###################################################################
 
 
-@follows(loadCufflinks, loadGeneLevelReadCounts)
+@follows(loadCufflinks,
+         loadCufflinksFPKM,
+         loadGeneLevelReadCounts)
 def expression():
     pass
 
