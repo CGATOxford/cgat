@@ -363,12 +363,19 @@ def getControl(track, suffix='.genome.bam'):
     return controls
 
 
-def getControlFile(controls, pattern):
+def getControlFile( track, controls, pattern):
     if not controls:
         L.warn("controls for track '%s' not found " % (track))
         controlfile = None
     else:
-        controlfile = pattern % controls[0].asFile()
+        if PARAMS["tracks_matched_control"]:
+            n = track.clone()
+            n.condition = PARAMS["tracks_control"]
+            control = n.asFile()
+            assert control in controls, "None of the control files (%s) match track (%s)" % ( " ".join(controls), track.asFile() )
+            controlfile = pattern % control
+        else:
+            controlfile = pattern % controls[0].asFile()
 
     return controlfile
 
@@ -823,7 +830,7 @@ def loadMACSSummaryFDR(infile, outfile):
 ######################################################################
 ######################################################################
 
-@follows(mkdir("macs2.dir"), normalizeBAM)
+@follows(mkdir("macs2.dir") ) #, normalizeBAM)
 @files([("%s.call.bam" % (x.asFile()),
          "macs2.dir/%s.macs2" % x.asFile()) for x in TRACKS])
 def callPeaksWithMACS2(infile, outfile):
@@ -832,8 +839,10 @@ def callPeaksWithMACS2(infile, outfile):
     '''
     track = P.snip(infile, ".call.bam")
     controls = getControl(Sample(track))
-    controlfile = getControlFile(controls, "%s.call.bam")
-    PipelinePeakcalling.runMACS2(infile, outfile, controlfile)
+    controlfile = getControlFile( Sample(track), controls, "%s.call.bam")
+#    PipelinePeakcalling.runMACS2(infile, outfile, controlfile)
+    print "\n" + infile + "\t" + str( controls ) + "\t" + controlfile + "\n"
+
 
 ############################################################
 
