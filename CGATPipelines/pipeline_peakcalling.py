@@ -830,7 +830,7 @@ def loadMACSSummaryFDR(infile, outfile):
 ######################################################################
 ######################################################################
 
-@follows(mkdir("macs2.dir") ) #, normalizeBAM)
+@follows(mkdir("macs2.dir") ), normalizeBAM)
 @files([("%s.call.bam" % (x.asFile()),
          "macs2.dir/%s.macs2" % x.asFile()) for x in TRACKS])
 def callPeaksWithMACS2(infile, outfile):
@@ -840,9 +840,7 @@ def callPeaksWithMACS2(infile, outfile):
     track = P.snip(infile, ".call.bam")
     controls = getControl(Sample(track))
     controlfile = getControlFile( Sample(track), controls, "%s.call.bam")
-#    PipelinePeakcalling.runMACS2(infile, outfile, controlfile)
-    print "\n" + infile + "\t" + str( controls ) + "\t" + controlfile + "\n"
-
+    PipelinePeakcalling.runMACS2(infile, outfile, controlfile)
 
 ############################################################
 
