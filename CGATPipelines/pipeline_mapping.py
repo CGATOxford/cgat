@@ -1,5 +1,4 @@
-"""
-=====================
+"""=====================
 Read mapping pipeline
 =====================
 
@@ -19,7 +18,7 @@ Overview
 The pipeline implements various mappers and QC plots. It can be used for
 
 * Mapping against a genome
-* Mapping RNASEQ data against a genome 
+* Mapping RNASEQ data against a genome
 * Mapping against a transcriptome
 
 Principal targets
@@ -38,24 +37,26 @@ Optional targets
 ----------------
 
 merge
-    merge mapped :term:`bam` formatted files, for example if reads from different lanes were mapped
-    separately. After merging, the ``qc`` target can be run again to get qc stats
-    for the merged :term:`bam` formatted files.
+    merge mapped :term:`bam` formatted files, for example if reads
+    from different lanes were mapped separately. After merging, the
+    ``qc`` target can be run again to get qc stats for the merged
+    :term:`bam` formatted files.
 
 
 Usage
 =====
 
-See :ref:`PipelineSettingUp` and :ref:`PipelineRunning` on general information how to use CGAT pipelines.
+See :ref:`PipelineSettingUp` and :ref:`PipelineRunning` on general
+information how to use CGAT pipelines.
 
 Configuration
 -------------
 
-The pipeline requires a configured :file:`pipeline.ini` file. 
+The pipeline requires a configured :file:`pipeline.ini` file.
 
-The sphinxreport report requires a :file:`conf.py` and :file:`sphinxreport.ini` file 
-(see :ref:`PipelineReporting`). To start with, use the files supplied with the
-Example_ data.
+The sphinxreport report requires a :file:`conf.py` and
+:file:`sphinxreport.ini` file (see :ref:`PipelineReporting`). To start
+with, use the files supplied with the Example_ data.
 
 Input
 -----
@@ -63,27 +64,31 @@ Input
 Reads
 +++++
 
-Reads are imported by placing files are linking to files in the :term:`working directory`.
+Reads are imported by placing files are linking to files in the
+:term:`working directory`.
 
 The default file format assumes the following convention:
 
    filename.<suffix>
 
-The ``suffix`` determines the file type. The following suffixes/file types are possible:
+The ``suffix`` determines the file type. The following suffixes/file
+types are possible:
 
 sra
-   Short-Read Archive format. Reads will be extracted using the :file:`fastq-dump` tool.
+   Short-Read Archive format. Reads will be extracted using the
+   :file:`fastq-dump` tool.
 
 fastq.gz
    Single-end reads in fastq format.
 
 fastq.1.gz, fastq2.2.gz
-   Paired-end reads in fastq format. The two fastq files must be sorted by read-pair.
+   Paired-end reads in fastq format. The two fastq files must be
+   sorted by read-pair.
 
 .. note::
 
-   Quality scores need to be of the same scale for all input files. Thus it might be
-   difficult to mix different formats.
+   Quality scores need to be of the same scale for all input
+   files. Thus it might be difficult to mix different formats.
 
 Optional inputs
 +++++++++++++++
@@ -91,11 +96,12 @@ Optional inputs
 Requirements
 -------------
 
-The pipeline requires the results from :doc:`pipeline_annotations`. Set the configuration variable 
+The pipeline requires the results from
+:doc:`pipeline_annotations`. Set the configuration variable
 :py:data:`annotations_database` and :py:data:`annotations_dir`.
 
-On top of the default CGAT setup, the pipeline requires the following software to be in the 
-path:
+On top of the default CGAT setup, the pipeline requires the following
+software to be in the path:
 
 +--------------------+-------------------+------------------------------------------------+
 |*Program*           |*Version*          |*Purpose*                                       |
@@ -123,11 +129,12 @@ path:
 Merging bam files
 -----------------
 
-The pipeline has the ability to merge data post-mapping. This is useful if data have
-been split over several lanes and have been provide as separate fastq files.
+The pipeline has the ability to merge data post-mapping. This is
+useful if data have been split over several lanes and have been
+provide as separate fastq files.
 
-To enable merging, set regular expression for the input and output in the [merge] section 
-of the configuration file.
+To enable merging, set regular expression for the input and output in
+the [merge] section of the configuration file.
 
 Pipeline output
 ===============
@@ -137,15 +144,16 @@ The major output is in the database file :file:`csvdb`.
 Example
 =======
 
-Example data is available at http://www.cgat.org/~andreas/sample_data/pipeline_mapping.tgz.
-To run the example, simply unpack and untar::
+Example data is available at
+http://www.cgat.org/~andreas/sample_data/pipeline_mapping.tgz.  To run
+the example, simply unpack and untar::
 
    wget http://www.cgat.org/~andreas/sample_data/pipeline_mapping.tgz
    tar -xvzf pipeline_mapping.tgz
    cd pipeline_mapping
    python <srcdir>/pipeline_mapping.py make full
 
-.. note:: 
+.. note::
    For the pipeline to run, install the :doc:`pipeline_annotations` as well.
 
 Glossary
@@ -162,7 +170,6 @@ Glossary
    star
       star_ - a read mapper for RNASEQ data
 
-   
 .. _tophat: http://tophat.cbcb.umd.edu/
 .. _bowtie: http://bowtie-bio.sourceforge.net/index.shtml
 .. _gsnap: http://research-pub.gene.com/gmap/
@@ -177,52 +184,26 @@ Code
 # load modules
 from ruffus import *
 
-import CGAT.Experiment as E
-import logging as L
-import CGAT.Database as Database
-import CGAT.CSV as CSV
-
 import sys
 import os
 import re
-import shutil
-import itertools
-import math
-import glob
-import time
-import gzip
-import collections
-import random
 
-import numpy
-import sqlite3
+# load options from the config file
+import CGAT.Experiment as E
+import CGAT.Pipeline as P
 import CGAT.GTF as GTF
 import CGAT.IOTools as IOTools
-import CGAT.IndexedFasta as IndexedFasta
-import CGAT.Tophat as Tophat
-from rpy2.robjects import r as R
-import rpy2.robjects as ro
-import rpy2.robjects.vectors as rovectors
-from rpy2.rinterface import RRuntimeError
-
-import CGAT.Expression as Expression
-
 import CGATPipelines.PipelineGeneset as PipelineGeneset
 import CGATPipelines.PipelineMapping as PipelineMapping
-import CGATPipelines.PipelineRnaseq as PipelineRnaseq
 import CGATPipelines.PipelineMappingQC as PipelineMappingQC
 import CGATPipelines.PipelinePublishing as PipelinePublishing
-
-import CGAT.Stats as Stats
+import CGATPipelines.PipelineTracks as PipelineTracks
 
 ###################################################
 ###################################################
 ###################################################
 # Pipeline configuration
 ###################################################
-
-# load options from the config file
-import CGAT.Pipeline as P
 P.getParameters(
     ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
      "../pipeline.ini",
@@ -241,36 +222,27 @@ PARAMS_ANNOTATIONS = P.peekParameters(PARAMS["annotations_dir"],
 ###################################################################
 # Helper functions mapping tracks to conditions, etc
 ###################################################################
-import CGATPipelines.PipelineTracks as PipelineTracks
-
 # determine the location of the input files (reads).
 try:
     PARAMS["input"]
 except NameError:
-    dataDir = "."
+    DATADIR = "."
 else:
     if PARAMS["input"] == 0:
-        dataDir = "."
+        DATADIR = "."
     elif PARAMS["input"] == 1:
-        dataDir = "data.dir"
+        DATADIR = "data.dir"
     else:
-        dataDir = PARAMS["input"]  # not recommended practise.
+        DATADIR = PARAMS["input"]  # not recommended practise.
 
-# collect sra nd fastq.gz tracks
-TRACKS = PipelineTracks.Tracks(PipelineTracks.Sample).loadFromDirectory(
-    glob.glob( os.path.join(dataDir, "*.sra") ), "(\S+).sra" ) +\
-    PipelineTracks.Tracks(PipelineTracks.Sample).loadFromDirectory(
-        glob.glob( os.path.join(dataDir, "*.fastq.gz") ), "(\S+).fastq.gz" ) +\
-    PipelineTracks.Tracks(PipelineTracks.Sample).loadFromDirectory(
-        glob.glob( os.path.join(dataDir, "*.fastq.1.gz") ), "(\S+).fastq.1.gz" ) +\
-    PipelineTracks.Tracks(PipelineTracks.Sample).loadFromDirectory(
-        glob.glob(os.path.join(dataDir, "*.csfasta.gz")), "(\S+).csfasta.gz")
 
 ###################################################################
 # Global flags
 ###################################################################
 MAPPERS = P.asList(PARAMS["mappers"])
-SPLICED_MAPPING = "tophat" in MAPPERS or "gsnap" in MAPPERS or "star" in MAPPERS
+SPLICED_MAPPING = ("tophat" in MAPPERS or
+                   "gsnap" in MAPPERS or
+                   "star" in MAPPERS)
 
 
 ###################################################################
@@ -297,7 +269,7 @@ def connect():
 ##
 ###################################################################
 if os.path.exists("pipeline_conf.py"):
-    L.info("reading additional configuration from pipeline_conf.py")
+    E.info("reading additional configuration from pipeline_conf.py")
     execfile("pipeline_conf.py")
 
 #########################################################################
@@ -322,16 +294,17 @@ def buildReferenceGeneSet(infile, outfile):
     Removes unwanted contigs according to configuration
     value ``geneset_remove_contigs``.
 
-    Removes transcripts overlapping ribosomal genes if 
-    ``geneset_remove_repetitive_rna`` is set. Protein
-    coding transcripts are not removed.
+    Removes transcripts overlapping ribosomal genes if
+    ``geneset_remove_repetitive_rna`` is set. Protein coding
+    transcripts are not removed.
 
     Transcripts will be ignored that
-       * have very long introns (max_intron_size) (otherwise, cufflinks complains)
+       * have very long introns (max_intron_size) (otherwise,
+         cufflinks complains)
        * are located on contigs to be ignored (usually: chrM, _random, ...)
 
-    The result is run through cuffdiff in order to add the p_id and tss_id tags
-    required by cuffdiff. 
+    The result is run through cuffdiff in order to add the p_id and
+    tss_id tags required by cuffdiff.
 
     This will only keep sources of the type 'exon'. It will also remove
     any transcripts not in the reference genome.
@@ -339,6 +312,7 @@ def buildReferenceGeneSet(infile, outfile):
     Cuffdiff requires overlapping genes to have different tss_id tags.
 
     This geneset is the source for most other genesets in the pipeline.
+
     '''
     tmp_mergedfiltered = P.getTempFilename(".")
 
@@ -348,21 +322,22 @@ def buildReferenceGeneSet(infile, outfile):
     else:
         rna_file = None
 
-    gene_ids = PipelineMapping.mergeAndFilterGTF(infile, tmp_mergedfiltered, "%s.removed.gz" % outfile,
-                                                 genome=os.path.join(
-                                                     PARAMS["genome_dir"], PARAMS["genome"]),
-                                                 max_intron_size=PARAMS[
-                                                     "max_intron_size"],
-                                                 remove_contigs=PARAMS[
-                                                     "geneset_remove_contigs"],
-                                                 rna_file=rna_file)
+    gene_ids = PipelineMapping.mergeAndFilterGTF(
+        infile, tmp_mergedfiltered, "%s.removed.gz" % outfile,
+        genome=os.path.join(
+            PARAMS["genome_dir"], PARAMS["genome"]),
+        max_intron_size=PARAMS[
+            "max_intron_size"],
+        remove_contigs=PARAMS[
+            "geneset_remove_contigs"],
+        rna_file=rna_file)
 
     # Add tss_id and p_id
-    PipelineMapping.resetGTFAttributes(infile=tmp_mergedfiltered,
-                                       genome=os.path.join(
-                                           PARAMS["bowtie_index_dir"], PARAMS["genome"]),
-                                       gene_ids=gene_ids,
-                                       outfile=outfile)
+    PipelineMapping.resetGTFAttributes(
+        infile=tmp_mergedfiltered,
+        genome=os.path.join(PARAMS["bowtie_index_dir"], PARAMS["genome"]),
+        gene_ids=gene_ids,
+        outfile=outfile)
 
     os.unlink(tmp_mergedfiltered)
 
@@ -375,17 +350,16 @@ def buildReferenceGeneSet(infile, outfile):
            suffix("reference.gtf.gz"),
            "refcoding.gtf.gz")
 def buildCodingGeneSet(infile, outfile):
-    '''build a gene set with only protein coding 
-    transcripts.
+    '''build a gene set with only protein coding transcripts.
 
     Genes are selected via their gene biotype in the GTF file.
     Note that this set will contain all transcripts of protein
     coding genes, including processed transcripts.
 
     This set includes UTR and CDS.
+
     '''
 
-    to_cluster = True
     statement = '''
     zcat %(infile)s | awk '$2 == "protein_coding"' | gzip > %(outfile)s
     '''
@@ -398,7 +372,8 @@ def buildCodingGeneSet(infile, outfile):
 
 @active_if(SPLICED_MAPPING)
 @follows(mkdir("geneset.dir"))
-@merge(os.path.join(PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_geneset_flat_gtf"]),
+@merge(os.path.join(PARAMS["annotations_dir"],
+                    PARAMS_ANNOTATIONS["interface_geneset_flat_gtf"]),
        "geneset.dir/introns.gtf.gz")
 def buildIntronGeneModels(infile, outfile):
     '''build protein-coding intron-transcipts.
@@ -414,27 +389,26 @@ def buildIntronGeneModels(infile, outfile):
     are removed.
     '''
 
-    to_cluster = True
-
-    filename_exons = os.path.join(PARAMS["annotations_dir"],
-                                  PARAMS_ANNOTATIONS["interface_geneset_exons_gtf"])
+    filename_exons = os.path.join(
+        PARAMS["annotations_dir"],
+        PARAMS_ANNOTATIONS["interface_geneset_exons_gtf"])
 
     statement = '''gunzip
-        < %(infile)s 
+        < %(infile)s
         | awk '$2 == "protein_coding"'
-	| python %(scriptsdir)s/gtf2gtf.py --sort=gene 
-	| python %(scriptsdir)s/gtf2gtf.py 
-               --exons2introns 
-               --intron-min-length=100 
-               --intron-border=10 
+        | python %(scriptsdir)s/gtf2gtf.py --sort=gene
+        | python %(scriptsdir)s/gtf2gtf.py
+               --exons2introns
+               --intron-min-length=100
+               --intron-border=10
                --log=%(outfile)s.log
         | python %(scriptsdir)s/gff2gff.py
                --crop=%(filename_exons)s
                --log=%(outfile)s.log
-	| python %(scriptsdir)s/gtf2gtf.py 
-              --set-transcript-to-gene 
-              --log=%(outfile)s.log 
-	| perl -p -e 's/intron/exon/'
+        | python %(scriptsdir)s/gtf2gtf.py
+              --set-transcript-to-gene
+              --log=%(outfile)s.log
+        | perl -p -e 's/intron/exon/'
         | gzip
         > %(outfile)s
     '''
@@ -468,13 +442,12 @@ def buildCodingExons(infile, outfile):
     This set is used for splice-site validation
     '''
 
-    to_cluster = True
     statement = '''
-    zcat %(infile)s 
+    zcat %(infile)s
     | awk '$2 == "protein_coding" && $3 == "CDS"'
-    | perl -p -e "s/CDS/exon/" 
-    | python %(scriptsdir)s/gtf2gtf.py --merge-exons --log=%(outfile)s.log 
-    | gzip 
+    | perl -p -e "s/CDS/exon/"
+    | python %(scriptsdir)s/gtf2gtf.py --merge-exons --log=%(outfile)s.log
+    | gzip
     > %(outfile)s
     '''
     P.run()
@@ -487,15 +460,14 @@ def buildCodingExons(infile, outfile):
 @active_if(SPLICED_MAPPING)
 @transform(buildCodingGeneSet, suffix(".gtf.gz"), ".fa")
 def buildReferenceTranscriptome(infile, outfile):
-    '''build reference transcriptome. 
+    '''build reference transcriptome.
 
-    The reference transcriptome contains all known 
-    protein coding transcripts.
+    The reference transcriptome contains all known protein coding
+    transcripts.
 
     The sequences include both UTR and CDS.
 
     '''
-    to_cluster = True
     gtf_file = P.snip(infile, ".gz")
 
     genome_file = os.path.abspath(
@@ -505,7 +477,7 @@ def buildReferenceTranscriptome(infile, outfile):
     zcat %(infile)s
     | awk '$3 == "exon"' > %(gtf_file)s;
     gtf_to_fasta %(gtf_file)s %(genome_file)s %(outfile)s;
-    checkpoint; 
+    checkpoint;
     samtools faidx %(outfile)s
     '''
     P.run()
@@ -547,12 +519,14 @@ def buildJunctions(infile, outfile):
 
     outf = IOTools.openFile(outfile, "w")
     njunctions = 0
-    for gffs in GTF.transcript_iterator(GTF.iterator(IOTools.openFile(infile, "r"))):
+    for gffs in GTF.transcript_iterator(
+            GTF.iterator(IOTools.openFile(infile, "r"))):
 
         gffs.sort(key=lambda x: x.start)
         end = gffs[0].end
         for gff in gffs[1:]:
-            # subtract one: these are not open/closed coordinates but the 0-based coordinates
+            # subtract one: these are not open/closed coordinates but
+            # the 0-based coordinates
             # of first and last residue that are to be kept (i.e., within the
             # exon).
             outf.write("%s\t%i\t%i\t%s\n" %
@@ -581,14 +555,18 @@ def buildJunctions(infile, outfile):
 
 @active_if(SPLICED_MAPPING)
 @follows(mkdir("gsnap.dir"))
-@files(os.path.join(PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_geneset_exons_gtf"]), "gsnap.dir/splicesites.iit")
+@files(os.path.join(PARAMS["annotations_dir"],
+                    PARAMS_ANNOTATIONS["interface_geneset_exons_gtf"]),
+       "gsnap.dir/splicesites.iit")
 def buildGSNAPSpliceSites(infile, outfile):
     '''build file with known splice sites for GSNAP from all exons...
     '''
 
     outfile = P.snip(outfile, ".iit")
-    statement = '''
-    zcat %(infile)s | gtf_splicesites | iit_store -o %(outfile)s > %(outfile)s.log'''
+    statement = '''zcat %(infile)s 
+    | gtf_splicesites | iit_store -o %(outfile)s
+    > %(outfile)s.log
+    '''
 
     P.run()
 
@@ -606,7 +584,7 @@ SEQUENCESUFFIXES = ("*.fastq.1.gz",
                     "*.csfasta.F3.gz",
                     )
 
-SEQUENCEFILES = tuple([os.path.join(dataDir, suffix_name)
+SEQUENCEFILES = tuple([os.path.join(DATADIR, suffix_name)
                       for suffix_name in SEQUENCESUFFIXES])
 SEQUENCEFILES_REGEX = regex(
     r".*/(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz|csfasta.F3.gz|export.txt.gz)")
@@ -624,7 +602,6 @@ SEQUENCEFILES_REGEX = regex(
            r"nreads.dir/\1.nreads")
 def countReads(infile, outfile):
     '''count number of reads in input files.'''
-    to_cluster = True
     m = PipelineMapping.Counter()
     statement = m.build((infile,), outfile)
     P.run()
@@ -664,9 +641,9 @@ def mapReadsWithTophat(infiles, outfile):
     else:
         job_options += " -l mem_free=%s" % PARAMS["tophat_memory"]
 
-    to_cluster = True
-    m = PipelineMapping.Tophat(executable=P.substituteParameters(**locals())["tophat_executable"],
-                               strip_sequence=PARAMS["strip_sequence"])
+    m = PipelineMapping.Tophat(
+        executable=P.substituteParameters(**locals())["tophat_executable"],
+        strip_sequence=PARAMS["strip_sequence"])
     infile, reffile, transcriptfile = infiles
     tophat_options = PARAMS["tophat_options"] + \
         " --raw-juncs %(reffile)s " % locals()

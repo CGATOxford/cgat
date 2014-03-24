@@ -17,4 +17,10 @@ paircounts_full:
     references: [testpairs_fullcounts.tsv.gz]
     options: --counter=readpair-fullcounts --bam-file=%DIR%/paircounting.bam --min-read-quality=15
 
+paircounts:
+    stdin: testpairs.gtf
+    outputs: [stdout]
+    references: [testpairs_counts.tsv.gz]
+    options: --counter=readpair-counts --bam-file=%DIR%/paircounting.bam --min-read-quality=15
+
       
