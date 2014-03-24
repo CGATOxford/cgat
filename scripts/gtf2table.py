@@ -200,7 +200,11 @@ for each transcript model according to the four axes. The output
 can be used to implement custom counting schemes.
 
 Reads below a minimum quality score will be ignored
-(--min-read-quality). By default, all reads will be counted.
+(``--min-read-quality``). By default, all reads will be counted.
+
+Reads mapping to multiple locations will be downweighted if
+the ``--weight-multi-mapping`` option is set. This requires
+the presence of the ``NH`` flag in the :term:`bam` file.
 
 For paired read counting, the library type can be specified with the
 ``--library-type`` option to make use of strand information. Library
