@@ -11,3 +11,10 @@ length:
     references: [test1.tsv]
     options: --counter=length --counter=position --counter=composition-na --counter=composition-cpg --genome-file=%DIR%/hg19.chr19
     
+paircounts_full:
+    stdin: testpairs.gtf
+    outputs: [stdout]
+    references: [testpairs_fullcounts.tsv.gz]
+    options: --counter=readpair-fullcounts --bam-file=%DIR%/paircounting.bam --min-read-quality=15
+
+      
