@@ -9,8 +9,8 @@
 Purpose
 -------
 
-compute properties of genes or transcripts given in a :term:`gtf` 
-formatted file and output them in tabular format. 
+compute properties of genes or transcripts given in a :term:`gtf`
+formatted file and output them in tabular format.
 
 Quantities can be either computed per gene (all exons across all transcripts)
 or per transcript. The input needs to be sorted accordingly.
@@ -185,6 +185,8 @@ Counts are then collated into a smaller set of summaries for convenience:
 |                    |inconsistent.                                       |
 +--------------------+----------------------------------------------------+
 |antisense           |in antisense direction.                             |
++--------------------+----------------------------------------------------+
+|nonsense            |in unexpected orientation                           |
 +--------------------+----------------------------------------------------+
 |notproper           |that are not proper pairs                           |
 +--------------------+----------------------------------------------------+
@@ -3613,7 +3615,6 @@ class CounterBigwigCounts(_gtf2table.Counter):
         segments = self.getSegments()
 
         length = sum([x[1] - x[0] for x in segments])
-        nreads = 0
         contig = self.getContig()
 
         t, valid = None, None
@@ -3729,7 +3730,9 @@ def main(argv=None):
                                 "quality",
                                 "read-coverage",
                                 "read-extension",
+                                "read-overlap",
                                 "read-counts",
+                                "read-fullcounts",
                                 "readpair-counts",
                                 "readpair-fullcounts",
                                 "splice",
@@ -3766,7 +3769,10 @@ def main(argv=None):
     parser.add_option("--library-type",
                       dest="library_type",
                       type="choice",
-                      choices=("fr-unstranded",
+                      choices=("unstranded",
+                               "firststrand",
+                               "secondstrand",
+                               "fr-unstranded",
                                "fr-firststrand",
                                "fr-secondstrand"),
                       help="library type of reads in bam file. "
@@ -3888,8 +3894,22 @@ def main(argv=None):
                 minimum_read_quality=options.minimum_read_quality,
                 options=options,
                 prefix=prefix))
+        elif c == "read-overlap":
+            counters.append(_gtf2table.CounterReadOverlap(
+                bam_files,
+                weight_multi_mapping=options.weight_multi_mapping,
+                minimum_read_quality=options.minimum_read_quality,
+                options=options,
+                prefix=prefix))
         elif c == "read-counts":
             counters.append(_gtf2table.CounterReadCounts(
+                bam_files,
+                weight_multi_mapping=options.weight_multi_mapping,
+                minimum_read_quality=options.minimum_read_quality,
+                options=options,
+                prefix=prefix))
+        elif c == "read-fullcounts":
+            counters.append(_gtf2table.CounterReadCountsFull(
                 bam_files,
                 weight_multi_mapping=options.weight_multi_mapping,
                 minimum_read_quality=options.minimum_read_quality,
