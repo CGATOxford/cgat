@@ -454,6 +454,62 @@ class CounterReadCounts(Counter):
     def __str__(self):
         return "\t".join( map(str, (self.result)))
 
+cdef inline computeOverlapWithExons(long * block_starts,
+                                    long * block_ends,
+                                    int nblocks,
+                                    long * exon_starts,
+                                    long * exon_ends,
+                                    int nexons,
+                                    long exons_start,
+                                    long exons_end):
+        
+    #---------------------------------------------------
+    # compute overlap with exons
+    cdef int current_exon = 0
+    cdef int current_block = 0
+    cdef long block_start = block_starts[current_block]
+    cdef long block_end = block_ends[current_block]
+    exons = []
+
+    while current_block < nblocks and block_start < exons_start:
+        nbases_outside += min(block_end, exons_start) - block_start
+        block_start = block_starts[current_block]
+        block_end = block_ends[current_block]
+        current_block += 1
+                    
+    while current_exon < nexons and current_block < nblocks:
+
+        exon_start, exon_end = exons[current_exon]
+        block_start = block_starts[current_block]
+        block_end = block_ends[current_block]
+
+        if exon_end <= block_start:
+            current_exon += 1
+        elif block_end <= exon_start:
+            current_block += 1
+        else:
+            max_start = max(exon_start, block_start)
+            min_end = min(exon_end, block_end)
+
+            nbases_exons += min_end - max_start
+
+            if exon_end < block_end:
+                current_exon += 1
+            elif block_end < exon_end:
+                current_block += 1
+            else:
+                current_exon += 1
+                current_block += 1
+
+    # compute bases outside transcript
+    while current_block < nblocks:
+        block_start = block_starts[current_block]
+        block_end = block_ends[current_block]
+        nbases_outside += block_end - max(block_start, exons_end)
+        current_block += 1
+
+    
+        
 ##-----------------------------------------------------------------------------------
 class CounterReadPairCountsFull(Counter):
     '''compute number of read pairs overlapping with exoIsoform
@@ -781,8 +837,6 @@ class CounterReadPairCountsFull(Counter):
                 block_ends[nblocks] = block_last_end
                 nblocks += 1
 
-                #---------------------------------------------------
-                # compute overlap with exons
                 current_exon = 0
                 current_block = 0
                 block_start = block_starts[current_block]
@@ -926,6 +980,7 @@ class CounterReadPairCounts(CounterReadPairCountsFull):
                        'sense_inconsistent',
                        'sense_other',
                        'antisense',
+                       'nonsense',
                        'notproper',
                        'quality_pairs',
                        'quality_reads',
@@ -984,10 +1039,14 @@ class CounterReadPairCounts(CounterReadPairCountsFull):
 
         if antisense is None:
             self.antisense = 0
+            self.nonsense = 0
         else:
             # sum over direction axis
-            self.antisense = \
-                numpy.sum(work, axis=(1,2))[antisense]
+            direction_summed = numpy.sum(
+                work, axis=(1,2))
+            self.antisense = direction_summed[antisense]
+            self.nonsense = numpy.sum(direction_summed.flat) -\
+                            (self.sense + self.antisense)
 
         # intronic pairs that are sense
         self.sense_intronic_pairs = \
@@ -1010,6 +1069,7 @@ class CounterReadPairCounts(CounterReadPairCountsFull):
             self.sense_inconsistent_pairs +
             self.sense_other_pairs +
             self.antisense + 
+            self.nonsense +
             self.improper_pairs)
 
     def __str__(self):
@@ -1022,6 +1082,7 @@ class CounterReadPairCounts(CounterReadPairCountsFull):
             self.sense_inconsistent_pairs,
             self.sense_other_pairs,
             self.antisense,
+            self.nonsense,
             self.improper_pairs,
             self.pairs_below_quality,
             self.reads_below_quality,
