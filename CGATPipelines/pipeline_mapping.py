@@ -187,6 +187,7 @@ from ruffus import *
 import sys
 import os
 import re
+import sqlite3
 
 # load options from the config file
 import CGAT.Experiment as E
