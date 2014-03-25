@@ -538,7 +538,12 @@ class Tracks:
                 if skip:
                     continue
 
-            track = rx.search(f).groups()[0]
+            try:
+                track = rx.search(f).groups()[0]
+            except AttributeError:
+                raise AttributeError(
+                    "file '%s' not matching '%s'" %
+                    (f, pattern))
             if track in added:
                 raise ValueError(
                     "multiple tracks  with the name '%s'" % track)
