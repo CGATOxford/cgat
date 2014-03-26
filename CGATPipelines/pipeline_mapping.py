@@ -270,7 +270,7 @@ TRACKS = PipelineTracks.Tracks(PipelineTracks.Sample).loadFromDirectory(
 # Global flags
 ###################################################################
 MAPPERS = P.asList(PARAMS["mappers"])
-SPLICED_MAPPING = "tophat" in MAPPERS or "gsnap" in MAPPERS or "star" in MAPPERS
+SPLICED_MAPPING = "tophat" in MAPPERS or "gsnap" in MAPPERS or "star" in MAPPERS or "tophat2" in MAPPERS
 
 
 ###################################################################

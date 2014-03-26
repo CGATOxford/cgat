@@ -150,11 +150,13 @@ def mergeAndFilterGTF(infile, outfile, logfile,
     E.info("filtering by contig and removing long introns")
     contigs = set(IndexedFasta.IndexedFasta(genome).getContigs())
 
+    rx_contigs = None
     #
     if remove_contigs is not None:
         rx_contigs = re.compile(remove_contigs)
         E.info("removing contigs %s" % remove_contigs)
 
+    rna_index = None
     if rna_file is not None:
         if not os.path.exists(rna_file):
             E.warn("file '%s' to remove repetetive rna does not exist" %
