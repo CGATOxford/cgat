@@ -1,0 +1,37 @@
+@SQ	SN:chr1	LN:100000
+proper_exonic_unspliced	99	chr1	1101	20	50M	chr1	1301	0	*	*
+proper_exonic_unspliced	147	chr1	1301	20	50M	chr1	1101	0	*	*
+proper_exonic_spliced	99	chr1	2176	20	25M100D25M	chr1	2351	0	*	*
+proper_exonic_spliced	147	chr1	2351	20	50M	chr1	2176	0	*	*
+proper_exonic_misspliced	99	chr1	3176	20	15M110D35M	chr1	3351	0	*	*
+proper_exonic_misspliced	147	chr1	3351	20	50M	chr1	3176	0	*	*
+proper_intronic	99	chr1	11201	20	50M	chr1	11301	0	*	*
+proper_intronic	147	chr1	11301	20	50M	chr1	11201	0	*	*
+proper_extension	99	chr1	12101	20	100M	chr1	12551	0	*	*
+proper_extension	147	chr1	12551	20	100M	chr1	12101	0	*	*
+proper_distronic	99	chr1	13151	20	100M	chr1	13501	0	*	*
+proper_distronic	147	chr1	13501	20	100M	chr1	13151	0	*	*
+proper_plus_FF	67	chr1	21101	20	50M	chr1	21501	0	*	*
+proper_plus_FF	131	chr1	21501	20	50M	chr1	21101	0	*	*
+proper_plus_FR	99	chr1	22101	20	50M	chr1	22501	0	*	*
+proper_plus_FR	147	chr1	22501	20	50M	chr1	22101	0	*	*
+proper_plus_RF	83	chr1	23101	20	50M	chr1	23501	0	*	*
+proper_plus_RF	163	chr1	23501	20	50M	chr1	23101	0	*	*
+proper_plus_RR	115	chr1	24101	20	50M	chr1	24501	0	*	*
+proper_plus_RR	179	chr1	24501	20	50M	chr1	24101	0	*	*
+proper_neg_FF	115	chr1	25101	20	50M	chr1	25501	0	*	*
+proper_neg_FF	179	chr1	25501	20	50M	chr1	25101	0	*	*
+proper_neg_FR	83	chr1	26101	20	50M	chr1	26501	0	*	*
+proper_neg_FR	163	chr1	26501	20	50M	chr1	26101	0	*	*
+proper_neg_RF	99	chr1	27101	20	50M	chr1	27501	0	*	*
+proper_neg_RF	147	chr1	27501	20	50M	chr1	27101	0	*	*
+proper_neg_RR	67	chr1	28101	20	50M	chr1	28501	0	*	*
+proper_neg_RR	131	chr1	28501	20	50M	chr1	28101	0	*	*
+improper	65	chr1	31101	20	50M	chr1	31301	0	*	*
+improper	129	chr1	31301	20	50M	chr1	31101	0	*	*
+unmapped	73	chr1	32101	20	50M	*	*	0	*	*
+outer	99	chr1	33101	20	50M	chr1	33401	0	*	*
+outer	147	chr1	33401	20	50M	chr1	33101	0	*	*
+quality	99	chr1	34101	10	50M	chr1	34301	0	*	*
+quality	147	chr1	34301	10	50M	chr1	34101	0	*	*
+

@@ -5,6 +5,27 @@ FPKM distributions
 This section summarizes the distribution of FPKM-values in each of
 the experiments. 
 
+Distribution of FPKM values
+===========================
+
+The following plots show the distribution of FPKM values in the
+various samples. To make differential expression analysis possible,
+these distributions should be fairly comparable.
+
+.. report:: Expression.ExpressionGenesLog2FPKM
+   :render: violin-plot
+
+   Violin plot of log2 transformed FPKM values for genes. 
+   +1 has been added to all FPKM values to facilitate plotting.
+
+
+.. report:: Expression.ExpressionTranscriptsLog2FPKM
+   :render: violin-plot
+
+   Violin plot of log2 transformed FPKM values for transcripts. 
+   +1 has been added to all FPKM values to facilitate plotting.
+
+
 Distribution of FPKM values in coding transcripts
 =================================================
 

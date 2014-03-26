@@ -116,8 +116,7 @@ def addComplementIntervals(intervals, first=None, last=None):
     """complement a list of intervals with intervals not
     in list and return both.
     """
-
-    return intervals + complementIntervals(intervals, first, last)
+    return intervals + complement(intervals, first, last)
 
 #----------------------------------------
 
@@ -222,7 +221,7 @@ def RemoveIntervalsContained(intervals):
 
     results:
 
-    [(10, 100), (70, 120), (130, 200), (140, 210)]   
+    [(10, 100), (70, 120), (130, 200), (140, 210)]
     """
     if not intervals:
         return []

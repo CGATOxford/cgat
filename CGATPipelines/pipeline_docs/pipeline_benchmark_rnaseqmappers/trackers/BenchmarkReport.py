@@ -30,7 +30,7 @@ DATABASE = P['benchmark_rnaseqmappers_backend']
 import PipelineTracks
 
 TRACKS = PipelineTracks.Tracks(PipelineTracks.Sample).loadFromDirectory(
-    glob.glob("%s/*.bam" % DATADIR), "%s/(\S+).bam" % DATADIR)
+    glob.glob("%s/*.bam" % DATADIR), "(\S+).bam" % DATADIR)
 
 ###########################################################################
 

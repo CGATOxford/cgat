@@ -424,8 +424,6 @@ def runCufflinks(infiles, outfile):
     '''estimate expression levels in each set using cufflinks.'''
     PipelineRnaseq.runCufflinks(infiles, outfile)
 
-#########################################################################
-
 
 @transform(runCufflinks,
            suffix(".cufflinks"),
@@ -433,6 +431,69 @@ def runCufflinks(infiles, outfile):
 def loadCufflinks(infile, outfile):
     '''load expression level measurements.'''
     PipelineRnaseq.loadCufflinks(infile, outfile)
+
+
+@collate(runCufflinks,
+         regex("fpkm.dir/(.*)_(.*).cufflinks"),
+         r"fpkm.dir/\1_fpkm_genes.tsv.gz")
+def mergeCufflinksGeneFPKM(infiles, outfile):
+    '''build aggregate table with cufflinks FPKM values.'''
+
+    prefix = os.path.basename(outfile)
+    prefix = prefix[:prefix.index("_")]
+
+    headers = ",".join(
+        [re.match("fpkm.dir/.*_(.*).cufflinks", x).groups()[0]
+         for x in infiles])
+
+    statement = '''
+    python %(scriptsdir)s/combine_tables.py
+        --columns=1
+        --skip-titles
+        --headers=%(headers)s
+        --take=FPKM fpkm.dir/%(prefix)s_*.genes_tracking.gz
+    | perl -p -e "s/tracking_id/gene_id/"
+    | gzip
+    > %(outfile)s
+    '''
+    P.run()
+
+
+@collate(runCufflinks,
+         regex("fpkm.dir/(.*)_(.*).cufflinks"),
+         r"fpkm.dir/\1_fpkm_isoforms.tsv.gz")
+def mergeCufflinksIsoformFPKM(infiles, outfile):
+    '''build aggregate table with cufflinks FPKM values.'''
+
+    prefix = os.path.basename(outfile)
+    prefix = prefix[:prefix.index("_")]
+
+    headers = ",".join(
+        [re.match("fpkm.dir/.*_(.*).cufflinks", x).groups()[0]
+         for x in infiles])
+
+    statement = '''
+    python %(scriptsdir)s/combine_tables.py
+        --columns=1
+        --skip-titles
+        --headers=%(headers)s
+        --take=FPKM fpkm.dir/%(prefix)s_*.fpkm_tracking.gz
+    | perl -p -e "s/tracking_id/transcript_id/"
+    | gzip
+    > %(outfile)s
+    '''
+    P.run()
+
+
+@transform((mergeCufflinksGeneFPKM, mergeCufflinksIsoformFPKM),
+           suffix(".tsv.gz"),
+           ".load")
+def loadCufflinksFPKM(infile, outfile):
+    '''load fkpm data into table.'''
+
+    P.load(infile, outfile,
+           "--index=gene_id --index=transcript_id")
+
 
 #########################################################################
 #########################################################################
@@ -513,10 +574,12 @@ def buildExpressionStats(tables, method, outfile, outdir):
     keys_status = "OK", "NOTEST", "FAIL", "NOCALL"
 
     outf = IOTools.openFile(outfile, "w")
-    outf.write("\t".join(("design", "geneset", "level", "treatment_name", "control_name", "tested",
-                          "\t".join(["status_%s" % x for x in keys_status]),
-                          "significant",
-                          "twofold")) + "\n")
+    outf.write("\t".join(
+        ("design", "geneset", "level", "treatment_name",
+         "control_name", "tested",
+         "\t".join(["status_%s" % x for x in keys_status]),
+         "significant",
+         "twofold")) + "\n")
 
     all_tables = set(Database.getTables(dbhandle))
 
@@ -1090,8 +1153,8 @@ def loadTagCountSummary(infile, outfile):
 #########################################################################
 # IMS: switch exon counts to feature counts
 TARGETS_DE = [((x, y, glob.glob("*.bam"),
-                "feature_counts.dir/%s.feature_counts.tsv.gz" % P.snip(y,
-                                                                       ".gtf.gz", path=True)),
+                "feature_counts.dir/%s.feature_counts.tsv.gz" %
+                P.snip(y, ".gtf.gz", strip_path=True)),
                "%s_%s.diff" % (P.snip(x, ".tsv"), P.snip(y, ".gtf.gz")))
               for x, y in itertools.product(glob.glob("design*.tsv"),
                                             glob.glob("*.gtf.gz"))]
@@ -1106,7 +1169,6 @@ TARGETS_DE = [((x, y, glob.glob("*.bam"),
 def runDESeq(infiles, outfile):
     '''perform differential expression analysis using deseq.'''
 
-    to_cluster = True
     design_file, geneset_file, bamfiles, count_file = infiles
 
     track = P.snip(outfile, ".diff")
@@ -1143,7 +1205,7 @@ def loadDESeq(infile, outfile):
             | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --allow-empty
               --index=test_id
-              --table=%(tablename)s 
+              --table=%(tablename)s
             > %(outfile)s
     '''
     P.run()
@@ -1181,22 +1243,20 @@ def loadDESeqStats(infile, outfile):
 def runEdgeR(infiles, outfile):
     '''perform differential expression analysis using edger.'''
 
-    to_cluster = True
-
     design_file, geneset_file, bamfiles, count_file = infiles
     track = P.snip(outfile, ".diff")
 
     statement = '''python %(scriptsdir)s/runExpression.py
-              --method=edger
-              --filename-tags=%(count_file)s
-              --filename-design=%(design_file)s
-              --output-filename-pattern=%(track)s_
-              --outfile=%(outfile)s
-              --fdr=%(edger_fdr)f
-              --filter-min-counts-per-row=%(tags_filter_min_counts_per_row)i
-              --filter-min-counts-per-sample=%(tags_filter_min_counts_per_sample)i
-              --filter-percentile-rowsums=%(tags_filter_percentile_rowsums)i
-              > %(outfile)s.log '''
+    --method=edger
+    --filename-tags=%(count_file)s
+    --filename-design=%(design_file)s
+    --output-filename-pattern=%(track)s_
+    --outfile=%(outfile)s
+    --fdr=%(edger_fdr)f
+    --filter-min-counts-per-row=%(tags_filter_min_counts_per_row)i
+    --filter-min-counts-per-sample=%(tags_filter_min_counts_per_sample)i
+    --filter-percentile-rowsums=%(tags_filter_percentile_rowsums)i
+    > %(outfile)s.log '''
 
     P.run()
 
@@ -1212,11 +1272,11 @@ def loadEdgeR(infile, outfile):
     # add gene level follow convention "<level>_diff"
     tablename = P.toTable(outfile) + "_gene_diff"
     statement = '''cat %(infile)s
-            | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --allow-empty
-              --index=test_id
-              --table=%(tablename)s 
-            > %(outfile)s
+    | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+    --allow-empty
+    --index=test_id
+    --table=%(tablename)s
+    > %(outfile)s
     '''
     P.run()
 
@@ -1248,7 +1308,9 @@ def loadEdgeRStats(infile, outfile):
 ###################################################################
 
 
-@follows(loadCufflinks, loadGeneLevelReadCounts)
+@follows(loadCufflinks,
+         loadCufflinksFPKM,
+         loadGeneLevelReadCounts)
 def expression():
     pass
 

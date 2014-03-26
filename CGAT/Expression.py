@@ -1661,14 +1661,12 @@ def loadCuffdiff(infile, outfile):
     for line in inf:
         line = line.split("\t")
         our_sample_name = P.snip(line[0])
-        our_sample_name = re.sub("-","_", our_sample_name)
+        our_sample_name = re.sub("-", "_", our_sample_name)
         cuffdiff_sample_name = "%s_%s" % (line[1], line[2])
         sample_lookup[cuffdiff_sample_name] = our_sample_name
 
     inf.close()
 
-
-                           
     for fn, level in (("cds.read_group_tracking", "cds"),
                       ("genes.read_group_tracking", "gene"),
                       ("isoforms.read_group_tracking", "isoform"),
