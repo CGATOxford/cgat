@@ -1,5 +1,4 @@
-'''
-gtf2table.py - annotate genes/transcripts
+'''gtf2table.py - annotate genes/transcripts
 =========================================
 
 :Author: Andreas Heger
@@ -10,20 +9,20 @@ gtf2table.py - annotate genes/transcripts
 Purpose
 -------
 
-compute properties of genes or transcripts given in a :term:`gtf` 
-formatted file and output them in tabular format. 
+compute properties of genes or transcripts given in a :term:`gtf`
+formatted file and output them in tabular format.
 
 Quantities can be either computed per gene (all exons across all transcripts)
 or per transcript. The input needs to be sorted accordingly.
 
 The following methods (see option ``--counter``) are available:
 
-bigwig-counts 
+bigwig-counts
    collect density values from bigwig file and output
    summary statistics and percentage of bases covered (``pcovered``)
    by value in bigwig file.
-   
-binding-pattern 
+
+binding-pattern
    given a list of intervals, determine the binding
    pattern within and surrounding the gene. For each gene, intervals
    overlapping the CDS, introns, UTRs and the flank are collected and
@@ -41,8 +40,8 @@ classifier-rnaseq
    geneset. Requires a :term:`gtf` file with a reference
    gene set.
 
-classifier-polii classify 
-   according to PolII transcripts. A
+classifier-polii
+   classify according to PolII transcripts. A
    gene/transcript is transcribed, if it is covered by large PolII
    intervals over 80% of its length. A gene/transript is primed if its
    promotor/UTR is covered by 50% of its length, while the rest of the
@@ -65,7 +64,7 @@ distance
    information of the features is ignored.
 
 distance-genes
-   compute distance of genes to genes in a second file. Requires a 
+   compute distance of genes to genes in a second file. Requires a
    second :term:`gtf` formatted file with genes. The counter distinguishes
    a variety of cases (closest upstream/downstream).
 
@@ -87,7 +86,7 @@ overlap
 overlap-stranded
     count overlap with genomic features in second another file. Outputs
     the number of overlapping exons. Records the direction of overlap
-    (sense/antisense). Requires a :term:`gff` formatted file with 
+    (sense/antisense). Requires a :term:`gff` formatted file with
     features.
 
 overlap-transcripts
@@ -103,7 +102,7 @@ position
    output genomic coordinates of gene
 
 proximity
-   report summary stats (lengths,values) of features in proximity to 
+   report summary stats (lengths,values) of features in proximity to
    genes input gene set. Requires a :term:`gff` formatted file with
    genomic features.
 
@@ -123,8 +122,17 @@ read-extension
 
 read-counts
    count number of reads overlapping a gene or transcript. Counts
-   uniquely by read name and counts duplicate and non-duplicate (reads)
-   separately.
+   uniquely by read name and counts duplicate and non-duplicate
+   (reads) separately.
+
+readpair-counts
+   count number of read pairs overlapping a gene or
+   transcript. Summarizes the output of readpair-fullcounts.
+
+readpair-fullcounts
+   count number of read pairs overlapping a gene or transcript.
+   Pairs are counted according to a variety of attributes
+   (exonic overlap/read pair status/splice status/...).
 
 splice
    output splicing summary of gene
@@ -132,6 +140,117 @@ splice
 splice-comparison
 
 territories
+
+Read counting
++++++++++++++
+
+The methods ``read-counts`` and ``readpair-counts`` count the number
+of reads inside a :term:`bam` formatted file that map inside a
+transcript or gene.
+
+These counters proceed on a per-gene or per-transcript basis depending
+on the ``--reporter`` option. All reads overlapping the exons or
+introns of a transcript are collected and counted either individually
+(``read-counts``) or as pairs (``readpair-counts``).
+
+For paired-read counting, each pair is classified and counted
+according to the following for axes:
+
+1. Pair status: proper pair, unmapped read in pair, ...
+2. Direction: for stranded protocols, sense, antisense, ...
+3. Overlap status: Pair overlaps exons only, introns only, ...
+4. Splice status: Reads are unspliced, spliced consistently with
+   transcript model, or inconsistently with transcript model
+
+Counts are then collated into a smaller set of summaries for convenience:
+
++--------------------+----------------------------------------------------+
+|Column              |Number of read pairs                                |
++--------------------+----------------------------------------------------+
+|counted_all         |considered to be correct: they are sense, overlap   |
+|                    |with exons fully.                                   |
++--------------------+----------------------------------------------------+
+|counted_spliced     |in sense direction and exonic, spliced and spliced  |
+|                    |correctly.                                          |
+|                    |                                                    |
++--------------------+----------------------------------------------------+
+|counted_unspliced   |in sense direction and exonic, not spliced.         |
++--------------------+----------------------------------------------------+
+|sense_intronic      |intronic and sense direction.                       |
++--------------------+----------------------------------------------------+
+|sense_inconsistent  |in sense direction, but overlap both introns and    |
+|                    |exons or extend beyond the transcript modelse       |
++--------------------+----------------------------------------------------+
+|sense_other         |in sense direction, but not counted, intronic or    |
+|                    |inconsistent.                                       |
++--------------------+----------------------------------------------------+
+|antisense           |in antisense direction.                             |
++--------------------+----------------------------------------------------+
+|nonsense            |in unexpected orientation                           |
++--------------------+----------------------------------------------------+
+|notproper           |that are not proper pairs                           |
++--------------------+----------------------------------------------------+
+|quality_pairs       |affected by a the removal of a low-quality read     |
++--------------------+----------------------------------------------------+
+|quality_reads       |Number of low quality reads removed                 |
++--------------------+----------------------------------------------------+
+|total               |Total number of pairs considered                    |
++--------------------+----------------------------------------------------+
+
+The Counter ``readpair-fullcounts`` provides the detailed counts
+for each transcript model according to the four axes. The output
+can be used to implement custom counting schemes.
+
+Reads below a minimum quality score will be ignored
+(``--min-read-quality``). By default, all reads will be counted.
+
+Reads mapping to multiple locations will be downweighted if
+the ``--weight-multi-mapping`` option is set. This requires
+the presence of the ``NH`` flag in the :term:`bam` file.
+
+For paired read counting, the library type can be specified with the
+``--library-type`` option to make use of strand information. Library
+types are labelled according to the tophat_ and cufflinks_
+convention. A summary is `here
+<http://www.nature.com/nprot/journal/v7/n3/fig_tab/nprot.2012.016_T1.html>`_.
+
++--------------------+--------------------+------------------------------+
+|Library type        |RNA-seq protocol    |Explanation                   |
++--------------------+--------------------+------------------------------+
+|fr-unstranded       |Illumina TruSeq     |Reads from the leftmost end of|
+| (default)          |                    |the fragment (in transcript   |
+|                    |                    |coordinates) map to the       |
+|                    |                    |transcript strand, and the    |
+|                    |                    |rightmost end maps to the     |
+|                    |                    |opposite strand left          |
+|                    |                    |                              |
++--------------------+--------------------+------------------------------+
+|fr-firststrand      |dUTP, NSR, NNSR39   |Same as above except we       |
+|                    |                    |enforce the rule that the     |
+|                    |                    |rightmost end of the fragment |
+|                    |                    |(in transcript coordinates) is|
+|                    |                    |the first sequenced (or only  |
+|                    |                    |sequenced for single-end      |
+|                    |                    |reads). Equivalently, it is   |
+|                    |                    |assumed that only the strand  |
+|                    |                    |generated during first strand |
+|                    |                    |synthesis is sequenced        |
++--------------------+--------------------+------------------------------+
+|fr-secondstrand     |Directional Illumina|Same as above                 |
+|                    |(Ligation)          |except TopHat/Cufflinks       |
+|                    |Standard SOLiD      |enforce the rule that the     |
+|                    |                    |leftmost end of the fragment  |
+|                    |                    |(in transcript coordinates) is|
+|                    |                    |the first sequenced (or only  |
+|                    |                    |sequenced for single-end      |
+|                    |                    |reads). Equivalently, it is   |
+|                    |                    |assumed that only the strand  |
+|                    |                    |generated during second strand|
+|                    |                    |synthesis is sequenced        |
++--------------------+--------------------+------------------------------+
+
+For unstranded protocols, all reads and pairs are considered to matching
+in the sense direction.
 
 Usage
 -----
@@ -152,28 +271,17 @@ Command line options
 '''
 
 import collections
-import array
-import struct
-import CGAT.Experiment as E
-
-import os
 import sys
 import string
-import re
-import optparse
 import math
-import time
-import tempfile
-import subprocess
 import types
 import bisect
-import array
-import collections
 import itertools
+
+import CGAT.Experiment as E
 import CGAT.GTF as GTF
 import CGAT.Bed as Bed
 import CGAT.IOTools as IOTools
-import CGAT.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Stats as Stats
 import CGAT.SequenceProperties as SequenceProperties
@@ -208,8 +316,8 @@ def readIntervalsFromGFF(filename_gff, source, feature,
     """read intervals from a file or list.
     """
 
-    assert not (
-        with_values and with_records), "both with_values and with_records are true."
+    assert not (with_values and with_records), \
+        "both with_values and with_records are true."
 
     ninput = 0
 
@@ -1356,9 +1464,9 @@ class ClassifierRNASeq(_gtf2table.Counter):
 
 
 class ClassifierRNASeqSplicing(_gtf2table.Counter):
-
-    """This is IMSs new style transcript classifier. It aims to give classifications
-    that make more sense to biologists involved in splicing by using familiar catagories.
+    """This is IMSs new style transcript classifier. It aims to give
+    classifications that make more sense to biologists involved in
+    splicing by using familiar catagories.
 
     classify RNASeq transcripts based on a reference annotation.
 
@@ -1397,36 +1505,40 @@ class ClassifierRNASeqSplicing(_gtf2table.Counter):
     |                    |                                                            |
     +--------------------+------------------------------------------------------------+
     |unknown             |``predicted`` and ``known`` transcript overlap, but do not  |
-        |                    |fall in any of the above categories.                        |
-        |                    |                                                            |
-        +--------------------+------------------------------------------------------------+
+    |                    |fall in any of the above categories.                        |
+    |                    |                                                            |
+    +--------------------+------------------------------------------------------------+
 
-    Any of these forms can also exist as a -fragment. This means that the comparison
-        known and the predicted transcript did not make the criteria for a class, but the 
-        comparison of the predicted and the part of the known transcirpt bewteen the start and
-        end of the known transcript do. 
+    Any of these forms can also exist as a -fragment. This means that
+    the comparison known and the predicted transcript did not make the
+    criteria for a class, but the comparison of the predicted and the
+    part of the known transcirpt bewteen the start and end of the
+    known transcript do.
 
-        Furthermore, ``predicted`` transcripts that do not overlap the exons of a ``known`` 
-    transcript, but only introns, are classed as ``intronic``. All other transcripts
-    that overlap neither introns nor exons of a ``known`` transcript are labeled 
-    ``intergenic``.
+    Furthermore, ``predicted`` transcripts that do not overlap the
+    exons of a ``known`` transcript, but only introns, are classed as
+    ``intronic``. All other transcripts that overlap neither introns
+    nor exons of a ``known`` transcript are labeled ``intergenic``.
 
-    If the ``known`` transcript is protein coding, the ``predicted`` transcript is further 
-    checked if it overlaps with the ``known`` UTR only. These transcripts are labelled ``utr5``
-    and ``utr3``.
+    If the ``known`` transcript is protein coding, the ``predicted``
+    transcript is further checked if it overlaps with the ``known``
+    UTR only. These transcripts are labelled ``utr5`` and ``utr3``.
 
-    Additionaly, the strandedness of the overlap is recorded as well (senes and antisense).
+    Additionaly, the strandedness of the overlap is recorded as well
+    (senes and antisense).
 
-    To decide, which transcript is the closest match, the resultant class are sorted as above 
-    in a priority list, where sense orientation has higher priority than anti-sense orientation.
-    For example, a ``predicted`` transcript will be rather labeled as ``sense intronic`` rather
-     than ``antisense fragment``.
+    To decide, which transcript is the closest match, the resultant
+    class are sorted as above in a priority list, where sense
+    orientation has higher priority than anti-sense orientation.  For
+    example, a ``predicted`` transcript will be rather labeled as
+    ``sense intronic`` rather than ``antisense fragment``.
 
     """
 
     header = ["noverlap_transcripts",
               "noverlap_genes",
-              "match_transcript_id", "match_gene_id", "source", "class", "sense"]
+              "match_transcript_id", "match_gene_id", "source", "class",
+              "sense"]
 
     # number of residues that are permitted for negligible overlap
     tolerance = 1
@@ -1990,8 +2102,9 @@ class ClassifierPolII(ClassifierIntervals):
             promotor_start, promotor_end = end - \
                 self.promotor_downstream, end + self.promotor_upstream
 
-        self.promotor_overlap = Intervals.calculateOverlap([(x.start, x.end) for x in r],
-                                                           [(promotor_start, promotor_end), ])
+        self.promotor_overlap = Intervals.calculateOverlap(
+            [(x.start, x.end) for x in r],
+            [(promotor_start, promotor_end), ])
 
         self.promotor_coverage = 100.0 * \
             float(self.promotor_overlap) / (promotor_end - promotor_start)
@@ -2037,10 +2150,9 @@ class CounterBindingPattern(CounterOverlap):
     Genes with one intron have only a first intron.
     Genes with two introns have a first and a middle intron.
 
-    This method also computes the expected number of times 
-    an interval would overlap with a certain feature. The 
-    probability is only exact if it is assumed that the 
-    intervals are point features.
+    This method also computes the expected number of times an interval
+    would overlap with a certain feature. The probability is only
+    exact if it is assumed that the intervals are point features.
     """
 
     headerTemplate = ["pattern", "overlap"]
@@ -2065,10 +2177,14 @@ class CounterBindingPattern(CounterOverlap):
 
         self.headerTemplate.extend(
             ["%s_%s" % (x, y) for x, y in itertools.product(
-                ("cds", "first_exon", "exon", "utr5", "utr3", "first_intron", "middle_intron", "last_intron", "intron") +
-                tuple(["flank5_%05i" % x for x in range(0, self.flank, increment)]) +
+                ("cds", "first_exon", "exon", "utr5", "utr3",
+                 "first_intron", "middle_intron", "last_intron", "intron") +
                 tuple(
-                    ["flank3_%05i" % x for x in range(0, self.flank, increment)]),
+                    ["flank5_%05i" % x for x in range(
+                        0, self.flank, increment)]) +
+                tuple(
+                    ["flank3_%05i" % x for x in range(
+                        0, self.flank, increment)]),
                 ("overlap", "poverlap"))])
 
     def count(self):
@@ -3227,10 +3343,12 @@ class CounterReadExtension(_gtf2table.Counter):
 
         self.header = \
             tuple(
-                ["%s_%s" % (x, y) for x, y in itertools.product(self.labels, ("length", "start", "end"))] +
+                ["%s_%s" % (x, y) for x, y in itertools.product(
+                    self.labels, ("length", "start", "end"))] +
                 ["%s_%s" % (x, y) for x, y in itertools.product(
                     ["%s_%s" % (xx, yy)
-                     for xx, yy in itertools.product(self.labels, self.directions)],
+                     for xx, yy in itertools.product(
+                         self.labels, self.directions)],
                     ("pcovered", ) + Stats.Summary().getHeaders())])
 
         self.outfiles = IOTools.FilePool(
@@ -3240,9 +3358,11 @@ class CounterReadExtension(_gtf2table.Counter):
         for x, y in itertools.product(self.labels[:2], self.directions):
             self.outfiles.write("%s_%s" % (x, y),
                                 "%s\n" % "\t".join(
-                                    ("gene_id", "length", "utr", "exon") + tuple(map(str, range(0,
-                                                                                                self.max_territory_size,
-                                                                                                self.increment)))))
+                                    ("gene_id", "length", "utr", "exon") +
+                                    tuple(map(str, range(
+                                        0,
+                                        self.max_territory_size,
+                                        self.increment)))))
 
         if not bamfiles:
             raise ValueError("supply --bam-file options for readcoverage")
@@ -3255,7 +3375,8 @@ class CounterReadExtension(_gtf2table.Counter):
         for gtf in GTF.iterator(IOTools.openFile(filename_territories_gff)):
             if gtf.gene_id in self.territories:
                 raise ValueError(
-                    "need territories - multiple entries for gene %s" % gtf.gene_id)
+                    "need territories - multiple entries for gene %s" %
+                    gtf.gene_id)
 
             self.territories[gtf.gene_id] = (gtf.contig, gtf.start, gtf.end)
 
@@ -3281,17 +3402,19 @@ class CounterReadExtension(_gtf2table.Counter):
             is_reverse = True
 
         try:
-            territory_contig, territory_start, territory_end = self.territories[
-                gene_id]
+            territory_contig, territory_start, territory_end =\
+                self.territories[gene_id]
         except KeyError:
             self.skip = True
             return
 
         # sanity check - is gene within territory?
         assert first_exon_start >= territory_start
-        assert last_exon_end <= territory_end, "assertion failed for %s: exon %i > territory %i" % (self.gene_id,
-                                                                                                    last_exon_end,
-                                                                                                    territory_end)
+        assert last_exon_end <= territory_end, \
+            "assertion failed for %s: exon %i > territory %i" % (
+                self.gene_id,
+                last_exon_end,
+                territory_end)
         assert contig == territory_contig
 
         # truncate territory
@@ -3435,13 +3558,15 @@ class CounterReadExtension(_gtf2table.Counter):
                     d.append(cc[x:min(length, x + self.increment)].max())
                 d.extend([""] * (max_d - len(d)))
                 self.outfiles.write("%s_%s" % (label, direction),
-                                    "%s\t%i\t%s\t%s\n" % (self.gene_id,
-                                                          length,
-                                                          utr_extension,
-                                                          "\t".join(map(str, d))))
+                                    "%s\t%i\t%s\t%s\n" % (
+                                        self.gene_id,
+                                        length,
+                                        utr_extension,
+                                        "\t".join(map(str, d))))
 
         # output coverage stats
-        for label, region, counts in zip(self.labels, self.regions, self.counts):
+        for label, region, counts in zip(
+                self.labels, self.regions, self.counts):
             if not region:
                 r.extend(["na"] * (1 + len(Stats.Summary().getHeaders())))
                 continue
@@ -3490,7 +3615,6 @@ class CounterBigwigCounts(_gtf2table.Counter):
         segments = self.getSegments()
 
         length = sum([x[1] - x[0] for x in segments])
-        nreads = 0
         contig = self.getContig()
 
         t, valid = None, None
@@ -3523,43 +3647,64 @@ class CounterBigwigCounts(_gtf2table.Counter):
 
 def main(argv=None):
 
-    parser = E.OptionParser(version="%prog version: $Id: gtf2table.py 2888 2010-04-07 08:48:36Z andreas $",
+    parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genome [default=%default].")
 
-    parser.add_option("-q", "--quality-file", dest="quality_file", type="string",
-                      help="filename with genomic base quality information [default=%default].")
+    parser.add_option("-q", "--quality-file",
+                      dest="quality_file",
+                      type="string",
+                      help="filename with genomic base quality "
+                      "information [default=%default].")
 
-    parser.add_option("-b", "--bam-file", dest="bam_files", type="string", metavar="bam",
-                      help="filename with read mapping information. Multiple files can be submitted in a comma-separated list [default=%default].")
+    parser.add_option("-b", "--bam-file", dest="bam_files",
+                      type="string", metavar="bam",
+                      help="filename with read mapping information. "
+                      "Multiple files can be submitted in a "
+                      "comma-separated list [default=%default].")
 
-    parser.add_option("-i", "--bigwig-file", dest="bigwig_file", type="string", metavar="bigwig",
-                      help="filename with bigwig information [default=%default].")
+    parser.add_option("-i", "--bigwig-file", dest="bigwig_file",
+                      type="string", metavar="bigwig",
+                      help="filename with bigwig information "
+                      "[default=%default].")
 
-    parser.add_option("-f", "--filename-gff", dest="filename_gff", type="string", action="append", metavar='bed',
-                      help="filename with extra gff files. The order is important [default=%default].")
+    parser.add_option("-f", "--filename-gff", dest="filename_gff",
+                      type="string", action="append", metavar='bed',
+                      help="filename with extra gff files. The order "
+                      "is important [default=%default].")
 
-    parser.add_option("--filename-format", dest="filename_format", type="choice",
+    parser.add_option("--filename-format", dest="filename_format",
+                      type="choice",
                       choices=("bed", "gff", "gtf"),
                       help="format of secondary stream [default=%default].")
 
-    parser.add_option("--gff-source", dest="gff_sources", type="string", action="append",
-                      help="restrict input to this 'source' in extra gff file (for counter: overlap) [default=%default].")
+    parser.add_option("--gff-source", dest="gff_sources", type="string",
+                      action="append",
+                      help="restrict input to this 'source' in extra "
+                      "gff file (for counter: overlap) [default=%default].")
 
-    parser.add_option("--gff-feature", dest="gff_features", type="string", action="append",
-                      help="restrict input to this 'feature' in extra gff file (for counter: overlap) [default=%default].")
+    parser.add_option("--gff-feature", dest="gff_features", type="string",
+                      action="append",
+                      help="restrict input to this 'feature' in extra gff "
+                      "file (for counter: overlap) [default=%default].")
 
     parser.add_option("-r", "--reporter", dest="reporter", type="choice",
                       choices=("genes", "transcripts"),
-                      help="report results for 'genes' or 'transcripts' [default=%default].")
+                      help="report results for 'genes' or 'transcripts' "
+                      "[default=%default].")
 
-    parser.add_option("-s", "--section", dest="sections", type="choice", action="append",
+    parser.add_option("-s", "--section", dest="sections",
+                      type="choice",
+                      action="append",
                       choices=("exons", "introns"),
-                      help="select range on which counters will operate [default=%default].")
+                      help="select range on which counters will operate "
+                      "[default=%default].")
 
-    parser.add_option("-c", "--counter", dest="counters", type="choice", action="append",
+    parser.add_option("-c", "--counter", dest="counters",
+                      type="choice",
+                      action="append",
                       choices=(	"bigwig-counts",
                                 "binding-pattern",
                                 "classifier",
@@ -3585,24 +3730,60 @@ def main(argv=None):
                                 "quality",
                                 "read-coverage",
                                 "read-extension",
+                                "read-overlap",
                                 "read-counts",
+                                "read-fullcounts",
+                                "readpair-counts",
+                                "readpair-fullcounts",
                                 "splice",
                                 "splice-comparison",
                                 "territories"),
-                      help="select counters to apply to input [default=%default].")
+                      help="select counters to apply to input "
+                      "[default=%default].")
 
-    parser.add_option("--add-gtf-source", dest="add_gtf_source", action="store_true",
-                      help="add gtf field of source to output [default=%default].")
+    parser.add_option("--add-gtf-source", dest="add_gtf_source",
+                      action="store_true",
+                      help="add gtf field of source to output "
+                      "[default=%default].")
 
-    parser.add_option("--proximal-distance", dest="proximal_distance", type="int",
-                      help="distance to be considered proximal to an interval [default=%default].")
+    parser.add_option("--proximal-distance", dest="proximal_distance",
+                      type="int",
+                      help="distance to be considered proximal to "
+                      "an interval [default=%default].")
 
-    parser.add_option("--weight-multi-mapping", dest="weight_multi_mapping", action="store_true",
-                      help="weight multi-mapping reads is read-counts counter. Requires "
-                      "the NH flag to be set by the mapper [default=%default].")
+    parser.add_option("--weight-multi-mapping",
+                      dest="weight_multi_mapping",
+                      action="store_true",
+                      help="weight multi-mapping reads in bam-files. "
+                      "Requires "
+                      "the NH flag to be set by the mapper "
+                      "[default=%default].")
 
-    parser.add_option("--prefix", dest="prefixes", type="string", action="append",
-                      help="add prefix to column headers - prefixes are used in the same order as the counters [default=%default].")
+    parser.add_option("--prefix", dest="prefixes",
+                      type="string",
+                      action="append",
+                      help="add prefix to column headers - prefixes "
+                      "are used in the same order as the counters "
+                      "[default=%default].")
+
+    parser.add_option("--library-type",
+                      dest="library_type",
+                      type="choice",
+                      choices=("unstranded",
+                               "firststrand",
+                               "secondstrand",
+                               "fr-unstranded",
+                               "fr-firststrand",
+                               "fr-secondstrand"),
+                      help="library type of reads in bam file. "
+                      "[default=%default]")
+
+    parser.add_option("--min-read-quality",
+                      dest="minimum_read_quality",
+                      type="float",
+                      help="minimum read quality. Reads with a quality "
+                      "score of less will be ignored. "
+                      "[default=%default]")
 
     parser.set_defaults(
         genome_file=None,
@@ -3618,7 +3799,9 @@ def main(argv=None):
         proximal_distance=10000,
         bam_files=None,
         weight_multi_mapping=False,
-        prefixes=[]
+        library_type='fr-unstranded',
+        prefixes=[],
+        minimum_read_quality=0,
     )
 
     if not argv:
@@ -3629,7 +3812,8 @@ def main(argv=None):
     if options.prefixes:
         if len(options.prefixes) != len(options.counters):
             raise ValueError(
-                "if any prefix is given, the number of prefixes must be the same as the number of counters")
+                "if any prefix is given, the number of prefixes "
+                "must be the same as the number of counters")
 
     # get files
     if options.genome_file:
@@ -3677,56 +3861,107 @@ def main(argv=None):
         if c == "position":
             for section in options.sections:
                 counters.append(
-                    CounterPosition(section=section, options=options, prefix=prefix))
+                    CounterPosition(
+                        section=section,
+                        options=options,
+                        prefix=prefix))
         elif c == "length":
             for section in options.sections:
                 counters.append(
-                    CounterLengths(section=section, options=options, prefix=prefix))
+                    CounterLengths(
+                        section=section,
+                        options=options,
+                        prefix=prefix))
         elif c == "splice":
             counters.append(CounterSpliceSites(fasta=fasta, prefix=prefix))
         elif c == "quality":
             counters.append(CounterQuality(fasta=quality, prefix=prefix))
         elif c == "overrun":
-            counters.append(CounterOverrun(filename_gff=options.filename_gff,
-                                           options=options, prefix=prefix))
+            counters.append(CounterOverrun(
+                filename_gff=options.filename_gff,
+                options=options,
+                prefix=prefix))
         elif c == "read-coverage":
-            counters.append(_gtf2table.CounterReadCoverage(bam_files,
-                                                           options=options, prefix=prefix))
+            counters.append(_gtf2table.CounterReadCoverage(
+                bam_files,
+                minimum_read_quality=options.minimum_read_quality,
+                options=options,
+                prefix=prefix))
         elif c == "read-extension":
-            counters.append(CounterReadExtension(bam_files,
-                                                 filename_gff=options.filename_gff,
-                                                 options=options,
-                                                 prefix=prefix))
+            counters.append(CounterReadExtension(
+                bam_files,
+                filename_gff=options.filename_gff,
+                minimum_read_quality=options.minimum_read_quality,
+                options=options,
+                prefix=prefix))
+        elif c == "read-overlap":
+            counters.append(_gtf2table.CounterReadOverlap(
+                bam_files,
+                weight_multi_mapping=options.weight_multi_mapping,
+                minimum_read_quality=options.minimum_read_quality,
+                options=options,
+                prefix=prefix))
         elif c == "read-counts":
-            counters.append(_gtf2table.CounterReadCounts(bam_files,
-                                                         weight_multi_mapping=options.weight_multi_mapping,
-                                                         options=options,
-                                                         prefix=prefix))
+            counters.append(_gtf2table.CounterReadCounts(
+                bam_files,
+                weight_multi_mapping=options.weight_multi_mapping,
+                minimum_read_quality=options.minimum_read_quality,
+                options=options,
+                prefix=prefix))
+        elif c == "read-fullcounts":
+            counters.append(_gtf2table.CounterReadCountsFull(
+                bam_files,
+                weight_multi_mapping=options.weight_multi_mapping,
+                minimum_read_quality=options.minimum_read_quality,
+                options=options,
+                prefix=prefix))
+        elif c == "readpair-counts":
+            counters.append(_gtf2table.CounterReadPairCounts(
+                bam_files,
+                weight_multi_mapping=options.weight_multi_mapping,
+                library_type=options.library_type,
+                minimum_read_quality=options.minimum_read_quality,
+                options=options,
+                prefix=prefix))
+        elif c == "readpair-fullcounts":
+            counters.append(_gtf2table.CounterReadPairCountsFull(
+                bam_files,
+                weight_multi_mapping=options.weight_multi_mapping,
+                minimum_read_quality=options.minimum_read_quality,
+                options=options,
+                prefix=prefix))
         elif c == "bigwig-counts":
-            counters.append(CounterBigwigCounts(bigwig_file,
-                                                options=options, prefix=prefix))
+            counters.append(CounterBigwigCounts(
+                bigwig_file,
+                options=options, prefix=prefix))
 
         elif c == "splice-comparison":
-            counters.append(CounterSpliceSiteComparison(fasta=fasta,
-                                                        filename_gff=options.filename_gff,
-                                                        feature=None,
-                                                        source=None,
-                                                        options=options, prefix=prefix))
+            counters.append(CounterSpliceSiteComparison(
+                fasta=fasta,
+                filename_gff=options.filename_gff,
+                feature=None,
+                source=None,
+                options=options, prefix=prefix))
         elif c == "composition-na":
             for section in options.sections:
-                counters.append(CounterCompositionNucleotides(fasta=fasta,
-                                                              section=section,
-                                                              options=options, prefix=prefix))
+                counters.append(CounterCompositionNucleotides(
+                    fasta=fasta,
+                    section=section,
+                    options=options,
+                    prefix=prefix))
         elif c == "composition-cpg":
             for section in options.sections:
-                counters.append(CounterCompositionCpG(fasta=fasta,
-                                                      section=section,
-                                                      options=options, prefix=prefix))
+                counters.append(CounterCompositionCpG(
+                    fasta=fasta,
+                    section=section,
+                    options=options, prefix=prefix))
 
         elif c in ("overlap",
                    "overlap-stranded",
                    "overlap-transcripts",
-                   "proximity", "proximity-exclusive", "proximity-lengthmatched",
+                   "proximity",
+                   "proximity-exclusive",
+                   "proximity-lengthmatched",
                    "neighbours",
                    "territories",
                    "distance",
@@ -3764,12 +3999,14 @@ def main(argv=None):
             for section in options.sections:
                 for source in options.gff_sources:
                     for feature in options.gff_features:
-                        counters.append(template(filename_gff=options.filename_gff,
-                                                 feature=feature,
-                                                 source=source,
-                                                 fasta=fasta,
-                                                 section=section,
-                                                 options=options, prefix=prefix))
+                        counters.append(template(
+                            filename_gff=options.filename_gff,
+                            feature=feature,
+                            source=source,
+                            fasta=fasta,
+                            section=section,
+                            options=options,
+                            prefix=prefix))
 
         elif c == "classifier":
             counters.append(Classifier(filename_gff=options.filename_gff,
@@ -3781,21 +4018,27 @@ def main(argv=None):
                                              fasta=fasta,
                                              options=options, prefix=prefix))
         elif c == "classifier-rnaseq-splicing":
-            counters.append(ClassifierRNASeqSplicing(filename_gff=options.filename_gff,
-                                                     fasta=fasta,
-                                                     options=options, prefix=prefix))
+            counters.append(ClassifierRNASeqSplicing(
+                filename_gff=options.filename_gff,
+                fasta=fasta,
+                options=options,
+                prefix=prefix))
         elif c == "classifier-polii":
-            counters.append(ClassifierPolII(filename_gff=options.filename_gff,
-                                            feature=None,
-                                            source=None,
-                                            fasta=fasta,
-                                            options=options, prefix=prefix))
+            counters.append(ClassifierPolII(
+                filename_gff=options.filename_gff,
+                feature=None,
+                source=None,
+                fasta=fasta,
+                options=options,
+                prefix=prefix))
         elif c == "binding-pattern":
-            counters.append(CounterBindingPattern(filename_gff=options.filename_gff,
-                                                  feature=None,
-                                                  source=None,
-                                                  fasta=fasta,
-                                                  options=options, prefix=prefix))
+            counters.append(CounterBindingPattern(
+                filename_gff=options.filename_gff,
+                feature=None,
+                source=None,
+                fasta=fasta,
+                options=options,
+                prefix=prefix))
 
     if options.reporter == "genes":
         iterator = GTF.flat_gene_iterator

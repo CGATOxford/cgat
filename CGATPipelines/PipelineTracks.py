@@ -9,10 +9,10 @@
 Motivation
 ----------
 
-A pipeline typically processes the data streams from several experimental
-data sources. These data streams are usually processed separately (processing,
-quality control) and as aggregates. For example, consider the following 
-experimental layout:
+A pipeline typically processes the data streams from several
+experimental data sources. These data streams are usually processed
+separately (processing, quality control) and as aggregates. For
+example, consider the following experimental layout:
 
 +------------------------------+--------------------------------------------------+
 |*Filename*                    |*Content*                                         |
@@ -34,22 +34,25 @@ experimental layout:
 |heart-unstimulated-R2         |heart, unstimulated, replicate 2                  |
 +------------------------------+--------------------------------------------------+
 
-The experiment measured in two tissues with two conditions with two replicates each
-giving eight data streams. During the analysis, the streams are merged in a variety 
-of combinations:
+The experiment measured in two tissues with two conditions with two
+replicates each giving eight data streams. During the analysis, the
+streams are merged in a variety of combinations:
 
     * unmerged for initial processing, QC, etc.
     * by replicates to assess reproducibility of measurements
     * by condition to assess the size of the response to the stimulus
-    * by tissue to assess differences between tissue and address the biological question.
+    * by tissue to assess differences between tissue and address the
+      biological question.
 
-The crossing of data streams complicates the building of pipelines, especially
-as no two experiments are the same. The :mod:`PipelineTracks` module assists
-in controlling these data streams. This module provides some tools to map tracks to different 
-representations and to group them in flexible ways in order to provide convenient short-cuts 
-in pipelines.
+The crossing of data streams complicates the building of pipelines,
+especially as no two experiments are the same. The
+:mod:`PipelineTracks` module assists in controlling these data
+streams. This module provides some tools to map tracks to different
+representations and to group them in flexible ways in order to provide
+convenient short-cuts in pipelines.
 
-There are three class within :mod:`PipelineTracks`: :class:`Sample`, :class:`Tracks` and :class:`Aggregate`.
+There are three class within :mod:`PipelineTracks`: :class:`Sample`,
+:class:`Tracks` and :class:`Aggregate`.
 
 A Track
 +++++++
@@ -105,8 +108,9 @@ example above with the attributes tissue, condition and replicate, the
 
 Once defined, you can add tracks to a :class:`tracks` container. For example::
 
-   TRACKS = PipelineTracks.Tracks( MySample ).loadFromDirectory( glob.glob( "*.fastq.gz" ), 
-                                                                 pattern = "(\S+).fastq.gz" )
+   TRACKS = PipelineTracks.Tracks( MySample ).loadFromDirectory(
+            glob.glob("*.fastq.gz"),
+            pattern = "(\S+).fastq.gz")
 
 will collect all files ending in ``.fastq.gz``. The track identifiers
 will be derived by removing the ``fastq.gz`` suffix. The variable
@@ -114,17 +118,23 @@ will be derived by removing the ``fastq.gz`` suffix. The variable
 ``*.fastq.gz``::
 
    >>> print TRACKS
-   [liver-stimulated-R2, heart-stimulated-R2, liver-stimulated-R1, liver-unstimulated-R1, heart-unstimulated-R2, heart-stimulated-R1, heart-unstimulated-R1, liver-unstimulated-R2]
+   [liver-stimulated-R2, heart-stimulated-R2, liver-stimulated-R1,
+    liver-unstimulated-R1, heart-unstimulated-R2, heart-stimulated-R1,
+    heart-unstimulated-R1, liver-unstimulated-R2]
 
 To build aggregates, use :class:`PipelineTracks.Aggregate`. The
 following combines replicates for each experiment::
 
-   EXPERIMENTS = PipelineTracks.Aggregate( TRACKS, labels = ("condition", "tissue" ) )
+   EXPERIMENTS = PipelineTracks.Aggregate(
+         TRACKS,
+         labels=("condition", "tissue"))
 
 Aggregates are simply containers of associated data sets. To get a
 list of experiments, type::
 
-   >>> EXPERIMENTS = PipelineTracks.Aggregate( TRACKS, labels = ("condition", "tissue" ) )
+   >>> EXPERIMENTS = PipelineTracks.Aggregate(
+             TRACKS,
+             labels=("condition", "tissue"))
    >>> print list(EXPERIMENT)
    [heart-stimulated-agg, heart-unstimulated-agg, liver-stimulated-agg, liver-unstimulated-agg]
 
@@ -152,7 +162,8 @@ or as a file, use data access functions :meth:`Sample.asTable` or
    >>> print [x.asTable() for x in EXPERIMENTS['heart-stimulated-agg'] ]
    ['heart_stimulated_R2', 'heart_stimulated_R1']
 
-Note how the ``-`` is converted to ``_`` as the former are illegal as SQL table names.
+Note how the ``-`` is converted to ``_`` as the former are illegal as
+SQL table names.
 
 The default representation is file-based. By using the class method::
 
@@ -230,12 +241,10 @@ API
 
 '''
 
-import sys
 import re
-import string
-import glob
 import collections
 import copy
+import os
 
 # '-' as separator
 FILE_SEPARATOR = "-"
@@ -492,7 +501,7 @@ class Tracks:
     factory = Sample
 
     def __init__(self, factory=Sample):
-        '''create a new container. 
+        '''create a new container.
 
         New tracks are derived using *factory*.
         '''
@@ -503,10 +512,12 @@ class Tracks:
     def loadFromDirectory(self, files, pattern, exclude=None):
         '''load tracks from a list of files, applying pattern.
 
-        Pattern is a regular expression with at at least one 
-        group, for example ``(.*).gz``.
+        Pattern is a regular expression with at at least one group,
+        for example ``(.*).gz``.
 
         If set, exclude files matching regular expression in *exclude*.
+
+        Only the filenames are being used. Any path is removed.
         '''
         tracks = []
         rx = re.compile(pattern)
@@ -514,7 +525,10 @@ class Tracks:
         if exclude:
             to_exclude = [re.compile(x) for x in exclude]
 
+        added = set()
         for f in files:
+            # remove any path
+            f = os.path.basename(f)
             if exclude:
                 skip = False
                 for x in to_exclude:
@@ -524,7 +538,16 @@ class Tracks:
                 if skip:
                     continue
 
-            tracks.append(self.factory(filename=rx.search(f).groups()[0]))
+            try:
+                track = rx.search(f).groups()[0]
+            except AttributeError:
+                raise AttributeError(
+                    "file '%s' not matching '%s'" %
+                    (f, pattern))
+            if track in added:
+                raise ValueError(
+                    "multiple tracks  with the name '%s'" % track)
+            tracks.append(self.factory(filename=track))
 
         self.tracks = tracks
         return self

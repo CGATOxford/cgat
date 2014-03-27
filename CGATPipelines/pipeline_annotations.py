@@ -677,6 +677,9 @@ def loadTranscriptInformation(infile, outfile):
     # uniprot_genename
     if PARAMS["genome"].startswith("dm"):
         del columns["uniprot_genename"]
+    # same fix for yeast
+    if PARAMS["genome"].startswith("sac"):
+        del columns["uniprot_genename"]
 
     data = PipelineBiomart.biomart_iterator(columns.keys(),
                                             biomart=PARAMS[
@@ -720,6 +723,12 @@ def loadTranscriptInformation(infile, outfile):
 
     # adding final column back into transcript_info for dmelanogaster genomes
     if PARAMS["genome"].startswith("dm"):
+        dbh = connect()
+        cc = dbh.cursor()
+        cc.execute( '''ALTER TABLE Table1 ADD COLUMN uniprot_name NULL''' )
+
+    # adding final column back into transcript_info for scerevisiae genomes
+    if PARAMS["genome"].startswith("sac"):
         dbh = connect()
         cc = dbh.cursor()
         cc.execute( '''ALTER TABLE Table1 ADD COLUMN uniprot_name NULL''' )

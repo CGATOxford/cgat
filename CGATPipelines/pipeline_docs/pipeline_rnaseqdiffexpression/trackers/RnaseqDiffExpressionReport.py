@@ -36,7 +36,7 @@ DATABASE_ANNOTATIONS = P['annotations_database']
 import CGATPipelines.PipelineTracks as PipelineTracks
 
 TRACKS = PipelineTracks.Tracks(PipelineTracks.Sample).loadFromDirectory(
-    glob.glob("%s/*.bam" % DATADIR), "%s/(\S+).bam" % DATADIR)
+    glob.glob("%s/*.bam" % DATADIR), "(\S+).bam")
 
 ALL = PipelineTracks.Aggregate(TRACKS)
 EXPERIMENTS = PipelineTracks.Aggregate(TRACKS, labels=("condition", "tissue"))

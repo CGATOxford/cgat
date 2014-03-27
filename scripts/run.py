@@ -1,3 +1,4 @@
+#!/bin/env python
 '''
 run.py - wrapper around command line
 ====================================

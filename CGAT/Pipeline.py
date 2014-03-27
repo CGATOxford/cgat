@@ -95,6 +95,12 @@ SCRIPTS_DIR = os.path.join(ROOT_DIR, "scripts")
 if not os.path.exists(SCRIPTS_DIR):
     SCRIPTS_DIR = os.path.join(sys.exec_prefix, "bin")
 
+#######################################################
+#######################################################
+#######################################################
+## Setting/using parameters
+#######################################################
+
 # possible to use defaultdict, but then statements will
 # fail on execution if a parameter does not exists, and not
 # while building the statement. Hence, use dict.
@@ -231,12 +237,75 @@ def substituteParameters(**kwargs):
                 p = k[len(outfile) + 1:]
                 if p not in local_params:
                     raise KeyError(
-                        "task specific parameter '%s' does not exist for '%s' " % (p, k))
-                E.debug("substituting task specific parameter for %s: %s = %s" %
+                        "task specific parameter '%s' "
+                        "does not exist for '%s' " % (p, k))
+                E.debug("substituting task specific parameter "
+                        "for %s: %s = %s" %
                         (outfile, p, local_params[k]))
                 local_params[p] = local_params[k]
 
     return local_params
+
+
+def asList(param):
+    '''return a param as a list'''
+    if type(param) == str:
+        try:
+            params = [x.strip() for x in param.strip().split(",")]
+        except AttributeError:
+            params = [param.strip()]
+        return [x for x in params if x != ""]
+    elif type(param) in (types.ListType, types.TupleType):
+        return param
+    else:
+        return [param]
+
+
+def asTuple(param):
+    '''return a param as a list'''
+    return tuple(asList(param))
+
+
+def flatten(l, ltypes=(list, tuple)):
+    '''flatten a nested list/tuple.'''
+    ltype = type(l)
+    l = list(l)
+    i = 0
+    while i < len(l):
+        while isinstance(l[i], ltypes):
+            if not l[i]:
+                l.pop(i)
+                i -= 1
+                break
+            else:
+                l[i:i + 1] = l[i]
+        i += 1
+    return ltype(l)
+
+
+def asDict(param):
+    '''return a section of configuration file as a dictionary.'''
+    return dict(CONFIG.items(param))
+
+
+def isTrue(param):
+    '''return True if param has a True value.
+
+    A parameter is false if it is:
+
+    * not set
+    * 0
+    * the empty string
+    * false or False
+
+    Otherwise the value is true.
+    '''
+    value = PARAMS.get(param, 0)
+    return value.lower() != 'false' or value
+
+#######################################################
+##
+#######################################################
 
 
 def checkFiles(filenames):
@@ -356,6 +425,9 @@ def checkParameter(key):
     if key not in PARAMS:
         raise ValueError("need `%s` to be set" % key)
 
+########################################
+########################################
+
 
 def log(loglevel, message):
     """log message at loglevel."""
@@ -397,47 +469,6 @@ def isEmpty(filename):
             return len(inf.read(10)) == 0
     else:
         return os.stat(filename)[6] == 0
-
-
-def asList(param):
-    '''return a param as a list'''
-    if type(param) == str:
-        try:
-            params = [x.strip() for x in param.strip().split(",")]
-        except AttributeError:
-            params = [param.strip()]
-        return [x for x in params if x != ""]
-    elif type(param) in (types.ListType, types.TupleType):
-        return param
-    else:
-        return [param]
-
-
-def asTuple(param):
-    '''return a param as a list'''
-    return tuple(asList(param))
-
-
-def flatten(l, ltypes=(list, tuple)):
-    '''flatten a nested list/tuple.'''
-    ltype = type(l)
-    l = list(l)
-    i = 0
-    while i < len(l):
-        while isinstance(l[i], ltypes):
-            if not l[i]:
-                l.pop(i)
-                i -= 1
-                break
-            else:
-                l[i:i + 1] = l[i]
-        i += 1
-    return ltype(l)
-
-
-def asDict(param):
-    '''return a section of configuration file as a dictionary.'''
-    return dict(CONFIG.items(param))
 
 
 def quote(track):
@@ -576,7 +607,7 @@ def concatenateAndLoad(infiles,
                    %(infiles)s
                    | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
                       --index=track
-                      --table=%(tablename)s 
+                      --table=%(tablename)s
                       %(load_options)s
                    > %(outfile)s'''
     run()
@@ -755,12 +786,13 @@ def createView(dbhandle, tables, tablename, outfile, view_type="TABLE",
     touch(outfile)
 
 
-def snip(filename, extension=None, alt_extension=None, path=False):
+def snip(filename, extension=None, alt_extension=None,
+         strip_path=False):
     '''return prefix of filename.
 
-    If extension is given, make sure that filename has the extension.
+    If *extension* is given, make sure that filename has the extension.
 
-    If path is set to false, the path is stripped from the file name.
+    If *strip_path* is set to true, the path is stripped from the file name.
     '''
     if extension:
         if filename.endswith(extension):
@@ -773,7 +805,7 @@ def snip(filename, extension=None, alt_extension=None, path=False):
     else:
         root, ext = os.path.splitext(filename)
 
-    if path is True:
+    if strip_path:
         snipped = os.path.basename(root)
     else:
         snipped = root
@@ -825,8 +857,10 @@ def execute(statement, **kwargs):
     stdout, stderr = process.communicate()
 
     if process.returncode != 0:
-        raise PipelineError("Child was terminated by signal %i: \nThe stderr was: \n%s\n%s\n" %
-                            (-process.returncode, stderr, statement))
+        raise PipelineError(
+            "Child was terminated by signal %i: \n"
+            "The stderr was: \n%s\n%s\n" %
+            (-process.returncode, stderr, statement))
 
     return stdout, stderr
 
@@ -834,14 +868,14 @@ def execute(statement, **kwargs):
 # detect_pipe_error(): propagate error of programs not at the end of a pipe
 # checkpoint(): exit a set of chained commands (via ;) if the previous
 # command failed.
-_exec_prefix = '''detect_pipe_error_helper() 
+_exec_prefix = '''detect_pipe_error_helper()
     {
     while [ "$#" != 0 ] ; do
         # there was an error in at least one program of the pipe
         if [ "$1" != 0 ] ; then return 1 ; fi
         shift 1
     done
-    return 0 
+    return 0
     }
     detect_pipe_error() {
     detect_pipe_error_helper "${PIPESTATUS[@]}"
@@ -872,15 +906,16 @@ def buildStatement(**kwargs):
         statement = kwargs.get("statement") % local_params
     except KeyError, msg:
         raise KeyError(
-            "Error when creating command: could not find %s in dictionaries" % msg)
+            "Error when creating command: could not "
+            "find %s in dictionaries" % msg)
     except ValueError, msg:
         raise ValueError("Error when creating command: %s, statement = %s" % (
             msg, kwargs.get("statement")))
 
     # add bash as prefix to allow advanced shell syntax like 'wc -l <(
     # gunzip < x.gz)'
-    # executable option to call() does not work. Note that there will be an extra
-    # indirection.
+    # executable option to call() does not work. Note that there will
+    # be an extra indirection.
     statement = " ".join(re.sub("\t+", " ", statement).split("\n")).strip()
     if statement.endswith(";"):
         statement = statement[:-1]
@@ -906,7 +941,7 @@ def joinStatements(statements, infile):
     These will be replaced by the names of successive temporary
     files.
 
-    In the first statement, @IN@ is replaced with *infile*. 
+    In the first statement, @IN@ is replaced with *infile*.
 
     The last statement should move @IN@ to outfile.
 
@@ -941,7 +976,7 @@ def getStdoutStderr(stdout_path, stderr_path, tries=5):
 
     Try at most *tries* times. If unsuccessfull, throw PipelineError.
 
-    Removes the files once they are read. 
+    Removes the files once they are read.
 
     Returns tuple of stdout and stderr.
     '''
@@ -1040,17 +1075,21 @@ def run(**kwargs):
         '''
 
         tmpfile = getTempFile(dir=os.getcwd())
-        tmpfile.write("#!/bin/bash\n")  # -l -O expand_aliases\n" )
+        # disabled: -l -O expand_aliases\n" )
+        tmpfile.write("#!/bin/bash\n")
         tmpfile.write(
-            'echo "START--------------------------------" >> %s \n' % shellfile)
+            'echo "START--------------------------------" >> %s\n' % shellfile)
         # disabled - problems with quoting
-        # tmpfile.write( '''echo 'statement=%s' >> %s\n''' % (shellquote(statement), shellfile) )
+        # tmpfile.write( '''echo 'statement=%s' >> %s\n''' %
+        # (shellquote(statement), shellfile) )
         tmpfile.write("set &>> %s\n" % shellfile)
         tmpfile.write("module list &>> %s\n" % shellfile)
         tmpfile.write(
-            'echo "END----------------------------------" >> %s \n' % shellfile)
+            'echo "END----------------------------------" >> %s\n' % shellfile)
         tmpfile.write(
-            expandStatement(statement, ignore_pipe_errors=ignore_pipe_errors) + "\n")
+            expandStatement(
+                statement,
+                ignore_pipe_errors=ignore_pipe_errors) + "\n")
         tmpfile.close()
 
         job_path = os.path.abspath(tmpfile.name)
@@ -1124,7 +1163,7 @@ def run(**kwargs):
     # If the cluster has not been disabled through the command line, do not
     #     run on cluster
     elif (options.get("job_queue") or
-          ("to_cluster" not in options or options.get( "to_cluster" ))) \
+          ("to_cluster" not in options or options.get("to_cluster"))) \
             and (GLOBAL_OPTIONS and not GLOBAL_OPTIONS.without_cluster):
 
         statement = buildStatement(**options)
@@ -1171,16 +1210,18 @@ def run(**kwargs):
 
         if "job_array" not in options:
             if retval and retval.exitStatus != 0:
-                raise PipelineError("---------------------------------------\n"
-                                    "Child was terminated by signal %i: \n"
-                                    "The stderr was: \n%s\n%s\n"
-                                    "-----------------------------------------" %
-                                    (retval.exitStatus,
-                                     "".join(stderr), statement))
+                raise PipelineError(
+                    "---------------------------------------\n"
+                    "Child was terminated by signal %i: \n"
+                    "The stderr was: \n%s\n%s\n"
+                    "-----------------------------------------" %
+                    (retval.exitStatus,
+                     "".join(stderr), statement))
 
         session.deleteJobTemplate(jt)
         try:
             os.unlink(job_path)
+            pass
         except OSError:
             L.warn(
                 ("temporary job file %s not present for "
@@ -1266,9 +1307,7 @@ def submit(module, function, params=None,
         params = ""
 
     job_options = jobOptions
-
     to_cluster = toCluster
-
     statement = '''python %(scriptsdir)s/run_function.py
                           --module=%(module)s
                           --function=%(function)s
@@ -1691,7 +1730,7 @@ def main(args=sys.argv):
                     options.stdout,
                     options.pipeline_format,
                     options.pipeline_targets)
-                
+
             elif options.pipeline_action == "plot":
                 outf, filename = tempfile.mkstemp()
                 pipeline_printout_graph(
