@@ -9,7 +9,6 @@ CSV.py - Tools for parsing CSV files
 
 """
 
-import string
 import re
 import types
 import csv
@@ -118,7 +117,6 @@ def GetMapColumn2Type(rows, ignore_empty=False, get_max_values=False):
                 map_column2type[h] = types.StringType
             else:
                 ignored.append(h)
-
     if get_max_values:
         return map_column2type, ignored, max_values
     else:
