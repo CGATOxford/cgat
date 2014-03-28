@@ -431,7 +431,11 @@ ILLUMINA_ADAPTORS = {"Genomic-DNA-Adaptor": "GATCGGAAGAGCTCGTATGCCGTCTTCTGCTTG",
                      "Epicentre-Nextera-Primer1": "AATGATACGGCGACCACCGA",
                      "Epicentre-Nextera-Primer2": "CAAGCAGAAGACGGCATACGA",
                      "Epicentre-Nextera-Read1": "GCCTCCCTCGCGCCATC",
-                     "Epicentre-Nextera-Read2": "GCCTTGCCAGCCCGCTC"
+                     "Epicentre-Nextera-Read2": "GCCTTGCCAGCCCGCTC",
+                     "NETseq-linker-1": "CTGTAGGCACCATCAAT",
+                     "NETseq-RT-primer_5prime": "ATCTCGTATGCCGTCTTCTGCTTG",
+                     "NETseq-RT-primer_3prime": "TCCGACGATCATTGATGGTGCCTACAG",
+                     "NETseq-PCR-primer-oLSC008-bc1": "AATGATACGGCGACCACCGAGATCTACACGATCGGAAGAGCACACGTCTGAACTCCAGTCACATGCCATCCGACGATCATTGATGG"
                      }
 
 #########################################################################

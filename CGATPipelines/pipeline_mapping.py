@@ -243,7 +243,8 @@ else:
 MAPPERS = P.asList(PARAMS["mappers"])
 SPLICED_MAPPING = ("tophat" in MAPPERS or
                    "gsnap" in MAPPERS or
-                   "star" in MAPPERS)
+                   "star" in MAPPERS or
+                   "tophat2" in MAPPERS)
 
 
 ###################################################################
