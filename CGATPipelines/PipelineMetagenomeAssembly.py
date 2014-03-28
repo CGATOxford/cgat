@@ -253,7 +253,7 @@ class Metavelvet(Assembler):
     velvet single genome assembly software
     '''
 
-    def build(self, infile):
+    def build(self, infile, PARAMS):
         '''
         run velveth and velvetg
         followed by meta-velvetg
@@ -279,7 +279,7 @@ class Metavelvet(Assembler):
         self.stats_file = track + ".stats.txt"
 
         if paired:
-            insert_length = "ins_length %i" % PARAMS["velvetg_insert_length"]
+            insert_length = "-ins_length %i" % PARAMS["velvetg_insert_length"]
         else:
             insert_length = ""
 
