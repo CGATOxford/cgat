@@ -429,7 +429,7 @@ def runMetavelvet(infile, outfile):
     run meta-velvet on each track
     '''
     job_options = " -l mem_free=30G"
-    statement = PipelineMetagenomeAssembly.Metavelvet().build(infile)
+    statement = PipelineMetagenomeAssembly.Metavelvet().build(infile, PARAMS)
     P.run()
 
 ###################################################################
