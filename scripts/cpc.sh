@@ -106,12 +106,12 @@ if test ! -x "$APP_FF"; then
 fi
 
 APP_SVM_SCALE="$LIB_DIR/libsvm/libsvm-2.81/svm-scale"
-test -x "$APP_SVM_SCALE" || (echo "Can't find svm-scale on your path, eheck it!" > /dev/stderr && exit 1)
+test -x "$APP_SVM_SCALE" || (echo "Can't find svm-scale on your path, check it!" > /dev/stderr && exit 1)
 
 APP_SVM_PREDICT="$LIB_DIR/libsvm/libsvm-2.81/svm-predict"
 APP_SVM_PREDICT2="$LIB_DIR/libsvm/libsvm-2.81/svm-predict2"
-test -x "$APP_SVM_PREDICT" || (echo "Can't find svm-predict on your path, eheck it!" > /dev/stderr && exit 1)
-test -x "$APP_SVM_PREDICT2" || (echo "Can't find svm-predict2 on your path, eheck it!" > /dev/stderr && exit 1)
+test -x "$APP_SVM_PREDICT" || (echo "Can't find svm-predict on your path, check it!" > /dev/stderr && exit 1)
+test -x "$APP_SVM_PREDICT2" || (echo "Can't find svm-predict2 on your path, check it!" > /dev/stderr && exit 1)
 
 APP_BLAST2TAB=$LIB_DIR/blast2table.pl
 if test ! -x "$APP_FF"; then
@@ -136,6 +136,8 @@ fi
 blast_opts="-strand plus";              # only the same strand
 blast_opts="$blast_opts -evalue 1e-10"; # as a quick setting (BLAST 9.3.2)
 blast_opts="$blast_opts -ungapped";  # un-gapped blast (Frith2006, PLoS)
+# Jethro ncbiblast-2.2.28+ 'Composition-adjusted searching not spported with ungapped search'
+#blast_opts="$blast_opts -comp_based_stats F" 
 blast_opts="$blast_opts -threshold 14"; # Neighborhood word threshold score, default=12 (BLAST 9.3.2)
 blast_opts="$blast_opts -db $m_blast_db"	# database settings
 
@@ -154,7 +156,7 @@ input_seq_size=`stat -Lc "%s" $arg_input_seq`;
 
 # local version
 echo "running blast"
-(cat $arg_input_seq | $APP_FARM $APP_BLAST $blast_opts | tee $arg_working_dir/blastx.bls | perl $APP_BLAST2TAB | tee $arg_working_dir/blastx.table | perl $c_extract_blast_feat ) > $arg_working_dir/blastx.feat1 &
+(cat $arg_input_seq | $APP_FARM $APP_BLAST $blast_opts | tee $arg_working_dir/blastx.bls | perl $APP_BLAST2TAB 2> $arg_working_dir/blast2table.log | tee $arg_working_dir/blastx.table | perl $c_extract_blast_feat ) > $arg_working_dir/blastx.feat1 & 
 
 echo "running framefinder"
 (cat $arg_input_seq | $APP_FF $ff_opts | tee $arg_working_dir/ff.fa1 | perl $c_extract_ff_feat ) > $arg_working_dir/ff.feat &
