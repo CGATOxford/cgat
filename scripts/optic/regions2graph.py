@@ -609,7 +609,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(
@@ -1045,7 +1045,7 @@ def main(argv=None):
             this_query_gene = None
 
         # process first entry
-        if min_from == None:
+        if min_from is None:
             min_from = this_prediction.mSbjctGenomeFrom
             max_from = this_prediction.mSbjctGenomeFrom
             max_to = this_prediction.mSbjctGenomeTo

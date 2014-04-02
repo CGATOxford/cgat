@@ -1,8 +1,4 @@
-import os
-import sys
 import re
-import types
-import itertools
 import glob
 
 from SphinxReport.Tracker import *
@@ -24,6 +20,7 @@ REFERENCE = "refcoding"
 EXPORTDIR = P.get('mapping_exportdir', P.get('exportdir', 'export'))
 DATADIR = P.get('mapping_datadir', P.get('datadir', '.'))
 DATABASE = P.get('mapping_backend', P.get('sql_backend', 'sqlite:///./csvdb'))
+DATADIR = '.'
 
 ###################################################################
 # cf. pipeline_rnaseq.py
@@ -32,11 +29,11 @@ DATABASE = P.get('mapping_backend', P.get('sql_backend', 'sqlite:///./csvdb'))
 import CGATPipelines.PipelineTracks as PipelineTracks
 
 TRACKS = PipelineTracks.Tracks(PipelineTracks.Sample).loadFromDirectory(
-    glob.glob( "%s/*.sra" % DATADIR), "%s/(\S+).sra" % DATADIR) +\
+    glob.glob("%s/*.sra" % DATADIR), "(\S+).sra") +\
     PipelineTracks.Tracks(PipelineTracks.Sample).loadFromDirectory(
-        glob.glob( "%s/*.fastq.gz" % DATADIR), "%s/(\S+).fastq.gz" % DATADIR ) +\
+        glob.glob("%s/*.fastq.gz" % DATADIR), "(\S+).fastq.gz") +\
     PipelineTracks.Tracks(PipelineTracks.Sample).loadFromDirectory(
-        glob.glob( "%s/*.fastq.1.gz" % DATADIR), "%s/(\S+).fastq.1.gz" % DATADIR ) +\
+        glob.glob("%s/*.fastq.1.gz" % DATADIR), "(\S+).fastq.1.gz") +\
     PipelineTracks.Tracks(PipelineTracks.Sample).loadFromDirectory(
         glob.glob("*.csfasta.gz"), "(\S+).csfasta.gz")
 

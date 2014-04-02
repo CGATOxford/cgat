@@ -66,7 +66,7 @@ def selectTracks(all_tracks, subset):
        tracks build after subtracting Unstim.
     '''
 
-    if subset == None or "master" in subset:
+    if subset is None or "master" in subset:
         return sorted(all_tracks)
     elif "conditions" in subset:
         return sorted(all_tracks)
@@ -167,7 +167,7 @@ class ExpressionAffymetrixSourceCounts(TrackerSQL):
 
         result = odict()
         for source, ncluster_ids, ntranscripts, ngenes in data:
-            if source == None:
+            if source is None:
                 source = "na"
             result[source] = odict((('cluster_ids', ncluster_ids),
                                     ('transcripts', ntranscripts),
@@ -209,7 +209,7 @@ class ExpressionSourceCounts(TrackerSQL):
 
         result = odict()
         for source, ncluster_ids, ntranscripts, ngenes in data:
-            if source == None:
+            if source is None:
                 source = "na"
             result[source] = odict((('cluster_ids', ncluster_ids),
                                     ('transcripts/with', ntranscripts),
@@ -236,7 +236,7 @@ class ExpressionSourceCounts(TrackerSQL):
         data.extend(self.get(statement))
 
         for source, ntranscripts, ngenes in data:
-            if source == None:
+            if source is None:
                 source = "na"
             if source not in result:
                 result[source] = odict((('cluster_ids', 0),
@@ -1130,14 +1130,14 @@ class ExpressionIntervalCounts(ExpressionTracker):
         for d in data:
             gid, closest_dist, nprobeset, nids, pvalue, minpeakval, maxpeakval, description, nmatches = d
 
-            if pvalue == None:
+            if pvalue is None:
                 x = 0
             elif self.called(pvalue):
                 x = 1
             else:
                 x = 2
 
-            if closest_dist != None and closest_dist <= self.mMaxClosestDist:
+            if closest_dist is not None and closest_dist <= self.mMaxClosestDist:
                 if nmatches > 0:
                     y = 0
                 else:
@@ -1437,7 +1437,7 @@ class GOTable(ExpressionTracker):
             return ["%s_%s" % (x, self.suffix) for x in tracks]
 
     def getSlices(self, subset=None):
-        if subset == None:
+        if subset is None:
             return ("biol_process", "cell_location", "mol_function")
         else:
             return subset
@@ -1569,7 +1569,7 @@ class GOMatrix(ExpressionTracker):
             return ["%s_%s" % (x, self.suffix) for x in tracks]
 
     def getSlices(self, subset=None):
-        if subset == None:
+        if subset is None:
             return ("biol_process", "cell_location", "mol_function")
         else:
             return subset

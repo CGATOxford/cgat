@@ -16,104 +16,95 @@ Importing a script/module is a pre-requisite for building
 documentation with sphinx. A script/module that can not be imported
 will fail within sphinx.
 
-Usage
------
+This script is best run within nosetests::
 
-Example::
+   nosetests tests/test_import.py
 
-   python test_import.py
-
-Type::
-
-   python cgat_import_extensions.py --help
-
-for command line help.
-
-Command line options
---------------------
 
 '''
 
 import os
-import sys
-import re
-import optparse
 import glob
 import traceback
 import imp
 
+from nose.tools import ok_
+
 import CGAT.Experiment as E
 
-# DIRECTORIES to examine for python modulesl/scripts
-DIRECTORIES = ('scripts',
-               'scripts/optic',
-               'scripts/gpipe',
-               'CGAT',
-               'CGATPipelines')
+# DIRECTORIES to examine for python modules/scripts
+EXPRESSIONS = (
+    ('tests', 'tests/*.py'),
+    ('scripts', 'scripts/*.py'),
+    ('optic', 'scripts/optic/*.py'),
+    ('gpipe', 'scripts/gpipe/*.py'),
+    ('CGAT', 'CGAT/*.py'),
+    ('CGATPipelines', 'CGATPipelines/*.py'))
+
+# Scripts to exclude as they fail imports.
+EXCLUDE = (
+    # The following fail because of pybedtools
+    # compilation fails. Reason why it triggers
+    # recompilation or why it fails is unknown
+    # (it seems using C compiler for C++ code).
+    'pipeline_intervals',
+    'bam2transcriptContribution',
+    'beds2counts',
+    'fasta2bed',
+    # The following fail because of pyximport
+    # problems
+    'bed2table',)
 
 
-def check_import(directory):
+def check_import(filename, outfile):
 
-    files = glob.glob(os.path.join(directory, "*.py"))
-    files.sort()
+    prefix, suffix = os.path.splitext(filename)
+    dirname, basename = os.path.split(prefix)
 
-    c = E.Counter()
+    if basename in EXCLUDE:
+        return
 
-    #import IndexedGenome
-    #files = ('IndexedGenome.py',)
+    if os.path.exists(prefix + ".pyc"):
+        os.remove(prefix + ".pyc")
 
-    sys.stderr.write(str(sys.path) + "\n")
-    for filename in files:
-        sys.stderr.write("importing %s\n" % filename)
-        c.input += 1
-        prefix, suffix = os.path.splitext(filename)
+    # ignore script with pyximport for now, something does not work
+    pyxfile = os.path.join(dirname, "_") + basename + "x"
+    if os.path.exists(pyxfile):
+        return
 
-        dirname, basename = os.path.split(prefix)
+    try:
+        imp.load_source(basename, filename)
+    except ImportError, msg:
+        outfile.write("FAIL %s\n%s\n" % (basename, msg))
+        outfile.flush()
+        traceback.print_exc(file=outfile)
+        ok_(False, '%i scripts/modules - ImportError' % basename)
+    except Exception, msg:
+        outfile.write("FAIL %s\n%s\n" % (basename, msg))
+        outfile.flush()
 
-        if os.path.exists(prefix + ".pyc"):
-            os.remove(prefix + ".pyc")
+        traceback.print_exc(file=outfile)
+        ok_(False, '%i scripts/modules - Exception' % basename)
 
-        pyxfile = os.path.join(dirname, "_") + basename + "x"
-        # ignore script with pyximport for now, something does not work
-        if os.path.exists(pyxfile):
-            c.skipped_pyx += 1
-            continue
-
-        success = False
-        try:
-            imp.load_source(basename, os.path.join(directory, filename))
-            c.success += 1
-            success = True
-            sys.stderr.write("PASS %s\n" % basename)
-            sys.stderr.flush()
-        except ImportError, msg:
-            c.import_fail += 1
-            sys.stderr.write("FAIL %s\n%s\n" % (basename, msg))
-            sys.stderr.flush()
-            traceback.print_exc()
-        except Exception, msg:
-            c.other_fail += 1
-            sys.stderr.write("FAIL %s\n%s\n" % (basename, msg))
-            sys.stderr.flush()
-            traceback.print_exc()
-
-        c.output += 1
-
-    sys.stderr.write('%s: %s\n' % (os.path.dirname(directory), c))
+    ok_(True)
 
 
 def test_imports():
-    '''test importing'''
+    '''test importing
 
-    # add scripts directories to path.  imp.load_source does not import
-    # modules that are in the same directory as the module being
-    # loaded from source. This causes a problem in the scripts
-    # directory where some scripts import function from other
-    # scripts.
+    Relative imports will cause a failure because
+    imp.load_source does not import modules that are in the same
+    directory as the module being loaded from source.
+    '''
+    outfile = open('test_import.log', 'a')
 
-    for directory in ('scripts',):
-        sys.path.insert(0, os.path.abspath(directory))
+    for label, expression in EXPRESSIONS:
 
-    for directory in DIRECTORIES:
-        check_import.description = directory
-        yield(check_import, os.path.abspath(directory))
+        files = glob.glob(expression)
+        files.sort()
+
+        for f in files:
+            if os.path.isdir(f):
+                continue
+            check_import.description = os.path.abspath(f)
+            yield(check_import, os.path.abspath(f), outfile)

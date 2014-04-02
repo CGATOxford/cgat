@@ -281,7 +281,7 @@ def addSegment(feature, start, end, template, options):
 
     entry = GTF.Entry()
 
-    if type(template) == types.TupleType:
+    if isinstance(template, tuple):
         entry.copy(template[0])
         entry.clearAttributes()
         entry.addAttribute("downstream_gene_id", template[1].gene_id)

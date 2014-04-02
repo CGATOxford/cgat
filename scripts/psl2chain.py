@@ -87,7 +87,7 @@ def main(argv=None):
 
         size, tend, qend = 0, None, None
         for qstart, tstart, size in psl.getBlocks():
-            if tend != None:
+            if tend is not None:
                 options.stdout.write(
                     "\t%i\t%i\n" % (tstart - tend, qstart - qend))
             qend, tend = qstart + size, tstart + size

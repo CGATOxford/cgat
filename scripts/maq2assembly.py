@@ -66,7 +66,7 @@ def reader(infile):
         pos, qual = int(pos) - 1, int(qual)
 
         if contig != last_contig or pos - 1 != last_pos:
-            if last_contig != None:
+            if last_contig is not None:
                 yield last_contig, start, last_pos + 1, reads, qualities
             start = pos
             last_contig = contig
@@ -77,7 +77,7 @@ def reader(infile):
         reads.append(nreads)
         qualities.append(qual)
 
-    if last_contig != None:
+    if last_contig is not None:
         yield last_contig, start, last_pos + 1, reads, qualities
 
 
@@ -215,7 +215,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(

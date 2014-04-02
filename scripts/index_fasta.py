@@ -63,7 +63,7 @@ import os
 
 def main(argv=None):
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(version="%prog version: $Id: IndexedFasta.py 2801 2009-10-22 13:40:39Z andreas $",

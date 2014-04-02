@@ -60,7 +60,7 @@ def uncompress(stream):
 
     n, r = None, []
     for c in stream:
-        if n == None:
+        if n is None:
             n = c
         else:
             r.append(n, c)

@@ -248,13 +248,13 @@ def runBaseML(mali, pairs, options):
     map_new2old = mali.mapIdentifiers()
     ids = mali.getIdentifiers()
 
-    if options.kappa != None:
+    if options.kappa is not None:
         paml_options["kappa"] = str(options.kappa)
 
     if options.fix_kappa:
         paml_options["fix_kappa"] = "1"
 
-    if options.alpha != None:
+    if options.alpha is not None:
         paml_options["alpha"] = str(options.alpha)
 
     if options.fix_alpha:
@@ -526,7 +526,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(version="%prog version: $Id: mali2rates.py 2781 2009-09-10 11:33:14Z andreas $",

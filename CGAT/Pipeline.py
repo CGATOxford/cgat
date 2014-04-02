@@ -20,8 +20,7 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##########################################################################
-'''
-Pipeline.py - Tools for ruffus pipelines
+'''Pipeline.py - Tools for ruffus pipelines
 ========================================
 
 :Author: Andreas Heger
@@ -29,9 +28,8 @@ Pipeline.py - Tools for ruffus pipelines
 :Date: |today|
 :Tags: Python
 
-The :mod:`Pipeline` module contains various utility functions
-for interfacing CGAT ruffus pipelines with databases and the 
-cluster.
+The :mod:`Pipeline` module contains various utility functions for
+interfacing CGAT ruffus pipelines with databases and the cluster.
 
 API
 ----
@@ -45,12 +43,9 @@ import optparse
 import stat
 import tempfile
 import time
-import random
 import inspect
 import types
-import multiprocessing
 import logging
-import collections
 import shutil
 import glob
 import gzip
@@ -100,21 +95,27 @@ SCRIPTS_DIR = os.path.join(ROOT_DIR, "scripts")
 if not os.path.exists(SCRIPTS_DIR):
     SCRIPTS_DIR = os.path.join(sys.exec_prefix, "bin")
 
+#######################################################
+#######################################################
+#######################################################
+## Setting/using parameters
+#######################################################
+
 # possible to use defaultdict, but then statements will
 # fail on execution if a parameter does not exists, and not
 # while building the statement. Hence, use dict.
 PARAMS = {
     'scriptsdir': SCRIPTS_DIR,
     'toolsdir': SCRIPTS_DIR,
-    'cmd-farm' : """python %s/farm.py 
-                --method=drmaa 
-                --cluster-priority=-10 
-		--cluster-queue=all.q 
-		--cluster-num-jobs=100 
+    'cmd-farm': """python %s/farm.py
+                --method=drmaa
+                --cluster-priority=-10
+                --cluster-queue=all.q
+                --cluster-num-jobs=100
                 --bashrc=%s/bashrc.cgat
-		--cluster-options="" """ % (SCRIPTS_DIR, SCRIPTS_DIR),
-    'cmd-sql' : """sqlite3 -header -csv -separator $'\\t' """,
-    'cmd-run' : """%s/run.py""" % SCRIPTS_DIR
+                --cluster-options="" """ % (SCRIPTS_DIR, SCRIPTS_DIR),
+    'cmd-sql': """sqlite3 -header -csv -separator $'\\t' """,
+    'cmd-run': """%s/run.py""" % SCRIPTS_DIR
 }
 
 # path until parameter sharing is resolved between CGAT module
@@ -151,9 +152,8 @@ def getParameters(filenames=["pipeline.ini", ],
                   default_ini=True):
     '''read a config file and return as a dictionary.
 
-    Sections and keys are combined with an underscore. If
-    a key without section does not exist, it will be added 
-    plain.
+    Sections and keys are combined with an underscore. If a key
+    without section does not exist, it will be added plain.
 
     For example::
 
@@ -172,6 +172,7 @@ def getParameters(filenames=["pipeline.ini", ],
 
     If default_ini is set, the default initialization file
     will be read from 'CGATPipelines/configuration/pipeline.ini'
+
     '''
 
     global CONFIG
@@ -220,8 +221,8 @@ def substituteParameters(**kwargs):
     Options in ``**kwargs`` substitute default
     values in PARAMS.
 
-    Finally, task specific configuration values 
-    are inserted.
+    Finally, task specific configuration values are inserted.
+
     '''
 
     # build parameter dictionary
@@ -236,12 +237,75 @@ def substituteParameters(**kwargs):
                 p = k[len(outfile) + 1:]
                 if p not in local_params:
                     raise KeyError(
-                        "task specific parameter '%s' does not exist for '%s' " % (p, k))
-                E.debug("substituting task specific parameter for %s: %s = %s" %
+                        "task specific parameter '%s' "
+                        "does not exist for '%s' " % (p, k))
+                E.debug("substituting task specific parameter "
+                        "for %s: %s = %s" %
                         (outfile, p, local_params[k]))
                 local_params[p] = local_params[k]
 
     return local_params
+
+
+def asList(param):
+    '''return a param as a list'''
+    if type(param) == str:
+        try:
+            params = [x.strip() for x in param.strip().split(",")]
+        except AttributeError:
+            params = [param.strip()]
+        return [x for x in params if x != ""]
+    elif type(param) in (types.ListType, types.TupleType):
+        return param
+    else:
+        return [param]
+
+
+def asTuple(param):
+    '''return a param as a list'''
+    return tuple(asList(param))
+
+
+def flatten(l, ltypes=(list, tuple)):
+    '''flatten a nested list/tuple.'''
+    ltype = type(l)
+    l = list(l)
+    i = 0
+    while i < len(l):
+        while isinstance(l[i], ltypes):
+            if not l[i]:
+                l.pop(i)
+                i -= 1
+                break
+            else:
+                l[i:i + 1] = l[i]
+        i += 1
+    return ltype(l)
+
+
+def asDict(param):
+    '''return a section of configuration file as a dictionary.'''
+    return dict(CONFIG.items(param))
+
+
+def isTrue(param):
+    '''return True if param has a True value.
+
+    A parameter is false if it is:
+
+    * not set
+    * 0
+    * the empty string
+    * false or False
+
+    Otherwise the value is true.
+    '''
+    value = PARAMS.get(param, 0)
+    return value.lower() != 'false' or value
+
+#######################################################
+##
+#######################################################
 
 
 def checkFiles(filenames):
@@ -258,7 +322,7 @@ def checkFiles(filenames):
 
 def which(filename):
 
-    if not os.environ.has_key('PATH') or os.environ['PATH'] == '':
+    if 'PATH' not in os.environ or os.environ['PATH'] == '':
         p = os.defpath
     else:
         p = os.environ['PATH']
@@ -361,6 +425,9 @@ def checkParameter(key):
     if key not in PARAMS:
         raise ValueError("need `%s` to be set" % key)
 
+########################################
+########################################
+
 
 def log(loglevel, message):
     """log message at loglevel."""
@@ -398,52 +465,10 @@ def isEmpty(filename):
     by opening it.
     '''
     if filename.endswith(".gz"):
-        n = 0
         with gzip.open(filename) as inf:
             return len(inf.read(10)) == 0
     else:
         return os.stat(filename)[6] == 0
-
-
-def asList(param):
-    '''return a param as a list'''
-    if type(param) == str:
-        try:
-            params = [x.strip() for x in param.strip().split(",")]
-        except AttributeError:
-            params = [param.strip()]
-        return [x for x in params if x != ""]
-    elif type(param) in (types.ListType, types.TupleType):
-        return param
-    else:
-        return [param]
-
-
-def asTuple(param):
-    '''return a param as a list'''
-    return tuple(asList(param))
-
-
-def flatten(l, ltypes=(list, tuple)):
-    '''flatten a nested list/tuple.'''
-    ltype = type(l)
-    l = list(l)
-    i = 0
-    while i < len(l):
-        while isinstance(l[i], ltypes):
-            if not l[i]:
-                l.pop(i)
-                i -= 1
-                break
-            else:
-                l[i:i + 1] = l[i]
-        i += 1
-    return ltype(l)
-
-
-def asDict(param):
-    '''return a section of configuration file as a dictionary.'''
-    return dict(CONFIG.items(param))
 
 
 def quote(track):
@@ -527,9 +552,9 @@ def load(infile,
         ignore_pipe_errors = True
 
     statement.append('''
-    python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
-              %(options)s 
-              --table=%(tablename)s 
+    python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+              %(options)s
+              --table=%(tablename)s
     > %(outfile)s
     ''')
 
@@ -567,7 +592,7 @@ def concatenateAndLoad(infiles,
     if not cat:
         cat = "track"
 
-    if has_titles == False:
+    if has_titles is False:
         no_titles = "--no-titles"
     else:
         no_titles = ""
@@ -582,7 +607,7 @@ def concatenateAndLoad(infiles,
                    %(infiles)s
                    | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
                       --index=track
-                      --table=%(tablename)s 
+                      --table=%(tablename)s
                       %(load_options)s
                    > %(outfile)s'''
     run()
@@ -604,12 +629,12 @@ def mergeAndLoad(infiles,
     merged.
 
     *columns* denotes the columns to be taken. By default, the first
-    two columns are taken with the first being the key. Filenames are 
+    two columns are taken with the first being the key. Filenames are
     stored in a ``track`` column. Directory names are chopped off.
 
     If *columns* is set to None, all columns will be taken. Here,
     column names will receive a prefix (*prefixes*). If *prefixes* is
-    None, the filename will be added as a prefix. 
+    None, the filename will be added as a prefix.
 
     If *prefixes* is a list, the respective prefix will be added to
     each column. The length of *prefixes* and *infiles* need to be the
@@ -621,6 +646,7 @@ def mergeAndLoad(infiles,
     supplied regular expression.
 
     *options* are passed on to ``csv2db.py``.
+
     '''
     if len(infiles) == 0:
         raise ValueError("no files for merging")
@@ -669,7 +695,7 @@ def mergeAndLoad(infiles,
                 %(transform)s
                 | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
                       --index=track
-                      --table=%(tablename)s 
+                      --table=%(tablename)s
                       %(options)s
                 > %(outfile)s
             """
@@ -694,7 +720,7 @@ def createView(dbhandle, tables, tablename, outfile, view_type="TABLE",
                  "context_stats", "track",
                  "picard_stats_alignment_summary_metrics", "track" )
 
-    view_type 
+    view_type
        type of view. If a view is to be created across multiple database,
        use "TABLE", otherwise, use "VIEW"
 
@@ -760,12 +786,13 @@ def createView(dbhandle, tables, tablename, outfile, view_type="TABLE",
     touch(outfile)
 
 
-def snip(filename, extension=None, alt_extension=None, path=False):
+def snip(filename, extension=None, alt_extension=None,
+         strip_path=False):
     '''return prefix of filename.
 
-    If extension is given, make sure that filename has the extension.
+    If *extension* is given, make sure that filename has the extension.
 
-    If path is set to false, the path is stripped from the file name.
+    If *strip_path* is set to true, the path is stripped from the file name.
     '''
     if extension:
         if filename.endswith(extension):
@@ -778,7 +805,7 @@ def snip(filename, extension=None, alt_extension=None, path=False):
     else:
         root, ext = os.path.splitext(filename)
 
-    if path == True:
+    if strip_path:
         snipped = os.path.basename(root)
     else:
         snipped = root
@@ -830,8 +857,10 @@ def execute(statement, **kwargs):
     stdout, stderr = process.communicate()
 
     if process.returncode != 0:
-        raise PipelineError("Child was terminated by signal %i: \nThe stderr was: \n%s\n%s\n" %
-                            (-process.returncode, stderr, statement))
+        raise PipelineError(
+            "Child was terminated by signal %i: \n"
+            "The stderr was: \n%s\n%s\n" %
+            (-process.returncode, stderr, statement))
 
     return stdout, stderr
 
@@ -839,14 +868,14 @@ def execute(statement, **kwargs):
 # detect_pipe_error(): propagate error of programs not at the end of a pipe
 # checkpoint(): exit a set of chained commands (via ;) if the previous
 # command failed.
-_exec_prefix = '''detect_pipe_error_helper() 
+_exec_prefix = '''detect_pipe_error_helper()
     {
     while [ "$#" != 0 ] ; do
         # there was an error in at least one program of the pipe
         if [ "$1" != 0 ] ; then return 1 ; fi
         shift 1
     done
-    return 0 
+    return 0
     }
     detect_pipe_error() {
     detect_pipe_error_helper "${PIPESTATUS[@]}"
@@ -865,8 +894,6 @@ def buildStatement(**kwargs):
     '''build statement from kwargs.
 
     Options in PARAMS are added, but kwargs take precedence.
-
-    If outfile is in kwargs, 
     '''
 
     if "statement" not in kwargs:
@@ -879,14 +906,16 @@ def buildStatement(**kwargs):
         statement = kwargs.get("statement") % local_params
     except KeyError, msg:
         raise KeyError(
-            "Error when creating command: could not find %s in dictionaries" % msg)
+            "Error when creating command: could not "
+            "find %s in dictionaries" % msg)
     except ValueError, msg:
         raise ValueError("Error when creating command: %s, statement = %s" % (
             msg, kwargs.get("statement")))
 
-    # add bash as prefix to allow advanced shell syntax like 'wc -l <( gunzip < x.gz)'
-    # executable option to call() does not work. Note that there will be an extra
-    # indirection.
+    # add bash as prefix to allow advanced shell syntax like 'wc -l <(
+    # gunzip < x.gz)'
+    # executable option to call() does not work. Note that there will
+    # be an extra indirection.
     statement = " ".join(re.sub("\t+", " ", statement).split("\n")).strip()
     if statement.endswith(";"):
         statement = statement[:-1]
@@ -912,7 +941,7 @@ def joinStatements(statements, infile):
     These will be replaced by the names of successive temporary
     files.
 
-    In the first statement, @IN@ is replaced with *infile*. 
+    In the first statement, @IN@ is replaced with *infile*.
 
     The last statement should move @IN@ to outfile.
 
@@ -947,7 +976,7 @@ def getStdoutStderr(stdout_path, stderr_path, tries=5):
 
     Try at most *tries* times. If unsuccessfull, throw PipelineError.
 
-    Removes the files once they are read. 
+    Removes the files once they are read.
 
     Returns tuple of stdout and stderr.
     '''
@@ -1046,17 +1075,21 @@ def run(**kwargs):
         '''
 
         tmpfile = getTempFile(dir=os.getcwd())
-        tmpfile.write("#!/bin/bash\n")  # -l -O expand_aliases\n" )
+        # disabled: -l -O expand_aliases\n" )
+        tmpfile.write("#!/bin/bash\n")
         tmpfile.write(
-            'echo "START--------------------------------" >> %s \n' % shellfile)
+            'echo "START--------------------------------" >> %s\n' % shellfile)
         # disabled - problems with quoting
-        # tmpfile.write( '''echo 'statement=%s' >> %s\n''' % (shellquote(statement), shellfile) )
+        # tmpfile.write( '''echo 'statement=%s' >> %s\n''' %
+        # (shellquote(statement), shellfile) )
         tmpfile.write("set &>> %s\n" % shellfile)
         tmpfile.write("module list &>> %s\n" % shellfile)
         tmpfile.write(
-            'echo "END----------------------------------" >> %s \n' % shellfile)
+            'echo "END----------------------------------" >> %s\n' % shellfile)
         tmpfile.write(
-            expandStatement(statement, ignore_pipe_errors=ignore_pipe_errors) + "\n")
+            expandStatement(
+                statement,
+                ignore_pipe_errors=ignore_pipe_errors) + "\n")
         tmpfile.close()
 
         job_path = os.path.abspath(tmpfile.name)
@@ -1130,7 +1163,7 @@ def run(**kwargs):
     # If the cluster has not been disabled through the command line, do not
     #     run on cluster
     elif (options.get("job_queue") or
-          ("to_cluster" not in options or options.get( "to_cluster" ))) \
+          ("to_cluster" not in options or options.get("to_cluster"))) \
             and (GLOBAL_OPTIONS and not GLOBAL_OPTIONS.without_cluster):
 
         statement = buildStatement(**options)
@@ -1148,7 +1181,7 @@ def run(**kwargs):
         jt.outputPath = ":" + stdout_path
         jt.errorPath = ":" + stderr_path
 
-        if "job_array" in options and options["job_array"] != None:
+        if "job_array" in options and options["job_array"] is not None:
             # run an array job
             start, end, increment = options.get("job_array")
             L.debug("starting an array job: %i-%i,%i" %
@@ -1177,19 +1210,22 @@ def run(**kwargs):
 
         if "job_array" not in options:
             if retval and retval.exitStatus != 0:
-                raise PipelineError("---------------------------------------\n"
-                                    "Child was terminated by signal %i: \n"
-                                    "The stderr was: \n%s\n%s\n"
-                                    "-----------------------------------------" %
-                                    (retval.exitStatus,
-                                     "".join(stderr), statement))
+                raise PipelineError(
+                    "---------------------------------------\n"
+                    "Child was terminated by signal %i: \n"
+                    "The stderr was: \n%s\n%s\n"
+                    "-----------------------------------------" %
+                    (retval.exitStatus,
+                     "".join(stderr), statement))
 
         session.deleteJobTemplate(jt)
         try:
             os.unlink(job_path)
+            pass
         except OSError:
             L.warn(
-                "temporary job file %s not present for clean-up - ignored" % job_path)
+                ("temporary job file %s not present for "
+                 "clean-up - ignored") % job_path)
     else:
         statement = buildStatement(**options)
 
@@ -1202,12 +1238,15 @@ def run(**kwargs):
                     "advanced bash syntax combined with single quotes")
             statement = """/bin/bash -c '%s'""" % statement
 
-        process = subprocess.Popen(expandStatement(statement, ignore_pipe_errors=ignore_pipe_errors),
-                                   cwd=os.getcwd(),
-                                   shell=True,
-                                   stdin=subprocess.PIPE,
-                                   stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE)
+        process = subprocess.Popen(
+            expandStatement(
+                statement,
+                ignore_pipe_errors=ignore_pipe_errors),
+            cwd=os.getcwd(),
+            shell=True,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE)
 
         # process.stdin.close()
         stdout, stderr = process.communicate()
@@ -1242,8 +1281,9 @@ def submit(module, function, params=None,
     The function should reside in *module*. If *module* is
     not part of the PYTHONPATH, an absolute path can be given.
 
-    *infiles* and *output* are either a single filename or a list of 
+    *infiles* and *output* are either a single filename or a list of
     input/output filenames. Neither options supports yet nested lists.
+
     '''
 
     if type(infiles) in (list, tuple):
@@ -1267,9 +1307,7 @@ def submit(module, function, params=None,
         params = ""
 
     job_options = jobOptions
-
     to_cluster = toCluster
-
     statement = '''python %(scriptsdir)s/run_function.py
                           --module=%(module)s
                           --function=%(function)s
@@ -1369,9 +1407,9 @@ def peekParameters(workingdir, pipeline):
     '''peak configuration parameters from an external directory.
     '''
 
-    # attempt to locate directory with pipeline source code
-    # This is a patch as pipelines might be called within the repository directory
-    # or from an installed location
+    # Attempt to locate directory with pipeline source code. This is a
+    # patch as pipelines might be called within the repository
+    # directory or from an installed location
     dirname = os.path.dirname(__file__)
 
     # called without a directory, use current directory
@@ -1409,7 +1447,9 @@ def peekParameters(workingdir, pipeline):
 
     if process.returncode != 0:
         raise PipelineError(
-            "Child was terminated by signal %i: \nThe stderr was: \n%s\n" % (-process.returncode, stderr))
+            ("Child was terminated by signal %i: \n"
+             "The stderr was: \n%s\n") %
+            (-process.returncode, stderr))
 
     for line in stdout.split("\n"):
         if line.startswith("dump"):
@@ -1447,7 +1487,7 @@ def run_report(clean=True):
     # if there is no DISPLAY variable set, xvfb runs, but
     # exits with error when killing process. Thus, ignore return
     # value.
-    print os.getenv("DISPLAY"), "command=", xvfb_command
+    # print os.getenv("DISPLAY"), "command=", xvfb_command
     if not os.getenv("DISPLAY"):
         erase_return = "|| true"
     else:
@@ -1460,15 +1500,15 @@ def run_report(clean=True):
 
     statement = '''
     %(clean)s
-    ( export SPHINX_DOCSDIR=%(docdir)s; 
-      export SPHINX_THEMEDIR=%(themedir)s; 
+    (export SPHINX_DOCSDIR=%(docdir)s;
+    export SPHINX_THEMEDIR=%(themedir)s;
     %(xvfb_command)s
-    sphinxreport-build 
+    sphinxreport-build
            --num-jobs=%(report_threads)s
-           sphinx-build 
-                    -b html 
+           sphinx-build
+                    -b html
                     -d %(report_doctrees)s
-                    -c . 
+                    -c .
            %(docdir)s %(report_html)s
     >& report.log %(erase_return)s )
     '''
@@ -1509,10 +1549,11 @@ touch
    touch files only, do not run
 
 clone <source>
-   create a clone of a pipeline in <source> in the current directory. The cloning
-   process aims to use soft linking to files (not directories) as much as possible. 
-   Time stamps are preserved. Cloning is useful if a pipeline needs to be re-run
-   from a certain point but the original pipeline should be preserved.
+   create a clone of a pipeline in <source> in the current
+   directory. The cloning process aims to use soft linking to files
+   (not directories) as much as possible.  Time stamps are
+   preserved. Cloning is useful if a pipeline needs to be re-run from
+   a certain point but the original pipeline should be preserved.
 
 '''
 
@@ -1523,39 +1564,53 @@ def main(args=sys.argv):
     global GLOBAL_ARGS
     global GLOBAL_SESSION
 
-    parser = optparse.OptionParser(version="%prog version: $Id: Pipeline.py 2799 2009-10-22 13:40:13Z andreas $",
+    parser = optparse.OptionParser(version="%prog version: $Id$",
                                    usage=USAGE)
 
-    parser.add_option("--pipeline-action", dest="pipeline_action", type="choice",
+    parser.add_option("--pipeline-action", dest="pipeline_action",
+                      type="choice",
                       choices=(
                           "make", "show", "plot", "dump", "config", "clone"),
                       help="action to take [default=%default].")
 
-    parser.add_option("--pipeline-format", dest="pipeline_format", type="choice",
+    parser.add_option("--pipeline-format", dest="pipeline_format",
+                      type="choice",
                       choices=("dot", "jpg", "svg", "ps", "png"),
                       help="pipeline format [default=%default].")
 
-    parser.add_option("-n", "--dry-run", dest="dry_run", action="store_true",
-                      help="perform a dry run (do not execute any shell commands) [default=%default].")
+    parser.add_option("-n", "--dry-run", dest="dry_run",
+                      action="store_true",
+                      help="perform a dry run (do not execute any shell "
+                      "commands) [default=%default].")
 
-    parser.add_option("-f", "--force", dest="force", action="store_true",
-                      help="force running the pipeline even if there are uncommited changes "
+    parser.add_option("-f", "--force", dest="force",
+                      action="store_true",
+                      help="force running the pipeline even if there "
+                      "are uncommited changes "
                       "in the repository [default=%default].")
 
-    parser.add_option("-l", "--local", dest="without_cluster", action="store_true",
+    parser.add_option("-l", "--local", dest="without_cluster",
+                      action="store_true",
                       help="execute all jobs locally [default=%default].")
 
     parser.add_option("-p", "--multiprocess", dest="multiprocess", type="int",
-                      help="number of parallel processes to use (different from number of jobs to use for cluster jobs) [default=%default].")
+                      help="number of parallel processes to use (different "
+                      "from number of jobs to use for cluster jobs) "
+                      "[default=%default].")
 
-    parser.add_option("-t", "--tempdir", dest="tempdir", type="string",
+    parser.add_option("-t", "--tempdir", dest="tempdir",
+                      type="string",
                       help="temporary directory to use [default=%default].")
 
-    parser.add_option("-e", "--exceptions", dest="log_exceptions", action="store_true",
-                      help="echo exceptions immediately as they occur [default=%default].")
+    parser.add_option("-e", "--exceptions", dest="log_exceptions",
+                      action="store_true",
+                      help="echo exceptions immediately as they occur "
+                      "[default=%default].")
 
-    parser.add_option("-i", "--terminate", dest="terminate", action="store_true",
-                      help="terminate immediately at the first exception [default=%default].")
+    parser.add_option("-i", "--terminate", dest="terminate",
+                      action="store_true",
+                      help="terminate immediately at the first exception "
+                      "[default=%default].")
 
     parser.set_defaults(
         pipeline_action=None,
@@ -1588,7 +1643,9 @@ def main(args=sys.argv):
         if status["M"] or status["A"]:
             if not options.force:
                 raise ValueError(
-                    "uncommitted change in code repository at '%s'. Either commit or use --force" % PARAMS["scriptsdir"])
+                    ("uncommitted change in code "
+                     "repository at '%s'. Either commit or "
+                     "use --force") % PARAMS["scriptsdir"])
             else:
                 E.warn("uncommitted changes in code repository - ignored ")
         version = version[:-1]
@@ -1626,7 +1683,8 @@ def main(args=sys.argv):
                 GLOBAL_SESSION.initialize()
 
                 #
-                #   make sure we are not logging at the same time in different processes
+                #   make sure we are not logging at the same time in
+                #   different processes
                 #
                 #session_mutex = manager.Lock()
 
@@ -1634,7 +1692,7 @@ def main(args=sys.argv):
                 handler = logging.FileHandler(filename=options.logfile,
                                               mode="a")
                 handler.setFormatter(MultiLineFormatter(
-                    '%(asctime)s %(levelname)s %(module)s.%(funcName)s.%(lineno)d %(message)s'))
+                    '%(asctime)s %(levelname)self %(module)s.%(funcName)s.%(lineno)d %(message)s'))
                 logger = logging.getLogger()
                 logger.addHandler(handler)
 
@@ -1647,7 +1705,8 @@ def main(args=sys.argv):
                              logger=logger,
                              verbose=options.loglevel,
                              log_exceptions=options.log_exceptions,
-                             exceptions_terminate_immediately=options.exceptions_terminate_immediately,
+                             exceptions_terminate_immediately=
+                             options.exceptions_terminate_immediately,
                              )
 
                 L.info(E.GetFooter())
@@ -1656,23 +1715,28 @@ def main(args=sys.argv):
 
             elif options.pipeline_action == "show":
                 pipeline_printout(
-                    options.stdout, options.pipeline_targets, verbose=options.loglevel)
+                    options.stdout,
+                    options.pipeline_targets,
+                    verbose=options.loglevel)
 
             elif options.pipeline_action == "touch":
-                pipeline_run(options.pipeline_targets,
-                             touch_files_only=True,
-                             verbose=options.loglevel)
+                pipeline_run(
+                    options.pipeline_targets,
+                    touch_files_only=True,
+                    verbose=options.loglevel)
 
             elif options.pipeline_action == "svg":
-                pipeline_printout_graph(options.stdout,
-                                        options.pipeline_format,
-                                        options.pipeline_targets)
+                pipeline_printout_graph(
+                    options.stdout,
+                    options.pipeline_format,
+                    options.pipeline_targets)
 
             elif options.pipeline_action == "plot":
                 outf, filename = tempfile.mkstemp()
-                pipeline_printout_graph(os.fdopen(outf, "w"),
-                                        options.pipeline_format,
-                                        options.pipeline_targets)
+                pipeline_printout_graph(
+                    os.fdopen(outf, "w"),
+                    options.pipeline_format,
+                    options.pipeline_targets)
                 execute("inkscape %s" % filename)
                 os.unlink(filename)
 
@@ -1726,19 +1790,4 @@ def main(args=sys.argv):
     E.Stop()
 
 if __name__ == "__main__":
-
     main()
-
-    #parser = optparse.OptionParser( version = "%prog version: $Id: Pipeline.py 2799 2009-10-22 13:40:13Z andreas $")
-
-    #(options, args) = E.Start( parser, add_cluster_options = True )
-
-    #global GLOBAL_OPTIONS
-    #global GLOBAL_ARGS
-    #GLOBAL_OPTIONS, GLOBAL_ARGS = options, args
-
-    #L.info("in main")
-
-    #run( **{"statement" : "printenv > test.out", "job_queue" : "server_jobs.q", "job_priority" : -10 } )
-    #run( **{"statement" : "printenv > test2.out", "job_queue" : "server_jobs.q", "job_priority" : -10 } )
-    #run( **{"statement" : "printenv > test3.out", "job_queue" : "server_jobs.q", "job_priority" : -10 } )

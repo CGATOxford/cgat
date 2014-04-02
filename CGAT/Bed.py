@@ -79,11 +79,11 @@ class Bed(object):
         self.contig, self.start, self.end = gff.contig, gff.start, gff.end
         try:
             self.fields = [getattr(gff, name),
-                           [gff.score, 0][gff.score == None],
+                           [gff.score, 0][gff.score is None],
                            gff.strand]
         except AttributeError:
             self.fields = [gff[name],
-                           [gff.score, 0][gff.score == None],
+                           [gff.score, 0][gff.score is None],
                            gff.strand]
 
     def __contains__(self, key):
@@ -253,7 +253,7 @@ def readAndIndex(infile, with_values=False, per_track=False):
     if per_track:
         indices = {}
         for track, beds in grouped_iterator(bed_iterator(infile)):
-            if track == None:
+            if track is None:
                 return _build(beds)
             else:
                 indices[track["name"]] = _build(beds)
@@ -287,7 +287,7 @@ def binIntervals(iterator, num_bins=5, method="equal-bases", bin_edges=None):
     for bed in beds:
         bed.fields[1] = float(bed.fields[1])
 
-    if bin_edges == None:
+    if bin_edges is None:
         if method == "equal-bases":
             data = numpy.array(
                 sorted([(x.fields[1], x.end - x.start) for x in beds]))
@@ -302,7 +302,7 @@ def binIntervals(iterator, num_bins=5, method="equal-bases", bin_edges=None):
             raise ValueError(
                 "unknown method %s to compute bins, supply bin_edges" % method)
 
-    if bin_edges == None:
+    if bin_edges is None:
         sums = data[:, 1].cumsum(axis=0)
         total = float(sums[-1])
         increment = float(total / num_bins)
@@ -327,7 +327,7 @@ def binIntervals(iterator, num_bins=5, method="equal-bases", bin_edges=None):
         name = bisect.bisect_right(bin_edges, bed.fields[1]) - 1
         contig = bed.contig
         if name != last_name or last_contig != contig:
-            if last_name != None:
+            if last_name is not None:
                 b = Bed()
                 b.contig, b.start, b.end, b.fields = last_contig, start, end, [
                     last_name]
@@ -338,7 +338,7 @@ def binIntervals(iterator, num_bins=5, method="equal-bases", bin_edges=None):
 
         end = bed.end
 
-    if last_name != None:
+    if last_name is not None:
         b = Bed()
         b.contig, b.start, b.end, b.fields = contig, start, end, [last_name]
         new_beds.append(b)

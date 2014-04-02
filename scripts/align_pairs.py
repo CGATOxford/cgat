@@ -68,7 +68,7 @@ def iterate_single_fasta(fn1):
 def iterate_list(infile, idx1, idx2=None):
 
     fasta1 = IndexedFasta.IndexedFasta(idx1)
-    if idx2 == None:
+    if idx2 is None:
         fasta2 = fasta1
     else:
         fasta2 = IndexedFasta.IndexedFasta(idx2)
@@ -113,7 +113,7 @@ def getFile(section, options):
 
 def main(argv=None):
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(

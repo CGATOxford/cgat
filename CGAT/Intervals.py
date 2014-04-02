@@ -84,7 +84,7 @@ def complement(intervals, first=None, last=None):
     """
 
     if len(intervals) == 0:
-        if first != None and last != None:
+        if first is not None and last is not None:
             return [(first, last)]
         else:
             return []
@@ -94,7 +94,7 @@ def complement(intervals, first=None, last=None):
     intervals.sort()
     last_from, last_to = intervals[0]
 
-    if first != None and first < last_from:
+    if first is not None and first < last_from:
         new_intervals.append((first, last_from))
 
     for this_from, this_to in intervals:
@@ -116,8 +116,7 @@ def addComplementIntervals(intervals, first=None, last=None):
     """complement a list of intervals with intervals not
     in list and return both.
     """
-
-    return intervals + complementIntervals(intervals, first, last)
+    return intervals + complement(intervals, first, last)
 
 #----------------------------------------
 
@@ -222,7 +221,7 @@ def RemoveIntervalsContained(intervals):
 
     results:
 
-    [(10, 100), (70, 120), (130, 200), (140, 210)]   
+    [(10, 100), (70, 120), (130, 200), (140, 210)]
     """
     if not intervals:
         return []
@@ -501,7 +500,7 @@ def fromArray(a):
             start = x
             was_a = is_a
         elif not is_a and was_a:
-            if start != None:
+            if start is not None:
                 intervals.append((start, x))
             was_a = is_a
     if is_a:

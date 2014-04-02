@@ -1,5 +1,4 @@
-'''
-malis2mali.py - concatenate multiple alignments
+'''malis2mali.py - concatenate multiple alignments
 ===============================================
 
 :Author: Andreas Heger
@@ -10,33 +9,37 @@ malis2mali.py - concatenate multiple alignments
 Purpose
 -------
 
-concatenate multiple alignments into a single multiple alignment. 
+concatenate multiple alignments into a single multiple alignment.
 
 This script requires the following input:
 
-1. Multiple alignments 
+1. Multiple alignments
 
-The multiple alignments can be given as separate files (option --pattern-mali contains
-a '%%s') or in a single file.
+The multiple alignments can be given as separate files (option
+--pattern-mali contains a '%%s') or in a single file.
 
 2. A list of components
 
 This file maps sequence identifiers in the multiple alignment file(s)
-to multiple alignment identifiers. The format for this file is a tab separated table 
-containing the following fields::
+to multiple alignment identifiers. The format for this file is a tab
+separated table containing the following fields::
 
-    1       sequence        a sequence identifier
-    2       input_id        The id under which the alignment is found. This value is substituted
-                            for the '%%s' in --pattern-mali.
-    3       component_id    The component_id or multiple alignment identifier.
-                            This field is optional. If no third column is specified, the input_id
-                            is used.
+    1  sequence     a sequence identifier
+
+    2  input_id     The id under which the alignment is found. This value
+                            is substituted for the '%%s' in
+                            --pattern-mali.
+
+    3 component_id  The component_id or multiple alignment identifier.
+                    This field is optional. If no third column is specified,
+                    the input_id is used.
 
 Methods:
 
 filter-variants
-   only keep variant columns in the multiple alignment. Set ``--width`` to 3 to test for variant
-   codons. Gaps will be ignored.
+
+   only keep variant columns in the multiple alignment. Set
+   ``--width`` to 3 to test for variant codons. Gaps will be ignored.
 
 Usage
 -----
@@ -55,23 +58,15 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
-import string
 import re
-import optparse
-import math
-import time
-import random
-import types
 
 
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import CGAT.Mali as Mali
+import CGAT.Malis as Malis
 
-# import shared helper functions from malis2malis
-from malis2malis import *
 
 # ------------------------------------------------------------
 
@@ -82,25 +77,37 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(
-        version="%prog version: $Id: malis2mali.py 2782 2009-09-10 11:40:29Z andreas $", usage=globals()["__doc__"])
+        version="%prog version: $Id$",
+        usage=globals()["__doc__"])
 
-    addOptions(parser)
+    Malis.addOptions(parser)
 
-    parser.add_option("--filename-coordinates", dest="filename_coordinates", type="string",
-                      help="filename of coordinates that constitute the multiple alignment.")
+    parser.add_option("--filename-coordinates",
+                      dest="filename_coordinates",
+                      type="string",
+                      help="filename of coordinates that constitute "
+                      "the multiple alignment.")
 
-    parser.add_option("--filename-identifiers", dest="filename_identifiers", type="string",
+    parser.add_option("--filename-identifiers",
+                      dest="filename_identifiers",
+                      type="string",
                       help="filename with list of identifiers to use.")
 
-    parser.add_option("-x", "--pattern-identifier", dest="pattern_identifier", type="string",
-                      help="pattern to extract identifier from a sequence header.")
+    parser.add_option("-x",
+                      "--pattern-identifier",
+                      dest="pattern_identifier",
+                      type="string",
+                      help="pattern to extract identifier from a sequence "
+                      "header.")
 
     parser.add_option("-w", "--width", dest="width", type="int",
-                      help="width of an alignment column (choose 3 for codon alignments) [default=%default].")
+                      help="width of an alignment column "
+                      "(choose 3 for codon alignments) "
+                      "[default=%default].")
 
     parser.add_option("-m", "--method", dest="methods", type="choice",
                       choices=("filter-variants", ),
@@ -135,21 +142,23 @@ def main(argv=None):
     # Read components
     ####################################################################
     map_seq_id2component, map_component2seq_id, map_component2input_id = \
-        readComponents(options)
+        Malis.readComponents(options)
 
     ####################################################################
     ####################################################################
     ####################################################################
     # Read regions to mask
     ####################################################################
-    map_component2masks = readMasks(options, map_component2input_id)
+    map_component2masks = Malis.readMasks(options,
+                                          map_component2input_id)
 
     ####################################################################
     ####################################################################
     ####################################################################
     # Read regions to extract
     ####################################################################
-    map_component2extracts = readExtracts(options, map_component2input_id)
+    map_component2extracts = Malis.readExtracts(options,
+                                                map_component2input_id)
 
     ####################################################################
     ####################################################################
@@ -197,11 +206,12 @@ def main(argv=None):
     ####################################################################
     # Build list of components to output.
     ####################################################################
-    component_ids, map_sample2reference = selectComponents(component_ids,
-                                                           map_component2seq_id,
-                                                           map_component2input_id,
-                                                           None,
-                                                           options)
+    component_ids, map_sample2reference = \
+        Malis.selectComponents(component_ids,
+                               map_component2seq_id,
+                               map_component2input_id,
+                               None,
+                               options)
 
     nskipped = 0
     new_component_ids = []
@@ -209,11 +219,11 @@ def main(argv=None):
     for component_id in component_ids:
 
         try:
-            mali = getMali(component_id,
-                           map_component2seq_id,
-                           map_component2input_id,
-                           None,
-                           options)
+            mali = Malis.getMali(component_id,
+                                 map_component2seq_id,
+                                 map_component2input_id,
+                                 None,
+                                 options)
         except OSError, msg:
             E.warn("could not find mali %s: %s" % (component_id, msg))
             nskipped += 1
@@ -241,9 +251,8 @@ def main(argv=None):
             if id in found:
 
                 if options.skip_doubles:
-                    if options.loglevel >= 1:
-                        options.stdlog.write(
-                            "# component %s: removed double entry %s\n" % (component_id, seq_id))
+                    E.infor("component %s: removed double entry %s\n" %
+                            (component_id, seq_id))
                     continue
                 else:
                     is_double = id
@@ -251,8 +260,9 @@ def main(argv=None):
 
             if options.output_format == "codeml":
                 if len(mali[seq_id]) % 3 != 0:
-                    raise "length of sequence %s is not a multiple of 3: %i" % (
-                        seq_id, len(mali[seq_id]))
+                    raise ValueError(
+                        "length of sequence %s is not a multiple of 3: %i" %
+                        (seq_id, len(mali[seq_id])))
 
             # change identifier to id
             found[id] = True
@@ -261,27 +271,26 @@ def main(argv=None):
 
         if is_double:
             nskipped += 1
-            if options.loglevel >= 1:
-                options.stdlog.write(
-                    "# component %s: skipped because it contains double entry %s\n" % (component_id, is_double))
+            E.info(("component %s: skipped because it "
+                    "contains double entry %s") %
+                   (component_id, is_double))
             continue
 
         if set(found.keys()) != identifiers_set:
             nskipped += 1
-            if options.loglevel >= 1:
-                options.stdlog.write("# component %s: skipped because incomplete: %s\n" % (
-                    component_id, str(found.keys())))
+            E.info("component %s: skipped because incomplete: %s" %
+                   (component_id, str(found.keys())))
             continue
 
         ###############################################################
         ###############################################################
         ###############################################################
         # mask the temporary alignment
-        maskAlignment(temp_mali,
-                      map_component2masks,
-                      map_component2extracts,
-                      map_sample2reference,
-                      options)
+        Malis.maskAlignment(temp_mali,
+                            map_component2masks,
+                            map_component2extracts,
+                            map_sample2reference,
+                            options)
 
         for id, o in temp_mali.items():
             if options.mask_acgtn:
@@ -319,7 +328,8 @@ def main(argv=None):
 
         options.stdout.write("%i %i G\n" % (nseqs, nnucleotides))
         options.stdout.write("G %i %s\n" % (
-            ngenes, " ".join(map(lambda x: str(len(x) / 3), sequences[identifiers[0]]))))
+            ngenes, " ".join(map(lambda x: str(len(x) / 3),
+                                 sequences[identifiers[0]]))))
 
         for id in identifiers:
             options.stdout.write("%s\n" % id)

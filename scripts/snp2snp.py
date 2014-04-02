@@ -194,10 +194,10 @@ def main(argv=None):
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv)
 
-    if options.method == None:
+    if options.method is None:
         raise ValueError("please supply a method")
 
-    if options.filename_genome != None:
+    if options.filename_genome is not None:
         fastafile = pysam.Fastafile(options.filename_genome)
     else:
         fastafile = None

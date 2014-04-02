@@ -9,7 +9,6 @@ CSV.py - Tools for parsing CSV files
 
 """
 
-import string
 import re
 import types
 import csv
@@ -40,7 +39,7 @@ def ConvertDictionary(d, map={}):
 
     for k, vv in d.items():
 
-        if vv == None:
+        if vv is None:
             continue
         v = vv.strip()
         try:
@@ -97,14 +96,14 @@ def GetMapColumn2Type(rows, ignore_empty=False, get_max_values=False):
 
             is_full[h] = True
 
-            if type(row[h]) == types.IntType:
+            if isinstance(row[h], int):
                 t = types.IntType
                 if h not in max_values:
                     max_values[h] = int(row[h])
                 else:
                     max_values[h] = max(h, int(row[h]))
 
-            elif type(row[h]) == types.FloatType:
+            elif isinstance(row[h], float):
                 t = types.FloatType
             else:
                 continue
@@ -118,7 +117,6 @@ def GetMapColumn2Type(rows, ignore_empty=False, get_max_values=False):
                 map_column2type[h] = types.StringType
             else:
                 ignored.append(h)
-
     if get_max_values:
         return map_column2type, ignored, max_values
     else:
@@ -227,7 +225,7 @@ def ReadTable(lines,
     If remove_incomplete, incomplete rows are simply ignored.
     """
 
-    if type(lines) == types.FileType:
+    if isinstance(lines, file):
         lines = lines.readlines()
 
     lines = filter(lambda x: x[0] != "#", lines)
@@ -336,7 +334,7 @@ def GroupTable(table,
     for row in table:
         if row[group_column] != last_value:
 
-            if last_value != None:
+            if last_value is not None:
                 new_table.append(
                     __DoGroup(rows, group_column, group_function, missing_value))
 
@@ -345,7 +343,7 @@ def GroupTable(table,
 
         rows.append(row)
 
-    if last_value != None:
+    if last_value is not None:
         new_table.append(
             __DoGroup(rows, group_column, group_function, missing_value))
 

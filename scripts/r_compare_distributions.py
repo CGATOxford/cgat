@@ -70,7 +70,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(
@@ -226,11 +226,11 @@ def main(argv=None):
         # compute breaks:
 
         min_value = min(min(values1), min(values2))
-        if options.min_value != None:
+        if options.min_value is not None:
             min_value = min(min_value, options.min_value)
 
         max_value = max(max(values1), max(values2))
-        if options.max_value != None:
+        if options.max_value is not None:
             max_value = max(max_value, options.max_value)
 
         extra_options = ""
@@ -243,7 +243,7 @@ def main(argv=None):
                 min_value + x * bin_size for x in range(options.num_bins)]
             extra_options += ", breaks=c(%s)" % ",".join(map(str, breaks))
 
-        elif options.bin_size != None:
+        elif options.bin_size is not None:
             num_bins = int(((max_value - min_value) / options.bin_size)) + 1
             breaks = [
                 min_value + x * options.bin_size for x in range(num_bins + 1)]

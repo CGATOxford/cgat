@@ -79,7 +79,7 @@ class multiway_groupby(object):
         self.current = [next(self.it[x]) for x in xrange(len(iterables))]
 
         # decide on target key
-        self.targetkey = min([x[0] for x in self.current if x[0] != None])
+        self.targetkey = min([x[0] for x in self.current if x[0] is not None])
 
     def __iter__(self):
         return self
@@ -116,7 +116,7 @@ class multiway_groupby(object):
 
         # decide which is target key
         try:
-            self.targetkey = min([x[0] for x in self.current if x[0] != None])
+            self.targetkey = min([x[0] for x in self.current if x[0] is not None])
         except ValueError:
             # if all are None, sequence is empty
             self.targetkey = None

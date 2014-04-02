@@ -2,7 +2,7 @@
 GTF.py - Classes and methods for dealing with gtf formatted files
 =================================================================
 
-:Author: 
+:Author:
 :Release: $Id$
 :Date: |today|
 :Tags: Python
@@ -52,7 +52,7 @@ class ParsingError(Error):
 
 def toDot(v):
     '''convert value to '.' if None'''
-    if v == None:
+    if v is None:
         return "."
     else:
         return str(v)
@@ -70,8 +70,8 @@ class Entry:
 
     """read/write gtf formatted entry.
 
-    The coordinates are kept internally in python coordinates (0-based, open-closed), but are
-    output as inclusive 1-based coordinates according to
+    The coordinates are kept internally in python coordinates (0-based, open-closed),
+    but are output as inclusive 1-based coordinates according to
 
     http://www.sanger.ac.uk/Software/formats/GFF/
     """
@@ -123,7 +123,7 @@ class Entry:
 
             d = map(lambda x: x.strip(), f.split(" "))
 
-            n, v = d[0], d[1]
+            n, v = d[0], " ".join(d[1:])
             if len(d) > 2:
                 v = d[1:]
 
@@ -155,8 +155,10 @@ class Entry:
     def getAttributeField(self, full=True):
         aa = []
         for k, v in self.attributes.items():
-            if type(v) == types.StringType:
+            if isinstance(v, str):
                 aa.append('%s "%s"' % (k, v))
+            elif isinstance(v, list) or isinstance(v, tuple):
+                aa.append('%s "%s"' % (k, " ".join(v)))
             else:
                 aa.append('%s %s' % (k, str(v)))
 
@@ -167,7 +169,7 @@ class Entry:
         else:
             return "; ".join(aa)
 
-        return attributes
+        return self.attributes
 
     def __cmp__(self, other):
         # note: does compare by strand as well!
@@ -177,7 +179,7 @@ class Entry:
     def __str__(self):
 
         def _todot(val):
-            if val == None:
+            if val is None:
                 return "."
             else:
                 return str(val)
@@ -233,7 +235,7 @@ class Entry:
 
     def copy(self, other):
         """fill from other entry.
-        works both if other is :class:`GTF.Entry` or 
+        works both if other is :class:`GTF.Entry` or
         :class:`pysam.GTFProxy`
         """
         self.contig = other.contig
@@ -334,12 +336,12 @@ def HalfIdentity(entry1, entry2, max_slippage=0):
 def asRanges(gffs, feature=None):
     """return ranges within a set of gffs.
 
-    Overlapping intervals are merged. 
+    Overlapping intervals are merged.
 
     The returned intervals are sorted.
     """
 
-    if type(feature) == types.StringType:
+    if isinstance(feature, basestring):
         gg = filter(lambda x: x.feature == feature, gffs)
     elif feature:
         gg = filter(lambda x: x.feature in feature, gffs)
@@ -479,7 +481,7 @@ def transcript_iterator(gff_iterator, strict=True):
 
     return a list of entries with the same transcript id.
 
-    Note: the entries for the same transcript have to be consecutive 
+    Note: the entries for the same transcript have to be consecutive
     in the file.
     """
     last = None
@@ -510,7 +512,7 @@ def joined_iterator(gffs, group_field=None):
     last_group_id = None
     matches = []
 
-    if group_field == None:
+    if group_field is None:
         group_function = lambda x: x.attributes
     elif group_field == "gene_id":
         group_function = lambda x: x.gene_id
@@ -538,7 +540,7 @@ def joined_iterator(gffs, group_field=None):
 def gene_iterator(gff_iterator, strict=True):
     """iterate over the contents of a gtf file.
 
-    return a list of transcripts with the same gene id. 
+    return a list of transcripts with the same gene id.
 
     Note: the entries have to be consecutive in the file, i.e,
     first sorted by transcript and then by gene id.
@@ -641,14 +643,14 @@ def iterator_filtered(gff_iterator, feature=None, source=None, contig=None, inte
 def iterator_sorted_chunks(gff_iterator, sort_by="contig-start"):
     """iterate over chunks in a sorted order
 
-    sort_by can be 
+    sort_by can be
 
     contig-start
        sort by position ignoring the strand
     contig-strand-start
        sort by position taking the strand into account
 
-    returns the chunks. 
+    returns the chunks.
     """
 
     # get all chunks and annotate with sort order

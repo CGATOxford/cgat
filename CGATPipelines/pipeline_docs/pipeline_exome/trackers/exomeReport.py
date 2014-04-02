@@ -6,7 +6,7 @@ import itertools
 import glob
 
 from SphinxReport.Tracker import *
-from SphinxReport.odict import OrderedDict as odict
+from collections import OrderedDict as odict
 
 # get from config file
 UCSC_DATABASE = "hg19"

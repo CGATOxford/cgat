@@ -119,7 +119,7 @@ def main(argv=None):
     else:
         fasta = None
 
-    if map_contig2size == None:
+    if map_contig2size is None:
         raise ValueError("no source of contig sizes supplied")
 
     # do sth

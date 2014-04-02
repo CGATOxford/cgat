@@ -192,7 +192,7 @@ def main():
                 match = re.match(r'^(.*?)\s*class="hide"\s*(.*)$', attributes)
                 if match:
                     # hide this heading and all stuff below
-                    assert hide == None
+                    assert hide is None
                     hide = level
                     attributes = "%s %s" % (match.group(1), match.group(2))
                     out = hide_out

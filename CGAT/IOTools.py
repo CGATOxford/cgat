@@ -273,14 +273,14 @@ def readTable(file,
             except ValueError:
                 data[x] = numpy.ma.masked
 
-        if truncate != None:
+        if truncate is not None:
             if data[0] < min_row:
                 if cumulate_out_of_range:
                     for x in range(1, num_cols):
                         min_data[x] += data[x]
                 continue
             elif data[0] >= max_row:
-                if max_data == None:
+                if max_data is None:
                     max_data = [0] * num_cols
                     max_data[0] = max_row
                 for x in range(1, num_cols):
@@ -290,7 +290,7 @@ def readTable(file,
                         # missing values cause type errors
                         continue
                 continue
-            elif min_row != None:
+            elif min_row is not None:
                 if cumulate_out_of_range:
                     for x in range(0, num_cols):
                         try:
@@ -311,9 +311,9 @@ def readTable(file,
 
         nrow += 1
 
-    if truncate != None:
+    if truncate is not None:
         if cumulate_out_of_range:
-            if max_data != None:
+            if max_data is not None:
                 matrix[nrow] = max_data
 
         # truncate matrix
@@ -332,7 +332,7 @@ def writeTable(outfile, table, columns=None, fillvalue=""):
     '''
 
     if type(table) == dict:
-        if columns == None:
+        if columns is None:
             columns = table.keys()
         outfile.write("\t".join(columns) + "\n")
         # get data
@@ -727,8 +727,8 @@ def prettyPercent(numerator, denominator, format="%5.2f", na="na"):
 
 
 def prettyString(val):
-    '''output val or na if val == None'''
-    if val != None:
+    '''output val or na if val is None'''
+    if val is not None:
         return val
     else:
         return "na"
@@ -805,7 +805,7 @@ def convertValue(value, list_detection=False):
     rx_int = re.compile("^\s*[+-]*[0-9]+\s*$")
     rx_float = re.compile("^\s*[+-]*[0-9.]+[.+\-eE][+-]*[0-9.]*\s*$")
 
-    if value == None:
+    if value is None:
         return value
 
     if list_detection and "," in value:

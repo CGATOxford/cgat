@@ -40,7 +40,7 @@ class OverlapsBase(DefaultTracker):
     pattern = "(.*)_intervals$"
 
     def getSlices(self, subset=None):
-        if subset != None:
+        if subset is not None:
             return subset
         else:
             return []
@@ -48,11 +48,11 @@ class OverlapsBase(DefaultTracker):
     def __call__(self, track, slice=None):
 
         tablename = self.tablename
-        if self.column == None:
+        if self.column is None:
             raise NotImplementedError("column not set in derived class.")
         column = self.column
 
-        if slice == None:
+        if slice is None:
             result = odict(self.get("SELECT set2, %(column)s1 FROM %(tablename)s WHERE set1 = '%(track)s'" % locals()) +
                            self.get("SELECT set1, %(column)s2 FROM %(tablename)s WHERE set2 = '%(track)s'" % locals()))
         elif "-" in slice:
@@ -98,7 +98,7 @@ class BasesNormalized(OverlapsBase):
 
     def __call__(self, track, slice=None):
         tablename = self.tablename
-        if self.column == None:
+        if self.column is None:
             raise NotImplementedError("column not set in derived class.")
         column = self.column
         return odict(self.get("SELECT set2, 100.0 * nbases_ovl1 / (nbases_ovl1 + nbases_unique1 + nbases_unique2) FROM %(tablename)s WHERE set1 = '%(track)s'" % locals()) +

@@ -75,7 +75,7 @@ Possibly two pipelines have been running concurrently.
         if self._durations:
             x = None
             for source, durations in self._durations.iteritems():
-                if x == None:
+                if x is None:
                     x = durations[0]
                 for y in durations[1:]:
                     x += y

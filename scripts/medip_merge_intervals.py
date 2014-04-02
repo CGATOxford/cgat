@@ -150,7 +150,7 @@ def main(argv=None):
 
         while 1:
             d = data.next()
-            if d == None:
+            if d is None:
                 break
             if d.contig == last.contig and d.start < last.start:
                 raise ValueError("error not sorted by start")

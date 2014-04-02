@@ -164,7 +164,7 @@ import rpy2.robjects as ro
 ###################################################################
 # Pipeline configuration
 import CGAT.Pipeline as P
-P.getParameters("pipeline_capseq.ini")
+P.getParameters(["pipeline_capseq.ini"])
 PARAMS = P.PARAMS
 USECLUSTER = True
 
@@ -1398,7 +1398,7 @@ def publish_report(infile, outfile):
     wig_dir = os.path.join(publish_dir, "wig")
     length_dir = os.path.join(publish_dir, "length")
     working_dir = os.getcwd()
-    statement =  '''cp -rf report/html/* %(report_dir)s > %(outfile)s; '''
+    statement = '''cp -rf report/html/* %(report_dir)s > %(outfile)s; '''
     statement += '''cp -sn %(working_dir)s/bam/*.norm.bam %(bam_dir)s >> %(outfile)s;'''
     statement += '''cp -sn %(working_dir)s/macs/with_input/*/treat/*.bw %(wig_dir)s >> %(outfile)s; '''
     statement += '''cp -sn %(working_dir)s/merged_bams/*.bw %(wig_dir)s >> %(outfile)s; '''

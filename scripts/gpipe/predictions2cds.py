@@ -91,7 +91,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(version="%prog version: $Id: gpipe/predictions2cds.py 1858 2008-05-13 15:07:05Z andreas $",

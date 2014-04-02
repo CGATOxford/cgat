@@ -152,7 +152,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(
@@ -518,7 +518,7 @@ def main(argv=None):
                         last_cluster_id = None
 
                     if last_cluster_id != cluster_id:
-                        if last_cluster_id != None:
+                        if last_cluster_id is not None:
                             pass
 
                         last_cluster_id = cluster_id

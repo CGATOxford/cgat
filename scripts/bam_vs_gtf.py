@@ -178,13 +178,13 @@ def main(argv=None):
                 o3 = _splice_overrun(start3, end3, overlap3)
                 o5 = _splice_overrun(start5, end5, overlap5)
 
-            if o3 != None:
+            if o3 is not None:
                 if o3 == 0:
                     nspliced_exact += 1
                 else:
                     nspliced_inexact += 1
                 nspliced_overrun[max(0, overrun_offset + o3)] += 1
-            if o5 != None:
+            if o5 is not None:
                 if o5 == 0:
                     nspliced_exact += 1
                 else:

@@ -138,7 +138,7 @@ class ProfileLibrary:
 
     def setWeightor(self, weightor):
         """set the sequence weightor to use for profile creation."""
-        if weightor == None or weightor == "none":
+        if weightor is None or weightor == "none":
             self.mWeightor = alignlib_lite.py_makeNoWeightor()
         elif weightor == "Henikoff":
             self.mWeightor = alignlib_lite.py_makeWeightorHenikoff()

@@ -27,30 +27,19 @@ for command line help.
 """
 
 import CGAT.Experiment as E
-import logging as L
-import CGAT.Database as Database
 import CGAT.CSV as CSV
 
-import sys
 import os
-import re
 import shutil
 import itertools
-import math
 import glob
-import time
-import gzip
 import collections
-import random
 
 import numpy
-import sqlite3
 import CGAT.GTF as GTF
 import CGAT.IOTools as IOTools
-import CGAT.IndexedFasta as IndexedFasta
 from rpy2.robjects import r as R
 import rpy2.robjects as ro
-import rpy2.robjects.vectors as rovectors
 import rpy2.rinterface as ri
 import rpy2.robjects.numpy2ri
 rpy2.robjects.numpy2ri.activate()
@@ -82,7 +71,7 @@ Utr = collections.namedtuple("Utr", "old new max status")
 
 
 def buildUTRExtension(infile, outfile):
-    '''build new utrs by building and fitting an HMM 
+    '''build new utrs by building and fitting an HMM
     to reads upstream and downstream of known genes.
 
     Works on output of buildGeneLevelReadExtension.
@@ -403,12 +392,12 @@ def buildUTRExtension(infile, outfile):
         if strand == "-":
             start5, end5, start3, end3 = start3, end3, start5, end5
 
-        if start5 == None:
+        if start5 is None:
             start5, end5, l5 = "", "", ""
         else:
             l5 = end5 - start5
 
-        if start3 == None:
+        if start3 is None:
             start3, end3, l3 = "", "", ""
         else:
             l3 = end3 - start3
@@ -462,7 +451,7 @@ def buildUTRExtension(infile, outfile):
         # note that None counts as 0 in min/max.
         for i, d in enumerate(zip(old_coordinates, new_coordinates)):
             if i % 2 == 0:
-                v = [z for z in d if z != None]
+                v = [z for z in d if z is not None]
                 if v:
                     max_coordinates.append(min(v))
                 else:
@@ -714,11 +703,16 @@ def loadCufflinks(infile, outfile):
     track = P.snip(outfile, ".load")
     P.load(infile + ".genes_tracking.gz",
            outfile=track + "_genefpkm.load",
-           options="--index=gene_id --ignore-column=tracking_id --ignore-column=class_code --ignore-column=nearest_ref_id")
+           options="--index=gene_id "
+           "--ignore-column=tracking_id "
+           "--ignore-column=class_code "
+           "--ignore-column=nearest_ref_id")
 
     track = P.snip(outfile, ".load")
     P.load(infile + ".fpkm_tracking.gz",
            outfile=track + "_fpkm.load",
-           options="--index=tracking_id --ignore-column=nearest_ref_id --rename-column=tracking_id:transcript_id")
+           options="--index=tracking_id "
+           "--ignore-column=nearest_ref_id "
+           "--rename-column=tracking_id:transcript_id")
 
     P.touch(outfile)

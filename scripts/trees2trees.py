@@ -60,7 +60,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(
@@ -171,7 +171,7 @@ def main(argv=None):
         id = tree.name
         has_discarded = False
 
-        if options.filter_ntaxa != None:
+        if options.filter_ntaxa is not None:
 
             ntaxa = len(tree.get_terminals())
             if ntaxa != options.filter_ntaxa:
@@ -191,7 +191,7 @@ def main(argv=None):
 
                 has_discarded = True
 
-        if options.filter_terminal_max_length != None:
+        if options.filter_terminal_max_length is not None:
             for x in tree.get_terminals():
                 node = tree.node(x)
                 if node.data.branchlength >= options.filter_terminal_max_length:
@@ -202,7 +202,7 @@ def main(argv=None):
                         options.stdlog.write("# tree %s: removed taxon %s because terminal branchlength to large: %s\n" %
                                              (id, node.data.taxon, str(node.data.branchlength)))
 
-        if options.filter_terminal_min_length != None:
+        if options.filter_terminal_min_length is not None:
             for x in tree.get_terminals():
                 node = tree.node(x)
                 if node.data.branchlength <= options.filter_terminal_min_length:
@@ -213,7 +213,7 @@ def main(argv=None):
                         options.stdlog.write("# tree %s: removed taxon %s because terminal branchlength to small: %s\n" %
                                              (id, node.data.taxon, str(node.data.branchlength)))
 
-        if options.filter_max_length != None:
+        if options.filter_max_length is not None:
             for x in tree.get_nodes(tree.root):
                 if x == tree.root:
                     continue
@@ -226,7 +226,7 @@ def main(argv=None):
                                              (id, x, tree.name, str(node.data.branchlength)))
                     node.data.branchlength = options.filtered_branch_length
 
-        if options.filter_min_length != None:
+        if options.filter_min_length is not None:
             for x in tree.get_nodes(tree.root):
                 if x == tree.root:
                     continue

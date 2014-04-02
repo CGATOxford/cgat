@@ -141,7 +141,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(
@@ -175,13 +175,13 @@ def main(argv=None):
         makefiles = set(("Makefile.gpipe",))
         method = "gpipe"
         readme = README_GPIPE
-        if options.name == None:
+        if options.name is None:
             options.name = "gpipe"
     elif os.path.exists("%s/Makefile.%s" % (source_directory, options.tool_set)):
         makefiles = set(("Makefile.%s" % options.tool_set,))
         method = options.tool_set
         readme = README_GENERIC
-        if options.name == None:
+        if options.name is None:
             options.name = options.tool_set
     else:
         raise ValueError("unknown toolset %s" % options.tool_set)

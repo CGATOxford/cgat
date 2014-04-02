@@ -98,7 +98,7 @@ class ContaminationRepeats(TrackerSQL):
         nspliced_ovl_repeats = self.getValue(
             "SELECT COUNT(*) FROM %(track)s_repeats as r, %(track)s_annotation as a where a.gene_id = r.gene_id and is_unknown AND exons_nval > 1 AND nover > 0" % locals())
 
-        if novl_repeats == None:
+        if novl_repeats is None:
             novl_repeats, nlength, nspliced, nspliced_ovl_repeats = 0, 0, 0, 0
 
         return odict((("repeats", repeats_size),

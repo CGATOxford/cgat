@@ -93,7 +93,7 @@ def concatenateTables(outfile, options, args):
 
     rx = re.compile(options.regex_filename)
 
-    if options.headers == None or options.headers == "auto":
+    if options.headers is None or options.headers == "auto":
         row_headers = [
             [y for y in rx.search(x).groups()] for x in options.filenames]
     else:
@@ -129,7 +129,8 @@ def concatenateTables(outfile, options, args):
     else:
         ncolumns = [len(table[0].split('\t')) for table in tables]
         if min(ncolumns) != max(ncolumns):
-            raise ValueError('tables have unequal number of columns (min=%i, max=%i)' %
+            raise ValueError('tables have unequal number of columns '
+                             '(min=%i, max=%i)' %
                              (min(ncolumns) != max(ncolumns)))
         # create a pseudo dictionary of columns
         titles = collections.OrderedDict(
@@ -160,7 +161,8 @@ def joinTables(outfile, options, args):
 
     if options.headers and options.headers[0] != "auto" and \
             len(options.headers) != len(options.filenames):
-        raise ValueError("number of provided headers (%i) is not equal to number filenames (%i)." %
+        raise ValueError("number of provided headers (%i) "
+                         "is not equal to number filenames (%i)." %
                          (len(options.headers), len(options.filenames)))
 
     tables = []
@@ -178,8 +180,10 @@ def joinTables(outfile, options, args):
     if options.prefixes:
         prefixes = [x.strip() for x in options.prefixes.split(",")]
         if len(prefixes) != len(options.filenames):
-            raise ValueError("number of prefixes (%i) and tables (%i) do not match" % (len(prefixes),
-                                                                                       len(options.filenames)))
+            raise ValueError(("number of prefixes (%i) and tables (%i) "
+                              "do not match") %
+                             (len(prefixes),
+                              len(options.filenames)))
     else:
         prefixes = None
 
@@ -305,7 +309,7 @@ def joinTables(outfile, options, args):
             else:
                 key = "-".join(row_keys)
 
-            if not keys.has_key(key):
+            if key not in keys:
                 sorted_keys.append(key)
                 keys[key] = 1
                 sizes[key] = 0
@@ -316,7 +320,8 @@ def joinTables(outfile, options, args):
             else:
                 max_size = max(len(data) - len(options.columns), max_size)
                 table[key] = [data[x]
-                              for x in range(0, len(data)) if x not in options.columns]
+                              for x in range(0, len(data))
+                              if x not in options.columns]
             n += 1
 
         # enter columns of "na" for empty tables.
@@ -354,7 +359,8 @@ def joinTables(outfile, options, args):
 
         order = range(0, len(tables) + 1)
 
-        if options.input_has_titles or (options.use_file_prefix or options.add_file_prefix):
+        if options.input_has_titles or \
+           (options.use_file_prefix or options.add_file_prefix):
 
             if options.sort:
                 sort_order = []
@@ -406,7 +412,7 @@ def joinTables(outfile, options, args):
 
                 max_size, table = tables[x - 1]
                 c = 0
-                if table.has_key(key):
+                if key in table:
                     outfile.write("\t")
                     outfile.write(string.join(table[key], "\t"))
                     c = len(table[key])
@@ -433,7 +439,7 @@ def joinTables(outfile, options, args):
 
                 max_size, table = tables[x]
                 c = 0
-                if table.has_key(key):
+                if key in table:
                     outfile.write("\t")
                     outfile.write("\t".join(table[key]))
                     c = len(table[key])
@@ -447,75 +453,118 @@ def joinTables(outfile, options, args):
 
 def main(argv=sys.argv):
 
-    parser = E.OptionParser(version="%prog version: $Id: combine_tables.py 2782 2009-09-10 11:40:29Z andreas $",
+    parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
-    parser.add_option("-t", "--no-titles", dest="input_has_titles", action="store_false",
-                      help="no titles in input.")
+    parser.add_option("-t", "--no-titles",
+                      dest="input_has_titles",
+                      action="store_false",
+                      help="no titles in input [%default].")
 
-    parser.add_option("--ignore-titles", dest="ignore_titles", action="store_true",
-                      help="")
+    parser.add_option("--ignore-titles",
+                      dest="ignore_titles",
+                      action="store_true",
+                      help="ignore titles in input [%default]")
 
-    parser.add_option("-i", "--skip-titles", dest="skip_titles", action="store_true",
+    parser.add_option("-i", "--skip-titles",
+                      dest="skip_titles",
+                      action="store_true",
                       help="skip output of titles.")
 
-    parser.add_option("-m", "--missing", "--missing-value", dest="missing_value", type="string",
+    parser.add_option("-m", "--missing", "--missing-value",
+                      dest="missing_value",
+                      type="string",
                       help="entry to use for missing values.")
 
     parser.add_option("--headers", dest="headers", type="string",
-                      help="add headers for files as a ,-separated list [%default].")
+                      help="add headers for files as a ,-separated "
+                      "list [%default].")
 
     parser.add_option("-c", "--columns", dest="columns", type="string",
-                      help="columns to use for joining. Multiple columns can be specified as a comma-separated list [default=%default].")
+                      help="columns to use for joining. Multiple columns "
+                      "can be specified as a comma-separated list "
+                      "[default=%default].")
 
-    parser.add_option("-k", "--take", dest="take", type="string", action="append",
-                      help="columns to take. If not set, all columns except for "
+    parser.add_option("-k", "--take",
+                      dest="take",
+                      type="string",
+                      action="append",
+                      help="columns to take. If not set, all columns "
+                      "except for "
                       "the join columns are taken [%default]")
 
     parser.add_option("-g", "--glob", dest="glob", type="string",
                       help="wildcard expression for table names.")
 
     parser.add_option("-s", "--sort", dest="sort", type="string",
-                      help="sort by column titles alphabetical|numeric|list of columns.")
+                      help="sort by column titles "
+                      "alphabetical|numeric|list of columns.")
 
     parser.add_option("-e", "--merge", dest="merge", action="store_true",
-                      help="simply merge tables without matching up rows. [default=%default].")
+                      help="simply merge tables without matching up "
+                      "rows. [default=%default].")
 
     parser.add_option("-a", "--cat", dest="cat", type="string",
-                      help="simply concatenate tables. Adds an additional column called X with the filename "
-                           " [default=%default].")
+                      help="simply concatenate tables. Adds an "
+                      "additional column called X with the filename "
+                      " [default=%default].")
 
     parser.add_option("--sort-keys", dest="sort_keys", type="choice",
                       choices=("numeric", "alphabetic"),
                       help="sort key columns by value.")
 
-    parser.add_option("--keep-empty", dest="ignore_empty", action="store_false",
-                      help="keep empty tables. The default is to ignore them.")
+    parser.add_option("--keep-empty", dest="ignore_empty",
+                      action="store_false",
+                      help="keep empty tables. The default is "
+                      "to ignore them.")
 
-    parser.add_option("--ignore-empty", dest="ignore_empty", action="store_true",
-                      help="ignore empty tables - this is the default [%default].")
+    parser.add_option("--ignore-empty",
+                      dest="ignore_empty",
+                      action="store_true",
+                      help="ignore empty tables - this is "
+                      "the default [%default].")
 
-    parser.add_option("--add-file-prefix", dest="add_file_prefix", action="store_true",
-                      help="add file prefix to columns headers. Suitable for multi-column tables [default=%default]")
+    parser.add_option("--add-file-prefix",
+                      dest="add_file_prefix",
+                      action="store_true",
+                      help="add file prefix to "
+                      "columns headers. Suitable for multi-column"
+                      "tables [default=%default]")
 
-    parser.add_option("--use-file-prefix", dest="use_file_prefix", action="store_true",
-                      help="use file prefix as column headers. Suitable for two-column tables [default=%default]")
+    parser.add_option("--use-file-prefix",
+                      dest="use_file_prefix",
+                      action="store_true",
+                      help="use file prefix as column headers. "
+                      "Suitable for two-column tables "
+                      "[default=%default]")
 
     parser.add_option("--prefixes", dest="prefixes", type="string",
-                      help="list of prefixes to use. , separated list of prefixes. The number "
-                      "of prefixes need to correspond to the number of input files [default=%default]")
+                      help="list of prefixes to use. "
+                      ", separated list of prefixes. "
+                      "The number of prefixes need to correspond to the "
+                      "number of input files [default=%default]")
 
-    parser.add_option("--regex-filename", dest="regex_filename", type="string",
-                      help="pattern to apply to filename to build prefix [default=%default]")
+    parser.add_option("--regex-filename", dest="regex_filename",
+                      type="string",
+                      help="pattern to apply to filename to "
+                      "build prefix [default=%default]")
 
-    parser.add_option("--regex-start", dest="regex_start", type="string",
-                      help="regular expression to start collecting table in a file [default=%default]")
+    parser.add_option("--regex-start",
+                      dest="regex_start",
+                      type="string",
+                      help="regular expression to start "
+                      "collecting table in a file [default=%default]")
 
-    parser.add_option("--regex-end", dest="regex_end", type="string",
-                      help="regular expression to end collecting table in a file [default=%default]")
+    parser.add_option("--regex-end",
+                      dest="regex_end",
+                      type="string",
+                      help="regular expression to end collecting "
+                      "table in a file [default=%default]")
 
-    parser.add_option("--test", dest="test", type="int",
-                      help="test combining tables with first X rows [default=%default]")
+    parser.add_option("--test", dest="test",
+                      type="int",
+                      help="test combining tables with "
+                      "first X rows [default=%default]")
 
     parser.set_defaults(
         input_has_titles=True,

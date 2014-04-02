@@ -589,11 +589,11 @@ def getOptions(options):
 
     slr_options = {}
 
-    if options.omega != None:
+    if options.omega is not None:
         slr_options["initial_omega"] = str(options.omega)
-    if options.kappa != None:
+    if options.kappa is not None:
         slr_options["initial_kappa"] = str(options.kappa)
-    if options.positive_only != None:
+    if options.positive_only is not None:
         slr_options["positive_only"] = str(options.positive_only)
 
     return slr_options

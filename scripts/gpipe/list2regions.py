@@ -72,8 +72,6 @@ import getopt
 
 import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
-import CGAT.Intervalls as Intervalls
-import CGAT.PredictionParser as PredictionParser
 
 param_long_options = ["verbose=", "help", "max-percent-overlap=",
                       "min-coverage-query=", "min-score=", "min-percent-identity=",
@@ -92,9 +90,7 @@ param_loglevel = 2
 
 param_border = 100
 
-from predict_genes import PredictorExonerate, PredictorGenewise
-
-# ------------------------------------------------------------
+from CGAT.Predictor2 import PredictorExonerate
 
 
 def main(argv=None):
@@ -103,7 +99,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     try:

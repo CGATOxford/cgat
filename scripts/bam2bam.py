@@ -279,7 +279,7 @@ def main(argv=None):
                         yield read
                 it = set_sequence(it)
 
-            if options.strip != None:
+            if options.strip is not None:
                 def strip_sequence(i):
                     for read in i:
                         read.seq = None

@@ -86,7 +86,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(
@@ -239,7 +239,7 @@ def main(argv=None):
 
                 for field in options.output_fields:
 
-                    if v != None:
+                    if v is not None:
                         if field == "zscore":
                             f = options.format % stats.getZScore(v)
                         elif field == "diff":

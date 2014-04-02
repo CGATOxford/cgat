@@ -54,17 +54,13 @@ Code
 
 '''
 import os
-import sys
 import string
 import re
 import time
-import optparse
 import tempfile
-import subprocess
 import types
 
 from CGAT import Experiment as E
-import csv
 from CGAT import CSV as CSV
 import sqlite3
 
@@ -88,9 +84,9 @@ def executewait(dbhandle, statement, error, retry=False, wait=5):
                    (msg, statement))
         # TODO: check for database locked msg
             if not retry:
-                raise error, msg
+                raise e
             if not re.search("locked", str(msg)):
-                raise error, msg
+                raise e
             time.sleep(wait)
             i -= 1
             continue
@@ -133,21 +129,24 @@ def quoteTableName(name, quote_char="_", backend="sqlite"):
         return re.sub("[-(),\[\]]:", "_", name)
 
 
-def createTable(dbhandle, error, options, rows=None, headers=None,
+def createTable(dbhandle, error, options,
+                rows=None,
+                headers=None,
                 first_column=None,
                 existing_tables=[]):
 
     # create table by guessing column types from data type.
     if rows:
-        map_column2type, ignored, max_values = CSV.GetMapColumn2Type(rows,
-                                                                     ignore_empty=options.ignore_empty,
-                                                                     get_max_values=True)
+        map_column2type, ignored, max_values = CSV.GetMapColumn2Type(
+            rows,
+            ignore_empty=options.ignore_empty,
+            get_max_values=True)
         if ignored:
             E.info("ignored columns: %s" % str(ignored))
 
         headers = map_column2type.keys()
         headers.sort()
-
+        
     elif headers:
         map_column2type = dict(zip(headers, [None, ] * len(headers)))
         ignored = 0
@@ -176,24 +175,23 @@ def createTable(dbhandle, error, options, rows=None, headers=None,
 
         present[hh] = 1
         take.append(h)
-
-        if map_column2type[h] == types.IntType:
+        if map_column2type[h] == int:
             max_value = max_values[h]
-            if h > 2147483647:
+            if max_value > 2147483647:
                 t = "BIGINT DEFAULT '0'"
-            elif h > 32767:
+            elif max_value > 32767:
                 t = "INTEGER DEFAULT '0'"
             else:
                 t = "SMALLINT DEFAULT '0'"
 
-        elif map_column2type[h] == types.FloatType:
+        elif map_column2type[h] == float:
             t = "FLOAT DEFAULT '0'"
         else:
             t = "TEXT"
 
         # remove special characters from column names
         if hh == "":
-            if first_column != None and header_index == 0:
+            if first_column is not None and header_index == 0:
                 hh = first_column
             else:
                 raise ValueError("column '%s' without header " % h)
@@ -248,7 +246,7 @@ def createTable(dbhandle, error, options, rows=None, headers=None,
                    (msg, statement))
             # TODO: check for database locked msg
             if not options.retry:
-                raise error, msg
+                raise error
             if not re.search("locked", str(msg)):
                 raise error("%s: %s" % (msg, statement))
             time.sleep(5)
@@ -294,7 +292,11 @@ def run(infile, options):
             E.warn("could not change permissions of database: %s" % msg)
 
         # Avoid the following error:
-        # sqlite3.ProgrammingError: You must not use 8-bit bytestrings unless you use a text_factory that can interpret 8-bit bytestrings (like text_factory = str). It is highly recommended that you instead just switch your application to Unicode strings
+        # sqlite3.ProgrammingError: You must not use 8-bit bytestrings
+        # unless you use a text_factory that can interpret 8-bit
+        # bytestrings (like text_factory = str). It is highly
+        # recommended that you instead just switch your application
+        # to Unicode strings
         # Note: might be better to make csv2db unicode aware.
         dbhandle.text_factory = str
 
@@ -308,10 +310,11 @@ def run(infile, options):
         existing_tables = set([x[0] for x in cc])
         cc.close()
 
-        quick_import_statement = "sqlite3 -header -csv -separator '\t' %s '.import %%s %s'" % (
-            options.database, options.tablename)
+        quick_import_statement = \
+            "sqlite3 -header -csv -separator '\t' %s '.import %%s %s'" % \
+            (options.database, options.tablename)
 
-    if options.header != None:
+    if options.header is not None:
         options.header = [x.strip() for x in options.header.split(",")]
 
     if options.utf:
@@ -338,10 +341,12 @@ def run(infile, options):
             rows.append(CSV.ConvertDictionary(row, map=options.map))
         except TypeError, msg:
             E.warn(
-                "incomplete line? Type error in conversion: '%s' with data: %s" % (msg, str(row)))
+                "incomplete line? Type error in conversion: "
+                "'%s' with data: %s" % (msg, str(row)))
         except ValueError, msg:
             E.warn(
-                "incomplete line? Type error in conversion: '%s' with data: %s" % (msg, str(row)))
+                "incomplete line? Type error in conversion: "
+                "'%s' with data: %s" % (msg, str(row)))
 
         if len(rows) >= options.guess_size:
             break
@@ -355,20 +360,25 @@ def run(infile, options):
                 E.warn("no data - no table created")
             else:
                 # create empty table and exit
-                take, map_column2type, ignored = createTable(dbhandle, error, headers=reader.fieldnames,
-                                                             options=options,
-                                                             first_column=options.first_column,
-                                                             existing_tables=existing_tables)
+                take, map_column2type, ignored = createTable(
+                    dbhandle,
+                    error,
+                    headers=reader.fieldnames,
+                    options=options,
+                    first_column=options.first_column,
+                    existing_tables=existing_tables)
                 E.info("empty table created")
             return
         else:
             raise ValueError("empty table")
     else:
-        take, map_column2type, ignored = createTable(dbhandle, error,
-                                                     rows=rows,
-                                                     options=options,
-                                                     first_column=options.first_column,
-                                                     existing_tables=existing_tables)
+        take, map_column2type, ignored = createTable(
+            dbhandle,
+            error,
+            rows=rows,
+            options=options,
+            first_column=options.first_column,
+            existing_tables=existing_tables)
 
     def row_iter(rows, reader):
         for row in rows:
@@ -377,7 +387,9 @@ def run(infile, options):
                            null=options.null,
                            string_value=options.string_value)
         for data in reader:
-            yield quoteRow(CSV.ConvertDictionary(data, map=options.map), take, map_column2type,
+            yield quoteRow(CSV.ConvertDictionary(data, map=options.map),
+                           take,
+                           map_column2type,
                            options.missing_values,
                            null=options.null,
                            string_value=options.string_value)
@@ -426,8 +438,8 @@ def run(infile, options):
 
         os.remove(filename)
 
-        # there is no way to .insert NULL values into sqlite. The only solution is
-        # to update all colums.
+        # there is no way to insert NULL values into sqlite. The only
+        # solution is to update all colums.
         for column in take:
             executewait(dbhandle,
                         "UPDATE %s SET %s = NULL WHERE %s = 'None'" % (
@@ -459,9 +471,9 @@ def run(infile, options):
                        (msg, statement))
                 # TODO: check for database locked msg
                 if not options.retry:
-                    raise error, msg
+                    raise error
                 if not re.search("locked", str(msg)):
-                    raise error, msg
+                    raise error
                 time.sleep(5)
                 continue
             break

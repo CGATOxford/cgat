@@ -32,7 +32,7 @@ DATABASE = P['rnaseqtranscripts_backend']
 import CGATPipelines.PipelineTracks as PipelineTracks
 
 TRACKS = PipelineTracks.Tracks(PipelineTracks.Sample3).loadFromDirectory(
-    glob.glob("%s/*.bam" % DATADIR), "%s/(\S+).bam" % DATADIR)
+    glob.glob("%s/*.bam" % DATADIR), "(\S+).bam")
 
 ALL = PipelineTracks.Aggregate(TRACKS)
 EXPERIMENTS = PipelineTracks.Aggregate(TRACKS, labels=("condition", "tissue"))
@@ -62,7 +62,7 @@ MAP_TRACKS = {
 def selectTracks(subset):
     '''select tracks from *all_tracks* according to *subset*.
     '''
-    if subset == None or subset == "default":
+    if subset is None or subset == "default":
         return MAP_TRACKS["default"]
     elif subset in MAP_TRACKS:
         return MAP_TRACKS[subset]

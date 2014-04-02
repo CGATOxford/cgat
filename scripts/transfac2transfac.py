@@ -41,7 +41,6 @@ Command line options
 # //
 
 import sys
-import os
 import re
 import CGAT.Experiment as E
 
@@ -52,7 +51,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     # setup command line parser
@@ -67,7 +66,7 @@ def main(argv=None):
 
     (options, args) = E.Start(parser)
 
-    if options.pattern != False:
+    if options.pattern is not False:
         patterns = [x.strip() for x in options.pattern.split(",")]
         E.info("Supplied patterns %s" % ", ".join(patterns))
     else:
@@ -81,50 +80,51 @@ def main(argv=None):
     for line in options.stdin:
 
         # pick up motif start and ends.
-        if line.startswith("AC") and inmotif == False:
+        if line.startswith("AC") and inmotif is False:
             # print "in align"
             inmotif = True
             motif = line
             continue
-        elif line.startswith("ID") and inmotif == True:
+        elif line.startswith("ID") and inmotif is True:
             # print line
             tid = line.split("  ")[1]
             motif += line
             continue
 
-        elif line.startswith("//") and inmotif == True:
+        elif line.startswith("//") and inmotif is True:
 
             motif += line
 
-            if tid == False:
+            if tid is False:
                 raise ValueError("matrix ID not determined")
 
-            if options.filter != False:
+            if options.filter is not False:
                 if tid.startswith(options.filter):
                     filter_emit = True
             else:
                 filter_emit = True
 
-            if patterns != False:
+            if patterns is not False:
                 for pat in patterns:
                     match = re.search(pat, tid, re.IGNORECASE)
-                    if match != None:
+                    if match is not None:
                         pattern_emit = True
                         break
             else:
                 pattern_emit = True
 
-            if filter_emit == True and pattern_emit == True:
+            if filter_emit is True and pattern_emit is True:
                 filtered_motifs.append(motif)
                 n += 1
 
-            inmotif, tid, filter_emit, pattern_emit = False, False, False, False
+            inmotif, tid, filter_emit, pattern_emit = (
+                False, False, False, False)
             continue
 
-        elif inmotif == True:
+        elif inmotif is True:
             motif += line
 
-        elif inmotif == False:
+        elif inmotif is False:
             continue
 
         else:

@@ -64,7 +64,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(version="%prog version: $Id: bed2annotator2tsv.py 2885 2010-04-07 08:46:50Z andreas $",

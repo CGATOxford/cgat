@@ -431,7 +431,7 @@ class PredictionParser:
             genomic_sequence = string.translate(
                 genomic_sequence, string.maketrans("ACGTacgt", "TGCAtgca"))[::-1]
 
-        if sbjct_from != None and sbjct_to != None:
+        if sbjct_from is not None and sbjct_to is not None:
             return genomic_sequence[sbjct_from:sbjct_to]
         else:
             return genomic_sequence

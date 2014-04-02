@@ -250,7 +250,7 @@ def publish_report(prefix="",
         prefix = PARAMS.get("report_prefix", "")
 
     web_dir = PARAMS["web_dir"]
-    if project_id == None:
+    if project_id is None:
         project_id = getProjectId()
 
     src_export = os.path.abspath("export")

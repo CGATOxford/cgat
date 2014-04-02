@@ -80,7 +80,7 @@ class EnrichmentOverUnstim(IntervalTracker):
         if condition == "Unstim":
             return []
 
-        if replicate == None:
+        if replicate is None:
             replicate = ""
         other_track = "run" + cellline + "Unstim" + replicate
 

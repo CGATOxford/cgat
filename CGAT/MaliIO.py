@@ -396,10 +396,10 @@ def getMapFromMali(seq1, seq2, gap_char="-"):
     # build map between genomic sequences:
     for p in range(len(seq1)):
 
-        if     seq1[p] != gap_char and \
-                seq2[p] != gap_char and \
-                seq1[p] in string.uppercase and \
-                seq2[p] in string.uppercase:
+        if seq1[p] != gap_char and \
+           seq2[p] != gap_char and \
+           seq1[p] in string.uppercase and \
+           seq2[p] in string.uppercase:
             map_a2b.addPairExplicit(xpos + 1, ypos + 1, 0)
 
         if seq1[p] != gap_char:

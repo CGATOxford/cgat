@@ -155,7 +155,7 @@ def Collect(infile,
     # apply filters
 
     if ninput > 0:
-        if max_qvalue != None:
+        if max_qvalue is not None:
             if use_annotator_fdr:
                 pvalues = annotator_fdr.keys()
                 pvalues.sort()
@@ -193,7 +193,7 @@ def Collect(infile,
                     no_fdr = True
                 else:
                     data = [x[0] for x in zip(data, qvalues.mPassed) if x[1]]
-        elif max_pvalue != None:
+        elif max_pvalue is not None:
             data = [x for x in data if x.mPValue < max_pvalue]
 
     if no_fdr:
@@ -696,7 +696,7 @@ class GoPlot:
             self.mElements.append(e)
 
         ###########################################################
-        if self.mMaxPValue != None or self.mMaxQValue != None:
+        if self.mMaxPValue is not None or self.mMaxQValue is not None:
             current_y += max(self.mFooterFontSize / 1.5,
                              self.mMaxBoxSize) + self.mSeparator
 
@@ -773,7 +773,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(

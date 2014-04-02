@@ -149,10 +149,10 @@ def Calculate(values,
 
     if not intervals:
 
-        if min_value == None:
+        if min_value is None:
             min_value = min(values)
 
-        if max_value == None:
+        if max_value is None:
             max_value = max(values)
 
         if dynamic_bins:
@@ -332,7 +332,7 @@ def Write(outfile, h, intervalls=None, format=0, nonull=None,
                 lines.append(fb(x) + "\t" + val)
 
     # print values
-    if nonull != None:
+    if nonull is not None:
         for l in range(0, len(lines)):
             lines[l] = re.sub("\t0", "\t%s" % nonull, lines[l])
 

@@ -284,7 +284,7 @@ def GetIntronPositions(seq, gap_char="-"):
 
         last_char = x
 
-        if last_upper == None:
+        if last_upper is None:
             transitions.append(x)
         elif seq[x] in string.uppercase and not last_upper:
             transitions.append(x)
@@ -711,11 +711,11 @@ def oldClusterMatrixClosestDistance(matrix_weights,
                 co = 0
 
             if matrix_compatibility and co <= param_max_compatibility:
-                if best == None or matrix_weights[x][m] < best:
+                if best is None or matrix_weights[x][m] < best:
                     best = matrix_weights[x][m]
                     best_m = m
 
-        if best != None and best <= param_clustering_max_distance:
+        if best is not None and best <= param_clustering_max_distance:
             best_matches[i] = (best_m, best)
 
     # go through edge list by increasing distance and add identifiers
@@ -884,11 +884,11 @@ def ClusterMatrixClosestDistance(matrix_weights,
             if param_loglevel >= 5:
                 print "# pair:", id, identifiers[m], matrix_weights[x][m]
 
-            if best == None or matrix_weights[x][m] < best:
+            if best is None or matrix_weights[x][m] < best:
                 best = matrix_weights[x][m]
                 best_m = m
 
-        if best != None and best <= param_clustering_max_distance:
+        if best is not None and best <= param_clustering_max_distance:
             if param_loglevel >= 3:
                 print "# assigning %s to %s with weight %f" % (id, identifiers[best_m], best)
             clusters[identifiers[best_m]].append((id, x, species, best, False))
@@ -1055,7 +1055,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     try:

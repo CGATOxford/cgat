@@ -467,7 +467,7 @@ def doFDR(options, args):
         annotators.append(readAnnotator(infile))
         infile.close()
 
-    do_filter = options.fdr_qvalue != None
+    do_filter = options.fdr_qvalue is not None
 
     extra_headers = set()
     for data, fdr, synonyms, input_files in annotators:

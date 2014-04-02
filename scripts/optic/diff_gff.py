@@ -177,7 +177,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(
@@ -305,7 +305,7 @@ def main(argv=None):
             last_l = True
             while GTF.Overlap(entry1, entry2):
 
-                if overlapping_genes != None:
+                if overlapping_genes is not None:
                     overlapping_genes.append((entry1.gene_id, entry2.gene_id))
 
                 write_last = True

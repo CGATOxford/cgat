@@ -9,7 +9,7 @@ Windows pipeline
 
 This pipeline takes mapped reads from ChIP-Seq experiments
 such has chromatin marks, MeDIP and performs analyses
-of the genomic read distribution. This contrasts with 
+of the genomic read distribution. This contrasts with
 :doc:`pipeline_intervals`, which annotates a set of
 non-overlapping intervals.
 
@@ -336,8 +336,10 @@ def mergeBackgroundWindows(infiles, outfile):
         PARAMS["annotations_dir"], PARAMS_ANNOTATIONS['interface_contigs'])
     statement = '''
     zcat %(infiles)s 
-    | bedtools slop -i stdin -b %(filtering_background_extension)i -g %(genomefile)s
-    | mergeBed 
+    | bedtools slop -i stdin
+                -b %(filtering_background_extension)i
+                -g %(genomefile)s
+    | mergeBed
     | bgzip
     > %(outfile)s
     '''
@@ -807,7 +809,7 @@ def buildWindowsFoldChangesPerInput(infile, outfile):
     map_track2input = mapTrack2Input(columns)
     take_tracks = [x for x, y in enumerate(columns) if y in map_track2input]
     take_input = [x for x, y in enumerate(
-        columns) if y in map_track2input.values() and y != None]
+        columns) if y in map_track2input.values() and y is not None]
 
     # build data frame
     dataframe = pandas.DataFrame(
@@ -828,7 +830,7 @@ def buildWindowsFoldChangesPerInput(infile, outfile):
     ratios = {}
     for column in dataframe.columns:
         i = map_track2input[column]
-        if i != None:
+        if i is not None:
             # ratios[column] = float(sum(dataframe_input[i])) / sum( dataframe[column] )
             ratios[column] = dataframe_input[
                 i].median() / dataframe[column].median()
@@ -836,7 +838,7 @@ def buildWindowsFoldChangesPerInput(infile, outfile):
             ratios[column] = None
 
     for column in dataframe.columns:
-        if ratios[column] != None:
+        if ratios[column] is not None:
             # normalize by input
             dataframe[column] *= ratios[column] / \
                 dataframe_input[map_track2input[column]]
@@ -1336,7 +1338,8 @@ def buildSpikeResults(infile, outfile):
     '''
     P.run()
 
-    spiked, spiked_d2hist_counts, xedges, yedges, spiked_l10average, spiked_l2fold = \
+    (spiked, spiked_d2hist_counts, xedges, yedges,
+     spiked_l10average, spiked_l2fold) = \
         outputSpikeCounts(P.snip(outfile, ".power.gz") + ".spiked.gz",
                           tmpfile_name,
                           max_expression,
@@ -1347,12 +1350,13 @@ def buildSpikeResults(infile, outfile):
     tmpfile_name = P.getTempFilename(".")
 
     statement = '''zcat %(infile)s
-    | grep -v -e "^spike" 
+    | grep -v -e "^spike"
     > %(tmpfile_name)s
     '''
     P.run()
 
-    unspiked, unspiked_d2hist_counts, unspiked_xedges, unspiked_yedges, unspiked_l10average, unspiked_l2fold = \
+    (unspiked, unspiked_d2hist_counts, unspiked_xedges,
+     unspiked_yedges, unspiked_l10average, unspiked_l2fold) = \
         outputSpikeCounts(P.snip(outfile, ".power.gz") + ".unspiked.gz",
                           tmpfile_name,
                           max_expression,
@@ -1376,10 +1380,11 @@ def buildSpikeResults(infile, outfile):
     for fdr in fdr_thresholds:
         take = spiked['qvalue'] < fdr
 
-        spiked_d2hist_fdr, xedges, yedges = numpy.histogram2d(spiked_l10average[take],
-                                                              spiked_l2fold[
-                                                                  take],
-                                                              bins=(xedges, yedges))
+        spiked_d2hist_fdr, xedges, yedges = \
+            numpy.histogram2d(spiked_l10average[take],
+                              spiked_l2fold[
+                                  take],
+                              bins=(xedges, yedges))
 
         spiked_d2hist_fdr_normed = spiked_d2hist_fdr / spiked_d2hist_counts
         spiked_d2hist_fdr_normed = numpy.nan_to_num(spiked_d2hist_fdr_normed)
@@ -1387,30 +1392,35 @@ def buildSpikeResults(infile, outfile):
         # set values without data to 0
         spiked_d2hist_fdr_normed[spiked_d2hist_counts == 0] = -1.0
 
-        for x, y in itertools.product(range(len(xedges) - 1), range(len(yedges) - 1)):
-            tmpfile.write("\t".join(map(str, (xedges[x], yedges[y],
-                                              fdr,
-                                              spiked_d2hist_fdr[x, y],
-                                              100.0 * spiked_d2hist_fdr_normed[x, y]))) + "\n")
+        for x, y in itertools.product(range(len(xedges) - 1),
+                                      range(len(yedges) - 1)):
+            tmpfile.write("\t".join(map(
+                str, (xedges[x], yedges[y],
+                      fdr,
+                      spiked_d2hist_fdr[x, y],
+                      100.0 * spiked_d2hist_fdr_normed[x, y]))) + "\n")
 
         # take elements in spiked_hist_fdr above a certain threshold
         for power in power_thresholds:
             power_take = spiked_d2hist_fdr_normed >= power
             power_counts = unspiked_d2hist_counts[power_take]
 
-            outf.write("\t".join(map(str, (fdr, power,
-                                           power_counts.sum().sum(),
-                                           100.0 * power_counts.sum().sum() / unspiked_total))) + "\n")
+            outf.write("\t".join(map(
+                str, (fdr, power,
+                      power_counts.sum().sum(),
+                      100.0 * power_counts.sum().sum()
+                      / unspiked_total))) + "\n")
 
     tmpfile.close()
     outf.close()
 
     # upload into table
     method = P.snip(os.path.dirname(outfile), ".dir")
-    tablename = P.toTable(P.snip(outfile, "power.gz") + method + ".spike.load")
+    tablename = P.toTable(
+        P.snip(outfile, "power.gz") + method + ".spike.load")
 
     statement = '''cat %(tmpfile_name)s
-    | python %(scriptsdir)s/csv2db.py 
+    | python %(scriptsdir)s/csv2db.py
            --table=%(tablename)s
            --index=fdr
     > %(outfile)s.log'''
@@ -1463,7 +1473,9 @@ def outputAllWindows(infile, outfile):
 @transform(outputAllWindows, suffix(".all.bed.gz"),
            (".top.bed.gz", ".bottom.bed.gz"))
 def outputTopWindows(infile, outfiles):
-    '''output bed with largest/smallest l2fold changes.
+    '''output bed file with largest/smallest l2fold changes.
+
+    The resultant bed files are sorted by coordinate.
     '''
     outfile = outfiles[0]
 
@@ -1471,9 +1483,11 @@ def outputTopWindows(infile, outfiles):
 
     statement = '''zcat %(infile)s
     | awk '$4 !~ /inf/'
-    | sort -k4,4n 
-    | tail -n %(bed_export)i 
-    | gzip > %(outfile)s || true
+    | sort -k4,4n
+    | tail -n %(bed_export)i
+    | sort -k1,1 -k2,2n
+    | bgzip
+    > %(outfile)s
     '''
     P.run()
 
@@ -1481,10 +1495,11 @@ def outputTopWindows(infile, outfiles):
 
     statement = '''zcat %(infile)s
     | awk '$4 !~ /inf/'
-    | sort -k4,4n 
-    | head -n %(bed_export)i 
-    | gzip 
-    > %(outfile)s || true
+    | sort -k4,4n
+    | head -n %(bed_export)i
+    | sort -k1,1 -k2,2n
+    | bgzip
+    > %(outfile)s
     '''
     P.run()
 
@@ -1532,15 +1547,14 @@ def buildDMRWindowStats(infile, outfile):
 @follows(mkdir("transcriptprofiles.dir"))
 @transform(prepareTags,
            regex(r".*/([^/].*)\.bed.gz"),
-           add_inputs(os.path.join(PARAMS["annotations_dir"],
-                                   PARAMS_ANNOTATIONS["interface_geneset_coding_exons_gtf"])),
+           add_inputs(os.path.join(
+               PARAMS["annotations_dir"],
+               PARAMS_ANNOTATIONS["interface_geneset_coding_exons_gtf"])),
            r"transcriptprofiles.dir/\1.transcriptprofile.tsv.gz")
 def buildIntervalProfileOfTranscripts(infiles, outfile):
     '''build a table with the overlap profile
     with protein coding exons.
     '''
-
-    to_cluster = True
 
     bedfile, gtffile = infiles
 
@@ -1556,22 +1570,23 @@ def buildIntervalProfileOfTranscripts(infiles, outfile):
     # input_files = getInput( t )
 
     # currently only implement one input file per track
-    # assert len(input_files) <= 1, "%s more than input: %s" % (track, input_files)
+    # assert len(input_files) <= 1,\
+    # "%s more than input: %s" % (track, input_files)
 
     # if len(input_files) == 1:
     #     options = '--controlfile=%s' % \
     #         (os.path.join( os.path.dirname( bedfile ),
     #                        input_files[0] + '.bed.gz') )
     statement = '''zcat %(gtffile)s
-                   | python %(scriptsdir)s/gtf2gtf.py 
-                     --filter=representative-transcript 
-                     --log=%(outfile)s.log 
+                   | python %(scriptsdir)s/gtf2gtf.py
+                     --filter=representative-transcript
+                     --log=%(outfile)s.log
                    | python %(scriptsdir)s/bam2geneprofile.py
                       --output-filename-pattern="%(outfile)s.%%s"
                       --force
                       --reporter=transcript
-                      --method=geneprofile 
-                      --method=tssprofile 
+                      --method=geneprofile
+                      --method=tssprofile
                       --normalize-profile=all
                       --output-all-profiles
                       --resolution-upstream=1000

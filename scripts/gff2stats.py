@@ -175,7 +175,7 @@ def main(argv=sys.argv):
     (options, args) = E.Start(parser, add_output_options=True)
 
     if len(args) == 0:
-        files = [sys.stdin]
+        files = [options.stdin]
     else:
         files = args
 

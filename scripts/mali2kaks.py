@@ -111,10 +111,10 @@ def runCodeML(mali, tree, has_non_overlaps, pairs, map_new2old, options):
     if options.clean_data:
         codeml_options["cleandata"] = options.clean_data
 
-    if options.omega != None:
+    if options.omega is not None:
         codeml_options["omega"] = str(options.omega)
 
-    if options.kappa != None:
+    if options.kappa is not None:
         codeml_options["kappa"] = str(options.kappa)
 
     if options.fix_kappa:
@@ -123,7 +123,7 @@ def runCodeML(mali, tree, has_non_overlaps, pairs, map_new2old, options):
     if options.fix_omega:
         codeml_options["fix_omega"] = "1"
 
-    if options.codon_frequencies != None:
+    if options.codon_frequencies is not None:
         c = options.codon_frequencies.upper()
         if c == "UNIFORM":
             a = "0"
@@ -137,10 +137,10 @@ def runCodeML(mali, tree, has_non_overlaps, pairs, map_new2old, options):
             a = options.codon_frequencies
         codeml_options["CodonFreq"] = a
 
-    if options.paml_method != None:
+    if options.paml_method is not None:
         codeml_options["paml_method"] = str(options.method)
 
-    if options.optimization_threshold != None:
+    if options.optimization_threshold is not None:
         codeml_options["Small_Diff"] = str(options.optimization_threshold)
 
     ninput, noutput, nskipped = 0, 0, 0
@@ -512,7 +512,7 @@ def runXrateSN(xgram, mali, options):
     dS = rS / (3 * rS0) * t
     dN = rN / (3 * rN0) * t
 
-    if s == None or n == None:
+    if s is None or n is None:
         o_dn, o_ds, o_omega = "na", "na", "na"
         o_rn, o_rn0, o_rs, o_rs0 = "na", "na", "na", "na"
         o_t, o_t0 = "na", "na"
@@ -645,7 +645,7 @@ def outputXRateResult(mali, result, rsi, rsv, rni, rnv, msg):
     pi, matrix = RateEstimation.getRateMatrix(result.getModel(),
                                               terminals=('COD0', 'COD1', 'COD2'))
 
-    if rsi == None:
+    if rsi is None:
         o_dn, o_ds, o_omega = "na", "na", "na"
         o_rn, o_rn0, o_rs, o_rs0 = "na", "na", "na", "na"
         o_t, o_t0 = "na", "na"
@@ -866,7 +866,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(
@@ -1066,7 +1066,7 @@ in the model. Provide values in a comma-separated list [%default].""")
 
     options.stdout.write("\terror_str\n")
 
-    if options.replicates != None:
+    if options.replicates is not None:
         ids = mali.getIdentifiers()
         assert(len(ids) % options.replicates == 0)
         s = len(ids) / options.replicates

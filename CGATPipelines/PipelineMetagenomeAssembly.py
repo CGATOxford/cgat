@@ -1,32 +1,23 @@
-'''
-classes and utility functions for pipeline_genomeassembly.py
+'''classes and utility functions for pipeline_genomeassembly.py
 
 Different assembly tools will use different inputs. Some can take
-fasta files whereas others will take fastq and in either case can 
-be paired-end (in the same or different files) or single end
+fasta files whereas others will take fastq and in either case can be
+paired-end (in the same or different files) or single end
+
 '''
 
-import sys
-import re
 import os
-import tempfile
 import collections
 import shutil
-import gzip
-import sqlite3
 
 import CGAT.IOTools as IOTools
 import CGAT.Pipeline as P
 import CGAT.Experiment as E
-import CGATPipelines.PipelineMapping as PipelineMapping
 import CGAT.FastaIterator as FastaIterator
 import CGAT.Fastq as Fastq
 import glob
-import collections
-import CGATPipelines.PipelineTracks as PipelineTracks
 import CGAT.Metaphlan as Metaphlan
 import numpy as np
-import shutil
 
 
 class Format:
@@ -134,8 +125,6 @@ class PairedData(Format):
 # pooling reads across
 # conditions
 #############################
-
-
 def pool_reads(infiles, outfile):
     '''
     pool raw reads across conditions
@@ -158,8 +147,6 @@ def pool_reads(infiles, outfile):
 #############################
 # filtering contigs by length
 #############################
-
-
 def filterContigs(infile, outfile, length):
     '''
     filter contigs by length
@@ -176,8 +163,6 @@ def filterContigs(infile, outfile, length):
 # function for performing
 # claculation of stats
 ############################
-
-
 def contig_to_stats(contigs_file, stats_file, params):
     '''
     calculate descriptive stats for a set
@@ -229,8 +214,6 @@ def contig_to_stats(contigs_file, stats_file, params):
 ###############################
 ###############################
 ###############################
-
-
 def build_scaffold_lengths(contigs_file, outfile, params):
     '''
     output the distribution of scaffold lengths
@@ -246,8 +229,6 @@ def build_scaffold_lengths(contigs_file, outfile, params):
 ############################
 # general assembler class
 ############################
-
-
 class Assembler(PairedData):
 
     '''
@@ -266,15 +247,13 @@ class Assembler(PairedData):
 ##########################
 # meta-velvet
 ##########################
-
-
 class Metavelvet(Assembler):
 
     '''
     velvet single genome assembly software
     '''
 
-    def build(self, infile):
+    def build(self, infile, PARAMS):
         '''
         run velveth and velvetg
         followed by meta-velvetg
@@ -300,7 +279,7 @@ class Metavelvet(Assembler):
         self.stats_file = track + ".stats.txt"
 
         if paired:
-            insert_length = "ins_length %i" % PARAMS["velvetg_insert_length"]
+            insert_length = "-ins_length %i" % PARAMS["velvetg_insert_length"]
         else:
             insert_length = ""
 
@@ -414,38 +393,10 @@ class Idba(Metavelvet):
         shutil.rmtree(tempdir)
         return statement
 
-        # DEPRECATED
-        # create single fasta file if required (reads are fastq format)
-        # if self.preprocess(infile):
-        #     inf = track + ".fa"
-        #     if not os.path.exists(inf):
-        #         statement = self.preprocess(infile)
-        #         job_options = " -l mem_free=30G"
-        #         to_cluster = True
-        #         P.run()
-        # else:
-        #     inf = infile
-
-        # build statement
-        # track = self.getTrack(infile)
-        # outdir = "idba.dir"
-
-        # get temporary file for running idba
-        # tempdir = P.getTempDir()
-
-        # NB at the moment we assume the default maxkmer of 100
-        # statement = '''%%(idba_executable)s -r %(inf)s -o %(tempdir)s %%(idba_options)s
-        #                ; mv %(tempdir)s/scaffold.fa idba.dir/%(track)s.scaffolds.fa
-        #                ; mv %(tempdir)s/contig-%%(idba_maxkmer)s.fa idba.dir/%(track)s.contigs.fa''' % locals()
-
-        # shutil.rmtree(tempdir)
-        # return statement
 
 ##########################
 # Ray meta
 ##########################
-
-
 class Ray(Idba):
 
     '''
@@ -527,8 +478,6 @@ class Ray(Idba):
 ##########################
 # SGA
 ##########################
-
-
 class SGA(Idba):
 
     '''
@@ -650,16 +599,20 @@ class SGA(Idba):
                           --log=%(outdir)s/%(track)s.contigs.log \
                           -a sga > %(outdir)s/%(track)s.contigs.fa"
 
-        statement = '''%s''' % "; ".join([preprocess_statement
-                                          , index_statement, correction_statement, filter_statement, overlap_statement, assembly_statement, move_statement, "rm -rf %(tempdir)s"]) % locals()
+        statement = "; ".join([preprocess_statement,
+                               index_statement,
+                               correction_statement,
+                               filter_statement,
+                               overlap_statement,
+                               assembly_statement,
+                               move_statement,
+                               "rm -rf %(tempdir)s"]) % locals()
 
         return statement
 
 ##########################
 # SOAPdenovo2
 ##########################
-
-
 class SoapDenovo2(Idba):
 
     '''
@@ -725,11 +678,53 @@ class SoapDenovo2(Idba):
                        rm -rf %(tempdir)s''' % locals()
         return statement
 
+
+##########################
+# Spades
+##########################
+class Spades(Idba):
+
+    def build(self, infile):
+        '''
+        build statement for running spades
+        '''
+        track = self.getTrack(os.path.basename(infile))
+
+        format = self.getFormat(infile)
+        paired = self.checkPairs(infile)
+
+        tempdir = P.getTempDir(".")
+        outdir = "spades.dir"
+
+        # input files
+        if not paired:
+            files = infile
+            files_statement = "-s %s" % files
+        else:
+            files_statement = "-1 "+ "-2 ".join( [infile, paired[1]] )
+
+        # kmer to use
+        k = "-k %(kmer)s"
+        
+        # spades options
+        spades_options = "%(spades_options)s"
+
+        # deal with spades output
+        move_statement = """mv %(tempdir)s/corrected/%(track)s*cor.* %(outdir)s; \
+                          mv %(tempdir)s/contigs.fasta %(outdir)s/%(track)s.contigs.fa; \
+                          mv %(tempdir)s/scaffolds.fasta %(outdir)s/%(track)s.scaffolds.fa \
+                          mv %(tempdir)s/spades.log %(outdir)s/%(track)s.contigs.log""" % locals()
+        
+        # statement - simple and default
+        statement = '''spades.py %(files_statement)s -o %(tempdir)s %(k)s %(spades_options)s;
+                       %(move_statement)s;
+                       rm -rf %(tempdir)s''' % locals()
+        return statement
+
+
 ##########################
 # metaphlan
 ##########################
-
-
 class Metaphlan(Idba):
 
     '''
@@ -764,7 +759,7 @@ class Metaphlan(Idba):
 
         return statement
 
-        # DEPRECATED
+         # DEPRECATED
         # create single fasta file if required (reads are fastq format)
         # inf = track + ".fa"
 

@@ -47,9 +47,9 @@ def publish_tracks(export_files, prefix="",
         prefix = PARAMS.get("report_prefix", "")
 
     web_dir = PARAMS["web_dir"]
-    if project_id == None:
+    if project_id is None:
         project_id = P.getProjectId()
-    if project_name == None:
+    if project_name is None:
         project_name = P.getProjectName()
 
     src_export = os.path.abspath("export")
@@ -132,7 +132,7 @@ def publish_tracks(export_files, prefix="",
                            (os.path.abspath(src), dest, msg))
             ucsctype, trackname = getName(os.path.basename(dest))
             # ignore invalid types and other files (.bai files, ...)
-            if ucsctype == None:
+            if ucsctype is None:
                 continue
             tracks[trackname] = (("bigDataUrl", os.path.basename(dest)),
                                  ("shortLabel", trackname),

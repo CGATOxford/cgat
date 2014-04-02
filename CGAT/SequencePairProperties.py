@@ -226,7 +226,7 @@ class SequencePairPropertiesCountsNa (SequencePairProperties):
         gp = self.mMapChar2Pos['G']
 
         # sum all rows and columns that have a least one G or C
-        # and remove those that have two
+        # and remove those that have two in order to not double count
         gc = numpy.sum(
             self.mMatrix[0:4, cp]
             + self.mMatrix[0:4, gp]

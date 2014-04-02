@@ -61,7 +61,7 @@ import CGAT.Masker as Masker
 
 # ------------------------------------------------------------------------
 def main(argv=None):
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(

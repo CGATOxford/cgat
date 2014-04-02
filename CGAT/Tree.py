@@ -29,15 +29,12 @@ Tree.py - A derivation of the tree class from Biopython
 :Tags: Python
 
 """
-import sys
-import string
-import re
-import os
 import math
 
 import Bio.Nexus
 import Bio.Nexus.Nodes
 import Bio.Nexus.Trees
+
 
 def updateNexus(nexus):
     """change trees in nexus object to trees from here.
@@ -255,7 +252,7 @@ class Tree(Bio.Nexus.Trees.Tree):
             if not self.node(node).succ:    # terminal
                 return self.node(node).data.taxon + make_info_string(self.node(node).data, terminal=True)
             else:
-                if self.node(node).data.taxon != None:
+                if self.node(node).data.taxon is not None:
                     # changed output: first taxon name, then branch length
                     return '(%s)%s%s' % (','.join(map(newickize_all_taxa, self.node(node).succ)), self.node(node).data.taxon, make_info_string(self.node(node).data))
                 else:
@@ -332,7 +329,7 @@ class Tree(Bio.Nexus.Trees.Tree):
         def dist2root(node_id):
             node = self.node(node_id)
             map_N2Root[node_id] = node.data.branchlength
-            if node.prev != None:
+            if node.prev is not None:
                 map_N2Root[node_id] += map_N2Root[node.prev]
 
         # traverse tree and record distance to root and maximum distance to
@@ -353,7 +350,7 @@ class Tree(Bio.Nexus.Trees.Tree):
         # update distance to any other
         def dist2other(node_id):
             node = self.node(node_id)
-            if node.prev != None:
+            if node.prev is not None:
                 p = self.node(node.prev)
                 root_dist = map_N2Root[node.prev]
                 s = set(p.succ)
@@ -390,13 +387,13 @@ class Tree(Bio.Nexus.Trees.Tree):
             # to avoid rounding errors for large trees with uniform
             # branchlengths
             if balance >= 0 and balance <= node.data.branchlength + 0.001:
-                if best_balance == None or best_balance > balance:
+                if best_balance is None or best_balance > balance:
                     best_balance = balance
                     best_node = x
 
         # in trees with all 0 distances, best_node will be None
         # in this case return a balanced tree
-        if best_node == None:
+        if best_node is None:
             return self.root_balanced()
 
         # compute distance of current node to new node
@@ -456,7 +453,7 @@ class Tree(Bio.Nexus.Trees.Tree):
                 best_node = x
                 break
 
-        if best_node == None:
+        if best_node is None:
             raise "no best node found for %i leaves" % threshold
 
         # remove current root

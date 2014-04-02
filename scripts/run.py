@@ -1,3 +1,4 @@
+#!/bin/env python
 '''
 run.py - wrapper around command line
 ====================================
@@ -57,7 +58,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(version="%prog version: $Id: run.py 2782 2009-09-10 11:40:29Z andreas $",

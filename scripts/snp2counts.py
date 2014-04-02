@@ -620,11 +620,11 @@ def getCDSPosition(exons, start, end, fasta=None, lcontig=None):
             nc_seq_start, nc_seq_end = exon_end, exon_end + lnoncoding
             intron_id = exon_id
 
-    if fasta and nc_seq_start != None:
+    if fasta and nc_seq_start is not None:
         nc_seq = fasta.getSequence(contig, strand, nc_seq_start, nc_seq_end)
 
     # subtract starting frame
-    if cds_start != None:
+    if cds_start is not None:
         cds_start -= start_phase
         cds_end -= start_phase
 
@@ -907,7 +907,7 @@ class CounterTranscripts(Counter):
         '''
         intron_effects, intron_changes = [], []
         # collect splicing effects only
-        if r.nc_start == None:
+        if r.nc_start is None:
             return intron_effects, intron_changes
 
         contig = snp.chromosome
@@ -1026,7 +1026,7 @@ class CounterTranscripts(Counter):
 
         coding_effects = []
         # process coding effects, return empty if none
-        if r.cds_start == None:
+        if r.cds_start is None:
             return coding_effects
 
         contig = snp.chromosome
@@ -1084,7 +1084,7 @@ class CounterTranscripts(Counter):
             if r.exon_skipping:
                 xx, yy = r.exon_start - r.nc_start, lvariant - \
                     (r.nc_end - r.exon_end)
-            elif r.nc_start != None:
+            elif r.nc_start is not None:
                 # deletion at exon boundary
                 if r.intron_id < r.exon_id:
                     # deletion at 5' end of exon, take only 3' bases of variant
@@ -1128,7 +1128,7 @@ class CounterTranscripts(Counter):
         snp_start, snp_end = self.getVariantRange(snp)
 
         # ignore snps that are out-of-range
-        if snp_start == None:
+        if snp_start is None:
             return
 
         contig = snp.chromosome
@@ -1611,7 +1611,7 @@ class CounterTranscripts(Counter):
 
             # instantiate intron sequence
             for x in toupdate:
-                if variant_intron_seqs[x][intron_id] == None:
+                if variant_intron_seqs[x][intron_id] is None:
                     variant_intron_seqs[x][intron_id] = list(
                         reference_seqs_na[intron_id])
 
@@ -1667,7 +1667,7 @@ class CounterTranscripts(Counter):
 
                 nframeshifts += 1
 
-                if variant_seq == None:
+                if variant_seq is None:
                     variant_name, variant_seq5, variant_seq3 = reference_name, reference_seq5, reference_seq3
                     nunchanged_frames += 1
                     codes.append(".")
@@ -1697,7 +1697,7 @@ class CounterTranscripts(Counter):
                 else:
                     nnoncanonical += 1
 
-                if variant_seq == None:
+                if variant_seq is None:
                     variant_name, variant_seq5, variant_seq3 = reference_name, reference_seq5, reference_seq3
                     nunchanged += 1
                     codes.append(".")

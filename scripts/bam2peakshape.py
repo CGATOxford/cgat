@@ -207,12 +207,12 @@ def outputResults(result, bins, options):
             "matrix_%s.gz" % re.sub("-", "_", sort))
         outfile_matrix.write("name\t%s\n" % "\t".join(map(str, out_bins)))
 
-        if result[0][2] != None:
+        if result[0][2] is not None:
             outfile_control = E.openOutputFile(
                 "control_%s.gz" % re.sub("-", "_", sort))
             outfile_control.write("name\t%s\n" % "\t".join(map(str, out_bins)))
 
-        if result[0][3] != None:
+        if result[0][3] is not None:
             outfile_shift = E.openOutputFile(
                 "shift_%s.gz" % re.sub("-", "_", sort))
             outfile_shift.write("name\t%s\n" % "\t".join(map(str, out_bins)))

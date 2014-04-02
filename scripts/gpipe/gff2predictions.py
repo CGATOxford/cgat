@@ -59,7 +59,6 @@ Code
 import sys
 import string
 import re
-import optparse
 
 USAGE = """python %s [OPTIONS] < psl > predictions
 
@@ -76,8 +75,7 @@ import CGAT.Exons as Exons
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.IOTools as IOTools
 import CGAT.GTF as GTF
-
-from predict_genes import PredictorExonerate
+import CGAT.Predictor2 as Predictor
 
 
 def checkIdentity(reference, translation, options):
@@ -96,10 +94,12 @@ def checkIdentity(reference, translation, options):
             nmismatch = 0
             # permit the first residue to be different, so start at residue 2
             for x in range(1, min(len(translation), len(reference))):
-                if reference[x] != translation[x] and translation[x] != "X" and reference[x] != "U":
+                if reference[x] != translation[x] and \
+                   translation[x] != "X" and reference[x] != "U":
                     if options.loglevel >= 2:
-                        options.stdlog.write("# %s: residue mismatch at position %i: %s %s\n" % (
-                            entry.mQueryToken, x, reference[x], translation[x]))
+                        options.stdlog.write(
+                            "# residue mismatch at position %i: %s %s\n" %
+                            (x, reference[x], translation[x]))
                     nmismatch += 1
                     if nmismatch > 10:
                         break
@@ -107,8 +107,8 @@ def checkIdentity(reference, translation, options):
             return nmismatch == 0, nmismatch
         else:
             if options.loglevel >= 2:
-                options.stdlog.write("# %s: length mismatch: %i - %i\n" %
-                                     (entry.mQueryToken, len(translation), len(reference)))
+                options.stdlog.write("# length mismatch: %i - %i\n" %
+                                     (len(translation), len(reference)))
             return False, 0
 
     return is_identical, 0
@@ -120,7 +120,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(
@@ -184,7 +184,7 @@ def main(argv=None):
     if options.filename_peptides:
         peptide_sequences = Genomics.ReadPeptideSequences(
             IOTools.openFile(options.filename_peptides, "r"))
-        predictor = PredictorExonerate()
+        predictor = Predictor.PredictorExonerate()
         predictor.mLogLevel = 0
     else:
         peptide_sequences = None

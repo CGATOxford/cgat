@@ -276,7 +276,7 @@ def chunk_iterator_psl_overlap(infile, args, prefix, use_header=False):
 
         match = iterator.next()
 
-        if match == None:
+        if match is None:
             break
 
         if match.mSbjctId != last_sbjct_id or match.mSbjctFrom >= (sbjct_end + merge_distance):
@@ -374,7 +374,7 @@ class ResultBuilder:
             outfile.write(l)
             self.mHeader = l
 
-            if self.mFieldIndex == None and self.mFieldName:
+            if self.mFieldIndex is None and self.mFieldName:
                 try:
                     self.mFieldIndex = self.mHeader.split(
                         "\t").index(self.mFieldName)
@@ -401,7 +401,7 @@ class ResultBuilder:
                 if l[0] == "#":
                     options.stdlog.write(l)
                 else:
-                    if self.mFieldIndex != None:
+                    if self.mFieldIndex is not None:
                         data = l[:-1].split("\t")
                         try:
                             data[self.mFieldIndex] = self.mMapper(

@@ -142,7 +142,7 @@ def main(argv=None):
     E.info("retrieving pubmed records")
     # output by pubmed id
     for pmid in map_uid2pmid.values():
-        if pmid == None:
+        if pmid is None:
             continue
         print pmid
         # retrieve record
@@ -157,9 +157,9 @@ def main(argv=None):
         etree = ET.parse(data)
         root = etree.getroot()
         article = root.find("PubmedArticle")
-        assert article != None
+        assert article is not None
         journal = article.find("*//Journal")
-        assert journal != None
+        assert journal is not None
         year = journal.find("./JournalIssue/PubDate/Year").text
         journal_title = journal.find("Title").text
 

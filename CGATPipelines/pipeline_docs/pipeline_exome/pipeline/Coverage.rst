@@ -5,20 +5,24 @@ Coverage
 Coverage of Target Regions
 ==========================
 
-The following table present an overview of the sequencing depth acheived for each of the target regions for each :term:`track`.
+The following table presents an overview of the coverage metrics
+for each :term:`track`.  See the 
+`Picard metrics <http://picard.sourceforge.net/picard-metric-definitions.shtml#HsMetrics>`_
+for a definition of the field contents.
 
-.. report:: Coverage.CoverageSummary
-   :render: table
-   :tracks: coverage_stats
-   :slices: features, covered, mean_cov, median_cov
+.. report:: Mapping.PicardCoverageStats
+   :render: xls-table
 
-   Coverage Summary
+   Coverage summary
 
-.. report:: Coverage.CoveragePlot
-   :render: line-plot
-   :transform: histogram
-   :tf-range: 0,500,20
-   :slices: cov_mean
-
-   Coverage Summary
-
+#.. report:
+#    :
+#        Coverage.CoverageSummary
+#    :
+#        render:
+#            table
+#    :
+#        slices:
+#            track, MEAN_TARGET_COVERAGE, PCT_TARGET_BASES_2X, PCT_TARGET_BASES_10X, PCT_TARGET_BASES_20X, PCT_TARGET_BASES_30X
+#
+#    Coverage Summary

@@ -133,7 +133,7 @@ from ruffus import *
 ###################################################################
 # Pipeline configuration
 import CGAT.Pipeline as P
-P.getParameters("pipeline.ini")
+P.getParameters(["pipeline.ini"])
 PARAMS = P.PARAMS
 USECLUSTER = True
 

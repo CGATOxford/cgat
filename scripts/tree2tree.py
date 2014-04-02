@@ -236,7 +236,7 @@ def Process(lines, other_trees, options, map_old2new, ntree):
                     node.data.taxon = map_old2new[node.data.taxon]
 
             elif method == "remove-pattern":
-                if species2remove == None:
+                if species2remove is None:
                     species2remove = re.compile(options.parameters[0])
                     del options.parameters
                 taxa = []
@@ -285,7 +285,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(version="%prog version: $Id: tree2tree.py 2782 2009-09-10 11:40:29Z andreas $",

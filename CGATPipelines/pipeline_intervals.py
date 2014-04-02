@@ -123,7 +123,7 @@ software to be in the path:
 +--------------------+-------------------+------------------------------------------------+
 |*Program*           |*Version*          |*Purpose*                                       |
 +--------------------+-------------------+------------------------------------------------+
-|bowtie_             |>=0.12.7           |read mapping                                    |
+|                    |                   |                                                |
 +--------------------+-------------------+------------------------------------------------+
 
 Pipline Output
@@ -154,15 +154,15 @@ Change Log
 26.2.2014 Andreas Heger
     added tag counting in intervals.
 
-Glossary
-========
+11.3.2014 Andreas Heger
+    preprocess all intervals to make sure they are
+    properly formatted:
+    1. merge overlapping intervals
+    2. sort intervals by coordinate
 
-.. glossary::
-
-   bowtie
-      bowtie_ - a read mapper
-
-.. _bowtie: http://bowtie-bio.sourceforge.net/index.shtml
+    As a consequence of this change, intervals and subsequent files
+    will end up in the intervals.dir directory. Thus, existing
+    pipelines will re-run.
 
 Code
 ====
@@ -184,7 +184,6 @@ import CGAT.Bed as Bed
 import CGAT.MatrixTools as MatrixTools
 import pysam
 import numpy
-import pybedtools
 import xml.etree.ElementTree
 import PipelineChipseq as PipelineChipseq
 import PipelineMotifs as PipelineMotifs
@@ -215,12 +214,23 @@ PARAMS_ANNOTATIONS = P.peekParameters(PARAMS["annotations_dir"],
 # Helper functions mapping tracks to conditions, etc
 ###################################################################
 # load all tracks - exclude input/control tracks
+# determine the location of the input files (reads).
+DATADIR = PARAMS.get('input', '.')
+if not os.path.exists(DATADIR):
+    raise OSError('data directory %s does not exists')
+
+
 Sample = PipelineTracks.Sample
 
-TRACKS = PipelineTracks.Tracks(Sample).loadFromDirectory(glob.glob("*.bed.gz"),
-                                                         "(\S+).bed.gz")
+TRACKS = PipelineTracks.Tracks(Sample).loadFromDirectory(
+    glob.glob(os.path.join(DATADIR, "*.bed.gz")),
+    "(\S+).bed.gz")
 
-TRACKS_BEDFILES = ["%s.bed.gz" % x for x in TRACKS]
+BEDFILES = [os.path.join(
+    DATADIR, "%s.bed.gz") % x for x in TRACKS]
+
+BAMFILES = glob.glob(os.path.join(DATADIR, "*.bam"))
+
 
 ###################################################################
 ###################################################################
@@ -240,8 +250,8 @@ if os.path.exists("pipeline_conf.py"):
 def getAssociatedBAMFiles(track):
     '''return a list of BAM files associated with a track.
 
-    By default, this method searches for ``track.bam`` 
-    file in the current directory and returns an offset of 0.
+    By default, this method searches for ``track.bam`` file in the
+    data directory and returns an offset of 0.
 
     Associations can be defined in the .ini file in the section
     [bams]. For example, the following snippet associates track
@@ -268,7 +278,6 @@ def getAssociatedBAMFiles(track):
 
         [bams]
         %=all.bam
-
 
     '''
     fn = track.asFile()
@@ -299,8 +308,9 @@ def getAssociatedBAMFiles(track):
         offsets = [0] * len(bamfiles)
 
     if len(bamfiles) != len(offsets):
-        raise ValueError("number of BAM files %s is not the same as number of offsets: %s" % (
-            str(bamfiles), str(offsets)))
+        raise ValueError("number of BAM files %s is not the "
+                         "same as number of offsets: %s" % (
+                             str(bamfiles), str(offsets)))
 
     return bamfiles, offsets
 
@@ -324,17 +334,71 @@ def connect():
 
     return dbh
 
+
 ###################################################################
 ###################################################################
 ###################################################################
 # General preparation tasks
 ###################################################################
+@transform('preprocess.dir/*.bed.gz',
+           regex(".*/(.*).bed.gz"),
+           r"%s/\1.bed.gz" % DATADIR)
+def prepareIntervals(infile, outfile):
+    '''optionally preprocess intervals.
+
+    1. Sort intervals by position.
+    2. Merge overlapping intervals.
+    3. Rename intervals: sequential number.
+    '''
+
+    statement = '''
+    zcat %(infile)s
+    | sort -k1,1 -k2,2n
+    | bedtools merge
+    | awk '{printf("%%s\\t%%s\\t%%s\\t%%i\n",$1,$2,$3,++a)}'
+    | bgzip
+    > %(outfile)s;
+    tabix -p bed %(outfile)s
+    '''
+    P.run()
+
+
+@merge(prepareIntervals, "preprocess.tsv.gz")
+def buildProcessingSummary(infiles, outfile):
+
+    outf = IOTools.openFile(outfile, "w")
+
+    for infile in infiles:
+        before = os.path.join(
+            'preprocess.dir',
+            getNumLines(os.path.basename(infile)))
+        after = getNumLines(infile)
+        outf.write("%s\t%i\t%i\n" % (
+            P.snip(os.path.basename(infile), ".bed.gz"),
+            before,
+            after))
+
+    outf.close()
+
+
+@follows(mkdir(os.path.join(PARAMS["exportdir"], "bed")))
+@transform(BEDFILES,
+           regex(r".*/(.*).bed.gz"),
+           os.path.join(PARAMS["exportdir"], "bed", r"\1.bed.gz"))
+def indexIntervals(infile, outfile):
+    '''index intervals.
+    '''
+    statement = '''zcat %(infile)s 
+    | sort -k1,1 -k2,2n
+    | bgzip > %(outfile)s;
+    tabix -p bed %(outfile)s'''
+    P.run()
 
 
 ############################################################
 ############################################################
 ############################################################
-@transform(TRACKS_BEDFILES,
+@transform(BEDFILES,
            suffix(".bed.gz"),
            "_intervals.load")
 def loadIntervals(infile, outfile):
@@ -350,8 +414,6 @@ def loadIntervals(infile, outfile):
        peakcenter: position with maximum number of reads in interval
        avgval: average coverage within interval
     '''
-
-    bedfile = infile
 
     tmpfile = P.getTempFile(".")
 
@@ -382,14 +444,6 @@ def loadIntervals(infile, outfile):
     samfiles = [pysam.Samfile(fn, "rb") for fn in bamfiles]
 
     c = E.Counter()
-
-    intervals = pybedtools.BedTool(infile)
-    merged = intervals.merge(n=True)
-    if len(intervals) != len(merged):
-        raise ValueError(
-            'pipeline_intervals expects non-overlapping intervals '
-            '%i in input, %i after merging' % (len(intervals),
-                                               len(merged)))
 
     # count tags
     for bed in Bed.iterator(IOTools.openFile(infile, "r")):
@@ -433,10 +487,12 @@ def loadIntervals(infile, outfile):
                  1)
 
         c.output += 1
-        tmpfile.write("\t".join(map(str, (avgval, disttostart, genelist, length,
-                                          peakcenter, peakval, position, bed.name,
-                                          npeaks, nprobes,
-                                          bed.contig, bed.start, bed.end, score))) + "\n")
+        tmpfile.write("\t".join(map(
+            str,
+            (avgval, disttostart, genelist, length,
+             peakcenter, peakval, position, bed.name,
+             npeaks, nprobes,
+             bed.contig, bed.start, bed.end, score))) + "\n")
 
     if c.output == 0:
         E.warn("%s - no aggregate intervals")
@@ -449,9 +505,9 @@ def loadIntervals(infile, outfile):
     statement = '''
     python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --allow-empty
-              --index=interval_id 
+              --index=interval_id
               --table=%(tablename)s
-    < %(tmpfilename)s 
+    < %(tmpfilename)s
     > %(outfile)s
     '''
 
@@ -460,20 +516,6 @@ def loadIntervals(infile, outfile):
 
     L.info("%s\n" % str(c))
 
-############################################################
-############################################################
-############################################################
-
-
-@follows(mkdir(os.path.join(PARAMS["exportdir"], "bed")))
-@transform(TRACKS_BEDFILES,
-           regex(r"(.*).bed.gz"),
-           os.path.join(PARAMS["exportdir"], "bed", r"\1.bed.gz"))
-def indexIntervals(infile, outfile):
-    '''index intervals.
-    '''
-    statement = '''zcat %(infile)s | sort -k1,1 -k2,2n | bgzip > %(outfile)s; tabix -p bed %(outfile)s'''
-    P.run()
 
 ############################################################
 ############################################################
@@ -492,8 +534,9 @@ def exportPeakLocations(infile, outfile):
     outf = IOTools.openFile(outfile, "w")
     cc = dbh.cursor()
     table = P.toTable(infile)
-    for x in cc.execute( """SELECT contig, peakcenter, peakcenter+1, interval_id, peakval 
-                                   FROM %(table)s """ % locals() ):
+    for x in cc.execute(
+            """SELECT contig, peakcenter, peakcenter+1, interval_id, peakval
+            FROM %(table)s """ % locals()):
         outf.write("\t".join(map(str, x)) + "\n")
     outf.close()
 
@@ -501,10 +544,11 @@ def exportPeakLocations(infile, outfile):
 ############################################################
 ############################################################
 ############################################################
-@transform(TRACKS_BEDFILES,
+@transform(BEDFILES,
            suffix(".bed.gz"),
-           add_inputs(os.path.join(PARAMS["annotations_dir"],
-                                   PARAMS_ANNOTATIONS["interface_genomic_context_bed"])),
+           add_inputs(os.path.join(
+               PARAMS["annotations_dir"],
+               PARAMS_ANNOTATIONS["interface_genomic_context_bed"])),
            ".contextstats")
 def buildContextStats(infiles, outfile):
     '''build mapping context stats.
@@ -519,10 +563,8 @@ def buildContextStats(infiles, outfile):
     infile, reffile = infiles
 
     min_overlap = 0.5
-
     job_options = "-l mem_free=4G"
 
-    to_cluster = True
     statement = '''
        python %(scriptsdir)s/bam_vs_bed.py
               --min-overlap=%(min_overlap)f
@@ -556,7 +598,7 @@ def loadContextStats(infiles, outfile):
                 | python %(scriptsdir)s/table2table.py --transpose
                 | python %(scriptsdir)s/csv2db.py
                       --index=track
-                      --table=%(tablename)s 
+                      --table=%(tablename)s
                 > %(outfile)s
                 """
     P.run()
@@ -566,27 +608,27 @@ def loadContextStats(infiles, outfile):
 ############################################################
 
 
-@transform(TRACKS_BEDFILES,
+@transform(BEDFILES,
            suffix(".bed.gz"),
            ".annotations")
 def annotateIntervalsFull(infile, outfile):
-    '''classify chipseq intervals according to their location 
+    '''classify chipseq intervals according to their location
     with respect to the gene set.
     '''
-    to_cluster = True
 
-    annotation_file = os.path.join(PARAMS["annotations_dir"],
-                                   PARAMS_ANNOTATIONS["interface_annotation_gff"])
+    annotation_file = os.path.join(
+        PARAMS["annotations_dir"],
+        PARAMS_ANNOTATIONS["interface_annotation_gff"])
 
     statement = """
-    zcat < %(infile)s 
-    | python %(scriptsdir)s/bed2table.py 
-                --bed-headers=contig,start,end
-		--counter=classifier-chipseq 
-		--counter=length 
-		--log=%(outfile)s.log 
-		--filename-gff=%(annotation_file)s 
-		--genome-file=%(genome_dir)s/%(genome)s
+    zcat < %(infile)s
+    | python %(scriptsdir)s/bed2table.py
+    --bed-headers=contig,start,end
+    --counter=classifier-chipseq
+    --counter=length
+    --log=%(outfile)s.log
+    --filename-gff=%(annotation_file)s
+    --genome-file=%(genome_dir)s/%(genome)s
     > %(outfile)s"""
 
     P.run()
@@ -600,23 +642,22 @@ def annotateIntervalsFull(infile, outfile):
            suffix(".bed.gz"),
            ".annotations")
 def annotateIntervalsPeak(infile, outfile):
-    '''classify chipseq intervals according to their location 
+    '''classify chipseq intervals according to their location
     with respect to the gene set.
     '''
-    to_cluster = True
-
-    annotation_file = os.path.join(PARAMS["annotations_dir"],
-                                   PARAMS_ANNOTATIONS["interface_annotation_gff"])
+    annotation_file = os.path.join(
+        PARAMS["annotations_dir"],
+        PARAMS_ANNOTATIONS["interface_annotation_gff"])
 
     statement = """
-    zcat < %(infile)s 
-    | python %(scriptsdir)s/bed2table.py 
-                --bed-headers=contig,start,end
-		--counter=classifier-chipseq 
-		--counter=length 
-		--log=%(outfile)s.log 
-		--filename-gff=%(annotation_file)s 
-		--genome-file=%(genome_dir)s/%(genome)s
+    zcat < %(infile)s
+    | python %(scriptsdir)s/bed2table.py
+       --bed-headers=contig,start,end
+       --counter=classifier-chipseq
+       --counter=length
+       --log=%(outfile)s.log
+       --filename-gff=%(annotation_file)s
+       --genome-file=%(genome_dir)s/%(genome)s
     > %(outfile)s"""
 
     P.run()
@@ -626,31 +667,28 @@ def annotateIntervalsPeak(infile, outfile):
 ############################################################
 
 
-@transform(TRACKS_BEDFILES,
+@transform(BEDFILES,
            suffix(".bed.gz"),
            ".binding.tsv.gz")
 def annotateBindingFull(infile, outfile):
     '''classify chipseq intervals according to their location 
     with respect to the gene set.
 
-    The reference gene set is 
-
     Binding is counted for the full intervals.
     '''
-    to_cluster = True
-
-    geneset = os.path.join(PARAMS["annotations_dir"],
-                           PARAMS_ANNOTATIONS[PARAMS["geneset_binding"]])
+    geneset = os.path.join(
+        PARAMS["annotations_dir"],
+        PARAMS_ANNOTATIONS[PARAMS["geneset_binding"]])
 
     statement = """
     zcat < %(geneset)s
     | awk '$2 == "protein_coding"'
-    | python %(scriptsdir)s/gtf2table.py 
-		--counter=position 
-		--counter=binding-pattern
-		--log=%(outfile)s.log 
-		--filename-gff=%(infile)s
-		--genome-file=%(genome_dir)s/%(genome)s
+    | python %(scriptsdir)s/gtf2table.py
+       --counter=position
+       --counter=binding-pattern
+       --log=%(outfile)s.log
+       --filename-gff=%(infile)s
+       --genome-file=%(genome_dir)s/%(genome)s
     | gzip
     > %(outfile)s"""
 
@@ -694,7 +732,7 @@ def annotateBindingPeak(infile, outfile):
 ############################################################
 
 
-@transform(TRACKS_BEDFILES,
+@transform(BEDFILES,
            suffix(".bed.gz"),
            ".tss")
 def annotateTSS(infile, outfile):
@@ -752,7 +790,7 @@ def annotateTSSPeaks(infile, outfile):
 ############################################################
 
 
-@transform(TRACKS_BEDFILES,
+@transform(BEDFILES,
            suffix(".bed.gz"),
            ".repeats")
 def annotateRepeats(infile, outfile):
@@ -780,7 +818,7 @@ def annotateRepeats(infile, outfile):
 ############################################################
 
 
-@transform(TRACKS_BEDFILES,
+@transform(BEDFILES,
            suffix(".bed.gz"),
            ".nuc")
 def annotateNucleotides(infile, outfile):
@@ -793,8 +831,8 @@ def annotateNucleotides(infile, outfile):
     # start of the pipeline and assign unique identifiers.
     statement = '''zcat %(infile)s 
                    | cut -f 1,2,3
-                   | python %(scriptsdir)s/bed2gff.py --as-gtf 
-                   | python %(scriptsdir)s/gtf2table.py 
+                   | python %(scriptsdir)s/bed2gff.py --as-gtf
+                   | python %(scriptsdir)s/gtf2table.py
                          --counter=composition-cpg
                          --genome-file=%(genome_dir)s/%(genome)s > %(outfile)s
                    '''
@@ -802,7 +840,9 @@ def annotateNucleotides(infile, outfile):
 
 
 ############################################################
-@transform((annotateIntervalsFull, annotateIntervalsPeak), suffix(".annotations"), "_annotations.load")
+@transform((annotateIntervalsFull, annotateIntervalsPeak),
+           suffix(".annotations"),
+           "_annotations.load")
 def loadAnnotations(infile, outfile):
     '''load interval annotations: genome architecture
     '''
@@ -811,7 +851,9 @@ def loadAnnotations(infile, outfile):
 ############################################################
 
 
-@transform((annotateBindingFull, annotateBindingPeak), suffix(".binding.tsv.gz"), "_binding.load")
+@transform((annotateBindingFull, annotateBindingPeak),
+           suffix(".binding.tsv.gz"),
+           "_binding.load")
 def loadBinding(infile, outfile):
     '''load interval binding: genome architecture
     '''
@@ -825,7 +867,9 @@ def loadTSS(infile, outfile):
     '''load interval annotations: distance to transcription start sites
     '''
     P.load(infile, outfile,
-           "--index=gene_id --index=closest_id --index=upstream_id --index=downstream_id --allow-empty")
+           "--index=gene_id --index=closest_id "
+           "--index=upstream_id --index=downstream_id "
+           "--allow-empty")
 
 ############################################################
 
@@ -853,13 +897,12 @@ def loadNucleotides(infile, outfile):
 @follows(mkdir("transcriptprofiles"))
 @transform(indexIntervals,
            regex(r".*/([^/].*)\.bed.gz"),
-           add_inputs(os.path.join(PARAMS["annotations_dir"],
-                                   PARAMS_ANNOTATIONS["interface_geneset_all_gtf"])),
+           add_inputs(os.path.join(
+               PARAMS["annotations_dir"],
+               PARAMS_ANNOTATIONS["interface_geneset_all_gtf"])),
            r"transcriptprofiles/\1.transcriptprofile.tsv.gz")
 def buildIntervalProfileOfTranscripts(infiles, outfile):
     '''build a table with the overlap profile of transcripts.'''
-
-    to_cluster = True
 
     bedfile, gtffile = infiles
 
@@ -867,8 +910,8 @@ def buildIntervalProfileOfTranscripts(infiles, outfile):
                       --output-filename-pattern="%(outfile)s.%%s"
                       --force
                       --reporter=transcript
-                      --method=geneprofile 
-                      --method=tssprofile 
+                      --method=geneprofile
+                      --method=tssprofile
                       --normalize-profile=none
                       --normalize-profile=area
                       --normalize-profile=counts
@@ -882,11 +925,15 @@ def buildIntervalProfileOfTranscripts(infiles, outfile):
 ###################################################################
 ###################################################################
 @follows(mkdir("transcriptprofiles"))
-@split(TRACKS_BEDFILES,
-       regex("(.*).bed.gz"),
-       [r"transcriptprofiles/\1.withoverlap.gtf.gz", r"transcriptprofiles/\1.woutoverlap.gtf.gz", r"\1.tss.withoverlap.gtf.gz", r"\1.tss.woutoverlap.gtf.gz"])
+@split(BEDFILES,
+       regex(".*/(.*).bed.gz"),
+       [r"transcriptprofiles/\1.withoverlap.gtf.gz",
+        r"transcriptprofiles/\1.woutoverlap.gtf.gz",
+        r"\1.tss.withoverlap.gtf.gz",
+        r"\1.tss.woutoverlap.gtf.gz"])
 def prepareGTFsByOverlapWithIntervals(infile, outfiles):
-    '''Prepare GTF file of overlapping and non-overlapping genes for profile plots'''
+    '''Prepare GTF file of overlapping and non-overlapping genes for
+    profile plots'''
 
     track = TRACKS.factory(filename=infile[:-len(".bed.gz")])
     track = Sample(filename=P.snip(infile, ".bed.gz"))
@@ -896,20 +943,21 @@ def prepareGTFsByOverlapWithIntervals(infile, outfiles):
 
     # do not checkpoint, as some files might be empty
     statement = '''
-                  intersectBed -u -a %(annotations_dir)s/%(geneset)s -b %(track)s.bed.gz
-                  | python %(scriptsdir)s/gff2bed.py --is-gtf -v 0 
-                  | cut -f4 
-                  | sort 
-                  | uniq > %(track)s_overlapping_genes; 
-                  zgrep -f %(track)s_overlapping_genes %(annotations_dir)s/%(geneset)s 
-                  | gzip > %(out1)s;
-                  zgrep -v -f %(track)s_overlapping_genes %(annotations_dir)s/%(geneset)s 
-                  | gzip > %(out2)s;
-                  zgrep -f %(track)s_overlapping_genes %(annotations_dir)s/tss.gene.gtf 
-                  | gzip > %(out3)s;
-                  zgrep -v -f %(track)s_overlapping_genes %(annotations_dir)s/tss.gene.gtf 
-                  | gzip > %(out4)s;
-                '''
+    intersectBed -u -a %(annotations_dir)s/%(geneset)s -b %(track)s.bed.gz
+    | python %(scriptsdir)s/gff2bed.py --is-gtf -v 0
+    | cut -f4
+    | sort
+    | uniq > %(track)s_overlapping_genes;
+    zgrep -f %(track)s_overlapping_genes %(annotations_dir)s/%(geneset)s
+    | gzip > %(out1)s;
+    zgrep -v -f %(track)s_overlapping_genes %(annotations_dir)s/%(geneset)s
+    | gzip > %(out2)s;
+    zgrep -f %(track)s_overlapping_genes %(annotations_dir)s/tss.gene.gtf
+    | gzip > %(out3)s;
+    zgrep -v -f %(track)s_overlapping_genes %(annotations_dir)s/tss.gene.gtf
+    | gzip > %(out4)s;
+    '''
+
     P.run()
 
 ############################################################
@@ -923,13 +971,13 @@ def prepareGTFsByOverlapWithIntervals(infile, outfiles):
 def annotateTSSNucleotides(infile, outfile):
     '''get the nucleotide composition of the intervals'''
 
-    statement = '''zcat %(infile)s 
+    statement = '''zcat %(infile)s
                    | slopBed -b 50 -g %(genome_dir)s/%(genome)s.fasta.fai
-                   | python %(scriptsdir)s/gtf2table.py 
-                               --counter=position 
+                   | python %(scriptsdir)s/gtf2table.py
+                               --counter=position
                                --counter=composition-cpg
-                               --genome-file=%(genome_dir)s/%(genome)s 
-                   | gzip 
+                               --genome-file=%(genome_dir)s/%(genome)s
+                   | gzip
                    > %(outfile)s
                    '''
     P.run()
@@ -953,8 +1001,6 @@ def loadTSSNucleotides(infile, outfile):
            r"\1.tsv.gz")
 def buildGenesByIntervalsProfiles(infile, outfile):
     '''Make gene profile plots.'''
-
-    to_cluster = True
 
     track = TRACKS.factory(
         filename=infile[len("transcriptprofiles/"):-len(".withoverlap.tsv.gz")])
@@ -1024,8 +1070,8 @@ def buildIntervals():
 
 
 @follows(mkdir("peakshapes"))
-@transform(TRACKS_BEDFILES,
-           regex("(.*).bed.gz"),
+@transform(BEDFILES,
+           regex(".*/(.*).bed.gz"),
            r"peakshapes/\1.peakshape.tsv.gz")
 def buildPeakShapeTable(infile, outfile):
     '''build a table with peak shape parameters.'''
@@ -1088,7 +1134,7 @@ def loadPeakShapeTable(infile, outfile):
 ############################################################
 
 
-@merge(TRACKS_BEDFILES,
+@merge(BEDFILES,
        "intervals.overlap")
 def buildOverlap(infiles, outfile):
     '''compute overlap between intervals.
@@ -1147,33 +1193,31 @@ def exportMotifSequences(infile, outfile):
 
     This method requires the _interval tables.
 
-    For motif discovery, only the sequences with the highest S/N ratio are supplied.
+    For motif discovery, only the sequences with the highest S/N ratio
+    are supplied.
 
     1. The top *motifs_proportion* intervals sorted by peakval
-    2. Only a region +/- *motifs_halfwidth* around the peak 
+    2. Only a region +/- *motifs_halfwidth* around the peak
     3. At least *motifs_min_sequences*. If there are not enough sequences
           to start with, all will be used.
     4. At most *motifs_max_size* sequences will be output.
+
     '''
     track = P.snip(infile, "_intervals.load")
     dbhandle = connect()
 
     p = P.substituteParameters(**locals())
-    nseq = PipelineMotifs.writeSequencesForIntervals(track,
-                                                     outfile,
-                                                     dbhandle,
-                                                     full=False,
-                                                     masker=P.asList(
-                                                         p['motifs_masker']),
-                                                     halfwidth=int(
-                                                         p["motifs_halfwidth"]),
-                                                     maxsize=int(
-                                                         p["motifs_max_size"]),
-                                                     proportion=p[
-                                                         "motifs_proportion"],
-                                                     min_sequences=p[
-                                                         "motifs_min_sequences"],
-                                                     order=p['motifs_score'])
+    nseq = PipelineMotifs.writeSequencesForIntervals(
+        track,
+        outfile,
+        dbhandle,
+        full=False,
+        masker=P.asList(p['motifs_masker']),
+        halfwidth=int(p["motifs_halfwidth"]),
+        maxsize=int(p["motifs_max_size"]),
+        proportion=p["motifs_proportion"],
+        min_sequences=p["motifs_min_sequences"],
+        order=p['motifs_score'])
 
     if nseq == 0:
         E.warn("%s: no sequences - meme skipped" % outfile)
@@ -1184,29 +1228,31 @@ def exportMotifSequences(infile, outfile):
 ############################################################
 ############################################################
 @follows(mkdir("motifs"))
-@transform(TRACKS_BEDFILES,
-           regex("(.*).bed.gz"),
+@transform(BEDFILES,
+           regex(".*/(.*).bed.gz"),
            r"motifs/\1.foreground.fasta")
 def exportMotifIntervalSequences(infile, outfile):
     '''export sequences for motif detection.
 
     This method requires the _interval tables.
     '''
-    PipelineMotifs.exportSequencesFromBedFile(infile, outfile,
-                                              masker=PARAMS['motifs_masker'])
+    PipelineMotifs.exportSequencesFromBedFile(
+        infile, outfile,
+        masker=PARAMS['motifs_masker'])
 
 
 @follows(mkdir("motifs"))
-@transform(TRACKS_BEDFILES,
-           regex("(.*).bed.gz"),
+@transform(BEDFILES,
+           regex(".*/(.*).bed.gz"),
            r"motifs/\1.control.fasta")
 def exportMotifControlSequences(infile, outfile):
-    '''for each interval, export the left and right 
+    '''for each interval, export the left and right
     sequence segment of the same size.
     '''
-    PipelineMotifs.exportSequencesFromBedFile(infile, outfile,
-                                              masker=PARAMS['motifs_masker'],
-                                              mode="leftright")
+    PipelineMotifs.exportSequencesFromBedFile(
+        infile, outfile,
+        masker=PARAMS['motifs_masker'],
+        mode="leftright")
 
 
 ############################################################
@@ -1216,20 +1262,17 @@ def exportMotifControlSequences(infile, outfile):
 def runMeme(infile, outfile):
     '''run MEME to find motifs.
 
-    In order to increase the signal/noise ratio,
-    MEME is not run on all intervals but only the 
-    top 10% of intervals (peakval) are used. 
-    Also, only the segment of 200 bp around the peak
-    is used and not the complete interval.
+    In order to increase the signal/noise ratio, MEME is not run on
+    all intervals but only the top 10% of intervals (peakval) are
+    used.  Also, only the segment of 200 bp around the peak is used
+    and not the complete interval.
 
     * Softmasked sequence is converted to hardmasked
       sequence to avoid the detection of spurious motifs.
 
     * Sequence is run through dustmasker
+
     '''
-
-    track = P.snip(infile, ".motifs.fasta")
-
     PipelineMotifs.runMEMEOnSequences(infile, outfile)
 
 ############################################################
@@ -1268,12 +1311,10 @@ def loadMemeSummary(infiles, outfile):
 def loadMotifSequenceComposition(infile, outfile):
     '''compute sequence composition of sequences used for ab-initio search.'''
 
-    to_cluster = True
-
     tablename = P.toTable(outfile)
 
     statement = '''
-    python %(scriptsdir)s/fasta2table.py 
+    python %(scriptsdir)s/fasta2table.py
         --section=na
         --log=%(outfile)s
     < %(infile)s
@@ -1353,8 +1394,11 @@ def loadTomTom(infile, outfile):
     # parse the text file
     for line in IOTools.openFile(infile):
         if line.startswith("#Query"):
-            tmpfile.write(
-                "target_name\tquery_id\ttarget_id\toptimal_offset\tpvalue\tevalue\tqvalue\tOverlap\tquery_consensus\ttarget_consensus\torientation\n")
+            tmpfile.write('\t'.join(
+                ("target_name", "query_id", "target_id",
+                 "optimal_offset", "pvalue", "evalue",
+                 "qvalue", "Overlap", "query_consensus",
+                 "target_consensus", "orientation")) + "\n")
             continue
         data = line[:-1].split("\t")
         target_name = name2alt[data[1]]
@@ -1378,10 +1422,11 @@ def loadTomTom(infile, outfile):
 def runMast(infiles, outfile):
     '''run mast on all intervals and motifs.
 
-    Collect all results for an E-value up to 10000 so that
-    all sequences are output and MAST curves can be computed. 
+    Collect all results for an E-value up to 10000 so that all
+    sequences are output and MAST curves can be computed.
 
     10000 is a heuristic.
+
     '''
     PipelineMotifs.runMAST(infiles, outfile)
 
@@ -1408,7 +1453,9 @@ def loadMast(infile, outfile):
 ############################################################
 
 
-@follows(loadMotifInformation, mkdir(os.path.join(PARAMS["exportdir"], "motifs")))
+@follows(loadMotifInformation,
+         mkdir(os.path.join(PARAMS["exportdir"],
+                            "motifs")))
 @merge(loadMast, "motifs.export")
 def exportMotifLocations(infiles, outfile):
     '''export motif locations. There will be a bed-file per motif.
@@ -1429,8 +1476,10 @@ def exportMotifLocations(infiles, outfile):
         for infile in infiles:
             table = P.toTable(infile)
             track = P.snip(table, "_mast")
-            for x in cc.execute( """SELECT contig, start, end, '%(track)s', evalue
-                                   FROM %(table)s WHERE motif = '%(motif)s' AND start IS NOT NULL""" % locals() ):
+            for x in cc.execute(
+                    """SELECT contig, start, end, '%(track)s', evalue
+                    FROM %(table)s WHERE motif = '%(motif)s' AND
+                    start IS NOT NULL""" % locals()):
                 tmpf.write("\t".join(map(str, x)) + "\n")
         tmpf.close()
 
@@ -1451,15 +1500,20 @@ def exportMotifLocations(infiles, outfile):
 
 
 @follows(mkdir("gat_context.dir"))
-@transform(TRACKS_BEDFILES,
-           regex("(.*).bed.gz"),
-           add_inputs(os.path.join(PARAMS["annotations_dir"],
-                                   PARAMS_ANNOTATIONS["interface_genomic_context_bed"]),
-                      os.path.join(PARAMS["annotations_dir"],
-                                   PARAMS_ANNOTATIONS["interface_mapability_filtered_bed"] % PARAMS["gat_mapability"]),
-                      os.path.join(PARAMS["annotations_dir"],
-                                   PARAMS_ANNOTATIONS["interface_gc_profile_bed"]),
-                      ),
+@transform(BEDFILES,
+           regex(".*/(.*).bed.gz"),
+           add_inputs(
+               os.path.join(
+                   PARAMS["annotations_dir"],
+                   PARAMS_ANNOTATIONS["interface_genomic_context_bed"]),
+               os.path.join(
+                   PARAMS["annotations_dir"],
+                   PARAMS_ANNOTATIONS["interface_mapability_filtered_bed"] %
+                   PARAMS["gat_mapability"]),
+               os.path.join(
+                   PARAMS["annotations_dir"],
+                   PARAMS_ANNOTATIONS["interface_gc_profile_bed"]),
+           ),
            r"gat_context.dir/\1.gat.tsv.gz")
 def runGATOnGenomicContext(infiles, outfile):
     '''run gat agains genomic context.
@@ -1501,15 +1555,20 @@ def runGATOnGenomicContext(infiles, outfile):
 
 
 @follows(mkdir("gat_annotations.dir"))
-@transform(TRACKS_BEDFILES,
-           regex("(.*).bed.gz"),
-           add_inputs(os.path.join(PARAMS["annotations_dir"],
-                                   PARAMS_ANNOTATIONS["interface_annotation_gff"]),
-                      os.path.join(PARAMS["annotations_dir"],
-                                   PARAMS_ANNOTATIONS["interface_mapability_filtered_bed"] % PARAMS["gat_mapability"]),
-                      os.path.join(PARAMS["annotations_dir"],
-                                   PARAMS_ANNOTATIONS["interface_gc_profile_bed"]),
-                      ),
+@transform(BEDFILES,
+           regex(".*/(.*).bed.gz"),
+           add_inputs(
+               os.path.join(
+                   PARAMS["annotations_dir"],
+                   PARAMS_ANNOTATIONS["interface_annotation_gff"]),
+               os.path.join(
+                   PARAMS["annotations_dir"],
+                   PARAMS_ANNOTATIONS["interface_mapability_filtered_bed"] %
+                   PARAMS["gat_mapability"]),
+               os.path.join(
+                   PARAMS["annotations_dir"],
+                   PARAMS_ANNOTATIONS["interface_gc_profile_bed"]),
+           ),
            r"gat_annotations.dir/\1.gat.tsv.gz")
 def runGATOnGenomicAnnotations(infiles, outfile):
     '''run gat agains genomic context.
@@ -1551,15 +1610,20 @@ def runGATOnGenomicAnnotations(infiles, outfile):
 
 
 @follows(mkdir("gat_genestructure.dir"))
-@transform(TRACKS_BEDFILES,
-           regex("(.*).bed.gz"),
-           add_inputs(os.path.join(PARAMS["annotations_dir"],
-                                   PARAMS_ANNOTATIONS["interface_genestructure_gff"]),
-                      os.path.join(PARAMS["annotations_dir"],
-                                   PARAMS_ANNOTATIONS["interface_mapability_filtered_bed"] % PARAMS["gat_mapability"]),
-                      os.path.join(PARAMS["annotations_dir"],
-                                   PARAMS_ANNOTATIONS["interface_gc_profile_bed"]),
-                      ),
+@transform(BEDFILES,
+           regex(".*/(.*).bed.gz"),
+           add_inputs(
+               os.path.join(
+                   PARAMS["annotations_dir"],
+                   PARAMS_ANNOTATIONS["interface_genestructure_gff"]),
+               os.path.join(
+                   PARAMS["annotations_dir"],
+                   PARAMS_ANNOTATIONS["interface_mapability_filtered_bed"] %
+                   PARAMS["gat_mapability"]),
+               os.path.join(
+                   PARAMS["annotations_dir"],
+                   PARAMS_ANNOTATIONS["interface_gc_profile_bed"]),
+           ),
            r"gat_genestructure.dir/\1.gat.tsv.gz")
 def runGATOnGeneStructure(infiles, outfile):
     '''run gat on gene structures
@@ -1567,17 +1631,18 @@ def runGATOnGeneStructure(infiles, outfile):
     The purpose of this gat run is to test for differential location
     of intervals in parts of certain gene structures.
 
-    The workspace is composed of all mapable regions. The workspace is 
+    The workspace is composed of all mapable regions. The workspace is
     restricted to annotations in order to reduce the effect of
-    intergenic depletion. Furthermore, the workspace is restricted
-    to those parts that contain segments and annotations in order
-    to avoid a gene bias (only genes of a certain structure contain
+    intergenic depletion. Furthermore, the workspace is restricted to
+    those parts that contain segments and annotations in order to
+    avoid a gene bias (only genes of a certain structure contain
     segments).
 
     Enrichment is controlled by isochores.
 
     To be rigorous, FDR should be re-computed after merging all
     analyses.
+
     '''
 
     bedfile, annofile, workspacefile, isochorefile = infiles
@@ -1613,19 +1678,26 @@ def runGATOnGeneStructure(infiles, outfile):
 
 
 @follows(mkdir("gat_functions.dir"))
-@transform(TRACKS_BEDFILES,
-           regex("(.*).bed.gz"),
-           add_inputs(os.path.join(PARAMS["annotations_dir"],
-                                   PARAMS_ANNOTATIONS["interface_genomic_function_bed"]),
-                      os.path.join(PARAMS["annotations_dir"],
-                                   PARAMS_ANNOTATIONS["interface_genomic_function_tsv"]),
-                      os.path.join(PARAMS["annotations_dir"],
-                                   PARAMS_ANNOTATIONS["interface_territories_gff"]),
-                      os.path.join(PARAMS["annotations_dir"],
-                                   PARAMS_ANNOTATIONS["interface_mapability_filtered_bed"] % PARAMS["gat_mapability"]),
-                      os.path.join(PARAMS["annotations_dir"],
-                                   PARAMS_ANNOTATIONS["interface_gc_profile_bed"]),
-                      ),
+@transform(BEDFILES,
+           regex(".*/(.*).bed.gz"),
+           add_inputs(
+               os.path.join(
+                   PARAMS["annotations_dir"],
+                   PARAMS_ANNOTATIONS["interface_genomic_function_bed"]),
+               os.path.join(
+                   PARAMS["annotations_dir"],
+                   PARAMS_ANNOTATIONS["interface_genomic_function_tsv"]),
+               os.path.join(
+                   PARAMS["annotations_dir"],
+                   PARAMS_ANNOTATIONS["interface_territories_gff"]),
+               os.path.join(
+                   PARAMS["annotations_dir"],
+                   PARAMS_ANNOTATIONS["interface_mapability_filtered_bed"] %
+                   PARAMS["gat_mapability"]),
+               os.path.join(
+                   PARAMS["annotations_dir"],
+                   PARAMS_ANNOTATIONS["interface_gc_profile_bed"]),
+           ),
            r"gat_functions.dir/\1.gat.tsv.gz")
 def runGATOnGeneAnnotations(infiles, outfile):
     '''run gat against genes and their annotations.
@@ -1640,9 +1712,8 @@ def runGATOnGeneAnnotations(infiles, outfile):
     # requires a large amount of memory
     job_options = "-l mem_free=20G"
 
-    bedfile, annofile, descriptionfile, workspacefile, mapabilityfile, isochorefile = infiles
-
-    to_cluster = True
+    (bedfile, annofile, descriptionfile,
+     workspacefile, mapabilityfile, isochorefile) = infiles
 
     statement = '''gat-run.py
          --segments=%(bedfile)s
@@ -1669,10 +1740,12 @@ def runGATOnGeneAnnotations(infiles, outfile):
 
 
 @follows(mkdir("gat_sets.dir"))
-@merge(TRACKS_BEDFILES,
+@merge(BEDFILES,
        "gat_sets.dir/gat_sets.tsv.gz",
        os.path.join(PARAMS["annotations_dir"],
-                    PARAMS_ANNOTATIONS["interface_mapability_filtered_bed"] % PARAMS["gat_mapability"]),
+                    PARAMS_ANNOTATIONS[
+                        "interface_mapability_filtered_bed"] %
+                    PARAMS["gat_mapability"]),
        os.path.join(PARAMS["annotations_dir"],
                     PARAMS_ANNOTATIONS["interface_gc_profile_bed"]))
 def runGATOnSets(infiles, outfile, workspacefile, isochorefile):
@@ -1680,14 +1753,14 @@ def runGATOnSets(infiles, outfile, workspacefile, isochorefile):
 
     job_options = "-l mem_free=4G -pe dedicated 4 -R y"
 
-    to_cluster = True
-
     segments = os.path.join("gat_sets.dir", "segments.bed")
     annotations = os.path.join("gat_sets.dir", "annotations.bed")
 
     infiles = " ".join(infiles)
     statement = '''
-    for x in %(infiles)s; do printf "track name=%%s\\n" `basename $x` >> %(segments)s; zcat $x >> %(segments)s; done'''
+    for x in %(infiles)s; do
+    printf "track name=%%s\\n" `basename $x` >> %(segments)s;
+    zcat $x >> %(segments)s; done'''
 
     P.run()
 
@@ -1736,7 +1809,7 @@ def summarizeGAT(infiles, outfile):
 
     outputs a log2fold and pvalue table for results.
 
-    The results are filtered. Remove all rows that 
+    The results are filtered. Remove all rows that
        * have no significant results (fdr)
        * expected overlap less than 1kb.
     '''
@@ -1744,10 +1817,12 @@ def summarizeGAT(infiles, outfile):
     col_headers = [P.snip(os.path.basename(x), ".gat.tsv.gz") for x in infiles]
 
     # get qvalues
-    qval_matrix, qval_row_headers = MatrixTools.buildMatrixFromTables(infiles,
-                                                                      column="qvalue",
-                                                                      column_header="annotation",
-                                                                      default=1.0)
+    qval_matrix, qval_row_headers = MatrixTools.buildMatrixFromTables(
+        infiles,
+        column="qvalue",
+        column_header="annotation",
+        default=1.0)
+
     # output qvalues
     column = "qvalue"
     with IOTools.openFile(outfile + "." + column + ".gz", "w") as outf:
@@ -1766,10 +1841,11 @@ def summarizeGAT(infiles, outfile):
     E.info("taking %i rows after qvalue filtering" % len(take_qvalue))
 
     # remove small results
-    expected_matrix, expected_row_headers = MatrixTools.buildMatrixFromTables(infiles,
-                                                                              column="expected",
-                                                                              column_header="annotation",
-                                                                              default=1.0)
+    expected_matrix, expected_row_headers = MatrixTools.buildMatrixFromTables(
+        infiles,
+        column="expected",
+        column_header="annotation",
+        default=1.0)
 
     expected_matrix[numpy.where(expected_matrix < min_expected)] = 0
     s = numpy.sum(expected_matrix, 1)
@@ -1783,10 +1859,11 @@ def summarizeGAT(infiles, outfile):
 
     for (column, default) in (("fold", 1.0), ("pvalue", 1.0)):
         # output single tables for fold and pvalue
-        matrix, row_headers = MatrixTools.buildMatrixFromTables(infiles,
-                                                                column=column,
-                                                                column_header="annotation",
-                                                                default=default)
+        matrix, row_headers = MatrixTools.buildMatrixFromTables(
+            infiles,
+            column=column,
+            column_header="annotation",
+            default=default)
 
         assert qval_row_headers == row_headers
 
@@ -1818,21 +1895,15 @@ def gat():
 ###################################################################
 ###################################################################
 @follows(mkdir('tags.dir'))
-@transform(TRACKS_BEDFILES,
-           regex('(.*).bed.gz'),
+@transform(BAMFILES,
+           regex('.*/(.*).bam'),
            r"tags.dir/\1.bed.gz")
 def prepareTags(infile, outfile):
     '''prepare tag files from bam files for counting
     '''
 
-    track = Sample(filename=P.snip(infile, ".bed.gz"))
-    bamfiles, offsets = getAssociatedBAMFiles(track)
-    if len(bamfiles) != 1:
-        raise NotImplementedError(
-            'tag counting needs exactly one associated bam files')
-
     PipelineWindows.convertReadsToIntervals(
-        bamfiles[0],
+        infile,
         outfile,
         filtering_quality=PARAMS.get('filtering_quality', None),
         filtering_dedup='filtering_dedup' in PARAMS,
@@ -1840,11 +1911,14 @@ def prepareTags(infile, outfile):
                                           'picard'))
 
 
-# replace with combinatorics later
 @follows(prepareTags)
-@files([(('%s.bed.gz' % x, 'tags.dir/%s.bed.gz' % y),
-         ('tags.dir/%s_vs_%s.tsv.gz' % (x, y)))
-        for x, y in itertools.product(TRACKS, repeat=2)])
+@files([((x, y),
+         ('tags.dir/%s_vs_%s.tsv.gz' %
+          (P.snip(x, ".bed.gz", strip_path=True),
+           P.snip(y, ".bed.gz", strip_path=True))))
+        for x, y in itertools.product(
+            BEDFILES,
+            prepareTags.pipeline_task.get_output_files(False, None))])
 def computeReadCountsInIntervals(infiles, outfile):
     '''compute a table of read counts of each BAM-file
     with respect to all interval sets.'''
@@ -1900,7 +1974,9 @@ def summarizeReadCounts(infile, outfile):
 # export intervals
 ############################################################
 @follows(mkdir('export'))
-@merge("*.bed.gz", ("export/intervals_%s.bed.gz" % PARAMS["version"], "intervals.view"))
+@merge("*.bed.gz",
+       ("export/intervals_%s.bed.gz" % PARAMS["version"],
+        "intervals.view"))
 def viewIntervals(infiles, outfiles):
 
     outfile_bed, outfile_code = outfiles
@@ -1911,7 +1987,8 @@ def viewIntervals(infiles, outfiles):
         track = infile[:-len(".bed")]
 
         outs.write(
-            '''track name="interval_%(track)s_%(version)s" description="Intervals in %(track)s - version %(version)s" visibility=2\n''' % locals() )
+            '''track name="interval_%(track)s_%(version)s" description="Intervals in %(track)s - version %(version)s" visibility=2\n''' %
+            locals())
 
         with IOTools.openFile(infile, "r") as f:
             for bed in Bed.iterator(f):
@@ -1936,7 +2013,8 @@ def viewIntervals(infiles, outfiles):
     outs = IOTools.openFile(outfile_code, "w")
     outs.write("#paste the following into the UCSC browser:\n")
     outs.write(
-        "http://wwwfgu.anat.ox.ac.uk/~andreas/ucsc_tracks/%(filename)s\n" % locals())
+        "http://wwwfgu.anat.ox.ac.uk/~andreas/ucsc_tracks/%(filename)s\n" %
+        locals())
     outs.close()
 
 ############################################################
@@ -1955,7 +2033,9 @@ def annotate_withreads():
     pass
 
 
-@follows(loadAnnotations, loadTSS, loadRepeats, loadContextStats, loadBinding, loadNucleotides, loadTSSNucleotides)
+@follows(loadAnnotations, loadTSS, loadRepeats,
+         loadContextStats, loadBinding,
+         loadNucleotides, loadTSSNucleotides)
 def annotate_intervals():
     pass
 
@@ -2114,7 +2194,8 @@ def publish():
 
     # directory, files
     exportfiles = {
-        "intervals": glob.glob(os.path.join(PARAMS["exportdir"], "bed", "*.bed.gz")) +
+        "intervals": glob.glob(os.path.join(
+            PARAMS["exportdir"], "bed", "*.bed.gz")) +
         glob.glob(os.path.join(PARAMS["exportdir"], "bed", "*.bed.gz.tbi")),
     }
 
@@ -2140,19 +2221,8 @@ def publish():
     for bam in bams:
         filename = os.path.basename(bam)
         track = P.snip(filename, ".bam")
-        print """track type=bam name="%(track)s" bigDataUrl=http://www.cgat.org/downloads/%(project_id)s/bamfiles/%(filename)s""" % locals()
+        print """track type=bam name="%(track)s" bigDataUrl=http://www.cgat.org/downloads/%(project_id)s/bamfiles/%(filename)s""" % \
+            locals()
 
 if __name__ == "__main__":
-
-    # print( "# tracks found: %s" % TRACKS_ALL )
-    # print( "# tracks by experiment: %s" % TRACKS_EXPERIMENTS )
-    # print( "# tracks by condition: %s" % TRACKS_CONDITIONS )
-    # print( "# tracks by tissue: %s" % TRACKS_TISSUES )
-
-    # fails for config command
-    # check compatibility
-    # assert PARAMS["genome"] == PARAMS_ANNOTATIONS["genome"]
-    # sanity checks
-    # assert len(TRACKS_ALL) > 0
-
     sys.exit(P.main(sys.argv))

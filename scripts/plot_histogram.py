@@ -239,7 +239,7 @@ def main():
 
     if infile != sys.stdin:
         infile.close()
-    if len(data) == 0:  # or data == None:
+    if len(data) == 0:  # or data is None:
         E.info("empty table: no plot")
         E.Stop()
         return

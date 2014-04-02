@@ -562,7 +562,7 @@ class BuilderTranscriptSpliced(BuilderTranscribedLocus):
                 if is_exon[left] > 0:
                     if is_exon[left] > is_exon[x]:
                         z = findSpliceStart(left, x)
-                        if z != None:
+                        if z is not None:
                             if self.options.loglevel >= 3:
                                 self.options.stdlog.write("# correcting intron boundary: %i-%i %s %s %s\n" %
                                                           (z,
@@ -579,7 +579,7 @@ class BuilderTranscriptSpliced(BuilderTranscribedLocus):
                 elif is_exon[right] > 0:
                     if is_exon[right] > is_exon[x]:
                         z = findSpliceEnd(x, right)
-                        if z != None:
+                        if z is not None:
                             if self.options.loglevel >= 3:
                                 self.options.stdlog.write("# correcting intron boundary: %i-%i: %s %s %s\n" %
                                                           (x, z + 1,
@@ -1286,7 +1286,7 @@ class FilterIntrons(Filter):
             last_s = match.mSbjctBlockStarts[0]
             for q, s, b in zip(match.mQueryBlockStarts[1:], match.mSbjctBlockStarts[1:], match.mBlockSizes[1:]):
                 if last_s - s >= self.mIntronSize:
-                    is_confirmed == False
+                    is_confirmed is False
                     # positions of exon boundaries on genome in alignment
                     # coordinates
                     pos1, pos2 = last_s - 1 - \
@@ -1688,7 +1688,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(
@@ -2028,7 +2028,7 @@ def main(argv=None):
 
         match = iterator.next()
 
-        if match == None:
+        if match is None:
             break
 
         ninput_lines += 1

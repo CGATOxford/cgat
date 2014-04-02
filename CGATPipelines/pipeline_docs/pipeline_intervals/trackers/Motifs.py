@@ -150,7 +150,7 @@ class MastFDR(Mast):
         control_evalues = self.getValues(
             "SELECT -min_evalue FROM %(track)s_mast WHERE motif = '%(slice)s'" % locals())
         bin_edges, fdrs = getFDR(evalues, control_evalues)
-        if bin_edges == None:
+        if bin_edges is None:
             return odict()
         bin_edges = [-x for x in bin_edges]
         print len(bin_edges), len(fdrs)
@@ -427,12 +427,14 @@ class MastMotifLocation(Mast):
 
     def __call__(self, track, slice=None):
 
-        data = numpy.array ( self.getValues( """SELECT (i.peakcenter - (m.start + (m.end - m.start) / 2)) / 
-                                          500.0
-                                 FROM %(track)s_mast as m, %(track)s_intervals as i 
-                                 WHERE i.interval_id = m.id AND motif = '%(slice)s'
-                                 AND m.nmatches = 1"""
-                                             % locals()), numpy.float)
+        data = numpy.array(self.getValues(
+            """SELECT (i.peakcenter -
+            (m.start + (m.end - m.start) / 2)) / 500.0
+            FROM %(track)s_mast as m,
+                 %(track)s_intervals as i
+            WHERE i.interval_id = m.id AND motif = '%(slice)s'
+            AND m.nmatches = 1"""
+            % locals()), numpy.float)
 
         data[data < -1.0] = -1.0
         data[data > 1.0] = 1.0
@@ -848,7 +850,7 @@ class TomTomResults(IntervalTracker):
 #         %(track)s_annotations AS a ON a.gene_id = i.interval_id,
 #         %(track)s_mast AS m ON m.id = i.interval_id'''
 
-#         if slice != None:
+#         if slice is not None:
 #             statement += " AND motif = '%(slice)s'"
 #         return statement
 

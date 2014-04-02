@@ -57,7 +57,7 @@ class StrainTracker(VariantsTracker):
 
         tracks = TrackerSQL.getTracks(self)
 
-        if subset == None:
+        if subset is None:
             return ["all"] + tracks
         else:
             return tracks

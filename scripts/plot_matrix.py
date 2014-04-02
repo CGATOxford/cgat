@@ -119,7 +119,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(
@@ -368,7 +368,7 @@ def main(argv=None):
         if not options.subplots:
             pylab.colorbar(format=options.bar_format)
 
-        if options.title == None or options.title != "":
+        if options.title is None or options.title != "":
             pylab.title(filename)
 
     if options.hardcopy:

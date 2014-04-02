@@ -422,7 +422,7 @@ class GOInfo:
         self.mGOType = go_type
 
     def __str__(self):
-        if self.mGOId == None:
+        if self.mGOId is None:
             return "\t".join(map(str, ("", "", "")))
         else:
             return "\t".join(map(str, (self.mGOId, self.mGOType, self.mDescription)))

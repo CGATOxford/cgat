@@ -460,7 +460,7 @@ def main():
             ##################################################################
             # build background - reconcile with foreground
             ##################################################################
-            if input_background == None:
+            if input_background is None:
                 background = list(gene2go.keys())
             else:
                 background = list(input_background)

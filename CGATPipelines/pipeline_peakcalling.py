@@ -482,7 +482,7 @@ def checkInput(infiles, outfile):
 ############################################################
 
 
-@files(input == None, "regions.mask")
+@files(input is None, "regions.mask")
 def makeMask(infile, outfile):
     '''Make a mask for filtering reads if required.
     '''
@@ -557,7 +557,7 @@ def loadDuplicationStats(infiles, outfile):
 ############################################################
 ############################################################
 ############################################################
-if PARAMS["calling_normalize"] == True:
+if PARAMS["calling_normalize"] is True:
     '''Normalise the number of reads in a set of prepared bam files.
 
     The minimum number of reads in a prepared bam file is calculated and this
@@ -1263,7 +1263,7 @@ def estimateSPPQualityMetrics(infile, outfile):
         raise ValueError("idr analysis requires a control")
 
     executable = P.which("run_spp.R")
-    if executable == None:
+    if executable is None:
         raise ValueError("could not find run_spp.R")
 
     statement = '''
@@ -1317,7 +1317,7 @@ def callPeaksWithSPPForIDR(infile, outfile):
         raise ValueError("idr analysis requires a control")
 
     executable = P.which("run_spp.R")
-    if executable == None:
+    if executable is None:
         raise ValueError("could not find run_spp.R")
 
     statement = '''

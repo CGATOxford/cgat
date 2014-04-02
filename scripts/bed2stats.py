@@ -63,7 +63,7 @@ class Counter:
 
     def __str__(self):
         bases = sum(self.bases_per_contig.values())
-        if self.size == None:
+        if self.size is None:
             return "%i\t%i\t%i" % (len(self.intervals_per_contig),
                                    sum(self.intervals_per_contig.values()),
                                    bases,
@@ -79,7 +79,7 @@ class Counter:
 # ------------------------------------------------------------
 def main(argv=None):
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(

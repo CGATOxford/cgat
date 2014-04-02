@@ -77,7 +77,7 @@ def readTable(file,
         num_cols = len(take)
 
     colors = None
-    if color != None:
+    if color is not None:
         take = [x for x in take if x != color]
         num_cols = len(take)
         colors = []
@@ -100,7 +100,7 @@ def readTable(file,
     for l in lines:
         data = l[:-1].split("\t")
 
-        if color != None:
+        if color is not None:
             colors.append(float(data[color]))
 
         try:
@@ -122,7 +122,7 @@ def readTable(file,
         matrix[nrow] = data
         nrow += 1
 
-    if truncate != None:
+    if truncate is not None:
         # truncate matrix
         matrix = matrix[0:nrow + 1, 0:num_cols]
 
@@ -135,7 +135,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(
@@ -390,7 +390,7 @@ def main(argv=None):
         if options.yrange:
             pylab.ylim(options.yrange)
 
-        if options.color != None:
+        if options.color is not None:
             pylab.colorbar()
 
     if options.function:

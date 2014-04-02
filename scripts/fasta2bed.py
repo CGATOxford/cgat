@@ -193,7 +193,7 @@ def segmentWithGCProfile(infile, options):
                     gc = None
                 end = int(pos)
                 # ignore the double lines
-                if gc != None and start != None and end - start > 2:
+                if gc is not None and start is not None and end - start > 2:
                     segments.append((contig, start, end, gc))
                 start = int(pos) - 1
 

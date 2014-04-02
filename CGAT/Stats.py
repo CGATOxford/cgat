@@ -327,7 +327,7 @@ class DistributionalParameters:
         self.mMean, self.mMedian, self.mMin, self.mMax, self.mSampleStd, self.mSum, self.mCounts, self.mQ1, self.mQ3 = \
             (0, 0, 0, 0, 0, 0, 0, 0, 0)
 
-        if values != None and len(values) > 0:
+        if values is not None and len(values) > 0:
             self.updateProperties(values)
         self.mFormat = format
         self.mMode = mode
@@ -339,7 +339,7 @@ class DistributionalParameters:
         If values is an vector of strings, each entry will be converted
         to float. Entries that can not be converted are ignored.
         """
-        values = [x for x in values if x != None]
+        values = [x for x in values if x is not None]
 
         if len(values) == 0:
             raise ValueError("no data for statistics")
@@ -462,9 +462,9 @@ class Summary(Result):
         self.counts, self.min, self.max, self.mean, self.median, self.samplestd, self.sum, self.q1, self.q3 = \
             (0, 0, 0, 0, 0, 0, 0, 0, 0)
 
-        if values != None:
+        if values is not None:
 
-            values = [x for x in values if x != None]
+            values = [x for x in values if x is not None]
 
             if len(values) == 0:
                 if allow_empty:
@@ -713,7 +713,7 @@ def doFDR(pvalues,
     """
 
     # set to default of qvalue method
-    if vlambda == None:
+    if vlambda is None:
         vlambda = numpy.arange(0, 0.95, 0.05)
 
     if min(pvalues) < 0 or max(pvalues) > 1:
@@ -805,7 +805,7 @@ def doFDR(pvalues,
         raise ValueError(
             "The estimated pi0 (%f) <= 0. Check that you have valid p-values or use another vlambda method." % pi0)
 
-    if fdr_level != None and (fdr_level <= 0 or fdr_level > 1):
+    if fdr_level is not None and (fdr_level <= 0 or fdr_level > 1):
         raise ValueError("'fdr_level' must be within (0, 1].")
 
     # The estimated q-values calculated here
@@ -855,7 +855,7 @@ qvalues
     result = FDRResult()
     result.mQValues = qvalues
 
-    if fdr_level != None:
+    if fdr_level is not None:
         result.mPassed = [x <= fdr_level for x in result.mQValues]
     else:
         result.mPassed = [False for x in result.mQValues]
@@ -887,13 +887,13 @@ def doFDRPython(pvalues,
         raise ValueError("p-values out of range")
 
     # set to default of qvalue method
-    if vlambda == None:
+    if vlambda is None:
         vlambda = numpy.arange(0, 0.95, 0.05)
 
     m = len(pvalues)
     pvalues = numpy.array(pvalues, dtype=numpy.float)
 
-    if pi0 == None:
+    if pi0 is None:
         if type(vlambda) == float:
             vlambda = (vlambda,)
 
@@ -971,7 +971,7 @@ def doFDRPython(pvalues,
         raise ValueError(
             "The estimated pi0 <= 0. Check that you have valid p-values or use another vlambda method.")
 
-    if fdr_level != None and (fdr_level <= 0 or fdr_level > 1):
+    if fdr_level is not None and (fdr_level <= 0 or fdr_level > 1):
         raise ValueError("'fdr_level' must be within (0, 1].")
 
     # compute qvalues
@@ -1003,7 +1003,7 @@ def doFDRPython(pvalues,
     result = FDRResult()
     result.mQValues = qvalues
 
-    if fdr_level != None:
+    if fdr_level is not None:
         result.mPassed = [x <= fdr_level for x in result.mQValues]
     else:
         result.mPassed = [False for x in result.mQValues]
@@ -1054,7 +1054,7 @@ class CorrelationTest:
         if method:
             self.mMethod = method
 
-        if self.mPValue != None:
+        if self.mPValue is not None:
             self.mSignificance = getSignificance(self.mPValue)
 
     def __str__(self):
@@ -1362,7 +1362,7 @@ def getPerformance(values,
             if last_value != value:
                 binned_values.append((true_positives, predicted, value))
         else:
-            if last_value != None and last_value != value:
+            if last_value is not None and last_value != value:
                 binned_values.append((true_positives, predicted, last_value))
 
         predicted += 1
@@ -1378,7 +1378,7 @@ def getPerformance(values,
     if true_positives == 0:
         raise ValueError("# no true positives!")
 
-    if total_positives == None:
+    if total_positives is None:
         if total_false_negatives:
             positives = float(predicted)
         else:
@@ -1478,7 +1478,7 @@ def adjustPValues(pvalues, method='fdr', n=None):
     p.adjust method in R.
     '''
 
-    if n == None:
+    if n is None:
         n = len(pvalues)
 
     if method == "fdr":

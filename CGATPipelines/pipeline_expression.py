@@ -372,7 +372,7 @@ def computeDifferentialExpressionSAM(infile, outfile):
                                                    "sam_permutations"],
                                                method=PARAMS["sam_method"])
 
-    if summary == None:
+    if summary is None:
         E.warn("no cutoff when running sam for %s" % infile)
 
     if cutoffs:

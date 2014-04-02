@@ -79,7 +79,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(
@@ -170,7 +170,7 @@ def main(argv=None):
 
         if options.multiple:
             skip = False
-            if map_query != None:
+            if map_query is not None:
                 if alignment.mQueryToken in map_query:
                     mq = map_query[alignment.mQueryToken]
                 else:
@@ -178,7 +178,7 @@ def main(argv=None):
             else:
                 mq = [None]
 
-            if map_sbjct != None:
+            if map_sbjct is not None:
                 if alignment.mSbjctToken in map_sbjct:
                     ms = map_sbjct[alignment.mSbjctToken]
                 else:
@@ -244,10 +244,10 @@ def main(argv=None):
                                 '\t'.join([str(new_map)] + data[9:]) + '\n')
                             noutput += 1
 
-        # options.multiple == False
+        # options.multiple is False
         else:
 
-            if map_query != None:
+            if map_query is not None:
                 if alignment.mQueryToken in map_query:
                     mq = map_query[alignment.mQueryToken]
                 else:
@@ -256,7 +256,7 @@ def main(argv=None):
             else:
                 mq = None
 
-            if map_sbjct != None:
+            if map_sbjct is not None:
                 if alignment.mSbjctToken in map_sbjct:
                     ms = map_sbjct[alignment.mSbjctToken]
                 else:

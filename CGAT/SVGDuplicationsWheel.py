@@ -468,7 +468,7 @@ class DuplicationPlot:
             a = min(pos1, pos2)
             b = max(pos1, pos2)
 
-            if mi == None:
+            if mi is None:
                 mi = a
             else:
                 mi = min(a, mi)

@@ -55,7 +55,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(
@@ -122,9 +122,9 @@ def main(argv=None):
         contigs = fasta.getContigSizes()
 
     if options.is_gtf:
-        iterator = GTF.transcript_iterator(GTF.iterator(sys.stdin))
+        iterator = GTF.transcript_iterator(GTF.iterator(options.stdin))
     else:
-        gffs = GTF.iterator(sys.stdin)
+        gffs = GTF.iterator(options.stdin)
         if options.merge:
             iterator = GTF.joined_iterator(gffs)
         else:

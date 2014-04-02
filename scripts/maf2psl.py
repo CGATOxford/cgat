@@ -42,7 +42,7 @@ def threaditer(reader, species):
     '''iterate over reader and return components for species.'''
     for m in reader:
         components = get_components_for_species(m, species)
-        if components != None:
+        if components is not None:
             yield components
 
 
@@ -73,7 +73,7 @@ def main(argv=None):
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv)
 
-    if options.query == None or options.target == None:
+    if options.query is None or options.target is None:
         if len(args) != 2:
             raise ValueError(
                 "please supply two sequence identifiers for query and target")

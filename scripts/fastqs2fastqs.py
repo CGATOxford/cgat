@@ -1,5 +1,4 @@
-'''
-fastqs2fastqs.py - reconcile reads from a pair of fastq files
+'''fastqs2fastqs.py - manipulate (merge/reconcile) fastq files
 =============================================================
 
 :Author: Andreas Heger
@@ -10,7 +9,16 @@ fastqs2fastqs.py - reconcile reads from a pair of fastq files
 Purpose
 -------
 
-This script takes two fastq files and outputs two fastq files. The aim
+This script manipulates multiple fastq files and outputs
+new fastq files. The script implements various method
+according to the ``--method`` option.
+
+reconcile
++++++++++
+
+Reconcile reads from a pair of fastq files
+
+This method takes two fastq files and outputs two fastq files. The aim
 of the script is to reconcile reads from a pair of fastq files. For example,
 if reads from each file are independently filtered based on quality scores,
 the read representation will vary across files. This script will output reads
@@ -23,10 +31,14 @@ Usage
 
 Example::
 
-   python fastqs2fastqs.py myReads.1.fastq.gz myReads.2.fastq.gz --reconcile --output-pattern myReads_reconciled.%i.fastq
+   python fastqs2fastqs.py \
+            --method=reconcile \
+            --output-pattern=myReads_reconciled.%i.fastq \
+            myReads.1.fastq.gz myReads.2.fastq.gz
 
-In this example we take a pair of fastq files, reconcile by read identifier and output 2 new
-fastq files named myReads_reconciled.1.fastq.gz myReads_reconciled.2.fastq.gz
+In this example we take a pair of fastq files, reconcile by read
+identifier and output 2 new fastq files named
+``myReads_reconciled.1.fastq.gz`` and ``myReads_reconciled.2.fastq.gz``.
 
 Type::
 
@@ -39,16 +51,9 @@ Command line options
 
 '''
 
-import os
 import sys
-import re
-import optparse
-import math
-import random
-
 import CGAT.IOTools as IOTools
 import CGAT.Experiment as E
-import CGAT.Fastq as Fastq
 
 
 def main(argv=None):
@@ -61,21 +66,25 @@ def main(argv=None):
         argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+    parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
     parser.add_option("-m", "--method", dest="method", type="choice",
-                      choices=('reconcile', ),
+                      choices=('reconcile', 'merge'),
                       help="method to apply [default=%default].")
 
     parser.add_option("-c", "--chop", dest="chop", action="store_true",
-                      help="whether or not to trim last character of sequence name. For example sometimes ids in the first \
-                            file in the pair will end with \1 and teh second with \2. If --chop is not specified \
-                            then the results will be wrong [default=%default]."  )
+                      help="whether or not to trim last character of "
+                      "sequence name. For example sometimes ids in the first "
+                      "file in the pair will end with \1 and the second "
+                      "with \2. If --chop is not specified "
+                      "then the results will be wrong [default=%default].")
     parser.add_option("-u", "--unpaired", dest="unpaired", action="store_true",
-                      help="whether or not to write out unpaired reads to a seperate file")
+                      help="whether or not to write out unpaired reads "
+                      "to a seperate file")
 
-    parser.add_option("-o", "--output-pattern", dest="output_pattern", type="string",
+    parser.add_option("-o", "--output-pattern",
+                      dest="output_pattern", type="string",
                       help="pattern for output files [default=%default].")
 
     parser.set_defaults(
@@ -122,7 +131,7 @@ def main(argv=None):
                 if options.chop:
                     r = r[:-1]
                 if r not in take:
-                    if unpaired_file == None:
+                    if unpaired_file is None:
                         continue
                     else:
                         unpaired_file.write("\n".join(l) + "\n")
@@ -139,7 +148,8 @@ def main(argv=None):
 
         take = ids1.intersection(ids2)
 
-        E.info("first pair: %i reads, second pair: %i reads, shared: %i reads" %
+        E.info("first pair: %i reads, second pair: %i reads, "
+               "shared: %i reads" %
                (len(ids1),
                 len(ids2),
                 len(take)))

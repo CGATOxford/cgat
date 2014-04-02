@@ -133,7 +133,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     #--------------------------------------------------------
@@ -259,11 +259,11 @@ def main(argv=None):
             except IndexError:
                 continue
 
-            if mi == None:
+            if mi is None:
                 mi = v
             else:
                 mi = min(v, mi)
-            if ma == None:
+            if ma is None:
                 ma = v
             else:
                 ma = max(v, ma)
@@ -380,7 +380,7 @@ def main(argv=None):
             if not subset.has_key(id1) or not subset.has_key(id2):
                 continue
 
-        if options.component != None:
+        if options.component is not None:
             if not components.has_key(id1):
                 continue
             if not components.has_key(id2):

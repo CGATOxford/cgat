@@ -1,5 +1,4 @@
-'''
-revigo.py - apply semantic clustering to GO output
+'''revigo.py - apply semantic clustering to GO output
 ==================================================
 
 :Author: Andreas Heger
@@ -33,58 +32,67 @@ for command line help.
 Documentation
 -------------
 
-In addition to a list of GO terms and their associated p-values (--filename-pvalues)
+In addition to a list of GO terms and their associated p-values
+(--filename-pvalues)
 
 Additional input files required are:
 
 * a file containing a gene ontology in obo-xml format (--filename-ontology)
 * a file mapping gene identifiers to GO terms (--filename-go)
 
-The script will compute a matrix of semantic similarities between GO terms
-based on the ``simrel`` measure described in the manuscript by Schlicker et al. (2006)
-(pmid:`16776819`).
+The script will compute a matrix of semantic similarities between GO
+terms based on the ``simrel`` measure described in the manuscript by
+Schlicker et al. (2006) (pmid:`16776819`).
 
-The script will then remove redundant terms from this matrix following the produce
-described in the revigo manuscript (:pmid:`21789182`).
+The script will then remove redundant terms from this matrix following
+the produce described in the revigo manuscript (:pmid:`21789182`).
 
-The script will output a file called `cluster.tsv` which contains the clustering results.
+The script will output a file called `cluster.tsv` which contains the
+clustering results.
 
-It will also output an image in :term:`svg` format of the clustered terms and their
-similarity in semantic space. Nodes are coloured by fold change and size is given
-by the P-Value.
+It will also output an image in :term:`svg` format of the clustered
+terms and their similarity in semantic space. Nodes are coloured by
+fold change and size is given by the P-Value.
 
 Additional output files
 +++++++++++++++++++++++
 
-Computing the similarity matrix can take same time. The script outputs some intermediate
-files that will be re-used on subsequent calls in order to speed up processing. The intermediate 
-files are:
+Computing the similarity matrix can take same time. The script outputs
+some intermediate files that will be re-used on subsequent calls in
+order to speed up processing. The intermediate files are:
 
     * ancestors.tsv: tab-separated file with all the ancestors of a term
-    * termfrequencies.tsv: tab-separated file with all the term frequencies and genes with this term
+
+    * termfrequencies.tsv: tab-separated file with all the term
+      frequencies and genes with this term
+
     * simrel.matrix: the full simrel matrix. This matrix is symmetric.
-    * cluster.matrix: the clustered simrel matrix. Only the cluster representatives have been kept.
+
+    * cluster.matrix: the clustered simrel matrix. Only the cluster
+      representatives have been kept.
 
 Quality control
 +++++++++++++++
 
-The output of this program is similar but not identical to revigo. The algorithm is not fully described
-and the input data are not identical. It seems that simrel values in this script are lower and thus the
-clustering is more conservative compared to revigo.
+The output of this program is similar but not identical to revigo. The
+algorithm is not fully described and the input data are not
+identical. It seems that simrel values in this script are lower and
+thus the clustering is more conservative compared to revigo.
 
 Command line options
 --------------------
 
-This module depends on unreleased code from http://code.google.com/p/gographer for parsing of the
-GO graph. The code has been modified to allow parsing of relationship information and record synonyms
-and obsolete identifiers. The code has been included into this script until gographer will be released. 
+This module depends on unreleased code from
+http://code.google.com/p/gographer for parsing of the GO graph. The
+code has been modified to allow parsing of relationship information
+and record synonyms and obsolete identifiers. The code has been
+included into this script until gographer will be released.
 
 '''
 
 import itertools
 import math
 import sys
-import optparse
 import collections
 import os
 import re
@@ -103,10 +111,7 @@ from networkx import DiGraph
 from networkx import topological_sort
 import cPickle
 
-import matplotlib
-matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-import pylab
 
 
 class Tokenizer:
@@ -641,11 +646,11 @@ class GOOboXmlHandler (ContentHandler):
                     parent, self.goid, relationship="parent_of")
 
         # and not self.name.has_key(self.goid):
-        elif name == "name" and not self.obsolete and not self.goid == None and self.goNode.name == None:
+        elif name == "name" and not self.obsolete and not self.goid is None and self.goNode.name is None:
             self.goNode.setName(self.cdata.strip())
 
         # and not self.name.has_key(self.goid):
-        elif name == "defstr" and not self.obsolete and not self.goid == None:
+        elif name == "defstr" and not self.obsolete and not self.goid is None:
             self.goNode.setDescription(self.cdata.strip())
 
         elif name == "term" and self.obsolete and self.namespace == self.elementNamespace:
@@ -930,7 +935,7 @@ class GOGraph(networkx.DiGraph):
 
         self.namespace = namespace
 
-        if GOOboXmlFileName != None:
+        if GOOboXmlFileName is not None:
             self.parseOboXml(GOOboXmlFileName)
 
     # Parses the given OBO XML file and creates a GOGraph
@@ -1109,7 +1114,7 @@ def readPValues(infile, synonyms={}):
             else:
                 parser = _parse3
             continue
-        if parser == None:
+        if parser is None:
             raise ValueError(
                 "don't know how to parse this file at line %s" % line)
 
@@ -1531,7 +1536,7 @@ def main(argv):
         options.ontology = map_ontology2namespace.keys()
 
     #########################################
-    if options.filename_pvalues == None:
+    if options.filename_pvalues is None:
         E.info("reading pvalues from stdin")
         all_term2pvalue, all_term2log2fold = readPValues(options.stdin)
     else:
@@ -1637,7 +1642,7 @@ def main(argv):
                                                           term2pvalue, go2info,
                                                           options)
 
-            if matrix == None:
+            if matrix is None:
                 E.warn("%s: no output" % test_ontology)
                 continue
 

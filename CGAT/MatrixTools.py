@@ -265,7 +265,7 @@ def buildMatrixFromLists(lists, dtype=numpy.float, default=None):
 def buildMatrixFromTables(infiles, column, column_header=0, dtype=numpy.float, default=None):
     '''build a matrix from a column called *column* in a series of input files.
 
-    If column_value == None, the first column is taken as the name of the row.
+    If column_value is None, the first column is taken as the name of the row.
 
     The columns are given by order of the input files.
 

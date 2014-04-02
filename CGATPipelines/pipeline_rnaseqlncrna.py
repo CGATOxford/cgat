@@ -762,8 +762,10 @@ def convertGTFToBed12(infile, outfile):
     PipelineLncRNA.gtfToBed12(infile, outfile, "transcript")
 
 
+# AH: added default empty location for phyloCSF_location_axt to allow
+# import of pipeline script
 @follows(mkdir("./phyloCSF"))
-@merge(os.path.join(PARAMS["phyloCSF_location_axt"], "*.axt.gz"),
+@merge(os.path.join(PARAMS.get("phyloCSF_location_axt", ""), "*.axt.gz"),
        "./phyloCSF/filtered_alignment.maf.gz")
 def createMAFAlignment(infiles, outfile):
     """
@@ -778,7 +780,7 @@ def createMAFAlignment(infiles, outfile):
     axt_files = []
     for axt_file in os.listdir(axt_dir):
         if axt_file.endswith("net.axt.gz") and not to_ignore.search(axt_file):
-            axt_files.append(os.path.join(axt_dir,  axt_file))
+            axt_files.append(os.path.join(axt_dir, axt_file))
     axt_files = (" ").join(sorted(axt_files))
 
     E.info("axt files from which MAF alignment will be created: %s" %

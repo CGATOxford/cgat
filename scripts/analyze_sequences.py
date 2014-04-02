@@ -175,7 +175,7 @@ class SequenceProperties:
 
 def main(argv=None):
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(version="%prog version: $Id: analyze_sequences.py 2865 2010-03-03 10:18:28Z andreas $",

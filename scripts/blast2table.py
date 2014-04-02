@@ -280,7 +280,7 @@ def main(argv=None):
 
     if options.with_header:
         header = outer.header[:]
-        if options.iterations != None:
+        if options.iterations is not None:
             header.append("iteration")
         sys.stdout.write("\t".join(header) + "\n")
 
@@ -310,7 +310,7 @@ def main(argv=None):
             yield group
 
     for group in grouper(sys.stdin):
-        if options.iterations == None:
+        if options.iterations is None:
             for r in group:
                 sys.stdout.write(str(r) + "\n")
         else:

@@ -84,7 +84,7 @@ Options:
 import CGAT.Experiment as E
 import CGAT.PredictionParser as PredictionParser
 
-from predict_genes import PredictorExonerate
+from CGAT.Predictor2 import PredictorExonerate
 
 parser = E.OptionParser(
     version="%prog version: $Id: gpipe/liftover_predictions.py 2781 2009-09-10 11:33:14Z andreas $")
@@ -225,7 +225,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     parser.add_option("-m", "--filename-map", dest="filename_map", type="string",

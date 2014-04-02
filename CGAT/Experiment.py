@@ -678,7 +678,7 @@ def Start(parser=None,
     if not no_parsing:
         (global_options, global_args) = parser.parse_args(argv[1:])
 
-    if global_options.random_seed != None:
+    if global_options.random_seed is not None:
         random.seed(global_options.random_seed)
 
     if add_pipe_options:
@@ -928,7 +928,8 @@ def openOutputFile(section, mode="w"):
         else:
             if not global_options.output_force and os.path.exists(fn):
                 raise OSError(
-                    "file %s already exists, use --force to overwrite existing files." % fn)
+                    ("file %s already exists, use --force to "
+                     "overwrite existing files.") % fn)
             if fn.endswith(".gz"):
                 return gzip.open(fn, mode)
             else:

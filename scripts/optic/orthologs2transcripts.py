@@ -544,7 +544,7 @@ def WriteExons(token1, peptide1, cds1, transcript1,
         # orthologous introns are between orthologous exons
         if param_write_introns:
 
-            if last_e1 != None:
+            if last_e1 is not None:
                 if e1 - last_e1 != 1 or e2 - last_e2 != 1:
                     nskipped_introns += 1
                 else:
@@ -1104,7 +1104,7 @@ def main(argv=None):
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None:
+    if argv is None:
         argv = sys.argv
 
     try:

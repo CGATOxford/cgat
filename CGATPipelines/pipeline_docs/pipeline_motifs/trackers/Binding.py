@@ -25,9 +25,9 @@ class BindingSummary(IntervalTracker):
 
         data = odict()
 
-        data["binding"]  = self.getValue( """
-                                SELECT COUNT(*) FROM %(track)s_binding 
-                                WHERE overlap > 0""" )
+        data["binding"] = self.getValue("""
+        SELECT COUNT(*) FROM %(track)s_binding
+        WHERE overlap > 0""" )
         cols = [x for x in self.getColumns(
             "%s_binding" % track) if x.endswith("_overlap")]
 

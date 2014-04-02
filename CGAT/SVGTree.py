@@ -505,13 +505,13 @@ class NodeDecorator:
         return e
 
     def getHeight(self, node_id):
-        if self.mPlotSymbol != None:
+        if self.mPlotSymbol is not None:
             return self.mFontSize
         else:
             return 0
 
     def getWidth(self, node_id):
-        if self.mPlotSymbol != None:
+        if self.mPlotSymbol is not None:
             return self.mFontSize
         else:
             return 0
@@ -546,9 +546,9 @@ class NodeDecoratorExternal(NodeDecorator):
 
         e = NodeDecorator.getElements(self, node_id, x, y)
 
-        if x_label == None:
+        if x_label is None:
             x_label = x
-        if y_label == None:
+        if y_label is None:
             y_label = y
         e.append(SVGdraw.text(x_label, y_label,
                               self.mTree.node(node_id).data.taxon,
@@ -592,7 +592,7 @@ class NodeDecoratorBySpecies(NodeDecorator):
 
         """
         # plot labels unless explicitely set to false:
-        if plot_label == None:
+        if plot_label is None:
             plot_label = True
 
         NodeDecorator.__init__(self, tree,
@@ -627,9 +627,9 @@ class NodeDecoratorBySpecies(NodeDecorator):
 
         e = NodeDecorator.getElements(self, node_id, x, y)
 
-        if x_label == None:
+        if x_label is None:
             x_label = x
-        if y_label == None:
+        if y_label is None:
             y_label = y
 
         t = self.mTree.node(node_id).data.taxon
@@ -654,7 +654,7 @@ class NodeDecoratorBySpecies(NodeDecorator):
                               stroke="rgb(%i,%i,%i)" % colour,
                               text_anchor="left")
 
-            if self.mMapTaxon2URL != None:
+            if self.mMapTaxon2URL is not None:
                 url = self.mMapTaxon2URL(t)
                 if url:
                     l = SVGdraw.link(url)

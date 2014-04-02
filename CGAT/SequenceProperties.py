@@ -838,7 +838,7 @@ class SequencePropertiesEntropy(SequencePropertiesCounts):
     def getFields(self):
 
         fields = SequenceProperties.getFields(self)
-        if self.mEntropy != None:
+        if self.mEntropy is not None:
             fields.append("%f" % self.mEntropy)
         else:
             fields.append("na")
@@ -1069,7 +1069,7 @@ class SequencePropertiesBias(SequencePropertiesCodons):
 
         freqs = Genomics.CalculateCodonFrequenciesFromCounts(
             self.mCodonCounts, self.mPseudoCounts)
-        if usage == None:
+        if usage is None:
             usage = freqs
 
         for codon, count in self.mCodonCounts.items():

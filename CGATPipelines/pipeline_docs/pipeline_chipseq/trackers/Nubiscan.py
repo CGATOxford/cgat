@@ -12,7 +12,7 @@ class Nubiscan(ChipseqReport.DefaultTracker):
     mPattern = "_nubiscan$"
 
     def getSlices(self, subset=None):
-        if subset == None:
+        if subset is None:
             return "rxrvdr", "nr"
         elif "with-control" in subset:
             return "rxrvdr", "nr", "rxrvdr_shuffled", "nr_shuffled", "rxrvdr_shifted", "nr_shifted"
@@ -197,11 +197,12 @@ class NubiscanROC(Nubiscan):
         rocs = []
         for field in self.mFields:
 
-            statement =  """SELECT DISTINCT i.interval_id, i.%(field)s, n.motif IS NOT NULL
-                                 FROM %(track)s_intervals as i
-                                 LEFT JOIN %(track)s_nubiscan as n
-                                    ON i.interval_id = n.id AND n.motif = '%(slice)s'
-                                 ORDER BY i.%(field)s DESC""" % locals()
+            statement = """
+            SELECT DISTINCT i.interval_id, i.%(field)s, n.motif IS NOT NULL
+            FROM %(track)s_intervals as i
+            LEFT JOIN %(track)s_nubiscan as n
+            ON i.interval_id = n.id AND n.motif = '%(slice)s'
+            ORDER BY i.%(field)s DESC""" % locals()
 
             values = self.get(statement)
             try:

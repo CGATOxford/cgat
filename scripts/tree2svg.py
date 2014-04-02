@@ -380,13 +380,13 @@ def main():
     if options.branch_scale:
         plot.setBranchScale(options.branch_scale)
 
-    if options.height_scale != None:
+    if options.height_scale is not None:
         plot.setHeightScale(options.height_scale)
 
-    if options.font_size_tips != None:
+    if options.font_size_tips is not None:
         plot.setFontSize(options.font_size_tips)
 
-    if options.plot_ruler == False:
+    if options.plot_ruler is False:
         plot.setRulerElements([])
 
     if options.show_branchlengths:

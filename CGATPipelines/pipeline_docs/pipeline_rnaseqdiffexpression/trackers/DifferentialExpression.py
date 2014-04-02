@@ -1,13 +1,9 @@
 import os
-import sys
-import re
-import types
 import itertools
 import math
 import sqlite3
 
 from SphinxReport.Tracker import *
-from SphinxReport.Utils import PARAMS as P
 from collections import OrderedDict as odict
 
 from RnaseqDiffExpressionReport import *
@@ -26,7 +22,8 @@ class TrackerDESeqSizeFactors(ProjectTracker):
     pattern = "(.*)_deseq_size_factors"
 
     def __call__(self, track):
-        return self.getAll("SELECT sample, * FROM %(track)s_deseq_size_factors")
+        return self.getAll(
+            "SELECT sample, * FROM %(track)s_deseq_size_factors")
 
 
 class TrackerDESeqSummary(ProjectTracker):
@@ -126,7 +123,7 @@ class TrackerDESummaryPlots(Tracker):
 %(design)s %(geneset)s
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-''' % locals() + "\n\n".join( rst_text )
+''' % locals() + "\n\n".join(rst_text)
         else:
             rst_text = ""
 
@@ -171,7 +168,7 @@ class TrackerDifferentialExpression(Tracker):
                     continue
 
                 rst_text.append('''
-%(design)s %(geneset)s %(level)s %(x)s vs %(y)s 
+%(design)s %(geneset)s %(level)s %(x)s vs %(y)s
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 .. figure:: %(filename)s
@@ -229,7 +226,8 @@ class DifferentialExpressionOverlap(DifferentialExpressionComparison):
                       ("shared", len(a.intersection(b).intersection(c)))))
 
 
-class DifferentialExpressionCorrelationPValueCuffdiffDeseq(DifferentialExpressionComparison):
+class DifferentialExpressionCorrelationPValueCuffdiffDeseq(
+        DifferentialExpressionComparison):
 
     '''fold change estimates per gene set.
     '''
@@ -246,7 +244,7 @@ class DifferentialExpressionCorrelationPValueCuffdiffDeseq(DifferentialExpressio
         pvalues = {pair1: [], pair2: []}
         for pvals in cc.execute("""
                    SELECT a.pvalue, b.pvalue
-                          FROM %s_%s_gene_diff AS a, 
+                          FROM %s_%s_gene_diff AS a,
                           %s_%s_gene_diff AS b
                           WHERE a.test_id = b.test_id
                           AND ABS( a.l2fold ) != 10
@@ -261,7 +259,8 @@ class DifferentialExpressionCorrelationPValueCuffdiffDeseq(DifferentialExpressio
         return pvalues
 
 
-class DifferentialExpressionCorrelationPValueCuffdiffEdger(DifferentialExpressionCorrelationPValueCuffdiffDeseq):
+class DifferentialExpressionCorrelationPValueCuffdiffEdger(
+        DifferentialExpressionCorrelationPValueCuffdiffDeseq):
 
     '''fold change estimates per gene set.'''
 
@@ -270,7 +269,8 @@ class DifferentialExpressionCorrelationPValueCuffdiffEdger(DifferentialExpressio
         return self.pair1, self.pair2
 
 
-class DifferentialExpressionCorrelationPValueDeseqEdger(DifferentialExpressionCorrelationPValueCuffdiffDeseq):
+class DifferentialExpressionCorrelationPValueDeseqEdger(
+        DifferentialExpressionCorrelationPValueCuffdiffDeseq):
 
     '''fold change estimates per gene set.'''
 
@@ -279,7 +279,8 @@ class DifferentialExpressionCorrelationPValueDeseqEdger(DifferentialExpressionCo
         return self.pair1, self.pair2
 
 
-class DifferentialExpressionCorrelationFoldChangeCuffdiffDeseq(DifferentialExpressionComparison):
+class DifferentialExpressionCorrelationFoldChangeCuffdiffDeseq(
+        DifferentialExpressionComparison):
 
     '''fold change estimates per gene set.'''
 
@@ -295,7 +296,7 @@ class DifferentialExpressionCorrelationFoldChangeCuffdiffDeseq(DifferentialExpre
         fold_changes = {pair1: [], pair2: []}
         for folds in cc.execute("""
                    SELECT a.l2fold, b.l2fold
-                          FROM %s_%s_gene_diff AS a, 
+                          FROM %s_%s_gene_diff AS a,
                           %s_%s_gene_diff AS b
                           WHERE a.test_id = b.test_id
                           AND ABS( a.l2fold ) < 10
@@ -310,7 +311,8 @@ class DifferentialExpressionCorrelationFoldChangeCuffdiffDeseq(DifferentialExpre
         return fold_changes
 
 
-class DifferentialExpressionCorrelationFoldChangeCuffdiffEdger(DifferentialExpressionCorrelationFoldChangeCuffdiffDeseq):
+class DifferentialExpressionCorrelationFoldChangeCuffdiffEdger(
+        DifferentialExpressionCorrelationFoldChangeCuffdiffDeseq):
 
     '''fold change estimates per gene set.'''
 
@@ -319,7 +321,8 @@ class DifferentialExpressionCorrelationFoldChangeCuffdiffEdger(DifferentialExpre
         return self.pair1, self.pair2
 
 
-class DifferentialExpressionCorrelationFoldChangeDeseqEdger(DifferentialExpressionCorrelationFoldChangeCuffdiffDeseq):
+class DifferentialExpressionCorrelationFoldChangeDeseqEdger(
+        DifferentialExpressionCorrelationFoldChangeCuffdiffDeseq):
 
     '''fold change estimates per gene set.'''
 
@@ -344,13 +347,13 @@ class VolcanoTracker(ProjectTracker):
         # disabled - takes potentially a lot of time
         return None
 
-        data = self.getAll( """SELECT l2fold,
-                                    pvalue, 
-                                    CASE WHEN value1 < value2 THEN value2 ELSE value1 END AS max_fpkm 
-                                    FROM %(track)s_%(method)s_%(slice)s_diff 
-                                    WHERE pvalue IS NOT NULL AND pvalue != 'nan' AND 
-                                          l2fold IS NOT NULL AND 
-                                          max_fpkm > 0""" )
+        data = self.getAll("""SELECT l2fold,
+        pvalue,
+        CASE WHEN value1 < value2 THEN value2 ELSE value1 END AS max_fpkm
+        FROM %(track)s_%(method)s_%(slice)s_diff
+        WHERE pvalue IS NOT NULL AND pvalue != 'nan' AND
+        l2fold IS NOT NULL AND
+        max_fpkm > 0""")
         if data:
             data["pvalue"] = [-math.log10(x + 0.00001) for x in data["pvalue"]]
             data["max_fpkm"] = [math.log10(x + 0.00001)
@@ -387,9 +390,9 @@ class ExonCounts(ProjectTracker):
         if not options:
             raise ValueError('tracker requires gene_id')
 
-        data = self.getAll('''SELECT gene_id, * FROM 
-                       %(track)s_exon_counts
-                       WHERE gene_id = '%(options)s' ''' )
+        data = self.getAll('''SELECT gene_id, * FROM
+        %(track)s_exon_counts
+        WHERE gene_id = '%(options)s' ''')
 
         if data:
             del data["gene_id"]

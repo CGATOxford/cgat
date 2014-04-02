@@ -418,7 +418,7 @@ def runDE(infiles, outfile, outdir,
 
     design_file, counts_file = infiles
 
-    if spike_file == None:
+    if spike_file is None:
         statement = "zcat %(counts_file)s"
     else:
         statement = '''python %(scriptsdir)s/combine_tables.py 

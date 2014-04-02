@@ -79,7 +79,7 @@ def ComplementIntervalls(intervalls, first=None, last=None):
     intervalls.sort()
     last_from, last_to = intervalls[0]
 
-    if first != None and first < last_from:
+    if first is not None and first < last_from:
         new_intervalls.append((first, last_from - 1))
 
     for this_from, this_to in intervalls:

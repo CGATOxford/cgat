@@ -373,7 +373,8 @@ class Mali:
                     id, 0, self.countCharacters(line[:-1]), line[:-1])
             return True
 
-        if type(infile) == types.ListType or type(infile) == types.TupleType:
+        if isinstance(infile, list) or \
+           isinstance(infile, tuple):
             lines = infile
         else:
             lines = infile.readlines()
@@ -1114,7 +1115,7 @@ class Mali:
             a = []
             for x in range(ncols):
                 m = map_this2other[x]
-                if m != None:
+                if m is not None:
                     a.append(annotation[m])
                 else:
                     a.append(self.mGapChar)
@@ -1149,7 +1150,7 @@ class Mali:
         if map_old2new is not given, a new map is created (map_new2old)
         """
         new_identifiers = []
-        if map_old2new != None:
+        if map_old2new is not None:
             for id in self.mIdentifiers:
                 new_id = map_old2new[id]
                 new_identifiers.append(new_id)
@@ -1198,7 +1199,7 @@ class Mali:
 
         l = None
         for s in self.mMali.values():
-            if l == None:
+            if l is None:
                 l = len(s.mString)
             else:
                 if l != len(s.mString):
@@ -1286,7 +1287,8 @@ class SequenceCollection(Mali):
 
         pattern_parse_ranges = re.compile("(\S+)/(\d+)-(\d+)")
 
-        if type(infile) == types.ListType or type(infile) == types.TupleType:
+        if isinstance(infile, list) or \
+           isinstance(infile, tuple):
             lines = infile
         else:
             lines = infile.readlines()
@@ -1389,7 +1391,7 @@ def convertAlignlib2Mali(mali, identifiers=None, seqs=None):
     if not identifiers:
         identifiers = ["%i" % x for x in range(mali.getNumSequences())]
 
-    if seqs == None:
+    if seqs is None:
         # old style MultipleAlignment
         for x in range(mali.getNumSequences()):
             a = mali.getRow(x)

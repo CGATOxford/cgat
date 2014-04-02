@@ -63,7 +63,7 @@ if [ "$OS" == "ubuntu" -o "$OS" == "travis" ] ; then
    echo " Installing packages for Ubuntu "
    echo
 
-   apt-get install -y gcc g++ zlib1g-dev libssl-dev libbz2-dev libfreetype6-dev libpng12-dev libblas-dev libatlas-dev liblapack-dev gfortran libpq-dev r-base-dev libreadline-dev libmysqlclient-dev libboost-dev libsqlite3-dev mercurial;
+   sudo apt-get install -y gcc g++ zlib1g-dev libssl-dev libbz2-dev libfreetype6-dev libpng12-dev libblas-dev libatlas-dev liblapack-dev gfortran libpq-dev r-base-dev libreadline-dev libmysqlclient-dev libboost-dev libsqlite3-dev mercurial;
 
 elif [ "$OS" == "sl" ] ; then
 
@@ -176,7 +176,7 @@ install_nosetests_deps() {
 if [ "$OS" == "ubuntu" -o "$OS" == "travis" ] ; then
 
    # GCProfile
-   apt-get install -y libc6-i386 libstdc++5:i386
+   sudo apt-get install -y libc6-i386 libstdc++5:i386
 
 elif [ "$OS" == "sl" ] ; then
 
@@ -245,10 +245,19 @@ if [ "$OS" == "travis" ] ; then
    cd $INIT_DIR
    export PYTHONPATH=$PYTHONPATH:$INIT_DIR
 
+   # bx-python
+   export C_INCLUDE_PATH=/home/travis/virtualenv/python2.7/local/lib/python2.7/site-packages/numpy/core/include
+
    python setup.py develop
 
    # run nosetests
-   nosetests -v tests/test_scripts.py ;
+   if [ "$TEST_IMPORT" == "1" ] ; then
+      nosetests -v tests/test_import.py ;
+   else
+      nosetests -v tests/test_scripts.py ;
+   fi
+
+   echo $? ;
 
 elif [ "$OS" == "ubuntu" ] ; then
 
@@ -272,8 +281,8 @@ elif [ "$OS" == "ubuntu" ] ; then
 
    python setup.py develop
 
-   # run nosetests
-   nosetests -v tests/test_scripts.py >& nosetests.out ;
+   nosetests -v tests/test_import.py >& test_import.out
+   nosetests -v tests/test_scripts.py >& test_scripts.out ;
 
 elif [ "$OS" == "sl" ] ; then
 
@@ -302,7 +311,8 @@ elif [ "$OS" == "sl" ] ; then
 
    python setup.py develop
 
-   nosetests -v tests/test_scripts.py >& nosetests.out;
+   nosetests -v tests/test_import.py >& test_import.out
+   nosetests -v tests/test_scripts.py >& test_scripts.out;
 
 else
 

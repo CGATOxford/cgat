@@ -525,13 +525,13 @@ class CodeML:
     def SetOptions(self, options):
         """set options from the command line."""
 
-        if options.paml_kappa != None:
+        if options.paml_kappa is not None:
             self.SetOption("kappa", str(options.paml_kappa))
 
         if options.paml_fix_kappa:
             self.SetOption("fix_kappa", "1")
 
-        if options.paml_alpha != None:
+        if options.paml_alpha is not None:
             self.SetOption("alpha", str(options.paml_alpha))
 
         if options.paml_fix_alpha:
@@ -1880,7 +1880,7 @@ class Evolver:
 
         self.calculateScale(self.mDs)
 
-        if self.mCodonTable == None:
+        if self.mCodonTable is None:
             raise "please supply a codon table."
 
         self.mNSequences = len(
@@ -1957,7 +1957,7 @@ class Evolver:
         t = 3 dS * (ps + omega (1 - ps )
         """
 
-        if self.mCodonTable == None:
+        if self.mCodonTable is None:
             raise "please supply a codon table."
 
         # number of synonymous/non-synonymous sites
@@ -2175,7 +2175,7 @@ class EvolverBaseml(Evolver):
         if self.mModel in ("JC69", "K80"):
             self.setUniformFrequencies()
 
-        if self.mFrequencies == None:
+        if self.mFrequencies is None:
             raise "please supply nucleotide frequencies."
 
         self.mNSequences = len(
@@ -2254,13 +2254,13 @@ def getOptions(options):
         codeml_options["Malpha"] = "0"
         codeml_options["Mgene"] = "0"
 
-    if options.omega != None:
+    if options.omega is not None:
         codeml_options["omega"] = str(options.omega)
 
     if options.estimate_ancestors:
         codeml_options["RateAncestor"] = "1"
 
-    if options.codon_frequencies != None:
+    if options.codon_frequencies is not None:
         c = options.codon_frequencies.upper()
         if c in ("UNIFORM", "FEQUAL"):
             a = "0"
@@ -2273,10 +2273,10 @@ def getOptions(options):
         else:
             a = options.codon_frequencies
         codeml_options["CodonFreq"] = a
-    if options.method != None:
+    if options.method is not None:
         codeml_options["method"] = str(options.method)
 
-    if options.optimization_threshold != None:
+    if options.optimization_threshold is not None:
         codeml_options["Small_Diff"] = str(options.optimization_threshold)
 
     if options.clean_data:
@@ -2512,7 +2512,7 @@ if __name__ == "__main__":
 
     (options, args) = Experiment.Start(parser)
 
-    if options.filter_parameters != None:
+    if options.filter_parameters is not None:
         options.filter_parameters = options.filter_parameters.split(",")
         options.filter_parameters.reverse()
 
@@ -2588,7 +2588,7 @@ if __name__ == "__main__":
                 # setup branch specific models.
                 # You need to create a new tree for each one
                 for node_id, node in tree.chain.items():
-                    if node.prev == None:
+                    if node.prev is None:
                         continue
 
                     branch += 1

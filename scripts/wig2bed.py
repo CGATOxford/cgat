@@ -60,7 +60,7 @@ def block_iterator(infile, contig, size, chunk_size=10000000):
 
     for x in range(0, size, chunk_size):
         iterator = infile.get(contig, x, x + chunk_size)
-        if iterator == None:
+        if iterator is None:
             raise StopIteration
         for v in iterator:
             yield v
