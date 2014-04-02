@@ -36,11 +36,7 @@ Command line options
 
 import os
 import sys
-import re
-import optparse
-import gzip
 import tempfile
-
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 
@@ -57,7 +53,7 @@ def main(argv=None):
         argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+    parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
     parser.set_defaults(
@@ -86,6 +82,8 @@ def main(argv=None):
 
     outstream1 = IOTools.openFile(outtemp1, "w")
     outstream2 = IOTools.openFile(outtemp2, "w")
+
+    E.info('writing fastq files to temporary directory %s' % tmpdir)
 
     found1, found2 = set(), set()
     read1_qlen, read2_qlen = 0, 0
@@ -126,9 +124,9 @@ def main(argv=None):
     outstream2.close()
 
     E.info("sorting fastq files")
-    statement = '''zcat %s 
-                   | sort -k1,1 
-                   | awk '{printf("@%%s\\n%%s\\n+\\n%%s\\n", $1,$2,$3)}' 
+    statement = '''zcat %s
+                   | sort -k1,1
+                   | awk '{printf("@%%s\\n%%s\\n+\\n%%s\\n", $1,$2,$3)}'
                    | gzip > %s'''
 
     E.run(statement % (outtemp1, fastqfile1))
