@@ -139,8 +139,8 @@ def test_scripts():
 
     scriptdirs = glob.glob("tests/*.py")
 
-    if os.path.exists("tests/test_scripts.yaml"):
-        config = yaml.load(open("tests/test_scripts.yaml"))
+    if os.path.exists("tests/_test_scripts.yaml"):
+        config = yaml.load(open("tests/_test_scripts.yaml"))
         if config is not None:
             if "restrict" in config and config["restrict"]:
                 values = config["restrict"]

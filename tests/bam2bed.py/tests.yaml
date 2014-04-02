@@ -9,22 +9,43 @@ default_test:
     stdin: example_human_g1k.bam
     outputs: [stdout]
     references: [example_human_g1k.tsv]
-    options:
+    options: <DIR>/example_human_g1k.bam
 
 merge_min100_test:
     stdin: example_human_g1k.bam
     outputs: [stdout]
     references: [example_human_g1k_merge_min100.tsv]
-    options: --merge-pairs --min-insert-size 100
+    options: <DIR>/example_human_g1k.bam --merge-pairs --min-insert-size 100
 
 merge_max150_test:
     stdin: example_human_g1k.bam
     outputs: [stdout]
     references: [example_human_g1k_merge_max150.tsv]
-    options: --merge-pairs --max-insert-size 150
+    options: <DIR>/example_human_g1k.bam --merge-pairs --max-insert-size 150
 
 region_test:
-    stdin:
+    stdin: example_human_g1k.bam
     outputs: [stdout]
     references: [example_human_g1k_region.tsv]
-    options: --region '1:69100:69200' <DIR>/example_human_g1k.bam
+    options: <DIR>/example_human_g1k.bam --region '1:69100:69200' 
+
+interval_100bp_test:
+    stdin: subsample.bam
+    outputs: [stdout]
+    references: [subsample-100-interval.bed, subsample-100.summary.txt]
+    options: <DIR>/subsample.bam --interval 100
+
+threshold_1%_test:
+    stdin: subsample.bam
+    outputs: [stdout]
+    references: [subsample-NH-interval.bed, subsample-NH.summary.txt]
+    options: <DIR>/subsample.bam --tag NH --threshold 0.01
+
+categorical_test:
+   stdin: subsample.bam
+   outputs: [stdout]
+   references: [subsample-cat.bed]
+   options: <DIR>/subsample.bam --condition cat
+
+
+    
