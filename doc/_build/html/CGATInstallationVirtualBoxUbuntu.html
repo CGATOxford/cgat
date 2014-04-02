@@ -1,0 +1,155 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>CGAT Virtual Machine &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/sorttable.js"></script>
+    <script type="text/javascript" src="_static/jquery.min.js"></script>
+    <script type="text/javascript" src="_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="index.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">CGAT  documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="cgat-virtual-machine">
+<span id="cgatinstallationvirtualboxubuntu"></span><h1>CGAT Virtual Machine<a class="headerlink" href="#cgat-virtual-machine" title="Permalink to this headline">¶</a></h1>
+<p>CGAT also provides a virtual machine with the CGAT Code
+Collection installed in Ubuntu 12.04 LTS. This virtual
+machine has been created with <a class="reference external" href="https://www.virtualbox.org">VirtualBox</a>. If you do not
+have VirtualBox installed, please go to the official page
+to download and install a copy:</p>
+<p><a class="reference external" href="https://www.virtualbox.org/wiki/Downloads">https://www.virtualbox.org/wiki/Downloads</a></p>
+<p>You also need to download the CGAT virtual machine from:</p>
+<p><a class="reference external" href="http://www.cgat.org/downloads/cgat-vm.vmdk">http://www.cgat.org/downloads/cgat-vm.vmdk</a></p>
+<p>To create a new CGAT virtual machine open VirtualBox
+and go through these steps:</p>
+<ol class="arabic simple">
+<li>Click <tt class="docutils literal"><span class="pre">New</span></tt> and type:<ul>
+<li>Name: cgat-vm</li>
+<li>Type: Linux</li>
+<li>Version: Ubuntu (64 bit)</li>
+</ul>
+</li>
+<li>RAM memory:<ul>
+<li>Select: <tt class="docutils literal"><span class="pre">1024</span> <span class="pre">MB</span></tt> of RAM memory.</li>
+</ul>
+</li>
+<li>Hard drive<ul>
+<li>Select the option: <tt class="docutils literal"><span class="pre">Use</span> <span class="pre">an</span> <span class="pre">existing</span> <span class="pre">virtual</span> <span class="pre">hard</span> <span class="pre">drive</span> <span class="pre">file</span></tt></li>
+<li>Click on the dialog and open the file <tt class="docutils literal"><span class="pre">cgat-vm.vmdk</span></tt> downloaded previously.</li>
+</ul>
+</li>
+</ol>
+<p>The CGAT virtual machine has been created. Power on this
+machine by clicking <tt class="docutils literal"><span class="pre">Start</span></tt>. You may now want to launch
+the <tt class="docutils literal"><span class="pre">terminal</span></tt> and start using the CGAT Code Collection.
+To begin, type:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">cgat</span> <span class="o">--</span><span class="n">help</span>
+</pre></div>
+</div>
+<p>In case you need root access to this virtual machine, do:</p>
+<div class="highlight-python"><div class="highlight"><pre>sudo su
+</pre></div>
+</div>
+<p>where the password is <tt class="docutils literal"><span class="pre">cgat</span></tt>.</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/CGATInstallationVirtualBoxUbuntu.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">CGAT  documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

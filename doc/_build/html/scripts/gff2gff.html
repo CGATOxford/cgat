@@ -1,0 +1,291 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gff2gff.py - manipulate gff files &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="Scripts" href="../scripts.html" />
+    <link rel="next" title="gff2histogram.py - compute histograms from intervals in gff or bed format" href="gff2histogram.html" />
+    <link rel="prev" title="gtf2alleles.py - predict effects of variants on gene set" href="gtf2alleles.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="gff2histogram.html" title="gff2histogram.py - compute histograms from intervals in gff or bed format"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="gtf2alleles.html" title="gtf2alleles.py - predict effects of variants on gene set"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../scripts.html" accesskey="U">Scripts</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-gff2gff"></span><div class="section" id="gff2gff-py-manipulate-gff-files">
+<h1>gff2gff.py - manipulate gff files<a class="headerlink" href="#gff2gff-py-manipulate-gff-files" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Andreas Heger</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id$</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Genomics Intervals GFF Manipulation</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="purpose">
+<h2>Purpose<a class="headerlink" href="#purpose" title="Permalink to this headline">¶</a></h2>
+<p>This scripts reads a <a class="reference internal" href="../glossary.html#term-gff"><em class="xref std std-term">gff</em></a> formatted file, operates
+on it and outputs the new intervals in <a class="reference internal" href="../glossary.html#term-gff"><em class="xref std std-term">gff</em></a> format.</p>
+<p>Extension options:</p>
+<dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">--extend</span></tt></dt>
+<dd>extend existing features</dd>
+<dt><tt class="docutils literal"><span class="pre">--add-up-flank/--add-down-flank</span></tt></dt>
+<dd>add an upstream/downstearm flanking segment to first/last exon of a group.</dd>
+</dl>
+<p>Segment transformations:</p>
+<dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">--crop</span></tt></dt>
+<dd>crop features according to features in a separate gff file.</dd>
+<dt><tt class="docutils literal"><span class="pre">--crop-unique</span></tt></dt>
+<dd>remove non-unique features from gff file.</dd>
+<dt><tt class="docutils literal"><span class="pre">--merge-features</span></tt></dt>
+<dd>merge consecutive features.</dd>
+<dt><tt class="docutils literal"><span class="pre">--join-features</span></tt></dt>
+<dd>group consecutive features</dd>
+</dl>
+<p>Filtering options:</p>
+<dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">--filter-range</span></tt></dt>
+<dd>extract features overlapping a chromosomal range.</dd>
+<dt><tt class="docutils literal"><span class="pre">--sanitize</span></tt></dt>
+<dd>reconcile chromosome names between ENSEMBL/UCSC or with an indexed
+genomic fasta file (see <a class="reference internal" href="index_fasta.html"><em>index_fasta.py - Index fasta formatted files</em></a>). Raises an exception if
+an unknown contig is found (unless <tt class="docutils literal"><span class="pre">--skip-missing</span></tt> is set).</dd>
+<dt><tt class="docutils literal"><span class="pre">--remove-contigs</span></tt></dt>
+<dd>remove contig matching to a series of regular expressions.</dd>
+</dl>
+</div>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>Make sure that a <a class="reference internal" href="../glossary.html#term-gff"><em class="xref std std-term">gff</em></a> formatted file contains only features on placed chromosomes:</p>
+<div class="highlight-python"><div class="highlight"><pre>cat in.gff 
+| gff2gff.py --sanitize=genome --genome-file=hg19 --skip-missing 
+| gff2gff.py --remove-contigs=&quot;chrUn,_random&quot; &gt; gff.out
+</pre></div>
+</div>
+<p>Type:</p>
+<div class="highlight-python"><div class="highlight"><pre>python gff2gff.py --help
+</pre></div>
+</div>
+<p>for command line help.</p>
+</div>
+<div class="section" id="command-line-options">
+<h2>Command line options<a class="headerlink" href="#command-line-options" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+<div class="highlight-text"><div class="highlight"><pre>Usage: gff2gff.py [options]
+
+Options:
+  --version             show program&#39;s version number and exit
+  -h, --help            show this help message and exit
+  --no-usage            output help without usage information
+  -f, --forward-coordinates
+                        translate to forward coordinates.
+  --forward-strand      convert to forward strand.
+  --ignore-strand       ignore strand information.
+  --is-gtf              input will be treated as gtf [default=False].
+  --add-up-flank=ADD_UP_FLANK
+                        add an upstream flanking segment to first exon of a
+                        group.
+  --add-down-flank=ADD_DOWN_FLANK
+                        add a downstream flanking segment to last segment of a
+                        group.
+  --extend              extend the existing features.
+  -c INPUT_FILENAME_CONTIGS, --contigs=INPUT_FILENAME_CONTIGS
+                        filename with contig lenghts.
+  --filename-agp=INPUT_FILENAME_AGP
+                        agp file to map coordinates from contigs to scaffolds.
+  -g GENOME_FILE, --genome-file=GENOME_FILE
+                        filename with genome.
+  --complement-groups   complement groups. Will write introns from exons
+                        [False].
+  --group-field=GROUP_FIELD
+                        gff field/attribute to group by such as gene_id,
+                        transrcipt_id, ... [none].
+  --combine-groups      combine groups.
+  --filter-range=FILTER_RANGE
+                        extract all elements overlapping a range. A range is
+                        specified by eithor &#39;contig:from..to&#39;,
+                        &#39;contig:+:from..to&#39;, or &#39;from,to&#39; .
+  --join-features=JOIN_FEATURES
+                        join features into a single transcript. Consecutive
+                        features are grouped  into the same transcript/gene.
+                        This metdo expects a string of for numbers ``a,b,c,d``
+                        as input with: a,b=minimum/maximum distance between
+                        features,  c,d=minimum,maximum number of features.
+  --merge-features=MERGE_FEATURES
+                        merge features. Consecutive features are merged into a
+                        single feature. This method expects a string of four
+                        numbers ``a,b,c,d`` as input; a,b=minimum/maximum
+                        distance between features, c,d=minimum,maximum number
+                        of features.
+  --crop-unique         crop overlapping intervals, keeping only intervals
+                        that are unique [default=False]
+  --crop=CROP           crop features in gff file with features in another
+                        file. If a feature falls in the middle of another, two
+                        entries will be output.
+  --sanitize=SANITIZE   sanitize chr names for ucsc or ensembl or use the
+                        genome translator [none].
+  --skip-missing        skip entries on missing contigs. Otherwise an
+                        exception is raised [False].
+  --remove-contigs=REMOVE_CONTIGS
+                        a comma separated list of regular expressions
+                        specifying contigs to be removed when runnnig sanitize
+                        [none].
+  -v LOGLEVEL, --verbose=LOGLEVEL
+                        loglevel [1]. The higher, the more output.
+  --timeit=TIMEIT_FILE  store timeing information in file [none].
+  --timeit-name=TIMEIT_NAME
+                        name in timing file for this class of jobs [all].
+  --timeit-header       add header for timing information [none].
+  --random-seed=RANDOM_SEED
+                        random seed to initialize number generator with
+                        [none].
+  -I FILE, --stdin=FILE
+                        file to read stdin from [default = stdin].
+  -L FILE, --log=FILE   file with logging information [default = stdout].
+  -E FILE, --error=FILE
+                        file with error information [default = stderr].
+  -S FILE, --stdout=FILE
+                        file where output is to go [default = stdout].
+</pre></div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">gff2gff.py - manipulate gff files</a><ul>
+<li><a class="reference internal" href="#purpose">Purpose</a></li>
+<li><a class="reference internal" href="#usage">Usage</a></li>
+<li><a class="reference internal" href="#command-line-options">Command line options</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="gtf2alleles.html"
+                        title="previous chapter">gtf2alleles.py - predict effects of variants on gene set</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="gff2histogram.html"
+                        title="next chapter">gff2histogram.py - compute histograms from intervals in gff or bed format</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/scripts/gff2gff.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="gff2histogram.html" title="gff2histogram.py - compute histograms from intervals in gff or bed format"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="gtf2alleles.html" title="gtf2alleles.py - predict effects of variants on gene set"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../scripts.html" >Scripts</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

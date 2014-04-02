@@ -1,0 +1,805 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>PipelineMapping.py - Utility functions for mapping short reads &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="Modules" href="../modules.html" />
+    <link rel="next" title="PipelineMappingQC.py - common tasks for QC’ing mapping" href="PipelineMappingQC.html" />
+    <link rel="prev" title="PipelineLncRNA.py - functions and classes for use with the lincRNA pipeline" href="PipelineLncRNA.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="PipelineMappingQC.html" title="PipelineMappingQC.py - common tasks for QC’ing mapping"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="PipelineLncRNA.html" title="PipelineLncRNA.py - functions and classes for use with the lincRNA pipeline"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" accesskey="U">Modules</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-PipelineMapping"></span><div class="section" id="pipelinemapping-py-utility-functions-for-mapping-short-reads">
+<h1>PipelineMapping.py - Utility functions for mapping short reads<a class="headerlink" href="#pipelinemapping-py-utility-functions-for-mapping-short-reads" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Andreas Heger</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id$</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Python</td>
+</tr>
+</tbody>
+</table>
+<p>Mapping reads is a common task in pipelines. Different pipelines
+combine different sources of input (<a class="reference internal" href="../glossary.html#term-36"><em class="xref std std-term">fastq</em></a> files, <a class="reference internal" href="../glossary.html#term-sra"><em class="xref std std-term">sra</em></a> files)
+of different data (single end, paired end) with different mapping
+algorithms (bowtie, tophat, stampy). This module provides utility
+functions to abstract some of these variations.</p>
+<p>The pipeline does not know what kind of data it gets (a <a class="reference internal" href="../glossary.html#term-sra"><em class="xref std std-term">sra</em></a> archive
+might contain single end or paired end data or both).</p>
+<p>A pipeline might get several input data (<a class="reference internal" href="../glossary.html#term-36"><em class="xref std std-term">fastq</em></a> and <a class="reference internal" href="../glossary.html#term-sra"><em class="xref std std-term">sra</em></a>
+formatted files at the same time).</p>
+<p>The module currently is able to deal with:</p>
+<blockquote>
+<div><ul class="simple">
+<li>tophat mapping against genome</li>
+<li>bowtie mapping against transcriptome, genome and junctions</li>
+<li>bwa against genome</li>
+<li>stampy against genome</li>
+</ul>
+</div></blockquote>
+<dl class="docutils">
+<dt>It implements:</dt>
+<dd><ul class="first last simple">
+<li>.sra: paired-end and single-end</li>
+<li>.fastq: paired-end and single-end</li>
+<li>.csfasta: colour-space, single-end</li>
+</ul>
+</dd>
+</dl>
+<div class="section" id="code">
+<h2>Code<a class="headerlink" href="#code" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="PipelineMapping.SequenceInformation">
+<em class="property">class </em><tt class="descclassname">PipelineMapping.</tt><tt class="descname">SequenceInformation</tt><a class="headerlink" href="#PipelineMapping.SequenceInformation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">tuple</span></tt></p>
+<p>SequenceInformation(paired_end, filename_first, filename_second, readlength_first, readlength_second, is_colour)</p>
+<dl class="method">
+<dt id="PipelineMapping.SequenceInformation.count">
+<tt class="descname">count</tt><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span> &rarr; integer -- return number of occurrences of value<a class="headerlink" href="#PipelineMapping.SequenceInformation.count" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="PipelineMapping.SequenceInformation.filename_first">
+<tt class="descname">filename_first</tt><a class="headerlink" href="#PipelineMapping.SequenceInformation.filename_first" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PipelineMapping.SequenceInformation.filename_second">
+<tt class="descname">filename_second</tt><a class="headerlink" href="#PipelineMapping.SequenceInformation.filename_second" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 2</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PipelineMapping.SequenceInformation.index">
+<tt class="descname">index</tt><span class="sig-paren">(</span><em>value</em><span class="optional">[</span>, <em>start</em><span class="optional">[</span>, <em>stop</em><span class="optional">]</span><span class="optional">]</span><span class="sig-paren">)</span> &rarr; integer -- return first index of value.<a class="headerlink" href="#PipelineMapping.SequenceInformation.index" title="Permalink to this definition">¶</a></dt>
+<dd><p>Raises ValueError if the value is not present.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PipelineMapping.SequenceInformation.is_colour">
+<tt class="descname">is_colour</tt><a class="headerlink" href="#PipelineMapping.SequenceInformation.is_colour" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 5</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PipelineMapping.SequenceInformation.paired_end">
+<tt class="descname">paired_end</tt><a class="headerlink" href="#PipelineMapping.SequenceInformation.paired_end" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PipelineMapping.SequenceInformation.readlength_first">
+<tt class="descname">readlength_first</tt><a class="headerlink" href="#PipelineMapping.SequenceInformation.readlength_first" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 3</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PipelineMapping.SequenceInformation.readlength_second">
+<tt class="descname">readlength_second</tt><a class="headerlink" href="#PipelineMapping.SequenceInformation.readlength_second" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 4</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineMapping.getReadLengthFromFastq">
+<tt class="descclassname">PipelineMapping.</tt><tt class="descname">getReadLengthFromFastq</tt><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.getReadLengthFromFastq" title="Permalink to this definition">¶</a></dt>
+<dd><p>return readlength from a fasta/fastq file.</p>
+<p>Only the first read is inspected. If there are
+different read lengths in the file, though luck.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineMapping.getReadLengthFromBamfile">
+<tt class="descclassname">PipelineMapping.</tt><tt class="descname">getReadLengthFromBamfile</tt><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.getReadLengthFromBamfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>return readlength from a bam file.</p>
+<p>Only the first read is inspected. If there are
+different read lengths in the file, though luck.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineMapping.getSequencingInformation">
+<tt class="descclassname">PipelineMapping.</tt><tt class="descname">getSequencingInformation</tt><span class="sig-paren">(</span><em>track</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.getSequencingInformation" title="Permalink to this definition">¶</a></dt>
+<dd><p>glean sequencing information from <em>track</em>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineMapping.mergeAndFilterGTF">
+<tt class="descclassname">PipelineMapping.</tt><tt class="descname">mergeAndFilterGTF</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em>, <em>logfile</em>, <em>genome</em>, <em>max_intron_size=None</em>, <em>remove_contigs=None</em>, <em>rna_file=None</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.mergeAndFilterGTF" title="Permalink to this definition">¶</a></dt>
+<dd><p>sanitize transcripts file for cufflinks analysis.</p>
+<p>Merge exons separated by small introns (&lt; 5bp).</p>
+<dl class="docutils">
+<dt>Transcripts will be ignored that</dt>
+<dd><ul class="first last simple">
+<li>have very long introns (max_intron_size) (otherwise, cufflinks complains)</li>
+<li>are located on contigs to be ignored (usually: chrM, _random, ...)</li>
+</ul>
+</dd>
+<dt>Optionally remove transcripts based on repetitive sequences by supplying a</dt>
+<dd>repetitve &#8220;rna_file&#8221;</dd>
+</dl>
+<p>This method preserves all features in a gtf file (exon, CDS, ...).</p>
+<p>returns a dictionary of all gene_ids that have been kept.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="PipelineMapping.Mapper">
+<em class="property">class </em><tt class="descclassname">PipelineMapping.</tt><tt class="descname">Mapper</tt><span class="sig-paren">(</span><em>executable=None</em>, <em>strip_sequence=False</em>, <em>remove_non_unique=False</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.Mapper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+<p>map reads.</p>
+<p>preprocesses the input data, calls mapper and post-process the output data.</p>
+<p>All in a single statement to be send to the cluster.</p>
+<dl class="method">
+<dt id="PipelineMapping.Mapper.quoteFile">
+<tt class="descname">quoteFile</tt><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.Mapper.quoteFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>add uncompression for compressed files.
+and programs that expect uncompressed files.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This will only work if the downstream programs read the
+file only once.</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="PipelineMapping.Mapper.preprocess">
+<tt class="descname">preprocess</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.Mapper.preprocess" title="Permalink to this definition">¶</a></dt>
+<dd><p>build preprocessing statement</p>
+<p>Build a command line statement that extracts/converts
+various input formats to fastq formatted files.</p>
+<p>Mapping qualities are changed to solexa format.</p>
+<p>returns the statement and the fastq files to map.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PipelineMapping.Mapper.mapper">
+<tt class="descname">mapper</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.Mapper.mapper" title="Permalink to this definition">¶</a></dt>
+<dd><p>build mapping statement on infiles.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PipelineMapping.Mapper.postprocess">
+<tt class="descname">postprocess</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.Mapper.postprocess" title="Permalink to this definition">¶</a></dt>
+<dd><p>collect output data and postprocess.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PipelineMapping.Mapper.cleanup">
+<tt class="descname">cleanup</tt><span class="sig-paren">(</span><em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.Mapper.cleanup" title="Permalink to this definition">¶</a></dt>
+<dd><p>clean up.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PipelineMapping.Mapper.build">
+<tt class="descname">build</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.Mapper.build" title="Permalink to this definition">¶</a></dt>
+<dd><p>run mapper.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="PipelineMapping.FastQc">
+<em class="property">class </em><tt class="descclassname">PipelineMapping.</tt><tt class="descname">FastQc</tt><span class="sig-paren">(</span><em>nogroup=False</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.FastQc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#PipelineMapping.Mapper" title="PipelineMapping.Mapper"><tt class="xref py py-class docutils literal"><span class="pre">PipelineMapping.Mapper</span></tt></a></p>
+<p>run fastqc to test read quality.</p>
+<dl class="method">
+<dt id="PipelineMapping.FastQc.mapper">
+<tt class="descname">mapper</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.FastQc.mapper" title="Permalink to this definition">¶</a></dt>
+<dd><p>build mapping statement on infiles.</p>
+<p>The output is created in exportdir</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PipelineMapping.FastQc.build">
+<tt class="descname">build</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.FastQc.build" title="Permalink to this definition">¶</a></dt>
+<dd><p>run mapper.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PipelineMapping.FastQc.cleanup">
+<tt class="descname">cleanup</tt><span class="sig-paren">(</span><em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.FastQc.cleanup" title="Permalink to this definition">¶</a></dt>
+<dd><p>clean up.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PipelineMapping.FastQc.postprocess">
+<tt class="descname">postprocess</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.FastQc.postprocess" title="Permalink to this definition">¶</a></dt>
+<dd><p>collect output data and postprocess.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PipelineMapping.FastQc.preprocess">
+<tt class="descname">preprocess</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.FastQc.preprocess" title="Permalink to this definition">¶</a></dt>
+<dd><p>build preprocessing statement</p>
+<p>Build a command line statement that extracts/converts
+various input formats to fastq formatted files.</p>
+<p>Mapping qualities are changed to solexa format.</p>
+<p>returns the statement and the fastq files to map.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PipelineMapping.FastQc.quoteFile">
+<tt class="descname">quoteFile</tt><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.FastQc.quoteFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>add uncompression for compressed files.
+and programs that expect uncompressed files.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This will only work if the downstream programs read the
+file only once.</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="PipelineMapping.Counter">
+<em class="property">class </em><tt class="descclassname">PipelineMapping.</tt><tt class="descname">Counter</tt><span class="sig-paren">(</span><em>executable=None</em>, <em>strip_sequence=False</em>, <em>remove_non_unique=False</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.Counter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#PipelineMapping.Mapper" title="PipelineMapping.Mapper"><tt class="xref py py-class docutils literal"><span class="pre">PipelineMapping.Mapper</span></tt></a></p>
+<p>count number of reads in fastq files.</p>
+<dl class="method">
+<dt id="PipelineMapping.Counter.mapper">
+<tt class="descname">mapper</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.Counter.mapper" title="Permalink to this definition">¶</a></dt>
+<dd><p>count number of reads by counting number of lines
+in fastq files.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PipelineMapping.Counter.build">
+<tt class="descname">build</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.Counter.build" title="Permalink to this definition">¶</a></dt>
+<dd><p>run mapper.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PipelineMapping.Counter.cleanup">
+<tt class="descname">cleanup</tt><span class="sig-paren">(</span><em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.Counter.cleanup" title="Permalink to this definition">¶</a></dt>
+<dd><p>clean up.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PipelineMapping.Counter.postprocess">
+<tt class="descname">postprocess</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.Counter.postprocess" title="Permalink to this definition">¶</a></dt>
+<dd><p>collect output data and postprocess.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PipelineMapping.Counter.preprocess">
+<tt class="descname">preprocess</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.Counter.preprocess" title="Permalink to this definition">¶</a></dt>
+<dd><p>build preprocessing statement</p>
+<p>Build a command line statement that extracts/converts
+various input formats to fastq formatted files.</p>
+<p>Mapping qualities are changed to solexa format.</p>
+<p>returns the statement and the fastq files to map.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PipelineMapping.Counter.quoteFile">
+<tt class="descname">quoteFile</tt><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.Counter.quoteFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>add uncompression for compressed files.
+and programs that expect uncompressed files.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This will only work if the downstream programs read the
+file only once.</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="PipelineMapping.BWA">
+<em class="property">class </em><tt class="descclassname">PipelineMapping.</tt><tt class="descname">BWA</tt><span class="sig-paren">(</span><em>remove_unique=False</em>, <em>align_stats=False</em>, <em>dedup=False</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.BWA" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#PipelineMapping.Mapper" title="PipelineMapping.Mapper"><tt class="xref py py-class docutils literal"><span class="pre">PipelineMapping.Mapper</span></tt></a></p>
+<p>run bwa to map reads against genome.</p>
+<ul class="simple">
+<li>colour space not implemented</li>
+</ul>
+<p>if remove_unique is true, a filtering step is included in postprocess,
+which removes reads that don&#8217;t have tag X0:i:1 (i.e. have &gt; 1 best hit)</p>
+<dl class="method">
+<dt id="PipelineMapping.BWA.mapper">
+<tt class="descname">mapper</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.BWA.mapper" title="Permalink to this definition">¶</a></dt>
+<dd><p>build mapping statement on infiles.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PipelineMapping.BWA.postprocess">
+<tt class="descname">postprocess</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.BWA.postprocess" title="Permalink to this definition">¶</a></dt>
+<dd><p>collect output data and postprocess.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PipelineMapping.BWA.build">
+<tt class="descname">build</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.BWA.build" title="Permalink to this definition">¶</a></dt>
+<dd><p>run mapper.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PipelineMapping.BWA.cleanup">
+<tt class="descname">cleanup</tt><span class="sig-paren">(</span><em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.BWA.cleanup" title="Permalink to this definition">¶</a></dt>
+<dd><p>clean up.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PipelineMapping.BWA.preprocess">
+<tt class="descname">preprocess</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.BWA.preprocess" title="Permalink to this definition">¶</a></dt>
+<dd><p>build preprocessing statement</p>
+<p>Build a command line statement that extracts/converts
+various input formats to fastq formatted files.</p>
+<p>Mapping qualities are changed to solexa format.</p>
+<p>returns the statement and the fastq files to map.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PipelineMapping.BWA.quoteFile">
+<tt class="descname">quoteFile</tt><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.BWA.quoteFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>add uncompression for compressed files.
+and programs that expect uncompressed files.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This will only work if the downstream programs read the
+file only once.</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="PipelineMapping.BWAMEM">
+<em class="property">class </em><tt class="descclassname">PipelineMapping.</tt><tt class="descname">BWAMEM</tt><span class="sig-paren">(</span><em>remove_unique=False</em>, <em>align_stats=False</em>, <em>dedup=False</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.BWAMEM" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#PipelineMapping.BWA" title="PipelineMapping.BWA"><tt class="xref py py-class docutils literal"><span class="pre">PipelineMapping.BWA</span></tt></a></p>
+<p>run bwa with mem algorithm to map reads against genome.
+class inherits postprocess function from BWA class.</p>
+<dl class="method">
+<dt id="PipelineMapping.BWAMEM.mapper">
+<tt class="descname">mapper</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.BWAMEM.mapper" title="Permalink to this definition">¶</a></dt>
+<dd><p>build mapping statement on infiles.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PipelineMapping.BWAMEM.build">
+<tt class="descname">build</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.BWAMEM.build" title="Permalink to this definition">¶</a></dt>
+<dd><p>run mapper.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PipelineMapping.BWAMEM.cleanup">
+<tt class="descname">cleanup</tt><span class="sig-paren">(</span><em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.BWAMEM.cleanup" title="Permalink to this definition">¶</a></dt>
+<dd><p>clean up.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PipelineMapping.BWAMEM.postprocess">
+<tt class="descname">postprocess</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.BWAMEM.postprocess" title="Permalink to this definition">¶</a></dt>
+<dd><p>collect output data and postprocess.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PipelineMapping.BWAMEM.preprocess">
+<tt class="descname">preprocess</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.BWAMEM.preprocess" title="Permalink to this definition">¶</a></dt>
+<dd><p>build preprocessing statement</p>
+<p>Build a command line statement that extracts/converts
+various input formats to fastq formatted files.</p>
+<p>Mapping qualities are changed to solexa format.</p>
+<p>returns the statement and the fastq files to map.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PipelineMapping.BWAMEM.quoteFile">
+<tt class="descname">quoteFile</tt><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.BWAMEM.quoteFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>add uncompression for compressed files.
+and programs that expect uncompressed files.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This will only work if the downstream programs read the
+file only once.</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="PipelineMapping.Stampy">
+<em class="property">class </em><tt class="descclassname">PipelineMapping.</tt><tt class="descname">Stampy</tt><span class="sig-paren">(</span><em>remove_unique=False</em>, <em>align_stats=False</em>, <em>dedup=False</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.Stampy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#PipelineMapping.BWA" title="PipelineMapping.BWA"><tt class="xref py py-class docutils literal"><span class="pre">PipelineMapping.BWA</span></tt></a></p>
+<p>map reads against genome using STAMPY.</p>
+<dl class="method">
+<dt id="PipelineMapping.Stampy.mapper">
+<tt class="descname">mapper</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.Stampy.mapper" title="Permalink to this definition">¶</a></dt>
+<dd><p>build mapping statement on infiles.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PipelineMapping.Stampy.build">
+<tt class="descname">build</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.Stampy.build" title="Permalink to this definition">¶</a></dt>
+<dd><p>run mapper.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PipelineMapping.Stampy.cleanup">
+<tt class="descname">cleanup</tt><span class="sig-paren">(</span><em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.Stampy.cleanup" title="Permalink to this definition">¶</a></dt>
+<dd><p>clean up.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PipelineMapping.Stampy.postprocess">
+<tt class="descname">postprocess</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.Stampy.postprocess" title="Permalink to this definition">¶</a></dt>
+<dd><p>collect output data and postprocess.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PipelineMapping.Stampy.preprocess">
+<tt class="descname">preprocess</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.Stampy.preprocess" title="Permalink to this definition">¶</a></dt>
+<dd><p>build preprocessing statement</p>
+<p>Build a command line statement that extracts/converts
+various input formats to fastq formatted files.</p>
+<p>Mapping qualities are changed to solexa format.</p>
+<p>returns the statement and the fastq files to map.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PipelineMapping.Stampy.quoteFile">
+<tt class="descname">quoteFile</tt><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.Stampy.quoteFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>add uncompression for compressed files.
+and programs that expect uncompressed files.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This will only work if the downstream programs read the
+file only once.</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="PipelineMapping.Bowtie">
+<em class="property">class </em><tt class="descclassname">PipelineMapping.</tt><tt class="descname">Bowtie</tt><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.Bowtie" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#PipelineMapping.Mapper" title="PipelineMapping.Mapper"><tt class="xref py py-class docutils literal"><span class="pre">PipelineMapping.Mapper</span></tt></a></p>
+<p>map with bowtie against genome.</p>
+<dl class="method">
+<dt id="PipelineMapping.Bowtie.mapper">
+<tt class="descname">mapper</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.Bowtie.mapper" title="Permalink to this definition">¶</a></dt>
+<dd><p>build mapping statement on infiles.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">a filter on bamfiles removes any /1 and /2
+markers from reads. The reason is that these
+markers are removed for paired-end data, but
+not for single-end data and will cause
+problems using read name lookup.</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="PipelineMapping.Bowtie.postprocess">
+<tt class="descname">postprocess</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.Bowtie.postprocess" title="Permalink to this definition">¶</a></dt>
+<dd><p>collect output data and postprocess.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PipelineMapping.Bowtie.build">
+<tt class="descname">build</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.Bowtie.build" title="Permalink to this definition">¶</a></dt>
+<dd><p>run mapper.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PipelineMapping.Bowtie.cleanup">
+<tt class="descname">cleanup</tt><span class="sig-paren">(</span><em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.Bowtie.cleanup" title="Permalink to this definition">¶</a></dt>
+<dd><p>clean up.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PipelineMapping.Bowtie.preprocess">
+<tt class="descname">preprocess</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.Bowtie.preprocess" title="Permalink to this definition">¶</a></dt>
+<dd><p>build preprocessing statement</p>
+<p>Build a command line statement that extracts/converts
+various input formats to fastq formatted files.</p>
+<p>Mapping qualities are changed to solexa format.</p>
+<p>returns the statement and the fastq files to map.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PipelineMapping.Bowtie.quoteFile">
+<tt class="descname">quoteFile</tt><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.Bowtie.quoteFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>add uncompression for compressed files.
+and programs that expect uncompressed files.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This will only work if the downstream programs read the
+file only once.</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="PipelineMapping.BowtieTranscripts">
+<em class="property">class </em><tt class="descclassname">PipelineMapping.</tt><tt class="descname">BowtieTranscripts</tt><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.BowtieTranscripts" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#PipelineMapping.Mapper" title="PipelineMapping.Mapper"><tt class="xref py py-class docutils literal"><span class="pre">PipelineMapping.Mapper</span></tt></a></p>
+<p>map with bowtie against transcripts.</p>
+<dl class="method">
+<dt id="PipelineMapping.BowtieTranscripts.mapper">
+<tt class="descname">mapper</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.BowtieTranscripts.mapper" title="Permalink to this definition">¶</a></dt>
+<dd><p>build mapping statement on infiles.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">a filter on bamfiles removes any /1 and /2
+markers from reads. The reason is that these
+markers are removed for paired-end data, but
+not for single-end data and will cause
+problems using read name lookup.</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="PipelineMapping.BowtieTranscripts.postprocess">
+<tt class="descname">postprocess</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.BowtieTranscripts.postprocess" title="Permalink to this definition">¶</a></dt>
+<dd><p>collect output data and postprocess.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PipelineMapping.BowtieTranscripts.build">
+<tt class="descname">build</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.BowtieTranscripts.build" title="Permalink to this definition">¶</a></dt>
+<dd><p>run mapper.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PipelineMapping.BowtieTranscripts.cleanup">
+<tt class="descname">cleanup</tt><span class="sig-paren">(</span><em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.BowtieTranscripts.cleanup" title="Permalink to this definition">¶</a></dt>
+<dd><p>clean up.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PipelineMapping.BowtieTranscripts.preprocess">
+<tt class="descname">preprocess</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.BowtieTranscripts.preprocess" title="Permalink to this definition">¶</a></dt>
+<dd><p>build preprocessing statement</p>
+<p>Build a command line statement that extracts/converts
+various input formats to fastq formatted files.</p>
+<p>Mapping qualities are changed to solexa format.</p>
+<p>returns the statement and the fastq files to map.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PipelineMapping.BowtieTranscripts.quoteFile">
+<tt class="descname">quoteFile</tt><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.BowtieTranscripts.quoteFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>add uncompression for compressed files.
+and programs that expect uncompressed files.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This will only work if the downstream programs read the
+file only once.</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="PipelineMapping.BowtieJunctions">
+<em class="property">class </em><tt class="descclassname">PipelineMapping.</tt><tt class="descname">BowtieJunctions</tt><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.BowtieJunctions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#PipelineMapping.BowtieTranscripts" title="PipelineMapping.BowtieTranscripts"><tt class="xref py py-class docutils literal"><span class="pre">PipelineMapping.BowtieTranscripts</span></tt></a></p>
+<p>map with bowtie against junctions.</p>
+<p>In post-processing, reads are mapped from junction coordinates
+to genomic coordinates.</p>
+<dl class="method">
+<dt id="PipelineMapping.BowtieJunctions.build">
+<tt class="descname">build</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.BowtieJunctions.build" title="Permalink to this definition">¶</a></dt>
+<dd><p>run mapper.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PipelineMapping.BowtieJunctions.cleanup">
+<tt class="descname">cleanup</tt><span class="sig-paren">(</span><em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.BowtieJunctions.cleanup" title="Permalink to this definition">¶</a></dt>
+<dd><p>clean up.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PipelineMapping.BowtieJunctions.mapper">
+<tt class="descname">mapper</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.BowtieJunctions.mapper" title="Permalink to this definition">¶</a></dt>
+<dd><p>build mapping statement on infiles.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">a filter on bamfiles removes any /1 and /2
+markers from reads. The reason is that these
+markers are removed for paired-end data, but
+not for single-end data and will cause
+problems using read name lookup.</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="PipelineMapping.BowtieJunctions.postprocess">
+<tt class="descname">postprocess</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.BowtieJunctions.postprocess" title="Permalink to this definition">¶</a></dt>
+<dd><p>collect output data and postprocess.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PipelineMapping.BowtieJunctions.preprocess">
+<tt class="descname">preprocess</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.BowtieJunctions.preprocess" title="Permalink to this definition">¶</a></dt>
+<dd><p>build preprocessing statement</p>
+<p>Build a command line statement that extracts/converts
+various input formats to fastq formatted files.</p>
+<p>Mapping qualities are changed to solexa format.</p>
+<p>returns the statement and the fastq files to map.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PipelineMapping.BowtieJunctions.quoteFile">
+<tt class="descname">quoteFile</tt><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.BowtieJunctions.quoteFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>add uncompression for compressed files.
+and programs that expect uncompressed files.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This will only work if the downstream programs read the
+file only once.</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineMapping.splitGeneSet">
+<tt class="descclassname">PipelineMapping.</tt><tt class="descname">splitGeneSet</tt><span class="sig-paren">(</span><em>infile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMapping.splitGeneSet" title="Permalink to this definition">¶</a></dt>
+<dd><p>split a gtf file by the first column</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">PipelineMapping.py - Utility functions for mapping short reads</a><ul>
+<li><a class="reference internal" href="#code">Code</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="PipelineLncRNA.html"
+                        title="previous chapter">PipelineLncRNA.py - functions and classes for use with the lincRNA pipeline</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="PipelineMappingQC.html"
+                        title="next chapter">PipelineMappingQC.py - common tasks for QC&#8217;ing mapping</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/pipelinemodules/PipelineMapping.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="PipelineMappingQC.html" title="PipelineMappingQC.py - common tasks for QC’ing mapping"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="PipelineLncRNA.html" title="PipelineLncRNA.py - functions and classes for use with the lincRNA pipeline"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" >Modules</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

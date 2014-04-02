@@ -1,0 +1,606 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>MeDIP-Seq pipeline &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="NGS Pipelines" href="../CGATPipelines.html" />
+    <link rel="next" title="Polyphen prediction pipeline" href="pipeline_polyphen.html" />
+    <link rel="prev" title="Read Mapping parameter titration pipeline" href="pipeline_mapping_benchmark.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pipeline_polyphen.html" title="Polyphen prediction pipeline"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="pipeline_mapping_benchmark.html" title="Read Mapping parameter titration pipeline"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../Pipelines.html" >CGAT Pipelines</a> &raquo;</li>
+          <li><a href="../CGATPipelines.html" accesskey="U">NGS Pipelines</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-pipeline_medip"></span><div class="section" id="medip-seq-pipeline">
+<h1>MeDIP-Seq pipeline<a class="headerlink" href="#medip-seq-pipeline" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body"><p class="first">David Sims</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body"><p class="first">$Id$</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body"><p class="first">April 02, 2014</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body"><p class="first">Python</p>
+<ol class="last arabic simple">
+<li>Align to genome using gapped alignment (BWA)</li>
+<li>Calculate alignment and coverage statistics (BAMStats)</li>
+<li>Identify differentially methylated regions (DMRs)</li>
+<li>Filter DMRs</li>
+<li>Calculate DMR statistics</li>
+<li>Produce report (SphinxReport)</li>
+</ol>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="methods">
+<h2>Methods<a class="headerlink" href="#methods" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="read-processing">
+<h3>Read processing<a class="headerlink" href="#read-processing" title="Permalink to this headline">¶</a></h3>
+<p>For medip-seq analysis, the following filtering steps are typically applied to the mapped data:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>removing duplicate reads</li>
+<li>removing reads with a mapping quality of less than 10</li>
+</ol>
+</div></blockquote>
+</div>
+<div class="section" id="medip-analysis">
+<h3>Medip analysis<a class="headerlink" href="#medip-analysis" title="Permalink to this headline">¶</a></h3>
+<p>The medip analysis makes use of the MEDIPS R package by <a class="reference external" href="http://medips.molgen.mpg.de/">Chavez et al.</a> 
+(see <a href="#id1"><span class="problematic" id="id2">:pmid:`20802089`</span></a>).</p>
+<p>Briefly, the data is processed in the following way:</p>
+<ol class="arabic simple">
+<li>Quality control
+1. Saturation analysis
+2. Computing CpG coverage
+3. Computing CpG enrichment</li>
+<li>Normalization
+1. Output data normalized by total read depth (rpm - reads per million)
+2. Output normalized relative methylation scores (rms)
+3. Output normalized absolute methylation scores (ams)</li>
+</ol>
+</div>
+</div>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>See <a class="reference internal" href="../UsingPipelines.html#pipelinesettingup"><em>Setting up a pipeline</em></a> and <a class="reference internal" href="../UsingPipelines.html#pipelinerunning"><em>Running a pipeline</em></a> on general information how to use CGAT pipelines.</p>
+<div class="section" id="configuration">
+<h3>Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">¶</a></h3>
+</div>
+<div class="section" id="input">
+<h3>Input<a class="headerlink" href="#input" title="Permalink to this headline">¶</a></h3>
+<p>Reads are imported by placing files or linking to files in the <a class="reference internal" href="../make_pipelines/Gpipe.html#term-working-directory"><em class="xref std std-term">working directory</em></a>.</p>
+<p>The default file format assumes the following convention:</p>
+<blockquote>
+<div>&lt;sample&gt;-&lt;condition&gt;-&lt;replicate&gt;.&lt;suffix&gt;</div></blockquote>
+<p><tt class="docutils literal"><span class="pre">sample</span></tt> and <tt class="docutils literal"><span class="pre">condition</span></tt> make up an <a class="reference internal" href="../glossary.html#term-experiment"><em class="xref std std-term">experiment</em></a>, while <tt class="docutils literal"><span class="pre">replicate</span></tt> denotes
+the <a class="reference internal" href="../glossary.html#term-replicate"><em class="xref std std-term">replicate</em></a> within an <a class="reference internal" href="../glossary.html#term-experiment"><em class="xref std std-term">experiment</em></a>. The <tt class="docutils literal"><span class="pre">suffix</span></tt> determines the file type.
+The following suffixes/file types are possible:</p>
+<dl class="docutils">
+<dt>sra</dt>
+<dd>Short-Read Archive format. Reads will be extracted using the <tt class="file docutils literal"><span class="pre">fastq-dump</span></tt> tool.</dd>
+<dt>fastq.gz</dt>
+<dd>Single-end reads in fastq format.</dd>
+<dt>fastq.1.gz, fastq2.2.gz</dt>
+<dd>Paired-end reads in fastq format. The two fastq files must be sorted by read-pair.</dd>
+</dl>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Quality scores need to be of the same scale for all input files. Thus it might be
+difficult to mix different formats.</p>
+</div>
+</div>
+<div class="section" id="requirements">
+<h3>Requirements<a class="headerlink" href="#requirements" title="Permalink to this headline">¶</a></h3>
+<p>On top of the default CGAT setup, the pipeline requires the following software to be in the 
+path:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="23%" />
+<col width="22%" />
+<col width="55%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><em>Program</em></td>
+<td><em>Version</em></td>
+<td><em>Purpose</em></td>
+</tr>
+<tr class="row-even"><td>Stampy</td>
+<td>&gt;=0.9.0</td>
+<td>read mapping</td>
+</tr>
+<tr class="row-odd"><td>BWA</td>
+<td>&nbsp;</td>
+<td>read mapping</td>
+</tr>
+<tr class="row-even"><td>SAMtools</td>
+<td>&nbsp;</td>
+<td>filtering, SNV / indel calling</td>
+</tr>
+<tr class="row-odd"><td>BEDTools</td>
+<td>&nbsp;</td>
+<td>filtering, SNV / indel calling</td>
+</tr>
+<tr class="row-even"><td>sra-tools</td>
+<td>&nbsp;</td>
+<td>extracting reads from .sra files</td>
+</tr>
+<tr class="row-odd"><td>picard</td>
+<td>&gt;=1.38</td>
+<td><dl class="first last docutils">
+<dt>bam/sam files. The .jar files need to be in your</dt>
+<dd>CLASSPATH environment variable.</dd>
+</dl>
+</td>
+</tr>
+<tr class="row-even"><td>vcf-tools</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>BAMStats</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section" id="pipeline-output">
+<h2>Pipeline output<a class="headerlink" href="#pipeline-output" title="Permalink to this headline">¶</a></h2>
+<p>?</p>
+</div>
+<div class="section" id="example">
+<h2>Example<a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h2>
+<p>ToDo: make exome sequencing example</p>
+</div>
+<div class="section" id="code">
+<h2>Code<a class="headerlink" href="#code" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pipeline_medip.connect">
+<tt class="descclassname">pipeline_medip.</tt><tt class="descname">connect</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_medip.connect" title="Permalink to this definition">¶</a></dt>
+<dd><p>connect to database.</p>
+<p>This method also attaches to helper databases.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_medip.trimReads">
+<tt class="descclassname">pipeline_medip.</tt><tt class="descname">trimReads</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_medip.trimReads" title="Permalink to this definition">¶</a></dt>
+<dd><p>trim reads with FastX</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_medip.makeTrackDirectories">
+<tt class="descclassname">pipeline_medip.</tt><tt class="descname">makeTrackDirectories</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_medip.makeTrackDirectories" title="Permalink to this definition">¶</a></dt>
+<dd><p>make track directories.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_medip.mapReads">
+<tt class="descclassname">pipeline_medip.</tt><tt class="descname">mapReads</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_medip.mapReads" title="Permalink to this definition">¶</a></dt>
+<dd><p>Map reads to the genome using BWA</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_medip.prepareBAMs">
+<tt class="descclassname">pipeline_medip.</tt><tt class="descname">prepareBAMs</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_medip.prepareBAMs" title="Permalink to this definition">¶</a></dt>
+<dd><p>filter bam files for medip-seq analysis.</p>
+<p>Optional steps include:</p>
+<ul class="simple">
+<li>deduplication - remove duplicate reads</li>
+<li>quality score filtering - remove reads below a certain quality score.</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_medip.loadPicardDuplicateStats">
+<tt class="descclassname">pipeline_medip.</tt><tt class="descname">loadPicardDuplicateStats</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_medip.loadPicardDuplicateStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Merge Picard duplicate stats into single table and load into SQLite.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_medip.buildPicardAlignmentStats">
+<tt class="descclassname">pipeline_medip.</tt><tt class="descname">buildPicardAlignmentStats</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_medip.buildPicardAlignmentStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gather BAM file alignment statistics using Picard</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_medip.loadPicardAlignmentStats">
+<tt class="descclassname">pipeline_medip.</tt><tt class="descname">loadPicardAlignmentStats</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_medip.loadPicardAlignmentStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Merge Picard alignment stats into single table and load into SQLite.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_medip.buildPicardGCStats">
+<tt class="descclassname">pipeline_medip.</tt><tt class="descname">buildPicardGCStats</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_medip.buildPicardGCStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gather BAM file GC bias stats using Picard</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_medip.loadPicardGCStats">
+<tt class="descclassname">pipeline_medip.</tt><tt class="descname">loadPicardGCStats</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_medip.loadPicardGCStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Merge Picard insert size stats into single table and load into SQLite.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_medip.buildBAMStats">
+<tt class="descclassname">pipeline_medip.</tt><tt class="descname">buildBAMStats</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_medip.buildBAMStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Count number of reads mapped, duplicates, etc.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_medip.loadBAMStats">
+<tt class="descclassname">pipeline_medip.</tt><tt class="descname">loadBAMStats</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_medip.loadBAMStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Import bam statistics into SQLite</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_medip.runMEDIPS">
+<tt class="descclassname">pipeline_medip.</tt><tt class="descname">runMEDIPS</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_medip.runMEDIPS" title="Permalink to this definition">¶</a></dt>
+<dd><p>run MEDIPS analysis - 
+outputs methylation profiles.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_medip.loadMEDIPS">
+<tt class="descclassname">pipeline_medip.</tt><tt class="descname">loadMEDIPS</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_medip.loadMEDIPS" title="Permalink to this definition">¶</a></dt>
+<dd><p>load medips results</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_medip.buildCoverageBed">
+<tt class="descclassname">pipeline_medip.</tt><tt class="descname">buildCoverageBed</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_medip.buildCoverageBed" title="Permalink to this definition">¶</a></dt>
+<dd><p>build bed file with regions covered by reads.</p>
+<p>Intervals containing only few reads (tiling_min_reads) are removed.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_medip.buildCpGCoverage">
+<tt class="descclassname">pipeline_medip.</tt><tt class="descname">buildCpGCoverage</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_medip.buildCpGCoverage" title="Permalink to this definition">¶</a></dt>
+<dd><p>count number times certain CpG are covered by reads.</p>
+<p>Reads are processed in the same way as by buildCoverageBed.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_medip.loadCpGCoverage">
+<tt class="descclassname">pipeline_medip.</tt><tt class="descname">loadCpGCoverage</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_medip.loadCpGCoverage" title="Permalink to this definition">¶</a></dt>
+<dd><p>load cpg coverag data.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_medip.buildVariableWidthTiles">
+<tt class="descclassname">pipeline_medip.</tt><tt class="descname">buildVariableWidthTiles</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_medip.buildVariableWidthTiles" title="Permalink to this definition">¶</a></dt>
+<dd><p>bed file with intervals that are covered by reads in any of the experiments.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_medip.buildNonoverlappingFixedWidthTiles">
+<tt class="descclassname">pipeline_medip.</tt><tt class="descname">buildNonoverlappingFixedWidthTiles</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_medip.buildNonoverlappingFixedWidthTiles" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build bed file segmenting entire genome using window x and shift y</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_medip.buildOverlappingFixedWidthTiles">
+<tt class="descclassname">pipeline_medip.</tt><tt class="descname">buildOverlappingFixedWidthTiles</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_medip.buildOverlappingFixedWidthTiles" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build bed file segmenting entire genome using window x and shift y</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_medip.buildTileStats">
+<tt class="descclassname">pipeline_medip.</tt><tt class="descname">buildTileStats</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_medip.buildTileStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>compute tiling window size statistics from bed file.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_medip.buildBigBed">
+<tt class="descclassname">pipeline_medip.</tt><tt class="descname">buildBigBed</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_medip.buildBigBed" title="Permalink to this definition">¶</a></dt>
+<dd><p>bed file with intervals that are covered by reads in any of the experiments.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_medip.buildTiledReadCounts">
+<tt class="descclassname">pipeline_medip.</tt><tt class="descname">buildTiledReadCounts</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_medip.buildTiledReadCounts" title="Permalink to this definition">¶</a></dt>
+<dd><p>compute coverage of genome with reads.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_medip.buildTiledReadCountsVariableWidth">
+<tt class="descclassname">pipeline_medip.</tt><tt class="descname">buildTiledReadCountsVariableWidth</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_medip.buildTiledReadCountsVariableWidth" title="Permalink to this definition">¶</a></dt>
+<dd><p>build read counds for variable width windows.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_medip.buildTiledReadCountsFixedWidthNoOverlap">
+<tt class="descclassname">pipeline_medip.</tt><tt class="descname">buildTiledReadCountsFixedWidthNoOverlap</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_medip.buildTiledReadCountsFixedWidthNoOverlap" title="Permalink to this definition">¶</a></dt>
+<dd><p>build read counds for fixed width windows.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_medip.buildTiledReadCountsFixedWidthOverlap">
+<tt class="descclassname">pipeline_medip.</tt><tt class="descname">buildTiledReadCountsFixedWidthOverlap</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_medip.buildTiledReadCountsFixedWidthOverlap" title="Permalink to this definition">¶</a></dt>
+<dd><p>build read counds for fixed width windows.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_medip.aggregateTiledReadCounts">
+<tt class="descclassname">pipeline_medip.</tt><tt class="descname">aggregateTiledReadCounts</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_medip.aggregateTiledReadCounts" title="Permalink to this definition">¶</a></dt>
+<dd><p>aggregate tag counts for each window.</p>
+<p>coverageBed outputs the following columns:
+1) Contig
+2) Start
+3) Stop
+4) Name
+5) The number of features in A that overlapped (by at least one base pair) the B interval.
+6) The number of bases in B that had non-zero coverage from features in A.
+7) The length of the entry in B.
+8) The fraction of bases in B that had non-zero coverage from features in A.</p>
+<p>For bed: use column 5
+For bed6: use column 7
+For bed12: use column 13</p>
+<p>This method uses the maximum number of reads found in any interval as the tag count.</p>
+<p>Tiles with no counts will not be output.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_medip.loadMethylationData">
+<tt class="descclassname">pipeline_medip.</tt><tt class="descname">loadMethylationData</tt><span class="sig-paren">(</span><em>infile</em>, <em>design_file</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_medip.loadMethylationData" title="Permalink to this definition">¶</a></dt>
+<dd><p>load methylation data for deseq/edger analysis.</p>
+<p>This method creates various R objects:</p>
+<p>countsTable : data frame with counts. 
+groups : vector with groups</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_medip.runDE">
+<tt class="descclassname">pipeline_medip.</tt><tt class="descname">runDE</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em>, <em>method</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_medip.runDE" title="Permalink to this definition">¶</a></dt>
+<dd><p>run DESeq or EdgeR.</p>
+<p>The job is split into smaller sections. The order of the input 
+data is randomized in order to avoid any biases due to chromosomes.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_medip.runDESeq">
+<tt class="descclassname">pipeline_medip.</tt><tt class="descname">runDESeq</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_medip.runDESeq" title="Permalink to this definition">¶</a></dt>
+<dd><p>estimate differential expression using DESeq.</p>
+<p>The final output is a table. It is slightly edited such that
+it contains a similar output and similar fdr compared to cuffdiff.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_medip.runEdgeR">
+<tt class="descclassname">pipeline_medip.</tt><tt class="descname">runEdgeR</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_medip.runEdgeR" title="Permalink to this definition">¶</a></dt>
+<dd><p>estimate differential methylation using EdgeR</p>
+<p>This method applies a paired test. The analysis follows
+the example in chapter 11 of the EdgeR manual.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_medip.mergeDMRWindows">
+<tt class="descclassname">pipeline_medip.</tt><tt class="descname">mergeDMRWindows</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_medip.mergeDMRWindows" title="Permalink to this definition">¶</a></dt>
+<dd><p>merge overlapping windows.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_medip.loadDMRWindows">
+<tt class="descclassname">pipeline_medip.</tt><tt class="descname">loadDMRWindows</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_medip.loadDMRWindows" title="Permalink to this definition">¶</a></dt>
+<dd><p>merge overlapping windows.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_medip.buildDMRStats">
+<tt class="descclassname">pipeline_medip.</tt><tt class="descname">buildDMRStats</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_medip.buildDMRStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>compute differential methylation stats.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_medip.loadDMRStats">
+<tt class="descclassname">pipeline_medip.</tt><tt class="descname">loadDMRStats</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_medip.loadDMRStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>load DMR stats into table.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_medip.buildDMRWindowStats">
+<tt class="descclassname">pipeline_medip.</tt><tt class="descname">buildDMRWindowStats</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_medip.buildDMRWindowStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>compute tiling window size statistics from bed file.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_medip.loadTileStats">
+<tt class="descclassname">pipeline_medip.</tt><tt class="descname">loadTileStats</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_medip.loadTileStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>load tiling stats into database.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_medip.buildDMRBed">
+<tt class="descclassname">pipeline_medip.</tt><tt class="descname">buildDMRBed</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_medip.buildDMRBed" title="Permalink to this definition">¶</a></dt>
+<dd><p>output bed6 file with differentially methylated regions.</p>
+<p>Overlapping/book-ended entries are merged.</p>
+<p>The score is the average log fold change.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_medip.computeDMROverlap">
+<tt class="descclassname">pipeline_medip.</tt><tt class="descname">computeDMROverlap</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_medip.computeDMROverlap" title="Permalink to this definition">¶</a></dt>
+<dd><p>compute overlap between bed sets.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_medip.buildMRBed">
+<tt class="descclassname">pipeline_medip.</tt><tt class="descname">buildMRBed</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_medip.buildMRBed" title="Permalink to this definition">¶</a></dt>
+<dd><p>output bed6 file with methylated regions.</p>
+<p>All regions are output, even the insignificant ones.</p>
+<p>The score is the log fold change.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_medip.build_report">
+<tt class="descclassname">pipeline_medip.</tt><tt class="descname">build_report</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_medip.build_report" title="Permalink to this definition">¶</a></dt>
+<dd><p>build report from scratch.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_medip.update_report">
+<tt class="descclassname">pipeline_medip.</tt><tt class="descname">update_report</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_medip.update_report" title="Permalink to this definition">¶</a></dt>
+<dd><p>update report.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_medip.publish">
+<tt class="descclassname">pipeline_medip.</tt><tt class="descname">publish</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_medip.publish" title="Permalink to this definition">¶</a></dt>
+<dd><p>publish files.</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">MeDIP-Seq pipeline</a><ul>
+<li><a class="reference internal" href="#methods">Methods</a><ul>
+<li><a class="reference internal" href="#read-processing">Read processing</a></li>
+<li><a class="reference internal" href="#medip-analysis">Medip analysis</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#usage">Usage</a><ul>
+<li><a class="reference internal" href="#configuration">Configuration</a></li>
+<li><a class="reference internal" href="#input">Input</a></li>
+<li><a class="reference internal" href="#requirements">Requirements</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#pipeline-output">Pipeline output</a></li>
+<li><a class="reference internal" href="#example">Example</a></li>
+<li><a class="reference internal" href="#code">Code</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="pipeline_mapping_benchmark.html"
+                        title="previous chapter">Read Mapping parameter titration pipeline</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="pipeline_polyphen.html"
+                        title="next chapter">Polyphen prediction pipeline</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/pipelines/pipeline_medip.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pipeline_polyphen.html" title="Polyphen prediction pipeline"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="pipeline_mapping_benchmark.html" title="Read Mapping parameter titration pipeline"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../Pipelines.html" >CGAT Pipelines</a> &raquo;</li>
+          <li><a href="../CGATPipelines.html" >NGS Pipelines</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

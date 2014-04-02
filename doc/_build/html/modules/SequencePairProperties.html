@@ -1,0 +1,263 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>SequencePairProperties.py - &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="Modules" href="../modules.html" />
+    <link rel="next" title="SequenceProperties.py - compute properties of sequences" href="SequenceProperties.html" />
+    <link rel="prev" title="Masker.py - Wrapper for sequence masking tools" href="Masker.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="SequenceProperties.html" title="SequenceProperties.py - compute properties of sequences"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="Masker.html" title="Masker.py - Wrapper for sequence masking tools"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" accesskey="U">Modules</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-SequencePairProperties"></span><div class="section" id="sequencepairproperties-py">
+<h1>SequencePairProperties.py -<a class="headerlink" href="#sequencepairproperties-py" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Andreas Heger</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id$</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Python</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="code">
+<h2>Code<a class="headerlink" href="#code" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="SequencePairProperties.SequencePairPropertiesDistance">
+<em class="property">class </em><tt class="descclassname">SequencePairProperties.</tt><tt class="descname">SequencePairPropertiesDistance</tt><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#SequencePairProperties.SequencePairPropertiesDistance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">SequencePairProperties.SequencePairProperties</span></tt></p>
+<p>base class for distance estimators.</p>
+<dl class="method">
+<dt id="SequencePairProperties.SequencePairPropertiesDistance.addProperties">
+<tt class="descname">addProperties</tt><span class="sig-paren">(</span><em>other</em><span class="sig-paren">)</span><a class="headerlink" href="#SequencePairProperties.SequencePairPropertiesDistance.addProperties" title="Permalink to this definition">¶</a></dt>
+<dd><p>add properties.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="SequencePairProperties.SequencePairPropertiesDistance.loadPair">
+<tt class="descname">loadPair</tt><span class="sig-paren">(</span><em>seq1</em>, <em>seq2</em><span class="sig-paren">)</span><a class="headerlink" href="#SequencePairProperties.SequencePairPropertiesDistance.loadPair" title="Permalink to this definition">¶</a></dt>
+<dd><p>load sequence properties from a pair.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SequencePairProperties.SequencePairPropertiesBaseML">
+<em class="property">class </em><tt class="descclassname">SequencePairProperties.</tt><tt class="descname">SequencePairPropertiesBaseML</tt><span class="sig-paren">(</span><em>options</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#SequencePairProperties.SequencePairPropertiesBaseML" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SequencePairProperties.SequencePairPropertiesDistance" title="SequencePairProperties.SequencePairPropertiesDistance"><tt class="xref py py-class docutils literal"><span class="pre">SequencePairProperties.SequencePairPropertiesDistance</span></tt></a></p>
+<p>Counts for nucleic acid sequences.</p>
+<p>The first characters are ACGT.</p>
+<dl class="method">
+<dt id="SequencePairProperties.SequencePairPropertiesBaseML.addProperties">
+<tt class="descname">addProperties</tt><span class="sig-paren">(</span><em>other</em><span class="sig-paren">)</span><a class="headerlink" href="#SequencePairProperties.SequencePairPropertiesBaseML.addProperties" title="Permalink to this definition">¶</a></dt>
+<dd><p>add properties.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SequencePairProperties.SequencePairPropertiesCountsNa">
+<em class="property">class </em><tt class="descclassname">SequencePairProperties.</tt><tt class="descname">SequencePairPropertiesCountsNa</tt><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#SequencePairProperties.SequencePairPropertiesCountsNa" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">SequencePairProperties.SequencePairProperties</span></tt></p>
+<p>Counts for nucleic acid sequences.</p>
+<p>The first characters are ACGT.</p>
+<dl class="method">
+<dt id="SequencePairProperties.SequencePairPropertiesCountsNa.buildSubstitutionMatrix">
+<tt class="descname">buildSubstitutionMatrix</tt><span class="sig-paren">(</span><em>seq1</em>, <em>seq2</em>, <em>alphabet</em><span class="sig-paren">)</span><a class="headerlink" href="#SequencePairProperties.SequencePairPropertiesCountsNa.buildSubstitutionMatrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>given a pair of sequences, calculate
+a substitution matrix for the given alphabet.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="SequencePairProperties.SequencePairPropertiesCountsNa.loadPair">
+<tt class="descname">loadPair</tt><span class="sig-paren">(</span><em>seq1</em>, <em>seq2</em><span class="sig-paren">)</span><a class="headerlink" href="#SequencePairProperties.SequencePairPropertiesCountsNa.loadPair" title="Permalink to this definition">¶</a></dt>
+<dd><p>load sequence properties from a pair.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="SequencePairProperties.SequencePairPropertiesCountsNa.addProperties">
+<tt class="descname">addProperties</tt><span class="sig-paren">(</span><em>other</em><span class="sig-paren">)</span><a class="headerlink" href="#SequencePairProperties.SequencePairPropertiesCountsNa.addProperties" title="Permalink to this definition">¶</a></dt>
+<dd><p>add properties.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SequencePairProperties.SequencePairPropertiesCountsCodons">
+<em class="property">class </em><tt class="descclassname">SequencePairProperties.</tt><tt class="descname">SequencePairPropertiesCountsCodons</tt><a class="headerlink" href="#SequencePairProperties.SequencePairPropertiesCountsCodons" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SequencePairProperties.SequencePairPropertiesCountsNa" title="SequencePairProperties.SequencePairPropertiesCountsNa"><tt class="xref py py-class docutils literal"><span class="pre">SequencePairProperties.SequencePairPropertiesCountsNa</span></tt></a></p>
+<p>the first characters are ACGT.</p>
+<dl class="method">
+<dt id="SequencePairProperties.SequencePairPropertiesCountsCodons.addProperties">
+<tt class="descname">addProperties</tt><span class="sig-paren">(</span><em>other</em><span class="sig-paren">)</span><a class="headerlink" href="#SequencePairProperties.SequencePairPropertiesCountsCodons.addProperties" title="Permalink to this definition">¶</a></dt>
+<dd><p>add properties.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="SequencePairProperties.SequencePairPropertiesCountsCodons.buildSubstitutionMatrix">
+<tt class="descname">buildSubstitutionMatrix</tt><span class="sig-paren">(</span><em>seq1</em>, <em>seq2</em>, <em>alphabet</em><span class="sig-paren">)</span><a class="headerlink" href="#SequencePairProperties.SequencePairPropertiesCountsCodons.buildSubstitutionMatrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>given a pair of sequences, calculate
+a substitution matrix for the given alphabet.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="SequencePairProperties.SequencePairPropertiesCountsCodons.loadPair">
+<tt class="descname">loadPair</tt><span class="sig-paren">(</span><em>seq1</em>, <em>seq2</em><span class="sig-paren">)</span><a class="headerlink" href="#SequencePairProperties.SequencePairPropertiesCountsCodons.loadPair" title="Permalink to this definition">¶</a></dt>
+<dd><p>load sequence properties from a pair.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SequencePairProperties.SequencePairPropertiesPID">
+<em class="property">class </em><tt class="descclassname">SequencePairProperties.</tt><tt class="descname">SequencePairPropertiesPID</tt><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#SequencePairProperties.SequencePairPropertiesPID" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SequencePairProperties.SequencePairPropertiesDistance" title="SequencePairProperties.SequencePairPropertiesDistance"><tt class="xref py py-class docutils literal"><span class="pre">SequencePairProperties.SequencePairPropertiesDistance</span></tt></a></p>
+<p>the first characters are ACGT.</p>
+<dl class="method">
+<dt id="SequencePairProperties.SequencePairPropertiesPID.addProperties">
+<tt class="descname">addProperties</tt><span class="sig-paren">(</span><em>other</em><span class="sig-paren">)</span><a class="headerlink" href="#SequencePairProperties.SequencePairPropertiesPID.addProperties" title="Permalink to this definition">¶</a></dt>
+<dd><p>add properties.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">SequencePairProperties.py -</a><ul>
+<li><a class="reference internal" href="#code">Code</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="Masker.html"
+                        title="previous chapter">Masker.py - Wrapper for sequence masking tools</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="SequenceProperties.html"
+                        title="next chapter">SequenceProperties.py - compute properties of sequences</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/modules/SequencePairProperties.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="SequenceProperties.html" title="SequenceProperties.py - compute properties of sequences"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="Masker.html" title="Masker.py - Wrapper for sequence masking tools"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" >Modules</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

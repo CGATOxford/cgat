@@ -1,0 +1,165 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>PipelineBiomart.py - utility tasks for importing data from biomart &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="Modules" href="../modules.html" />
+    <link rel="next" title="PipelineChipseq.py - ChIP-Seq tasks associated with intervals." href="PipelineChipseq.html" />
+    <link rel="prev" title="PipelineAnnotator.py -" href="PipelineAnnotator.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="PipelineChipseq.html" title="PipelineChipseq.py - ChIP-Seq tasks associated with intervals."
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="PipelineAnnotator.html" title="PipelineAnnotator.py -"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" accesskey="U">Modules</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-PipelineBiomart"></span><div class="section" id="pipelinebiomart-py-utility-tasks-for-importing-data-from-biomart">
+<h1>PipelineBiomart.py - utility tasks for importing data from biomart<a class="headerlink" href="#pipelinebiomart-py-utility-tasks-for-importing-data-from-biomart" title="Permalink to this headline">¶</a></h1>
+<p>In order to find out about datasets, filters and attributes, use the</p>
+<p>listDatasets( mart )
+listFilters( mart )
+listAttributes( mart )</p>
+<p>functions.</p>
+<dl class="function">
+<dt id="PipelineBiomart.importFromBiomart">
+<tt class="descclassname">PipelineBiomart.</tt><tt class="descname">importFromBiomart</tt><span class="sig-paren">(</span><em>outfile</em>, <em>columns</em>, <em>biomart='ensembl'</em>, <em>dataset='hsapiens_gene_ensembl'</em>, <em>host='www.biomart.org'</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineBiomart.importFromBiomart" title="Permalink to this definition">¶</a></dt>
+<dd><p>download a dataset from biomart and output as a 
+tab-separated table.</p>
+<p><em>columns</em> is a dictionary mapping biomart columns to columns
+in the output tables. <em>biomart</em> and <em>dataset</em> denote the 
+database and dataset to get the data from.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineBiomart.biomart_iterator">
+<tt class="descclassname">PipelineBiomart.</tt><tt class="descname">biomart_iterator</tt><span class="sig-paren">(</span><em>columns</em>, <em>biomart='ensembl'</em>, <em>dataset='hsapiens_gene_ensembl'</em>, <em>host='www.biomart.org'</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineBiomart.biomart_iterator" title="Permalink to this definition">¶</a></dt>
+<dd><p>download a dataset from biomart and output as a 
+tab-separated table.</p>
+<p><em>columns</em> is a list with field to obtain.</p>
+<p><em>biomart</em> and <em>dataset</em> denote the 
+database and dataset to get the data from.</p>
+<p>returns a iterator over rows.</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="PipelineAnnotator.html"
+                        title="previous chapter">PipelineAnnotator.py -</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="PipelineChipseq.html"
+                        title="next chapter">PipelineChipseq.py - ChIP-Seq tasks associated with intervals.</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/pipelinemodules/PipelineBiomart.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="PipelineChipseq.html" title="PipelineChipseq.py - ChIP-Seq tasks associated with intervals."
+             >next</a> |</li>
+        <li class="right" >
+          <a href="PipelineAnnotator.html" title="PipelineAnnotator.py -"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" >Modules</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

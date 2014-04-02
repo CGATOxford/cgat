@@ -1,0 +1,232 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>csvs2csv.py - join tables &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="Scripts" href="../scripts.html" />
+    <link rel="next" title="csv2csv.py - operate on tables" href="csv2csv.html" />
+    <link rel="prev" title="combine_histograms.py - combine several histograms" href="combine_histograms.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="csv2csv.html" title="csv2csv.py - operate on tables"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="combine_histograms.html" title="combine_histograms.py - combine several histograms"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../scripts.html" accesskey="U">Scripts</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-csvs2csv"></span><div class="section" id="csvs2csv-py-join-tables">
+<h1>csvs2csv.py - join tables<a class="headerlink" href="#csvs2csv-py-join-tables" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Andreas Heger</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id$</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Python</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="purpose">
+<h2>Purpose<a class="headerlink" href="#purpose" title="Permalink to this headline">¶</a></h2>
+<p>This script reads several tab-separated tables and joins them.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">working with multiple columns per table and sorting is
+not implemented correctly and likely to fail.</p>
+</div>
+</div>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>Example:</p>
+<div class="highlight-python"><div class="highlight"><pre>python combine_tables.py --help
+</pre></div>
+</div>
+<p>Type:</p>
+<div class="highlight-python"><div class="highlight"><pre>python combine_tables.py --help
+</pre></div>
+</div>
+<p>for command line help.</p>
+</div>
+<div class="section" id="command-line-options">
+<h2>Command line options<a class="headerlink" href="#command-line-options" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+<div class="highlight-text"><div class="highlight"><pre>Usage: csvs2csv.py [options]
+
+Options:
+  --version             show program&#39;s version number and exit
+  -h, --help            show this help message and exit
+  --no-usage            output help without usage information
+  -t, --no-titles       no titles in input.
+  -i, --skip-titles     skip output of titles.
+  -m MISSING_VALUE, --missing=MISSING_VALUE
+                        entry to use for missing values.
+  --headers=HEADERS     add headers for files.
+  -c COLUMNS, --columns=COLUMNS
+                        columns to use for joining. Multiple columns can be
+                        specified as a comma-separated list [default=1].
+  -g GLOB, --glob=GLOB  wildcard expression for table names.
+  -s SORT, --sort=SORT  sort by column titles alphabetical|numeric|list of
+                        columns.
+  -e, --merge           simply merge tables without matching up rows.
+                        [default=False].
+  --sort-keys=SORT_KEYS
+                        sort key columns by value.
+  --keep-empty          keep empty tables. The default is to ignore them.
+  --add-file-prefix     add file prefix to columns headers in multi-column
+                        tables [default=False]
+  --regex-filename=REGEX_FILENAME
+                        pattern to apply to filename to build prefix
+                        [default=(.*)]
+  -v LOGLEVEL, --verbose=LOGLEVEL
+                        loglevel [1]. The higher, the more output.
+  --timeit=TIMEIT_FILE  store timeing information in file [none].
+  --timeit-name=TIMEIT_NAME
+                        name in timing file for this class of jobs [all].
+  --timeit-header       add header for timing information [none].
+  --random-seed=RANDOM_SEED
+                        random seed to initialize number generator with
+                        [none].
+  -I FILE, --stdin=FILE
+                        file to read stdin from [default = stdin].
+  -L FILE, --log=FILE   file with logging information [default = stdout].
+  -E FILE, --error=FILE
+                        file with error information [default = stderr].
+  -S FILE, --stdout=FILE
+                        file where output is to go [default = stdout].
+</pre></div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">csvs2csv.py - join tables</a><ul>
+<li><a class="reference internal" href="#purpose">Purpose</a></li>
+<li><a class="reference internal" href="#usage">Usage</a></li>
+<li><a class="reference internal" href="#command-line-options">Command line options</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="combine_histograms.html"
+                        title="previous chapter">combine_histograms.py - combine several histograms</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="csv2csv.html"
+                        title="next chapter">csv2csv.py - operate on tables</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/scripts/csvs2csv.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="csv2csv.html" title="csv2csv.py - operate on tables"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="combine_histograms.html" title="combine_histograms.py - combine several histograms"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../scripts.html" >Scripts</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,243 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Documentation &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/sorttable.js"></script>
+    <script type="text/javascript" src="_static/jquery.min.js"></script>
+    <script type="text/javascript" src="_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="index.html" />
+    <link rel="next" title="Release notes" href="release.html" />
+    <link rel="prev" title="Style Guide" href="styleguide.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="release.html" title="Release notes"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="styleguide.html" title="Style Guide"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">CGAT  documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="documentation">
+<h1>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>CGAT scripts and modules use <a class="reference external" href="http://sphinx-doc.org/">sphinx</a> for documentation. The philosophy
+is to maintain documentation and code together. Thus, most
+documentation will be kept inside the actual scripts and modules,
+supported by overview documents explaining usage and higher level
+concepts.</p>
+</div>
+<div class="section" id="building-the-documentation">
+<h2>Building the documentation<a class="headerlink" href="#building-the-documentation" title="Permalink to this headline">¶</a></h2>
+<p>CGAT&#8217;s documentation lives in the <tt class="file docutils literal"><span class="pre">doc</span></tt> directory of the
+repository. To build the documentation, enter the <tt class="file docutils literal"><span class="pre">doc</span></tt>
+directory and type:</p>
+<div class="highlight-python"><div class="highlight"><pre>make html
+</pre></div>
+</div>
+<p>The output will be in the directory <tt class="file docutils literal"><span class="pre">_build/html</span></tt>.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>Each script, module and pipeline needs to be importable,
+i.e, the following must work:</p>
+<div class="highlight-python"><div class="highlight"><pre>python -c &quot;import pipeline_mapping&quot;
+</pre></div>
+</div>
+<p class="last">Especially in pipelines some care is necessary to avoid failing
+with an error if no input or configuration files are present.</p>
+</div>
+</div>
+<div class="section" id="writing-documentation">
+<h2>Writing documentation<a class="headerlink" href="#writing-documentation" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference external" href="http://sphinx-doc.org/">sphinx</a> documentation is written in <a class="reference external" href="http://docutils.sourceforge.net/rst.html">Restructured Text</a>. A useful
+primer is <a class="reference external" href="http://sphinx-doc.org/rest.html">here</a>.</p>
+<p>Some specifics for the CGAT code base are:</p>
+<ul>
+<li><p class="first">Refering to a separate script can be done using the <tt class="docutils literal"><span class="pre">:doc:</span></tt>
+directive, for example:</p>
+<div class="highlight-python"><div class="highlight"><pre>:doc:`scripts/bed2summary`
+</pre></div>
+</div>
+<p>Note that the path relative to the current directory needs to
+be supplied.</p>
+</li>
+<li><p class="first">Glossary terms (<tt class="docutils literal"><span class="pre">:term:</span></tt>) are defined in
+<tt class="file docutils literal"><span class="pre">glossary.rst</span></tt>.</p>
+</li>
+</ul>
+</div>
+<div class="section" id="adding-documentation">
+<h2>Adding documentation<a class="headerlink" href="#adding-documentation" title="Permalink to this headline">¶</a></h2>
+<p>In order to add a new script, module or pipeline to the documentation documement,
+perform the following steps.</p>
+<p>Here, we will be adding the script <tt class="file docutils literal"><span class="pre">bed2summary.py</span></tt> to
+the documentation.</p>
+<ol class="arabic">
+<li><p class="first">Create a file <tt class="file docutils literal"><span class="pre">doc/scripts/bed2summary.rst</span></tt> with the
+following contents:</p>
+<div class="highlight-python"><div class="highlight"><pre>.. automodule:: bed2summary
+
+.. program-output:: python ../scripts/bed2summary.py --help
+</pre></div>
+</div>
+<p>This will build the documentation within the bed2summary script
+and add the command line help to the document.</p>
+</li>
+<li><p class="first">Add an entry to <tt class="file docutils literal"><span class="pre">doc/scripts.rst</span></tt>. For example:</p>
+<div class="highlight-python"><div class="highlight"><pre>.. toctree::
+
+   scripts/bed2summary
+</pre></div>
+</div>
+<p>Please add your script to the toctree of an existing group.</p>
+</li>
+<li><p class="first">For scripts that are part of the CGAT code collection, also add an
+entry into <tt class="file docutils literal"><span class="pre">doc/CGATReference.rst</span></tt>.</p>
+</li>
+</ol>
+<p>Adding a module or pipeline is similar to adding a script, except that:</p>
+<ol class="arabic simple">
+<li>the <tt class="file docutils literal"><span class="pre">.rst</span></tt> file should be in <tt class="file docutils literal"><span class="pre">doc/modules</span></tt> or
+<tt class="file docutils literal"><span class="pre">doc/pipelines</span></tt>, respectively.</li>
+<li>The entry needs to be added to <tt class="file docutils literal"><span class="pre">modules.rst</span></tt> or
+<tt class="file docutils literal"><span class="pre">CGATPipelines.rst</span></tt>, respectively.</li>
+<li>no <tt class="docutils literal"><span class="pre">program-output</span></tt> is necessary.</li>
+</ol>
+</div>
+<div class="section" id="requisites">
+<h2>Requisites<a class="headerlink" href="#requisites" title="Permalink to this headline">¶</a></h2>
+<p>Building the documentation requires the following components:</p>
+<dl class="docutils">
+<dt><a class="reference external" href="http://sphinx-doc.org/">sphinx</a></dt>
+<dd>The documenation building system.</dd>
+<dt><a class="reference external" href="https://pypi.python.org/pypi/sphinxcontrib-programoutput">sphinxcontrib-programoutput</a></dt>
+<dd>Adding command line output to documenation.</dd>
+</dl>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Documentation</a><ul>
+<li><a class="reference internal" href="#overview">Overview</a></li>
+<li><a class="reference internal" href="#building-the-documentation">Building the documentation</a></li>
+<li><a class="reference internal" href="#writing-documentation">Writing documentation</a></li>
+<li><a class="reference internal" href="#adding-documentation">Adding documentation</a></li>
+<li><a class="reference internal" href="#requisites">Requisites</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="styleguide.html"
+                        title="previous chapter">Style Guide</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="release.html"
+                        title="next chapter">Release notes</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/documenting.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="release.html" title="Release notes"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="styleguide.html" title="Style Guide"
+             >previous</a> |</li>
+        <li><a href="index.html">CGAT  documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,344 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>cgat_script_template.py - template for CGAT scripts &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="Scripts" href="../scripts.html" />
+    <link rel="next" title="bam2fastq.py - output fastq files from a bam-file" href="bam2fastq.html" />
+    <link rel="prev" title="bam2bam.py - modify bam files" href="bam2bam.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="bam2fastq.html" title="bam2fastq.py - output fastq files from a bam-file"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="bam2bam.html" title="bam2bam.py - modify bam files"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../scripts.html" accesskey="U">Scripts</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-bam2bed"></span><div class="section" id="cgat-script-template-py-template-for-cgat-scripts">
+<h1>cgat_script_template.py - template for CGAT scripts<a class="headerlink" href="#cgat-script-template-py-template-for-cgat-scripts" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id$</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Python</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="purpose">
+<h2>Purpose<a class="headerlink" href="#purpose" title="Permalink to this headline">¶</a></h2>
+<p>Convert BAM files into BED files</p>
+</div>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>Example:</p>
+<div class="highlight-python"><div class="highlight"><pre>python bam2bed.py &lt;input.bam&gt; --options
+</pre></div>
+</div>
+<p>Type:</p>
+<div class="highlight-python"><div class="highlight"><pre>python cgat_script_template.py --help
+</pre></div>
+</div>
+<p>for command line help.</p>
+</div>
+<div class="section" id="documentation">
+<h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h2>
+<p>This script takes a <a class="reference internal" href="../glossary.html#term-bam"><em class="xref std std-term">bam</em></a> file as input and counts the number of reads 
+in windows across each chromsome.  Output is a <a class="reference internal" href="../glossary.html#term-bed"><em class="xref std std-term">bed</em></a> formatted file 
+for each interval with the relevant counts of reads mapping to each interval.  
+Reads can be selected on the basis of <em class="xref std std-term">tags</em>, such as NH or NM and a 
+threshold for the proportion of reads mapping to an interval before 
+it is output.  Read counting is done using mapping position within an interval.</p>
+<p>The <a class="reference internal" href="../glossary.html#term-bam"><em class="xref std std-term">bam</em></a> file must have an <em class="xref std std-term">index</em> file (.bai) in the same 
+directory. A contig file can be provided with the &#8211;contig-file option, or a 
+new one can be generated using a specific genome and directory with the 
+&#8211;genome and &#8211;genome-dir.
+The default action is to create a dictionary of contig sizes from the bam file
+header info, which requires no additional user input.</p>
+<p>The original bam2bed.py functionality was to convert BAM files to BED files 
+over a user-specified interval.  This functionality has been preserved in 
+this version.</p>
+<p>For example:</p>
+<div class="highlight-python"><div class="highlight"><pre>samtools view example.bam
+
+READ1    163    1     13040   15      76M     =       13183   219     ...
+READ1    83     1     13183   7       76M     =       13040   -219    ...
+READ2    147    1     13207   0       76M     =       13120   -163    ...
+
+python bam2bed.py example.bam 
+
+ 1       13039   13115   READ1     15      +
+ 1       13119   13195   READ2     0       +
+ 1       13182   13258   READ1     7       -
+ 1       13206   13282   READ2     0       -
+</pre></div>
+</div>
+<div class="section" id="options">
+<h3>Options<a class="headerlink" href="#options" title="Permalink to this headline">¶</a></h3>
+<table border="1" class="docutils">
+<colgroup>
+<col width="25%" />
+<col width="75%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>&#8211;genome-dir</td>
+<td>location of genome .fasta files to construct contig
+dictionary</td>
+</tr>
+<tr class="row-even"><td>&#8211;genome</td>
+<td>genome to extract contig data for</td>
+</tr>
+<tr class="row-odd"><td>&#8211;contig-file</td>
+<td>contig file containing contig IDs and sizes</td>
+</tr>
+<tr class="row-even"><td>&#8211;condition</td>
+<td>used to specify whether a range or categorical filter
+is used to select reads for counting.  The default
+behaviour with <cite>cat</cite> is to output by contig.</td>
+</tr>
+<tr class="row-odd"><td>&#8211;interval</td>
+<td>size of intervals over which to count reads</td>
+</tr>
+<tr class="row-even"><td>&#8211;tag</td>
+<td>SAM format tag used to count reads, e.g. to only ouput
+reads that are multi-mapping use the NH tag and supply
+a float value to the &#8216;&#8211;threshold&#8217; option</td>
+</tr>
+<tr class="row-odd"><td>&#8211;threshold</td>
+<td>The cut-off value above which regions with this number
+of reads mapping to it will be ouput.  e.g. for regions
+where &gt; 1% of reads are multimapping use &#8211;tag NH and
+&#8211;threshold 0.1</td>
+</tr>
+<tr class="row-even"><td>&#8211;region, -r</td>
+<td>output read intervals that overlap a specified region</td>
+</tr>
+<tr class="row-odd"><td>&#8211;merge-pairs, -m</td>
+<td>merge paired-end reads and output interval for entire
+fragment</td>
+</tr>
+<tr class="row-even"><td>&#8211;max-insert-size</td>
+<td>only merge if insert size is less than specified no. of
+bases</td>
+</tr>
+<tr class="row-odd"><td>&#8211;min-insert-size</td>
+<td>only merge if insert size is greater than specified
+no. of bases</td>
+</tr>
+</tbody>
+</table>
+<p>For example to output only 1000bp intervals that have &gt;10% of reads that 
+are multi-mapping:</p>
+<div class="highlight-python"><div class="highlight"><pre>python bam2bed.py example.bam --condition range --interval 1000 --tag NH --threshold 0.1
+</pre></div>
+</div>
+<p>To just count reads within 100bp intervals you can supply the command thus:</p>
+<div class="highlight-python"><div class="highlight"><pre>python bam2bed.py example.bam --condition range --interval 100
+</pre></div>
+</div>
+<p>The output files are a :term:bedGraph format file with each interval that has 
+&gt;0 reads aligned to it and a tab-delimtted per-contig :term:summary file that 
+contains:</p>
+<div class="highlight-python"><div class="highlight"><pre>Contig: Intervals: Total: Min: Max: Mean:   Median:  25th_Q:  75th_Q:
+chr1    40         100189 4    6971 2504.72 2942.00  1040.00  3521.00
+chr10   48         7358   1    1136 153.29  21.00    9.00     47.00
+chr11   16         3502   1    3312 218.88  4.00     1.00     10.00
+</pre></div>
+</div>
+<p>To use the original function of bam2bed.py use the <cite>&#8211;region</cite> option.</p>
+<p>The default behaviour is to output the sum of reads across regions in 10kbp windows.</p>
+</div>
+</div>
+<div class="section" id="command-line-options">
+<h2>Command line options<a class="headerlink" href="#command-line-options" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+<div class="highlight-text"><div class="highlight"><pre>Usage: bam2bed.py [options]
+
+Options:
+  --version             show program&#39;s version number and exit
+  -h, --help            show this help message and exit
+  --no-usage            output help without usage information
+  --genome-dir=GDIR     genome directory containing fasta format files
+  --genome=GENOME       the genome to which reads were aligned
+  --contig-file=CONTIG  list of contigs and their sizes in tsv format
+  --condition=CONDITION
+                        either `range` or `cat`, `range` is used with
+                        --interval.
+  --interval=INTERVAL   the interval size to count reads in. [default=10000]
+  --tag=TAG             outputs regions with &gt;:term:`threshold` reads
+                        containing `tag`
+  --threshold=THRESHOLD
+                        a threshold for reads matching :term:`tag` in an
+                        interval. [default=0.01]
+  -r REGION, --region=REGION
+                        output read intervals that overlap samtools region
+                        striing [default=none].
+  -m, --merge-pairs     merge paired-end reads and output interval for entire
+                        fragment [default=none].
+  --max-insert-size=MAX_INSERT_SIZE
+                        only merge paired-end reads if they are less than #
+                        bases apart. 0 turns off this filter [default=0].
+  --min-insert-size=MIN_INSERT_SIZE
+                        only merge paired-end reads if theya re at least #
+                        bases apart.  0 turns off this filter [default=0].
+  --bed-format=BED_FORMAT
+                        bed format to output. Only used with --merge-pairs
+                        option.  [default=6]
+  -v LOGLEVEL, --verbose=LOGLEVEL
+                        loglevel [1]. The higher, the more output.
+  --timeit=TIMEIT_FILE  store timeing information in file [none].
+  --timeit-name=TIMEIT_NAME
+                        name in timing file for this class of jobs [all].
+  --timeit-header       add header for timing information [none].
+  --random-seed=RANDOM_SEED
+                        random seed to initialize number generator with
+                        [none].
+  -I FILE, --stdin=FILE
+                        file to read stdin from [default = stdin].
+  -L FILE, --log=FILE   file with logging information [default = stdout].
+  -E FILE, --error=FILE
+                        file with error information [default = stderr].
+  -S FILE, --stdout=FILE
+                        file where output is to go [default = stdout].
+</pre></div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">cgat_script_template.py - template for CGAT scripts</a><ul>
+<li><a class="reference internal" href="#purpose">Purpose</a></li>
+<li><a class="reference internal" href="#usage">Usage</a></li>
+<li><a class="reference internal" href="#documentation">Documentation</a><ul>
+<li><a class="reference internal" href="#options">Options</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#command-line-options">Command line options</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="bam2bam.html"
+                        title="previous chapter">bam2bam.py - modify bam files</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="bam2fastq.html"
+                        title="next chapter">bam2fastq.py - output fastq files from a bam-file</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/scripts/bam2bed.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="bam2fastq.html" title="bam2fastq.py - output fastq files from a bam-file"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="bam2bam.html" title="bam2bam.py - modify bam files"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../scripts.html" >Scripts</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

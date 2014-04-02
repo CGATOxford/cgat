@@ -1,0 +1,297 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Bioprospector.py - Parser for Bioprospector output &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="Modules" href="../modules.html" />
+    <link rel="next" title="BlatTest.py -" href="BlatTest.html" />
+    <link rel="prev" title="SuffixArray.py - sarry frontend" href="SuffixArray.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="BlatTest.html" title="BlatTest.py -"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="SuffixArray.html" title="SuffixArray.py - sarry frontend"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" accesskey="U">Modules</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-Bioprospector"></span><div class="section" id="bioprospector-py-parser-for-bioprospector-output">
+<h1>Bioprospector.py - Parser for Bioprospector output<a class="headerlink" href="#bioprospector-py-parser-for-bioprospector-output" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id$</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Python</td>
+</tr>
+</tbody>
+</table>
+<dl class="class">
+<dt id="Bioprospector.Match">
+<em class="property">class </em><tt class="descclassname">Bioprospector.</tt><tt class="descname">Match</tt><a class="headerlink" href="#Bioprospector.Match" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">tuple</span></tt></p>
+<p>Match(id, site, strand, start, end, width1, width2, sequence)</p>
+<dl class="method">
+<dt id="Bioprospector.Match.count">
+<tt class="descname">count</tt><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span> &rarr; integer -- return number of occurrences of value<a class="headerlink" href="#Bioprospector.Match.count" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Bioprospector.Match.end">
+<tt class="descname">end</tt><a class="headerlink" href="#Bioprospector.Match.end" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 4</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="Bioprospector.Match.id">
+<tt class="descname">id</tt><a class="headerlink" href="#Bioprospector.Match.id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Bioprospector.Match.index">
+<tt class="descname">index</tt><span class="sig-paren">(</span><em>value</em><span class="optional">[</span>, <em>start</em><span class="optional">[</span>, <em>stop</em><span class="optional">]</span><span class="optional">]</span><span class="sig-paren">)</span> &rarr; integer -- return first index of value.<a class="headerlink" href="#Bioprospector.Match.index" title="Permalink to this definition">¶</a></dt>
+<dd><p>Raises ValueError if the value is not present.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="Bioprospector.Match.sequence">
+<tt class="descname">sequence</tt><a class="headerlink" href="#Bioprospector.Match.sequence" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 7</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="Bioprospector.Match.site">
+<tt class="descname">site</tt><a class="headerlink" href="#Bioprospector.Match.site" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="Bioprospector.Match.start">
+<tt class="descname">start</tt><a class="headerlink" href="#Bioprospector.Match.start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 3</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="Bioprospector.Match.strand">
+<tt class="descname">strand</tt><a class="headerlink" href="#Bioprospector.Match.strand" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 2</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="Bioprospector.Match.width1">
+<tt class="descname">width1</tt><a class="headerlink" href="#Bioprospector.Match.width1" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 5</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="Bioprospector.Match.width2">
+<tt class="descname">width2</tt><a class="headerlink" href="#Bioprospector.Match.width2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 6</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="Bioprospector.Motif">
+<em class="property">class </em><tt class="descclassname">Bioprospector.</tt><tt class="descname">Motif</tt><a class="headerlink" href="#Bioprospector.Motif" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">tuple</span></tt></p>
+<p>Motif(id, pattern, width1, width2, min_gap, max_gap, score, sites, matches)</p>
+<dl class="method">
+<dt id="Bioprospector.Motif.count">
+<tt class="descname">count</tt><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span> &rarr; integer -- return number of occurrences of value<a class="headerlink" href="#Bioprospector.Motif.count" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="Bioprospector.Motif.id">
+<tt class="descname">id</tt><a class="headerlink" href="#Bioprospector.Motif.id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Bioprospector.Motif.index">
+<tt class="descname">index</tt><span class="sig-paren">(</span><em>value</em><span class="optional">[</span>, <em>start</em><span class="optional">[</span>, <em>stop</em><span class="optional">]</span><span class="optional">]</span><span class="sig-paren">)</span> &rarr; integer -- return first index of value.<a class="headerlink" href="#Bioprospector.Motif.index" title="Permalink to this definition">¶</a></dt>
+<dd><p>Raises ValueError if the value is not present.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="Bioprospector.Motif.matches">
+<tt class="descname">matches</tt><a class="headerlink" href="#Bioprospector.Motif.matches" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 8</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="Bioprospector.Motif.max_gap">
+<tt class="descname">max_gap</tt><a class="headerlink" href="#Bioprospector.Motif.max_gap" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 5</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="Bioprospector.Motif.min_gap">
+<tt class="descname">min_gap</tt><a class="headerlink" href="#Bioprospector.Motif.min_gap" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 4</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="Bioprospector.Motif.pattern">
+<tt class="descname">pattern</tt><a class="headerlink" href="#Bioprospector.Motif.pattern" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="Bioprospector.Motif.score">
+<tt class="descname">score</tt><a class="headerlink" href="#Bioprospector.Motif.score" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 6</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="Bioprospector.Motif.sites">
+<tt class="descname">sites</tt><a class="headerlink" href="#Bioprospector.Motif.sites" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 7</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="Bioprospector.Motif.width1">
+<tt class="descname">width1</tt><a class="headerlink" href="#Bioprospector.Motif.width1" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 2</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="Bioprospector.Motif.width2">
+<tt class="descname">width2</tt><a class="headerlink" href="#Bioprospector.Motif.width2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 3</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="Bioprospector.parse">
+<tt class="descclassname">Bioprospector.</tt><tt class="descname">parse</tt><span class="sig-paren">(</span><em>infile</em><span class="sig-paren">)</span><a class="headerlink" href="#Bioprospector.parse" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse Bioprospector output.</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="SuffixArray.html"
+                        title="previous chapter">SuffixArray.py - sarry frontend</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="BlatTest.html"
+                        title="next chapter">BlatTest.py -</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/modules/Bioprospector.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="BlatTest.html" title="BlatTest.py -"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="SuffixArray.html" title="SuffixArray.py - sarry frontend"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" >Modules</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

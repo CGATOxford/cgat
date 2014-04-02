@@ -1,0 +1,233 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>combine_histograms.py - combine several histograms &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="Scripts" href="../scripts.html" />
+    <link rel="next" title="csvs2csv.py - join tables" href="csvs2csv.html" />
+    <link rel="prev" title="map_residues.py - liftover for residues" href="map_residues.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="csvs2csv.html" title="csvs2csv.py - join tables"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="map_residues.html" title="map_residues.py - liftover for residues"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../scripts.html" accesskey="U">Scripts</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-combine_histograms"></span><div class="section" id="combine-histograms-py-combine-several-histograms">
+<h1>combine_histograms.py - combine several histograms<a class="headerlink" href="#combine-histograms-py-combine-several-histograms" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Andreas Heger</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id$</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Python</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="purpose">
+<h2>Purpose<a class="headerlink" href="#purpose" title="Permalink to this headline">¶</a></h2>
+<p>OPTIONS:
+-n, &#8211;normalize         normalize each histogram
+-m, &#8211;missing=          set missing values to #
+-t, &#8211;titles            use supplied titles
+-h, &#8211;headers=          set header to #, &#8220;auto&#8221; = filenames
+-f, &#8211;format=           format to use when combining histograms
+&#8211;format-value=         format for numbers
+&#8211;format-bin=           format for bin values</p>
+<p>-&gt; relative frequencies
+-&gt; cumulative counts and frequencies in both directions</p>
+</div>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>Example:</p>
+<div class="highlight-python"><div class="highlight"><pre>python combine_histograms.py --help
+</pre></div>
+</div>
+<p>Type:</p>
+<div class="highlight-python"><div class="highlight"><pre>python combine_histograms.py --help
+</pre></div>
+</div>
+<p>for command line help.</p>
+</div>
+<div class="section" id="command-line-options">
+<h2>Command line options<a class="headerlink" href="#command-line-options" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+<div class="highlight-text"><div class="highlight"><pre>combine_histograms.py - combine several histograms
+==================================================
+
+:Author: Andreas Heger
+:Release: $Id$
+:Date: |today|
+:Tags: Python
+
+Purpose
+-------
+
+OPTIONS:
+-n, --normalize         normalize each histogram
+-m, --missing=          set missing values to #
+-t, --titles            use supplied titles
+-h, --headers=          set header to #, &quot;auto&quot; = filenames
+-f, --format=           format to use when combining histograms
+--format-value=         format for numbers
+--format-bin=           format for bin values
+
+-&gt; relative frequencies
+-&gt; cumulative counts and frequencies in both directions
+
+Usage
+-----
+
+Example::
+
+   python combine_histograms.py --help
+
+Type::
+
+   python combine_histograms.py --help
+
+for command line help.
+
+Command line options
+--------------------
+
+option --no-usage not recognized
+</pre></div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">combine_histograms.py - combine several histograms</a><ul>
+<li><a class="reference internal" href="#purpose">Purpose</a></li>
+<li><a class="reference internal" href="#usage">Usage</a></li>
+<li><a class="reference internal" href="#command-line-options">Command line options</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="map_residues.html"
+                        title="previous chapter">map_residues.py - liftover for residues</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="csvs2csv.html"
+                        title="next chapter">csvs2csv.py - join tables</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/scripts/combine_histograms.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="csvs2csv.html" title="csvs2csv.py - join tables"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="map_residues.html" title="map_residues.py - liftover for residues"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../scripts.html" >Scripts</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

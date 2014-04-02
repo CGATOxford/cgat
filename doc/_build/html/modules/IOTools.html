@@ -1,0 +1,550 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>IOTools - tools for I/O operations &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="Modules" href="../modules.html" />
+    <link rel="next" title="Iterators.py - general purpose iterators." href="Iterators.html" />
+    <link rel="prev" title="CSV.py - Tools for parsing CSV files" href="CSV.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="Iterators.html" title="Iterators.py - general purpose iterators."
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="CSV.html" title="CSV.py - Tools for parsing CSV files"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" accesskey="U">Modules</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-IOTools"></span><div class="section" id="iotools-tools-for-i-o-operations">
+<h1>IOTools - tools for I/O operations<a class="headerlink" href="#iotools-tools-for-i-o-operations" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Andreas Heger</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id$</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Python</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="code">
+<h2>Code<a class="headerlink" href="#code" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="IOTools.readMap">
+<tt class="descclassname">IOTools.</tt><tt class="descname">readMap</tt><span class="sig-paren">(</span><em>infile</em>, <em>columns=(0</em>, <em>1)</em>, <em>map_functions=(&lt;type 'str'&gt;</em>, <em>&lt;type 'str'&gt;)</em>, <em>both_directions=False</em>, <em>has_header=False</em><span class="sig-paren">)</span><a class="headerlink" href="#IOTools.readMap" title="Permalink to this definition">¶</a></dt>
+<dd><p>read a map (pairs of values) from infile.
+returns a hash.</p>
+<p>Use map functions to convert elements.
+If both_directions is set to true, both mapping directions are returned.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="IOTools.readList">
+<tt class="descclassname">IOTools.</tt><tt class="descname">readList</tt><span class="sig-paren">(</span><em>infile</em>, <em>column=0</em>, <em>map_function=&lt;type 'str'&gt;</em>, <em>map_category={}</em>, <em>with_title=False</em><span class="sig-paren">)</span><a class="headerlink" href="#IOTools.readList" title="Permalink to this definition">¶</a></dt>
+<dd><p>read a list of values from infile.</p>
+<p>Use map_function to convert values.
+Use map_category, to map read values directory 
+If with_title, first line is assumed to be a title</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="IOTools.ReadList">
+<tt class="descclassname">IOTools.</tt><tt class="descname">ReadList</tt><span class="sig-paren">(</span><em>infile</em>, <em>column=0</em>, <em>map_function=&lt;type 'str'&gt;</em>, <em>map_category={}</em><span class="sig-paren">)</span><a class="headerlink" href="#IOTools.ReadList" title="Permalink to this definition">¶</a></dt>
+<dd><p>read a list of values from infile.</p>
+<p>Use map_function to convert values.
+Use map_category, to map read values directory</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="IOTools.readMultiMap">
+<tt class="descclassname">IOTools.</tt><tt class="descname">readMultiMap</tt><span class="sig-paren">(</span><em>infile</em>, <em>columns=(0</em>, <em>1)</em>, <em>map_functions=(&lt;type 'str'&gt;</em>, <em>&lt;type 'str'&gt;)</em>, <em>both_directions=False</em>, <em>has_header=False</em>, <em>dtype=&lt;type 'dict'&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#IOTools.readMultiMap" title="Permalink to this definition">¶</a></dt>
+<dd><p>read a map (pairs of values) from infile.
+returns a hash.</p>
+<p>Use map functions to convert elements.
+If both_directions is set to true, both mapping directions are returned.
+This function can have n:n matches</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="IOTools.readTable">
+<tt class="descclassname">IOTools.</tt><tt class="descname">readTable</tt><span class="sig-paren">(</span><em>file</em>, <em>separator='\t'</em>, <em>numeric_type=&lt;type 'float'&gt;</em>, <em>take='all'</em>, <em>headers=True</em>, <em>truncate=None</em>, <em>cumulate_out_of_range=True</em><span class="sig-paren">)</span><a class="headerlink" href="#IOTools.readTable" title="Permalink to this definition">¶</a></dt>
+<dd><p>read a table of values. There probably is a routine for this in Numpy, which
+I haven&#8217;t found yet.</p>
+<p>If cumulate_out_of_range is set to true, the terminal bins will
+contain the cumulative values of bins out of range.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="IOTools.writeTable">
+<tt class="descclassname">IOTools.</tt><tt class="descname">writeTable</tt><span class="sig-paren">(</span><em>outfile</em>, <em>table</em>, <em>columns=None</em>, <em>fillvalue=''</em><span class="sig-paren">)</span><a class="headerlink" href="#IOTools.writeTable" title="Permalink to this definition">¶</a></dt>
+<dd><p>write a table to outfile.</p>
+<p>If table is a dictionary, output columnwise. If <em>columns</em> is a list,
+only output columns in columns in the specified order.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="IOTools.readMatrix">
+<tt class="descclassname">IOTools.</tt><tt class="descname">readMatrix</tt><span class="sig-paren">(</span><em>infile</em>, <em>dtype=&lt;type 'float'&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#IOTools.readMatrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>read a numpy matrix from infile.</p>
+<p>return tuple of matrix, row_headers, col_headers</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="IOTools.writeMatrix">
+<tt class="descclassname">IOTools.</tt><tt class="descname">writeMatrix</tt><span class="sig-paren">(</span><em>outfile</em>, <em>matrix</em>, <em>row_headers</em>, <em>col_headers</em>, <em>row_header=''</em><span class="sig-paren">)</span><a class="headerlink" href="#IOTools.writeMatrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>write a numpy matrix to outfile.</p>
+<p><em>row_header</em> gives the title of the rows</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="IOTools.getInvertedDictionary">
+<tt class="descclassname">IOTools.</tt><tt class="descname">getInvertedDictionary</tt><span class="sig-paren">(</span><em>dict</em>, <em>make_unique=False</em><span class="sig-paren">)</span><a class="headerlink" href="#IOTools.getInvertedDictionary" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns an inverted dictionary with keys and values swapped.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="IOTools.readSequence">
+<tt class="descclassname">IOTools.</tt><tt class="descname">readSequence</tt><span class="sig-paren">(</span><em>file</em><span class="sig-paren">)</span><a class="headerlink" href="#IOTools.readSequence" title="Permalink to this definition">¶</a></dt>
+<dd><p>read sequence from a fasta file.</p>
+<p>returns a tuple with description and sequence</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="IOTools.getLastLine">
+<tt class="descclassname">IOTools.</tt><tt class="descname">getLastLine</tt><span class="sig-paren">(</span><em>filename</em>, <em>nlines=1</em>, <em>read_size=1024</em><span class="sig-paren">)</span><a class="headerlink" href="#IOTools.getLastLine" title="Permalink to this definition">¶</a></dt>
+<dd><p>return last line of a file.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="IOTools.getNumLines">
+<tt class="descclassname">IOTools.</tt><tt class="descname">getNumLines</tt><span class="sig-paren">(</span><em>filename</em>, <em>ignore_comments=True</em><span class="sig-paren">)</span><a class="headerlink" href="#IOTools.getNumLines" title="Permalink to this definition">¶</a></dt>
+<dd><p>get number of lines in filename.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="IOTools.ReadMap">
+<tt class="descclassname">IOTools.</tt><tt class="descname">ReadMap</tt><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#IOTools.ReadMap" title="Permalink to this definition">¶</a></dt>
+<dd><p>compatibility - see readMap.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="IOTools.isEmpty">
+<tt class="descclassname">IOTools.</tt><tt class="descname">isEmpty</tt><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="headerlink" href="#IOTools.isEmpty" title="Permalink to this definition">¶</a></dt>
+<dd><p>return True if file exists and is empty.</p>
+<p>raises OSError if file does not exist</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="IOTools.isComplete">
+<tt class="descclassname">IOTools.</tt><tt class="descname">isComplete</tt><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="headerlink" href="#IOTools.isComplete" title="Permalink to this definition">¶</a></dt>
+<dd><p>return True if file exists and is complete.</p>
+<p>A file in complete if its last line starts
+with &#8216;# job finished&#8217;</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="IOTools.FilePool">
+<em class="property">class </em><tt class="descclassname">IOTools.</tt><tt class="descname">FilePool</tt><span class="sig-paren">(</span><em>output_pattern=None</em>, <em>header=None</em>, <em>force=True</em><span class="sig-paren">)</span><a class="headerlink" href="#IOTools.FilePool" title="Permalink to this definition">¶</a></dt>
+<dd><p>manage a pool of output files</p>
+<p>This class will keep a large number of files open. To
+see if you can handle this, check the limit within the shell:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">ulimit</span> <span class="o">-</span><span class="n">n</span>
+</pre></div>
+</div>
+<p>The number of currently open and maximum open files in the system:</p>
+<blockquote>
+<div>cat /proc/sys/fs/file-nr</div></blockquote>
+<p>Changing these limits might not be easy for a user.</p>
+<p>This class is inefficient if the number of files is larger than
+<tt class="xref py py-attr docutils literal"><span class="pre">maxopen</span></tt> and calls to <cite>write</cite> do not group keys together.</p>
+<dl class="method">
+<dt id="IOTools.FilePool.close">
+<tt class="descname">close</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#IOTools.FilePool.close" title="Permalink to this definition">¶</a></dt>
+<dd><p>close all open files.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="IOTools.FilePool.getFilename">
+<tt class="descname">getFilename</tt><span class="sig-paren">(</span><em>identifier</em><span class="sig-paren">)</span><a class="headerlink" href="#IOTools.FilePool.getFilename" title="Permalink to this definition">¶</a></dt>
+<dd><p>get filename for an identifier.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="IOTools.FilePool.openFile">
+<tt class="descname">openFile</tt><span class="sig-paren">(</span><em>filename</em>, <em>mode='w'</em><span class="sig-paren">)</span><a class="headerlink" href="#IOTools.FilePool.openFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>open file.</p>
+<p>If file is in a new directory, create directories.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="IOTools.FilePool.deleteFiles">
+<tt class="descname">deleteFiles</tt><span class="sig-paren">(</span><em>min_size=0</em><span class="sig-paren">)</span><a class="headerlink" href="#IOTools.FilePool.deleteFiles" title="Permalink to this definition">¶</a></dt>
+<dd><p>delete all files below a minimum size.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="IOTools.FilePoolMemory">
+<em class="property">class </em><tt class="descclassname">IOTools.</tt><tt class="descname">FilePoolMemory</tt><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#IOTools.FilePoolMemory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#IOTools.FilePool" title="IOTools.FilePool"><tt class="xref py py-class docutils literal"><span class="pre">IOTools.FilePool</span></tt></a></p>
+<p>manage a pool of output files</p>
+<p>The data is cached in memory before writing to disk.</p>
+<dl class="method">
+<dt id="IOTools.FilePoolMemory.close">
+<tt class="descname">close</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#IOTools.FilePoolMemory.close" title="Permalink to this definition">¶</a></dt>
+<dd><p>close all open files.
+writes the data to disk.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="IOTools.FilePoolMemory.deleteFiles">
+<tt class="descname">deleteFiles</tt><span class="sig-paren">(</span><em>min_size=0</em><span class="sig-paren">)</span><a class="headerlink" href="#IOTools.FilePoolMemory.deleteFiles" title="Permalink to this definition">¶</a></dt>
+<dd><p>delete all files below a minimum size.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="IOTools.FilePoolMemory.getFilename">
+<tt class="descname">getFilename</tt><span class="sig-paren">(</span><em>identifier</em><span class="sig-paren">)</span><a class="headerlink" href="#IOTools.FilePoolMemory.getFilename" title="Permalink to this definition">¶</a></dt>
+<dd><p>get filename for an identifier.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="IOTools.FilePoolMemory.openFile">
+<tt class="descname">openFile</tt><span class="sig-paren">(</span><em>filename</em>, <em>mode='w'</em><span class="sig-paren">)</span><a class="headerlink" href="#IOTools.FilePoolMemory.openFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>open file.</p>
+<p>If file is in a new directory, create directories.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="IOTools.val2str">
+<tt class="descclassname">IOTools.</tt><tt class="descname">val2str</tt><span class="sig-paren">(</span><em>val</em>, <em>format='%5.2f'</em>, <em>na='na'</em><span class="sig-paren">)</span><a class="headerlink" href="#IOTools.val2str" title="Permalink to this definition">¶</a></dt>
+<dd><p>return formatted value.</p>
+<p>If value does not fit format string, return &#8220;na&#8221;</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="IOTools.str2val">
+<tt class="descclassname">IOTools.</tt><tt class="descname">str2val</tt><span class="sig-paren">(</span><em>val</em>, <em>format='%5.2f'</em>, <em>na='na'</em><span class="sig-paren">)</span><a class="headerlink" href="#IOTools.str2val" title="Permalink to this definition">¶</a></dt>
+<dd><p>guess type of value.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="IOTools.prettyFloat">
+<tt class="descclassname">IOTools.</tt><tt class="descname">prettyFloat</tt><span class="sig-paren">(</span><em>val</em>, <em>format='%5.2f'</em><span class="sig-paren">)</span><a class="headerlink" href="#IOTools.prettyFloat" title="Permalink to this definition">¶</a></dt>
+<dd><p>deprecated, use val2str</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="IOTools.prettyPercent">
+<tt class="descclassname">IOTools.</tt><tt class="descname">prettyPercent</tt><span class="sig-paren">(</span><em>numerator</em>, <em>denominator</em>, <em>format='%5.2f'</em>, <em>na='na'</em><span class="sig-paren">)</span><a class="headerlink" href="#IOTools.prettyPercent" title="Permalink to this definition">¶</a></dt>
+<dd><p>output a percent value or &#8220;na&#8221; if not defined</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="IOTools.prettyString">
+<tt class="descclassname">IOTools.</tt><tt class="descname">prettyString</tt><span class="sig-paren">(</span><em>val</em><span class="sig-paren">)</span><a class="headerlink" href="#IOTools.prettyString" title="Permalink to this definition">¶</a></dt>
+<dd><p>output val or na if val is None</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="IOTools.nested_dict">
+<em class="property">class </em><tt class="descclassname">IOTools.</tt><tt class="descname">nested_dict</tt><a class="headerlink" href="#IOTools.nested_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="http://docs.python.org/2.7/library/collections.html#collections.defaultdict" title="(in Python v2.7)"><tt class="xref py py-class docutils literal"><span class="pre">collections.defaultdict</span></tt></a></p>
+<p>Auto-vivifying nested dictionaries.</p>
+<p>For example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">nd</span><span class="o">=</span> <span class="n">nested_dict</span><span class="p">()</span>
+<span class="n">nd</span><span class="p">[</span><span class="s">&quot;mouse&quot;</span><span class="p">][</span><span class="s">&quot;chr1&quot;</span><span class="p">][</span><span class="s">&quot;+&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">311</span> 
+</pre></div>
+</div>
+<dl class="method">
+<dt id="IOTools.nested_dict.iterflattened">
+<tt class="descname">iterflattened</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#IOTools.nested_dict.iterflattened" title="Permalink to this definition">¶</a></dt>
+<dd><p>iterate through values with nested keys flattened into a tuple</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="IOTools.nested_dict.clear">
+<tt class="descname">clear</tt><span class="sig-paren">(</span><span class="sig-paren">)</span> &rarr; None.  Remove all items from D.<a class="headerlink" href="#IOTools.nested_dict.clear" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="IOTools.nested_dict.copy">
+<tt class="descname">copy</tt><span class="sig-paren">(</span><span class="sig-paren">)</span> &rarr; a shallow copy of D.<a class="headerlink" href="#IOTools.nested_dict.copy" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="IOTools.nested_dict.default_factory">
+<tt class="descname">default_factory</tt><a class="headerlink" href="#IOTools.nested_dict.default_factory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Factory for default value called by __missing__().</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="IOTools.nested_dict.fromkeys">
+<em class="property">static </em><tt class="descname">fromkeys</tt><span class="sig-paren">(</span><em>S</em><span class="optional">[</span>, <em>v</em><span class="optional">]</span><span class="sig-paren">)</span> &rarr; New dict with keys from S and values equal to v.<a class="headerlink" href="#IOTools.nested_dict.fromkeys" title="Permalink to this definition">¶</a></dt>
+<dd><p>v defaults to None.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="IOTools.nested_dict.get">
+<tt class="descname">get</tt><span class="sig-paren">(</span><em>k</em><span class="optional">[</span>, <em>d</em><span class="optional">]</span><span class="sig-paren">)</span> &rarr; D[k] if k in D, else d.  d defaults to None.<a class="headerlink" href="#IOTools.nested_dict.get" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="IOTools.nested_dict.has_key">
+<tt class="descname">has_key</tt><span class="sig-paren">(</span><em>k</em><span class="sig-paren">)</span> &rarr; True if D has a key k, else False<a class="headerlink" href="#IOTools.nested_dict.has_key" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="IOTools.nested_dict.items">
+<tt class="descname">items</tt><span class="sig-paren">(</span><span class="sig-paren">)</span> &rarr; list of D's (key, value) pairs, as 2-tuples<a class="headerlink" href="#IOTools.nested_dict.items" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="IOTools.nested_dict.iteritems">
+<tt class="descname">iteritems</tt><span class="sig-paren">(</span><span class="sig-paren">)</span> &rarr; an iterator over the (key, value) items of D<a class="headerlink" href="#IOTools.nested_dict.iteritems" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="IOTools.nested_dict.iterkeys">
+<tt class="descname">iterkeys</tt><span class="sig-paren">(</span><span class="sig-paren">)</span> &rarr; an iterator over the keys of D<a class="headerlink" href="#IOTools.nested_dict.iterkeys" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="IOTools.nested_dict.itervalues">
+<tt class="descname">itervalues</tt><span class="sig-paren">(</span><span class="sig-paren">)</span> &rarr; an iterator over the values of D<a class="headerlink" href="#IOTools.nested_dict.itervalues" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="IOTools.nested_dict.keys">
+<tt class="descname">keys</tt><span class="sig-paren">(</span><span class="sig-paren">)</span> &rarr; list of D's keys<a class="headerlink" href="#IOTools.nested_dict.keys" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="IOTools.nested_dict.pop">
+<tt class="descname">pop</tt><span class="sig-paren">(</span><em>k</em><span class="optional">[</span>, <em>d</em><span class="optional">]</span><span class="sig-paren">)</span> &rarr; v, remove specified key and return the corresponding value.<a class="headerlink" href="#IOTools.nested_dict.pop" title="Permalink to this definition">¶</a></dt>
+<dd><p>If key is not found, d is returned if given, otherwise KeyError is raised</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="IOTools.nested_dict.popitem">
+<tt class="descname">popitem</tt><span class="sig-paren">(</span><span class="sig-paren">)</span> &rarr; (k, v), remove and return some (key, value) pair as a<a class="headerlink" href="#IOTools.nested_dict.popitem" title="Permalink to this definition">¶</a></dt>
+<dd><p>2-tuple; but raise KeyError if D is empty.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="IOTools.nested_dict.setdefault">
+<tt class="descname">setdefault</tt><span class="sig-paren">(</span><em>k</em><span class="optional">[</span>, <em>d</em><span class="optional">]</span><span class="sig-paren">)</span> &rarr; D.get(k,d), also set D[k]=d if k not in D<a class="headerlink" href="#IOTools.nested_dict.setdefault" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="IOTools.nested_dict.update">
+<tt class="descname">update</tt><span class="sig-paren">(</span><em>E</em>, <em>**F</em><span class="sig-paren">)</span> &rarr; None.  Update D from dict/iterable E and F.<a class="headerlink" href="#IOTools.nested_dict.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>If E has a .keys() method, does:     for k in E: D[k] = E[k]
+If E lacks .keys() method, does:     for (k, v) in E: D[k] = v
+In either case, this is followed by: for k in F: D[k] = F[k]</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="IOTools.nested_dict.values">
+<tt class="descname">values</tt><span class="sig-paren">(</span><span class="sig-paren">)</span> &rarr; list of D's values<a class="headerlink" href="#IOTools.nested_dict.values" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="IOTools.nested_dict.viewitems">
+<tt class="descname">viewitems</tt><span class="sig-paren">(</span><span class="sig-paren">)</span> &rarr; a set-like object providing a view on D's items<a class="headerlink" href="#IOTools.nested_dict.viewitems" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="IOTools.nested_dict.viewkeys">
+<tt class="descname">viewkeys</tt><span class="sig-paren">(</span><span class="sig-paren">)</span> &rarr; a set-like object providing a view on D's keys<a class="headerlink" href="#IOTools.nested_dict.viewkeys" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="IOTools.nested_dict.viewvalues">
+<tt class="descname">viewvalues</tt><span class="sig-paren">(</span><span class="sig-paren">)</span> &rarr; an object providing a view on D's values<a class="headerlink" href="#IOTools.nested_dict.viewvalues" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="IOTools.flatten">
+<tt class="descclassname">IOTools.</tt><tt class="descname">flatten</tt><span class="sig-paren">(</span><em>l</em>, <em>ltypes=(&lt;type 'list'&gt;</em>, <em>&lt;type 'tuple'&gt;)</em><span class="sig-paren">)</span><a class="headerlink" href="#IOTools.flatten" title="Permalink to this definition">¶</a></dt>
+<dd><p>flatten a nested list/tuple.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="IOTools.which">
+<tt class="descclassname">IOTools.</tt><tt class="descname">which</tt><span class="sig-paren">(</span><em>program</em><span class="sig-paren">)</span><a class="headerlink" href="#IOTools.which" title="Permalink to this definition">¶</a></dt>
+<dd><p>check if program is in path.</p>
+<p>from post at <a class="reference external" href="http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python">http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python</a></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="IOTools.convertValue">
+<tt class="descclassname">IOTools.</tt><tt class="descname">convertValue</tt><span class="sig-paren">(</span><em>value</em>, <em>list_detection=False</em><span class="sig-paren">)</span><a class="headerlink" href="#IOTools.convertValue" title="Permalink to this definition">¶</a></dt>
+<dd><p>convert a value to int, float or str.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="IOTools.iterate_tabular">
+<tt class="descclassname">IOTools.</tt><tt class="descname">iterate_tabular</tt><span class="sig-paren">(</span><em>infile</em>, <em>sep='\t'</em><span class="sig-paren">)</span><a class="headerlink" href="#IOTools.iterate_tabular" title="Permalink to this definition">¶</a></dt>
+<dd><p>iterate over infile skipping comments.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="IOTools.openFile">
+<tt class="descclassname">IOTools.</tt><tt class="descname">openFile</tt><span class="sig-paren">(</span><em>filename</em>, <em>mode='r'</em>, <em>create_dir=False</em><span class="sig-paren">)</span><a class="headerlink" href="#IOTools.openFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>open file in <em>filename</em> with mode <em>mode</em>.</p>
+<p>If <em>create</em> is set, the directory containing filename
+will be created if it does not exist.</p>
+<p>gzip - compressed files are recognized by the
+suffix <tt class="docutils literal"><span class="pre">.gz</span></tt> and opened transparently.</p>
+<p>Note that there are differences in the file
+like objects returned, for example in the
+ability to seek.</p>
+<p>returns a file or file-like object.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="IOTools.iterate">
+<tt class="descclassname">IOTools.</tt><tt class="descname">iterate</tt><span class="sig-paren">(</span><em>infile</em><span class="sig-paren">)</span><a class="headerlink" href="#IOTools.iterate" title="Permalink to this definition">¶</a></dt>
+<dd><p>iterate over infile and return a namedtuple according to 
+first row.</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">IOTools - tools for I/O operations</a><ul>
+<li><a class="reference internal" href="#code">Code</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="CSV.html"
+                        title="previous chapter">CSV.py - Tools for parsing CSV files</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="Iterators.html"
+                        title="next chapter">Iterators.py - general purpose iterators.</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/modules/IOTools.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="Iterators.html" title="Iterators.py - general purpose iterators."
+             >next</a> |</li>
+        <li class="right" >
+          <a href="CSV.html" title="CSV.py - Tools for parsing CSV files"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" >Modules</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

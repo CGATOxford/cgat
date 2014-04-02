@@ -1,0 +1,172 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>SaryFasta.py - index fasta files by suffix array &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="Modules" href="../modules.html" />
+    <link rel="next" title="Fasta.py - Methods for dealing with fasta files." href="Fasta.html" />
+    <link rel="prev" title="IntervallsWeigted.py - working with weigted intervals" href="IntervallsWeighted.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="Fasta.html" title="Fasta.py - Methods for dealing with fasta files."
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="IntervallsWeighted.html" title="IntervallsWeigted.py - working with weigted intervals"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" accesskey="U">Modules</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-SaryFasta"></span><div class="section" id="saryfasta-py-index-fasta-files-by-suffix-array">
+<h1>SaryFasta.py - index fasta files by suffix array<a class="headerlink" href="#saryfasta-py-index-fasta-files-by-suffix-array" title="Permalink to this headline">¶</a></h1>
+<p>Subroutines for working on I/O of large genomic files.</p>
+<p>Index a fasta file to retrieve sequences by suffix-array fragment
+search.</p>
+<p>python SaryFasta.py [options] name [ files ]</p>
+<dl class="function">
+<dt id="SaryFasta.getHID">
+<tt class="descclassname">SaryFasta.</tt><tt class="descname">getHID</tt><span class="sig-paren">(</span><em>sequence</em><span class="sig-paren">)</span><a class="headerlink" href="#SaryFasta.getHID" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns a hash identifier for a sequence.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="SaryFasta.createDatabase">
+<tt class="descclassname">SaryFasta.</tt><tt class="descname">createDatabase</tt><span class="sig-paren">(</span><em>db</em>, <em>filenames</em>, <em>buf_size=400000000</em>, <em>force=False</em>, <em>regex_identifier=None</em><span class="sig-paren">)</span><a class="headerlink" href="#SaryFasta.createDatabase" title="Permalink to this definition">¶</a></dt>
+<dd><p>index files in filenames to create database.</p>
+<p>buf_size: buffer size for a sary chunk.</p>
+<p>Two new files are created - db.fasta and db_name.idx</p>
+<p>regex_identifier: pattern to extract identifier from description line.
+If None, the part until the first white-space character is used.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="SaryFasta.benchmarkRandomFragment">
+<tt class="descclassname">SaryFasta.</tt><tt class="descname">benchmarkRandomFragment</tt><span class="sig-paren">(</span><em>fasta</em>, <em>size</em><span class="sig-paren">)</span><a class="headerlink" href="#SaryFasta.benchmarkRandomFragment" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns a random fragment of size.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="SaryFasta.verify">
+<tt class="descclassname">SaryFasta.</tt><tt class="descname">verify</tt><span class="sig-paren">(</span><em>reference</em>, <em>fasta</em>, <em>num_iterations</em>, <em>fragment_size</em>, <em>stdout=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2aaff7fbf1e0&gt;</em>, <em>quiet=False</em><span class="sig-paren">)</span><a class="headerlink" href="#SaryFasta.verify" title="Permalink to this definition">¶</a></dt>
+<dd><p>verify two databases.</p>
+<p>Get segment from fasta and check for presence in fasta2.</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="IntervallsWeighted.html"
+                        title="previous chapter">IntervallsWeigted.py - working with weigted intervals</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="Fasta.html"
+                        title="next chapter">Fasta.py - Methods for dealing with fasta files.</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/modules/SaryFasta.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="Fasta.html" title="Fasta.py - Methods for dealing with fasta files."
+             >next</a> |</li>
+        <li class="right" >
+          <a href="IntervallsWeighted.html" title="IntervallsWeigted.py - working with weigted intervals"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" >Modules</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

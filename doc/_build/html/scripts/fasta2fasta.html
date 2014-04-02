@@ -1,0 +1,287 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>fasta2fasta.py - operate on sequences &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="Scripts" href="../scripts.html" />
+    <link rel="next" title="fasta2kmercontent.py" href="fasta2kmercontent.html" />
+    <link rel="prev" title="diff_bam.py - compare multiple bam files against each other" href="diff_bam.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="fasta2kmercontent.html" title="fasta2kmercontent.py"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="diff_bam.html" title="diff_bam.py - compare multiple bam files against each other"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../scripts.html" accesskey="U">Scripts</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-fasta2fasta"></span><div class="section" id="fasta2fasta-py-operate-on-sequences">
+<h1>fasta2fasta.py - operate on sequences<a class="headerlink" href="#fasta2fasta-py-operate-on-sequences" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Andreas Heger</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id$</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Sequences</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="purpose">
+<h2>Purpose<a class="headerlink" href="#purpose" title="Permalink to this headline">¶</a></h2>
+<p>perform operations (masking, renaming) on a stream of fasta formatted sequences.</p>
+<p>Available edit operations are:</p>
+<dl class="docutils">
+<dt>translate</dt>
+<dd>translate sequences using the standard genetic code.</dd>
+<dt>translate-to-stop</dt>
+<dd>translate until first stop codon</dd>
+<dt>truncate-at-stop</dt>
+<dd>truncate sequence at first stop codon</dd>
+<dt>back-translate</dt>
+<dd>convert nucleotide sequence to peptide sequence
+Requires parameter of second fasta file with peptide sequences.</dd>
+<dt>mark-codons</dt>
+<dd>adds a space after each codon</dd>
+<dt>apply-map</dt>
+<dd>rename sequence identifiers from a given map
+Requires parameter with filename of a map. The map is a 
+tab-separated file mapping old to new names.</dd>
+<dt>build-map</dt>
+<dd>rename sequence identifiers numerically and save output in a tab-separated file. 
+Requires parameter with filename of a map. The map is a tab-separated file
+mapping new to old names and will be newly created. Any exiting file of the 
+same name will be overwritten.</dd>
+<dt>pseudo-codons</dt>
+<dd>translate, but keep register with codons</dd>
+<dt>interleaved-codons</dt>
+<dd>mix amino acids and codons</dd>
+</dl>
+<p>map-codons:</p>
+<dl class="docutils">
+<dt>remove-gaps</dt>
+<dd>remove all gaps in the sequence</dd>
+<dt>mask-stops</dt>
+<dd>mask all stop codons</dd>
+<dt>mask-seg</dt>
+<dd>mask sequence by running seg</dd>
+<dt>mask-bias</dt>
+<dd>mask sequence by running bias</dd>
+<dt>mask-codons</dt>
+<dd>mask codon sequence given a masked amino acid sequence.
+Requires parameter with masked amino acids in fasta format.</dd>
+<dt>mask-incomplete-codons</dt>
+<dd>mask codons that are partially masked or gapped</dd>
+<dt>mask-soft</dt>
+<dd>combine hard-masked (NNN) sequences with unmasked sequences to generate 
+soft masked sequence (masked regions in lower case)</dd>
+<dt>remove-stops</dt>
+<dd>remove stop codons</dd>
+<dt>upper</dt>
+<dd>convert sequence to upper case</dd>
+<dt>lower</dt>
+<dd>convert sequence to lower case</dd>
+<dt>reverse-complement</dt>
+<dd>build the reverse complement</dd>
+<dt>shuffle</dt>
+<dd>shuffle each sequence</dd>
+<dt>sample</dt>
+<dd>select a certain proportion of sequences</dd>
+</dl>
+<p>Parameters are given to the option parameters in a comma-separated list in the order
+that the edit operations are called upon.</p>
+<p>Exclusion/inclusion is tested before applying any id mapping.</p>
+</div>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>Example:</p>
+<div class="highlight-python"><div class="highlight"><pre>python fasta2fasta.py --method=translate &lt; in.fasta &gt; out.fasta
+</pre></div>
+</div>
+<p>Type:</p>
+<div class="highlight-python"><div class="highlight"><pre>python fasta2fasta.py --help
+</pre></div>
+</div>
+<p>for command line help.</p>
+</div>
+<div class="section" id="command-line-options">
+<h2>Command line options<a class="headerlink" href="#command-line-options" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+<div class="highlight-text"><div class="highlight"><pre>Usage: fasta2fasta.py [options]
+
+Options:
+  --version             show program&#39;s version number and exit
+  -h, --help            show this help message and exit
+  --no-usage            output help without usage information
+  -m METHODS, --method=METHODS
+                        method to apply to sequences.
+  -p PARAMETERS, --parameters=PARAMETERS
+                        parameter stack for methods that require one [default
+                        = ].
+  -x, --ignore-errors   ignore errors [default = False].
+  -e EXCLUDE, --exclude=EXCLUDE
+                        exclude sequences with ids matching pattern [default =
+                        none].
+  --sample-proportion=SAMPLE_PROPORTION
+                        sample proportion [default = none].
+  -n INCLUDE, --include=INCLUDE
+                        include sequences with ids matching pattern [default =
+                        none].
+  -t TYPE, --type=TYPE  sequence type (aa or na) [na]. This option determines
+                        which characters to use for masking [default = na].
+  -l TEMPLATE_IDENTIFIER, --template-identifier=TEMPLATE_IDENTIFIER
+                        template for numerical identifier [default = ID%06i]
+                        for the operation --build-map. A %i is replaced by the
+                        position of the sequence in the file.
+  -v LOGLEVEL, --verbose=LOGLEVEL
+                        loglevel [1]. The higher, the more output.
+  --timeit=TIMEIT_FILE  store timeing information in file [none].
+  --timeit-name=TIMEIT_NAME
+                        name in timing file for this class of jobs [all].
+  --timeit-header       add header for timing information [none].
+  --random-seed=RANDOM_SEED
+                        random seed to initialize number generator with
+                        [none].
+  -I FILE, --stdin=FILE
+                        file to read stdin from [default = stdin].
+  -L FILE, --log=FILE   file with logging information [default = stdout].
+  -E FILE, --error=FILE
+                        file with error information [default = stderr].
+  -S FILE, --stdout=FILE
+                        file where output is to go [default = stdout].
+</pre></div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">fasta2fasta.py - operate on sequences</a><ul>
+<li><a class="reference internal" href="#purpose">Purpose</a></li>
+<li><a class="reference internal" href="#usage">Usage</a></li>
+<li><a class="reference internal" href="#command-line-options">Command line options</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="diff_bam.html"
+                        title="previous chapter">diff_bam.py - compare multiple bam files against each other</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="fasta2kmercontent.html"
+                        title="next chapter">fasta2kmercontent.py</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/scripts/fasta2fasta.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="fasta2kmercontent.html" title="fasta2kmercontent.py"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="diff_bam.html" title="diff_bam.py - compare multiple bam files against each other"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../scripts.html" >Scripts</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,648 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>PredictionParser.py - Parser for exonerate/genewise output &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="Modules" href="../modules.html" />
+    <link rel="next" title="Predictor.py - running gene predictions with exonerate" href="Predictor.html" />
+    <link rel="prev" title="PredictionFile.py -" href="PredictionFile.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="Predictor.html" title="Predictor.py - running gene predictions with exonerate"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="PredictionFile.html" title="PredictionFile.py -"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" accesskey="U">Modules</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-PredictionParser"></span><div class="section" id="predictionparser-py-parser-for-exonerate-genewise-output">
+<h1>PredictionParser.py - Parser for exonerate/genewise output<a class="headerlink" href="#predictionparser-py-parser-for-exonerate-genewise-output" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Andreas Heger</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id$</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Python</td>
+</tr>
+</tbody>
+</table>
+<dl class="exception">
+<dt id="PredictionParser.Error">
+<em class="property">exception </em><tt class="descclassname">PredictionParser.</tt><tt class="descname">Error</tt><a class="headerlink" href="#PredictionParser.Error" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="http://docs.python.org/2.7/library/exceptions.html#exceptions.Exception" title="(in Python v2.7)"><tt class="xref py py-class docutils literal"><span class="pre">exceptions.Exception</span></tt></a></p>
+<p>Base class for exceptions in this module.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="PredictionParser.InputError">
+<em class="property">exception </em><tt class="descclassname">PredictionParser.</tt><tt class="descname">InputError</tt><span class="sig-paren">(</span><em>message</em><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.InputError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#PredictionParser.Error" title="PredictionParser.Error"><tt class="xref py py-class docutils literal"><span class="pre">PredictionParser.Error</span></tt></a></p>
+<p>Exception raised for errors in the input.</p>
+<dl class="docutils">
+<dt>Attributes:</dt>
+<dd>expression &#8211; input expression in which the error occurred
+message &#8211; explanation of the error</dd>
+</dl>
+</dd></dl>
+
+<dl class="exception">
+<dt id="PredictionParser.AlignmentError">
+<em class="property">exception </em><tt class="descclassname">PredictionParser.</tt><tt class="descname">AlignmentError</tt><span class="sig-paren">(</span><em>message</em><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.AlignmentError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#PredictionParser.Error" title="PredictionParser.Error"><tt class="xref py py-class docutils literal"><span class="pre">PredictionParser.Error</span></tt></a></p>
+<p>Exception raised by inconsistent alignments.</p>
+<dl class="docutils">
+<dt>Attributes:</dt>
+<dd>expression &#8211; input expression in which the error occurred
+message &#8211; explanation of the error</dd>
+</dl>
+</dd></dl>
+
+<dl class="class">
+<dt id="PredictionParser.PredictionParserEntryCaleb">
+<em class="property">class </em><tt class="descclassname">PredictionParser.</tt><tt class="descname">PredictionParserEntryCaleb</tt><a class="headerlink" href="#PredictionParser.PredictionParserEntryCaleb" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">PredictionParser.PredictionParserEntry</span></tt></p>
+<p>a parser to convert Calebs predictions.</p>
+<p>The format is:
+ENSG00000000005 ENST00000003616 688.97  96.85   100     1       318     317     17 61 108 142 193 249   NULL    NULL    951     100     X       +       77495591        77511098      MAKNPPENCEDCHILNAEAFKSKKICKSLKICGLVFGILALTLIVLFWGGKHFWPETPKKTYDMEHTFYSNGEKKKIYMEIDPVTRTEIFRSGNGTDETLEVHDFKNGYTGIYFVGLQKCFIKTQIKVIPEFSEPEEEIDENEEITTTFFEQSVIWVPAEKPIENRDFLKNSKILEICDNVTMYWINPTLIAVSELQDFEEDGEDLHFPTNEKKGIEQNEQWVVPQVKMEKIRHTRQASEEELPINDYTENGLEFDPMLDERGYCCIYCRRGNRYCRRVCEPLLGYYPYPYCYQGGRVICRVIMPCNWWVARMLGRV atggcaaagaatcctccagagaactgtgaggactgtcacattctaaatgcagaagcttttaaatccaagaagatatgtaaatcacttaagatttgtggattggtgtttggtatcctggctctaactctaattgtcctgttttgggggggcaagcacttctggccggagacacccaaaaaaacatatgacatggagcacactttctacagcaatggagagaagaagaagatttacatggaaattgatcctgtgaccagaactgaaatattcagaagtggaaatggcactgatgaaacattggaagtacatgactttaaaaatggttacactggcatctactttgtaggtcttcaaaaatgcttcatcaaaactcagattaaagtgattcctgaattttctgaaccagaggaggaaatagatgagaatgaagaaatcaccacaactttttttgaacagtctgtgatttgggtcccagcagaaaagcctattgaaaatcgagactttctgaaaaattccaaaattctggaaatttgtgataatgtgaccatgtattggatcaatcccactctaatagcagtttcagagttacaagactttgaggaagatggtgaagatcttcactttcctaccaatgaaaaaaaaggtattgaacaaaacgagcagtgggtggtcccccaagtgaagatggaaaagatccgccacaccagacaagcaagtgaggaagaacttccaataaatgactatactgaaaatggactagaatttgatcccatgctggatgagagaggttattgttgtatttactgccgtcgaggcaaccgctactgccgccgcgtctgtgaacctttactaggttactacccgtatccatactgctatcaaggagggcgggttatctgtcgtgtcatcatgccttgcaactggtgggtagcccgcatgctggggagggtc     MAKNPPENCEDCHILNAEAFKSKKICKSLKICGLVFGILALTLIVLFWGSKHFWPEVPKKAYDMEHTFYSNGEKKKIYMEIDPVTRTEIFRSGNGTDETLEVHDFKNGYTGIYFVGLQKCFIKTQIKVIPEFSEPEEEIDENEEITTTFFEQSVIWVPAEKPIENRDFLKNSKILEICDNVTMYWINPTLISVSELQDFEEEGEDLHFPANEKKGIEQNEQWVVPQVKVEKTRHARQASEEELPINDYTENGIEFDPMLDERGYCCIYCRRGNRYCRRVCEPLLGYYPYPYCYQGGRVICRVIMPCNWWVARMLGRV       MAKNPPENCEDCHILNAEAFKSKKICKSLKICGLVFGILALTLIVLFWGGKHFWPETPKKTYDMEHTFYSNGEKKKIYMEIDPVTRTEIFRSGNGTDETLEVHDFKNGYTGIYFVGLQKCFIKTQIKVIPEFSEPEEEIDENEEITTTFFEQSVIWVPAEKPIENRDFLKNSKILEICDNVTMYWINPTLIAVSELQDFEEDGEDLHFPTNEKKGIEQNEQWVVPQVKMEKIRHTRQASEEELPINDYTENGLEFDPMLDERGYCCIYCRRGNRYCRRVCEPLLGYYPYPYCYQGGRVICRVIMPCNWWVARMLGRV       0       3904_results    0       0.0167  0.2019  0.0825  678.5   272.5   0.00517 0.03308 4.8054  -1484.5 0.2092  NULL    0       317     317     1       0    317      317     317     NULL    NULL    794.08</p>
+<p>Note: Caleb&#8217;s protein positions sometimes start 0.</p>
+<dl class="method">
+<dt id="PredictionParser.PredictionParserEntryCaleb.Add">
+<tt class="descname">Add</tt><span class="sig-paren">(</span><em>const_other</em>, <em>combine_contig=False</em>, <em>allow_overlap=False</em>, <em>contig_size=0</em><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserEntryCaleb.Add" title="Permalink to this definition">¶</a></dt>
+<dd><p>add one entry to another.</p>
+<p>This procedure allows to add
+- predictions on different contigs if combine_contig = True
+- overlapping predictions on the same query if allow_overlap = True</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserEntryCaleb.CleanAlignmentInfo">
+<tt class="descname">CleanAlignmentInfo</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserEntryCaleb.CleanAlignmentInfo" title="Permalink to this definition">¶</a></dt>
+<dd><p>remove alignment information (to save space).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserEntryCaleb.GetCopy">
+<tt class="descname">GetCopy</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserEntryCaleb.GetCopy" title="Permalink to this definition">¶</a></dt>
+<dd><p>return a new copy.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserEntryCaleb.GetExonBoundariesOnGenome">
+<tt class="descname">GetExonBoundariesOnGenome</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserEntryCaleb.GetExonBoundariesOnGenome" title="Permalink to this definition">¶</a></dt>
+<dd><p>return a list of exons for this prediction.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserEntryCaleb.InvertGenomicCoordinates">
+<tt class="descname">InvertGenomicCoordinates</tt><span class="sig-paren">(</span><em>lgenome</em><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserEntryCaleb.InvertGenomicCoordinates" title="Permalink to this definition">¶</a></dt>
+<dd><p>invert genomic alignment on sequence.</p>
+<p>Negative strand is calculated from the other end.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserEntryCaleb.SetStrand">
+<tt class="descname">SetStrand</tt><span class="sig-paren">(</span><em>strand</em><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserEntryCaleb.SetStrand" title="Permalink to this definition">¶</a></dt>
+<dd><p>set strand.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserEntryCaleb.SetTranslation">
+<tt class="descname">SetTranslation</tt><span class="sig-paren">(</span><em>genomic_sequence</em><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserEntryCaleb.SetTranslation" title="Permalink to this definition">¶</a></dt>
+<dd><p>set translation from genomic sequence.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserEntryCaleb.ShiftGenomicRegion">
+<tt class="descname">ShiftGenomicRegion</tt><span class="sig-paren">(</span><em>offset</em><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserEntryCaleb.ShiftGenomicRegion" title="Permalink to this definition">¶</a></dt>
+<dd><p>shift aligned genomic region by offset.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserEntryCaleb.ShiftQueryRegion">
+<tt class="descname">ShiftQueryRegion</tt><span class="sig-paren">(</span><em>offset</em><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserEntryCaleb.ShiftQueryRegion" title="Permalink to this definition">¶</a></dt>
+<dd><p>shift aligned genomic region by offset.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserEntryCaleb.Write">
+<tt class="descname">Write</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserEntryCaleb.Write" title="Permalink to this definition">¶</a></dt>
+<dd><p>write a tab separated list of results.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="PredictionParser.iterator_predictions">
+<tt class="descclassname">PredictionParser.</tt><tt class="descname">iterator_predictions</tt><span class="sig-paren">(</span><em>infile</em><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.iterator_predictions" title="Permalink to this definition">¶</a></dt>
+<dd><p>a simple iterator over all entries in a file.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="PredictionParser.PredictionParserGenewise">
+<em class="property">class </em><tt class="descclassname">PredictionParser.</tt><tt class="descname">PredictionParserGenewise</tt><a class="headerlink" href="#PredictionParser.PredictionParserGenewise" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">PredictionParser.PredictionParser</span></tt></p>
+<p>Parse output from genewise.</p>
+<dl class="method">
+<dt id="PredictionParser.PredictionParserGenewise.GetNew">
+<tt class="descname">GetNew</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserGenewise.GetNew" title="Permalink to this definition">¶</a></dt>
+<dd><p>return object of the same type.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserGenewise.ExtractData">
+<tt class="descname">ExtractData</tt><span class="sig-paren">(</span><em>lines</em>, <em>peptide_sequence</em>, <em>genomic_sequence</em><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserGenewise.ExtractData" title="Permalink to this definition">¶</a></dt>
+<dd><p>call the various parsers for a chunk of data.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserGenewise.ParseSummary">
+<tt class="descname">ParseSummary</tt><span class="sig-paren">(</span><em>lines</em><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserGenewise.ParseSummary" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse summary entry of genewise.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserGenewise.ParseTranslation">
+<tt class="descname">ParseTranslation</tt><span class="sig-paren">(</span><em>lines</em><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserGenewise.ParseTranslation" title="Permalink to this definition">¶</a></dt>
+<dd><p>read a translation entry from genewise.</p>
+<p>return a tuple (description, sequence)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserGenewise.ParsePeptide">
+<tt class="descname">ParsePeptide</tt><span class="sig-paren">(</span><em>lines</em><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserGenewise.ParsePeptide" title="Permalink to this definition">¶</a></dt>
+<dd><p>read a peptide entry from genewise.</p>
+<p>return a tuple (description, sequence, modifications)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserGenewise.ParseAlb">
+<tt class="descname">ParseAlb</tt><span class="sig-paren">(</span><em>lines</em><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserGenewise.ParseAlb" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse genewise logical block alignment and return aligment.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">tuple with <tt class="docutils literal"><span class="pre">(code,</span> <span class="pre">score,</span> <span class="pre">ngaps,</span> <span class="pre">nframeshifts,</span>
+<span class="pre">nintrons,</span> <span class="pre">nphase0,</span> <span class="pre">nphase1,</span> <span class="pre">nphase2,</span>
+<span class="pre">alignment</span> <span class="pre">of</span> <span class="pre">peptide</span> <span class="pre">to</span> <span class="pre">genome,</span>
+<span class="pre">alignment</span> <span class="pre">of</span> <span class="pre">peptide</span> <span class="pre">to</span> <span class="pre">translation)</span></tt></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserGenewise.GetNumErrors">
+<tt class="descname">GetNumErrors</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserGenewise.GetNumErrors" title="Permalink to this definition">¶</a></dt>
+<dd><p>return number of errors.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserGenewise.GetNumInput">
+<tt class="descname">GetNumInput</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserGenewise.GetNumInput" title="Permalink to this definition">¶</a></dt>
+<dd><p>return number of input.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserGenewise.GetNumOutput">
+<tt class="descname">GetNumOutput</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserGenewise.GetNumOutput" title="Permalink to this definition">¶</a></dt>
+<dd><p>return number of output.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserGenewise.Parse">
+<tt class="descname">Parse</tt><span class="sig-paren">(</span><em>lines</em>, <em>peptide_sequence=None</em>, <em>genomic_sequence=None</em><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserGenewise.Parse" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse lines.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserGenewise.Sort">
+<tt class="descname">Sort</tt><span class="sig-paren">(</span><em>cmp_function=None</em><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserGenewise.Sort" title="Permalink to this definition">¶</a></dt>
+<dd><p>sort predictions.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserGenewise.Write">
+<tt class="descname">Write</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserGenewise.Write" title="Permalink to this definition">¶</a></dt>
+<dd><p>write a tab separated list of results.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="PredictionParser.PredictionParserExonerate">
+<em class="property">class </em><tt class="descclassname">PredictionParser.</tt><tt class="descname">PredictionParserExonerate</tt><a class="headerlink" href="#PredictionParser.PredictionParserExonerate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">PredictionParser.PredictionParser</span></tt></p>
+<p>Parse output from exonerate.</p>
+<dl class="method">
+<dt id="PredictionParser.PredictionParserExonerate.GetNumErrors">
+<tt class="descname">GetNumErrors</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserExonerate.GetNumErrors" title="Permalink to this definition">¶</a></dt>
+<dd><p>return number of errors.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserExonerate.GetNumInput">
+<tt class="descname">GetNumInput</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserExonerate.GetNumInput" title="Permalink to this definition">¶</a></dt>
+<dd><p>return number of input.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserExonerate.GetNumOutput">
+<tt class="descname">GetNumOutput</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserExonerate.GetNumOutput" title="Permalink to this definition">¶</a></dt>
+<dd><p>return number of output.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserExonerate.Parse">
+<tt class="descname">Parse</tt><span class="sig-paren">(</span><em>lines</em>, <em>peptide_sequence=None</em>, <em>genomic_sequence=None</em><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserExonerate.Parse" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse lines.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserExonerate.Sort">
+<tt class="descname">Sort</tt><span class="sig-paren">(</span><em>cmp_function=None</em><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserExonerate.Sort" title="Permalink to this definition">¶</a></dt>
+<dd><p>sort predictions.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserExonerate.Write">
+<tt class="descname">Write</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserExonerate.Write" title="Permalink to this definition">¶</a></dt>
+<dd><p>write a tab separated list of results.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="PredictionParser.Blocks2Alignment">
+<tt class="descclassname">PredictionParser.</tt><tt class="descname">Blocks2Alignment</tt><span class="sig-paren">(</span><em>query_block_starts</em>, <em>sbjct_block_starts</em>, <em>block_sizes</em><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.Blocks2Alignment" title="Permalink to this definition">¶</a></dt>
+<dd><p>convert a list of blocks to a peptid2genome alignment.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PredictionParser.Blocks2AlignmentCDNA">
+<tt class="descclassname">PredictionParser.</tt><tt class="descname">Blocks2AlignmentCDNA</tt><span class="sig-paren">(</span><em>query_block_starts</em>, <em>sbjct_block_starts</em>, <em>block_sizes</em><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.Blocks2AlignmentCDNA" title="Permalink to this definition">¶</a></dt>
+<dd><p>convert a list of blocks to a peptid2genome alignment.</p>
+<p>Both blocks are in nucleotides.</p>
+<p>Just get the exon structure correct.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="PredictionParser.PredictionParserBlatCDNA">
+<em class="property">class </em><tt class="descclassname">PredictionParser.</tt><tt class="descname">PredictionParserBlatCDNA</tt><a class="headerlink" href="#PredictionParser.PredictionParserBlatCDNA" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">PredictionParser.PredictionParser</span></tt></p>
+<p>Parse output from psl.</p>
+<p>Sample line:</p>
+<div class="highlight-python"><div class="highlight"><pre>psLayout version 3
+
+match   mis-    rep.    N&#39;s     Q gap   Q gap   T gap   T gap   strand  Q               Q       Q       Q       T               T       T       T       block   blockSizes
+        qStarts  tStarts
+        match   match           count   bases   count   bases           name            size    start   end     name            size    start   end     count
+:: ---------------------------------------------------------------------------------------------------------------------------------------------------------------
+885     0       0       0       0       0       3       85      +       ENSCAFT00000000002      885     0       885     chr1.fa 124897793       3228799 3229769 4       41,577,103,164,       0,41,618,721,   3228799,3228845,3229427,3229605,        aactactttggattcacccacagtggggcggcggcagcagc,ggctgcggcccagtatagccagcatccagcttctggtgtagcctactctcatccaactacagttgctagctacgctatccatcaggctccagtagctgctcacacagttactgcggcccatgcaccagcaggcaccacagttgcagttgccaggcctgccccagtagctgttgcagctgctgcaatagctgctgcttatggaggctaccccactggacatacagcaagtgactatggctctatccagagacaacaagaagcaccaccaccagcacccccagctactacacagaactaccaggactcatactcatatgtaagatccactgctcctgctgtagcatatgatagtaagcagctgcctgcccagcctcagccttctgttgctgaaacctactatcagattgcccccaaagcaggttatagccaaggtgcaactcagtatacacaagcccagcaaactcgacaagtgacagccataaaaccagccacaccaagtccagctaccactactttctccatttatcccgtatcttccatcgttcagtcagtagcagttgcagctactgtggtgcca,tatacccagagtgctacttatagtaccatggcagttacttattctggtacatcttattcaggttatgaagcagcagtatattcagctgcatccttctactacc,cagctgcctggacagggaccatctttactaaaaaagcaccattccaaaataaacaactgaaaccaaaacagcctcccaaaccggcccagatagattatcgtgatgtttgtaagattagctgtgctgaaccacagacttataaagaacatttagaaggacaaaaa,     aactactttggattcacccacagtggggcggcggcagcagc,ggctgcggcccagtatagccagcatccagcttctggtgtagcctactctcatccaactacagttgctagctacgctatccatcaggctccagtagctgctcacacagttactgcggcccatgcaccagcaggcaccacagttgcagttgccaggcctgccccagtagctgttgcagctgctgcaatagctgctgcttatggaggctaccccactggacatacagcaagtgactatggctctatccagagacaacaagaagcaccaccaccagcacccccagctactacacagaactaccaggactcatactcatatgtaagatccactgctcctgctgtagcatatgatagtaagcagctgcctgcccagcctcagccttctgttgctgaaacctactatcagattgcccccaaagcaggttatagccaaggtgcaactcagtatacacaagcccagcaaactcgacaagtgacagccataaaaccagccacaccaagtccagctaccactactttctccatttatcccgtatcttccatcgttcagtcagtagcagttgcagctactgtggtgcca,tatacccagagtgctacttatagtaccatggcagttacttattctggtacatcttattcaggttatgaagcagcagtatattcagctgcatccttctactacc,cagctgcctggacagggaccatctttactaaaaaagcaccattccaaaataaacaactgaaaccaaaacagcctcccaaaccggcccagatagattatcgtgatgtttgtaagattagctgtgctgaaccacagacttataaagaacatttagaaggacaaaaa,
+</pre></div>
+</div>
+<p>Run is cDNA versus genome.</p>
+<dl class="method">
+<dt id="PredictionParser.PredictionParserBlatCDNA.ExtractData">
+<tt class="descname">ExtractData</tt><span class="sig-paren">(</span><em>lines</em>, <em>peptide_sequence</em>, <em>genomic_sequence</em><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserBlatCDNA.ExtractData" title="Permalink to this definition">¶</a></dt>
+<dd><p>extract data from psl, tab-formatted output.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserBlatCDNA.GetNumErrors">
+<tt class="descname">GetNumErrors</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserBlatCDNA.GetNumErrors" title="Permalink to this definition">¶</a></dt>
+<dd><p>return number of errors.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserBlatCDNA.GetNumInput">
+<tt class="descname">GetNumInput</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserBlatCDNA.GetNumInput" title="Permalink to this definition">¶</a></dt>
+<dd><p>return number of input.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserBlatCDNA.GetNumOutput">
+<tt class="descname">GetNumOutput</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserBlatCDNA.GetNumOutput" title="Permalink to this definition">¶</a></dt>
+<dd><p>return number of output.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserBlatCDNA.Parse">
+<tt class="descname">Parse</tt><span class="sig-paren">(</span><em>lines</em>, <em>peptide_sequence=None</em>, <em>genomic_sequence=None</em><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserBlatCDNA.Parse" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse lines.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserBlatCDNA.Sort">
+<tt class="descname">Sort</tt><span class="sig-paren">(</span><em>cmp_function=None</em><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserBlatCDNA.Sort" title="Permalink to this definition">¶</a></dt>
+<dd><p>sort predictions.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserBlatCDNA.Write">
+<tt class="descname">Write</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserBlatCDNA.Write" title="Permalink to this definition">¶</a></dt>
+<dd><p>write a tab separated list of results.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="PredictionParser.PredictionParserBlatTrans">
+<em class="property">class </em><tt class="descclassname">PredictionParser.</tt><tt class="descname">PredictionParserBlatTrans</tt><a class="headerlink" href="#PredictionParser.PredictionParserBlatTrans" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">PredictionParser.PredictionParser</span></tt></p>
+<p>Parse output from psl.</p>
+<p>Query is protein, database is 6frame translation</p>
+<p>Input looks like this:</p>
+<div class="highlight-python"><div class="highlight"><pre>psLayout version 3
+
+match   mis-    rep.    N&#39;s     Q gap   Q gap   T gap   T gap   strand  Q               Q       Q       Q       T               T       T       T       block   blockSizes
+        qStarts  tStarts
+        match   match           count   bases   count   bases           name            size    start   end     name            size    start   end     count
+:: ---------------------------------------------------------------------------------------------------------------------------------------------------------------
+98      0       0       0       0       0       2       3113    +-      185061  98      0       98      chr19.fa        56914383        6068186 6071593 3       28,27,43,        0,28,55,        50842790,50845539,50846068,     IFSCRQNCVEFYPIFLVTLWMAGWYFNQ,VFATCLGLVYIYARHQYFWGYSEAAKK,RITGFRLSLGCLALLTVLGALGIANSFLDEYLDLNVIKKLRHF,   IFSCRQNCVEFYPIFLVTLWMAGWYFNQ,VFATCLGLVYIYARHQYFWGYSEAAKK,RITGFRLSLGCLALLTVLGALGIANSFLDEYLDLNVIKKLRHF,
+</pre></div>
+</div>
+<dl class="method">
+<dt id="PredictionParser.PredictionParserBlatTrans.ExtractData">
+<tt class="descname">ExtractData</tt><span class="sig-paren">(</span><em>lines</em>, <em>peptide_sequence</em>, <em>genomic_sequence</em><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserBlatTrans.ExtractData" title="Permalink to this definition">¶</a></dt>
+<dd><p>extract data from psl, tab-formatted output.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserBlatTrans.GetNumErrors">
+<tt class="descname">GetNumErrors</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserBlatTrans.GetNumErrors" title="Permalink to this definition">¶</a></dt>
+<dd><p>return number of errors.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserBlatTrans.GetNumInput">
+<tt class="descname">GetNumInput</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserBlatTrans.GetNumInput" title="Permalink to this definition">¶</a></dt>
+<dd><p>return number of input.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserBlatTrans.GetNumOutput">
+<tt class="descname">GetNumOutput</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserBlatTrans.GetNumOutput" title="Permalink to this definition">¶</a></dt>
+<dd><p>return number of output.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserBlatTrans.Parse">
+<tt class="descname">Parse</tt><span class="sig-paren">(</span><em>lines</em>, <em>peptide_sequence=None</em>, <em>genomic_sequence=None</em><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserBlatTrans.Parse" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse lines.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserBlatTrans.Sort">
+<tt class="descname">Sort</tt><span class="sig-paren">(</span><em>cmp_function=None</em><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserBlatTrans.Sort" title="Permalink to this definition">¶</a></dt>
+<dd><p>sort predictions.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserBlatTrans.Write">
+<tt class="descname">Write</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserBlatTrans.Write" title="Permalink to this definition">¶</a></dt>
+<dd><p>write a tab separated list of results.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="PredictionParser.PredictionParserExons">
+<em class="property">class </em><tt class="descclassname">PredictionParser.</tt><tt class="descname">PredictionParserExons</tt><span class="sig-paren">(</span><em>contig_sizes={}</em><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserExons" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">PredictionParser.PredictionParser</span></tt></p>
+<p>Parse output from exons file.</p>
+<p>Input looks like this:</p>
+<div class="highlight-python"><div class="highlight"><pre>CG9926-RA       chr3R   -1      0       1       0       696     9776126 9776819
+CG9927-RA       chr3R   -1      0       1       0       398     9771125 9771523
+CG9927-RA       chr3R   -1      1       2       398     1026    9770442 9771067
+CG9928-RA       chr2L   -1      0       1       0       321     13131417        13131735
+CG9929-RA       chr3R   -1      0       1       0       117     9769026 9769143
+CG9929-RA       chr3R   -1      0       2       117     347     9768742 9768972
+CG9929-RA       chr3R   -1      1       3       347     942     9768091 9768683
+CG9930-RA       chr3R   -1      0       1       0       880     9699040 9699920
+CG9930-RA       chr3R   -1      2       2       880     1038    9694339 9694497
+CG9930-RA       chr3R   -1      0       3       1038    1575    9693241 9693775
+</pre></div>
+</div>
+<p>Negative strand exons are given as positive strand coordinates, but are still sorted
+in increasing order.</p>
+<p>Coordinates are zero-based in open/closed notation.</p>
+<p>The score is set to the length of the transcript.</p>
+<dl class="method">
+<dt id="PredictionParser.PredictionParserExons.ExtractData">
+<tt class="descname">ExtractData</tt><span class="sig-paren">(</span><em>lines</em>, <em>peptide_sequence</em>, <em>genomic_sequence</em><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserExons.ExtractData" title="Permalink to this definition">¶</a></dt>
+<dd><p>extract data from exons file, tab-formatted output.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserExons.GetNumErrors">
+<tt class="descname">GetNumErrors</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserExons.GetNumErrors" title="Permalink to this definition">¶</a></dt>
+<dd><p>return number of errors.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserExons.GetNumInput">
+<tt class="descname">GetNumInput</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserExons.GetNumInput" title="Permalink to this definition">¶</a></dt>
+<dd><p>return number of input.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserExons.GetNumOutput">
+<tt class="descname">GetNumOutput</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserExons.GetNumOutput" title="Permalink to this definition">¶</a></dt>
+<dd><p>return number of output.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserExons.Parse">
+<tt class="descname">Parse</tt><span class="sig-paren">(</span><em>lines</em>, <em>peptide_sequence=None</em>, <em>genomic_sequence=None</em><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserExons.Parse" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse lines.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserExons.Sort">
+<tt class="descname">Sort</tt><span class="sig-paren">(</span><em>cmp_function=None</em><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserExons.Sort" title="Permalink to this definition">¶</a></dt>
+<dd><p>sort predictions.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserExons.Write">
+<tt class="descname">Write</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserExons.Write" title="Permalink to this definition">¶</a></dt>
+<dd><p>write a tab separated list of results.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="PredictionParser.PredictionParserGFF">
+<em class="property">class </em><tt class="descclassname">PredictionParser.</tt><tt class="descname">PredictionParserGFF</tt><span class="sig-paren">(</span><em>contig_sizes={}</em><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserGFF" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">PredictionParser.PredictionParser</span></tt></p>
+<p>Parse GFF files.</p>
+<dl class="method">
+<dt id="PredictionParser.PredictionParserGFF.ExtractData">
+<tt class="descname">ExtractData</tt><span class="sig-paren">(</span><em>lines</em>, <em>peptide_sequence</em>, <em>genomic_sequence</em><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserGFF.ExtractData" title="Permalink to this definition">¶</a></dt>
+<dd><p>extract data from psl, tab-formatted output.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserGFF.GetNumErrors">
+<tt class="descname">GetNumErrors</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserGFF.GetNumErrors" title="Permalink to this definition">¶</a></dt>
+<dd><p>return number of errors.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserGFF.GetNumInput">
+<tt class="descname">GetNumInput</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserGFF.GetNumInput" title="Permalink to this definition">¶</a></dt>
+<dd><p>return number of input.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserGFF.GetNumOutput">
+<tt class="descname">GetNumOutput</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserGFF.GetNumOutput" title="Permalink to this definition">¶</a></dt>
+<dd><p>return number of output.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserGFF.Parse">
+<tt class="descname">Parse</tt><span class="sig-paren">(</span><em>lines</em>, <em>peptide_sequence=None</em>, <em>genomic_sequence=None</em><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserGFF.Parse" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse lines.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserGFF.Sort">
+<tt class="descname">Sort</tt><span class="sig-paren">(</span><em>cmp_function=None</em><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserGFF.Sort" title="Permalink to this definition">¶</a></dt>
+<dd><p>sort predictions.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PredictionParser.PredictionParserGFF.Write">
+<tt class="descname">Write</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PredictionParser.PredictionParserGFF.Write" title="Permalink to this definition">¶</a></dt>
+<dd><p>write a tab separated list of results.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="PredictionFile.html"
+                        title="previous chapter">PredictionFile.py -</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="Predictor.html"
+                        title="next chapter">Predictor.py - running gene predictions with exonerate</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/modules/PredictionParser.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="Predictor.html" title="Predictor.py - running gene predictions with exonerate"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="PredictionFile.html" title="PredictionFile.py -"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" >Modules</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

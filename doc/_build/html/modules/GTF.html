@@ -1,0 +1,479 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>GTF.py - Classes and methods for dealing with gtf formatted files &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="Modules" href="../modules.html" />
+    <link rel="next" title="Bed.py - Tools for working with bed files" href="Bed.html" />
+    <link rel="prev" title="SequenceProperties.py - compute properties of sequences" href="SequenceProperties.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="Bed.html" title="Bed.py - Tools for working with bed files"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="SequenceProperties.html" title="SequenceProperties.py - compute properties of sequences"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" accesskey="U">Modules</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-GTF"></span><div class="section" id="gtf-py-classes-and-methods-for-dealing-with-gtf-formatted-files">
+<h1>GTF.py - Classes and methods for dealing with gtf formatted files<a class="headerlink" href="#gtf-py-classes-and-methods-for-dealing-with-gtf-formatted-files" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id$</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Python</td>
+</tr>
+</tbody>
+</table>
+<p>The default GTF version is 2.2.</p>
+<dl class="exception">
+<dt id="GTF.Error">
+<em class="property">exception </em><tt class="descclassname">GTF.</tt><tt class="descname">Error</tt><a class="headerlink" href="#GTF.Error" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="http://docs.python.org/2.7/library/exceptions.html#exceptions.Exception" title="(in Python v2.7)"><tt class="xref py py-class docutils literal"><span class="pre">exceptions.Exception</span></tt></a></p>
+<p>Base class for exceptions in this module.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="GTF.ParsingError">
+<em class="property">exception </em><tt class="descclassname">GTF.</tt><tt class="descname">ParsingError</tt><span class="sig-paren">(</span><em>message</em><span class="sig-paren">)</span><a class="headerlink" href="#GTF.ParsingError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#GTF.Error" title="GTF.Error"><tt class="xref py py-class docutils literal"><span class="pre">GTF.Error</span></tt></a></p>
+<p>Exception raised for errors in the input.</p>
+<dl class="docutils">
+<dt>Attributes:</dt>
+<dd>message &#8211; explanation of the error</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="GTF.toDot">
+<tt class="descclassname">GTF.</tt><tt class="descname">toDot</tt><span class="sig-paren">(</span><em>v</em><span class="sig-paren">)</span><a class="headerlink" href="#GTF.toDot" title="Permalink to this definition">¶</a></dt>
+<dd><p>convert value to &#8216;.&#8217; if None</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GTF.quote">
+<tt class="descclassname">GTF.</tt><tt class="descname">quote</tt><span class="sig-paren">(</span><em>v</em><span class="sig-paren">)</span><a class="headerlink" href="#GTF.quote" title="Permalink to this definition">¶</a></dt>
+<dd><p>return a quoted attribute.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="GTF.Entry">
+<em class="property">class </em><tt class="descclassname">GTF.</tt><tt class="descname">Entry</tt><a class="headerlink" href="#GTF.Entry" title="Permalink to this definition">¶</a></dt>
+<dd><p>read/write gtf formatted entry.</p>
+<p>The coordinates are kept internally in python coordinates (0-based, open-closed),
+but are output as inclusive 1-based coordinates according to</p>
+<p><a class="reference external" href="http://www.sanger.ac.uk/Software/formats/GFF/">http://www.sanger.ac.uk/Software/formats/GFF/</a></p>
+<dl class="method">
+<dt id="GTF.Entry.read">
+<tt class="descname">read</tt><span class="sig-paren">(</span><em>line</em><span class="sig-paren">)</span><a class="headerlink" href="#GTF.Entry.read" title="Permalink to this definition">¶</a></dt>
+<dd><p>read gff entry from line.</p>
+<p>&lt;seqname&gt; &lt;source&gt; &lt;feature&gt; &lt;start&gt; &lt;end&gt; &lt;score&gt; &lt;strand&gt; &lt;frame&gt; [attributes] [comments]</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GTF.Entry.parseInfo">
+<tt class="descname">parseInfo</tt><span class="sig-paren">(</span><em>attributes</em>, <em>line</em><span class="sig-paren">)</span><a class="headerlink" href="#GTF.Entry.parseInfo" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse attributes.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GTF.Entry.invert">
+<tt class="descname">invert</tt><span class="sig-paren">(</span><em>lcontig</em><span class="sig-paren">)</span><a class="headerlink" href="#GTF.Entry.invert" title="Permalink to this definition">¶</a></dt>
+<dd><p>invert genomic coordinates from
+forward to reverse coordinates and back.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GTF.Entry.fromGTF">
+<tt class="descname">fromGTF</tt><span class="sig-paren">(</span><em>other</em>, <em>gene_id</em>, <em>transcript_id</em><span class="sig-paren">)</span><a class="headerlink" href="#GTF.Entry.fromGTF" title="Permalink to this definition">¶</a></dt>
+<dd><p>fill from other entry.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GTF.Entry.fromBed">
+<tt class="descname">fromBed</tt><span class="sig-paren">(</span><em>other</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#GTF.Entry.fromBed" title="Permalink to this definition">¶</a></dt>
+<dd><p>fill from a bed entry.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GTF.Entry.copy">
+<tt class="descname">copy</tt><span class="sig-paren">(</span><em>other</em><span class="sig-paren">)</span><a class="headerlink" href="#GTF.Entry.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>fill from other entry.
+works both if other is <a class="reference internal" href="#GTF.Entry" title="GTF.Entry"><tt class="xref py py-class docutils literal"><span class="pre">GTF.Entry</span></tt></a> or
+<tt class="xref py py-class docutils literal"><span class="pre">pysam.GTFProxy</span></tt></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GTF.Entry.asDict">
+<tt class="descname">asDict</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#GTF.Entry.asDict" title="Permalink to this definition">¶</a></dt>
+<dd><p>return attributes as a dictionary.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GTF.Entry.hasOverlap">
+<tt class="descname">hasOverlap</tt><span class="sig-paren">(</span><em>other</em>, <em>min_overlap=0</em><span class="sig-paren">)</span><a class="headerlink" href="#GTF.Entry.hasOverlap" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns true, if overlap with other entry.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GTF.Entry.isIdentical">
+<tt class="descname">isIdentical</tt><span class="sig-paren">(</span><em>other</em>, <em>max_slippage=0</em><span class="sig-paren">)</span><a class="headerlink" href="#GTF.Entry.isIdentical" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns true, if self and other overlap completely.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="GTF.Entry.isHalfIdentical">
+<tt class="descname">isHalfIdentical</tt><span class="sig-paren">(</span><em>other</em>, <em>max_slippage=0</em><span class="sig-paren">)</span><a class="headerlink" href="#GTF.Entry.isHalfIdentical" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns true, if self and other overlap.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="GTF.Overlap">
+<tt class="descclassname">GTF.</tt><tt class="descname">Overlap</tt><span class="sig-paren">(</span><em>entry1</em>, <em>entry2</em>, <em>min_overlap=0</em><span class="sig-paren">)</span><a class="headerlink" href="#GTF.Overlap" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns true, if entry1 and entry2 overlap.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GTF.Identity">
+<tt class="descclassname">GTF.</tt><tt class="descname">Identity</tt><span class="sig-paren">(</span><em>entry1</em>, <em>entry2</em>, <em>max_slippage=0</em><span class="sig-paren">)</span><a class="headerlink" href="#GTF.Identity" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns true, if entry1 and entry2 overlap.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GTF.HalfIdentity">
+<tt class="descclassname">GTF.</tt><tt class="descname">HalfIdentity</tt><span class="sig-paren">(</span><em>entry1</em>, <em>entry2</em>, <em>max_slippage=0</em><span class="sig-paren">)</span><a class="headerlink" href="#GTF.HalfIdentity" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns true, if entry1 and entry2 overlap.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GTF.asRanges">
+<tt class="descclassname">GTF.</tt><tt class="descname">asRanges</tt><span class="sig-paren">(</span><em>gffs</em>, <em>feature=None</em><span class="sig-paren">)</span><a class="headerlink" href="#GTF.asRanges" title="Permalink to this definition">¶</a></dt>
+<dd><p>return ranges within a set of gffs.</p>
+<p>Overlapping intervals are merged.</p>
+<p>The returned intervals are sorted.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GTF.readFromFile">
+<tt class="descclassname">GTF.</tt><tt class="descname">readFromFile</tt><span class="sig-paren">(</span><em>infile</em><span class="sig-paren">)</span><a class="headerlink" href="#GTF.readFromFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>read gtf from file.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GTF.CombineOverlaps">
+<tt class="descclassname">GTF.</tt><tt class="descname">CombineOverlaps</tt><span class="sig-paren">(</span><em>old_gff</em>, <em>method='combine'</em><span class="sig-paren">)</span><a class="headerlink" href="#GTF.CombineOverlaps" title="Permalink to this definition">¶</a></dt>
+<dd><p>combine overlapping entries for a list of gffs.</p>
+<p>method can be any of combine|longest|shortest
+only the first letter is important.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GTF.SortPerContig">
+<tt class="descclassname">GTF.</tt><tt class="descname">SortPerContig</tt><span class="sig-paren">(</span><em>gff</em><span class="sig-paren">)</span><a class="headerlink" href="#GTF.SortPerContig" title="Permalink to this definition">¶</a></dt>
+<dd><p>sort gff entries per contig and return a dictionary mapping a
+contig to the begin of the list.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GTF.iterator">
+<tt class="descclassname">GTF.</tt><tt class="descname">iterator</tt><span class="sig-paren">(</span><em>infile</em><span class="sig-paren">)</span><a class="headerlink" href="#GTF.iterator" title="Permalink to this definition">¶</a></dt>
+<dd><p>return a simple iterator over all entries in a file.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GTF.track_iterator">
+<tt class="descclassname">GTF.</tt><tt class="descname">track_iterator</tt><span class="sig-paren">(</span><em>infile</em><span class="sig-paren">)</span><a class="headerlink" href="#GTF.track_iterator" title="Permalink to this definition">¶</a></dt>
+<dd><p>a simple iterator over all entries in a file.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GTF.chunk_iterator">
+<tt class="descclassname">GTF.</tt><tt class="descname">chunk_iterator</tt><span class="sig-paren">(</span><em>gff_iterator</em><span class="sig-paren">)</span><a class="headerlink" href="#GTF.chunk_iterator" title="Permalink to this definition">¶</a></dt>
+<dd><p>iterate over the contents of a gff file.</p>
+<p>return entries as single element lists</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GTF.iterator_contigs">
+<tt class="descclassname">GTF.</tt><tt class="descname">iterator_contigs</tt><span class="sig-paren">(</span><em>gffs</em><span class="sig-paren">)</span><a class="headerlink" href="#GTF.iterator_contigs" title="Permalink to this definition">¶</a></dt>
+<dd><p>iterate over contigs.</p>
+<p>TODO: implement as coroutines</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GTF.transcript_iterator">
+<tt class="descclassname">GTF.</tt><tt class="descname">transcript_iterator</tt><span class="sig-paren">(</span><em>gff_iterator</em>, <em>strict=True</em><span class="sig-paren">)</span><a class="headerlink" href="#GTF.transcript_iterator" title="Permalink to this definition">¶</a></dt>
+<dd><p>iterate over the contents of a gtf file.</p>
+<p>return a list of entries with the same transcript id.</p>
+<p>Note: the entries for the same transcript have to be consecutive
+in the file.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GTF.joined_iterator">
+<tt class="descclassname">GTF.</tt><tt class="descname">joined_iterator</tt><span class="sig-paren">(</span><em>gffs</em>, <em>group_field=None</em><span class="sig-paren">)</span><a class="headerlink" href="#GTF.joined_iterator" title="Permalink to this definition">¶</a></dt>
+<dd><p>iterate over the contents of a gff file.</p>
+<p>return a list of entries with the same group id.
+Note: the entries have to be consecutive in
+the file.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GTF.gene_iterator">
+<tt class="descclassname">GTF.</tt><tt class="descname">gene_iterator</tt><span class="sig-paren">(</span><em>gff_iterator</em>, <em>strict=True</em><span class="sig-paren">)</span><a class="headerlink" href="#GTF.gene_iterator" title="Permalink to this definition">¶</a></dt>
+<dd><p>iterate over the contents of a gtf file.</p>
+<p>return a list of transcripts with the same gene id.</p>
+<p>Note: the entries have to be consecutive in the file, i.e,
+first sorted by transcript and then by gene id.</p>
+<p>Genes with the same name on different contigs are resolved
+separately in <em>strict</em> = False.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GTF.flat_gene_iterator">
+<tt class="descclassname">GTF.</tt><tt class="descname">flat_gene_iterator</tt><span class="sig-paren">(</span><em>gff_iterator</em>, <em>strict=True</em><span class="sig-paren">)</span><a class="headerlink" href="#GTF.flat_gene_iterator" title="Permalink to this definition">¶</a></dt>
+<dd><p>iterate over the contents of a gtf file.</p>
+<p>return a list of entries with the same gene id.</p>
+<p>Note: the entries have to be consecutive in the file, i.e,
+sorted by gene_id</p>
+<p>Genes with the same name on different contigs are resolved
+separately in <em>strict</em> = False</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GTF.merged_gene_iterator">
+<tt class="descclassname">GTF.</tt><tt class="descname">merged_gene_iterator</tt><span class="sig-paren">(</span><em>gff_iterator</em><span class="sig-paren">)</span><a class="headerlink" href="#GTF.merged_gene_iterator" title="Permalink to this definition">¶</a></dt>
+<dd><p>iterate over the contents of a gtf file.</p>
+<p>Each gene is merged into a single entry spanning the whole
+stretch that a gene covers.</p>
+<p>Note: the entries have to be consecutive in the file, i.e,
+sorted by gene_id</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GTF.iterator_filtered">
+<tt class="descclassname">GTF.</tt><tt class="descname">iterator_filtered</tt><span class="sig-paren">(</span><em>gff_iterator</em>, <em>feature=None</em>, <em>source=None</em>, <em>contig=None</em>, <em>interval=None</em>, <em>strand=None</em><span class="sig-paren">)</span><a class="headerlink" href="#GTF.iterator_filtered" title="Permalink to this definition">¶</a></dt>
+<dd><p>iterate over the contents of a gff file.</p>
+<p>yield only entries for a given feature</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GTF.iterator_sorted_chunks">
+<tt class="descclassname">GTF.</tt><tt class="descname">iterator_sorted_chunks</tt><span class="sig-paren">(</span><em>gff_iterator</em>, <em>sort_by='contig-start'</em><span class="sig-paren">)</span><a class="headerlink" href="#GTF.iterator_sorted_chunks" title="Permalink to this definition">¶</a></dt>
+<dd><p>iterate over chunks in a sorted order</p>
+<p>sort_by can be</p>
+<dl class="docutils">
+<dt>contig-start</dt>
+<dd>sort by position ignoring the strand</dd>
+<dt>contig-strand-start</dt>
+<dd>sort by position taking the strand into account</dd>
+</dl>
+<p>returns the chunks.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GTF.iterator_min_feature_length">
+<tt class="descclassname">GTF.</tt><tt class="descname">iterator_min_feature_length</tt><span class="sig-paren">(</span><em>gff_iterator</em>, <em>min_length</em>, <em>feature='exon'</em><span class="sig-paren">)</span><a class="headerlink" href="#GTF.iterator_min_feature_length" title="Permalink to this definition">¶</a></dt>
+<dd><p>select only those genes with a minimum length of a given feature.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GTF.iterator_sorted">
+<tt class="descclassname">GTF.</tt><tt class="descname">iterator_sorted</tt><span class="sig-paren">(</span><em>gff_iterator</em>, <em>sort_order='gene'</em><span class="sig-paren">)</span><a class="headerlink" href="#GTF.iterator_sorted" title="Permalink to this definition">¶</a></dt>
+<dd><p>sort input and yield sorted output.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GTF.toIntronIntervals">
+<tt class="descclassname">GTF.</tt><tt class="descname">toIntronIntervals</tt><span class="sig-paren">(</span><em>chunk</em><span class="sig-paren">)</span><a class="headerlink" href="#GTF.toIntronIntervals" title="Permalink to this definition">¶</a></dt>
+<dd><p>convert a set of gtf elements within a transcript to intron coordinates.</p>
+<p>Will raise an error if more than one transcript is submitted.</p>
+<p>Note that coordinates will still be forward strand coordinates</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GTF.toSequence">
+<tt class="descclassname">GTF.</tt><tt class="descname">toSequence</tt><span class="sig-paren">(</span><em>chunk</em>, <em>fasta</em><span class="sig-paren">)</span><a class="headerlink" href="#GTF.toSequence" title="Permalink to this definition">¶</a></dt>
+<dd><p>convert a list of gff attributes to a single sequence.</p>
+<p>This function ensures correct in-order concatenation on
+positive/negative strand. Overlapping regions are merged.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GTF.iterator_overlapping_genes">
+<tt class="descclassname">GTF.</tt><tt class="descname">iterator_overlapping_genes</tt><span class="sig-paren">(</span><em>gtf_iterator</em>, <em>min_overlap=0</em><span class="sig-paren">)</span><a class="headerlink" href="#GTF.iterator_overlapping_genes" title="Permalink to this definition">¶</a></dt>
+<dd><p>return overlapping genes.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GTF.iterator_transcripts2genes">
+<tt class="descclassname">GTF.</tt><tt class="descname">iterator_transcripts2genes</tt><span class="sig-paren">(</span><em>gtf_iterator</em>, <em>min_overlap=0</em><span class="sig-paren">)</span><a class="headerlink" href="#GTF.iterator_transcripts2genes" title="Permalink to this definition">¶</a></dt>
+<dd><p>cluster transcripts by exon overlap.</p>
+<p>The gene id is set to the first transcript encountered of a gene.
+If a gene stretches over several contigs, subsequent copies are
+appended a number.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GTF.readAsIntervals">
+<tt class="descclassname">GTF.</tt><tt class="descname">readAsIntervals</tt><span class="sig-paren">(</span><em>gff_iterator</em>, <em>with_values=False</em>, <em>with_records=False</em>, <em>merge_genes=False</em>, <em>with_gene_id=False</em>, <em>with_transcript_id=False</em>, <em>use_strand=False</em><span class="sig-paren">)</span><a class="headerlink" href="#GTF.readAsIntervals" title="Permalink to this definition">¶</a></dt>
+<dd><p>read tuples of (start, end) from a GTF file.</p>
+<p>If with_values is True, a value is added to the tuples.
+If with_records is True, the record is added to the tuples.
+If with_gene_id is True, the gene_id is added to the tuples
+with_values and with_records are exclusive.</p>
+<p>Ignores strand and everything but the coordinates.</p>
+<p>If use_strand is True, intervals will be grouped by contig and strand.
+The default is to group by contig only.</p>
+<p>Returns a dictionary of intervals by contig.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GTF.iterator_overlaps">
+<tt class="descclassname">GTF.</tt><tt class="descname">iterator_overlaps</tt><span class="sig-paren">(</span><em>gff_iterator</em>, <em>min_overlap=0</em><span class="sig-paren">)</span><a class="headerlink" href="#GTF.iterator_overlaps" title="Permalink to this definition">¶</a></dt>
+<dd><p>iterate over gff file and return a list of features that
+are overlapping.</p>
+<p>The input should be sorted by contig,start</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GTF.readAndIndex">
+<tt class="descclassname">GTF.</tt><tt class="descname">readAndIndex</tt><span class="sig-paren">(</span><em>iterator</em>, <em>with_value=True</em><span class="sig-paren">)</span><a class="headerlink" href="#GTF.readAndIndex" title="Permalink to this definition">¶</a></dt>
+<dd><p>read from gtf stream and index.</p>
+<p>returns an <a class="reference internal" href="IndexedGenome.html#IndexedGenome.IndexedGenome" title="IndexedGenome.IndexedGenome"><tt class="xref py py-class docutils literal"><span class="pre">IndexedGenome.IndexedGenome</span></tt></a></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GTF.getGene2Transcript">
+<tt class="descclassname">GTF.</tt><tt class="descname">getGene2Transcript</tt><span class="sig-paren">(</span><em>iterator</em><span class="sig-paren">)</span><a class="headerlink" href="#GTF.getGene2Transcript" title="Permalink to this definition">¶</a></dt>
+<dd><p>return a dictionary mapping a gene to its transcripts.</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="SequenceProperties.html"
+                        title="previous chapter">SequenceProperties.py - compute properties of sequences</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="Bed.html"
+                        title="next chapter">Bed.py - Tools for working with bed files</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/modules/GTF.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="Bed.html" title="Bed.py - Tools for working with bed files"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="SequenceProperties.html" title="SequenceProperties.py - compute properties of sequences"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" >Modules</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

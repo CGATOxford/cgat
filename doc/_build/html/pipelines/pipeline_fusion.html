@@ -1,0 +1,363 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Project 4 Pipeline &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="NGS Pipelines" href="../CGATPipelines.html" />
+    <link rel="next" title="Interval pipeline" href="pipeline_intervals.html" />
+    <link rel="prev" title="pipeline_expression.py - analysis of expression data" href="pipeline_expression.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pipeline_intervals.html" title="Interval pipeline"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="pipeline_expression.html" title="pipeline_expression.py - analysis of expression data"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../Pipelines.html" >CGAT Pipelines</a> &raquo;</li>
+          <li><a href="../CGATPipelines.html" accesskey="U">NGS Pipelines</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-pipeline_fusion"></span><div class="section" id="project-4-pipeline">
+<h1>Project 4 Pipeline<a class="headerlink" href="#project-4-pipeline" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Ian Subery</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id$</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Python</td>
+</tr>
+</tbody>
+</table>
+<p>A pipeline to run various packages for detecting fusion transcripts in RNA-seq data.</p>
+<div class="section" id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>The pipleline takes a set up reads in any legal format for tophat and performs the following tasks:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Runs tophat-fusion on each track seperately collecting the data in directiories of the form:
+track_tophat</li>
+<li>Runs tophat-fusion-post on all track simulateously to build a single report of fusions found in the samples</li>
+</ul>
+</div></blockquote>
+<p>Eventaully, this pipeline may include other algorithms for finding fusion transcripts and tasks for  QCing the
+resulting calls. Currently the pipline uses the annotation provided by tophat  fusion. Eventaully we hope to be
+able to use our own annontations.</p>
+</div>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>See <a class="reference internal" href="../UsingPipelines.html#pipelinesettingup"><em>Setting up a pipeline</em></a> and <a class="reference internal" href="../UsingPipelines.html#pipelinerunning"><em>Running a pipeline</em></a> on general information how to use CGAT pipelines.</p>
+<div class="section" id="configuration">
+<h3>Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">¶</a></h3>
+<p>The pipeline requires a configured <tt class="file docutils literal"><span class="pre">pipeline.ini</span></tt> file.</p>
+<p>The sphinxreport report requires a <tt class="file docutils literal"><span class="pre">conf.py</span></tt> and <tt class="file docutils literal"><span class="pre">sphinxreport.ini</span></tt> file 
+(see <a class="reference internal" href="../UsingPipelines.html#pipelinereporting"><em>Building pipeline reports</em></a>). To start with, use the files supplied with the
+<a class="reference internal" href="#example">Example</a> data.</p>
+</div>
+<div class="section" id="input">
+<h3>Input<a class="headerlink" href="#input" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="reads">
+<h4>Reads<a class="headerlink" href="#reads" title="Permalink to this headline">¶</a></h4>
+<p>As per the rnaseq pipeline.</p>
+<p>Reads are imported by placing files are linking to files in the <a class="reference internal" href="../make_pipelines/Gpipe.html#term-working-directory"><em class="xref std std-term">working directory</em></a>.</p>
+<p>The default file format assumes the following convention:</p>
+<blockquote>
+<div>&lt;sample&gt;-&lt;condition&gt;-&lt;replicate&gt;.&lt;suffix&gt;</div></blockquote>
+<p><tt class="docutils literal"><span class="pre">sample</span></tt> and <tt class="docutils literal"><span class="pre">condition</span></tt> make up an <a class="reference internal" href="../glossary.html#term-experiment"><em class="xref std std-term">experiment</em></a>, while <tt class="docutils literal"><span class="pre">replicate</span></tt> denotes
+the <a class="reference internal" href="../glossary.html#term-replicate"><em class="xref std std-term">replicate</em></a> within an <a class="reference internal" href="../glossary.html#term-experiment"><em class="xref std std-term">experiment</em></a>. The <tt class="docutils literal"><span class="pre">suffix</span></tt> determines the file type.
+The following suffixes/file types are possible:</p>
+<dl class="docutils">
+<dt>sra</dt>
+<dd>Short-Read Archive format. Reads will be extracted using the <tt class="file docutils literal"><span class="pre">fastq-dump</span></tt> tool.</dd>
+<dt>fastq.gz</dt>
+<dd>Single-end reads in fastq format.</dd>
+<dt>fastq.1.gz, fastq2.2.gz</dt>
+<dd>Paired-end reads in fastq format. The two fastq files must be sorted by read-pair.</dd>
+</dl>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Quality scores need to be of the same scale for all input files. Thus it might be
+difficult to mix different formats.</p>
+</div>
+</div>
+<div class="section" id="optional-inputs">
+<h4>Optional inputs<a class="headerlink" href="#optional-inputs" title="Permalink to this headline">¶</a></h4>
+</div>
+</div>
+<div class="section" id="requirements">
+<h3>Requirements<a class="headerlink" href="#requirements" title="Permalink to this headline">¶</a></h3>
+<p>The pipeline requires the results from <a class="reference internal" href="pipeline_annotations.html"><em>Annotation pipeline</em></a>. Set the configuration variable 
+<tt class="xref py py-data docutils literal"><span class="pre">annotations_database</span></tt> and <tt class="xref py py-data docutils literal"><span class="pre">annotations_dir</span></tt>.</p>
+<p>On top of the default CGAT setup, the pipeline requires the following software to be in the 
+path:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="23%" />
+<col width="22%" />
+<col width="55%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><em>Program</em></td>
+<td><em>Version</em></td>
+<td><em>Purpose</em></td>
+</tr>
+<tr class="row-even"><td>blast</td>
+<td>2.2.25+</td>
+<td>Used by tophat-fusion-post</td>
+</tr>
+<tr class="row-odd"><td>blastall script</td>
+<td>0.1</td>
+<td>Provides an alias to the now depcrecated
+blastall for those with Blast+</td>
+</tr>
+<tr class="row-even"><td>tophat-fusion-post</td>
+<td>0.1.0</td>
+<td>post-postprocessing of tophat-fusion results</td>
+</tr>
+<tr class="row-odd"><td>tophat-fusion</td>
+<td>0.1.0</td>
+<td>read mapping</td>
+</tr>
+</tbody>
+</table>
+<p>In addition, the blast databases need to be availible and their location specified in the ini.</p>
+</div>
+</div>
+<div class="section" id="pipeline-output">
+<h2>Pipeline output<a class="headerlink" href="#pipeline-output" title="Permalink to this headline">¶</a></h2>
+<p>Currently the major output if in the tophatfusion_out directory. Integration with database coming soon.</p>
+</div>
+<div class="section" id="example">
+<h2>Example<a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h2>
+<p>Example data is available at <a class="reference external" href="http://www.cgat.org/~andreas/sample_data/pipeline_template.tgz">http://www.cgat.org/~andreas/sample_data/pipeline_template.tgz</a>.
+To run the example, simply unpack and untar:</p>
+<div class="highlight-python"><div class="highlight"><pre>wget http://www.cgat.org/~andreas/sample_data/pipeline_template.tgz
+tar -xvzf pipeline_template.tgz
+cd pipeline_template
+python &lt;srcdir&gt;/pipeline_template.py make full
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">For the pipeline to run, install the <a class="reference internal" href="pipeline_annotations.html"><em>Annotation pipeline</em></a> as well.</p>
+</div>
+</div>
+<div class="section" id="glossary">
+<h2>Glossary<a class="headerlink" href="#glossary" title="Permalink to this headline">¶</a></h2>
+<dl class="glossary docutils">
+</dl>
+</div>
+<div class="section" id="code">
+<h2>Code<a class="headerlink" href="#code" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pipeline_fusion.connect">
+<tt class="descclassname">pipeline_fusion.</tt><tt class="descname">connect</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_fusion.connect" title="Permalink to this definition">¶</a></dt>
+<dd><p>connect to database.</p>
+<p>Use this method to connect to additional databases.</p>
+<p>Returns a database connection.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_fusion.prepare_directory">
+<tt class="descclassname">pipeline_fusion.</tt><tt class="descname">prepare_directory</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfiles</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_fusion.prepare_directory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prepares the directory neccesary for the pipeline. Links 
+the required annotation files and blast databases</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_fusion.mapReadsWithTophatFusion">
+<tt class="descclassname">pipeline_fusion.</tt><tt class="descname">mapReadsWithTophatFusion</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_fusion.mapReadsWithTophatFusion" title="Permalink to this definition">¶</a></dt>
+<dd><p>map reads from .fastq or .sra files and find candidate fusions</p>
+<p>A list with known splice junctions expect from rnaseq pipeline</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_fusion.postprocessTopHatFusion">
+<tt class="descclassname">pipeline_fusion.</tt><tt class="descname">postprocessTopHatFusion</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_fusion.postprocessTopHatFusion" title="Permalink to this definition">¶</a></dt>
+<dd><p>Uses tophat-fusion-post to postprocess and filter all of the
+tophat-fusion output into one report. Slow as it is not 
+cluster aware and spawns a large number of blast tasks</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_fusion.doCleanUp">
+<tt class="descclassname">pipeline_fusion.</tt><tt class="descname">doCleanUp</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_fusion.doCleanUp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Does the clean-up that should have been done at the end of 
+the tophat run  but wasn&#8217;t because the files were needed by 
+tophat-fusion-post</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_fusion.edgeR_analysis">
+<tt class="descclassname">pipeline_fusion.</tt><tt class="descname">edgeR_analysis</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_fusion.edgeR_analysis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Runs the edgeR GLM analysis script using each of the input
+files as the exon counts, and each of the <em>design.tsv</em>  as the
+designs.</p>
+<p>Options to the script are stored in the ini.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_fusion.build_report">
+<tt class="descclassname">pipeline_fusion.</tt><tt class="descname">build_report</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_fusion.build_report" title="Permalink to this definition">¶</a></dt>
+<dd><p>build report from scratch.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_fusion.update_report">
+<tt class="descclassname">pipeline_fusion.</tt><tt class="descname">update_report</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_fusion.update_report" title="Permalink to this definition">¶</a></dt>
+<dd><p>update report.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_fusion.publish_report">
+<tt class="descclassname">pipeline_fusion.</tt><tt class="descname">publish_report</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_fusion.publish_report" title="Permalink to this definition">¶</a></dt>
+<dd><p>publish report.</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Project 4 Pipeline</a><ul>
+<li><a class="reference internal" href="#overview">Overview</a></li>
+<li><a class="reference internal" href="#usage">Usage</a><ul>
+<li><a class="reference internal" href="#configuration">Configuration</a></li>
+<li><a class="reference internal" href="#input">Input</a><ul>
+<li><a class="reference internal" href="#reads">Reads</a></li>
+<li><a class="reference internal" href="#optional-inputs">Optional inputs</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#requirements">Requirements</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#pipeline-output">Pipeline output</a></li>
+<li><a class="reference internal" href="#example">Example</a></li>
+<li><a class="reference internal" href="#glossary">Glossary</a></li>
+<li><a class="reference internal" href="#code">Code</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="pipeline_expression.html"
+                        title="previous chapter">pipeline_expression.py - analysis of expression data</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="pipeline_intervals.html"
+                        title="next chapter">Interval pipeline</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/pipelines/pipeline_fusion.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pipeline_intervals.html" title="Interval pipeline"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="pipeline_expression.html" title="pipeline_expression.py - analysis of expression data"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../Pipelines.html" >CGAT Pipelines</a> &raquo;</li>
+          <li><a href="../CGATPipelines.html" >NGS Pipelines</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

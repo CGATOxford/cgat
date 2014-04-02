@@ -1,0 +1,205 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>MatlabTools.py - &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="Modules" href="../modules.html" />
+    <link rel="next" title="MatrixTools.py -" href="MatrixTools.html" />
+    <link rel="prev" title="Stats.py -" href="Stats.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="MatrixTools.html" title="MatrixTools.py -"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="Stats.html" title="Stats.py -"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" accesskey="U">Modules</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-MatlabTools"></span><div class="section" id="matlabtools-py">
+<h1>MatlabTools.py -<a class="headerlink" href="#matlabtools-py" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Andreas Heger</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id$</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Python</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="code">
+<h2>Code<a class="headerlink" href="#code" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="MatlabTools.WriteMatrix">
+<tt class="descclassname">MatlabTools.</tt><tt class="descname">WriteMatrix</tt><span class="sig-paren">(</span><em>matrix</em>, <em>outfile=&lt;open file '&lt;stdout&gt;'</em>, <em>mode 'w' at 0x2aaff7fbf1e0&gt;</em>, <em>separator='\t'</em>, <em>format='%f'</em>, <em>row_headers=None</em>, <em>col_headers=None</em><span class="sig-paren">)</span><a class="headerlink" href="#MatlabTools.WriteMatrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>write matrix to stream.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="MatlabTools.ReadMatrix">
+<tt class="descclassname">MatlabTools.</tt><tt class="descname">ReadMatrix</tt><span class="sig-paren">(</span><em>file</em>, <em>separator='\t'</em>, <em>numeric_type=&lt;type 'float'&gt;</em>, <em>take='all'</em>, <em>headers=False</em><span class="sig-paren">)</span><a class="headerlink" href="#MatlabTools.ReadMatrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>read a matrix. There probably is a routine for this in Numpy, which
+I haven&#8217;t found yet.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="MatlabTools.ReadSparseMatrix">
+<tt class="descclassname">MatlabTools.</tt><tt class="descname">ReadSparseMatrix</tt><span class="sig-paren">(</span><em>filename</em>, <em>separator='\t'</em>, <em>numeric_type=&lt;type 'float'&gt;</em>, <em>is_symmetric=None</em><span class="sig-paren">)</span><a class="headerlink" href="#MatlabTools.ReadSparseMatrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>read sparse matrix.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="MatlabTools.ReadBinarySparseMatrix">
+<tt class="descclassname">MatlabTools.</tt><tt class="descname">ReadBinarySparseMatrix</tt><span class="sig-paren">(</span><em>filename</em>, <em>separator='\t'</em>, <em>numeric_type=&lt;type 'float'&gt;</em>, <em>is_symmetric=None</em><span class="sig-paren">)</span><a class="headerlink" href="#MatlabTools.ReadBinarySparseMatrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>read sparse matrix.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="MatlabTools.readMatrix">
+<tt class="descclassname">MatlabTools.</tt><tt class="descname">readMatrix</tt><span class="sig-paren">(</span><em>infile</em>, <em>format='full'</em>, <em>separator='\t'</em>, <em>numeric_type=&lt;type 'float'&gt;</em>, <em>take='all'</em>, <em>headers=True</em>, <em>missing=None</em><span class="sig-paren">)</span><a class="headerlink" href="#MatlabTools.readMatrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>read a matrix from file ane return a numpy matrix.</p>
+<p>formats accepted are:
+* full
+* sparse
+* phylip</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="MatlabTools.writeMatrix">
+<tt class="descclassname">MatlabTools.</tt><tt class="descname">writeMatrix</tt><span class="sig-paren">(</span><em>outfile</em>, <em>matrix</em>, <em>format='full'</em>, <em>separator='\t'</em>, <em>value_format='%f'</em>, <em>row_headers=None</em>, <em>col_headers=None</em><span class="sig-paren">)</span><a class="headerlink" href="#MatlabTools.writeMatrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>write matrix to stream.</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">MatlabTools.py -</a><ul>
+<li><a class="reference internal" href="#code">Code</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="Stats.html"
+                        title="previous chapter">Stats.py -</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="MatrixTools.html"
+                        title="next chapter">MatrixTools.py -</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/modules/MatlabTools.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="MatrixTools.html" title="MatrixTools.py -"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="Stats.html" title="Stats.py -"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" >Modules</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

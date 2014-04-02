@@ -1,0 +1,684 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Variant annotation pipeline &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="NGS Pipelines" href="../CGATPipelines.html" />
+    <link rel="next" title="pipeline_testing - automated testing of pipelines" href="pipeline_testing.html" />
+    <link rel="prev" title="Variant annotation pipeline" href="pipeline_variant_annotation.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pipeline_testing.html" title="pipeline_testing - automated testing of pipelines"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="pipeline_variant_annotation.html" title="Variant annotation pipeline"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../Pipelines.html" >CGAT Pipelines</a> &raquo;</li>
+          <li><a href="../CGATPipelines.html" accesskey="U">NGS Pipelines</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-pipeline_variants"></span><div class="section" id="variant-annotation-pipeline">
+<h1>Variant annotation pipeline<a class="headerlink" href="#variant-annotation-pipeline" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Andreas Heger</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id$</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Python</td>
+</tr>
+</tbody>
+</table>
+<p>The Variants pipeline attempts to annotate variants in
+a <a class="reference internal" href="../glossary.html#term-vcf"><em class="xref std std-term">vcf</em></a> formatted file. It computes</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>the effects of SNPs on transcripts and genes</li>
+</ol>
+</div></blockquote>
+<p>This pipeline works on a single genome.</p>
+<div class="section" id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>See <a class="reference internal" href="../UsingPipelines.html#pipelinesettingup"><em>Setting up a pipeline</em></a> and <a class="reference internal" href="../UsingPipelines.html#pipelinerunning"><em>Running a pipeline</em></a> on general information how to use CGAT pipelines.</p>
+<div class="section" id="configuration">
+<h3>Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">¶</a></h3>
+<p>The pipeline requires a configured <tt class="file docutils literal"><span class="pre">pipeline.ini</span></tt> file.</p>
+<p>The sphinxreport report requires a <tt class="file docutils literal"><span class="pre">conf.py</span></tt> and <tt class="file docutils literal"><span class="pre">sphinxreport.ini</span></tt> file 
+(see <a class="reference internal" href="../UsingPipelines.html#pipelinereporting"><em>Building pipeline reports</em></a>). To start with, use the files supplied with the
+<a class="reference internal" href="#example">Example</a> data.</p>
+</div>
+<div class="section" id="input">
+<h3>Input<a class="headerlink" href="#input" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="variants">
+<h4>Variants<a class="headerlink" href="#variants" title="Permalink to this headline">¶</a></h4>
+<p>Variants are read from a <a class="reference internal" href="../glossary.html#term-vcf"><em class="xref std std-term">vcf</em></a> formatted file called <tt class="file docutils literal"><span class="pre">variants.vcf.gz</span></tt>. 
+The file is assumed to have been compressed with <tt class="file docutils literal"><span class="pre">bgzip</span></tt> and compressed with
+tabix.</p>
+<p>The tracks are taken from the headers in the <a class="reference internal" href="../glossary.html#term-vcf"><em class="xref std std-term">vcf</em></a> file. Please avoid any special
+characters like <tt class="docutils literal"><span class="pre">_][*.+-</span></tt>  within strain names.</p>
+<p>The pipeline expects the following information within the genotype field in 
+the <a class="reference internal" href="../glossary.html#term-vcf"><em class="xref std std-term">vcf</em></a> file:</p>
+<dl class="docutils">
+<dt>GT</dt>
+<dd>The genotype</dd>
+<dt>DP</dt>
+<dd>The read depth</dd>
+</dl>
+</div>
+<div class="section" id="optional-inputs">
+<h4>Optional inputs<a class="headerlink" href="#optional-inputs" title="Permalink to this headline">¶</a></h4>
+</div>
+</div>
+<div class="section" id="requirements">
+<h3>Requirements<a class="headerlink" href="#requirements" title="Permalink to this headline">¶</a></h3>
+<p>The pipeline requires the results from <a class="reference internal" href="pipeline_annotations.html"><em>Annotation pipeline</em></a>. Set the configuration variable 
+<tt class="xref py py-data docutils literal"><span class="pre">annotations_database</span></tt> and <tt class="xref py py-data docutils literal"><span class="pre">annotations_dir</span></tt>.</p>
+<p>On top of the default CGAT setup, the pipeline requires the following software to be in the 
+path:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="23%" />
+<col width="22%" />
+<col width="55%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><em>Program</em></td>
+<td><em>Version</em></td>
+<td><em>Purpose</em></td>
+</tr>
+<tr class="row-even"><td><a class="reference external" href="http://genetics.bwh.harvard.edu/pph2/dokuwiki/start">polyphen</a></td>
+<td>&gt;=2.0.23</td>
+<td>prediction of deleterious substitutions</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section" id="pipeline-output">
+<h2>Pipeline output<a class="headerlink" href="#pipeline-output" title="Permalink to this headline">¶</a></h2>
+<p>The major output is in the database file <tt class="file docutils literal"><span class="pre">csvdb</span></tt>.</p>
+</div>
+<div class="section" id="example">
+<h2>Example<a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h2>
+<p>Example data is available at <a class="reference external" href="http://www.cgat.org/~andreas/sample_data/pipeline_variants.tgz">http://www.cgat.org/~andreas/sample_data/pipeline_variants.tgz</a>.
+To run the example, simply unpack and untar:</p>
+<div class="highlight-python"><div class="highlight"><pre>wget http://www.cgat.org/~andreas/sample_data/pipeline_variants.tgz
+tar -xvzf pipeline_variants.tgz
+cd pipeline_variants
+python &lt;srcdir&gt;/pipeline_variants.py make full
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">For the pipeline to run, install the <a class="reference internal" href="pipeline_annotations.html"><em>Annotation pipeline</em></a> as well.</p>
+</div>
+</div>
+<div class="section" id="glossary">
+<h2>Glossary<a class="headerlink" href="#glossary" title="Permalink to this headline">¶</a></h2>
+<dl class="glossary docutils">
+<dt id="term-polyphen">polyphen</dt>
+<dd><a class="reference external" href="http://genetics.bwh.harvard.edu/pph2/dokuwiki/start">polyphen</a> - a program to predict the deleteriousness of substitutions</dd>
+</dl>
+</div>
+<div class="section" id="code">
+<h2>Code<a class="headerlink" href="#code" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pipeline_variants.connect">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">connect</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.connect" title="Permalink to this definition">¶</a></dt>
+<dd><p>connect to database.</p>
+<p>This method also attaches to helper databases.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.indexGenome">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">indexGenome</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.indexGenome" title="Permalink to this definition">¶</a></dt>
+<dd><p>index the genome for samtools.</p>
+<p>Samtools does not like long lines, so create a new file
+with split lines (what a waste).</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.importPseudogenes">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">importPseudogenes</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.importPseudogenes" title="Permalink to this definition">¶</a></dt>
+<dd><p>import pseudogene data from pseudogenes.org</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.importMGI">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">importMGI</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.importMGI" title="Permalink to this definition">¶</a></dt>
+<dd><p>create via BIOMART</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.loadGene2Omim">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">loadGene2Omim</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.loadGene2Omim" title="Permalink to this definition">¶</a></dt>
+<dd><p>download gene id - OMIM associations via BIOMART.</p>
+<p>Missing numerical entries are set to 0 (from -2147483648).</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.loadHumanOrthologs">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">loadHumanOrthologs</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.loadHumanOrthologs" title="Permalink to this definition">¶</a></dt>
+<dd><p>download human2mouse orthologs</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.buildSelenoList">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">buildSelenoList</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.buildSelenoList" title="Permalink to this definition">¶</a></dt>
+<dd><p>export a list of seleno cysteine transcripts.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.loadEnsembl2Uniprot">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">loadEnsembl2Uniprot</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.loadEnsembl2Uniprot" title="Permalink to this definition">¶</a></dt>
+<dd><p>load mapping from ENSEMBL transcripts ids to
+uniprot ids.</p>
+<p>This method expects an BioMart output file with the following 
+five columns: 
+Ensembl gene id, 
+Ensembl transcript id, 
+Uniprot Swissprot Id,
+Uniprot Accession
+Uniport/Trembl Accession</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.buildBaseAnnotations">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">buildBaseAnnotations</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.buildBaseAnnotations" title="Permalink to this definition">¶</a></dt>
+<dd><p>build base annotations</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.buildExonAnnotations">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">buildExonAnnotations</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.buildExonAnnotations" title="Permalink to this definition">¶</a></dt>
+<dd><p>build exon annotations</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.buildGeneAnnotations">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">buildGeneAnnotations</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.buildGeneAnnotations" title="Permalink to this definition">¶</a></dt>
+<dd><p>build gene annotations.</p>
+<p>Merge exons per gene within the reference set. The
+output includes the UTR and non-coding genes.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.makeGeneCounts">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">makeGeneCounts</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.makeGeneCounts" title="Permalink to this definition">¶</a></dt>
+<dd><p>coun gene exon statistics.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.buildAnnotations">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">buildAnnotations</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em>, <em>sample</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.buildAnnotations" title="Permalink to this definition">¶</a></dt>
+<dd><p>annotate snps with gene set.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.loadAnnotations">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">loadAnnotations</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.loadAnnotations" title="Permalink to this definition">¶</a></dt>
+<dd><p>load annotations</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.summarizeAnnotations">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">summarizeAnnotations</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.summarizeAnnotations" title="Permalink to this definition">¶</a></dt>
+<dd><p>compute summary stats for annotation files.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.loadAnnotationsSummary">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">loadAnnotationsSummary</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.loadAnnotationsSummary" title="Permalink to this definition">¶</a></dt>
+<dd><p>load annotations</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.buildEffects">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">buildEffects</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em>, <em>sample</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.buildEffects" title="Permalink to this definition">¶</a></dt>
+<dd><p>annotate snps with gene set.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.loadEffects">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">loadEffects</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.loadEffects" title="Permalink to this definition">¶</a></dt>
+<dd><p>load transcript effects into tables.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.mergeEffects">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">mergeEffects</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.mergeEffects" title="Permalink to this definition">¶</a></dt>
+<dd><p>load transcript effects into single table.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.buildAlleles">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">buildAlleles</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em>, <em>sample</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.buildAlleles" title="Permalink to this definition">¶</a></dt>
+<dd><p>annotate snps with gene set.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.loadAlleles">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">loadAlleles</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.loadAlleles" title="Permalink to this definition">¶</a></dt>
+<dd><p>load allele.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.summarizeAllelesPerTranscript">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">summarizeAllelesPerTranscript</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.summarizeAllelesPerTranscript" title="Permalink to this definition">¶</a></dt>
+<dd><p>summarize effects on a per-gene level.</p>
+<p>The following fields are exclusive:</p>
+<dl class="docutils">
+<dt>is_wildtype</dt>
+<dd>both alleles are wildtype</dd>
+<dt>is_knockout</dt>
+<dd>both alleles knocked out</dd>
+<dt>is_truncated</dt>
+<dd>both alleles truncated or truncated and knocked out</dd>
+<dt>is_affected</dt>
+<dd>one allele is truncated or knocked out</dd>
+</dl>
+<p>The other fields are not necessarily exclusive, for example there
+could be transcripts with one knocked out allele and one wildtype
+allele, such that <tt class="docutils literal"><span class="pre">is_nmd_affected</span></tt>, <tt class="docutils literal"><span class="pre">is_affected</span></tt> and <tt class="docutils literal"><span class="pre">has_wildtype</span></tt> 
+are all true.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.summarizeAllelesPerGene">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">summarizeAllelesPerGene</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.summarizeAllelesPerGene" title="Permalink to this definition">¶</a></dt>
+<dd><p>summarize effects on a per-gene level.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.summarizeEffectsPerGene">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">summarizeEffectsPerGene</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.summarizeEffectsPerGene" title="Permalink to this definition">¶</a></dt>
+<dd><p>summarize effects on a per-gene level.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.makeSNPCountsPerGene">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">makeSNPCountsPerGene</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.makeSNPCountsPerGene" title="Permalink to this definition">¶</a></dt>
+<dd><p>count snps within genes</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.setupMultipleAlignment">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">setupMultipleAlignment</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.setupMultipleAlignment" title="Permalink to this definition">¶</a></dt>
+<dd><p>prepare input files for multiple alignment computations.</p>
+<p>This script does some id-mapping to resolve coordinates.</p>
+<p>Basically, each genome is separated into two alleles. 
+Gene_id&#8217;s will be suffixed with the allele_id. This ensures
+that exons of a gene with multiple transcipts will be resolved
+correctly with consistent coordinates.</p>
+<p>From an alignment point of view, the two alleles of the genes will be treated
+independently, but transcripts within a gene  will be merged correctly at exon 
+boundaries, again on a per-allele basis.</p>
+<p>Later, when collecting the results, the allele id is moved from the gene to
+the transcript.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.buildMultipleAlignments">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">buildMultipleAlignments</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.buildMultipleAlignments" title="Permalink to this definition">¶</a></dt>
+<dd><p>build multiple alignments.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.buildMultipleAlignmentVariantColumns">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">buildMultipleAlignmentVariantColumns</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.buildMultipleAlignmentVariantColumns" title="Permalink to this definition">¶</a></dt>
+<dd><p>build multiple alignments.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.mergeMultipleAlignments">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">mergeMultipleAlignments</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.mergeMultipleAlignments" title="Permalink to this definition">¶</a></dt>
+<dd><p>collect multiple alignment results into files that
+are compatible with OPTIC.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.buildPolyphenInput">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">buildPolyphenInput</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.buildPolyphenInput" title="Permalink to this definition">¶</a></dt>
+<dd><p>build polyphen input file.</p>
+<p>SNPS across all species are aggregated into a single
+file to avoid multiple submissions for the same variant.</p>
+<p>Mapping to Uniprot ids was not successful - 40% of the
+SNPs would have been lost. Hence I map to ensembl protein
+identifiers. Note that the sequence file is then to be 
+submitted to POLYPHEN as well.</p>
+<p>Note that this method outputs 1-based coordinates for polyphen,
+while the coordinates in the .map file are still 0-based.</p>
+<p>SNPs are assigned a snp_id and a locus_id. The snp_id refers
+to the SNP within a peptide sequence while the locus_id refers
+to the genomic location. If there are alternative
+transcripts overlapping a SNP, the same SNP will get two
+snp_ids, but the same locus_id. As the peptide background might
+be different for the same SNP depending on the transcript,
+its effect needs to be predicted twice.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.buildPolyphenFeatures">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">buildPolyphenFeatures</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.buildPolyphenFeatures" title="Permalink to this definition">¶</a></dt>
+<dd><p>run polyphen on the cluster.</p>
+<p>To do this, first send uniref to all nodes:</p>
+<dl class="docutils">
+<dt>python ~/cgat/cluster_distribute.py </dt>
+<dd>&#8211;collection=andreas 
+/net/cpp-group/tools/polyphen-2.0.18/nrdb/uniref100*.{pin,psd,psi,phr,psq,pal}</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.runPolyphen">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">runPolyphen</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em>, <em>model</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.runPolyphen" title="Permalink to this definition">¶</a></dt>
+<dd><p>run POLYPHEN on feature tables to classify SNPs.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.loadPolyphenMap">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">loadPolyphenMap</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.loadPolyphenMap" title="Permalink to this definition">¶</a></dt>
+<dd><p>load polyphen input data.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.loadPolyphen">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">loadPolyphen</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.loadPolyphen" title="Permalink to this definition">¶</a></dt>
+<dd><p>load polyphen results.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.analysePolyphen">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">analysePolyphen</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.analysePolyphen" title="Permalink to this definition">¶</a></dt>
+<dd><p>compute enrichment of SNPs within genes
+and deleterious SNPs within SNPs within genes.</p>
+<p>del: enrichment of deleterious snps within snps per gene
+len: enrichment of snps within genes
+com: enrichment of deleterious snps within gene</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.loadPolyphenAnalysis">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">loadPolyphenAnalysis</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.loadPolyphenAnalysis" title="Permalink to this definition">¶</a></dt>
+<dd><p>load polyphen analysis results.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.buildSharedSNPMatrix">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">buildSharedSNPMatrix</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfiles</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.buildSharedSNPMatrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>build matrix of shared coding nonsynonymous SNPs.</p>
+<p>Counts are per locus id.</p>
+<p>Percent identities are only within coding segregating loci
+and thus do not reflect the real divergence.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.buildSNPDensityIsochores">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">buildSNPDensityIsochores</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.buildSNPDensityIsochores" title="Permalink to this definition">¶</a></dt>
+<dd><p>build isochores with SNP density.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.runGATOnQTLs">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">runGATOnQTLs</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.runGATOnQTLs" title="Permalink to this definition">¶</a></dt>
+<dd><p>run enrichment analysisusing the qtl definitions from
+Jonathan Flint&#8217;s group.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.runGATOnQTLsSmall">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">runGATOnQTLsSmall</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.runGATOnQTLsSmall" title="Permalink to this definition">¶</a></dt>
+<dd><p>run enrichment analysisusing the qtl definitions from
+Jonathan Flint&#8217;s group.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.createMGI">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">createMGI</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.createMGI" title="Permalink to this definition">¶</a></dt>
+<dd><p>get GO assignments from MGI</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.buildGeneMatrix">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">buildGeneMatrix</tt><span class="sig-paren">(</span><em>tracks</em>, <em>analysis</em>, <em>statement</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.buildGeneMatrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>build a gene matrix.</p>
+<p>A gene matrix is an n x m matrix for n genes and m gene lists.
+Each column contains a 1 if a gene is present in a gene list,
+otherwise it is 0.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.buildGeneMatrixEffects">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">buildGeneMatrixEffects</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.buildGeneMatrixEffects" title="Permalink to this definition">¶</a></dt>
+<dd><p>build gene matrix with consequences data.</p>
+<p>Note that this analysis is confounded by gene length.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.buildGeneMatrixAlleles">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">buildGeneMatrixAlleles</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.buildGeneMatrixAlleles" title="Permalink to this definition">¶</a></dt>
+<dd><p>build gene matrix from alleles results</p>
+<p><tt class="docutils literal"><span class="pre">options</span></tt> is a tuple of (<tt class="docutils literal"><span class="pre">track</span></tt>, <tt class="docutils literal"><span class="pre">analysis</span></tt>, <tt class="docutils literal"><span class="pre">ontology</span></tt>)</p>
+<p><tt class="docutils literal"><span class="pre">analysis</span></tt> can be:</p>
+<dl class="docutils">
+<dt>stoptruncated</dt>
+<dd>genes that are truncated due to stops</dd>
+<dt>nmdknockout</dt>
+<dd>genes that are knocked out due to NMD</dd>
+<dt>splicetruncated</dt>
+<dd>genes that are truncated due to deleted splice sites</dd>
+<dt>knockout</dt>
+<dd>any of the above</dd>
+</dl>
+<p>Note that the analysis here needs to be background adjusted.
+NMD transcripts and splice truncated transcripts are only 
+multiple exon transcripts, while stoptruncated ones are
+only single exon ones.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.buildGeneMatrixConsequences">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">buildGeneMatrixConsequences</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.buildGeneMatrixConsequences" title="Permalink to this definition">¶</a></dt>
+<dd><p>build gene matrix from effecs results</p>
+<dl class="docutils">
+<dt>nmdknockouttranscript</dt>
+<dd>genes for which one transcript has been knocked out
+due to NMD</dd>
+<dt>nmdaffectedtranscript</dt>
+<dd>genes in which one transcript is affected by NMD</dd>
+<dt>nmdknockoutgenes</dt>
+<dd>genes in which all transcripts have been knocked out 
+due to NMD</dd>
+</dl>
+<p>Note that the analysis here needs to be background adjusted.
+For example, NMD transcripts are only multiple exon transcripts.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.runGeneListAnalysis">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">runGeneListAnalysis</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.runGeneListAnalysis" title="Permalink to this definition">¶</a></dt>
+<dd><p>run a gene list analysis.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.loadGeneListAnalysis">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">loadGeneListAnalysis</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.loadGeneListAnalysis" title="Permalink to this definition">¶</a></dt>
+<dd><p>load gene list analysis results.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.clone">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">clone</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.clone" title="Permalink to this definition">¶</a></dt>
+<dd><p>clone a pipeline using symbolic links.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.createViewGenes">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">createViewGenes</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.createViewGenes" title="Permalink to this definition">¶</a></dt>
+<dd><p>create view in database for genes.</p>
+<p>This view aggregates all information on a per-gene
+basis. There is only a single entry per gene.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.build_report">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">build_report</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.build_report" title="Permalink to this definition">¶</a></dt>
+<dd><p>build report from scratch.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_variants.update_report">
+<tt class="descclassname">pipeline_variants.</tt><tt class="descname">update_report</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_variants.update_report" title="Permalink to this definition">¶</a></dt>
+<dd><p>update report.</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Variant annotation pipeline</a><ul>
+<li><a class="reference internal" href="#overview">Overview</a></li>
+<li><a class="reference internal" href="#usage">Usage</a><ul>
+<li><a class="reference internal" href="#configuration">Configuration</a></li>
+<li><a class="reference internal" href="#input">Input</a><ul>
+<li><a class="reference internal" href="#variants">Variants</a></li>
+<li><a class="reference internal" href="#optional-inputs">Optional inputs</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#requirements">Requirements</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#pipeline-output">Pipeline output</a></li>
+<li><a class="reference internal" href="#example">Example</a></li>
+<li><a class="reference internal" href="#glossary">Glossary</a></li>
+<li><a class="reference internal" href="#code">Code</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="pipeline_variant_annotation.html"
+                        title="previous chapter">Variant annotation pipeline</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="pipeline_testing.html"
+                        title="next chapter">pipeline_testing - automated testing of pipelines</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/pipelines/pipeline_variants.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pipeline_testing.html" title="pipeline_testing - automated testing of pipelines"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="pipeline_variant_annotation.html" title="Variant annotation pipeline"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../Pipelines.html" >CGAT Pipelines</a> &raquo;</li>
+          <li><a href="../CGATPipelines.html" >NGS Pipelines</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

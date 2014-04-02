@@ -1,0 +1,260 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Bed.py - Tools for working with bed files &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="Modules" href="../modules.html" />
+    <link rel="next" title="GO.py - compute GO enrichment from gene lists" href="GO.html" />
+    <link rel="prev" title="GTF.py - Classes and methods for dealing with gtf formatted files" href="GTF.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="GO.html" title="GO.py - compute GO enrichment from gene lists"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="GTF.html" title="GTF.py - Classes and methods for dealing with gtf formatted files"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" accesskey="U">Modules</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-Bed"></span><div class="section" id="bed-py-tools-for-working-with-bed-files">
+<h1>Bed.py - Tools for working with bed files<a class="headerlink" href="#bed-py-tools-for-working-with-bed-files" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Andreas Heger</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id$</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Python</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="code">
+<h2>Code<a class="headerlink" href="#code" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="Bed.Bed">
+<em class="property">class </em><tt class="descclassname">Bed.</tt><tt class="descname">Bed</tt><a class="headerlink" href="#Bed.Bed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+<p>an interval in bed format.</p>
+<p>empty constructor.</p>
+<dl class="method">
+<dt id="Bed.Bed.fromGTF">
+<tt class="descname">fromGTF</tt><span class="sig-paren">(</span><em>gff</em>, <em>is_gtf=False</em>, <em>name=None</em><span class="sig-paren">)</span><a class="headerlink" href="#Bed.Bed.fromGTF" title="Permalink to this definition">¶</a></dt>
+<dd><p>fill from gtf formatted entry.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="Bed.Bed.columns">
+<tt class="descname">columns</tt><a class="headerlink" href="#Bed.Bed.columns" title="Permalink to this definition">¶</a></dt>
+<dd><p>return number of columns in bed-entry.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="Bed.Track">
+<em class="property">class </em><tt class="descclassname">Bed.</tt><tt class="descname">Track</tt><span class="sig-paren">(</span><em>line</em><span class="sig-paren">)</span><a class="headerlink" href="#Bed.Track" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+<p>bed track information.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Bed.iterator">
+<tt class="descclassname">Bed.</tt><tt class="descname">iterator</tt><span class="sig-paren">(</span><em>infile</em><span class="sig-paren">)</span><a class="headerlink" href="#Bed.iterator" title="Permalink to this definition">¶</a></dt>
+<dd><p>iterate over a bed formatted file.</p>
+<p>The iterator is <a class="reference internal" href="../glossary.html#term-track"><em class="xref std std-term">track</em></a> aware.</p>
+<p>This iterator yields <a class="reference internal" href="#module-Bed" title="Bed"><tt class="xref py py-class docutils literal"><span class="pre">Bed</span></tt></a> objects.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Bed.setName">
+<tt class="descclassname">Bed.</tt><tt class="descname">setName</tt><span class="sig-paren">(</span><em>iterator</em><span class="sig-paren">)</span><a class="headerlink" href="#Bed.setName" title="Permalink to this definition">¶</a></dt>
+<dd><p>yield bed entries in which name is set if unset.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Bed.grouped_iterator">
+<tt class="descclassname">Bed.</tt><tt class="descname">grouped_iterator</tt><span class="sig-paren">(</span><em>iterator</em><span class="sig-paren">)</span><a class="headerlink" href="#Bed.grouped_iterator" title="Permalink to this definition">¶</a></dt>
+<dd><p>yield bed results grouped by track.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Bed.blocked_iterator">
+<tt class="descclassname">Bed.</tt><tt class="descname">blocked_iterator</tt><span class="sig-paren">(</span><em>iterator</em><span class="sig-paren">)</span><a class="headerlink" href="#Bed.blocked_iterator" title="Permalink to this definition">¶</a></dt>
+<dd><p>yield blocked bed results.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Bed.readAndIndex">
+<tt class="descclassname">Bed.</tt><tt class="descname">readAndIndex</tt><span class="sig-paren">(</span><em>infile</em>, <em>with_values=False</em>, <em>per_track=False</em><span class="sig-paren">)</span><a class="headerlink" href="#Bed.readAndIndex" title="Permalink to this definition">¶</a></dt>
+<dd><p>read and index a bed formatted file in <tt class="docutils literal"><span class="pre">infile</span></tt>.</p>
+<p>If <tt class="docutils literal"><span class="pre">with_values</span></tt> is set, the original bed entry will be kept for
+further reference. Otherwise only the intervals will be indexed and
+any additional fields in the bed entry will be ignored.</p>
+<p>The default is to use all intervals. If per_track is set,
+separate indices will be build for each track.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Bed.binIntervals">
+<tt class="descclassname">Bed.</tt><tt class="descname">binIntervals</tt><span class="sig-paren">(</span><em>iterator</em>, <em>num_bins=5</em>, <em>method='equal-bases'</em>, <em>bin_edges=None</em><span class="sig-paren">)</span><a class="headerlink" href="#Bed.binIntervals" title="Permalink to this definition">¶</a></dt>
+<dd><p>merge adjacent bins by score.</p>
+<p>Several merging methods are possible:</p>
+<dl class="docutils">
+<dt>equal-bases</dt>
+<dd>merge intervals such that each bin contains the equal number of bases</dd>
+<dt>equal-intervals</dt>
+<dd>merge intervals such that each bin contains the equal number intervals</dd>
+</dl>
+<p>This options requires the fifth field (score) of the bed input 
+file to be present.</p>
+<p>bins should be non-overlapping.</p>
+<p>returns a list of intervals (<a class="reference internal" href="#module-Bed" title="Bed"><tt class="xref py py-class docutils literal"><span class="pre">Bed</span></tt></a>) and the bin_edges</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Bed.merge">
+<tt class="descclassname">Bed.</tt><tt class="descname">merge</tt><span class="sig-paren">(</span><em>iterator</em><span class="sig-paren">)</span><a class="headerlink" href="#Bed.merge" title="Permalink to this definition">¶</a></dt>
+<dd><p>merge overlapping intervals.</p>
+<p>returns a list of merged intervals.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Bed.getNumColumns">
+<tt class="descclassname">Bed.</tt><tt class="descname">getNumColumns</tt><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="headerlink" href="#Bed.getNumColumns" title="Permalink to this definition">¶</a></dt>
+<dd><p>return number of fields in bed-file by looking at the first 
+entry.</p>
+<p>Returns 0 if file is empty.</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Bed.py - Tools for working with bed files</a><ul>
+<li><a class="reference internal" href="#code">Code</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="GTF.html"
+                        title="previous chapter">GTF.py - Classes and methods for dealing with gtf formatted files</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="GO.html"
+                        title="next chapter">GO.py - compute GO enrichment from gene lists</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/modules/Bed.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="GO.html" title="GO.py - compute GO enrichment from gene lists"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="GTF.html" title="GTF.py - Classes and methods for dealing with gtf formatted files"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" >Modules</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,567 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Genomics.py - Tools for working with genomic data &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="Modules" href="../modules.html" />
+    <link rel="next" title="Maq.py -" href="Maq.html" />
+    <link rel="prev" title="GenomicIO.py - Subroutines for working on I/O of large genomic files" href="GenomicIO.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="Maq.html" title="Maq.py -"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="GenomicIO.html" title="GenomicIO.py - Subroutines for working on I/O of large genomic files"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" accesskey="U">Modules</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-Genomics"></span><div class="section" id="genomics-py-tools-for-working-with-genomic-data">
+<h1>Genomics.py - Tools for working with genomic data<a class="headerlink" href="#genomics-py-tools-for-working-with-genomic-data" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Andreas Heger</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id$</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Python</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="code">
+<h2>Code<a class="headerlink" href="#code" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="Genomics.complement">
+<tt class="descclassname">Genomics.</tt><tt class="descname">complement</tt><span class="sig-paren">(</span><em>s</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.complement" title="Permalink to this definition">¶</a></dt>
+<dd><p>complement a sequence.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.GetHID">
+<tt class="descclassname">Genomics.</tt><tt class="descname">GetHID</tt><span class="sig-paren">(</span><em>sequence</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.GetHID" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns a hash identifier for a sequence.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.String2Location">
+<tt class="descclassname">Genomics.</tt><tt class="descname">String2Location</tt><span class="sig-paren">(</span><em>s</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.String2Location" title="Permalink to this definition">¶</a></dt>
+<dd><p>convert a string to location information.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.GetFastaId">
+<tt class="descclassname">Genomics.</tt><tt class="descname">GetFastaId</tt><span class="sig-paren">(</span><em>fasta_record</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.GetFastaId" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get Fasta Id from a fasta record.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.IndexExists">
+<tt class="descclassname">Genomics.</tt><tt class="descname">IndexExists</tt><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.IndexExists" title="Permalink to this definition">¶</a></dt>
+<dd><p>check if a certain file has been indexed.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.ParseFasta2HashFromIndex">
+<tt class="descclassname">Genomics.</tt><tt class="descname">ParseFasta2HashFromIndex</tt><span class="sig-paren">(</span><em>filename</em>, <em>filter=None</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.ParseFasta2HashFromIndex" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse fasta file via index.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.ParseFasta2Hash">
+<tt class="descclassname">Genomics.</tt><tt class="descname">ParseFasta2Hash</tt><span class="sig-paren">(</span><em>infile</em>, <em>filter=None</em>, <em>regex_identifier=None</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.ParseFasta2Hash" title="Permalink to this definition">¶</a></dt>
+<dd><p>read fasta formatted sequences file and build a hash.</p>
+<p>Keys are all characters before the first whitespace in the description line.</p>
+<p>Previously, if the key contained a &#8221;:&#8221;, everything before the &#8221;:&#8221; was removed.
+This is not true any more.</p>
+<p>Use array for higher space efficiency.</p>
+<p>If regex_identifier is given, this is used to extract the identifier
+from the fasta description line.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.oldParseFasta2Hash">
+<tt class="descclassname">Genomics.</tt><tt class="descname">oldParseFasta2Hash</tt><span class="sig-paren">(</span><em>infile</em>, <em>filter=None</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.oldParseFasta2Hash" title="Permalink to this definition">¶</a></dt>
+<dd><p>read fasta formatted sequences file and build a hash.</p>
+<p>Keys are all characters before the first whitespace in the description line.
+If the key contains a :, everything before the : is removed</p>
+<p>Use array for higher space efficiency.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.WriteGenomicSequences">
+<tt class="descclassname">Genomics.</tt><tt class="descname">WriteGenomicSequences</tt><span class="sig-paren">(</span><em>outfile</em>, <em>forward_sequences</em>, <em>wrap=0</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.WriteGenomicSequences" title="Permalink to this definition">¶</a></dt>
+<dd><p>read genomic sequences from a fasta file and return forward
+and backward sequence.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.ReadGenomicSequences">
+<tt class="descclassname">Genomics.</tt><tt class="descname">ReadGenomicSequences</tt><span class="sig-paren">(</span><em>infile</em>, <em>do_reverse=True</em>, <em>filter=None</em>, <em>mask=None</em>, <em>as_array=False</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.ReadGenomicSequences" title="Permalink to this definition">¶</a></dt>
+<dd><p>read genomic sequences from a fasta file and return forward
+and backward sequence.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.GetGenomicSequence">
+<tt class="descclassname">Genomics.</tt><tt class="descname">GetGenomicSequence</tt><span class="sig-paren">(</span><em>sbjct_token</em>, <em>sbjct_strand</em>, <em>sbjct_from</em>, <em>sbjct_to</em>, <em>genome_file</em>, <em>filter=None</em>, <em>use_index=True</em>, <em>loglevel=2</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.GetGenomicSequence" title="Permalink to this definition">¶</a></dt>
+<dd><p>get genomic fragment.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.ReadPeptideSequences">
+<tt class="descclassname">Genomics.</tt><tt class="descname">ReadPeptideSequences</tt><span class="sig-paren">(</span><em>infile</em>, <em>filter=None</em>, <em>as_array=False</em>, <em>regex_identifier=None</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.ReadPeptideSequences" title="Permalink to this definition">¶</a></dt>
+<dd><p>read peptide sequence from fasta infile.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.ReadContigSizes">
+<tt class="descclassname">Genomics.</tt><tt class="descname">ReadContigSizes</tt><span class="sig-paren">(</span><em>infile</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.ReadContigSizes" title="Permalink to this definition">¶</a></dt>
+<dd><p>read sizes of congits from file.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.ReadLocationsGFF">
+<tt class="descclassname">Genomics.</tt><tt class="descname">ReadLocationsGFF</tt><span class="sig-paren">(</span><em>infile</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.ReadLocationsGFF" title="Permalink to this definition">¶</a></dt>
+<dd><p>read locations from a file in GFF format</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.ReadGo">
+<tt class="descclassname">Genomics.</tt><tt class="descname">ReadGo</tt><span class="sig-paren">(</span><em>infile</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.ReadGo" title="Permalink to this definition">¶</a></dt>
+<dd><p>read go assignments from file as output by Caleb&#8217;s script</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.ReadClusters">
+<tt class="descclassname">Genomics.</tt><tt class="descname">ReadClusters</tt><span class="sig-paren">(</span><em>infile</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.ReadClusters" title="Permalink to this definition">¶</a></dt>
+<dd><p>read clustering information from cd-hit file.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.ToForwardCoordinates">
+<tt class="descclassname">Genomics.</tt><tt class="descname">ToForwardCoordinates</tt><span class="sig-paren">(</span><em>a</em>, <em>b</em>, <em>strand</em>, <em>length</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.ToForwardCoordinates" title="Permalink to this definition">¶</a></dt>
+<dd><p>return a and b in forward coordinates.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.ReadMap">
+<tt class="descclassname">Genomics.</tt><tt class="descname">ReadMap</tt><span class="sig-paren">(</span><em>infile</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.ReadMap" title="Permalink to this definition">¶</a></dt>
+<dd><p>read clustering information from a map file.</p>
+<p>The file maps transcripts to representative transcripts.
+rep is not a member of itself.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.CountGeneFeatures">
+<tt class="descclassname">Genomics.</tt><tt class="descname">CountGeneFeatures</tt><span class="sig-paren">(</span><em>first_position</em>, <em>alignment</em>, <em>genomic_sequence=None</em>, <em>border_stop_codon=0</em>, <em>stop_codons=('TAG'</em>, <em>'TAA'</em>, <em>'TGA')</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.CountGeneFeatures" title="Permalink to this definition">¶</a></dt>
+<dd><p>calculate number of genomic features in a peptide to genome alignment.</p>
+<p>border_stop_codon should be divisible by three and is the number of codons
+that are ignored at the edes of matches regions.</p>
+<p>returns (nintrons, nframeshifts, ngaps, nsplit, nstopcodons, disruptions)</p>
+<p>disruptions is a list of disruptions in the prediction. Each disruption
+is a tuple of ( &#8220;stop|frameshift&#8221;, position in protein, position in cds, position on genomic sequence).</p>
+<p>Note that codons can be split, for example:
+S 0 2 5 0 2 I 0 17541 3 0 2 S 1 2 5 0 2 I 0 27979 3 0 2 S 1 2</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.Alignment2String">
+<tt class="descclassname">Genomics.</tt><tt class="descname">Alignment2String</tt><span class="sig-paren">(</span><em>alignment</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.Alignment2String" title="Permalink to this definition">¶</a></dt>
+<dd><p>convert an alignment to an alignment string.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.String2Alignment">
+<tt class="descclassname">Genomics.</tt><tt class="descname">String2Alignment</tt><span class="sig-paren">(</span><em>source</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.String2Alignment" title="Permalink to this definition">¶</a></dt>
+<dd><p>convert an alignment string to an alignment.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.Alignment2ExonBoundaries">
+<tt class="descclassname">Genomics.</tt><tt class="descname">Alignment2ExonBoundaries</tt><span class="sig-paren">(</span><em>alignment</em>, <em>query_from=0</em>, <em>sbjct_from=0</em>, <em>add_stop_codon=1</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.Alignment2ExonBoundaries" title="Permalink to this definition">¶</a></dt>
+<dd><p>convert a Peptide2DNA alignment to exon boundaries.</p>
+<p>frame is frame of start of exon.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.RemoveFrameShiftsFromAlignment">
+<tt class="descclassname">Genomics.</tt><tt class="descname">RemoveFrameShiftsFromAlignment</tt><span class="sig-paren">(</span><em>row_ali</em>, <em>col_ali</em>, <em>gap_char='-'</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.RemoveFrameShiftsFromAlignment" title="Permalink to this definition">¶</a></dt>
+<dd><p>remove frame shifts in alignment. These are all gaps that
+are 1, 2, 4, or 5 residues long.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.MaskStopCodons">
+<tt class="descclassname">Genomics.</tt><tt class="descname">MaskStopCodons</tt><span class="sig-paren">(</span><em>sequence</em>, <em>stop_codons=('TAG'</em>, <em>'TAA'</em>, <em>'TGA')</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.MaskStopCodons" title="Permalink to this definition">¶</a></dt>
+<dd><p>mask stop codons in a sequence.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.Alignment2DNA">
+<tt class="descclassname">Genomics.</tt><tt class="descname">Alignment2DNA</tt><span class="sig-paren">(</span><em>alignment</em>, <em>query_from=0</em>, <em>sbjct_from=0</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.Alignment2DNA" title="Permalink to this definition">¶</a></dt>
+<dd><p>convert a Peptide2DNA alignment to a DNA against DNA
+alignment.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.encodeGenotype">
+<tt class="descclassname">Genomics.</tt><tt class="descname">encodeGenotype</tt><span class="sig-paren">(</span><em>code</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.encodeGenotype" title="Permalink to this definition">¶</a></dt>
+<dd><p>encode genotypes like GG, GA into a one-letter code.
+The returned code is lower case if code[0] &lt; code[1], otherwise
+it is uppercase.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.decodeGenotype">
+<tt class="descclassname">Genomics.</tt><tt class="descname">decodeGenotype</tt><span class="sig-paren">(</span><em>code</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.decodeGenotype" title="Permalink to this definition">¶</a></dt>
+<dd><p>decode single letter genotypes like m, M into two letters.
+This is the reverse operation to <a class="reference internal" href="#Genomics.encodeGenotype" title="Genomics.encodeGenotype"><tt class="xref py py-meth docutils literal"><span class="pre">encodeGenotype()</span></tt></a>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.resolveAmbiguousNA">
+<tt class="descclassname">Genomics.</tt><tt class="descname">resolveAmbiguousNA</tt><span class="sig-paren">(</span><em>code</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.resolveAmbiguousNA" title="Permalink to this definition">¶</a></dt>
+<dd><p>resolve ambiguous nucleic acid letters.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.resolveReverseAmbiguousNA">
+<tt class="descclassname">Genomics.</tt><tt class="descname">resolveReverseAmbiguousNA</tt><span class="sig-paren">(</span><em>genotype</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.resolveReverseAmbiguousNA" title="Permalink to this definition">¶</a></dt>
+<dd><p>map a genotype to a single letter amino acid amiguous code,
+for example, CT -&gt; Y.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.GetMapAA2Codons">
+<tt class="descclassname">Genomics.</tt><tt class="descname">GetMapAA2Codons</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.GetMapAA2Codons" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns a map of amino acids to codons</p>
+<p>No stop codons.
+.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.MapCodon2AA">
+<tt class="descclassname">Genomics.</tt><tt class="descname">MapCodon2AA</tt><span class="sig-paren">(</span><em>codon</em>, <em>is_seleno=False</em>, <em>ignore_n=True</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.MapCodon2AA" title="Permalink to this definition">¶</a></dt>
+<dd><p>map a codon to an amino acid using the standard translation
+tables</p>
+<p>The mapping returns gaps as gaps and will return an amino acid
+for incomplete codons if there is unambiguous mapping.</p>
+<p>If <tt class="docutils literal"><span class="pre">is_seleno</span></tt> is set, the codon is translated for a selenoprotein.</p>
+<p>If <tt class="docutils literal"><span class="pre">ignore_n</span></tt> is set, codons with <tt class="docutils literal"><span class="pre">n</span></tt> are returned
+as <tt class="docutils literal"><span class="pre">?</span></tt> in order to distinguish them from stop codons.</p>
+<p>Amino acids are returned as upper-case letters.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.Alignment2PeptideAlignment">
+<tt class="descclassname">Genomics.</tt><tt class="descname">Alignment2PeptideAlignment</tt><span class="sig-paren">(</span><em>alignment</em>, <em>query_from=0</em>, <em>sbjct_from=0</em>, <em>genomic_sequence=None</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.Alignment2PeptideAlignment" title="Permalink to this definition">¶</a></dt>
+<dd><p>convert a Peptide2DNA aligment to a Peptide2Peptide alignment.</p>
+<p>How to handle frameshifts?</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.translate">
+<tt class="descclassname">Genomics.</tt><tt class="descname">translate</tt><span class="sig-paren">(</span><em>sequence</em>, <em>is_seleno=False</em>, <em>prefer_lowercase=True</em>, <em>ignore_n=False</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.translate" title="Permalink to this definition">¶</a></dt>
+<dd><p>convert DNA sequence to a peptide sequence</p>
+<p>If <tt class="docutils literal"><span class="pre">is_seleno</span></tt> is set, &#8220;TGA&#8221; codons are treated as
+encoding for selenocysteine.</p>
+<p>If <tt class="docutils literal"><span class="pre">ignore_n</span></tt> is set, codons with <tt class="docutils literal"><span class="pre">n</span></tt> are returned
+as <tt class="docutils literal"><span class="pre">?</span></tt> in order to distinguish them from stop codons.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.TranslateDNA2Protein">
+<tt class="descclassname">Genomics.</tt><tt class="descname">TranslateDNA2Protein</tt><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.TranslateDNA2Protein" title="Permalink to this definition">¶</a></dt>
+<dd><p>convert a DNA sequence to a peptide sequence.
+keep case.</p>
+<p>deprecated - use <a class="reference internal" href="#Genomics.translate" title="Genomics.translate"><tt class="xref py py-meth docutils literal"><span class="pre">translate()</span></tt></a> instead.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.Alignment2CDNA">
+<tt class="descclassname">Genomics.</tt><tt class="descname">Alignment2CDNA</tt><span class="sig-paren">(</span><em>alignment</em>, <em>query_from=0</em>, <em>sbjct_from=0</em>, <em>genome=None</em>, <em>remove_frameshifts=0</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.Alignment2CDNA" title="Permalink to this definition">¶</a></dt>
+<dd><p>build cDNA sequence from genomic fragment and
+return alignment of query to it.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.Exons2Alignment">
+<tt class="descclassname">Genomics.</tt><tt class="descname">Exons2Alignment</tt><span class="sig-paren">(</span><em>exons</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.Exons2Alignment" title="Permalink to this definition">¶</a></dt>
+<dd><p>build an cigar alignment string from a list of exons.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.AlignmentProtein2CDNA">
+<tt class="descclassname">Genomics.</tt><tt class="descname">AlignmentProtein2CDNA</tt><span class="sig-paren">(</span><em>src</em>, <em>exons1=None</em>, <em>exons2=None</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.AlignmentProtein2CDNA" title="Permalink to this definition">¶</a></dt>
+<dd><p>convert a peptide alignment to a nucleotide
+alignment.</p>
+<p>multiplies coordinates with 3.
+Insert introns.</p>
+<p>Note: alignment starts at 1</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.GetDegenerateSites">
+<tt class="descclassname">Genomics.</tt><tt class="descname">GetDegenerateSites</tt><span class="sig-paren">(</span><em>seq1</em>, <em>seq2</em>, <em>degeneracy=4</em>, <em>position=3</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.GetDegenerateSites" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns two new sequenes containing only degenerate sites.</p>
+<p>Only unmutated positions are counted.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="Genomics.SequencePairInfo">
+<em class="property">class </em><tt class="descclassname">Genomics.</tt><tt class="descname">SequencePairInfo</tt><a class="headerlink" href="#Genomics.SequencePairInfo" title="Permalink to this definition">¶</a></dt>
+<dd><p>the first characters are ACGT.</p>
+<dl class="method">
+<dt id="Genomics.SequencePairInfo.getGCContent">
+<tt class="descname">getGCContent</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.SequencePairInfo.getGCContent" title="Permalink to this definition">¶</a></dt>
+<dd><p>return GC content.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="Genomics.SequencePairInfoCodons">
+<em class="property">class </em><tt class="descclassname">Genomics.</tt><tt class="descname">SequencePairInfoCodons</tt><a class="headerlink" href="#Genomics.SequencePairInfoCodons" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#Genomics.SequencePairInfo" title="Genomics.SequencePairInfo"><tt class="xref py py-class docutils literal"><span class="pre">Genomics.SequencePairInfo</span></tt></a></p>
+<p>the first characters are ACGT.</p>
+<dl class="method">
+<dt id="Genomics.SequencePairInfoCodons.getGCContent">
+<tt class="descname">getGCContent</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.SequencePairInfoCodons.getGCContent" title="Permalink to this definition">¶</a></dt>
+<dd><p>return GC content.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.AlignedPair2SubstitutionMatrix">
+<tt class="descclassname">Genomics.</tt><tt class="descname">AlignedPair2SubstitutionMatrix</tt><span class="sig-paren">(</span><em>seq1</em>, <em>seq2</em>, <em>alphabet</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.AlignedPair2SubstitutionMatrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>given a pair of sequences, calculate
+a substitution matrix for the given alphabet.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.CalculatePairIndices">
+<tt class="descclassname">Genomics.</tt><tt class="descname">CalculatePairIndices</tt><span class="sig-paren">(</span><em>seq1</em>, <em>seq2</em>, <em>gap_char='-'</em>, <em>with_codons=False</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.CalculatePairIndices" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns number of idential and transitions/transversions substitutions
+in the alignment.</p>
+<p>If with-codons = True, synonymous and nonsynonymous changes will be recorded
+as well. The routine assumes no frame-shifts and will count more than one change
+as non-synonymous.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.makeSubstitutionMatrix">
+<tt class="descclassname">Genomics.</tt><tt class="descname">makeSubstitutionMatrix</tt><span class="sig-paren">(</span><em>type='EMBOSS'</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.makeSubstitutionMatrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>make alignator with DNA substitution matrix.</p>
+<p>EMBOSS style matrix:
+identity = 5
+mismatch = -4
+gop = -16
+gep = -4</p>
+<p>ClustalW style matrix:
+match = 1 mismatch = 0
+gop = -10 gep = -0.1</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.CalculateRCSUValuesFromCounts">
+<tt class="descclassname">Genomics.</tt><tt class="descname">CalculateRCSUValuesFromCounts</tt><span class="sig-paren">(</span><em>counts</em>, <em>pseudo_counts=0</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.CalculateRCSUValuesFromCounts" title="Permalink to this definition">¶</a></dt>
+<dd><p>calculate RCSU values for codons.</p>
+<p>RCSU = relative frequency / uniform frequency</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.CalculateCodonFrequenciesFromCounts">
+<tt class="descclassname">Genomics.</tt><tt class="descname">CalculateCodonFrequenciesFromCounts</tt><span class="sig-paren">(</span><em>counts</em>, <em>pseudo_counts=0</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.CalculateCodonFrequenciesFromCounts" title="Permalink to this definition">¶</a></dt>
+<dd><p>calculate codon frequencies from codon counts per amino acid.
+pseudo_counts are added if desired.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.CalculateCAIWeightsFromCounts">
+<tt class="descclassname">Genomics.</tt><tt class="descname">CalculateCAIWeightsFromCounts</tt><span class="sig-paren">(</span><em>counts</em>, <em>pseudo_counts=0</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.CalculateCAIWeightsFromCounts" title="Permalink to this definition">¶</a></dt>
+<dd><p>calculate CAI weights from codon counts.
+pseudo_counts are added if desired.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.CountCodons">
+<tt class="descclassname">Genomics.</tt><tt class="descname">CountCodons</tt><span class="sig-paren">(</span><em>sequence</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.CountCodons" title="Permalink to this definition">¶</a></dt>
+<dd><p>count the codons in a sequence.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.GetUniformCodonUsage">
+<tt class="descclassname">Genomics.</tt><tt class="descname">GetUniformCodonUsage</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.GetUniformCodonUsage" title="Permalink to this definition">¶</a></dt>
+<dd><p>get list of frequencies for codons expected for uniform codon usage.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.GetBiasedCodonUsage">
+<tt class="descclassname">Genomics.</tt><tt class="descname">GetBiasedCodonUsage</tt><span class="sig-paren">(</span><em>bias=1.0</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.GetBiasedCodonUsage" title="Permalink to this definition">¶</a></dt>
+<dd><p>get list of frequencies for codons according to some bias.</p>
+<p>The first codon for each aa is the most biased, all others are less biased.</p>
+<p>The ratio determines the relative bias between the first and all other
+codons. 0.0 is no bias, 1.0 is complete bias.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.convertStrand">
+<tt class="descclassname">Genomics.</tt><tt class="descname">convertStrand</tt><span class="sig-paren">(</span><em>strand</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.convertStrand" title="Permalink to this definition">¶</a></dt>
+<dd><p>convert various strand notations into [+-.].</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.IsJunk">
+<tt class="descclassname">Genomics.</tt><tt class="descname">IsJunk</tt><span class="sig-paren">(</span><em>contig</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.IsJunk" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns true, if contigs is likely to be junk.</p>
+<p>This is done by name matching. Junk contigs contain either
+one of the following:</p>
+<p>random, unknown, chrU, chU.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.GetIntronType">
+<tt class="descclassname">Genomics.</tt><tt class="descname">GetIntronType</tt><span class="sig-paren">(</span><em>sequence</em>, <em>both_strands=False</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.GetIntronType" title="Permalink to this definition">¶</a></dt>
+<dd><p>return intron type for an intronic sequence.</p>
+<p>If both_strands is True, both strands are checked.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Genomics.printPrettyAlignment">
+<tt class="descclassname">Genomics.</tt><tt class="descname">printPrettyAlignment</tt><span class="sig-paren">(</span><em>seq1</em>, <em>*args</em><span class="sig-paren">)</span><a class="headerlink" href="#Genomics.printPrettyAlignment" title="Permalink to this definition">¶</a></dt>
+<dd><p>print a pretty alignment.</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Genomics.py - Tools for working with genomic data</a><ul>
+<li><a class="reference internal" href="#code">Code</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="GenomicIO.html"
+                        title="previous chapter">GenomicIO.py - Subroutines for working on I/O of large genomic files</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="Maq.html"
+                        title="next chapter">Maq.py -</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/modules/Genomics.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="Maq.html" title="Maq.py -"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="GenomicIO.html" title="GenomicIO.py - Subroutines for working on I/O of large genomic files"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" >Modules</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

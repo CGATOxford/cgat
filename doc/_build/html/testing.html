@@ -1,0 +1,268 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Testing &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/sorttable.js"></script>
+    <script type="text/javascript" src="_static/jquery.min.js"></script>
+    <script type="text/javascript" src="_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="index.html" />
+    <link rel="next" title="Style Guide" href="styleguide.html" />
+    <link rel="prev" title="Contributing to CGAT code" href="developing.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="styleguide.html" title="Style Guide"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="developing.html" title="Contributing to CGAT code"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">CGAT  documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="testing">
+<span id="id1"></span><h1>Testing<a class="headerlink" href="#testing" title="Permalink to this headline">¶</a></h1>
+<p>This module describes the implementation of unit tests for the CGAT
+code collection.</p>
+<div class="section" id="testing-scripts">
+<h2>Testing scripts<a class="headerlink" href="#testing-scripts" title="Permalink to this headline">¶</a></h2>
+<p>Scripts are tested by comparing the expected output with the latest
+output. The tests are implemented in the script
+<tt class="file docutils literal"><span class="pre">test_scripts.py</span></tt>.</p>
+<p>This script collects tests from subdirectories in the <tt class="file docutils literal"><span class="pre">tests</span></tt>
+directory. Each test is named by the name of the script it tests.</p>
+<div class="section" id="adding-a-new-test-manually">
+<h3>Adding a new test manually<a class="headerlink" href="#adding-a-new-test-manually" title="Permalink to this headline">¶</a></h3>
+<p>To add a new test for a CGAT script, create a new <a class="reference internal" href="glossary.html#term-test-directory"><em class="xref std std-term">test
+directory</em></a> in the directory <tt class="file docutils literal"><span class="pre">tests</span></tt>. The name of the <a class="reference internal" href="glossary.html#term-test-directory"><em class="xref std std-term">test
+directory</em></a> has to correspond to the name of the script the tests will
+tested.</p>
+<p>In this directory, create a file called <tt class="file docutils literal"><span class="pre">tests.yaml</span></tt>. This file is
+in <a class="reference internal" href="glossary.html#term-yaml"><em class="xref std std-term">yaml</em></a> format, a simple text-based format to describe nested data
+structures.</p>
+<p>The <tt class="file docutils literal"><span class="pre">tests.yaml</span></tt> file contains the descriptions of the
+individual tests to run. Each test is a separate data structure in
+this file. The fields are:</p>
+<dl class="docutils">
+<dt>options</dt>
+<dd>Command line options for running the test. If you need to
+provide additional files as input, use the <tt class="docutils literal"><span class="pre">%DIR%</span></tt> place
+holder for the <a class="reference internal" href="glossary.html#term-test-directory"><em class="xref std std-term">test directory</em></a>.</dd>
+<dt>stdin</dt>
+<dd>Filename of file to use as stdin to the script. If no stdin is
+required, set to <tt class="docutils literal"><span class="pre">null</span></tt> or omit.</dd>
+<dt>outputs</dt>
+<dd>A list of output files obtained by running the script that
+should be compared to the list of files in <tt class="docutils literal"><span class="pre">references</span></tt>.
+<tt class="docutils literal"><span class="pre">stdout</span></tt> signifies the standard output.</dd>
+<dt>references</dt>
+<dd>A list of expected output files. The order of <tt class="docutils literal"><span class="pre">outputs</span></tt> and
+<tt class="docutils literal"><span class="pre">references</span></tt> should be the same. The reference files are
+expected to be found in the directory <a class="reference internal" href="glossary.html#term-test-directory"><em class="xref std std-term">test directory</em></a>
+and thus need not prefixed with a directory place holder.</dd>
+<dt>description</dt>
+<dd>A description of test.</dd>
+</dl>
+<p>To illustrate, we will be creating tests for the scripts
+<tt class="docutils literal"><span class="pre">fasta2counts.py</span></tt>. First we create the <a class="reference internal" href="glossary.html#term-test-directory"><em class="xref std std-term">test directory</em></a>
+<tt class="file docutils literal"><span class="pre">tests/fasta2counts.py</span></tt>. Next we create a file
+<tt class="file docutils literal"><span class="pre">tests/fasta2counts.py/tests.yaml</span></tt> with the following content:</p>
+<div class="highlight-python"><div class="highlight"><pre>basic_test:
+    outputs: [stdout]
+    stdin: null
+    references: [test1.tsv]
+    options: --genome-file=&lt;DIR&gt;/small_genome
+</pre></div>
+</div>
+<p><tt class="docutils literal"><span class="pre">basic_test</span></tt> is the name of the test. There is no standard input
+and the output of the script goes to stdout. Stdout will be compared to
+the file <tt class="file docutils literal"><span class="pre">test1.tsv</span></tt>. The script requires the <tt class="docutils literal"><span class="pre">--genome-file</span></tt>
+option, which we supply in the <tt class="docutils literal"><span class="pre">options</span></tt> field. The <tt class="docutils literal"><span class="pre">&lt;DIR&gt;</span></tt> prefix
+will be expanded to the directory that contains the file
+<tt class="file docutils literal"><span class="pre">tests.yaml</span></tt>.</p>
+<p>Finally, we create the required input and reference files in the
+<a class="reference internal" href="glossary.html#term-test-directory"><em class="xref std std-term">test directory</em></a>. Our directory structure looks thus:</p>
+<div class="highlight-python"><div class="highlight"><pre>|___tests
+  |___fasta2counts.py
+  | |___small_genome.fasta
+  | |___small_genome.idx
+  | |___test1.tsv
+  | |___tests.yaml
+</pre></div>
+</div>
+<p>Multiple tests per script can be defined by adding additional data structures in
+the <tt class="file docutils literal"><span class="pre">tests.yaml</span></tt> file.</p>
+<p>Please write abundant tests, but keep test data to a minimum. Thus,
+instead of running on a large bam file, create stripped down versions
+containing only relevant data that is sufficient for the test at hand.</p>
+<p>Re-use test data as much as possible. Some
+generic test data used by multiple tests is in the <tt class="file docutils literal"><span class="pre">tests/data</span></tt>
+directory.</p>
+</div>
+<div class="section" id="creating-a-test">
+<h3>Creating a test<a class="headerlink" href="#creating-a-test" title="Permalink to this headline">¶</a></h3>
+<p>The script <tt class="file docutils literal"><span class="pre">tests/setup_test.py</span></tt> can be used to set up
+a testing stub. For example:</p>
+<div class="highlight-python"><div class="highlight"><pre>python tests/setup_test.py scripts/bam2bam.py
+</pre></div>
+</div>
+<p>will add a new test for the script <tt class="file docutils literal"><span class="pre">bam2bam.py</span></tt>.</p>
+<p>The script will create a new testing directory for each script passed
+on the command line and create a simple <tt class="file docutils literal"><span class="pre">tests.yaml</span></tt> file. The
+basic test will simply call a script to check if starts without error
+and returns a version string.</p>
+</div>
+<div class="section" id="running-tests">
+<h3>Running tests<a class="headerlink" href="#running-tests" title="Permalink to this headline">¶</a></h3>
+<p>In order to run the tests on CGAT scripts, type:</p>
+<div class="highlight-python"><div class="highlight"><pre>nosetests tests/test_scripts.py
+</pre></div>
+</div>
+<p>In order to get more information, type:</p>
+<div class="highlight-python"><div class="highlight"><pre>nosetests -v tests/test_scripts.py
+</pre></div>
+</div>
+<p>To run individual tests, edit the file
+<tt class="file docutils literal"><span class="pre">tests/test_scripts.yaml</span></tt>. In order to restrict testing to
+a single script, for example <tt class="docutils literal"><span class="pre">beds2counts.py</span></tt>, add the following:</p>
+<div class="highlight-python"><div class="highlight"><pre>restrict:
+      regex: beds2counts.py
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="testing-modules">
+<h2>Testing modules<a class="headerlink" href="#testing-modules" title="Permalink to this headline">¶</a></h2>
+<p>TODO e</p>
+</div>
+<div class="section" id="testing-pipelines">
+<h2>Testing pipelines<a class="headerlink" href="#testing-pipelines" title="Permalink to this headline">¶</a></h2>
+<p>TODO - describe pipeline_testing</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Testing</a><ul>
+<li><a class="reference internal" href="#testing-scripts">Testing scripts</a><ul>
+<li><a class="reference internal" href="#adding-a-new-test-manually">Adding a new test manually</a></li>
+<li><a class="reference internal" href="#creating-a-test">Creating a test</a></li>
+<li><a class="reference internal" href="#running-tests">Running tests</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#testing-modules">Testing modules</a></li>
+<li><a class="reference internal" href="#testing-pipelines">Testing pipelines</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="developing.html"
+                        title="previous chapter">Contributing to CGAT code</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="styleguide.html"
+                        title="next chapter">Style Guide</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/testing.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="styleguide.html" title="Style Guide"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="developing.html" title="Contributing to CGAT code"
+             >previous</a> |</li>
+        <li><a href="index.html">CGAT  documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

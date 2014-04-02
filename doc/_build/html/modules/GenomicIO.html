@@ -1,0 +1,192 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>GenomicIO.py - Subroutines for working on I/O of large genomic files &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="Modules" href="../modules.html" />
+    <link rel="next" title="Genomics.py - Tools for working with genomic data" href="Genomics.html" />
+    <link rel="prev" title="GO.py - compute GO enrichment from gene lists" href="GO.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="Genomics.html" title="Genomics.py - Tools for working with genomic data"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="GO.html" title="GO.py - compute GO enrichment from gene lists"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" accesskey="U">Modules</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-GenomicIO"></span><div class="section" id="genomicio-py-subroutines-for-working-on-i-o-of-large-genomic-files">
+<h1>GenomicIO.py - Subroutines for working on I/O of large genomic files<a class="headerlink" href="#genomicio-py-subroutines-for-working-on-i-o-of-large-genomic-files" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id$</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Python</td>
+</tr>
+</tbody>
+</table>
+<p>I tried the Biopython parser, but it was too slow for large genomic chunks.</p>
+<dl class="function">
+<dt id="GenomicIO.index_file">
+<tt class="descclassname">GenomicIO.</tt><tt class="descname">index_file</tt><span class="sig-paren">(</span><em>filenames</em>, <em>db_name</em><span class="sig-paren">)</span><a class="headerlink" href="#GenomicIO.index_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>index file/files.</p>
+<p>Two new files are create - db_name.fasta and db_name.idx</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GenomicIO.index_exists">
+<tt class="descclassname">GenomicIO.</tt><tt class="descname">index_exists</tt><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="headerlink" href="#GenomicIO.index_exists" title="Permalink to this definition">¶</a></dt>
+<dd><p>check if a certain file has been indexed.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GenomicIO.getSequence">
+<tt class="descclassname">GenomicIO.</tt><tt class="descname">getSequence</tt><span class="sig-paren">(</span><em>db_name</em>, <em>sbjct_token</em>, <em>sbjct_strand</em>, <em>sbjct_from</em>, <em>sbjct_to</em>, <em>as_array=False</em>, <em>forward_coordinates=False</em><span class="sig-paren">)</span><a class="headerlink" href="#GenomicIO.getSequence" title="Permalink to this definition">¶</a></dt>
+<dd><p>get genomic fragment.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GenomicIO.splitFasta">
+<tt class="descclassname">GenomicIO.</tt><tt class="descname">splitFasta</tt><span class="sig-paren">(</span><em>infile</em>, <em>chunk_size</em>, <em>dir='/tmp'</em>, <em>pattern=None</em><span class="sig-paren">)</span><a class="headerlink" href="#GenomicIO.splitFasta" title="Permalink to this definition">¶</a></dt>
+<dd><p>split a fasta file into a subset of files.</p>
+<p>If pattern is not given, random file names are chosen.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="GenomicIO.getConverter">
+<tt class="descclassname">GenomicIO.</tt><tt class="descname">getConverter</tt><span class="sig-paren">(</span><em>format</em><span class="sig-paren">)</span><a class="headerlink" href="#GenomicIO.getConverter" title="Permalink to this definition">¶</a></dt>
+<dd><p>return a converter function for
+converting various coordinate schemes into
+0-based, both strand, closed-open ranges.</p>
+<p>converter functions have the parameters
+x, y, s, l: with x and y the coordinates of
+a sequence fragment, s the strand (True is positive)
+and l being the length of the contig.</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="GO.html"
+                        title="previous chapter">GO.py - compute GO enrichment from gene lists</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="Genomics.html"
+                        title="next chapter">Genomics.py - Tools for working with genomic data</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/modules/GenomicIO.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="Genomics.html" title="Genomics.py - Tools for working with genomic data"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="GO.html" title="GO.py - compute GO enrichment from gene lists"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" >Modules</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,455 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Optimizing cufflinks parameters &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="NGS Pipelines" href="../CGATPipelines.html" />
+    <link rel="next" title="Mappability pipeline" href="pipeline_mappability.html" />
+    <link rel="prev" title="Benchmark: RNASeq-Mapping" href="pipeline_benchmark_rnaseqmappers.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pipeline_mappability.html" title="Mappability pipeline"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="pipeline_benchmark_rnaseqmappers.html" title="Benchmark: RNASeq-Mapping"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../Pipelines.html" >CGAT Pipelines</a> &raquo;</li>
+          <li><a href="../CGATPipelines.html" accesskey="U">NGS Pipelines</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-pipeline_cufflinks_optimization"></span><div class="section" id="optimizing-cufflinks-parameters">
+<h1>Optimizing cufflinks parameters<a class="headerlink" href="#optimizing-cufflinks-parameters" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Nick Ilott</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id$</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Python</td>
+</tr>
+</tbody>
+</table>
+<p>The cufflinks optimization pipeline attempts to assess the quality of a variety of transcript
+assemblies using various sets of parameters.</p>
+<div class="section" id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>Building transcripts is an important prerequisite for a number of projects that we undertake,
+especially where the emphasis is on transcript structure or the identification of non-coding
+transcripts (often lowly expressed).</p>
+<p>In addition to the general issues  associated with transcript building, we are often working on
+a variety of data from different library types and as such are not aware of the optimal set of
+parameters for a transcript assembly from the outset of an analysis. This is especially important when 
+we are faced with such things as high numbers of intronic reads from a non-polyA selected library
+or low depth. Ideally we want to optimize the number of spliced reads that are incorporated into
+transcript models, thus using the maximal amount of information that is present in any given datset.</p>
+<p>Another issue in transcript assembly is the time that is required to run an assembly on an entire
+transcriptome, creating a bottleneck in parameter optimization.</p>
+<p>Given the above, the cufflinks optimization pipeline uses a reduced set of alignments (from a tophat run)
+to optimize a variety of user specified parameters. It performs the following tasks</p>
+<blockquote>
+<div><ul class="simple">
+<li>Reduction of input bam files into chr19 only bamfiles</li>
+<li>Runs the rnaseq transcript building pipeline for all combinations
+of user specified parameters</li>
+<li>Collects metrics in a single database csvdb from each run (metrics provided by the transcript
+building pipeline) and assesses how many reads contribute to transcripts (inc. spliced reads)</li>
+<li>It also assesses the ratio of single vs. multi exon transfrags as a measure of overall transcriptome
+quality.</li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>See <a class="reference internal" href="../UsingPipelines.html#pipelinesettingup"><em>Setting up a pipeline</em></a> and <a class="reference internal" href="../UsingPipelines.html#pipelinerunning"><em>Running a pipeline</em></a> on general information how to use CGAT pipelines.</p>
+<div class="section" id="configuration">
+<h3>Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">¶</a></h3>
+<p>The pipeline requires a configured <tt class="file docutils literal"><span class="pre">pipeline.ini</span></tt> file.</p>
+<p>The sphinxreport report requires a <tt class="file docutils literal"><span class="pre">conf.py</span></tt> and <tt class="file docutils literal"><span class="pre">sphinxreport.ini</span></tt> file 
+(see <a class="reference internal" href="../UsingPipelines.html#pipelinereporting"><em>Building pipeline reports</em></a>). To start with, use the files supplied with the
+<a class="reference internal" href="#example">Example</a> data.</p>
+</div>
+<div class="section" id="input">
+<h3>Input<a class="headerlink" href="#input" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="mapped-reads">
+<h4>Mapped reads<a class="headerlink" href="#mapped-reads" title="Permalink to this headline">¶</a></h4>
+<p>The principal input of this pipeline is a collection of reads mapped to a reference genome.
+Mapped reads are imported by placing files are linking to files in the <a class="reference internal" href="../make_pipelines/Gpipe.html#term-working-directory"><em class="xref std std-term">working directory</em></a>.</p>
+<p>The default file format assumes the following convention:</p>
+<blockquote>
+<div>&lt;sample&gt;-&lt;condition&gt;-&lt;replicate&gt;.bam</div></blockquote>
+<p><tt class="docutils literal"><span class="pre">sample</span></tt> and <tt class="docutils literal"><span class="pre">condition</span></tt> make up an <a class="reference internal" href="../glossary.html#term-experiment"><em class="xref std std-term">experiment</em></a>, while <tt class="docutils literal"><span class="pre">replicate</span></tt> denotes
+the <a class="reference internal" href="../glossary.html#term-replicate"><em class="xref std std-term">replicate</em></a> within an <a class="reference internal" href="../glossary.html#term-experiment"><em class="xref std std-term">experiment</em></a>.</p>
+</div>
+</div>
+<div class="section" id="requirements">
+<h3>Requirements<a class="headerlink" href="#requirements" title="Permalink to this headline">¶</a></h3>
+<p>The pipeline requires the results from <a class="reference internal" href="pipeline_annotations.html"><em>Annotation pipeline</em></a>. Set the configuration variable 
+<tt class="xref py py-data docutils literal"><span class="pre">annotations_database</span></tt> and <tt class="xref py py-data docutils literal"><span class="pre">annotations_dir</span></tt>.</p>
+<p>On top of the default CGAT setup, the pipeline requires the following software to be in the 
+path:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="23%" />
+<col width="22%" />
+<col width="55%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><em>Program</em></td>
+<td><em>Version</em></td>
+<td><em>Purpose</em></td>
+</tr>
+<tr class="row-even"><td><a class="reference external" href="http://cufflinks.cbcb.umd.edu/index.html">cufflinks</a></td>
+<td>&gt;=1.3.0</td>
+<td>transcription levels</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section" id="example">
+<h2>Example<a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h2>
+<p>Example data is available at <a class="reference external" href="http://www.cgat.org/~andreas/sample_data/pipeline_cufflinks_optimization.tgz">http://www.cgat.org/~andreas/sample_data/pipeline_cufflinks_optimization.tgz</a>.
+To run the example, simply unpack and untar:</p>
+<div class="highlight-python"><div class="highlight"><pre>wget http://www.cgat.org/~andreas/sample_data/pipeline_cufflinks_optimization.tgz
+tar -xvzf pipeline_cufflinks_optimization.tgz
+cd pipeline_cufflinks_optimization.dir
+python &lt;srcdir&gt;/pipeline_cufflinks_optimization.py make full
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">For the pipeline to run, install the <a class="reference internal" href="pipeline_annotations.html"><em>Annotation pipeline</em></a> as well.</p>
+</div>
+</div>
+<div class="section" id="glossary">
+<h2>Glossary<a class="headerlink" href="#glossary" title="Permalink to this headline">¶</a></h2>
+<dl class="glossary docutils">
+<dt id="term-cufflinks">cufflinks</dt>
+<dd><a class="reference external" href="http://cufflinks.cbcb.umd.edu/index.html">cufflinks</a> - transcriptome analysis</dd>
+</dl>
+</div>
+<div class="section" id="code">
+<h2>Code<a class="headerlink" href="#code" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pipeline_cufflinks_optimization.connect">
+<tt class="descclassname">pipeline_cufflinks_optimization.</tt><tt class="descname">connect</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_cufflinks_optimization.connect" title="Permalink to this definition">¶</a></dt>
+<dd><p>connect to database.</p>
+<p>This method also attaches to helper databases.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_cufflinks_optimization.updateFile">
+<tt class="descclassname">pipeline_cufflinks_optimization.</tt><tt class="descname">updateFile</tt><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_cufflinks_optimization.updateFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>create empty file for updating purposes</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_cufflinks_optimization.options_generator">
+<tt class="descclassname">pipeline_cufflinks_optimization.</tt><tt class="descname">options_generator</tt><span class="sig-paren">(</span><em>cufflinks_options</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_cufflinks_optimization.options_generator" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns a generator for dealing with the cufflinks parameters
+for directory names and .ini file creation</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_cufflinks_optimization.getDirectoryNames">
+<tt class="descclassname">pipeline_cufflinks_optimization.</tt><tt class="descname">getDirectoryNames</tt><span class="sig-paren">(</span><em>options_generator</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_cufflinks_optimization.getDirectoryNames" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the names for the directories</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_cufflinks_optimization.getLogFileNames">
+<tt class="descclassname">pipeline_cufflinks_optimization.</tt><tt class="descname">getLogFileNames</tt><span class="sig-paren">(</span><em>options_generator</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_cufflinks_optimization.getLogFileNames" title="Permalink to this definition">¶</a></dt>
+<dd><p>get filenames for log files</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_cufflinks_optimization.reduceBamToChr19">
+<tt class="descclassname">pipeline_cufflinks_optimization.</tt><tt class="descname">reduceBamToChr19</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_cufflinks_optimization.reduceBamToChr19" title="Permalink to this definition">¶</a></dt>
+<dd><p>reduce the dataset for parameter testing.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_cufflinks_optimization.indexBam">
+<tt class="descclassname">pipeline_cufflinks_optimization.</tt><tt class="descname">indexBam</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_cufflinks_optimization.indexBam" title="Permalink to this definition">¶</a></dt>
+<dd><p>index the reduced bam file</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_cufflinks_optimization.createLogFiles">
+<tt class="descclassname">pipeline_cufflinks_optimization.</tt><tt class="descname">createLogFiles</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfiles</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_cufflinks_optimization.createLogFiles" title="Permalink to this definition">¶</a></dt>
+<dd><p>creates sentinel files</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_cufflinks_optimization.linkBamToWorkingDirs">
+<tt class="descclassname">pipeline_cufflinks_optimization.</tt><tt class="descname">linkBamToWorkingDirs</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_cufflinks_optimization.linkBamToWorkingDirs" title="Permalink to this definition">¶</a></dt>
+<dd><p>symlink the bam file and index to the working directories
+for execution of the transcript building pipeline</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_cufflinks_optimization.createConfigFiles">
+<tt class="descclassname">pipeline_cufflinks_optimization.</tt><tt class="descname">createConfigFiles</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_cufflinks_optimization.createConfigFiles" title="Permalink to this definition">¶</a></dt>
+<dd><p>create all of the relevant .ini files in each working
+directory in order to execute the transcript building</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_cufflinks_optimization.linkToPipelineRnaseqTranscriptsConfigFiles">
+<tt class="descclassname">pipeline_cufflinks_optimization.</tt><tt class="descname">linkToPipelineRnaseqTranscriptsConfigFiles</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfiles</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_cufflinks_optimization.linkToPipelineRnaseqTranscriptsConfigFiles" title="Permalink to this definition">¶</a></dt>
+<dd><p>produces links to the configuration files for report building</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_cufflinks_optimization.executePipelineRnaseqTranscripts">
+<tt class="descclassname">pipeline_cufflinks_optimization.</tt><tt class="descname">executePipelineRnaseqTranscripts</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_cufflinks_optimization.executePipelineRnaseqTranscripts" title="Permalink to this definition">¶</a></dt>
+<dd><p>executes the transcripts building pipeline in each directory</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_cufflinks_optimization.filterReferenceGtfForChr19">
+<tt class="descclassname">pipeline_cufflinks_optimization.</tt><tt class="descname">filterReferenceGtfForChr19</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_cufflinks_optimization.filterReferenceGtfForChr19" title="Permalink to this definition">¶</a></dt>
+<dd><p>for reporting purposes get the chr19 filtered reference gtf file;
+gives an idea of the sort of numbers that are expected from
+the transcript assembly</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_cufflinks_optimization.splitMultiAndSingleExonLincRna">
+<tt class="descclassname">pipeline_cufflinks_optimization.</tt><tt class="descname">splitMultiAndSingleExonLincRna</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfiles</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_cufflinks_optimization.splitMultiAndSingleExonLincRna" title="Permalink to this definition">¶</a></dt>
+<dd><p>pulls out the multi-exonic and the single exonic lincRNA transcripts
+from the lincrna.gtf.gz</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_cufflinks_optimization.countMultiAndSingleExonLincRna">
+<tt class="descclassname">pipeline_cufflinks_optimization.</tt><tt class="descname">countMultiAndSingleExonLincRna</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_cufflinks_optimization.countMultiAndSingleExonLincRna" title="Permalink to this definition">¶</a></dt>
+<dd><p>outputs the transcript and gene counts for lincRNA transcripts</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_cufflinks_optimization.summariseReadsContributingToTranscripts">
+<tt class="descclassname">pipeline_cufflinks_optimization.</tt><tt class="descname">summariseReadsContributingToTranscripts</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_cufflinks_optimization.summariseReadsContributingToTranscripts" title="Permalink to this definition">¶</a></dt>
+<dd><p>for each run of the pipeline and for each track, count the proportion
+of reads that contribute to the resulting transcript models</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_cufflinks_optimization.summariseExonCountsAndLengthOfMultiExonicLincRNA">
+<tt class="descclassname">pipeline_cufflinks_optimization.</tt><tt class="descname">summariseExonCountsAndLengthOfMultiExonicLincRNA</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_cufflinks_optimization.summariseExonCountsAndLengthOfMultiExonicLincRNA" title="Permalink to this definition">¶</a></dt>
+<dd><p>summarizes some basic statistics on the length and number of exons 
+for each set of parameter values</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_cufflinks_optimization.loadCountSingleAndMultiExonLincRNA">
+<tt class="descclassname">pipeline_cufflinks_optimization.</tt><tt class="descname">loadCountSingleAndMultiExonLincRNA</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_cufflinks_optimization.loadCountSingleAndMultiExonLincRNA" title="Permalink to this definition">¶</a></dt>
+<dd><p>load the counts for the multi and single exon lincRNA</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_cufflinks_optimization.loadSummariseReadsContributingToTranscripts">
+<tt class="descclassname">pipeline_cufflinks_optimization.</tt><tt class="descname">loadSummariseReadsContributingToTranscripts</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_cufflinks_optimization.loadSummariseReadsContributingToTranscripts" title="Permalink to this definition">¶</a></dt>
+<dd><p>loads the summary of reads contributing to transcripts</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_cufflinks_optimization.loadNumberExonsLengthSummaryStats">
+<tt class="descclassname">pipeline_cufflinks_optimization.</tt><tt class="descname">loadNumberExonsLengthSummaryStats</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_cufflinks_optimization.loadNumberExonsLengthSummaryStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>load the table of exon counts and transcript lengths</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_cufflinks_optimization.outputAllNumberExonsLengthSummaryStats">
+<tt class="descclassname">pipeline_cufflinks_optimization.</tt><tt class="descname">outputAllNumberExonsLengthSummaryStats</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_cufflinks_optimization.outputAllNumberExonsLengthSummaryStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>outputs a flat file containing the exon lengths and number of 
+exons for multi-exon transcripts for each track</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_cufflinks_optimization.outputAllMultiAndSingleExonLincRNACounts">
+<tt class="descclassname">pipeline_cufflinks_optimization.</tt><tt class="descname">outputAllMultiAndSingleExonLincRNACounts</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_cufflinks_optimization.outputAllMultiAndSingleExonLincRNACounts" title="Permalink to this definition">¶</a></dt>
+<dd><p>output the counts for multi and single exon counts</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_cufflinks_optimization.outputReadsContributingToTranscripts">
+<tt class="descclassname">pipeline_cufflinks_optimization.</tt><tt class="descname">outputReadsContributingToTranscripts</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_cufflinks_optimization.outputReadsContributingToTranscripts" title="Permalink to this definition">¶</a></dt>
+<dd><p>output the proportion of reads contributing to transcripts</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_cufflinks_optimization.buildAllStats">
+<tt class="descclassname">pipeline_cufflinks_optimization.</tt><tt class="descname">buildAllStats</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_cufflinks_optimization.buildAllStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>paste stats together</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_cufflinks_optimization.addRanksToAllStats">
+<tt class="descclassname">pipeline_cufflinks_optimization.</tt><tt class="descname">addRanksToAllStats</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_cufflinks_optimization.addRanksToAllStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>rank each track by each variable</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_cufflinks_optimization.loadRankedAllStats">
+<tt class="descclassname">pipeline_cufflinks_optimization.</tt><tt class="descname">loadRankedAllStats</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_cufflinks_optimization.loadRankedAllStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>load data with ranks in place</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_cufflinks_optimization.build_report">
+<tt class="descclassname">pipeline_cufflinks_optimization.</tt><tt class="descname">build_report</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_cufflinks_optimization.build_report" title="Permalink to this definition">¶</a></dt>
+<dd><p>build report from scratch.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_cufflinks_optimization.publish">
+<tt class="descclassname">pipeline_cufflinks_optimization.</tt><tt class="descname">publish</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_cufflinks_optimization.publish" title="Permalink to this definition">¶</a></dt>
+<dd><p>publish files.</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Optimizing cufflinks parameters</a><ul>
+<li><a class="reference internal" href="#overview">Overview</a></li>
+<li><a class="reference internal" href="#usage">Usage</a><ul>
+<li><a class="reference internal" href="#configuration">Configuration</a></li>
+<li><a class="reference internal" href="#input">Input</a><ul>
+<li><a class="reference internal" href="#mapped-reads">Mapped reads</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#requirements">Requirements</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#example">Example</a></li>
+<li><a class="reference internal" href="#glossary">Glossary</a></li>
+<li><a class="reference internal" href="#code">Code</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="pipeline_benchmark_rnaseqmappers.html"
+                        title="previous chapter">Benchmark: RNASeq-Mapping</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="pipeline_mappability.html"
+                        title="next chapter">Mappability pipeline</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/pipelines/pipeline_cufflinks_optimization.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pipeline_mappability.html" title="Mappability pipeline"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="pipeline_benchmark_rnaseqmappers.html" title="Benchmark: RNASeq-Mapping"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../Pipelines.html" >CGAT Pipelines</a> &raquo;</li>
+          <li><a href="../CGATPipelines.html" >NGS Pipelines</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

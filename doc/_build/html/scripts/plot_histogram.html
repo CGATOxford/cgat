@@ -1,0 +1,252 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>plot_histogram.py - create line plot of tabular data &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="Scripts" href="../scripts.html" />
+    <link rel="next" title="plot_matrix.py - plot a matrix (imshow)" href="plot_matrix.html" />
+    <link rel="prev" title="plot_data.py - create scatter plot from tabular data" href="plot_data.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="plot_matrix.html" title="plot_matrix.py - plot a matrix (imshow)"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="plot_data.html" title="plot_data.py - create scatter plot from tabular data"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../scripts.html" accesskey="U">Scripts</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-plot_histogram"></span><div class="section" id="plot-histogram-py-create-line-plot-of-tabular-data">
+<h1>plot_histogram.py - create line plot of tabular data<a class="headerlink" href="#plot-histogram-py-create-line-plot-of-tabular-data" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Andreas Heger</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id$</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Python</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="purpose">
+<h2>Purpose<a class="headerlink" href="#purpose" title="Permalink to this headline">¶</a></h2>
+<p>Reads data in tabular format with observations in rows in
+different samples in columns. The first column provides the
+bins.</p>
+<p>Missing values (na) are ignored.</p>
+<p>Reads data from stdin unless infile is given.</p>
+</div>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>Example:</p>
+<div class="highlight-python"><div class="highlight"><pre>python plot_histogram.py --help
+</pre></div>
+</div>
+<p>Type:</p>
+<div class="highlight-python"><div class="highlight"><pre>python plot_histogram.py --help
+</pre></div>
+</div>
+<p>for command line help.</p>
+</div>
+<div class="section" id="command-line-options">
+<h2>Command line options<a class="headerlink" href="#command-line-options" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+<div class="highlight-text"><div class="highlight"><pre>Usage: plot_histogram.py [options]
+
+Options:
+  --version             show program&#39;s version number and exit
+  -h, --help            show this help message and exit
+  --no-usage            output help without usage information
+  -l LEGEND, --legend=LEGEND
+                        legend for plot [default=none].
+  -t TITLE, --title=TITLE
+                        title for plot [default=none].
+  -p FILE, --hardcopy=FILE
+                        filename for hardcopy of plot. The extension defines
+                        the format. Known extensions are: &#39;emf, eps, jpeg,
+                        jpg, pdf, png, ps, raw, rgba, svg, svgz&#39;
+                        [default=none].
+  --xrange=XRANGE       x viewing range of plot [default=none].
+  --yrange=YRANGE       y viewing range of plot[default=none].
+  -o LOGSCALE, --logscale=LOGSCALE
+                        use logscale on x, y or xy [default=none]
+  -x XTITLE, --xtitle=XTITLE
+                        title for x axis [default=none]
+  -y YTITLE, --ytitle=YTITLE
+                        title for y axis [default=none]
+  -d DPI, --dpi=DPI     dpi of images [default=80]
+  -n, --normalize       normalize histograms [default=none]
+  --cumulate            calculate cumulative histogram [default=False].
+  --reverse-cumulate    calculate cumulative histogram in reverse order
+                        [default=False].
+  --legend-location=LEGEND_LOCATION
+                        location of legend [default=upper right]
+  --backend=BACKEND     backend to use [Agg|SVG|PS] [default=cairo]
+  --symbols=SYMBOLS     symbols to use for each histogram [steps|...] [default
+                        =g-D,b-h,r-+,c-+,m-+,y-+,k-o,g-^,b-&lt;,r-&gt;,c-D,m-h].
+  --dump                dump data for debug purposes [default=False].
+  -c COLUMNS, --columns=COLUMNS
+                        columns to use for plotting [default=all].
+  --truncate            truncate date within x range. If not set, xrange is
+                        simply a viewing range [default=False].
+  --as-lines            plot only lines, no symbols [default=False].
+  --noheaders           do not take first input line as header [default=True].
+  --stacked             do a stacked plot [default=False].
+  --add-function=FUNCTION
+                        add a function to the plot [default=none].
+  --add-error-bars=ERROR_BARS
+                        add error bars. The input format is &#39;interleaved&#39; or
+                        &#39;blocked&#39;. In the interleaved format the error follows
+                        each column. I the blocked format first the data, then
+                        the errors in the same order [default=none].
+  -v LOGLEVEL, --verbose=LOGLEVEL
+                        loglevel [1]. The higher, the more output.
+  --timeit=TIMEIT_FILE  store timeing information in file [none].
+  --timeit-name=TIMEIT_NAME
+                        name in timing file for this class of jobs [all].
+  --timeit-header       add header for timing information [none].
+  --random-seed=RANDOM_SEED
+                        random seed to initialize number generator with
+                        [none].
+  -I FILE, --stdin=FILE
+                        file to read stdin from [default = stdin].
+  -L FILE, --log=FILE   file with logging information [default = stdout].
+  -E FILE, --error=FILE
+                        file with error information [default = stderr].
+  -S FILE, --stdout=FILE
+                        file where output is to go [default = stdout].
+</pre></div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">plot_histogram.py - create line plot of tabular data</a><ul>
+<li><a class="reference internal" href="#purpose">Purpose</a></li>
+<li><a class="reference internal" href="#usage">Usage</a></li>
+<li><a class="reference internal" href="#command-line-options">Command line options</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="plot_data.html"
+                        title="previous chapter">plot_data.py - create scatter plot from tabular data</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="plot_matrix.html"
+                        title="next chapter">plot_matrix.py - plot a matrix (imshow)</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/scripts/plot_histogram.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="plot_matrix.html" title="plot_matrix.py - plot a matrix (imshow)"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="plot_data.html" title="plot_data.py - create scatter plot from tabular data"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../scripts.html" >Scripts</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

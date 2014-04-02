@@ -1,0 +1,254 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>bed2fasta.py - get sequences from bed file &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="Scripts" href="../scripts.html" />
+    <link rel="next" title="bed2stats.py - summary of bed file contents" href="bed2stats.html" />
+    <link rel="prev" title="beds2counts.py - compute overlap stats between multiple bed files" href="beds2counts.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="bed2stats.html" title="bed2stats.py - summary of bed file contents"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="beds2counts.html" title="beds2counts.py - compute overlap stats between multiple bed files"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../scripts.html" accesskey="U">Scripts</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-bed2fasta"><span id="bed2fasta-py"></span></span><div class="section" id="bed2fasta-py-get-sequences-from-bed-file">
+<h1>bed2fasta.py - get sequences from bed file<a class="headerlink" href="#bed2fasta-py-get-sequences-from-bed-file" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Andreas Heger</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id$</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Genomics Intervals Sequences Conversion BED FASTA</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="purpose">
+<h2>Purpose<a class="headerlink" href="#purpose" title="Permalink to this headline">¶</a></h2>
+<p>This script outputs nucleotide sequences for intervals within
+a <a class="reference internal" href="../glossary.html#term-bed"><em class="xref std std-term">bed</em></a> formatted file using a corresponding genome file.</p>
+</div>
+<div class="section" id="options">
+<h2>Options<a class="headerlink" href="#options" title="Permalink to this headline">¶</a></h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="28%" />
+<col width="72%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>-g, &#8211;genome-file</td>
+<td>The genome file from which to retrieve fasta
+sequences</td>
+</tr>
+<tr class="row-even"><td>-m, &#8211;masker</td>
+<td>Masks out a collection of sequences, for
+example repeat sequences</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>A required input to bed2fasta.py is a CGAT indexed genome. To obtain an
+idexed human reference genome we would type</p>
+<dl class="docutils">
+<dt>Example::</dt>
+<dd>cat hg19.fasta | index_fasta.py hg19 &gt; hg19.log</dd>
+</dl>
+<p>This file would then serve as the &#8211;genome-file when we wish to extract
+sequences from a <a class="reference internal" href="../glossary.html#term-bed"><em class="xref std std-term">bed</em></a> formatted file.</p>
+<p>For example we could now type:</p>
+<div class="highlight-python"><div class="highlight"><pre>cat in.bed | python bed2fasta.py --genome-file hg19 &gt; out.fasta
+</pre></div>
+</div>
+<p>Where we take a set of genomic intervals (e.g. from a human ChIP-seq experiment)
+and output their respective nucleotide sequences.</p>
+<p>Type:</p>
+<div class="highlight-python"><div class="highlight"><pre>python bed2fasta.py --help
+</pre></div>
+</div>
+<p>for command line help.</p>
+</div>
+<div class="section" id="command-line-options">
+<h2>Command line options<a class="headerlink" href="#command-line-options" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+<div class="highlight-text"><div class="highlight"><pre>Usage: bed2fasta.py [options]
+
+Options:
+  --version             show program&#39;s version number and exit
+  -h, --help            show this help message and exit
+  --no-usage            output help without usage information
+  -g GENOME_FILE, --genome-file=GENOME_FILE
+                        filename with genome.
+  -m MASKER, --masker=MASKER
+                        apply masker [none].
+  -o MODE, --mode=MODE  what to output [intervals]
+  --min-length=MIN_LENGTH
+                        require a minimum sequence length [0]
+  --max-length=MAX_LENGTH
+                        require a maximum sequence length [0]
+  --extend-at=EXTEND_AT
+                        extend at no, 3&#39;, 5&#39; or both ends. If 3only or 5only
+                        are set, only the added sequence is returned
+                        [default=none]
+  --extend-by=EXTEND_BY
+                        extend by # bases [default=100]
+  --use-strand          use strand information and return reverse complement
+                        [default=True]
+  -v LOGLEVEL, --verbose=LOGLEVEL
+                        loglevel [1]. The higher, the more output.
+  --timeit=TIMEIT_FILE  store timeing information in file [none].
+  --timeit-name=TIMEIT_NAME
+                        name in timing file for this class of jobs [all].
+  --timeit-header       add header for timing information [none].
+  --random-seed=RANDOM_SEED
+                        random seed to initialize number generator with
+                        [none].
+  -I FILE, --stdin=FILE
+                        file to read stdin from [default = stdin].
+  -L FILE, --log=FILE   file with logging information [default = stdout].
+  -E FILE, --error=FILE
+                        file with error information [default = stderr].
+  -S FILE, --stdout=FILE
+                        file where output is to go [default = stdout].
+</pre></div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">bed2fasta.py - get sequences from bed file</a><ul>
+<li><a class="reference internal" href="#purpose">Purpose</a></li>
+<li><a class="reference internal" href="#options">Options</a></li>
+<li><a class="reference internal" href="#usage">Usage</a></li>
+<li><a class="reference internal" href="#command-line-options">Command line options</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="beds2counts.html"
+                        title="previous chapter">beds2counts.py - compute overlap stats between multiple bed files</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="bed2stats.html"
+                        title="next chapter">bed2stats.py - summary of bed file contents</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/scripts/bed2fasta.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="bed2stats.html" title="bed2stats.py - summary of bed file contents"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="beds2counts.html" title="beds2counts.py - compute overlap stats between multiple bed files"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../scripts.html" >Scripts</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,213 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>CSV.py - Tools for parsing CSV files &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="Modules" href="../modules.html" />
+    <link rel="next" title="IOTools - tools for I/O operations" href="IOTools.html" />
+    <link rel="prev" title="Experiment.py - Tools for scripts" href="Experiment.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="IOTools.html" title="IOTools - tools for I/O operations"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="Experiment.html" title="Experiment.py - Tools for scripts"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" accesskey="U">Modules</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-CSV"></span><div class="section" id="csv-py-tools-for-parsing-csv-files">
+<h1>CSV.py - Tools for parsing CSV files<a class="headerlink" href="#csv-py-tools-for-parsing-csv-files" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Andreas Heger</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id$</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Python</td>
+</tr>
+</tbody>
+</table>
+<dl class="function">
+<dt id="CSV.ConvertDictionary">
+<tt class="descclassname">CSV.</tt><tt class="descname">ConvertDictionary</tt><span class="sig-paren">(</span><em>d</em>, <em>map={}</em><span class="sig-paren">)</span><a class="headerlink" href="#CSV.ConvertDictionary" title="Permalink to this definition">¶</a></dt>
+<dd><p>tries to convert values in a dictionary.</p>
+<p>if map contains &#8216;default&#8217;, a default conversion is enforced.
+For example, to force int for every column but column id,
+supply map = {&#8216;default&#8217; : &#8220;int&#8221;, &#8220;id&#8221; : &#8220;str&#8221; }</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="CSV.GetMapColumn2Type">
+<tt class="descclassname">CSV.</tt><tt class="descname">GetMapColumn2Type</tt><span class="sig-paren">(</span><em>rows</em>, <em>ignore_empty=False</em>, <em>get_max_values=False</em><span class="sig-paren">)</span><a class="headerlink" href="#CSV.GetMapColumn2Type" title="Permalink to this definition">¶</a></dt>
+<dd><p>map fields to types based on rows.</p>
+<p>Preference is Int to Float to String.</p>
+<p>If get_max_values is set to true, the maximum values for integer
+columns are returned in a dictionary.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="CSV.CommentStripper">
+<em class="property">class </em><tt class="descclassname">CSV.</tt><tt class="descname">CommentStripper</tt><span class="sig-paren">(</span><em>infile</em><span class="sig-paren">)</span><a class="headerlink" href="#CSV.CommentStripper" title="Permalink to this definition">¶</a></dt>
+<dd><p>iterator class for stripping comments from file.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="CSV.DictReader">
+<em class="property">class </em><tt class="descclassname">CSV.</tt><tt class="descname">DictReader</tt><span class="sig-paren">(</span><em>infile</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#CSV.DictReader" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="http://docs.python.org/2.7/library/csv.html#csv.DictReader" title="(in Python v2.7)"><tt class="xref py py-class docutils literal"><span class="pre">csv.DictReader</span></tt></a></p>
+<p>like csv.DictReader, but skip comments (lines starting with &#8220;#&#8221;).</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="CSV.DictReaderLarge">
+<em class="property">class </em><tt class="descclassname">CSV.</tt><tt class="descname">DictReaderLarge</tt><span class="sig-paren">(</span><em>infile</em>, <em>fieldnames</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#CSV.DictReaderLarge" title="Permalink to this definition">¶</a></dt>
+<dd><p>drop-in for csv.DictReader - handles very large fields</p>
+<p>Warning - minimal implementation - does not handle dialects</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="CSV.ReadTable">
+<tt class="descclassname">CSV.</tt><tt class="descname">ReadTable</tt><span class="sig-paren">(</span><em>lines</em>, <em>as_rows=True</em>, <em>with_header=True</em>, <em>ignore_incomplete=False</em>, <em>dialect='excel-tab'</em><span class="sig-paren">)</span><a class="headerlink" href="#CSV.ReadTable" title="Permalink to this definition">¶</a></dt>
+<dd><p>read a table from infile</p>
+<p>returns table as rows or as columns.
+If remove_incomplete, incomplete rows are simply ignored.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="CSV.ReadTables">
+<tt class="descclassname">CSV.</tt><tt class="descname">ReadTables</tt><span class="sig-paren">(</span><em>infile</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#CSV.ReadTables" title="Permalink to this definition">¶</a></dt>
+<dd><p>read a set of csv tables.</p>
+<p>Individual tables are separated by // on a single line.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="CSV.GroupTable">
+<tt class="descclassname">CSV.</tt><tt class="descname">GroupTable</tt><span class="sig-paren">(</span><em>table</em>, <em>group_column=0</em>, <em>group_function=&lt;built-in function min&gt;</em>, <em>missing_value='na'</em><span class="sig-paren">)</span><a class="headerlink" href="#CSV.GroupTable" title="Permalink to this definition">¶</a></dt>
+<dd><p>group table by <em>group_column</em>.</p>
+<p>The table need not be sorted.</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="Experiment.html"
+                        title="previous chapter">Experiment.py - Tools for scripts</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="IOTools.html"
+                        title="next chapter">IOTools - tools for I/O operations</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/modules/CSV.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="IOTools.html" title="IOTools - tools for I/O operations"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="Experiment.html" title="Experiment.py - Tools for scripts"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" >Modules</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

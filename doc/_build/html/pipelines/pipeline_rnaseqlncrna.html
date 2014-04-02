@@ -1,0 +1,572 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Long non-coding RNA pipeline &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="NGS Pipelines" href="../CGATPipelines.html" />
+    <link rel="next" title="CAPseq pipeline" href="pipeline_capseq.html" />
+    <link rel="prev" title="Peak calling pipeline" href="pipeline_peakcalling.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pipeline_capseq.html" title="CAPseq pipeline"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="pipeline_peakcalling.html" title="Peak calling pipeline"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../Pipelines.html" >CGAT Pipelines</a> &raquo;</li>
+          <li><a href="../CGATPipelines.html" accesskey="U">NGS Pipelines</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-pipeline_rnaseqlncrna"></span><div class="section" id="long-non-coding-rna-pipeline">
+<h1>Long non-coding RNA pipeline<a class="headerlink" href="#long-non-coding-rna-pipeline" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>The pipeline_rnaseqLncRNA.py pipeline aims to predict lncRNAs from an ab initio
+assembly of transcripts.</p>
+<p>It requires that raw reads have been mapped to a reference transcriptome and assembled
+into transcript models using cufflinks and therefore makes the assumption that the
+transcript building has gone to plan.</p>
+</div>
+<div class="section" id="details">
+<h2>Details<a class="headerlink" href="#details" title="Permalink to this headline">¶</a></h2>
+<p>Prediction of LncRNA are not based on a reference annotation to begin with, although 
+downstream comparisons are made to a reference non-coding gene set. The main features
+of the pipeline are as follows:</p>
+<ul>
+<li><dl class="first docutils">
+<dt>Build a coding gene set based on an ab initio assembly.</dt>
+<dd><p class="first last">The ab initio assembly is filtered for protein coding genes. In this step only genes 
+that are compatible with an annotated protein coding transcript are kept - this will
+reduce noise that is associated with a large number of incomplete transfrags. The 
+filtering is based on output from cuffcompare (class code &#8220;=&#8221;).</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>build a non-coding gene set.</dt>
+<dd><p class="first">A reference non-coding set of transcripts is built by filtering a provided ensembl
+reference set (usually a set that is built from the transcript building pipeline) for 
+transcripts that do not belong to one of the following biotypes</p>
+<p>protein_coding</p>
+<p>ambiguous_orf</p>
+<p>retained_intron</p>
+<p>sense_intronic</p>
+<p>antisense</p>
+<p>sense_overlapping</p>
+<p class="last">This set of non-coding transcripts is required in the filtering of the ab initio geneset 
+for LncRNA prediction. This is because many putative lncRNA have multiple associated
+biotypes. For example MALAT1 is described as both a lncRNA and a processed transcript. To 
+avoid removing known ncRNA we therefore check for existence of putative transcripts in this
+set.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>Build a putative lncRNA gene set.</dt>
+<dd><p class="first last">The ab initio set of lncRNA are filtered to remove overlapping protein coding exons. This 
+filtering is performed on the level of the transcript - although there may be multiple isoform
+predictions per lncRNA, at this point the sensitivity of lncRNA prediction is increased. 
+Antisense transcripts overlapping protein coding transcripts are retained.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>Filter putative lncRNA gene set</dt>
+<dd><p class="first last">Due to many fragments being produced from RNA-seq data, putative single exon lncRNA are flagged
+with in the lncRNA gtf file so it is easy to filter for the more reliable multi-exonic lncRNA. 
+Although many single exon lncRNA are likely to be artifacts, we assess the overlap of putative
+single exon lncRNA with sets of lncRNA that have been previously identified. If an overlap is
+found with a transcript in the reference set then the reference is added to the lncRNA gene set.
+This means that true single exon lncRNA are still picked up - as long as there is previous evidence
+to support their existence.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>Build final lncRNA gene set</dt>
+<dd><p class="first last">The putative set of lncRNA are assessed for coding potential using the coding potential calculator
+(CPC). Any lncRNA that are annotated as &#8216;coding&#8217; in this analysis are removed from downstream analysis.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>Combine coding and non-coding gene sets</dt>
+<dd><p class="first last">In order to assess expression levels between genes within samples i.e. protein coding vs. lncRNA, it
+is required that the FPKM estimation be made on a complete geneset. Therefore the lncRNA geneset is 
+concatenated to the protein coding gene set for use in downstream analysis.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>See <a class="reference internal" href="../UsingPipelines.html#pipelinesettingup"><em>Setting up a pipeline</em></a> and <a class="reference internal" href="../UsingPipelines.html#pipelinerunning"><em>Running a pipeline</em></a> on general information how to use CGAT pipelines.</p>
+<div class="section" id="configuration">
+<h3>Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">¶</a></h3>
+<p>The pipeline requires a configured <tt class="file docutils literal"><span class="pre">pipeline.ini</span></tt> file.</p>
+<p>The sphinxreport report requires a <tt class="file docutils literal"><span class="pre">conf.py</span></tt> and <tt class="file docutils literal"><span class="pre">sphinxreport.ini</span></tt> file 
+(see <a class="reference internal" href="../UsingPipelines.html#pipelinereporting"><em>Building pipeline reports</em></a>)</p>
+</div>
+<div class="section" id="input">
+<h3>input<a class="headerlink" href="#input" title="Permalink to this headline">¶</a></h3>
+<p>The pipeline generally assumes that transcripts have been assembled using the pipeline_rnaseqtranscripts.py
+pipeline using cufflinks.</p>
+<p>Files are supplied in the working directory. They are specified in the configuration file
+and refer to:</p>
+<ul>
+<li><p class="first">A coding geneset that is the output from a cufflinks transcript assembly.</p>
+<blockquote>
+<div><p>abinitio_coding = <tt class="file docutils literal"><span class="pre">&lt;name&gt;.gtf.gz</span></tt></p>
+</div></blockquote>
+</li>
+<li><p class="first">An abinitio geneset that is the output from a cufflinks transcript assembly. This is to be used for lncRNA prediction. 
+(note that this may be different to the abinitio_coding geneset).</p>
+<blockquote>
+<div><p>abinitio_lncrna = <tt class="file docutils literal"><span class="pre">&lt;name&gt;.gtf.gz</span></tt></p>
+</div></blockquote>
+</li>
+<li><p class="first">A reference geneset containing known protein coding transcripts. This is used for comparisons in the report.</p>
+<blockquote>
+<div><p>refcoding = <tt class="file docutils literal"><span class="pre">&lt;name&gt;.gtf.gz</span></tt></p>
+</div></blockquote>
+</li>
+<li><p class="first">A reference geneset from ensembl with all known expressed transcripts</p>
+<blockquote>
+<div><p>reference = <tt class="file docutils literal"><span class="pre">&lt;name&gt;.gtf.gz</span></tt></p>
+</div></blockquote>
+</li>
+<li><p class="first">An optional geneset containing previously identified lncRNA. If this is not supplied then the pipeline uses
+a reference non-coding set from the ensembl reference.</p>
+<blockquote>
+<div><p>previous = <tt class="file docutils literal"><span class="pre">&lt;name&gt;.gtf.gz</span></tt></p>
+</div></blockquote>
+</li>
+</ul>
+</div>
+<div class="section" id="pipeline-output">
+<h3>Pipeline output<a class="headerlink" href="#pipeline-output" title="Permalink to this headline">¶</a></h3>
+<p>The pipeline produces three main files of interest:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="42%" />
+<col width="58%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>Filename</td>
+<td>Description</td>
+</tr>
+<tr class="row-even"><td><tt class="file docutils literal"><span class="pre">lncrna_final.class.gtf.gz</span></tt></td>
+<td>Ab initio set of lncRNA transcripts filtered for
+single exon status (excl.previously observed) and
+classified relative to protein coding transcripts</td>
+</tr>
+<tr class="row-odd"><td><tt class="file docutils literal"><span class="pre">&lt;name&gt;_coding.gtf.gz</span></tt></td>
+<td>Ab inito assembled protein coding transcipts - for
+a comparable set to lncRNA transcripts</td>
+</tr>
+<tr class="row-even"><td><tt class="file docutils literal"><span class="pre">transcripts.gtf.gz</span></tt></td>
+<td>Combined set from the two sets above. to be used
+for downstream FPKM estimation and differential
+expression analysis</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section" id="code">
+<h2>code<a class="headerlink" href="#code" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pipeline_rnaseqlncrna.connect">
+<tt class="descclassname">pipeline_rnaseqlncrna.</tt><tt class="descname">connect</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_rnaseqlncrna.connect" title="Permalink to this definition">¶</a></dt>
+<dd><p>connect to database.</p>
+<p>This method also attaches to helper databases.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_rnaseqlncrna.Rconnect">
+<tt class="descclassname">pipeline_rnaseqlncrna.</tt><tt class="descname">Rconnect</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_rnaseqlncrna.Rconnect" title="Permalink to this definition">¶</a></dt>
+<dd><p>connect to a database through R</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_rnaseqlncrna.filenameToTablename">
+<tt class="descclassname">pipeline_rnaseqlncrna.</tt><tt class="descname">filenameToTablename</tt><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_rnaseqlncrna.filenameToTablename" title="Permalink to this definition">¶</a></dt>
+<dd><p>converts filename containing &#8221;.&#8221; to tablename where &#8221;.&#8221; converted to &#8220;_&#8221;</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_rnaseqlncrna.updateFile">
+<tt class="descclassname">pipeline_rnaseqlncrna.</tt><tt class="descname">updateFile</tt><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_rnaseqlncrna.updateFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>create empty file for updating purposes</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_rnaseqlncrna.tabSplit">
+<tt class="descclassname">pipeline_rnaseqlncrna.</tt><tt class="descname">tabSplit</tt><span class="sig-paren">(</span><em>line</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_rnaseqlncrna.tabSplit" title="Permalink to this definition">¶</a></dt>
+<dd><p>generic split by newline and tab for reading tsv files</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_rnaseqlncrna.buildCodingGeneSet">
+<tt class="descclassname">pipeline_rnaseqlncrna.</tt><tt class="descname">buildCodingGeneSet</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_rnaseqlncrna.buildCodingGeneSet" title="Permalink to this definition">¶</a></dt>
+<dd><p>takes the output from cuffcompare of a transcript
+assembly and filters for annotated protein coding
+genes.</p>
+<p>NB &#8220;pruned&#8221; refers to nomenclature in the transcript
+building pipeline - transcripts that appear in at least
+two samples.</p>
+<p>Because an abinitio assembly will often contain
+fragments of known transcripts and describe them as 
+novel, the default behaviour is to produce a set that
+is composed of &#8216;complete&#8217; or &#8216;contained&#8217; transcripts
+i.e. nothing novel. This may underestimate the number 
+of transcripts that are actually expressed</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_rnaseqlncrna.buildRefcodingGeneSet">
+<tt class="descclassname">pipeline_rnaseqlncrna.</tt><tt class="descname">buildRefcodingGeneSet</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_rnaseqlncrna.buildRefcodingGeneSet" title="Permalink to this definition">¶</a></dt>
+<dd><p>builds a refcoding geneset based on the genes that are present in
+the abinitio assembly</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_rnaseqlncrna.buildRefnoncodingGeneSet">
+<tt class="descclassname">pipeline_rnaseqlncrna.</tt><tt class="descname">buildRefnoncodingGeneSet</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_rnaseqlncrna.buildRefnoncodingGeneSet" title="Permalink to this definition">¶</a></dt>
+<dd><p>filter the refnoncoding geneset for things that are described in ensembl
+as being:
+Ambiguous_orf
+Retained_intron
+Sense_intronic
+antisense
+Sense_overlapping
+Processed transcript</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_rnaseqlncrna.buildLncRNAGeneSet">
+<tt class="descclassname">pipeline_rnaseqlncrna.</tt><tt class="descname">buildLncRNAGeneSet</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_rnaseqlncrna.buildLncRNAGeneSet" title="Permalink to this definition">¶</a></dt>
+<dd><p>build lncRNA gene set.</p>
+<p>This is a set of transcripts in the abinitio set that
+do not overlap at any protein coding or pseudogene transcripts
+or additional biotypes from ensembl that are unwanted
+(exons) in a reference gene set.</p>
+<p>Transcripts need to have a length of at least 200 bp.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_rnaseqlncrna.flagExonStatus">
+<tt class="descclassname">pipeline_rnaseqlncrna.</tt><tt class="descname">flagExonStatus</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_rnaseqlncrna.flagExonStatus" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds two attributes to the gtf entry:
+exon_status_locus - specifies whether the gene model is multi- or single exon
+exon_status - specifies whether the transcript is mult- or single exon</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_rnaseqlncrna.renameTranscriptsInPreviousSets">
+<tt class="descclassname">pipeline_rnaseqlncrna.</tt><tt class="descname">renameTranscriptsInPreviousSets</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_rnaseqlncrna.renameTranscriptsInPreviousSets" title="Permalink to this definition">¶</a></dt>
+<dd><p>transcripts need to be renamed because they may use the same
+cufflinks identifiers as we use in the analysis - don&#8217;t do if they
+have an ensembl id - sort by transcript</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_rnaseqlncrna.buildFilteredLncRNAGeneSet">
+<tt class="descclassname">pipeline_rnaseqlncrna.</tt><tt class="descname">buildFilteredLncRNAGeneSet</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_rnaseqlncrna.buildFilteredLncRNAGeneSet" title="Permalink to this definition">¶</a></dt>
+<dd><p>Depending on on filtering_remove_single_exon will:
+i) remove all single exon transcripts from all lncrna models (transcripts)
+ii) remove lncrna loci that only contain single exon transcripts (loci)
+iii) leave all single-exon and multi-exon loci in outfile (None)</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_rnaseqlncrna.classifyFilteredLncRNA">
+<tt class="descclassname">pipeline_rnaseqlncrna.</tt><tt class="descname">classifyFilteredLncRNA</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_rnaseqlncrna.classifyFilteredLncRNA" title="Permalink to this definition">¶</a></dt>
+<dd><p>classifies all lincRNA before cpc filtering to define any classes that
+are represented in the coding set that are  filtered
+NOTE: This task is not included when running the full pipeline</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_rnaseqlncrna.buildLncRNAFasta">
+<tt class="descclassname">pipeline_rnaseqlncrna.</tt><tt class="descname">buildLncRNAFasta</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_rnaseqlncrna.buildLncRNAFasta" title="Permalink to this definition">¶</a></dt>
+<dd><p>create fasta file from lncRNA geneset for testing coding
+potential of transcripts</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_rnaseqlncrna.runCPC">
+<tt class="descclassname">pipeline_rnaseqlncrna.</tt><tt class="descname">runCPC</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_rnaseqlncrna.runCPC" title="Permalink to this definition">¶</a></dt>
+<dd><p>run coding potential calculations on lncRNA geneset</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_rnaseqlncrna.loadCPCResults">
+<tt class="descclassname">pipeline_rnaseqlncrna.</tt><tt class="descname">loadCPCResults</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_rnaseqlncrna.loadCPCResults" title="Permalink to this definition">¶</a></dt>
+<dd><p>load the results of the cpc analysis</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_rnaseqlncrna.buildFinalLncRNAGeneSet">
+<tt class="descclassname">pipeline_rnaseqlncrna.</tt><tt class="descname">buildFinalLncRNAGeneSet</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_rnaseqlncrna.buildFinalLncRNAGeneSet" title="Permalink to this definition">¶</a></dt>
+<dd><p>the final lncRNA gene set consists of transcripts that pass
+the initial filtering stage i.e. are;
+multi-exonic/previously seen single exon transcripts
+display low evidence for coding potential</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_rnaseqlncrna.buildLncRNAGeneSetStats">
+<tt class="descclassname">pipeline_rnaseqlncrna.</tt><tt class="descname">buildLncRNAGeneSetStats</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_rnaseqlncrna.buildLncRNAGeneSetStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>counts:
+no. of transcripts
+no. genes
+average number of exons per transcript
+average number of exons per gene
+no. multi-exon transcripts
+no. single exon transcripts
+no. multi-exon genes
+no. single exon genes</p>
+<p>in the coding and lncRNA genesets</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_rnaseqlncrna.buildRefcodingGeneSetStats">
+<tt class="descclassname">pipeline_rnaseqlncrna.</tt><tt class="descname">buildRefcodingGeneSetStats</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_rnaseqlncrna.buildRefcodingGeneSetStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>counts:
+no. of transcripts
+no. genes
+average number of exons per transcript
+average number of exons per gene
+no. multi-exon transcripts
+no. single exon transcripts
+no. multi-exon genes
+no. single exon genes</p>
+<p>in the coding and lncRNA genesets</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_rnaseqlncrna.loadGeneSetStats">
+<tt class="descclassname">pipeline_rnaseqlncrna.</tt><tt class="descname">loadGeneSetStats</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_rnaseqlncrna.loadGeneSetStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>load stats on coding and lncRNA gene sets</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_rnaseqlncrna.classifyLncRNA">
+<tt class="descclassname">pipeline_rnaseqlncrna.</tt><tt class="descname">classifyLncRNA</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_rnaseqlncrna.classifyLncRNA" title="Permalink to this definition">¶</a></dt>
+<dd><p>Classify lncRNA realtive to protein coding loci</p>
+<p>Classify lincRNA in terms of their relationship to 
+protein coding genes - creates indices for intervals on the 
+fly - mayb should be creating additional annotations:</p>
+<dl class="docutils">
+<dt>antisense</dt>
+<dd>transcript overlapping protein coding exons on opposite strand</dd>
+<dt>antisense_upstream</dt>
+<dd>transcript &lt; 2kb from tss on opposite strand</dd>
+<dt>antisense_downstream </dt>
+<dd>transcript &lt; 2kb from gene end on opposite strand</dd>
+<dt>sense_upstream</dt>
+<dd>transcript &lt; 2kb from tss on same strand</dd>
+<dt>sense_downstream</dt>
+<dd>transcript &lt; 2kb from gene end on same strand</dd>
+<dt>intergenic</dt>
+<dd>transcript &gt;2kb from any protein coding gene</dd>
+<dt>intronic</dt>
+<dd>overlaps protein coding gene intron on same strand</dd>
+<dt>antisense_intronic</dt>
+<dd>overlaps protein coding intron on opposite strand</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_rnaseqlncrna.loadLncRNAClass">
+<tt class="descclassname">pipeline_rnaseqlncrna.</tt><tt class="descname">loadLncRNAClass</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_rnaseqlncrna.loadLncRNAClass" title="Permalink to this definition">¶</a></dt>
+<dd><p>load the lncRNA classifications</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_rnaseqlncrna.buildFullGeneSet">
+<tt class="descclassname">pipeline_rnaseqlncrna.</tt><tt class="descname">buildFullGeneSet</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_rnaseqlncrna.buildFullGeneSet" title="Permalink to this definition">¶</a></dt>
+<dd><p>produces a final gene set that can be used for 
+differential expression analysis and comparisons
+between protein coding and lncRNA transcripts</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_rnaseqlncrna.convertGTFToBed12">
+<tt class="descclassname">pipeline_rnaseqlncrna.</tt><tt class="descname">convertGTFToBed12</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_rnaseqlncrna.convertGTFToBed12" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transform the lncrna_final.gtf.gz into lncrna_final.bed</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_rnaseqlncrna.createMAFAlignment">
+<tt class="descclassname">pipeline_rnaseqlncrna.</tt><tt class="descname">createMAFAlignment</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_rnaseqlncrna.createMAFAlignment" title="Permalink to this definition">¶</a></dt>
+<dd><p>Takes all .axt files in the input directory, filters them to remove
+files based on supplied regular expressions, converts to a single maf file
+using axtToMaf, filters maf alignments under a specified length.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_rnaseqlncrna.extractLncRNAFastaAlignments">
+<tt class="descclassname">pipeline_rnaseqlncrna.</tt><tt class="descname">extractLncRNAFastaAlignments</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_rnaseqlncrna.extractLncRNAFastaAlignments" title="Permalink to this definition">¶</a></dt>
+<dd><p>Recieves a MAF file containing pairwise alignments and a gtf12 file
+containing intervals. Outputs a single fasta file containing aligned
+sequence for each interval.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_rnaseqlncrna.build_report">
+<tt class="descclassname">pipeline_rnaseqlncrna.</tt><tt class="descname">build_report</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_rnaseqlncrna.build_report" title="Permalink to this definition">¶</a></dt>
+<dd><p>build report from scratch.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_rnaseqlncrna.update_report">
+<tt class="descclassname">pipeline_rnaseqlncrna.</tt><tt class="descname">update_report</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_rnaseqlncrna.update_report" title="Permalink to this definition">¶</a></dt>
+<dd><p>update report.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_rnaseqlncrna.publish">
+<tt class="descclassname">pipeline_rnaseqlncrna.</tt><tt class="descname">publish</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_rnaseqlncrna.publish" title="Permalink to this definition">¶</a></dt>
+<dd><p>publish files.</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Long non-coding RNA pipeline</a><ul>
+<li><a class="reference internal" href="#overview">Overview</a></li>
+<li><a class="reference internal" href="#details">Details</a></li>
+<li><a class="reference internal" href="#usage">Usage</a><ul>
+<li><a class="reference internal" href="#configuration">Configuration</a></li>
+<li><a class="reference internal" href="#input">input</a></li>
+<li><a class="reference internal" href="#pipeline-output">Pipeline output</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#code">code</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="pipeline_peakcalling.html"
+                        title="previous chapter">Peak calling pipeline</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="pipeline_capseq.html"
+                        title="next chapter">CAPseq pipeline</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/pipelines/pipeline_rnaseqlncrna.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pipeline_capseq.html" title="CAPseq pipeline"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="pipeline_peakcalling.html" title="Peak calling pipeline"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../Pipelines.html" >CGAT Pipelines</a> &raquo;</li>
+          <li><a href="../CGATPipelines.html" >NGS Pipelines</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

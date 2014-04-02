@@ -1,0 +1,494 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Mali.py - Tools for multiple alignments &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="Modules" href="../modules.html" />
+    <link rel="next" title="MaliIO.py -" href="MaliIO.html" />
+    <link rel="prev" title="Intervals.py -" href="Intervals.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="MaliIO.html" title="MaliIO.py -"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="Intervals.html" title="Intervals.py -"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" accesskey="U">Modules</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-Mali"></span><div class="section" id="mali-py-tools-for-multiple-alignments">
+<h1>Mali.py - Tools for multiple alignments<a class="headerlink" href="#mali-py-tools-for-multiple-alignments" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Andreas Heger</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id$</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Python</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="code">
+<h2>Code<a class="headerlink" href="#code" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="Mali.SequenceCollection">
+<em class="property">class </em><tt class="descclassname">Mali.</tt><tt class="descname">SequenceCollection</tt><a class="headerlink" href="#Mali.SequenceCollection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">Mali.Mali</span></tt></p>
+<p>reads in a sequence collection, but permits
+several entries per id.</p>
+<p>Note that this might cause problems with interleaved 
+formats like phylips or clustal.</p>
+<p>This mapping is achieved by appending a numeric
+suffix. The suffix is retained for the life-time
+of the object, but not output to a file.</p>
+<dl class="method">
+<dt id="Mali.SequenceCollection.addEntry">
+<tt class="descname">addEntry</tt><span class="sig-paren">(</span><em>s</em><span class="sig-paren">)</span><a class="headerlink" href="#Mali.SequenceCollection.addEntry" title="Permalink to this definition">¶</a></dt>
+<dd><p>add an aligned string object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Mali.SequenceCollection.readFromFile">
+<tt class="descname">readFromFile</tt><span class="sig-paren">(</span><em>infile</em>, <em>format='fasta'</em><span class="sig-paren">)</span><a class="headerlink" href="#Mali.SequenceCollection.readFromFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>read multiple alignment from file in various format.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Mali.SequenceCollection.addAnnotation">
+<tt class="descname">addAnnotation</tt><span class="sig-paren">(</span><em>key</em>, <em>annotation</em><span class="sig-paren">)</span><a class="headerlink" href="#Mali.SequenceCollection.addAnnotation" title="Permalink to this definition">¶</a></dt>
+<dd><p>add annotation.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Mali.SequenceCollection.apply">
+<tt class="descname">apply</tt><span class="sig-paren">(</span><em>f</em><span class="sig-paren">)</span><a class="headerlink" href="#Mali.SequenceCollection.apply" title="Permalink to this definition">¶</a></dt>
+<dd><p>apply function f to every row in the multiple alignment.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Mali.SequenceCollection.buildColumnMap">
+<tt class="descname">buildColumnMap</tt><span class="sig-paren">(</span><em>other</em>, <em>join_field=None</em><span class="sig-paren">)</span><a class="headerlink" href="#Mali.SequenceCollection.buildColumnMap" title="Permalink to this definition">¶</a></dt>
+<dd><p>build map of columns in other to this.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Mali.SequenceCollection.checkLength">
+<tt class="descname">checkLength</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Mali.SequenceCollection.checkLength" title="Permalink to this definition">¶</a></dt>
+<dd><p>check lengths of aligned strings.</p>
+<p>Return false if they are inconsistent.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Mali.SequenceCollection.clipByAnnotation">
+<tt class="descname">clipByAnnotation</tt><span class="sig-paren">(</span><em>key</em>, <em>chars=''</em><span class="sig-paren">)</span><a class="headerlink" href="#Mali.SequenceCollection.clipByAnnotation" title="Permalink to this definition">¶</a></dt>
+<dd><p>restrict alignment to positions where 
+annotation identified by key in chars.</p>
+<p>if chars is empty, nothing is clipped.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Mali.SequenceCollection.copyAnnotations">
+<tt class="descname">copyAnnotations</tt><span class="sig-paren">(</span><em>other</em><span class="sig-paren">)</span><a class="headerlink" href="#Mali.SequenceCollection.copyAnnotations" title="Permalink to this definition">¶</a></dt>
+<dd><p>copy annotations from annother mali.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Mali.SequenceCollection.filter">
+<tt class="descname">filter</tt><span class="sig-paren">(</span><em>f</em><span class="sig-paren">)</span><a class="headerlink" href="#Mali.SequenceCollection.filter" title="Permalink to this definition">¶</a></dt>
+<dd><p>filter multiple alignment using function <em>f</em>.</p>
+<p>The function <em>f</em> should return True for entries that 
+should be kept and False for those that should be removed.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Mali.SequenceCollection.getAlphabet">
+<tt class="descname">getAlphabet</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Mali.SequenceCollection.getAlphabet" title="Permalink to this definition">¶</a></dt>
+<dd><p>get alphabet from the multiple alignment.</p>
+<p>Alphabet is &#8220;na&#8221;, if more than 90% of characaters are &#8220;actgxn&#8221;,
+otherwise it is &#8220;aa&#8221;.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Mali.SequenceCollection.getAnnotation">
+<tt class="descname">getAnnotation</tt><span class="sig-paren">(</span><em>key</em><span class="sig-paren">)</span><a class="headerlink" href="#Mali.SequenceCollection.getAnnotation" title="Permalink to this definition">¶</a></dt>
+<dd><p>return annotation associated with key.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Mali.SequenceCollection.getColumns">
+<tt class="descname">getColumns</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Mali.SequenceCollection.getColumns" title="Permalink to this definition">¶</a></dt>
+<dd><p>return mali in column orientation.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Mali.SequenceCollection.getConsensus">
+<tt class="descname">getConsensus</tt><span class="sig-paren">(</span><em>mark_with_gaps=False</em><span class="sig-paren">)</span><a class="headerlink" href="#Mali.SequenceCollection.getConsensus" title="Permalink to this definition">¶</a></dt>
+<dd><p>return consensus string.</p>
+<p>The consensus string returns the most frequent character per column
+that is not a gap.
+If mark_with_gaps is set to True, positions with any gap characater are
+set to gaps.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Mali.SequenceCollection.getLength">
+<tt class="descname">getLength</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Mali.SequenceCollection.getLength" title="Permalink to this definition">¶</a></dt>
+<dd><p>deprecated.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Mali.SequenceCollection.getResidueNumber">
+<tt class="descname">getResidueNumber</tt><span class="sig-paren">(</span><em>key</em>, <em>position</em><span class="sig-paren">)</span><a class="headerlink" href="#Mali.SequenceCollection.getResidueNumber" title="Permalink to this definition">¶</a></dt>
+<dd><p>return residue number in sequence key at position position.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Mali.SequenceCollection.getWidth">
+<tt class="descname">getWidth</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Mali.SequenceCollection.getWidth" title="Permalink to this definition">¶</a></dt>
+<dd><p>deprecated.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Mali.SequenceCollection.insertColumns">
+<tt class="descname">insertColumns</tt><span class="sig-paren">(</span><em>position</em>, <em>num_gaps</em>, <em>keep_fixed=None</em>, <em>char='-'</em><span class="sig-paren">)</span><a class="headerlink" href="#Mali.SequenceCollection.insertColumns" title="Permalink to this definition">¶</a></dt>
+<dd><p>insert gaps at position into multiple alignment.</p>
+<p>if keep_constant is a list of identifiers, those are kept constant,
+instead, gaps are added to the end.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Mali.SequenceCollection.lower">
+<tt class="descname">lower</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Mali.SequenceCollection.lower" title="Permalink to this definition">¶</a></dt>
+<dd><p>convert all characters in mali to lowercase.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Mali.SequenceCollection.lowerCase">
+<tt class="descname">lowerCase</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Mali.SequenceCollection.lowerCase" title="Permalink to this definition">¶</a></dt>
+<dd><p>set all characters to lower case.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="Mali.SequenceCollection.mGapPattern">
+<tt class="descname">mGapPattern</tt><em class="property"> = &lt;_sre.SRE_Pattern object at 0x3161160&gt;</em><a class="headerlink" href="#Mali.SequenceCollection.mGapPattern" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="Mali.SequenceCollection.mapColumns">
+<tt class="descname">mapColumns</tt><span class="sig-paren">(</span><em>columns</em>, <em>map_function</em><span class="sig-paren">)</span><a class="headerlink" href="#Mali.SequenceCollection.mapColumns" title="Permalink to this definition">¶</a></dt>
+<dd><p>apply map_function to all residues in columns.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Mali.SequenceCollection.mapIdentifiers">
+<tt class="descname">mapIdentifiers</tt><span class="sig-paren">(</span><em>map_old2new=None</em>, <em>pattern_identifier='ID%06i'</em><span class="sig-paren">)</span><a class="headerlink" href="#Mali.SequenceCollection.mapIdentifiers" title="Permalink to this definition">¶</a></dt>
+<dd><p>map identifiers in multiple aligment.</p>
+<p>if map_old2new is not given, a new map is created (map_new2old)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Mali.SequenceCollection.markCodons">
+<tt class="descname">markCodons</tt><span class="sig-paren">(</span><em>mode='case'</em><span class="sig-paren">)</span><a class="headerlink" href="#Mali.SequenceCollection.markCodons" title="Permalink to this definition">¶</a></dt>
+<dd><p>mark codons.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Mali.SequenceCollection.markTransitions">
+<tt class="descname">markTransitions</tt><span class="sig-paren">(</span><em>map_id2transitions</em>, <em>mode='case'</em><span class="sig-paren">)</span><a class="headerlink" href="#Mali.SequenceCollection.markTransitions" title="Permalink to this definition">¶</a></dt>
+<dd><p>mark transitions in the multiple alignment.</p>
+<p>if mode == case, then upper/lower case is used for the transitions</p>
+<p>Otherwise, a character given by mode is inserted.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Mali.SequenceCollection.maskColumn">
+<tt class="descname">maskColumn</tt><span class="sig-paren">(</span><em>column</em>, <em>mask_char='x'</em><span class="sig-paren">)</span><a class="headerlink" href="#Mali.SequenceCollection.maskColumn" title="Permalink to this definition">¶</a></dt>
+<dd><p>mask a column.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Mali.SequenceCollection.maskColumns">
+<tt class="descname">maskColumns</tt><span class="sig-paren">(</span><em>columns</em>, <em>mask_char='x'</em><span class="sig-paren">)</span><a class="headerlink" href="#Mali.SequenceCollection.maskColumns" title="Permalink to this definition">¶</a></dt>
+<dd><p>mask columns in a multiple alignment.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Mali.SequenceCollection.propagateMasks">
+<tt class="descname">propagateMasks</tt><span class="sig-paren">(</span><em>min_chars=1</em>, <em>mask_char='x'</em><span class="sig-paren">)</span><a class="headerlink" href="#Mali.SequenceCollection.propagateMasks" title="Permalink to this definition">¶</a></dt>
+<dd><p>propagate masked characters to all rows of a multiple alignment
+within a column.</p>
+<p>If there is at least min_chars in a mali column, that are masks,
+propagate the masks to all other rows.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Mali.SequenceCollection.propagateTransitions">
+<tt class="descname">propagateTransitions</tt><span class="sig-paren">(</span><em>min_chars=1</em><span class="sig-paren">)</span><a class="headerlink" href="#Mali.SequenceCollection.propagateTransitions" title="Permalink to this definition">¶</a></dt>
+<dd><p>propagate lower case in a column to all residues.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Mali.SequenceCollection.recount">
+<tt class="descname">recount</tt><span class="sig-paren">(</span><em>reset_first=False</em><span class="sig-paren">)</span><a class="headerlink" href="#Mali.SequenceCollection.recount" title="Permalink to this definition">¶</a></dt>
+<dd><p>recount residue in alignments.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Mali.SequenceCollection.removeEmptySequences">
+<tt class="descname">removeEmptySequences</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Mali.SequenceCollection.removeEmptySequences" title="Permalink to this definition">¶</a></dt>
+<dd><p>remove sequences that are completely empty.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Mali.SequenceCollection.removeEndGaps">
+<tt class="descname">removeEndGaps</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Mali.SequenceCollection.removeEndGaps" title="Permalink to this definition">¶</a></dt>
+<dd><p>remove end gaps.</p>
+<p>end gaps do not include any characters and thus
+the alignment coordinates won&#8217;t change.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Mali.SequenceCollection.removeGaps">
+<tt class="descname">removeGaps</tt><span class="sig-paren">(</span><em>allowed_gaps=0</em>, <em>minimum_gaps=1</em>, <em>frame=1</em><span class="sig-paren">)</span><a class="headerlink" href="#Mali.SequenceCollection.removeGaps" title="Permalink to this definition">¶</a></dt>
+<dd><p>remove gappy columns.</p>
+<p>allowed_gaps: number of gaps allowed for column to be kept
+minimum_gaps: number of gaps for column to be removed</p>
+<p>set minimum_gaps to the number of sequences to remove columns
+with all gaps.</p>
+<p>If frame is &gt; 1 (3 most likely), then a whole codon is removed
+as soon as there is one column to be removed.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Mali.SequenceCollection.removePattern">
+<tt class="descname">removePattern</tt><span class="sig-paren">(</span><em>match_function</em>, <em>allowed_matches=0</em>, <em>minimum_matches=1</em>, <em>delete_frame=1</em>, <em>search_frame=1</em><span class="sig-paren">)</span><a class="headerlink" href="#Mali.SequenceCollection.removePattern" title="Permalink to this definition">¶</a></dt>
+<dd><p>remove columns (or group of columns), that match a certain pattern.</p>
+<p>allowed_matches: number of matches allowed so that column is still kept
+minimum_matches: number of matches required for column to be removed</p>
+<p>set minimum_matches to the number of sequences to remove columns
+with all gaps.</p>
+<p>Patterns are matches in search_frame. For example, if frame is 3, 
+whole codons are supplied to match_function.</p>
+<p>delete_frame specifies the frame for deletion. If it is set to 3,
+codons are removed if already one column matches.</p>
+<p>Example: remove all columns that contain at least one stop-codon:</p>
+<dl class="docutils">
+<dt>removePattern( lambda x: x.upper() in (&#8220;TAG&#8221;, &#8220;TAA&#8221;, &#8220;TGA&#8221;),</dt>
+<dd>allowed_matches = 0,
+minimum_matches = 1,
+search_frame = 3,
+delete_frame = 3)</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="Mali.SequenceCollection.removeUnalignedEnds">
+<tt class="descname">removeUnalignedEnds</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Mali.SequenceCollection.removeUnalignedEnds" title="Permalink to this definition">¶</a></dt>
+<dd><p>remove unaligned ends in the multiple alignment.</p>
+<p>unaligned ends correspond to lower-case characters.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Mali.SequenceCollection.rename">
+<tt class="descname">rename</tt><span class="sig-paren">(</span><em>old_name</em>, <em>new_name</em><span class="sig-paren">)</span><a class="headerlink" href="#Mali.SequenceCollection.rename" title="Permalink to this definition">¶</a></dt>
+<dd><p>rename an entry.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Mali.SequenceCollection.setAnnotation">
+<tt class="descname">setAnnotation</tt><span class="sig-paren">(</span><em>key</em>, <em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#Mali.SequenceCollection.setAnnotation" title="Permalink to this definition">¶</a></dt>
+<dd><p>set annotation associated with key to value.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Mali.SequenceCollection.shiftAlignment">
+<tt class="descname">shiftAlignment</tt><span class="sig-paren">(</span><em>map_id2offset</em><span class="sig-paren">)</span><a class="headerlink" href="#Mali.SequenceCollection.shiftAlignment" title="Permalink to this definition">¶</a></dt>
+<dd><p>shift alignment by offset.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Mali.SequenceCollection.shuffle">
+<tt class="descname">shuffle</tt><span class="sig-paren">(</span><em>frame=1</em><span class="sig-paren">)</span><a class="headerlink" href="#Mali.SequenceCollection.shuffle" title="Permalink to this definition">¶</a></dt>
+<dd><p>shuffle multiple alignment.</p>
+<p>The frame determines the block size for shuffling. Use 3 for codons in
+a multiple alignment without frame-shifts.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Mali.SequenceCollection.takeColumns">
+<tt class="descname">takeColumns</tt><span class="sig-paren">(</span><em>columns</em><span class="sig-paren">)</span><a class="headerlink" href="#Mali.SequenceCollection.takeColumns" title="Permalink to this definition">¶</a></dt>
+<dd><p>restrict alignments to certain columns.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Mali.SequenceCollection.truncate">
+<tt class="descname">truncate</tt><span class="sig-paren">(</span><em>first</em>, <em>last</em><span class="sig-paren">)</span><a class="headerlink" href="#Mali.SequenceCollection.truncate" title="Permalink to this definition">¶</a></dt>
+<dd><p>truncate alignment within range.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Mali.SequenceCollection.upper">
+<tt class="descname">upper</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Mali.SequenceCollection.upper" title="Permalink to this definition">¶</a></dt>
+<dd><p>convert all characters in mali to uppercase.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Mali.SequenceCollection.upperCase">
+<tt class="descname">upperCase</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Mali.SequenceCollection.upperCase" title="Permalink to this definition">¶</a></dt>
+<dd><p>set all characters to upper case.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Mali.SequenceCollection.writeToFile">
+<tt class="descname">writeToFile</tt><span class="sig-paren">(</span><em>outfile</em>, <em>write_ranges=True</em>, <em>format='plain'</em>, <em>options=None</em><span class="sig-paren">)</span><a class="headerlink" href="#Mali.SequenceCollection.writeToFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>write alignment to file.</p>
+<p>If options is given, these lines are output into the multiple alignment.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="Mali.convertMali2Alignlib">
+<tt class="descclassname">Mali.</tt><tt class="descname">convertMali2Alignlib</tt><span class="sig-paren">(</span><em>mali</em><span class="sig-paren">)</span><a class="headerlink" href="#Mali.convertMali2Alignlib" title="Permalink to this definition">¶</a></dt>
+<dd><p>convert a multiple alignment of type <a class="reference internal" href="#module-Mali" title="Mali"><tt class="xref py py-class docutils literal"><span class="pre">Mali</span></tt></a>
+into an alignlib_lite.py_multiple alignment object.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Mali.convertAlignlib2Mali">
+<tt class="descclassname">Mali.</tt><tt class="descname">convertAlignlib2Mali</tt><span class="sig-paren">(</span><em>mali</em>, <em>identifiers=None</em>, <em>seqs=None</em><span class="sig-paren">)</span><a class="headerlink" href="#Mali.convertAlignlib2Mali" title="Permalink to this definition">¶</a></dt>
+<dd><p>convert a multiple alignment into an alignlib_lite.py_multiple alignment object.</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Mali.py - Tools for multiple alignments</a><ul>
+<li><a class="reference internal" href="#code">Code</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="Intervals.html"
+                        title="previous chapter">Intervals.py -</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="MaliIO.html"
+                        title="next chapter">MaliIO.py -</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/modules/Mali.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="MaliIO.html" title="MaliIO.py -"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="Intervals.html" title="Intervals.py -"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" >Modules</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

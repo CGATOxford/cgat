@@ -1,0 +1,266 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Clustering metagenomic contigs on tetranucleotide frequency &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="clustering-metagenomic-contigs-on-tetranucleotide-frequency">
+<h1>Clustering metagenomic contigs on tetranucleotide frequency<a class="headerlink" href="#clustering-metagenomic-contigs-on-tetranucleotide-frequency" title="Permalink to this headline">¶</a></h1>
+<p>Metagenomic sequencing has become a widely used method for assessing the
+functional potential of microbial communities across a wide range of environments.
+Often the first step in a metagenomic analysis is the assembly of short reads
+into longer contigs - permitting gene/function predictions to be made. However, due to the
+complexity of a sample, many contigs are often produced that represent a variety of species
+that are present in the community. Assignment of contigs to species is non-trivial. Nevertheless,
+researchers will often use nucleotide content to begin to cluster related contigs. A common
+method is to compute tetranucleotide frequencies for each contig and cluster the results. Here
+we explain how to use the CGAT script, <tt class="docutils literal"><span class="pre">fasta2kmercontent.py</span></tt> to calculate the tetranucleotide
+frequencies for a set of contigs (up to 8-mers supported).</p>
+<p>Our input is a <a class="reference internal" href="../glossary.html#term-fasta"><em class="xref std std-term">fasta</em></a> formatted file representing a set of contigs derived from a
+metgenome assembly - metagenome_contigs.fasta. A simple command line statement will compute
+the tetranucleotide frequency for the set of contigs:</p>
+<div class="highlight-python"><div class="highlight"><pre>cat metagenome_contigs.fa | fasta2kmercontent --kmer 4 --proportion &gt; metagenome_tetranucleotide_freq.tsv
+</pre></div>
+</div>
+<p>Notice that we specify the <tt class="docutils literal"><span class="pre">--proportion</span></tt> option in this example. This is because contigs
+will be of different length and thus incomparable without this option.</p>
+<p>The output will be a tab-delimited text file with contigs as columns and tetramers as rows.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="3%" />
+<col width="14%" />
+<col width="14%" />
+<col width="14%" />
+<col width="14%" />
+<col width="21%" />
+<col width="21%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>kmer</td>
+<td>Streptococcus_suis26</td>
+<td>Streptococcus_suis27</td>
+<td>Streptococcus_suis24</td>
+<td>Streptococcus_suis25</td>
+<td>Bacteroides_thetaiotaomicron101</td>
+<td>Bacteroides_thetaiotaomicron23</td>
+</tr>
+<tr class="row-even"><td>GTAC</td>
+<td>0.0016393442623</td>
+<td>0.00234100663285</td>
+<td>0.00522778192681</td>
+<td>0.00265428002654</td>
+<td>0.00303990610329</td>
+<td>0.00334864510152</td>
+</tr>
+<tr class="row-odd"><td>CGAG</td>
+<td>0.0016393442623</td>
+<td>0.00195083886071</td>
+<td>0.00124470998257</td>
+<td>0.000663570006636</td>
+<td>0.00129694835681</td>
+<td>0.00128348645102</td>
+</tr>
+<tr class="row-even"><td>GTAA</td>
+<td>0.00327868852459</td>
+<td>0.00390167772142</td>
+<td>0.0049788399303</td>
+<td>0.00729927007299</td>
+<td>0.0037646713615</td>
+<td>0.00467073264881</td>
+</tr>
+<tr class="row-odd"><td>CGAA</td>
+<td>0.00327868852459</td>
+<td>0.00429184549356</td>
+<td>0.00224047796863</td>
+<td>0.00199071001991</td>
+<td>0.00422828638498</td>
+<td>0.0042847216861</td>
+</tr>
+<tr class="row-even"><td>AAAT</td>
+<td>0.0131147540984</td>
+<td>0.00819352321498</td>
+<td>0.00398307194424</td>
+<td>0.00729927007299</td>
+<td>0.00776115023474</td>
+<td>0.0080869296688</td>
+</tr>
+<tr class="row-odd"><td>CGAC</td>
+<td>0.0016393442623</td>
+<td>0.000390167772142</td>
+<td>0.00199153597212</td>
+<td>0.00132714001327</td>
+<td>0.00261443661972</td>
+<td>0.00177565042847</td>
+</tr>
+<tr class="row-even"><td>GTAT</td>
+<td>0.00655737704918</td>
+<td>0.00156067108857</td>
+<td>0.00373412994772</td>
+<td>0.00398142003981</td>
+<td>0.00450704225352</td>
+<td>0.00579981471474</td>
+</tr>
+<tr class="row-odd"><td>AGTG</td>
+<td>0.0</td>
+<td>0.00546234880999</td>
+<td>0.00323624595469</td>
+<td>0.00398142003981</td>
+<td>0.00215962441315</td>
+<td>0.00340654674593</td>
+</tr>
+<tr class="row-even"><td>AGTA</td>
+<td>0.00327868852459</td>
+<td>0.00429184549356</td>
+<td>0.00373412994772</td>
+<td>0.00331785003318</td>
+<td>0.00409330985915</td>
+<td>0.00409171620474</td>
+</tr>
+<tr class="row-odd"><td>...</td>
+<td>...</td>
+<td>...</td>
+<td>...</td>
+<td>...</td>
+<td>...</td>
+<td>...</td>
+</tr>
+</tbody>
+</table>
+<p>As the output is in tab separated format it is straight-forward to load into statistical/plotting software such as R and perform further
+downstream analysis. For example, we can perform a simple clustering analysis on the results. Start R and type:</p>
+<div class="highlight-python"><div class="highlight"><pre>R version 2.15.2 (2012-10-26) -- &quot;Trick or Treat&quot;
+Copyright (C) 2012 The R Foundation for Statistical Computing
+ISBN 3-900051-07-0
+Platform: x86_64-unknown-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type &#39;license()&#39; or &#39;licence()&#39; for distribution details.
+
+R is a collaborative project with many contributors.
+Type &#39;contributors()&#39; for more information and
+&#39;citation()&#39; on how to cite R or R packages in publications.
+
+Type &#39;demo()&#39; for some demos, &#39;help()&#39; for on-line help, or
+&#39;help.start()&#39; for an HTML browser interface to help.
+Type &#39;q()&#39; to quit R.
+
+
+&gt; tetra &lt;- read.csv(&quot;metagenome_tetranucleotide_freq.tsv&quot;, header = T, stringsAsFactors = F, sep = &quot;\t&quot;, row.names = 1)
+&gt; plot(hclust(dist(t(dat))))
+</pre></div>
+</div>
+<p>This will produce a cluster dendrogram like the one displayed below.</p>
+<img alt="../_images/metagenome_contigs_tetra.png" src="../_images/metagenome_contigs_tetra.png" />
+<p>This example is using data from simulated metagenomic data and we therefore know the source of the contigs. We can see that it
+is possible to separate Streptococcus species from Bacteroides based on tetranucleotide composition. There is less separation
+between the two closely related bacteroides species. Although this example dataset is unrealistically simple, it emphasises
+the ease with which CGAT tools can be used for quick assessment of data.</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/recipes/metagenome_contigs_kmers.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

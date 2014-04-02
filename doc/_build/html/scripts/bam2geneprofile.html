@@ -1,0 +1,496 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>bam2geneprofile.py - build meta-gene profile for a set of transcripts/genes &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="Scripts" href="../scripts.html" />
+    <link rel="next" title="bed2bed.py - manipulate bed files" href="bed2bed.html" />
+    <link rel="prev" title="Scripts" href="../scripts.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="bed2bed.html" title="bed2bed.py - manipulate bed files"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../scripts.html" title="Scripts"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../scripts.html" accesskey="U">Scripts</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-bam2geneprofile"></span><div class="section" id="bam2geneprofile-py-build-meta-gene-profile-for-a-set-of-transcripts-genes">
+<h1>bam2geneprofile.py - build meta-gene profile for a set of transcripts/genes<a class="headerlink" href="#bam2geneprofile-py-build-meta-gene-profile-for-a-set-of-transcripts-genes" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Andreas Heger</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id$</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Genomics NGS Genesets Intervals GTF BAM Summary</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="purpose">
+<h2>Purpose<a class="headerlink" href="#purpose" title="Permalink to this headline">¶</a></h2>
+<p>This script takes a <a class="reference internal" href="../glossary.html#term-gtf"><em class="xref std std-term">gtf</em></a> formatted file and computes meta-gene profiles
+over various annotations derived from the <a class="reference internal" href="../glossary.html#term-gtf"><em class="xref std std-term">gtf</em></a> file.</p>
+<p>A meta-gene profile is an abstract genomic entity over which reads stored in a 
+<a class="reference internal" href="../glossary.html#term-bam"><em class="xref std std-term">bam</em></a> formatted file have been counted. A meta-gene might be an idealized
+eukaryotic gene (upstream, exonic sequence, downstream) or any other genomic landmark 
+of interest such as transcription start sites.</p>
+<p>The script can be used to visualize binding profiles of a chromatin mark in gene 
+bodies, binding of transcription factors in promotors or 3&#8217; bias in RNASeq data.</p>
+<p>This script is designed with a slight emphasis on RNA-Seq datasets. For 
+example, it takes care of spliced reads, by using the CIGAR string in the BAM
+file to accurately define aligned bases (if the &#8211;base-accurate is specified), 
+currently this feature is turned off by default).</p>
+<p>Alternatively, for the purpose of visualizing binding profiles of transcription factors
+ChIP-Seq without the need to use any genomic annotations (ENSEMBL, or refseq), you may
+also consider using <a class="reference internal" href="bam2peakshape.html"><em>bam2peakshape.py - compute peak shape features from a bam-file</em></a>, which is
+designed with a slight emphasis on Chip-Seq datasets, for example, <a class="reference internal" href="bam2peakshape.html"><em>bam2peakshape.py - compute peak shape features from a bam-file</em></a> is able to
+center the counting window to the summit of every individual peak. <a class="reference internal" href="bam2peakshape.html"><em>bam2peakshape.py - compute peak shape features from a bam-file</em></a> is also able
+to: (1) plot the control RNA-Seq library to enable side-by-side comparison; (2) randomize
+the given regions to provide a semi-control.</p>
+</div>
+<div class="section" id="background">
+<h2>Background<a class="headerlink" href="#background" title="Permalink to this headline">¶</a></h2>
+<p>The <tt class="file docutils literal"><span class="pre">bam2geneprofile.py</span></tt> script reads in a set of transcripts from a <a class="reference internal" href="../glossary.html#term-gtf"><em class="xref std std-term">gtf</em></a> 
+formatted file. For each transcript, overlapping reads from the provided <a class="reference internal" href="../glossary.html#term-bam"><em class="xref std std-term">bam</em></a> file 
+are collected. The counts within the transcript are then mapped onto the meta-gene
+structure and counts are aggregated over all transcripts in the <a class="reference internal" href="../glossary.html#term-gtf"><em class="xref std std-term">gtf</em></a> file.</p>
+<p><a class="reference internal" href="../glossary.html#term-bam"><em class="xref std std-term">Bam</em></a> files need to be sorted by coordinate and indexed.</p>
+<p>A meta-gene structure has two components - regions of variable size, such as exons, introns, etc,
+which nevertheless have a fixed start and end coordinate in a transcript. The other component
+are regions of fixed width, such a regions of a certain size upstream or downstream of a landmark such as
+a transcription start site.</p>
+<p>The size of the former class, regions of variable size, can be varied with <tt class="docutils literal"><span class="pre">--resolution</span></tt> options.
+For example, the option <tt class="docutils literal"><span class="pre">--resolution-upstream-utr=1000</span></tt> will create a meta-gene with 
+a 1000bp upstream UTR region. UTRs that are larger will be compressed, but UTRs that are smaller, will
+be stretched to fit the 1000bp meta-gene UTR region.</p>
+<p>The size of fixed-width regions can be set with <tt class="docutils literal"><span class="pre">--extension</span></tt> options. For example,
+the options <tt class="docutils literal"><span class="pre">--extension-upstream</span></tt> will set the size of the uptsream extension region
+to 1000bp. Note that no scaling is required when counting reads towards the meta-gene profile.</p>
+</div>
+<div class="section" id="normalization">
+<h2>Normalization<a class="headerlink" href="#normalization" title="Permalink to this headline">¶</a></h2>
+<p>Normalization can be applied in two stages of the computation.</p>
+<div class="section" id="count-vector">
+<h3>Count Vector<a class="headerlink" href="#count-vector" title="Permalink to this headline">¶</a></h3>
+<p>Before adding counts to the meta-gene profile, the profile for the
+individual transcript can be normalized. Without normalization, highly
+expressed genes will contribute more to the meta-gene profile than
+lowly expressed genes.  Normalization can assure that each gene
+contributes an equal amount.</p>
+<p>Normalization is applied to the vector of read counts that is computed
+for each transcript. Normalization can be applied for the whole
+transcript (<tt class="docutils literal"><span class="pre">total</span></tt>) or on a per segment basis depending on the
+counter. For example, in the gene counter, exons, upstream and
+downstream segments can be normalized independently.</p>
+<p>Counts can be normalized either by the maximum or the sum of all
+counts in a segment or across the whole transcript. Normalization is
+controlled with the command line option <tt class="docutils literal"><span class="pre">--normalization</span></tt>. Its
+arguments are:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">none</span></tt>: no normalization</li>
+<li><tt class="docutils literal"><span class="pre">sum</span></tt>: sum of counts within a region (exons,upstream, ...). 
+The area under the curve will sum to 1 for each region.</li>
+<li><tt class="docutils literal"><span class="pre">max</span></tt>: maximum count within a region (exons,upstream, ...).</li>
+<li><tt class="docutils literal"><span class="pre">total-sum</span></tt>: sum of counts across all regions. The area 
+under the curve will sum to 1 for
+the complete transcript.</li>
+<li><tt class="docutils literal"><span class="pre">total-max</span></tt>: maximum count across all regions.</li>
+</ul>
+<p>The options above control the contribution of individual transcripts
+to a meta-gene profile and are thus suited for example for RNA-Seq data.</p>
+<p>The options above do not control for different read-depths or any
+local biases. To compare meta-gene profiles between samples,
+additional normalization is required.</p>
+</div>
+<div class="section" id="meta-gene-profile">
+<h3>Meta-gene profile<a class="headerlink" href="#meta-gene-profile" title="Permalink to this headline">¶</a></h3>
+<p>To enable comparison between experiments, the meta-gene profile itself
+can be normalized.  Normalization a profile can help comparing the
+shapes of profiles between different experiments independent of the
+number of reads or transcripts used in the construction of the
+meta-gene profile.</p>
+<p>Meta-gene profile normalization is controlled via the <tt class="docutils literal"><span class="pre">--normalize-profile</span></tt> 
+option. Possible normalization are:</p>
+<ul class="simple">
+<li>none: no normalization</li>
+<li>area: normalize such that the area under the meta-gene profile is 1.</li>
+<li>counts: normalize by number of features (genes,tss) that have been counted.</li>
+<li>background: normalize with background (see below).</li>
+</ul>
+<p>A special normalization is activated with the <tt class="docutils literal"><span class="pre">background</span></tt> option.
+Here, the counts at the left and right most regions are used to
+estimate a background level for each transcript. The counts are
+then divided by this background-level. The assumption is that the
+meta-gene model is computed over a large enough area to include
+genomic background.</p>
+</div>
+</div>
+<div class="section" id="options">
+<h2>Options<a class="headerlink" href="#options" title="Permalink to this headline">¶</a></h2>
+<p>The script provides a variety of different meta-gene structures i.e. geneprofiles, selectable
+via using the option: (<tt class="docutils literal"><span class="pre">--method</span></tt>).</p>
+<div class="section" id="profiles">
+<h3>Profiles<a class="headerlink" href="#profiles" title="Permalink to this headline">¶</a></h3>
+<p>Different profiles are accessible through the <tt class="docutils literal"><span class="pre">--method</span></tt> option. Multiple
+methods can be applied at the same time. While <tt class="docutils literal"><span class="pre">upstream</span></tt> and <tt class="docutils literal"><span class="pre">downstream</span></tt>
+typically have a fixed size, the other regions such as <tt class="docutils literal"><span class="pre">CDS</span></tt>, <tt class="docutils literal"><span class="pre">UTR</span></tt> will be
+scaled to a common size.</p>
+<dl class="docutils">
+<dt>utrprofile</dt>
+<dd>UPSTREAM - UTR5 - CDS - UTR3 - DOWNSTREAM
+gene models with UTR. Separate the coding section from the non-coding part.</dd>
+<dt>geneprofile </dt>
+<dd>UPSTREAM - EXON - DOWNSTREAM
+simple exonic gene models</dd>
+<dt>geneprofilewithintrons </dt>
+<dd>UPSTREAM - EXON - INTRON - DOWNSTREAM
+gene models containing also intronic sequence, only correct if used with &#8211;base-accuracy</dd>
+<dt>geneprofileabsolutedistancefromthreeprimeend</dt>
+<dd>UPSTREAM - EXON(AbsoluteFromThreePrimeEnd) - INTRON(AbsoluteFromThreePrimeEnd) - DOWNSTREAM
+For EXON region, the script counts over the mRNA transcript only, skipping introns. 
+Designed to visualize the 3 prime bias in RNASeq data, only correct if used with &#8211;base-accuracy</dd>
+<dt>tssprofile</dt>
+<dd>UPSTREAM - DOWNSTREAM
+transcription start/stop sites</dd>
+<dt>intervalprofile </dt>
+<dd>UPSTREAM - INTERVAL - DOWNSTREAM
+Similar to geneprofile, but count over the complete span of the gene
+(including introns).</dd>
+<dt>midpointprofile</dt>
+<dd>UPSTREAM  - DOWNSTREAM
+aggregate over midpoint of gene model</dd>
+</dl>
+</div>
+<div class="section" id="genes-versus-transcripts">
+<h3>Genes versus transcripts<a class="headerlink" href="#genes-versus-transcripts" title="Permalink to this headline">¶</a></h3>
+<p>The default is to collect reads on a per-transcript level. Alternatively, the script can
+merge all transcripts of a gene into a single virtual transcript. Note that this virtual transcript
+might not be a biologically plausible transcript. It is usually better to provide <tt class="file docutils literal"><span class="pre">bam2geneprofile.py</span></tt>
+with a set of representative transcripts per gene in order to avoid up-weighting genes with
+multiple transcripts.</p>
+</div>
+<div class="section" id="control">
+<h3>Control<a class="headerlink" href="#control" title="Permalink to this headline">¶</a></h3>
+<p>If control files (input tracks) are supplied, counts in the control file can be used
+to compute a fold-change.</p>
+</div>
+<div class="section" id="bed-and-wiggle-files">
+<h3>Bed and wiggle files<a class="headerlink" href="#bed-and-wiggle-files" title="Permalink to this headline">¶</a></h3>
+<p>The densities can be computed from <a class="reference internal" href="../glossary.html#term-bed"><em class="xref std std-term">bed</em></a> or <a class="reference internal" href="../glossary.html#term-wiggle"><em class="xref std std-term">wiggle</em></a> formatted files.
+If a <a class="reference internal" href="../glossary.html#term-bed"><em class="xref std std-term">bed</em></a> formatted file is supplied, it must be compressed with and indexed with <tt class="file docutils literal"><span class="pre">tabix</span></tt>.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Paired-endedness is ignored. Both ends of a paired-ended read are treated 
+individually.</p>
+</div>
+</div>
+</div>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>The following command will generate the gene profile plot similar to Fig 1(a) 
+in the published CGAT paper, but using a test dataset that is much smaller 
+and simpler than the dataset used for publishing the CGAT paper.</p>
+<div class="highlight-python"><div class="highlight"><pre>python ./scripts/bam2geneprofile.py 
+    --bamfile=./tests/bam2geneprofile.py/multipleReadsSplicedOutAllIntronsAndSecondExon.bam
+    --gtffile=./tests/bam2geneprofile.py/onegeneWithoutAnyCDS.gtf.gz
+    --method=geneprofile
+    --reporter=gene
+</pre></div>
+</div>
+<p>In the following, a slightly more involved example will use more features
+of this script. The following command generate the gene profile showing 
+base accuracy of upstream (500bp), exons, introns and downstream(500bp) of 
+a gene model from some user supplied RNA-Seq data and geneset.</p>
+<div class="highlight-python"><div class="highlight"><pre>python ./scripts/bam2geneprofile.py
+    --bamfile=./rnaseq.bam
+    --gtffile=./geneset.gtf.gz
+    --method=geneprofilewithintrons
+    --reporter=gene
+    --extension-upstream=500
+    --resolution-upstream=500
+    --extension-downstream=500
+    --resolution-downstream=500
+</pre></div>
+</div>
+<p>The output will contain read coverage over genes, merging all transcripts of
+a gene into a single chain of exons. The profile will contain four separate
+segments:</p>
+<ol class="arabic simple">
+<li>the upstream region of a gene ( set to be 500bp ), (<tt class="docutils literal"><span class="pre">--extension-upstream=500</span></tt>).</li>
+<li>the transcribed region of a gene. The transcribed region of every gene will
+be scaled to 1000 bp ( default ), shrinking longer transcripts and 
+expanding shorter transcripts.</li>
+<li>the intronic regions of a gene. These will be scaled to 1000b ( default ).</li>
+<li>the downstream region of a gene ( set to be 500bp ), (<tt class="docutils literal"><span class="pre">--extension-downstream=500</span></tt>).</li>
+</ol>
+<p>Type:</p>
+<div class="highlight-python"><div class="highlight"><pre>python bam2geneprofile.py --help
+</pre></div>
+</div>
+<p>for command line help.</p>
+</div>
+<div class="section" id="command-line-options">
+<h2>Command line options<a class="headerlink" href="#command-line-options" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+<div class="highlight-text"><div class="highlight"><pre>Usage: bam2geneprofile.py [options]
+
+Options:
+  --version             show program&#39;s version number and exit
+  -h, --help            show this help message and exit
+  --no-usage            output help without usage information
+  -m METHODS, --method=METHODS
+                        counters to use. Counters describe the meta-gene
+                        structure to use [[]].
+                         Note using geneprofilewithintrons, or
+                        geneprofileabsolutedistancefromthreeprimeend will
+                        automatically turn on the --base-accuracy option
+  -b BAM, --bamfile=BAM, --bedfile=BAM, --bigwigfile=BAM
+                        BAM/bed/bigwig files to use. Do not mix different
+                        types[[]]
+  -c BAM, --controlfile=BAM
+                        control/input to use. Should be of the same type as
+                        the bam/bed/bigwig file [[]]
+  -g GTF, --gtffile=GTF
+                        GTF file to use. [none]
+  -n NORMALIZATION, --normalization=NORMALIZATION
+                        normalization to apply on each transcript profile
+                        before adding to meta-gene profile. [none]
+  -p PROFILE_NORMALIZATIONS, --normalize-profile=PROFILE_NORMALIZATIONS
+                        normalization to apply on meta-gene profile
+                        normalization. [[]]
+  -r REPORTER, --reporter=REPORTER
+                        report results for genes or transcripts. When &#39;genes`
+                        is chosen, exons across all transcripts for a gene are
+                        merged. When &#39;transcript&#39; is chosen, counts are
+                        computed for each transcript separately with each
+                        transcript contributing equally to the meta-gene
+                        profile. [transcript]
+  -i SHIFTS, --shift=SHIFTS
+                        shift reads in :term:`bam` formatted file before
+                        computing densities (ChIP-Seq). [[]]
+  -a, --merge-pairs     merge pairs in :term:`bam` formatted file before
+                        computing densities (ChIP-Seq).[False]
+  -u, --base-accuracy   compute densities with base accuracy. The default is
+                        to only use the start and end of the aligned region
+                        (RNA-Seq) [False]
+  -e EXTENDS, --extend=EXTENDS
+                        extend reads in :term:`bam` formatted file (ChIP-Seq).
+                        [[]]
+  --resolution-upstream=RESOLUTION_UPSTREAM
+                        resolution of upstream region in bp [1000]
+  --resolution-downstream=RESOLUTION_DOWNSTREAM
+                        resolution of downstream region in bp [1000]
+  --resolution-upstream-utr=RESOLUTION_UPSTREAM_UTR
+                        resolution of upstream UTR region in bp [1000]
+  --resolution-downstream-utr=RESOLUTION_DOWNSTREAM_UTR
+                        resolution of downstream UTR region in bp [1000]
+  --resolution-cds=RESOLUTION_CDS
+                        resolution of cds region in bp [1000]
+  --resolution-introns=RESOLUTION_INTRONS
+                        resolution of introns region in bp [1000]
+  --resolution-exons-absolute-distance-topolya=RESOLUTION_EXONS_ABSOLUTE_DISTANCE_TOPOLYA
+                        resolution of exons absolute distance topolya in bp
+                        [3000]
+  --resolution-introns-absolute-distance-topolya=RESOLUTION_INTRONS_ABSOLUTE_DISTANCE_TOPOLYA
+                        resolution of introns absolute distance topolya in bp
+                        [500]
+  --extension-exons-absolute-distance-topolya=EXTENSION_EXONS_ABSOLUTE_DISTANCE_TOPOLYA
+                        extension for exons from the absolute distance from
+                        the topolya in bp[3000]
+  --extension-introns-absolute-distance-topolya=EXTENSION_INTRONS_ABSOLUTE_DISTANCE_TOPOLYA
+                        extension for introns from the absolute distance from
+                        the topolya in bp[500]
+  --extension-upstream=EXTENSION_UPSTREAM
+                        extension upstream from the first exon in bp[2500]
+  --extension-downstream=EXTENSION_DOWNSTREAM
+                        extension downstream from the last exon in bp[2500]
+  --extension-inward=EXTENSION_INWARD
+                        extension inward from a TSS start site in bp[3000]
+  --extension-outward=EXTENSION_OUTWARD
+                        extension outward from a TSS start site in bp[3000]
+  --scale-flank-length=SCALE_FLANKS
+                        scale flanks to (integer multiples of) gene length[0]
+  --control-factor=CONTROL_FACTOR
+                        factor for normalizing control and fg data. Computed
+                        from data if not set. [none]
+  --output-all-profiles
+                        keep individual profiles for each transcript and
+                        output. [False]
+  --input-filename-counts=INPUT_FILENAME_COUNTS
+                        filename with count data for each transcript. Use this
+                        instead of recomputing the profile. Useful for
+                        plotting the meta-gene profile from previously
+                        computed counts [none]
+  --background-region=BACKGROUND-REGION
+                        number of bins on either side of the profile to be
+                        considered for background meta-gene normalizatian
+                        [none]
+  -v LOGLEVEL, --verbose=LOGLEVEL
+                        loglevel [1]. The higher, the more output.
+  --timeit=TIMEIT_FILE  store timeing information in file [none].
+  --timeit-name=TIMEIT_NAME
+                        name in timing file for this class of jobs [all].
+  --timeit-header       add header for timing information [none].
+  --random-seed=RANDOM_SEED
+                        random seed to initialize number generator with
+                        [none].
+  -P OUTPUT_FILENAME_PATTERN, --output-filename-pattern=OUTPUT_FILENAME_PATTERN
+                        OUTPUT filename pattern for various methods [%s].
+  -F, --force           force over-writing of existing files.
+  -I FILE, --stdin=FILE
+                        file to read stdin from [default = stdin].
+  -L FILE, --log=FILE   file with logging information [default = stdout].
+  -E FILE, --error=FILE
+                        file with error information [default = stderr].
+  -S FILE, --stdout=FILE
+                        file where output is to go [default = stdout].
+</pre></div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">bam2geneprofile.py - build meta-gene profile for a set of transcripts/genes</a><ul>
+<li><a class="reference internal" href="#purpose">Purpose</a></li>
+<li><a class="reference internal" href="#background">Background</a></li>
+<li><a class="reference internal" href="#normalization">Normalization</a><ul>
+<li><a class="reference internal" href="#count-vector">Count Vector</a></li>
+<li><a class="reference internal" href="#meta-gene-profile">Meta-gene profile</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#options">Options</a><ul>
+<li><a class="reference internal" href="#profiles">Profiles</a></li>
+<li><a class="reference internal" href="#genes-versus-transcripts">Genes versus transcripts</a></li>
+<li><a class="reference internal" href="#control">Control</a></li>
+<li><a class="reference internal" href="#bed-and-wiggle-files">Bed and wiggle files</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#usage">Usage</a></li>
+<li><a class="reference internal" href="#command-line-options">Command line options</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="../scripts.html"
+                        title="previous chapter">Scripts</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="bed2bed.html"
+                        title="next chapter">bed2bed.py - manipulate bed files</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/scripts/bam2geneprofile.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="bed2bed.html" title="bed2bed.py - manipulate bed files"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../scripts.html" title="Scripts"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../scripts.html" >Scripts</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

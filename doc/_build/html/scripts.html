@@ -1,0 +1,469 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Scripts &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/sorttable.js"></script>
+    <script type="text/javascript" src="_static/jquery.min.js"></script>
+    <script type="text/javascript" src="_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="index.html" />
+    <link rel="next" title="bam2geneprofile.py - build meta-gene profile for a set of transcripts/genes" href="scripts/bam2geneprofile.html" />
+    <link rel="prev" title="Welcome to the CGAT code collection" href="index.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="scripts/bam2geneprofile.html" title="bam2geneprofile.py - build meta-gene profile for a set of transcripts/genes"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to the CGAT code collection"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">CGAT  documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="scripts">
+<span id="id1"></span><h1>Scripts<a class="headerlink" href="#scripts" title="Permalink to this headline">¶</a></h1>
+<p>This document contains all the scripts for/by CGAT.
+Scripts are written to be called from the command line.</p>
+<div class="section" id="genomics">
+<h2>Genomics<a class="headerlink" href="#genomics" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="scripts/bam2geneprofile.html">bam2geneprofile.py - build meta-gene profile for a set of transcripts/genes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/bed2bed.html">bed2bed.py - manipulate bed files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/bed2gff.html">bed2gff.py - convert bed to gff/gtf</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/gff2bed.html">gff2bed.py - convert from gff to bed</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/psl2assembly.html">psl2assembly.py - assemble (long) reads on genome</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/psl2psl.html">psl2psl.py - manipulate psl files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/psl2gff.html">psl2gff.py - convert from psl to gff</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/psl2map.html">psl2map.py - build a mappping from blat alignments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/psl2wiggle.html">psl2wiggle.py - convert from psl to wiggle</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/psl2wiggle_stats.html">psl2wiggle_stats.py - intersect psl and wiggle files to compute stats</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/diff_gtf.html">diff_gtf.py - compute overlap between multiple gtf files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/fasta2gff.html">fasta2gff.py - create random segments from fasta file</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/gff2psl.html">gff2psl.py - convert from gff to psl</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/gff2coverage.html">gff2coverage.py - compute genomic coverage of gff intervals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/gff2fasta.html">gff2fasta.py - output sequences from genomic features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/gtf2alleles.html">gtf2alleles.py - predict effects of variants on gene set</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/gff2gff.html">gff2gff.py - manipulate gff files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/gff2histogram.html">gff2histogram.py - compute histograms from intervals in gff or bed format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/gff2plot.html">gff2plot.py - plot genomic data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/gff2stats.html">gff2stats.py - count features, etc. in gff file</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/gff2view.html">gff2view.py - view gff intervals in UCSC genome browser</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/gff_decorate.html">gff_decorate.py - decorate genomic windows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/gtf2gff.html">gtf2gff.py - convert a transcript set to genomic features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/gtf2gtf.html">gtf2gtf.py - manipulate transcript models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/gtf2reads.html">gtf2reads.py - sample reads from genes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/gtf2table.html">gtf2table.py - annotate genes/transcripts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/gtfs2graph.html">gtfs2graph.py - compute overlap graph between genes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/gtf2fasta.html">gtf2fasta.py - annotate genomic bases from a gene set</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/snp2table.html">snp2table.py - annotate variants</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/psl2fasta.html">psl2fasta.py - output alignment pairs from psl formatted alignments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/psl2stats.html">psl2stats.py - output genomic coverage from psl formatted alignments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/psl2table.html">psl2table.py - output stats for psl formatted alignments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/maq2assembly.html">maq2assembly.py - convert output from maq cns2view</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/maq2psl.html">maq2psl.py - wonvert the output of maqview to psl format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/analyze_readpositions.html">analyze_readpositions.py - compute read coverage on transcripts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/combine_gff.html">combine_gff.py - merge overlapping intervals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/quality2fasta.html">quality2fasta.py - convert quality scores to fasta/fastq output</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/bam2wiggle.html">bam2wiggle.py - convert bam to wig/bigwig file</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/bed2annotator.html">bed2annotator.py - convert bed to annotator format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/bed2graph.html">bed2graph.py - compute the overlap graph between two bed files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/bed2psl.html">bed2psl.py - convert a bed file to a psl file</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/chain2psl.html">chain2psl.py - convert a chain file to a psl file</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/diff_bed.html">diff_bed.py - count differences between several bed files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/gff2table.html">gff2table.py - compute features for intersection of two gff files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/index2gff.html">index2gff.py - convert indexed fasta file to gff file</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/maf2psl.html">map2psql.py - convert maf formatted file to a psl formatted file</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/maq2psl.html">maq2psl.py - wonvert the output of maqview to psl format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/snp2counts.html">snp2counts.py - count number SNPs in geneset</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/snp2maf.html">snp2map.py - build maf formatted multiple genomic alignments from SNPs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/psl2chain.html">psl2chain.py - convert psl formatted file to a chain formatted file</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="trees">
+<h2>Trees<a class="headerlink" href="#trees" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="scripts/tree2matrix.html">tree2matrix.py - convert a tree to a distance matrix</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/tree2plot.html">tree2plot.py - plot a tree as postscript (deprecated)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/tree2stats.html">tree2stats.py - compute statistics on trees</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/tree2taxa.html">tree2taxa.py - extract taxa in a tree</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/tree2tree.html">tree2tree.py - manipulate trees</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/tree2svg.html">tree2svg.py - plot a tree in svg format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/tree_collapse_species.html">tree_collapse_species.py - collapse single species nodes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/tree_diff.html">tree_diff.py - compare two sets of trees</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/tree_strain2species.html">trees_train2species.py - convert trees containing strains to species trees</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/trees2sets.html">trees2sets.py - compute ortholog sets from trees</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/trees2tree.html">trees2tree.py - aggregate trees into a single tree</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/trees2trees.html">trees2trees.py - manipulate a collection of trees</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/tree_species2genes.html">tree_species2genes.py - collapse leaves with the same species.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/matrix2tree.html">matrix2tree.py - build tree from a distance matrix</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/fasta2nj.html">fasta2nj.py - convert fasta file to nj input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/tree2patterns.html">tree2patterns.py - convert trees to taxon patterns</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/tree_species2genes.html">tree_species2genes.py - collapse leaves with the same species.</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="alignment">
+<h2>Alignment<a class="headerlink" href="#alignment" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="scripts/align_transcripts.html">align_transcripts.py - multiply align transcripts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/peptides2cds.html">peptides2cds.py - map peptide sequences onto nucleic acid sequences</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="visualization">
+<h2>Visualization<a class="headerlink" href="#visualization" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="scripts/plot_data.html">plot_data.py - create scatter plot from tabular data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/plot_histogram.html">plot_histogram.py - create line plot of tabular data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/plot_matrix.html">plot_matrix.py - plot a matrix (imshow)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/png2svg.html">png2svg.py - arrange several bitmat images into a single image</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/go2svg.html">go2svg.py - plot results of a GO analysis</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="graphs">
+<h2>Graphs<a class="headerlink" href="#graphs" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="scripts/graph2stats.html">graph2stats.py - calculate statistics for a (redundant) graph</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/graph_combine_links_redundant.html">graph_combine_links_redundant.py - remove redundant links</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/graph_filter_links_redundant.html">graph_filter_links_redundant.py -</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/graph_links2gdl.html">graph_links2gdl.py - output graph in gdl format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/compare_clusters.html">compare_clusters.py - compare two partitions of the same data</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="sequences-and-rates">
+<h2>Sequences and rates<a class="headerlink" href="#sequences-and-rates" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="scripts/align_pairs.html">align_pairs.py - align nucleotide sequence pairs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/align_all_vs_all.html">align_all_vs_all.py - all-vs-all pairwise alignment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/jalview.html">jalview.py - build annotation for viewing in jalview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/mali2bootstrap.html">mali2bootstrap.py - create bootstrap samples from a mali</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/mali2mali.html">mali2mali.py - operate on a multiple alignments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/mali2malis.html">mali2malis.py - split a multiple alignment into smaller multiple alignments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/mali2summary.html">mali2summary.py - compute summary stats on a mali</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/malis2mali.html">malis2mali.py - concatenate multiple alignments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/malis2malis.html">malis2malis.py - extract subsets of malis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/malis2profiles.html">malis2profiles.py - build profiles from malis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/sequence2alignment.html">sequence2alignment.py - convert aligned sequences to an alignment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/sequences2mali.html">sequences2mali.py - build pileup mali from a set of sequences</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/mask_fasta.html">mask_fasta.py - mask fasta formatted sequences</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/index_fasta.html">index_fasta.py - Index fasta formatted files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/mali2kaks.html">mali2kaks.py - rate analysis with PAML</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/mali2rates.html">mali2rates.py - calculate rates for sequences in a multiple alignment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/malis2masks.html">malis2masks.py - mask positions in a set of malis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/diff_fasta.html">diff_fasta.py - compare contents of two fasta files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/rates2rates.html">rates2rates.py - operate on rates</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/introns2rates.html">introns2rates.py - compute rates of aligned intron sequences</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/nr2table.html">nr2table.py - convert description in nr fasta file to table</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/extractseq.html">extractseq.py - extract sequences/sequence regions from a fasta file</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/quality2masks.html">quality2masks.py - mask low-quality bases in multiple alignment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/map_residues.html">map_residues.py - liftover for residues</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="matrices-and-tables">
+<h2>Matrices and Tables<a class="headerlink" href="#matrices-and-tables" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="scripts/combine_histograms.html">combine_histograms.py - combine several histograms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/csvs2csv.html">csvs2csv.py - join tables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/csv2csv.html">csv2csv.py - operate on tables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/csv2db.html">csv2db.py - upload table to database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/csv2xls.html">csv2xls.py - convert table to excel format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/csv_cut.html">csv_cut.py - select columns from a table</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/csv_intersection.html">csv_intersection.py - intersect two tables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/csv_rename.html">csv_rename.py - rename columns in a table</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/csv_set.html">csv_set.py - set operations on a table</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/cat_tables.html">cat_tables.py - concatenate tables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/matrix2matrix.html">matrix2matrix.py - operate on matrices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/matrix2stats.html">matrix2stats.py - compute statistics on matrices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/sparse2full.html">sparse2full.py - convert a sparse matrix to adjacency matrix</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/filter_tokens.html">filter_tokens.py - select columns from a table</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/table2graph.html">convert adjacency lists to edge lists</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/table2table.html">table2table.py - operate on tables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/join_tables.html">join_tables.py - join tables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/substitute_tokens.html">substitute_tokens.py - substitute fields in tables</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="stats">
+<h2>Stats<a class="headerlink" href="#stats" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="scripts/compare_histograms.html">histograms2distance.py - compute Kullback-Leibler distance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/data2roc.html">data2roc.py - compute ROC data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/data2stats.html">data2stats.py - summary statistics on table columns/rows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/data2bins.html">data2bins.py - split table according to values in a column</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/data2histogram.html">data2histogram.py - histogram data in a table</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/data2multiple_anova.html">data2multiple_anova.py - compute multiple ANOVA between samples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/histogram2histogram.html">histogram2histogram.py - operations on histograms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/merge_tables.html">merge_tables.py -</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/modify_table.html">modify_table.py -</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/r_compare_distributions.html">r_compare_distributions.py - statistical test for distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/r_mann_whitney_u.html">r_mann_whitney_u.py - Mann-Whitney U test</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/r_table2scatter.html">r_table2scatter.py - R based plots and stats</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/r_test.html">r_test.py - t-test and wilcoxon tests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/calculate_histogram_2D.html">calculate_histogram_2D.py - calculate 2D histogram</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/simulate_function.html">simulate_function.py - create datapoints for a function</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/histograms2kl.html">histograms2kl.py - compute Kullback-Leibler distance</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="tools">
+<h2>Tools<a class="headerlink" href="#tools" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="databases">
+<h3>Databases<a class="headerlink" href="#databases" title="Permalink to this headline">¶</a></h3>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="scripts/mysql_clone_database.html">mysql_clone_database.py - clone a mysql database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/psql_add_tables.html">psql_add_tables.py - merge two tables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/psql_clone_database.html">psql_clone_database.py - clone a psql schema</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/check_db.html">check_db.py - do a sanity check for a collection of linked tables</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="cluster-and-jobs">
+<h3>Cluster and jobs<a class="headerlink" href="#cluster-and-jobs" title="Permalink to this headline">¶</a></h3>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="scripts/farm.html">farm.py - execute a cmd on the cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/qkill.html">qkill.py - kill jobs in the queue</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/nofarm.html">nofarm.py - stand-in for <tt class="docutils literal"><span class="pre">farm.py</span></tt></a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/run.html">run.py - wrapper around command line</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/submit.html">submit.py - run a collection of qsub scripts on the cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/clean.html">clean.py - clean up output files from aborted runs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/cgat_cluster_distribute.html">cluster_distribute.py - distribute files to cluster nodes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/cgat_logfiles2tsv.html">cgat_logfiles2tsv.py - create summary from logfiles</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/split_file.html">split_file.py - split a file into parts</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="other">
+<h3>Other<a class="headerlink" href="#other" title="Permalink to this headline">¶</a></h3>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="scripts/rename_links.html">rename_links.py - rename all links in a directory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/cgat_log2wiki.html">cgat_log2wiki.py - convert a log file into a wiki page</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/convert_time2seconds.html">convert_time2seconds.py -</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/cgat_html_add_toc.html">cgat_html_add_toc.py - insert table of contents in html document</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/set_diff.html">set_diff.py - compare contents of several files</a></li>
+</ul>
+</div>
+</div>
+</div>
+<div class="section" id="unsorted">
+<h2>Unsorted<a class="headerlink" href="#unsorted" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="scripts/add_random_reads_to_bam.html">Add a number of random reads to an aligned bam file</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/align_mali_vs_mali.html">align_mali_vs_mali.py - align two multiple alignments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/analyze_go.html">analyze_go.py -</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/bam2UniquePairs.html">bam2UniquePairs.py - filter/report uniquely mapped read pairs from a (bwa!) bam-file</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/bam2bam.html">bam2bam.py - modify bam files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/bam2bed.html">cgat_script_template.py - template for CGAT scripts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/bam2fastq.html">bam2fastq.py - output fastq files from a bam-file</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/bam2peakshape.html">bam2peakshape.py - compute peak shape features from a bam-file</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/bam2stats.html">bam2stats.py - compute stats from a bam-file</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/bam2transcriptContribution.html">bam2transcriptContribution.py</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/barplotGo.html">barplotGo.py</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/beds2counts.html">beds2counts.py - compute overlap stats between multiple bed files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/bed2fasta.html">bed2fasta.py - get sequences from bed file</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/bed2stats.html">bed2stats.py - summary of bed file contents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/bed2table.html">bed2table.py - annotate intervals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/beds2beds.html">beds2beds.py - decompose bed files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/blast2table.html">blast2table.py - output tabular results from BLAST/PSIBLAST runs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/cgat_build_report_page.html">cgat_build_report_page.py - build report page for all projects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/chain2stats.html">chain2stats.py</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/combine_tables.html">combine_tables.py - join tables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/diff_chains.html">diff_chains.py - compare to chain formatted files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/fasta2table.html">fasta2table.py - analyze sequences for codon bias and other sequence properties</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/fasta2variants.html">fasta2variants.py - create sequence variants from a set of sequences</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/fastq2N.html">fastq2N.py -</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/fastq2fastq.html">fastq2fastq.py - manipulate fastq files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/fastq2solid.html">fastq2solid.py - convert fastq to solid</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/fastq2table.html">fastq2table.py - compute stats on reads in fastq files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/filter_reads.html">filter_reads.py -</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/genelist_analysis.html">genelist_analysis.py -analyse gene lists (GO, etc.)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/genome_bed.html">genome_bed.py - Create a bed file tiling a genome from a fai file</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/go2plot.html">go2plot.py -</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/gtf2overlap.html">gtf2Overlap.py</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/index2bed.html">index2bed.py - convert indexed fasta file to bed file</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/intervaltable2bed.html">table2bed.py</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/liftover.html">liftover.py -</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/list_overlap.html">list_overlap.py - compute overlap between lists</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/mali2table.html">mali2summary.py - compute column stats for a multiple alignment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/mali_extract.html">mali_extract.py -</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/mali_phylip2fasta.html">mali_phylip2fasta.py -</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/mali_plain2aln.html">mali_plain2aln.py -</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/mali_remove_gaps.html">mali_remove_gaps.py -</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/medip_merge_intervals.html">medip_merge_intervals.py - merge differentially methylated regions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/probeset2gene.html">probeset2gene -</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/cgat_rebuild_extensions.html">cgat_rebuild_extensions.py - rebuild all cython extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/revigo.html">revigo.py - apply semantic clustering to GO output</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/cgat_ruffus_profile.html">cgat_ruffus_profile.py - analyze ruffus logfile</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/run_function.html">run_function.py - run a function within a python module remotely</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/snp2snp.html">snp2snp.py - manipulate lists of SNPs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/solexa2stats.html">solexa2stats.py - compute stats from solexa export files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/tree_map_leaves.html">tree_map_leaves.py -</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/vcf2vcf.html">vcf2vcf.py - manipulate vcf files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/vcfstats2db.html">vcfstats_sqlite.py - reformat output of vcf-stats for database loading</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/wig2wig.html">wig2wig.py - manipulate wiggle files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/bam_vs_bam.html">bam_vs_bam.py - compute coverage correlation between bam files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/bam_vs_bed.html">bam_vs_bed.py - count context that reads map to</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/bam_vs_gtf.html">bam_vs_gtf.py - compare bam file against gene set</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/cgat2rdf.html">cgat2rdf.py - create rdf description of CGAT script</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/diff_bam.html">diff_bam.py - compare multiple bam files against each other</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/fasta2fasta.html">fasta2fasta.py - operate on sequences</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/fasta2kmercontent.html">fasta2kmercontent.py</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/fastas2fasta.html">fastas2fasta.py - concatenate sequences from multiple fasta files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/fastqs2fasta.html">fastqs2fasta.py - interleave two fastq files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/fastqs2fastqs.html">fastqs2fastqs.py - manipulate (merge/reconcile) fastq files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/gtf2tsv.html">gtf2tsv.py - convert gtf file to a tab-separated table</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/gtfs2tsv.html">gtfs2tsv.py - compare two genesets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/rnaseq_junction_bam2bam.html">rnaseq_junction_bams2bam.py - convert mappings against junctions to genomic coordinates</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scripts/split_gff.html">gff2chunks.py - split a gff file into chunks</a></li>
+</ul>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Scripts</a><ul>
+<li><a class="reference internal" href="#genomics">Genomics</a></li>
+<li><a class="reference internal" href="#trees">Trees</a></li>
+<li><a class="reference internal" href="#alignment">Alignment</a></li>
+<li><a class="reference internal" href="#visualization">Visualization</a></li>
+<li><a class="reference internal" href="#graphs">Graphs</a></li>
+<li><a class="reference internal" href="#sequences-and-rates">Sequences and rates</a></li>
+<li><a class="reference internal" href="#matrices-and-tables">Matrices and Tables</a></li>
+<li><a class="reference internal" href="#stats">Stats</a></li>
+<li><a class="reference internal" href="#tools">Tools</a><ul>
+<li><a class="reference internal" href="#databases">Databases</a></li>
+<li><a class="reference internal" href="#cluster-and-jobs">Cluster and jobs</a></li>
+<li><a class="reference internal" href="#other">Other</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#unsorted">Unsorted</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Welcome to the CGAT code collection</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="scripts/bam2geneprofile.html"
+                        title="next chapter">bam2geneprofile.py - build meta-gene profile for a set of transcripts/genes</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/scripts.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="scripts/bam2geneprofile.html" title="bam2geneprofile.py - build meta-gene profile for a set of transcripts/genes"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to the CGAT code collection"
+             >previous</a> |</li>
+        <li><a href="index.html">CGAT  documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

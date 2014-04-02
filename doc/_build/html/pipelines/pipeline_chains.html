@@ -1,0 +1,283 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Chains pipeline &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="NGS Pipelines" href="../CGATPipelines.html" />
+    <link rel="next" title="Liftover pipeline" href="pipeline_liftover.html" />
+    <link rel="prev" title="Ancestral repeats pipeline" href="pipeline_ancestral_repeats.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pipeline_liftover.html" title="Liftover pipeline"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="pipeline_ancestral_repeats.html" title="Ancestral repeats pipeline"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../Pipelines.html" >CGAT Pipelines</a> &raquo;</li>
+          <li><a href="../CGATPipelines.html" accesskey="U">NGS Pipelines</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-pipeline_chains"></span><div class="section" id="chains-pipeline">
+<h1>Chains pipeline<a class="headerlink" href="#chains-pipeline" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Andreas Heger</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id: pipeline_chains.py 2900 2010-04-13 14:38:00Z andreas $</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Python</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="purpose">
+<h2>Purpose<a class="headerlink" href="#purpose" title="Permalink to this headline">¶</a></h2>
+<p>build pairwise genomic alignments from a set of multiple alignments or combine several
+pairwise alignments into new pairwise alignments.</p>
+<p>Starting from a multiple genomic alignment in <a class="reference internal" href="../glossary.html#term-maf"><em class="xref std std-term">maf</em></a> format, this pipeline builds
+a set of pairwise mappings between various query genomes and a single
+reference or target genome.</p>
+<p>The output is a set of <a class="reference external" href="http://www.breyer.com/ucsc/htdocs/goldenPath/help/chain.html">chain</a>
+formatted files that can be used to map feature sets from one assembly to
+another using <tt class="file docutils literal"><span class="pre">liftOver</span></tt>.</p>
+<p>The script works by creating <tt class="docutils literal"><span class="pre">psl</span></tt> formatted files first. It will then filter and merge
+these. <tt class="docutils literal"><span class="pre">chain</span></tt> formatted files are created in the last stage.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">There is a limit on the divergence between assemblies beyond which features can not be mapped accurately.
+At high divergence, features should better mapped using tools like <tt class="file docutils literal"><span class="pre">gmap</span></tt>.</p>
+</div>
+<p>Liftover chain files are named &lt;target&gt;To&lt;query&gt;.over.chain.gz. Liftover files
+downloaded from UCSC are unique for query, but can have overlapping targets.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This script removes all 1-to-many, many-to-1 and many-to-many mappings.
+It does so in a greedy way by removing all segments that overlap with any other segment.
+A single base overlap is sufficient for overlap and all overlapping segments are removed.</p>
+</div>
+<div class="section" id="nomenclature">
+<h3>Nomenclature<a class="headerlink" href="#nomenclature" title="Permalink to this headline">¶</a></h3>
+<p>The nomenclature in the UCSC is <tt class="file docutils literal"><span class="pre">TargetToQuery.chain</span></tt> for mapping <tt class="docutils literal"><span class="pre">target</span></tt>
+to <tt class="docutils literal"><span class="pre">query</span></tt> (according to the UCSC documentation, <tt class="docutils literal"><span class="pre">target</span></tt> is the first entry
+in <tt class="docutils literal"><span class="pre">chain</span></tt> files).</p>
+<p>I have been using the nomenclature <cite>QueryToTarget.psl</cite>.</p>
+</div>
+</div>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>Type:</p>
+<div class="highlight-python"><div class="highlight"><pre>python &lt;script_name&gt;.py --help
+</pre></div>
+</div>
+<p>for command line help.</p>
+<p>To use the pipeline, run the following tasks</p>
+<dl class="docutils">
+<dt>prepare</dt>
+<dd>extract pairwise alignments from a maf alignment
+and convert chain files to psl files</dd>
+<dt>build</dt>
+<dd>build the required pairwise alignments</dd>
+</dl>
+</div>
+<div class="section" id="code">
+<h2>Code<a class="headerlink" href="#code" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pipeline_chains.extractGenomes">
+<tt class="descclassname">pipeline_chains.</tt><tt class="descname">extractGenomes</tt><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_chains.extractGenomes" title="Permalink to this definition">¶</a></dt>
+<dd><p>extract the two genomes from a chain filename.
+It also decapitalizes them.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_chains.writeContigSizes">
+<tt class="descclassname">pipeline_chains.</tt><tt class="descname">writeContigSizes</tt><span class="sig-paren">(</span><em>genome</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_chains.writeContigSizes" title="Permalink to this definition">¶</a></dt>
+<dd><p>write contig sizes to outfile for UCSC tools.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_chains.convertChainToPsl">
+<tt class="descclassname">pipeline_chains.</tt><tt class="descname">convertChainToPsl</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_chains.convertChainToPsl" title="Permalink to this definition">¶</a></dt>
+<dd><p>convert a chain file to a psl file.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_chains.buildIndirectMaps">
+<tt class="descclassname">pipeline_chains.</tt><tt class="descname">buildIndirectMaps</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em>, <em>track</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_chains.buildIndirectMaps" title="Permalink to this definition">¶</a></dt>
+<dd><p>build a map between query and target, linking
+via intermediate targets.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_chains.convertPslToChain">
+<tt class="descclassname">pipeline_chains.</tt><tt class="descname">convertPslToChain</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_chains.convertPslToChain" title="Permalink to this definition">¶</a></dt>
+<dd><p>convert a psl to a chain file.</p>
+<p>see <a class="reference external" href="http://genomewiki.ucsc.edu/index.php/Minimal_Steps_For_LiftOver">http://genomewiki.ucsc.edu/index.php/Minimal_Steps_For_LiftOver</a></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_chains.buildPslStats">
+<tt class="descclassname">pipeline_chains.</tt><tt class="descname">buildPslStats</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_chains.buildPslStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>compute alignment coverage statistics in chain files</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_chains.buildChainStats">
+<tt class="descclassname">pipeline_chains.</tt><tt class="descname">buildChainStats</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_chains.buildChainStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>compute alignment coverage statistics in chain files</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_chains.build_report">
+<tt class="descclassname">pipeline_chains.</tt><tt class="descname">build_report</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_chains.build_report" title="Permalink to this definition">¶</a></dt>
+<dd><p>build report from scratch.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_chains.update_report">
+<tt class="descclassname">pipeline_chains.</tt><tt class="descname">update_report</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_chains.update_report" title="Permalink to this definition">¶</a></dt>
+<dd><p>update report.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_chains.publish_report">
+<tt class="descclassname">pipeline_chains.</tt><tt class="descname">publish_report</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_chains.publish_report" title="Permalink to this definition">¶</a></dt>
+<dd><p>publish report.</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Chains pipeline</a><ul>
+<li><a class="reference internal" href="#purpose">Purpose</a><ul>
+<li><a class="reference internal" href="#nomenclature">Nomenclature</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#usage">Usage</a></li>
+<li><a class="reference internal" href="#code">Code</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="pipeline_ancestral_repeats.html"
+                        title="previous chapter">Ancestral repeats pipeline</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="pipeline_liftover.html"
+                        title="next chapter">Liftover pipeline</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/pipelines/pipeline_chains.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pipeline_liftover.html" title="Liftover pipeline"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="pipeline_ancestral_repeats.html" title="Ancestral repeats pipeline"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../Pipelines.html" >CGAT Pipelines</a> &raquo;</li>
+          <li><a href="../CGATPipelines.html" >NGS Pipelines</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,727 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Installing CGAT pipelines &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/sorttable.js"></script>
+    <script type="text/javascript" src="_static/jquery.min.js"></script>
+    <script type="text/javascript" src="_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="index.html" />
+    <link rel="up" title="CGAT Pipelines" href="Pipelines.html" />
+    <link rel="next" title="Using CGAT pipelines" href="UsingPipelines.html" />
+    <link rel="prev" title="CGAT Pipelines" href="Pipelines.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="UsingPipelines.html" title="Using CGAT pipelines"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="Pipelines.html" title="CGAT Pipelines"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="Pipelines.html" accesskey="U">CGAT Pipelines</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="installing-cgat-pipelines">
+<span id="cgatsetup"></span><h1>Installing CGAT pipelines<a class="headerlink" href="#installing-cgat-pipelines" title="Permalink to this headline">¶</a></h1>
+<p>The CGAT pipelines, scripts and libraries make several assumptions about
+the computing environment. This section describes how to install the code
+and set up your computing environment.</p>
+<div class="section" id="downloading-and-installing-the-source-code">
+<h2>Downloading and installing the source code<a class="headerlink" href="#downloading-and-installing-the-source-code" title="Permalink to this headline">¶</a></h2>
+<p>To obtain the latest code, check it out from the public <a class="reference external" href="http://git-scm.com/">git</a>
+repository and activate it:</p>
+<div class="highlight-python"><div class="highlight"><pre>git clone https://github.com/CGATOxford/cgat.git
+cd cgat
+python setup.py develop
+</pre></div>
+</div>
+<p>Please see the installation instructions for the
+<a class="reference external" href="http://www.cgat.org/~andreas/documentation/cgat/CGATInstallation.html">CGAT Toolkit</a>
+if you run into problems.</p>
+<p>Once checked-out, you can get the latest changes via pulling:</p>
+<div class="highlight-python"><div class="highlight"><pre>git pull
+</pre></div>
+</div>
+<p>Some scripts contain <a class="reference external" href="http://cython.org/">cython</a> code that needs to be recompiled if the
+script or the <a class="reference external" href="http://code.google.com/p/pysam/">pysam</a> installation has changed. To rebuild all scripts,
+for example after updating the repository, type:</p>
+<div class="highlight-python"><div class="highlight"><pre>python cgat/scripts/cgat_rebuild_extensions.py
+</pre></div>
+</div>
+<p>Recompilation requires a C compiler to be installed.</p>
+</div>
+<div class="section" id="setting-up-the-computing-environment">
+<h2>Setting up the computing environment<a class="headerlink" href="#setting-up-the-computing-environment" title="Permalink to this headline">¶</a></h2>
+<p>The pipelines assume that Sun Grid Engine has been installed. Other queueing systems
+might work, but expect to be disappointed. The pipeline is started on a
+<a class="reference internal" href="glossary.html#term-submit-host"><em class="xref std std-term">submit host</em></a> assuming a default queue <tt class="docutils literal"><span class="pre">all.q</span></tt>. Other queues can be specified on the
+command line, for example:</p>
+<div class="highlight-python"><div class="highlight"><pre>python cgat/CGATPipelines/pipeline_&lt;name&gt;.py --cluster-queue=medium_jobs.q
+</pre></div>
+</div>
+<p>A pipeline might start up to <tt class="docutils literal"><span class="pre">-p/--multiprocess</span></tt> processes. Preferentially,
+tasks are sent to the cluster, but for some tasks this is not possible.
+These might thus run on the <a class="reference internal" href="glossary.html#term-submit-host"><em class="xref std std-term">submit host</em></a>, so make sure it is fairly powerful.</p>
+<p>Pipelines expects that the <a class="reference internal" href="make_pipelines/Gpipe.html#term-working-directory"><em class="xref std std-term">working directory</em></a> is accessible with
+the same path both from the submit and the <a class="reference internal" href="glossary.html#term-execution-host"><em class="xref std std-term">execution host</em></a>.</p>
+</div>
+<div class="section" id="software-requirements">
+<h2>Software requirements<a class="headerlink" href="#software-requirements" title="Permalink to this headline">¶</a></h2>
+<p>On top of pipeline specific bioinformatics software, CGAT pipelines
+make use a variety of software. Unfortunately we can&#8217;t support many
+versions. The following table gives a list software we have currently
+(7/2/2014) installed:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="20%" />
+<col width="47%" />
+<col width="33%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><em>Section</em></td>
+<td><em>Software</em></td>
+<td><em>Version</em></td>
+</tr>
+<tr class="row-even"><td>apps</td>
+<td>java</td>
+<td>jre1.6.0_26</td>
+</tr>
+<tr class="row-odd"><td>apps</td>
+<td>gccxml</td>
+<td>0.9</td>
+</tr>
+<tr class="row-even"><td>apps</td>
+<td>R</td>
+<td>2.15.2</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>alignlib</td>
+<td>0.4.4</td>
+</tr>
+<tr class="row-even"><td>apps</td>
+<td>python</td>
+<td>2.7.1</td>
+</tr>
+<tr class="row-odd"><td>apps</td>
+<td>perl</td>
+<td>5.12.3</td>
+</tr>
+<tr class="row-even"><td>apps</td>
+<td>graphlib</td>
+<td>0.1</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>abacas</td>
+<td>1.3.1</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>abiwtap</td>
+<td>1.2.1</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>artemis</td>
+<td>15</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>bamstats</td>
+<td>1.22</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>bamtools1</td>
+<td>2.3.0</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>batman</td>
+<td>0.2.3</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>bedtools</td>
+<td>2.18.1</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>belvu</td>
+<td>2.16</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>bfast</td>
+<td>0.6.5a</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>bioprospector</td>
+<td>2004</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>boost</td>
+<td>1.46.1</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>bowtie</td>
+<td>0.12.7</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>bowtie2</td>
+<td>2.1.0</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>BRIG-0.95-dist</td>
+<td>0.95</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>BroadPeak</td>
+<td>1.0</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>bwa</td>
+<td>test-0.7.5a</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>cdhit</td>
+<td>4.3</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>CHANCE</td>
+<td>1.0</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>circos</td>
+<td>0.63-4</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>CLASS</td>
+<td>1.0.1</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>clustalw</td>
+<td>2.1</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>cortex</td>
+<td>0.0.4</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>cortex_var</td>
+<td>1.0.5.20</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>cufflinks</td>
+<td>2.0.2</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>cpc</td>
+<td>0.9-r2</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>dialign</td>
+<td>2.2.1</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>denovogear</td>
+<td>0.5.2</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>emboss</td>
+<td>6.5.7</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>ensembl</td>
+<td>62</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>ensembl-variation</td>
+<td>62</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>exonerate</td>
+<td>2.2.0</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>famseq</td>
+<td>1.0.0-1</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>fastqc</td>
+<td>0.9.2</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>fastx</td>
+<td>0.0.13</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>flash</td>
+<td>1.2.6</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>flux-simulator</td>
+<td>1.2.1</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>gatk</td>
+<td>2.1.13</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>gatk-full</td>
+<td>2.7-2</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>gblocks</td>
+<td>0.91b</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>gcprofile</td>
+<td>1.0</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>gmap</td>
+<td>2012.07.20</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>galaxy</td>
+<td>dist</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>gitools</td>
+<td>1.6.4</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>glimmer</td>
+<td>3.02</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>hpeak</td>
+<td>2.1</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>gem</td>
+<td>003425</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>GEM</td>
+<td>1.1</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>GemSim</td>
+<td>version_unknown</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>idba</td>
+<td>1.1.0</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>IGV</td>
+<td>2.3.2</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>IGVTools</td>
+<td>2.1.24</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>java_genomics_toolkit</td>
+<td>0.0.1</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>kent</td>
+<td>1.0</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>hmmer</td>
+<td>3.0</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>lastz</td>
+<td>1.02.00</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>leotools</td>
+<td>0.1</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>mappability_map</td>
+<td>1.0</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>Mauve</td>
+<td>2.3.1</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>MEGAN</td>
+<td>4</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>meme</td>
+<td>4.9.1</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>MetaGeneMark</td>
+<td>1.0.0</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>metaphlan</td>
+<td>1.7.7</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>meta-velvet</td>
+<td>1.2.02</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>mtools</td>
+<td>1</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>MUMmer</td>
+<td>3.23</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>muscle</td>
+<td>3.8.31</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>ncbiblast</td>
+<td>2.2.28+</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>newickutils</td>
+<td>1.3.0</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>novoalign</td>
+<td>2.07.11</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>novoalignCS</td>
+<td>1.01.11</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>paml</td>
+<td>4.4c</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>peakranger</td>
+<td>1.16</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>peaksplitter</td>
+<td>1.0</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>perm</td>
+<td>0.3.5</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>phylip</td>
+<td>3.69</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>PhyloCSF</td>
+<td>1.0</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>plinkseq</td>
+<td>0.08</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>polymutt</td>
+<td>0.14</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>polyphen</td>
+<td>2.0.23</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>prodigal</td>
+<td>2.60</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>Ray</td>
+<td>2.2.0</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>reaper</td>
+<td>13-100</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>samtools</td>
+<td>0.1.19</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>scripture</td>
+<td>2.0b</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>seqimp</td>
+<td>13-095</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>seqtk</td>
+<td>1.0.0</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>sga</td>
+<td>1.0.0</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>shrimp</td>
+<td>2.1.1</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>sicer</td>
+<td>1.1</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>sickle</td>
+<td>1.0</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>sift</td>
+<td>4.0.3</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>simseq</td>
+<td>72ce499</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>snpEff</td>
+<td>3.3</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>soap</td>
+<td>2.21</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>SOAPdenovo2</td>
+<td>2.04</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>soapsplice</td>
+<td>1.0</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>SPAdes-3.0</td>
+<td>3.0</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>sratoolkit</td>
+<td>2.1.7</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>SpliceMap</td>
+<td>3.3.5.2</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>stampy</td>
+<td>1.0.17</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>statgen</td>
+<td>0.1.4</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>star</td>
+<td>2.3.0e</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>storm</td>
+<td>0.1</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>subread</td>
+<td>1.3.6-p1</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>sylamer</td>
+<td>08-123</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>tabix</td>
+<td>0.2.6</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>TAXAassign</td>
+<td>0.4</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>triodenovo</td>
+<td>0.01</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>tophat</td>
+<td>1.4.1</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>tophat2</td>
+<td>2.0.10</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>treebest</td>
+<td>0.1</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>Trinity</td>
+<td>2012-01-25</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>tv</td>
+<td>0.5</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>vcftools</td>
+<td>0.1.8a</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>velvet</td>
+<td>1.2.10</td>
+</tr>
+<tr class="row-even"><td>bio</td>
+<td>velvet-optimiser</td>
+<td>2.2.5</td>
+</tr>
+<tr class="row-odd"><td>bio</td>
+<td>VEP</td>
+<td>67</td>
+</tr>
+</tbody>
+</table>
+<p>What exactly is required will depend on the particular pipeline. The pipeline assumes
+that the executables are in the users <span class="target" id="index-0"></span><tt class="xref std std-envvar docutils literal"><span class="pre">PATH</span></tt> and that the rest of the environment
+has been set up for each tool.</p>
+<p>Additionally, there is a list of additional software that is required
+that are usually shipped as a source package with the operating
+system such as <a class="reference external" href="http://www.sqlite.org/">sqlite</a>.</p>
+<p>Please see the installation instructions for the
+<a class="reference external" href="http://www.cgat.org/~andreas/documentation/cgat/CGATInstallation.html">CGAT Toolkit</a>.</p>
+<div class="section" id="python-libraries">
+<h3>Python libraries<a class="headerlink" href="#python-libraries" title="Permalink to this headline">¶</a></h3>
+<p>CGAT uses python extensively and is currently developed against python 2.7.1. Python
+2.6 should work as well, but some libraries present in 2.7.1 but missing in 2.6
+might need to be installed. Scripts have not yet been ported to python 3.</p>
+<p>The CGAT pipelines require several python libraries to be installed.
+When installing the CGAT code collection, these dependencies should be
+automatically installed.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Installing CGAT pipelines</a><ul>
+<li><a class="reference internal" href="#downloading-and-installing-the-source-code">Downloading and installing the source code</a></li>
+<li><a class="reference internal" href="#setting-up-the-computing-environment">Setting up the computing environment</a></li>
+<li><a class="reference internal" href="#software-requirements">Software requirements</a><ul>
+<li><a class="reference internal" href="#python-libraries">Python libraries</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="Pipelines.html"
+                        title="previous chapter">CGAT Pipelines</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="UsingPipelines.html"
+                        title="next chapter">Using CGAT pipelines</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/InstallingPipelines.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="UsingPipelines.html" title="Using CGAT pipelines"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="Pipelines.html" title="CGAT Pipelines"
+             >previous</a> |</li>
+        <li><a href="index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="Pipelines.html" >CGAT Pipelines</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

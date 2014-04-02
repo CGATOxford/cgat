@@ -1,0 +1,253 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>SequenceProperties.py - compute properties of sequences &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="Modules" href="../modules.html" />
+    <link rel="next" title="GTF.py - Classes and methods for dealing with gtf formatted files" href="GTF.html" />
+    <link rel="prev" title="SequencePairProperties.py -" href="SequencePairProperties.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="GTF.html" title="GTF.py - Classes and methods for dealing with gtf formatted files"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="SequencePairProperties.html" title="SequencePairProperties.py -"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" accesskey="U">Modules</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-SequenceProperties"></span><div class="section" id="sequenceproperties-py-compute-properties-of-sequences">
+<h1>SequenceProperties.py - compute properties of sequences<a class="headerlink" href="#sequenceproperties-py-compute-properties-of-sequences" title="Permalink to this headline">¶</a></h1>
+<p>Classes for extracting and reporting sequence properties on nucleotide sequences.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Andreas Heger</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id$</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Python</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="code">
+<h2>Code<a class="headerlink" href="#code" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="SequenceProperties.SequencePropertiesCpg">
+<em class="property">class </em><tt class="descclassname">SequenceProperties.</tt><tt class="descname">SequencePropertiesCpg</tt><span class="sig-paren">(</span><em>reference_usage=</em><span class="optional">[</span><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#SequenceProperties.SequencePropertiesCpg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">SequenceProperties.SequenceProperties</span></tt></p>
+<p>compute CpG frequencies as well as nucleotide frequencies.</p>
+<dl class="method">
+<dt id="SequenceProperties.SequencePropertiesCpg.loadSequence">
+<tt class="descname">loadSequence</tt><span class="sig-paren">(</span><em>sequence</em>, <em>next_char=None</em><span class="sig-paren">)</span><a class="headerlink" href="#SequenceProperties.SequencePropertiesCpg.loadSequence" title="Permalink to this definition">¶</a></dt>
+<dd><p>load sequence properties from a sequence.</p>
+<p>If next_char is given and a &#8216;G&#8217; and last char in sequence is &#8216;C&#8217;,
+an additional CpG will be counted in order to correctly account
+for CpG at sequence boundaries.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SequenceProperties.SequencePropertiesDegeneracy">
+<em class="property">class </em><tt class="descclassname">SequenceProperties.</tt><tt class="descname">SequencePropertiesDegeneracy</tt><a class="headerlink" href="#SequenceProperties.SequencePropertiesDegeneracy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">SequenceProperties.SequenceProperties</span></tt></p>
+<p>count degeneracy.</p>
+<p>The degeneracies for amino acids are:</p>
+<div class="highlight-python"><div class="highlight"><pre>2: MW are non-degenerate.
+9: EDKNQHCYF are 2-fold degenerate.
+1: I is 3-fold degenerate
+5: VGATP are 4-fold degenerate.
+3: RLS are 2-fold and four-fold degenerate.
+   Depending on the first two codons, the codons are counted
+   as two or four-fold degenerate codons. This is encoded
+   in the file Genomics.py.
+</pre></div>
+</div>
+<p>Note that the number degenerate sites is computed across all codon 
+positions.</p>
+<dl class="method">
+<dt id="SequenceProperties.SequencePropertiesDegeneracy.loadSequence">
+<tt class="descname">loadSequence</tt><span class="sig-paren">(</span><em>sequence</em><span class="sig-paren">)</span><a class="headerlink" href="#SequenceProperties.SequencePropertiesDegeneracy.loadSequence" title="Permalink to this definition">¶</a></dt>
+<dd><p>load sequence properties from a sequence.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="SequenceProperties.SequencePropertiesDegeneracy.updateProperties">
+<tt class="descname">updateProperties</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#SequenceProperties.SequencePropertiesDegeneracy.updateProperties" title="Permalink to this definition">¶</a></dt>
+<dd><p>update fields from counts.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SequenceProperties.SequencePropertiesCodonTranslator">
+<em class="property">class </em><tt class="descclassname">SequenceProperties.</tt><tt class="descname">SequencePropertiesCodonTranslator</tt><a class="headerlink" href="#SequenceProperties.SequencePropertiesCodonTranslator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">SequenceProperties.SequencePropertiesCodonUsage</span></tt></p>
+<p>This class outputs the sequence with codons replaced by their frequencies.</p>
+<dl class="method">
+<dt id="SequenceProperties.SequencePropertiesCodonTranslator.loadSequence">
+<tt class="descname">loadSequence</tt><span class="sig-paren">(</span><em>sequence</em><span class="sig-paren">)</span><a class="headerlink" href="#SequenceProperties.SequencePropertiesCodonTranslator.loadSequence" title="Permalink to this definition">¶</a></dt>
+<dd><p>load sequence properties from a sequence.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SequenceProperties.SequencePropertiesAminoAcids">
+<em class="property">class </em><tt class="descclassname">SequenceProperties.</tt><tt class="descname">SequencePropertiesAminoAcids</tt><span class="sig-paren">(</span><em>reference_usage=</em><span class="optional">[</span><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#SequenceProperties.SequencePropertiesAminoAcids" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">SequenceProperties.SequenceProperties</span></tt></p>
+<p>sequence properties of amino acid sequences.</p>
+<dl class="method">
+<dt id="SequenceProperties.SequencePropertiesAminoAcids.loadSequence">
+<tt class="descname">loadSequence</tt><span class="sig-paren">(</span><em>sequence</em><span class="sig-paren">)</span><a class="headerlink" href="#SequenceProperties.SequencePropertiesAminoAcids.loadSequence" title="Permalink to this definition">¶</a></dt>
+<dd><p>load sequence properties from a sequence.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SequenceProperties.SequencePropertiesGaps">
+<em class="property">class </em><tt class="descclassname">SequenceProperties.</tt><tt class="descname">SequencePropertiesGaps</tt><span class="sig-paren">(</span><em>gap_chars='xXnN'</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#SequenceProperties.SequencePropertiesGaps" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">SequenceProperties.SequenceProperties</span></tt></p>
+<p>counter for genomic sequences.</p>
+<p>Counts gap characters and gap regions</p>
+<dl class="method">
+<dt id="SequenceProperties.SequencePropertiesGaps.loadSequence">
+<tt class="descname">loadSequence</tt><span class="sig-paren">(</span><em>sequence</em><span class="sig-paren">)</span><a class="headerlink" href="#SequenceProperties.SequencePropertiesGaps.loadSequence" title="Permalink to this definition">¶</a></dt>
+<dd><p>load sequence properties from a sequence.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">SequenceProperties.py - compute properties of sequences</a><ul>
+<li><a class="reference internal" href="#code">Code</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="SequencePairProperties.html"
+                        title="previous chapter">SequencePairProperties.py -</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="GTF.html"
+                        title="next chapter">GTF.py - Classes and methods for dealing with gtf formatted files</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/modules/SequenceProperties.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="GTF.html" title="GTF.py - Classes and methods for dealing with gtf formatted files"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="SequencePairProperties.html" title="SequencePairProperties.py -"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" >Modules</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,575 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Exome pipeline &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="NGS Pipelines" href="../CGATPipelines.html" />
+    <link rel="next" title="pipeline_expression.py - analysis of expression data" href="pipeline_expression.html" />
+    <link rel="prev" title="CAPseq pipeline" href="pipeline_capseq.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pipeline_expression.html" title="pipeline_expression.py - analysis of expression data"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="pipeline_capseq.html" title="CAPseq pipeline"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../Pipelines.html" >CGAT Pipelines</a> &raquo;</li>
+          <li><a href="../CGATPipelines.html" accesskey="U">NGS Pipelines</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-pipeline_exome"></span><div class="section" id="exome-pipeline">
+<h1>Exome pipeline<a class="headerlink" href="#exome-pipeline" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">David Sims</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id$</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Python</td>
+</tr>
+</tbody>
+</table>
+<p>The exome pipeline imports unmapped reads from one or more 
+fastq or sra files and aligns them to the genome using BWA.
+Post alignment quality control is performed using Picard. 
+The pipeline then performs local realignment around indels 
+and base quality score recalibration using GATK.
+Next variants (SNVs and indels) are called, annotated, and
+filtered according to various inheritance models (de novo,
+dominant, and recessive).</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>Align to genome using gapped alignment (BWA)</li>
+<li>Check alignment quality and target region coverage (Picard)</li>
+<li>Local realignment and BQSR in GATK</li>
+<li>Variant calling (SNVs &amp; indels) using GATK HaplotypeCaller</li>
+<li>Variant annotation using SNPeff, GATK VariantAnnotator, and SnpSift</li>
+<li>Variant quality score recalibration (GATK)</li>
+<li>Flags variants within genes of interest (such as known disease genes) (GATK) (optional)</li>
+<li>Filters potential de novo variants</li>
+<li>Filters potential de novo variants using lower stringency criteria</li>
+<li>Filters potential dominant mutations</li>
+<li>Filters potential homozygous recessive mutations</li>
+<li>Filters potential compound heterozygous mutations</li>
+<li>Generates summary statistics for unfiltered vcf file</li>
+<li>Generates report</li>
+</ol>
+</div></blockquote>
+<dl class="docutils">
+<dt>Warning:</dt>
+<dd><ol class="first last arabic simple">
+<li>Great care should be taken in interpreting lower stringency de novo variants as it is expected almost all will
+be false positives.  Users should examine them manually in the csvdb database and html report.</li>
+<li>Great care should be taken when interpreting compound heterozygous changes.  Gemini is very permissive and users
+should examine the genotypes in the csvdb table to make sure they are consistent with a recessive inheritance
+pattern.</li>
+</ol>
+</dd>
+<dt>To do:</dt>
+<dd><ol class="first last arabic simple">
+<li>Allow users to add other training sets for variant quality score recalibration</li>
+<li>Allow users to add annotations using SnpSift</li>
+</ol>
+</dd>
+</dl>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>See <a class="reference internal" href="../UsingPipelines.html#pipelinesettingup"><em>Setting up a pipeline</em></a> and <a class="reference internal" href="../UsingPipelines.html#pipelinerunning"><em>Running a pipeline</em></a> on general information how to use CGAT pipelines.</p>
+<div class="section" id="configuration">
+<h3>Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">¶</a></h3>
+</div>
+<div class="section" id="input">
+<h3>Input<a class="headerlink" href="#input" title="Permalink to this headline">¶</a></h3>
+<p>Reads are imported by placing files or linking to files in the <a class="reference internal" href="../make_pipelines/Gpipe.html#term-working-directory"><em class="xref std std-term">working directory</em></a>.</p>
+<p>The default file format assumes the following convention:</p>
+<blockquote>
+<div>&lt;family&gt;-&lt;sample&gt;-&lt;condition&gt;-&lt;replicate&gt;.&lt;suffix&gt;</div></blockquote>
+<p><tt class="docutils literal"><span class="pre">family</span></tt> = &#8220;Single&#8221;, &#8220;Trio&#8221;, or &#8220;Multiplex&#8221; followed by numerical identifier.  <tt class="docutils literal"><span class="pre">sample</span></tt> and <tt class="docutils literal"><span class="pre">condition</span></tt>
+make up an <a class="reference internal" href="../glossary.html#term-experiment"><em class="xref std std-term">experiment</em></a>, while <tt class="docutils literal"><span class="pre">replicate</span></tt> denotes the <a class="reference internal" href="../glossary.html#term-replicate"><em class="xref std std-term">replicate</em></a> within an <a class="reference internal" href="../glossary.html#term-experiment"><em class="xref std std-term">experiment</em></a>. 
+The <tt class="docutils literal"><span class="pre">suffix</span></tt> determines the file type. The following suffixes/file types are possible:</p>
+<dl class="docutils">
+<dt>sra</dt>
+<dd>Short-Read Archive format. Reads will be extracted using the <tt class="file docutils literal"><span class="pre">fastq-dump</span></tt> tool.</dd>
+<dt>fastq.gz</dt>
+<dd>Single-end reads in fastq format.</dd>
+<dt>fastq.1.gz, fastq.2.gz</dt>
+<dd>Paired-end reads in fastq format. The two fastq files must be sorted by read-pair.</dd>
+</dl>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Quality scores need to be of the same scale for all input files. Thus it might be
+difficult to mix different formats.</p>
+</div>
+<p>If you are submitting families then a .ped file for each family must be supplied within your working firectory. 
+This is a tab-delimited file named &lt;family&gt;.ped (where &lt;family&gt; is the family ID in the title of the corresponding 
+fastq files) with no header and one individual per line according to the following pattern:</p>
+<p>family_id sample_id father_id mother_id sex phenotype</p>
+<p>family_id and sample_id should correspond to &lt;family&gt; and &lt;family&gt;-&lt;sample&gt; in the sra/fastq filenames, father_id and 
+mother_id should be &#8216;0&#8217; if unknown, sex should be &#8216;1&#8217; if male, &#8216;2&#8217; if female and &#8216;0&#8217; if unknown, and phenotype 
+should be &#8216;1&#8217; if unaffected, &#8216;2&#8217; if affected and &#8216;0&#8217; if unknown.</p>
+<p>If you are running the functions to look for compound heterozygotes in Multiplex families then there is a further
+requirement for the .ped files.  The phasing tools expect a trio and therefore any other family members (other than
+parents and one child) must be labelled as unrelated.  That is, the first additional family member could be labelled
+&#8220;family0&#8221; in the family_id column, and subsequent additional family members could be &#8220;family1&#8221;, &#8220;family2&#8221; and so on.
+For example, a multiplex family called Multiplex1 may have two parents and two affected children.  The .ped file
+would look like this:</p>
+<p>Multiplex1 ID1 0 0 1 1
+Multiplex1 ID2 0 0 2 1
+Multiplex1 ID3 ID1 ID2 1 2
+Family0 ID4 ID1 ID2 2 2</p>
+</div>
+<div class="section" id="documentation">
+<h3>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h3>
+<p>If you would like the genes of interest to be flagged in your vcf, make add_genes_of_interest=1 (default=0) and
+provide a list of comma separated genes (without spaces) in the ini file.</p>
+</div>
+<div class="section" id="requirements">
+<h3>Requirements<a class="headerlink" href="#requirements" title="Permalink to this headline">¶</a></h3>
+<p>On top of the default CGAT setup, the pipeline requires the following software to be in the 
+path:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="23%" />
+<col width="22%" />
+<col width="55%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><em>Program</em></td>
+<td><em>Version</em></td>
+<td><em>Purpose</em></td>
+</tr>
+<tr class="row-even"><td>Stampy</td>
+<td>&gt;=0.9.0</td>
+<td>read mapping</td>
+</tr>
+<tr class="row-odd"><td>BWA</td>
+<td>&nbsp;</td>
+<td>read mapping</td>
+</tr>
+<tr class="row-even"><td>SAMtools</td>
+<td>&nbsp;</td>
+<td>filtering, SNV / indel calling</td>
+</tr>
+<tr class="row-odd"><td>BEDTools</td>
+<td>&nbsp;</td>
+<td>filtering</td>
+</tr>
+<tr class="row-even"><td>sra-tools</td>
+<td>&nbsp;</td>
+<td>extracting reads from .sra files</td>
+</tr>
+<tr class="row-odd"><td>picard</td>
+<td>&gt;=1.38</td>
+<td><dl class="first last docutils">
+<dt>bam/sam files. The .jar files need to be in your</dt>
+<dd>CLASSPATH environment variable.</dd>
+</dl>
+</td>
+</tr>
+<tr class="row-even"><td>vcf-tools</td>
+<td>&nbsp;</td>
+<td>VCF filtering</td>
+</tr>
+<tr class="row-odd"><td>GATK</td>
+<td>2.5-2</td>
+<td>local realignment, BQSR, variant calling</td>
+</tr>
+<tr class="row-even"><td>SNPeff</td>
+<td>3.3</td>
+<td>&nbsp;</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section" id="pipeline-output">
+<h2>Pipeline output<a class="headerlink" href="#pipeline-output" title="Permalink to this headline">¶</a></h2>
+<p>The major output is a csvdb containing quality control information by sample and variant information by family and 
+an html report with similar information.</p>
+</div>
+<div class="section" id="example">
+<h2>Example<a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h2>
+<p>ToDo: make exome sequencing example</p>
+</div>
+<div class="section" id="code">
+<h2>Code<a class="headerlink" href="#code" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pipeline_exome.loadROI">
+<tt class="descclassname">pipeline_exome.</tt><tt class="descname">loadROI</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_exome.loadROI" title="Permalink to this definition">¶</a></dt>
+<dd><p>Import regions of interest bed file into SQLite.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_exome.loadROI2Gene">
+<tt class="descclassname">pipeline_exome.</tt><tt class="descname">loadROI2Gene</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_exome.loadROI2Gene" title="Permalink to this definition">¶</a></dt>
+<dd><p>Import genes mapping to regions of interest bed file into SQLite.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_exome.loadSamples">
+<tt class="descclassname">pipeline_exome.</tt><tt class="descname">loadSamples</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_exome.loadSamples" title="Permalink to this definition">¶</a></dt>
+<dd><p>Import sample information into SQLite.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_exome.mergeFastqs">
+<tt class="descclassname">pipeline_exome.</tt><tt class="descname">mergeFastqs</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_exome.mergeFastqs" title="Permalink to this definition">¶</a></dt>
+<dd><p>merge fastqs by library and read pair prior to mapping</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_exome.mapReads">
+<tt class="descclassname">pipeline_exome.</tt><tt class="descname">mapReads</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_exome.mapReads" title="Permalink to this definition">¶</a></dt>
+<dd><p>Map reads to the genome using BWA (output=SAM), convert to BAM, sort and index BAM file, generate
+alignment statistics and deduplicate using Picard</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_exome.loadPicardDuplicateStats">
+<tt class="descclassname">pipeline_exome.</tt><tt class="descname">loadPicardDuplicateStats</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_exome.loadPicardDuplicateStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Merge Picard duplicate stats into single table and load into SQLite.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_exome.loadPicardAlignStats">
+<tt class="descclassname">pipeline_exome.</tt><tt class="descname">loadPicardAlignStats</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_exome.loadPicardAlignStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Merge Picard alignment stats into single table and load into SQLite.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_exome.buildCoverageStats">
+<tt class="descclassname">pipeline_exome.</tt><tt class="descname">buildCoverageStats</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_exome.buildCoverageStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate coverage statistics for regions of interest from a bed file using Picard</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_exome.loadCoverageStats">
+<tt class="descclassname">pipeline_exome.</tt><tt class="descname">loadCoverageStats</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_exome.loadCoverageStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Import coverage statistics into SQLite</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_exome.GATKpreprocessing">
+<tt class="descclassname">pipeline_exome.</tt><tt class="descname">GATKpreprocessing</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_exome.GATKpreprocessing" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reorders BAM according to reference fasta and add read groups using SAMtools, realigns around indels and
+recalibrates base quality scores using GATK</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_exome.listOfBAMs">
+<tt class="descclassname">pipeline_exome.</tt><tt class="descname">listOfBAMs</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_exome.listOfBAMs" title="Permalink to this definition">¶</a></dt>
+<dd><p>generates a file containing a list of BAMs for each family, for use in variant calling</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_exome.haplotypeCaller">
+<tt class="descclassname">pipeline_exome.</tt><tt class="descname">haplotypeCaller</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_exome.haplotypeCaller" title="Permalink to this definition">¶</a></dt>
+<dd><p>Call SNVs and indels using GATK HaplotypeCaller in all members of a family together</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_exome.annotateVariantsSNPeff">
+<tt class="descclassname">pipeline_exome.</tt><tt class="descname">annotateVariantsSNPeff</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_exome.annotateVariantsSNPeff" title="Permalink to this definition">¶</a></dt>
+<dd><p>Annotate variants using SNPeff</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_exome.variantAnnotator">
+<tt class="descclassname">pipeline_exome.</tt><tt class="descname">variantAnnotator</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_exome.variantAnnotator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Annotate variant file using GATK VariantAnnotator</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_exome.variantRecalibrator">
+<tt class="descclassname">pipeline_exome.</tt><tt class="descname">variantRecalibrator</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_exome.variantRecalibrator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create variant recalibration file</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_exome.applyVariantRecalibration">
+<tt class="descclassname">pipeline_exome.</tt><tt class="descname">applyVariantRecalibration</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_exome.applyVariantRecalibration" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform variant quality score recalibration using GATK</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_exome.annotateVariantsSNPsift">
+<tt class="descclassname">pipeline_exome.</tt><tt class="descname">annotateVariantsSNPsift</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_exome.annotateVariantsSNPsift" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add annotations using SNPsift</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_exome.findGenes">
+<tt class="descclassname">pipeline_exome.</tt><tt class="descname">findGenes</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_exome.findGenes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds expression &#8220;GENE_OF_INTEREST&#8221; to the FILTER column of the vcf if variant is within a gene of interest 
+as defined in the ini file</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_exome.vcfToTable">
+<tt class="descclassname">pipeline_exome.</tt><tt class="descname">vcfToTable</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_exome.vcfToTable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts vcf to tab-delimited file</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_exome.loadVariantAnnotation">
+<tt class="descclassname">pipeline_exome.</tt><tt class="descname">loadVariantAnnotation</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_exome.loadVariantAnnotation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load VCF annotations into database</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_exome.deNovoVariants">
+<tt class="descclassname">pipeline_exome.</tt><tt class="descname">deNovoVariants</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_exome.deNovoVariants" title="Permalink to this definition">¶</a></dt>
+<dd><p>Filter de novo variants based on provided jexl expression</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_exome.tabulateDeNovos">
+<tt class="descclassname">pipeline_exome.</tt><tt class="descname">tabulateDeNovos</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_exome.tabulateDeNovos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tabulate de novo variants</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_exome.loadDeNovos">
+<tt class="descclassname">pipeline_exome.</tt><tt class="descname">loadDeNovos</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_exome.loadDeNovos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load de novos into database</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_exome.lowerStringencyDeNovos">
+<tt class="descclassname">pipeline_exome.</tt><tt class="descname">lowerStringencyDeNovos</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_exome.lowerStringencyDeNovos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Filter lower stringency de novo variants based on provided jexl expression</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_exome.tabulateLowerStringencyDeNovos">
+<tt class="descclassname">pipeline_exome.</tt><tt class="descname">tabulateLowerStringencyDeNovos</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_exome.tabulateLowerStringencyDeNovos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tabulate lower stringency de novo variants</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_exome.loadLowerStringencyDeNovos">
+<tt class="descclassname">pipeline_exome.</tt><tt class="descname">loadLowerStringencyDeNovos</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_exome.loadLowerStringencyDeNovos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load lower stringency de novos into database</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_exome.dominantVariants">
+<tt class="descclassname">pipeline_exome.</tt><tt class="descname">dominantVariants</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_exome.dominantVariants" title="Permalink to this definition">¶</a></dt>
+<dd><p>Filter variants according to autosomal dominant disease model</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_exome.tabulateDoms">
+<tt class="descclassname">pipeline_exome.</tt><tt class="descname">tabulateDoms</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_exome.tabulateDoms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tabulate dominant disease candidate variants</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_exome.loadDoms">
+<tt class="descclassname">pipeline_exome.</tt><tt class="descname">loadDoms</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_exome.loadDoms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load dominant disease candidates into database</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_exome.recessiveVariants">
+<tt class="descclassname">pipeline_exome.</tt><tt class="descname">recessiveVariants</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_exome.recessiveVariants" title="Permalink to this definition">¶</a></dt>
+<dd><p>Filter variants according to autosomal recessive disease model</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_exome.tabulateRecs">
+<tt class="descclassname">pipeline_exome.</tt><tt class="descname">tabulateRecs</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_exome.tabulateRecs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tabulate potential homozygous recessive disease variants</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_exome.loadRecs">
+<tt class="descclassname">pipeline_exome.</tt><tt class="descname">loadRecs</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_exome.loadRecs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load homozygous recessive disease candidates into database</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_exome.compoundHets">
+<tt class="descclassname">pipeline_exome.</tt><tt class="descname">compoundHets</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_exome.compoundHets" title="Permalink to this definition">¶</a></dt>
+<dd><p>Identify potentially pathogenic compound heterozygous variants (phasing with GATK followed by compound het
+calling using Gemini</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_exome.loadCompoundHets">
+<tt class="descclassname">pipeline_exome.</tt><tt class="descname">loadCompoundHets</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_exome.loadCompoundHets" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load compound heterozygous variants into database</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_exome.buildVCFstats">
+<tt class="descclassname">pipeline_exome.</tt><tt class="descname">buildVCFstats</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_exome.buildVCFstats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate statistics on VCF file</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_exome.loadVCFstats">
+<tt class="descclassname">pipeline_exome.</tt><tt class="descname">loadVCFstats</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_exome.loadVCFstats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Import variant statistics into SQLite</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_exome.publish">
+<tt class="descclassname">pipeline_exome.</tt><tt class="descname">publish</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_exome.publish" title="Permalink to this definition">¶</a></dt>
+<dd><p>publish files.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_exome.build_report">
+<tt class="descclassname">pipeline_exome.</tt><tt class="descname">build_report</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_exome.build_report" title="Permalink to this definition">¶</a></dt>
+<dd><p>build report from scratch.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_exome.update_report">
+<tt class="descclassname">pipeline_exome.</tt><tt class="descname">update_report</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_exome.update_report" title="Permalink to this definition">¶</a></dt>
+<dd><p>update report.</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Exome pipeline</a><ul>
+<li><a class="reference internal" href="#usage">Usage</a><ul>
+<li><a class="reference internal" href="#configuration">Configuration</a></li>
+<li><a class="reference internal" href="#input">Input</a></li>
+<li><a class="reference internal" href="#documentation">Documentation</a></li>
+<li><a class="reference internal" href="#requirements">Requirements</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#pipeline-output">Pipeline output</a></li>
+<li><a class="reference internal" href="#example">Example</a></li>
+<li><a class="reference internal" href="#code">Code</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="pipeline_capseq.html"
+                        title="previous chapter">CAPseq pipeline</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="pipeline_expression.html"
+                        title="next chapter">pipeline_expression.py - analysis of expression data</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/pipelines/pipeline_exome.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pipeline_expression.html" title="pipeline_expression.py - analysis of expression data"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="pipeline_capseq.html" title="CAPseq pipeline"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../Pipelines.html" >CGAT Pipelines</a> &raquo;</li>
+          <li><a href="../CGATPipelines.html" >NGS Pipelines</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

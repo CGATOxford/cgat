@@ -1,0 +1,360 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>pipeline_vitaminD_motifs.py - &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="Modules" href="../modules.html" />
+    <link rel="next" title="PipelinePeakCalling.py - ChIP-Seq tasks associated with calling peaks" href="PipelinePeakcalling.html" />
+    <link rel="prev" title="PipelineMedip.py - tasks associated with MedipSeq analysis" href="PipelineMedip.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="PipelinePeakcalling.html" title="PipelinePeakCalling.py - ChIP-Seq tasks associated with calling peaks"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="PipelineMedip.html" title="PipelineMedip.py - tasks associated with MedipSeq analysis"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" accesskey="U">Modules</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-PipelineMotifs"></span><div class="section" id="pipeline-vitamind-motifs-py">
+<h1>pipeline_vitaminD_motifs.py -<a class="headerlink" href="#pipeline-vitamind-motifs-py" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Andreas Heger</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id$</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Python</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="purpose">
+<h2>Purpose<a class="headerlink" href="#purpose" title="Permalink to this headline">¶</a></h2>
+<div class="admonition-todo admonition" id="index-0">
+<p class="first admonition-title">Todo</p>
+<p class="last">describe purpose of the script.</p>
+</div>
+</div>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>Example:</p>
+<div class="highlight-python"><div class="highlight"><pre>python pipeline_vitaminD_motifs.py --help
+</pre></div>
+</div>
+<p>Type:</p>
+<div class="highlight-python"><div class="highlight"><pre>python pipeline_vitaminD_motifs.py --help
+</pre></div>
+</div>
+<p>for command line help.</p>
+</div>
+<div class="section" id="documentation">
+<h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="code">
+<h2>Code<a class="headerlink" href="#code" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="PipelineMotifs.filterMotifsFromMEME">
+<tt class="descclassname">PipelineMotifs.</tt><tt class="descname">filterMotifsFromMEME</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em>, <em>selected</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMotifs.filterMotifsFromMEME" title="Permalink to this definition">¶</a></dt>
+<dd><p>select motifs from a MEME file and save into outfile</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineMotifs.maskSequences">
+<tt class="descclassname">PipelineMotifs.</tt><tt class="descname">maskSequences</tt><span class="sig-paren">(</span><em>sequences</em>, <em>masker=None</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMotifs.maskSequences" title="Permalink to this definition">¶</a></dt>
+<dd><p>return a list of masked sequence.</p>
+<dl class="docutils">
+<dt><em>masker</em> can be one of</dt>
+<dd>dust/dustmasker * run dustmasker on sequences
+softmask        * use softmask to hardmask sequences</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineMotifs.exportSequencesFromBedFile">
+<tt class="descclassname">PipelineMotifs.</tt><tt class="descname">exportSequencesFromBedFile</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em>, <em>masker=None</em>, <em>mode='intervals'</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMotifs.exportSequencesFromBedFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>export sequences for intervals in <a class="reference internal" href="../glossary.html#term-bed"><em class="xref std std-term">bed</em></a>-formatted <em>infile</em> 
+to <a class="reference internal" href="../glossary.html#term-fasta"><em class="xref std std-term">fasta</em></a> formatted <em>outfile</em></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineMotifs.writeSequencesForIntervals">
+<tt class="descclassname">PipelineMotifs.</tt><tt class="descname">writeSequencesForIntervals</tt><span class="sig-paren">(</span><em>track</em>, <em>filename</em>, <em>dbhandle</em>, <em>full=False</em>, <em>halfwidth=None</em>, <em>maxsize=None</em>, <em>proportion=None</em>, <em>masker=</em>, <span class="optional">[</span><span class="optional">]</span><em>offset=0</em>, <em>shuffled=False</em>, <em>num_sequences=None</em>, <em>min_sequences=None</em>, <em>order='peakval'</em>, <em>shift=None</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMotifs.writeSequencesForIntervals" title="Permalink to this definition">¶</a></dt>
+<dd><p>build a sequence set for motif discovery. Intervals are taken 
+from the table &lt;track&gt;_intervals in the database <em>dbhandle</em> and 
+save to <em>filename</em> in <a class="reference internal" href="../glossary.html#term-fasta"><em class="xref std std-term">fasta</em></a> format.</p>
+<p>If num_shuffles is set, shuffled copies are created as well with
+the shuffled number appended to the filename.</p>
+<p>The sequences are masked before shuffling (is this appropriate?)</p>
+<p>If <em>full</em> is set, the whole intervals will be output, otherwise
+only the region around the peak given by <em>halfwidth</em></p>
+<p>If <em>maxsize</em> is set, the output is truncated at <em>maxsize</em> characters
+in order to create jobs that take too long.</p>
+<p>If proportion is set, only the top <em>proportion</em> intervals are output
+(sorted by peakval).</p>
+<p>If <em>num_sequences</em> is set, the first <em>num_sequences</em> will be used.</p>
+<dl class="docutils">
+<dt><em>masker</em> can be a combination of </dt>
+<dd><ul class="first last simple">
+<li>dust, dustmasker: apply dustmasker</li>
+<li>softmask: mask softmasked genomic regions</li>
+</ul>
+</dd>
+</dl>
+<p><em>order</em> is the order by which peaks should be sorted. Possible values
+are &#8216;peakval&#8217; (peak value, descending order), &#8216;score&#8217; (peak score, descending order)</p>
+<p>If <em>shift</em> is set, intervals will be shifted. <tt class="docutils literal"><span class="pre">leftright</span></tt> creates two intervals
+on the left and right of the actual interval. The intervals will be centered around
+the mid-point and truncated the same way as the main intervals.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineMotifs.runRegexMotifSearch">
+<tt class="descclassname">PipelineMotifs.</tt><tt class="descname">runRegexMotifSearch</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMotifs.runRegexMotifSearch" title="Permalink to this definition">¶</a></dt>
+<dd><p>run a regular expression search on sequences.
+compute counts.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineMotifs.runGLAM2SCAN">
+<tt class="descclassname">PipelineMotifs.</tt><tt class="descname">runGLAM2SCAN</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMotifs.runGLAM2SCAN" title="Permalink to this definition">¶</a></dt>
+<dd><p>run glam2scan on all intervals and motifs.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineMotifs.loadGLAM2SCAN">
+<tt class="descclassname">PipelineMotifs.</tt><tt class="descname">loadGLAM2SCAN</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMotifs.loadGLAM2SCAN" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse mast file and load into database.</p>
+<p>Parse several motif runs and add them to the same
+table.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineMotifs.loadMAST">
+<tt class="descclassname">PipelineMotifs.</tt><tt class="descname">loadMAST</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMotifs.loadMAST" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse mast file and load into database.</p>
+<p>Parse several motif runs and add them to the same
+table.</p>
+<p>Add columns for the control data as well.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineMotifs.runBioProspector">
+<tt class="descclassname">PipelineMotifs.</tt><tt class="descname">runBioProspector</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em>, <em>dbhandle</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMotifs.runBioProspector" title="Permalink to this definition">¶</a></dt>
+<dd><p>run bioprospector for motif discovery.</p>
+<p>Bioprospector is run on only the top 10% of peaks.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineMotifs.loadBioProspector">
+<tt class="descclassname">PipelineMotifs.</tt><tt class="descname">loadBioProspector</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMotifs.loadBioProspector" title="Permalink to this definition">¶</a></dt>
+<dd><p>load results from bioprospector.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineMotifs.runMAST">
+<tt class="descclassname">PipelineMotifs.</tt><tt class="descname">runMAST</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMotifs.runMAST" title="Permalink to this definition">¶</a></dt>
+<dd><p>run mast on all intervals and motifs.</p>
+<p>Collect all results for an E-value up to 10000 so that
+all sequences are output and MAST curves can be computed.</p>
+<p>10000 is a heuristic.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineMotifs.runGLAM2">
+<tt class="descclassname">PipelineMotifs.</tt><tt class="descname">runGLAM2</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em>, <em>dbhandle</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMotifs.runGLAM2" title="Permalink to this definition">¶</a></dt>
+<dd><p>run glam2 on all intervals and motifs.</p>
+<p>In order to increase the signal/noise ratio,
+MEME is not run on all intervals but only the 
+top 10% of intervals (peakval) are used. 
+Also, only the segment of 200 bp around the peak
+is used and not the complete interval.</p>
+<ul class="simple">
+<li>Softmasked sequence is converted to hardmasked
+sequence to avoid the detection of spurious motifs.</li>
+<li>Sequence is run through dustmasker</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineMotifs.collectMEMEResults">
+<tt class="descclassname">PipelineMotifs.</tt><tt class="descname">collectMEMEResults</tt><span class="sig-paren">(</span><em>tmpdir</em>, <em>target_path</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMotifs.collectMEMEResults" title="Permalink to this definition">¶</a></dt>
+<dd><p>collect output from a MEME run in tmpdir
+and copy all over to target_path</p>
+<p>convert images output by MEME (.eps files) to 
+.png files.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineMotifs.runMEME">
+<tt class="descclassname">PipelineMotifs.</tt><tt class="descname">runMEME</tt><span class="sig-paren">(</span><em>track</em>, <em>outfile</em>, <em>dbhandle</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMotifs.runMEME" title="Permalink to this definition">¶</a></dt>
+<dd><p>run MEME to find motifs.</p>
+<p>In order to increase the signal/noise ratio,
+MEME is not run on all intervals but only the 
+top 10% of intervals (peakval) are used. 
+Also, only the segment of 200 bp around the peak
+is used and not the complete interval.</p>
+<ul class="simple">
+<li>Softmasked sequence is converted to hardmasked
+sequence to avoid the detection of spurious motifs.</li>
+<li>Sequence is run through dustmasker</li>
+</ul>
+<p>This method is deprecated - use runMEMEOnSequences instead.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineMotifs.runMEMEOnSequences">
+<tt class="descclassname">PipelineMotifs.</tt><tt class="descname">runMEMEOnSequences</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMotifs.runMEMEOnSequences" title="Permalink to this definition">¶</a></dt>
+<dd><p>run MEME to find motifs.</p>
+<p>In order to increase the signal/noise ratio,
+MEME is not run on all intervals but only the 
+top 10% of intervals (peakval) are used. 
+Also, only the segment of 200 bp around the peak
+is used and not the complete interval.</p>
+<ul class="simple">
+<li>Softmasked sequence is converted to hardmasked
+sequence to avoid the detection of spurious motifs.</li>
+<li>Sequence is run through dustmasker</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineMotifs.runTomTom">
+<tt class="descclassname">PipelineMotifs.</tt><tt class="descname">runTomTom</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineMotifs.runTomTom" title="Permalink to this definition">¶</a></dt>
+<dd><p>compare ab-initio motifs against tomtom.</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">pipeline_vitaminD_motifs.py -</a><ul>
+<li><a class="reference internal" href="#purpose">Purpose</a></li>
+<li><a class="reference internal" href="#usage">Usage</a></li>
+<li><a class="reference internal" href="#documentation">Documentation</a></li>
+<li><a class="reference internal" href="#code">Code</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="PipelineMedip.html"
+                        title="previous chapter">PipelineMedip.py - tasks associated with MedipSeq analysis</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="PipelinePeakcalling.html"
+                        title="next chapter">PipelinePeakCalling.py - ChIP-Seq tasks associated with calling peaks</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/pipelinemodules/PipelineMotifs.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="PipelinePeakcalling.html" title="PipelinePeakCalling.py - ChIP-Seq tasks associated with calling peaks"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="PipelineMedip.html" title="PipelineMedip.py - tasks associated with MedipSeq analysis"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" >Modules</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,196 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>454 Transcript mapping pipeline &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="Lecgacy pipelines" href="../MakePipelines.html" />
+    <link rel="next" title="OPTIC" href="Optic.html" />
+    <link rel="prev" title="GPipe - Gene prediction pipeline" href="Gpipe.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="Optic.html" title="OPTIC"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="Gpipe.html" title="GPipe - Gene prediction pipeline"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../Pipelines.html" >CGAT Pipelines</a> &raquo;</li>
+          <li><a href="../MakePipelines.html" accesskey="U">Lecgacy pipelines</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="transcript-mapping-pipeline">
+<h1>454 Transcript mapping pipeline<a class="headerlink" href="#transcript-mapping-pipeline" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="purpose">
+<h2>Purpose<a class="headerlink" href="#purpose" title="Permalink to this headline">¶</a></h2>
+<p>Map 454 reads onto a genome and assemble overlapping
+transcripts into transcript models.</p>
+<p>The pipeline currently does not use base quality information
+during mapping and does not consider alternative transcripts.</p>
+</div>
+<div class="section" id="setting-up">
+<h2>Setting up<a class="headerlink" href="#setting-up" title="Permalink to this headline">¶</a></h2>
+<p>To set up the pipeline in the current directory run:</p>
+<div class="highlight-python"><div class="highlight"><pre>python setup.py --method=map_transcripts_454 &gt; setup.log
+</pre></div>
+</div>
+<p>Add or link fasta files of reads into directory. These should end
+with the suffix .fasta. The pipeline will process several files at the same time.
+For example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">tissue1</span><span class="o">.</span><span class="n">fasta</span>
+<span class="n">tissue2</span><span class="o">.</span><span class="n">fasta</span>
+<span class="n">tissue3</span><span class="o">.</span><span class="n">fasta</span>
+</pre></div>
+</div>
+<p>Link towards the genome from /net/cpp-data/backup/databases/indexed_fasta and
+call the files genome.fasta and genome.idx. For example:</p>
+<div class="highlight-python"><div class="highlight"><pre>ln -s /net/cpp-data/backup/databases/indexed_fasta/hs_ncbi36_softmasked.fasta genome.fasta
+ln -s /net/cpp-data/backup/databases/indexed_fasta/hs_ncbi36_softmasked.idx genome.idx
+</pre></div>
+</div>
+<p>Build the index for <a class="reference external" href="http://www.molecularevolution.org/software/genomics/gmap">gmap</a> by running gmap_setup. By default, <a class="reference external" href="http://www.molecularevolution.org/software/genomics/gmap">gmap</a> indices should be put
+in <tt class="file docutils literal"><span class="pre">/net/cpp-mirror/databases/gmap</span></tt>. Provide the location to the indices using
+the variable <tt class="docutils literal"><span class="pre">PARAM_GMAP_OPTIONS</span></tt>.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Indices on networked disks are slow to load up. For performance reasons
+work with local indices.</p>
+</div>
+</div>
+<div class="section" id="configuration">
+<h2>Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">¶</a></h2>
+<p>Edit the <tt class="file docutils literal"><span class="pre">Makefile</span></tt> to configure the pipeline. See <a class="reference internal" href="#parameters">Parameters</a> below.</p>
+</div>
+<div class="section" id="parameters">
+<h2>Parameters<a class="headerlink" href="#parameters" title="Permalink to this headline">¶</a></h2>
+<p>The following parameters can be set in the <tt class="file docutils literal"><span class="pre">Makefile</span></tt>:</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">454 Transcript mapping pipeline</a><ul>
+<li><a class="reference internal" href="#purpose">Purpose</a></li>
+<li><a class="reference internal" href="#setting-up">Setting up</a></li>
+<li><a class="reference internal" href="#configuration">Configuration</a></li>
+<li><a class="reference internal" href="#parameters">Parameters</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="Gpipe.html"
+                        title="previous chapter">GPipe - Gene prediction pipeline</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="Optic.html"
+                        title="next chapter">OPTIC</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/make_pipelines/MapTranscripts454.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="Optic.html" title="OPTIC"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="Gpipe.html" title="GPipe - Gene prediction pipeline"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../Pipelines.html" >CGAT Pipelines</a> &raquo;</li>
+          <li><a href="../MakePipelines.html" >Lecgacy pipelines</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

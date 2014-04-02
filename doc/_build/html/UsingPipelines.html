@@ -1,0 +1,320 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Using CGAT pipelines &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/sorttable.js"></script>
+    <script type="text/javascript" src="_static/jquery.min.js"></script>
+    <script type="text/javascript" src="_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="index.html" />
+    <link rel="up" title="CGAT Pipelines" href="Pipelines.html" />
+    <link rel="next" title="Building CGAT pipelines" href="BuildingPipelines.html" />
+    <link rel="prev" title="Installing CGAT pipelines" href="InstallingPipelines.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="BuildingPipelines.html" title="Building CGAT pipelines"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="InstallingPipelines.html" title="Installing CGAT pipelines"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="Pipelines.html" accesskey="U">CGAT Pipelines</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="using-cgat-pipelines">
+<h1>Using CGAT pipelines<a class="headerlink" href="#using-cgat-pipelines" title="Permalink to this headline">¶</a></h1>
+<p>This section provides a tutorial-like introduction to CGAT pipelines.</p>
+<div class="section" id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>A pipeline takes input data and performs a series of automated steps (<a class="reference internal" href="glossary.html#term-task"><em class="xref std std-term">task</em></a>) on it to
+produce some output data.</p>
+<p>Each pipeline is usually coupled with a <a class="reference internal" href="glossary.html#term-sphinxreport"><em class="xref std std-term">SphinxReport</em></a> document to summarize and
+visualize the results.</p>
+<p>It really helps if you are familiar with following:</p>
+<blockquote>
+<div><ul class="simple">
+<li>the unix command line to run and debug the pipeline</li>
+<li><a class="reference external" href="http://python.org/">python</a> in order to understand what happens in the pipeline</li>
+<li><a class="reference external" href="http://www.ruffus.org.uk/">ruffus</a> in order to understand the pipeline code</li>
+<li><a class="reference external" href="http://wikis.sun.com/display/GridEngine/Home">sge</a> in order to monitor your jobs</li>
+<li><a class="reference external" href="http://git-scm.com/">git</a> in order to up-to-date code</li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="setting-up-a-pipeline">
+<span id="pipelinesettingup"></span><h2>Setting up a pipeline<a class="headerlink" href="#setting-up-a-pipeline" title="Permalink to this headline">¶</a></h2>
+<p>Before starting, check that your computing environment is appropriate
+(see <a class="reference internal" href="InstallingPipelines.html#cgatsetup"><em>Installing CGAT pipelines</em></a>). Once all components are in place, setting up a
+pipeline involves the following steps:</p>
+<p><em>Step 1</em>: Get the latest clone of the cgat script repository:</p>
+<div class="highlight-python"><div class="highlight"><pre>git clone https://github.com/CGATOxford/cgat.git
+</pre></div>
+</div>
+<p>The directory <tt class="file docutils literal"><span class="pre">cgat</span></tt> is the <a class="reference internal" href="make_pipelines/Gpipe.html#term-source-directory"><em class="xref std std-term">source directory</em></a>. It will be abbreviated
+<tt class="docutils literal"><span class="pre">&lt;cgat&gt;</span></tt> in the following commands. This directory will contain the pipeline
+master script named <tt class="file docutils literal"><span class="pre">pipeline_&lt;name&gt;.py</span></tt>, the default configuration files
+and all the helper scripts and libraries to run the pipeline.</p>
+<p><em>Step 2</em>: Create a <a class="reference internal" href="make_pipelines/Gpipe.html#term-working-directory"><em class="xref std std-term">working directory</em></a> and enter it. For example:</p>
+<div class="highlight-python"><div class="highlight"><pre>mkdir version1
+cd version1
+</pre></div>
+</div>
+<p>The pipeline will live there and all subsequent steps should be executed
+from within this directory.</p>
+<p><em>Step 3</em>: Obtain and edit an initial configuration file. Ruffus pipelines are controlled
+by a configuration file. A configuration file with all the default values can be
+obtained by running:</p>
+<div class="highlight-python"><div class="highlight"><pre>python &lt;cgat&gt;/pipeline_&lt;name&gt;.py config
+</pre></div>
+</div>
+<p>This will create a new <tt class="file docutils literal"><span class="pre">pipeline.ini</span></tt> file. <strong>YOU MUST EDIT THIS FILE</strong>.
+The default values are likely to use the wrong genome or point to non-existing
+locations of indices and databases. The configuration file should be well documented
+and the format is simple. The documenation for the
+<a class="reference external" href="http://docs.python.org/library/configparser.html">ConfigParser</a> python module
+contains the full specification.</p>
+<p><em>Step 4</em>: Add the input files. The required input is specific for each pipeline; read
+the pipeline documentation to find out exactly which files are needed
+and where they should be put. Commonly, a pipeline
+works from input files linked into the <a class="reference internal" href="make_pipelines/Gpipe.html#term-working-directory"><em class="xref std std-term">working directory</em></a> and named
+following pipeline specific conventions.</p>
+</div>
+<div class="section" id="running-a-pipeline">
+<span id="pipelinerunning"></span><h2>Running a pipeline<a class="headerlink" href="#running-a-pipeline" title="Permalink to this headline">¶</a></h2>
+<p>Pipelines are controlled by a single python script called <tt class="file docutils literal"><span class="pre">pipeline_&lt;name&gt;.py</span></tt>
+that lives in the <a class="reference internal" href="make_pipelines/Gpipe.html#term-source-directory"><em class="xref std std-term">source directory</em></a>. Command line usage information is available
+by running:</p>
+<div class="highlight-python"><div class="highlight"><pre>python &lt;cgat&gt;/pipeline_&lt;name&gt;.py --help
+</pre></div>
+</div>
+<p>The basic syntax for <tt class="docutils literal"><span class="pre">pipeline_&lt;name&gt;.py</span></tt> is:</p>
+<div class="highlight-python"><div class="highlight"><pre>python &lt;cgat&gt;/pipeline_&lt;name&gt;.py [options] _COMMAND_
+</pre></div>
+</div>
+<p><tt class="docutils literal"><span class="pre">COMMAND</span></tt> can be one of the following:</p>
+<dl class="docutils">
+<dt>make &lt;task&gt;</dt>
+<dd>run all tasks required to build <a class="reference internal" href="glossary.html#term-task"><em class="xref std std-term">task</em></a></dd>
+<dt>show &lt;task&gt;</dt>
+<dd>show tasks required to build <a class="reference internal" href="glossary.html#term-task"><em class="xref std std-term">task</em></a> without executing them</dd>
+<dt>plot &lt;task&gt;</dt>
+<dd>plot image (requires <a class="reference external" href="http://inkscape.org/">inkscape</a>) of pipeline state for <a class="reference internal" href="glossary.html#term-task"><em class="xref std std-term">task</em></a></dd>
+<dt>touch &lt;task&gt;</dt>
+<dd>touch files without running <a class="reference internal" href="glossary.html#term-task"><em class="xref std std-term">task</em></a> or its pre-requisites. This sets the
+timestamps for files in <a class="reference internal" href="glossary.html#term-task"><em class="xref std std-term">task</em></a> and its pre-requisites such that they will
+seem up-to-date to the pipeline.</dd>
+<dt>config</dt>
+<dd>write a new configuration file <tt class="file docutils literal"><span class="pre">pipeline.ini</span></tt> with default values. An existing
+configuration file will not be overwritten.</dd>
+<dt>clone &lt;srcdir&gt;</dt>
+<dd>clone a pipeline from <tt class="file docutils literal"><span class="pre">srcdir</span></tt> into the current
+directory. Cloning attempts to conserve disk space by linking.</dd>
+</dl>
+<p>In case you are running a long pipeline, make sure you start it appropriately, for example:</p>
+<div class="highlight-python"><div class="highlight"><pre>nice -19 nohup &lt;cgat&gt;/pipeline_&lt;name&gt;.py make full
+</pre></div>
+</div>
+<p>This will keep the pipeline running if you close the terminal.</p>
+<div class="section" id="troubleshooting">
+<h3>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permalink to this headline">¶</a></h3>
+<p>Many things can go wrong while running the pipeline. Look out for</p>
+<blockquote>
+<div><ul>
+<li><dl class="first docutils">
+<dt>bad input format. The pipeline does not perform sanity checks on the input format.</dt>
+<dd><p class="first last">If the input is bad, you might see wrong or missing results or an error message.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>pipeline disruptions. Problems with the cluster, the file system or the controlling terminal</dt>
+<dd><p class="first last">might all cause the pipeline to abort.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>bugs. The pipeline makes many implicit assumptions about the input files and the programs it</dt>
+<dd><p class="first last">runs. If program versions change or inputs change, the pipeline might not be able to deal with it.
+The result will be wrong or missing results or an error message.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<p>If the pipeline aborts, locate the step that caused the error by reading the logfiles and
+the error messages on stderr (<tt class="file docutils literal"><span class="pre">nohup.out</span></tt>). See if you can understand the error and guess
+the likely problem (new program versions, badly formatted input, ...). If you are able to fix
+the error, remove the output files of the step in which the error occured and restart the
+pipeline. Processing should resume at the appropriate point.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Look out for upstream errors. For example, the pipeline might build a geneset filtering
+by a certain set of contigs. If the contig names do not match, the geneset will be empty,
+but the geneset building step might conclude successfully. However, you might get an error
+in any of the downstream steps complaining that the gene set is empty. To fix this, fix
+the error and delete the files created by the geneset building step and not just the step
+that threw the error.</p>
+</div>
+</div>
+<div class="section" id="updating-to-the-latest-code-version">
+<h3>Updating to the latest code version<a class="headerlink" href="#updating-to-the-latest-code-version" title="Permalink to this headline">¶</a></h3>
+<p>To get the latest bugfixes, go into the <a class="reference internal" href="make_pipelines/Gpipe.html#term-source-directory"><em class="xref std std-term">source directory</em></a> and type:</p>
+<div class="highlight-python"><div class="highlight"><pre>git pull
+</pre></div>
+</div>
+<p>The first command retrieves the latest changes from the master repository
+and the second command updates your local version with these changes.</p>
+</div>
+</div>
+<div class="section" id="building-pipeline-reports">
+<span id="pipelinereporting"></span><h2>Building pipeline reports<a class="headerlink" href="#building-pipeline-reports" title="Permalink to this headline">¶</a></h2>
+<p>Some of the pipelines are associated with an automated report generator to display
+summary information as a set of nicely formatted html pages. In order to
+build the documentation, drop the appropriate <tt class="file docutils literal"><span class="pre">conf.py</span></tt> and <tt class="file docutils literal"><span class="pre">sphinxreport.ini</span></tt>
+configuration files into the <a class="reference internal" href="make_pipelines/Gpipe.html#term-working-directory"><em class="xref std std-term">working directory</em></a> and run the pipeline command:</p>
+<blockquote>
+<div>nice -19 pipeline_&lt;name&gt;.py make build_report</div></blockquote>
+<p>This will create the report from scratch in the current directory. The report can
+be viewed opening the file <tt class="file docutils literal"><span class="pre">&lt;work&gt;/report/html/contents.html</span></tt> in your browser.</p>
+<p>Sphinxreport is quite powerful, but also runs quite slowly on large projects that
+need to generate a multitude of plots and tables. In order to speed up this process,
+there are some advanced features that Sphinxreport offers:</p>
+<blockquote>
+<div><ul class="simple">
+<li>caching of results</li>
+<li>multiprocessing</li>
+<li>incremental builds</li>
+<li>separate build directory</li>
+</ul>
+</div></blockquote>
+<p>Please see the <a class="reference external" href="http://code.google.com/p/sphinx-report/">sphinxreport</a> documentation for more information.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Using CGAT pipelines</a><ul>
+<li><a class="reference internal" href="#introduction">Introduction</a></li>
+<li><a class="reference internal" href="#setting-up-a-pipeline">Setting up a pipeline</a></li>
+<li><a class="reference internal" href="#running-a-pipeline">Running a pipeline</a><ul>
+<li><a class="reference internal" href="#troubleshooting">Troubleshooting</a></li>
+<li><a class="reference internal" href="#updating-to-the-latest-code-version">Updating to the latest code version</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#building-pipeline-reports">Building pipeline reports</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="InstallingPipelines.html"
+                        title="previous chapter">Installing CGAT pipelines</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="BuildingPipelines.html"
+                        title="next chapter">Building CGAT pipelines</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/UsingPipelines.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="BuildingPipelines.html" title="Building CGAT pipelines"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="InstallingPipelines.html" title="Installing CGAT pipelines"
+             >previous</a> |</li>
+        <li><a href="index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="Pipelines.html" >CGAT Pipelines</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

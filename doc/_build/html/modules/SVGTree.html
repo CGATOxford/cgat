@@ -1,0 +1,322 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>SVGTree.py - &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="Modules" href="../modules.html" />
+    <link rel="next" title="SVGdraw.py - generate SVG drawings" href="SVGdraw.html" />
+    <link rel="prev" title="SVGDuplicationsWheel.py -" href="SVGDuplicationsWheel.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="SVGdraw.html" title="SVGdraw.py - generate SVG drawings"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="SVGDuplicationsWheel.html" title="SVGDuplicationsWheel.py -"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" accesskey="U">Modules</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-SVGTree"></span><div class="section" id="svgtree-py">
+<h1>SVGTree.py -<a class="headerlink" href="#svgtree-py" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Andreas Heger</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id$</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Python</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="code">
+<h2>Code<a class="headerlink" href="#code" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="SVGTree.BorderDecorator">
+<em class="property">class </em><tt class="descclassname">SVGTree.</tt><tt class="descname">BorderDecorator</tt><span class="sig-paren">(</span><em>tree</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGTree.BorderDecorator" title="Permalink to this definition">¶</a></dt>
+<dd><p>class for decorating the border in a tree plot.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGTree.BranchDecorator">
+<em class="property">class </em><tt class="descclassname">SVGTree.</tt><tt class="descname">BranchDecorator</tt><span class="sig-paren">(</span><em>tree</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGTree.BranchDecorator" title="Permalink to this definition">¶</a></dt>
+<dd><p>class for decorating the border in a tree plot.</p>
+<dl class="method">
+<dt id="SVGTree.BranchDecorator.setFontSize">
+<tt class="descname">setFontSize</tt><span class="sig-paren">(</span><em>size</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGTree.BranchDecorator.setFontSize" title="Permalink to this definition">¶</a></dt>
+<dd><p>set font size.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGTree.BranchDecoratorHorizontal">
+<em class="property">class </em><tt class="descclassname">SVGTree.</tt><tt class="descname">BranchDecoratorHorizontal</tt><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGTree.BranchDecoratorHorizontal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SVGTree.BranchDecorator" title="SVGTree.BranchDecorator"><tt class="xref py py-class docutils literal"><span class="pre">SVGTree.BranchDecorator</span></tt></a></p>
+<p>default branch decorator - default is plane line.</p>
+<dl class="method">
+<dt id="SVGTree.BranchDecoratorHorizontal.setFontSize">
+<tt class="descname">setFontSize</tt><span class="sig-paren">(</span><em>size</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGTree.BranchDecoratorHorizontal.setFontSize" title="Permalink to this definition">¶</a></dt>
+<dd><p>set font size.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGTree.BranchDecoratorHorizontalBranchLength">
+<em class="property">class </em><tt class="descclassname">SVGTree.</tt><tt class="descname">BranchDecoratorHorizontalBranchLength</tt><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGTree.BranchDecoratorHorizontalBranchLength" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SVGTree.BranchDecoratorHorizontal" title="SVGTree.BranchDecoratorHorizontal"><tt class="xref py py-class docutils literal"><span class="pre">SVGTree.BranchDecoratorHorizontal</span></tt></a></p>
+<p>branch decorator - adds branch length to branch.</p>
+<dl class="method">
+<dt id="SVGTree.BranchDecoratorHorizontalBranchLength.getText">
+<tt class="descname">getText</tt><span class="sig-paren">(</span><em>node_id</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGTree.BranchDecoratorHorizontalBranchLength.getText" title="Permalink to this definition">¶</a></dt>
+<dd><p>return text.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="SVGTree.BranchDecoratorHorizontalBranchLength.setFontSize">
+<tt class="descname">setFontSize</tt><span class="sig-paren">(</span><em>size</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGTree.BranchDecoratorHorizontalBranchLength.setFontSize" title="Permalink to this definition">¶</a></dt>
+<dd><p>set font size.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGTree.BranchDecoratorHorizontalBranchLengthError">
+<em class="property">class </em><tt class="descclassname">SVGTree.</tt><tt class="descname">BranchDecoratorHorizontalBranchLengthError</tt><span class="sig-paren">(</span><em>tree</em>, <em>error_tree</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGTree.BranchDecoratorHorizontalBranchLengthError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SVGTree.BranchDecoratorHorizontalBranchLength" title="SVGTree.BranchDecoratorHorizontalBranchLength"><tt class="xref py py-class docutils literal"><span class="pre">SVGTree.BranchDecoratorHorizontalBranchLength</span></tt></a></p>
+<p>branch decorator - adds branch length to branch + error.</p>
+<dl class="method">
+<dt id="SVGTree.BranchDecoratorHorizontalBranchLengthError.getText">
+<tt class="descname">getText</tt><span class="sig-paren">(</span><em>node_id</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGTree.BranchDecoratorHorizontalBranchLengthError.getText" title="Permalink to this definition">¶</a></dt>
+<dd><p>return text.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="SVGTree.BranchDecoratorHorizontalBranchLengthError.setFontSize">
+<tt class="descname">setFontSize</tt><span class="sig-paren">(</span><em>size</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGTree.BranchDecoratorHorizontalBranchLengthError.setFontSize" title="Permalink to this definition">¶</a></dt>
+<dd><p>set font size.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGTree.BranchDecoratorHorizontalBranchLengthWithKaks">
+<em class="property">class </em><tt class="descclassname">SVGTree.</tt><tt class="descname">BranchDecoratorHorizontalBranchLengthWithKaks</tt><span class="sig-paren">(</span><em>tree</em>, <em>error_tree</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGTree.BranchDecoratorHorizontalBranchLengthWithKaks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SVGTree.BranchDecoratorHorizontalBranchLength" title="SVGTree.BranchDecoratorHorizontalBranchLength"><tt class="xref py py-class docutils literal"><span class="pre">SVGTree.BranchDecoratorHorizontalBranchLength</span></tt></a></p>
+<p>branch decorator - adds branch length to branch + kaks.</p>
+<dl class="method">
+<dt id="SVGTree.BranchDecoratorHorizontalBranchLengthWithKaks.getText">
+<tt class="descname">getText</tt><span class="sig-paren">(</span><em>node_id</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGTree.BranchDecoratorHorizontalBranchLengthWithKaks.getText" title="Permalink to this definition">¶</a></dt>
+<dd><p>return text.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="SVGTree.BranchDecoratorHorizontalBranchLengthWithKaks.setFontSize">
+<tt class="descname">setFontSize</tt><span class="sig-paren">(</span><em>size</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGTree.BranchDecoratorHorizontalBranchLengthWithKaks.setFontSize" title="Permalink to this definition">¶</a></dt>
+<dd><p>set font size.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGTree.BranchDecoratorHorizontalAboveBelow">
+<em class="property">class </em><tt class="descclassname">SVGTree.</tt><tt class="descname">BranchDecoratorHorizontalAboveBelow</tt><span class="sig-paren">(</span><em>tree</em>, <em>decorator1</em>, <em>decorator2</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGTree.BranchDecoratorHorizontalAboveBelow" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SVGTree.BranchDecoratorHorizontalBranchLength" title="SVGTree.BranchDecoratorHorizontalBranchLength"><tt class="xref py py-class docutils literal"><span class="pre">SVGTree.BranchDecoratorHorizontalBranchLength</span></tt></a></p>
+<p>branch decorator - displays two branch values.</p>
+<p>One decorator is displayed above and the the other one below the branch.
+The branch itself is rendered as a horizontal line.</p>
+<dl class="method">
+<dt id="SVGTree.BranchDecoratorHorizontalAboveBelow.getText">
+<tt class="descname">getText</tt><span class="sig-paren">(</span><em>node_id</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGTree.BranchDecoratorHorizontalAboveBelow.getText" title="Permalink to this definition">¶</a></dt>
+<dd><p>return text.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="SVGTree.BranchDecoratorHorizontalAboveBelow.setFontSize">
+<tt class="descname">setFontSize</tt><span class="sig-paren">(</span><em>size</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGTree.BranchDecoratorHorizontalAboveBelow.setFontSize" title="Permalink to this definition">¶</a></dt>
+<dd><p>set font size.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGTree.NodeDecorator">
+<em class="property">class </em><tt class="descclassname">SVGTree.</tt><tt class="descname">NodeDecorator</tt><span class="sig-paren">(</span><em>tree</em>, <em>plot_label=False</em>, <em>plot_symbol=None</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGTree.NodeDecorator" title="Permalink to this definition">¶</a></dt>
+<dd><p>class for decorating nodes.</p>
+<p>The default decorator does nothing. It implements the
+methods to plot symbols. Symbol choices are</p>
+<ul class="simple">
+<li>square</li>
+<li>circle</li>
+</ul>
+<dl class="method">
+<dt id="SVGTree.NodeDecorator.getLegend">
+<tt class="descname">getLegend</tt><span class="sig-paren">(</span><em>x</em>, <em>y</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGTree.NodeDecorator.getLegend" title="Permalink to this definition">¶</a></dt>
+<dd><p>add legend.
+returns elements and maximum x and y output.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGTree.NodeDecoratorExternal">
+<em class="property">class </em><tt class="descclassname">SVGTree.</tt><tt class="descname">NodeDecoratorExternal</tt><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGTree.NodeDecoratorExternal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SVGTree.NodeDecorator" title="SVGTree.NodeDecorator"><tt class="xref py py-class docutils literal"><span class="pre">SVGTree.NodeDecorator</span></tt></a></p>
+<p>class for decorating external nodes. Simply write name.</p>
+<dl class="method">
+<dt id="SVGTree.NodeDecoratorExternal.getLegend">
+<tt class="descname">getLegend</tt><span class="sig-paren">(</span><em>x</em>, <em>y</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGTree.NodeDecoratorExternal.getLegend" title="Permalink to this definition">¶</a></dt>
+<dd><p>add legend.
+returns elements and maximum x and y output.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGTree.NodeDecoratorBySpecies">
+<em class="property">class </em><tt class="descclassname">SVGTree.</tt><tt class="descname">NodeDecoratorBySpecies</tt><span class="sig-paren">(</span><em>tree</em>, <em>plot_label=None</em>, <em>plot_symbol=None</em>, <em>extract_species=&lt;type 'str'&gt;</em>, <em>map_species2colour=None</em>, <em>map_species2name=None</em>, <em>map_taxon2url=None</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGTree.NodeDecoratorBySpecies" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SVGTree.NodeDecorator" title="SVGTree.NodeDecorator"><tt class="xref py py-class docutils literal"><span class="pre">SVGTree.NodeDecorator</span></tt></a></p>
+<p>class for decorating external nodes.</p>
+<p>Colour by species and rename.</p>
+<p>colours are a &#8216;,&#8217;-separated tuples of RGB values.</p>
+<dl class="method">
+<dt id="SVGTree.NodeDecoratorBySpecies.getLegend">
+<tt class="descname">getLegend</tt><span class="sig-paren">(</span><em>x</em>, <em>y</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGTree.NodeDecoratorBySpecies.getLegend" title="Permalink to this definition">¶</a></dt>
+<dd><p>add legend.
+returns elements and maximum x and y output.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">SVGTree.py -</a><ul>
+<li><a class="reference internal" href="#code">Code</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="SVGDuplicationsWheel.html"
+                        title="previous chapter">SVGDuplicationsWheel.py -</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="SVGdraw.html"
+                        title="next chapter">SVGdraw.py - generate SVG drawings</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/modules/SVGTree.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="SVGdraw.html" title="SVGdraw.py - generate SVG drawings"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="SVGDuplicationsWheel.html" title="SVGDuplicationsWheel.py -"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" >Modules</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

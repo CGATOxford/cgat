@@ -1,0 +1,189 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>RLE.py - a simple run length encoder &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="Modules" href="../modules.html" />
+    <link rel="next" title="SVGDuplicationsWheel.py -" href="SVGDuplicationsWheel.html" />
+    <link rel="prev" title="PipelineUtilities.py - helper functions for CGAT pipelines" href="../pipelinemodules/PipelineUtilities.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="SVGDuplicationsWheel.html" title="SVGDuplicationsWheel.py -"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../pipelinemodules/PipelineUtilities.html" title="PipelineUtilities.py - helper functions for CGAT pipelines"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" accesskey="U">Modules</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-RLE"></span><div class="section" id="rle-py-a-simple-run-length-encoder">
+<h1>RLE.py - a simple run length encoder<a class="headerlink" href="#rle-py-a-simple-run-length-encoder" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id$</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Python</td>
+</tr>
+</tbody>
+</table>
+<p>Taken from: <a class="reference external" href="http://rosettacode.org/wiki/Run-length_encoding#Python">http://rosettacode.org/wiki/Run-length_encoding#Python</a></p>
+<dl class="function">
+<dt id="RLE.encode">
+<tt class="descclassname">RLE.</tt><tt class="descname">encode</tt><span class="sig-paren">(</span><em>input_array</em><span class="sig-paren">)</span><a class="headerlink" href="#RLE.encode" title="Permalink to this definition">¶</a></dt>
+<dd><p>encode array or string.</p>
+<p>return tuples of (count, value).</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">encode</span><span class="p">(</span><span class="n">array</span><span class="o">.</span><span class="n">array</span><span class="p">(</span> <span class="s">&quot;i&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">10</span><span class="p">,</span><span class="mi">10</span><span class="p">,</span><span class="mi">10</span><span class="p">,</span><span class="mi">20</span><span class="p">,</span><span class="mi">20</span><span class="p">,</span><span class="mi">20</span><span class="p">,</span><span class="mi">20</span><span class="p">)</span> <span class="p">)</span> <span class="p">)</span>
+<span class="go">[(4, 10), (4, 20)]</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">encode</span><span class="p">(</span><span class="s">&quot;aaaaahhhhhhmmmmmmmuiiiiiiiaaaaaa&quot;</span><span class="p">)</span>
+<span class="go">[(5, &#39;a&#39;), (6, &#39;h&#39;), (7, &#39;m&#39;), (1, &#39;u&#39;), (7, &#39;i&#39;), (6, &#39;a&#39;)]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="RLE.decode">
+<tt class="descclassname">RLE.</tt><tt class="descname">decode</tt><span class="sig-paren">(</span><em>lst</em>, <em>typecode</em><span class="sig-paren">)</span><a class="headerlink" href="#RLE.decode" title="Permalink to this definition">¶</a></dt>
+<dd><p>decode to array</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">decode</span><span class="p">(</span> <span class="p">[(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">20</span><span class="p">)],</span> <span class="n">typecode</span><span class="o">=</span><span class="s">&quot;i&quot;</span> <span class="p">)</span>
+<span class="go">array(&#39;i&#39;, [10, 10, 10, 10, 20, 20, 20, 20])</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">decode</span><span class="p">(</span> <span class="p">[(</span><span class="mi">5</span><span class="p">,</span> <span class="s">&#39;a&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="s">&#39;h&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="s">&#39;m&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s">&#39;u&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="s">&#39;i&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="s">&#39;a&#39;</span><span class="p">)],</span> <span class="n">typecode</span><span class="o">=</span><span class="s">&quot;c&quot;</span> <span class="p">)</span>
+<span class="go">array(&#39;c&#39;, &#39;aaaaahhhhhhmmmmmmmuiiiiiiiaaaaaa&#39;)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="RLE.compress">
+<tt class="descclassname">RLE.</tt><tt class="descname">compress</tt><span class="sig-paren">(</span><em>input_string</em>, <em>bytes=1</em><span class="sig-paren">)</span><a class="headerlink" href="#RLE.compress" title="Permalink to this definition">¶</a></dt>
+<dd><p>return compressed stream.</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="../pipelinemodules/PipelineUtilities.html"
+                        title="previous chapter">PipelineUtilities.py - helper functions for CGAT pipelines</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="SVGDuplicationsWheel.html"
+                        title="next chapter">SVGDuplicationsWheel.py -</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/modules/RLE.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="SVGDuplicationsWheel.html" title="SVGDuplicationsWheel.py -"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../pipelinemodules/PipelineUtilities.html" title="PipelineUtilities.py - helper functions for CGAT pipelines"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" >Modules</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

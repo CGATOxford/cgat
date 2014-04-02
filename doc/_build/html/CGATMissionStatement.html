@@ -1,0 +1,197 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Background &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/sorttable.js"></script>
+    <script type="text/javascript" src="_static/jquery.min.js"></script>
+    <script type="text/javascript" src="_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="index.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">CGAT  documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="background">
+<h1>Background<a class="headerlink" href="#background" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="mission-statement">
+<h2>Mission statement<a class="headerlink" href="#mission-statement" title="Permalink to this headline">¶</a></h2>
+<p>The CGAT code collection has been written over several years in
+the context of comparative genomics and more recently next-generation
+sequencing analysis.</p>
+<p>The aim of the toolkit is to solve practical problems in the analysis
+of genomic data. The focus of the toolkit is to facilitate the
+interpretation of genomic data in a biological context. Furthermore,
+as a training institution our aim is to write code that is well
+structured and can serve as an introduction to advanced bioinformatic
+scripting for biologists.</p>
+</div>
+<div class="section" id="other-toolkits-with-similar-functionality">
+<h2>Other toolkits with similar functionality<a class="headerlink" href="#other-toolkits-with-similar-functionality" title="Permalink to this headline">¶</a></h2>
+<p>The CGAT code collection extends, complements but also overlaps
+various other toolkits. As all toolkits, and ours, continue to evolve,
+this is a very dynamic relationship. For example, our workflows frequently
+use other toolkits, in particular <a class="reference external" href="http://bedtools.readthedocs.org/en/latest/">bedtools</a> and the <a class="reference external" href="http://genome.ucsc.edu/admin/git.html">UCSC tools</a>, for
+high-performance computations. Usage of common genomic file formats
+and a command line interface ensures compatibility.</p>
+<p>Below is a list of toolkits with similar or complementarity
+functionality to the CGAT code collection and quotes from their
+respective web-sites:</p>
+<ul class="simple">
+<li><a class="reference external" href="http://bedtools.readthedocs.org/en/latest/">bedtools</a>
+The BEDTools utilities allow one to address common genomics tasks such
+as finding feature overlaps and computing coverage. The utilities are
+largely based on four widely-used file formats: BED, GFF/GTF, VCF, and
+SAM/BAM. Using BEDTools, one can develop sophisticated pipelines that
+answer complicated research questions by &#8220;streaming&#8221; several BEDTools
+together.</li>
+<li><a class="reference external" href="http://samtools.sourceforge.net/">samtools</a>
+SAM Tools provide various utilities for manipulating alignments in
+the SAM format, including sorting, merging, indexing and generating
+alignments in a per-position format.</li>
+<li><a class="reference external" href="http://genome.ucsc.edu/admin/git.html">UCSC tools</a>
+<a class="reference external" href="http://users.soe.ucsc.edu/~kent/">Jim Kent&#8217;s</a> genomic utilities
+for working with genomic features and alignments.</li>
+<li><a class="reference external" href="http://emboss.sourceforge.net/">EMBOSS</a>
+EMBOSS is &#8220;The European Molecular Biology Open Software Suite&#8221;. EMBOSS
+is a free Open Source software analysis package specially developed
+for the needs of the molecular biology (e.g. EMBnet) user
+community. The software automatically copes with data in a variety of
+formats and even allows transparent retrieval of sequence data from
+the web. Also, as extensive libraries are provided with the package,
+it is a platform to allow other scientists to develop and release
+software in true open source spirit. EMBOSS also integrates a range of
+currently available packages and tools for sequence analysis into a
+seamless whole. EMBOSS breaks the historical trend towards commercial
+software packages.</li>
+<li><a class="reference external" href="http://csbi.ltdk.helsinki.fi/grok/">GROK</a>
+GROK (Genomic Region Operation Toolkit) is &#8220;Swiss Army knife&#8221; library
+for processing genomic interval data. GROK operates on genomic
+regions, annotated chromosomal intervals that represent sequencing
+short reads, gene locations, ChIP-seq peaks or other genomic
+features. Applications of GROK include file format conversions, set
+operations, overlap queries, and filtering and transformation
+operations. Supported file formats include BAM/SAM, BED, BedGraph,
+CSV, FASTQ, GFF/GTF, VCF and Wiggle.</li>
+<li><a class="reference external" href="https://code.google.com/p/biopieces/">biopieces</a>
+The Biopieces are a collection of bioinformatics tools that can be
+pieced together in a very easy and flexible manner to perform both
+simple and complex tasks. The Biopieces work on a data stream in such
+a way that the data stream can be passed through several different
+Biopieces, each performing one specific task: modifying or adding
+records to the data stream, creating plots, or uploading data to
+databases and web services.</li>
+<li><a class="reference external" href="http://hannonlab.cshl.edu/fastx_toolkit/">fastx-toolkit</a>
+The FASTX-Toolkit is a collection of command line tools for
+Short-Reads FASTA/FASTQ files preprocessing.</li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Background</a><ul>
+<li><a class="reference internal" href="#mission-statement">Mission statement</a></li>
+<li><a class="reference internal" href="#other-toolkits-with-similar-functionality">Other toolkits with similar functionality</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/CGATMissionStatement.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="index.html">CGAT  documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

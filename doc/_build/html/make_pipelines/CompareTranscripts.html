@@ -1,0 +1,480 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Transcript comparison pipeline &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="Lecgacy pipelines" href="../MakePipelines.html" />
+    <link rel="next" title="GPipe - Gene prediction pipeline" href="Gpipe.html" />
+    <link rel="prev" title="Lecgacy pipelines" href="../MakePipelines.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="Gpipe.html" title="GPipe - Gene prediction pipeline"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../MakePipelines.html" title="Lecgacy pipelines"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../Pipelines.html" >CGAT Pipelines</a> &raquo;</li>
+          <li><a href="../MakePipelines.html" accesskey="U">Lecgacy pipelines</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="transcript-comparison-pipeline">
+<h1>Transcript comparison pipeline<a class="headerlink" href="#transcript-comparison-pipeline" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="purpose">
+<h2>Purpose<a class="headerlink" href="#purpose" title="Permalink to this headline">¶</a></h2>
+<p>Map 454 reads onto a genome and assemble overlapping
+transcripts into transcript models.</p>
+<p>The pipeline currently does not use base quality information
+during mapping and does not consider alternative transcripts.</p>
+</div>
+<div class="section" id="setting-up">
+<h2>Setting up<a class="headerlink" href="#setting-up" title="Permalink to this headline">¶</a></h2>
+<p>To set up the pipeline in the current directory run:</p>
+<div class="highlight-python"><div class="highlight"><pre>python setup.py --method=compare_transcripts &gt; setup.log
+</pre></div>
+</div>
+<p>Link towards the genome from /net/cpp-data/backup/databases/indexed_fasta and
+call the files genome.fasta and genome.idx. For example:</p>
+<div class="highlight-python"><div class="highlight"><pre>ln -s /net/cpp-data/backup/databases/indexed_fasta/hs_ncbi36_softmasked.fasta genome.fasta
+ln -s /net/cpp-data/backup/databases/indexed_fasta/hs_ncbi36_softmasked.idx genome.idx
+</pre></div>
+</div>
+<p>Input (required):</p>
+<dl class="docutils">
+<dt>%.gtf</dt>
+<dd>gtf files with (experimental) transcripts. The % denotes the
+track name, for example heart.gtf, kidney.gtf, sample1.gtf, ...</dd>
+<dt>genome.fasta, genome.idx</dt>
+<dd>an indexed genome <tt class="docutils literal"><span class="pre">PARAM_GENOME</span></tt>. See also index_fasta.py.</dd>
+<dt>ensembl.gtf</dt>
+<dd>a gtf file with a reference sequence set: the default is <tt class="docutils literal"><span class="pre">ensembl</span></tt>,
+but can be changed in <tt class="docutils literal"><span class="pre">PARAM_MASTER_SET_GENES</span></tt>.</dd>
+<dt>annotations.gff</dt>
+<dd>a gff file with annotated genomic regions. See
+<tt class="docutils literal"><span class="pre">PARAM_GENOME_REGIONS</span></tt>. Use gtf2gff.py to create this file.</dd>
+</dl>
+<p>The pipeline includes additional information if it is present:</p>
+<dl class="docutils">
+<dt>%.coverage</dt>
+<dd>table with coverage information for a track. The output
+is from blat2assembly.py</dd>
+<dt>%.polyA</dt>
+<dd>information about polyA tails. The output is from
+blat2assembly.py</dd>
+<dt>%.readstats</dt>
+<dd>a table with read alignment statistics after filtering
+(see output from MapTranscripts)</dd>
+<dt>%.readmap</dt>
+<dd>a table mapping gene_ids to read_ids after filtering
+(see output from MapTranscripts)</dd>
+<dt>%.readinfo</dt>
+<dd>a table with read information.</dd>
+<dt>%.readgtf</dt>
+<dd>mapped locations of reads after filtering.</dd>
+</dl>
+<dl class="glossary docutils">
+<dt id="term-param-file-repeats-rates">PARAM_FILE_REPEATS_RATES</dt>
+<dd>gff formatted file of ancesctral repeats.
+The score field contains the rate (see Makefile.ancestral_repeats)</dd>
+<dt id="term-param-file-repeats">PARAM_FILE_REPEATS</dt>
+<dd>gff file with repeats in genome. These are used for masking in coding
+potential predictions.</dd>
+<dt id="term-param-file-repeats-gc">PARAM_FILE_REPEATS_GC</dt>
+<dd>gff formatted file of ancesctral repeats.
+The score field contains the G+C content (see Makefile.ancestral_repeats)</dd>
+<dt id="term-param-file-alignments">PARAM_FILE_ALIGNMENTS</dt>
+<dd>psl formatted file with genomic alignments
+between this species in query and another at appropriate evolutionary
+distance in target.</dd>
+<dt id="term-param-filename-go-param-filename-goslim">PARAM_FILENAME_GO (PARAM_FILENAME_GOSLIM)</dt>
+<dd><p class="first">GO annotations for genes in the reference set. Example format is:</p>
+<div class="last highlight-python"><div class="highlight"><pre>cell_location   ENSPPYG00000000676      GO:0016020      membrane        NA
+</pre></div>
+</div>
+</dd>
+<dt id="term-param-filename-territories">PARAM_FILENAME_TERRITORIES</dt>
+<dd><p class="first">gene territories. GTF formatted file, an example entry would be:</p>
+<div class="last highlight-python"><div class="highlight"><pre>chr1    protein_coding  exon    3979975 4199559 .       -       .       transcript_id &quot;ENSPPYG00000000050&quot;; gene_id &quot;ENSPPYG00000000050&quot;;#
+</pre></div>
+</div>
+</dd>
+<dt id="term-param-cpc-uniref">PARAM_CPC_UNIREF</dt>
+<dd>uniref database to use for coding potential predictions.</dd>
+<dt id="term-param-database">PARAM_DATABASE</dt>
+<dd>database name</dd>
+</dl>
+<p>Output from the mapTranscripts454 project can be imported with a single command:</p>
+<div class="highlight-python"><div class="highlight"><pre>make PATH_TO_MAPPING_DIR.add-tracks
+</pre></div>
+</div>
+</div>
+<div class="section" id="configuration">
+<h2>Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">¶</a></h2>
+<p>Edit the <tt class="file docutils literal"><span class="pre">Makefile</span></tt> to configure the pipeline. See <a class="reference internal" href="#parameters">Parameters</a> below.</p>
+</div>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>The pipeline is controlled by running <a class="reference external" href="http://www.gnu.org/software/make">make</a> targets. The results of the pipeline
+computation are stored as tab separated tables in the working directory. Most of these
+tables are then imported into an <a class="reference external" href="http://www.sqlite.org/">sqlite</a> database called <tt class="docutils literal"><span class="pre">csvdb</span></tt> (see <a class="reference internal" href="#term-param-database"><em class="xref std std-term">PARAM_DATABASE</em></a>).</p>
+<div class="section" id="annotation">
+<h3>Annotation<a class="headerlink" href="#annotation" title="Permalink to this headline">¶</a></h3>
+<p>Type:</p>
+<div class="highlight-python"><div class="highlight"><pre>make all
+</pre></div>
+</div>
+<p>to do all.</p>
+<div class="section" id="fine-grained-control">
+<h4>Fine grained control<a class="headerlink" href="#fine-grained-control" title="Permalink to this headline">¶</a></h4>
+<p>A more complete list of targets:</p>
+<dl class="docutils">
+<dt>all</dt>
+<dd>make all</dd>
+<dt>build</dt>
+<dd>only build, but do not import.</dd>
+<dt>import</dt>
+<dd>import</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="visualization">
+<h3>Visualization<a class="headerlink" href="#visualization" title="Permalink to this headline">¶</a></h3>
+<p>The following targets aid visualizatiov:</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>ucsc-tracks-gtf</dt>
+<dd>export the segments as compressed gtf files. Can be viewed as
+user tracks in the <a class="reference external" href="http://genome.ucsc.edu">ucsc</a> genome browser.</dd>
+</dl>
+</div></blockquote>
+</div>
+<div class="section" id="go-analysis">
+<h3>GO analysis<a class="headerlink" href="#go-analysis" title="Permalink to this headline">¶</a></h3>
+<p>GO analysis will compute the relative enrichment/depletion gene sets.</p>
+<p>Requires <tt class="docutils literal"><span class="pre">PARAM_FILENAME_TERRITORIES</span></tt>, <tt class="docutils literal"><span class="pre">PARAM_FILENAME_GO</span></tt>
+and <tt class="docutils literal"><span class="pre">PARAM_FILENAME_GOSLIM</span></tt> to be set.</p>
+<p>There are two counting methods. The first method (<tt class="docutils literal"><span class="pre">go</span></tt>) assigns GO terms associated with
+the reference gene set to TLs and counts these. The second method (<tt class="docutils literal"><span class="pre">territorygo</span></tt>) assigns TLs to genes
+in the reference set and then does a GO analysis on theses.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The convential GO analysis based on gene list is the <tt class="docutils literal"><span class="pre">territorygo</span></tt> method.</p>
+</div>
+<div class="section" id="id1">
+<h4>Usage<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h4>
+<p>Usage:</p>
+<div class="highlight-python"><div class="highlight"><pre>make &lt;track&gt;:&lt;slice&gt;:&lt;subset&gt;:&lt;background&gt;.&lt;go&gt;.&lt;method&gt;analysis
+</pre></div>
+</div>
+<p>The fields are:</p>
+<dl class="docutils">
+<dt>track</dt>
+<dd>the data track to be chosen.</dd>
+<dt>slice</dt>
+<dd>the slices correspond to flags in the table &lt;track&gt;_annotation. Use <tt class="docutils literal"><span class="pre">all</span></tt>
+to use all segments in a <tt class="docutils literal"><span class="pre">track</span></tt>.</dd>
+<dt>subset</dt>
+<dd>the subset corresponds to a table that is joined with &lt;track&gt;_annotation to
+restrict segments to a user-specified set. Use <tt class="docutils literal"><span class="pre">all</span></tt> for no restriction.</dd>
+<dt>background</dt>
+<dd>the background gene set</dd>
+<dt>go</dt>
+<dd>either <tt class="docutils literal"><span class="pre">go</span></tt> or <tt class="docutils literal"><span class="pre">goslim</span></tt></dd>
+<dt>method</dt>
+<dd>either <tt class="docutils literal"><span class="pre">go</span></tt> or <tt class="docutils literal"><span class="pre">goterritory</span></tt></dd>
+</dl>
+<p>Results will be in the directory <tt class="file docutils literal"><span class="pre">&lt;track&gt;:&lt;slice&gt;:&lt;subset&gt;:&lt;background&gt;.&lt;go&gt;.&lt;method&gt;analysis.dir</span></tt>.</p>
+<p>For example:</p>
+<div class="highlight-python"><div class="highlight"><pre>make thoracic:known:all:thoracic.go.goanalysis
+</pre></div>
+</div>
+<p>will compute the enrichment of protein coding TL in the track <tt class="docutils literal"><span class="pre">thoracic</span></tt> using
+all <tt class="docutils literal"><span class="pre">thoracic</span></tt> genes as the background.</p>
+<p>The command:</p>
+<div class="highlight-python"><div class="highlight"><pre>make thoracic:known:all:ensembl.goslim.territorygoanalysis
+</pre></div>
+</div>
+<p>will compute  <tt class="docutils literal"><span class="pre">goslim</span></tt> term enrichment. The foreground set are genes from the reference set (<tt class="docutils literal"><span class="pre">ensembl</span></tt>) overlapping
+protein coding TL in the track <tt class="docutils literal"><span class="pre">thoracic</span></tt>. The background is the complete reference gene
+set (<tt class="docutils literal"><span class="pre">ensembl</span></tt>).</p>
+</div>
+</div>
+<div class="section" id="annotator-analysis">
+<h3>Annotator analysis<a class="headerlink" href="#annotator-analysis" title="Permalink to this headline">¶</a></h3>
+<p>Annotator computes the statistical significance of enrichment/depletion
+of genomic features (called segments) within genomic regions (called annotations).</p>
+<p>To run annotator analysis, two files need to be present:</p>
+<ol class="arabic simple">
+<li>A workspace</li>
+<li>A collection of annotations on the genome</li>
+</ol>
+<div class="section" id="building-workspaces">
+<h4>Building workspaces<a class="headerlink" href="#building-workspaces" title="Permalink to this headline">¶</a></h4>
+<dl class="docutils">
+<dt>Workspaces are built using makefile targets. For example to build :file:<tt class="docutils literal"><span class="pre">genome.workspace</span></tt>, type::</dt>
+<dd>make genome.workspace</dd>
+</dl>
+<p>All workspaces exclude contigs called matching <tt class="docutils literal"><span class="pre">random</span></tt>.</p>
+<dl class="docutils">
+<dt>genome.workspace</dt>
+<dd>full genome</dd>
+<dt>intergenic.workspace</dt>
+<dd>only intergenic regions</dd>
+<dt>intronic.workspace</dt>
+<dd>only intronic regions</dd>
+<dt>unknown.workspace</dt>
+<dd>both intergenic and intronic regions</dd>
+<dt>territories.workspace</dt>
+<dd>workspace of territories</dd>
+<dt>alignable.workspace</dt>
+<dd>only segments that can be aligned to a reference genome.</dd>
+</dl>
+<p>There is a convenience target:</p>
+<div class="highlight-python"><div class="highlight"><pre>make annotator-workspaces
+</pre></div>
+</div>
+<p>that will build all available workspaces.</p>
+</div>
+<div class="section" id="annotations">
+<h4>Annotations<a class="headerlink" href="#annotations" title="Permalink to this headline">¶</a></h4>
+<p>Annotations are built using makefile targets.</p>
+<dl class="docutils">
+<dt>all.annotations:</dt>
+<dd>all subsets (all/known/unknown) for each track.</dd>
+<dt>architecture.annotations:</dt>
+<dd>annotations according to genes (intronic, intergenic, ...).</dd>
+<dt>{all,known,unknown}_sets.annotations</dt>
+<dd>annotations of known, unknown, all transcripts</dd>
+<dt>allgo_territories.annotations</dt>
+<dd>territories annotation with GO categories</dd>
+<dt>allgoslim_territories.annotations</dt>
+<dd>territories annotation with GOSlim categories</dd>
+<dt>intronicgo_territories.annotations</dt>
+<dd>territories annotation with GO categories</dd>
+<dt>intronicgoslim_territories.annotations</dt>
+<dd>territories annotation with GOSlim categories</dd>
+<dt>intergenicgo_territories.annotations</dt>
+<dd>territories annotation with GO categories</dd>
+<dt>intergenicgoslim_territories.annotations</dt>
+<dd>territories annotation with GOSlim categories</dd>
+</dl>
+<p>There is a convenience target:</p>
+<div class="highlight-python"><div class="highlight"><pre>make annotator-annotations
+</pre></div>
+</div>
+<p>that will build all available annotations.</p>
+</div>
+<div class="section" id="id2">
+<h4>Usage<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h4>
+<p>In order to perform <tt class="docutils literal"><span class="pre">Annotator</span></tt> analyses, you run a make target:</p>
+<div class="highlight-python"><div class="highlight"><pre>make &lt;track&gt;:&lt;slice&gt;:&lt;subset&gt;:&lt;workspace&gt;:&lt;workspace2&gt;_&lt;annotations&gt;.annotators
+</pre></div>
+</div>
+<p>The fields determine which segments are used for the enrichment analysis.</p>
+<dl class="docutils">
+<dt>track</dt>
+<dd>the data track to be chosen.</dd>
+<dt>slice</dt>
+<dd>the slices correspond to flags in the table &lt;track&gt;_annotation. Use <tt class="docutils literal"><span class="pre">all</span></tt>
+to use all segments in a <tt class="docutils literal"><span class="pre">track</span></tt>.</dd>
+<dt>subset</dt>
+<dd>the subset corresponds to a table that is joined with &lt;track&gt;_annotation to
+restrict segments to a user-specified set. Use <tt class="docutils literal"><span class="pre">all</span></tt> for no restriction.</dd>
+<dt>workspace</dt>
+<dd>the workspace to be used</dd>
+<dt>workspace2</dt>
+<dd>a second workspace. The actual workspace will be the intersection of both workspaces.</dd>
+<dt>annotations</dt>
+<dd>annotations to use.</dd>
+</dl>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Annotations, segments and the workspace need to be chosen carefully for each experiment.
+For example, failing to use territories for goterritory analysis will measure enrichment
+of segments within goterritories in general, and not necessarily relative enrichment
+between go territories.</p>
+</div>
+<p>The results will be in the file <tt class="file docutils literal"><span class="pre">&lt;track&gt;:&lt;slice&gt;:&lt;subset&gt;:&lt;workspace&gt;:&lt;workspace2&gt;_&lt;annotations&gt;.annotators</span></tt>.</p>
+</div>
+<div class="section" id="examples">
+<h4>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h4>
+<p>The command:</p>
+<div class="highlight-python"><div class="highlight"><pre>make thoracic:unknown:all:intergenic:all_unknownsets.annotators
+</pre></div>
+</div>
+<p>will test for enrichment among <tt class="docutils literal"><span class="pre">unknown</span></tt> transcripts in the track <tt class="docutils literal"><span class="pre">thoracic</span></tt>
+with intergenic segments the other sets. The command:</p>
+<div class="highlight-python"><div class="highlight"><pre>make thoracic:intronic:all:intronic:territories_intronicgoslimterritories.annotators
+</pre></div>
+</div>
+<p>will check for enrichment of <tt class="docutils literal"><span class="pre">intronic</span></tt> transcripts from the track <tt class="docutils literal"><span class="pre">merged</span></tt>
+within intronic genomic segments that also have GO assignments (intersection
+of workspaces <tt class="docutils literal"><span class="pre">intronic</span></tt> and <tt class="docutils literal"><span class="pre">territories</span></tt>. It will label GO territories
+by GOslim territories.</p>
+</div>
+</div>
+<div class="section" id="association-analysis">
+<h3>Association analysis<a class="headerlink" href="#association-analysis" title="Permalink to this headline">¶</a></h3>
+<p>Association analysis computes the significance of finding segments close
+to annotations.</p>
+<p>Type:</p>
+<div class="highlight-python"><div class="highlight"><pre>make annotator-distance-run
+</pre></div>
+</div>
+<p>to run all association analyses.</p>
+</div>
+</div>
+<div class="section" id="parameters">
+<h2>Parameters<a class="headerlink" href="#parameters" title="Permalink to this headline">¶</a></h2>
+<p>The following parameters can be set in the <tt class="file docutils literal"><span class="pre">Makefile</span></tt>:</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Transcript comparison pipeline</a><ul>
+<li><a class="reference internal" href="#purpose">Purpose</a></li>
+<li><a class="reference internal" href="#setting-up">Setting up</a></li>
+<li><a class="reference internal" href="#configuration">Configuration</a></li>
+<li><a class="reference internal" href="#usage">Usage</a><ul>
+<li><a class="reference internal" href="#annotation">Annotation</a><ul>
+<li><a class="reference internal" href="#fine-grained-control">Fine grained control</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#visualization">Visualization</a></li>
+<li><a class="reference internal" href="#go-analysis">GO analysis</a><ul>
+<li><a class="reference internal" href="#id1">Usage</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#annotator-analysis">Annotator analysis</a><ul>
+<li><a class="reference internal" href="#building-workspaces">Building workspaces</a></li>
+<li><a class="reference internal" href="#annotations">Annotations</a></li>
+<li><a class="reference internal" href="#id2">Usage</a></li>
+<li><a class="reference internal" href="#examples">Examples</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#association-analysis">Association analysis</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#parameters">Parameters</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="../MakePipelines.html"
+                        title="previous chapter">Lecgacy pipelines</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="Gpipe.html"
+                        title="next chapter">GPipe - Gene prediction pipeline</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/make_pipelines/CompareTranscripts.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="Gpipe.html" title="GPipe - Gene prediction pipeline"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../MakePipelines.html" title="Lecgacy pipelines"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../Pipelines.html" >CGAT Pipelines</a> &raquo;</li>
+          <li><a href="../MakePipelines.html" >Lecgacy pipelines</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

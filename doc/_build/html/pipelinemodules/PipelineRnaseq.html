@@ -1,0 +1,340 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Rnaseq.py - Tools for RNAseq analysis &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="Modules" href="../modules.html" />
+    <link rel="next" title="PipelineTracks.py - Definition of tracks in pipelines" href="PipelineTracks.html" />
+    <link rel="prev" title="PipelinePeakCalling.py - ChIP-Seq tasks associated with calling peaks" href="PipelinePeakcalling.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="PipelineTracks.html" title="PipelineTracks.py - Definition of tracks in pipelines"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="PipelinePeakcalling.html" title="PipelinePeakCalling.py - ChIP-Seq tasks associated with calling peaks"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" accesskey="U">Modules</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-PipelineRnaseq"></span><div class="section" id="rnaseq-py-tools-for-rnaseq-analysis">
+<h1>Rnaseq.py - Tools for RNAseq analysis<a class="headerlink" href="#rnaseq-py-tools-for-rnaseq-analysis" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Andreas Heger</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id$</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Python</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="purpose">
+<h2>Purpose<a class="headerlink" href="#purpose" title="Permalink to this headline">¶</a></h2>
+<p>Pipeline components - GO analysis</p>
+<p>Tasks related to gene set GO analysis.</p>
+</div>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>Type:</p>
+<div class="highlight-python"><div class="highlight"><pre>python &lt;script_name&gt;.py --help
+</pre></div>
+</div>
+<p>for command line help.</p>
+<dl class="class">
+<dt id="PipelineRnaseq.Utr">
+<em class="property">class </em><tt class="descclassname">PipelineRnaseq.</tt><tt class="descname">Utr</tt><a class="headerlink" href="#PipelineRnaseq.Utr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">tuple</span></tt></p>
+<p>Utr(old, new, max, status)</p>
+<dl class="method">
+<dt id="PipelineRnaseq.Utr.count">
+<tt class="descname">count</tt><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span> &rarr; integer -- return number of occurrences of value<a class="headerlink" href="#PipelineRnaseq.Utr.count" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="PipelineRnaseq.Utr.index">
+<tt class="descname">index</tt><span class="sig-paren">(</span><em>value</em><span class="optional">[</span>, <em>start</em><span class="optional">[</span>, <em>stop</em><span class="optional">]</span><span class="optional">]</span><span class="sig-paren">)</span> &rarr; integer -- return first index of value.<a class="headerlink" href="#PipelineRnaseq.Utr.index" title="Permalink to this definition">¶</a></dt>
+<dd><p>Raises ValueError if the value is not present.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PipelineRnaseq.Utr.max">
+<tt class="descname">max</tt><a class="headerlink" href="#PipelineRnaseq.Utr.max" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 2</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PipelineRnaseq.Utr.new">
+<tt class="descname">new</tt><a class="headerlink" href="#PipelineRnaseq.Utr.new" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PipelineRnaseq.Utr.old">
+<tt class="descname">old</tt><a class="headerlink" href="#PipelineRnaseq.Utr.old" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PipelineRnaseq.Utr.status">
+<tt class="descname">status</tt><a class="headerlink" href="#PipelineRnaseq.Utr.status" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 3</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineRnaseq.buildUTRExtension">
+<tt class="descclassname">PipelineRnaseq.</tt><tt class="descname">buildUTRExtension</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineRnaseq.buildUTRExtension" title="Permalink to this definition">¶</a></dt>
+<dd><p>build new utrs by building and fitting an HMM
+to reads upstream and downstream of known genes.</p>
+<p>Works on output of buildGeneLevelReadExtension.</p>
+<p>Known problems</p>
+<ul class="simple">
+<li>the size of the extension is limited by the window size</li>
+<li>introns within UTRs are ignored.</li>
+<li>UTR extension might be underestimated for highly expressed genes
+as relative read counts drop off quickly, even though there is
+a good amount of reads still present in the UTR.</li>
+</ul>
+<p>The model</p>
+<p>The model is a three-state model:</p>
+<div class="highlight-python"><div class="highlight"><pre>UTR --|--&gt; notUTR --|--&gt; otherTranscript --|
+  ^---|      ^------|              ^-------|
+             ^-----------------------------|
+</pre></div>
+</div>
+<p>The chain starts in UTR and ends in notUTr or otherTranscript.</p>
+<p>The otherTranscript state models peaks of within the upstream/
+downstream region of a gene. These peaks might correspond to
+additional exons or unknown transcripts. Without this state,
+the UTR might be artificially extend to include these peaks.</p>
+<p>Emissions are modelled with beta distributions. These
+distributions permit both bimodal (UTR) and unimodal (notUTR)
+distribution of counts.</p>
+<p>Parameter estimation</p>
+<p>Parameters are derived from known UTRs within full length 
+territories.</p>
+<p>Transitions and emissions for the otherTranscript state
+are set heuristically:</p>
+<blockquote>
+<div><ul>
+<li><dl class="first docutils">
+<dt>low probabibily for remaining in state &#8220;otherTranscript&#8221;.</dt>
+<dd><ul class="first last simple">
+<li>these transcripts should be short.</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>emissions biased towards high counts - only strong signals</dt>
+<dd><p class="first last">will be considered.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>these could be estimated from known UTRs, but I am worried</dt>
+<dd><p class="first last">UTR extensions then will be diluted.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<p>Alternatives</p>
+<p>The method could be improved.</p>
+<blockquote>
+<div><ul>
+<li><dl class="first docutils">
+<dt>base level resolution? </dt>
+<dd><ul class="first last">
+<li><p class="first">longer chains result in more data and longer running times.</p>
+</li>
+<li><dl class="first docutils">
+<dt>the averaging in windows smoothes the data, which might have</dt>
+<dd><p class="first last">a beneficial effect.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>raw counts instead of scaled counts?</dt>
+<dd><ul class="first last">
+<li><dl class="first docutils">
+<dt>better model, as highly expressed genes should give more</dt>
+<dd><p class="first last">confident predictions.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineRnaseq.plotGeneLevelReadExtension">
+<tt class="descclassname">PipelineRnaseq.</tt><tt class="descname">plotGeneLevelReadExtension</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineRnaseq.plotGeneLevelReadExtension" title="Permalink to this definition">¶</a></dt>
+<dd><p>plot reads extending beyond last exon.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineRnaseq.filterAndMergeGTF">
+<tt class="descclassname">PipelineRnaseq.</tt><tt class="descname">filterAndMergeGTF</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em>, <em>remove_genes</em>, <em>merge=False</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineRnaseq.filterAndMergeGTF" title="Permalink to this definition">¶</a></dt>
+<dd><p>filter gtf file infile with gene ids in remove_genes
+and write to outfile.</p>
+<p>If <em>merge</em> is set, the resultant transcript models are merged by overlap.</p>
+<p>A summary file &#8220;&lt;outfile&gt;.summary&#8221; contains the number of transcripts that failed 
+various filters.</p>
+<p>A file &#8220;&lt;outfile&gt;.removed.tsv.gz&#8221; contains the filters that a transcript failed.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineRnaseq.runCufflinks">
+<tt class="descclassname">PipelineRnaseq.</tt><tt class="descname">runCufflinks</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineRnaseq.runCufflinks" title="Permalink to this definition">¶</a></dt>
+<dd><p>estimate expression levels in each set.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineRnaseq.loadCufflinks">
+<tt class="descclassname">PipelineRnaseq.</tt><tt class="descname">loadCufflinks</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineRnaseq.loadCufflinks" title="Permalink to this definition">¶</a></dt>
+<dd><p>load expression level measurements.</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Rnaseq.py - Tools for RNAseq analysis</a><ul>
+<li><a class="reference internal" href="#purpose">Purpose</a></li>
+<li><a class="reference internal" href="#usage">Usage</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="PipelinePeakcalling.html"
+                        title="previous chapter">PipelinePeakCalling.py - ChIP-Seq tasks associated with calling peaks</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="PipelineTracks.html"
+                        title="next chapter">PipelineTracks.py - Definition of tracks in pipelines</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/pipelinemodules/PipelineRnaseq.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="PipelineTracks.html" title="PipelineTracks.py - Definition of tracks in pipelines"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="PipelinePeakcalling.html" title="PipelinePeakCalling.py - ChIP-Seq tasks associated with calling peaks"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" >Modules</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

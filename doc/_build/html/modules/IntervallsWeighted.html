@@ -1,0 +1,220 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>IntervallsWeigted.py - working with weigted intervals &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="Modules" href="../modules.html" />
+    <link rel="next" title="SaryFasta.py - index fasta files by suffix array" href="SaryFasta.html" />
+    <link rel="prev" title="Intervalls.py -" href="Intervalls.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="SaryFasta.html" title="SaryFasta.py - index fasta files by suffix array"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="Intervalls.html" title="Intervalls.py -"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" accesskey="U">Modules</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-IntervallsWeighted"></span><div class="section" id="intervallsweigted-py-working-with-weigted-intervals">
+<h1>IntervallsWeigted.py - working with weigted intervals<a class="headerlink" href="#intervallsweigted-py-working-with-weigted-intervals" title="Permalink to this headline">¶</a></h1>
+<p>Work with weighted invervalls. A weighted intervall is
+a tuple of the form (from,to,weight).</p>
+<p>Funktions in this module take an optional function parameter object fct,
+that will give the weight if two intervalls are combined. The default
+is to add the weights of intervalls that are combined.</p>
+<p>This module is work in progress. Finished are:</p>
+<p>CombineIntervallsLarge
+RemoveIntervallsSpanning</p>
+<dl class="function">
+<dt id="IntervallsWeighted.CombineIntervallsLarge">
+<tt class="descclassname">IntervallsWeighted.</tt><tt class="descname">CombineIntervallsLarge</tt><span class="sig-paren">(</span><em>intervalls</em>, <em>fct=&lt;function &lt;lambda&gt; at 0xd0ab938&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#IntervallsWeighted.CombineIntervallsLarge" title="Permalink to this definition">¶</a></dt>
+<dd><p>combine intervalls. Overlapping intervalls
+are concatenated into larger intervalls.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="IntervallsWeighted.ComplementIntervalls">
+<tt class="descclassname">IntervallsWeighted.</tt><tt class="descname">ComplementIntervalls</tt><span class="sig-paren">(</span><em>intervalls</em>, <em>first=None</em>, <em>last=None</em><span class="sig-paren">)</span><a class="headerlink" href="#IntervallsWeighted.ComplementIntervalls" title="Permalink to this definition">¶</a></dt>
+<dd><p>complement a list of intervalls with intervalls not
+in list.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="IntervallsWeighted.AddComplementIntervalls">
+<tt class="descclassname">IntervallsWeighted.</tt><tt class="descname">AddComplementIntervalls</tt><span class="sig-paren">(</span><em>intervalls</em>, <em>first=None</em>, <em>last=None</em><span class="sig-paren">)</span><a class="headerlink" href="#IntervallsWeighted.AddComplementIntervalls" title="Permalink to this definition">¶</a></dt>
+<dd><p>complement a list of intervalls with intervalls not
+in list and return both.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="IntervallsWeighted.CombineIntervallsDistance">
+<tt class="descclassname">IntervallsWeighted.</tt><tt class="descname">CombineIntervallsDistance</tt><span class="sig-paren">(</span><em>intervalls</em>, <em>min_distance</em><span class="sig-paren">)</span><a class="headerlink" href="#IntervallsWeighted.CombineIntervallsDistance" title="Permalink to this definition">¶</a></dt>
+<dd><p>combine a list of non-overlapping intervalls,
+and merge those that are less than a certain
+distance apart.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="IntervallsWeighted.DeleteSmallIntervalls">
+<tt class="descclassname">IntervallsWeighted.</tt><tt class="descname">DeleteSmallIntervalls</tt><span class="sig-paren">(</span><em>intervalls</em>, <em>min_length</em><span class="sig-paren">)</span><a class="headerlink" href="#IntervallsWeighted.DeleteSmallIntervalls" title="Permalink to this definition">¶</a></dt>
+<dd><p>combine a list of non-overlapping intervalls,
+and delete those that are too small.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="IntervallsWeighted.CombineIntervallsOverlap">
+<tt class="descclassname">IntervallsWeighted.</tt><tt class="descname">CombineIntervallsOverlap</tt><span class="sig-paren">(</span><em>intervalls</em><span class="sig-paren">)</span><a class="headerlink" href="#IntervallsWeighted.CombineIntervallsOverlap" title="Permalink to this definition">¶</a></dt>
+<dd><p>combine intervalls.
+Overlapping intervalls are reduced to their intersection.</p>
+<p>first_from, last_to contain region of current maximum overlapping segment.
+max_right is maximum extension of any sequence overlapping with current
+overlapping segment.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="IntervallsWeighted.RemoveIntervallsContained">
+<tt class="descclassname">IntervallsWeighted.</tt><tt class="descname">RemoveIntervallsContained</tt><span class="sig-paren">(</span><em>intervalls</em><span class="sig-paren">)</span><a class="headerlink" href="#IntervallsWeighted.RemoveIntervallsContained" title="Permalink to this definition">¶</a></dt>
+<dd><p>remove intervalls that are fully contained in another.</p>
+<p>[(10, 100), (20, 50), (70, 120), (130, 200), (10, 50), (140, 210), (150, 200)]</p>
+<p>results:</p>
+<p>[(10, 100), (70, 120), (130, 200), (140, 210)]</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="IntervallsWeighted.RemoveIntervallsSpanning">
+<tt class="descclassname">IntervallsWeighted.</tt><tt class="descname">RemoveIntervallsSpanning</tt><span class="sig-paren">(</span><em>intervalls</em>, <em>fct=&lt;function &lt;lambda&gt; at 0xd0abcf8&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#IntervallsWeighted.RemoveIntervallsSpanning" title="Permalink to this definition">¶</a></dt>
+<dd><p>remove intervalls that are full covering
+another, i.e. always keep the smallest.</p>
+<p>[(10, 100), (20, 50), (70, 120), (40,80), (130, 200), (10, 50), (140, 210), (150, 200)]</p>
+<p>result:</p>
+<p>[(20, 50), (40, 80), (70, 120), (150, 200)]</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="IntervallsWeighted.ShortenIntervallsOverlap">
+<tt class="descclassname">IntervallsWeighted.</tt><tt class="descname">ShortenIntervallsOverlap</tt><span class="sig-paren">(</span><em>intervalls</em>, <em>to_remove</em><span class="sig-paren">)</span><a class="headerlink" href="#IntervallsWeighted.ShortenIntervallsOverlap" title="Permalink to this definition">¶</a></dt>
+<dd><p>shorten intervalls, so that there is no
+overlap with another set of intervalls.</p>
+<p>assumption: intervalls are not overlapping</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="Intervalls.html"
+                        title="previous chapter">Intervalls.py -</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="SaryFasta.html"
+                        title="next chapter">SaryFasta.py - index fasta files by suffix array</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/modules/IntervallsWeighted.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="SaryFasta.html" title="SaryFasta.py - index fasta files by suffix array"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="Intervalls.html" title="Intervalls.py -"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" >Modules</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

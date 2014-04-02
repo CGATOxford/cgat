@@ -1,0 +1,326 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>table2table.py - operate on tables &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="Scripts" href="../scripts.html" />
+    <link rel="next" title="join_tables.py - join tables" href="join_tables.html" />
+    <link rel="prev" title="convert adjacency lists to edge lists" href="table2graph.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="join_tables.html" title="join_tables.py - join tables"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="table2graph.html" title="convert adjacency lists to edge lists"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../scripts.html" accesskey="U">Scripts</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-table2table"></span><div class="section" id="table2table-py-operate-on-tables">
+<h1>table2table.py - operate on tables<a class="headerlink" href="#table2table-py-operate-on-tables" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Andreas Heger</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id$</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Python</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="purpose">
+<h2>Purpose<a class="headerlink" href="#purpose" title="Permalink to this headline">¶</a></h2>
+<p>This script implements a few methods for manipulating tables.</p>
+<div class="section" id="methods-working-on-all-tables">
+<h3>Methods working on all tables:<a class="headerlink" href="#methods-working-on-all-tables" title="Permalink to this headline">¶</a></h3>
+<dl class="docutils">
+<dt>transpose</dt>
+<dd>transpose a table</dd>
+<dt>split-fields</dt>
+<dd>Split muliple-value fields in each row at <tt class="docutils literal"><span class="pre">--separator</span></tt>. Output
+multiple rows with all combinations.</dd>
+<dt>group</dt>
+<dd>Group values by column</dd>
+<dt>join-column</dt>
+<dd>Join rows in a table by columns</dd>
+<dt>expand-table</dt>
+<dd>If a field in a row contains multiple values,
+the row is expanded into multiple rows such
+that all values have space.</dd>
+<dt>flatten-table</dt>
+<dd>Output a table as row/column/value tuples.</dd>
+<dt>as-column</dt>
+<dd>Output table as a single column. Colums in the original table are appended and output.</dd>
+<dt>collapse-table</dt>
+<dd>Collapse a table of two columns with row names in the first column. Outputs a table
+with multiple columns for each row name.</dd>
+</dl>
+</div>
+<div class="section" id="methods-for-numerical-columns">
+<h3>Methods for numerical columns<a class="headerlink" href="#methods-for-numerical-columns" title="Permalink to this headline">¶</a></h3>
+<p>Some methods make only sense for columns containing numerical values.
+If a table contains both numerical and non-numerical data, the
+numerical columns can be specified by the <tt class="docutils literal"><span class="pre">--columns</span></tt> option.</p>
+<dl class="docutils">
+<dt>normalize-by-value</dt>
+<dd>divide all cells in a table by a value</dd>
+<dt>multiply-by-value</dt>
+<dd>multiply all cells in a table by a value</dd>
+<dt>lower-bound</dt>
+<dd>replace all cells with a value of less than lower bound with the lower
+bound.</dd>
+<dt>upper-bound</dt>
+<dd>replace all cells with a value of more than upper bound with the upper
+bound.</dd>
+<dt>normalize-by-table</dt>
+<dd>divide each cell in a table with the corresponding entry in a secondary
+table.</dd>
+<dt>normalize-by-max</dt>
+<dd>divide table columns by maximum per column</dd>
+<dt>kullback-leibler</dt>
+<dd>compute kullback-leibler divergence between two columns. Compute
+both D(a||b), D(b||a) and (D(a||b) + D(b||a)) / 2</dd>
+<dt>rank</dt>
+<dd>substitute cells with their ranks in a column</dd>
+<dt>fdr</dt>
+<dd>compute an FDR over selected columns. Replaces the columns
+with the qvalues.</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>Example:</p>
+<div class="highlight-python"><div class="highlight"><pre>python table2table.py --help
+</pre></div>
+</div>
+<p>Type:</p>
+<div class="highlight-python"><div class="highlight"><pre>python table2table.py --help
+</pre></div>
+</div>
+<p>for command line help.</p>
+</div>
+<div class="section" id="command-line-options">
+<h2>Command line options<a class="headerlink" href="#command-line-options" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+<div class="highlight-text"><div class="highlight"><pre>Usage: table2table.py [options]
+
+Options:
+  --version             show program&#39;s version number and exit
+  -h, --help            show this help message and exit
+  --no-usage            output help without usage information
+  -m METHODS, --method=METHODS
+                        actions to perform on table.
+  -s SCALE, --scale=SCALE
+                        factor to scale matrix by.
+  -f FORMAT, --format=FORMAT
+                        output number format.
+  -p PARAMETERS, --parameters=PARAMETERS
+                        Parameters for various functions.
+  -t, --headers         matrix has row/column headers.
+  --transpose           transpose table.
+  --set-transpose-field=SET_TRANSPOSE_FIELD
+                        set first field (row 1 and col 1) to this value
+                        [none].
+  --transpose-format=TRANSPOSE_FORMAT
+                        input format of un-transposed table
+  --expand              expand table - multi-value cells with be expanded over
+                        several rows.
+  --no-headers          matrix has no row/column headers.
+  --columns=COLUMNS     columns to use.
+  --file=FILE           columns to test from table.
+  -d DELIM, --delimiter=DELIM
+                        delimiter of columns.
+  -V, --invert-match    invert match.
+  --sort-by-rows=SORT_ROWS
+                        output order for rows.
+  -a VALUE, --value=VALUE
+                        value to use for various algorithms.
+  --group=GROUP_COLUMN  group values by column. Supply an integer column
+                        [default=0]
+  --group-function=GROUP_FUNCTION
+                        function to group values by.
+  --join-table=JOIN_COLUMN
+                        join rows in a table by columns.
+  --collapse-table=COLLAPSE_TABLE
+                        collapse a table. Value determines the missing
+                        variable [none].
+  --join-column-name=JOIN_COLUMN_NAME
+                        use this column as a prefix.
+  --flatten-table       flatten a table [False].
+  --as-column           output table as a single column.
+  --split-fields        split fields.
+  --separator=SEPARATOR
+                        separator for multi-valued fields [default=;].
+  --fdr-method=FDR_METHOD
+                        method to perform multiple testing correction by
+                        controlling the fdr [default=BH].
+  --fdr-add-column=FDR_ADD_COLUMN
+                        add new column instead of replacing existing columns.
+                        The value of the option will be used as prefix if
+                        there are multiple columns [none]
+  --id-column=ID_COLUMN
+                        list of column(s) to use as the row id when flattening
+                        the table. If None, then row number is used.
+                        [default=none].
+  --variable-name=VARIABLE_NAME
+                        the column header for the &#39;variable&#39; column when
+                        flattening [default=column].
+  --value-name=VALUE_NAME
+                        the column header for the &#39;value&#39; column when
+                        flattening [default=value].
+  -v LOGLEVEL, --verbose=LOGLEVEL
+                        loglevel [1]. The higher, the more output.
+  --timeit=TIMEIT_FILE  store timeing information in file [none].
+  --timeit-name=TIMEIT_NAME
+                        name in timing file for this class of jobs [all].
+  --timeit-header       add header for timing information [none].
+  --random-seed=RANDOM_SEED
+                        random seed to initialize number generator with
+                        [none].
+  -I FILE, --stdin=FILE
+                        file to read stdin from [default = stdin].
+  -L FILE, --log=FILE   file with logging information [default = stdout].
+  -E FILE, --error=FILE
+                        file with error information [default = stderr].
+  -S FILE, --stdout=FILE
+                        file where output is to go [default = stdout].
+</pre></div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">table2table.py - operate on tables</a><ul>
+<li><a class="reference internal" href="#purpose">Purpose</a><ul>
+<li><a class="reference internal" href="#methods-working-on-all-tables">Methods working on all tables:</a></li>
+<li><a class="reference internal" href="#methods-for-numerical-columns">Methods for numerical columns</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#usage">Usage</a></li>
+<li><a class="reference internal" href="#command-line-options">Command line options</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="table2graph.html"
+                        title="previous chapter">convert adjacency lists to edge lists</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="join_tables.html"
+                        title="next chapter">join_tables.py - join tables</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/scripts/table2table.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="join_tables.html" title="join_tables.py - join tables"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="table2graph.html" title="convert adjacency lists to edge lists"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../scripts.html" >Scripts</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

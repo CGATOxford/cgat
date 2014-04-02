@@ -1,0 +1,423 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>bam2stats.py - compute stats from a bam-file &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="Scripts" href="../scripts.html" />
+    <link rel="next" title="bam2transcriptContribution.py" href="bam2transcriptContribution.html" />
+    <link rel="prev" title="bam2peakshape.py - compute peak shape features from a bam-file" href="bam2peakshape.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="bam2transcriptContribution.html" title="bam2transcriptContribution.py"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="bam2peakshape.html" title="bam2peakshape.py - compute peak shape features from a bam-file"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../scripts.html" accesskey="U">Scripts</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-bam2stats"></span><div class="section" id="bam2stats-py-compute-stats-from-a-bam-file">
+<h1>bam2stats.py - compute stats from a bam-file<a class="headerlink" href="#bam2stats-py-compute-stats-from-a-bam-file" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Andreas Heger</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id$</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Genomics NGS Summary BAM</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="purpose">
+<h2>Purpose<a class="headerlink" href="#purpose" title="Permalink to this headline">¶</a></h2>
+<p>This script takes a bam file as input and computes a few metrics by
+iterating over the file. The metrics output are:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="36%" />
+<col width="64%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><em>Category</em></td>
+<td><em>Content</em></td>
+</tr>
+<tr class="row-even"><td>total</td>
+<td>total number of alignments in bam file</td>
+</tr>
+<tr class="row-odd"><td>alignments_mapped</td>
+<td>alignments mapped to a chromosome (bam
+flag)</td>
+</tr>
+<tr class="row-even"><td>alignments_unmapped</td>
+<td>alignments unmapped (bam flag)</td>
+</tr>
+<tr class="row-odd"><td>qc_fail</td>
+<td>alignments failing QC (bam flag)</td>
+</tr>
+<tr class="row-even"><td>mate_unmapped</td>
+<td>alignments in which the mate is unmapped
+(bam flag)</td>
+</tr>
+<tr class="row-odd"><td>reverse</td>
+<td>alignments in which read maps to reverse
+strand (bam flag)</td>
+</tr>
+<tr class="row-even"><td>mate_reverse</td>
+<td>alignments in which mate maps to reverse
+strand (bam flag)</td>
+</tr>
+<tr class="row-odd"><td>proper_pair</td>
+<td>alignments in which both pairs have been
+mapped properly (according to the mapper)
+(bam flag)</td>
+</tr>
+<tr class="row-even"><td>read1</td>
+<td>alignments for 1st read of pair (bam flag)</td>
+</tr>
+<tr class="row-odd"><td>paired</td>
+<td>alignments of reads that are paired (bam
+flag)</td>
+</tr>
+<tr class="row-even"><td>duplicate</td>
+<td>read is PCR or optical duplicate (bam
+flag)</td>
+</tr>
+<tr class="row-odd"><td>read2</td>
+<td>alignment is for 2nd read of pair (bam
+flag)</td>
+</tr>
+<tr class="row-even"><td>secondary</td>
+<td>alignment is not primary alignment</td>
+</tr>
+<tr class="row-odd"><td>alignments_rna</td>
+<td>alignments mapping to regions specified in
+a .gff file</td>
+</tr>
+<tr class="row-even"><td>alignments_no_rna</td>
+<td>alignments not mapping to regions in a
+.gff file (if &#8211;remove-rna has been set,
+otherwise equal to mapped)</td>
+</tr>
+<tr class="row-odd"><td>alignments_duplicates</td>
+<td>number of alignments mapping to the same
+location</td>
+</tr>
+<tr class="row-even"><td>alignments_unique</td>
+<td>number of alignments mapping to unique
+locations</td>
+</tr>
+<tr class="row-odd"><td>reads_total</td>
+<td>number of reads in file. Either given via
+&#8211;input-reads or deduc ed as the sum of
+mappend and unmapped reads</td>
+</tr>
+<tr class="row-even"><td>reads_mapped</td>
+<td>number of reads mapping in file. Derived
+from the total number o f alignments and
+removing counts for multiple
+matches. Requires the NH flag to be set
+correctly.</td>
+</tr>
+<tr class="row-odd"><td>reads_unmapped</td>
+<td><p class="first">number of reads unmapped in file. Assumes
+that there is only one</p>
+<blockquote class="last">
+<div>entry per unmapped read.</div></blockquote>
+</td>
+</tr>
+<tr class="row-even"><td>reads_missing</td>
+<td>number of reads missing, if number of
+reads given by &#8211;input-rea ds. Otherwise
+0.</td>
+</tr>
+<tr class="row-odd"><td>reads_norna</td>
+<td>reads not mapping to repetetive RNA
+regions.</td>
+</tr>
+<tr class="row-even"><td>pairs_total</td>
+<td>number of total pairs - this is the number
+of reads_total divided by two. If there
+were no pairs, pairs_total will be 0.</td>
+</tr>
+<tr class="row-odd"><td>pairs_mapped</td>
+<td>number of mapped pairs - this is the same
+as the number of proper pairs.</td>
+</tr>
+</tbody>
+</table>
+<p>Additionally, the script outputs histograms for the following tags and
+scores.</p>
+<ul class="simple">
+<li>NM: number of mismatches in alignments.</li>
+<li>NH: number of hits of reads.</li>
+<li>mapq: mapping quality of alignments.</li>
+</ul>
+<div class="section" id="supplying-a-fastq-file">
+<h3>Supplying a fastq file<a class="headerlink" href="#supplying-a-fastq-file" title="Permalink to this headline">¶</a></h3>
+<p>If a fastq file is supplied (<tt class="docutils literal"><span class="pre">--filename-fastq</span></tt>), the script will
+compute some additional summary statistics. However, as it builds a dictionary
+of all sequences, it will also require a good  amount of memory. The additional
+metrics output are:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="38%" />
+<col width="62%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><em>Category</em></td>
+<td><em>Content</em></td>
+</tr>
+<tr class="row-even"><td>pairs_total</td>
+<td>total number of pairs in input data</td>
+</tr>
+<tr class="row-odd"><td>pairs_mapped</td>
+<td>pairs in which both reads map</td>
+</tr>
+<tr class="row-even"><td>pairs_unmapped</td>
+<td>pairs in which neither read maps</td>
+</tr>
+<tr class="row-odd"><td>pairs_proper_unique</td>
+<td>pairs which are proper and map uniquely.</td>
+</tr>
+<tr class="row-even"><td>pairs_incomplete</td>
+<td>pairs in which one of the reads maps
+uniquely, but the other does not map.</td>
+</tr>
+<tr class="row-odd"><td>pairs_proper_duplicate</td>
+<td>pairs which are proper and unique, but
+marked as duplicates.</td>
+</tr>
+<tr class="row-even"><td>pairs_proper_multimapping</td>
+<td>pairs which are proper, but map to
+multiple locations.</td>
+</tr>
+<tr class="row-odd"><td>pairs_not_proper_unique</td>
+<td>pairs mapping uniquely, but not flagged
+as proper</td>
+</tr>
+<tr class="row-even"><td>pairs_other</td>
+<td>pairs not in any of the above categories</td>
+</tr>
+</tbody>
+</table>
+<p>Note that for paired-end data, any <tt class="docutils literal"><span class="pre"></span></tt> or <tt class="docutils literal"><span class="pre">/2</span></tt> suffixes will be
+removed from the read name in the assumption that these have been removed
+in the bam file as well.</p>
+</div>
+</div>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>Example:</p>
+<div class="highlight-python"><div class="highlight"><pre>cat in.bam | python bam2stats.py -
+</pre></div>
+</div>
+<p>This command will generate various statistics based on the supplied
+BAM file, such as percentage reads mapped and percentage reads mapped
+in pairs.</p>
+<p>Type:</p>
+<div class="highlight-python"><div class="highlight"><pre>python cgat_script_template.py --help
+</pre></div>
+</div>
+<p>for command line help.</p>
+</div>
+<div class="section" id="documentation">
+<h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h2>
+<p>Reads are not counted via read name, but making use of NH and HI flags
+when present.  To recap, NH is the number of reported alignments that
+contain the query in the current record, while HI is the hit index and
+ranges from 0 to NH-1.</p>
+<p>Unfortunately, not all aligners follow this convention. For example,
+gsnap seems to set NH to the number of reportable alignments, while
+the actual number of reported alignments in the file is less. Thus, if
+the HI flag is present, the maximum HI is used to correct the NH
+flag. The assumption is, that the same reporting threshold has been
+used for all alignments.</p>
+<p>If no NH flag is present, it is assumed that all reads have only been
+reported once.</p>
+<p>Multi-matching counts after filtering are really guesswork. Basically,
+the assumption is that filtering is consistent and will tend to remove
+all alignments of a query.</p>
+</div>
+<div class="section" id="command-line-options">
+<h2>Command line options<a class="headerlink" href="#command-line-options" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+<div class="highlight-text"><div class="highlight"><pre>Usage: bam2stats.py [options]
+
+Options:
+  --version             show program&#39;s version number and exit
+  -h, --help            show this help message and exit
+  --no-usage            output help without usage information
+  -r GFF, --filename-rna=GFF
+                        gff formatted file with rna locations. Note that the
+                        computation currently does not take into account
+                        indels, so it is an approximate count only [none]
+  -f, --remove-rna      as well as counting, also remove rna reads for
+                        duplicate and other counts [False]
+  -i INPUT_READS, --input-reads=INPUT_READS
+                        the number of reads - if given, used to provide
+                        percentages [0]
+  --force-output        output nh/nm stats even if there is only a single
+                        count [False]
+  -d, --output-details  output per-read details [False]
+  -q FILENAME_FASTQ, --filename-fastq=FILENAME_FASTQ
+                        filename with sequences and quality scores. This file
+                        is only used to collect sequence identifiers. Thus,
+                        for paired end data a single file is sufficient [none]
+  -v LOGLEVEL, --verbose=LOGLEVEL
+                        loglevel [1]. The higher, the more output.
+  --timeit=TIMEIT_FILE  store timeing information in file [none].
+  --timeit-name=TIMEIT_NAME
+                        name in timing file for this class of jobs [all].
+  --timeit-header       add header for timing information [none].
+  --random-seed=RANDOM_SEED
+                        random seed to initialize number generator with
+                        [none].
+  -P OUTPUT_FILENAME_PATTERN, --output-filename-pattern=OUTPUT_FILENAME_PATTERN
+                        OUTPUT filename pattern for various methods [%s].
+  -F, --force           force over-writing of existing files.
+  -I FILE, --stdin=FILE
+                        file to read stdin from [default = stdin].
+  -L FILE, --log=FILE   file with logging information [default = stdout].
+  -E FILE, --error=FILE
+                        file with error information [default = stderr].
+  -S FILE, --stdout=FILE
+                        file where output is to go [default = stdout].
+</pre></div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">bam2stats.py - compute stats from a bam-file</a><ul>
+<li><a class="reference internal" href="#purpose">Purpose</a><ul>
+<li><a class="reference internal" href="#supplying-a-fastq-file">Supplying a fastq file</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#usage">Usage</a></li>
+<li><a class="reference internal" href="#documentation">Documentation</a></li>
+<li><a class="reference internal" href="#command-line-options">Command line options</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="bam2peakshape.html"
+                        title="previous chapter">bam2peakshape.py - compute peak shape features from a bam-file</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="bam2transcriptContribution.html"
+                        title="next chapter">bam2transcriptContribution.py</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/scripts/bam2stats.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="bam2transcriptContribution.html" title="bam2transcriptContribution.py"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="bam2peakshape.html" title="bam2peakshape.py - compute peak shape features from a bam-file"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../scripts.html" >Scripts</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

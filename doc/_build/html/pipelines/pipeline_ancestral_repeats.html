@@ -1,0 +1,353 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Ancestral repeats pipeline &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="NGS Pipelines" href="../CGATPipelines.html" />
+    <link rel="next" title="Chains pipeline" href="pipeline_chains.html" />
+    <link rel="prev" title="Annotation pipeline" href="pipeline_annotations.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pipeline_chains.html" title="Chains pipeline"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="pipeline_annotations.html" title="Annotation pipeline"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../Pipelines.html" >CGAT Pipelines</a> &raquo;</li>
+          <li><a href="../CGATPipelines.html" accesskey="U">NGS Pipelines</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-pipeline_ancestral_repeats"></span><div class="section" id="ancestral-repeats-pipeline">
+<h1>Ancestral repeats pipeline<a class="headerlink" href="#ancestral-repeats-pipeline" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Andreas Heger</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id: pipeline_ancestral_repeats.py 2876 2010-03-27 17:42:11Z andreas $</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Python</td>
+</tr>
+</tbody>
+</table>
+<p>The ancestral repeats pipeline defines ancestral repeats for a pair of genomes
+and computes rates for these.</p>
+<p>This pipeline performs the following actions:</p>
+<blockquote>
+<div><ul>
+<li><dl class="first docutils">
+<dt>collect repeatmasker annotation from external databases. Currently implemented are:</dt>
+<dd><ul class="first last simple">
+<li>UCSC</li>
+<li>Ensembl</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p class="first">build pairwise genomic alignment from axt or maf files</p>
+</li>
+<li><p class="first">define ancestral repeats</p>
+</li>
+<li><p class="first">compute rates of ancestral repeats</p>
+</li>
+</ul>
+</div></blockquote>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>See <a class="reference internal" href="../UsingPipelines.html#pipelinesettingup"><em>Setting up a pipeline</em></a> and <a class="reference internal" href="../UsingPipelines.html#pipelinerunning"><em>Running a pipeline</em></a> on general information how to use CGAT pipelines.</p>
+<div class="section" id="configuration">
+<h3>Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">¶</a></h3>
+<p>The pipeline expects a <a class="reference internal" href="../glossary.html#term-query"><em class="xref std std-term">query</em></a> and <a class="reference internal" href="../glossary.html#term-target"><em class="xref std std-term">target</em></a> genome. These should be set in the general section.
+For each genome there should then be section on how to obtain the repeatmasker tracks. The default
+configuration file gives an example.</p>
+</div>
+<div class="section" id="input">
+<h3>Input<a class="headerlink" href="#input" title="Permalink to this headline">¶</a></h3>
+<p>The pipeline starts from an empty working directory. It will collect the input
+data from directories specified in the configuration files.</p>
+<p>The genomic alignment can both be build from <a class="reference internal" href="../glossary.html#term-axt"><em class="xref std std-term">axt</em></a> formatted pairwise alignments
+and from <a class="reference internal" href="../glossary.html#term-maf"><em class="xref std std-term">maf</em></a> formatted multiple alignmentns. However, the latter currently 
+only works if the <a class="reference internal" href="../glossary.html#term-query"><em class="xref std std-term">query</em></a> genome is the reference species in the maf files.</p>
+<p>This is a consequence of <tt class="file docutils literal"><span class="pre">maf2Axt</span></tt> requiring that the strand of the reference species 
+is always positive and I have not figured out how to invert maf alignments.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">ENSEMBL import is not thoroughly tested.
+<a class="reference internal" href="../glossary.html#term-maf"><em class="xref std std-term">maf</em></a> formatted import is not thoroughly tested.</p>
+</div>
+<p>Type:</p>
+<div class="highlight-python"><div class="highlight"><pre>python pipeline_ancestral_repeats.py --help
+</pre></div>
+</div>
+<p>for command line help.</p>
+</div>
+<div class="section" id="requirements">
+<h3>Requirements<a class="headerlink" href="#requirements" title="Permalink to this headline">¶</a></h3>
+</div>
+</div>
+<div class="section" id="output">
+<h2>Output<a class="headerlink" href="#output" title="Permalink to this headline">¶</a></h2>
+<p>The pipeline builds the following files:</p>
+<dl class="docutils">
+<dt>aligned_repeats.psl.gz</dt>
+<dd><a class="reference internal" href="../glossary.html#term-psl"><em class="xref std std-term">psl</em></a> formatted files of alignments between ancestral repeats</dd>
+<dt>aligned_repeats.rates.gz</dt>
+<dd>rates between ancestral repeats</dd>
+<dt>alignment.psl.gz</dt>
+<dd><a class="reference internal" href="../glossary.html#term-psl"><em class="xref std std-term">psl</em></a> formatted genomic alignment between query and target.</dd>
+<dt>&lt;query&gt;_rates.gff.gz</dt>
+<dd><a class="reference internal" href="../glossary.html#term-gff"><em class="xref std std-term">gff</em></a> formatted file of ancestral repeats on the query. The score field is set
+to the estimated substitution rate of the repeat.</dd>
+</dl>
+</div>
+<div class="section" id="example">
+<h2>Example<a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h2>
+<p>Example data is available at <a class="reference external" href="http://www.cgat.org/~andreas/sample_data/pipeline_ancestral_repeats.tgz">http://www.cgat.org/~andreas/sample_data/pipeline_ancestral_repeats.tgz</a>.
+To run the example, simply unpack and untar:</p>
+<div class="highlight-python"><div class="highlight"><pre>wget http://www.cgat.org/~andreas/sample_data/pipeline_ancestral_repeats.tgz
+tar -xvzf pipeline_ancestral_repeats.tgz
+cd pipeline_ancestral_repeats
+python &lt;srcdir&gt;/pipeline_ancestral_repeats.py make full
+</pre></div>
+</div>
+<p>The example data builds ancestral repeats between human hg19:chr19 and mouse mm9:chr7.</p>
+</div>
+<div class="section" id="code">
+<h2>Code<a class="headerlink" href="#code" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pipeline_ancestral_repeats.getGenomes">
+<tt class="descclassname">pipeline_ancestral_repeats.</tt><tt class="descname">getGenomes</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_ancestral_repeats.getGenomes" title="Permalink to this definition">¶</a></dt>
+<dd><p>return genome names of query and target.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_ancestral_repeats.buildSizes">
+<tt class="descclassname">pipeline_ancestral_repeats.</tt><tt class="descname">buildSizes</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_ancestral_repeats.buildSizes" title="Permalink to this definition">¶</a></dt>
+<dd><p>extract size information from genomes.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_ancestral_repeats.buildGenomeAlignment">
+<tt class="descclassname">pipeline_ancestral_repeats.</tt><tt class="descname">buildGenomeAlignment</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_ancestral_repeats.buildGenomeAlignment" title="Permalink to this definition">¶</a></dt>
+<dd><p>build pairwise genomic aligment from axt files.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_ancestral_repeats.importRepeatsFromUCSC">
+<tt class="descclassname">pipeline_ancestral_repeats.</tt><tt class="descname">importRepeatsFromUCSC</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em>, <em>ucsc_database</em>, <em>repeattypes</em>, <em>genome</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_ancestral_repeats.importRepeatsFromUCSC" title="Permalink to this definition">¶</a></dt>
+<dd><p>import repeats from a UCSC formatted file.</p>
+<p>The repeats are stored as a <a class="reference internal" href="../glossary.html#term-gff"><em class="xref std std-term">gff</em></a> formatted file.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_ancestral_repeats.importRepeatsFromEnsembl">
+<tt class="descclassname">pipeline_ancestral_repeats.</tt><tt class="descname">importRepeatsFromEnsembl</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em>, <em>ensembl_database</em>, <em>repeattypes</em>, <em>genome</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_ancestral_repeats.importRepeatsFromEnsembl" title="Permalink to this definition">¶</a></dt>
+<dd><p>import repeats from an ENSEMBL database.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_ancestral_repeats.importRepeats">
+<tt class="descclassname">pipeline_ancestral_repeats.</tt><tt class="descname">importRepeats</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em>, <em>track</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_ancestral_repeats.importRepeats" title="Permalink to this definition">¶</a></dt>
+<dd><p>import repeats from external sources.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_ancestral_repeats.mergeRepeats">
+<tt class="descclassname">pipeline_ancestral_repeats.</tt><tt class="descname">mergeRepeats</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_ancestral_repeats.mergeRepeats" title="Permalink to this definition">¶</a></dt>
+<dd><p>merge adjacent repeats.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_ancestral_repeats.buildAlignedRepeats">
+<tt class="descclassname">pipeline_ancestral_repeats.</tt><tt class="descname">buildAlignedRepeats</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_ancestral_repeats.buildAlignedRepeats" title="Permalink to this definition">¶</a></dt>
+<dd><p>build alignment between repeats.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_ancestral_repeats.buildRepeatsRates">
+<tt class="descclassname">pipeline_ancestral_repeats.</tt><tt class="descname">buildRepeatsRates</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_ancestral_repeats.buildRepeatsRates" title="Permalink to this definition">¶</a></dt>
+<dd><p>compute rates for individual aligned repeats.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_ancestral_repeats.computeAlignmentStats">
+<tt class="descclassname">pipeline_ancestral_repeats.</tt><tt class="descname">computeAlignmentStats</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_ancestral_repeats.computeAlignmentStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>compute alignment coverage statistics</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_ancestral_repeats.computeRepeatsCounts">
+<tt class="descclassname">pipeline_ancestral_repeats.</tt><tt class="descname">computeRepeatsCounts</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_ancestral_repeats.computeRepeatsCounts" title="Permalink to this definition">¶</a></dt>
+<dd><p>count number and type of repeats.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_ancestral_repeats.buildRepeatDistribution">
+<tt class="descclassname">pipeline_ancestral_repeats.</tt><tt class="descname">buildRepeatDistribution</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_ancestral_repeats.buildRepeatDistribution" title="Permalink to this definition">¶</a></dt>
+<dd><p>count size and distance distribution of repeats.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_ancestral_repeats.exportRatesAsGFF">
+<tt class="descclassname">pipeline_ancestral_repeats.</tt><tt class="descname">exportRatesAsGFF</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_ancestral_repeats.exportRatesAsGFF" title="Permalink to this definition">¶</a></dt>
+<dd><p>export gff file with rate as score.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_ancestral_repeats.build_report">
+<tt class="descclassname">pipeline_ancestral_repeats.</tt><tt class="descname">build_report</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_ancestral_repeats.build_report" title="Permalink to this definition">¶</a></dt>
+<dd><p>build report from scratch.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_ancestral_repeats.update_report">
+<tt class="descclassname">pipeline_ancestral_repeats.</tt><tt class="descname">update_report</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_ancestral_repeats.update_report" title="Permalink to this definition">¶</a></dt>
+<dd><p>update report.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_ancestral_repeats.publish_report">
+<tt class="descclassname">pipeline_ancestral_repeats.</tt><tt class="descname">publish_report</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_ancestral_repeats.publish_report" title="Permalink to this definition">¶</a></dt>
+<dd><p>publish report.</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Ancestral repeats pipeline</a><ul>
+<li><a class="reference internal" href="#usage">Usage</a><ul>
+<li><a class="reference internal" href="#configuration">Configuration</a></li>
+<li><a class="reference internal" href="#input">Input</a></li>
+<li><a class="reference internal" href="#requirements">Requirements</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#output">Output</a></li>
+<li><a class="reference internal" href="#example">Example</a></li>
+<li><a class="reference internal" href="#code">Code</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="pipeline_annotations.html"
+                        title="previous chapter">Annotation pipeline</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="pipeline_chains.html"
+                        title="next chapter">Chains pipeline</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/pipelines/pipeline_ancestral_repeats.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pipeline_chains.html" title="Chains pipeline"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="pipeline_annotations.html" title="Annotation pipeline"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../Pipelines.html" >CGAT Pipelines</a> &raquo;</li>
+          <li><a href="../CGATPipelines.html" >NGS Pipelines</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

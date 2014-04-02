@@ -1,0 +1,301 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Polyphen prediction pipeline &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="NGS Pipelines" href="../CGATPipelines.html" />
+    <link rel="next" title="Variant annotation pipeline" href="pipeline_variant_annotation.html" />
+    <link rel="prev" title="MeDIP-Seq pipeline" href="pipeline_medip.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pipeline_variant_annotation.html" title="Variant annotation pipeline"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="pipeline_medip.html" title="MeDIP-Seq pipeline"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../Pipelines.html" >CGAT Pipelines</a> &raquo;</li>
+          <li><a href="../CGATPipelines.html" accesskey="U">NGS Pipelines</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-pipeline_polyphen"></span><div class="section" id="polyphen-prediction-pipeline">
+<h1>Polyphen prediction pipeline<a class="headerlink" href="#polyphen-prediction-pipeline" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Andreas Heger</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id: pipeline_snps.py 2870 2010-03-03 10:20:29Z andreas $</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Python</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="purpose">
+<h2>Purpose<a class="headerlink" href="#purpose" title="Permalink to this headline">¶</a></h2>
+<p>Input:</p>
+<p>Indels in pileup format.</p>
+</div>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>Type:</p>
+<div class="highlight-python"><div class="highlight"><pre>python &lt;script_name&gt;.py --help
+</pre></div>
+</div>
+<p>for command line help.</p>
+</div>
+<div class="section" id="code">
+<h2>Code<a class="headerlink" href="#code" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pipeline_polyphen.buildGeneRegions">
+<tt class="descclassname">pipeline_polyphen.</tt><tt class="descname">buildGeneRegions</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_polyphen.buildGeneRegions" title="Permalink to this definition">¶</a></dt>
+<dd><p>annotate genomic regions with reference gene set.</p>
+<p>Only considers protein coding genes. In case of overlapping
+genes, only take the longest (in genomic coordinates).
+Genes not on UCSC contigs are removed.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_polyphen.buildGenes">
+<tt class="descclassname">pipeline_polyphen.</tt><tt class="descname">buildGenes</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_polyphen.buildGenes" title="Permalink to this definition">¶</a></dt>
+<dd><p>build a collection of exons from the protein-coding
+section of the ENSEMBL gene set. The exons include both CDS
+and UTR.</p>
+<p>The set is filtered in the same way as in <a class="reference internal" href="#pipeline_polyphen.buildGeneRegions" title="pipeline_polyphen.buildGeneRegions"><tt class="xref py py-meth docutils literal"><span class="pre">buildGeneRegions()</span></tt></a>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_polyphen.loadGeneInformation">
+<tt class="descclassname">pipeline_polyphen.</tt><tt class="descname">loadGeneInformation</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_polyphen.loadGeneInformation" title="Permalink to this definition">¶</a></dt>
+<dd><p>load the transcript set.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_polyphen.loadGeneStats">
+<tt class="descclassname">pipeline_polyphen.</tt><tt class="descname">loadGeneStats</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_polyphen.loadGeneStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>load the transcript set.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_polyphen.buildTranscripts">
+<tt class="descclassname">pipeline_polyphen.</tt><tt class="descname">buildTranscripts</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_polyphen.buildTranscripts" title="Permalink to this definition">¶</a></dt>
+<dd><p>build a collection of transcripts from the protein-coding
+section of the ENSEMBL gene set.</p>
+<p>Only CDS are used.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_polyphen.loadTranscripts">
+<tt class="descclassname">pipeline_polyphen.</tt><tt class="descname">loadTranscripts</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_polyphen.loadTranscripts" title="Permalink to this definition">¶</a></dt>
+<dd><p>load the transcript set.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_polyphen.loadTranscriptStats">
+<tt class="descclassname">pipeline_polyphen.</tt><tt class="descname">loadTranscriptStats</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_polyphen.loadTranscriptStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>load the transcript set.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_polyphen.loadTranscriptInformation">
+<tt class="descclassname">pipeline_polyphen.</tt><tt class="descname">loadTranscriptInformation</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_polyphen.loadTranscriptInformation" title="Permalink to this definition">¶</a></dt>
+<dd><p>load the transcript set.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_polyphen.buildPeptideFasta">
+<tt class="descclassname">pipeline_polyphen.</tt><tt class="descname">buildPeptideFasta</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_polyphen.buildPeptideFasta" title="Permalink to this definition">¶</a></dt>
+<dd><p>load ENSEMBL peptide file</p>
+<p><em>infile</em> is an ENSEMBL .pep.all.fa.gz file.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_polyphen.buildCDNAFasta">
+<tt class="descclassname">pipeline_polyphen.</tt><tt class="descname">buildCDNAFasta</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_polyphen.buildCDNAFasta" title="Permalink to this definition">¶</a></dt>
+<dd><p>load ENSEMBL peptide file</p>
+<p><em>infile</em> is an ENSEMBL .cdna.all.fa.gz file.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_polyphen.buildCDSFasta">
+<tt class="descclassname">pipeline_polyphen.</tt><tt class="descname">buildCDSFasta</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_polyphen.buildCDSFasta" title="Permalink to this definition">¶</a></dt>
+<dd><p>build cds sequences from peptide and cds file.</p>
+<p><em>infile</em> is an ENSEMBL .cdna.all.fa.gz file.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_polyphen.loadProteinStats">
+<tt class="descclassname">pipeline_polyphen.</tt><tt class="descname">loadProteinStats</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_polyphen.loadProteinStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>load the transcript set.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_polyphen.buildBenchmarkSet">
+<tt class="descclassname">pipeline_polyphen.</tt><tt class="descname">buildBenchmarkSet</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_polyphen.buildBenchmarkSet" title="Permalink to this definition">¶</a></dt>
+<dd><p>build a benchmark set of protein ids.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_polyphen.buildPolyphenFeatures">
+<tt class="descclassname">pipeline_polyphen.</tt><tt class="descname">buildPolyphenFeatures</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_polyphen.buildPolyphenFeatures" title="Permalink to this definition">¶</a></dt>
+<dd><p>run polyphen on the cluster.</p>
+<p>To do this, first send uniref to all nodes:</p>
+<dl class="docutils">
+<dt>python ~/cgat/cluster_distribute.py </dt>
+<dd>&#8211;collection=andreas 
+/net/cpp-group/tools/polyphen-2.0.18/nrdb/uniref100*.{pin,psd,psi,phr,psq,pal}</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_polyphen.runPolyphen">
+<tt class="descclassname">pipeline_polyphen.</tt><tt class="descname">runPolyphen</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em>, <em>model</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_polyphen.runPolyphen" title="Permalink to this definition">¶</a></dt>
+<dd><p>run POLYPHEN on feature tables to classify SNPs.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_polyphen.loadPolyphenWeights">
+<tt class="descclassname">pipeline_polyphen.</tt><tt class="descname">loadPolyphenWeights</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_polyphen.loadPolyphenWeights" title="Permalink to this definition">¶</a></dt>
+<dd><p>load polyphen input data.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_polyphen.loadPolyphen">
+<tt class="descclassname">pipeline_polyphen.</tt><tt class="descname">loadPolyphen</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_polyphen.loadPolyphen" title="Permalink to this definition">¶</a></dt>
+<dd><p>load polyphen results.</p>
+<p>The comment column is ignored.</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Polyphen prediction pipeline</a><ul>
+<li><a class="reference internal" href="#purpose">Purpose</a></li>
+<li><a class="reference internal" href="#usage">Usage</a></li>
+<li><a class="reference internal" href="#code">Code</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="pipeline_medip.html"
+                        title="previous chapter">MeDIP-Seq pipeline</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="pipeline_variant_annotation.html"
+                        title="next chapter">Variant annotation pipeline</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/pipelines/pipeline_polyphen.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pipeline_variant_annotation.html" title="Variant annotation pipeline"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="pipeline_medip.html" title="MeDIP-Seq pipeline"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../Pipelines.html" >CGAT Pipelines</a> &raquo;</li>
+          <li><a href="../CGATPipelines.html" >NGS Pipelines</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,732 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>CAPseq pipeline &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="NGS Pipelines" href="../CGATPipelines.html" />
+    <link rel="next" title="Exome pipeline" href="pipeline_exome.html" />
+    <link rel="prev" title="Long non-coding RNA pipeline" href="pipeline_rnaseqlncrna.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pipeline_exome.html" title="Exome pipeline"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="pipeline_rnaseqlncrna.html" title="Long non-coding RNA pipeline"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../Pipelines.html" >CGAT Pipelines</a> &raquo;</li>
+          <li><a href="../CGATPipelines.html" accesskey="U">NGS Pipelines</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-pipeline_capseq"></span><div class="section" id="capseq-pipeline">
+<h1>CAPseq pipeline<a class="headerlink" href="#capseq-pipeline" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">David Sims</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id: pipeline_capseq.py 2900 2011-05-24 14:38:00Z david $</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Python</td>
+</tr>
+</tbody>
+</table>
+<p>The CAPseq pipeline imports reads from one or more CAPseq experiments and
+performs the following tasks:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Align reads to the genome using Bowtie</li>
+<li>Call peaks using MACS</li>
+<li>Compare intervals across tracks</li>
+</ul>
+</div></blockquote>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>See <a class="reference internal" href="../UsingPipelines.html#pipelinesettingup"><em>Setting up a pipeline</em></a> and <a class="reference internal" href="../UsingPipelines.html#pipelinerunning"><em>Running a pipeline</em></a> on general information how to use CGAT pipelines.</p>
+<div class="section" id="configuration">
+<h3>Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">¶</a></h3>
+<p>The pipeline requires a configured <tt class="file docutils literal"><span class="pre">pipeline_capseq.ini</span></tt> file. The pipeline looks for a configuration file in several places:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>The default configuration in the <a class="reference internal" href="../glossary.html#term-code-directory"><em class="xref std std-term">code directory</em></a>.</li>
+<li>A shared configuration file <tt class="file docutils literal"><span class="pre">../pipeline.ini</span></tt>.</li>
+<li>A local configuration <tt class="file docutils literal"><span class="pre">pipeline.ini</span></tt>.</li>
+</ol>
+</div></blockquote>
+<p>The order is as above. Thus, a local configuration setting will
+override a shared configuration setting and a default configuration
+setting.</p>
+<p>Configuration files follow the ini format (see the python
+<cite>ConfigParser &lt;http://docs.python.org/library/configparser.html&gt;</cite> documentation).
+The configuration file is organized by section and the variables are documented within 
+the file. In order to get a local configuration file in the current directory, type:</p>
+<div class="highlight-python"><div class="highlight"><pre>python &lt;codedir&gt;/pipeline_cpg.py config
+</pre></div>
+</div>
+<p>The sphinxreport report requires a <tt class="file docutils literal"><span class="pre">conf.py</span></tt> and <tt class="file docutils literal"><span class="pre">sphinxreport.ini</span></tt> file 
+(see <a class="reference internal" href="../UsingPipelines.html#pipelinereporting"><em>Building pipeline reports</em></a>). To start with, use the files supplied with the
+<a class="reference internal" href="#example">Example</a> data.</p>
+</div>
+<div class="section" id="input">
+<h3>Input<a class="headerlink" href="#input" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="reads">
+<h4>Reads<a class="headerlink" href="#reads" title="Permalink to this headline">¶</a></h4>
+<p>Input are <tt class="file docutils literal"><span class="pre">.fastq.gz</span></tt>-formatted files. The files should be
+labeled in the following way:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">sample</span><span class="o">-</span><span class="n">condition</span><span class="o">-</span><span class="n">replicate</span><span class="o">.</span><span class="n">fastq</span><span class="o">.</span><span class="n">gz</span>
+</pre></div>
+</div>
+<p>Note that neither <tt class="docutils literal"><span class="pre">sample</span></tt>, <tt class="docutils literal"><span class="pre">condition</span></tt> or <tt class="docutils literal"><span class="pre">replicate</span></tt> should contain 
+<tt class="docutils literal"><span class="pre">_</span></tt> (underscore) and <tt class="docutils literal"><span class="pre">.</span></tt> (dot) characters as these are used by the pipeline
+to delineate tasks.</p>
+</div>
+</div>
+<div class="section" id="requirements">
+<h3>Requirements<a class="headerlink" href="#requirements" title="Permalink to this headline">¶</a></h3>
+<p>The pipeline requires the information from the following pipelines:</p>
+<p><a class="reference internal" href="pipeline_annotations.html"><em>Annotation pipeline</em></a></p>
+<dl class="docutils">
+<dt>set the configuration variables:</dt>
+<dd><tt class="xref py py-data docutils literal"><span class="pre">annotations_database</span></tt> 
+<tt class="xref py py-data docutils literal"><span class="pre">annotations_dir</span></tt></dd>
+</dl>
+<p>On top of the default CGAT setup, the pipeline requires the following software to be in the 
+path:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="23%" />
+<col width="22%" />
+<col width="55%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><em>Program</em></td>
+<td><em>Version</em></td>
+<td><em>Purpose</em></td>
+</tr>
+<tr class="row-even"><td>bowtie</td>
+<td>&gt;=0.12.7</td>
+<td>read mapping</td>
+</tr>
+<tr class="row-odd"><td>MACS</td>
+<td>14</td>
+<td>peak finding</td>
+</tr>
+<tr class="row-even"><td>Picard</td>
+<td>&gt;=1.4</td>
+<td>Dupliate removal, mapping stats</td>
+</tr>
+<tr class="row-odd"><td>BEDTools</td>
+<td>&nbsp;</td>
+<td>interval comparison</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section" id="pipline-output">
+<h2>Pipline Output<a class="headerlink" href="#pipline-output" title="Permalink to this headline">¶</a></h2>
+<p>The results of the computation are all stored in an sqlite relational
+database <tt class="file docutils literal"><span class="pre">csvdb</span></tt>.</p>
+</div>
+<div class="section" id="example">
+<h2>Example<a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h2>
+<p>Example data is available at <a class="reference external" href="http://www.cgat.org/~andreas/sample_data/pipeline_capseq.tgz">http://www.cgat.org/~andreas/sample_data/pipeline_capseq.tgz</a>.
+To run the example, simply unpack and untar:</p>
+<div class="highlight-python"><div class="highlight"><pre>wget http://www.cgat.org/~andreas/sample_data/pipeline_capseq.tgz
+tar -xvzf pipeline_capseq.tgz
+cd pipeline_capseq.dir
+python &lt;srcdir&gt;/pipeline_capseq.py make full
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">For the pipeline to run, install the <a class="reference internal" href="pipeline_annotations.html"><em>Annotation pipeline</em></a> as well.</p>
+</div>
+</div>
+<div class="section" id="glossary">
+<h2>Glossary<a class="headerlink" href="#glossary" title="Permalink to this headline">¶</a></h2>
+<dl class="glossary docutils">
+<dt id="term-bowtie">bowtie</dt>
+<dd><a class="reference external" href="http://bowtie-bio.sourceforge.net/index.shtml">bowtie</a> - a read mapper</dd>
+</dl>
+</div>
+<div class="section" id="code">
+<h2>Code<a class="headerlink" href="#code" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pipeline_capseq.getControl">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">getControl</tt><span class="sig-paren">(</span><em>track</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.getControl" title="Permalink to this definition">¶</a></dt>
+<dd><p>return appropriate control for a track</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.buildBAM">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">buildBAM</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.buildBAM" title="Permalink to this definition">¶</a></dt>
+<dd><p>map reads with bowtie</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.buildPicardAlignStats">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">buildPicardAlignStats</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.buildPicardAlignStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gather BAM file alignment statistics using Picard</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.loadPicardAlignStats">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">loadPicardAlignStats</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.loadPicardAlignStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Merge Picard alignment stats into single table and load into SQLite.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.buildPicardGCStats">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">buildPicardGCStats</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.buildPicardGCStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gather BAM file GC bias stats using Picard</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.loadPicardGCStats">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">loadPicardGCStats</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.loadPicardGCStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Merge Picard insert size stats into single table and load into SQLite.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.buildBAMStats">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">buildBAMStats</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.buildBAMStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Count number of reads mapped, duplicates, etc. using bam2stats.py</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.loadBAMStats">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">loadBAMStats</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.loadBAMStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Import bam statistics into SQLite</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.dedup">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">dedup</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.dedup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove duplicate alignments from BAM files.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.loadPicardDuplicateStats">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">loadPicardDuplicateStats</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.loadPicardDuplicateStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Merge Picard duplicate stats into single table and load into SQLite.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.removeUnmapped">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">removeUnmapped</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.removeUnmapped" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove unmapped reads from BAM file</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.normaliseBAMs">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">normaliseBAMs</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfiles</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.normaliseBAMs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Within each &#8220;sample&#8221; where a sample represents a biological object in real life and a combination of
+tissue and replicate labels in the pipeline, Sample reads from the BAM for each track such that all have the same
+number of reads.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.mergeReplicateBAMs">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">mergeReplicateBAMs</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.mergeReplicateBAMs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Merge normalised BAM files for all replicates, then sort and index.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.getMergedBigWig">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">getMergedBigWig</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.getMergedBigWig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Merge multiple BAM files per replicate to produce a single non peak-shifted bigwig file</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.getMergedBigWigPeakShift">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">getMergedBigWigPeakShift</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.getMergedBigWigPeakShift" title="Permalink to this definition">¶</a></dt>
+<dd><p>Merge multiple BAM files per replicate to produce a single peak-shifted bigwig file</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.runMacsMerged">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">runMacsMerged</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.runMacsMerged" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run MACS for peakshifted wig generation</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.normaliseWig">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">normaliseWig</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.normaliseWig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run MACS for peakshifted wig generation</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.runMACS">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">runMACS</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.runMACS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run MACS for peak detection using control sample.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.loadMACS">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">loadMACS</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.loadMACS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load MACS intervals into database and filter on fold change and p-value</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.summarizeMACS">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">summarizeMACS</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.summarizeMACS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse MACS summary statistics from log file</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.loadMACSSummary">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">loadMACSSummary</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.loadMACSSummary" title="Permalink to this definition">¶</a></dt>
+<dd><p>load macs summary into database</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.exportIntervalsAsBed">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">exportIntervalsAsBed</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.exportIntervalsAsBed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Export MACS intervals from database as BED file and filter on fold change</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.convertWigToBigWig">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">convertWigToBigWig</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.convertWigToBigWig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert MACS wig file to bigwig file</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.runMACSsolo">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">runMACSsolo</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.runMACSsolo" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run MACS for peak detection.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.summarizeMACSsolo">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">summarizeMACSsolo</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.summarizeMACSsolo" title="Permalink to this definition">¶</a></dt>
+<dd><p>run MACS for peak detection.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.loadMACSsoloSummary">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">loadMACSsoloSummary</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.loadMACSsoloSummary" title="Permalink to this definition">¶</a></dt>
+<dd><p>load macs summary.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.exportIntervalsAsBedsolo">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">exportIntervalsAsBedsolo</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.exportIntervalsAsBedsolo" title="Permalink to this definition">¶</a></dt>
+<dd><p>Export list of intervals passing fold change threshold to file</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.convertWigToBigWigSolo">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">convertWigToBigWigSolo</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.convertWigToBigWigSolo" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert MACS wig file to bigwig file</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.mergeIntervals">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">mergeIntervals</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.mergeIntervals" title="Permalink to this definition">¶</a></dt>
+<dd><p>Merge intervals less than n bases apart in each dataset and update foldchange scores</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.sanitiseIntervals">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">sanitiseIntervals</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.sanitiseIntervals" title="Permalink to this definition">¶</a></dt>
+<dd><p>sanatise so that intervals do not exceed contig length</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.loadMergedIntervals">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">loadMergedIntervals</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.loadMergedIntervals" title="Permalink to this definition">¶</a></dt>
+<dd><p>load combined intervals.</p>
+<p>Also, re-evaluate the intervals by counting reads within
+the interval. In contrast to the initial pipeline, the
+genome is not binned. In particular, the meaning of the
+columns in the table changes to:</p>
+<p>nProbes: number of reads in interval
+PeakCenter: position with maximum number of reads in interval
+AvgVal: average coverage within interval</p>
+<p>If <em>replicates</em> is true, only replicates will be considered
+for the counting. Otherwise the counts aggregate both replicates
+and conditions.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.getBackground">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">getBackground</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.getBackground" title="Permalink to this definition">¶</a></dt>
+<dd><p>Count the number of reads in the bamfile used for MACS that do not overlap an interval</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.loadBackground">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">loadBackground</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.loadBackground" title="Permalink to this definition">¶</a></dt>
+<dd><p>load background into database</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.thresholdFoldChange">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">thresholdFoldChange</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.thresholdFoldChange" title="Permalink to this definition">¶</a></dt>
+<dd><p>Assess interval overlap between conditions at different fold change thresholds</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.loadFoldChangeThreshold">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">loadFoldChangeThreshold</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.loadFoldChangeThreshold" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load intervals overlapping chipseq into database</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.sharedIntervalsFoldChangeThreshold">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">sharedIntervalsFoldChangeThreshold</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.sharedIntervalsFoldChangeThreshold" title="Permalink to this definition">¶</a></dt>
+<dd><p>identify shared intervals between datasets at different foldchange thresholds</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.loadSharedIntervalsFoldChangeThreshold">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">loadSharedIntervalsFoldChangeThreshold</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.loadSharedIntervalsFoldChangeThreshold" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load intervals overlapping other tracks into database</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.replicatedIntervals">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">replicatedIntervals</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.replicatedIntervals" title="Permalink to this definition">¶</a></dt>
+<dd><p>Combine replicates between experiments.
+First all intervals are merged across replicates 
+and then merged intervals that do not overlap an interval in all replicates are removed.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.loadReplicatedIntervals">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">loadReplicatedIntervals</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.loadReplicatedIntervals" title="Permalink to this definition">¶</a></dt>
+<dd><p>load replicated intervals.</p>
+<p>Also, re-evaluate the intervals by counting reads within
+the interval. In contrast to the initial pipeline, the
+genome is not binned. In particular, the meaning of the
+columns in the table changes to:</p>
+<p>nProbes: number of reads in interval
+PeakCenter: position with maximum number of reads in interval
+AvgVal: average coverage within interval</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.exportReplicatedIntervalsAsBed">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">exportReplicatedIntervalsAsBed</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.exportReplicatedIntervalsAsBed" title="Permalink to this definition">¶</a></dt>
+<dd><p>export locations for all intervals.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.replicatedFoldChange">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">replicatedFoldChange</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.replicatedFoldChange" title="Permalink to this definition">¶</a></dt>
+<dd><p>Assess interval overlap between conditions at different fold change thresholds</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.pairwiseIntervals">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">pairwiseIntervals</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.pairwiseIntervals" title="Permalink to this definition">¶</a></dt>
+<dd><p>identify overlapping intervals for each pair of datasets</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.loadPairwiseIntervals">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">loadPairwiseIntervals</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.loadPairwiseIntervals" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load overlapping intervals into database</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.uniqueIntervals">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">uniqueIntervals</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.uniqueIntervals" title="Permalink to this definition">¶</a></dt>
+<dd><p>identify unique intervals for each dataset</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.loadUniqueIntervals">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">loadUniqueIntervals</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.loadUniqueIntervals" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load unique intervals into database</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.sharedIntervals">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">sharedIntervals</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.sharedIntervals" title="Permalink to this definition">¶</a></dt>
+<dd><p>identify shared intervals between datasets</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.loadSharedIntervals">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">loadSharedIntervals</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.loadSharedIntervals" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load shared intervals into database</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.uniqueReplicatedIntervals">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">uniqueReplicatedIntervals</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.uniqueReplicatedIntervals" title="Permalink to this definition">¶</a></dt>
+<dd><p>identify unique intervals for each dataset</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.loadUniqueReplicatedIntervals">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">loadUniqueReplicatedIntervals</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.loadUniqueReplicatedIntervals" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load unique intervals into database</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.sharedReplicatedIntervals">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">sharedReplicatedIntervals</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.sharedReplicatedIntervals" title="Permalink to this definition">¶</a></dt>
+<dd><p>identify shared intervals between datasets</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.loadSharedReplicatedIntervals">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">loadSharedReplicatedIntervals</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.loadSharedReplicatedIntervals" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load shared intervals into database</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.exportCAPseqReplicatedLength">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">exportCAPseqReplicatedLength</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.exportCAPseqReplicatedLength" title="Permalink to this definition">¶</a></dt>
+<dd><p>Export length of CAPseq intervals</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.build_report">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">build_report</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.build_report" title="Permalink to this definition">¶</a></dt>
+<dd><p>build report from scratch.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.update_report">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">update_report</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.update_report" title="Permalink to this definition">¶</a></dt>
+<dd><p>update report.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.publish_report">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">publish_report</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.publish_report" title="Permalink to this definition">¶</a></dt>
+<dd><p>Link bed, bam, wig and report files to web</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.replicateMappingAndCalling">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">replicateMappingAndCalling</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.replicateMappingAndCalling" title="Permalink to this definition">¶</a></dt>
+<dd><p>Link to BAM files and MACS results from previous run</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.mapReads">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">mapReads</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.mapReads" title="Permalink to this definition">¶</a></dt>
+<dd><p>Align reads to target genome.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.NormaliseBAMFiles">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">NormaliseBAMFiles</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.NormaliseBAMFiles" title="Permalink to this definition">¶</a></dt>
+<dd><p>Normalise BAMS</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.exportBigWigs">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">exportBigWigs</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.exportBigWigs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Export merged BAM files per replictae in bigwig format</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.buildIntervalsMacs">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">buildIntervalsMacs</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.buildIntervalsMacs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find peaks using MACS using input as control</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.buildIntervalsMacsNoControl">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">buildIntervalsMacsNoControl</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.buildIntervalsMacsNoControl" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find peaks using MACS without control sample</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.mergePeaks">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">mergePeaks</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.mergePeaks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Merge nearby intervals within a single track</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.background">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">background</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.background" title="Permalink to this definition">¶</a></dt>
+<dd><p>Assess level of background (non-peak) binding</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.FoldChangeThreshold">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">FoldChangeThreshold</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.FoldChangeThreshold" title="Permalink to this definition">¶</a></dt>
+<dd><p>Assess number of intervals above different fold change thresholds</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.findReplicatedIntervals">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">findReplicatedIntervals</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.findReplicatedIntervals" title="Permalink to this definition">¶</a></dt>
+<dd><p>Intersect replicates to identify replicated intervals</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.comparePeaks">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">comparePeaks</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.comparePeaks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compare intervals across tracks</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.compareReplicatedPeaks">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">compareReplicatedPeaks</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.compareReplicatedPeaks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compare intervals across tracks</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.full">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">full</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.full" title="Permalink to this definition">¶</a></dt>
+<dd><p>run the full pipeline.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_capseq.chipseq">
+<tt class="descclassname">pipeline_capseq.</tt><tt class="descname">chipseq</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_capseq.chipseq" title="Permalink to this definition">¶</a></dt>
+<dd><p>run the pipeline on chipseq data</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">CAPseq pipeline</a><ul>
+<li><a class="reference internal" href="#usage">Usage</a><ul>
+<li><a class="reference internal" href="#configuration">Configuration</a></li>
+<li><a class="reference internal" href="#input">Input</a><ul>
+<li><a class="reference internal" href="#reads">Reads</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#requirements">Requirements</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#pipline-output">Pipline Output</a></li>
+<li><a class="reference internal" href="#example">Example</a></li>
+<li><a class="reference internal" href="#glossary">Glossary</a></li>
+<li><a class="reference internal" href="#code">Code</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="pipeline_rnaseqlncrna.html"
+                        title="previous chapter">Long non-coding RNA pipeline</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="pipeline_exome.html"
+                        title="next chapter">Exome pipeline</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/pipelines/pipeline_capseq.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pipeline_exome.html" title="Exome pipeline"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="pipeline_rnaseqlncrna.html" title="Long non-coding RNA pipeline"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../Pipelines.html" >CGAT Pipelines</a> &raquo;</li>
+          <li><a href="../CGATPipelines.html" >NGS Pipelines</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

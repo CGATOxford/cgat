@@ -1,0 +1,257 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>File formats &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/sorttable.js"></script>
+    <script type="text/javascript" src="_static/jquery.min.js"></script>
+    <script type="text/javascript" src="_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="index.html" />
+    <link rel="prev" title="Importing CGAT scripts into galaxy" href="galaxy.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="galaxy.html" title="Importing CGAT scripts into galaxy"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">CGAT  documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="file-formats">
+<h1>File formats<a class="headerlink" href="#file-formats" title="Permalink to this headline">¶</a></h1>
+<dl class="glossary docutils">
+<dt id="term-yaml">yaml</dt>
+<dd>Language to serialize objects. Used in the CGAT testing
+framework. (<a class="reference external" href="http://en.wikipedia.org/wiki/YAML">YAML</a>).</dd>
+<dt id="term-bam">bam</dt>
+<dd>Format to store genomic alignments in a compressed format.
+(<a class="reference external" href="http://samtools.sourceforge.net/">BAM</a>).</dd>
+<dt id="term-bed">bed</dt>
+<dd>File containing genomic intervals.
+(<a class="reference external" href="https://genome.ucsc.edu/FAQ/FAQformat.html#format1">BED</a>).</dd>
+<dt id="term-vcf">vcf</dt>
+<dd><a class="reference external" href="http://www.1000genomes.org/wiki/Analysis/Variant%20Call%20Format/vcf-variant-call-format-version-41">Variant call format</a>.</dd>
+<dt id="term-gtf">gtf</dt>
+<dd><a class="reference external" href="http://www.ensembl.org/info/website/upload/gff.html">General transfer format</a>.
+Format to store genes and transcripts.</dd>
+<dt id="term-gff">gff</dt>
+<dd><a class="reference external" href="http://www.ensembl.org/info/website/upload/gff.html">General feature format</a>.</dd>
+<dt id="term-bigwig">bigwig</dt>
+<dd>Compressed format for displaying numerical values across
+genomic ranges (<a class="reference external" href="https://genome.ucsc.edu/goldenPath/help/bigWig.html">BIGWIG</a>).</dd>
+<dt id="term-fasta">fasta</dt>
+<dd>Sequence format.</dd>
+<dt id="term-wiggle">wiggle</dt>
+<dd>Format for displaying numerical values across genomic
+ranges (<a class="reference external" href="https://genome.ucsc.edu/goldenPath/help/wiggle.html">Wiggle</a>).</dd>
+<dt id="term-psl">psl</dt>
+<dd>Genomic alignment format. The format is described in detail
+<a class="reference external" href="https://genome.ucsc.edu/FAQ/FAQformat.html#format2">(PSL</a>.</dd>
+<dt id="term-sam">sam</dt>
+<dd>Format to store genomic alignments
+<a class="reference external" href="http://samtools.sourceforge.net/">(SAM</a>).</dd>
+<dt id="term-gdl">gdl</dt>
+<dd>gdl</dd>
+<dt id="term-tsv">tsv</dt>
+<dd><p class="first">Tab separated values. In these tables, records are separated by new-line
+characters and fields by tab characters. Lines with comments are started
+by the <tt class="docutils literal"><span class="pre">#</span></tt> character and are ignored. The first uncommented line
+should contain the column headers. For example:</p>
+<div class="last highlight-python"><div class="highlight"><pre># This is a comment
+gene_id       length
+gene1 1000
+gene2 2000
+# Another comment
+</pre></div>
+</div>
+</dd>
+<dt id="term-svg">svg</dt>
+<dd>pass</dd>
+<dt id="term-edge-list">edge list</dt>
+<dd>pass</dd>
+<dt id="term-fastq">fastq</dt>
+<dd>Sequence format containing quality scores, more background is
+<a class="reference external" href="http://en.wikipedia.org/wiki/FASTQ_format">here</a></dd>
+<dt id="term-sra">sra</dt>
+<dd>sra</dd>
+<dt id="term-axt">axt</dt>
+<dd>axt</dd>
+<dt id="term-maf">maf</dt>
+<dd>maf</dd>
+<dt id="term-rdf">rdf</dt>
+<dd><a class="reference external" href="http://en.wikipedia.org/wiki/Resource_Description_Framework">Resource description framework</a></dd>
+</dl>
+</div>
+<div class="section" id="other-terms">
+<h1>Other terms<a class="headerlink" href="#other-terms" title="Permalink to this headline">¶</a></h1>
+<dl class="glossary docutils">
+<dt id="term-test-directory">test directory</dt>
+<dd>Directory that contains the <tt class="file docutils literal"><span class="pre">test.yaml</span></tt>, input and
+reference files for testing scripts.</dd>
+<dt id="term-experiment">experiment</dt>
+<dd>experiment</dd>
+<dt id="term-replicate">replicate</dt>
+<dd>replicate</dd>
+<dt id="term-graph">graph</dt>
+<dd>graph</dd>
+<dt id="term-track">track</dt>
+<dd>track</dd>
+<dt id="term-25">graph</dt>
+<dd>graph</dd>
+<dt id="term-submit-host">submit host</dt>
+<dd>pass</dd>
+<dt id="term-execution-host">execution host</dt>
+<dd>pass</dd>
+<dt id="term-28">edge list</dt>
+<dd>pass</dd>
+<dt id="term-task">task</dt>
+<dd>pass</dd>
+<dt id="term-sphinxreport">sphinxreport</dt>
+<dd>sphinxreport</dd>
+<dt id="term-query">query</dt>
+<dd>pass</dd>
+<dt id="term-target">target</dt>
+<dd>pass</dd>
+<dt id="term-code-directory">code directory</dt>
+<dd>pass</dd>
+<dt id="term-go">go</dt>
+<dd>pass</dd>
+<dt id="term-goslim">goslim</dt>
+<dd>pass</dd>
+<dt id="term-36">fastq</dt>
+<dd>pass</dd>
+<dt id="term-tss">tss</dt>
+<dd>Transcription start site</dd>
+<dt id="term-production-pipeline">production pipeline</dt>
+<dd>A pipeline that performs common tasks on a certain type of
+data. The idea of a production pipeline is to provide common
+preprocessing of data and a first look. A <a class="reference internal" href="#term-project-pipeline"><em class="xref std std-term">project
+pipeline</em></a> might then take data from one or more
+<a class="reference internal" href="#term-production-pipeline"><em class="xref std std-term">production pipeline</em></a> to glean biological insight.</dd>
+<dt id="term-project-pipeline">project pipeline</dt>
+<dd>A pipeline that is project specific. Usually code is developed
+first inside a project pipeline. When it becomes generally
+useful, it may be refactored into a production pipeline.</dd>
+<dt id="term-stdin">stdin</dt>
+<dd>Unix standard input. Most CGAT tools read data from stdin.</dd>
+<dt id="term-stdout">stdout</dt>
+<dd>Unix standard output. Most CGAT tools output data to stdout.</dd>
+<dt id="term-stderr">stderr</dt>
+<dd>Unix standard error. This is where errors go.</dd>
+<dt id="term-loglevel">loglevel</dt>
+<dd>Verbosity of logging information. The logging level can be
+determined by the <tt class="docutils literal"><span class="pre">--verbose</span></tt> option. A
+level of <tt class="docutils literal"><span class="pre">0</span></tt> means no logging output, while <tt class="docutils literal"><span class="pre">1</span></tt> is information
+messages only, while <tt class="docutils literal"><span class="pre">2</span></tt> outputs also debugging information.</dd>
+</dl>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">File formats</a></li>
+<li><a class="reference internal" href="#other-terms">Other terms</a></li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="galaxy.html"
+                        title="previous chapter">Importing CGAT scripts into galaxy</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/glossary.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="galaxy.html" title="Importing CGAT scripts into galaxy"
+             >previous</a> |</li>
+        <li><a href="index.html">CGAT  documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

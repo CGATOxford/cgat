@@ -1,0 +1,190 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>PipelineTransfacMatch.py - Classes and functions used in pipeline_trasfacmatch.py &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="Modules" href="../modules.html" />
+    <link rel="next" title="PipelineUCSC.py - utility functions for accessing UCSC data" href="PipelineUCSC.html" />
+    <link rel="prev" title="PipelineTracks.py - Definition of tracks in pipelines" href="PipelineTracks.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="PipelineUCSC.html" title="PipelineUCSC.py - utility functions for accessing UCSC data"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="PipelineTracks.html" title="PipelineTracks.py - Definition of tracks in pipelines"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" accesskey="U">Modules</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-PipelineTransfacMatch"></span><div class="section" id="pipelinetransfacmatch-py-classes-and-functions-used-in-pipeline-trasfacmatch-py">
+<h1>PipelineTransfacMatch.py - Classes and functions used in pipeline_trasfacmatch.py<a class="headerlink" href="#pipelinetransfacmatch-py-classes-and-functions-used-in-pipeline-trasfacmatch-py" title="Permalink to this headline">¶</a></h1>
+<dl class="function">
+<dt id="PipelineTransfacMatch.filenameToTablename">
+<tt class="descclassname">PipelineTransfacMatch.</tt><tt class="descname">filenameToTablename</tt><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineTransfacMatch.filenameToTablename" title="Permalink to this definition">¶</a></dt>
+<dd><p>converts filename containing &#8221;.&#8221; to tablename where &#8221;.&#8221; converted to &#8220;_&#8221;</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="PipelineTransfacMatch.Match">
+<em class="property">class </em><tt class="descclassname">PipelineTransfacMatch.</tt><tt class="descname">Match</tt><a class="headerlink" href="#PipelineTransfacMatch.Match" title="Permalink to this definition">¶</a></dt>
+<dd><p>class with methods to parse the output from match.
+Each instance of this class will be an identifiable 
+sequence</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineTransfacMatch.match_iterator">
+<tt class="descclassname">PipelineTransfacMatch.</tt><tt class="descname">match_iterator</tt><span class="sig-paren">(</span><em>infile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineTransfacMatch.match_iterator" title="Permalink to this definition">¶</a></dt>
+<dd><p>return a generator object of class Match</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineTransfacMatch.frequencyMetrics">
+<tt class="descclassname">PipelineTransfacMatch.</tt><tt class="descname">frequencyMetrics</tt><span class="sig-paren">(</span><em>database</em>, <em>match_table</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineTransfacMatch.frequencyMetrics" title="Permalink to this definition">¶</a></dt>
+<dd><p>builds metrics using Match data loaded
+into an sqlite database</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineTransfacMatch.testSignificanceOfMatrices">
+<tt class="descclassname">PipelineTransfacMatch.</tt><tt class="descname">testSignificanceOfMatrices</tt><span class="sig-paren">(</span><em>background</em>, <em>foreground</em>, <em>database</em>, <em>match_table</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineTransfacMatch.testSignificanceOfMatrices" title="Permalink to this definition">¶</a></dt>
+<dd><p>uses the fishers exact test to estimate the significance of 
+transcription factor motifs in a foregound set of intervals
+compared to a background set</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineTransfacMatch.calculateCpGComposition">
+<tt class="descclassname">PipelineTransfacMatch.</tt><tt class="descname">calculateCpGComposition</tt><span class="sig-paren">(</span><em>interval_names</em>, <em>sequence_file</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineTransfacMatch.calculateCpGComposition" title="Permalink to this definition">¶</a></dt>
+<dd><p>given a set of interval names that are present in a 
+fasta file, return CpG content file</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineTransfacMatch.matchBackgroundForCpGComposition">
+<tt class="descclassname">PipelineTransfacMatch.</tt><tt class="descname">matchBackgroundForCpGComposition</tt><span class="sig-paren">(</span><em>gc_load_files</em>, <em>background</em>, <em>foreground</em>, <em>database</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineTransfacMatch.matchBackgroundForCpGComposition" title="Permalink to this definition">¶</a></dt>
+<dd><p>take the background set and subset it for intervals with
+a CpG distribution that is the same as the foreground set
+- this requires that the background set is sufficiently
+large</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="PipelineTracks.html"
+                        title="previous chapter">PipelineTracks.py - Definition of tracks in pipelines</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="PipelineUCSC.html"
+                        title="next chapter">PipelineUCSC.py - utility functions for accessing UCSC data</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/pipelinemodules/PipelineTransfacMatch.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="PipelineUCSC.html" title="PipelineUCSC.py - utility functions for accessing UCSC data"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="PipelineTracks.html" title="PipelineTracks.py - Definition of tracks in pipelines"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" >Modules</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

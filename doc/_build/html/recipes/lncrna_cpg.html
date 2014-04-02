@@ -1,0 +1,411 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Assessing CpG content in long non-coding RNA promoters &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="assessing-cpg-content-in-long-non-coding-rna-promoters">
+<h1>Assessing CpG content in long non-coding RNA promoters<a class="headerlink" href="#assessing-cpg-content-in-long-non-coding-rna-promoters" title="Permalink to this headline">¶</a></h1>
+<p>The description of pervasive transcription across many mammalian genomes has sparked an interest
+in the role of long non-coding RNAs in diverse biological systems. Transcripts derived from non-coding
+loci have been shown to be important in a number of different processes including development and cancer.
+However, some features that are normally associated with protein coding genes are not observed in lncRNAs e.g
+they are less conserved. Protein coding gene promoters have a characteristically high GC content and CpG
+density. But do lncRNAs display the same bias in their promoters? In this example we show you how to use
+CGAT tools to answer this question. We will be using:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">gtf2gtf</span><span class="o">.</span><span class="n">py</span>
+<span class="n">gtf2gff</span><span class="o">.</span><span class="n">py</span>
+<span class="n">gff2bed</span><span class="o">.</span><span class="n">py</span>
+<span class="n">bed2fasta</span><span class="o">.</span><span class="n">py</span>
+<span class="n">fasta2table</span><span class="o">.</span><span class="n">py</span>
+</pre></div>
+</div>
+<p>Our initial input file is a <a class="reference internal" href="../glossary.html#term-gtf"><em class="xref std std-term">gtf</em></a> formatted file containing genomic coordinates and annotations for
+a set of lncRNAs - lncRNA.gtf.gz. We can compute the GC and CpG composition using a single command line
+statement using multiple CGAT tools. However, as described in <a class="reference internal" href="../cgat.html#quickstart"><em>Quickstart</em></a>, we require an CGAT indexed
+genome as input to both gtf2gff.py and bed2fasta.py. The first step is therefore to create the indexed genome.</p>
+<p>In our example our lncRNA transcript models are from an RNA-seq experiment in human cells. We can index the
+human hg19 reference genome by downloading the <a class="reference internal" href="../glossary.html#term-fasta"><em class="xref std std-term">fasta</em></a> formatted genome from the UCSC website
+and running index_fasta.py:</p>
+<div class="highlight-python"><div class="highlight"><pre>wget http://hgdownload.cse.ucsc.edu/goldenPath/hg19/bigZips/chromFa.tar.gz | index_fasta.py hg19 &gt; hg19.log
+</pre></div>
+</div>
+<p>We can then use this indexed genome as additional input when required. The code to generate a table with GC content and CpG
+composition looks like:</p>
+<div class="highlight-python"><div class="highlight"><pre>zcat lncRNA.gtf.gz
+| gtf2gtf.py --sort=gene
+| gtf2gtf.py --merge-transcripts
+| gtf2gff.py --genome-file=hg19 --method=promotors -p 1500 --sort
+| gff2bed.py
+| bed2fasta.py --genome-file=hg19
+| fasta2table.py --section=cpg
+| gzip
+&gt; lncRNA_cpg.tsv.gz
+</pre></div>
+</div>
+<p>The above commands in turn (1) sorts the input file by gene identifier, (2) merges transcripts that have the same gene identifier,
+(3) produces a set of lncRNA promoters 1.5Kb upstream of the lncRNA transcription start sites
+(using <tt class="docutils literal"><span class="pre">--method=promotors</span></tt> in combination with -p 1500), (4) converts gff formatted promoters into <a class="reference internal" href="../glossary.html#term-bed"><em class="xref std std-term">bed</em></a> format,
+(5) retrieves sequences from the human hg19 reference genome for lncRNA promoter intervals and (5) outputs statistics related
+to nucleotide composition including CpG content (specified with the <tt class="docutils literal"><span class="pre">--section=cpg</span></tt> option).
+The output file lncRNA_cpg.tsv.gz will be a tab-delimited text file which will look like:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="33%" />
+<col width="2%" />
+<col width="2%" />
+<col width="2%" />
+<col width="2%" />
+<col width="1%" />
+<col width="2%" />
+<col width="2%" />
+<col width="2%" />
+<col width="2%" />
+<col width="5%" />
+<col width="5%" />
+<col width="5%" />
+<col width="5%" />
+<col width="5%" />
+<col width="5%" />
+<col width="5%" />
+<col width="5%" />
+<col width="5%" />
+<col width="6%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>id</td>
+<td>nC</td>
+<td>nG</td>
+<td>nA</td>
+<td>nT</td>
+<td>nN</td>
+<td>nUnk</td>
+<td>nGC</td>
+<td>nAT</td>
+<td>nCpG</td>
+<td>pC</td>
+<td>pG</td>
+<td>pA</td>
+<td>pT</td>
+<td>pN</td>
+<td>pUnk</td>
+<td>pGC</td>
+<td>pAT</td>
+<td>pCpG</td>
+<td>CpG_ObsExp</td>
+</tr>
+<tr class="row-even"><td>ENSG00000224969.1 chr1:948573..950073 (+)</td>
+<td>423</td>
+<td>518</td>
+<td>277</td>
+<td>282</td>
+<td>0</td>
+<td>0</td>
+<td>941</td>
+<td>559</td>
+<td>71</td>
+<td>0.282000</td>
+<td>0.345333</td>
+<td>0.184667</td>
+<td>0.188000</td>
+<td>0.000000</td>
+<td>0.000000</td>
+<td>0.627333</td>
+<td>0.372667</td>
+<td>0.094667</td>
+<td>0.486048</td>
+</tr>
+<tr class="row-odd"><td>NONCO170 chr1:33464145..33465645 (+)</td>
+<td>418</td>
+<td>396</td>
+<td>359</td>
+<td>327</td>
+<td>0</td>
+<td>0</td>
+<td>814</td>
+<td>686</td>
+<td>37</td>
+<td>0.278667</td>
+<td>0.264000</td>
+<td>0.239333</td>
+<td>0.218000</td>
+<td>0.000000</td>
+<td>0.000000</td>
+<td>0.542667</td>
+<td>0.457333</td>
+<td>0.049333</td>
+<td>0.335291</td>
+</tr>
+<tr class="row-even"><td>NONCO195 chr1:87239820..87241320 (+)</td>
+<td>354</td>
+<td>294</td>
+<td>425</td>
+<td>427</td>
+<td>0</td>
+<td>0</td>
+<td>648</td>
+<td>852</td>
+<td>13</td>
+<td>0.236000</td>
+<td>0.196000</td>
+<td>0.283333</td>
+<td>0.284667</td>
+<td>0.000000</td>
+<td>0.000000</td>
+<td>0.432000</td>
+<td>0.568000</td>
+<td>0.017333</td>
+<td>0.187363</td>
+</tr>
+<tr class="row-odd"><td>NONCO55 chr1:108591390..108592890 (+)</td>
+<td>296</td>
+<td>323</td>
+<td>471</td>
+<td>410</td>
+<td>0</td>
+<td>0</td>
+<td>619</td>
+<td>881</td>
+<td>9</td>
+<td>0.197333</td>
+<td>0.215333</td>
+<td>0.314000</td>
+<td>0.273333</td>
+<td>0.000000</td>
+<td>0.000000</td>
+<td>0.412667</td>
+<td>0.587333</td>
+<td>0.012000</td>
+<td>0.141202</td>
+</tr>
+<tr class="row-even"><td>NONCO59 chr1:111181220..111182720 (+)</td>
+<td>270</td>
+<td>380</td>
+<td>452</td>
+<td>398</td>
+<td>0</td>
+<td>0</td>
+<td>650</td>
+<td>850</td>
+<td>9</td>
+<td>0.180000</td>
+<td>0.253333</td>
+<td>0.301333</td>
+<td>0.265333</td>
+<td>0.000000</td>
+<td>0.000000</td>
+<td>0.433333</td>
+<td>0.566667</td>
+<td>0.012000</td>
+<td>0.131579</td>
+</tr>
+<tr class="row-odd"><td>NONCO215 chr1:120190857..120192357 (+)</td>
+<td>350</td>
+<td>415</td>
+<td>384</td>
+<td>351</td>
+<td>0</td>
+<td>0</td>
+<td>765</td>
+<td>735</td>
+<td>62</td>
+<td>0.233333</td>
+<td>0.276667</td>
+<td>0.256000</td>
+<td>0.234000</td>
+<td>0.000000</td>
+<td>0.000000</td>
+<td>0.510000</td>
+<td>0.490000</td>
+<td>0.082667</td>
+<td>0.640275</td>
+</tr>
+<tr class="row-even"><td>NONCO66 chr1:121117751..121119251 (+)</td>
+<td>374</td>
+<td>313</td>
+<td>340</td>
+<td>473</td>
+<td>0</td>
+<td>0</td>
+<td>687</td>
+<td>813</td>
+<td>16</td>
+<td>0.249333</td>
+<td>0.208667</td>
+<td>0.226667</td>
+<td>0.315333</td>
+<td>0.000000</td>
+<td>0.000000</td>
+<td>0.458000</td>
+<td>0.542000</td>
+<td>0.021333</td>
+<td>0.205020</td>
+</tr>
+<tr class="row-odd"><td>NONCO69 chr1:144569176..144570676 (+)</td>
+<td>233</td>
+<td>299</td>
+<td>498</td>
+<td>470</td>
+<td>0</td>
+<td>0</td>
+<td>532</td>
+<td>968</td>
+<td>21</td>
+<td>0.155333</td>
+<td>0.199333</td>
+<td>0.332000</td>
+<td>0.313333</td>
+<td>0.000000</td>
+<td>0.000000</td>
+<td>0.354667</td>
+<td>0.645333</td>
+<td>0.028000</td>
+<td>0.452151</td>
+</tr>
+<tr class="row-even"><td>NONCO70 chr1:144592229..144593729 (+)</td>
+<td>382</td>
+<td>382</td>
+<td>361</td>
+<td>375</td>
+<td>0</td>
+<td>0</td>
+<td>764</td>
+<td>736</td>
+<td>53</td>
+<td>0.254667</td>
+<td>0.254667</td>
+<td>0.240667</td>
+<td>0.250000</td>
+<td>0.000000</td>
+<td>0.000000</td>
+<td>0.509333</td>
+<td>0.490667</td>
+<td>0.070667</td>
+<td>0.544804</td>
+</tr>
+</tbody>
+</table>
+<p>The <tt class="docutils literal"><span class="pre">--section</span></tt> option specifies that we want to include statistics on CpG composition in the output. Alternative options
+include:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">length</span>
+<span class="n">na</span>
+<span class="n">aa</span>
+<span class="n">cpg</span>
+<span class="n">degeneracy</span>
+<span class="n">bias</span>
+<span class="n">codons</span>
+<span class="n">codon</span><span class="o">-</span><span class="n">usage</span>
+<span class="n">codon</span><span class="o">-</span><span class="n">translator</span>
+<span class="n">sequence</span>
+</pre></div>
+</div>
+<p>As the output is in tab separated format it is straight-forward to load into statistical/plotting software such as R and perform further
+downstream analysis.</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/recipes/lncrna_cpg.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

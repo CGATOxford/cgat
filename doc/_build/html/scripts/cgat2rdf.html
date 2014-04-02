@@ -1,0 +1,279 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>cgat2rdf.py - create rdf description of CGAT script &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="Scripts" href="../scripts.html" />
+    <link rel="next" title="diff_bam.py - compare multiple bam files against each other" href="diff_bam.html" />
+    <link rel="prev" title="bam_vs_gtf.py - compare bam file against gene set" href="bam_vs_gtf.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="diff_bam.html" title="diff_bam.py - compare multiple bam files against each other"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="bam_vs_gtf.html" title="bam_vs_gtf.py - compare bam file against gene set"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../scripts.html" accesskey="U">Scripts</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-cgat2rdf"></span><div class="section" id="cgat2rdf-py-create-rdf-description-of-cgat-script">
+<h1>cgat2rdf.py - create rdf description of CGAT script<a class="headerlink" href="#cgat2rdf-py-create-rdf-description-of-cgat-script" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id$</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Python</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="purpose">
+<h2>Purpose<a class="headerlink" href="#purpose" title="Permalink to this headline">¶</a></h2>
+<p>This script creates an rdf description of a CGAT
+script.</p>
+<p>Optionally, the script outputs also a galaxy xml
+description of the scripts&#8217; interface.</p>
+</div>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>Example:</p>
+<div class="highlight-python"><div class="highlight"><pre>python cgat2rdf.py bam2stats.py 
+</pre></div>
+</div>
+<p>Type:</p>
+<div class="highlight-python"><div class="highlight"><pre>python cgat2rdf.py --help
+</pre></div>
+</div>
+<p>for command line help.</p>
+</div>
+<div class="section" id="documentation">
+<h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h2>
+<p>This script takes a CGAT script and attempts to write an interface definition
+for this script. In order to guess the file types correctly, <tt class="file docutils literal"><span class="pre">cgat2rdf.py</span></tt>
+makes use of the following information:</p>
+<ol class="arabic simple">
+<li>The script name. If the name of the script contains a &#8220;format2format.py&#8221;, <tt class="file docutils literal"><span class="pre">cgat2rdf.py</span></tt>
+will assume that the script works within a pipe: it takes stdin and stdout as 
+input and output, respectively, and each are formatted according to the formats.
+For example, <tt class="docutils literal"><span class="pre">bed2bed.py</span></tt> has a <a class="reference internal" href="../glossary.html#term-bed"><em class="xref std std-term">bed</em></a> formatted file as input and output,
+while <tt class="docutils literal"><span class="pre">gtf2gff.py</span></tt> has a <a class="reference internal" href="../glossary.html#term-gtf"><em class="xref std std-term">gtf</em></a> formatted file as input and outputs
+a <a class="reference internal" href="../glossary.html#term-gff"><em class="xref std std-term">gff</em></a> file. Most formats are not parsed, though <tt class="file docutils literal"><span class="pre">cgat2rdf.py</span></tt> contains
+some type mappings:</li>
+</ol>
+<table border="1" class="docutils">
+<colgroup>
+<col width="33%" />
+<col width="33%" />
+<col width="33%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>Format</td>
+<td>Maps to</td>
+<td>Content</td>
+</tr>
+<tr class="row-even"><td>tsv</td>
+<td>tabular</td>
+<td>Tab-separated values</td>
+</tr>
+<tr class="row-odd"><td>table</td>
+<td>tabular</td>
+<td>ditto</td>
+</tr>
+<tr class="row-even"><td>stats</td>
+<td>tabular</td>
+<td>ditto</td>
+</tr>
+<tr class="row-odd"><td>csv</td>
+<td>tabular</td>
+<td>ditto</td>
+</tr>
+</tbody>
+</table>
+<ol class="arabic simple" start="2">
+<li>The command line options. <tt class="file docutils literal"><span class="pre">cgat2rdf.py</span></tt> will import the script it 
+runs and captures the command line option parser information. Based on these
+data, options are added to the interface. Atomic values such as int, float,
+etc, are interpreted directly. For textual arguments, <tt class="file docutils literal"><span class="pre">cgat2rdf.py</span></tt>
+tests if the <tt class="xref py py-attr docutils literal"><span class="pre">metavar</span></tt> attribute has been set. When set, the content
+of this attribute will determine the file type.</li>
+</ol>
+<p>The interface decription can be exported either as <a class="reference internal" href="../glossary.html#term-rdf"><em class="xref std std-term">RDF</em></a> or in a variety
+of other formats:</p>
+<dl class="docutils">
+<dt>galaxy</dt>
+<dd>Galaxy xml file.</dd>
+</dl>
+</div>
+<div class="section" id="command-line-options">
+<h2>Command line options<a class="headerlink" href="#command-line-options" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+<div class="highlight-text"><div class="highlight"><pre>Usage: cgat2rdf.py [options]
+
+Options:
+  --version             show program&#39;s version number and exit
+  -h, --help            show this help message and exit
+  --no-usage            output help without usage information
+  -f OUTPUT_FORMAT, --format=OUTPUT_FORMAT
+                        output format [rdf].
+  -l FILENAME_LIST, --list=FILENAME_LIST
+                        filename with list of files to export [none].
+  -s SRC_DIR, --source-dir=SRC_DIR
+                        directory to look for scripts [none].
+  -r INPUT_REGEX, --input-regex=INPUT_REGEX
+                        regular expression to extract script name [none].
+  -p OUTPUT_PATTERN, --output-pattern=OUTPUT_PATTERN
+                        pattern to build output filename. Should contain an
+                        &#39;%s&#39; [none].
+  -v LOGLEVEL, --verbose=LOGLEVEL
+                        loglevel [1]. The higher, the more output.
+  --timeit=TIMEIT_FILE  store timeing information in file [none].
+  --timeit-name=TIMEIT_NAME
+                        name in timing file for this class of jobs [all].
+  --timeit-header       add header for timing information [none].
+  --random-seed=RANDOM_SEED
+                        random seed to initialize number generator with
+                        [none].
+  -I FILE, --stdin=FILE
+                        file to read stdin from [default = stdin].
+  -L FILE, --log=FILE   file with logging information [default = stdout].
+  -E FILE, --error=FILE
+                        file with error information [default = stderr].
+  -S FILE, --stdout=FILE
+                        file where output is to go [default = stdout].
+</pre></div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">cgat2rdf.py - create rdf description of CGAT script</a><ul>
+<li><a class="reference internal" href="#purpose">Purpose</a></li>
+<li><a class="reference internal" href="#usage">Usage</a></li>
+<li><a class="reference internal" href="#documentation">Documentation</a></li>
+<li><a class="reference internal" href="#command-line-options">Command line options</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="bam_vs_gtf.html"
+                        title="previous chapter">bam_vs_gtf.py - compare bam file against gene set</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="diff_bam.html"
+                        title="next chapter">diff_bam.py - compare multiple bam files against each other</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/scripts/cgat2rdf.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="diff_bam.html" title="diff_bam.py - compare multiple bam files against each other"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="bam_vs_gtf.html" title="bam_vs_gtf.py - compare bam file against gene set"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../scripts.html" >Scripts</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

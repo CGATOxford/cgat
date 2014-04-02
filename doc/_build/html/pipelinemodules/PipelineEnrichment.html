@@ -1,0 +1,332 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>PipelineEnrichment.py - &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="Modules" href="../modules.html" />
+    <link rel="next" title="Purpose" href="PipelineGO.html" />
+    <link rel="prev" title="PipelineDatabase.py - utility functions for working with a database" href="PipelineDatabase.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="PipelineGO.html" title="Purpose"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="PipelineDatabase.html" title="PipelineDatabase.py - utility functions for working with a database"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" accesskey="U">Modules</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-PipelineEnrichment"></span><div class="section" id="pipelineenrichment-py">
+<h1>PipelineEnrichment.py -<a class="headerlink" href="#pipelineenrichment-py" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Andreas Heger</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id$</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Python</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="code">
+<h2>Code<a class="headerlink" href="#code" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="PipelineEnrichment.buildGenomeGCSegmentation">
+<tt class="descclassname">PipelineEnrichment.</tt><tt class="descname">buildGenomeGCSegmentation</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineEnrichment.buildGenomeGCSegmentation" title="Permalink to this definition">¶</a></dt>
+<dd><p>segment the genome into windows according to G+C content.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineEnrichment.buildAnnotatorGC">
+<tt class="descclassname">PipelineEnrichment.</tt><tt class="descname">buildAnnotatorGC</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineEnrichment.buildAnnotatorGC" title="Permalink to this definition">¶</a></dt>
+<dd><p>compute G+C regions.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineEnrichment.buildIsochoresGC">
+<tt class="descclassname">PipelineEnrichment.</tt><tt class="descname">buildIsochoresGC</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineEnrichment.buildIsochoresGC" title="Permalink to this definition">¶</a></dt>
+<dd><p>compute isochores based on G+C content</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineEnrichment.buildWorkSpace">
+<tt class="descclassname">PipelineEnrichment.</tt><tt class="descname">buildWorkSpace</tt><span class="sig-paren">(</span><em>outfile</em>, <em>workspace</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineEnrichment.buildWorkSpace" title="Permalink to this definition">¶</a></dt>
+<dd><p>write genomic workspace.</p>
+<p>Available workspaces are:</p>
+<dl class="docutils">
+<dt>genomic</dt>
+<dd>the full genome</dd>
+<dt>intronic</dt>
+<dd>introns (requires annotator_regions to be set)</dd>
+<dt>exonic</dt>
+<dd>exonic (requires annotator_regions to be set)</dd>
+<dt>intergenic</dt>
+<dd>introns (requires annotator_regions to be set)</dd>
+<dt>geneterritories</dt>
+<dd>introns (requires annotator_geneterritories to be set)</dd>
+<dt>mappable</dt>
+<dd>mappable part of genome (requires annotator_mappability to be set )</dd>
+<dt>alignable</dt>
+<dd>only the alignable part of a genome (requires annotator_alignment to be set)</dd>
+</dl>
+<p>If <tt class="docutils literal"><span class="pre">gc_control</span></tt> is True, the chromosomes will be divided into isochores
+(requiers the paramater <tt class="docutils literal"><span class="pre">annotator_gc_workspace</span></tt> to be set).</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineEnrichment.buildAnnotatorAnnotations">
+<tt class="descclassname">PipelineEnrichment.</tt><tt class="descname">buildAnnotatorAnnotations</tt><span class="sig-paren">(</span><em>tmpdir</em>, <em>outfile</em>, <em>annotations=None</em>, <em>bedfiles=None</em>, <em>gfffiles=None</em>, <em>gofile=None</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineEnrichment.buildAnnotatorAnnotations" title="Permalink to this definition">¶</a></dt>
+<dd><p>write annotations in annotator format.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineEnrichment.buildGeneSetAnnotations">
+<tt class="descclassname">PipelineEnrichment.</tt><tt class="descname">buildGeneSetAnnotations</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em>, <em>slice</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineEnrichment.buildGeneSetAnnotations" title="Permalink to this definition">¶</a></dt>
+<dd><p>build annotations of all sets from database.</p>
+<p><tt class="docutils literal"><span class="pre">slice</span></tt> can be any of the slices in the <tt class="docutils literal"><span class="pre">annotation</span></tt> 
+tables.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineEnrichment.buildAnnotatorSlicedSegments">
+<tt class="descclassname">PipelineEnrichment.</tt><tt class="descname">buildAnnotatorSlicedSegments</tt><span class="sig-paren">(</span><em>tmpdir</em>, <em>outfile</em>, <em>track</em>, <em>slice</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineEnrichment.buildAnnotatorSlicedSegments" title="Permalink to this definition">¶</a></dt>
+<dd><p>slice segments.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineEnrichment.buildAnnotatorSegments">
+<tt class="descclassname">PipelineEnrichment.</tt><tt class="descname">buildAnnotatorSegments</tt><span class="sig-paren">(</span><em>tmpdir</em>, <em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineEnrichment.buildAnnotatorSegments" title="Permalink to this definition">¶</a></dt>
+<dd><p>convert segments in bed format to annotator format
+from infile to outfile.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineEnrichment.runAnnotator">
+<tt class="descclassname">PipelineEnrichment.</tt><tt class="descname">runAnnotator</tt><span class="sig-paren">(</span><em>tmpdir</em>, <em>outfile</em>, <em>tmpannotations</em>, <em>tmpsegments</em>, <em>tmpworkspaces</em>, <em>tmpsynonyms</em>, <em>options=''</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineEnrichment.runAnnotator" title="Permalink to this definition">¶</a></dt>
+<dd><p>run annotator.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineEnrichment.genericImportAnnotator">
+<tt class="descclassname">PipelineEnrichment.</tt><tt class="descname">genericImportAnnotator</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em>, <em>table</em>, <em>workspace</em>, <em>slice</em>, <em>subset</em>, <em>fdr_method</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineEnrichment.genericImportAnnotator" title="Permalink to this definition">¶</a></dt>
+<dd><p>generic import of annotator results.</p>
+<p>Assumes that the suffix of all infiles is the same.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineEnrichment.importAnnotator">
+<tt class="descclassname">PipelineEnrichment.</tt><tt class="descname">importAnnotator</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em>, <em>regex_id</em>, <em>table</em>, <em>fdr_method</em>, <em>with_slice=False</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineEnrichment.importAnnotator" title="Permalink to this definition">¶</a></dt>
+<dd><p>generic import of annotator results.</p>
+<p>If with-slice is true, the first id field is assumed
+to be a concatenation of track.slice.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineEnrichment.makeAnnotatorGO">
+<tt class="descclassname">PipelineEnrichment.</tt><tt class="descname">makeAnnotatorGO</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em>, <em>gofile</em>, <em>workspace</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineEnrichment.makeAnnotatorGO" title="Permalink to this definition">¶</a></dt>
+<dd><p>check statistical overlap between intervals and genomic
+segements having GO assignments.</p>
+<p>worspace should be <tt class="docutils literal"><span class="pre">promotors</span></tt> or <tt class="docutils literal"><span class="pre">gene-territories</span></tt></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineEnrichment.buildAnnotatorSegmentsROI">
+<tt class="descclassname">PipelineEnrichment.</tt><tt class="descname">buildAnnotatorSegmentsROI</tt><span class="sig-paren">(</span><em>tmpdir</em>, <em>roi_class</em>, <em>outfile</em>, <em>overlap=None</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineEnrichment.buildAnnotatorSegmentsROI" title="Permalink to this definition">¶</a></dt>
+<dd><p>convert segments in bed format to annotator format
+from infile to outfile.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineEnrichment.makeAnnotatorROIGO">
+<tt class="descclassname">PipelineEnrichment.</tt><tt class="descname">makeAnnotatorROIGO</tt><span class="sig-paren">(</span><em>roi_class</em>, <em>outfile</em>, <em>gofile</em>, <em>workspace</em>, <em>overlap=None</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineEnrichment.makeAnnotatorROIGO" title="Permalink to this definition">¶</a></dt>
+<dd><p>check statistical overlap between intervals and genomic
+segements having GO assignments.</p>
+<p>worspace should be <tt class="docutils literal"><span class="pre">promotors</span></tt> or <tt class="docutils literal"><span class="pre">gene-territories</span></tt></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineEnrichment.makeAnnotatorArchitecture">
+<tt class="descclassname">PipelineEnrichment.</tt><tt class="descname">makeAnnotatorArchitecture</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em>, <em>workspaces=('mappable'</em>, <em>'genomic')</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineEnrichment.makeAnnotatorArchitecture" title="Permalink to this definition">¶</a></dt>
+<dd><p>check statistical overlap between intervals and and other genomic features
+defined in the file PARAMS[&#8220;annotations&#8221;].</p>
+<p>Annotator is run with the following parameters:</p>
+<blockquote>
+<div><p>1 Segments: the interval track</p>
+<p>2 Annotations:</p>
+<blockquote>
+<div>1 genomic architecture (PARAMS[&#8220;annotation&#8221;])
+2 promotors (PARAMS[&#8220;promotors&#8221;])</div></blockquote>
+<p>3 Workspace: the full genome</p>
+</div></blockquote>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineEnrichment.makeAnnotator">
+<tt class="descclassname">PipelineEnrichment.</tt><tt class="descname">makeAnnotator</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em>, <em>segments</em>, <em>annotations</em>, <em>workspaces=('mappable'</em>, <em>'genomic')</em>, <em>gc_control=True</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineEnrichment.makeAnnotator" title="Permalink to this definition">¶</a></dt>
+<dd><p>check statistical overlap between intervals and and other genomic features</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineEnrichment.makeAnnotatorTracks">
+<tt class="descclassname">PipelineEnrichment.</tt><tt class="descname">makeAnnotatorTracks</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineEnrichment.makeAnnotatorTracks" title="Permalink to this definition">¶</a></dt>
+<dd><p>check statistical overlap between intervals and selected ucsc tracks</p>
+<dl class="docutils">
+<dt>Annotator is run with the following parameters:</dt>
+<dd><p class="first">1 Segments: the interval track</p>
+<dl class="docutils">
+<dt>2 Annotations:</dt>
+<dd>1 ucsc encode features
+2 disease intervals (regions of interest)</dd>
+</dl>
+<p class="last">3 Workspace: the full genome</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineEnrichment.makeAnnotatorRegionsOfInterest">
+<tt class="descclassname">PipelineEnrichment.</tt><tt class="descname">makeAnnotatorRegionsOfInterest</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineEnrichment.makeAnnotatorRegionsOfInterest" title="Permalink to this definition">¶</a></dt>
+<dd><p>check statistical overlap between intervals regions of interest.</p>
+<p>Annotator is run with the following parameters:</p>
+<blockquote>
+<div><p>1 Segments: the interval track</p>
+<dl class="docutils">
+<dt>2 Annotations:</dt>
+<dd>1 disease intervals (regions of interest)</dd>
+</dl>
+<p>3 Workspace: mappable part of gene territories</p>
+</div></blockquote>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">PipelineEnrichment.py -</a><ul>
+<li><a class="reference internal" href="#code">Code</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="PipelineDatabase.html"
+                        title="previous chapter">PipelineDatabase.py - utility functions for working with a database</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="PipelineGO.html"
+                        title="next chapter">Purpose</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/pipelinemodules/PipelineEnrichment.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="PipelineGO.html" title="Purpose"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="PipelineDatabase.html" title="PipelineDatabase.py - utility functions for working with a database"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" >Modules</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

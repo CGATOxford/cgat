@@ -1,0 +1,684 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Read mapping pipeline &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="NGS Pipelines" href="../CGATPipelines.html" />
+    <link rel="next" title="RNA-Seq Transcript Build pipeline" href="pipeline_rnaseqtranscripts.html" />
+    <link rel="prev" title="ReadQc pipeline" href="pipeline_readqc.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pipeline_rnaseqtranscripts.html" title="RNA-Seq Transcript Build pipeline"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="pipeline_readqc.html" title="ReadQc pipeline"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../Pipelines.html" >CGAT Pipelines</a> &raquo;</li>
+          <li><a href="../CGATPipelines.html" accesskey="U">NGS Pipelines</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-pipeline_mapping"></span><div class="section" id="read-mapping-pipeline">
+<h1>Read mapping pipeline<a class="headerlink" href="#read-mapping-pipeline" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Andreas Heger</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id$</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Python</td>
+</tr>
+</tbody>
+</table>
+<p>The read mapping pipeline imports unmapped reads from one or more
+NGS experiments and maps reads against a reference genome.</p>
+<p>This pipeline works on a single genome.</p>
+<div class="section" id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>The pipeline implements various mappers and QC plots. It can be used for</p>
+<ul class="simple">
+<li>Mapping against a genome</li>
+<li>Mapping RNASEQ data against a genome</li>
+<li>Mapping against a transcriptome</li>
+</ul>
+<div class="section" id="principal-targets">
+<h3>Principal targets<a class="headerlink" href="#principal-targets" title="Permalink to this headline">¶</a></h3>
+<dl class="docutils">
+<dt>mapping</dt>
+<dd>perform all mappings</dd>
+<dt>qc</dt>
+<dd>perform all QC steps</dd>
+<dt>full</dt>
+<dd>compute all mappings and QC</dd>
+</dl>
+</div>
+<div class="section" id="optional-targets">
+<h3>Optional targets<a class="headerlink" href="#optional-targets" title="Permalink to this headline">¶</a></h3>
+<dl class="docutils">
+<dt>merge</dt>
+<dd>merge mapped <a class="reference internal" href="../glossary.html#term-bam"><em class="xref std std-term">bam</em></a> formatted files, for example if reads
+from different lanes were mapped separately. After merging, the
+<tt class="docutils literal"><span class="pre">qc</span></tt> target can be run again to get qc stats for the merged
+<a class="reference internal" href="../glossary.html#term-bam"><em class="xref std std-term">bam</em></a> formatted files.</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>See <a class="reference internal" href="../UsingPipelines.html#pipelinesettingup"><em>Setting up a pipeline</em></a> and <a class="reference internal" href="../UsingPipelines.html#pipelinerunning"><em>Running a pipeline</em></a> on general
+information how to use CGAT pipelines.</p>
+<div class="section" id="configuration">
+<h3>Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">¶</a></h3>
+<p>The pipeline requires a configured <tt class="file docutils literal"><span class="pre">pipeline.ini</span></tt> file.</p>
+<p>The sphinxreport report requires a <tt class="file docutils literal"><span class="pre">conf.py</span></tt> and
+<tt class="file docutils literal"><span class="pre">sphinxreport.ini</span></tt> file (see <a class="reference internal" href="../UsingPipelines.html#pipelinereporting"><em>Building pipeline reports</em></a>). To start
+with, use the files supplied with the <a class="reference internal" href="#example">Example</a> data.</p>
+</div>
+<div class="section" id="input">
+<h3>Input<a class="headerlink" href="#input" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="reads">
+<h4>Reads<a class="headerlink" href="#reads" title="Permalink to this headline">¶</a></h4>
+<p>Reads are imported by placing files are linking to files in the
+<a class="reference internal" href="../make_pipelines/Gpipe.html#term-working-directory"><em class="xref std std-term">working directory</em></a>.</p>
+<p>The default file format assumes the following convention:</p>
+<blockquote>
+<div>filename.&lt;suffix&gt;</div></blockquote>
+<p>The <tt class="docutils literal"><span class="pre">suffix</span></tt> determines the file type. The following suffixes/file
+types are possible:</p>
+<dl class="docutils">
+<dt>sra</dt>
+<dd>Short-Read Archive format. Reads will be extracted using the
+<tt class="file docutils literal"><span class="pre">fastq-dump</span></tt> tool.</dd>
+<dt>fastq.gz</dt>
+<dd>Single-end reads in fastq format.</dd>
+<dt>fastq.1.gz, fastq2.2.gz</dt>
+<dd>Paired-end reads in fastq format. The two fastq files must be
+sorted by read-pair.</dd>
+</dl>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Quality scores need to be of the same scale for all input
+files. Thus it might be difficult to mix different formats.</p>
+</div>
+</div>
+<div class="section" id="optional-inputs">
+<h4>Optional inputs<a class="headerlink" href="#optional-inputs" title="Permalink to this headline">¶</a></h4>
+</div>
+</div>
+<div class="section" id="requirements">
+<h3>Requirements<a class="headerlink" href="#requirements" title="Permalink to this headline">¶</a></h3>
+<p>The pipeline requires the results from
+<a class="reference internal" href="pipeline_annotations.html"><em>Annotation pipeline</em></a>. Set the configuration variable
+<tt class="xref py py-data docutils literal"><span class="pre">annotations_database</span></tt> and <tt class="xref py py-data docutils literal"><span class="pre">annotations_dir</span></tt>.</p>
+<p>On top of the default CGAT setup, the pipeline requires the following
+software to be in the path:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="23%" />
+<col width="22%" />
+<col width="55%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><em>Program</em></td>
+<td><em>Version</em></td>
+<td><em>Purpose</em></td>
+</tr>
+<tr class="row-even"><td><a class="reference external" href="http://bowtie-bio.sourceforge.net/index.shtml">bowtie</a></td>
+<td>&gt;=0.12.7</td>
+<td>read mapping</td>
+</tr>
+<tr class="row-odd"><td><a class="reference external" href="http://tophat.cbcb.umd.edu/">tophat</a></td>
+<td>&gt;=1.4.0</td>
+<td>read mapping</td>
+</tr>
+<tr class="row-even"><td><a class="reference external" href="http://research-pub.gene.com/gmap/">gsnap</a></td>
+<td>&gt;=2012.07.20</td>
+<td>read mapping</td>
+</tr>
+<tr class="row-odd"><td>samtools</td>
+<td>&gt;=0.1.16</td>
+<td>bam/sam files</td>
+</tr>
+<tr class="row-even"><td>bedtools</td>
+<td>&nbsp;</td>
+<td>working with intervals</td>
+</tr>
+<tr class="row-odd"><td>sra-tools</td>
+<td>&nbsp;</td>
+<td>extracting reads from .sra files</td>
+</tr>
+<tr class="row-even"><td>picard</td>
+<td>&gt;=1.42</td>
+<td><dl class="first last docutils">
+<dt>bam/sam files. The .jar files need to be in your</dt>
+<dd>CLASSPATH environment variable.</dd>
+</dl>
+</td>
+</tr>
+<tr class="row-odd"><td><a class="reference external" href="http://code.google.com/p/rna-star/">star</a></td>
+<td>&gt;=2.2.0c</td>
+<td>read mapping</td>
+</tr>
+<tr class="row-even"><td><a class="reference external" href="http://www.agf.liv.ac.uk/454/sabkea/samStats_13-01-2011">bamstats</a></td>
+<td>&gt;=1.22</td>
+<td>from CGR, Liverpool</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="merging-bam-files">
+<h3>Merging bam files<a class="headerlink" href="#merging-bam-files" title="Permalink to this headline">¶</a></h3>
+<p>The pipeline has the ability to merge data post-mapping. This is
+useful if data have been split over several lanes and have been
+provide as separate fastq files.</p>
+<p>To enable merging, set regular expression for the input and output in
+the [merge] section of the configuration file.</p>
+</div>
+</div>
+<div class="section" id="pipeline-output">
+<h2>Pipeline output<a class="headerlink" href="#pipeline-output" title="Permalink to this headline">¶</a></h2>
+<p>The major output is in the database file <tt class="file docutils literal"><span class="pre">csvdb</span></tt>.</p>
+</div>
+<div class="section" id="example">
+<h2>Example<a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h2>
+<p>Example data is available at
+<a class="reference external" href="http://www.cgat.org/~andreas/sample_data/pipeline_mapping.tgz">http://www.cgat.org/~andreas/sample_data/pipeline_mapping.tgz</a>.  To run
+the example, simply unpack and untar:</p>
+<div class="highlight-python"><div class="highlight"><pre>wget http://www.cgat.org/~andreas/sample_data/pipeline_mapping.tgz
+tar -xvzf pipeline_mapping.tgz
+cd pipeline_mapping
+python &lt;srcdir&gt;/pipeline_mapping.py make full
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">For the pipeline to run, install the <a class="reference internal" href="pipeline_annotations.html"><em>Annotation pipeline</em></a> as well.</p>
+</div>
+</div>
+<div class="section" id="glossary">
+<h2>Glossary<a class="headerlink" href="#glossary" title="Permalink to this headline">¶</a></h2>
+<dl class="glossary docutils">
+<dt id="term-tophat">tophat</dt>
+<dd><a class="reference external" href="http://tophat.cbcb.umd.edu/">tophat</a> - a read mapper to detect splice-junctions</dd>
+<dt id="term-bowtie">bowtie</dt>
+<dd><a class="reference external" href="http://bowtie-bio.sourceforge.net/index.shtml">bowtie</a> - a read mapper</dd>
+<dt id="term-star">star</dt>
+<dd><a class="reference external" href="http://code.google.com/p/rna-star/">star</a> - a read mapper for RNASEQ data</dd>
+</dl>
+</div>
+<div class="section" id="code">
+<h2>Code<a class="headerlink" href="#code" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pipeline_mapping.connect">
+<tt class="descclassname">pipeline_mapping.</tt><tt class="descname">connect</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_mapping.connect" title="Permalink to this definition">¶</a></dt>
+<dd><p>connect to database.</p>
+<p>This method also attaches to helper databases.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_mapping.buildReferenceGeneSet">
+<tt class="descclassname">pipeline_mapping.</tt><tt class="descname">buildReferenceGeneSet</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_mapping.buildReferenceGeneSet" title="Permalink to this definition">¶</a></dt>
+<dd><p>sanitize ENSEMBL transcripts file for cufflinks analysis.</p>
+<p>Merge exons separated by small introns (&lt; 5bp).</p>
+<p>Removes unwanted contigs according to configuration
+value <tt class="docutils literal"><span class="pre">geneset_remove_contigs</span></tt>.</p>
+<p>Removes transcripts overlapping ribosomal genes if
+<tt class="docutils literal"><span class="pre">geneset_remove_repetitive_rna</span></tt> is set. Protein coding
+transcripts are not removed.</p>
+<dl class="docutils">
+<dt>Transcripts will be ignored that</dt>
+<dd><ul class="first last simple">
+<li>have very long introns (max_intron_size) (otherwise,
+cufflinks complains)</li>
+<li>are located on contigs to be ignored (usually: chrM, _random, ...)</li>
+</ul>
+</dd>
+</dl>
+<p>The result is run through cuffdiff in order to add the p_id and
+tss_id tags required by cuffdiff.</p>
+<p>This will only keep sources of the type &#8216;exon&#8217;. It will also remove
+any transcripts not in the reference genome.</p>
+<p>Cuffdiff requires overlapping genes to have different tss_id tags.</p>
+<p>This geneset is the source for most other genesets in the pipeline.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_mapping.buildCodingGeneSet">
+<tt class="descclassname">pipeline_mapping.</tt><tt class="descname">buildCodingGeneSet</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_mapping.buildCodingGeneSet" title="Permalink to this definition">¶</a></dt>
+<dd><p>build a gene set with only protein coding transcripts.</p>
+<p>Genes are selected via their gene biotype in the GTF file.
+Note that this set will contain all transcripts of protein
+coding genes, including processed transcripts.</p>
+<p>This set includes UTR and CDS.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_mapping.buildIntronGeneModels">
+<tt class="descclassname">pipeline_mapping.</tt><tt class="descname">buildIntronGeneModels</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_mapping.buildIntronGeneModels" title="Permalink to this definition">¶</a></dt>
+<dd><p>build protein-coding intron-transcipts.</p>
+<p>Intron-transcripts are the reverse complement of transcripts.</p>
+<p>Only protein coding genes are taken.</p>
+<p>10 bp are truncated on either end of an intron and need
+to have a minimum length of 100.</p>
+<p>Introns from nested genes might overlap, but all exons
+are removed.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_mapping.buildCodingExons">
+<tt class="descclassname">pipeline_mapping.</tt><tt class="descname">buildCodingExons</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_mapping.buildCodingExons" title="Permalink to this definition">¶</a></dt>
+<dd><p>compile set of protein coding exons.</p>
+<p>This set is used for splice-site validation</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_mapping.buildReferenceTranscriptome">
+<tt class="descclassname">pipeline_mapping.</tt><tt class="descname">buildReferenceTranscriptome</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_mapping.buildReferenceTranscriptome" title="Permalink to this definition">¶</a></dt>
+<dd><p>build reference transcriptome.</p>
+<p>The reference transcriptome contains all known protein coding
+transcripts.</p>
+<p>The sequences include both UTR and CDS.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_mapping.buildJunctions">
+<tt class="descclassname">pipeline_mapping.</tt><tt class="descname">buildJunctions</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_mapping.buildJunctions" title="Permalink to this definition">¶</a></dt>
+<dd><p>build file with splice junctions from gtf file.</p>
+<p>A junctions file is a better option than supplying a GTF
+file, as parsing the latter often fails. See:</p>
+<p><a class="reference external" href="http://seqanswers.com/forums/showthread.php?t=7563">http://seqanswers.com/forums/showthread.php?t=7563</a></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_mapping.buildGSNAPSpliceSites">
+<tt class="descclassname">pipeline_mapping.</tt><tt class="descname">buildGSNAPSpliceSites</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_mapping.buildGSNAPSpliceSites" title="Permalink to this definition">¶</a></dt>
+<dd><p>build file with known splice sites for GSNAP from all exons...</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_mapping.countReads">
+<tt class="descclassname">pipeline_mapping.</tt><tt class="descname">countReads</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_mapping.countReads" title="Permalink to this definition">¶</a></dt>
+<dd><p>count number of reads in input files.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_mapping.mapReadsWithTophat">
+<tt class="descclassname">pipeline_mapping.</tt><tt class="descname">mapReadsWithTophat</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_mapping.mapReadsWithTophat" title="Permalink to this definition">¶</a></dt>
+<dd><p>map reads from .fastq or .sra files.</p>
+<p>A list with known splice junctions is supplied.</p>
+<p>If tophat fails with an error such as:</p>
+<div class="highlight-python"><div class="highlight"><pre>Error: segment-based junction search failed with err =-6
+what():  std::bad_alloc
+</pre></div>
+</div>
+<p>it means that it ran out of memory.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_mapping.mapReadsWithTophat2">
+<tt class="descclassname">pipeline_mapping.</tt><tt class="descname">mapReadsWithTophat2</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_mapping.mapReadsWithTophat2" title="Permalink to this definition">¶</a></dt>
+<dd><p>map reads from .fastq or .sra files.</p>
+<p>A list with known splice junctions is supplied.</p>
+<p>If tophat fails with an error such as:</p>
+<div class="highlight-python"><div class="highlight"><pre>Error: segment-based junction search failed with err =-6
+what():  std::bad_alloc
+</pre></div>
+</div>
+<p>it means that it ran out of memory.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_mapping.mapReadsWithGSNAP">
+<tt class="descclassname">pipeline_mapping.</tt><tt class="descname">mapReadsWithGSNAP</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_mapping.mapReadsWithGSNAP" title="Permalink to this definition">¶</a></dt>
+<dd><p>map reads from .fastq or .sra files.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_mapping.mapReadsWithSTAR">
+<tt class="descclassname">pipeline_mapping.</tt><tt class="descname">mapReadsWithSTAR</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_mapping.mapReadsWithSTAR" title="Permalink to this definition">¶</a></dt>
+<dd><p>map reads from .fastq or .sra files.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_mapping.buildSTARStats">
+<tt class="descclassname">pipeline_mapping.</tt><tt class="descname">buildSTARStats</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_mapping.buildSTARStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>load stats from STAR run.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_mapping.loadSTARStats">
+<tt class="descclassname">pipeline_mapping.</tt><tt class="descname">loadSTARStats</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_mapping.loadSTARStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>load stats from STAR run.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_mapping.mapReadsWithBowtieAgainstTranscriptome">
+<tt class="descclassname">pipeline_mapping.</tt><tt class="descname">mapReadsWithBowtieAgainstTranscriptome</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_mapping.mapReadsWithBowtieAgainstTranscriptome" title="Permalink to this definition">¶</a></dt>
+<dd><p>map reads using bowtie against transcriptome data.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_mapping.mapReadsWithBowtie">
+<tt class="descclassname">pipeline_mapping.</tt><tt class="descname">mapReadsWithBowtie</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_mapping.mapReadsWithBowtie" title="Permalink to this definition">¶</a></dt>
+<dd><p>map reads with bowtie</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_mapping.mapReadsWithBWA">
+<tt class="descclassname">pipeline_mapping.</tt><tt class="descname">mapReadsWithBWA</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_mapping.mapReadsWithBWA" title="Permalink to this definition">¶</a></dt>
+<dd><p>map reads with bwa</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_mapping.mapReadsWithStampy">
+<tt class="descclassname">pipeline_mapping.</tt><tt class="descname">mapReadsWithStampy</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_mapping.mapReadsWithStampy" title="Permalink to this definition">¶</a></dt>
+<dd><p>map reads with stampy</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_mapping.buildPicardStats">
+<tt class="descclassname">pipeline_mapping.</tt><tt class="descname">buildPicardStats</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_mapping.buildPicardStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>build alignment stats using picard.</p>
+<p>Note that picards counts reads but they are in fact alignments.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_mapping.loadPicardStats">
+<tt class="descclassname">pipeline_mapping.</tt><tt class="descname">loadPicardStats</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_mapping.loadPicardStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>merge alignment stats into single tables.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_mapping.buildPicardDuplicationStats">
+<tt class="descclassname">pipeline_mapping.</tt><tt class="descname">buildPicardDuplicationStats</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_mapping.buildPicardDuplicationStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get duplicate stats from picard MarkDuplicates.
+Pair duplication is properly handled, including inter-chromosomal cases. SE data is also handled.
+These stats also contain a histogram that estimates the return from additional sequecing.
+No marked bam files are retained (/dev/null...)
+Note that picards counts reads but they are in fact alignments.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_mapping.loadPicardDuplicationStats">
+<tt class="descclassname">pipeline_mapping.</tt><tt class="descname">loadPicardDuplicationStats</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfiles</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_mapping.loadPicardDuplicationStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>merge alignment stats into single tables.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_mapping.buildBAMStats">
+<tt class="descclassname">pipeline_mapping.</tt><tt class="descname">buildBAMStats</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_mapping.buildBAMStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>count number of reads mapped, duplicates, etc.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_mapping.loadBAMStats">
+<tt class="descclassname">pipeline_mapping.</tt><tt class="descname">loadBAMStats</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_mapping.loadBAMStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>import bam statisticis.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_mapping.buildContextStats">
+<tt class="descclassname">pipeline_mapping.</tt><tt class="descname">buildContextStats</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_mapping.buildContextStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>build mapping context stats.</p>
+<p>Examines the genomic context to where reads align.</p>
+<p>A read is assigned to the genomic context that it overlaps by at
+least 50%. Thus some reads that map across several non-overlapping
+contexts might be dropped.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_mapping.loadContextStats">
+<tt class="descclassname">pipeline_mapping.</tt><tt class="descname">loadContextStats</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_mapping.loadContextStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>load context mapping statistics.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_mapping.buildExonValidation">
+<tt class="descclassname">pipeline_mapping.</tt><tt class="descname">buildExonValidation</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_mapping.buildExonValidation" title="Permalink to this definition">¶</a></dt>
+<dd><p>count number of reads mapped, duplicates, etc.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_mapping.loadExonValidation">
+<tt class="descclassname">pipeline_mapping.</tt><tt class="descname">loadExonValidation</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_mapping.loadExonValidation" title="Permalink to this definition">¶</a></dt>
+<dd><p>merge alignment stats into single tables.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_mapping.splitCodingGeneSetByChr">
+<tt class="descclassname">pipeline_mapping.</tt><tt class="descname">splitCodingGeneSetByChr</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfiles</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_mapping.splitCodingGeneSetByChr" title="Permalink to this definition">¶</a></dt>
+<dd><p>split coding geneset by chromosome to allow parallel
+read counting</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_mapping.buildTranscriptLevelReadCounts">
+<tt class="descclassname">pipeline_mapping.</tt><tt class="descname">buildTranscriptLevelReadCounts</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_mapping.buildTranscriptLevelReadCounts" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>count reads falling into transcripts of protein coding </dt>
+<dd>gene models.</dd>
+</dl>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">In paired-end data sets each mate will be counted. Thus
+the actual read counts are approximately twice the fragment
+counts.</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_mapping.collateTranscriptCounts">
+<tt class="descclassname">pipeline_mapping.</tt><tt class="descname">collateTranscriptCounts</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_mapping.collateTranscriptCounts" title="Permalink to this definition">¶</a></dt>
+<dd><p>pull together the transcript counts over each chromosome</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_mapping.buildIntronLevelReadCounts">
+<tt class="descclassname">pipeline_mapping.</tt><tt class="descname">buildIntronLevelReadCounts</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_mapping.buildIntronLevelReadCounts" title="Permalink to this definition">¶</a></dt>
+<dd><p>compute coverage of exons with reads.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_mapping.loadReadCounts">
+<tt class="descclassname">pipeline_mapping.</tt><tt class="descname">loadReadCounts</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_mapping.loadReadCounts" title="Permalink to this definition">¶</a></dt>
+<dd><p>load read counts into database.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_mapping.buildBigWig">
+<tt class="descclassname">pipeline_mapping.</tt><tt class="descname">buildBigWig</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_mapping.buildBigWig" title="Permalink to this definition">¶</a></dt>
+<dd><p>build wiggle files from bam files.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_mapping.loadBigWigStats">
+<tt class="descclassname">pipeline_mapping.</tt><tt class="descname">loadBigWigStats</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_mapping.loadBigWigStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>load bigwig summary for all wiggle files.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_mapping.buildBed">
+<tt class="descclassname">pipeline_mapping.</tt><tt class="descname">buildBed</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_mapping.buildBed" title="Permalink to this definition">¶</a></dt>
+<dd><p>build bed files from bam files.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_mapping.createViewMapping">
+<tt class="descclassname">pipeline_mapping.</tt><tt class="descname">createViewMapping</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_mapping.createViewMapping" title="Permalink to this definition">¶</a></dt>
+<dd><p>create view in database for alignment stats.</p>
+<p>This view aggregates all information on a per-track basis.</p>
+<p>The table is built from the following tracks:</p>
+<blockquote>
+<div>context_stats
+bam_stats</div></blockquote>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_mapping.build_report">
+<tt class="descclassname">pipeline_mapping.</tt><tt class="descname">build_report</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_mapping.build_report" title="Permalink to this definition">¶</a></dt>
+<dd><p>build report from scratch.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_mapping.update_report">
+<tt class="descclassname">pipeline_mapping.</tt><tt class="descname">update_report</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_mapping.update_report" title="Permalink to this definition">¶</a></dt>
+<dd><p>update report.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_mapping.publish">
+<tt class="descclassname">pipeline_mapping.</tt><tt class="descname">publish</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_mapping.publish" title="Permalink to this definition">¶</a></dt>
+<dd><p>publish files.</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Read mapping pipeline</a><ul>
+<li><a class="reference internal" href="#overview">Overview</a><ul>
+<li><a class="reference internal" href="#principal-targets">Principal targets</a></li>
+<li><a class="reference internal" href="#optional-targets">Optional targets</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#usage">Usage</a><ul>
+<li><a class="reference internal" href="#configuration">Configuration</a></li>
+<li><a class="reference internal" href="#input">Input</a><ul>
+<li><a class="reference internal" href="#reads">Reads</a></li>
+<li><a class="reference internal" href="#optional-inputs">Optional inputs</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#requirements">Requirements</a></li>
+<li><a class="reference internal" href="#merging-bam-files">Merging bam files</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#pipeline-output">Pipeline output</a></li>
+<li><a class="reference internal" href="#example">Example</a></li>
+<li><a class="reference internal" href="#glossary">Glossary</a></li>
+<li><a class="reference internal" href="#code">Code</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="pipeline_readqc.html"
+                        title="previous chapter">ReadQc pipeline</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="pipeline_rnaseqtranscripts.html"
+                        title="next chapter">RNA-Seq Transcript Build pipeline</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/pipelines/pipeline_mapping.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pipeline_rnaseqtranscripts.html" title="RNA-Seq Transcript Build pipeline"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="pipeline_readqc.html" title="ReadQc pipeline"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../Pipelines.html" >CGAT Pipelines</a> &raquo;</li>
+          <li><a href="../CGATPipelines.html" >NGS Pipelines</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

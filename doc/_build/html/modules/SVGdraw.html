@@ -1,0 +1,924 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>SVGdraw.py - generate SVG drawings &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="Modules" href="../modules.html" />
+    <link rel="next" title="SetTools.py - Tools for working on sets" href="SetTools.html" />
+    <link rel="prev" title="SVGTree.py -" href="SVGTree.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="SetTools.html" title="SetTools.py - Tools for working on sets"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="SVGTree.html" title="SVGTree.py -"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" accesskey="U">Modules</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-SVGdraw"></span><div class="section" id="svgdraw-py-generate-svg-drawings">
+<h1>SVGdraw.py - generate SVG drawings<a class="headerlink" href="#svgdraw-py-generate-svg-drawings" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Fedor Baart &amp; Hans de Wit</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id$</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Python</td>
+</tr>
+</tbody>
+</table>
+<p>This module has been copied from 3rd party resources.</p>
+<p>SVGdraw uses an object model drawing and a method toXML to create SVG graphics
+by using easy to use classes and methods usualy you start by creating a drawing eg</p>
+<blockquote>
+<div>d=drawing()
+#then you create a SVG root element
+s=svg()
+#then you add some elements eg a circle and add it to the svg root element
+c=circle()
+#you can supply attributes by using named arguments.
+c=circle(fill=&#8217;red&#8217;,stroke=&#8217;blue&#8217;)
+#or by updating the attributes attribute:
+c.attributes[&#8216;stroke-width&#8217;]=1
+s.addElement(c)
+#then you add the svg root element to the drawing
+d.setSVG(s)
+#and finaly you xmlify the drawing
+d.toXml()</div></blockquote>
+<p>this results in the svg source of the drawing, which consists of a circle
+on a white background. Its as easy as that;)
+This module was created using the SVG specification of www.w3c.org and the
+O&#8217;Reilly (www.oreilly.com) python books as information sources. A svg viewer
+is available from www.adobe.com</p>
+<dl class="class">
+<dt id="SVGdraw.pathdata">
+<em class="property">class </em><tt class="descclassname">SVGdraw.</tt><tt class="descname">pathdata</tt><span class="sig-paren">(</span><em>x=None</em>, <em>y=None</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.pathdata" title="Permalink to this definition">¶</a></dt>
+<dd><p>class used to create a pathdata object which can be used for a path.
+although most methods are pretty straightforward it might be useful to look at the SVG specification.</p>
+<dl class="method">
+<dt id="SVGdraw.pathdata.closepath">
+<tt class="descname">closepath</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.pathdata.closepath" title="Permalink to this definition">¶</a></dt>
+<dd><p>ends the path</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="SVGdraw.pathdata.move">
+<tt class="descname">move</tt><span class="sig-paren">(</span><em>x</em>, <em>y</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.pathdata.move" title="Permalink to this definition">¶</a></dt>
+<dd><p>move to absolute</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="SVGdraw.pathdata.relmove">
+<tt class="descname">relmove</tt><span class="sig-paren">(</span><em>x</em>, <em>y</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.pathdata.relmove" title="Permalink to this definition">¶</a></dt>
+<dd><p>move to relative</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="SVGdraw.pathdata.line">
+<tt class="descname">line</tt><span class="sig-paren">(</span><em>x</em>, <em>y</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.pathdata.line" title="Permalink to this definition">¶</a></dt>
+<dd><p>line to absolute</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="SVGdraw.pathdata.relline">
+<tt class="descname">relline</tt><span class="sig-paren">(</span><em>x</em>, <em>y</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.pathdata.relline" title="Permalink to this definition">¶</a></dt>
+<dd><p>line to relative</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="SVGdraw.pathdata.hline">
+<tt class="descname">hline</tt><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.pathdata.hline" title="Permalink to this definition">¶</a></dt>
+<dd><p>horizontal line to absolute</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="SVGdraw.pathdata.relhline">
+<tt class="descname">relhline</tt><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.pathdata.relhline" title="Permalink to this definition">¶</a></dt>
+<dd><p>horizontal line to relative</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="SVGdraw.pathdata.vline">
+<tt class="descname">vline</tt><span class="sig-paren">(</span><em>y</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.pathdata.vline" title="Permalink to this definition">¶</a></dt>
+<dd><p>verical line to absolute</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="SVGdraw.pathdata.relvline">
+<tt class="descname">relvline</tt><span class="sig-paren">(</span><em>y</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.pathdata.relvline" title="Permalink to this definition">¶</a></dt>
+<dd><p>vertical line to relative</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="SVGdraw.pathdata.bezier">
+<tt class="descname">bezier</tt><span class="sig-paren">(</span><em>x1</em>, <em>y1</em>, <em>x2</em>, <em>y2</em>, <em>x</em>, <em>y</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.pathdata.bezier" title="Permalink to this definition">¶</a></dt>
+<dd><p>bezier with xy1 and xy2 to xy absolut</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="SVGdraw.pathdata.relbezier">
+<tt class="descname">relbezier</tt><span class="sig-paren">(</span><em>x1</em>, <em>y1</em>, <em>x2</em>, <em>y2</em>, <em>x</em>, <em>y</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.pathdata.relbezier" title="Permalink to this definition">¶</a></dt>
+<dd><p>bezier with xy1 and xy2 to xy relative</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="SVGdraw.pathdata.smbezier">
+<tt class="descname">smbezier</tt><span class="sig-paren">(</span><em>x2</em>, <em>y2</em>, <em>x</em>, <em>y</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.pathdata.smbezier" title="Permalink to this definition">¶</a></dt>
+<dd><p>smooth bezier with xy2 to xy absolut</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="SVGdraw.pathdata.relsmbezier">
+<tt class="descname">relsmbezier</tt><span class="sig-paren">(</span><em>x2</em>, <em>y2</em>, <em>x</em>, <em>y</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.pathdata.relsmbezier" title="Permalink to this definition">¶</a></dt>
+<dd><p>smooth bezier with xy2 to xy relative</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="SVGdraw.pathdata.qbezier">
+<tt class="descname">qbezier</tt><span class="sig-paren">(</span><em>x1</em>, <em>y1</em>, <em>x</em>, <em>y</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.pathdata.qbezier" title="Permalink to this definition">¶</a></dt>
+<dd><p>quadratic bezier with xy1 to xy absolut</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="SVGdraw.pathdata.relqbezier">
+<tt class="descname">relqbezier</tt><span class="sig-paren">(</span><em>x1</em>, <em>y1</em>, <em>x</em>, <em>y</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.pathdata.relqbezier" title="Permalink to this definition">¶</a></dt>
+<dd><p>quadratic bezier with xy1 to xy relative</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="SVGdraw.pathdata.smqbezier">
+<tt class="descname">smqbezier</tt><span class="sig-paren">(</span><em>x</em>, <em>y</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.pathdata.smqbezier" title="Permalink to this definition">¶</a></dt>
+<dd><p>smooth quadratic bezier to xy absolut</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="SVGdraw.pathdata.relsmqbezier">
+<tt class="descname">relsmqbezier</tt><span class="sig-paren">(</span><em>x</em>, <em>y</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.pathdata.relsmqbezier" title="Permalink to this definition">¶</a></dt>
+<dd><p>smooth quadratic bezier to xy relative</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="SVGdraw.pathdata.ellarc">
+<tt class="descname">ellarc</tt><span class="sig-paren">(</span><em>rx</em>, <em>ry</em>, <em>xrot</em>, <em>laf</em>, <em>sf</em>, <em>x</em>, <em>y</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.pathdata.ellarc" title="Permalink to this definition">¶</a></dt>
+<dd><p>elliptival arc with rx and ry rotating with xrot using large-arc-flag and sweep-flag  to xy absolut</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="SVGdraw.pathdata.relellarc">
+<tt class="descname">relellarc</tt><span class="sig-paren">(</span><em>rx</em>, <em>ry</em>, <em>xrot</em>, <em>laf</em>, <em>sf</em>, <em>x</em>, <em>y</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.pathdata.relellarc" title="Permalink to this definition">¶</a></dt>
+<dd><p>elliptival arc with rx and ry rotating with xrot using large-arc-flag and sweep-flag  to xy relative</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGdraw.SVGelement">
+<em class="property">class </em><tt class="descclassname">SVGdraw.</tt><tt class="descname">SVGelement</tt><span class="sig-paren">(</span><em>type=''</em>, <em>attributes=None</em>, <em>elements=None</em>, <em>text=''</em>, <em>namespace=''</em>, <em>cdata=None</em>, <em>**args</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.SVGelement" title="Permalink to this definition">¶</a></dt>
+<dd><p>SVGelement(type,attributes,elements,text,namespace,**args)
+Creates a arbitrary svg element and is intended to be subclassed not used on its own.
+This element is the base of every svg element it defines a class which resembles
+a xml-element. The main advantage of this kind of implementation is that you don&#8217;t
+have to create a toXML method for every different graph object. Every element
+consists of a type, attribute, optional subelements, optional text and an optional
+namespace. Note the elements==None, if elements = None:self.elements=[] construction.
+This is done because if you default to elements=[] every object has a reference
+to the same empty list.</p>
+<dl class="method">
+<dt id="SVGdraw.SVGelement.addElement">
+<tt class="descname">addElement</tt><span class="sig-paren">(</span><em>SVGelement</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.SVGelement.addElement" title="Permalink to this definition">¶</a></dt>
+<dd><p>adds an element to a SVGelement</p>
+<p>SVGelement.addElement(SVGelement)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGdraw.tspan">
+<em class="property">class </em><tt class="descclassname">SVGdraw.</tt><tt class="descname">tspan</tt><span class="sig-paren">(</span><em>text=None</em>, <em>**args</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.tspan" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SVGdraw.SVGelement" title="SVGdraw.SVGelement"><tt class="xref py py-class docutils literal"><span class="pre">SVGdraw.SVGelement</span></tt></a></p>
+<p>ts=tspan(text=&#8217;&#8216;,**args)</p>
+<p>a tspan element can be used for applying formatting to a textsection
+usage:
+ts=tspan(&#8216;this text is bold&#8217;)
+ts.attributes[&#8216;font-weight&#8217;]=&#8217;bold&#8217;
+st=spannedtext()
+st.addtspan(ts)
+t=text(3,5,st)</p>
+<dl class="method">
+<dt id="SVGdraw.tspan.addElement">
+<tt class="descname">addElement</tt><span class="sig-paren">(</span><em>SVGelement</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.tspan.addElement" title="Permalink to this definition">¶</a></dt>
+<dd><p>adds an element to a SVGelement</p>
+<p>SVGelement.addElement(SVGelement)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGdraw.tref">
+<em class="property">class </em><tt class="descclassname">SVGdraw.</tt><tt class="descname">tref</tt><span class="sig-paren">(</span><em>link</em>, <em>**args</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.tref" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SVGdraw.SVGelement" title="SVGdraw.SVGelement"><tt class="xref py py-class docutils literal"><span class="pre">SVGdraw.SVGelement</span></tt></a></p>
+<p>tr=tref(link=&#8217;&#8216;,**args)</p>
+<p>a tref element can be used for referencing text by a link to its id.
+usage:
+tr=tref(&#8216;#linktotext&#8217;)
+st=spannedtext()
+st.addtref(tr)
+t=text(3,5,st)</p>
+<dl class="method">
+<dt id="SVGdraw.tref.addElement">
+<tt class="descname">addElement</tt><span class="sig-paren">(</span><em>SVGelement</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.tref.addElement" title="Permalink to this definition">¶</a></dt>
+<dd><p>adds an element to a SVGelement</p>
+<p>SVGelement.addElement(SVGelement)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGdraw.spannedtext">
+<em class="property">class </em><tt class="descclassname">SVGdraw.</tt><tt class="descname">spannedtext</tt><span class="sig-paren">(</span><em>textlist=None</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.spannedtext" title="Permalink to this definition">¶</a></dt>
+<dd><p>st=spannedtext(textlist=[])</p>
+<p>a spannedtext can be used for text which consists of text, tspan&#8217;s and tref&#8217;s
+You can use it to add to a text element or path element. Don&#8217;t add it directly
+to a svg or a group element.
+usage:</p>
+<p>ts=tspan(&#8216;this text is bold&#8217;)
+ts.attributes[&#8216;font-weight&#8217;]=&#8217;bold&#8217;
+tr=tref(&#8216;#linktotext&#8217;)
+tr.attributes[&#8216;fill&#8217;]=&#8217;red&#8217;
+st=spannedtext()
+st.addtspan(ts)
+st.addtref(tr)
+st.addtext(&#8216;This text is not bold&#8217;)
+t=text(3,5,st)</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGdraw.rect">
+<em class="property">class </em><tt class="descclassname">SVGdraw.</tt><tt class="descname">rect</tt><span class="sig-paren">(</span><em>x=None</em>, <em>y=None</em>, <em>width=None</em>, <em>height=None</em>, <em>fill=None</em>, <em>stroke=None</em>, <em>stroke_width=None</em>, <em>**args</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.rect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SVGdraw.SVGelement" title="SVGdraw.SVGelement"><tt class="xref py py-class docutils literal"><span class="pre">SVGdraw.SVGelement</span></tt></a></p>
+<p>r=rect(width,height,x,y,fill,stroke,stroke_width,**args)</p>
+<p>a rectangle is defined by a width and height and a xy pair</p>
+<dl class="method">
+<dt id="SVGdraw.rect.addElement">
+<tt class="descname">addElement</tt><span class="sig-paren">(</span><em>SVGelement</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.rect.addElement" title="Permalink to this definition">¶</a></dt>
+<dd><p>adds an element to a SVGelement</p>
+<p>SVGelement.addElement(SVGelement)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGdraw.ellipse">
+<em class="property">class </em><tt class="descclassname">SVGdraw.</tt><tt class="descname">ellipse</tt><span class="sig-paren">(</span><em>cx=None</em>, <em>cy=None</em>, <em>rx=None</em>, <em>ry=None</em>, <em>fill=None</em>, <em>stroke=None</em>, <em>stroke_width=None</em>, <em>**args</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.ellipse" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SVGdraw.SVGelement" title="SVGdraw.SVGelement"><tt class="xref py py-class docutils literal"><span class="pre">SVGdraw.SVGelement</span></tt></a></p>
+<p>e=ellipse(rx,ry,x,y,fill,stroke,stroke_width,**args)</p>
+<p>an ellipse is defined as a center and a x and y radius.</p>
+<dl class="method">
+<dt id="SVGdraw.ellipse.addElement">
+<tt class="descname">addElement</tt><span class="sig-paren">(</span><em>SVGelement</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.ellipse.addElement" title="Permalink to this definition">¶</a></dt>
+<dd><p>adds an element to a SVGelement</p>
+<p>SVGelement.addElement(SVGelement)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGdraw.circle">
+<em class="property">class </em><tt class="descclassname">SVGdraw.</tt><tt class="descname">circle</tt><span class="sig-paren">(</span><em>cx=None</em>, <em>cy=None</em>, <em>r=None</em>, <em>fill=None</em>, <em>stroke=None</em>, <em>stroke_width=None</em>, <em>**args</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.circle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SVGdraw.SVGelement" title="SVGdraw.SVGelement"><tt class="xref py py-class docutils literal"><span class="pre">SVGdraw.SVGelement</span></tt></a></p>
+<p>c=circle(x,y,radius,fill,stroke,stroke_width,**args)</p>
+<p>The circle creates an element using a x, y and radius values eg</p>
+<dl class="method">
+<dt id="SVGdraw.circle.addElement">
+<tt class="descname">addElement</tt><span class="sig-paren">(</span><em>SVGelement</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.circle.addElement" title="Permalink to this definition">¶</a></dt>
+<dd><p>adds an element to a SVGelement</p>
+<p>SVGelement.addElement(SVGelement)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGdraw.point">
+<em class="property">class </em><tt class="descclassname">SVGdraw.</tt><tt class="descname">point</tt><span class="sig-paren">(</span><em>x</em>, <em>y</em>, <em>fill='black'</em>, <em>**args</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.point" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SVGdraw.circle" title="SVGdraw.circle"><tt class="xref py py-class docutils literal"><span class="pre">SVGdraw.circle</span></tt></a></p>
+<p>p=point(x,y,color)</p>
+<p>A point is defined as a circle with a size 1 radius. It may be more efficient to use a
+very small rectangle if you use many points because a circle is difficult to render.</p>
+<dl class="method">
+<dt id="SVGdraw.point.addElement">
+<tt class="descname">addElement</tt><span class="sig-paren">(</span><em>SVGelement</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.point.addElement" title="Permalink to this definition">¶</a></dt>
+<dd><p>adds an element to a SVGelement</p>
+<p>SVGelement.addElement(SVGelement)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGdraw.line">
+<em class="property">class </em><tt class="descclassname">SVGdraw.</tt><tt class="descname">line</tt><span class="sig-paren">(</span><em>x1=None</em>, <em>y1=None</em>, <em>x2=None</em>, <em>y2=None</em>, <em>stroke=None</em>, <em>stroke_width=None</em>, <em>**args</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.line" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SVGdraw.SVGelement" title="SVGdraw.SVGelement"><tt class="xref py py-class docutils literal"><span class="pre">SVGdraw.SVGelement</span></tt></a></p>
+<p>l=line(x1,y1,x2,y2,stroke,stroke_width,**args)</p>
+<p>A line is defined by a begin x,y pair and an end x,y pair</p>
+<dl class="method">
+<dt id="SVGdraw.line.addElement">
+<tt class="descname">addElement</tt><span class="sig-paren">(</span><em>SVGelement</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.line.addElement" title="Permalink to this definition">¶</a></dt>
+<dd><p>adds an element to a SVGelement</p>
+<p>SVGelement.addElement(SVGelement)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGdraw.polyline">
+<em class="property">class </em><tt class="descclassname">SVGdraw.</tt><tt class="descname">polyline</tt><span class="sig-paren">(</span><em>points</em>, <em>fill=None</em>, <em>stroke=None</em>, <em>stroke_width=None</em>, <em>**args</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.polyline" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SVGdraw.SVGelement" title="SVGdraw.SVGelement"><tt class="xref py py-class docutils literal"><span class="pre">SVGdraw.SVGelement</span></tt></a></p>
+<p>pl=polyline([[x1,y1],[x2,y2],...],fill,stroke,stroke_width,**args)</p>
+<p>a polyline is defined by a list of xy pairs</p>
+<dl class="method">
+<dt id="SVGdraw.polyline.addElement">
+<tt class="descname">addElement</tt><span class="sig-paren">(</span><em>SVGelement</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.polyline.addElement" title="Permalink to this definition">¶</a></dt>
+<dd><p>adds an element to a SVGelement</p>
+<p>SVGelement.addElement(SVGelement)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGdraw.polygon">
+<em class="property">class </em><tt class="descclassname">SVGdraw.</tt><tt class="descname">polygon</tt><span class="sig-paren">(</span><em>points</em>, <em>fill=None</em>, <em>stroke=None</em>, <em>stroke_width=None</em>, <em>**args</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.polygon" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SVGdraw.SVGelement" title="SVGdraw.SVGelement"><tt class="xref py py-class docutils literal"><span class="pre">SVGdraw.SVGelement</span></tt></a></p>
+<p>pl=polyline([[x1,y1],[x2,y2],...],fill,stroke,stroke_width,**args)</p>
+<p>a polygon is defined by a list of xy pairs</p>
+<dl class="method">
+<dt id="SVGdraw.polygon.addElement">
+<tt class="descname">addElement</tt><span class="sig-paren">(</span><em>SVGelement</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.polygon.addElement" title="Permalink to this definition">¶</a></dt>
+<dd><p>adds an element to a SVGelement</p>
+<p>SVGelement.addElement(SVGelement)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGdraw.path">
+<em class="property">class </em><tt class="descclassname">SVGdraw.</tt><tt class="descname">path</tt><span class="sig-paren">(</span><em>pathdata</em>, <em>fill=None</em>, <em>stroke=None</em>, <em>stroke_width=None</em>, <em>id=None</em>, <em>**args</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SVGdraw.SVGelement" title="SVGdraw.SVGelement"><tt class="xref py py-class docutils literal"><span class="pre">SVGdraw.SVGelement</span></tt></a></p>
+<p>p=path(path,fill,stroke,stroke_width,**args)</p>
+<p>a path is defined by a path object and optional width, stroke and fillcolor</p>
+<dl class="method">
+<dt id="SVGdraw.path.addElement">
+<tt class="descname">addElement</tt><span class="sig-paren">(</span><em>SVGelement</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.path.addElement" title="Permalink to this definition">¶</a></dt>
+<dd><p>adds an element to a SVGelement</p>
+<p>SVGelement.addElement(SVGelement)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGdraw.text">
+<em class="property">class </em><tt class="descclassname">SVGdraw.</tt><tt class="descname">text</tt><span class="sig-paren">(</span><em>x=None</em>, <em>y=None</em>, <em>text=None</em>, <em>font_size=None</em>, <em>font_family=None</em>, <em>text_anchor=None</em>, <em>font_style=None</em>, <em>**args</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.text" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SVGdraw.SVGelement" title="SVGdraw.SVGelement"><tt class="xref py py-class docutils literal"><span class="pre">SVGdraw.SVGelement</span></tt></a></p>
+<p>t=text(x,y,text,font_size,font_family,**args)</p>
+<p>a text element can bge used for displaying text on the screen</p>
+<dl class="method">
+<dt id="SVGdraw.text.addElement">
+<tt class="descname">addElement</tt><span class="sig-paren">(</span><em>SVGelement</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.text.addElement" title="Permalink to this definition">¶</a></dt>
+<dd><p>adds an element to a SVGelement</p>
+<p>SVGelement.addElement(SVGelement)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGdraw.textpath">
+<em class="property">class </em><tt class="descclassname">SVGdraw.</tt><tt class="descname">textpath</tt><span class="sig-paren">(</span><em>link</em>, <em>text=None</em>, <em>**args</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.textpath" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SVGdraw.SVGelement" title="SVGdraw.SVGelement"><tt class="xref py py-class docutils literal"><span class="pre">SVGdraw.SVGelement</span></tt></a></p>
+<p>tp=textpath(text,link,**args)</p>
+<p>a textpath places a text on a path which is referenced by a link.</p>
+<dl class="method">
+<dt id="SVGdraw.textpath.addElement">
+<tt class="descname">addElement</tt><span class="sig-paren">(</span><em>SVGelement</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.textpath.addElement" title="Permalink to this definition">¶</a></dt>
+<dd><p>adds an element to a SVGelement</p>
+<p>SVGelement.addElement(SVGelement)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGdraw.pattern">
+<em class="property">class </em><tt class="descclassname">SVGdraw.</tt><tt class="descname">pattern</tt><span class="sig-paren">(</span><em>x=None</em>, <em>y=None</em>, <em>width=None</em>, <em>height=None</em>, <em>patternUnits=None</em>, <em>**args</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.pattern" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SVGdraw.SVGelement" title="SVGdraw.SVGelement"><tt class="xref py py-class docutils literal"><span class="pre">SVGdraw.SVGelement</span></tt></a></p>
+<p>p=pattern(x,y,width,height,patternUnits,**args)</p>
+<p>A pattern is used to fill or stroke an object using a pre-defined
+graphic object which can be replicated (&#8220;tiled&#8221;) at fixed intervals
+in x and y to cover the areas to be painted.</p>
+<dl class="method">
+<dt id="SVGdraw.pattern.addElement">
+<tt class="descname">addElement</tt><span class="sig-paren">(</span><em>SVGelement</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.pattern.addElement" title="Permalink to this definition">¶</a></dt>
+<dd><p>adds an element to a SVGelement</p>
+<p>SVGelement.addElement(SVGelement)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGdraw.title">
+<em class="property">class </em><tt class="descclassname">SVGdraw.</tt><tt class="descname">title</tt><span class="sig-paren">(</span><em>text=None</em>, <em>**args</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.title" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SVGdraw.SVGelement" title="SVGdraw.SVGelement"><tt class="xref py py-class docutils literal"><span class="pre">SVGdraw.SVGelement</span></tt></a></p>
+<p>t=title(text,**args)</p>
+<p>a title is a text element. The text is displayed in the title bar
+add at least one to the root svg element</p>
+<dl class="method">
+<dt id="SVGdraw.title.addElement">
+<tt class="descname">addElement</tt><span class="sig-paren">(</span><em>SVGelement</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.title.addElement" title="Permalink to this definition">¶</a></dt>
+<dd><p>adds an element to a SVGelement</p>
+<p>SVGelement.addElement(SVGelement)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGdraw.description">
+<em class="property">class </em><tt class="descclassname">SVGdraw.</tt><tt class="descname">description</tt><span class="sig-paren">(</span><em>text=None</em>, <em>**args</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.description" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SVGdraw.SVGelement" title="SVGdraw.SVGelement"><tt class="xref py py-class docutils literal"><span class="pre">SVGdraw.SVGelement</span></tt></a></p>
+<p>d=description(text,**args)</p>
+<p>a description can be added to any element and is used for a tooltip
+Add this element before adding other elements.</p>
+<dl class="method">
+<dt id="SVGdraw.description.addElement">
+<tt class="descname">addElement</tt><span class="sig-paren">(</span><em>SVGelement</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.description.addElement" title="Permalink to this definition">¶</a></dt>
+<dd><p>adds an element to a SVGelement</p>
+<p>SVGelement.addElement(SVGelement)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGdraw.lineargradient">
+<em class="property">class </em><tt class="descclassname">SVGdraw.</tt><tt class="descname">lineargradient</tt><span class="sig-paren">(</span><em>x1=None</em>, <em>y1=None</em>, <em>x2=None</em>, <em>y2=None</em>, <em>id=None</em>, <em>**args</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.lineargradient" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SVGdraw.SVGelement" title="SVGdraw.SVGelement"><tt class="xref py py-class docutils literal"><span class="pre">SVGdraw.SVGelement</span></tt></a></p>
+<p>lg=lineargradient(x1,y1,x2,y2,id,**args)</p>
+<p>defines a lineargradient using two xy pairs.
+stop elements van be added to define the gradient colors.</p>
+<dl class="method">
+<dt id="SVGdraw.lineargradient.addElement">
+<tt class="descname">addElement</tt><span class="sig-paren">(</span><em>SVGelement</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.lineargradient.addElement" title="Permalink to this definition">¶</a></dt>
+<dd><p>adds an element to a SVGelement</p>
+<p>SVGelement.addElement(SVGelement)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGdraw.radialgradient">
+<em class="property">class </em><tt class="descclassname">SVGdraw.</tt><tt class="descname">radialgradient</tt><span class="sig-paren">(</span><em>cx=None</em>, <em>cy=None</em>, <em>r=None</em>, <em>fx=None</em>, <em>fy=None</em>, <em>id=None</em>, <em>**args</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.radialgradient" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SVGdraw.SVGelement" title="SVGdraw.SVGelement"><tt class="xref py py-class docutils literal"><span class="pre">SVGdraw.SVGelement</span></tt></a></p>
+<p>rg=radialgradient(cx,cy,r,fx,fy,id,**args)</p>
+<p>defines a radial gradient using a outer circle which are defined by a cx,cy and r and by using a focalpoint.
+stop elements van be added to define the gradient colors.</p>
+<dl class="method">
+<dt id="SVGdraw.radialgradient.addElement">
+<tt class="descname">addElement</tt><span class="sig-paren">(</span><em>SVGelement</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.radialgradient.addElement" title="Permalink to this definition">¶</a></dt>
+<dd><p>adds an element to a SVGelement</p>
+<p>SVGelement.addElement(SVGelement)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGdraw.stop">
+<em class="property">class </em><tt class="descclassname">SVGdraw.</tt><tt class="descname">stop</tt><span class="sig-paren">(</span><em>offset</em>, <em>stop_color=None</em>, <em>**args</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.stop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SVGdraw.SVGelement" title="SVGdraw.SVGelement"><tt class="xref py py-class docutils literal"><span class="pre">SVGdraw.SVGelement</span></tt></a></p>
+<p>st=stop(offset,stop_color,**args)</p>
+<p>Puts a stop color at the specified radius</p>
+<dl class="method">
+<dt id="SVGdraw.stop.addElement">
+<tt class="descname">addElement</tt><span class="sig-paren">(</span><em>SVGelement</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.stop.addElement" title="Permalink to this definition">¶</a></dt>
+<dd><p>adds an element to a SVGelement</p>
+<p>SVGelement.addElement(SVGelement)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGdraw.style">
+<em class="property">class </em><tt class="descclassname">SVGdraw.</tt><tt class="descname">style</tt><span class="sig-paren">(</span><em>type</em>, <em>cdata=None</em>, <em>**args</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.style" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SVGdraw.SVGelement" title="SVGdraw.SVGelement"><tt class="xref py py-class docutils literal"><span class="pre">SVGdraw.SVGelement</span></tt></a></p>
+<p>st=style(type,cdata=None,**args)</p>
+<p>Add a CDATA element to this element for defing in line stylesheets etc..</p>
+<dl class="method">
+<dt id="SVGdraw.style.addElement">
+<tt class="descname">addElement</tt><span class="sig-paren">(</span><em>SVGelement</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.style.addElement" title="Permalink to this definition">¶</a></dt>
+<dd><p>adds an element to a SVGelement</p>
+<p>SVGelement.addElement(SVGelement)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGdraw.image">
+<em class="property">class </em><tt class="descclassname">SVGdraw.</tt><tt class="descname">image</tt><span class="sig-paren">(</span><em>url</em>, <em>x=None</em>, <em>y=None</em>, <em>width=None</em>, <em>height=None</em>, <em>**args</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.image" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SVGdraw.SVGelement" title="SVGdraw.SVGelement"><tt class="xref py py-class docutils literal"><span class="pre">SVGdraw.SVGelement</span></tt></a></p>
+<p>im=image(url,width,height,x,y,**args)</p>
+<p>adds an image to the drawing. Supported formats are .png, .jpg and .svg.</p>
+<dl class="method">
+<dt id="SVGdraw.image.addElement">
+<tt class="descname">addElement</tt><span class="sig-paren">(</span><em>SVGelement</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.image.addElement" title="Permalink to this definition">¶</a></dt>
+<dd><p>adds an element to a SVGelement</p>
+<p>SVGelement.addElement(SVGelement)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGdraw.cursor">
+<em class="property">class </em><tt class="descclassname">SVGdraw.</tt><tt class="descname">cursor</tt><span class="sig-paren">(</span><em>url</em>, <em>**args</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.cursor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SVGdraw.SVGelement" title="SVGdraw.SVGelement"><tt class="xref py py-class docutils literal"><span class="pre">SVGdraw.SVGelement</span></tt></a></p>
+<p>c=cursor(url,**args)</p>
+<p>defines a custom cursor for a element or a drawing</p>
+<dl class="method">
+<dt id="SVGdraw.cursor.addElement">
+<tt class="descname">addElement</tt><span class="sig-paren">(</span><em>SVGelement</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.cursor.addElement" title="Permalink to this definition">¶</a></dt>
+<dd><p>adds an element to a SVGelement</p>
+<p>SVGelement.addElement(SVGelement)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGdraw.marker">
+<em class="property">class </em><tt class="descclassname">SVGdraw.</tt><tt class="descname">marker</tt><span class="sig-paren">(</span><em>id=None</em>, <em>viewBox=None</em>, <em>refx=None</em>, <em>refy=None</em>, <em>markerWidth=None</em>, <em>markerHeight=None</em>, <em>**args</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.marker" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SVGdraw.SVGelement" title="SVGdraw.SVGelement"><tt class="xref py py-class docutils literal"><span class="pre">SVGdraw.SVGelement</span></tt></a></p>
+<p>m=marker(id,viewbox,refX,refY,markerWidth,markerHeight,**args)</p>
+<p>defines a marker which can be used as an endpoint for a line or other pathtypes
+add an element to it which should be used as a marker.</p>
+<dl class="method">
+<dt id="SVGdraw.marker.addElement">
+<tt class="descname">addElement</tt><span class="sig-paren">(</span><em>SVGelement</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.marker.addElement" title="Permalink to this definition">¶</a></dt>
+<dd><p>adds an element to a SVGelement</p>
+<p>SVGelement.addElement(SVGelement)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGdraw.group">
+<em class="property">class </em><tt class="descclassname">SVGdraw.</tt><tt class="descname">group</tt><span class="sig-paren">(</span><em>id=None</em>, <em>**args</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.group" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SVGdraw.SVGelement" title="SVGdraw.SVGelement"><tt class="xref py py-class docutils literal"><span class="pre">SVGdraw.SVGelement</span></tt></a></p>
+<p>g=group(id,**args)</p>
+<p>a group is defined by an id and is used to contain elements
+g.addElement(SVGelement)</p>
+<dl class="method">
+<dt id="SVGdraw.group.addElement">
+<tt class="descname">addElement</tt><span class="sig-paren">(</span><em>SVGelement</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.group.addElement" title="Permalink to this definition">¶</a></dt>
+<dd><p>adds an element to a SVGelement</p>
+<p>SVGelement.addElement(SVGelement)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGdraw.symbol">
+<em class="property">class </em><tt class="descclassname">SVGdraw.</tt><tt class="descname">symbol</tt><span class="sig-paren">(</span><em>id=None</em>, <em>viewBox=None</em>, <em>**args</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.symbol" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SVGdraw.SVGelement" title="SVGdraw.SVGelement"><tt class="xref py py-class docutils literal"><span class="pre">SVGdraw.SVGelement</span></tt></a></p>
+<p>sy=symbol(id,viewbox,**args)</p>
+<p>defines a symbol which can be used on different places in your graph using
+the use element. A symbol is not rendered but you can use &#8216;use&#8217; elements to
+display it by referencing its id.
+sy.addElement(SVGelement)</p>
+<dl class="method">
+<dt id="SVGdraw.symbol.addElement">
+<tt class="descname">addElement</tt><span class="sig-paren">(</span><em>SVGelement</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.symbol.addElement" title="Permalink to this definition">¶</a></dt>
+<dd><p>adds an element to a SVGelement</p>
+<p>SVGelement.addElement(SVGelement)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGdraw.defs">
+<em class="property">class </em><tt class="descclassname">SVGdraw.</tt><tt class="descname">defs</tt><span class="sig-paren">(</span><em>**args</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.defs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SVGdraw.SVGelement" title="SVGdraw.SVGelement"><tt class="xref py py-class docutils literal"><span class="pre">SVGdraw.SVGelement</span></tt></a></p>
+<p>d=defs(<tt class="docutils literal"><span class="pre">**args</span></tt>)</p>
+<p>container for defining elements</p>
+<dl class="method">
+<dt id="SVGdraw.defs.addElement">
+<tt class="descname">addElement</tt><span class="sig-paren">(</span><em>SVGelement</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.defs.addElement" title="Permalink to this definition">¶</a></dt>
+<dd><p>adds an element to a SVGelement</p>
+<p>SVGelement.addElement(SVGelement)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGdraw.switch">
+<em class="property">class </em><tt class="descclassname">SVGdraw.</tt><tt class="descname">switch</tt><span class="sig-paren">(</span><em>**args</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.switch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SVGdraw.SVGelement" title="SVGdraw.SVGelement"><tt class="xref py py-class docutils literal"><span class="pre">SVGdraw.SVGelement</span></tt></a></p>
+<p>sw=switch(<tt class="docutils literal"><span class="pre">**args</span></tt>)</p>
+<p>Elements added to a switch element which are &#8220;switched&#8221; by the attributes
+requiredFeatures, requiredExtensions and systemLanguage.
+Refer to the SVG specification for details.</p>
+<dl class="method">
+<dt id="SVGdraw.switch.addElement">
+<tt class="descname">addElement</tt><span class="sig-paren">(</span><em>SVGelement</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.switch.addElement" title="Permalink to this definition">¶</a></dt>
+<dd><p>adds an element to a SVGelement</p>
+<p>SVGelement.addElement(SVGelement)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGdraw.use">
+<em class="property">class </em><tt class="descclassname">SVGdraw.</tt><tt class="descname">use</tt><span class="sig-paren">(</span><em>link</em>, <em>x=None</em>, <em>y=None</em>, <em>width=None</em>, <em>height=None</em>, <em>**args</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.use" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SVGdraw.SVGelement" title="SVGdraw.SVGelement"><tt class="xref py py-class docutils literal"><span class="pre">SVGdraw.SVGelement</span></tt></a></p>
+<p>u=use(link,x,y,width,height,``**args``)</p>
+<p>references a symbol by linking to its id and its position, height and width</p>
+<dl class="method">
+<dt id="SVGdraw.use.addElement">
+<tt class="descname">addElement</tt><span class="sig-paren">(</span><em>SVGelement</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.use.addElement" title="Permalink to this definition">¶</a></dt>
+<dd><p>adds an element to a SVGelement</p>
+<p>SVGelement.addElement(SVGelement)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGdraw.link">
+<em class="property">class </em><tt class="descclassname">SVGdraw.</tt><tt class="descname">link</tt><span class="sig-paren">(</span><em>link=''</em>, <em>**args</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.link" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SVGdraw.SVGelement" title="SVGdraw.SVGelement"><tt class="xref py py-class docutils literal"><span class="pre">SVGdraw.SVGelement</span></tt></a></p>
+<p>a=link(url,``**args``)</p>
+<p>a link  is defined by a hyperlink. add elements which have to be linked
+a.addElement(SVGelement)</p>
+<dl class="method">
+<dt id="SVGdraw.link.addElement">
+<tt class="descname">addElement</tt><span class="sig-paren">(</span><em>SVGelement</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.link.addElement" title="Permalink to this definition">¶</a></dt>
+<dd><p>adds an element to a SVGelement</p>
+<p>SVGelement.addElement(SVGelement)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGdraw.view">
+<em class="property">class </em><tt class="descclassname">SVGdraw.</tt><tt class="descname">view</tt><span class="sig-paren">(</span><em>id=None</em>, <em>**args</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.view" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SVGdraw.SVGelement" title="SVGdraw.SVGelement"><tt class="xref py py-class docutils literal"><span class="pre">SVGdraw.SVGelement</span></tt></a></p>
+<p>v=view(id,``**args``)</p>
+<p>a view can be used to create a view with different attributes</p>
+<dl class="method">
+<dt id="SVGdraw.view.addElement">
+<tt class="descname">addElement</tt><span class="sig-paren">(</span><em>SVGelement</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.view.addElement" title="Permalink to this definition">¶</a></dt>
+<dd><p>adds an element to a SVGelement</p>
+<p>SVGelement.addElement(SVGelement)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGdraw.script">
+<em class="property">class </em><tt class="descclassname">SVGdraw.</tt><tt class="descname">script</tt><span class="sig-paren">(</span><em>type</em>, <em>cdata=None</em>, <em>**args</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.script" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SVGdraw.SVGelement" title="SVGdraw.SVGelement"><tt class="xref py py-class docutils literal"><span class="pre">SVGdraw.SVGelement</span></tt></a></p>
+<p>sc=script(type,type,cdata,``**args``)</p>
+<p>adds a script element which contains CDATA to the SVG drawing</p>
+<dl class="method">
+<dt id="SVGdraw.script.addElement">
+<tt class="descname">addElement</tt><span class="sig-paren">(</span><em>SVGelement</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.script.addElement" title="Permalink to this definition">¶</a></dt>
+<dd><p>adds an element to a SVGelement</p>
+<p>SVGelement.addElement(SVGelement)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGdraw.animate">
+<em class="property">class </em><tt class="descclassname">SVGdraw.</tt><tt class="descname">animate</tt><span class="sig-paren">(</span><em>attribute</em>, <em>fr=None</em>, <em>to=None</em>, <em>dur=None</em>, <em>**args</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.animate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SVGdraw.SVGelement" title="SVGdraw.SVGelement"><tt class="xref py py-class docutils literal"><span class="pre">SVGdraw.SVGelement</span></tt></a></p>
+<p>an=animate(attribute,from,to,during,``**args``)</p>
+<p>animates an attribute.</p>
+<dl class="method">
+<dt id="SVGdraw.animate.addElement">
+<tt class="descname">addElement</tt><span class="sig-paren">(</span><em>SVGelement</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.animate.addElement" title="Permalink to this definition">¶</a></dt>
+<dd><p>adds an element to a SVGelement</p>
+<p>SVGelement.addElement(SVGelement)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGdraw.animateMotion">
+<em class="property">class </em><tt class="descclassname">SVGdraw.</tt><tt class="descname">animateMotion</tt><span class="sig-paren">(</span><em>pathdata</em>, <em>dur</em>, <em>**args</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.animateMotion" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SVGdraw.SVGelement" title="SVGdraw.SVGelement"><tt class="xref py py-class docutils literal"><span class="pre">SVGdraw.SVGelement</span></tt></a></p>
+<p>an=animateMotion(pathdata,dur,``**args``)</p>
+<p>animates a SVGelement over the given path in dur seconds</p>
+<dl class="method">
+<dt id="SVGdraw.animateMotion.addElement">
+<tt class="descname">addElement</tt><span class="sig-paren">(</span><em>SVGelement</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.animateMotion.addElement" title="Permalink to this definition">¶</a></dt>
+<dd><p>adds an element to a SVGelement</p>
+<p>SVGelement.addElement(SVGelement)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGdraw.animateTransform">
+<em class="property">class </em><tt class="descclassname">SVGdraw.</tt><tt class="descname">animateTransform</tt><span class="sig-paren">(</span><em>type=None</em>, <em>fr=None</em>, <em>to=None</em>, <em>dur=None</em>, <em>**args</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.animateTransform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SVGdraw.SVGelement" title="SVGdraw.SVGelement"><tt class="xref py py-class docutils literal"><span class="pre">SVGdraw.SVGelement</span></tt></a></p>
+<p>antr=animateTransform(type,from,to,dur,``**args``)</p>
+<p>transform an element from and to a value.</p>
+<dl class="method">
+<dt id="SVGdraw.animateTransform.addElement">
+<tt class="descname">addElement</tt><span class="sig-paren">(</span><em>SVGelement</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.animateTransform.addElement" title="Permalink to this definition">¶</a></dt>
+<dd><p>adds an element to a SVGelement</p>
+<p>SVGelement.addElement(SVGelement)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGdraw.animateColor">
+<em class="property">class </em><tt class="descclassname">SVGdraw.</tt><tt class="descname">animateColor</tt><span class="sig-paren">(</span><em>attribute</em>, <em>type=None</em>, <em>fr=None</em>, <em>to=None</em>, <em>dur=None</em>, <em>**args</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.animateColor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SVGdraw.SVGelement" title="SVGdraw.SVGelement"><tt class="xref py py-class docutils literal"><span class="pre">SVGdraw.SVGelement</span></tt></a></p>
+<p>ac=animateColor(attribute,type,from,to,dur,``**args``)</p>
+<p>Animates the color of a element</p>
+<dl class="method">
+<dt id="SVGdraw.animateColor.addElement">
+<tt class="descname">addElement</tt><span class="sig-paren">(</span><em>SVGelement</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.animateColor.addElement" title="Permalink to this definition">¶</a></dt>
+<dd><p>adds an element to a SVGelement</p>
+<p>SVGelement.addElement(SVGelement)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGdraw.set">
+<em class="property">class </em><tt class="descclassname">SVGdraw.</tt><tt class="descname">set</tt><span class="sig-paren">(</span><em>attribute</em>, <em>to=None</em>, <em>dur=None</em>, <em>**args</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.set" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SVGdraw.SVGelement" title="SVGdraw.SVGelement"><tt class="xref py py-class docutils literal"><span class="pre">SVGdraw.SVGelement</span></tt></a></p>
+<p>st=set(attribute,to,during,``**args``)</p>
+<p>sets an attribute to a value for a</p>
+<dl class="method">
+<dt id="SVGdraw.set.addElement">
+<tt class="descname">addElement</tt><span class="sig-paren">(</span><em>SVGelement</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.set.addElement" title="Permalink to this definition">¶</a></dt>
+<dd><p>adds an element to a SVGelement</p>
+<p>SVGelement.addElement(SVGelement)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGdraw.svg">
+<em class="property">class </em><tt class="descclassname">SVGdraw.</tt><tt class="descname">svg</tt><span class="sig-paren">(</span><em>viewBox=None</em>, <em>width=None</em>, <em>height=None</em>, <em>**args</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.svg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#SVGdraw.SVGelement" title="SVGdraw.SVGelement"><tt class="xref py py-class docutils literal"><span class="pre">SVGdraw.SVGelement</span></tt></a></p>
+<p>s=svg(viewbox,width,height,``**args``)</p>
+<p>a svg or element is the root of a drawing add all elements to a svg element.
+You can have different svg elements in one svg file
+s.addElement(SVGelement)</p>
+<p>eg
+d=drawing()
+s=svg((0,0,100,100),&#8216;100%&#8217;,&#8216;100%&#8217;)
+c=circle(50,50,20)
+s.addElement(c)
+d.setSVG(s)
+d.toXml()</p>
+<dl class="method">
+<dt id="SVGdraw.svg.addElement">
+<tt class="descname">addElement</tt><span class="sig-paren">(</span><em>SVGelement</em><span class="sig-paren">)</span><a class="headerlink" href="#SVGdraw.svg.addElement" title="Permalink to this definition">¶</a></dt>
+<dd><p>adds an element to a SVGelement</p>
+<p>SVGelement.addElement(SVGelement)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="SVGdraw.drawing">
+<em class="property">class </em><tt class="descclassname">SVGdraw.</tt><tt class="descname">drawing</tt><a class="headerlink" href="#SVGdraw.drawing" title="Permalink to this definition">¶</a></dt>
+<dd><p>d=drawing()</p>
+<p>this is the actual SVG document. It needs a svg element as a root.
+Use the addSVG method to set the svg to the root. Use the toXml method to write the SVG
+source to the screen or to a file
+d=drawing()
+d.addSVG(svg)
+d.toXml(optionalfilename)</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="SVGTree.html"
+                        title="previous chapter">SVGTree.py -</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="SetTools.html"
+                        title="next chapter">SetTools.py - Tools for working on sets</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/modules/SVGdraw.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="SetTools.html" title="SetTools.py - Tools for working on sets"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="SVGTree.html" title="SVGTree.py -"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" >Modules</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,236 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>bam2wiggle.py - convert bam to wig/bigwig file &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="Scripts" href="../scripts.html" />
+    <link rel="next" title="bed2annotator.py - convert bed to annotator format" href="bed2annotator.html" />
+    <link rel="prev" title="quality2fasta.py - convert quality scores to fasta/fastq output" href="quality2fasta.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="bed2annotator.html" title="bed2annotator.py - convert bed to annotator format"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="quality2fasta.html" title="quality2fasta.py - convert quality scores to fasta/fastq output"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../scripts.html" accesskey="U">Scripts</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-bam2wiggle"></span><div class="section" id="bam2wiggle-py-convert-bam-to-wig-bigwig-file">
+<h1>bam2wiggle.py - convert bam to wig/bigwig file<a class="headerlink" href="#bam2wiggle-py-convert-bam-to-wig-bigwig-file" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Andreas Heger</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id: bam2wiggle.py 2832 2009-11-24 16:11:06Z andreas $</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Genomics NGS Intervals Conversion BAM WIGGLE</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="purpose">
+<h2>Purpose<a class="headerlink" href="#purpose" title="Permalink to this headline">¶</a></h2>
+<p>convert a bam file to a bigwig or bedgraph file.</p>
+<p>The script requires the executables <tt class="file docutils literal"><span class="pre">wigToBigWig</span></tt> and 
+<tt class="file docutils literal"><span class="pre">bedToBigBed</span></tt> to be in the user&#8217;s PATH.</p>
+<p>If no &#8211;shift or &#8211;extend option are given, the coverage is computed directly on reads. 
+Counting can be performed at a certain resolution.
+The counting currently is not aware of spliced reads, i.e., an inserted intron will be 
+included in the coverage.</p>
+<p>If &#8211;shift or &#8211;extend are given, the coverage is computed by shifting read
+alignment positions upstream for positive strand reads or downstream for negative
+strand reads and extend them by a fixed amount.</p>
+<p>For RNASEQ data it might be best to run genomeCoverageBed directly on the 
+bam file.</p>
+</div>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>Type:</p>
+<div class="highlight-python"><div class="highlight"><pre>python bam2wiggle.py --output-format=bigwig in.bam out.bigwig
+</pre></div>
+</div>
+<p>to convert the <a class="reference internal" href="../glossary.html#term-bam"><em class="xref std std-term">bam</em></a> file file:<cite>in.bam</cite> to <a class="reference internal" href="../glossary.html#term-bigwig"><em class="xref std std-term">bigwig</em></a> format 
+and save the result in <tt class="file docutils literal"><span class="pre">out.bigwig</span></tt>.</p>
+<p>Type:</p>
+<div class="highlight-python"><div class="highlight"><pre>python bam2wiggle.py --help
+</pre></div>
+</div>
+<p>for command line help.</p>
+</div>
+<div class="section" id="command-line-options">
+<h2>Command line options<a class="headerlink" href="#command-line-options" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+<div class="highlight-text"><div class="highlight"><pre>Usage: bam2wiggle.py [options]
+
+Options:
+  --version             show program&#39;s version number and exit
+  -h, --help            show this help message and exit
+  --no-usage            output help without usage information
+  -o OUTPUT_FORMAT, --output-format=OUTPUT_FORMAT
+                        output format [default=wiggle]
+  -b OUTPUT_FILENAME, --output-filename=OUTPUT_FILENAME
+                        filename for output [default=none]
+  -s SHIFT, --shift=SHIFT
+                        shift reads by a certain amount (ChIP-Seq) [0]
+  -e EXTEND, --extend=EXTEND
+                        extend reads by a certain amount (ChIP-Seq) [0]
+  -p SPAN, --span=SPAN  span of a window in wiggle tracks [1]
+  -m, --merge-pairs     merge paired-ended reads into a single bed interval
+                        [default=none].
+  --max-insert-size=MAX_INSERT_SIZE
+                        only merge if insert size less that # bases. 0 turns
+                        of this filter [default=0].
+  --min-insert-size=MIN_INSERT_SIZE
+                        only merge paired-end reads if they are at least #
+                        bases apart.  0 turns of this filter. [default=0]
+  -v LOGLEVEL, --verbose=LOGLEVEL
+                        loglevel [1]. The higher, the more output.
+  --timeit=TIMEIT_FILE  store timeing information in file [none].
+  --timeit-name=TIMEIT_NAME
+                        name in timing file for this class of jobs [all].
+  --timeit-header       add header for timing information [none].
+  --random-seed=RANDOM_SEED
+                        random seed to initialize number generator with
+                        [none].
+  -I FILE, --stdin=FILE
+                        file to read stdin from [default = stdin].
+  -L FILE, --log=FILE   file with logging information [default = stdout].
+  -E FILE, --error=FILE
+                        file with error information [default = stderr].
+  -S FILE, --stdout=FILE
+                        file where output is to go [default = stdout].
+</pre></div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">bam2wiggle.py - convert bam to wig/bigwig file</a><ul>
+<li><a class="reference internal" href="#purpose">Purpose</a></li>
+<li><a class="reference internal" href="#usage">Usage</a></li>
+<li><a class="reference internal" href="#command-line-options">Command line options</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="quality2fasta.html"
+                        title="previous chapter">quality2fasta.py - convert quality scores to fasta/fastq output</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="bed2annotator.html"
+                        title="next chapter">bed2annotator.py - convert bed to annotator format</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/scripts/bam2wiggle.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="bed2annotator.html" title="bed2annotator.py - convert bed to annotator format"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="quality2fasta.html" title="quality2fasta.py - convert quality scores to fasta/fastq output"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../scripts.html" >Scripts</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

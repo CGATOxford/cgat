@@ -1,0 +1,391 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>PipelineGeneset.py - utility tasks for dealing with ENSEMBL gene sets &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="Modules" href="../modules.html" />
+    <link rel="next" title="PipelineIntervalAnnotation.py - Tasks associated with annotation of genomic intervals" href="PipelineIntervalAnnotation.html" />
+    <link rel="prev" title="Purpose" href="PipelineGO.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="PipelineIntervalAnnotation.html" title="PipelineIntervalAnnotation.py - Tasks associated with annotation of genomic intervals"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="PipelineGO.html" title="Purpose"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" accesskey="U">Modules</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-PipelineGeneset"></span><div class="section" id="pipelinegeneset-py-utility-tasks-for-dealing-with-ensembl-gene-sets">
+<h1>PipelineGeneset.py - utility tasks for dealing with ENSEMBL gene sets<a class="headerlink" href="#pipelinegeneset-py-utility-tasks-for-dealing-with-ensembl-gene-sets" title="Permalink to this headline">¶</a></h1>
+<p>Most of this tasks take a geneset (.gtf.gz) from ENSEMBL
+as input.</p>
+<dl class="function">
+<dt id="PipelineGeneset.connectToUCSC">
+<tt class="descclassname">PipelineGeneset.</tt><tt class="descname">connectToUCSC</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#PipelineGeneset.connectToUCSC" title="Permalink to this definition">¶</a></dt>
+<dd><p>connect to UCSC mysql database.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineGeneset.importRefSeqFromUCSC">
+<tt class="descclassname">PipelineGeneset.</tt><tt class="descname">importRefSeqFromUCSC</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em>, <em>remove_duplicates=True</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineGeneset.importRefSeqFromUCSC" title="Permalink to this definition">¶</a></dt>
+<dd><p>import gene set from UCSC database
+based on refseq mappings.</p>
+<p>Outputs a gtf-formatted file a la ENSEMBL.</p>
+<p>Depending on <em>remove_duplicates</em>, duplicate mappings are either
+removed or kept.</p>
+<p>Matches to chr_random are ignored (as does ENSEMBL).</p>
+<p>Note that this approach does not work as a gene set, as refseq maps 
+are not real gene builds and unalignable parts cause
+differences that are not reconcilable.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineGeneset.annotateGenome">
+<tt class="descclassname">PipelineGeneset.</tt><tt class="descname">annotateGenome</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em>, <em>only_proteincoding=False</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineGeneset.annotateGenome" title="Permalink to this definition">¶</a></dt>
+<dd><p>annotate genomic regions with reference gene set.</p>
+<p><em>infile</em> is an ENSEMBL gtf file.
+Only considers protein coding genes, if <em>only_proteincoding</em> is set.</p>
+<p>The method applies the following filters:
+* Exons from different transcripts in each gene are merged by overlap.
+* In case of overlapping genes, only take the longest (in genomic coordinates) is kept.</p>
+<p>The task outputs a <a class="reference internal" href="../glossary.html#term-gff"><em class="xref std std-term">gff</em></a> formatted file in <em>outfile</em>. For more information,
+see documentation for the script <tt class="xref py py-mod docutils literal"><span class="pre">gtf2gff.py</span></tt> under the option <tt class="docutils literal"><span class="pre">--method=genome</span></tt>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineGeneset.annotateGeneStructure">
+<tt class="descclassname">PipelineGeneset.</tt><tt class="descname">annotateGeneStructure</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em>, <em>only_proteincoding=False</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineGeneset.annotateGeneStructure" title="Permalink to this definition">¶</a></dt>
+<dd><p>annotate genomic regions with reference gene set.</p>
+<p><em>infile</em> is an ENSEMBL gtf file.
+Only considers protein coding genes, if <em>only_proteincoding</em> is set.</p>
+<p>The method applies the following filters:
+* If there are multiple transcripts in a gene, a representative transcript is kept.
+* In case of overlapping genes, only take the longest (in genomic coordinates) is kept.</p>
+<p>The task outputs a <a class="reference internal" href="../glossary.html#term-gff"><em class="xref std std-term">gff</em></a> formatted file in <em>outfile</em>. For more information,
+see documentation for the script <tt class="xref py py-mod docutils literal"><span class="pre">gtf2gff.py</span></tt> under the option <tt class="docutils literal"><span class="pre">--method=genes</span></tt>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineGeneset.buildFlatGeneSet">
+<tt class="descclassname">PipelineGeneset.</tt><tt class="descname">buildFlatGeneSet</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineGeneset.buildFlatGeneSet" title="Permalink to this definition">¶</a></dt>
+<dd><p>build a flattened gene set.</p>
+<p>All transcripts in a gene are merged into a single transcript.</p>
+<p><em>infile</em> is an ENSEMBL gtf file.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineGeneset.buildProteinCodingGenes">
+<tt class="descclassname">PipelineGeneset.</tt><tt class="descname">buildProteinCodingGenes</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineGeneset.buildProteinCodingGenes" title="Permalink to this definition">¶</a></dt>
+<dd><p>build a collection of exons from the protein-coding
+section of the ENSEMBL gene set.</p>
+<p>The exons include both CDS and UTR.</p>
+<p><em>infile</em> is an ENSEMBL gtf file.</p>
+<p>The set is filtered in the same way as in <tt class="xref py py-meth docutils literal"><span class="pre">buildGeneRegions()</span></tt>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineGeneset.loadGeneInformation">
+<tt class="descclassname">PipelineGeneset.</tt><tt class="descname">loadGeneInformation</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em>, <em>only_proteincoding=False</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineGeneset.loadGeneInformation" title="Permalink to this definition">¶</a></dt>
+<dd><p>load gene information gleaned from the attributes
+in the gene set gtf file.</p>
+<p><em>infile</em> is an ENSEMBL gtf file.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineGeneset.loadTranscriptInformation">
+<tt class="descclassname">PipelineGeneset.</tt><tt class="descname">loadTranscriptInformation</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em>, <em>only_proteincoding=False</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineGeneset.loadTranscriptInformation" title="Permalink to this definition">¶</a></dt>
+<dd><p>load the transcript set.</p>
+<p><em>infile</em> is an ENSEMBL gtf file.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineGeneset.buildCDNAFasta">
+<tt class="descclassname">PipelineGeneset.</tt><tt class="descname">buildCDNAFasta</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineGeneset.buildCDNAFasta" title="Permalink to this definition">¶</a></dt>
+<dd><p>load ENSEMBL cdna FASTA file</p>
+<p><em>infile</em> is an ENSEMBL cdna file.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineGeneset.buildPeptideFasta">
+<tt class="descclassname">PipelineGeneset.</tt><tt class="descname">buildPeptideFasta</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineGeneset.buildPeptideFasta" title="Permalink to this definition">¶</a></dt>
+<dd><p>create ENSEMBL peptide file</p>
+<p><em>infile</em> is an ENSEMBL .pep.all.fa.gz file.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineGeneset.loadPeptideSequences">
+<tt class="descclassname">PipelineGeneset.</tt><tt class="descname">loadPeptideSequences</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineGeneset.loadPeptideSequences" title="Permalink to this definition">¶</a></dt>
+<dd><p>load ENSEMBL peptide file into database</p>
+<p><em>infile</em> is an ENSEMBL .pep.all.fa.gz file.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineGeneset.buildCDSFasta">
+<tt class="descclassname">PipelineGeneset.</tt><tt class="descname">buildCDSFasta</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineGeneset.buildCDSFasta" title="Permalink to this definition">¶</a></dt>
+<dd><p>load ENSEMBL cdna FASTA file</p>
+<p><em>infile</em> is an ENSEMBL cdna file.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineGeneset.loadGeneStats">
+<tt class="descclassname">PipelineGeneset.</tt><tt class="descname">loadGeneStats</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineGeneset.loadGeneStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>load gene statistics to database.</p>
+<p>The <em>infile</em> is the <em>outfile</em> from <tt class="xref py py-meth docutils literal"><span class="pre">buildGenes()</span></tt></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineGeneset.buildExons">
+<tt class="descclassname">PipelineGeneset.</tt><tt class="descname">buildExons</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineGeneset.buildExons" title="Permalink to this definition">¶</a></dt>
+<dd><p>build a collection of transcripts from the ENSEMBL gene set.</p>
+<p>Only the exon portion is kept.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineGeneset.buildCodingExons">
+<tt class="descclassname">PipelineGeneset.</tt><tt class="descname">buildCodingExons</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineGeneset.buildCodingExons" title="Permalink to this definition">¶</a></dt>
+<dd><p>build a collection of transcripts from the protein-coding portion of the ENSEMBL gene set.</p>
+<p>All exons are kept</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineGeneset.buildNonCodingExons">
+<tt class="descclassname">PipelineGeneset.</tt><tt class="descname">buildNonCodingExons</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineGeneset.buildNonCodingExons" title="Permalink to this definition">¶</a></dt>
+<dd><p>build a collection of transcripts from the non-coding portion of the ENSEMBL gene set.</p>
+<p>All exons are kept</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineGeneset.buildLincRNAExons">
+<tt class="descclassname">PipelineGeneset.</tt><tt class="descname">buildLincRNAExons</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineGeneset.buildLincRNAExons" title="Permalink to this definition">¶</a></dt>
+<dd><p>build a collection of transcripts from the LincRNA portion of the ENSEMBL gene set. All exons are kept</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineGeneset.buildCDS">
+<tt class="descclassname">PipelineGeneset.</tt><tt class="descname">buildCDS</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineGeneset.buildCDS" title="Permalink to this definition">¶</a></dt>
+<dd><p>build a collection of transcripts from the protein-coding
+section of the ENSEMBL gene set.</p>
+<p>Only CDS exons are parts of exons are output - UTR&#8217;s are removed.</p>
+<p>Removes any transcripts with very long (&gt; 3Mb) introns.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineGeneset.loadTranscripts">
+<tt class="descclassname">PipelineGeneset.</tt><tt class="descname">loadTranscripts</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineGeneset.loadTranscripts" title="Permalink to this definition">¶</a></dt>
+<dd><p>load the transcript set into the database.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineGeneset.loadTranscript2Gene">
+<tt class="descclassname">PipelineGeneset.</tt><tt class="descname">loadTranscript2Gene</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineGeneset.loadTranscript2Gene" title="Permalink to this definition">¶</a></dt>
+<dd><p>build and load a map of transcript to gene from gtf file</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineGeneset.loadTranscriptStats">
+<tt class="descclassname">PipelineGeneset.</tt><tt class="descname">loadTranscriptStats</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineGeneset.loadTranscriptStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>load gene statistics to database.</p>
+<p>The <em>infile</em> is the <em>outfile</em> from <tt class="xref py py-meth docutils literal"><span class="pre">buildTranscripts()</span></tt></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineGeneset.loadProteinStats">
+<tt class="descclassname">PipelineGeneset.</tt><tt class="descname">loadProteinStats</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineGeneset.loadProteinStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>load protein statistics to database.</p>
+<p>The <em>infile</em> is an ENSEMBL peptide file.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineGeneset.buildPromotorRegions">
+<tt class="descclassname">PipelineGeneset.</tt><tt class="descname">buildPromotorRegions</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineGeneset.buildPromotorRegions" title="Permalink to this definition">¶</a></dt>
+<dd><p>annotate promotor regions from reference gene set.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineGeneset.buildTSSRegions">
+<tt class="descclassname">PipelineGeneset.</tt><tt class="descname">buildTSSRegions</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineGeneset.buildTSSRegions" title="Permalink to this definition">¶</a></dt>
+<dd><p>annotate transcription start sites from reference gene set.</p>
+<p>Similar to promotors, except that the witdth is set to 1.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineGeneset.buildOverlapWithEnsembl">
+<tt class="descclassname">PipelineGeneset.</tt><tt class="descname">buildOverlapWithEnsembl</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em>, <em>filename_bed</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineGeneset.buildOverlapWithEnsembl" title="Permalink to this definition">¶</a></dt>
+<dd><p>compute overlap of genes in <tt class="docutils literal"><span class="pre">infile</span></tt> with intervals
+in <tt class="docutils literal"><span class="pre">filename_bed</span></tt> and load into database.</p>
+<p>If <tt class="docutils literal"><span class="pre">filename_bed</span></tt> has multiple tracks the overlap will
+be computed for each track separately.</p>
+<p><tt class="docutils literal"><span class="pre">infile</span></tt> is the output from <tt class="xref py py-meth docutils literal"><span class="pre">buildGenes()</span></tt>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineGeneset.compareGeneSets">
+<tt class="descclassname">PipelineGeneset.</tt><tt class="descname">compareGeneSets</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineGeneset.compareGeneSets" title="Permalink to this definition">¶</a></dt>
+<dd><p>compute overlap of genes, exons and transcripts in <tt class="docutils literal"><span class="pre">infiles</span></tt></p>
+<p><tt class="docutils literal"><span class="pre">infiles</span></tt> are protein coding gene sets.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineGeneset.buildPseudogenes">
+<tt class="descclassname">PipelineGeneset.</tt><tt class="descname">buildPseudogenes</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineGeneset.buildPseudogenes" title="Permalink to this definition">¶</a></dt>
+<dd><p>annotate genomic regions with reference gene set.</p>
+<p><em>infile</em> is an ENSEMBL gtf file.</p>
+<p>This task selects all pseudogenic transcripts in a single file.</p>
+<p>Pseudogenes are:</p>
+<ul class="simple">
+<li>gene_type or transcript_type contains the phrase &#8220;pseudo&#8221;. This taken from
+the database.</li>
+<li>feature &#8216;processed_transcript&#8217; with similarity to protein coding genes. Similarity
+is assessed by aligning with exonerate.</li>
+</ul>
+<p>Pseudogenic transcripts can overlap with protein coding transcripts.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineGeneset.buildNUMTs">
+<tt class="descclassname">PipelineGeneset.</tt><tt class="descname">buildNUMTs</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineGeneset.buildNUMTs" title="Permalink to this definition">¶</a></dt>
+<dd><p>build annotation with nuclear mitochondrial sequences.</p>
+<p>map mitochondrial chromosome against genome using
+exonerate</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineGeneset.sortGTF">
+<tt class="descclassname">PipelineGeneset.</tt><tt class="descname">sortGTF</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em>, <em>order='contig+gene'</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineGeneset.sortGTF" title="Permalink to this definition">¶</a></dt>
+<dd><p>sort a gtf file - the sorting is performed on the cluster.</p>
+<p>Ssee gtf2gtf.py for valid options for order.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineGeneset.buildGenomicFunctionalAnnotation">
+<tt class="descclassname">PipelineGeneset.</tt><tt class="descname">buildGenomicFunctionalAnnotation</tt><span class="sig-paren">(</span><em>gtffile</em>, <em>dbh</em>, <em>outfiles</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineGeneset.buildGenomicFunctionalAnnotation" title="Permalink to this definition">¶</a></dt>
+<dd><p>output a bed file with genomic regions with functional annotations.</p>
+<p>The regions for each gene are given in the gtf file.</p>
+<p>Each bed entry is a gene territory. Bed entries are labeled
+by functional annotations associated with a gene.</p>
+<p>Ambiguities in territories are resolved by outputting 
+annotations for all genes within a territory.</p>
+<p>The output file contains annotations for both GO and GOSlim. These
+are prefixed by <tt class="docutils literal"><span class="pre">go:</span></tt> and <tt class="docutils literal"><span class="pre">goslim:</span></tt>.</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="PipelineGO.html"
+                        title="previous chapter">Purpose</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="PipelineIntervalAnnotation.html"
+                        title="next chapter">PipelineIntervalAnnotation.py - Tasks associated with annotation of genomic intervals</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/pipelinemodules/PipelineGeneset.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="PipelineIntervalAnnotation.html" title="PipelineIntervalAnnotation.py - Tasks associated with annotation of genomic intervals"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="PipelineGO.html" title="Purpose"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" >Modules</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

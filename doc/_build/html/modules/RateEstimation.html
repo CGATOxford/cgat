@@ -1,0 +1,206 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>RateEstimation.py - utilities for computing rate estimates for codon models. &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="Modules" href="../modules.html" />
+    <link rel="next" title="PamMatrices.py -" href="PamMatrices.html" />
+    <link rel="prev" title="TreeTools.py - tools for dealing with domain trees." href="TreeTools.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="PamMatrices.html" title="PamMatrices.py -"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="TreeTools.html" title="TreeTools.py - tools for dealing with domain trees."
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" accesskey="U">Modules</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-RateEstimation"></span><div class="section" id="rateestimation-py-utilities-for-computing-rate-estimates-for-codon-models">
+<h1>RateEstimation.py - utilities for computing rate estimates for codon models.<a class="headerlink" href="#rateestimation-py-utilities-for-computing-rate-estimates-for-codon-models" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id$</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Python</td>
+</tr>
+</tbody>
+</table>
+<dl class="function">
+<dt id="RateEstimation.evaluateCodonPair">
+<tt class="descclassname">RateEstimation.</tt><tt class="descname">evaluateCodonPair</tt><span class="sig-paren">(</span><em>codon1</em>, <em>codon2</em><span class="sig-paren">)</span><a class="headerlink" href="#RateEstimation.evaluateCodonPair" title="Permalink to this definition">¶</a></dt>
+<dd><p>evaluate differences between codon pair.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="RateEstimation.countSubstitutions">
+<tt class="descclassname">RateEstimation.</tt><tt class="descname">countSubstitutions</tt><span class="sig-paren">(</span><em>pi</em>, <em>Q</em><span class="sig-paren">)</span><a class="headerlink" href="#RateEstimation.countSubstitutions" title="Permalink to this definition">¶</a></dt>
+<dd><p>count substitituions given a matrix Q and frequencies pi.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="RateEstimation.initializeQMatrix">
+<tt class="descclassname">RateEstimation.</tt><tt class="descname">initializeQMatrix</tt><span class="sig-paren">(</span><em>codons</em><span class="sig-paren">)</span><a class="headerlink" href="#RateEstimation.initializeQMatrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>get an initialized Q matrix.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="RateEstimation.getQMatrix">
+<tt class="descclassname">RateEstimation.</tt><tt class="descname">getQMatrix</tt><span class="sig-paren">(</span><em>pi</em>, <em>Rsi</em>, <em>Rsv</em>, <em>Rni</em>, <em>Rnv</em><span class="sig-paren">)</span><a class="headerlink" href="#RateEstimation.getQMatrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>build a q matrix.</p>
+<p>Diagonal elements are set to the negative of the row sums.
+The matrix is normalized such that trace of the matrix is -1.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="RateEstimation.getRateMatrix">
+<tt class="descclassname">RateEstimation.</tt><tt class="descname">getRateMatrix</tt><span class="sig-paren">(</span><em>trained_model</em>, <em>terminals=None</em><span class="sig-paren">)</span><a class="headerlink" href="#RateEstimation.getRateMatrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>return a rate matrix from an xrate grammar.</p>
+<dl class="docutils">
+<dt>terminals: return rate matrix and frequencies for these</dt>
+<dd>terminals. If none are given, a dictionaries of
+matrices and frequencies are returned.</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="RateEstimation.setFrequencies">
+<tt class="descclassname">RateEstimation.</tt><tt class="descname">setFrequencies</tt><span class="sig-paren">(</span><em>model</em>, <em>mali</em>, <em>prefix=''</em><span class="sig-paren">)</span><a class="headerlink" href="#RateEstimation.setFrequencies" title="Permalink to this definition">¶</a></dt>
+<dd><p>set frequencies in a model according to those observed in data.</p>
+<p>prefix: prefix for rate parameters.</p>
+<p>Frequencies are labelled:
+pa0, pc0, ..., pa1, pc1, ..., pa2, pc2, ...</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="RateEstimation.getDistanceGTR">
+<tt class="descclassname">RateEstimation.</tt><tt class="descname">getDistanceGTR</tt><span class="sig-paren">(</span><em>pi</em>, <em>matrix</em><span class="sig-paren">)</span><a class="headerlink" href="#RateEstimation.getDistanceGTR" title="Permalink to this definition">¶</a></dt>
+<dd><p>obtain distance from a GTR model.
+see Felsenstein 1994, pp 209</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="TreeTools.html"
+                        title="previous chapter">TreeTools.py - tools for dealing with domain trees.</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="PamMatrices.html"
+                        title="next chapter">PamMatrices.py -</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/modules/RateEstimation.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="PamMatrices.html" title="PamMatrices.py -"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="TreeTools.html" title="TreeTools.py - tools for dealing with domain trees."
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" >Modules</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

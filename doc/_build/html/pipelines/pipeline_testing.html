@@ -1,0 +1,318 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>pipeline_testing - automated testing of pipelines &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="NGS Pipelines" href="../CGATPipelines.html" />
+    <link rel="next" title="pipeline_quickstart.py - setup a new pipeline" href="pipeline_quickstart.html" />
+    <link rel="prev" title="Variant annotation pipeline" href="pipeline_variants.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pipeline_quickstart.html" title="pipeline_quickstart.py - setup a new pipeline"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="pipeline_variants.html" title="Variant annotation pipeline"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../Pipelines.html" >CGAT Pipelines</a> &raquo;</li>
+          <li><a href="../CGATPipelines.html" accesskey="U">NGS Pipelines</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-pipeline_testing"></span><div class="section" id="pipeline-testing-automated-testing-of-pipelines">
+<h1>pipeline_testing - automated testing of pipelines<a class="headerlink" href="#pipeline-testing-automated-testing-of-pipelines" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Andreas Heger</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id$</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Python</td>
+</tr>
+</tbody>
+</table>
+<p>This pipeline executes other pipelines for testing purposes.</p>
+<div class="section" id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>This pipeline implements automated testing of CGAT pipelines. This
+pipeline is run regularly on the code in the master repository in
+order to check if all pipelines are functional.</p>
+<p>This pipeline can also be run from within a cloned repository before
+checking in changes. This is highly recommended, as changes in shared
+scripts might break existing workflows.</p>
+</div>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>See <a class="reference internal" href="../UsingPipelines.html#pipelinesettingup"><em>Setting up a pipeline</em></a> and <a class="reference internal" href="../UsingPipelines.html#pipelinerunning"><em>Running a pipeline</em></a> on general
+information how to use CGAT pipelines.</p>
+<p>In order to run all tests, simply enter an empty directory and type:</p>
+<div class="highlight-python"><div class="highlight"><pre>python &lt;srcdir&gt;/pipeline_testing.py make full
+python &lt;srcdir&gt;/pipeline_testing.py make build_report
+</pre></div>
+</div>
+<p>The first command will run all pipelines while the second will build a summary
+report.</p>
+<div class="section" id="configuration">
+<h3>Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">¶</a></h3>
+<p>The pipeline requires a configured <tt class="file docutils literal"><span class="pre">pipeline.ini</span></tt> file.</p>
+<p>The sphinxreport report requires a <tt class="file docutils literal"><span class="pre">conf.py</span></tt> and <tt class="file docutils literal"><span class="pre">sphinxreport.ini</span></tt> file 
+(see <a class="reference internal" href="../UsingPipelines.html#pipelinereporting"><em>Building pipeline reports</em></a>). To start with, use the files supplied with the
+<a href="#id1"><span class="problematic" id="id2">Example_</span></a> data.</p>
+</div>
+<div class="section" id="input">
+<h3>Input<a class="headerlink" href="#input" title="Permalink to this headline">¶</a></h3>
+<p>As input, the pipeline requires a directory with test cases. The
+directory is specified in the <tt class="docutils literal"><span class="pre">data_dir</span></tt> configuration
+variable. Each data directory needs to start with the name of the
+pipeline that is to be tested. Valid names for test cases are thus
+<tt class="docutils literal"><span class="pre">pipeline_annotations</span></tt>, <tt class="docutils literal"><span class="pre">pipeline_annotations_lizard</span></tt>,
+<tt class="docutils literal"><span class="pre">pipeline_rnaseq_illumina</span></tt>, <tt class="docutils literal"><span class="pre">pipeline_rnaseq_solid</span></tt>, etc.</p>
+<p>A test case directory contains all the data that is required for
+running a test within a directory, such as the genomic sequence,
+various data files and configuration files. For example, for testing
+<a class="reference internal" href="pipeline_rnaseq.html"><em>RNA-Seq pipeline</em></a>, the following files are given:</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>data files</dt>
+<dd>Brain-F1-R1.fastq.gz,Brain-F1-R2.fastq.gz,Brain-F2-R1.fastq.gz,Brain-F2-R2.fastq.gz,UHR-F1-R1.fastq.gz,UHR-F1-R2.fastq.gz</dd>
+<dt>genomic sequence</dt>
+<dd>hg19.fasta,hg19.idx</dd>
+<dt>bowtie indices</dt>
+<dd>hg19.1.ebwt,hg19.2.ebwt,hg19.3.ebwt,hg19.4.ebwt,hg19.fa,hg19.fa.fai,hg19.rev.1.ebwt,hg19.rev.2.ebwt
+hg19_cs.1.ebwt,hg19_cs.2.ebwt,hg19_cs.3.ebwt,hg19_cs.4.ebwt,hg19_cs.rev.1.ebwt,hg19_cs.rev.2.ebwt</dd>
+<dt>configuration files</dt>
+<dd>conf.py,pipeline.ini,sphinxreport.ini</dd>
+</dl>
+</div></blockquote>
+<p>Dependencies between pipelines are currently implemented within the
+script itself. The dependencies that are currently implemented are:</p>
+<ul class="simple">
+<li><a class="reference internal" href="pipeline_annotations.html"><em>Annotation pipeline</em></a> is run before any other pipelines.</li>
+</ul>
+<div class="section" id="optional-inputs">
+<h4>Optional inputs<a class="headerlink" href="#optional-inputs" title="Permalink to this headline">¶</a></h4>
+</div>
+</div>
+<div class="section" id="requirements">
+<h3>Requirements<a class="headerlink" href="#requirements" title="Permalink to this headline">¶</a></h3>
+<p>All the test cases need to be properly configured. In particular, all
+the required software for all the pipelines need to be in place in
+order for all tests to pass.</p>
+</div>
+</div>
+<div class="section" id="pipeline-output">
+<h2>Pipeline output<a class="headerlink" href="#pipeline-output" title="Permalink to this headline">¶</a></h2>
+<p>The major output is in the database file <tt class="file docutils literal"><span class="pre">csvdb</span></tt>.</p>
+</div>
+<div class="section" id="glossary">
+<h2>Glossary<a class="headerlink" href="#glossary" title="Permalink to this headline">¶</a></h2>
+<dl class="glossary docutils">
+</dl>
+</div>
+<div class="section" id="code">
+<h2>Code<a class="headerlink" href="#code" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pipeline_testing.getPipelinesDir">
+<tt class="descclassname">pipeline_testing.</tt><tt class="descname">getPipelinesDir</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_testing.getPipelinesDir" title="Permalink to this definition">¶</a></dt>
+<dd><p>return directory with pipelines.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_testing.splitTestName">
+<tt class="descclassname">pipeline_testing.</tt><tt class="descname">splitTestName</tt><span class="sig-paren">(</span><em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_testing.splitTestName" title="Permalink to this definition">¶</a></dt>
+<dd><p>split the test name into pipeline and data part.</p>
+<p>The name of a test starts with the name of a pipeline followed by
+some description.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_testing.runTest">
+<tt class="descclassname">pipeline_testing.</tt><tt class="descname">runTest</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em>, <em>update=False</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_testing.runTest" title="Permalink to this definition">¶</a></dt>
+<dd><p>run a test.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_testing.runPreparationTests">
+<tt class="descclassname">pipeline_testing.</tt><tt class="descname">runPreparationTests</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_testing.runPreparationTests" title="Permalink to this definition">¶</a></dt>
+<dd><p>run pre-requisite pipelines.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_testing.runTests">
+<tt class="descclassname">pipeline_testing.</tt><tt class="descname">runTests</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_testing.runTests" title="Permalink to this definition">¶</a></dt>
+<dd><p>run a pipeline with test data.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_testing.updateTests">
+<tt class="descclassname">pipeline_testing.</tt><tt class="descname">updateTests</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_testing.updateTests" title="Permalink to this definition">¶</a></dt>
+<dd><p>run a pipeline with test data.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_testing.runReports">
+<tt class="descclassname">pipeline_testing.</tt><tt class="descname">runReports</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_testing.runReports" title="Permalink to this definition">¶</a></dt>
+<dd><p>run a pipeline report.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_testing.build_report">
+<tt class="descclassname">pipeline_testing.</tt><tt class="descname">build_report</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_testing.build_report" title="Permalink to this definition">¶</a></dt>
+<dd><p>build report from scratch.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_testing.update_report">
+<tt class="descclassname">pipeline_testing.</tt><tt class="descname">update_report</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_testing.update_report" title="Permalink to this definition">¶</a></dt>
+<dd><p>update report.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_testing.publish_report">
+<tt class="descclassname">pipeline_testing.</tt><tt class="descname">publish_report</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_testing.publish_report" title="Permalink to this definition">¶</a></dt>
+<dd><p>publish report.</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">pipeline_testing - automated testing of pipelines</a><ul>
+<li><a class="reference internal" href="#overview">Overview</a></li>
+<li><a class="reference internal" href="#usage">Usage</a><ul>
+<li><a class="reference internal" href="#configuration">Configuration</a></li>
+<li><a class="reference internal" href="#input">Input</a><ul>
+<li><a class="reference internal" href="#optional-inputs">Optional inputs</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#requirements">Requirements</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#pipeline-output">Pipeline output</a></li>
+<li><a class="reference internal" href="#glossary">Glossary</a></li>
+<li><a class="reference internal" href="#code">Code</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="pipeline_variants.html"
+                        title="previous chapter">Variant annotation pipeline</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="pipeline_quickstart.html"
+                        title="next chapter">pipeline_quickstart.py - setup a new pipeline</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/pipelines/pipeline_testing.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pipeline_quickstart.html" title="pipeline_quickstart.py - setup a new pipeline"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="pipeline_variants.html" title="Variant annotation pipeline"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../Pipelines.html" >CGAT Pipelines</a> &raquo;</li>
+          <li><a href="../CGATPipelines.html" >NGS Pipelines</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

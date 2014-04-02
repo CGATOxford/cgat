@@ -1,0 +1,824 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Interval pipeline &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="NGS Pipelines" href="../CGATPipelines.html" />
+    <link rel="next" title="Read Mapping parameter titration pipeline" href="pipeline_mapping_benchmark.html" />
+    <link rel="prev" title="Project 4 Pipeline" href="pipeline_fusion.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pipeline_mapping_benchmark.html" title="Read Mapping parameter titration pipeline"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="pipeline_fusion.html" title="Project 4 Pipeline"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../Pipelines.html" >CGAT Pipelines</a> &raquo;</li>
+          <li><a href="../CGATPipelines.html" accesskey="U">NGS Pipelines</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-pipeline_intervals"></span><div class="section" id="interval-pipeline">
+<h1>Interval pipeline<a class="headerlink" href="#interval-pipeline" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Andreas Heger</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id: pipeline_chipseq.py 2900 2010-04-13 14:38:00Z andreas $</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Python</td>
+</tr>
+</tbody>
+</table>
+<p>The interval pipeline takes a several set of <a class="reference internal" href="../glossary.html#term-bed"><em class="xref std std-term">bed</em></a> formatted
+genomic intervals and annotates them. The intervals are expected to
+be non-overlapping, which the pipeline checks.</p>
+<dl class="docutils">
+<dt>It performs the following analyses:</dt>
+<dd><ul class="first last">
+<li><dl class="first docutils">
+<dt>Peak location</dt>
+<dd><ul class="first last simple">
+<li>requires a bam-file to be associated with each bed-file.</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p class="first">Motif discovery using MEME</p>
+</li>
+<li><dl class="first docutils">
+<dt>Motif detection using MAST</dt>
+<dd><ul class="first last simple">
+<li>requires a set of known motifs</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p class="first">Overlap with genomic context.</p>
+</li>
+<li><p class="first">Aggregate transcript/gene profiles</p>
+</li>
+</ul>
+</dd>
+</dl>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>See <a class="reference internal" href="../UsingPipelines.html#pipelinesettingup"><em>Setting up a pipeline</em></a> and <a class="reference internal" href="../UsingPipelines.html#pipelinerunning"><em>Running a pipeline</em></a> on general
+information how to use CGAT pipelines.</p>
+<div class="section" id="configuration">
+<h3>Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">¶</a></h3>
+<p>The pipeline requires a configured <tt class="file docutils literal"><span class="pre">pipeline.ini</span></tt> file. The
+pipeline looks for a configuration file in several places:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>The default configuration in the <a class="reference internal" href="../glossary.html#term-code-directory"><em class="xref std std-term">code directory</em></a>.</li>
+<li>A shared configuration file <tt class="file docutils literal"><span class="pre">../pipeline.ini</span></tt>.</li>
+<li>A local configuration <tt class="file docutils literal"><span class="pre">pipeline.ini</span></tt>.</li>
+</ol>
+</div></blockquote>
+<p>The order is as above. Thus, a local configuration setting will
+override a shared configuration setting and a default configuration
+setting.</p>
+<p>Configuration files follow the ini format (see the python
+<cite>ConfigParser &lt;http://docs.python.org/library/configparser.html&gt;</cite>
+documentation).  The configuration file is organized by section and
+the variables are documented within the file. In order to get a local
+configuration file in the current directory, type:</p>
+<div class="highlight-python"><div class="highlight"><pre>python &lt;codedir&gt;/pipeline_chipseq.py config
+</pre></div>
+</div>
+<p>The following sections and parameters probably should be changed from
+the default values:</p>
+<div class="admonition-todo admonition" id="index-0">
+<p class="first admonition-title">Todo</p>
+<p class="last">describe important parameters</p>
+</div>
+<p>The sphinxreport report requires a <tt class="file docutils literal"><span class="pre">conf.py</span></tt> and
+<tt class="file docutils literal"><span class="pre">sphinxreport.ini</span></tt> file (see <a class="reference internal" href="../UsingPipelines.html#pipelinereporting"><em>Building pipeline reports</em></a>). To start
+with, use the files supplied with the <a class="reference internal" href="#example">Example</a> data.</p>
+</div>
+<div class="section" id="input">
+<h3>Input<a class="headerlink" href="#input" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="intervals">
+<h4>Intervals<a class="headerlink" href="#intervals" title="Permalink to this headline">¶</a></h4>
+<p>Input are <a class="reference internal" href="../glossary.html#term-bed"><em class="xref std std-term">bed</em></a>-formatted files of intervals. Intervals should
+be at least bed4 formatted, i.e., each interval should be labelled
+(uniquely).</p>
+</div>
+<div class="section" id="optional-inputs">
+<h4>Optional inputs<a class="headerlink" href="#optional-inputs" title="Permalink to this headline">¶</a></h4>
+<p>Optinally, peaks can be supplied as <a class="reference internal" href="../glossary.html#term-bed"><em class="xref std std-term">bed</em></a> formatted files. These
+peak files will then be processed in the same way as peaks called
+within the pipeline. Use the option <tt class="docutils literal"><span class="pre">tracks_extra</span></tt> to declare any
+additional tracks.</p>
+<p>Additional peak files can be associated with one of the <a class="reference internal" href="../glossary.html#term-bam"><em class="xref std std-term">bam</em></a>
+files created by the pipeline. This permits counting the number of
+tags inside peaks, finding the peak summit, etc. In order to
+associated a peak file with a <a class="reference internal" href="../glossary.html#term-bam"><em class="xref std std-term">bam</em></a> formatted file, define a
+section in the pipeline.ini file. For example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">[</span><span class="n">mycalls</span><span class="o">.</span><span class="n">bed</span><span class="p">]</span>
+<span class="n">track</span><span class="o">=</span><span class="n">tissue</span><span class="o">-</span><span class="n">sample</span><span class="o">-</span><span class="n">agg</span>
+</pre></div>
+</div>
+<p>will process the file <tt class="docutils literal"><span class="pre">mycalls.bed</span></tt> exactly the same way as the
+track <tt class="docutils literal"><span class="pre">tissue-sample-agg</span></tt>.  Replicates can be specified
+explicitely:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">[</span><span class="n">mycalls</span><span class="o">.</span><span class="n">bed</span><span class="p">]</span>
+<span class="n">replicates</span><span class="o">=</span><span class="n">tissue1</span><span class="o">-</span><span class="n">sample1</span><span class="o">-</span><span class="n">R1</span><span class="p">,</span><span class="n">tissue1</span><span class="o">-</span><span class="n">sample1</span><span class="o">-</span><span class="n">R2</span>
+</pre></div>
+</div>
+<p>will associate the file <tt class="docutils literal"><span class="pre">mycalls.bed</span></tt> with the replicates
+<tt class="docutils literal"><span class="pre">tissue1-sample1-R1</span></tt> and <tt class="docutils literal"><span class="pre">tissue1-sample1-R2</span></tt>. Note that globs
+don&#8217;t work for this yet, all replicates have to be specified
+explicitely.</p>
+</div>
+<div class="section" id="reference-motifs">
+<h4>Reference motifs<a class="headerlink" href="#reference-motifs" title="Permalink to this headline">¶</a></h4>
+<p>Reference motifs are described by fasta-formatted multiple alignments, see for
+example Jaspar download. The motifs are build by running MEME on the file.</p>
+<p>Reference motifs should end in the suffix &#8221;.motif.fasta&#8221;, for example,
+<tt class="file docutils literal"><span class="pre">rxrvdr.motif.fasta</span></tt>.</p>
+</div>
+</div>
+<div class="section" id="requirements">
+<h3>Requirements<a class="headerlink" href="#requirements" title="Permalink to this headline">¶</a></h3>
+<p>The pipeline requires the information from the following pipelines:</p>
+<dl class="docutils">
+<dt><a class="reference internal" href="pipeline_annotations.html"><em>Annotation pipeline</em></a></dt>
+<dd>set the configuration variable <tt class="xref py py-data docutils literal"><span class="pre">annotations_database</span></tt>
+and <tt class="xref py py-data docutils literal"><span class="pre">annotations_dir</span></tt>.</dd>
+</dl>
+<p>On top of the default CGAT setup, the pipeline requires the following
+software to be in the path:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="23%" />
+<col width="22%" />
+<col width="55%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><em>Program</em></td>
+<td><em>Version</em></td>
+<td><em>Purpose</em></td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section" id="pipline-output">
+<h2>Pipline Output<a class="headerlink" href="#pipline-output" title="Permalink to this headline">¶</a></h2>
+<p>The results of the computation are all stored in an sqlite relational
+database <tt class="file docutils literal"><span class="pre">csvdb</span></tt>.</p>
+</div>
+<div class="section" id="example">
+<h2>Example<a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h2>
+<p>Example data is available at
+<a class="reference external" href="http://www.cgat.org/~andreas/sample_data/pipeline_chipseq.tgz">http://www.cgat.org/~andreas/sample_data/pipeline_chipseq.tgz</a>.  To run
+the example, simply unpack and untar:</p>
+<div class="highlight-python"><div class="highlight"><pre>wget http://www.cgat.org/~andreas/sample_data/pipeline_chipseq.tgz
+tar -xvzf pipeline_chipseq.tgz
+cd pipeline_chipseq
+python &lt;srcdir&gt;/pipeline_chipseq.py make full
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">For the pipeline to run, install the <a class="reference internal" href="pipeline_annotations.html"><em>Annotation pipeline</em></a> as well.</p>
+</div>
+</div>
+<div class="section" id="change-log">
+<h2>Change Log<a class="headerlink" href="#change-log" title="Permalink to this headline">¶</a></h2>
+<dl class="docutils">
+<dt>26.2.2014 Andreas Heger</dt>
+<dd>added tag counting in intervals.</dd>
+<dt>11.3.2014 Andreas Heger</dt>
+<dd><p class="first">preprocess all intervals to make sure they are
+properly formatted:
+1. merge overlapping intervals
+2. sort intervals by coordinate</p>
+<p class="last">As a consequence of this change, intervals and subsequent files
+will end up in the intervals.dir directory. Thus, existing
+pipelines will re-run.</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="code">
+<h2>Code<a class="headerlink" href="#code" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pipeline_intervals.getAssociatedBAMFiles">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">getAssociatedBAMFiles</tt><span class="sig-paren">(</span><em>track</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.getAssociatedBAMFiles" title="Permalink to this definition">¶</a></dt>
+<dd><p>return a list of BAM files associated with a track.</p>
+<p>By default, this method searches for <tt class="docutils literal"><span class="pre">track.bam</span></tt> file in the
+data directory and returns an offset of 0.</p>
+<p>Associations can be defined in the .ini file in the section
+[bams]. For example, the following snippet associates track
+track1 with the bamfiles <tt class="file docutils literal"><span class="pre">track1.bam</span></tt> and <tt class="file docutils literal"><span class="pre">track2.bam</span></tt>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">[</span><span class="n">bams</span><span class="p">]</span>
+<span class="n">track1</span><span class="o">=</span><span class="n">track1</span><span class="o">.</span><span class="n">bam</span><span class="p">,</span><span class="n">track2</span><span class="o">.</span><span class="n">bam</span>
+</pre></div>
+</div>
+<p>Glob expressions are permitted.</p>
+<p>Offsets are used to shift tags in ChIP experiments. Offsets
+need to be defined in the [offsets] sections. If no offsets
+are defined, the method returns a list of 0 offsets.</p>
+<p>Offsets need to be defined in the same order as the bam files:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">[</span><span class="n">offsets</span><span class="p">]</span>
+<span class="n">track1</span><span class="o">=</span><span class="mi">120</span><span class="p">,</span><span class="mi">200</span>
+</pre></div>
+</div>
+<p>returns a list of BAM files and offsets.</p>
+<p>Default tracks and offsets can be specified using a placeholder <tt class="docutils literal"><span class="pre">%</span></tt>. The
+following will associate all tracks with the same bam file:</p>
+<div class="highlight-python"><div class="highlight"><pre>[bams]
+%=all.bam
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.connect">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">connect</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.connect" title="Permalink to this definition">¶</a></dt>
+<dd><p>connect to database.</p>
+<p>This method also attaches to helper databases.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.prepareIntervals">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">prepareIntervals</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.prepareIntervals" title="Permalink to this definition">¶</a></dt>
+<dd><p>optionally preprocess intervals.</p>
+<ol class="arabic simple">
+<li>Sort intervals by position.</li>
+<li>Merge overlapping intervals.</li>
+<li>Rename intervals: sequential number.</li>
+</ol>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.indexIntervals">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">indexIntervals</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.indexIntervals" title="Permalink to this definition">¶</a></dt>
+<dd><p>index intervals.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.loadIntervals">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">loadIntervals</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.loadIntervals" title="Permalink to this definition">¶</a></dt>
+<dd><p>load intervals from <a class="reference internal" href="../glossary.html#term-bed"><em class="xref std std-term">bed</em></a> formatted files into
+the database.</p>
+<p>If a <a class="reference internal" href="../glossary.html#term-bam"><em class="xref std std-term">bam</em></a> file is associated with a <a class="reference internal" href="../glossary.html#term-bed"><em class="xref std std-term">bed</em></a>
+file, re-evaluate the intervals by counting reads within
+the interval. In contrast to the initial pipeline, the
+genome is not binned.</p>
+<blockquote>
+<div>nprobes: number of reads in interval
+peakcenter: position with maximum number of reads in interval
+avgval: average coverage within interval</div></blockquote>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.exportPeakLocations">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">exportPeakLocations</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.exportPeakLocations" title="Permalink to this definition">¶</a></dt>
+<dd><p>export peak locations</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.buildContextStats">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">buildContextStats</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.buildContextStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>build mapping context stats.</p>
+<p>Examines the genomic context to where reads align.</p>
+<p>A read is assigned to the genomic context that it
+overlaps by at least 50%. Thus some reads mapping
+several contexts might be dropped.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.loadContextStats">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">loadContextStats</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.loadContextStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>load context mapping statistics.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.annotateIntervalsFull">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">annotateIntervalsFull</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.annotateIntervalsFull" title="Permalink to this definition">¶</a></dt>
+<dd><p>classify chipseq intervals according to their location
+with respect to the gene set.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.annotateIntervalsPeak">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">annotateIntervalsPeak</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.annotateIntervalsPeak" title="Permalink to this definition">¶</a></dt>
+<dd><p>classify chipseq intervals according to their location
+with respect to the gene set.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.annotateBindingFull">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">annotateBindingFull</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.annotateBindingFull" title="Permalink to this definition">¶</a></dt>
+<dd><p>classify chipseq intervals according to their location 
+with respect to the gene set.</p>
+<p>Binding is counted for the full intervals.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.annotateBindingPeak">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">annotateBindingPeak</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.annotateBindingPeak" title="Permalink to this definition">¶</a></dt>
+<dd><p>classify chipseq intervals according to their location 
+with respect to the gene set.</p>
+<p>Binding is counted for peaks.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.annotateTSS">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">annotateTSS</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.annotateTSS" title="Permalink to this definition">¶</a></dt>
+<dd><p>compute distance to TSS</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.annotateTSSPeaks">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">annotateTSSPeaks</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.annotateTSSPeaks" title="Permalink to this definition">¶</a></dt>
+<dd><p>compute distance to TSS</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.annotateRepeats">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">annotateRepeats</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.annotateRepeats" title="Permalink to this definition">¶</a></dt>
+<dd><p>count the overlap between intervals and repeats.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.annotateNucleotides">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">annotateNucleotides</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.annotateNucleotides" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the nucleotide composition of the intervals</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.loadAnnotations">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">loadAnnotations</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.loadAnnotations" title="Permalink to this definition">¶</a></dt>
+<dd><p>load interval annotations: genome architecture</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.loadBinding">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">loadBinding</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.loadBinding" title="Permalink to this definition">¶</a></dt>
+<dd><p>load interval binding: genome architecture</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.loadTSS">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">loadTSS</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.loadTSS" title="Permalink to this definition">¶</a></dt>
+<dd><p>load interval annotations: distance to transcription start sites</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.loadRepeats">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">loadRepeats</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.loadRepeats" title="Permalink to this definition">¶</a></dt>
+<dd><p>load interval annotations: repeats</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.loadNucleotides">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">loadNucleotides</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.loadNucleotides" title="Permalink to this definition">¶</a></dt>
+<dd><p>load interval annotations: nucleotide composition</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.buildIntervalProfileOfTranscripts">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">buildIntervalProfileOfTranscripts</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.buildIntervalProfileOfTranscripts" title="Permalink to this definition">¶</a></dt>
+<dd><p>build a table with the overlap profile of transcripts.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.prepareGTFsByOverlapWithIntervals">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">prepareGTFsByOverlapWithIntervals</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfiles</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.prepareGTFsByOverlapWithIntervals" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prepare GTF file of overlapping and non-overlapping genes for
+profile plots</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.annotateTSSNucleotides">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">annotateTSSNucleotides</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.annotateTSSNucleotides" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the nucleotide composition of the intervals</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.loadTSSNucleotides">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">loadTSSNucleotides</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.loadTSSNucleotides" title="Permalink to this definition">¶</a></dt>
+<dd><p>load interval annotations: nucleotide composition</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.buildGenesByIntervalsProfiles">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">buildGenesByIntervalsProfiles</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.buildGenesByIntervalsProfiles" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make gene profile plots.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.loadByIntervalProfiles">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">loadByIntervalProfiles</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.loadByIntervalProfiles" title="Permalink to this definition">¶</a></dt>
+<dd><p>load interval annotations: nucleotide composition</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.buildPeakShapeTable">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">buildPeakShapeTable</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.buildPeakShapeTable" title="Permalink to this definition">¶</a></dt>
+<dd><p>build a table with peak shape parameters.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.loadPeakShapeTable">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">loadPeakShapeTable</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.loadPeakShapeTable" title="Permalink to this definition">¶</a></dt>
+<dd><p>load peak shape information.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.buildOverlap">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">buildOverlap</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.buildOverlap" title="Permalink to this definition">¶</a></dt>
+<dd><p>compute overlap between intervals.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.loadOverlap">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">loadOverlap</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.loadOverlap" title="Permalink to this definition">¶</a></dt>
+<dd><p>load overlap results.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.exportMotifSequences">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">exportMotifSequences</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.exportMotifSequences" title="Permalink to this definition">¶</a></dt>
+<dd><p>export sequences for motif discovery.</p>
+<p>This method requires the _interval tables.</p>
+<p>For motif discovery, only the sequences with the highest S/N ratio
+are supplied.</p>
+<ol class="arabic">
+<li><p class="first">The top <em>motifs_proportion</em> intervals sorted by peakval</p>
+</li>
+<li><p class="first">Only a region +/- <em>motifs_halfwidth</em> around the peak</p>
+</li>
+<li><dl class="first docutils">
+<dt>At least <em>motifs_min_sequences</em>. If there are not enough sequences</dt>
+<dd><p class="first last">to start with, all will be used.</p>
+</dd>
+</dl>
+</li>
+<li><p class="first">At most <em>motifs_max_size</em> sequences will be output.</p>
+</li>
+</ol>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.exportMotifIntervalSequences">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">exportMotifIntervalSequences</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.exportMotifIntervalSequences" title="Permalink to this definition">¶</a></dt>
+<dd><p>export sequences for motif detection.</p>
+<p>This method requires the _interval tables.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.exportMotifControlSequences">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">exportMotifControlSequences</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.exportMotifControlSequences" title="Permalink to this definition">¶</a></dt>
+<dd><p>for each interval, export the left and right
+sequence segment of the same size.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.runMeme">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">runMeme</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.runMeme" title="Permalink to this definition">¶</a></dt>
+<dd><p>run MEME to find motifs.</p>
+<p>In order to increase the signal/noise ratio, MEME is not run on
+all intervals but only the top 10% of intervals (peakval) are
+used.  Also, only the segment of 200 bp around the peak is used
+and not the complete interval.</p>
+<ul class="simple">
+<li>Softmasked sequence is converted to hardmasked
+sequence to avoid the detection of spurious motifs.</li>
+<li>Sequence is run through dustmasker</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.loadMemeSummary">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">loadMemeSummary</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.loadMemeSummary" title="Permalink to this definition">¶</a></dt>
+<dd><p>load information about motifs into database.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.loadMotifSequenceComposition">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">loadMotifSequenceComposition</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.loadMotifSequenceComposition" title="Permalink to this definition">¶</a></dt>
+<dd><p>compute sequence composition of sequences used for ab-initio search.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.loadMotifInformation">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">loadMotifInformation</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.loadMotifInformation" title="Permalink to this definition">¶</a></dt>
+<dd><p>load information about motifs into database.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.runTomTom">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">runTomTom</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.runTomTom" title="Permalink to this definition">¶</a></dt>
+<dd><p>compare ab-initio motifs against tomtom.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.loadTomTom">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">loadTomTom</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.loadTomTom" title="Permalink to this definition">¶</a></dt>
+<dd><p>load tomtom results</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.runMast">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">runMast</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.runMast" title="Permalink to this definition">¶</a></dt>
+<dd><p>run mast on all intervals and motifs.</p>
+<p>Collect all results for an E-value up to 10000 so that all
+sequences are output and MAST curves can be computed.</p>
+<p>10000 is a heuristic.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.loadMast">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">loadMast</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.loadMast" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse mast file and load into database.</p>
+<p>Parse several motif runs and add them to the same
+table.</p>
+<p>Add columns for the control data as well.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.exportMotifLocations">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">exportMotifLocations</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.exportMotifLocations" title="Permalink to this definition">¶</a></dt>
+<dd><p>export motif locations. There will be a bed-file per motif.</p>
+<p>Overlapping motif matches in different tracks will be merged.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.runGATOnGenomicContext">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">runGATOnGenomicContext</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.runGATOnGenomicContext" title="Permalink to this definition">¶</a></dt>
+<dd><p>run gat agains genomic context.</p>
+<p>The workspace is composed of all mapable regions.
+Enrichment is controlled by isochores.</p>
+<p>To be rigorous, FDR should be re-computed after merging all
+analyses.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.runGATOnGenomicAnnotations">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">runGATOnGenomicAnnotations</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.runGATOnGenomicAnnotations" title="Permalink to this definition">¶</a></dt>
+<dd><p>run gat agains genomic context.</p>
+<p>The workspace is composed of all mapable regions.
+Enrichment is controlled by isochores.</p>
+<p>To be rigorous, FDR should be re-computed after merging all
+analyses.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.runGATOnGeneStructure">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">runGATOnGeneStructure</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.runGATOnGeneStructure" title="Permalink to this definition">¶</a></dt>
+<dd><p>run gat on gene structures</p>
+<p>The purpose of this gat run is to test for differential location
+of intervals in parts of certain gene structures.</p>
+<p>The workspace is composed of all mapable regions. The workspace is
+restricted to annotations in order to reduce the effect of
+intergenic depletion. Furthermore, the workspace is restricted to
+those parts that contain segments and annotations in order to
+avoid a gene bias (only genes of a certain structure contain
+segments).</p>
+<p>Enrichment is controlled by isochores.</p>
+<p>To be rigorous, FDR should be re-computed after merging all
+analyses.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.runGATOnGeneAnnotations">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">runGATOnGeneAnnotations</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.runGATOnGeneAnnotations" title="Permalink to this definition">¶</a></dt>
+<dd><p>run gat against genes and their annotations.</p>
+<p>The workspace is composed of all mapable regions within gene territories.
+Enrichment is controlled by isochores.</p>
+<p>To be rigorous, FDR should be re-computed after merging all
+analyses.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.runGATOnSets">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">runGATOnSets</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em>, <em>workspacefile</em>, <em>isochorefile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.runGATOnSets" title="Permalink to this definition">¶</a></dt>
+<dd><p>run gat on intervals against each other.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.loadGat">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">loadGat</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.loadGat" title="Permalink to this definition">¶</a></dt>
+<dd><p>load individual gat results.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.summarizeGAT">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">summarizeGAT</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.summarizeGAT" title="Permalink to this definition">¶</a></dt>
+<dd><p>summarize GAT results.</p>
+<p>outputs a log2fold and pvalue table for results.</p>
+<dl class="docutils">
+<dt>The results are filtered. Remove all rows that</dt>
+<dd><ul class="first last simple">
+<li>have no significant results (fdr)</li>
+<li>expected overlap less than 1kb.</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.prepareTags">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">prepareTags</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.prepareTags" title="Permalink to this definition">¶</a></dt>
+<dd><p>prepare tag files from bam files for counting</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.computeReadCountsInIntervals">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">computeReadCountsInIntervals</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.computeReadCountsInIntervals" title="Permalink to this definition">¶</a></dt>
+<dd><p>compute a table of read counts of each BAM-file
+with respect to all interval sets.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.aggregateReadCounts">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">aggregateReadCounts</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.aggregateReadCounts" title="Permalink to this definition">¶</a></dt>
+<dd><p>aggregate tag counts into single files
+per interval set.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.summarizeReadCounts">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">summarizeReadCounts</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.summarizeReadCounts" title="Permalink to this definition">¶</a></dt>
+<dd><p>perform summarization of read counts</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.full">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">full</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.full" title="Permalink to this definition">¶</a></dt>
+<dd><p>run the full pipeline.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.build_report">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">build_report</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.build_report" title="Permalink to this definition">¶</a></dt>
+<dd><p>build report from scratch.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.update_report">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">update_report</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.update_report" title="Permalink to this definition">¶</a></dt>
+<dd><p>update report.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_intervals.publish">
+<tt class="descclassname">pipeline_intervals.</tt><tt class="descname">publish</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_intervals.publish" title="Permalink to this definition">¶</a></dt>
+<dd><p>publish files.</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Interval pipeline</a><ul>
+<li><a class="reference internal" href="#usage">Usage</a><ul>
+<li><a class="reference internal" href="#configuration">Configuration</a></li>
+<li><a class="reference internal" href="#input">Input</a><ul>
+<li><a class="reference internal" href="#intervals">Intervals</a></li>
+<li><a class="reference internal" href="#optional-inputs">Optional inputs</a></li>
+<li><a class="reference internal" href="#reference-motifs">Reference motifs</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#requirements">Requirements</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#pipline-output">Pipline Output</a></li>
+<li><a class="reference internal" href="#example">Example</a></li>
+<li><a class="reference internal" href="#change-log">Change Log</a></li>
+<li><a class="reference internal" href="#code">Code</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="pipeline_fusion.html"
+                        title="previous chapter">Project 4 Pipeline</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="pipeline_mapping_benchmark.html"
+                        title="next chapter">Read Mapping parameter titration pipeline</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/pipelines/pipeline_intervals.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pipeline_mapping_benchmark.html" title="Read Mapping parameter titration pipeline"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="pipeline_fusion.html" title="Project 4 Pipeline"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../Pipelines.html" >CGAT Pipelines</a> &raquo;</li>
+          <li><a href="../CGATPipelines.html" >NGS Pipelines</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

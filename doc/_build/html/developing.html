@@ -1,0 +1,238 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Contributing to CGAT code &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/sorttable.js"></script>
+    <script type="text/javascript" src="_static/jquery.min.js"></script>
+    <script type="text/javascript" src="_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="index.html" />
+    <link rel="next" title="Testing" href="testing.html" />
+    <link rel="prev" title="OPTIC" href="make_pipelines/Optic.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="testing.html" title="Testing"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="make_pipelines/Optic.html" title="OPTIC"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">CGAT  documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="contributing-to-cgat-code">
+<span id="developing"></span><h1>Contributing to CGAT code<a class="headerlink" href="#contributing-to-cgat-code" title="Permalink to this headline">¶</a></h1>
+<p>We encourage everyone who uses parts of the CGAT code collection to
+contribute. Contributions can take many forms: bugreports, bugfixes,
+new scripts and pipelines, documentation, tests, etc. All
+contributions are welcome.</p>
+<div class="section" id="checklist-for-new-scripts-modules">
+<h2>Checklist for new scripts/modules<a class="headerlink" href="#checklist-for-new-scripts-modules" title="Permalink to this headline">¶</a></h2>
+<p>Before adding a new scripts to the repository, please check if the
+following are true:</p>
+<ol class="arabic simple">
+<li>The script performs a non-trivial task. If a one-line command line
+entry using standard unix commands can give the same effect, avoid
+adding a script to the repository.</li>
+<li>The script has a clear purpose. Scripts should follow the
+<a class="reference external" href="http://en.wikipedia.org/wiki/Unix_philosophy">unix philosophy</a>.
+They should concentrate on one task and do it well. Ideally,
+the major input and output can be read from and written to standard
+input and standard output, respectively.</li>
+<li>The script follows the naming convention of CGAT scripts.</li>
+<li>The scripts follows the <a class="reference internal" href="styleguide.html#styleguide"><em>Style Guide</em></a>.</li>
+<li>The script implements the <tt class="docutils literal"><span class="pre">-h/--help</span></tt> options. Ideally, the
+script has been derived from <tt class="file docutils literal"><span class="pre">scripts/cgat_script_template.py</span></tt>.</li>
+<li>The script can be imported. Ideally, it imports without performing
+any actions or writing output.</li>
+<li>The script is well documented and the documentation has been added
+to the CGAT documentation. There should be an entry in
+<tt class="file docutils literal"><span class="pre">doc/scripts.rst</span></tt> and a file
+<tt class="file docutils literal"><span class="pre">doc/scripts/newscript.py</span></tt>.</li>
+<li>The script has at least one test case added to <tt class="file docutils literal"><span class="pre">tests</span></tt> - and
+the test works (see <a class="reference internal" href="testing.html#testing"><em>Testing</em></a>).</li>
+</ol>
+</div>
+<div class="section" id="building-extensions">
+<h2>Building extensions<a class="headerlink" href="#building-extensions" title="Permalink to this headline">¶</a></h2>
+<p>Using <a class="reference external" href="http://www.prescod.net/pyximport/">pyximport</a>, it is (relatively) straight-forward to add optimized
+C-code to python scripts and, for example, access pysam internals and
+the underlying samtools library. See for example <a class="reference internal" href="scripts/bam2stats.html"><em>bam2stats.py - compute stats from a bam-file</em></a>.</p>
+<p>To add an extension, the following needs to be in place:</p>
+<ol class="arabic">
+<li><p class="first">The main script (<tt class="file docutils literal"><span class="pre">scripts/bam2stats.py</span></tt>). The important lines in this script
+are:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">pyximport</span>
+    <span class="n">pyximport</span><span class="o">.</span><span class="n">install</span><span class="p">()</span>
+    <span class="kn">import</span> <span class="nn">_bam2stats</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">CGAT._bam2stats</span> <span class="kn">as</span> <span class="nn">_bam2stats</span>
+</pre></div>
+</div>
+<p>The snippet first attempts to build and import the extension by
+setting up <a class="reference external" href="http://www.prescod.net/pyximport/">pyximport</a> and then importing the cython module
+as <tt class="file docutils literal"><span class="pre">_bam2stats</span></tt>.
+In case this fails, as is the case for an installed code, it
+looks for a pre-built extension (by <tt class="docutils literal"><span class="pre">setup.py</span></tt>) in the CGAT
+pacakge.</p>
+</li>
+<li><p class="first">The cython implementation <tt class="file docutils literal"><span class="pre">_bam2stats.pyx</span></tt>. This script imports the pysam API via:</p>
+<div class="highlight-python"><div class="highlight"><pre>from csamtools cimport *
+</pre></div>
+</div>
+<p>This statement imports, amongst others, <tt class="xref py py-class docutils literal"><span class="pre">AlignedRead</span></tt> into the namespace. Speed can be
+gained from declaring variables. For example, to efficiently iterate
+over a file, an <tt class="xref py py-class docutils literal"><span class="pre">AlignedRead</span></tt> object is declared:</p>
+<div class="highlight-python"><div class="highlight"><pre># loop over samfile
+cdef AlignedRead read
+for read in samfile:
+    ...
+</pre></div>
+</div>
+</li>
+<li><p class="first">A <tt class="file docutils literal"><span class="pre">pyxbld</span></tt> providing <a class="reference external" href="http://www.prescod.net/pyximport/">pyximport</a> with build information.
+Required are the locations of the samtools and pysam header libraries
+of a source installation of pysam plus the <tt class="file docutils literal"><span class="pre">csamtools.so</span></tt>
+shared library. For example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">make_ext</span><span class="p">(</span><span class="n">modname</span><span class="p">,</span> <span class="n">pyxfilename</span><span class="p">):</span>
+    <span class="kn">from</span> <span class="nn">distutils.extension</span> <span class="kn">import</span> <span class="n">Extension</span>
+    <span class="kn">import</span> <span class="nn">pysam</span><span class="o">,</span> <span class="nn">os</span>
+    <span class="n">dirname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span> <span class="n">pysam</span><span class="o">.</span><span class="n">__file__</span> <span class="p">)[:</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="s">&quot;pysam&quot;</span><span class="p">)]</span>
+    <span class="k">return</span> <span class="n">Extension</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="n">modname</span><span class="p">,</span>
+                     <span class="n">sources</span><span class="o">=</span><span class="p">[</span><span class="n">pyxfilename</span><span class="p">],</span>
+                     <span class="n">extra_link_args</span><span class="o">=</span><span class="p">[</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span> <span class="n">dirname</span><span class="p">,</span>
+                            <span class="s">&quot;csamtools.so&quot;</span><span class="p">)],</span>
+                     <span class="n">include_dirs</span> <span class="o">=</span>  <span class="n">pysam</span><span class="o">.</span><span class="n">get_include</span><span class="p">(),</span>
+                     <span class="n">define_macros</span> <span class="o">=</span> <span class="n">pysam</span><span class="o">.</span><span class="n">get_defines</span><span class="p">()</span> <span class="p">)</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<p>If the script <tt class="file docutils literal"><span class="pre">bam2stats.py</span></tt> is called the first time, <a class="reference external" href="http://www.prescod.net/pyximport/">pyximport</a> will
+compile the <a class="reference external" href="http://cython.org/">cython</a> extension <tt class="file docutils literal"><span class="pre">_bam2stats.pyx</span></tt> and make it available
+to the script. Compilation requires a working compiler and <a class="reference external" href="http://cython.org/">cython</a> installation.
+Each time <tt class="file docutils literal"><span class="pre">_bam2stats.pyx</span></tt> is modified, a new compilation will take place.</p>
+<p><a class="reference external" href="http://www.prescod.net/pyximport/">pyximport</a> comes with <a class="reference external" href="http://cython.org/">cython</a>.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Contributing to CGAT code</a><ul>
+<li><a class="reference internal" href="#checklist-for-new-scripts-modules">Checklist for new scripts/modules</a></li>
+<li><a class="reference internal" href="#building-extensions">Building extensions</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="make_pipelines/Optic.html"
+                        title="previous chapter">OPTIC</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="testing.html"
+                        title="next chapter">Testing</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/developing.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="testing.html" title="Testing"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="make_pipelines/Optic.html" title="OPTIC"
+             >previous</a> |</li>
+        <li><a href="index.html">CGAT  documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

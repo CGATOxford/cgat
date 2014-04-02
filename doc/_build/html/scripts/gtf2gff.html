@@ -1,0 +1,441 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>gtf2gff.py - convert a transcript set to genomic features &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="Scripts" href="../scripts.html" />
+    <link rel="next" title="gtf2gtf.py - manipulate transcript models" href="gtf2gtf.html" />
+    <link rel="prev" title="gff_decorate.py - decorate genomic windows" href="gff_decorate.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="gtf2gtf.html" title="gtf2gtf.py - manipulate transcript models"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="gff_decorate.html" title="gff_decorate.py - decorate genomic windows"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../scripts.html" accesskey="U">Scripts</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-gtf2gff"></span><div class="section" id="gtf2gff-py-convert-a-transcript-set-to-genomic-features">
+<h1>gtf2gff.py - convert a transcript set to genomic features<a class="headerlink" href="#gtf2gff-py-convert-a-transcript-set-to-genomic-features" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Andreas Heger</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id: gtf2gff.py 2861 2010-02-23 17:36:32Z andreas $</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Genomics Genesets Intervals Transformation GTF GFF</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="purpose">
+<h2>Purpose<a class="headerlink" href="#purpose" title="Permalink to this headline">¶</a></h2>
+<p>This scripts converts a transcript set in a <a class="reference internal" href="../glossary.html#term-gtf"><em class="xref std std-term">gtf</em></a> formatted file into a set
+of features in a <a class="reference internal" href="../glossary.html#term-gff"><em class="xref std std-term">gff</em></a> formatted file.</p>
+<p>In other words, a gene set (gtf), which constitutes a hierarchical set of 
+annotations, will be converted into a non-hierarchical list of genomic segments.</p>
+<p>Various methods can be used to do the conversion (see command line argument 
+<tt class="docutils literal"><span class="pre">--method</span></tt>):</p>
+<dl class="docutils">
+<dt>exons</dt>
+<dd>annotate exons. Exonic segments are classified according 
+to the transcript structure.</dd>
+<dt>genome/full</dt>
+<dd>annotate genome with gene set. Genomic segments are labeled 
+<tt class="docutils literal"><span class="pre">intronic</span></tt>, <tt class="docutils literal"><span class="pre">intergenic</span></tt>, etc. This annotation aggregates
+the information of multiple genes such that each annotation
+is either valid or ambiguous.</dd>
+<dt>genes</dt>
+<dd>annotate genome using the information on a gene-by-gene basis.
+Multiple overlapping annotations will be created for each transcript.
+Redundant annotations will be merged.</dd>
+<dt>great-domains</dt>
+<dd>regulatory domains using the basal+extended model according to GREAT.</dd>
+<dt>promotors</dt>
+<dd>declare promoter regions. These segments might be overlapping. A promotor
+is the region x kb upstream of a transcription start site. The option
+<tt class="docutils literal"><span class="pre">--promotor</span></tt> sets the region width.</dd>
+<dt>regulons</dt>
+<dd>declare regulatory regions. Regulatory regions contain the region x kb of
+upstream and downstream of a transciption start site. The options <tt class="docutils literal"><span class="pre">--upstream</span></tt>
+and <tt class="docutils literal"><span class="pre">-downstream</span></tt> set the region width.</dd>
+<dt>tts-regulons</dt>
+<dd>declare tts regulatory regions. tts-regulatory regions contain the region x kb of
+upstream and downstream of a transciption termination site. The options <tt class="docutils literal"><span class="pre">--upstream</span></tt>
+and <tt class="docutils literal"><span class="pre">-downstream</span></tt> set the region width.</dd>
+<dt>territories</dt>
+<dd>build gene territories around full length genes.</dd>
+<dt>tss-territories</dt>
+<dd>build gene territories around transcription start sites.</dd>
+</dl>
+<div class="section" id="genome">
+<h3>Genome<a class="headerlink" href="#genome" title="Permalink to this headline">¶</a></h3>
+<p>If <tt class="docutils literal"><span class="pre">--method=genome</span></tt>, the gene set is used to annotate the complete genome.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The gtf file has to be sorted first by contig and then by position.</p>
+</div>
+<p>A segment in the genome will either be covered by:</p>
+<dl class="docutils">
+<dt>cds</dt>
+<dd>a coding exon (also: CDS, start_codon).</dd>
+<dt>utr</dt>
+<dd>a UTR (also: stop_codon)</dd>
+<dt>5flank, 3flank, flank</dt>
+<dd>an upstream/downstream segment of defined size. If 
+the intergenic region is too small to accomodate a flank, the regions is
+just &#8216;flank&#8217;.</dd>
+<dt>intergenic</dt>
+<dd>intergenic region.</dd>
+<dt>5telomeric, 3telomeric</dt>
+<dd>telomeric region (before/after first/last gene).</dd>
+<dt>intronic</dt>
+<dd>intronic region. An intron has a minimum size of 30 bases.</dd>
+<dt>frameshift</dt>
+<dd>frameshift. Introns of less than 4 residues length</dd>
+<dt>ambiguous</dt>
+<dd>in case of overlapping genes, regions are designated ambiguous</dd>
+<dt>unknown</dt>
+<dd>unknown are <tt class="docutils literal"><span class="pre">intronic</span></tt> regions that are less than the minimum size 
+of an intron (default: 30) and larger than the size of frameshift (default:4).
+These could be either genuine small introns or they could be artefactual arising
+from collapsing the exons within a gene model.</dd>
+</dl>
+<p>All segments are annotated by their closest gene. Intergenic regions are
+annotated with their two neighbouring genes. The upstream gene is listed
+in the attribute gene_id, the downstream one is listed in the attribute
+downstream_gene_id.</p>
+</div>
+<div class="section" id="genes">
+<h3>Genes<a class="headerlink" href="#genes" title="Permalink to this headline">¶</a></h3>
+<p>If <tt class="docutils literal"><span class="pre">--method=genes</span></tt>, the gene set is used to annotate the complete genome.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The gtf file has to be sorted by gene.</p>
+</div>
+<p>A segment in the genome will be annotated as:</p>
+<dl class="docutils">
+<dt>cds</dt>
+<dd>a coding exon</dd>
+<dt>utr5, utr3</dt>
+<dd>a 5&#8217; or 3&#8217; utr</dd>
+<dt>exon</dt>
+<dd>an exon. Exons are further classified into first, middle and last exons.</dd>
+<dt>intronic</dt>
+<dd>an intronic region. Intronic regions are further divided into first, middle, last.</dd>
+<dt>upstream, downstream</dt>
+<dd>upstream/downstream regions in 5 intervals of a total of 1kb (see option &#8211;flank to increase
+the total size).</dd>
+</dl>
+</div>
+<div class="section" id="territories">
+<span id="id1"></span><h3>Territories<a class="headerlink" href="#territories" title="Permalink to this headline">¶</a></h3>
+<p>If <tt class="docutils literal"><span class="pre">--method=territories</span></tt>, the gene set is used to define gene territories. 
+Territories are segments around genes and are non-overlapping. Exons in a gene
+are merged and the resulting the region is enlarged by &#8211;radius. Overlapping
+territories are divided at the midpoint between the two genes. The maximum
+extent of a territory is limited by the option <tt class="docutils literal"><span class="pre">--radius</span></tt></p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The gtf file has to be sorted first by contig and then by position.</p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Genes should already have been merged (gtf2gtf &#8211;merge-transcripts)</p>
+</div>
+</div>
+<div class="section" id="tssterritories">
+<h3>TSSTerritories<a class="headerlink" href="#tssterritories" title="Permalink to this headline">¶</a></h3>
+<p>If <tt class="docutils literal"><span class="pre">--method=tss-territories</span></tt>, the gene set is used to define gene territories. 
+Instead of the full gene length as in <a class="reference internal" href="#territories"><em>Territories</em></a>, only the tss is used to 
+define a territory. Territories are segments around genes and are non-overlapping.
+Overlapping territories are divided at the midpoint between the two genes. The maximum
+extent of a territory is limited by the option <tt class="docutils literal"><span class="pre">--radius</span></tt>.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The gtf file has to be sorted first by contig and then by position.</p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Genes should already have been merged (gtf2gtf &#8211;merge-transcripts)</p>
+</div>
+<p>The domain definitions corresponds to the <tt class="docutils literal"><span class="pre">nearest</span> <span class="pre">gene</span></tt> rule in GREAT.</p>
+</div>
+<div class="section" id="great-domains">
+<h3>GREAT-Domains<a class="headerlink" href="#great-domains" title="Permalink to this headline">¶</a></h3>
+<p>Define GREAT regulatory domains. Each TSS in a gene is associated with a 
+basal region. The basal region is then extended upstream to the basal region 
+of the closest gene, but at most to &#8211;radius. In the case of overlapping genes,
+the extension is towards the next non-overlapping gene.</p>
+<p>This is the &#8220;basal plus extension&#8221; rule in GERAT. Commonly used are 5+1 with 1 Mb extension. 
+To achieve this, set</p>
+<p><tt class="docutils literal"><span class="pre">--method=great-domains</span> <span class="pre">--upstream=5000</span> <span class="pre">--downstream=1000</span> <span class="pre">--radius=1000000</span></tt></p>
+<p>If there are a multiple TSS in a transcript, the basal region extends from the
+first to the last TSS plus the upstream/downstream flank.</p>
+</div>
+<div class="section" id="exons">
+<h3>Exons<a class="headerlink" href="#exons" title="Permalink to this headline">¶</a></h3>
+<p>If <tt class="docutils literal"><span class="pre">--method=exons</span></tt>, exons are annotated by their dispensibility.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The gtf file should be sorted by genes</p>
+</div>
+<p>For each exon, the following additional fields are added to the gtf file:</p>
+<dl class="docutils">
+<dt>ntranscripts</dt>
+<dd>number of transcripts</dd>
+<dt>nused</dt>
+<dd>number of transcripts using this exon</dd>
+<dt>positions</dt>
+<dd>positions of exon within transcripts. This is a <tt class="docutils literal"><span class="pre">,</span></tt> separated list of
+tuples <tt class="docutils literal"><span class="pre">pos:total</span></tt>. For example, <tt class="docutils literal"><span class="pre">1:10,5:8</span></tt> indicates an exon that appears
+in first position in a ten exon transcript and fifth position in an eight
+exon transcript. The position is according to the direction of transcription.</dd>
+</dl>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">overlapping but non-identical exons, for example due to internal splice sites, are listed 
+as separate exons. Thus the output is not fully flat as some segments could be overlapping
+(see output variable <tt class="docutils literal"><span class="pre">noverlapping</span></tt> in the log file).</p>
+</div>
+<p>The following example uses an ENSEMBL gene set:</p>
+<div class="highlight-python"><div class="highlight"><pre>gunzip &lt; Mus_musculus.NCBIM37.55.gtf.gz | awk &#39;$3 == &quot;CDS&quot;&#39; | python gtf2gff.py --method=exons --restrict-source=protein_coding
+</pre></div>
+</div>
+</div>
+<div class="section" id="promoters">
+<h3>Promoters<a class="headerlink" href="#promoters" title="Permalink to this headline">¶</a></h3>
+<p>If <tt class="docutils literal"><span class="pre">--method=promotors</span></tt>, putative promotor regions are output. A
+promoter is a pre-defined segment upstream of the transcription start
+site. As the actual start site is usually not known, the start of the
+first exon within a transcript is used as a proxy. A gene can have
+several promotors associated with it, but overlapping promotor regions
+of the same gene will be merged. A promoter can extend into an
+adjacent upstream gene.</p>
+<p>The <tt class="docutils literal"><span class="pre">--restrict-source</span></tt> option determines which GTF entries are output. The default
+is to output all entries but the user can choose from protein_coding, pseudogene or lncRNA.</p>
+<p>The size of the promotor region can be specified by the command line
+argument <tt class="docutils literal"><span class="pre">--promotor</span></tt>.</p>
+</div>
+<div class="section" id="regulons">
+<h3>Regulons<a class="headerlink" href="#regulons" title="Permalink to this headline">¶</a></h3>
+<p>If <tt class="docutils literal"><span class="pre">--method=regulons</span></tt>, putative regulon regions are output. This is similar
+to a <tt class="docutils literal"><span class="pre">promotor</span></tt>, but the region extends both upstream and downstream from
+the transcription start site.</p>
+<p>The <tt class="docutils literal"><span class="pre">--restrict-source</span></tt> option determines which GTF entries are output. The default
+is to output all entries but the user can choose from protein_coding, pseudogene or lncRNA.</p>
+<p>The size of the promotor region can be specified by the command line
+argument <tt class="docutils literal"><span class="pre">--upstream</span></tt> and <tt class="docutils literal"><span class="pre">--downstream</span></tt></p>
+<p>If <tt class="docutils literal"><span class="pre">--method=tts-regulons</span></tt>, regulons will be defined around the transcription
+termination site.</p>
+</div>
+</div>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<dl class="docutils">
+<dt>Type::</dt>
+<dd>python gtf2gff.py &#8211;method=genome &#8211;genome-file=hg19 &lt; geneset.gtf &gt; annotations.gff</dd>
+</dl>
+<p>for command line help.</p>
+</div>
+<div class="section" id="command-line-options">
+<h2>Command line options<a class="headerlink" href="#command-line-options" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+<div class="highlight-text"><div class="highlight"><pre>Usage: gtf2gff.py [options]
+
+Options:
+  --version             show program&#39;s version number and exit
+  -h, --help            show this help message and exit
+  --no-usage            output help without usage information
+  -g GENOME_FILE, --genome-file=GENOME_FILE
+                        filename with genome [default=none].
+  -i, --ignore-missing  Ignore transcripts on contigs that are not in the
+                        genome-file [default=False].
+  -s RESTRICT_SOURCE, --restrict-source=RESTRICT_SOURCE
+                        restrict input by source [default=none].
+  -m METHOD, --method=METHOD
+                        method for defining segments [default=genome].
+  -r RADIUS, --radius=RADIUS
+                        radius of a territory [default=50000].
+  -f FLANK, --flank=FLANK
+                        size of the flanking region next to a gene
+                        [default=1000].
+  --increment=INCREMENT
+                        size of increment in flank in genestructure annotation
+                        [default=1000].
+  -p PROMOTOR, --promotor=PROMOTOR
+                        size of a promotor region [default=5000].
+  -u UPSTREAM, --upstream=UPSTREAM
+                        size of region upstream of tss [default=5000].
+  -d DOWNSTREAM, --downstream=DOWNSTREAM
+                        size of region downstream of tss [default=5000].
+  --detail=DETAIL       level of detail for gene structure annotation
+                        [default=exons].
+  --merge-promotors     merge promotors [default=False].
+  --min-intron-length=MIN_INTRON_LENGTH
+                        minimum intron length. If the distance between two
+                        consecutive exons is smaller, the region will be
+                        marked &#39;unknown&#39; [default=30].
+  -o, --sort            sort input before processing. Otherwise, the input is
+                        assumed to be sorted [default=False].
+  -v LOGLEVEL, --verbose=LOGLEVEL
+                        loglevel [1]. The higher, the more output.
+  --timeit=TIMEIT_FILE  store timeing information in file [none].
+  --timeit-name=TIMEIT_NAME
+                        name in timing file for this class of jobs [all].
+  --timeit-header       add header for timing information [none].
+  --random-seed=RANDOM_SEED
+                        random seed to initialize number generator with
+                        [none].
+  -I FILE, --stdin=FILE
+                        file to read stdin from [default = stdin].
+  -L FILE, --log=FILE   file with logging information [default = stdout].
+  -E FILE, --error=FILE
+                        file with error information [default = stderr].
+  -S FILE, --stdout=FILE
+                        file where output is to go [default = stdout].
+</pre></div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">gtf2gff.py - convert a transcript set to genomic features</a><ul>
+<li><a class="reference internal" href="#purpose">Purpose</a><ul>
+<li><a class="reference internal" href="#genome">Genome</a></li>
+<li><a class="reference internal" href="#genes">Genes</a></li>
+<li><a class="reference internal" href="#territories">Territories</a></li>
+<li><a class="reference internal" href="#tssterritories">TSSTerritories</a></li>
+<li><a class="reference internal" href="#great-domains">GREAT-Domains</a></li>
+<li><a class="reference internal" href="#exons">Exons</a></li>
+<li><a class="reference internal" href="#promoters">Promoters</a></li>
+<li><a class="reference internal" href="#regulons">Regulons</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#usage">Usage</a></li>
+<li><a class="reference internal" href="#command-line-options">Command line options</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="gff_decorate.html"
+                        title="previous chapter">gff_decorate.py - decorate genomic windows</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="gtf2gtf.html"
+                        title="next chapter">gtf2gtf.py - manipulate transcript models</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/scripts/gtf2gff.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="gtf2gtf.html" title="gtf2gtf.py - manipulate transcript models"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="gff_decorate.html" title="gff_decorate.py - decorate genomic windows"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../scripts.html" >Scripts</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

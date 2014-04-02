@@ -1,0 +1,240 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>PipelineUtilities.py - helper functions for CGAT pipelines &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="Modules" href="../modules.html" />
+    <link rel="next" title="RLE.py - a simple run length encoder" href="../modules/RLE.html" />
+    <link rel="prev" title="PipelineUCSC.py - utility functions for accessing UCSC data" href="PipelineUCSC.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../modules/RLE.html" title="RLE.py - a simple run length encoder"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="PipelineUCSC.html" title="PipelineUCSC.py - utility functions for accessing UCSC data"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" accesskey="U">Modules</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-PipelineUtilities"></span><div class="section" id="pipelineutilities-py-helper-functions-for-cgat-pipelines">
+<h1>PipelineUtilities.py - helper functions for CGAT pipelines<a class="headerlink" href="#pipelineutilities-py-helper-functions-for-cgat-pipelines" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Steve Sansom</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id$</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Python</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="purpose">
+<h2>Purpose<a class="headerlink" href="#purpose" title="Permalink to this headline">¶</a></h2>
+<p>To make excuting database commands and files IO as trivial and (TODO: robust) as possible possible. Before changing the default behaviour of any of these functions please discuss!. Better to add new functions and then deprecate.</p>
+</div>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>Type:</p>
+<div class="highlight-python"><div class="highlight"><pre>python &lt;script_name&gt;.py --help
+</pre></div>
+</div>
+<p>for command line help.</p>
+</div>
+<div class="section" id="code">
+<h2>Code<a class="headerlink" href="#code" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="PipelineUtilities.db_execute">
+<tt class="descclassname">PipelineUtilities.</tt><tt class="descname">db_execute</tt><span class="sig-paren">(</span><em>cc</em>, <em>statements</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineUtilities.db_execute" title="Permalink to this definition">¶</a></dt>
+<dd><p>excute a statement or statements against a cursor</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineUtilities.execute">
+<tt class="descclassname">PipelineUtilities.</tt><tt class="descname">execute</tt><span class="sig-paren">(</span><em>queries</em>, <em>database='csvdb'</em>, <em>attach=False</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineUtilities.execute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Execute a statement or a  list of statements (sequentially)</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineUtilities.fetch">
+<tt class="descclassname">PipelineUtilities.</tt><tt class="descname">fetch</tt><span class="sig-paren">(</span><em>query</em>, <em>database='csvdb'</em>, <em>attach=False</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineUtilities.fetch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fetch all query results and return</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineUtilities.fetch_with_names">
+<tt class="descclassname">PipelineUtilities.</tt><tt class="descname">fetch_with_names</tt><span class="sig-paren">(</span><em>query</em>, <em>database='csvdb'</em>, <em>attach=False</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineUtilities.fetch_with_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fetch query results and returns them as an array of row arrays, 
+in which the first entry is an array of the field names</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineUtilities.fetch_DataFrame">
+<tt class="descclassname">PipelineUtilities.</tt><tt class="descname">fetch_DataFrame</tt><span class="sig-paren">(</span><em>query</em>, <em>database='csvdb'</em>, <em>attach=False</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineUtilities.fetch_DataFrame" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fetch query results and returns them as a pandas dataframe</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineUtilities.write">
+<tt class="descclassname">PipelineUtilities.</tt><tt class="descname">write</tt><span class="sig-paren">(</span><em>outfile</em>, <em>lines</em>, <em>header=False</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineUtilities.write" title="Permalink to this definition">¶</a></dt>
+<dd><p>expects [[[line1-field1],[line1-field2 ] ],... ]</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineUtilities.biomart_iterator">
+<tt class="descclassname">PipelineUtilities.</tt><tt class="descname">biomart_iterator</tt><span class="sig-paren">(</span><em>attributes</em>, <em>host</em>, <em>biomart</em>, <em>dataset</em>, <em>filters=None</em>, <em>values=None</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineUtilities.biomart_iterator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Modified from pipeline biomart...</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineUtilities.txtToDict">
+<tt class="descclassname">PipelineUtilities.</tt><tt class="descname">txtToDict</tt><span class="sig-paren">(</span><em>filename</em>, <em>key=None</em>, <em>sep='\t'</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineUtilities.txtToDict" title="Permalink to this definition">¶</a></dt>
+<dd><p>make a dictionary from a text file keyed 
+on the specified column</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineUtilities.save">
+<tt class="descclassname">PipelineUtilities.</tt><tt class="descname">save</tt><span class="sig-paren">(</span><em>file_name</em>, <em>obj</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineUtilities.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>dump a python object to a file using pickle</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="PipelineUtilities.load">
+<tt class="descclassname">PipelineUtilities.</tt><tt class="descname">load</tt><span class="sig-paren">(</span><em>file_name</em><span class="sig-paren">)</span><a class="headerlink" href="#PipelineUtilities.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>retrieve a pickled python object from a file</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">PipelineUtilities.py - helper functions for CGAT pipelines</a><ul>
+<li><a class="reference internal" href="#purpose">Purpose</a></li>
+<li><a class="reference internal" href="#usage">Usage</a></li>
+<li><a class="reference internal" href="#code">Code</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="PipelineUCSC.html"
+                        title="previous chapter">PipelineUCSC.py - utility functions for accessing UCSC data</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="../modules/RLE.html"
+                        title="next chapter">RLE.py - a simple run length encoder</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/pipelinemodules/PipelineUtilities.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../modules/RLE.html" title="RLE.py - a simple run length encoder"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="PipelineUCSC.html" title="PipelineUCSC.py - utility functions for accessing UCSC data"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" >Modules</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

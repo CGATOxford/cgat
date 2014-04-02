@@ -1,0 +1,393 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Exons.py - A library to read/write/manage exons. &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="Modules" href="../modules.html" />
+    <link rel="next" title="Orthologs.py - tools to deal with Leo’s orthology pipeline." href="Orthologs.html" />
+    <link rel="prev" title="MatrixTools.py -" href="MatrixTools.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="Orthologs.html" title="Orthologs.py - tools to deal with Leo’s orthology pipeline."
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="MatrixTools.html" title="MatrixTools.py -"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" accesskey="U">Modules</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-Exons"></span><div class="section" id="exons-py-a-library-to-read-write-manage-exons">
+<h1>Exons.py - A library to read/write/manage exons.<a class="headerlink" href="#exons-py-a-library-to-read-write-manage-exons" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id$</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Python</td>
+</tr>
+</tbody>
+</table>
+<dl class="class">
+<dt id="Exons.Exon">
+<em class="property">class </em><tt class="descclassname">Exons.</tt><tt class="descname">Exon</tt><a class="headerlink" href="#Exons.Exon" title="Permalink to this definition">¶</a></dt>
+<dd><p>class for exons.</p>
+<p>contains info about the genomic location of an exon
+and its location within a peptide sequence.</p>
+<p>The field mAlignment is set optionally.</p>
+<dl class="method">
+<dt id="Exons.Exon.Read">
+<tt class="descname">Read</tt><span class="sig-paren">(</span><em>line</em>, <em>contig_sizes={}</em>, <em>format='exons'</em>, <em>extract_id=None</em>, <em>converter=None</em><span class="sig-paren">)</span><a class="headerlink" href="#Exons.Exon.Read" title="Permalink to this definition">¶</a></dt>
+<dd><p>read exon from tab-separated line.</p>
+<p>extract_id is a regular expression object to extract the identifier from
+the identifier column.</p>
+<p>if converter is given, it is used to convert to
+zero-based open-closed both strand coordinates.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Exons.Exon.Merge">
+<tt class="descname">Merge</tt><span class="sig-paren">(</span><em>other</em><span class="sig-paren">)</span><a class="headerlink" href="#Exons.Exon.Merge" title="Permalink to this definition">¶</a></dt>
+<dd><p>Merge this exon with another (adjacent and preceeding) exon.</p>
+<p>Do not merge if the distance between exons is not divisible by 3.
+Merging of two exons invalidated peptide coordinates for all following
+exons. These need to be updated.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Exons.Exon.InvertGenomicCoordinates">
+<tt class="descname">InvertGenomicCoordinates</tt><span class="sig-paren">(</span><em>lgenome</em><span class="sig-paren">)</span><a class="headerlink" href="#Exons.Exon.InvertGenomicCoordinates" title="Permalink to this definition">¶</a></dt>
+<dd><p>invert genomic alignment on sequence.</p>
+<p>Negative strand is calculated from the other end.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="Exons.UpdatePeptideCoordinates">
+<tt class="descclassname">Exons.</tt><tt class="descname">UpdatePeptideCoordinates</tt><span class="sig-paren">(</span><em>exons</em><span class="sig-paren">)</span><a class="headerlink" href="#Exons.UpdatePeptideCoordinates" title="Permalink to this definition">¶</a></dt>
+<dd><p>updates peptides coordinates for a list of exons.</p>
+<p>Exons have to  be sorted.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Exons.PostProcessExons">
+<tt class="descclassname">Exons.</tt><tt class="descname">PostProcessExons</tt><span class="sig-paren">(</span><em>all_exons</em>, <em>do_invert=None</em>, <em>remove_utr=None</em>, <em>filter=None</em>, <em>reset=False</em>, <em>require_increase=False</em>, <em>no_invert=False</em>, <em>contig_sizes={}</em>, <em>from_zero=False</em>, <em>delete_missing=False</em>, <em>set_peptide_coordinates=False</em>, <em>set_rank=False</em><span class="sig-paren">)</span><a class="headerlink" href="#Exons.PostProcessExons" title="Permalink to this definition">¶</a></dt>
+<dd><p>do post-processing of exons</p>
+<p>exons is a dictionary of lists of exons.</p>
+<p>Exons are sorted by mPeptideFrom.</p>
+<p>Operations include:</p>
+<p>-invert: sort out forward/reverse strand coordinates</p>
+<dl class="docutils">
+<dt>-set_peptide_coordinates: sets the peptide coordinates of</dt>
+<dd>exons.</dd>
+</dl>
+<p>-set-rank: set rank of exons</p>
+<p>-remove_utr: remove any utr (needs peptide coordinates)</p>
+<dl class="docutils">
+<dt>-delete_missing: if set set true, exons on contigs not in contig_sizes</dt>
+<dd>will be deleted.</dd>
+</dl>
+<p>-from_zero: exon genomic coordinates start at 0</p>
+<p>-reset: exon genomic coordinates start 0</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Exons.GetExonBoundariesFromTable">
+<tt class="descclassname">Exons.</tt><tt class="descname">GetExonBoundariesFromTable</tt><span class="sig-paren">(</span><em>dbhandle</em>, <em>table_name_predictions='predictions'</em>, <em>table_name_exons='exons'</em>, <em>only_good=False</em>, <em>do_invert=None</em>, <em>remove_utr=None</em>, <em>filter=None</em>, <em>reset=False</em>, <em>require_increase=False</em>, <em>contig_sizes={}</em>, <em>prediction_ids=None</em>, <em>table_name_quality='quality'</em>, <em>table_name_redundant='redundant'</em>, <em>non_redundant_filter=False</em>, <em>schema=None</em>, <em>quality_filter=None</em>, <em>from_zero=False</em>, <em>delete_missing=False</em><span class="sig-paren">)</span><a class="headerlink" href="#Exons.GetExonBoundariesFromTable" title="Permalink to this definition">¶</a></dt>
+<dd><p>get exon boundaries from table.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Exons.CountNumExons">
+<tt class="descclassname">Exons.</tt><tt class="descname">CountNumExons</tt><span class="sig-paren">(</span><em>exons</em><span class="sig-paren">)</span><a class="headerlink" href="#Exons.CountNumExons" title="Permalink to this definition">¶</a></dt>
+<dd><p>return hash with number of exons per entry.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Exons.SetRankToPositionFlag">
+<tt class="descclassname">Exons.</tt><tt class="descname">SetRankToPositionFlag</tt><span class="sig-paren">(</span><em>exons</em><span class="sig-paren">)</span><a class="headerlink" href="#Exons.SetRankToPositionFlag" title="Permalink to this definition">¶</a></dt>
+<dd><p>set rank for all exons.</p>
+<p>Set rank to
+1 : if it is first exon,
+-1: if it is the last exon (single exon genes are -1)
+0 : if it is an internal exon.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Exons.ReadExonBoundaries">
+<tt class="descclassname">Exons.</tt><tt class="descname">ReadExonBoundaries</tt><span class="sig-paren">(</span><em>file</em>, <em>do_invert=None</em>, <em>remove_utr=None</em>, <em>filter=None</em>, <em>reset=False</em>, <em>require_increase=False</em>, <em>no_invert=False</em>, <em>contig_sizes={}</em>, <em>converter=None</em>, <em>from_zero=False</em>, <em>delete_missing=False</em>, <em>format='exons'</em>, <em>gtf_extract_id=None</em><span class="sig-paren">)</span><a class="headerlink" href="#Exons.ReadExonBoundaries" title="Permalink to this definition">¶</a></dt>
+<dd><p>read exons boundaries from tab separated file.</p>
+<p>if remove_utr is set, the UTR of the first/last exon is removed.</p>
+<p>if reset is set, then the genomic part is moved so that it starts at 1.
+if require_increase is set, then exons are sorted in increasing order.</p>
+<p>If do_invert is set: negative strand coordinates are converted to positive
+strand coordinates</p>
+<p>if no_invert is set: coordinates are kept as they are.</p>
+<p>if from_zero is set: coordinates are mapped from 0. Thus reverse
+strand coordinates will be negative.</p>
+<p>if delete_missing is True and sbjct-token is not in contig_sizes
+but the exon needs to be inverted: delete transcript.</p>
+<p>The exon file format is tab-separated and can be of the two formats:</p>
+<p>format=&#8221;exons&#8221;:
+id, contig, strand, frame, rank, peptide_from, peptide_to, genome_from, genome_to</p>
+<p>format = &#8220;gtf&#8221;:
+contig, ignored, ignored, genome_from, genome_to, ignored, strand, frame, id</p>
+<p>if converter is given, use it to convert to forward/reverse strand coordinates.</p>
+<p>gtg_extract_id: regular expression object to extract id from id column.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Exons.Alignment2Exons">
+<tt class="descclassname">Exons.</tt><tt class="descname">Alignment2Exons</tt><span class="sig-paren">(</span><em>alignment</em>, <em>query_from=0</em>, <em>sbjct_from=0</em>, <em>add_stop_codon=1</em><span class="sig-paren">)</span><a class="headerlink" href="#Exons.Alignment2Exons" title="Permalink to this definition">¶</a></dt>
+<dd><p>convert a Peptide2DNA alignment to exon boundaries.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Exons.Exons2Alignment">
+<tt class="descclassname">Exons.</tt><tt class="descname">Exons2Alignment</tt><span class="sig-paren">(</span><em>exons</em><span class="sig-paren">)</span><a class="headerlink" href="#Exons.Exons2Alignment" title="Permalink to this definition">¶</a></dt>
+<dd><p>build alignment string from a (sorted) list of exons.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Exons.RemoveRedundantEntries">
+<tt class="descclassname">Exons.</tt><tt class="descname">RemoveRedundantEntries</tt><span class="sig-paren">(</span><em>l</em><span class="sig-paren">)</span><a class="headerlink" href="#Exons.RemoveRedundantEntries" title="Permalink to this definition">¶</a></dt>
+<dd><p>remove redundant entries (and 0s) from list.</p>
+<p>One liner?</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Exons.CompareGeneStructures">
+<tt class="descclassname">Exons.</tt><tt class="descname">CompareGeneStructures</tt><span class="sig-paren">(</span><em>xcmp_exons</em>, <em>ref_exons</em>, <em>map_ref2cmp=None</em>, <em>cmp_sequence=None</em>, <em>ref_sequence=None</em>, <em>threshold_min_pide=0</em>, <em>threshold_slipping_exon_boundary=9</em>, <em>map_cmp2ref=None</em>, <em>threshold_terminal_exon=15</em><span class="sig-paren">)</span><a class="headerlink" href="#Exons.CompareGeneStructures" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compare two gene structures.</p>
+<p>This function is useful for comparing the exon boundaries of
+a predicted peptide with the exon boundaries of the query peptide.</p>
+<p>cmp_exons are exons for the gene to test.
+ref_exons are exons from the reference.</p>
+<p>Exon boundaries are already mapped to the peptide for the
+reference.</p>
+<p>map_ref2cmp: Alignment of protein sequences for cmp and ref.
+map_cmp2ref: Alignment of cmp to ref. If given, mapping is done from cmp to ref.
+Invalid exon boundaries can be set to -1.</p>
+<dl class="docutils">
+<dt>threshold_terminal_exon:</dt>
+<dd>Disregard terminal exons for counting missed boundaries, if they are
+maximum x nucleotides long.</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="Exons.MapExons">
+<tt class="descclassname">Exons.</tt><tt class="descname">MapExons</tt><span class="sig-paren">(</span><em>exons</em>, <em>map_a2b</em><span class="sig-paren">)</span><a class="headerlink" href="#Exons.MapExons" title="Permalink to this definition">¶</a></dt>
+<dd><p>map peptide coordinates of exons with map.</p>
+<p>returns a list of mapped exons.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Exons.CountMissedBoundaries">
+<tt class="descclassname">Exons.</tt><tt class="descname">CountMissedBoundaries</tt><span class="sig-paren">(</span><em>cmp_boundaries</em>, <em>reference_boundaries</em>, <em>max_slippage=9</em>, <em>min_from=0</em>, <em>max_to=0</em><span class="sig-paren">)</span><a class="headerlink" href="#Exons.CountMissedBoundaries" title="Permalink to this definition">¶</a></dt>
+<dd><p>count missed boundaries comparing cmp to ref.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Exons.GetExonsRange">
+<tt class="descclassname">Exons.</tt><tt class="descname">GetExonsRange</tt><span class="sig-paren">(</span><em>exons</em>, <em>first</em>, <em>last</em>, <em>full=True</em>, <em>min_overlap=0</em>, <em>min_exon_size=0</em><span class="sig-paren">)</span><a class="headerlink" href="#Exons.GetExonsRange" title="Permalink to this definition">¶</a></dt>
+<dd><p>get exons in range (first:last) (peptide coordinates).</p>
+<p>Set full to False, if you don&#8217;t require full coverage.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Exons.ClusterByExonIdentity">
+<tt class="descclassname">Exons.</tt><tt class="descname">ClusterByExonIdentity</tt><span class="sig-paren">(</span><em>exons</em>, <em>max_terminal_num_exons=3</em>, <em>min_terminal_exon_coverage=0.0</em>, <em>max_slippage=0</em>, <em>loglevel=0</em><span class="sig-paren">)</span><a class="headerlink" href="#Exons.ClusterByExonIdentity" title="Permalink to this definition">¶</a></dt>
+<dd><p>build clusters of transcripts with identical exons.</p>
+<p>The boundaries in the first/last exon can vary.</p>
+<p>Returns two maps map_cluster2transcripts and
+map_transcript2cluster</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Exons.ClusterByExonOverlap">
+<tt class="descclassname">Exons.</tt><tt class="descname">ClusterByExonOverlap</tt><span class="sig-paren">(</span><em>exons</em>, <em>min_overlap=0</em>, <em>min_min_coverage=0</em>, <em>min_max_coverage=0</em>, <em>loglevel=0</em><span class="sig-paren">)</span><a class="headerlink" href="#Exons.ClusterByExonOverlap" title="Permalink to this definition">¶</a></dt>
+<dd><p>build clusters of transcripts with overlapping exons.</p>
+<p>Exons need not be identical.</p>
+<p>Returns two maps map_cluster2transcripts and
+map_transcript2cluster</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Exons.CheckOverlap">
+<tt class="descclassname">Exons.</tt><tt class="descname">CheckOverlap</tt><span class="sig-paren">(</span><em>exons1</em>, <em>exons2</em>, <em>min_overlap=1</em><span class="sig-paren">)</span><a class="headerlink" href="#Exons.CheckOverlap" title="Permalink to this definition">¶</a></dt>
+<dd><p>check if exons overlap.</p>
+<p>(does not check chromosome and strand.)</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Exons.CheckCoverage">
+<tt class="descclassname">Exons.</tt><tt class="descname">CheckCoverage</tt><span class="sig-paren">(</span><em>exons1</em>, <em>exons2</em>, <em>max_terminal_num_exons=3</em>, <em>min_terminal_exon_coverage=0.0</em>, <em>max_slippage=0</em><span class="sig-paren">)</span><a class="headerlink" href="#Exons.CheckCoverage" title="Permalink to this definition">¶</a></dt>
+<dd><p>check if one set of exons covers the other.</p>
+<p>Note: does not check chromosome and strand, just genomic coordinates.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Exons.CheckContainedAinB">
+<tt class="descclassname">Exons.</tt><tt class="descname">CheckContainedAinB</tt><span class="sig-paren">(</span><em>exons1</em>, <em>exons2</em>, <em>min_terminal_exon_coverage=0.0</em>, <em>loglevel=0</em><span class="sig-paren">)</span><a class="headerlink" href="#Exons.CheckContainedAinB" title="Permalink to this definition">¶</a></dt>
+<dd><p>check if all exons in exons1 are contained in exons2.</p>
+<p>Note: does not check contig and strand.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Exons.CheckCoverageAinB">
+<tt class="descclassname">Exons.</tt><tt class="descname">CheckCoverageAinB</tt><span class="sig-paren">(</span><em>exons1</em>, <em>exons2</em>, <em>min_terminal_num_exons=3</em>, <em>min_terminal_exon_coverage=0.0</em>, <em>max_slippage=0</em>, <em>loglevel=0</em><span class="sig-paren">)</span><a class="headerlink" href="#Exons.CheckCoverageAinB" title="Permalink to this definition">¶</a></dt>
+<dd><p>check if exons1 are all in exons2</p>
+<p>Note: does not check contig and strand.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Exons.GetPeptideLengths">
+<tt class="descclassname">Exons.</tt><tt class="descname">GetPeptideLengths</tt><span class="sig-paren">(</span><em>exons</em><span class="sig-paren">)</span><a class="headerlink" href="#Exons.GetPeptideLengths" title="Permalink to this definition">¶</a></dt>
+<dd><p>for all exons get maximum length in coding nucleotides.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Exons.GetGenomeLengths">
+<tt class="descclassname">Exons.</tt><tt class="descname">GetGenomeLengths</tt><span class="sig-paren">(</span><em>exons</em><span class="sig-paren">)</span><a class="headerlink" href="#Exons.GetGenomeLengths" title="Permalink to this definition">¶</a></dt>
+<dd><p>for all exons get maximum nucleotide.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Exons.CalculateStats">
+<tt class="descclassname">Exons.</tt><tt class="descname">CalculateStats</tt><span class="sig-paren">(</span><em>exons</em><span class="sig-paren">)</span><a class="headerlink" href="#Exons.CalculateStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>calculate some statistics for all exons.</p>
+<p>minimum/maximum intron/exon length, number of exons
+gene length</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="Exons.MatchExons">
+<tt class="descclassname">Exons.</tt><tt class="descname">MatchExons</tt><span class="sig-paren">(</span><em>map_a2b</em>, <em>in_exons1</em>, <em>in_exons2</em>, <em>threshold_slipping_boundary=9</em><span class="sig-paren">)</span><a class="headerlink" href="#Exons.MatchExons" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns a list of overlapping exons (mapped via map_a2b).</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="MatrixTools.html"
+                        title="previous chapter">MatrixTools.py -</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="Orthologs.html"
+                        title="next chapter">Orthologs.py - tools to deal with Leo&#8217;s orthology pipeline.</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/modules/Exons.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="Orthologs.html" title="Orthologs.py - tools to deal with Leo’s orthology pipeline."
+             >next</a> |</li>
+        <li class="right" >
+          <a href="MatrixTools.html" title="MatrixTools.py -"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../modules.html" >Modules</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>

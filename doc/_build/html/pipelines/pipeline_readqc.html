@@ -1,0 +1,314 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>ReadQc pipeline &mdash; CGAT  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/cgat.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/sorttable.js"></script>
+    <script type="text/javascript" src="../_static/jquery.min.js"></script>
+    <script type="text/javascript" src="../_static/jquery.dataTables.min.js"></script>
+    <link rel="top" title="CGAT  documentation" href="../index.html" />
+    <link rel="up" title="NGS Pipelines" href="../CGATPipelines.html" />
+    <link rel="next" title="Read mapping pipeline" href="pipeline_mapping.html" />
+    <link rel="prev" title="Transfac match pipeline" href="pipeline_transfacmatch.html" />
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').dataTable({
+              "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+     
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pipeline_mapping.html" title="Read mapping pipeline"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="pipeline_transfacmatch.html" title="Transfac match pipeline"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../Pipelines.html" >CGAT Pipelines</a> &raquo;</li>
+          <li><a href="../CGATPipelines.html" accesskey="U">NGS Pipelines</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <span class="target" id="module-pipeline_readqc"></span><div class="section" id="readqc-pipeline">
+<h1>ReadQc pipeline<a class="headerlink" href="#readqc-pipeline" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">David Sims</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Release:</th><td class="field-body">$Id$</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Date:</th><td class="field-body">April 02, 2014</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Tags:</th><td class="field-body">Python</td>
+</tr>
+</tbody>
+</table>
+<p>The readqc pipeline imports unmapped reads from one or more
+fastq and performs basic quality control steps:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>per position quality</li>
+<li>per read quality</li>
+<li>duplicates</li>
+</ol>
+</div></blockquote>
+<p>For further details see <a class="reference external" href="http://www.bioinformatics.bbsrc.ac.uk/projects/fastqc/">http://www.bioinformatics.bbsrc.ac.uk/projects/fastqc/</a></p>
+<p>Individual tasks are enabled in the configuration file.</p>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>See <a class="reference internal" href="../UsingPipelines.html#pipelinesettingup"><em>Setting up a pipeline</em></a> and <a class="reference internal" href="../UsingPipelines.html#pipelinerunning"><em>Running a pipeline</em></a> on general information how to use CGAT pipelines.</p>
+<div class="section" id="configuration">
+<h3>Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">¶</a></h3>
+<p>No general configuration required.</p>
+</div>
+<div class="section" id="input">
+<h3>Input<a class="headerlink" href="#input" title="Permalink to this headline">¶</a></h3>
+<p>Reads are imported by placing files or linking to files in the <a class="reference internal" href="../make_pipelines/Gpipe.html#term-working-directory"><em class="xref std std-term">working directory</em></a>.</p>
+<p>The default file format assumes the following convention:</p>
+<blockquote>
+<div>&lt;sample&gt;-&lt;condition&gt;-&lt;replicate&gt;.&lt;suffix&gt;</div></blockquote>
+<p><tt class="docutils literal"><span class="pre">sample</span></tt> and <tt class="docutils literal"><span class="pre">condition</span></tt> make up an <a class="reference internal" href="../glossary.html#term-experiment"><em class="xref std std-term">experiment</em></a>, while <tt class="docutils literal"><span class="pre">replicate</span></tt> denotes
+the <a class="reference internal" href="../glossary.html#term-replicate"><em class="xref std std-term">replicate</em></a> within an <a class="reference internal" href="../glossary.html#term-experiment"><em class="xref std std-term">experiment</em></a>. The <tt class="docutils literal"><span class="pre">suffix</span></tt> determines the file type.
+The following suffixes/file types are possible:</p>
+<dl class="docutils">
+<dt>sra</dt>
+<dd>Short-Read Archive format. Reads will be extracted using the <tt class="file docutils literal"><span class="pre">fastq-dump</span></tt> tool.</dd>
+<dt>fastq.gz</dt>
+<dd>Single-end reads in fastq format.</dd>
+<dt>fastq.1.gz, fastq2.2.gz</dt>
+<dd>Paired-end reads in fastq format. The two fastq files must be sorted by read-pair.</dd>
+</dl>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Quality scores need to be of the same scale for all input files. Thus it might be
+difficult to mix different formats.</p>
+</div>
+</div>
+<div class="section" id="requirements">
+<h3>Requirements<a class="headerlink" href="#requirements" title="Permalink to this headline">¶</a></h3>
+<p>On top of the default CGAT setup, the pipeline requires the following software to be in the 
+path:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="23%" />
+<col width="22%" />
+<col width="55%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><em>Program</em></td>
+<td><em>Version</em></td>
+<td><em>Purpose</em></td>
+</tr>
+<tr class="row-even"><td>fastqc</td>
+<td>&gt;=0.9.0</td>
+<td>read quality control</td>
+</tr>
+<tr class="row-odd"><td>sra-tools</td>
+<td>&nbsp;</td>
+<td>extracting reads from .sra files</td>
+</tr>
+<tr class="row-even"><td>picard</td>
+<td>&gt;=1.38</td>
+<td><dl class="first last docutils">
+<dt>bam/sam files. The .jar files need to be in your</dt>
+<dd>CLASSPATH environment variable.</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section" id="pipeline-output">
+<h2>Pipeline output<a class="headerlink" href="#pipeline-output" title="Permalink to this headline">¶</a></h2>
+<p>The major output is a set of HTML pages and plots reporting on the quality of the sequence archive</p>
+</div>
+<div class="section" id="example">
+<h2>Example<a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h2>
+<p>Example data is available at <a class="reference external" href="http://www.cgat.org/~andreas/sample_data/pipeline_readqc.tgz">http://www.cgat.org/~andreas/sample_data/pipeline_readqc.tgz</a>.
+To run the example, simply unpack and untar:</p>
+<div class="highlight-python"><div class="highlight"><pre>wget http://www.cgat.org/~andreas/sample_data/pipeline_readqc.tgz
+tar -xvzf pipeline_readqc.tgz
+cd pipeline_readqc
+python &lt;srcdir&gt;/pipeline_readqc.py make full
+</pre></div>
+</div>
+</div>
+<div class="section" id="code">
+<h2>Code<a class="headerlink" href="#code" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pipeline_readqc.runFastqc">
+<tt class="descclassname">pipeline_readqc.</tt><tt class="descname">runFastqc</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_readqc.runFastqc" title="Permalink to this definition">¶</a></dt>
+<dd><p>convert sra files to fastq and check mapping qualities are in solexa format. 
+Perform quality control checks on reads from .fastq files.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_readqc.loadFastqc">
+<tt class="descclassname">pipeline_readqc.</tt><tt class="descname">loadFastqc</tt><span class="sig-paren">(</span><em>infile</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_readqc.loadFastqc" title="Permalink to this definition">¶</a></dt>
+<dd><p>load FASTQC stats.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_readqc.collectFastQCSections">
+<tt class="descclassname">pipeline_readqc.</tt><tt class="descname">collectFastQCSections</tt><span class="sig-paren">(</span><em>infiles</em>, <em>section</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_readqc.collectFastQCSections" title="Permalink to this definition">¶</a></dt>
+<dd><p>iterate over all fastqc files and extract a particular section.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_readqc.buildFastQCSummaryStatus">
+<tt class="descclassname">pipeline_readqc.</tt><tt class="descname">buildFastQCSummaryStatus</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_readqc.buildFastQCSummaryStatus" title="Permalink to this definition">¶</a></dt>
+<dd><p>load fastqc status summaries into a single table.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_readqc.buildFastQCSummaryBasicStatistics">
+<tt class="descclassname">pipeline_readqc.</tt><tt class="descname">buildFastQCSummaryBasicStatistics</tt><span class="sig-paren">(</span><em>infiles</em>, <em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_readqc.buildFastQCSummaryBasicStatistics" title="Permalink to this definition">¶</a></dt>
+<dd><p>load fastqc summaries into a single table.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_readqc.publish">
+<tt class="descclassname">pipeline_readqc.</tt><tt class="descname">publish</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_readqc.publish" title="Permalink to this definition">¶</a></dt>
+<dd><p>publish files.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_readqc.build_report">
+<tt class="descclassname">pipeline_readqc.</tt><tt class="descname">build_report</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_readqc.build_report" title="Permalink to this definition">¶</a></dt>
+<dd><p>build report from scratch.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pipeline_readqc.update_report">
+<tt class="descclassname">pipeline_readqc.</tt><tt class="descname">update_report</tt><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pipeline_readqc.update_report" title="Permalink to this definition">¶</a></dt>
+<dd><p>update report.</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/cgat_logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">ReadQc pipeline</a><ul>
+<li><a class="reference internal" href="#usage">Usage</a><ul>
+<li><a class="reference internal" href="#configuration">Configuration</a></li>
+<li><a class="reference internal" href="#input">Input</a></li>
+<li><a class="reference internal" href="#requirements">Requirements</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#pipeline-output">Pipeline output</a></li>
+<li><a class="reference internal" href="#example">Example</a></li>
+<li><a class="reference internal" href="#code">Code</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="pipeline_transfacmatch.html"
+                        title="previous chapter">Transfac match pipeline</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="pipeline_mapping.html"
+                        title="next chapter">Read mapping pipeline</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/pipelines/pipeline_readqc.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pipeline_mapping.html" title="Read mapping pipeline"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="pipeline_transfacmatch.html" title="Transfac match pipeline"
+             >previous</a> |</li>
+        <li><a href="../index.html">CGAT  documentation</a> &raquo;</li>
+          <li><a href="../Pipelines.html" >CGAT Pipelines</a> &raquo;</li>
+          <li><a href="../CGATPipelines.html" >NGS Pipelines</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011, Andreas Heger.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3a0.
+    </div>
+  </body>
+</html>
