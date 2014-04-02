@@ -733,7 +733,7 @@ def callPeaksWithMACS(infile, outfile):
     track = P.snip(infile, ".call.bam")
 
     controls = getControl(Sample(track))
-    controlfile = getControlFile(controls, "%s.call.bam")
+    controlfile = getControlFile(Sample(track), controls, "%s.call.bam")
 
     PipelinePeakcalling.runMACS(infile, outfile, controlfile)
 
@@ -830,7 +830,7 @@ def loadMACSSummaryFDR(infile, outfile):
 ######################################################################
 ######################################################################
 
-@follows(mkdir("macs2.dir") ), normalizeBAM)
+@follows(mkdir("macs2.dir"), normalizeBAM)
 @files([("%s.call.bam" % (x.asFile()),
          "macs2.dir/%s.macs2" % x.asFile()) for x in TRACKS])
 def callPeaksWithMACS2(infile, outfile):
@@ -838,7 +838,7 @@ def callPeaksWithMACS2(infile, outfile):
     output bed files are compressed and indexed.
     '''
     track = P.snip(infile, ".call.bam")
-    controls = getControl(Sample(track))
+    controls = getControl(Sample(track), suffix=".call.bam" )
     controlfile = getControlFile( Sample(track), controls, "%s.call.bam")
     PipelinePeakcalling.runMACS2(infile, outfile, controlfile)
 
@@ -906,7 +906,7 @@ def callPeaksWithZinba(infiles, outfile):
     infile, controlfile = infiles
 
     controls = getControl(Sample(track))
-    controlfile = getControlFile(controls, "%s.call.bam")
+    controlfile = getControlFile( Sample(track), controls, "%s.call.bam")
 
     if os.path.exists(os.path.join(outfile + "_files", outfile + ".model")):
         PipelinePeakcalling.runZinba(infile,
@@ -973,7 +973,7 @@ def callBroaderPeaksWithSICER(infile, outfile):
     track = P.snip(infile, ".call.bam")
 
     controls = getControl(Sample(track))
-    controlfile = getControlFile(controls, "%s.call.bam")
+    controlfile = getControlFile( Sample(track), controls, "%s.call.bam")
     PipelinePeakcalling.runSICER(infile, outfile, controlfile, "broad")
 
 ######################################################################
@@ -1025,7 +1025,7 @@ def callPeaksWithPeakRanger(infile, outfile):
     '''run PeakRanger Ranger for peak detection.'''
     track = P.snip(infile, ".call.bam")
     controls = getControl(Sample(track))
-    controlfile = getControlFile(controls, "%s.call.bam")
+    controlfile = getControlFile( Sample(track), controls, "%s.call.bam")
     PipelinePeakcalling.runPeakRanger(infile, outfile, controlfile)
 
 
@@ -1073,7 +1073,7 @@ def callPeaksWithPeakRangerCCAT(infile, outfile):
     '''run Peak Ranger CCAT for broad peak detection.'''
     track = P.snip(infile, ".call.bam")
     controls = getControl(Sample(track))
-    controlfile = getControlFile(controls, "%s.call.bam")
+    controlfile = getControlFile(Sample(track), controls, "%s.call.bam")
     PipelinePeakcalling.runPeakRangerCCAT(infile, outfile, controlfile)
 
 ##########################################################
@@ -1134,7 +1134,7 @@ def buildBroadPeakBedgraphFiles(infiles, outfile):
         remove_background = "true"
         track = P.snip(infile, ".call.bam")
         controls = getControl(Sample(track))
-        controlfile = getControlFile(controls, "%s.call.bam")
+        controlfile = getControlFile(Sample(track), controls, "%s.call.bam")
         infiles.append(controlfile)
     else:
         remove_background = "false"
@@ -1212,7 +1212,7 @@ def callPeaksWithSPP(infile, outfile):
     '''run SICER for peak detection.'''
     track = P.snip(infile, ".call.bam")
     controls = getControl(Sample(track))
-    controlfile = getControlFile(controls, "%s.call.bam")
+    controlfile = getControlFile(Sample(track), controls, "%s.call.bam")
     PipelinePeakcalling.runSPP(infile, outfile, controlfile)
 
 ############################################################
@@ -1307,7 +1307,7 @@ def callPeaksWithSPPForIDR(infile, outfile):
     '''run SICER for peak detection.'''
     track = P.snip(infile, ".call.bam")
     controls = getControl(Sample(track))
-    controlfile = getControlFile(controls, "%s.call.bam")
+    controlfile = getControlFile(Sample(track), controls, "%s.call.bam")
 
     job_options = "-l mem_free=4G"
 
@@ -1411,7 +1411,7 @@ def callPeaksWithScripture(infile, outfile):
     '''run SICER for peak detection.'''
     track = P.snip(infile, ".call.bam")
     controls = getControl(Sample(track))
-    controlfile = getControlFile(controls, "%s.call.bam")
+    controlfile = getControlFile(Sample(track), controls, "%s.call.bam")
 
     contig_sizes = os.path.join(PARAMS["annotations_dir"],
                                 PARAMS_ANNOTATIONS["interface_contigs"])

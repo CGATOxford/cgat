@@ -271,8 +271,12 @@ def main(argv=None):
     parser.add_option("--action", dest="action", type="choice",
                       choices=("plot", "run"),
                       help="action to perform [default=%default]")
+
     parser.add_option("-s", "--signal-value", dest="signal_value", type="string",
                       help="use either p.value or sig.value as ranking measure [default=%default]")
+
+    parser.add_option("-r", "--overlap-ratio", dest="overlap_ratio", type="int",
+                      help="a value between 0 and 1 that controls how much two peaks have to overlap to be called as the same [default=%default]")
 
     parser.set_defaults(
         action="plot",
