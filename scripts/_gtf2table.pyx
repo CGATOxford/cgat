@@ -222,7 +222,7 @@ class CounterReadCoverage(Counter):
     # to avoid out-of-memory
     max_length = 100000
 
-    def __init__(self, bamfiles, *args, **kwargs ):
+    def __init__(self, bamfiles, *args, minimum_read_quality = 0, **kwargs ):
         Counter.__init__(self, *args, **kwargs )
         if not bamfiles: raise ValueError("supply --bam-file options for readcoverage")
         self.mBamFiles = bamfiles
@@ -329,8 +329,8 @@ class CounterReadOverlap(Counter):
     
     def __init__(self, bamfiles,
                  *args,
-                 minimum_read_quality = 0,
                  weight_multi_mapping = False,
+                 minimum_read_quality = 0,
                  **kwargs ):
         Counter.__init__(self, *args, **kwargs )
         if not bamfiles: 
