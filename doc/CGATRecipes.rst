@@ -15,4 +15,8 @@ would like a use case then please post a request on the `CGAT users group`_ webs
    recipes/lncrna_cpg
    recipes/metagenome_contigs_kmers
 
+:download:`Recipe00 Stripping Bam Files <recipes/Recipe00-SimpleTest.html>`
+:download:`Recipe05 Stripping Bam Files <recipes/Recipe05-StrippingBamFiles.html>`
+
 .. _CGAT users group: https://groups.google.com/forum/?fromgroups#!forum/cgat-user-group
+

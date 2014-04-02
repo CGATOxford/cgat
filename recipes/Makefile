@@ -11,10 +11,10 @@ html: $(HTML)
 # change into working directory
 # link all data files
 # run ipython notebook
-%.html: %
+%.build: %
 	cd $*; \
 	ln -s /ifs/public/cgat/recipes/* .; \
-	runipy --html ../$* *.ipynb >& rebuild.log
+	runipy --template=full --html ../../doc/recipes/$*.html *.ipynb >& $@
 
 clean:
-	rm -f */*.bam */*.bam.bai */*.fastq*
+	rm -f */*.bam */*.bam.bai */*.fastq* */README */Makefile */metrics* */*.log
