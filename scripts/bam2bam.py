@@ -93,15 +93,11 @@ Command line options
 
 import os
 import sys
-import re
-import optparse
-import collections
 import itertools
 import tempfile
 import shutil
 
 import CGAT.Experiment as E
-import CGAT.IOTools as IOTools
 import pysam
 
 try:
@@ -138,15 +134,18 @@ def main(argv=None):
 
     parser.add_option("--strip", dest="strip", type="choice",
                       choices=("sequence", "quality", "match"),
-                      help = "remove parts of the bam-file. Note that stripping the sequence will "
+                      help = "remove parts of the bam-file. Note that "
+                      "stripping the sequence will "
                       "also strip the quality values [%default]")
 
     parser.add_option("--unstrip", dest="unstrip", action="store_true",
                       help="add sequence and quality into bam file [%default]")
 
-    parser.add_option("--filter", dest="filter", action="append", type="choice",
+    parser.add_option("--filter", dest="filter",
+                      action="append", type="choice",
                       choices=('NM', 'CM', 'mapped', 'unique', "non-unique"),
-                      help = "filter bam file. The option denotes the property that is  "
+                      help = "filter bam file. The option denotes "
+                      "the property that is  "
                       "used to determine better match [%default]")
 
     parser.add_option("--reference-bam", dest="reference_bam", type="string",
@@ -156,8 +155,10 @@ def main(argv=None):
                       help="output in sam format [%default]")
 
     parser.add_option("--inplace", dest="inplace", action="store_true",
-                      help="modify bam files in-place. Bam files need to be given "
-                      "as arguments. Temporary bam files are written to /tmp [%default]")
+                      help="modify bam files in-place. Bam files need "
+                      "to be given "
+                      "as arguments. Temporary bam files are written "
+                      "to /tmp [%default]")
 
     parser.add_option("--fastq1", "-1", dest="fastq_pair1", type="string",
                       help="fastq file with read information for first in pair or unpaired [%default]")
