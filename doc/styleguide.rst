@@ -231,8 +231,67 @@ restructured text. For example::
 Writing documentation for scripts
 ---------------------------------
 
-Please follow the example in :doc:`scripts/cgat_script_template` for
-documenting scripts. In addition, please pay attention to the following:
+There is a minimum standard for documentation to maintain clarity of
+tools and code.  The documentation for any given script should follow
+the basic outline in :doc:`scripts/cgat_script_template`. 
+
+Three main headers exist::
+
+  `Purpose`
+  Describe the overall purpose and function of the script and the
+  input and output formats.  This can be extensive and include
+  sub-headers to further describe script functionality.
+  For example::
+    
+    `Purpose`
+    This script takes a :term:`gtf` formatted file and computes meta-gene profiles
+    over various annotations derived from the :term:`gtf` file. 
+
+    A meta-gene profile is an abstract genomic entity over which reads stored in a 
+    :term:`bam` formatted file have been counted. A meta-gene might be an idealized
+    eukaryotic gene (upstream, exonic sequence, downstream) or any other genomic landmark 
+    of interest such as transcription start sites.
+
+  `Usage`
+   Describe example use cases for the script with one or more options.  In addition provide
+   the head of both example input and example output files.
+   For example::
+    
+    `Usage`
+    samtools view example.bam
+
+    READ1    163    1     13040   15      76M     =       13183   219     ...
+    READ1    83     1     13183   7       76M     =       13040   -219    ...
+    READ2    147    1     13207   0       76M     =       13120   -163    ...
+
+    python bam2bed.py example.bam 
+
+    1       13039   13115   READ1     15      +
+    1       13119   13195   READ2     0       +
+    1       13182   13258   READ1     7       -
+    1       13206   13282   READ2     0       -
+
+  `Options`
+  Describe all of the options for the script.  If necessary provide extensive detail of the
+  methods of each option and how they are combined to provide the intended functionality
+  of the script.  This should include all `choice` for options with a verbose description
+  of what that `choice` does.
+  For example::
+
+    `Profiles`
+
+    Different profiles are accessible through the ``--method`` option. Multiple
+    methods can be applied at the same time. While ``upstream`` and ``downstream``
+    typically have a fixed size, the other regions such as ``CDS``, ``UTR`` will be
+    scaled to a common size.
+
+    utrprofile
+        UPSTREAM - UTR5 - CDS - UTR3 - DOWNSTREAM
+    	gene models with UTR. Separate the coding section from the non-coding part.
+
+
+In addition, please pay attention to the following:
+
 
 * Declare input data types for genomic data sets in optparse using 
   the `metavar` keyword. For example::
@@ -243,7 +302,8 @@ documenting scripts. In addition, please pay attention to the following:
   Setting the type permits the script to be integrated into workflow
   sytemns such as galaxy_.
 
-* Please provide a meaningful example in the command line help.
+* Please provide a meaningful example in the command line help (see above for
+  minimum requirements).
 
 * Be verbose. Something that is not documented within a script
   will not be used.
