@@ -1,3 +1,9 @@
+version:
+    stdin: null
+    outputs: [stdout]
+    references: []
+    options: --version
+
 basic_test:
     stdin: test.fasta.gz
     outputs: [stdout]
