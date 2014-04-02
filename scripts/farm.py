@@ -1,3 +1,4 @@
+#!/bin/env python
 '''
 farm.py - execute a cmd on the cluster
 ======================================

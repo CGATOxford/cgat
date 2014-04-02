@@ -731,7 +731,7 @@ def loadTranscriptInformation(infile, outfile):
     if PARAMS["genome"].startswith("sac"):
         dbh = connect()
         cc = dbh.cursor()
-        cc.execute( '''ALTER TABLE Table1 ADD COLUMN uniprot_name NULL''' )
+        cc.execute( '''ALTER TABLE transcript_info ADD COLUMN uniprot_name NULL''' )
 
 ############################################################
 ############################################################
