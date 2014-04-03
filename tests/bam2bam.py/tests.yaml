@@ -28,3 +28,9 @@ unstrip:
     outputs: [stdout]
     references: [paired.bam]
     options: -v 0 --unstrip --fastq1=<DIR>/paired.fastq.1.gz --fastq2=<DIR>/paired.fastq.2.gz
+
+set_flag:
+    stdin: unstrip.bam
+    outputs: [stdout]
+    references: [nh_flag.bam]
+    options: -v 0 --set-nh	
