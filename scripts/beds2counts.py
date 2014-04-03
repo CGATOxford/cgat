@@ -11,7 +11,7 @@ Purpose
 -------
 
 This script takes multiple bed files e.g. from multiple samples from the same experiment. It 
-asseses the overlap between samples and outputs a count for each merged interval corresponding
+assesses the overlap between samples and outputs a count for each merged interval corresponding
 to the number of samples that a particular interval was found in.
 
 Writes the output to stdout.

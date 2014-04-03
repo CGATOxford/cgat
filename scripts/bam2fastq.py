@@ -10,8 +10,8 @@ bam2fastq.py - output fastq files from a bam-file
 Purpose
 -------
 
-Convert a BAM file to a FASTQ files. This script ouputs
-fastq records from a aligned reads in a bam file.
+This script takes a :term:`bam` formatted file and converts it to two :term:`fastq`
+formatted files, one containing the forward reads and one containing the reverse reads.
 
 Usage
 -----
@@ -20,8 +20,8 @@ Example::
 
    python bam2fastq.py in.bam out.1.fastq out.2.fastq
 
-This command converts the BAM file in.bam into fastq files containing
-forward reads (out.1.fastq) and reverse reads (out.2.fastq).
+This command converts the :term:`bam` formatted file in.bam into :term:`fastq` files 
+containing forward reads (out.1.fastq) and reverse reads (out.2.fastq).
 
 Type::
 
@@ -31,6 +31,7 @@ for command line help.
 
 Command line options
 --------------------
+
 
 '''
 
