@@ -136,7 +136,7 @@ during the notebook execution.
 
        pip install runipy
 
-Data for recipes can be made available in www.cgat.org/downloads/cgat/recipes.
+Data for recipes can be made available in www.cgat.org/downloads/public/cgat/recipes.
 Ideally, recipes should make use of publicly available data sets such
 as ENCODE.
 
