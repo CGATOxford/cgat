@@ -54,7 +54,12 @@ The script implements the following methods:
    an alternative :term:`bam` formatted file (``--filter-bam``). 
 
 ``filter``
-   remove alignments based on a variety of flags.
+   remove alignments based on a variety of flags.  These may
+   be ``unique``, ``non-unique``, ``mapped``, ``NM`` or 
+   ``CM``.  If ``unique`` is given this wil NOT remove any
+   unmapped reads.  This can be achieved by providing the
+   ``filter`` option twice, once each with ``mapped`` and
+   ``unique``.
 
 ``strip`` 
    remove the sequence and/or quality scores from all reads in
