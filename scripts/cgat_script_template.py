@@ -10,8 +10,17 @@ cgat_script_template.py - template for CGAT scripts
 Purpose
 -------
 
+<Overall purpose and function of the script>
+
+Options
+-------
+
+<Options for the script, with detail of how they are combined to provide \
+intended functionality>
+
 Usage
 -----
+<Example use case>
 
 Example::
 
