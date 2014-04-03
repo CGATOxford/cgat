@@ -46,9 +46,20 @@ Usage
 
 Type::
 
-   python index_fasta.py --help
+   cgat index_genome DATABASE [SOURCE...|-] [OPTIONS]
+   cgat index_genome DATABASE [SOURCE...|-] --compression=COMPRESSION --random-access-points=RAP
 
-for command line help.
+To create indexed DATABASE from SOURCE. Supply - as SOURCE to read from stdin.
+If the output is to be compressed, a spacing for the random access points must
+be supplied through RAP.
+
+Type::
+
+   cgat index_genome DATABASE --extract=CONTIG:STRAND]:START:END
+
+To extract the bases on the STRAND strand, between START to END from entry CONTIG,
+from DATABASE.
+
 
 Command line options
 --------------------
@@ -57,8 +68,6 @@ Command line options
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Experiment as E
 import sys
-import re
-import os
 
 
 def main(argv=None):
@@ -74,55 +83,69 @@ def main(argv=None):
                             "The default coordinates are 0-based open/closed coordinates on both strands. "
                             "For example, chr1:+:10:12 will return bases 11 to 12 on chr1.")
 
+    compression_choices = ("lzo", "zlib", "gzip", "dictzip", "bzip2", "debug")
     parser.add_option("-c", "--compression", dest="compression", type="choice",
-                      choices=(
-                          "lzo", "zlib", "gzip", "dictzip", "bzip2", "debug"),
-                      help="compress database [default=%default].")
+                      choices=compression_choices,
+                      help="compress database, using specied compression. "
+                            "Valid choices are %s. [default=%%default]." % ", ".join(compression_choices))
 
     parser.add_option("--random-access-points", dest="random_access_points", type="int",
                       help="save random access points every # number of nucleotides [default=%default].")
 
+    input_format_choices = ("one-forward-open", "zero-both-open")
     parser.add_option("-i", "--input-format", dest="input_format", type="choice",
-                      choices=("one-forward-open", "zero-both-open"),
-                      help="coordinate format of input [default=%default].")
+                      choices=input_format_choices,
+                      help="coordinate format of input. Valid choices are %s [default=%%default]." 
+                      % ", ".join(input_format_choices))
 
     parser.add_option("-s", "--synonyms", dest="synonyms", type="string",
                       help="list of synonyms, comma separated with =, for example, chr1=chr1b [default=%default]")
 
-    parser.add_option("-b", "--benchmark", dest="benchmark", action="store_true",
+    parser.add_option("-b", "--benchmark", dest="benchmark",
+                      action="store_true",
                       help="benchmark time for read access [default=%default].")
 
-    parser.add_option("--benchmark-num-iterations", dest="benchmark_num_iterations", type="int",
+    parser.add_option("--benchmark-num-iterations", dest="benchmark_num_iterations", 
+                      type="int",
                       help="number of iterations for benchmark [default=%default].")
 
-    parser.add_option("--benchmark-fragment-size", dest="benchmark_fragment_size", type="int",
+    parser.add_option("--benchmark-fragment-size", dest="benchmark_fragment_size", 
+                      type="int",
                       help="benchmark: fragment size [default=%default].")
 
     parser.add_option("--verify", dest="verify", type="string",
                       help="verify against other database [default=%default].")
 
+    file_format_choices = ("fasta", "auto", "fasta.gz", "tar", "tar.gz")
     parser.add_option("--file-format", dest="file_format", type="choice",
-                      choices=("fasta", "auto", "fasta.gz", "tar", "tar.gz"),
-                      help="file format of input. Supply if data comes from stdin [default=%default].")
+                      choices=file_format_choices,
+                      help="file format of input. Supply if data comes from stdin "
+                           "Valid choices are %s [default=%%default]." % ", ".join(file_format_choices))
 
-    parser.add_option("-a", "--clean-sequence", dest="clean_sequence", action="store_true",
+    parser.add_option("-a", "--clean-sequence", dest="clean_sequence", 
+                      action="store_true",
                       help="remove X/x from DNA sequences - they cause errors in exonerate [default=%default].")
 
-    parser.add_option("--allow-duplicates", dest="allow_duplicates", action="store_true",
+    parser.add_option("--allow-duplicates", dest="allow_duplicates", 
+                      action="store_true",
                       help="allow duplicate identifiers. Further occurances of an identifier are suffixed by an '_%i' [default=%default].")
 
-    parser.add_option("--regex-identifier", dest="regex_identifier", type="string",
+    parser.add_option("--regex-identifier", dest="regex_identifier", 
+                      type="string",
                       help="regular expression for extracting the identifier from fasta description line [default=%default].")
 
-    parser.add_option("--compress-index", dest="compress_index", action="store_true",
+    parser.add_option("--compress-index", dest="compress_index", 
+                      action="store_true",
                       help="compress index [default=%default].")
 
     parser.add_option("--force", dest="force", action="store_true",
                       help="force overwriting of existing files [default=%default].")
 
+    translator_choices = ("solexa", "phred", "bytes", "range200")
     parser.add_option("-t", "--translator", dest="translator", type="choice",
-                      choices=("solexa", "phred", "bytes", "range200"),
-                      help="translate numerical quality scores [default=%default].")
+                      choices=translator_choices,
+                      help="translate numerical quality scores. "
+                           "Valid choices are %s [default=%%default]." % ", ".join(translator_choices))
 
     parser.set_defaults(
         extract=None,
@@ -160,13 +183,13 @@ def main(argv=None):
 
     if options.translator:
         if options.translator == "phred":
-            options.translator = TranslatorPhred()
+            options.translator = IndexedFasta.TranslatorPhred()
         elif options.translator == "solexa":
-            options.translator = TranslatorSolexa()
+            options.translator = IndexedFasta.TranslatorSolexa()
         elif options.translator == "bytes":
-            options.translator = TranslatorBytes()
+            options.translator = IndexedFasta.TranslatorBytes()
         elif options.translator == "range200":
-            options.translator = TranslatorRange200()
+            options.translator = IndexedFasta.TranslatorRange200()
         else:
             raise ValueError("unknown translator %s" % options.translator)
 
@@ -184,8 +207,8 @@ def main(argv=None):
                              (options.extract, sequence))
     elif options.benchmark:
         import timeit
-        timer = timeit.Timer(stmt="benchmarkRandomFragment( fasta = fasta, size = %i)" % (options.benchmark_fragment_size),
-                             setup="""from __main__ import benchmarkRandomFragment,IndexedFasta\nfasta=IndexedFasta.IndexedFasta( "%s" )""" % (args[0] ) )
+        timer = timeit.Timer(stmt="IndexedFasta.benchmarkRandomFragment( fasta = fasta, size = %i)" % (options.benchmark_fragment_size),
+                             setup="""from __main__ import IndexedFasta\nfasta=IndexedFasta.IndexedFasta( "%s" )""" % (args[0] ) )
 
         t = timer.timeit(number=options.benchmark_num_iterations)
         options.stdout.write("iter\tsize\ttime\n")
@@ -194,10 +217,10 @@ def main(argv=None):
     elif options.verify:
         fasta1 = IndexedFasta.IndexedFasta(args[0])
         fasta2 = IndexedFasta.IndexedFasta(options.verify)
-        nerrors1 = verify(fasta1, fasta2,
-                          options.verify_num_iterations,
-                          options.verify_fragment_size,
-                          stdout=options.stdout)
+        nerrors1 = IndexedFasta.verify(fasta1, fasta2,
+                                       options.verify_num_iterations,
+                                       options.verify_fragment_size,
+                                       stdout=options.stdout)
         options.stdout.write("errors=%i\n" % (nerrors1))
         nerrors2 = IndexedFasta.verify(fasta2, fasta1,
                                        options.verify_num_iterations,
