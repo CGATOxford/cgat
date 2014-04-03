@@ -5,8 +5,128 @@ version:
     references: []
     options: --version
 
-index:
+index_tar:
     stdin: null
     outputs: [test1_sc.fasta, test1_sc.idx]
     references: [test1.fasta, test1.idx]
     options: test1_sc %DIR%/test1_sc.tar.gz > test1.log
+
+index_multiple_fasta:
+    stdin: null
+    outputs: [test2_sc.fasta, test2_sc.idx]
+    references: [test1.fasta, test1.idx]
+    options: test2_sc %DIR%/chr*.fa > test2.log
+
+# This test tests 3 things
+# 1. reading from stdin
+# 2. compressing output
+# 3. specifying file format on commandline
+index_stdin:
+    stdin: test1_sc.tar.gz
+    outputs: [test3_sc.gz, test3_sc.cdx]
+    binary: [test3_sc.gz]
+    references: [test3.gz, test3.cdx]
+    options: test3_sc - --compression=gzip --file-format=tar.gz --random-access-points=1000000 > test3.log
+
+# This test tests the ability to clean and also
+# to use synonyms
+clean:
+    stdin: null
+    outputs: [test4_sc.fasta, test4_sc.idx]
+    references: [test4.fasta, test4.idx]
+    options: test4_sc %DIR%/with_x.fa --clean-sequence --synonyms=chrI=chr1 > test4.log
+
+#allowing duplicates
+allowdups:
+    stdin: null
+    outputs: [test5_sc.fasta, test5_sc.idx]
+    references: [test5.fasta, test5.idx]
+    options: test5_sc %DIR%/chrI.fa %DIR%/1chr.fa --allow-duplicates > test5.log
+
+
+#regex-ing identifiers
+regexid:
+    stdin: null
+    outputs: [test6_sc.fasta, test6_sc.idx]
+    references: [test6.fasta, test6.idx]
+    options: test6_sc %DIR%/test1_sc.tar.gz --regex-identifier="chr(.+)"
+
+#verifying
+verify:
+   stdin: null
+   outputs: []
+   references: []
+   options: --verify=%DIR%/test1 -L /dev/null %DIR%/test1
+
+verify-binary:
+   stdin: null
+   outputs: []
+   references: []
+   options: --verify=%DIR%/test1 -L /dev/null %DIR%/test3
+
+#compress-index
+compress:
+   stdin: null
+   outputs: [test1.idx.dbm]
+   references: [test1_ref.idx.dbm]
+   options: --compress-index %DIR%/test1 --force
+
+#benchmark-index
+benchmark:
+   stdin: null
+   outputs: [stdout]
+   references: [test1_benchmark.txt]
+   options: -b --benchmark-num-iterations=100 -L /dev/null %DIR%/test1
+
+benchmark-binary:
+   stdin: null
+   outputs: [stdout]
+   references: [test1_benchmark.txt]
+   options: -b --benchmark-num-iterations=100 -L /dev/null %DIR%/test3
+
+###Testing Extraction
+
+
+#1. From a normal index:
+extract:
+    stdin: null
+    outputs: [stdout]
+    references: [normal_extract.fa]
+    options: --extract=chrI:+:100:200 -L /dev/null %DIR%/test1
+
+#2. From the negative strand
+extract-revcomp:
+    stdin: null
+    outputs: [stdout]
+    references: [normal_extract_rev.fa]
+    options: --extract=chrI:-:100:200 -L /dev/null %DIR%/test1
+
+#3. Using 1-based co-ordinates
+extract-cord:
+    stdin: null
+    outputs: [stdout]
+    references: [one_based_extract.fa]
+    options: --extract=chrI:+:101:201 --input-format=one-forward-open -L /dev/null %DIR%/test1
+
+#4. From a compressed database
+extract-compressed:
+    stdin: null
+    outputs: [stdout]
+    references: [normal_extract.fa]
+    options: --extract=chrI:+:100:200 -L /dev/null %DIR%/test3 
+
+#5. Using a synonymn.
+extract-synonym:
+    stdin: null
+    outputs: [stdout]
+    references: [withn_extract.fa]
+    options:  --extract=chr1:+:100:200 -L /dev/null %DIR%/test4
+
+#6. Extract from duplicate entries
+
+extract-dup:
+    stdin: null
+    outputs: [stdout]
+    references: [dup_extract.fa]
+    options: --extract=chrI_1:+:100:200 -L /dev/null %DIR%/test5
+

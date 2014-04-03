@@ -1,3 +1,9 @@
+version:
+   stdin: null
+   outputs: [stdout]
+   references: []
+   options: --version
+
 
 standard_test:
     stdin: null

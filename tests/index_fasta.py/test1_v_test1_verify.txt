@@ -1,0 +1,4 @@
+verifying test1.fasta and test1.fasta using 100000 random segments of length 100
+errors=0
+verifying test1.fasta and test1.fasta using 100000 random segments of length 100
+errors=0
