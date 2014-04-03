@@ -1,0 +1,1 @@
+Contig:	Intervals:	Total:	Min:	Max:	Mean:	Median:	25th_quartile:	75th_quartile:
