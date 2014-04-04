@@ -1230,7 +1230,7 @@ def buildBAMStats(infiles, outfile):
     rna_file = os.path.join(PARAMS["annotations_dir"],
                             PARAMS_ANNOTATIONS["interface_rna_gff"])
 
-    job_options = "-l mem_free=8G"
+    job_options = "-l mem_free=12G"
 
     bamfile, readsfile = infiles
 
