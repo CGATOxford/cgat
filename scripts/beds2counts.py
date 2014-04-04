@@ -11,23 +11,55 @@ Purpose
 -------
 
 This script takes multiple bed files e.g. from multiple samples from the same experiment. It 
+<<<<<<< HEAD
 assesses the overlap between samples and outputs a count for each merged interval corresponding
+=======
+asseses the overlap between samples, and outputs a count for each merged interval corresponding
+>>>>>>> master
 to the number of samples that a particular interval was found in.
 
 Writes the output to stdout.
 
+Options
+-------
+
+This script will take in two bed format files and output a bed format file that contains
+all of the interval that overlap between the two files.  Overlap is by at least 1bp.
+
+The only option it takes is the input bed files.
+
++---------------+-------------------------------------------------+
+|-i, --infiles  |bedfiles to check for overlap                    |
++---------------+-------------------------------------------------+
+
 Usage
 -----
 
-Example::
+For example::
 
-   python beds2counts.py file1.bed file2.bed > output.bed
+  python --infiles example1.bed example2.bed > output.bed
+
+  example1.bed
+
+  chr1	948765	948815	SRF.273
+  chr1	2323201	2323251	SRF.300
+  chr1	6259715	6259765	SRF.268
+  chr1	6661074	6661124	SRF.191
+  chr1	10534963	10535013	SRF.428
+
+  output.bed
+  
+  chr12	95611371	95611421	2
+  chr1	152434177	152434227	2
+  chr17	6543993	6544043	2
+  chr12	4436649	4436699	2
 
 Type::
 
    python beds2counts.py --help
 
 for command line help.
+
 
 Command line options
 --------------------

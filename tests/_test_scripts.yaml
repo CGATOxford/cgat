@@ -1,4 +1,4 @@
 restrict:
         manifest:
-        regex: bed2fasta.py
+        regex: bam2bed.py
 
