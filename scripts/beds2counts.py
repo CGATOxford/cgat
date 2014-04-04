@@ -1,8 +1,8 @@
 '''
-beds2counts.py - compute overlap stats between multiple bed files
+beds2counts - compute overlap stats between multiple bed files
 =================================================================
 
-:Author: Nick Ilott 
+:Author: Nick Ilott
 :Release: $Id$
 :Date: |today|
 :Tags: Genomics Intervals Comparison BED Counting
@@ -10,34 +10,53 @@ beds2counts.py - compute overlap stats between multiple bed files
 Purpose
 -------
 
-This script takes multiple bed files e.g. from multiple samples from the same experiment. It 
-assesses the overlap between samples and outputs a count for each merged interval corresponding
-to the number of samples that a particular interval was found in.
+Take multiple bed input files, generate a union of the intervals and output
+the number of the input files each interval appears in. Ouput goes to stdout
+unless redirected.
 
-Writes the output to stdout.
+
+Example
+-------
+
+For example if the command:
+
+    cgat bed2counts a.bed b.bed c.bed > output.tsv
+
+Is run, where a.bed-c.bed look like:
+
+                     1         2         3         4
+           012345678901234567890123456789012345678901234
+    a.bed: -------          -----               -------
+    b.bed:      -----        --
+    c.bed:  ---
+
+    Union: ----------       -----               -------
+
+Then output.tsv will look like:
+
+    contig	start	end	count
+    chr1	0	7	3
+    chr1	17	22	2
+    chr1	37	44	1
+
+Options
+-------
+
+The only option other than the standard cgat options is -i, --infiles this
+allows the input files to be provided as a comma seperated list to the option
+rather than a space delimited set of positional arguements. It is present
+purely for galaxy compatibility.
 
 Usage
 -----
 
-Example::
-
-   python beds2counts.py file1.bed file2.bed > output.bed
-
-Type::
-
-   python beds2counts.py --help
-
-for command line help.
+    cgat beds2counts BED [BED ...] [OPTIONS]
 
 Command line options
 --------------------
-
 '''
 import tempfile
-import os
 import sys
-import re
-import optparse
 
 # importing pybedtools within sphinx does not work
 try:
