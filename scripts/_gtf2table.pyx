@@ -705,8 +705,9 @@ class CounterReadCountsFull(CounterBAM):
         # TODO: define block struc 
         # maximum number of blocks is 100 
         # we expect few (<10)
-        cdef long * block_starts = <long*>malloc(100 *sizeof(long))
-        cdef long * block_ends = <long*>malloc(100 * sizeof(long))
+        cdef int max_nblocks = 1000
+        cdef long * block_starts = <long*>malloc(max_nblocks *sizeof(long))
+        cdef long * block_ends = <long*>malloc(max_nblocks * sizeof(long))
         cdef long * exon_starts = <long*>malloc(nexons *sizeof(long))
         cdef long * exon_ends = <long*>malloc(nexons * sizeof(long))
         cdef int nblocks = 0
@@ -778,6 +779,10 @@ class CounterReadCountsFull(CounterBAM):
                             block_starts[nblocks] = block_first_start
                             block_ends[nblocks] = block_last_end
                             nblocks += 1
+                            assert nblocks <= max_nblocks, \
+                                'number of blocks %i greater than maximum(%i)' % \
+                                (nblocks, max_nblocks)
+
                         block_first_start = block_start
 
                     block_last_end = block_end
@@ -1153,9 +1158,10 @@ class CounterReadPairCountsFull(CounterBAM):
         # TODO: define block struc 
         # maximum number of blocks is 100 
         # we expect few (<10)
-        cdef long * block_starts = <long*>malloc(100 *sizeof(long))
-        cdef long * block_ends = <long*>malloc(100 * sizeof(long))
-        cdef long * exon_starts = <long*>malloc(nexons *sizeof(long))
+        cdef int max_nblocks = 1000
+        cdef long * block_starts = <long*>malloc(max_nblocks *sizeof(long))
+        cdef long * block_ends = <long*>malloc(max_nblocks * sizeof(long))
+        cdef long * exon_starts = <long*>malloc(nexons * sizeof(long))
         cdef long * exon_ends = <long*>malloc(nexons * sizeof(long))
         cdef int nblocks = 0
         cdef long max_start = 0
@@ -1299,6 +1305,9 @@ class CounterReadPairCountsFull(CounterBAM):
                                 block_starts[nblocks] = block_first_start
                                 block_ends[nblocks] = block_last_end
                                 nblocks += 1
+                                assert nblocks <= max_nblocks, \
+                                    'number of blocks %i greater than maximum(%i)' % \
+                                    (nblocks, max_nblocks)
                             block_first_start = block_start
 
                         block_last_end = block_end
@@ -1381,7 +1390,7 @@ class CounterReadPairCountsFull(CounterBAM):
                     except KeyError:
                         nh = 1
                     weight = 1.0 / nh
-
+                
                 counters[pair_status][direction_status][exons_status][spliced_status] += weight
 
         free(block_starts)
