@@ -561,7 +561,7 @@ NAME_MAP = {
     'lzo': ('lzo',   'cdx', True),
     'dictzip': ('dz',    'idx', False),
     'zlib': ('zlib',  'cdx', True),
-    'gzip': ('gzip',  'cdx', True),
+    'gzip': ('gz',  'cdx', True),
     'bzip2': ('bz2',   'cdx', True),
     'debug': ('debug', 'cdx', True),
 }
@@ -1151,12 +1151,12 @@ def verify(fasta1, fasta2, num_iterations, fragment_size,
     Get segment from fasta1 and check for presence in fasta2.
     """
     if not quiet:
-        options.stdout.write("verifying %s and %s using %i random segments of length %i\n" %
-                             (fasta1.getDatabaseName(),
-                              fasta2.getDatabaseName(),
-                              num_iterations,
-                              fragment_size))
-        options.stdout.flush()
+        stdout.write("verifying %s and %s using %i random segments of length %i\n" %
+                     (fasta1.getDatabaseName(),
+                      fasta2.getDatabaseName(),
+                      num_iterations,
+                      fragment_size))
+        stdout.flush()
     nerrors = 0
     for x in range(num_iterations):
         contig, strand, start, end = fasta1.getRandomCoordinates(fragment_size)
@@ -1164,8 +1164,8 @@ def verify(fasta1, fasta2, num_iterations, fragment_size,
         s2 = fasta2.getSequence(contig, strand, start, end)
         if s1 != s2:
             if not quiet:
-                options.stdout.write("discordant segment: %s:%s:%i:%i\n%s\n%s\n" %
-                                     (contig, strand, start, end, s1, s2))
+                stdout.write("discordant segment: %s:%s:%i:%i\n%s\n%s\n" %
+                             (contig, strand, start, end, s1, s2))
             nerrors += 1
     return nerrors
 

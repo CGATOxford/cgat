@@ -10,9 +10,32 @@ gff2stats.py - count features, etc. in gff file
 Purpose
 -------
 
-This script computes the number of intervals per feature,
+This script generates summary statistics over features,
 source, gene_id and transcript_id in one or more :term:`gff` 
 or :term:`gtf` formatted files.
+
+Usage
+-----
+
+Input is either a gff or gtf file; gtf input must be specified
+with the --is-gtf option.
+
+  Example::
+  
+  python gff2stats.py --is-gtf example.gtf > example_sum.tsv
+
+  cat example.gtf
+  
+  19  processed_transcript  exon  6634666509  .  -  .  gene_id "ENSG00000225373"; transcript_id "ENST00000592209" ...
+  19  processed_transcript  exon  6052160747  .  -  .  gene_id "ENSG00000225373"; transcript_id "ENST00000592209" ...
+  19  processed_transcript  exon  6010560162  .  -  .  gene_id "ENSG00000225373"; transcript_id "ENST00000592209" ...
+  19  processed_transcript  exon  6634666416  .  -  .  gene_id "ENSG00000225373"; transcript_id "ENST00000589741" ...
+  
+  cat example_sum.tsv
+
+  track  contigs  strands  features  sources  genes  transcripts ... 
+  stdin  1        2        4         23       2924   12752       ...
+  
 
 For a gff file, the implemented counters are:
 
@@ -25,12 +48,18 @@ For a gtf file, the additional implemented counters are:
 
 The output is a tab-separated table.
 
-Usage
------
+Options
+-------
 
-Example::
+The default action of ``gff2stats`` is to count over contigs, strand, 
+feature and source.  This assumes the input file is a gff file
 
-   python gff2stats.py --help
+There is a single option for this script::
+
+``is-gtf``
+  The input file is gtf format.  The output will therefore contain summaries over
+  exon numbers, exon sizes, intron sizes and transcript sizes in addition to the
+  the number of genes, transcripts and single exon transcripts.
 
 Type::
 
@@ -96,7 +125,7 @@ class counter_exons:
         tuple(["transcript_size_%s" % x for x in Stats.Summary.fields])
 
     def __init__(self, iter):
-
+        
         self.iter = iter
 
         self.counts_gene_ids = collections.defaultdict(int)
