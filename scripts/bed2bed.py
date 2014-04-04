@@ -1,64 +1,66 @@
 '''
-bed2bed.py - manipulate bed files
+bed2bed - manipulate bed files
 =================================
 
-Purpose 
+Purpose
 -------
 
 This script provides various methods for merging (by position, by name
 or by score), filtering and moving bed formatted intervals and
 outputting the results as a bed file
 
-Usage 
------
+Options
+-------
 
-   python bed2bed.py --method=[METHOD] [options]
+This script provides several methods, each with a set of options
+to control behavoir:
 
-This script provides several methods:
-
-merge 
+merge
 +++++
 
 Merge together overlapping or adjacent intervals. The basic
-functionality is similar to bedtools merge, but with some additions: 
+functionality is similar to bedtools merge, but with some additions:
 
 * Merging by name: specifying the --merge-by-name option will mean
   that only overlaping (or adjacent intervals) with the same value in
-  the 4th column of the bed will be merged 
+  the 4th column of the bed will be merged
 
 * Removing overlapping intervals with inconsistent names: set the
    ``--remove-inconsistent`` option.
 
-.. caution:: 
-   Intervals of the same name will only be merged if they 
+.. caution::
+   Intervals of the same name will only be merged if they
    are consecutive in the bed file.
 
 * Only output merged intervals: By specifiying the --merge-min-intervals=n
   options, only those intervals that were created by merging at least n
   intervals together will be output
 
-bins 
+Intervals that are close but not overlapping can be merged by setting
+--merge-distance to a non-zero value
+
+bins
 ++++
 
 Merges together overlapping or adjecent intervals only if they have
 "similar" scores. Score similarity is assessed by creating a number of
-score bins and assigning each interval to a bin. If too adjacent
+score bins and assigning each interval to a bin. If two adjacent
 intervals are in the same bin, the intervals are merged. Note that in
 contrast to merge-by-name above, two intervals do not need to be
 overlapping or within a certain distance to be merged.
 
-There are several methods to create the bins: 
+There are several methods to create the bins:
 
-* equal-bases: Bins are created to that they contain the same number of bases.  Specified
-  by passing "equal-bases" to --binning-method. This is the default.  
+* equal-bases: Bins are created to that they contain the same number of bases.
+  Specified by passing "equal-bases" to --binning-method. This is the default.
 
 * equal-intervals: Score bins are create so that each bin contains the
   same number of intervals. Specified by passing "equal-intervals" to
-  --binning-method.  
+  --binning-method.
 
 * equal-range: Score bins are created so that
   each bin covers the same fraction of the total range of
-  scores. Specified by passing "equal-range" to --binning-method.  
+  scores. Specified by passing "equal-range" to --binning-method.
 
 * bin-edges: Score binds can be specified by manually passing a comma
   seperated list of bin edges to --bin-edges.
@@ -66,7 +68,7 @@ There are several methods to create the bins:
 The number of bins is specified by the --num-bins options, and the
 default is 5.
 
-block 
+block
 +++++
 
 Creates blocked bed12 outputs from a bed6, where intervals with the
@@ -75,20 +77,20 @@ same name are merged together to create a single bed12 entry.
 .. Caution:: Input must be sorted so that entries of the same
 name are together.
 
-filter-genome 
+filter-genome
 +++++++++++++
 
 Removes intervals that are on unknown contigs or extend off the 3' or
 5' end of the contig.  Requires a tab seperated input file to -g which
 lists the contigs in the genome, plus their lengths.
 
-sanitize-genome 
+sanitize-genome
 +++++++++++++++
 
 As above, but instead of removing intervals overlapping the ends of
 contigs, truncates them.  Also removes empty intervals.
 
-shift 
+shift
 +++++
 
 Moves intervals by the specified amount, but will not allow them to be
@@ -96,26 +98,54 @@ shifted off the end of contigs. Thus if a shift will shift the start
 of end of the contig, the interval is only moved as much as is
 possible without doing this.
 
+Other options
++++++++++++++
+
+-g/--genome-file, -b/--bam-file:
+   the filter-genome, sanitize-genome and shift methods require a genome in
+   order to ensure they are not placing intervals outside the limits of
+   contigs. This genome can be supplied either as a samtools or cgat indexed
+   genome, or extracted from the header of a bam file.
+
+Examples
+--------
+
+Merge overlapping or adjectent peaks from a CHiP-seq experiment where the
+intervals have the same name:
+
+    cat chip-peaks.bed | cgat bed2bed --method=merge --merge-by-name > chip-peaks-merged.bed
+
+Merge adjected ChIP-seq peaks if their scores are in the same quartile of
+all scores:
+
+    cat chip-peaks.bed | cgat bed2bed --method=bins --binning-method=equal-intervals --num-bins=4
+
+Remove intervals that overlap the ends of a contig and those that are on a
+non-standard contig. Take the input intervals from a file rather than stdin.
+Note that hg19.fasta has been indexed with `index_genome`:
+
+    cgat bed2bed --method=filter-genome --genome-file=hg19.fasta -I chip-peaks.bed -O chip-peaks-sanitized.bed
+
+Convert a bed file contain gene structures with one line per exon to a bed12
+with linked block representing the gene structure. Note the transparent use
+of compressed input and output files:
+
+    cgat bed2bed --method=block -I transcripts.bed.gz -O transcripts.blocked.bed.gz
+
+Usage
+-----
+
+   cgat bed2bed --method=[METHOD] [OPTIONS]
+
+Will read bed file from stdin and apply the specified method
+
 Command line options
 --------------------
 '''
 
 import sys
-import re
-import string
-import optparse
-import time
-import os
-import itertools
-import tempfile
-import subprocess
-import shutil
-
 import CGAT.Experiment as E
-import CGAT.Stats as Stats
-import CGAT.GTF as GTF
 import CGAT.IndexedFasta as IndexedFasta
-import CGAT.IOTools as IOTools
 import CGAT.Bed as Bed
 import pysam
 
@@ -150,8 +180,9 @@ def merge(iterator,
         for bed in iterator:
             d = bed.start - max_end
             if bed.contig == last.contig:
-                assert bed.start >= last.start, "input file should be sorted by contig and position: d=%i:\n%s\n%s\n" % (
-                    d, last, bed)
+                assert bed.start >= last.start, \
+                    "input file should be sorted by contig and position: d=%i:\n%s\n%s\n" \
+                    % (d, last, bed)
 
             if bed.contig != last.contig or \
                     d > max_distance or \
