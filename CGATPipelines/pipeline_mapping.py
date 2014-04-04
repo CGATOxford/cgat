@@ -189,6 +189,7 @@ import os
 import re
 import sqlite3
 import collections
+import glob
 # load options from the config file
 import CGAT.Experiment as E
 import CGAT.Pipeline as P
@@ -953,8 +954,9 @@ def mapReadsWithBowtie(infiles, outfile):
 
     job_options = "-pe dedicated %i -R y" % PARAMS["bowtie_threads"]
     to_cluster = True
-    m = PipelineMapping.Bowtie(executable=P.substituteParameters(**locals())["bowtie_executable"],
-                               strip_sequence=PARAMS["strip_sequence"])
+    m = PipelineMapping.Bowtie(
+        executable=P.substituteParameters(**locals())["bowtie_executable"],
+        strip_sequence=PARAMS["strip_sequence"])
     infile, reffile = infiles
     # IMS remove reporting options to the ini
     #bowtie_options = "%s --best --strata -a" % PARAMS["bowtie_options"]
@@ -975,19 +977,22 @@ def mapReadsWithBowtie(infiles, outfile):
 def mapReadsWithBWA(infile, outfile):
     '''map reads with bwa'''
 
-    job_options = "-pe dedicated %i -R y -l mem_free=%s" % (PARAMS["bwa_threads"],
-                                                            PARAMS["bwa_memory"])
-    to_cluster = True
-    if PARAMS["bwa_algorithm"] == "aln":
+    job_options = "-pe dedicated %i -R y -l mem_free=%s" % \
+                  (PARAMS["bwa_threads"],
+                   PARAMS["bwa_memory"])
+
+    algorithm = P.substituteParameters(**locals())["bwa_algorithm"]
+    if algorithm == 'aln':
         m = PipelineMapping.BWA(
             remove_non_unique=PARAMS["remove_non_unique"],
             strip_sequence=PARAMS["strip_sequence"])
-    elif PARAMS["bwa_algorithm"] == "mem":
+
+    elif algorithm == "mem":
         m = PipelineMapping.BWAMEM(
             remove_non_unique=PARAMS["remove_non_unique"],
             strip_sequence=PARAMS["strip_sequence"])
     else:
-        raise ValueError("bwa algorithm parameter not set")
+        raise ValueError("bwa algorithm '%s' not known" % algorithm)
 
     statement = m.build((infile,), outfile)
     P.run()
@@ -1348,7 +1353,7 @@ def loadContextStats(infiles, outfile):
     dbhandle = sqlite3.connect(PARAMS["database"])
 
 # The following is not necessary any more as context stats now also outputs a "total" column
-#    cc = Database.executewait( dbhandle, '''ALTER TABLE %(tablename)s ADD COLUMN mapped INTEGER''' % locals())
+#    cc = Database.execute
 #    statement = '''UPDATE %(tablename)s SET mapped =
 #                                       (SELECT b.alignments_mapped FROM bam_stats AS b
 #                                            WHERE %(tablename)s.track = b.track)''' % locals()#
