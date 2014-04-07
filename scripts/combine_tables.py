@@ -102,7 +102,6 @@ def concatenateTables(outfile, options, args):
     tables = []
     # read all tables
     for filename in options.filenames:
-        print filename
         tables.append(readTable(filename, options))
 
     if options.cat is None:
