@@ -1,8 +1,8 @@
 '''
-beds2counts.py - compute overlap stats between multiple bed files
+beds2counts - compute overlap stats between multiple bed files
 =================================================================
 
-:Author: Nick Ilott 
+:Author: Nick Ilott
 :Release: $Id$
 :Date: |today|
 :Tags: Genomics Intervals Comparison BED Counting
@@ -11,65 +11,52 @@ Purpose
 -------
 
 This script takes multiple bed files e.g. from multiple samples from the same experiment. It 
-<<<<<<< HEAD
 assesses the overlap between samples and outputs a count for each merged interval corresponding
-=======
-asseses the overlap between samples, and outputs a count for each merged interval corresponding
->>>>>>> master
 to the number of samples that a particular interval was found in.
 
-Writes the output to stdout.
+
+Example
+-------
+
+For example if the command:
+
+    cgat bed2counts a.bed b.bed c.bed > output.tsv
+
+Is run, where a.bed-c.bed look like:
+
+                     1         2         3         4
+           012345678901234567890123456789012345678901234
+    a.bed: -------          -----               -------
+    b.bed:      -----        --
+    c.bed:  ---
+
+    Union: ----------       -----               -------
+
+Then output.tsv will look like:
+
+    contig	start	end	count
+    chr1	0	7	3
+    chr1	17	22	2
+    chr1	37	44	1
 
 Options
 -------
 
-This script will take in two bed format files and output a bed format file that contains
-all of the interval that overlap between the two files.  Overlap is by at least 1bp.
-
-The only option it takes is the input bed files.
-
-+---------------+-------------------------------------------------+
-|-i, --infiles  |bedfiles to check for overlap                    |
-+---------------+-------------------------------------------------+
+The only option other than the standard cgat options is -i, --infiles this
+allows the input files to be provided as a comma seperated list to the option
+rather than a space delimited set of positional arguements. It is present
+purely for galaxy compatibility.
 
 Usage
 -----
 
-For example::
-
-  python --infiles example1.bed example2.bed > output.bed
-
-  example1.bed
-
-  chr1	948765	948815	SRF.273
-  chr1	2323201	2323251	SRF.300
-  chr1	6259715	6259765	SRF.268
-  chr1	6661074	6661124	SRF.191
-  chr1	10534963	10535013	SRF.428
-
-  output.bed
-  
-  chr12	95611371	95611421	2
-  chr1	152434177	152434227	2
-  chr17	6543993	6544043	2
-  chr12	4436649	4436699	2
-
-Type::
-
-   python beds2counts.py --help
-
-for command line help.
-
+    cgat beds2counts BED [BED ...] [OPTIONS]
 
 Command line options
 --------------------
-
 '''
 import tempfile
-import os
 import sys
-import re
-import optparse
 
 # importing pybedtools within sphinx does not work
 try:
