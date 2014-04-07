@@ -283,7 +283,7 @@ import CGAT.Experiment as E
 import logging as L
 import CGAT.Database as Database
 import CGAT.CSV as CSV
-
+import CGAT.BamTools as BamTools
 import sys
 import os
 import re
@@ -342,18 +342,33 @@ TRACKS = PipelineTracks.Tracks(Sample).loadFromDirectory(
      PARAMS["tracks_control"] not in x],
     "(\S+).genome.bam")
 
+CONTROLTRACKS = PipelineTracks.Tracks(Sample).loadFromDirectory(
+    [x for x in glob.glob("*.genome.bam") if
+     PARAMS["tracks_control"] in x],
+    "(\S+).genome.bam")
+
 EXPERIMENTS = PipelineTracks.Aggregate(TRACKS, labels=("condition", "tissue"))
 CONDITIONS = PipelineTracks.Aggregate(TRACKS, labels=("condition", ))
 TISSUES = PipelineTracks.Aggregate(TRACKS, labels=("tissue", ))
 
 ##################################################################
-
-
 def getControl(track, suffix='.genome.bam'):
     '''return appropriate control(s) for a track.
     '''
-    prefix = PipelineTracks.FILE_SEPARATOR.join((track.experiment,
-                                                 PARAMS["tracks_control"]))
+    fn = track.asFile().lower()
+    control = PARAMS.get("controls_%s" % fn.lower(), None)
+    if control != None:
+        if not os.path.exists(control + suffix):
+            raise ValueError("control file %s does not exist for %s" % 
+                             (fn+suffix,
+                              track))
+        controls = [Sample(filename=control)]
+        return controls
+
+    prefix = PipelineTracks.FILE_SEPARATOR.join(
+        (track.experiment,
+         PARAMS["tracks_control"]))
+
     controlfiles = glob.glob(prefix + "*" + suffix)
     controls = [Sample(filename=x[:-len(suffix)]) for x in controlfiles]
     # if multiple, filter by number of parts
@@ -413,7 +428,7 @@ def getBamFiles(infile, suffix):
     assert os.path.exists(bamfile), "bamfile %s does not exist" % bamfile
 
     controls = getControl(Sample(track))
-    controlfile = getControlFile(controls, "%s.call.bam")
+    controlfile = getControlFile(Sample(track), controls, "%s.call.bam")
     if not os.path.exists(controlfile):
         L.warn("no controlfile '%s' for track '%s' not found " %
                (controlfile, track))
@@ -667,7 +682,7 @@ def checkDataQuality(infile, outfile):
 
     track = P.snip(infile, ".call.bam")
     controls = getControl(Sample(track))
-    controlfile = getControlFile(controls, "%s.call.bam")
+    controlfile = getControlFile(Sample(track), controls, "%s.call.bam")
 
     if not os.path.exists(controlfile):
         L.warn("controlfile '%s' for track '%s' not found " %
@@ -731,7 +746,10 @@ def callPeaksWithMACS(infile, outfile):
     output bed files are compressed and indexed.
     '''
     track = P.snip(infile, ".call.bam")
-
+    if BamTools.isPaired(infile):
+        E.warn("macs will not work with paired-ended data: %s skipped" % infile)
+        P.touch(outfile)
+        return
     controls = getControl(Sample(track))
     controlfile = getControlFile(Sample(track), controls, "%s.call.bam")
 
@@ -839,7 +857,7 @@ def callPeaksWithMACS2(infile, outfile):
     '''
     track = P.snip(infile, ".call.bam")
     controls = getControl(Sample(track), suffix=".call.bam" )
-    controlfile = getControlFile( Sample(track), controls, "%s.call.bam")
+    controlfile = getControlFile(Sample(track), controls, "%s.call.bam")
     PipelinePeakcalling.runMACS2(infile, outfile, controlfile)
 
 ############################################################
@@ -906,7 +924,7 @@ def callPeaksWithZinba(infiles, outfile):
     infile, controlfile = infiles
 
     controls = getControl(Sample(track))
-    controlfile = getControlFile( Sample(track), controls, "%s.call.bam")
+    controlfile = getControlFile(Sample(track), controls, "%s.call.bam")
 
     if os.path.exists(os.path.join(outfile + "_files", outfile + ".model")):
         PipelinePeakcalling.runZinba(infile,
@@ -954,7 +972,7 @@ def callNarrowerPeaksWithSICER(infile, outfile):
     track = P.snip(infile, ".call.bam")
 
     controls = getControl(Sample(track))
-    controlfile = getControlFile(controls, "%s.call.bam")
+    controlfile = getControlFile(Sample(track), controls, "%s.call.bam")
     PipelinePeakcalling.runSICER(infile, outfile, controlfile, "narrow")
 
 
@@ -973,7 +991,7 @@ def callBroaderPeaksWithSICER(infile, outfile):
     track = P.snip(infile, ".call.bam")
 
     controls = getControl(Sample(track))
-    controlfile = getControlFile( Sample(track), controls, "%s.call.bam")
+    controlfile = getControlFile(Sample(track), controls, "%s.call.bam")
     PipelinePeakcalling.runSICER(infile, outfile, controlfile, "broad")
 
 ######################################################################
@@ -1025,7 +1043,7 @@ def callPeaksWithPeakRanger(infile, outfile):
     '''run PeakRanger Ranger for peak detection.'''
     track = P.snip(infile, ".call.bam")
     controls = getControl(Sample(track))
-    controlfile = getControlFile( Sample(track), controls, "%s.call.bam")
+    controlfile = getControlFile(Sample(track), controls, "%s.call.bam")
     PipelinePeakcalling.runPeakRanger(infile, outfile, controlfile)
 
 
@@ -1258,7 +1276,7 @@ def estimateSPPQualityMetrics(infile, outfile):
     job_options = "-l mem_free=4G"
     track = P.snip(infile, ".call.bam")
     controls = getControl(Sample(track))
-    controlfile = getControlFile(controls, "%s.call.bam")
+    controlfile = getControlFile(Sample(track), controls, "%s.call.bam")
     if controlfile is None:
         raise ValueError("idr analysis requires a control")
 
