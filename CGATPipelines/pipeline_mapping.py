@@ -187,6 +187,7 @@ from ruffus import *
 import sys
 import os
 import re
+import glob
 import sqlite3
 import collections
 # load options from the config file
