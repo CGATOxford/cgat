@@ -86,6 +86,8 @@ fi # if-OS
 } # install_os_packages
 
 # funcion to install Python dependencies
+# by default in $HOME/CGAT
+# otherwise, in $CGAT_HOME
 install_python_deps() {
 
 if [ "$OS" == "ubuntu" -o "$OS" == "sl" ] ; then
@@ -94,27 +96,33 @@ if [ "$OS" == "ubuntu" -o "$OS" == "sl" ] ; then
    echo " Installing Python dependencies for $1 "
    echo
 
-   # Build Python
-   cd
-   mkdir CGAT
+   # Go to CGAT_HOME to continue with installation
+   if [ -z "$CGAT_HOME" ] ; then
+      # install in default location
+      CGAT_HOME=$HOME/CGAT-DEPS
+   fi
+
+   # Build Python 2.7.5
+   mkdir -p $CGAT_HOME
+   cd $CGAT_HOME
+   mkdir python_build
+   cd python_build
    wget http://www.python.org/ftp/python/2.7.5/Python-2.7.5.tgz
    tar xzvf Python-2.7.5.tgz
    rm Python-2.7.5.tgz
    cd Python-2.7.5
-   ./configure --prefix=$HOME/CGAT/Python-2.7.5
+   ./configure --prefix=$CGAT_HOME/Python-2.7.5
    make
    make install
-   cd
-   rm -rf Python-2.7.5
+   cd $CGAT_HOME
+   rm -rf python_build/
 
    # Create virtual environment
-   cd
-   cd CGAT
    wget --no-check-certificate https://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.10.1.tar.gz
    tar xvfz virtualenv-1.10.1.tar.gz
    rm virtualenv-1.10.1.tar.gz
    cd virtualenv-1.10.1
-   $HOME/CGAT/Python-2.7.5/bin/python virtualenv.py cgat-venv
+   $CGAT_HOME/Python-2.7.5/bin/python virtualenv.py cgat-venv
    source cgat-venv/bin/activate
 
    # Install Python prerequisites
@@ -137,7 +145,7 @@ if [ "$OS" == "ubuntu" -o "$OS" == "sl" ] ; then
    echo
    echo
    echo "To start using the Python virtual environment with the CGAT code collection, type:"
-   echo "-> source $HOME/CGAT/virtualenv-1.10.1/cgat-venv/bin/activate"
+   echo "-> source $CGAT_HOME/virtualenv-1.10.1/cgat-venv/bin/activate"
    echo "-> cgat --help"
    echo
    echo "To finish the Python virtual environment, type:"
@@ -202,26 +210,37 @@ echo
 echo " Running nosetests for $1 "
 echo
 
+# Go to CGAT_HOME to continue with installation
+if [ -z "$CGAT_HOME" ] ; then
+   # install in default location
+   CGAT_HOME=$HOME/CGAT-DEPS
+fi
+
 # create a new folder to store external tools
-mkdir -p $HOME/CGAT/external-tools
-cd $HOME/CGAT/external-tools
+mkdir -p $CGAT_HOME/external-tools
+cd $CGAT_HOME/external-tools
 
 # wigToBigWig
-wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/wigToBigWig
+# wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/wigToBigWig
+wget --no-check-certificate https://www.cgat.org/downloads/public/external-tools/wigToBigWig
 chmod +x wigToBigWig
-PATH=$PATH:$HOME/CGAT/external-tools
+PATH=$PATH:$CGAT_HOME/external-tools
 
 # BEDtools
-curl -L https://github.com/arq5x/bedtools2/releases/download/v2.18.2/bedtools-2.18.2.tar.gz > bedtools-2.18.2.tar.gz
+# curl -L https://github.com/arq5x/bedtools2/releases/download/v2.18.2/bedtools-2.18.2.tar.gz > bedtools-2.18.2.tar.gz
+wget --no-check-certificate https://www.cgat.org/downloads/public/external-tools/bedtools-2.18.2.tar.gz
 tar xzvf bedtools-2.18.2.tar.gz
+rm bedtools-2.18.2.tar.gz
 cd bedtools-2.18.2
 make
-PATH=$PATH:$HOME/CGAT/external-tools/bedtools-2.18.2/bin
+PATH=$PATH:$CGAT_HOME/external-tools/bedtools-2.18.2/bin
 
 # GCProfile
 cd ..
-wget http://tubic.tju.edu.cn/GC-Profile/download/GCProfile_LINUX.tar
+# wget http://tubic.tju.edu.cn/GC-Profile/download/GCProfile_LINUX.tar
+wget --no-check-certificate https://www.cgat.org/downloads/public/external-tools/GCProfile_LINUX.tar
 tar xvf GCProfile_LINUX.tar
+rm GCProfile_LINUX.tar
 cp GCProfile_LINUX/GCProfile .
 cp GCProfile_LINUX/gnuplot .
 } # nosetests_external_deps
@@ -259,60 +278,32 @@ if [ "$OS" == "travis" ] ; then
 
    echo $? ;
 
-elif [ "$OS" == "ubuntu" ] ; then
-
-   # GCProfile
-   #apt-get install -y libc6-i386 libstdc++5:i386
+elif [ "$OS" == "ubuntu" -o "$OS" == "sl" ] ; then
 
    # prepare external dependencies
    nosetests_external_deps $OS
 
+   # Go to CGAT_GITHUB to continue with installation
+   if [ -z "$CGAT_GITHUB" ] ; then
+      # install in default location
+      CGAT_GITHUB=$HOME/CGAT-GITHUB
+   fi
+
    # clone CGAT repository to run nosetests
-   cd
-   git clone https://github.com/CGATOxford/cgat.git
-   cd cgat
+   git clone https://github.com/CGATOxford/cgat.git $CGAT_GITHUB
+   cd $CGAT_GITHUB
 
    # Set up other environment variables
-   export PYTHONPATH=$PYTHONPATH:$HOME/cgat
-   source $HOME/CGAT/virtualenv-1.10.1/cgat-venv/bin/activate
+   export PYTHONPATH=$PYTHONPATH:$CGAT_GITHUB
+   source $CGAT_HOME/virtualenv-1.10.1/cgat-venv/bin/activate
 
    # bx-python
-   export C_INCLUDE_PATH=$HOME/CGAT/virtualenv-1.10.1/cgat-venv/lib/python2.7/site-packages/numpy/core/include
+   export C_INCLUDE_PATH=$CGAT_HOME/virtualenv-1.10.1/cgat-venv/lib/python2.7/site-packages/numpy/core/include
 
    python setup.py develop
 
    nosetests -v tests/test_import.py >& test_import.out
    nosetests -v tests/test_scripts.py >& test_scripts.out ;
-
-elif [ "$OS" == "sl" ] ; then
-
-   # libpq
-   #wget http://yum.postgresql.org/9.3/redhat/rhel-6-x86_64/pgdg-sl93-9.3-1.noarch.rpm
-   #rpm -i pgdg-sl93-9.3-1.noarch.rpm 
-   #yum install -y postgresql93-devel
-
-   # GCProfile
-   #yum install -y glibc.i686 compat-libstdc++-33.i686
-
-   # prepare external dependencies
-   nosetests_external_deps $OS
-
-   # clone CGAT repository to run nosetests
-   cd
-   git clone https://github.com/CGATOxford/cgat.git
-   cd cgat
-
-   # Set up other environment variables
-   export PYTHONPATH=$PYTHONPATH:$HOME/cgat
-   source $HOME/CGAT/virtualenv-1.10.1/cgat-venv/bin/activate
-
-   # bx-python
-   export C_INCLUDE_PATH=$HOME/CGAT/virtualenv-1.10.1/cgat-venv/lib/python2.7/site-packages/numpy/core/include
-
-   python setup.py develop
-
-   nosetests -v tests/test_import.py >& test_import.out
-   nosetests -v tests/test_scripts.py >& test_scripts.out;
 
 else
 
@@ -330,11 +321,18 @@ echo
 echo " 1) Become root and install the operating system* packages: "
 echo " ./install-CGAT-tools.sh --install-os-packages"
 echo
-echo " 2) Now, as a normal user (non root), install the Python dependencies**: "
+echo " 2) Now, as a normal user (non root), install the Python dependencies** in the default folder ($HOME/CGAT-DEPS): "
 echo " ./install-CGAT-tools.sh --install-python-deps"
 echo
+echo " or specify a custom folder with --cgat-deps-dir option, as follows: "
+echo " ./install-CGAT-tools.sh --install-python-deps --cgat-deps-dir /path/to/folder"
+echo
 echo " At this stage the CGAT Code Collection is ready to go and you do not need further steps. Please type the following for more information:"
-echo " source $HOME/CGAT/virtualenv-1.10.1/cgat-venv/bin/activate"
+if [ -z "$CGAT_HOME" ] ; then
+   echo " source $HOME/CGAT-DEPS/virtualenv-1.10.1/cgat-venv/bin/activate"
+else
+   echo " source $CGAT_HOME/virtualenv-1.10.1/cgat-venv/bin/activate"
+fi 
 echo " cgat --help "
 echo
 echo " The CGAT Code Collection tests the software with nosetests. If you are interested in running those, please continue with the following steps:"
@@ -342,64 +340,106 @@ echo
 echo " 3) Become root to install external tools and set up the environment: "
 echo " ./install-CGAT-tools.sh --install-nosetests-deps"
 echo
-echo " 4) Then, back as a normal user (non root), run nosetests as follows:"
+echo " 4) Then, back again as a normal user (non root), run nosetests as follows:"
 echo " ./install-CGAT-tools.sh --run-nosetests"
 echo 
+echo " This will clone the CGAT repository from GitHub to: $HOME/CGAT-GITHUB by default. If you want to change that use --git-hub-dir as follows:"
+echo " ./install-CGAT-tools.sh --run-nosetests --git-hub-dir /path/to/folder"
+echo
 echo " NOTES: "
 echo " * Supported operating systems: Ubuntu 12.x and Scientific Linux 6.x "
 echo " ** An isolated virtual environment will be created to install Python dependencies "
 echo
 exit 1;
-}
+} # help_message
 
+# the script starts here
 
-# the main script starts here
-
-if [ $# -eq 0 -o $# -gt 1 ] ; then
+if [ $# -eq 0 ] ; then
 
    help_message
 
-else
+fi
 
-   if [ "$1" == "--help" ] ; then
+INPUT_ARGS=$(getopt -n "$0" -o ht1234g:c: --long "help,
+                                                  travis,
+                                                  install-os-packages,
+                                                  install-python-deps,
+                                                  install-nosetests-deps,
+                                                  run-nosetests,
+                                                  git-hub-dir:,
+                                                  cgat-deps-dir:"  -- "$@")
+eval set -- "$INPUT_ARGS"
 
-      help_message
+while true;
+do
 
-   elif [ "$1" == "--travis" ] ; then
+  if [ "$1" == "-h" -o "$1" == "--help" ] ; then
 
+    help_message
+
+  elif [ "$1" == "-t" -o "$1" == "--travis" ] ; then
+
+      echo "travis"
       OS="travis"
       install_os_packages
       install_python_deps
       install_nosetests_deps
       run_nosetests
+      shift ;
 
-   elif [ "$1" == "--install-os-packages" ] ; then
+  elif [ "$1" == "-1" -o "$1" == "--install-os-packages" ] ; then
 
+      echo "Install OS Packages"
       detect_os
       install_os_packages
+      shift ;
 
-   elif [ "$1" == "--install-python-deps" ] ; then
+  elif [ "$1" == "-2" -o "$1" == "--install-python-deps" ] ; then
 
+      echo "Install Python Deps"
       detect_os
       install_python_deps
+      shift ;
 
-   elif [ "$1" == "--install-nosetests-deps" ] ; then
+  elif [ "$1" == "-3" -o "$1" == "--install-nosetests-deps" ] ; then
 
+      echo "Install Nosetests Deps"
       detect_os
       install_nosetests_deps
+      shift ;
 
-   elif [ "$1" == "--run-nosetests" ] ; then
+  elif [ "$1" == "-4" -o "$1" == "--run-nosetests" ] ; then
 
+      echo "Run Nosetests"
       detect_os
       run_nosetests
+      shift ;
 
-   else 
+  elif [ "$1" == "-g" -o "$1" == "--git-hub-dir" ] ; then
 
-      echo 
-      echo " Incorrect input parameter: $1 "
-      help_message
+      echo "Git hub dir: $2"
+#      CGAT_GITHUB="$2"
+#      install_
+      shift 2 ;
 
-   fi # if argument 1
+  elif [ "$1" == "-c" -o "$1" == "--cgat-deps-dir" ] ; then
 
-fi # if number of input parameters
+      echo "CGAT deps dir: $2"
+#      CGAT_HOME="$2"
+#      install_python_deps
+      shift 2 ;
+
+  elif [ "$1" == "--" ] ; then
+
+    shift
+    break ;
+
+  else
+
+    help_message
+
+  fi # if-args
+
+done # while-loop
 
