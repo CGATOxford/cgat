@@ -33,4 +33,5 @@ set_flag:
     stdin: unstrip.bam
     outputs: [stdout]
     references: [nh_flag.bam]
-    options: -v 0 --set-nh	
+    options: -v 0 --set-nh
+
