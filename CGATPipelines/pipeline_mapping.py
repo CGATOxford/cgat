@@ -1086,8 +1086,9 @@ if "merge_pattern_input" in PARAMS and PARAMS["merge_pattern_input"]:
         for infile in infiles:
             with IOTools.openFile(infile, "r") as inf:
                 for line in infiles:
-                    if not line.startswith("nreads"):
+                    if line.startswith("nreads"):
                         continue
+                    E.info("%s" % line[:-1])
                     nreads += int(line[:-1].split("\t")[1])
 
         outf = IOTools.openFile(outfile, "w")
@@ -1461,7 +1462,8 @@ def buildTranscriptLevelReadCounts(infiles, outfile):
                --counter=read-counts 
                --prefix=""
                --counter=read-coverage
-               --prefix=coverage_
+               --prefix=coverage_        
+               -v 0
             | gzip
           > %(outfile)s
          ''' % locals()
