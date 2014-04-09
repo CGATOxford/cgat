@@ -659,8 +659,8 @@ def plotPairs():
        ''')
     #R('''pairs(countsTable, lower.panel = panel.pearson, pch=".", log="xy")''')
     R('''pairs(countsTable,
-               lower.panel = panel.pearson, 
-               pch=".", 
+               lower.panel = panel.pearson,
+               pch=".",
                labels=colnames(countsTable),
                log="xy")''')
 
@@ -975,6 +975,8 @@ def deseqPlotGeneHeatmap(outfile,
     Should be 'blind', as then the transform is
     not informed by the experimental design.
     '''
+    if len(data) == 0:
+        return
 
     R.png(outfile, width=500, height=2000)
     hmcol = R.colorRampPalette(R['brewer.pal'](9, "GnBu"))(100)
@@ -1344,15 +1346,21 @@ def runDESeq(outfile,
         # plot heatmap of differentially expressed genes
         # plot gene heatmap for all genes - order by average expression
         select = res.rx2('padj').ro < fdr
-        E.info('%s vs %s: plotting %i genes in heatmap' %
-               (treatment, control, len(select)))
-        data = R.exprs(vsd).rx(select, True)
-        order = R.order(R.rowMeans(data), decreasing=True)
-        deseqPlotGeneHeatmap(
-            '%sgene_heatmap.png' % outfile_groups_prefix,
-            R['as.matrix'](data.rx(order, True)),
-            Colv=False,
-            Rowv=True)
+        if len(select) > 0:
+            E.info('%s vs %s: plotting %i genes in heatmap' %
+                   (treatment, control, len(select)))
+            data = R.exprs(vsd).rx(select, True)
+            if not isinstance(data, rpy2.robjects.vectors.FloatVector):
+                order = R.order(R.rowMeans(data), decreasing=True)
+                deseqPlotGeneHeatmap(
+                    '%sgene_heatmap.png' % outfile_groups_prefix,
+                    R['as.matrix'](data.rx(order, True)),
+                    Colv=False,
+                    Rowv=True)
+            else:
+                E.warn('can not plot differentially expressed genes')
+        else:
+            E.warn('no differentially expressed genes at fdr %f' % fdr)
 
         # Plot pvalue histogram
         R.png('''%(outfile_groups_prefix)spvalue_histogram.png''' % locals())
@@ -1581,12 +1589,14 @@ def loadCuffdiff(infile, outfile):
 
     Note: converts from ln(fold change) to log2 fold change.
 
-    The cuffdiff output is parsed. 
+    The cuffdiff output is parsed.
 
-    Pairwise comparisons in which one gene is not expressed (fpkm < fpkm_silent)
-    are set to status 'NOCALL'. These transcripts might nevertheless be significant.
+    Pairwise comparisons in which one gene is not expressed (fpkm <
+    fpkm_silent) are set to status 'NOCALL'. These transcripts might
+    nevertheless be significant.
 
     This requires the cummeRbund library to be present in R.
+
     '''
 
     prefix = P.toTable(outfile)
@@ -1607,12 +1617,12 @@ def loadCuffdiff(infile, outfile):
     tmpname = P.getTempFilename()
 
     # ignore promoters and splicing - no fold change column, but  sqrt(JS)
-    for fn, level in (("cds_exp.diff", "cds"),
-                      ("gene_exp.diff", "gene"),
-                      ("isoform_exp.diff", "isoform"),
-                      # ("promoters.diff", "promotor"),
-                      # ("splicing.diff", "splice"),
-                      ("tss_group_exp.diff", "tss")):
+    for fn, level in (("cds_exp.diff.gz", "cds"),
+                      ("gene_exp.diff.gz", "gene"),
+                      ("isoform_exp.diff.gz", "isoform"),
+                      # ("promoters.diff.gz", "promotor"),
+                      # ("splicing.diff.gz", "splice"),
+                      ("tss_group_exp.diff.gz", "tss")):
 
         tablename = prefix + "_" + level + "_diff"
 
@@ -1622,30 +1632,30 @@ def loadCuffdiff(infile, outfile):
         with IOTools.openFile(tmpname, "w") as outf:
             writeExpressionResults(outf, results)
 
-        statement = '''cat %(tmpname)s 
+        statement = '''cat %(tmpname)s
         | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --allow-empty
               --index=treatment_name
               --index=control_name
               --index=test_id
-              --table=%(tablename)s 
+              --table=%(tablename)s
          >> %(outfile)s.log
          '''
 
         P.run()
 
-    for fn, level in (("cds.fpkm_tracking", "cds"),
-                      ("genes.fpkm_tracking", "gene"),
-                      ("isoforms.fpkm_tracking", "isoform"),
-                      ("tss_groups.fpkm_tracking", "tss")):
+    for fn, level in (("cds.fpkm_tracking.gz", "cds"),
+                      ("genes.fpkm_tracking.gz", "gene"),
+                      ("isoforms.fpkm_tracking.gz", "isoform"),
+                      ("tss_groups.fpkm_tracking.gz", "tss")):
 
         tablename = prefix + "_" + level + "_levels"
 
-        statement = '''cat %(indir)s/%(fn)s
+        statement = '''zcat %(indir)s/%(fn)s
         | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --allow-empty
               --index=tracking_id
-              --table=%(tablename)s 
+              --table=%(tablename)s
          >> %(outfile)s.log
          '''
 
@@ -1653,7 +1663,8 @@ def loadCuffdiff(infile, outfile):
 
     # Jethro - load tables of sample specific cuffdiff fpkm values into csvdb
 
-    #IMS: First read in lookup table for CuffDiff/Pipeline sample name conversion
+    #IMS: First read in lookup table for CuffDiff/Pipeline sample name
+    #conversion
     inf = IOTools.openFile(os.path.join(indir, "read_groups.info"))
     inf.readline()
     sample_lookup = {}
@@ -1667,10 +1678,10 @@ def loadCuffdiff(infile, outfile):
 
     inf.close()
 
-    for fn, level in (("cds.read_group_tracking", "cds"),
-                      ("genes.read_group_tracking", "gene"),
-                      ("isoforms.read_group_tracking", "isoform"),
-                      ("tss_groups.read_group_tracking", "tss")):
+    for fn, level in (("cds.read_group_tracking.gz", "cds"),
+                      ("genes.read_group_tracking.gz", "gene"),
+                      ("isoforms.read_group_tracking.gz", "isoform"),
+                      ("tss_groups.read_group_tracking.gz", "tss")):
 
         tablename = prefix + "_" + level + "sample_fpkms"
 
@@ -1717,9 +1728,10 @@ def loadCuffdiff(infile, outfile):
 
         samples = sorted(samples)
 
-        # IMS - CDS files might be empty if not cds has been calculated for the genes
-        # in the long term need to add CDS annotation to denovo predicted genesets
-        # in meantime just skip if cds tracking file is empty
+        # IMS - CDS files might be empty if not cds has been
+        # calculated for the genes in the long term need to add CDS
+        # annotation to denovo predicted genesets in meantime just
+        # skip if cds tracking file is empty
 
         if len(samples) == 0:
             continue
@@ -1761,7 +1773,7 @@ def loadCuffdiff(infile, outfile):
     tmpfile.write("\n".join(tracks) + "\n")
     tmpfile.close()
 
-    statement = P.load(tmpfile.name, outfile)
+    P.load(tmpfile.name, outfile)
     os.unlink(tmpfile.name)
 
 
@@ -1788,8 +1800,6 @@ def runCuffdiff(bamfiles,
     '''
 
     design = readDesignFile(design_file)
-
-    to_cluster = True
 
     outdir = outfile + ".dir"
     try:
@@ -1827,6 +1837,12 @@ def runCuffdiff(bamfiles,
     extra_options = " ".join(extra_options)
 
     # IMS added a checkpoint to catch cuffdiff errors
+    # AH: removed log messages about BAM record error
+    # These cause logfiles to grow several Gigs and are
+    # frequent for BAM files not created by tophat.
+    # Error is:
+    # BAM record error: found spliced alignment without XS attribute
+    # AH: compress output in outdir
     statement = '''date > %(outfile)s.log; hostname >> %(outfile)s.log;
     cuffdiff --output-dir %(outdir)s
              --verbose
@@ -1837,13 +1853,17 @@ def runCuffdiff(bamfiles,
              %(cuffdiff_options)s
              <(gunzip < %(geneset_file)s )
              %(reps)s
-    >> %(outfile)s.log 2>&1;
+    2>&1
+    | grep -v 'BAM record error'
+    >> %(outfile)s.log;
+    checkpoint;
+    gzip %(outdir)s/*;
     checkpoint;
     date >> %(outfile)s.log;
     '''
     P.run()
 
-    results = parseCuffdiff(os.path.join(outdir, "gene_exp.diff"))
+    results = parseCuffdiff(os.path.join(outdir, "gene_exp.diff.gz"))
 
     if outfile == sys.stdout:
         writeExpressionResults(outfile, results)
@@ -1944,8 +1964,27 @@ def outputTagSummary(filename_tags,
         nobservations, nsamples = tuple(R('''dim(countsTable)'''))
         E.info("read data: %i observations for %i samples" %
                (nobservations, nsamples))
-        E.debug("sample names: %s" % R('''colnames(countsTable)'''))
+        # remove samples without data
+        R('''max_counts = apply(countsTable,2,max)''')
+
+        filter_min_counts_per_sample = 1
+
+        empty_samples = tuple(
+            R('''max_counts < %i''' % filter_min_counts_per_sample))
+        sample_names = R('''colnames(countsTable)''')
+        nempty_samples = sum(empty_samples)
+
+        if nempty_samples:
+            E.warn("%i empty samples are being removed: %s" %
+                   (nempty_samples,
+                    ",".join([sample_names[x]
+                              for x, y in enumerate(empty_samples) if y])))
+            R('''countsTable <- countsTable[, max_counts >= %i]''' %
+              filter_min_counts_per_sample)
+            nobservations, nsamples = tuple(R('''dim(countsTable)'''))
+
         R('''groups = factor(colnames( countsTable ))''')
+        E.debug("sample names: %s" % R('''colnames(countsTable)'''))
 
     nrows, ncolumns = tuple(R('''dim(countsTable)'''))
 
