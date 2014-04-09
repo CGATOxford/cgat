@@ -1,5 +1,17 @@
 #!/usr/bin/env bash
 
+
+# message to display when the OS is not correct
+sanity_check_os() {
+   echo
+   echo " Unsupported operating system "
+   echo " " $OS
+   echo " Installation aborted "
+   echo
+   exit 1;
+} # sanity_check_os
+
+
 # function to detect the Operating System
 detect_os(){
 
@@ -35,24 +47,11 @@ elif [ -f /etc/system-release ]; then
 
 else
 
-   echo
-   echo " Operating system not supported "
-   echo
-   echo " Exiting installation "
-   echo
-   exit 1;
+   sanity_check_os
 
 fi
 } # detect_os
 
-# message to display when the OS is not correct
-sanity_check_os() {
-   echo
-   echo " Unsupported operating system: $OS "
-   echo " Installation aborted "
-   echo
-   exit 1;
-} # sanity_check_os
 
 # function to install operating system dependencies
 install_os_packages() {
@@ -80,7 +79,7 @@ elif [ "$OS" == "sl" ] ; then
 
 else
 
-   sanity_check_os
+   sanity_check_os $OS
 
 fi # if-OS
 } # install_os_packages
@@ -174,7 +173,7 @@ elif [ "$OS" == "travis" ] ; then
 
 else
 
-   sanity_check_os
+   sanity_check_os $OS
 
 fi # if-OS
 } # install_python_deps
@@ -276,8 +275,6 @@ if [ "$OS" == "travis" ] ; then
       nosetests -v tests/test_scripts.py ;
    fi
 
-   echo $? ;
-
 elif [ "$OS" == "ubuntu" -o "$OS" == "sl" ] ; then
 
    # prepare external dependencies
@@ -302,12 +299,12 @@ elif [ "$OS" == "ubuntu" -o "$OS" == "sl" ] ; then
 
    python setup.py develop
 
-   nosetests -v tests/test_import.py >& test_import.out
-   nosetests -v tests/test_scripts.py >& test_scripts.out ;
+   /usr/bin/time -o test_import.time -v nosetests -v tests/test_import.py >& test_import.out
+   /usr/bin/time -o test_scripts.time -v nosetests -v tests/test_scripts.py >& test_scripts.out ;
 
 else
 
-   sanity_check_os
+   sanity_check_os $OS
 
 fi # if-OS
 
@@ -361,6 +358,18 @@ if [ $# -eq 0 ] ; then
 
 fi
 
+# these variables will store the information about input parameters
+# travis execution
+TRAVIS=
+# install operating system's dependencies
+OS_PKGS=
+# install Python dependencies
+PY_PKGS=
+# install dependencies to run nosetests
+NT_PKGS=
+# run nosetests
+NT_RUN=
+# variable to actually store the input parameters
 INPUT_ARGS=$(getopt -n "$0" -o ht1234g:c: --long "help,
                                                   travis,
                                                   install-os-packages,
@@ -371,7 +380,8 @@ INPUT_ARGS=$(getopt -n "$0" -o ht1234g:c: --long "help,
                                                   cgat-deps-dir:"  -- "$@")
 eval set -- "$INPUT_ARGS"
 
-while true;
+# process all the input parameters first
+while [ "$1" != "--" ]
 do
 
   if [ "$1" == "-h" -o "$1" == "--help" ] ; then
@@ -379,67 +389,86 @@ do
     help_message
 
   elif [ "$1" == "-t" -o "$1" == "--travis" ] ; then
-
-      echo "travis"
-      OS="travis"
-      install_os_packages
-      install_python_deps
-      install_nosetests_deps
-      run_nosetests
+      
+      TRAVIS=1
       shift ;
 
   elif [ "$1" == "-1" -o "$1" == "--install-os-packages" ] ; then
-
-      echo "Install OS Packages"
-      detect_os
-      install_os_packages
+      
+      OS_PKGS=1
       shift ;
 
   elif [ "$1" == "-2" -o "$1" == "--install-python-deps" ] ; then
-
-      echo "Install Python Deps"
-      detect_os
-      install_python_deps
+      
+      PY_PKGS=1
       shift ;
 
   elif [ "$1" == "-3" -o "$1" == "--install-nosetests-deps" ] ; then
 
-      echo "Install Nosetests Deps"
-      detect_os
-      install_nosetests_deps
+      NT_PKGS=1
       shift ;
 
   elif [ "$1" == "-4" -o "$1" == "--run-nosetests" ] ; then
 
-      echo "Run Nosetests"
-      detect_os
-      run_nosetests
+      NT_RUN=1
       shift ;
 
   elif [ "$1" == "-g" -o "$1" == "--git-hub-dir" ] ; then
 
-      echo "Git hub dir: $2"
-#      CGAT_GITHUB="$2"
-#      install_
+      CGAT_GITHUB="$2"
       shift 2 ;
 
   elif [ "$1" == "-c" -o "$1" == "--cgat-deps-dir" ] ; then
 
-      echo "CGAT deps dir: $2"
-#      CGAT_HOME="$2"
-#      install_python_deps
+      CGAT_HOME="$2"
       shift 2 ;
-
-  elif [ "$1" == "--" ] ; then
-
-    shift
-    break ;
 
   else
 
     help_message
 
   fi # if-args
+  
 
 done # while-loop
+
+# perform actions according to the input parameters processed
+if [ "$TRAVIS" == "1" ] ; then
+
+  OS="travis"
+  install_os_packages
+  install_python_deps
+  install_nosetests_deps
+  run_nosetests
+
+else 
+
+  detect_os
+  
+  if [ "$OS_PKGS" == "1" ] ; then
+
+    install_os_packages
+
+  fi
+
+  if [ "$PY_PKGS" == "1" ] ; then
+
+    install_python_deps
+
+  fi
+
+  if [ "$NT_PKGS" == "1" ] ; then
+
+    install_nosetests_deps
+
+  fi
+
+  if [ "$NT_RUN" == "1" ] ; then
+
+    run_nosetests
+
+  fi
+
+
+fi # if-variables
 
