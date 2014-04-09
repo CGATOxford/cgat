@@ -443,5 +443,3 @@ do
 
 done # while-loop
 
-exit 0
-
