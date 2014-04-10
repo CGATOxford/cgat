@@ -295,14 +295,14 @@ def loadPicardDuplicateStats(infiles, outfile):
            regex("(.*).bw"),
            r"background.dir/\1.bed.gz")
 def buildBackgroundWindows(infile, outfile):
-    '''compute regions with high background count in input 
+    '''compute regions with high background count in input
     '''
 
     job_options = "-l mem_free=16G"
 
     statement = '''
-    python %(scriptsdir)s/wig2bed.py 
-             --bigwig-file=%(infile)s 
+    python %(scriptsdir)s/wig2bed.py
+             --bigwig-file=%(infile)s
              --genome-file=%(genome_dir)s/%(genome)s
              --threshold=%(filtering_background_density)f
              --method=threshold
@@ -391,10 +391,8 @@ def buildCoverageBed(infile, outfile):
     Intervals containing only few reads (tiling_min_reads) are removed.
     '''
 
-    to_cluster = True
-
     statement = '''
-    zcat %(infile)s 
+    zcat %(infile)s
     | cut -f 1,2,3
     | python %(scriptsdir)s/bed2bed.py
           --method=merge
@@ -417,7 +415,7 @@ def buildCpGComposition(infile, outfile):
     '''
 
     statement = '''
-    zcat %(infile)s 
+    zcat %(infile)s
     | python %(scriptsdir)s/bed2table.py
           --counter=composition-cpg
           --genome-file=%(genome_dir)s/%(genome)s
@@ -430,13 +428,13 @@ def buildCpGComposition(infile, outfile):
 @merge(buildCoverageBed, "tags.dir/genomic.covered.tsv.gz")
 def buildReferenceCpGComposition(infiles, outfile):
     '''compute CpG densities across reference windows across
-    the genome. 
+    the genome.
 
     This will take the first file of the input and
     shuffle the intervals, and then compute.
 
     Using fixed size windows across the genome results in
-    a very discretized distribution compared to the other 
+    a very discretized distribution compared to the other
     read coverage tracks which have intervals of different size.
     '''
 
@@ -447,7 +445,7 @@ def buildReferenceCpGComposition(infiles, outfile):
         PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_gaps_bed"])
 
     # remove windows which are more than 50% N - column 17
-    statement = '''bedtools shuffle 
+    statement = '''bedtools shuffle
                       -i %(infile)s
                       -g %(contig_sizes)s
                       -excl %(gaps_bed)s
