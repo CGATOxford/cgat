@@ -288,7 +288,7 @@ def asDict(param):
     return dict(CONFIG.items(param))
 
 
-def isTrue(param):
+def isTrue(param, **kwargs):
     '''return True if param has a True value.
 
     A parameter is false if it is:
@@ -300,8 +300,13 @@ def isTrue(param):
 
     Otherwise the value is true.
     '''
-    value = PARAMS.get(param, 0)
-    return value.lower() != 'false' or value
+    if kwargs:
+        p = substituteParameters(**kwargs)
+    else:
+        p = PARAMS
+    value = p.get(param, 0)
+    return value not in (0, '', 'false', 'False')
+
 
 #######################################################
 ##
