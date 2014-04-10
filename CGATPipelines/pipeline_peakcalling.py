@@ -70,7 +70,7 @@ peakranger_ccat
     PeakRanger is here run using the CCAT alogorithm (See:
     Xu, H., L. Handoko, et al. (2010).A signal-noise model for
     significance analysis of ChIP-seq with negative
-    control.Bioinformatics 26(9): 1199-1204)
+    control. Bioinformatics 26(9): 1199-1204)
 
 scripture
     As of version 2, scripture has added a ChIP-Seq module. The current
@@ -277,6 +277,14 @@ the example, simply unpack and untar::
 .. _peakranger: http://ranger.sourceforge.net/
 .. _scripture: http://www.broadinstitute.org/software/scripture/home
 
+ChangeLog
+=========
+
+10/04/14 AH
+    * added prediction of tag and fragment sizes
+    * SICER, SPP now use predicted fragment size instead
+      of fragment size supplied in options.
+
 Code
 ====
 
@@ -285,32 +293,22 @@ Code
 # load modules
 from ruffus import *
 
-import CGAT.Experiment as E
 import logging as L
-import CGAT.Database as Database
-import CGAT.CSV as CSV
-import CGAT.BamTools as BamTools
 import sys
 import os
 import re
 import shutil
 import itertools
-import math
 import glob
-import time
-import gzip
-import collections
-import random
-
-import numpy
 import sqlite3
-import CGAT.GTF as GTF
+
+import CGAT.Experiment as E
 import CGAT.Bed as Bed
 import CGAT.IOTools as IOTools
-import CGAT.IndexedFasta as IndexedFasta
+import CGAT.Database as Database
+import CGAT.BamTools as BamTools
 
 import CGATPipelines.PipelinePeakcalling as PipelinePeakcalling
-import CGATPipelines.PipelineMotifs as PipelineMotifs
 import CGATPipelines.PipelineTracks as PipelineTracks
 import CGATPipelines.PipelineMappingQC as PipelineMappingQC
 
@@ -605,7 +603,6 @@ if PARAMS["calling_normalize"] is True:
     # First count the number of reads in each bam
     @transform(prepareBAMForPeakCalling, suffix("prep.bam"), "prep.count")
     def countReadsInBAM(infile, outfile):
-        to_cluster = True
         statement = '''samtools idxstats %s
         | awk '{s+=$3} END {print s}' > %s ''' % (
             infile, outfile)
@@ -664,9 +661,6 @@ else:
 def buildBAMStats(infile, outfile):
     '''count number of reads mapped, duplicates, etc.
     '''
-
-    to_cluster = True
-
     statement = '''python
     %(scriptsdir)s/bam2stats.py
          --force
@@ -685,6 +679,32 @@ def loadBAMStats(infiles, outfile):
     '''import bam statisticis.'''
 
     PipelineMappingQC.loadBAMStats(infiles, outfile)
+
+
+@follows(mkdir("background.dir"))
+@transform("*%s*.genome.bw" % PARAMS["tracks_control"],
+           regex("(.*).bw"),
+           r"background.dir/\1.bed.gz")
+def buildBackgroundWindows(infile, outfile):
+    '''compute regions with high background count in input
+
+    Requires bigwig files in the data directory.
+    '''
+
+    job_options = "-l mem_free=16G"
+
+    statement = '''
+    python %(scriptsdir)s/wig2bed.py
+             --bigwig-file=%(infile)s
+             --genome-file=%(genome_dir)s/%(genome)s
+             --threshold=%(calling_background_density)f
+             --method=threshold
+             --log=%(outfile)s.log
+    | bgzip
+    > %(outfile)s
+    '''
+
+    P.run()
 
 
 ######################################################################
@@ -707,7 +727,6 @@ def checkDataQuality(infile, outfile):
         P.touch(outfile)
         return
 
-    to_cluster = True
     statement = '''peakranger nr --format bam %(infile)s %(controlfile)s
     | awk -v FS=":" '/Estimated noise rate/
       { printf("estimated_noise_rate\\n%%f\\n", $2) }'
@@ -734,11 +753,105 @@ def loadDataQuality(infiles, outfile):
 def checkLibraryComplexity(infile, outfile):
     '''uses peakranger to check library complexity.'''
 
-    to_cluster = True
     statement = '''peakranger lc --format bam %(infile)s > %(outfile)s'''
     P.run()
 
 
+####################################################################
+@follows(normalizeBAM, mkdir('fragment_size.dir'))
+@files([("%s.call.bam" % (x.asFile()),
+         "fragment_size.dir/%s.fragment_size" % x.asFile()) for x in TRACKS])
+def predictFragmentSize(infile, outfile):
+    '''predict fragment size.
+
+    For single end data, use MACS2, for paired-end data
+    use the bamfile.
+
+    In some BAM files the read length (rlen) attribute
+    is not set, which causes MACS2 to predict a 0.
+
+    Thus it is computed here from the CIGAR string if rlen is 0.
+    '''
+    tagsize = BamTools.estimateTagSize(infile)
+
+    if BamTools.isPaired(infile):
+        mode = "PE"
+        mean, std = BamTools.estimateInsertSizeDistribution(infile, 10000)
+    else:
+        mode = "SE"
+        statement = '''macs2 predictd
+        --format BAM
+        --ifile %(infile)s
+        --outdir %(outfile)s.dir
+        --verbose 2
+        %(macs2_predictd_options)s
+        >& %(outfile)s.tsv
+        '''
+        P.run()
+
+        with IOTools.openFile(outfile + ".tsv") as inf:
+            lines = inf.readlines()
+            line = [x for x in lines
+                    if "# predicted fragment length is" in x]
+            if len(line) == 0:
+                raise ValueError(
+                    'could not find predicted fragment length')
+            mean = re.search(
+                "# predicted fragment length is (\d+)",
+                line[0]).groups()[0]
+            std = 'na'
+
+    outf = IOTools.openFile(outfile, "w")
+    outf.write("mode\tfragmentsize_mean\tfragmentsize_std\ttagsize\n")
+    outf.write("\t".join(
+        map(str, (mode, mean, std, tagsize))) + "\n")
+    outf.close()
+
+
+@merge(predictFragmentSize, "fragment_sizes.tsv")
+def buildFragmentSizeTable(infiles, outfile):
+    '''build a table with fragment sizes.'''
+    statement = '''
+    python %(scriptsdir)s/combine_tables.py
+    --cat=track 
+    --regex-filename=".*/(\\S+).fragment_size"
+    fragment_size.dir/*.fragment_size
+    > %(outfile)s
+    '''
+    P.run()
+
+@E.cachedfunction
+def getFragmentSizeTable():
+    if not os.path.exists('fragment_sizes.tsv'):
+        raise ValueError('can not read fragment_sizes.tsv')
+    table = IOTools.readMap(IOTools.openFile('fragment_sizes.tsv'),
+                            columns='all',
+                            has_header=True)
+    return table
+
+
+def getFragmentSize(track):
+    '''return fragment size for track.
+    
+    returns None if not available.
+    '''
+    table = getFragmentSizeTable()
+    if track in table:
+        return int(table[track].fragmentsize_mean)
+    else:
+        return None
+
+def getTagSize(track):
+    '''return tag size for track.
+    
+    returns None if not available.
+    '''
+    table = getFragmentSizeTable()
+    if track in table:
+        return int(table[track].tagsize)
+    else:
+        return None
+        
 ######################################################################
 ######################################################################
 ##                                                                  ##
@@ -773,7 +886,11 @@ def callPeaksWithMACS(infile, outfile):
     controls = getControl(Sample(track))
     controlfile = getControlFile(Sample(track), controls, "%s.call.bam")
 
-    PipelinePeakcalling.runMACS(infile, outfile, controlfile)
+    PipelinePeakcalling.runMACS(
+        infile,
+        outfile,
+        controlfile,
+        tagsize=getTagSize(track))
 
 ############################################################
 
@@ -800,9 +917,7 @@ def loadMACS(infile, outfile):
 def cleanMACS(infiles, outfiles):
     '''clean up MACS - build bigwig file and remove wig files.'''
 
-    to_cluster = True
     infile, contigfile = infiles
-    outdir = os.path.join(PARAMS["exportdir"], "macs")
 
     for indir, outfile in zip(
             (os.path.join(infile + "_MACS_wiggle", "treat"),
@@ -879,10 +994,14 @@ def callPeaksWithMACS2(infile, outfile):
     track = P.snip(infile, ".call.bam")
     controls = getControl(Sample(track), suffix=".call.bam")
     controlfile = getControlFile(Sample(track), controls, "%s.call.bam")
-    PipelinePeakcalling.runMACS2(infile,
-                                 outfile,
-                                 controlfile,
-                                 P.isTrue('macs2_force_single_end'))
+    PipelinePeakcalling.runMACS2(
+        infile,
+        outfile,
+        controlfile,
+        P.isTrue('macs2_force_single_end',
+                 **locals()),
+        tagsize=getTagSize(track)
+    )
 
 ############################################################
 
@@ -997,7 +1116,10 @@ def callNarrowerPeaksWithSICER(infile, outfile):
 
     controls = getControl(Sample(track))
     controlfile = getControlFile(Sample(track), controls, "%s.call.bam")
-    PipelinePeakcalling.runSICER(infile, outfile, controlfile, "narrow")
+    PipelinePeakcalling.runSICER(infile, outfile,
+                                 controlfile, 
+                                 "narrow",
+                                 fragmentsize=getFragmentSize(track))
 
 
 ######################################################################
@@ -1016,7 +1138,11 @@ def callBroaderPeaksWithSICER(infile, outfile):
 
     controls = getControl(Sample(track))
     controlfile = getControlFile(Sample(track), controls, "%s.call.bam")
-    PipelinePeakcalling.runSICER(infile, outfile, controlfile, "broad")
+    PipelinePeakcalling.runSICER(infile,
+                                 outfile,
+                                 controlfile,
+                                 "broad",
+                                 fragmentsize=getFragmentSize(track))
 
 ######################################################################
 ######################################################################
@@ -1165,7 +1291,6 @@ def loadPeakRangerSummaryCCAT(infile, outfile):
        "broadpeak.dir/genome_windows.bed.gz")
 def buildBroadPeakGenomeWindows(infile, outfile):
     windows = PARAMS["broadpeak_genome_windows"]
-    tmpf = P.getTempFilename(".")
     PipelinePeakcalling.createGenomeWindows(infile, outfile, windows)
 
 
@@ -1301,7 +1426,6 @@ def loadSPPSummary(infile, outfile):
 def estimateSPPQualityMetrics(infile, outfile):
     '''estimate ChIP-Seq quality metrics using SPP'''
 
-    to_cluster = True
     job_options = "-l mem_free=4G"
     track = P.snip(infile, ".call.bam")
     controls = getControl(Sample(track))
@@ -1362,8 +1486,6 @@ def callPeaksWithSPPForIDR(infile, outfile):
 
     job_options = "-l mem_free=4G"
 
-    to_cluster = True
-
     if controlfile is None:
         raise ValueError("idr analysis requires a control")
 
@@ -1394,7 +1516,6 @@ def applyIDR(infiles, outfile):
 
     job_options = "-l mem_free=4G"
 
-    to_cluster = True
     chromosome_table = os.path.join(
         PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_contigs"])
 
@@ -1429,8 +1550,6 @@ def applyIDR(infiles, outfile):
            ".plot")
 def plotIDR(infile, outfile):
     '''plot IDR results.'''
-
-    to_cluster = True
 
     track = P.snip(infile, ".idr")
     files = glob.glob(track + "*.idr-em.sav")

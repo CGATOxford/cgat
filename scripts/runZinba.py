@@ -52,27 +52,35 @@ Code
 
 import os
 import sys
-import re
-import optparse
 import tempfile
 import shutil
 import subprocess
-import collections
 
 # for zinba
 from rpy2.robjects import r as R
-import rpy2.robjects as ro
-import rpy2.robjects.vectors as rovectors
-from rpy2.rinterface import RRuntimeError
 
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
+import CGAT.BamTools as BamTools
 
 
-def bamToBed(infile, outfile):
+def bamToBed(infile, outfile,
+             min_insert_size=0,
+             max_insert_size=1000):
     '''convert bam to bed with bedtools.'''
 
-    statement = "bamToBed -i %(infile)s > %(outfile)s" % locals()
+    if BamTools.isPaired(infile):
+        # output strand as well
+        statement = ['''cat %(infile)s
+        | python %(scriptsdir)s/bam2bed.py
+              --merge-pairs
+              --min-insert-size=%(min_insert_size)i
+              --max-insert-size=%(max_insert_size)i
+              --log=%(outfile)s.log
+              --bed-format=6
+        > %(outfile)s''' % locals()]
+    else:
+        statement = "bamToBed -i %(infile)s > %(outfile)s" % locals()
 
     E.debug("executing statement '%s'" % statement)
 
@@ -96,24 +104,30 @@ def main(argv=None):
         argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+    parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
-    parser.add_option("-f", "--input-format", dest="input_format", type="choice",
+    parser.add_option("-f", "--input-format", dest="input_format",
+                      type="choice",
                       choices=("bed", "bam"),
                       help="input file format [default=%default].")
 
-    parser.add_option("-s", "--fragment-size", dest="fragment_size", type="int",
+    parser.add_option("-s", "--fragment-size", dest="fragment_size",
+                      type="int",
                       help="fragment size [default=%default].")
 
-    parser.add_option("-m", "--mappability-dir", dest="mappability_dir", type="string",
+    parser.add_option("-m", "--mappability-dir", dest="mappability_dir",
+                      type="string",
                       help="mappability_dir [default=%default].")
 
-    parser.add_option("-b", "--bit-filename", dest="bit_filename", type="string",
+    parser.add_option("-b", "--bit-filename", dest="bit_filename",
+                      type="string",
                       help="2bit genome filename [default=%default].")
 
-    parser.add_option("-c", "--control-filename", dest="control_filename", type="string",
-                      help="filename of input/control data in bed format [default=%default].")
+    parser.add_option("-c", "--control-filename", dest="control_filename",
+                      type="string",
+                      help="filename of input/control data in bed format "
+                      "[default=%default].")
 
     parser.add_option("-i", "--index-dir", dest="index_dir", type="string",
                       help="index directory [default=%default].")
@@ -121,17 +135,21 @@ def main(argv=None):
     parser.add_option("-t", "--threads", dest="threads", type="int",
                       help="number of threads to use [default=%default].")
 
-    parser.add_option("-q", "--fdr-threshold", dest="fdr_threshold", type="float",
+    parser.add_option("-q", "--fdr-threshold", dest="fdr_threshold",
+                      type="float",
                       help="fdr threshold [default=%default].")
 
-    parser.add_option("-a", "--alignability-threshold", dest="alignability_threshold", type="int",
+    parser.add_option("-a", "--alignability-threshold",
+                      dest="alignability_threshold", type="int",
                       help="alignability threshold [default=%default].")
 
-    parser.add_option("-p", "--per-contig", dest="per_contig", action="store_true",
+    parser.add_option("-p", "--per-contig", dest="per_contig",
+                      action="store_true",
                       help="run analysis per chromosome [default=%default]")
 
     parser.add_option("-w", "--temp-dir", dest="tempdir", type="string",
-                      help="use existing directory as temporary directory [default=%default].")
+                      help="use existing directory as temporary directory "
+                      "[default=%default].")
 
     parser.add_option("--keep-temp", dest="keep_temp", action="store_true",
                       help="keep temporary directory [default=%default]")
@@ -141,7 +159,16 @@ def main(argv=None):
                       help="action to perform [default=%default]")
 
     parser.add_option("--improvement", dest="improvement", type="float",
-                      help="relative improvement of likelihood until convergence [default=%default]")
+                      help="relative improvement of likelihood until "
+                      "convergence [default=%default]")
+
+    parser.add_option("--min-insert-size", dest="min_insert_size", type="int",
+                      help="minimum insert size for paired end data "
+                      "[default=%default]")
+
+    parser.add_option("--max-insert-size", dest="max_insert_size", type="int",
+                      help="maximum insert size for paired end data "
+                      "[default=%default]")
 
     parser.set_defaults(
         input_format="bed",
@@ -158,6 +185,8 @@ def main(argv=None):
         cnvOffset=2500,
         per_contig=False,
         keep_temp=False,
+        min_insert_size=0,
+        max_insert_size=1000,
         filelist="files.list",
         action="full",
         improvement=0.00001,
