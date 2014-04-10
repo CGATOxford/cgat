@@ -1,0 +1,19 @@
+@SQ	SN:chrX	LN:171031299
+read1	163	chrX	11	255	60M	=	*	*	*	*	NM:i:1	NH:i:1	XS:A:+
+read2	163	chrX	111	255	60M	=	*	*	*	*	NM:i:1	NH:i:1	XS:A:+
+read3	163	chrX	211	255	60M	=	*	*	*	*	NM:i:1	NH:i:1	XS:A:+
+read4	163	chrX	311	255	60M	=	*	*	*	*	NM:i:1	NH:i:1	XS:A:+
+read5	163	chrX	371	255	60M	=	*	*	*	*	NM:i:1	NH:i:1	XS:A:+
+read11	163	chrX	1011	255	60M	=	*	*	*	*	NM:i:1	NH:i:1	XS:A:+
+read12	163	chrX	1021	255	60M	=	*	*	*	*	NM:i:1	NH:i:1	XS:A:+
+read13	163	chrX	1031	255	60M	=	*	*	*	*	NM:i:1	NH:i:1	XS:A:+
+read21	163	chrX	2011	255	60M	=	*	*	*	*	NM:i:1	NH:i:1	XS:A:+
+read21	163	chrX	2012	255	60M	=	*	*	*	*	NM:i:1	NH:i:1	XS:A:+
+read21	163	chrX	2013	255	60M	=	*	*	*	*	NM:i:1	NH:i:1	XS:A:+
+read21	163	chrX	2014	255	60M	=	*	*	*	*	NM:i:1	NH:i:1	XS:A:+
+read21	163	chrX	2015	255	60M	=	*	*	*	*	NM:i:1	NH:i:1	XS:A:+
+read21	163	chrX	2016	255	60M	=	*	*	*	*	NM:i:1	NH:i:1	XS:A:+
+read21	163	chrX	2017	255	60M	=	*	*	*	*	NM:i:1	NH:i:1	XS:A:+
+read21	163	chrX	2018	255	60M	=	*	*	*	*	NM:i:1	NH:i:1	XS:A:+
+read21	163	chrX	2019	255	60M	=	*	*	*	*	NM:i:1	NH:i:1	XS:A:+
+read21	163	chrX	2020	255	60M	=	*	*	*	*	NM:i:1	NH:i:1	XS:A:+
