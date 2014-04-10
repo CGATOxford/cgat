@@ -831,7 +831,7 @@ class CounterReadCountsFull(CounterBAM):
                     direction_status = 1 - direction_status
 
                 # sort out the exon attribute
-                if nbases_exons >= nbases_total - max_bases_outside_exons:
+                if nbases_exons > 0 and nbases_exons >= nbases_total - max_bases_outside_exons:
                     # only exonic
                     exons_status = 0
                 elif nbases_introns == 0:
@@ -1371,7 +1371,7 @@ class CounterReadPairCountsFull(CounterBAM):
                     direction_status = direction_status + 4
 
                 # sort out the exon attribute
-                if nbases_exons >= nbases_total - max_bases_outside_exons:
+                if nbases_exons > 0 and nbases_exons >= nbases_total - max_bases_outside_exons:
                     # only exonic
                     exons_status = 0
                 elif nbases_introns == 0:
