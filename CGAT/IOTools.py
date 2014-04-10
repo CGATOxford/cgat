@@ -74,6 +74,8 @@ def readMap(infile,
         key_column, value_column = columns
 
     key_function, value_function = map_functions
+    # default is to return a tuple for multiple values
+    datatype = None
 
     for l in infile:
         if l[0] == "#":
@@ -81,6 +83,10 @@ def readMap(infile,
         n += 1
 
         if has_header and n == 1:
+            if columns == "all":
+                header = l[:-1].split("\t")
+                # remove the first column
+                datatype = collections.namedtuple("DATA", header[1:])
             continue
 
         d = l[:-1].split("\t")
@@ -89,6 +95,8 @@ def readMap(infile,
         key = key_function(d[key_column])
         if value_column:
             val = value_function(d[value_column])
+        elif datatype:
+            val = datatype._make([d[x] for x in range(1, len(d))])
         else:
             val = tuple(map(value_function, [d[x] for x in range(1, len(d))]))
 
