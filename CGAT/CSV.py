@@ -128,6 +128,9 @@ def GetMapColumn2Type(rows, ignore_empty=False, get_max_values=False):
 class CommentStripper:
 
     """iterator class for stripping comments from file.
+
+    This iterator will skip any lines beginning with '#'
+    or any empty lines at the beginning of the output.
     """
 
     def __init__(self, infile):
@@ -139,9 +142,9 @@ class CommentStripper:
     def next(self):
         while 1:
             line = self.infile.next()
-            if not line:
+            if line is None:
                 raise StopIteration
-            if line[0] != "#":
+            if line.strip() != "" and not line.startswith("#"):
                 return line
 
 
