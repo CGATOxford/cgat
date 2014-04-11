@@ -271,7 +271,7 @@ def prepareTags(infile, outfile):
         outfile,
         filtering_quality=PARAMS.get('filtering_quality', None),
         filtering_dedup='filtering_dedup' in PARAMS,
-        filtering_dedup_method=PARAMS['dedup_method'])
+        filtering_dedup_method=PARAMS['filtering_dedup_method'])
 
 #########################################################################
 #########################################################################
@@ -695,7 +695,9 @@ def countReadsWithinWindows(infiles, outfile):
 def aggregateWindowsReadCounts(infiles, outfile):
     '''aggregate tag counts into a single file.
     '''
-    PipelineWindows.aggregateWindowsReadCounts(infiles, outfile)
+    PipelineWindows.aggregateWindowsReadCounts(infiles,
+                                               outfile,
+                                               regex="(.*).counts.bed.gz")
 
 #########################################################################
 #########################################################################

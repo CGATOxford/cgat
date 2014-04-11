@@ -14,8 +14,8 @@ Transcripts
    :render: ggplot
    :glob: transcriptprofiles.dir/*.geneprofile.matrix.tsv.gz
    :aes: x='bin',y='background',color='track'
-   :geom: geom_point()
-   :split-at: 10
+   :geom: geom_point(size=1)
+   :split-at: 5
    :split-always: input
    :regex: .*/(.*).transcriptprofile.* 
 
@@ -29,8 +29,8 @@ TSS profiles
    :render: ggplot
    :glob: transcriptprofiles.dir/*.tssprofile.matrix.tsv.gz
    :aes: x='bin',y='background',color='track'
-   :geom: geom_point()
-   :split-at: 10
+   :geom: geom_point(size=1)
+   :split-at: 5
    :split-always: input
    :regex: .*/(.*).transcriptprofile.* 
 

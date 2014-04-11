@@ -28,15 +28,11 @@ unstrip:
     outputs: [stdout]
     references: [paired.bam]
     options: -v 0 --unstrip --fastq1=<DIR>/paired.fastq.1.gz --fastq2=<DIR>/paired.fastq.2.gz
-<<<<<<< HEAD
-=======
 
->>>>>>> master
 set_flag:
     stdin: unstrip.bam
     outputs: [stdout]
     references: [nh_flag.bam]
-<<<<<<< HEAD
     options: -v 0 --set-nh
 
 filter_unique_mapped_sam:
@@ -62,6 +58,4 @@ unset_mapq:
     outputs: [stdout]
     references: [mapq_unset.bam]
     options: -v 0 --unset-unmapped-mapq
-=======
-    options: -v 0 --set-nh	
->>>>>>> master
+    options: -v 0 --set-nh

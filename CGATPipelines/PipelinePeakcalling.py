@@ -7,43 +7,26 @@ def runXXX():
 def loadXXX():
     load results from peak caller. The minimum information required are:
         contig, start, end
-        
 '''
 
-import sys
-import tempfile
-import optparse
 import shutil
-import itertools
-import csv
-import math
 import random
 import re
 import glob
 import os
-import shutil
 import collections
 import sqlite3
-import cStringIO
-import csv
 import numpy
-import gzip
 import pysam
-import fileinput
 
 ##########################
 import CGAT.Experiment as E
 import CGAT.Pipeline as P
-import CGAT.IndexedFasta as IndexedFasta
 import CGAT.IndexedGenome as IndexedGenome
-import CGAT.FastaIterator as FastaIterator
-import CGAT.Genomics as Genomics
 import CGAT.IOTools as IOTools
-import CGAT.GTF as GTF
+import CGAT.BamTools as BamTools
 import CGAT.Bed as Bed
 import CGAT.WrapperMACS as WrapperMACS
-import CGAT.WrapperZinba as WrapperZinba
-import CGATPipelines.PipelineMapping as PipelineMapping
 
 ###################################################
 ###################################################
@@ -991,7 +974,6 @@ def runMACS(infile, outfile, controlfile=None):
     Output bed files are compressed and indexed.
     '''
     to_cluster = True
-
     job_options = "-l mem_free=8G"
 
     if controlfile:
@@ -1000,14 +982,14 @@ def runMACS(infile, outfile, controlfile=None):
         control = ""
 
     statement = '''
-    macs14 
-    -t %(infile)s 
-    %(control)s 
+    macs14
+    -t %(infile)s
+    %(control)s
     --diag
-    --verbose=10 
-    --name=%(outfile)s 
+    --verbose=10
+    --name=%(outfile)s
     --format=BAM
-    %(macs_options)s 
+    %(macs_options)s
     >& %(outfile)s
     '''
 
@@ -1016,14 +998,14 @@ def runMACS(infile, outfile, controlfile=None):
     # compress macs bed files and index with tabix
     for suffix in ('peaks', 'summits'):
         statement = '''
-        bgzip -f %(outfile)s_%(suffix)s.bed; 
+        bgzip -f %(outfile)s_%(suffix)s.bed;
         tabix -f -p bed %(outfile)s_%(suffix)s.bed.gz
         '''
         P.run()
 
     for suffix in ('peaks.xls', 'negative_peaks.xls'):
-        statement = '''grep -v "^$" 
-                       < %(outfile)s_%(suffix)s 
+        statement = '''grep -v "^$"
+                       < %(outfile)s_%(suffix)s
                        | bgzip > %(outfile)s_%(suffix)s.gz;
                        tabix -f -p bed %(outfile)s_%(suffix)s.gz;
                        checkpoint;
@@ -1039,7 +1021,7 @@ def runMACS(infile, outfile, controlfile=None):
 def summarizeMACS2(infiles, outfile):
     '''run MACS2 for peak detection.
 
-    This script parses the MACS2 logfile to extract 
+    This script parses the MACS2 logfile to extract
     peak calling parameters and results.
 
     TODO: doesn't report peak numbers...
@@ -1055,14 +1037,20 @@ def summarizeMACS2(infiles, outfile):
     map_targets = [
         ("tags after filtering in treatment:\s+(\d+)",
          "fragment_treatment_filtered", ()),
-        ("total tags in treatment:\s+(\d+)", "fragment_treatment_total", ()),
+        ("total tags in treatment:\s+(\d+)",
+         "fragment_treatment_total", ()),
         ("tags after filtering in control:\s+(\d+)",
          "fragment_control_filtered", ()),
-        ("total tags in control:\s+(\d+)", "fragment_control_total", ()),
-        ("predicted fragment length is (\d+) bps", "fragment_length", ()),
+        ("total tags in control:\s+(\d+)",
+         "fragment_control_total", ()),
+        ("predicted fragment length is (\d+) bps",
+         "fragment_length", ()),
         # Number of peaks doesn't appear to be reported!.
-        # ("#3 Total number of candidates: (\d+)", "ncandidates",("positive", "negative") ),
-        # ("#3 Finally, (\d+) peaks are called!",  "called", ("positive", "negative") )
+        ("#3 Total number of candidates: (\d+)",
+         "ncandidates", ("positive", "negative")),
+        ("#3 Finally, (\d+) peaks are called!",
+         "called",
+         ("positive", "negative"))
     ]
 
     mapper, mapper_header = {}, {}
@@ -1166,11 +1154,16 @@ def bedGraphToBigwig(infile, contigsfile, outfile, remove=True):
 ############################################################
 
 
-def runMACS2(infile, outfile, controlfile=None):
+def runMACS2(infile, outfile,
+             controlfile=None,
+             force_single_end=False):
     '''run MACS for peak detection from BAM files.
 
     The output bed files contain the P-value as their score field.
     Output bed files are compressed and indexed.
+
+    If *force_single_end* is set, do not use paired-ended
+    mode for paired ended BAM files.
 
     Build bedgraph files and convert to bigwig files.
     '''
@@ -1189,11 +1182,16 @@ def runMACS2(infile, outfile, controlfile=None):
     # removed to let macs2 detect the format.
 
     # format bam needs to be set explicitely, autodetection does not
-    # work.  -B --SPMR: ask macs to create a bed-graph file with
+    # work. Use paired end mode to detect tag size
+    if not force_single_end and BamTools.isPaired(infile):
+        format_options = '--format=BAMPE'
+    else:
+        format_options = '--format=BAM'
+
+    # -B --SPMR: ask macs to create a bed-graph file with
     # fragment pileup per million reads
     statement = '''
                     macs2 callpeak
-                    --format=BAM
                     -t %(infile)s
                     -c %(control)s
                     --verbose=10
