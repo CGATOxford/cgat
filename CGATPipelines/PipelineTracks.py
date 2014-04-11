@@ -315,6 +315,10 @@ class Sample(object):
         '''return sample as valid R label'''
         return R_SEPARATOR.join(map(to_aggregate, self.data.values()))
 
+    def asList(self):
+        '''return sample as a tuple'''
+        return map(to_aggregate, self.data.values())
+
     def fromFile(self, fn):
         '''build sample from filename *fn*'''
         self._split(fn, FILE_SEPARATOR)

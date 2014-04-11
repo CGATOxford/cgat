@@ -7,43 +7,26 @@ def runXXX():
 def loadXXX():
     load results from peak caller. The minimum information required are:
         contig, start, end
-        
 '''
 
-import sys
-import tempfile
-import optparse
 import shutil
-import itertools
-import csv
-import math
 import random
 import re
 import glob
 import os
-import shutil
 import collections
 import sqlite3
-import cStringIO
-import csv
 import numpy
-import gzip
 import pysam
-import fileinput
 
 ##########################
 import CGAT.Experiment as E
 import CGAT.Pipeline as P
-import CGAT.IndexedFasta as IndexedFasta
 import CGAT.IndexedGenome as IndexedGenome
-import CGAT.FastaIterator as FastaIterator
-import CGAT.Genomics as Genomics
 import CGAT.IOTools as IOTools
-import CGAT.GTF as GTF
+import CGAT.BamTools as BamTools
 import CGAT.Bed as Bed
 import CGAT.WrapperMACS as WrapperMACS
-import CGAT.WrapperZinba as WrapperZinba
-import CGATPipelines.PipelineMapping as PipelineMapping
 
 ###################################################
 ###################################################
@@ -77,8 +60,13 @@ def getPeakShiftFromMacs(infile):
     with IOTools.openFile(infile, "r") as ins:
         rx = re.compile("#2 predicted fragment length is (\d+) bps")
         r2 = re.compile("#2 Use (\d+) as shiftsize, \d+ as fragment length")
+        r3 = re.compile("#1 fragment size = (\d+)")
         for line in ins:
             x = rx.search(line)
+            if x:
+                shift = int(x.groups()[0])
+                break
+            x = r3.search(line)
             if x:
                 shift = int(x.groups()[0])
                 break
@@ -984,30 +972,34 @@ def summarizeMACSFDR(infiles, outfile):
 ############################################################
 
 
-def runMACS(infile, outfile, controlfile=None):
+def runMACS(infile, outfile,
+            controlfile=None,
+            tagsize=None):
     '''run MACS for peak detection from BAM files.
 
     The output bed files contain the P-value as their score field.
     Output bed files are compressed and indexed.
     '''
     to_cluster = True
-
     job_options = "-l mem_free=8G"
 
+    options = []
     if controlfile:
-        control = "--control=%s" % controlfile
-    else:
-        control = ""
+        options.append("--control=%s" % controlfile)
+    if tagsize is not None:
+        options.append("--tsize %i" % tagsize)
+    
+    options = " ".join(options)
 
     statement = '''
-    macs14 
-    -t %(infile)s 
-    %(control)s 
+    macs14
+    -t %(infile)s
     --diag
-    --verbose=10 
-    --name=%(outfile)s 
+    --verbose=10
+    --name=%(outfile)s
     --format=BAM
-    %(macs_options)s 
+    %(options)s
+    %(macs_options)s
     >& %(outfile)s
     '''
 
@@ -1016,14 +1008,14 @@ def runMACS(infile, outfile, controlfile=None):
     # compress macs bed files and index with tabix
     for suffix in ('peaks', 'summits'):
         statement = '''
-        bgzip -f %(outfile)s_%(suffix)s.bed; 
+        bgzip -f %(outfile)s_%(suffix)s.bed;
         tabix -f -p bed %(outfile)s_%(suffix)s.bed.gz
         '''
         P.run()
 
     for suffix in ('peaks.xls', 'negative_peaks.xls'):
-        statement = '''grep -v "^$" 
-                       < %(outfile)s_%(suffix)s 
+        statement = '''grep -v "^$"
+                       < %(outfile)s_%(suffix)s
                        | bgzip > %(outfile)s_%(suffix)s.gz;
                        tabix -f -p bed %(outfile)s_%(suffix)s.gz;
                        checkpoint;
@@ -1039,7 +1031,7 @@ def runMACS(infile, outfile, controlfile=None):
 def summarizeMACS2(infiles, outfile):
     '''run MACS2 for peak detection.
 
-    This script parses the MACS2 logfile to extract 
+    This script parses the MACS2 logfile to extract
     peak calling parameters and results.
 
     TODO: doesn't report peak numbers...
@@ -1055,14 +1047,20 @@ def summarizeMACS2(infiles, outfile):
     map_targets = [
         ("tags after filtering in treatment:\s+(\d+)",
          "fragment_treatment_filtered", ()),
-        ("total tags in treatment:\s+(\d+)", "fragment_treatment_total", ()),
+        ("total tags in treatment:\s+(\d+)",
+         "fragment_treatment_total", ()),
         ("tags after filtering in control:\s+(\d+)",
          "fragment_control_filtered", ()),
-        ("total tags in control:\s+(\d+)", "fragment_control_total", ()),
-        ("predicted fragment length is (\d+) bps", "fragment_length", ()),
+        ("total tags in control:\s+(\d+)",
+         "fragment_control_total", ()),
+        ("predicted fragment length is (\d+) bps",
+         "fragment_length", ()),
         # Number of peaks doesn't appear to be reported!.
-        # ("#3 Total number of candidates: (\d+)", "ncandidates",("positive", "negative") ),
-        # ("#3 Finally, (\d+) peaks are called!",  "called", ("positive", "negative") )
+        ("#3 Total number of candidates: (\d+)",
+         "ncandidates", ("positive", "negative")),
+        ("#3 Finally, (\d+) peaks are called!",
+         "called",
+         ("positive", "negative"))
     ]
 
     mapper, mapper_header = {}, {}
@@ -1166,18 +1164,28 @@ def bedGraphToBigwig(infile, contigsfile, outfile, remove=True):
 ############################################################
 
 
-def runMACS2(infile, outfile, controlfile=None):
+def runMACS2(infile, outfile,
+             controlfile=None,
+             force_single_end=False,
+             tagsize=None):
     '''run MACS for peak detection from BAM files.
 
     The output bed files contain the P-value as their score field.
     Output bed files are compressed and indexed.
 
+    If *force_single_end* is set, do not use paired-ended
+    mode for paired ended BAM files.
+
     Build bedgraph files and convert to bigwig files.
     '''
+    options = []
+
     if controlfile:
-        control = "%s" % controlfile
-    else:
-        control = ""
+        options.append("--control %s" % controlfile)
+    if tagsize is not None:
+        options.append("--tsize %i" % tagsize)
+    
+    options = " ".join(options)
 
     job_options = "-l mem_free=8G"
 
@@ -1189,20 +1197,27 @@ def runMACS2(infile, outfile, controlfile=None):
     # removed to let macs2 detect the format.
 
     # format bam needs to be set explicitely, autodetection does not
-    # work.  -B --SPMR: ask macs to create a bed-graph file with
+    # work. Use paired end mode to detect tag size
+    if not force_single_end and BamTools.isPaired(infile):
+        format_options = '--format=BAMPE'
+    else:
+        format_options = '--format=BAM'
+
+    # --bdg --SPMR: ask macs to create a bed-graph file with
     # fragment pileup per million reads
     statement = '''
-                    macs2 callpeak
-                    --format=BAM
-                    -t %(infile)s
-                    -c %(control)s
-                    --verbose=10
-                    --name=%(outfile)s
-                    --qvalue=%(macs2_max_qvalue)s
-                    -B --SPMR
-                    %(macs2_options)s
-                    >& %(outfile)s
-                '''
+    macs2 callpeak
+    %(format_options)s
+    --treatment %(infile)s
+    --verbose=10
+    --name=%(outfile)s
+    --qvalue=%(macs2_max_qvalue)s
+    --bdg
+    --SPMR
+    %(options)s
+    %(macs2_options)s
+    >& %(outfile)s
+    '''
     P.run()
 
     # compress macs bed files and index with tabix
@@ -1277,7 +1292,6 @@ def runZinba(infile, outfile, controlfile, action="full"):
 
     options = " ".join(options)
 
-    # python %(scriptsdir)s/WrapperZinba.py
     statement = '''
     python %(scriptsdir)s/runZinba.py
            --input-format=bam
@@ -1288,6 +1302,8 @@ def runZinba(infile, outfile, controlfile, action="full"):
            --mappability-dir=%(mappability_dir)s
            --improvement=%(zinba_improvement)f
            --action=%(action)s
+           --min-insert-size=%(calling_min_insert_size)i
+           --max-insert-size=%(calling_max_insert_size)i
            %(zinba_options)s
            %(options)s
     %(infile)s %(outfile)s
@@ -1499,7 +1515,7 @@ def loadMACS2(infile, outfile, bamfile, controlfile=None):
     It maps the following MACS2 output files to tables:
     * _peaks: MACS2 peaks
     * _summits: MACS2 sub-peaks
-    * _regions: MACS2 broad peaks 
+    * _regions: MACS2 broad peaks
 
     This method creates two optional additional files:
 
@@ -1520,7 +1536,7 @@ def loadMACS2(infile, outfile, bamfile, controlfile=None):
     filename_subpeaks = infile + "_summits.bed.gz"
 
     if not os.path.exists(filename_bed):
-        E.warn("could not find %s" % infilename)
+        E.warn("could not find %s" % filename_bed)
         P.touch(outfile)
         return
 
@@ -1533,7 +1549,9 @@ def loadMACS2(infile, outfile, bamfile, controlfile=None):
     ###############################################################
     # create plot by calling R
     if os.path.exists(filename_r):
-        statement = '''R --vanilla < %(filename_r)s > %(filename_rlog)s; mv %(filename_pdf)s %(exportdir)s'''
+        statement = '''
+        R --vanilla < %(filename_r)s > %(filename_rlog)s;
+        mv %(filename_pdf)s %(exportdir)s'''
         P.run()
 
     ###############################################################
@@ -1552,7 +1570,7 @@ def loadMACS2(infile, outfile, bamfile, controlfile=None):
     with IOTools.openFile(filename_bed, "r") as ins:
         for peak in WrapperMACS.iterateMacs2Peaks(ins):
 
-            if peak.fdr > max_qvalue:
+            if peak.qvalue > max_qvalue:
                 counter.removed_qvalue += 1
                 continue
             elif peak.pvalue < min_pvalue:
@@ -1565,8 +1583,7 @@ def loadMACS2(infile, outfile, bamfile, controlfile=None):
             outtemp.write("\t".join(map(str, (
                 peak.contig, peak.start, peak.end,
                 id,
-                peak.pvalue, peak.fold, peak.fdr,
-                peak.start + peak.summit - 1,
+                peak.pvalue, peak.fold, peak.qvalue,
                 peak.pileup))) + "\n")
             id += 1
             counter.output += 1
@@ -1587,7 +1604,8 @@ def loadMACS2(infile, outfile, bamfile, controlfile=None):
     ###############################################################
     # load peaks
     shift = getPeakShiftFromMacs(infile)
-    assert shift is not None, "could not determine peak shift from MACS file %s" % infile
+    assert shift is not None,\
+        "could not determine peak shift from MACS file %s" % infile
 
     E.info("%s: found peak shift of %i" % (track, shift))
 
@@ -1599,7 +1617,7 @@ def loadMACS2(infile, outfile, bamfile, controlfile=None):
         "contig", "start", "end",
         "interval_id",
         "pvalue", "fold", "qvalue",
-        "macs_summit", "macs_nprobes"))
+        "macs_nprobes"))
 
     tablename = P.toTable(outfile) + "_peaks"
 
@@ -1608,20 +1626,20 @@ def loadMACS2(infile, outfile, bamfile, controlfile=None):
     else:
         control = ""
 
-    statement = '''python %(scriptsdir)s/bed2table.py 
+    statement = '''python %(scriptsdir)s/bed2table.py
                            --counter=peaks
                            --bam-file=%(bamfile)s
                            --offset=%(shift)i
                            %(control)s
-                           --all-fields 
+                           --all-fields
                            --bed-header=%(headers)s
                            --log=%(outfile)s
                 < %(tmpfilename)s
-                | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
+                | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
                        --index=contig,start
                        --index=interval_id
                        --table=%(tablename)s
-                       --allow-empty 
+                       --allow-empty
                 > %(outfile)s'''
 
     P.run()
@@ -1797,12 +1815,14 @@ def loadZinba(infile, outfile, bamfile,
 ############################################################
 ############################################################
 ############################################################
-def runSICER(infile, outfile, controlfile=None, mode="narrow"):
+def runSICER(infile,
+             outfile,
+             controlfile=None,
+             mode="narrow",
+             fragmentsize=100):
     '''run sicer on infile.'''
 
     job_options = "-l mem_free=8G"
-
-    to_cluster = True
 
     workdir = outfile + ".dir"
 
@@ -1811,7 +1831,18 @@ def runSICER(infile, outfile, controlfile=None, mode="narrow"):
     except OSError:
         pass
 
-    statement = ['bamToBed -i %(infile)s > %(workdir)s/foreground.bed']
+    if BamTools.isPaired(infile):
+        # output strand as well
+        statement = ['''cat %(infile)s
+        | python %(scriptsdir)s/bam2bed.py
+              --merge-pairs
+              --min-insert-size=%(calling_min_insert_size)i
+              --max-insert-size=%(calling_max_insert_size)i
+              --log=%(outfile)s.log
+              --bed-format=6
+        > %(workdir)s/foreground.bed''']
+    else:
+        statement = ['bamToBed -i %(infile)s > %(workdir)s/foreground.bed']
 
     outfile = os.path.basename(outfile)
 
@@ -1831,7 +1862,7 @@ def runSICER(infile, outfile, controlfile=None, mode="narrow"):
         statement.append( '''SICER.sh . foreground.bed control.bed . %(genome)s 
                     %(sicer_redundancy_threshold)i
                     %(window_size)i
-                    %(sicer_fragment_size)i
+                    %(fragment_size)i
                     %(sicer_effective_genome_fraction)f
                     %(gap_size)i
                     %(sicer_fdr_threshold)f
@@ -1841,7 +1872,7 @@ def runSICER(infile, outfile, controlfile=None, mode="narrow"):
         statement.append( '''SICER-rb.sh . foreground.bed . %(genome)s 
                     %(sicer_redundancy_threshold)i
                     %(window_size)i
-                    %(sicer_fragment_size)i
+                    %(fragment_size)i
                     %(sicer_effective_genome_fraction)f
                     %(gap_size)i
                     %(sicer_evalue_threshold)f
@@ -1873,8 +1904,10 @@ def loadSICER(infile, outfile, bamfile, controlfile=None, mode="narrow"):
     # taking the file islands-summary-FDR, which contains
     # 'summary file of significant islands with requirement of FDR=0.01'
 
-    bedfile = os.path.join(sicerdir, "foreground" + "-W" +
-                           str(window) + "-G" + str(gap) + "-islands-summary-FDR" + fdr)
+    bedfile = os.path.join(
+        sicerdir,
+        "foreground" + "-W" + str(window) +
+        "-G" + str(gap) + "-islands-summary-FDR" + fdr)
 
     assert os.path.exists(bedfile)
 
@@ -1887,21 +1920,21 @@ def loadSICER(infile, outfile, bamfile, controlfile=None, mode="narrow"):
 
     # add new interval id at fourth column
     statement = '''cat < %(bedfile)s
-               | awk '{printf("%%s\\t%%s\\t%%s\\t%%i", $1,$2,$3,++a); 
+               | awk '{printf("%%s\\t%%s\\t%%s\\t%%i", $1,$2,$3,++a);
                           for (x = 4; x <= NF; ++x) {printf("\\t%%s", $x)}; printf("\\n" ); }' 
-               | python %(scriptsdir)s/bed2table.py 
+               | python %(scriptsdir)s/bed2table.py
                            --counter=peaks
                            --bam-file=%(bamfile)s
                            --offset=%(offset)i
                            %(control)s
-                           --all-fields 
+                           --all-fields
                            --bed-header=%(headers)s
                            --log=%(outfile)s
-                | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
+                | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
                        --index=contig,start
                        --index=interval_id
                        --table=%(tablename)s
-                       --allow-empty 
+                       --allow-empty
                 > %(outfile)s'''
 
     P.run()
@@ -2000,7 +2033,6 @@ def runPeakRanger(infile, outfile, controlfile):
 
     job_options = "-l mem_free=8G"
 
-    to_cluster = True
     assert controlfile is not None, "peakranger requires a control"
 
     statement = '''peakranger ranger
@@ -2047,40 +2079,40 @@ def loadPeakRanger(infile, outfile, bamfile, controlfile=None, table_suffix="pea
     bedfile = infile + "_region.bed"
     headers = "contig,start,end,interval_id,qvalue,strand"
     tablename = P.toTable(outfile) + "_" + table_suffix
-    statement = '''python %(scriptsdir)s/bed2table.py 
+    statement = '''python %(scriptsdir)s/bed2table.py
                            --counter=peaks
                            --bam-file=%(bamfile)s
                            --offset=%(offset)i
                            %(control)s
-                           --all-fields 
+                           --all-fields
                            --bed-header=%(headers)s
                            --log=%(outfile)s
                 < <( grep -v "fdrFailed" %(bedfile)s )
-                | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
+                | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
                        --index=contig,start
                        --index=interval_id
                        --table=%(tablename)s
-                       --allow-empty 
+                       --allow-empty
                 > %(outfile)s'''
     P.run()
 
     bedfile = infile + "_summit.bed"
     headers = "contig,start,end,interval_id,qvalue,strand"
     tablename = P.toTable(outfile) + "_summits"
-    statement = '''python %(scriptsdir)s/bed2table.py 
+    statement = '''python %(scriptsdir)s/bed2table.py
                            --counter=peaks
                            --bam-file=%(bamfile)s
                            --offset=%(offset)i
                            %(control)s
-                           --all-fields 
+                           --all-fields
                            --bed-header=%(headers)s
                            --log=%(outfile)s
                 < <( grep -v "fdrFailed" %(bedfile)s )
-                | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
+                | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
                        --index=contig,start
                        --index=interval_id
                        --table=%(tablename)s
-                       --allow-empty 
+                       --allow-empty
                 > %(outfile)s'''
 
     P.run()
@@ -2167,14 +2199,12 @@ def summarizePeakRanger(infiles, outfile):
 def runPeakRangerCCAT(infile, outfile, controlfile):
     '''run peak ranger
     '''
-    to_cluster = True
-
     job_options = "-l mem_free=8G"
 
     assert controlfile is not None, "peakranger requires a control"
 
     statement = '''peakranger ccat
-              --data %(infile)s 
+              --data %(infile)s
               --control %(controlfile)s
               --output %(outfile)s
               --format bam
@@ -2202,14 +2232,11 @@ def runPeakRangerCCAT(infile, outfile, controlfile):
 def runSPP(infile, outfile, controlfile):
     '''run spp for peak detection.'''
 
-    to_cluster = True
-
     job_options = "-pe dedicated %i -R y" % PARAMS["spp_threads"]
-
     assert controlfile is not None, "spp requires a control"
 
     statement = '''
-    python %(scriptsdir)s/WrapperSPP.py
+    python %(scriptsdir)s/runSPP.py
            --input-format=bam
            --control-filename=%(controlfile)s
            --fdr-threshold=%(spp_fdr_threshold)f

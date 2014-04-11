@@ -3,12 +3,16 @@ language: python
 
 env:
   global:
-    - CGAT_TASK_STEPSIZE=91
+    - CGAT_TASK_STEPSIZE=44
   matrix:
     - CGAT_TASK_ID=1
-    - CGAT_TASK_ID=92
-    - CGAT_TASK_ID=183
-    - CGAT_TASK_ID=274
+    - CGAT_TASK_ID=45
+    - CGAT_TASK_ID=90
+    - CGAT_TASK_ID=135
+    - CGAT_TASK_ID=180
+    - CGAT_TASK_ID=225
+    - CGAT_TASK_ID=270
+    - CGAT_TASK_ID=315
     - TEST_IMPORT=1
 
 python:

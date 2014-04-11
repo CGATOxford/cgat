@@ -1,5 +1,4 @@
-'''
-wig2bed.py - convert densities to intervals
+'''wig2bed.py - convert densities to intervals
 ===========================================
 
 Purpose
@@ -13,9 +12,9 @@ threshold
     output windows that contain values above a certain
     threshold.
 
-std-above-mean
-    output windows that are a certain number of standard deviations 
-    above the mean. 
+std-above-mean 
+    output windows that are a certain number of standard
+    deviations above the mean.
 
 multiple-of-mean
     output windows that are a certain times above the mean.
@@ -36,14 +35,6 @@ Command line options
 
 import sys
 import re
-import string
-import optparse
-import time
-import os
-import itertools
-import tempfile
-import subprocess
-import shutil
 import collections
 
 import CGAT.Experiment as E
@@ -122,12 +113,14 @@ def getBigwigSummary(bigwig_file):
 
 def main(argv=sys.argv):
 
-    parser = E.OptionParser(version="%prog version: $Id: bed2bed.py 2861 2010-02-23 17:36:32Z andreas $",
+    parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
-    parser.add_option("-m", "--method", dest="methods", type="choice", action="append",
+    parser.add_option("-m", "--method", dest="methods", type="choice",
+                      action="append",
                       choices=(
-                          "threshold", "stddev-above-mean", "multiple-of-mean"),
+                          "threshold", "stddev-above-mean",
+                          "multiple-of-mean"),
                       help="method to apply [default=%default]")
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
@@ -136,7 +129,8 @@ def main(argv=sys.argv):
     parser.add_option("-t", "--threshold", dest="threshold", type="float",
                       help="threshold to apply [default=%default]")
 
-    parser.add_option("-i", "--bigwig-file", dest="bigwig_file", type="string", metavar="bigwig",
+    parser.add_option("-i", "--bigwig-file", dest="bigwig_file",
+                      type="string", metavar="bigwig",
                       help="filename with bigwig information [default=%default].")
 
     parser.add_option("-b", "--bigwig", dest="bigwig", action="store_true",
