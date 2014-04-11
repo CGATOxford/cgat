@@ -242,9 +242,10 @@ Three main headers exist:
     input and output formats.  This can be extensive and include
     sub-headers to further describe script functionality. 
     For example::
-    
+   
         Purpose
 	-------
+
     	This script takes a :term:`gtf` formatted file and computes meta-gene profiles
 	over various annotations derived from the :term:`gtf` file. 
 
@@ -257,12 +258,12 @@ Three main headers exist:
     Describe example use cases for the script with one or more options.  In addition provide
     the head of both example input and example output files.  
     Example input and output::
-    
+        
         Usage
-    	-----
-	    samtools view example.bam     
+	-----
+	    samtools view example.bam
 
-            READ1    163    1     13040   15      76M     =       13183   219     ...
+	    READ1    163    1     13040   15      76M     =       13183   219     ...
 	    READ1    83     1     13183   7       76M     =       13040   -219    ...
 	    READ2    147    1     13207   0       76M     =       13120   -163    ...
 
@@ -305,6 +306,24 @@ generated for every CGAT script:
      These are automatically generated from :doc:`scripts/cgat_script_template` and
      detail each option specified within the script.  No further details need to be
      added to this section.
+
+
+`Options`
+Describe all of the options for the script.  If necessary provide extensive detail of the
+methods of each option and how they are combined to provide the intended functionality
+of the script.  This should include all `choice` for options with a verbose description
+of what that `choice` does.
+For example::
+
+      `Profiles`
+       Different profiles are accessible through the ``--method`` option. Multiple
+       methods can be applied at the same time. While ``upstream`` and ``downstream``
+       typically have a fixed size, the other regions such as ``CDS``, ``UTR`` will be
+       scaled to a common size.
+
+       utrprofile
+            UPSTREAM - UTR5 - CDS - UTR3 - DOWNSTREAM
+	    gene models with UTR. Separate the coding section from the non-coding part.
 
 
 In addition, please pay attention to the following:

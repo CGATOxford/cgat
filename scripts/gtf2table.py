@@ -3891,14 +3891,13 @@ def main(argv=None):
         elif c == "read-coverage":
             counters.append(_gtf2table.CounterReadCoverage(
                 bam_files,
-                minimum_read_quality=options.minimum_read_quality,
                 options=options,
                 prefix=prefix))
         elif c == "read-extension":
+	    minimum_read_quality=options.minimum_read_quality
             counters.append(CounterReadExtension(
                 bam_files,
                 filename_gff=options.filename_gff,
-                minimum_read_quality=options.minimum_read_quality,
                 options=options,
                 prefix=prefix))
         elif c == "read-overlap":
@@ -3912,7 +3911,7 @@ def main(argv=None):
             counters.append(_gtf2table.CounterReadCounts(
                 bam_files,
                 weight_multi_mapping=options.weight_multi_mapping,
-                minimum_read_quality=options.minimum_read_quality,
+#               minimum_read_quality=options.minimum_read_quality,
                 options=options,
                 prefix=prefix))
         elif c == "read-fullcounts":

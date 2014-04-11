@@ -101,12 +101,16 @@ def merge_pairs( Samfile input_samfile,
                             read.mapq,
                             ) )
         else:
+            if read.is_reverse:
+                strand = '-'
+            else:
+                strand = '+'
             outfile.write( "%s\t%i\t%i\t%s\t%i\t%s\n" % 
                            (input_samfile.getrname( read.tid ),
                             start, end,
                             read.qname,
                             read.mapq,
-                            "+"
+                            strand
                             ) )
 
     c = E.Counter()

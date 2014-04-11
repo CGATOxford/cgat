@@ -1,5 +1,5 @@
 """bam2bed.py - convert bam formatted file to bed formatted file
-=============================================================
+================================================================
 
 :Author: Andreas Heger
 :Release: $Id$
@@ -11,10 +11,25 @@ Purpose
 
 Convert BAM files into BED files.
 
+By default, bam2bed outputs each read as a separate interval.  With
+the option ``--merge-pairs`` paired-end reads are merged and output as
+a single interval. The strand is set according to the first read in a
+pair.
+
 Usage
 -----
 
-Example::
+To output read intervals that overlap chromosome 1, coordinates 13000-13100::
+
+   samtools view -ub example.bam 1:13000:13100 | python bam2bed.py
+
+To merge paired-end reads and output fragment interval ie. leftmost
+mapped base to rightmost mapped base::
+
+   cat example.bam | python bam2bed.py --merge-pairs
+
+   1       13119   13282   READ2     0       +
+   1       13039   13258   READ1     7       +
 
    python bam2bed.py in.bam > out.bed
 
@@ -26,66 +41,7 @@ Type::
 
 for command line help.
 
-Documentation
--------------
 
-This tool converts BAM files into BED files supplying the intervals
-for each read in the BAM file.  BAM files must have a corresponding
-index file ie. example.bam and example.bam.bai
-
-For example::
-
-   samtools view example.bam
-
-   READ1     163     1       13040   15      76M     =       13183   219     ...
-   READ1     83      1       13183   7       76M     =       13040   -219    ...
-   READ2     147     1       13207   0       76M     =       13120   -163    ...
-
-   python bam2bed.py example.bam 
-
-   1       13039   13115   READ1     15      +
-   1       13119   13195   READ2     0       +
-   1       13182   13258   READ1     7       -
-   1       13206   13282   READ2     0       -
-
-Options
-^^^^^^^
-+-------------------+--------------------------------------------------------+
-|--region, -r       |output read intervals that overlap a specified region   |
-+-------------------+--------------------------------------------------------+
-|--merge-pairs, -m  |merge paired-end reads and output interval for entire   |
-|                   |fragment                                                |
-+-------------------+--------------------------------------------------------+
-|--max-insert-size  |only merge if insert size is less than specified no. of |
-|                   |bases                                                   |
-+-------------------+--------------------------------------------------------+
-|--min-insert-size  |only merge if insert size is greater than specified     |
-|                   |no. of bases                                            |
-+-------------------+--------------------------------------------------------+
-
-For example,
-
-To output read intervals that overlap chromosome 1, coordinates 13000-13100::
-
-   samtools view example.bam
-
-   READ1     163     1       13040   15      76M     =       13183   219 ...
-   READ2     99      1       13120   0       76M     =       13207   163 ...
-   READ1     83      1       13183   7       76M     =       13040   -219...
-   READ2     147     1       13207   0       76M     =       13120   -163...
-
-   python bam2bed.py example.bam --region '1:13000:13100'
-
-   1       13039   13115   READ1     15      +
-
-To merge paired-end reads and output fragment interval ie. leftmost
-mapped base to rightmost mapped base::
-
-   python bam2bed.py example.bam --merge-pairs
-
-   1       13119   13282   READ2     0       +
-   1       13039   13258   READ1     7       +
-   
 Command line options
 --------------------
 
@@ -118,17 +74,24 @@ def main(argv=None):
         version="%prog version: $Id$", usage=globals()["__doc__"])
 
     parser.add_option("-r", "--region", dest="region", type="string",
-                      help="output read intervals that overlap samtools region string [default=%default]. ")
+                      help="output read intervals that overlap samtools "
+                      "region string. This option works not from stdin."
+                      "This option is deprecated, use samtools instead. "
+                      "[default=%default]. ")
 
-    parser.add_option("-m", "--merge-pairs", dest="merge_pairs", action="store_true",
-                      help="merge paired-ended reads and output interval for entire fragment [default=%default]. ")
+    parser.add_option("-m", "--merge-pairs", dest="merge_pairs",
+                      action="store_true",
+                      help="merge paired-ended reads and output interval "
+                      "for entire fragment [default=%default]. ")
 
     parser.add_option("--max-insert-size", dest="max_insert_size", type="int",
-                      help="only merge paired-end reads if they are less than # bases apart. "
+                      help="only merge paired-end reads if they are less than "
+                      "# bases apart. "
                       " 0 turns off this filter [default=%default]. ")
 
     parser.add_option("--min-insert-size", dest="min_insert_size", type="int",
-                      help="only merge paired-end reads if they are at least # bases apart. "
+                      help="only merge paired-end reads if they are at "
+                      "least # bases apart. "
                       " 0 turns off this filter [default=%default]. ")
 
     parser.add_option("--bed-format", dest="bed_format", type="choice",
@@ -162,7 +125,6 @@ def main(argv=None):
                                        bed_format=options.bed_format)
 
         options.stdlog.write("category\tcounts\n%s\n" % counter.asTable())
-
     else:
         if options.region is not None:
             if args[0] == "-":
@@ -189,7 +151,6 @@ def main(argv=None):
                 if op in take:
                     t += l
 
-            start = read.pos
             if read.is_reverse:
                 strand = "-"
             else:

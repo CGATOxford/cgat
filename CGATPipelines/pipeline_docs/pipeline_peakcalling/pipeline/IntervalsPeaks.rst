@@ -48,6 +48,7 @@ The following plot shows the distribution of the interval size for each set.
    :logscale: x
    :tf-aggregate: normalized-total
    :as-lines:
+   :layout: column-3
 
    Distribution of interval lengths
 
@@ -65,6 +66,7 @@ The following plot shows the distribution of the average read coverage within in
    :tf-range: 0,50
    :tf-aggregate: normalized-total,reverse-cumulative
    :as-lines:
+   :layout: column-3
 
    Distribution of the average read depth within intervals.
 
@@ -79,6 +81,7 @@ The following plot shows the distribution of the maximum read coverage within in
    :tf-range: 0,100
    :tf-aggregate: normalized-total,reverse-cumulative
    :as-lines:
+   :layout: column-3
 
    Distribution of the maximum read depth within intervals.
 
@@ -95,6 +98,7 @@ strandedness.
    :transform: histogram
    :tf-aggregate: normalized-total
    :as-lines:
+   :layout: column-3
   
    Distance of peak towards start/end of interval normalized
    by the size of the interval.
@@ -110,6 +114,7 @@ strandedness.
    :logscale: x
    :tf-aggregate: normalized-total
    :as-lines:
+   :layout: column-3
   
    Distance of peak towards start/end of interval
 

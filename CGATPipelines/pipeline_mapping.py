@@ -187,6 +187,7 @@ from ruffus import *
 import sys
 import os
 import re
+import glob
 import sqlite3
 import collections
 # load options from the config file
@@ -690,8 +691,9 @@ def mapReadsWithTophat2(infiles, outfile):
         job_options += " -l mem_free=%s" % PARAMS["tophat2_memory"]
 
     to_cluster = True
-    m = PipelineMapping.Tophat2(executable=P.substituteParameters(**locals())["tophat2_executable"],
-                                strip_sequence=PARAMS["strip_sequence"])
+    m = PipelineMapping.Tophat2(
+        executable=P.substituteParameters(**locals())["tophat2_executable"],
+        strip_sequence=PARAMS["strip_sequence"])
     infile, reffile, transcriptfile = infiles
     tophat_options = PARAMS["tophat2_options"] + \
         " --raw-juncs %(reffile)s " % locals()
