@@ -556,6 +556,7 @@ class CounterBAM(Counter):
                  *args,
                  weight_multi_mapping = False,
                  minimum_read_quality = 0,
+                 use_first_base = False,
                  **kwargs ):
         Counter.__init__(self, *args, **kwargs )
         if not bamfiles: 
@@ -563,6 +564,7 @@ class CounterBAM(Counter):
         self.mBamFiles = bamfiles
         self.weight_multi_mapping = weight_multi_mapping
         self.minimum_read_quality = minimum_read_quality
+        self.use_first_base = use_first_base
         self.header = [ '_'.join(x) 
                         for x in itertools.product( 
                                 self.headers_direction,
@@ -665,6 +667,7 @@ class CounterReadCountsFull(CounterBAM):
 
         cdef int min_intron_size = self.min_intron_size
         cdef float minimum_read_quality = self.minimum_read_quality
+        cdef bint use_first_base = self.use_first_base
         cdef bint weight_multi_mapping = self.weight_multi_mapping
         cdef int max_bases_outside_exons = self.max_bases_outside_exons
 
@@ -778,9 +781,21 @@ class CounterReadCountsFull(CounterBAM):
                             block_starts[nblocks] = block_first_start
                             block_ends[nblocks] = block_last_end
                             nblocks += 1
-                        block_first_start = block_start
+# Kath start of edit
+                        if use_first_base and read.is_reverse:
+                            block_first_start = block_end-1
+                        else:
+                            block_first_start = block_start
+                        
+                    if use_first_base and not read.is_reverse:
+                        block_last_end = block_start+1
+                    else:
+                        block_last_end = block_end
+# Kath end of edit
 
-                    block_last_end = block_end
+#                        block_first_start = block_start
+
+#                    block_last_end = block_end
 
                 # close of loop
                 nbases_total += block_last_end - block_first_start
