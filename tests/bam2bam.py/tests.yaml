@@ -58,4 +58,3 @@ unset_mapq:
     outputs: [stdout]
     references: [mapq_unset.bam]
     options: -v 0 --unset-unmapped-mapq
-    options: -v 0 --set-nh
