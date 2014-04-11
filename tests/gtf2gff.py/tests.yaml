@@ -12,7 +12,7 @@ genome:
 
 genome_flank:
     stdin: hg19.chr.gtf.gz
-    outputs:[stdout]
+    outputs: [stdout]
     references: [genome_flank.gff]
     options: --genome-file=%DIR%/hg19.chr19 --method=genome --sort --flank=10000
 
