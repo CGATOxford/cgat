@@ -3911,7 +3911,7 @@ def main(argv=None):
             counters.append(_gtf2table.CounterReadCounts(
                 bam_files,
                 weight_multi_mapping=options.weight_multi_mapping,
-#               minimum_read_quality=options.minimum_read_quality,
+                minimum_read_quality=options.minimum_read_quality,
                 options=options,
                 prefix=prefix))
         elif c == "read-fullcounts":

@@ -742,7 +742,6 @@ class CounterReadCountsFull(CounterBAM):
             for read in samfile.fetch(contig,
                                       exons_start,
                                       exons_end):
-                
                 if minimum_read_quality > 0 and read.mapq <= minimum_read_quality:
                     quality_read_status += 1
                     continue
