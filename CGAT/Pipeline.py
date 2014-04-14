@@ -1712,6 +1712,7 @@ def main(args=sys.argv):
                              log_exceptions=options.log_exceptions,
                              exceptions_terminate_immediately=
                              options.exceptions_terminate_immediately,
+                             checksum_level=0,
                              )
 
                 L.info(E.GetFooter())
@@ -1722,26 +1723,30 @@ def main(args=sys.argv):
                 pipeline_printout(
                     options.stdout,
                     options.pipeline_targets,
-                    verbose=options.loglevel)
+                    verbose=options.loglevel,
+                    checksum_level=0,)
 
             elif options.pipeline_action == "touch":
                 pipeline_run(
                     options.pipeline_targets,
                     touch_files_only=True,
-                    verbose=options.loglevel)
+                    verbose=options.loglevel,
+                    checksum_level=0)
 
             elif options.pipeline_action == "svg":
                 pipeline_printout_graph(
                     options.stdout,
                     options.pipeline_format,
-                    options.pipeline_targets)
+                    options.pipeline_targets,
+                    checksum_level=0)
 
             elif options.pipeline_action == "plot":
                 outf, filename = tempfile.mkstemp()
                 pipeline_printout_graph(
                     os.fdopen(outf, "w"),
                     options.pipeline_format,
-                    options.pipeline_targets)
+                    options.pipeline_targets,
+                    checksum_level=0)
                 execute("inkscape %s" % filename)
                 os.unlink(filename)
 
