@@ -485,7 +485,7 @@ def buildReferenceTranscriptome(infile, outfile):
     '''
     P.run()
 
-    os.symlink(gtf_file, P.snip(gtf_file, ".gtf") + ".gff")
+    os.symlink(os.path.abspath(gtf_file), P.snip(os.path.abspath(gtf_file), ".gtf") + ".gff")
 
     prefix = P.snip(outfile, ".fa")
 
@@ -589,6 +589,7 @@ SEQUENCESUFFIXES = ("*.fastq.1.gz",
 
 SEQUENCEFILES = tuple([os.path.join(DATADIR, suffix_name)
                       for suffix_name in SEQUENCESUFFIXES])
+
 SEQUENCEFILES_REGEX = regex(
     r".*/(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz|csfasta.F3.gz|export.txt.gz)")
 
@@ -695,14 +696,14 @@ def mapReadsWithTophat2(infiles, outfile):
         executable=P.substituteParameters(**locals())["tophat2_executable"],
         strip_sequence=PARAMS["strip_sequence"])
     infile, reffile, transcriptfile = infiles
-    tophat_options = PARAMS["tophat2_options"] + \
+    tophat2_options = PARAMS["tophat2_options"] + \
         " --raw-juncs %(reffile)s " % locals()
 
     # Nick - added the option to map to the reference transcriptome first
     # (built within the pipeline)
     if PARAMS["tophat2_include_reference_transcriptome"]:
         prefix = os.path.abspath(P.snip(transcriptfile, ".fa"))
-        tophat_options = tophat_options + \
+        tophat2_options = tophat2_options + \
             " --transcriptome-index=%s -n 2" % prefix
 
     statement = m.build((infile,), outfile)

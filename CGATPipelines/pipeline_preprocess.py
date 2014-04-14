@@ -690,6 +690,11 @@ def processReads(infiles, outfile):
             'fastq_quality_filter -Q %(offset)i -v %(filter_options)s 2>> %(outfile)s_filter.log')
         do_sth = True
 
+    if PARAMS["process_trimmomatic"]:
+        s.append(
+            'trimmomatic %(trimmomatic_datatype)s -phred%(offset)i /dev/stdin /dev/stdout %(trimmomatic_options)s')
+        do_sth = True
+
     if PARAMS["process_sample"]:
         s.append(
             'python %(scriptsdir)s/fastq2fastq.py --sample=%(sample_proportion)f --log=%(outfile)s_sample.log')
