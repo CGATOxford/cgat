@@ -19,7 +19,7 @@ import sys, os, itertools, re
 # path were documentation source resides
 # Use environment variable SPHINX_DOCSDIR. If unset, the default
 # is a level up in the src directory.
-docsdir=os.environ.get( "SPHINX_DOCSDIR", "../src/pipeline_docs/pipeline_annotations" )
+docsdir=os.environ.get( "SPHINX_DOCSDIR", "." )
 
 if not os.path.exists(docsdir):
     raise ValueError( "documentation directory '%s' not found" % docsdir )
