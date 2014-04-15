@@ -78,13 +78,13 @@ def check_import(filename, outfile):
         outfile.write("FAIL %s\n%s\n" % (basename, msg))
         outfile.flush()
         traceback.print_exc(file=outfile)
-        ok_(False, '%i scripts/modules - ImportError' % basename)
+        ok_(False, '%s scripts/modules - ImportError' % basename)
     except Exception, msg:
         outfile.write("FAIL %s\n%s\n" % (basename, msg))
         outfile.flush()
 
         traceback.print_exc(file=outfile)
-        ok_(False, '%i scripts/modules - Exception' % basename)
+        ok_(False, '%s scripts/modules - Exception' % basename)
 
     ok_(True)
 
