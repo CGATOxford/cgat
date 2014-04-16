@@ -657,7 +657,6 @@ def plotPairs():
             text(x, y, txt, cex = cex);
             }
        ''')
-    #R('''pairs(countsTable, lower.panel = panel.pearson, pch=".", log="xy")''')
     R('''pairs(countsTable,
                lower.panel = panel.pearson,
                pch=".",
@@ -668,17 +667,29 @@ def plotPairs():
 def plotPCA():
     '''plot a PCA plot from countsTable.'''
 
-    R('''library( RColorBrewer )''')
-    R('''library( lattice )''')
+    R('''library(ggplot2)''')
     R('''pca = prcomp(t(countsTable))''')
-    R('''if (length(groups) >= 3) colours = brewer.pal(nlevels(groups), "Paired") else colours = c("green", "blue")''')
-    R('''xyplot( PC2 ~ PC1, data = as.data.frame(pca$x ), 
-                 groups=groups, col = colours, 
-                 main = draw.key(key = list(rect = list(col = colours), text = list(levels(groups)))),
-                 cex=2,
-                 pch=16,
-                 )''')
-
+    R('''p1 = ggplot(
+    as.data.frame(pca$x),
+    aes(x=PC1, y=PC2, colour=groups, label=rownames(pca$x))) \
+    + geom_text(size=4, vjust=1) \
+    + geom_point()''')
+    R('''p2 = qplot(x=PC1, y=PC3,
+    data = as.data.frame(pca$x),
+    label=rownames(pca$x),
+    colour=groups)''')
+    R('''p3 = qplot(x=PC2, y=PC3,
+    data = as.data.frame(pca$x),
+    label=rownames(pca$x),
+    colour=groups)''')
+    # TODO: plot all in a multi-plot with proper scale
+    # the following squishes the plots
+    # R('''source('%s')''' %
+    #   os.path.join(os.path.dirname(E.__file__),
+    #                "../R",
+    #                "multiplot.R"))
+    # R('''multiplot(p1, p2, p3, cols=2)''')
+    R('''plot(p1)''')
 
 def runEdgeR(outfile,
              outfile_prefix="edger.",
@@ -691,15 +702,17 @@ def runEdgeR(outfile,
 
     Results are stored in *outfile* and files prefixed by *outfile_prefix*.
 
-    The dispersion is usually measuered from replicates. If there are no 
+    The dispersion is usually measuered from replicates. If there are no
     replicates, you need to set the *dispersion* explicitely.
 
     See page 13 of the EdgeR user guide::
 
-       2. Simply pick a reasonable dispersion value, based on your experience with similar data,
-       and use that. Although subjective, this is still more defensible than assuming Poisson
-       variation. Typical values are dispersion=0.4 for human data, dispersion=0.1 for data
-       on genetically identical model organisms or dispersion=0.01 for technical replicates.
+       2. Simply pick a reasonable dispersion value, based on your
+       experience with similar data, and use that. Although
+       subjective, this is still more defensible than assuming Poisson
+       variation. Typical values are dispersion=0.4 for human data,
+       dispersion=0.1 for data on genetically identical model
+       organisms or dispersion=0.01 for technical replicates.
 
     '''
 
@@ -1424,12 +1437,8 @@ def readDesignFile(design_file):
             design[track] = Design._make((int(include), group, pair))
     return design
 
-#########################################################################
-#########################################################################
-#########################################################################
 
-
-def plotTagStats(infile, design_file, outfile):
+def plotTagStats(infile, design_file, outfile_prefix):
     '''provide summary plots for tag data.'''
 
     loadTagData(infile, design_file)
@@ -1452,21 +1461,24 @@ def plotTagStats(infile, design_file, outfile):
     R('''library('reshape')''')
 
     R('''d = melt( log10(countsTable + 1), variable_name = 'sample' )''')
+
+    # Note that ggsave does not work if there is 
+    # X display.
+    R.png(outfile_prefix + ".densities.png")
     R('''gp = ggplot(d)''')
     R('''pp = gp + geom_density(aes(x=value, group=sample,
     color=sample, fill=sample), alpha=I(1/3))''')
-
-    R.ggsave(outfile + ".densities.png")
+    R('''plot(pp)''')
     R['dev.off']()
 
+    R.png(outfile_prefix + ".boxplots.png")
     R('''gp = ggplot(d)''')
     R('''pp = gp +
     geom_boxplot(aes(x=sample,y=value,color=sample,fill=sample),
     size=0.3,
     alpha=I(1/3)) +
     theme(axis.text.x = theme_text( angle=90, hjust=1, size=8 ) )''')
-
-    R.ggsave(outfile + ".boxplots.png")
+    R('''plot(pp)''')
     R['dev.off']()
 
 #########################################################################
@@ -1474,7 +1486,7 @@ def plotTagStats(infile, design_file, outfile):
 #########################################################################
 
 
-def plotDETagStats(infile, outfile):
+def plotDETagStats(infile, outfile_prefix):
     '''provide summary plots for tag data.
 
     Stratify boxplots and densities according to differential expression calls.
@@ -1495,7 +1507,7 @@ def plotDETagStats(infile, outfile):
         geom_density(aes(x=log10(control_mean+1),group=factor(significant),
                                          color=factor(significant),fill=factor(significant)),alpha=I(1/3))''')
 
-    fn = outfile + ".densities.png"
+    fn = outfile_prefix + ".densities.png"
     R.png(fn)
     try:
         R('''grid.newpage()''')
@@ -1525,7 +1537,7 @@ def plotDETagStats(infile, outfile):
                          alpha=I(1/3)) +\
         opts( axis.text.x = theme_text( angle=90, hjust=1, size=8 ) )''')
 
-    fn = outfile + ".boxplots.png"
+    fn = outfile_prefix + ".boxplots.png"
     R.png(fn)
     try:
         R('''print( a, vp = viewport( layout.pos.row = 1, layout.pos.col = 1 ) )''')
@@ -1539,10 +1551,11 @@ def parseCuffdiff(infile):
     '''parse a cuffdiff .diff output file.'''
     min_fpkm = PARAMS["cuffdiff_fpkm_expressed"]
 
-    CuffdiffResult = collections.namedtuple("CuffdiffResult",
-                                            "test_id gene_id gene  locus   sample_1 sample_2  "
-                                            " status  value_1 value_2 l2fold  "
-                                            "test_stat p_value q_value significant ")
+    CuffdiffResult = collections.namedtuple(
+        "CuffdiffResult",
+        "test_id gene_id gene  locus   sample_1 sample_2  "
+        " status  value_1 value_2 l2fold  "
+        "test_stat p_value q_value significant ")
 
     results = []
 
@@ -1665,7 +1678,7 @@ def loadCuffdiff(infile, outfile):
 
     #IMS: First read in lookup table for CuffDiff/Pipeline sample name
     #conversion
-    inf = IOTools.openFile(os.path.join(indir, "read_groups.info"))
+    inf = IOTools.openFile(os.path.join(indir, "read_groups.info.gz"))
     inf.readline()
     sample_lookup = {}
 
@@ -1843,7 +1856,8 @@ def runCuffdiff(bamfiles,
     # Error is:
     # BAM record error: found spliced alignment without XS attribute
     # AH: compress output in outdir
-    statement = '''date > %(outfile)s.log; hostname >> %(outfile)s.log;
+    statement = '''date > %(outfile)s.log;
+    hostname >> %(outfile)s.log;
     cuffdiff --output-dir %(outdir)s
              --verbose
              --num-threads %(threads)i
@@ -1857,7 +1871,7 @@ def runCuffdiff(bamfiles,
     | grep -v 'BAM record error'
     >> %(outfile)s.log;
     checkpoint;
-    gzip %(outdir)s/*;
+    gzip -f %(outdir)s/*;
     checkpoint;
     date >> %(outfile)s.log;
     '''
@@ -2022,7 +2036,7 @@ def outputTagSummary(filename_tags,
     # build correlation
     R('''correlations = cor(countsTable)''')
     outfilename = output_filename_pattern + "correlation.tsv"
-    E.info("outputting sample correlations to %s" % outfilename)
+    E.info("outputting sample correlations table to %s" % outfilename)
     R('''write.table(correlations, file='%(outfilename)s',
     sep="\t",
     row.names=TRUE,
@@ -2031,18 +2045,21 @@ def outputTagSummary(filename_tags,
 
     # output scatter plots
     outfilename = output_filename_pattern + "scatter.png"
+    E.info("outputting scatter plots to %s" % outfilename)
     R.png(outfilename, width=960, height=960)
     plotPairs()
     R['dev.off']()
 
     # output heatmap based on correlations
     outfilename = output_filename_pattern + "heatmap.svg"
+    E.info("outputting correlation heatmap to %s" % outfilename)
     R.svg(outfilename)
     plotCorrelationHeatmap(method="correlation")
     R['dev.off']()
 
     # output PCA
     outfilename = output_filename_pattern + "pca.svg"
+    E.info("outputting PCA plot to %s" % outfilename)
     R.svg(outfilename)
     plotPCA()
     R['dev.off']()
@@ -2050,6 +2067,7 @@ def outputTagSummary(filename_tags,
     # output an MDS plot
     R('''suppressMessages(library('limma'))''')
     outfilename = output_filename_pattern + "mds.svg"
+    E.info("outputting mds plot to %s" % outfilename)
     R.svg(outfilename)
     R('''plotMDS( countsTable )''')
     R['dev.off']()
