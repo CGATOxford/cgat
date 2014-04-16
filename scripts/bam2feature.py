@@ -98,10 +98,9 @@ import sys
 import pysam
 import itertools
 import CGAT.Experiment as E
-import CGAT.Bed as Bed
            
     # This version of the counter uses a Profiler class to iterate
-    # over a bam file and check each read against a condition 
+    # over a bam file and check each read against a condition
     # to see if it should be counted.
     # The initial simple implementation is counting per contig.
     # Will generalize out to include user defined options
@@ -269,7 +268,6 @@ class Profiler(object):
                                running_total)
                 
                     last_tid = current_tid
-                    last_pos = current_pos
                     running_total = 0
                     res = []
                 else:
@@ -398,7 +396,7 @@ class Aggregator(object):
 
             if (counter > 1
                 and interval > last_interval
-                and float(counter)/float(reads) >= threshold):
+                and counter/float(reads) >= threshold):
                 
                 yield (self.samfile.getrname(record.contig),
                        last_interval,
@@ -453,8 +451,7 @@ def main(argv=None):
     # test presence of bam index file
 
     bam_index = "%s.bai" % args[0]
-    file_prefix = options.filename
-
+    
     if not os.path.exists(bam_index):
         raise IOError("there is no index file for %s" % args[0])
 
