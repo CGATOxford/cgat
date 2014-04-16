@@ -65,3 +65,11 @@ def estimateTagSize(bamfile,
         raise ValueError('multiple tag sizes in %s: %s' % (bamfile, sizes))
 
     return mi
+
+
+def getNumberOfAlignments(bamfile):
+    '''return number of alignments in bamfile.
+    '''
+    samfile = pysam.Samfile(bamfile)
+    return samfile.mapped
+
