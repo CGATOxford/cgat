@@ -785,7 +785,8 @@ class CounterReadCountsFull(CounterBAM):
                                 (nblocks, max_nblocks)
 
                         block_first_start = block_start
-                        block_last_end = block_end
+                        
+                    block_last_end = block_end
 
                 # close of loop
                 nbases_total += block_last_end - block_first_start

@@ -1,8 +1,8 @@
 .. _CGATInstallationVirtualBoxUbuntu:
 
-====================
-CGAT Virtual Machine
-====================
+================================
+Virtualbox: CGAT Virtual Machine
+================================
 
 CGAT also provides a virtual machine with the CGAT Code 
 Collection installed in Ubuntu 12.04 LTS. This virtual 
@@ -29,7 +29,7 @@ and go through these steps:
 
 2. RAM memory:
 
-   - Select: ``1024 MB`` of RAM memory.
+   - Select: ``1024 MB`` of RAM memory at least.
 
 3. Hard drive
 

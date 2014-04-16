@@ -71,7 +71,7 @@ To just count reads within 100bp intervals you can supply the command thus::
 The output files are a :term:bedGraph format file with each interval that has
 >0 reads aligned to it::
 
-  track type=bedGraph name="NH intervals" description="Intervals with NH > 1.00%" visibility=full priority=20
+  track type=bedGraph name="NH intervals" ...
   chr1   24690001  24700001   7.00
   chr11  58110001  58120001   12.00
   chr12  63790001  6938000    12.00
@@ -98,15 +98,17 @@ import sys
 import pysam
 import itertools
 import CGAT.Experiment as E
-           
+
     # This version of the counter uses a Profiler class to iterate
     # over a bam file and check each read against a condition
     # to see if it should be counted.
     # The initial simple implementation is counting per contig.
     # Will generalize out to include user defined options
 
+
 class Result(object):
-    ''' 
+
+    '''
     The result class wraps up useful read information
     for the Aggregator class functions '''
 
@@ -122,7 +124,9 @@ class Result(object):
         self.tag = tag
         self.cigar = cigar
 
+
 class ReadCounter(object):
+
     ''' A class that determines if a read should be counted '''
 
     def __init__(self, read):
@@ -133,24 +137,23 @@ class ReadCounter(object):
 
     def __getattr__(self, item):
         return item
-        
+
     def checkCount(self, item, condition=None):
         '''
         Checks whether the read meets a categorical condition,
         returns True or False
         '''
-        
+
         if condition is None:
             return True
         elif self.__getattr__(item) == condition:
             return True
         else:
             return False
-    
+
     def checkRange(self,
                    item,
                    condition=None):
-
         ''' Checks whether a read attribute falls within a given range
         Range is defined by passing in
         a tuple of (`lower limit`, `upper limit`)
@@ -164,9 +167,10 @@ class ReadCounter(object):
             return True
         else:
             return False
-                   
+
 
 class Profiler(object):
+
     ''' 
     A class that takes a list of ReadCounter instances
     and a sam file and yields profiles of counts
@@ -180,7 +184,7 @@ class Profiler(object):
                  threshold=0.01):
 
         # The samfile is a standard pysam samfile object
-        
+
         self.samfile = samfile
         self.condition = condition
         self.k = k
@@ -194,53 +198,52 @@ class Profiler(object):
                                k=self.k,
                                tag=self.tag,
                                threshold=self.threshold)
-                
+
     def TheCounter(self,
                    samfile,
                    condition=None,
                    k=10000,
                    tag=None,
                    threshold=0.01):
-        
+
         contig_it = itertools.izip(samfile.references, samfile.lengths)
         contig_dict = {}
-        
+
         for i in contig_it:
             contig_dict[i[0]] = i[1]
-            
-            
+
         # Count reads in a bamfile
         # initialise the variables
-        
         running_total = 0
         last_tid = 0
         res = []
         for read in samfile:
             if read.tid != -1:
                 current_tid = read.tid
-                current_pos = read.pos
                 contig_id = samfile.getrname(current_tid)
                 last_contig = samfile.getrname(last_tid)
-           
+
                 # assign strandedness to each read
                 # not used currently - implemented for future use
-                
+
                 if read.is_reverse:
                     strand = '+'
                 else:
                     strand = '-'
-                  
+
                 # count reads based on input - only using range at the moment
                 # need specific implementations for `cat`
 
                     if self.condition == "cat":
-                        tocount = ReadCounter(read=read).checkCount(item=read.tid)
+                        tocount = ReadCounter(
+                            read=read).checkCount(item=read.tid)
                     elif self.condition == "range":
                         tocount = ReadCounter(read).checkRange(item=read.pos)
                     else:
-                        tocount = ReadCounter(read).checkCount(item=read.tid,
-                                                               condition=current_tid)
-            
+                        tocount = ReadCounter(read).checkCount(
+                            item=read.tid,
+                            condition=current_tid)
+
             # check reads are on the same contig
             # if not change the contig variable and
             # reinitialise the variables
@@ -251,34 +254,39 @@ class Profiler(object):
                         E.info("%s:Intervals with %0.2f tag: %s" % (contig_id,
                                                                     threshold,
                                                                     tag))
-                        yield Aggregator(samfile=samfile,
-                                         results=res).tagsInterval(results=res,
-                                                                   k=self.k,
-                                                                   contig_size=contig_dict[last_contig],
-                                                                   threshold=threshold)
+                        result = Aggregator(samfile=samfile,
+                                            results=res)
+                        contig_size = contig_dict[last_contig]
+                        yield result.tagsInterval(results=res,
+                                                  k=self.k,
+                                                  contig_size=contig_size,
+                                                  threshold=threshold)
+
                     elif (self.condition == "range"):
-                        yield Aggregator(samfile=samfile,
-                                         results=res).sumInterval(results=res,
-                                                                  k=self.k,
-                                                                  contig_size=contig_dict[last_contig])
+                        result = Aggregator(samfile=samfile,
+                                            results=res)
+                        contig_size = contig_dict[last_contig]
+                        yield result.sumInterval(results=res,
+                                                 k=self.k,
+                                                 contig_size=contig_size)
                     elif self.condition == "cat":
                         yield (contig_id,
                                1,
                                contig_dict[contig_id],
                                running_total)
-                
+
                     last_tid = current_tid
                     running_total = 0
                     res = []
                 else:
                     pass
-        
+
         # begin counting reads from the list of Counters
         # the running total becomes the read index - currently not used
 
                     if tocount:
                         running_total += 1
-            
+
                         if tag is not None:
                             res.append(Result(contig=read.tid,
                                               start=read.pos,
@@ -296,8 +304,10 @@ class Profiler(object):
                         pass
             else:
                 pass
-        
+
+
 class Aggregator(object):
+
     ''' A class to perform functions to be called by Profiler.
     Options are: sum over interval and tagged reads over intervals
     '''
@@ -349,7 +359,6 @@ class Aggregator(object):
                        intsum)
                 intsum = 0
 
-                      
     def tagsInterval(self,
                      results,
                      k,
@@ -361,7 +370,7 @@ class Aggregator(object):
         E.g. output regions with a large proportion of multi-mapping reads.
         Default is intervals with >1% reads :term:`tag`>1
         '''
-        
+
         reads = 0
         counter = 0
         interval = 1
@@ -394,16 +403,16 @@ class Aggregator(object):
             # only yield results if the proportion of reads in
             # an interval exceed a threshold
 
-            if (counter > 1
-                and interval > last_interval
-                and counter/float(reads) >= threshold):
-                
+            if counter > 1 and \
+               interval > last_interval and \
+               float(counter) / float(reads) >= threshold:
                 yield (self.samfile.getrname(record.contig),
                        last_interval,
                        interval,
                        counter)
                 reads = 0
                 counter = 0
+
 
 def main(argv=None):
     """script main.
@@ -421,11 +430,11 @@ def main(argv=None):
     parser.add_option("--condition", dest="condition",
                       type="string", help="either `range`"
                       "or `cat`, `range` is used with --interval.")
-    
+
     parser.add_option("--interval", dest="interval", type="int",
                       help="the interval size to count reads"
                       "in [default=%default]")
-    
+
     parser.add_option("--tag", dest="tag", type="string",
                       help="outputs regions with >:term:`threshold`"
                       "reads containing `tag`")
@@ -436,22 +445,21 @@ def main(argv=None):
 
     parser.add_option("--output-filename-pattern", dest="filename",
                       type="string", help="file prefix pattern")
-    
+
     parser.set_defaults(condition="range",
                         threshold=0.01,
                         interval=10000,
                         tag=None)
-    
+
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv)
 
     if len(args) == 0:
         args.append("-")
-            
+
     # test presence of bam index file
 
     bam_index = "%s.bai" % args[0]
-    
     if not os.path.exists(bam_index):
         raise IOError("there is no index file for %s" % args[0])
 
@@ -462,7 +470,7 @@ def main(argv=None):
         options.interval = None
 
     # if interval is given, assume range is also required for condition
-    
+
     if options.interval and not options.condition:
         options.condition = "range"
 
@@ -471,14 +479,12 @@ def main(argv=None):
     # or automatically detect format
 
     # read in whole bam file
-        
+
     E.info("reading input file %s" % args[0])
     samfile = pysam.Samfile(args[0], "rb")
-            
-        
+
     # use the file header information to generate a dictionary of contig ids
     # and sizes
-
     E.info("Making contig dictionary from input file %s header" % (args[0]))
 
     contig_it = itertools.izip(samfile.references, samfile.lengths)
@@ -489,14 +495,14 @@ def main(argv=None):
 
         # Write out a summary file
         # TODO: have as a user defined option to switch on/off
-  
+
     if (options.interval and options.tag):
         options.stdout.write('track type=bedGraph name="%s intervals" '
                              'description="Intervals with %s > %0.2f%%" '
                              'visibility=full priority=20\n'
                              % (options.tag,
                                 options.tag,
-                                round(options.threshold*100, 2)))
+                                round(options.threshold * 100, 2)))
 
         prof1 = Profiler(samfile=samfile,
                          condition=options.condition,
@@ -542,7 +548,7 @@ def main(argv=None):
                                                        res[1],
                                                        res[2],
                                                        res[3]))
-    
+
     # write footer and output benchmarkinformation.
     E.Stop()
 
