@@ -1450,7 +1450,8 @@ def estimateSPPQualityMetrics(infile, outfile):
         raise ValueError("could not find run_spp.R")
 
     statement = '''
-    Rscript %(executable)s -c=%(infile)s -i=%(controlfile)s -rf -savp -out=%(outfile)s
+    Rscript %(executable)s -c=%(infile)s -i=%(controlfile)s -rf \
+           -savp -out=%(outfile)s
     >& %(outfile)s.log'''
 
     P.run()
@@ -1737,8 +1738,6 @@ def getPeakShift(track, method):
 def buildPeakShapeTable(infile, outfile):
     '''build a table with peak shape parameters.'''
 
-    to_cluster = True
-
     # compute suffix (includes method name)
     track, method, section = re.match(
         "(.*)_(.*)\.(.*).bed.gz", os.path.basename(infile)).groups()
@@ -1816,8 +1815,10 @@ def allIntervalsAsBed(infile, outfile):
 def makeReproducibilityOfMethods(infiles, outfile):
     '''compute overlap between intervals.
 
-    Note the exon percentages are approximations assuming that there are
-    not more than one intervals in one set overlapping one in the other set.
+    Note the exon percentages are approximations assuming that there
+    are not more than one intervals in one set overlapping one in the
+    other set.
+
     '''
     PipelinePeakcalling.makeReproducibility(infiles, outfile)
 
@@ -1837,8 +1838,10 @@ def makeReproducibilityOfMethods(infiles, outfile):
 def makeReproducibilityOfReplicates(infiles, outfile):
     '''compute overlap between intervals.
 
-    Note the exon percentages are approximations assuming that there are
-    not more than one intervals in one set overlapping one in the other set.
+    Note the exon percentages are approximations assuming that there
+    are not more than one intervals in one set overlapping one in the
+    other set.
+
     '''
     PipelinePeakcalling.makeReproducibility(infiles, outfile)
 
@@ -1880,10 +1883,6 @@ def qc():
 def full():
     pass
 
-###################################################################
-###################################################################
-###################################################################
-
 
 @follows(mkdir("report"))
 def build_report():
@@ -1891,10 +1890,6 @@ def build_report():
 
     E.info("starting documentation build process from scratch")
     P.run_report(clean=True)
-
-###################################################################
-###################################################################
-###################################################################
 
 
 @follows(mkdir("report"))
@@ -1904,51 +1899,11 @@ def update_report():
     E.info("updating documentation")
     P.run_report(clean=False)
 
-###################################################################
-###################################################################
-###################################################################
 
-
-@follows(mkdir("%s/bamfiles" % PARAMS["web_dir"]),
-         mkdir("%s/genesets" % PARAMS["web_dir"]),
-         mkdir("%s/classification" % PARAMS["web_dir"]),
-         mkdir("%s/differential_expression" % PARAMS["web_dir"]),
-         update_report,
-         )
+@follows(update_report)
 def publish():
     '''publish files.'''
-    # publish web pages
     P.publish_report()
-
-    # publish additional data
-    web_dir = PARAMS["web_dir"]
-    project_id = P.getProjectId()
-
-    # directory, files
-    exportfiles = {
-        "bamfiles":
-        glob.glob("*.accepted.bam") + glob.glob("*.accepted.bam.bai"),
-        "genesets": ["lincrna.gtf.gz", "abinitio.gtf.gz"],
-        "classification": glob.glob("*.class.tsv.gz"),
-        "differential_expression": glob.glob("*.cuffdiff.dir"),
-    }
-
-    bams = []
-
-    for targetdir, filenames in exportfiles.iteritems():
-        for src in filenames:
-            dest = "%s/%s/%s" % (web_dir, targetdir, src)
-            if dest.endswith(".bam"):
-                bams.append(dest)
-            dest = os.path.abspath(dest)
-            if not os.path.exists(dest):
-                os.symlink(os.path.abspath(src), dest)
-
-    # output ucsc links
-    for bam in bams:
-        filename = os.path.basename(bam)
-        track = P.snip(filename, ".bam")
-        print """track type=bam name="%(track)s" bigDataUrl=http://www.cgat.org/downloads/%(project_id)s/bamfiles/%(filename)s""" % locals()
 
 if __name__ == "__main__":
     sys.exit(P.main(sys.argv))

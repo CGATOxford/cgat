@@ -3,19 +3,14 @@ import itertools
 import math
 import sqlite3
 
-from SphinxReport.Tracker import *
-from collections import OrderedDict as odict
-
 from RnaseqDiffExpressionReport import *
-
-##############################################################
-##############################################################
-##############################################################
 
 
 class DESummary(ProjectTracker, SingleTableTrackerRows):
     table = "de_stats"
-    fields = ("track", "design", "treatment_name", "control_name")
+    fields = ("track", "design",
+              "treatment_name", "control_name",
+              "geneset", "level")
 
 
 class TrackerDESeqSizeFactors(ProjectTracker):
@@ -40,9 +35,6 @@ class TrackerEdgeRSummary(ProjectTracker):
         return self.getAll("SELECT sample, * FROM %(track)s_edger_summary")
 
 
-##############################################################
-##############################################################
-##############################################################
 class TrackerDESeqFit(Tracker):
     method = "deseq"
     tracks = [x.asFile() for x in DESIGNS]
@@ -144,10 +136,6 @@ class TrackerDESummaryPlotsCuffdiff(TrackerDESummaryPlots):
     method = "cuffdiff"
     levels = CUFFDIFF_LEVELS
 
-################################################################
-################################################################
-################################################################
-
 
 class TrackerDifferentialExpression(Tracker):
 
@@ -188,42 +176,39 @@ class TrackerDEPairwiseCuffdiff(TrackerDifferentialExpression):
     levels = CUFFDIFF_LEVELS
 
 
-#############################################################
-#############################################################
-#############################################################
-##
-#############################################################
 class DifferentialExpressionComparison(ProjectTracker):
+    '''base class for trackers comparing two differential
+    expression methods'''
 
-    tracks = ["%s_%s" % (y, x.asFile())
-              for x, y in itertools.product(GENESETS, DESIGNS)]
+    def getTracks(self):
+        tables = self.getTables(pattern="(.*_gene_diff$)")
+        # group by method
+        return ["%s:%s" % (x, y)
+                for x, y in itertools.combinations(tables, 2)]
+
+    def getParts(self, track):
+        return track.split(":")
 
 
 class DifferentialExpressionOverlap(DifferentialExpressionComparison):
-
-    '''number of features differentially expressed
-    in all sets.
+    '''number of features differentially expressed in each pairwise
+    comparison.
     '''
 
-    def __call__(self, track, slice=None):
+    def __call__(self, track):
 
-        pair1, pair2, pair3 = "deseq", "cuffdiff", "edger"
-
+        pair1, pair2 = self.getParts(track)
         a = self.get(
-            '''SELECT test_id FROM %(track)s_%(pair1)s_gene_diff WHERE significant = 1''')
+            '''SELECT test_id FROM %(pair1)s WHERE significant = 1''')
         b = self.get(
-            '''SELECT test_id FROM %(track)s_%(pair2)s_gene_diff WHERE significant = 1''')
-        c = self.get(
-            '''SELECT test_id FROM %(track)s_%(pair3)s_gene_diff WHERE significant = 1''')
+            '''SELECT test_id FROM %(pair2)s WHERE significant = 1''')
 
         a = set(map(str, a))
         b = set(map(str, b))
-        c = set(map(str, c))
 
-        return odict(((pair1, len(a)),
-                      (pair2, len(b)),
-                      (pair3, len(c)),
-                      ("shared", len(a.intersection(b).intersection(c)))))
+        return odict((('left', len(a)),
+                      ('right', len(b)),
+                      ("shared", len(a.intersection(b)))))
 
 
 class DifferentialExpressionCorrelationPValueCuffdiffDeseq(
@@ -238,23 +223,24 @@ class DifferentialExpressionCorrelationPValueCuffdiffDeseq(
 
     def __call__(self, track, slice=None):
 
-        pair1, pair2 = self.getPairs(track)
+        pair1, pair2 = self.getParts(track)
         dbh = sqlite3.connect("csvdb")
         cc = dbh.cursor()
-        pvalues = {pair1: [], pair2: []}
-        for pvals in cc.execute("""
-                   SELECT a.pvalue, b.pvalue
-                          FROM %s_%s_gene_diff AS a,
-                          %s_%s_gene_diff AS b
-                          WHERE a.test_id = b.test_id
-                          AND ABS( a.l2fold ) != 10
-                          AND ABS( b.l2fold ) != 10
-                          AND a.pvalue IS NOT NULL
-                          AND b.pvalue IS NOT NULL
-                          AND a.status == 'OK' and b.status == 'OK'
-                           """ % (slice, pair1, slice, pair2)).fetchall():
-            pvalues[pair1].append(-math.log10(pvals[0] + 0.0000001))
-            pvalues[pair2].append(-math.log10(pvals[1] + 0.0000001))
+        fold_changes = {pair1: [], pair2: []}
+        for folds in cc.execute(
+                """
+                SELECT a.l2fold, b.l2fold
+                FROM %s AS a,
+                %s AS b
+                WHERE a.test_id = b.test_id
+                AND ABS( a.l2fold ) < 10
+                AND ABS( b.l2fold ) < 10
+                AND a.pvalue IS NOT NULL
+                AND b.pvalue IS NOT NULL
+                AND a.status == 'OK' and b.status == 'OK'
+                """ % (pair1, pair2)).fetchall():
+            fold_changes[pair1].append(folds[0])
+            fold_changes[pair2].append(folds[1])
 
         return pvalues
 
@@ -284,27 +270,24 @@ class DifferentialExpressionCorrelationFoldChangeCuffdiffDeseq(
 
     '''fold change estimates per gene set.'''
 
-    def getPairs(self, track):
-        self.pair1, self.pair2 = track[0], track[1]
-        return self.pair1, self.pair2
+    def __call__(self, track):
 
-    def __call__(self, track, slice=None):
-
-        pair1, pair2 = self.getPairs(track)
+        pair1, pair2 = self.getParts(track)
         dbh = sqlite3.connect("csvdb")
         cc = dbh.cursor()
         fold_changes = {pair1: [], pair2: []}
-        for folds in cc.execute("""
-                   SELECT a.l2fold, b.l2fold
-                          FROM %s_%s_gene_diff AS a,
-                          %s_%s_gene_diff AS b
-                          WHERE a.test_id = b.test_id
-                          AND ABS( a.l2fold ) < 10
-                          AND ABS( b.l2fold ) < 10
-                          AND a.pvalue IS NOT NULL
-                          AND b.pvalue IS NOT NULL
-                          AND a.status == 'OK' and b.status == 'OK'
-                           """ % (slice, pair1, slice, pair2)).fetchall():
+        for folds in cc.execute(
+                """
+                SELECT a.l2fold, b.l2fold
+                FROM %s AS a,
+                %s AS b
+                WHERE a.test_id = b.test_id
+                AND ABS( a.l2fold ) < 10
+                AND ABS( b.l2fold ) < 10
+                AND a.pvalue IS NOT NULL
+                AND b.pvalue IS NOT NULL
+                AND a.status == 'OK' and b.status == 'OK'
+                """ % (pair1, pair2)).fetchall():
             fold_changes[pair1].append(folds[0])
             fold_changes[pair2].append(folds[1])
 
@@ -329,12 +312,6 @@ class DifferentialExpressionCorrelationFoldChangeDeseqEdger(
     def getPairs(self, track):
         self.pair1, self.pair2 = track[0], track[2]
         return self.pair1, self.pair2
-
-#############################################################
-#############################################################
-#############################################################
-##
-#############################################################
 
 
 class VolcanoTracker(ProjectTracker):

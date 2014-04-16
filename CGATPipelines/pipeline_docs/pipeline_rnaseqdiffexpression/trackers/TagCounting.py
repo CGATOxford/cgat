@@ -20,3 +20,7 @@ class TagCountsSummaryPerDesign(ProjectTracker):
 
     def __call__(self, track):
         return self.getAll("SELECT * FROM design%(track)s_stats")
+
+
+class FeatureCountsSummary(ProjectTracker, SingleTableTrackerRows):
+    table = "feature_counts_summary"

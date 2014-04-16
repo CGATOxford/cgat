@@ -24,9 +24,21 @@ significantly different number of reads.
 
 .. report:: DifferentialExpression.DESummary
    :render: table
-   :slices: geneset,level,significant,twofold,tested
+   :slices: significant,twofold,tested
 
    Table with results of differential enrichment analysis.
+
+.. report:: DifferentialExpression.DESummary
+   :render: interleaved-bar-plot
+   :slices: significant
+
+   Number of significant number of DE genes
+
+.. report:: DifferentialExpression.DESummary
+   :render: interleaved-bar-plot
+   :slices: twofold
+
+   Number of twofold number of DE genes
 
 More detailed results for each method are below.
 

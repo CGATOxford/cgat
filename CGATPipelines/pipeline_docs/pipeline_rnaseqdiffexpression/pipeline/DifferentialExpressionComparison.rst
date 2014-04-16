@@ -16,57 +16,60 @@ expressed that are common to all methods.
 
 .. report:: DifferentialExpression.DifferentialExpressionOverlap
    :render: table
-   :groupby: all
 
    Number of consistent predictions between different methods.
 
-Fold change
-===========
+.. The following plots all take a while, disabled for now until 
+.. there is grouping on a per-design level.
 
-.. report:: DifferentialExpression.DifferentialExpressionCorrelationFoldChangeCuffdiffDeseq
-   :render: r-smooth-scatter-plot
-   :layout: column-3
-   :width: 300
-   
-   Scatter-plots of fold change estimates Cuffdiff vs. DESeq
+..
+   Fold change
+   ===========
 
-.. report:: DifferentialExpression.DifferentialExpressionCorrelationFoldChangeCuffdiffEdger
-   :render: r-smooth-scatter-plot
-   :layout: column-3
-   :width: 300
+   .. report:: DifferentialExpression.DifferentialExpressionCorrelationFoldChangeCuffdiffDeseq
+      :render: r-smooth-scatter-plot
+      :layout: column-3
+      :width: 300
 
-   Scatter-plots of fold change estimates Cuffdiff vs. EdgeR
+      Scatter-plots of fold change estimates Cuffdiff vs. DESeq
 
-.. report:: DifferentialExpression.DifferentialExpressionCorrelationFoldChangeDeseqEdger
-   :render: r-smooth-scatter-plot
-   :layout: column-3
-   :width: 300
-   
-   Scatter-plots of fold change estimates DESeq vs. EdgeR
+   .. report:: DifferentialExpression.DifferentialExpressionCorrelationFoldChangeCuffdiffEdger
+      :render: r-smooth-scatter-plot
+      :layout: column-3
+      :width: 300
 
-P-values
-===========
+      Scatter-plots of fold change estimates Cuffdiff vs. EdgeR
 
-.. report:: DifferentialExpression.DifferentialExpressionCorrelationPValueCuffdiffDeseq
-   :render: r-smooth-scatter-plot
-   :layout: column-3
-   
-   Scatter-plots of fold change estimates Cuffdiff vs. DESeq
+   .. report:: DifferentialExpression.DifferentialExpressionCorrelationFoldChangeDeseqEdger
+      :render: r-smooth-scatter-plot
+      :layout: column-3
+      :width: 300
+
+      Scatter-plots of fold change estimates DESeq vs. EdgeR
+
+   P-values
+   ===========
+
+   .. report:: DifferentialExpression.DifferentialExpressionCorrelationPValueCuffdiffDeseq
+      :render: r-smooth-scatter-plot
+      :layout: column-3
+
+      Scatter-plots of fold change estimates Cuffdiff vs. DESeq
 
 
-.. report:: DifferentialExpression.DifferentialExpressionCorrelationPValueCuffdiffEdger
-   :render: r-smooth-scatter-plot
-   :layout: column-3
-   :width: 300
+   .. report:: DifferentialExpression.DifferentialExpressionCorrelationPValueCuffdiffEdger
+      :render: r-smooth-scatter-plot
+      :layout: column-3
+      :width: 300
 
-   Scatter-plots of fold change estimates Cuffdiff vs. EdgeR
+      Scatter-plots of fold change estimates Cuffdiff vs. EdgeR
 
-.. report:: DifferentialExpression.DifferentialExpressionCorrelationPValueDeseqEdger
-   :render: r-smooth-scatter-plot
-   :layout: column-3
-   :width: 300
-   
-   Scatter-plots of fold change estimates DESeq vs. EdgeR
+   .. report:: DifferentialExpression.DifferentialExpressionCorrelationPValueDeseqEdger
+      :render: r-smooth-scatter-plot
+      :layout: column-3
+      :width: 300
+
+      Scatter-plots of fold change estimates DESeq vs. EdgeR
 
 
 

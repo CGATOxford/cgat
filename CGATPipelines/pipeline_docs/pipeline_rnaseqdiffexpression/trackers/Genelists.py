@@ -55,16 +55,16 @@ class AllDifferentiallyExpressedGenes(ProjectTracker):
     pattern = '(.*)_gene_diff'
 
     def __call__(self, track, slice=None):
-        statement = '''SELECT a.gene_name, 
+        statement = '''SELECT a.gene_name,
                               a.gene_id,
-                              a.gene_biotype, 
+                              a.gene_biotype,
                               t.l2fold,
                               t.treatment_mean,
                               t.control_mean,
                               t.pvalue,
                               t.qvalue,
                               s.contig, s.start, s.end
-                              FROM %(track)s_gene_diff as t, 
+                              FROM %(track)s_gene_diff as t,
                                    annotations.gene_info as a,
                                    annotations.gene_stats as s
                               WHERE a.gene_id = t.test_id AND
