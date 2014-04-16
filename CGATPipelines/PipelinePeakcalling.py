@@ -1129,7 +1129,7 @@ def summarizeMACS2FDR(infiles, outfile):
         peaks = list(WrapperMACS.iterateMacs2Peaks(inf))
 
         # for threshold in fdr_thresholds:
-        called.append(len([x for x in peaks if x.fdr <= fdr_threshold]))
+        called.append(len([x for x in peaks if x.qvalue <= fdr_threshold]))
 
         outf.write("%s\t%s\n" % (track, "\t".join(map(str, called))))
 
@@ -1260,7 +1260,12 @@ def runMACS2(infile, outfile,
 ############################################################
 
 
-def runZinba(infile, outfile, controlfile, action="full"):
+def runZinba(infile,
+             outfile,
+             controlfile,
+             action="full",
+             fragment_size=None,
+             tag_size=None):
     '''run Zinba for peak detection.'''
 
     to_cluster = True
@@ -1270,12 +1275,17 @@ def runZinba(infile, outfile, controlfile, action="full"):
     job_options = "-l mem_free=32G -pe dedicated %i -R y" % PARAMS[
         "zinba_threads"]
 
+    # TODO: use closest size or build mapability file
+    assert 40 <= tag_size < 60, "not all tag sizes implemented"
+    tag_size = 50
+    fragment_size = 200
+
     mappability_dir = os.path.join(PARAMS["zinba_mappability_dir"],
                                    PARAMS["genome"],
-                                   "%i" % PARAMS["zinba_read_length"],
+                                   "%i" % tag_size,
                                    "%i" % PARAMS[
                                        "zinba_alignability_threshold"],
-                                   "%i" % PARAMS["zinba_fragment_size"])
+                                   "%i" % fragment_size)
 
     if not os.path.exists(mappability_dir):
         raise OSError(
@@ -1296,7 +1306,7 @@ def runZinba(infile, outfile, controlfile, action="full"):
     python %(scriptsdir)s/runZinba.py
            --input-format=bam
            --fdr-threshold=%(zinba_fdr_threshold)f
-           --fragment-size=%(zinba_fragment_size)s
+           --fragment-size=%(fragment_size)i
            --threads=%(zinba_threads)i
            --bit-file=%(bit_file)s
            --mappability-dir=%(mappability_dir)s
@@ -1819,7 +1829,7 @@ def runSICER(infile,
              outfile,
              controlfile=None,
              mode="narrow",
-             fragmentsize=100):
+             fragment_size=100):
     '''run sicer on infile.'''
 
     job_options = "-l mem_free=8G"

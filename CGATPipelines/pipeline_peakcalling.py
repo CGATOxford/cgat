@@ -813,12 +813,13 @@ def buildFragmentSizeTable(infiles, outfile):
     '''build a table with fragment sizes.'''
     statement = '''
     python %(scriptsdir)s/combine_tables.py
-    --cat=track 
+    --cat=track
     --regex-filename=".*/(\\S+).fragment_size"
     fragment_size.dir/*.fragment_size
     > %(outfile)s
     '''
     P.run()
+
 
 @E.cachedfunction
 def getFragmentSizeTable():
@@ -832,18 +833,19 @@ def getFragmentSizeTable():
 
 def getFragmentSize(track):
     '''return fragment size for track.
-    
+
     returns None if not available.
     '''
     table = getFragmentSizeTable()
     if track in table:
-        return int(table[track].fragmentsize_mean)
+        return int(round(float(table[track].fragmentsize_mean)))
     else:
         return None
 
+
 def getTagSize(track):
     '''return tag size for track.
-    
+
     returns None if not available.
     '''
     table = getFragmentSizeTable()
@@ -851,7 +853,7 @@ def getTagSize(track):
         return int(table[track].tagsize)
     else:
         return None
-        
+
 ######################################################################
 ######################################################################
 ##                                                                  ##
@@ -1062,28 +1064,38 @@ def loadMACS2SummaryFDR(infile, outfile):
 @follows(mkdir("zinba.dir"), normalizeBAM)
 @files([("%s.call.bam" % (x.asFile()),
          "zinba.dir/%s.zinba" % x.asFile()) for x in TRACKS])
-def callPeaksWithZinba(infiles, outfile):
+def callPeaksWithZinba(infile, outfile):
     '''run Zinba for peak detection.'''
-    infile, controlfile = infiles
 
+    track = P.snip(infile, ".call.bam")
     controls = getControl(Sample(track))
     controlfile = getControlFile(Sample(track), controls, "%s.call.bam")
 
     if os.path.exists(os.path.join(outfile + "_files", outfile + ".model")):
-        PipelinePeakcalling.runZinba(infile,
-                                     outfile,
-                                     controlfile,
-                                     action="model")
+        PipelinePeakcalling.runZinba(
+            infile,
+            outfile,
+            controlfile,
+            action="model",
+            fragment_size=getFragmentSize(track),
+            tag_size=getTagSize(track))
 
     elif os.path.exists(os.path.join(outfile + "_files", outfile + ".list")):
-        PipelinePeakcalling.runZinba(infile,
-                                     outfile,
-                                     controlfile,
-                                     action="predict")
-
+        PipelinePeakcalling.runZinba(
+            infile,
+            outfile,
+            controlfile,
+            action="predict",
+            fragment_size=getFragmentSize(track),
+            tag_size=getTagSize(track))
     else:
         PipelinePeakcalling.runZinba(
-            infile, outfile, controlfile, action="full")
+            infile,
+            outfile,
+            controlfile,
+            action="full",
+            fragment_size=getFragmentSize(track),
+            tag_size=getTagSize(track))
 
 ############################################################
 
@@ -1117,9 +1129,9 @@ def callNarrowerPeaksWithSICER(infile, outfile):
     controls = getControl(Sample(track))
     controlfile = getControlFile(Sample(track), controls, "%s.call.bam")
     PipelinePeakcalling.runSICER(infile, outfile,
-                                 controlfile, 
+                                 controlfile,
                                  "narrow",
-                                 fragmentsize=getFragmentSize(track))
+                                 fragment_size=getFragmentSize(track))
 
 
 ######################################################################
@@ -1142,7 +1154,7 @@ def callBroaderPeaksWithSICER(infile, outfile):
                                  outfile,
                                  controlfile,
                                  "broad",
-                                 fragmentsize=getFragmentSize(track))
+                                 fragment_size=getFragmentSize(track))
 
 ######################################################################
 ######################################################################
@@ -1494,7 +1506,8 @@ def callPeaksWithSPPForIDR(infile, outfile):
         raise ValueError("could not find run_spp.R")
 
     statement = '''
-    Rscript %(executable)s -c=%(infile)s -i=%(controlfile)s -npeak=%(idr_npeaks)s 
+    Rscript %(executable)s -c=%(infile)s -i=%(controlfile)s
+            -npeak=%(idr_npeaks)s
             -odir=idr.dir -savr -savp -rf -out=%(outfile)s
     >& %(outfile)s.log'''
 
@@ -1818,7 +1831,7 @@ def makeReproducibilityOfMethods(infiles, outfile):
          regex(
              os.path.join(
                  PARAMS["exportdir"],
-                 "bedfiles", 
+                 "bedfiles",
                  r"(.+)-[^-]+_(.+)\.(.+).bed.gz")),
          r"reproducibility.dir/\1-\2.\3.reproducibility")
 def makeReproducibilityOfReplicates(infiles, outfile):

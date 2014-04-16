@@ -556,7 +556,6 @@ class CounterBAM(Counter):
                  *args,
                  weight_multi_mapping = False,
                  minimum_read_quality = 0,
-                 use_first_base = False,
                  **kwargs ):
         Counter.__init__(self, *args, **kwargs )
         if not bamfiles: 
@@ -564,7 +563,6 @@ class CounterBAM(Counter):
         self.mBamFiles = bamfiles
         self.weight_multi_mapping = weight_multi_mapping
         self.minimum_read_quality = minimum_read_quality
-        self.use_first_base = use_first_base
         self.header = [ '_'.join(x) 
                         for x in itertools.product( 
                                 self.headers_direction,
@@ -667,7 +665,6 @@ class CounterReadCountsFull(CounterBAM):
 
         cdef int min_intron_size = self.min_intron_size
         cdef float minimum_read_quality = self.minimum_read_quality
-        cdef bint use_first_base = self.use_first_base
         cdef bint weight_multi_mapping = self.weight_multi_mapping
         cdef int max_bases_outside_exons = self.max_bases_outside_exons
 
@@ -742,7 +739,6 @@ class CounterReadCountsFull(CounterBAM):
             for read in samfile.fetch(contig,
                                       exons_start,
                                       exons_end):
-                
                 if minimum_read_quality > 0 and read.mapq <= minimum_read_quality:
                     quality_read_status += 1
                     continue

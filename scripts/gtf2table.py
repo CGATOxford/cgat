@@ -561,7 +561,7 @@ class CounterCompositionCpG(_gtf2table.Counter):
     '''compute CpG frequencies as well as nucleotide frequencies.
 
     Note that CpG density is calculated across the merged exons
-    of a transcript. Thus, there might be difference between the CpG 
+    of a transcript. Thus, there might be difference between the CpG
     on a genomic level and on the transrcipt level depending on how
     many genomic CpG are lost across an intron-exon boundary or how
     many transcript CpG are created by exon fusion.
@@ -3887,7 +3887,6 @@ def main(argv=None):
                 options=options,
                 prefix=prefix))
         elif c == "read-extension":
-	    minimum_read_quality=options.minimum_read_quality
             counters.append(CounterReadExtension(
                 bam_files,
                 filename_gff=options.filename_gff,
@@ -3904,7 +3903,7 @@ def main(argv=None):
             counters.append(_gtf2table.CounterReadCounts(
                 bam_files,
                 weight_multi_mapping=options.weight_multi_mapping,
-#               minimum_read_quality=options.minimum_read_quality,
+                minimum_read_quality=options.minimum_read_quality,
                 options=options,
                 prefix=prefix))
         elif c == "read-fullcounts":
