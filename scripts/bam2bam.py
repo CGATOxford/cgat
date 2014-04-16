@@ -160,6 +160,10 @@ def main(argv=None):
     parser.add_option("--fastq2", "-2", dest="fastq_pair2", type="string",
                       help="fastq file with read information for second in pair [%default]")
 
+    parser.add_option("--keep-first-base", dest="keep_first_base", action="store_true",
+                      help="keep first base of reads such that gtf2table.py will only consider the"
+                      "first base in its counts")
+
     parser.set_defaults(
         filter=[],
         set_nh=False,
@@ -172,6 +176,7 @@ def main(argv=None):
         inplace=False,
         fastq_pair1=None,
         fastq_pair2=None,
+        keep_first_base=False
     )
 
     # add common options (-h/--help, ...) and parse command line
@@ -238,6 +243,8 @@ def main(argv=None):
                                     colour_mismatches=colour_mismatches)
 
             options.stdlog.write("category\tcounts\n%s\n" % c.asTable())
+            
+
 
         else:
             # set up the modifying iterators
@@ -348,6 +355,19 @@ def main(argv=None):
 
             if options.set_nh:
                 it = _bam2bam.SetNH(it)
+
+            # keep first base of reads by changing the cigarstring to '1M' and, in reads mapping to the
+            # reverse strand, changes the pos to aend - 1
+            if options.keep_first_base:
+                def keep_first_base(i):
+                    for read in i:
+                        if read.is_reverse:
+                            read.pos = read.aend - 1
+                            read.cigarstring = '1M'
+                        elif not read.is_unmapped:
+                            read.cigarstring = '1M'
+                        yield read
+                it = keep_first_base(it)
 
             # read and output
             for read in it:

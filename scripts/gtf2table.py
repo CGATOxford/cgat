@@ -3784,12 +3784,6 @@ def main(argv=None):
                       help="minimum read quality. Reads with a quality "
                       "score of less will be ignored. "
                       "[default=%default]")
-    
-    parser.add_option("--use-first-base",
-		      dest="use_first_base",
-		      action="store_true",
-		      help="consider only the first base of the read when counting"
-		      "[default=%default].")
 
     parser.set_defaults(
         genome_file=None,
@@ -3807,8 +3801,7 @@ def main(argv=None):
         weight_multi_mapping=False,
         library_type='fr-unstranded',
         prefixes=[],
-        minimum_read_quality=0,
-	use_first_base=False
+        minimum_read_quality=0
     )
 
     if not argv:
@@ -3919,7 +3912,6 @@ def main(argv=None):
                 bam_files,
                 weight_multi_mapping=options.weight_multi_mapping,
                 minimum_read_quality=options.minimum_read_quality,
-		use_first_base=options.use_first_base,
                 options=options,
                 prefix=prefix))
         elif c == "readpair-counts":

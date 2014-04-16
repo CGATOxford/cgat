@@ -786,15 +786,9 @@ class CounterReadCountsFull(CounterBAM):
                                 'number of blocks %i greater than maximum(%i)' % \
                                 (nblocks, max_nblocks)
 
-                        if use_first_base and read.is_reverse:
-                            block_first_start = block_end-1
-                        else:
-                            block_first_start = block_start
+                        block_first_start = block_start
                         
-                    if use_first_base and not read.is_reverse:
-                        block_last_end = block_start+1
-                    else:
-                        block_last_end = block_end
+                    block_last_end = block_end
 
                 # close of loop
                 nbases_total += block_last_end - block_first_start
