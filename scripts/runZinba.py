@@ -114,7 +114,8 @@ def main(argv=None):
 
     parser.add_option("-s", "--fragment-size", dest="fragment_size",
                       type="int",
-                      help="fragment size [default=%default].")
+                      help="fragment size, used for the extension parameter "
+                      "in Zinba [default=%default].")
 
     parser.add_option("-m", "--mappability-dir", dest="mappability_dir",
                       type="string",

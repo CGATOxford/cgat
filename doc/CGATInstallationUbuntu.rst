@@ -21,6 +21,7 @@ Download and place them into your home directory::
 
         cd
         wget https://raw.github.com/CGATOxford/cgat/master/install-CGAT-tools.sh
+        chmod +x install-CGAT-tools.sh
 
 Install DEB dependencies
 ------------------------
@@ -41,7 +42,7 @@ Test the installation
 
 First activate the CGAT virtual environment::
 
-        source $HOME/CGAT/virtualenv-1.10.1/cgat-venv/bin/activate
+        source $HOME/CGAT-DEPS/virtualenv-1.10.1/cgat-venv/bin/activate
 
 Then, test the cgat command::
 

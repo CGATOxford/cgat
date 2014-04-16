@@ -119,7 +119,14 @@ Installation instructions for the following operating systems are available:
 
 * :ref:`CGATInstallationUbuntu`
 
-Furthermore, we also provide a :ref:`CGATInstallationVirtualBoxUbuntu`.
+Furthermore, we also provide different means of getting the CGAT Code Collection
+pre-installed:
+
+* :ref:`CGATInstallationVirtualBoxUbuntu`
+
+* :ref:`CGATInstallationVagrant`
+
+* :ref:`CGATInstallationDocker`
 
 .. _GalaxyInstallation:
 
