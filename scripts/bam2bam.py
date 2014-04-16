@@ -41,31 +41,31 @@ Documentation
 The script implements the following methods:
 
 ``set-nh``
-   set the NH flag. Some tools (bowtie, bwa) do not set the NH flag. 
+   set the NH flag. Some tools (bowtie, bwa) do not set the NH flag.
    If set, this option will set the NH flag (for mapped reads).
    This option requires the bam/sam file to be sorted by read name.
 
-``unset-unmapped_mapq`` 
+``unset-unmapped_mapq``
    some tools set the mapping quality of unmapped reads. This
    causes a violation in the Picard tools.
 
 ``remove-better``
    remove alignments that are worse than alignments present in
-   an alternative :term:`bam` formatted file (``--filter-bam``). 
+   an alternative :term:`bam` formatted file (``--filter-bam``).
 
 ``filter``
    remove alignments based on a variety of flags.
 
-``strip`` 
+``strip``
    remove the sequence and/or quality scores from all reads in
-   a bam-file. If ``match``, sequence and quality are stripped 
+   a bam-file. If ``match``, sequence and quality are stripped
    for alignments without mismatches. The latter requires the
-   ``NM`` tag. If not present, nothing will be stripped. Note 
+   ``NM`` tag. If not present, nothing will be stripped. Note
    that stripping is not reversible if the read names are not
    unique.
 
 ``set-sequence``
-   set the sequence and quality scores in the bam file to some 
+   set the sequence and quality scores in the bam file to some
    dummy sequence. Necessary for some tools that can not work
    with bam-files without sequence.
 
@@ -88,15 +88,11 @@ Command line options
 
 import os
 import sys
-import re
-import optparse
-import collections
 import itertools
 import tempfile
 import shutil
 
 import CGAT.Experiment as E
-import CGAT.IOTools as IOTools
 import pysam
 
 try:
@@ -227,25 +223,24 @@ def main(argv=None):
             if remove_mismatches:
                 if not options.reference_bam:
                     raise ValueError(
-                        "requiring reference bam file for removing by mismatches")
+                        "requiring reference bam file for removing by "
+                        "mismatches")
 
                 pysam_ref = pysam.Samfile(options.reference_bam, "rb")
             else:
                 pysam_ref = None
 
             # filter and flags are the opposite way around
-            c = _bam2bam.filter_bam(pysam_in, pysam_out, pysam_ref,
-                                    remove_nonunique="unique" in options.filter,
-                                    remove_unique="non-unique" in options.filter,
-                                    remove_contigs=None,
-                                    remove_unmapped="mapped" in options.filter,
-                                    remove_mismatches=remove_mismatches,
-                                    colour_mismatches=colour_mismatches)
+            c = _bam2bam.filter_bam(
+                pysam_in, pysam_out, pysam_ref,
+                remove_nonunique="unique" in options.filter,
+                remove_unique="non-unique" in options.filter,
+                remove_contigs=None,
+                remove_unmapped="mapped" in options.filter,
+                remove_mismatches=remove_mismatches,
+                colour_mismatches=colour_mismatches)
 
             options.stdlog.write("category\tcounts\n%s\n" % c.asTable())
-            
-
-
         else:
             # set up the modifying iterators
             it = pysam_in.fetch(until_eof=True)
@@ -356,8 +351,9 @@ def main(argv=None):
             if options.set_nh:
                 it = _bam2bam.SetNH(it)
 
-            # keep first base of reads by changing the cigarstring to '1M' and, in reads mapping to the
-            # reverse strand, changes the pos to aend - 1
+            # keep first base of reads by changing the cigarstring to
+            # '1M' and, in reads mapping to the reverse strand,
+            # changes the pos to aend - 1
             if options.keep_first_base:
                 def keep_first_base(i):
                     for read in i:

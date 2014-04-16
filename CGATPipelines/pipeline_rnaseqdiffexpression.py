@@ -114,7 +114,7 @@ Design matrices
 +++++++++++++++
 
 Design matrices are imported by placing :term:`tsv` formatted files
-into the :term:`working directory`. A design matrix describes the 
+into the :term:`working directory`. A design matrix describes the
 experimental design to test. Each design file has four columns::
 
       track   include group   pair
@@ -274,10 +274,10 @@ ChangeLog
 
 28.03.2014  Andreas Heger
             added automated selection of paired counting to featureCounts
-            and gtf2table counting.           
+            and gtf2table counting.
 
 11.4.2014   Andreas Heger
-            changed workflow. Multiple counters are applied and 
+            changed workflow. Multiple counters are applied and
             differential expression is computed on all.
 
 
@@ -511,7 +511,7 @@ CUFFDIFF_TARGETS_DE = [
     (
         (x, y, glob.glob("*.bam")),
         "%s_%s.tsv.gz" % (P.snip(x, ".tsv"),
-                        P.snip(y, ".gtf.gz")))
+                          P.snip(y, ".gtf.gz")))
     for x, y in itertools.product(glob.glob("design*.tsv"),
                                   glob.glob("*.gtf.gz"))
 ]
@@ -843,18 +843,21 @@ def buildCodingExons(infile, outfile):
            suffix(".gtf.gz"),
            ".unionintersection.bed.gz")
 def buildUnionIntersectionExons(infile, outfile):
-    '''build union/intersection genes according to Bullard et al. (2010) BMC Bioinformatics.
+    '''build union/intersection genes according to
+    Bullard et al. (2010) BMC Bioinformatics.
 
     Builds a single-segment bed file.
     '''
 
     statement = '''
     gunzip < %(infile)s
-    | python %(scriptsdir)s/gtf2gtf.py --intersect-transcripts --with-utr --log=%(outfile)s.log
-    | python %(scriptsdir)s/gff2gff.py --is-gtf --crop-unique  --log=%(outfile)s.log
+    | python %(scriptsdir)s/gtf2gtf.py --intersect-transcripts
+    --with-utr --log=%(outfile)s.log
+    | python %(scriptsdir)s/gff2gff.py --is-gtf
+    --crop-unique  --log=%(outfile)s.log
     | python %(scriptsdir)s/gff2bed.py --is-gtf --log=%(outfile)s.log
     | sort -k1,1 -k2,2n
-    | gzip 
+    | gzip
     > %(outfile)s
     '''
 
@@ -975,7 +978,7 @@ def aggregateGeneLevelReadCounts(infiles, outfile):
            regex(r"(\S+).bam"),
            r"extension_counts.dir/\1.extension_counts.tsv.gz")
 def buildGeneLevelReadExtension(infile, outfile):
-    '''compute extension of cds. 
+    '''compute extension of cds.
 
     Known UTRs are counted as well.
     '''
@@ -996,11 +999,11 @@ def buildGeneLevelReadExtension(infile, outfile):
         remove_contigs = ""
 
     statement = '''
-    zcat %(cds)s 
+    zcat %(cds)s
     %(remove_contigs)s
-    | python %(scriptsdir)s/gtf2table.py 
+    | python %(scriptsdir)s/gtf2table.py
           --reporter=genes
-          --bam-file=%(infile)s 
+          --bam-file=%(infile)s
           --counter=position
           --counter=read-extension
           --min-mapping-quality=%(counting_min_mapping_quality)i
