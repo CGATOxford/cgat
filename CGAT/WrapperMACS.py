@@ -1,4 +1,4 @@
-##########################################################################
+ ##########################################################################
 #
 #   MRC FGU Computational Genomics Group
 #
@@ -38,6 +38,10 @@ API
 '''
 
 import collections
+
+import math
+import CGAT.IOTools as IOTools
+import CGAT.CSV as CSV
 
 MacsPeak = collections.namedtuple(
     "MacsPeak", "contig start end length summit tags pvalue fold fdr")
@@ -91,50 +95,33 @@ def iterateMacsPeaks(infile):
         yield MacsPeak._make(data)
 
 Macs2Peak = collections.namedtuple(
-    "Macs2Peak", "contig start end length summit pileup pvalue fold fdr name")
+    "Macs2Peak",
+    "contig start end length pileup "
+    "pvalue fold qvalue "
+    "name")
 
 
 def iterateMacs2Peaks(infile):
     '''iterate over peaks.xls file and return parsed data.
-    The fdr is converted from percent to values between 0 and 1.
+    
+    pvalues and fdr are converted to values between 0 and 1
+    from their -log10 values.
     '''
 
-    for line in infile:
-        if line.startswith("#"):
-            continue
-        if line.startswith("chr\tstart"):
-            continue
-        # skip empty lines
-        if line.startswith("\n"):
-            continue
-
-        data = line[:-1].split("\t")
-
-        if len(data) == 10:
-            # convert % fdr
-            data[8] = 10 ** -float(data[8])
-        elif len(data) == 8:
-            # if no fdr given, set to 0
-            #data.append( 0.0 )
-            raise ValueError("No FDR found line %s" % line)
-        else:
-            raise ValueError("could not parse line %s" % line)
-
+    for row in CSV.DictReader(infile, dialect='excel-tab'):
         # these are 1-based coordinates
         # macs can have negative start coordinates
         # start
-        data[1] = max(int(data[1]) - 1, 0)
-        # end
-        data[2] = int(data[2])
-        # length
-        data[3] = int(data[3])
-        # summit
-        data[4] = int(data[4])
-        # ntags
-        data[5] = float(data[5])
-        # -10log10(pvalue)
-        data[6] = float(data[6])
-        # fold
-        data[7] = float(data[7])
-
-        yield Macs2Peak._make(data)
+        try:
+            yield Macs2Peak._make(
+                (row['chr'],
+                 max(int(row['start']) - 1, 0),
+                 int(row['end']),
+                 int(row['length']),
+                 float(row['pileup']),
+                 math.pow(10, -float(row['-log10(pvalue)'])),
+                 float(row['fold_enrichment']),
+                 math.pow(10, -float(row['-log10(qvalue)'])),
+                 row['name']))
+        except KeyError, msg:
+            raise KeyError("%s: %s" % (msg, row))

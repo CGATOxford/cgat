@@ -39,7 +39,6 @@ API
 from ruffus import *
 
 import os
-import sys
 import re
 import shutil
 from CGAT import Experiment as E
@@ -71,8 +70,8 @@ def getMakefiles(makefiles, source_directory="", ignore_missing=False):
                 if ignore_missing:
                     continue
                 else:
-                    raise IOError, "could not find %s in %s" % (
-                        makefile, source_directory)
+                    raise IOError("could not find %s in %s" %
+                                  (makefile, source_directory))
 
             output_makefiles.append(fn)
             infile = open(fn, "r")
@@ -176,7 +175,8 @@ def getModules(modules, scriptdirs, libdirs):
 ##########################################################################
 ##########################################################################
 ##########################################################################
-# Methods related to publishing - should be moved into the CGATPipelines directory.
+# Methods related to publishing - should be moved into the CGATPipelines
+# directory.
 ##########################################################################
 def getProjectId():
     '''cgat specific method: get the (obfuscated) project id

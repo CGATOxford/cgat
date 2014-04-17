@@ -124,6 +124,8 @@ def main(argv=None):
 
     (file, pathname, description) = imp.find_module(command, [path, ])
     module = imp.load_module(command, file, pathname, description)
+    # remove 'cgat' from sys.argv
+    del sys.argv[0]
     module.main(sys.argv)
 
 if __name__ == "__main__":

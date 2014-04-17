@@ -11,7 +11,20 @@ Purpose
 -------
 
 This script outputs nucleotide sequences for intervals within
-a :term:`bed` formatted file using.
+a :term:`bed` formatted file using a corresponding genome file.
+
+Options
+-------
+
++------------------+----------------------------------------------+
+|-g, --genome-file |The genome file from which to retrieve fasta  |
+|                  |sequences                                     |
++------------------+----------------------------------------------+
+|-m, --masker      |Masks out a collection of sequences, for      |
+|                  |example repeat sequences                      |
++------------------+----------------------------------------------+
+
+
 
 Usage
 -----

@@ -37,6 +37,7 @@ import collections
 
 import numpy
 import CGAT.GTF as GTF
+import CGAT.BamTools as BamTools
 import CGAT.IOTools as IOTools
 from rpy2.robjects import r as R
 import rpy2.robjects as ro
@@ -656,7 +657,6 @@ def runCufflinks(infiles, outfile):
     '''
 
     gtffile, bamfile = infiles
-    to_cluster = True
 
     job_options = "-pe dedicated %i -R y" % PARAMS["cufflinks_threads"]
 
@@ -673,15 +673,22 @@ def runCufflinks(infiles, outfile):
     # note: cufflinks adds \0 bytes to gtf file - replace with '.'
     # increase max-bundle-length to 4.5Mb due to Galnt-2 in mm9 with a 4.3Mb
     # intron.
-    statement = '''mkdir %(tmpfilename)s; 
-    cd %(tmpfilename)s; 
-    cufflinks --label %(track)s      
+
+    # AH: removed log messages about BAM record error
+    # These cause logfiles to grow several Gigs and are
+    # frequent for BAM files not created by tophat.
+    # Error is:
+    # BAM record error: found spliced alignment without XS attribute
+    statement = '''mkdir %(tmpfilename)s;
+    cd %(tmpfilename)s;
+    cufflinks --label %(track)s
               --GTF <(gunzip < %(gtffile)s)
               --num-threads %(cufflinks_threads)i
               --frag-bias-correct %(bowtie_index_dir)s/%(genome)s.fa
               --library-type %(cufflinks_library_type)s
               %(cufflinks_options)s
-              %(bamfile)s 
+              %(bamfile)s
+    | grep -v 'BAM record error'
     >& %(outfile)s;
     perl -p -e "s/\\0/./g" < transcripts.gtf | gzip > %(outfile)s.gtf.gz;
     gzip < isoforms.fpkm_tracking > %(outfile)s.fpkm_tracking.gz;
@@ -716,3 +723,67 @@ def loadCufflinks(infile, outfile):
            "--rename-column=tracking_id:transcript_id")
 
     P.touch(outfile)
+
+
+def runFeatureCounts(annotations_file,
+                     bamfile,
+                     outfile,
+                     nthreads=4,
+                     strand=2,
+                     options=""):
+    '''run feature counts on *annotations_file* with
+    *bam_file*.
+    
+    If the bam-file is paired, paired-end counting
+    is enabled and the bam file automatically sorted.
+    '''
+
+    # featureCounts cannot handle gzipped in or out files
+    outfile = P.snip(outfile, ".gz")
+    tmpdir = P.getTempDir()
+    annotations_tmp = os.path.join(tmpdir,
+                                   'geneset.gtf')
+    bam_tmp = os.path.join(tmpdir,
+                           bamfile)
+
+    # -p -B specifies count fragments rather than reads, and both
+    # reads must map to the feature
+    # for legacy reasons look at feature_counts_paired
+    if BamTools.isPaired(bamfile):
+        # select paired end mode, additional options
+        paired_options = "-p -B"
+        # remove .bam extension
+        bam_prefix = P.snip(bam_tmp, ".bam")
+        # sort by read name
+        paired_processing = \
+            """samtools 
+                sort -@ %(nthreads)i -n %(bamfile)s %(bam_prefix)s; 
+            checkpoint; """ % locals()
+        bamfile = bam_tmp 
+    else:
+        paired_options = ""
+        paired_processing = ""
+
+    job_options = "-pe dedicated %i" % nthreads
+
+    # AH: what is the -b option doing?
+    statement = '''mkdir %(tmpdir)s;
+                   zcat %(annotations_file)s > %(annotations_tmp)s;
+                   checkpoint;
+                   %(paired_processing)s
+                   featureCounts %(options)s
+                                 -T %(nthreads)i
+                                 -s %(strand)s
+                                 -b
+                                 -a %(annotations_tmp)s
+                                 %(paired_options)s
+                                 -o %(outfile)s
+                                 %(bamfile)s
+                    >& %(outfile)s.log;
+                    checkpoint;
+                    gzip -f %(outfile)s;
+                    checkpoint;
+                    rm -rf %(tmpdir)s
+    '''
+
+    P.run()

@@ -166,6 +166,7 @@ import time
 import gzip
 import collections
 import random
+import subprocess
 from rpy2.robjects import r as R
 
 import CGAT.Experiment as E
@@ -273,7 +274,11 @@ def tabSplit(line):
 
 
 @follows(mkdir("gtfs"))
-@merge([PARAMS["genesets_abinitio_coding"], PARAMS["genesets_reference"]], os.path.join("gtfs", P.snip(PARAMS["genesets_abinitio_coding"], ".gtf.gz") + "_coding.gtf.gz"))
+@merge([PARAMS["genesets_abinitio_coding"], 
+        PARAMS["genesets_reference"]], 
+       os.path.join("gtfs", 
+                    P.snip(PARAMS["genesets_abinitio_coding"], ".gtf.gz") 
+                    + "_coding.gtf.gz") )
 def buildCodingGeneSet(infiles, outfile):
     '''
     takes the output from cuffcompare of a transcript
@@ -299,7 +304,10 @@ def buildCodingGeneSet(infiles, outfile):
 
 
 @follows(buildCodingGeneSet)
-@transform(PARAMS["genesets_refcoding"], regex(r"(\S+).gtf.gz"), add_inputs(buildCodingGeneSet), r"gtfs/\1.gtf.gz")
+@transform(PARAMS["genesets_refcoding"], 
+           regex(r"(\S+).gtf.gz"), 
+           add_inputs(buildCodingGeneSet), 
+           r"gtfs/\1.gtf.gz")
 def buildRefcodingGeneSet(infiles, outfile):
     '''
     builds a refcoding geneset based on the genes that are present in
@@ -361,10 +369,13 @@ def buildLncRNAGeneSet(infiles, outfile):
 @transform(buildLncRNAGeneSet, suffix(".gtf.gz"), "_flag.gtf.gz")
 def flagExonStatus(infile, outfile):
     '''
-    Adds an attribute to the gtf entry dependent on whether the lncRNA 
-    is multi or single exon
+    Adds two attributes to the gtf entry:
+    exon_status_locus - specifies whether the gene model is multi- or single exon
+    exon_status - specifies whether the transcript is mult- or single exon
     '''
+
     PipelineLncRNA.flagExonStatus(infile, outfile)
+
 
 ##########################################################################
 ##########################################################################
@@ -408,13 +419,18 @@ if PARAMS["genesets_previous"]:
     @transform(flagExonStatus, regex(r"(\S+)_flag.gtf.gz"), add_inputs(renameTranscriptsInPreviousSets), r"\1_filtered.gtf.gz")
     def buildFilteredLncRNAGeneSet(infiles, outfile):
         '''
-        Creates a filtered lncRNA geneset. 
-        This geneset will not include any single exon lncRNA 
-        unless it has been seen previously i.e. it overlaps
-        a previously identified lncRNA
+        Creates a filtered lncRNA geneset. That contains previously identified 
+        gene models supplied in contig file.        
         '''
+        assert PARAMS["filtering_remove_single_exon"] in ["loci", 
+                                                          "transcripts", 
+                                                          None]
         PipelineLncRNA.buildFilteredLncRNAGeneSet(
-            infiles[0], outfile, infiles[1:len(infiles)])
+            infiles[0], 
+            outfile, 
+            infiles[1:len(infiles)],
+            filter_se = PARAMS["filtering_remove_single_exon"])
+
 else:
 
     # Writing the following to log will cause all subsequent log messages
@@ -424,9 +440,28 @@ else:
     @transform(flagExonStatus, regex(r"(\S+)_flag.gtf.gz"), r"\1_filtered.gtf.gz")
     def buildFilteredLncRNAGeneSet(infile, outfile):
         '''
-        will just filter out single exon lncRNA
+        Depending on on filtering_remove_single_exon will:
+        i) remove all single exon transcripts from all lncrna models (transcripts)
+        ii) remove lncrna loci that only contain single exon transcripts (loci)
+        iii) leave all single-exon and multi-exon loci in outfile (None)
         '''
-        statement = '''zcat %(infile)s | grep 'exon_status "m"' | gzip > %(outfile)s'''                 # jethro - changed 'exon status "m"' to 'exon_status "m"'
+
+        if not PARAMS["filtering_remove_single_exon"]:
+            E.info("Both multi-exon and single-exon lncRNA are retained!")
+            statement = ( "cp %(infile)s %(outfile)s" )
+        elif  PARAMS["filtering_remove_single_exon"] == "loci":
+            E.info("Warning: removing all single-exon transcripts from lncRNA set")
+            statement = ( "zcat %(infile)s |"
+                          " grep 'exon_status_locus \"s\"'"
+                          " gzip > %(outfile)s" )
+        elif PARAMS["filtering_remove_single_exon"] == "transcripts":
+            E.info("Warning: removing loci with only single-exon transcripts")
+            statement = ( "zcat %(infile)s |"
+                          " grep 'exon_status \"s\"'"
+                          " gzip > %(outfile)s" )
+        else:
+            raise ValueError("Unregocnised parameter %s" 
+                             % PARAMS["filtering_remove_single_exon"]  ) 
         P.run()
 
 ##########################################################################
@@ -439,6 +474,7 @@ def classifyFilteredLncRNA(infiles, outfile):
     '''
     classifies all lincRNA before cpc filtering to define any classes that
     are represented in the coding set that are  filtered
+    NOTE: This task is not included when running the full pipeline
     '''
     PipelineLncRNA.classifyLncRNAGenes(
         infiles[0], infiles[1], outfile, dist=PARAMS["lncrna_dist"])
@@ -470,12 +506,18 @@ def runCPC(infile, outfile):
     '''
     run coding potential calculations on lncRNA geneset
     '''
-#    result_table = P.snip(outfile, ".fasta") + ".result"
+    # farm.py is called from within cpc.sh
+    assert P.which("farm.py"), "farm.py needs to be in $PATH for cpc to run"
+    # Default cpc parameters don't work with later versions of blast
+    E.info("Running cpc with blast version:%s" % P.which("blastx"))
+
     result_evidence = P.snip(outfile, ".result") + ".evidence"
     working_dir = "cpc"
-    statement = '''%(scriptsdir)s/cpc.sh %(infile)s %(outfile)s %(working_dir)s %(result_evidence)s '''
-    P.run()
-#    statement = '''mv %(result_table)s cpc/'''
+    statement = ("%(scriptsdir)s/cpc.sh"
+                 " %(infile)s"
+                 " %(outfile)s"
+                 " %(working_dir)s"
+                 " %(result_evidence)s")
     P.run()
 
 ##########################################################################
@@ -489,11 +531,9 @@ def loadCPCResults(infile, outfile):
     '''
     load the results of the cpc analysis
     '''
-# inf = os.path.join("cpc", infile)
-# Jethro - removed line
     tablename = filenameToTablename(os.path.basename(infile))
     statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s --log=%(outfile)s.log 
-                   --header=transcript_id,feature,C_NC,CP_score --index=transcript_id < %(infile)s > %(outfile)s'''   # Jethro - changed < %(inf)s > to < %(infile)s >
+                   --header=transcript_id,feature,C_NC,CP_score --index=transcript_id < %(infile)s > %(outfile)s'''
     P.run()
 
 ##########################################################################
@@ -511,17 +551,23 @@ def buildFinalLncRNAGeneSet(infile, outfile):
     display low evidence for coding potential
     '''
 
-    # filter based on coding potential
-    PipelineLncRNA.buildFinalLncRNAGeneSet(
-        infile, "lncrna_filtered_cpc_result", outfile, PARAMS["filtering_cpc"])
+    # filter based on coding potential and rename
+    PipelineLncRNA.buildFinalLncRNAGeneSet(infile, 
+                                           "lncrna_filtered_cpc_result", 
+                                           outfile, 
+                                           PARAMS["filtering_cpc"],
+                                           PARAMS["filtering_cpc_threshold"],
+                                           PARAMS["final_geneset_rename"])
 
 ##########################################################################
 ##########################################################################
 ##########################################################################
 
 
-@transform([buildCodingGeneSet, buildFinalLncRNAGeneSet, buildRefcodingGeneSet], regex(r"(\S+)/(\S+).gtf.gz"), r"\2.stats")
-def buildGeneSetStats(infile, outfile):
+@transform(buildFinalLncRNAGeneSet,
+           regex(r"(\S+)/(\S+).gtf.gz"), 
+           r"\2.stats")
+def buildLncRNAGeneSetStats(infile, outfile):
     '''
     counts:
     no. of transcripts
@@ -536,23 +582,85 @@ def buildGeneSetStats(infile, outfile):
     in the coding and lncRNA genesets
     '''
     outf = open(outfile, "w")
-    outf.write("\t".join(["no_transcripts", "no_genes", "no_exons_per_transcript", "no_exons_per_gene",
-               "no_single_exon_transcripts", "no_multi_exon_transcripts", "no_single_exon_genes", "no_multi_exon_genes"]) + "\n")
-    outf.write("\t".join(map(str, [PipelineLncRNA.CounterTranscripts(infile).count(), PipelineLncRNA.CounterGenes(infile).count(), PipelineLncRNA.CounterExonsPerTranscript(infile).count(), PipelineLncRNA.CounterExonsPerGene(infile).count(
-    ), PipelineLncRNA.CounterSingleExonTranscripts(infile).count(), PipelineLncRNA.CounterMultiExonTranscripts(infile).count(), PipelineLncRNA.CounterSingleExonGenes(infile).count(), PipelineLncRNA.CounterMultiExonGenes(infile).count()])))
+    outf.write("\t".join(["no_transcripts", 
+                          "no_genes", 
+                          "no_exons_per_transcript", 
+                          "no_exons_per_gene",
+                          "no_single_exon_transcripts", 
+                          "no_multi_exon_transcripts", 
+                          "no_single_exon_genes", 
+                          "no_multi_exon_genes"]) + "\n")
+    outf.write("\t".join(map(str, [PipelineLncRNA.CounterTranscripts(infile).count(), 
+                                   PipelineLncRNA.CounterGenes(infile).count(), 
+                                   PipelineLncRNA.CounterExonsPerTranscript(infile).count(), 
+                                   PipelineLncRNA.CounterExonsPerGene(infile).count(), 
+                                   PipelineLncRNA.CounterSingleExonTranscripts(infile).count(), 
+                                   PipelineLncRNA.CounterMultiExonTranscripts(infile).count(), 
+                                   PipelineLncRNA.CounterSingleExonGenes(infile).count(), 
+                                   PipelineLncRNA.CounterMultiExonGenes(infile).count()])))
+
+
+@transform( buildRefcodingGeneSet,
+           regex(r"(\S+)/(\S+).gtf.gz"), 
+           r"\2.stats")
+def buildRefcodingGeneSetStats(infile, outfile):
+    '''
+    counts:
+    no. of transcripts
+    no. genes
+    average number of exons per transcript
+    average number of exons per gene
+    no. multi-exon transcripts
+    no. single exon transcripts
+    no. multi-exon genes
+    no. single exon genes
+
+    in the coding and lncRNA genesets
+    '''
+
+    # calculate exon status for refcoding genes. 
+    tmpf = P.getTempFilename(".") + ".gz"
+    PipelineLncRNA.flagExonStatus(infile, tmpf)
+
+
+    outf = open(outfile, "w")
+    outf.write("\t".join(["no_transcripts", 
+                          "no_genes", 
+                          "no_exons_per_transcript", 
+                          "no_exons_per_gene",
+                          "no_single_exon_transcripts", 
+                          "no_multi_exon_transcripts", 
+                          "no_single_exon_genes", 
+                          "no_multi_exon_genes"]) + "\n")
+    outf.write("\t".join(map(str, [PipelineLncRNA.CounterTranscripts(tmpf).count(), 
+                                   PipelineLncRNA.CounterGenes(tmpf).count(), 
+                                   PipelineLncRNA.CounterExonsPerTranscript(tmpf).count(), 
+                                   PipelineLncRNA.CounterExonsPerGene(tmpf).count(), 
+                                   PipelineLncRNA.CounterSingleExonTranscripts(tmpf).count(), 
+                                   PipelineLncRNA.CounterMultiExonTranscripts(tmpf).count(), 
+                                   PipelineLncRNA.CounterSingleExonGenes(tmpf).count(), 
+                                   PipelineLncRNA.CounterMultiExonGenes(tmpf).count()])))
+
+
+    os.unlink(tmpf)
+    os.unlink(tmpf + ".log")
+    os.unlink(P.snip(tmpf, ".gz"))
 
 ##########################################################################
 ##########################################################################
 ##########################################################################
-
-
-@transform(buildGeneSetStats, suffix(".stats"), ".load")
+@transform([buildLncRNAGeneSetStats, buildRefcodingGeneSetStats],
+           suffix(".stats"), 
+           ".load")
 def loadGeneSetStats(infile, outfile):
     '''
     load stats on coding and lncRNA gene sets
     '''
     tablename = filenameToTablename(infile)
-    statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s --log=%(outfile)s.log < %(infile)s > %(outfile)s'''
+    statement = ("python %(scriptsdir)s/csv2db.py"
+                 " -t %(tablename)s"
+                 " --log=%(outfile)s.log"
+                 " < %(infile)s > %(outfile)s" )
     P.run()
 
 ##########################################################################
@@ -560,7 +668,10 @@ def loadGeneSetStats(infile, outfile):
 ##########################################################################
 
 
-@transform(buildFinalLncRNAGeneSet, regex(r"(\S+).gtf.gz"), add_inputs(PARAMS["genesets_refcoding"]), r"\1.class.gtf.gz")
+@transform(buildFinalLncRNAGeneSet, 
+           regex(r"(\S+).gtf.gz"), 
+           add_inputs(PARAMS["genesets_refcoding"]), 
+           r"\1.class.gtf.gz")
 def classifyLncRNA(infiles, outfile):
     '''
 
@@ -806,9 +917,12 @@ def mergeLncRNAPhyloCSF(infiles, outfile):
 ##########################################################################
 ##########################################################################
 # targets
-
-
-@follows(buildCodingGeneSet, buildRefnoncodingGeneSet, buildFinalLncRNAGeneSet, loadGeneSetStats, loadLncRNAClass, classifyLncRNA, buildFullGeneSet)
+@follows(buildCodingGeneSet,
+         buildRefnoncodingGeneSet, 
+         buildFinalLncRNAGeneSet,
+         loadGeneSetStats,
+         loadLncRNAClass,
+         buildFullGeneSet)
 def GeneSets():
     pass
 

@@ -174,7 +174,8 @@ def main(argv=None):
                       choices=(
                           "deseq", "edger",
                           "ttest",
-                          "mock", "summary", "dump", "spike"),
+                          "mock", "summary", "dump", "spike",
+                          "plottagstats"),
                       help="differential expression method to apply "
                       "[default=%default].")
 
@@ -331,6 +332,14 @@ def main(argv=None):
             Expression.dumpTagData(options.input_filename_tags,
                                    options.input_filename_design,
                                    outfile=options.stdout)
+
+        elif options.method == "plottagstats":
+            assert options.input_filename_tags and os.path.exists(
+                options.input_filename_tags)
+            Expression.plotTagStats(
+                options.input_filename_tags,
+                options.input_filename_design,
+                outfile_prefix=options.output_filename_pattern)
 
         elif options.method == "spike":
             Expression.outputSpikeIns(

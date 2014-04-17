@@ -1,4 +1,0 @@
-restrict:
-        manifest:
-        regex: bed2fasta.py
-

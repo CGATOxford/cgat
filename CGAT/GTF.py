@@ -558,7 +558,7 @@ def gene_iterator(gff_iterator, strict=True):
                 yield matches
             matches = []
             last = gffs[0]
-            assert not strict or last not in found, "duplicate entry %s" % last
+            assert not strict or last.gene_id not in found, "duplicate entry %s" % last
             found.add(last.gene_id)
 
         matches.append(gffs)
@@ -591,7 +591,7 @@ def flat_gene_iterator(gff_iterator, strict=True):
             matches = []
             last = gff
             if strict:
-                assert last not in found, "duplicate entry %s" % last.gene_id
+                assert last.gene_id not in found, "duplicate entry %s" % last.gene_id
                 found.add(last.gene_id)
         matches.append(gff)
 
@@ -667,6 +667,14 @@ def iterator_sorted_chunks(gff_iterator, sort_by="contig-start"):
         chunks.sort()
         for contig, start, strand, chunk in chunks:
             chunk.sort(key=lambda x: (x.contig, x.strand, x.start))
+            yield chunk
+    elif sort_by == "contig-strand-start-end":
+        # intervals with the same start position will be sorted by end position
+        chunks = ([(x[0].contig, x[0].strand, min([y.start for y in x]), x)
+                  for x in gff_iterator])
+        chunks.sort()
+        for contig, start, strand, chunk in chunks:
+            chunk.sort(key=lambda x: (x.contig, x.strand, x.start, x.end))
             yield chunk
     else:
         raise ValueError("unknown sort order %s" % sort_by)

@@ -1,5 +1,5 @@
-'''
-farm.py - execute a cmd on the cluster
+#!/bin/env python
+'''farm.py - execute a cmd on the cluster
 ======================================
 
 :Author: Andreas Heger
@@ -45,8 +45,8 @@ The temporary directory is not deleted to allow manual recovery.
 Examples
 --------
 
-The following command will split the file "go" at the first column 
-and execute the command perl -p -e "s/GO/gaga/"::
+The following command will split the file "go" at the first column and
+execute the command perl -p -e "s/GO/gaga/"::
 
    cat go | farm.py --split-at-colum=1 perl -p -e "s/GO/gaga/"
 
@@ -73,9 +73,6 @@ Command line options
 import os
 import sys
 import re
-import string
-import optparse
-import time
 import glob
 import subprocess
 import tempfile
@@ -84,6 +81,7 @@ import stat
 
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
+import CGAT.Blat as Blat
 import threadpool
 import multiprocessing
 
@@ -229,11 +227,8 @@ def chunk_iterator_regex_split(infile, args, prefix, use_header=False):
     """
 
     rex = args[0]
-    column = args[1]
     chunk_size = args[2]
     max_lines = args[3]
-    last = None
-    header = None
 
     nlines = 0
     n = 0
@@ -246,7 +241,8 @@ def chunk_iterator_regex_split(infile, args, prefix, use_header=False):
             continue
 
         if rex.search(line[:-1]):
-            if n > 0 and (n % chunk_size == 0 or (max_lines and nlines > max_lines)):
+            if n > 0 and (n % chunk_size == 0 or
+                          (max_lines and nlines > max_lines)):
                 outfile.close()
                 yield filename
                 filename = "%s/%010i.in" % (prefix, n)
@@ -270,7 +266,8 @@ def chunk_iterator_psl_overlap(infile, args, prefix, use_header=False):
     processed_contigs = set()
 
     merge_distance = args[0]
-
+    last_sbjct_id = None
+    sbjct_end = 0
     while 1:
 
         match = iterator.next()
@@ -278,7 +275,8 @@ def chunk_iterator_psl_overlap(infile, args, prefix, use_header=False):
         if match is None:
             break
 
-        if match.mSbjctId != last_sbjct_id or match.mSbjctFrom >= (sbjct_end + merge_distance):
+        if match.mSbjctId != last_sbjct_id or \
+           match.mSbjctFrom >= (sbjct_end + merge_distance):
             if last_sbjct_id:
                 outfile.close()
                 yield filename
@@ -378,14 +376,13 @@ class ResultBuilder:
                     self.mFieldIndex = self.mHeader.split(
                         "\t").index(self.mFieldName)
                 except ValueError:
-                    if options.loglevel >= 1:
-                        options.stdlog.write("# Warning: no mapping, can not find field %s in %s" % (
-                            self.mFieldName, self.mHeader))
+                    E.warn("no mapping, can not find field %s in %s" %
+                           (self.mFieldName, self.mHeader))
                     self.mFieldName = None
 
-                if options.loglevel >= 2:
-                    options.stdlog.write(
-                        "# substituting field: %s, %s\n" % (self.mFieldName, self.mFieldIndex))
+                E.debug(
+                    "substituting field: %s, %s" %
+                    (self.mFieldName, self.mFieldIndex))
 
     def __call__(self, filenames, outfile, options):
 
@@ -407,7 +404,8 @@ class ResultBuilder:
                                 fi, data[self.mFieldIndex])
                         except IndexError:
                             raise IndexError(
-                                "can not find field %i in %s" % (self.mFieldIndex, l))
+                                "can not find field %i in %s" %
+                                (self.mFieldIndex, l))
                         l = "\t".join(data) + "\n"
 
                     outfile.write(l)
@@ -416,7 +414,8 @@ class ResultBuilder:
 
 class ResultBuilderPSL (ResultBuilder):
 
-    """Result builder for psl tables. Here, column 9, the query id, is substituted."""
+    """Result builder for psl tables. Here, column 9,
+    the query id, is substituted."""
 
     def __init__(self, *args, **kwargs):
         ResultBuilder.__init__(self, *args, **kwargs)
@@ -539,7 +538,8 @@ def runCommand(data):
     if "|" in cmd:
         if r"\|" not in cmd:
             E.warn(
-                "pipes (`|`) within command need to be escaped, otherwise jobs run on submit host")
+                "pipes (`|`) within command need to be escaped, "
+                "otherwise jobs run on submit host")
 
     c = '%s -v "BASH_ENV=%s" -q %s -p %i %s %s' % (options.cluster_cmd,
                                                    options.bashrc,
@@ -930,10 +930,12 @@ def main():
         else:
             raise ValueError("please specify a way to chunk input data")
 
-        data = [(x, cmd, options, None, options.subdirs) for x in chunk_iterator(options.stdin,
-                                                                                 args,
-                                                                                 prefix=tmpdir,
-                                                                                 use_header=options.input_header)]
+        data = [(x, cmd, options, None, options.subdirs)
+                for x in chunk_iterator(
+                    options.stdin,
+                    args,
+                    prefix=tmpdir,
+                    use_header=options.input_header)]
 
         started_requests = [(x[0], x[0] + ".out") for x in data]
 
@@ -1019,12 +1021,14 @@ def main():
                           )(started_requests, options.stdout, options)
 
         # deal with logfiles : combine them into a single file
-        x = re.search("'--log=(\S+)'", cmd) or re.search("'--L\s+(\S+)'", cmd)
-        if x:
-            E.info("logging output goes to %s" % x.groups()[0])
-            logfile = IOtools.openFile(x.groups()[0], "a")
-            ResultBuilderLog()([(x[0], "%s.log" % x[0])
-                                for x in started_requests], logfile, options)
+        rr = re.search("'--log=(\S+)'", cmd) or re.search("'--L\s+(\S+)'", cmd)
+        if rr:
+            E.info("logging output goes to %s" % rr.groups()[0])
+            logfile = IOTools.openFile(rr.groups()[0], "a")
+            ResultBuilderLog()(
+                [(x[0], "%s.log" % x[0]) for x in started_requests],
+                logfile,
+                options)
             logfile.close()
 
         # deal with other files

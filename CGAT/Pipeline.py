@@ -288,7 +288,7 @@ def asDict(param):
     return dict(CONFIG.items(param))
 
 
-def isTrue(param):
+def isTrue(param, **kwargs):
     '''return True if param has a True value.
 
     A parameter is false if it is:
@@ -300,8 +300,13 @@ def isTrue(param):
 
     Otherwise the value is true.
     '''
-    value = PARAMS.get(param, 0)
-    return value.lower() != 'false' or value
+    if kwargs:
+        p = substituteParameters(**kwargs)
+    else:
+        p = PARAMS
+    value = p.get(param, 0)
+    return value not in (0, '', 'false', 'False')
+
 
 #######################################################
 ##
@@ -1707,6 +1712,7 @@ def main(args=sys.argv):
                              log_exceptions=options.log_exceptions,
                              exceptions_terminate_immediately=
                              options.exceptions_terminate_immediately,
+                             checksum_level=0,
                              )
 
                 L.info(E.GetFooter())
@@ -1717,26 +1723,30 @@ def main(args=sys.argv):
                 pipeline_printout(
                     options.stdout,
                     options.pipeline_targets,
-                    verbose=options.loglevel)
+                    verbose=options.loglevel,
+                    checksum_level=0,)
 
             elif options.pipeline_action == "touch":
                 pipeline_run(
                     options.pipeline_targets,
                     touch_files_only=True,
-                    verbose=options.loglevel)
+                    verbose=options.loglevel,
+                    checksum_level=0)
 
             elif options.pipeline_action == "svg":
                 pipeline_printout_graph(
                     options.stdout,
                     options.pipeline_format,
-                    options.pipeline_targets)
+                    options.pipeline_targets,
+                    checksum_level=0)
 
             elif options.pipeline_action == "plot":
                 outf, filename = tempfile.mkstemp()
                 pipeline_printout_graph(
                     os.fdopen(outf, "w"),
                     options.pipeline_format,
-                    options.pipeline_targets)
+                    options.pipeline_targets,
+                    checksum_level=0)
                 execute("inkscape %s" % filename)
                 os.unlink(filename)
 

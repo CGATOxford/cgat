@@ -14,34 +14,38 @@
 
 import sys
 import os
-import itertools
-import re
 
 ################################################################
 ## Options related to CGAT pipelines 
 
-# path were documentation source resides. 
-# Use environment variable SPHINX_DOCSDIR. 
+# path were documentation source resides.
+# Use environment variable SPHINX_DOCSDIR.
 # TODO: If unset, try to guess the location, but how?
-docsdir = os.environ.get( "SPHINX_DOCSDIR", 
-                          "." )
+docsdir = os.environ.get("SPHINX_DOCSDIR",
+                         ".")
+
 
 if not os.path.exists(docsdir):
-    raise ValueError( "documentation directory '%s' not found" % docsdir )
+    raise ValueError("documentation directory '%s' not found" % docsdir)
+
 
 ################################################################
-# Import pipeline configuration from pipeline.ini in the current 
+# Import pipeline configuration from pipeline.ini in the current
 # directory and the common one.
 import CGAT.Pipeline as P
 import CGATPipelines
 
+# PATH were code for pipelines is stored
+pipelinesdir = os.path.dirname(CGATPipelines.__file__)
+
 # The default configuration file - 'inifile' is read by
 # sphinx-report.
-inifile = os.path.join( os.path.dirname( CGATPipelines.__file__), 
-                        'configuration', 
-                        'pipeline.ini' )
+inifile = os.path.join(os.path.dirname(CGATPipelines.__file__),
+                       'configuration',
+                       'pipeline.ini')
 
-PARAMS = P.getParameters( [inifile, "pipeline.ini" ] )
+PARAMS = P.getParameters([inifile, "pipeline.ini"])
+
 
 def setup(app):
     app.add_config_value('PARAMS', {}, True)
@@ -52,7 +56,7 @@ def setup(app):
 ## The pipeline assumes that sphinxreport is called within the
 ## working directory. If the report is in a separate build directory,
 ## change the paths below.
-## 
+##
 ## directory with export directory from pipeline
 ## This should be a directory in the build directory - you can
 ## link from here to a directory outside the build tree, though.
@@ -81,8 +85,9 @@ release = PARAMS['release']
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-sys.path = [os.path.abspath('.'), 
-            os.path.abspath('%s/trackers' % docsdir)]  + sys.path
+sys.path = [os.path.abspath('.'),
+            pipelinesdir,
+            os.path.abspath('%s/trackers' % docsdir)] + sys.path
 
 # -- General configuration ------------------------------------------------
 
@@ -92,25 +97,25 @@ sys.path = [os.path.abspath('.'),
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.autodoc', 
-              'sphinx.ext.doctest', 
-              'sphinx.ext.coverage', 
-              'sphinx.ext.pngmath', 
+extensions = ['sphinx.ext.autodoc',
+              'sphinx.ext.doctest',
+              'sphinx.ext.coverage',
+              'sphinx.ext.pngmath',
               'sphinx.ext.ifconfig',
-	      'sphinx.ext.intersphinx',
-              'SphinxReport.only_directives', 
-              'SphinxReport.report_directive', 
+              'sphinx.ext.intersphinx',
+              'SphinxReport.only_directives',
+              'SphinxReport.report_directive',
               'sphinx.ext.inheritance_diagram',
               'SphinxReport.errors_directive',
-              'SphinxReport.roles' ]
+              'SphinxReport.roles']
 
 if P.CONFIG.has_section('intersphinx'):
-    intersphinx_mapping = dict( 
-        [ (x, (y, None)) for x,y in P.CONFIG.items( 'intersphinx') ] )
+    intersphinx_mapping = dict(
+        [(x, (y, None)) for x, y in P.CONFIG.items('intersphinx')])
 
 # Add any paths that contain templates here, relative to this directory.
 # Add any paths that contain templates here, relative to this directory.
-templates_path = [os.path.relpath( '%s/_templates' % docsdir )]
+templates_path = [os.path.relpath('%s/_templates' % docsdir)]
 
 # The suffix of source filenames.
 source_suffix = '.rst'

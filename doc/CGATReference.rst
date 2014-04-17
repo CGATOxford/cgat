@@ -87,10 +87,6 @@ Gene sets
     Annotate each base in the genome according to its use within
     a transcript. Outputs lists of junctions.
 
-:doc:`scripts/gtf2gff`
-    Derive genomic intervals (intergenic regions, introns) from
-    a gene set.
-
 :doc:`scripts/gtf2gtf`
     merge exons/transcripts/genes, filter transcripts/genes, rename
     transcripts/genes, ...

@@ -33,7 +33,8 @@ except IOError:
 PROJECT_ROOT = '/ifs/projects'
 
 
-def publish_tracks(export_files, prefix="",
+def publish_tracks(export_files,
+                   prefix="",
                    project_id=None,
                    project_name=None):
     '''publish a UCSC Track Hub.
