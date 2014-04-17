@@ -57,9 +57,16 @@ def main(argv=None):
                       help="e.g N50 - the length at which 50% of contigs are equal or above")
     parser.add_option("-f", "--filter-length", dest="filter_length", type="int",
                       help="calculate stats on contigs longer than -f")
+    parser.add_option("--use-length", dest="use_length", action="store_true",
+                      help="use a predefined length on which to calculate the NX")
+    parser.add_option("-l", "--length", dest="length", type="int",
+                      help="if use-length is set then provide the length to calculate N50")
+
 
     parser.set_defaults(N=50,
-                        filter_length=0)
+                        filter_length=0,
+                        use_length=False,
+                        length=None)
 
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv)
@@ -87,7 +94,12 @@ def main(argv=None):
     # and caculate the NX
     index = 0
     cum_length = 0
-    total_length = sum(contig_lengths)
+    if options.use_length:
+        assert options.length, "must supply a length when --use-length is set"
+        total_length = options.length
+    else:
+        total_length = sum(contig_lengths)
+
     for length in sorted(contig_lengths, reverse=True):
         while cum_length <= total_length * (float(N) / 100):
             index += 1
