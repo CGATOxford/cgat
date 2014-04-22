@@ -123,8 +123,6 @@ ALIGNMENTS = glob.glob("*.bam")
 ######################################################
 ######################################################
 ######################################################
-
-
 def dbList(xset):
     '''
     return a list for checking inclusion from a db query
@@ -140,8 +138,6 @@ def dbList(xset):
 ######################################################
 ######################################################
 ######################################################
-
-
 @follows(mkdir("taxonomy.dir"))
 @merge(GENOMES, r"taxonomy.dir/gi_accessions.tsv")
 def buildGiAccessionNumbers(infiles, outfile):
@@ -190,8 +186,6 @@ def buildGi2Taxa(infiles, outfile):
 ######################################################
 ######################################################
 ######################################################
-
-
 @transform(buildGiAccessionNumbers, suffix(".tsv"), ".load")
 def loadGiAccessionNumbers(infile, outfile):
     '''
@@ -202,8 +196,6 @@ def loadGiAccessionNumbers(infile, outfile):
 ###################################################
 ###################################################
 ###################################################
-
-
 @transform(SEQUENCE_FILES, regex("(\S+).(fastq.gz|fastq.1.gz)"), add_inputs(buildGi2Taxa), r"taxonomy.dir/\1.taxonomy.relab")
 def buildTrueTaxonomicRelativeAbundances(infiles, outfile):
     '''
@@ -222,8 +214,6 @@ def buildTrueTaxonomicRelativeAbundances(infiles, outfile):
 ###################################################
 ###################################################
 ###################################################
-
-
 @jobs_limit(1, "db")
 @transform(buildTrueTaxonomicRelativeAbundances, suffix(".relab"), ".relab.load")
 def loadTrueTaxonomicAbundances(infile, outfile):
@@ -235,8 +225,6 @@ def loadTrueTaxonomicAbundances(infile, outfile):
 ###################################################
 ###################################################
 ###################################################
-
-
 # AH: added default for results_resultsdir
 @follows(mkdir("taxonomy.dir"))
 @transform(glob.glob(os.path.join(os.path.join(PARAMS.get("results_resultsdir", ""), "metaphlan.dir"), "*.relab")), regex("(\S+)/(\S+).relab"), r"taxonomy.dir/metaphlan_\2.taxonomy.relab.load")
@@ -249,8 +237,6 @@ def loadEstimatedTaxonomicRelativeAbundances(infile, outfile):
 ###################################################
 ###################################################
 ###################################################
-
-
 @jobs_limit(1, "R")
 @transform(loadTrueTaxonomicAbundances, suffix(".load"), add_inputs(loadEstimatedTaxonomicRelativeAbundances), ".pdf")
 def plotRelativeAbundanceCorrelations(infiles, outfile):
@@ -265,8 +251,6 @@ def plotRelativeAbundanceCorrelations(infiles, outfile):
 ###################################################
 ###################################################
 ###################################################
-
-
 @transform(loadTrueTaxonomicAbundances, suffix(".load"), add_inputs(loadEstimatedTaxonomicRelativeAbundances), ".fp")
 def calculateFalsePositiveRate(infiles, outfile):
     '''
@@ -278,8 +262,6 @@ def calculateFalsePositiveRate(infiles, outfile):
 ###################################################
 ###################################################
 ###################################################
-
-
 @merge(calculateFalsePositiveRate, "taxonomy.dir/false_positives.tsv")
 def mergeFalsePositiveRates(infiles, outfile):
     '''
@@ -297,8 +279,6 @@ def mergeFalsePositiveRates(infiles, outfile):
 ###################################################
 ###################################################
 ###################################################
-
-
 @transform(mergeFalsePositiveRates, suffix(".tsv"), ".pdf")
 def plotFalsePositiveRates(infile, outfile):
     '''
@@ -330,8 +310,6 @@ def plotFalsePositiveRates(infile, outfile):
 ###################################################
 ###################################################
 ###################################################
-
-
 @transform(calculateFalsePositiveRate, suffix(".fp"), ".fp.load")
 def loadFalsePositiveRate(infile, outfile):
     '''
@@ -342,8 +320,6 @@ def loadFalsePositiveRate(infile, outfile):
 ###################################################
 ###################################################
 ###################################################
-
-
 @transform(loadEstimatedTaxonomicRelativeAbundances, suffix(".load"), add_inputs(loadTrueTaxonomicAbundances), ".comparison.pdf")
 def compareAbundanceOfFalsePositiveSpecies(infiles, outfile):
     '''
@@ -393,8 +369,6 @@ def compareAbundanceOfFalsePositiveSpecies(infiles, outfile):
 ###################################################
 ###################################################
 ###################################################
-
-
 @follows(loadFalsePositiveRate, plotRelativeAbundanceCorrelations)
 def taxonomy():
     pass
@@ -406,6 +380,159 @@ def taxonomy():
 ###################################################
 ###################################################
 ###################################################
+
+# comparison between assemblers
+@follows(mkdir("assembly_stats.dir"))
+@transform(os.path.join(PARAMS.get("assemblydir"), "csvdb"), 
+           regex("(\S+)/csvdb"), 
+           r"assembly_stats.dir/assembly_stats.tsv")
+def buildAssemblyStats(infile, outfile):
+    '''
+    return assembly stats from all of the assemblers that
+    were used in the running of the contig assembly
+    '''
+    assemblers = P.asList(PARAMS.get("assemblers"))
+    
+    # connect
+    dbh = sqlite3.connect(infile)
+    cc = dbh.cursor()
+    
+    result = {}
+    alignment_stats_names = []
+    for assembler in assemblers:
+        tablename = "%s_contig_summary_tsv" % assembler
+        # get the contig summaries
+        for data in cc.execute("""SELECT track,
+                                  nscaffolds,
+                                  median_length,
+                                  mean_length,
+                                  max_length,
+                                  scaffold_length,
+                                  N50
+                                  FROM %s""" % tablename).fetchall():
+            track = "%s_" % assembler+data[0]
+            result[track] = list(data[1:])
+            alignment_stats_names.append(track+"_alignment_stats")
+
+    # get the alignment statistics - % of reads
+    # mapping to contigs
+    for a in alignment_stats_names:
+        a = P.toTable(a+".load")
+        for data in cc.execute("""SELECT percent FROM %s WHERE category == 'reads_mapped'""" % a).fetchall():
+            track = a[:-len("_alignment_stats")].replace("_filtered_contigs", ".filtered.contigs").replace("sim_", "sim-").replace("BP_", "BP-")
+            result[track].append(data[0])
+
+    outf = open(outfile, "w")
+    outf.write("assembler\ttrack\tncontigs\tmedian_length\tmean_length\tmax_length\ttotal_length\tN50\tpercent_mapped\n")
+    for track, results in result.iteritems():
+        assembler = track.split("_")[0]
+        track = track.split("_")[1].replace("-R1.filtered.contigs", "")
+        outf.write("\t".join([assembler, track] + map(str,results)) + "\n")
+    outf.close()
+
+###################################################
+###################################################
+###################################################
+# just using Ray for the time being as results
+# were the most consistent
+@follows(mkdir("lengths.dir"))
+@merge(glob.glob(os.path.join(PARAMS.get("assemblydir"), "ray.dir/*lengths.tsv")),
+       "lengths.dir/lengths_cum.pdf")
+def plotLengthCumProp(infiles, outfile):
+    '''
+    plot the length distributions as cumulative proportion
+    '''
+    inf250 = [x for x in infiles if x.find("250BP") != -1][0]
+    inf150 = [x for x in infiles if x.find("150BP") != -1][0]
+    inf100 = [x for x in infiles if x.find("100BP") != -1][0]
+    R('''dat.250 <- read.csv("%s", header = T, stringsAsFactors = F, sep = "\t")''' % inf250)
+    R('''dat.150 <- read.csv("%s", header = T, stringsAsFactors = F, sep = "\t")''' % inf150)
+    R('''dat.100 <- read.csv("%s", header = T, stringsAsFactors = F, sep = "\t")''' % inf100)
+    R('''dat.250$status <- "250bp"''')
+    R('''dat.150$status <- "150bp"''')
+    R('''dat.100$status <- "100bp"''')
+    R('''dat <- data.frame(rbind(dat.250, dat.150, dat.100))''')
+    R('''colnames(dat) <- c("contig", "length", "status")''')
+    R('''library(ggplot2)''')
+    R('''ggplot(dat, aes(x = length, colour = status)) + stat_ecdf() + scale_x_log10() + scale_colour_manual(values = c("cadetblue", "lightblue", "slategray")) + scale_linetype_manual(values = c(0,1,2))''')
+    R('''ggsave("%s")''' % outfile)
+
+###################################################
+###################################################
+###################################################
+# coverage variability
+@jobs_limit(1, "R")
+@follows(mkdir("coverage.dir"))
+@transform(glob.glob(os.path.join(PARAMS.get("assemblydir"), "ray.dir/*.binned")),
+           regex("(\S+)/(\S+).binned"),
+           add_inputs(glob.glob(os.path.join(PARAMS.get("assemblydir"), "ray.dir/*.lengths.tsv"))),
+           r"coverage.dir/\2.pdf")
+def plotCoverageProfile(infiles, outfile):
+    '''
+    plot coverage profile over contigs
+    '''
+    track = P.snip(os.path.basename(infiles[0]), ".coverage.binned")
+    length_file = [inf for inf in infiles[1] if inf.find(track) != -1][0]
+
+    R('''coverage <- read.csv("%s", header = T, stringsAsFactors = F, sep = "\t")
+         lengths <- read.csv("%s", header = T, stringsAsFactors = F, sep = "\t")
+         lengths <- lengths[order(lengths$length, decreasing = T),]
+         coverage <- coverage[lengths$scaffold_name,]
+         library(WGCNA)
+         library(RColorBrewer)
+         library(pheatmap)
+         breaks = seq(-10,10,0.05)
+         colors = colorRampPalette(c("blue", "black", "red"))(length(breaks))
+         pdf("%s")
+         pheatmap(coverage, scale = "row", color = colors, cluster_rows = F, cluster_cols = F, breaks = breaks)''' % (infiles[0], length_file, outfile))
+    R["dev.off"]()
+
+###################################################
+###################################################
+###################################################
+# how well do we predict genes?
+###################################################
+###################################################
+###################################################
+@follows(mkdir("genes.dir"))
+@transform(glob.glob(os.path.join(PARAMS.get("assemblydir"), "ray.dir/*.fasta.gz")),
+           regex("(\S+)/(\S+).fasta.gz"),
+           r"genes.dir/\2.start_stops")
+def countCompleteGenes(infile, outfile):
+    '''
+    count the number of genes that are classed
+    as complete based on having a start and stop codon
+    '''
+    start = "ATG"
+    stop = ["TAG", "TAA", "TGA"]
+
+    ntotal = 0
+    nstart = 0
+    nstop = 0
+    nstart_nstop = 0
+    for fasta in FastaIterator.iterate(IOTools.openFile(infile)):
+        ntotal += 1
+        if fasta.sequence.startswith(start):
+            nstart += 1
+        if fasta.sequence[-3:len(fasta.sequence)] in stop:
+            nstop += 1
+        if fasta.sequence.startswith(start) and fasta.sequence[-3:len(fasta.sequence)] in stop:
+            nstart_nstop += 1
+    outf = open(outfile, "w")
+    outf.write("total_genes\tpstart\tpstop\tpstart_stop\n")
+    outf.write("\t".join(map(str,[ntotal, float(nstart)/ntotal, float(nstop)/ntotal, float(nstart_nstop)/ntotal])) + "\n")
+    outf.close()
+
+###################################################
+###################################################
+###################################################
+
+
+
+
+
+
+
 
 
 # AH: default value for results_resultsdir

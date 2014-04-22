@@ -510,7 +510,7 @@ class SGA(Idba):
         else:
             # DOESN'T DEAL WITH INTERLEAVED FILES YET
             pe_mode = "--pe-mode=1"
-            files = " ".join([os.path.abspath(infile), paired[1]])
+            files = " ".join([os.path.abspath(infile), os.path.abspath(paired[1])])
 
         executable = "%(sga_executable)s"
 
@@ -663,8 +663,10 @@ class SoapDenovo2(Idba):
 
         # get track from config file
         for line in open(config).readlines():
-            if line.startswith("q") or line.startswith("q1"):
+            if line.startswith("q2"): continue
+            elif line.startswith("q") or line.startswith("q1"):
                 track = self.getTrack(line[:-1].split("=")[1])
+        
 
         options = "%(soapdenovo_options)s"
         tempdir = P.getTempDir(".")
@@ -675,6 +677,9 @@ class SoapDenovo2(Idba):
                        %(options)s; checkpoint;
                        mv %(tempdir)s/%(track)s* %(outdir)s;
                        mv %(outdir)s/%(track)s.contig %(outdir)s/%(track)s.contigs.fa;
+                       cat %(outdir)s/%(track)s.contigs.fa 
+                       | python %%(scriptsdir)s/rename_contigs.py -a 
+                       --log=%(outdir)s/%(track)s.contigs.log  
                        rm -rf %(tempdir)s''' % locals()
         return statement
 
@@ -701,7 +706,12 @@ class Spades(Idba):
             files = infile
             files_statement = "-s %s" % files
         else:
-            files_statement = "-1 "+ "-2 ".join( [infile, paired[1]] )
+            # spades doesn't like the fastq.1.gz type format
+            temp1 = os.path.join(tempdir, track+".1.fastq")
+            temp2 = os.path.join(tempdir, track+".2.fastq")
+            infile2 = paired[1]
+            unzip_statement = "zcat %(infile)s > %(temp1)s; zcat %(infile2)s > %(temp2)s" % locals()
+            files_statement = " -1 " + " -2 ".join( [temp1, temp2] )
 
         # kmer to use
         k = "-k %(kmer)s"
@@ -712,13 +722,14 @@ class Spades(Idba):
         # deal with spades output
         move_statement = """mv %(tempdir)s/corrected/%(track)s*cor.* %(outdir)s; \
                           mv %(tempdir)s/contigs.fasta %(outdir)s/%(track)s.contigs.fa; \
-                          mv %(tempdir)s/scaffolds.fasta %(outdir)s/%(track)s.scaffolds.fa \
+                          mv %(tempdir)s/scaffolds.fasta %(outdir)s/%(track)s.scaffolds.fa; \
                           mv %(tempdir)s/spades.log %(outdir)s/%(track)s.contigs.log""" % locals()
         
         # statement - simple and default
-        statement = '''spades.py %(files_statement)s -o %(tempdir)s %(k)s %(spades_options)s;
-                       %(move_statement)s;
-                       rm -rf %(tempdir)s''' % locals()
+        statement = '''%(unzip_statement)s; checkpoint; 
+                       spades.py %(files_statement)s -o %(tempdir)s %(k)s %(spades_options)s; checkpoint;
+                       %(move_statement)s; checkpoint;
+                       rm -rf %(tempdir)s %(temp1)s %(temp2)s''' % locals()
         return statement
 
 
@@ -859,3 +870,21 @@ class Cortex_var(Idba):
                     ''' % locals()
 
         return statement
+
+def filterBamOnPos(bam, tempname):
+    '''
+    filter bam file based on leftmost
+    position being 0 i.e. mapping off the
+    end of the contig
+    '''
+    tempbam = tempname
+    import pysam
+    samfile = pysam.Samfile(bam, "rb")
+    outbam = pysam.Samfile( tempbam, "wb", template = samfile )
+    for alignment in samfile.fetch(until_eof = True):
+        # get alignments that 0-based map to -1
+        if alignment.pos == -1: continue
+        outbam.write(alignment)
+    samfile.close()
+    outbam.close()
+

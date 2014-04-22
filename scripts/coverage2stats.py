@@ -68,9 +68,9 @@ def main(argv=None):
     parser.add_option("--bin", dest="bin", action="store_true",
                       help="output average in bins across the interval")
     parser.add_option("-n", "--bin-number", dest="bin_number", type=int,
-                      help="pattern to write coverage bins to")
+                      help="number of bins for coverage profile")
     parser.add_option("-o", "--output-filename-prefix", dest="output_filename_prefix",
-                      help="number of bins for histogram")
+                      help="pattern to write coverage bins to")
 
     parser.set_defaults(
         bin=False, bin_number=10)
@@ -91,17 +91,24 @@ def main(argv=None):
     options.stdout.write("contig\tcov_mean\tcov_sd\n")
     if options.bin:
         outf = open(options.output_filename_prefix + ".binned", "w")
+        outf.write("%s" % "\t".join([str(i) for i in range(1,options.bin_number + 1,1)]) + "\n")
     for contig, coverage in coverage_result.iteritems():
         coverage = map(float, coverage)
         options.stdout.write(
             "%s\t%s\t%s\n" % (contig, str(np.mean(coverage)), str(np.std(coverage))))
         if options.bin:
-            bins = np.linspace(0, max(coverage), options.bin_number)
-            hist = np.histogram(coverage, bins=bins)
-            print hist
-
-#            outf.write(contig + "\t" + "\t".join(map(str, list(bin_means))) + "\n")
-#    outf.close()
+            bin_means = []
+            bins = np.linspace(0, len(coverage), options.bin_number + 1)
+            if len(coverage) < len(bins) - 1:
+                E.warn("will not calculate coverage means for %s: too short" % contig)
+                continue
+            for i in range(len(bins)):
+                try:
+                    bin_mean = np.mean(coverage[int(bins[i]):int(bins[i+1])])
+                except IndexError: continue
+                bin_means.append(bin_mean)
+            outf.write(contig + "\t" + "\t".join(map(str, bin_means)) + "\n")
+    outf.close()
 
     # write footer and output benchmark information.
     E.Stop()
