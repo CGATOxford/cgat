@@ -1680,6 +1680,15 @@ def main(args=sys.argv):
 
     elif options.pipeline_action in ("make", "show", "svg", "plot", "touch"):
 
+        # set up extra file logger
+        handler = logging.FileHandler(filename=options.logfile,
+                                      mode="a")
+        handler.setFormatter(
+            MultiLineFormatter(
+                '%(asctime)s %(levelname)self %(module)s.%(funcName)s.%(lineno)d %(message)s'))
+        logger = logging.getLogger()
+        logger.addHandler(handler)
+
         try:
             if options.pipeline_action == "make":
 
@@ -1693,13 +1702,6 @@ def main(args=sys.argv):
                 #
                 #session_mutex = manager.Lock()
 
-                # set up extra file logger
-                handler = logging.FileHandler(filename=options.logfile,
-                                              mode="a")
-                handler.setFormatter(MultiLineFormatter(
-                    '%(asctime)s %(levelname)self %(module)s.%(funcName)s.%(lineno)d %(message)s'))
-                logger = logging.getLogger()
-                logger.addHandler(handler)
 
                 L.info(E.GetHeader())
                 L.info("code location: %s" % PARAMS["scriptsdir"])
