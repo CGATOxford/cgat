@@ -1,5 +1,4 @@
-"""
-=============================================================
+"""=============================================================
 PipelineUtilities.py - helper functions for CGAT pipelines
 =============================================================
 
@@ -11,7 +10,10 @@ PipelineUtilities.py - helper functions for CGAT pipelines
 Purpose
 -------
 
-To make excuting database commands and files IO as trivial and (TODO: robust) as possible possible. Before changing the default behaviour of any of these functions please discuss!. Better to add new functions and then deprecate.
+To make excuting database commands and files IO as trivial and (TODO:
+robust) as possible possible. Before changing the default behaviour of
+any of these functions please discuss!. Better to add new functions
+and then deprecate.
 
 Usage
 -----

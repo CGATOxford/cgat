@@ -458,6 +458,8 @@ class SAM(object):
                                                      mean1 - mean2,
                                                      math.pow(
                                                          2, mean1 - mean2),
+                                                     math.pow(
+                                                         2, mean1 - mean2),
                                                      significant,
                                                      "OK")))
 

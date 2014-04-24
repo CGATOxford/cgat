@@ -78,7 +78,6 @@ Command line options
 import os
 import sys
 import re
-import optparse
 import datetime
 import collections
 
@@ -95,7 +94,7 @@ PARSER = None
 from rdflib import Graph
 from rdflib import Namespace
 from rdflib.namespace import RDF, RDFS, DCTERMS
-from rdflib import Graph, Namespace, Literal, BNode, URIRef
+from rdflib import Literal, BNode, URIRef
 from rdflib.collection import Collection
 
 #DCTerms = Namespace('http://purl.org/dc/terms/')
@@ -549,29 +548,32 @@ def processScript(script_name, outfile, options):
                     param['type'] = "data"
                 if mvar == "bam":
                     use_wrapper = True
-                    data['parameters'].append(buildParam(name='wrapper_bam_file',
-                                                         ns_name='wrapper_bam_file',
-                                                         arg_long='--wrapper-bam-file',
-                                                         label=option.dest,
-                                                         type='data',
-                                                         format='bam',
-                                                         help=option.help,
-                                                         value=getattr(defaults,  option.dest)))
+                    data['parameters'].append(buildParam(
+                        name='wrapper_bam_file',
+                        ns_name='wrapper_bam_file',
+                        arg_long='--wrapper-bam-file',
+                        label=option.dest,
+                        type='data',
+                        format='bam',
+                        help=option.help,
+                        value=getattr(defaults,  option.dest)))
 
-                    data['parameters'].append(buildParam(name='wrapper_bam_index',
-                                                         ns_name='wrapper_bam_index',
-                                                         arg_long='--wrapper-bai-file',
-                                                         type='data',
-                                                         value='${wrapper_bam_file.metadata.bam_index}',
-                                                         display='hidden'))
+                    data['parameters'].append(buildParam(
+                        name='wrapper_bam_index',
+                        ns_name='wrapper_bam_index',
+                        arg_long='--wrapper-bai-file',
+                        type='data',
+                        value='${wrapper_bam_file.metadata.bam_index}',
+                        display='hidden'))
 
                     # use long argument
-                    data['parameters'].append(buildParam(name='wrapper_bam_option',
-                                                         ns_name='wrapper_bam_option',
-                                                         arg_long='--wrapper-bam-option',
-                                                         value=param[
-                                                             'arg_long'],
-                                                         display='hidden'))
+                    data['parameters'].append(buildParam(
+                        name='wrapper_bam_option',
+                        ns_name='wrapper_bam_option',
+                        arg_long='--wrapper-bam-option',
+                        value=param[
+                            'arg_long'],
+                        display='hidden'))
 
                     continue
 
@@ -606,17 +608,19 @@ def processScript(script_name, outfile, options):
         # deal with multiple output files:
         if option.dest == "output_filename_pattern":
             use_wrapper = True
-            data['parameters'].append(buildParam(name='wrapper_html_file',
-                                                 ns_name='wrapper_html_file',
-                                                 arg_long='--wrapper-html-file',
-                                                 value='$html_file',
-                                                 display='hidden'))
+            data['parameters'].append(buildParam(
+                name='wrapper_html_file',
+                ns_name='wrapper_html_file',
+                arg_long='--wrapper-html-file',
+                value='$html_file',
+                display='hidden'))
 
-            data['parameters'].append(buildParam(name='wrapper_html_dir',
-                                                 ns_name='wrapper_html_dir',
-                                                 arg_long='--wrapper-html-dir',
-                                                 value='$html_file.files_path',
-                                                 display='hidden'))
+            data['parameters'].append(buildParam(
+                name='wrapper_html_dir',
+                ns_name='wrapper_html_dir',
+                arg_long='--wrapper-html-dir',
+                value='$html_file.files_path',
+                display='hidden'))
 
             outputs.append(buildParam(name='html_file',
                                       ns_name='html_file',
@@ -674,7 +678,7 @@ def main(argv=None):
         argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+    parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
     parser.add_option("-f", "--format", dest="output_format", type="choice",
@@ -682,16 +686,20 @@ def main(argv=None):
                       help = "output format [%default]. ")
 
     parser.add_option("-l", "--list", dest="filename_list", type="string",
-                      help="filename with list of files to export [%default]. ")
+                      help="filename with list of files to export "
+                      "[%default]. ")
 
     parser.add_option("-s", "--source-dir", dest="src_dir", type="string",
                       help="directory to look for scripts [%default]. ")
 
     parser.add_option("-r", "--input-regex", dest="input_regex", type="string",
-                      help="regular expression to extract script name [%default]. ")
+                      help="regular expression to extract script name "
+                      "[%default]. ")
 
-    parser.add_option("-p", "--output-pattern", dest="output_pattern", type="string",
-                      help="pattern to build output filename. Should contain an '%s' [%default]. ")
+    parser.add_option("-p", "--output-pattern", dest="output_pattern",
+                      type="string",
+                      help="pattern to build output filename. Should contain "
+                      "an '%s' [%default]. ")
 
     parser.set_defaults(output_format="rdf",
                         src_dir=None,
@@ -744,13 +752,13 @@ def main(argv=None):
 
         if options.output_format == "galaxy":
             options.stdout.write(
-                '''   <tool file="cgat/%s" />\n''' % outfile_name )
+                '''   <tool file="cgat/%s" />\n''' % outfile_name)
 
         if outfile != options.stdout:
             outfile.close()
 
     if options.output_format == "galaxy":
-        options.stdout.write( '''</section>\n''')
+        options.stdout.write('''</section>\n''')
 
     E.Stop()
 
