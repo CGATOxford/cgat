@@ -285,6 +285,10 @@ ChangeLog
     * SICER, SPP now use predicted fragment size instead
       of fragment size supplied in options.
 
+24/04/14 AH
+    * added background filtering to pipeline. All intervals are output as
+      well as intervals that do not overlap with regions of high input.
+
 Code
 ====
 
@@ -707,7 +711,35 @@ def buildBackgroundWindows(infile, outfile):
     P.run()
 
 
-######################################################################
+@merge(buildBackgroundWindows, "background.dir/background.bed.gz")
+def mergeBackgroundWindows(infiles, outfile):
+    '''build a single bed file of regions with elevated background.'''
+
+    if len(infiles) == 0:
+        # write a dummy file with a dummy chromosome
+        # an empty background file would otherwise cause
+        # errors downstream in bedtools intersect
+        outf = IOTools.openFile(outfile, "w")
+        outf.write("chrXXXX\t1\t2\n")
+        outf.close()
+        return
+
+    infiles = " ".join(infiles)
+    genomefile = os.path.join(
+        PARAMS["annotations_dir"], PARAMS_ANNOTATIONS['interface_contigs'])
+    statement = '''
+    zcat %(infiles)s 
+    | bedtools slop -i stdin
+                -b %(calling_background_extension)i
+                -g %(genomefile)s
+    | mergeBed
+    | bgzip
+    > %(outfile)s
+    '''
+
+    P.run()
+
+
 @follows(normalizeBAM)
 @files([("%s.call.bam" % (x.asFile()),
          "%s.data_quality" % x.asFile()) for x in TRACKS])
@@ -733,8 +765,6 @@ def checkDataQuality(infile, outfile):
     > %(outfile)s'''
     P.run()
 
-####################################################################
-
 
 @merge(checkDataQuality, "data_quality.load")
 def loadDataQuality(infiles, outfile):
@@ -743,8 +773,6 @@ def loadDataQuality(infiles, outfile):
     P.concatenateAndLoad(infiles, outfile,
                          regex_filename="(.*).data_quality",
                          has_titles=False)
-
-####################################################################
 
 
 @follows(normalizeBAM)
@@ -1652,9 +1680,55 @@ for x in P.asList(PARAMS["peakcallers"]):
 def calling():
     pass
 
-############################################################
-############################################################
-############################################################
+
+@follows(mkdir(os.path.join(PARAMS["exportdir"], "filtered_bedfiles")),
+         mkdir('filtering.dir'))
+@transform(CALLINGTARGETS, regex("(.*)/(.*).load"),
+           add_inputs(mergeBackgroundWindows),
+           (os.path.join(
+               PARAMS["exportdir"],
+               "filtered_bedfiles",
+               r"\2.peaks.bed.gz"),
+            os.path.join(
+                PARAMS["exportdir"],
+                "filtered_bedfiles",
+                r"\2.regions.bed.gz"),
+            os.path.join(
+                PARAMS["exportdir"],
+                "filtered_bedfiles",
+                r"\2.summits.bed.gz"),
+            r"filtering.dir/\2.tsv"))
+def exportFilteredIntervalsAsBed(infiles, outfiles):
+    '''export filtered intervals as bed files.
+
+    Intervals are filtered by:
+
+    * removing all intervals that overlap a background interval
+    '''
+
+    infile, background_bed = infiles
+    outfile_peaks, outfile_regions, outfile_summits, outfile_summary = outfiles
+    track = P.snip(os.path.basename(infile), ".load")
+
+    logfile = IOTools.openFile(outfile_summary, "w")
+    logfile.write("category\tinput\toutput\tremoved_background\n")
+
+    for category, tablename, outfile in (
+            ('peaks', "%s_peaks" % P.quote(track), outfile_peaks),
+            ('regions', "%s_regions" % P.quote(track), outfile_regions),
+            ('summits', "%s_summits" % P.quote(track), outfile_summits)):
+        dbh = connect()
+        if tablename in Database.getTables(dbh):
+            c = PipelinePeakcalling.exportIntervalsAsBed(
+                infile, outfile, tablename,
+                bedfilter=background_bed)
+            logfile.write("\t".join(map(str, (
+                category, c.input, c.output, c.removed_bedfilter))) + "\n")
+        else:
+            E.warn("no table %s - empty bed file output" % tablename)
+            P.touch(outfile_peaks)
+
+    logfile.close()
 
 
 @follows(mkdir(os.path.join(PARAMS["exportdir"], "bedfiles")))
@@ -1677,33 +1751,17 @@ def exportIntervalsAsBed(infile, outfiles):
     outfile_peaks, outfile_regions, outfile_summits = outfiles
     track = P.snip(os.path.basename(infile), ".load")
 
-    dbh = connect()
-    tablename = "%s_peaks" % P.quote(track)
-    if tablename in Database.getTables(dbh):
-        PipelinePeakcalling.exportIntervalsAsBed(
-            infile, outfile_peaks, tablename)
-    else:
-        E.warn("no table %s - empty bed file output" % tablename)
-        P.touch(outfile_peaks)
-
-    dbh = connect()
-    tablename = "%s_regions" % P.quote(track)
-    if tablename in Database.getTables(dbh):
-        PipelinePeakcalling.exportIntervalsAsBed(
-            infile, outfile_regions, tablename)
-    else:
-        E.warn("no table %s - empty bed file output" % tablename)
-        P.touch(outfile_regions)
-
-    dbh = connect()
-    tablename = "%s_summits" % P.quote(track)
-    if tablename in Database.getTables(dbh):
-        PipelinePeakcalling.exportIntervalsAsBed(
-            infile, outfile_summits, tablename)
-    else:
-        E.warn("no table %s - empty bed file output" % tablename)
-        P.touch(outfile_summits)
-
+    for tablename, outfile in (
+            ("%s_peaks" % P.quote(track), outfile_peaks),
+            ("%s_regions" % P.quote(track), outfile_regions),
+            ("%s_summits" % P.quote(track), outfile_summits)):
+        dbh = connect()
+        if tablename in Database.getTables(dbh):
+            PipelinePeakcalling.exportIntervalsAsBed(
+                infile, outfile, tablename)
+        else:
+            E.warn("no table %s - empty bed file output" % tablename)
+            P.touch(outfile_peaks)
 
 ###################################################################
 ###################################################################
