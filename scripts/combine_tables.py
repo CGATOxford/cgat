@@ -87,8 +87,6 @@ def readTable(filename, options):
 def concatenateTables(outfile, options, args):
     '''concatenate tables.'''
 
-    first = True
-
     missing_value = options.missing_value
 
     rx = re.compile(options.regex_filename)
@@ -112,6 +110,11 @@ def concatenateTables(outfile, options, args):
                                for x in range(len(row_headers))]
     else:
         row_head_titles = [x.strip() for x in options.cat.split(",")]
+        if len(row_headers[0]) != len(row_head_titles):
+            raise ValueError(
+                "row header (%i) has different number of fields in "
+                "regular expression than supplied by the --cat option (%i)" %
+                (len(row_headers[0]), len(row_head_titles)))
 
     # collect titles
     if options.input_has_titles:

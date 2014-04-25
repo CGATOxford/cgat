@@ -1704,31 +1704,53 @@ def exportFilteredIntervalsAsBed(infiles, outfiles):
     Intervals are filtered by:
 
     * removing all intervals that overlap a background interval
+    * merging overlapping intervals
     '''
 
     infile, background_bed = infiles
-    outfile_peaks, outfile_regions, outfile_summits, outfile_summary = outfiles
+
+    outfile_peaks, outfile_regions, outfile_summits, \
+        outfile_summary = outfiles
+
     track = P.snip(os.path.basename(infile), ".load")
 
     logfile = IOTools.openFile(outfile_summary, "w")
-    logfile.write("category\tinput\toutput\tremoved_background\n")
+    logfile.write(
+        "category\tinput\toutput\tremoved_background\tremoved_merged\n")
 
     for category, tablename, outfile in (
-            ('peaks', "%s_peaks" % P.quote(track), outfile_peaks),
-            ('regions', "%s_regions" % P.quote(track), outfile_regions),
-            ('summits', "%s_summits" % P.quote(track), outfile_summits)):
+            ('peaks', "%s_peaks" % P.quote(track),
+             outfile_peaks),
+            ('regions', "%s_regions" % P.quote(track),
+             outfile_regions),
+            ('summits', "%s_summits" % P.quote(track),
+             outfile_summits)):
         dbh = connect()
         if tablename in Database.getTables(dbh):
             c = PipelinePeakcalling.exportIntervalsAsBed(
                 infile, outfile, tablename,
-                bedfilter=background_bed)
+                bedfilter=background_bed,
+                merge=True)
             logfile.write("\t".join(map(str, (
-                category, c.input, c.output, c.removed_bedfilter))) + "\n")
+                category, c.input,
+                c.output,
+                c.removed_bedfilter,
+                c.removed_merging))) + "\n")
         else:
             E.warn("no table %s - empty bed file output" % tablename)
-            P.touch(outfile_peaks)
+            P.touch(outfile)
 
     logfile.close()
+
+
+@merge(exportFilteredIntervalsAsBed, 'exported_intervals.load')
+def loadFilteredExportSummary(infiles, outfile):
+    '''load export summary.'''
+    infiles = [x[-1] for x in infiles]
+    P.concatenateAndLoad(infiles,
+                         outfile,
+                         regex_filename=('filtering.dir/(.*)_([^_]+).tsv'),
+                         cat="track,method")
 
 
 @follows(mkdir(os.path.join(PARAMS["exportdir"], "bedfiles")))
@@ -1761,7 +1783,7 @@ def exportIntervalsAsBed(infile, outfiles):
                 infile, outfile, tablename)
         else:
             E.warn("no table %s - empty bed file output" % tablename)
-            P.touch(outfile_peaks)
+            P.touch(outfile)
 
 ###################################################################
 ###################################################################

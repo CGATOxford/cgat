@@ -579,6 +579,13 @@ def concatenateAndLoad(infiles,
     '''concatenate categorical tables and load into a database.
 
     If *has_titles* is False, the tables are assumed to have no titles.
+
+    If given, *regex_filename* is applied to the filename to extract
+    the track name. If the pattern contains multiple groups, they are
+    added as additional columns. For example, if *cat* is set to 
+    ``track,method`` and regex_filename is ``(.*)_(.*).tsv.gz``
+    the columns ``track`` and method to the table.
+
     '''
 
     infiles = " ".join(infiles)

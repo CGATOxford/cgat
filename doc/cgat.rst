@@ -26,6 +26,7 @@ are below, followed by a :ref:`quickstart` guide.
    CGATInstallation
    CGATUsage
    CGATRecipes
+   CGATToolMap
    CGATReference
    CGATMissionStatement
    developing

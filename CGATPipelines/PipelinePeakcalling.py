@@ -18,6 +18,7 @@ import collections
 import sqlite3
 import numpy
 import pysam
+import pybedtools
 
 ##########################
 import CGAT.Experiment as E
@@ -39,10 +40,6 @@ P.getParameters(
      "pipeline.ini"])
 
 PARAMS = P.PARAMS
-
-if os.path.exists("pipeline_conf.py"):
-    E.info("reading additional configuration from pipeline_conf.py")
-    execfile("pipeline_conf.py")
 
 ############################################################
 ############################################################
@@ -529,11 +526,14 @@ def buildBAMStats(infile, outfile):
 ############################################################
 def exportIntervalsAsBed(infile, outfile,
                          tablename,
-                         bedfilter=None):
+                         bedfilter=None,
+                         merge=False):
     '''export intervals from database as bed files.
 
     If *bedfilter* is set, remove intervals overlapping
     any of the intervals in the :term:`bed` formatted file.
+
+    If *merge* is set, merge overlapping intervals.
 
     Returns a counter object.
     '''
@@ -548,41 +548,60 @@ def exportIntervalsAsBed(infile, outfile,
         track = P.snip(outfile, ".bed")
 
     cc = dbhandle.cursor()
-    statement = """SELECT contig, start, end, interval_id, peakval FROM %s
-    ORDER by contig, start""" % tablename
+    statement = """SELECT contig, start, end
+    FROM %s""" % tablename
     cc.execute(statement)
 
-    if bedfilter:
-        bedfilter = Bed.readAndIndex(IOTools.openFile(bedfilter))
+    bd = pybedtools.BedTool(list(cc.fetchall()))
+    tmpfile = P.getTempFilename()
+    bd.saveas(tmpfile)
+    cc.close()
 
     c = E.Counter()
+    bd = pybedtools.BedTool(tmpfile)
+    c.input = len(bd)
+    bd = pybedtools.BedTool(tmpfile)
+    latest = c.input
 
-    with IOTools.openFile("%s.bed" % track, "w") as outs:
+    if bedfilter:
 
-        for result in cc:
-            contig, start, end, interval_id, peakval = result
-            c.input += 1
+        bd = bd.intersect(pybedtools.BedTool(bedfilter), v=True, wa=True)
+        bd.saveas(tmpfile)
+        bd = pybedtools.BedTool(tmpfile)
 
-            if bedfilter and contig in bedfilter and \
-               len(list(bedfilter[contig].find(start, end))) > 0:
-                c.removed_bedfilter += 1
-                continue
+        c.after_bedfilter = len(bd)
+        bd = pybedtools.BedTool(tmpfile)
+        
+        c.removed_bedfilter = latest - c.after_bedfilter
+        latest = c.after_bedfilter
 
-            c.output += 1
+    if merge and latest > 0:
+        # empty bedfiles cause an error
+        # pybedtools not very intuitive.
+        bd = bd.sort()
+        bd.saveas(tmpfile)
+        bd = pybedtools.BedTool(tmpfile)
 
-            # peakval is truncated at a 1000 as this is the maximum permitted
-            # score in a bed file.
-            peakval = int(min(peakval, 1000))
-            outs.write("%s\t%i\t%i\t%s\t%i\n" %
-                       (contig, start, end, str(interval_id), peakval))
+        bd = bd.merge()
+        bd.saveas(tmpfile)
+        bd = pybedtools.BedTool(tmpfile)
 
-        cc.close()
+        c.after_merging = len(bd)
+        bd = pybedtools.BedTool(tmpfile)
+
+        c.removed_merging = latest - c.after_merging
+        latest = c.after_merging
+
+    c.output = latest        
+
+    bd.saveas(track + '.bed')
 
     if compress:
         E.info("compressing and indexing %s" % outfile)
         statement = 'bgzip -f %(track)s.bed; tabix -f -p bed %(outfile)s'
         P.run()
 
+    os.unlink(tmpfile)
     return c
 
 ############################################################
@@ -600,8 +619,9 @@ def exportMacsIntervalsAsBed(infile, outfile, foldchange):
     track = track[:-len("_macs")]
 
     cc = dbhandle.cursor()
-    statement = "SELECT contig, start, end, interval_id, fold FROM %(track)s_macs_intervals where fold >= %(foldchange)s ORDER by contig, start" % locals(
-    )
+    statement = """SELECT contig, start, end, interval_id, fold
+    FROM %(track)s_macs_intervals where fold >= %(foldchange)s
+    ORDER by contig, start""" % locals()
     cc.execute(statement)
 
     outs = open(outfile, "w")
