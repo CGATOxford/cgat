@@ -308,24 +308,6 @@ generated for every CGAT script:
      added to this section.
 
 
-`Options`
-Describe all of the options for the script.  If necessary provide extensive detail of the
-methods of each option and how they are combined to provide the intended functionality
-of the script.  This should include all `choice` for options with a verbose description
-of what that `choice` does.
-For example::
-
-      `Profiles`
-       Different profiles are accessible through the ``--method`` option. Multiple
-       methods can be applied at the same time. While ``upstream`` and ``downstream``
-       typically have a fixed size, the other regions such as ``CDS``, ``UTR`` will be
-       scaled to a common size.
-
-       utrprofile
-            UPSTREAM - UTR5 - CDS - UTR3 - DOWNSTREAM
-	    gene models with UTR. Separate the coding section from the non-coding part.
-
-
 In addition, please pay attention to the following:
 
 * Declare input data types for genomic data sets in optparse using 
@@ -334,8 +316,8 @@ In addition, please pay attention to the following:
       parser.add_option( "--extra-intervals", dest = "extra_intervals",
                       metavar="bed", help = "..." )
 
-  Setting the type permits the script to be integrated into workflow
-  sytemns such as galaxy_.
+  Setting the `type` permits the script to be integrated into workflow
+  systems such as galaxy_.
 
 * Please provide a meaningful example in the command line help (see above for
   minimum requirements).
