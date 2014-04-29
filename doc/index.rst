@@ -65,6 +65,7 @@ Developer's guide
    testing.rst
    styleguide.rst
    documenting.rst
+   pipelines.rst
    release.rst
    galaxy.rst
 
