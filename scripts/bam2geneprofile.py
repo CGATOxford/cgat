@@ -37,8 +37,60 @@ is able to center the counting window to the summit of every individual peak.
 enable side-by-side comparison; (2) randomize the given regions to provide a 
 semi-control.
 
-Background
----------- 
+
+
+Usage
+-----
+
+
+
+Quick start examples
+++++++++++++++++++++
+
+The following command will generate the gene profile plot similar to Fig 1(a) 
+in the published CGAT paper, but using a test dataset that is much smaller 
+and simpler than the dataset used for publishing the CGAT paper. ::
+
+    python ./scripts/bam2geneprofile.py 
+        --bamfile=./tests/bam2geneprofile.py/multipleReadsSplicedOutAllIntronsAndSecondExon.bam
+        --gtffile=./tests/bam2geneprofile.py/onegeneWithoutAnyCDS.gtf.gz
+        --method=geneprofile
+        --reporter=gene
+
+In the following, a slightly more involved example will use more features
+of this script. The following command generate the gene profile showing 
+base accuracy of upstream (500bp), exons, introns and downstream(500bp) of 
+a gene model from some user supplied RNA-Seq data and geneset. ::
+
+    python ./scripts/bam2geneprofile.py
+        --bamfile=./rnaseq.bam
+        --gtffile=./geneset.gtf.gz
+        --method=geneprofilewithintrons
+        --reporter=gene
+        --extension-upstream=500
+        --resolution-upstream=500
+        --extension-downstream=500
+        --resolution-downstream=500
+
+The output will contain read coverage over genes. The profile will contain 
+four separate segments:
+
+1. the upstream region of a gene ( set to be 500bp ), 
+   (``--extension-upstream=500``).
+
+2. the transcribed region of a gene. The transcribed region of every gene will
+   be scaled to 1000 bp ( default ), shrinking longer transcripts and 
+   expanding shorter transcripts.
+
+3. the intronic regions of a gene. These will be scaled to 1000b ( default ).
+
+4. the downstream region of a gene ( set to be 500bp ), 
+   (``--extension-downstream=500``).
+
+
+
+Detailed explaination
++++++++++++++++++++++
 
 The :file:`bam2geneprofile.py` script reads in a set of transcripts from a 
 :term:`gtf` formatted file. For each transcript, overlapping reads from the 
@@ -65,76 +117,24 @@ example, the options ``--extension-upstream`` will set the size of the
 uptsream extension region to 1000bp. Note that no scaling is required when 
 counting reads towards the fixed-width meta-gene profile.
 
-Normalization
--------------
 
-Normalization can be applied in two stages of the computation.
 
-Count Vector
-++++++++++++
+Type::
 
-Before adding counts to the meta-gene profile, the profile for the
-individual transcript can be normalized. Without normalization, highly
-expressed genes will contribute more to the meta-gene profile than
-lowly expressed genes.  Normalization can assure that each gene
-contributes an equal amount.
+   python bam2geneprofile.py --help
 
-Normalization is applied to the vector of read counts that is computed
-for each transcript. Normalization can be applied for the whole
-transcript (``total``) or on a per segment basis depending on the
-counter. For example, in the gene counter, exons, upstream and
-downstream segments can be normalized independently.
+for command line help.
 
-Counts can be normalized either by the maximum or the sum of all
-counts in a segment or across the whole transcript. Normalization is
-controlled with the command line option ``--normalization``. Its
-arguments are:
 
-* ``none``: no normalization
-* ``sum``: sum of counts within a region (exons,upstream, ...). 
-  The area under the curve will sum to 1 for each region.
-* ``max``: maximum count within a region (exons,upstream, ...). 
-* ``total-sum``: sum of counts across all regions. The area 
-  under the curve will sum to 1 for
-  the complete transcript.
-* ``total-max``: maximum count across all regions.
 
-The options above control the contribution of individual transcripts
-to a meta-gene profile and are thus suited for example for RNA-Seq data.
-
-The options above do not control for different read-depths or any
-local biases. To compare meta-gene profiles between samples,
-additional normalization is required.
-
-Meta-gene profile
-+++++++++++++++++
-
-To enable comparison between experiments, the meta-gene profile itself
-can be normalized.  Normalization a profile can help comparing the
-shapes of profiles between different experiments independent of the
-number of reads or transcripts used in the construction of the
-meta-gene profile.
-
-Meta-gene profile normalization is controlled via the ``--normalize-profile`` 
-option. Possible normalization are:
-
-* none: no normalization
-* area: normalize such that the area under the meta-gene profile is 1.
-* counts: normalize by number of features (genes,tss) that have been counted.
-* background: normalize with background (see below).
-
-A special normalization is activated with the ``background`` option.
-Here, the counts at the left and right most regions are used to
-estimate a background level for each transcript. The counts are
-then divided by this background-level. The assumption is that the
-meta-gene model is computed over a large enough area to include
-genomic background. 
 
 Options
 -------
 
 The script provides a variety of different meta-gene structures i.e. 
 geneprofiles, selectable via using the option: (``--method``).
+
+
 
 Profiles
 ++++++++
@@ -187,6 +187,75 @@ midpointprofile
     UPSTREAM  - DOWNSTREAM
     aggregate over midpoint of gene model
 
+
+
+Normalization
++++++++++++++
+
+Normalization can be applied in two stages of the computation.
+
+Count vector normalization
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Before adding counts to the meta-gene profile, the profile for the
+individual transcript can be normalized. Without normalization, highly
+expressed genes will contribute more to the meta-gene profile than
+lowly expressed genes.  Normalization can assure that each gene
+contributes an equal amount.
+
+Normalization is applied to the vector of read counts that is computed
+for each transcript. Normalization can be applied for the whole
+transcript (``total``) or on a per segment basis depending on the
+counter. For example, in the gene counter, exons, upstream and
+downstream segments can be normalized independently.
+
+Counts can be normalized either by the maximum or the sum of all
+counts in a segment or across the whole transcript. Normalization is
+controlled with the command line option ``--normalization``. Its
+arguments are:
+
+* ``none``: no normalization
+* ``sum``: sum of counts within a region (exons,upstream, ...). 
+  The area under the curve will sum to 1 for each region.
+* ``max``: maximum count within a region (exons,upstream, ...). 
+* ``total-sum``: sum of counts across all regions. The area 
+  under the curve will sum to 1 for
+  the complete transcript.
+* ``total-max``: maximum count across all regions.
+
+The options above control the contribution of individual transcripts
+to a meta-gene profile and are thus suited for example for RNA-Seq data.
+
+The options above do not control for different read-depths or any
+local biases. To compare meta-gene profiles between samples,
+additional normalization is required.
+
+Meta-gene profile normalization
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To enable comparison between experiments, the meta-gene profile itself
+can be normalized.  Normalization a profile can help comparing the
+shapes of profiles between different experiments independent of the
+number of reads or transcripts used in the construction of the
+meta-gene profile.
+
+Meta-gene profile normalization is controlled via the ``--normalize-profile`` 
+option. Possible normalization are:
+
+* none: no normalization
+* area: normalize such that the area under the meta-gene profile is 1.
+* counts: normalize by number of features (genes,tss) that have been counted.
+* background: normalize with background (see below).
+
+A special normalization is activated with the ``background`` option.
+Here, the counts at the left and right most regions are used to
+estimate a background level for each transcript. The counts are
+then divided by this background-level. The assumption is that the
+meta-gene model is computed over a large enough area to include
+genomic background. 
+
+
+
 Genes versus transcripts
 ++++++++++++++++++++++++
 
@@ -197,11 +266,15 @@ plausible transcript. It is usually better to provide
 :file:`bam2geneprofile.py` with a set of representative transcripts per gene 
 in order to avoid up-weighting genes with multiple transcripts.
 
+
+
 Control
 +++++++
 
 If control files (chip-seq input tracks) are supplied, counts in the control 
 file can be used to compute a fold-change.
+
+
 
 Bed and wiggle files
 ++++++++++++++++++++
@@ -215,54 +288,6 @@ with and indexed with :file:`tabix`.
    Paired-endedness is ignored. Both ends of a paired-ended read are treated 
    individually.
 
-Usage
------
-
-The following command will generate the gene profile plot similar to Fig 1(a) 
-in the published CGAT paper, but using a test dataset that is much smaller 
-and simpler than the dataset used for publishing the CGAT paper. ::
-
-    python ./scripts/bam2geneprofile.py 
-        --bamfile=./tests/bam2geneprofile.py/multipleReadsSplicedOutAllIntronsAndSecondExon.bam
-        --gtffile=./tests/bam2geneprofile.py/onegeneWithoutAnyCDS.gtf.gz
-        --method=geneprofile
-        --reporter=gene
-
-In the following, a slightly more involved example will use more features
-of this script. The following command generate the gene profile showing 
-base accuracy of upstream (500bp), exons, introns and downstream(500bp) of 
-a gene model from some user supplied RNA-Seq data and geneset. ::
-
-    python ./scripts/bam2geneprofile.py
-        --bamfile=./rnaseq.bam
-        --gtffile=./geneset.gtf.gz
-        --method=geneprofilewithintrons
-        --reporter=gene
-        --extension-upstream=500
-        --resolution-upstream=500
-        --extension-downstream=500
-        --resolution-downstream=500
-
-The output will contain read coverage over genes. The profile will contain 
-four separate segments:
-
-1. the upstream region of a gene ( set to be 500bp ), 
-   (``--extension-upstream=500``).
-
-2. the transcribed region of a gene. The transcribed region of every gene will
-   be scaled to 1000 bp ( default ), shrinking longer transcripts and 
-   expanding shorter transcripts.
-
-3. the intronic regions of a gene. These will be scaled to 1000b ( default ).
-
-4. the downstream region of a gene ( set to be 500bp ), 
-   (``--extension-downstream=500``).
-
-Type::
-
-   python bam2geneprofile.py --help
-
-for command line help.
 
 Command line options
 --------------------
