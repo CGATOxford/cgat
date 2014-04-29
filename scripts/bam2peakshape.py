@@ -97,6 +97,26 @@ for command line help.
 Options
 -------
 
+shift
++++++
+
+shift the each read by a certain distance, because in a ChIP-Seq experment, 
+the read is always at the edge of an sonicated fragment, the actual binding
+site is usually L/2 distance away from the read, where L is the length of
+sonicated fragment (determined either experimentally or computationally).
+
+This option is used only if the input reads are in :term:`bed` formatted file.
+If input reads are :term:`bigwig` formatted file, this option is ignored.
+
+
+centring method
++++++++++++++++
+
+"reads" will output in the way that the summit of the peaks are aligned. 
+"middle" will output in the way that the middle of the input bed 
+intervals are aligned.
+
+
 
 
 .. todo::
