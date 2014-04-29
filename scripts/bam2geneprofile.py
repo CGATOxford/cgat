@@ -33,7 +33,7 @@ factor ChIP-Seq without the need to use any genomic annotations (ENSEMBL, or
 refseq), you may also consider using :doc:`bam2peakshape`, which is designed 
 with a slight emphasis on Chip-Seq datasets. For example, :doc:`bam2peakshape` 
 is able to center the counting window to the summit of every individual peak. 
-:doc:`bam2peakshape` is also able to: (1) plot the control RNA-Seq library to 
+:doc:`bam2peakshape` is also able to: (1) plot the control ChIP-Seq library to 
 enable side-by-side comparison; (2) randomize the given regions to provide a 
 semi-control.
 

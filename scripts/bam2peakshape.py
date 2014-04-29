@@ -24,6 +24,7 @@ side-by-side comparison of treatment vs control;
 (3) It can randomly shift the set of input regions to generate a artificial 
 set of regions, in the absence of real ChIP-Seq control library, the random 
 regions can provide a peaks profile that can be used as the control.
+
 For example, given the peaks regions defined by analyzing some ChIP-Seq dataset
 (e.g. by using MACS), and without the need to use any additional genomic 
 annotations (e.g. ENSEMBL, refseq), we can visualise the binding profiles of 
@@ -47,10 +48,27 @@ peak_heigt * 90%.
 Usage
 -----
 
-Example::
+Detailed usage example
+++++++++++++++++++++++
 
-   python bam2peakshape.py bamfile bedfile
+The following command will generate the peak shape plot for the peak regions
+defined in :file:`onepeak.bed`, using the reads stored in :file:`small.bam`. 
+The command will also create a profile for the control library. 
+The control library in this example is re-using the same reads file 
+:file:`small.bam`, however, in your actual experiment, it should 
+be a different library (the input library for this ChIP-Seq experiment).  ::
 
+    python ./scripts/bam2peakshape.py \
+        ./tests/bam2peakshape.py/small.bam \
+        ./tests/bam2peakshape.py/onepeak.bed \
+        --control-file=./tests/bam2peakshape.py/small.bam \
+        --only-interval \
+        --normalization
+        
+
+
+Output files
+++++++++++++
 
 Among the features output are:
 
@@ -97,8 +115,8 @@ for command line help.
 Options
 -------
 
-shift
-+++++
+Option: Shift
++++++++++++++
 
 shift the each read by a certain distance, because in a ChIP-Seq experment, 
 the read is always at the edge of an sonicated fragment, the actual binding
@@ -108,15 +126,35 @@ sonicated fragment (determined either experimentally or computationally).
 This option is used only if the input reads are in :term:`bed` formatted file.
 If input reads are :term:`bigwig` formatted file, this option is ignored.
 
+Option: Random shift
+++++++++++++++++++++
 
-centring method
-+++++++++++++++
+randomly shift the set of input regions to generate a artificial 
+set of regions. In the absence of real ChIP-Seq control library, the random 
+regions can provide a peaks profile that can be used as the control.
+
+Option: Centring method
++++++++++++++++++++++++
 
 "reads" will output in the way that the summit of the peaks are aligned. 
 "middle" will output in the way that the middle of the input bed 
 intervals are aligned.
 
+Option: Only interval
++++++++++++++++++++++
 
+Only count reads that are in the interval as defined by the input bed file.
+
+
+Option: Normalization=sum
++++++++++++++++++++++++++
+
+normalize counts such that the sum of all counts in all features are exactly 
+1000000.
+
+The detail normalization algorithm as follows:
+norm = sum(all counts in all features)/1000000.0 
+normalized count = normalized count / norm
 
 
 .. todo::
