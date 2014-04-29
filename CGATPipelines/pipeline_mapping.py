@@ -187,6 +187,7 @@ from ruffus import *
 import sys
 import os
 import re
+import glob
 import sqlite3
 import collections
 import glob
@@ -1085,8 +1086,8 @@ if "merge_pattern_input" in PARAMS and PARAMS["merge_pattern_input"]:
         nreads = 0
         for infile in infiles:
             with IOTools.openFile(infile, "r") as inf:
-                for line in infiles:
-                    if line.startswith("nreads"):
+                for line in infile:
+                    if not line.startswith("nreads"):
                         continue
                     E.info("%s" % line[:-1])
                     nreads += int(line[:-1].split("\t")[1])

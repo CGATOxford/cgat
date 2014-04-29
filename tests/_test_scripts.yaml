@@ -1,4 +1,0 @@
-restrict:
-        manifest:
-        regex: bam2bed.py
-

@@ -47,7 +47,8 @@ class IntervalsSummaryTable(DefaultTracker):
 
     def __call__(self, track, slice):
         table = "%s_%s_%s" % (track, slice, self.suffix)
-
+        if not self.hasTable(table):
+            return
         # Get the column containing the recorded qvalues
         fdr_col_headings = ("fdr", "qvalue", "FDR")
         fdr_col_head = None
@@ -101,6 +102,8 @@ class IntervalsSummary(DefaultTracker):
 
     def __call__(self, track, slice):
         table = "%s_%s_%s" % (track, slice, self.suffix)
+        if not self.hasTable(table):
+            return
         data = self.getFirstRow(
             "SELECT COUNT(*), AVG(end-start), MIN(end-start), MAX(end-start) as VARCHAR FROM %(table)s")
         return odict(zip(("nintervals", "avg(length)", "min(length)", "max(length)"), data))
@@ -129,8 +132,12 @@ class IntervalLengths(DefaultTracker):
     """
 
     def __call__(self, track, slice=None):
+        table = "%s_%s_%s" % (track, slice, self.suffix)
+        if not self.hasTable(table):
+            return
+        
         data = self.getValues(
-            "SELECT length FROM %(track)s_%(slice)s_%(suffix)s")
+            "SELECT length FROM %(table)s")
         return {"length": data}
 
 
@@ -158,8 +165,11 @@ class IntervalPeakValues(DefaultTracker):
     """
 
     def __call__(self, track, slice=None):
+        table = "%s_%s_%s" % (track, slice, self.suffix)
+        if not self.hasTable(table):
+            return
         data = self.getValues(
-            "SELECT peakval FROM %(track)s_%(slice)s_%(suffix)s")
+            "SELECT peakval FROM %(table)s")
         return {"peakval": data}
 
 
@@ -187,8 +197,12 @@ class IntervalAverageValues(DefaultTracker):
     """
 
     def __call__(self, track, slice=None):
+        table = "%s_%s_%s" % (track, slice, self.suffix)
+        if not self.hasTable(table):
+            return
+
         data = self.getValues(
-            "SELECT avgval FROM %(track)s_%(slice)s_%(suffix)s")
+            "SELECT avgval FROM %(table)s")
         return {"avgval": data}
 
 
@@ -213,10 +227,14 @@ class SummitsAverageValues(SummitsIntervals, IntervalAverageValues):
 class PeakLocation(DefaultTracker):
 
     def __call__(self, track, slice=None):
+        table = "%s_%s_%s" % (track, slice, self.suffix)
+        if not self.hasTable(table):
+            return
+
         data1 = self.getValues(
-            "SELECT (PeakCenter - start) / CAST( Length as FLOAT) - 0.5 FROM %(track)s_%(slice)s_%(suffix)s")
+            "SELECT (PeakCenter - start) / CAST( Length as FLOAT) - 0.5 FROM %(table)s")
         data2 = self.getValues(
-            "SELECT (end - PeakCenter) / CAST( Length as FLOAT) - 0.5 FROM %(track)s_%(slice)s_%(suffix)s")
+            "SELECT (end - PeakCenter) / CAST( Length as FLOAT) - 0.5 FROM %(table)s")
         return {"distance": data1 + data2}
 
 
@@ -241,10 +259,13 @@ class SummitsPeakLocation(SummitsIntervals, PeakLocation):
 class PeakDistance(DefaultTracker):
 
     def __call__(self, track, slice=None):
+        table = "%s_%s_%s" % (track, slice, self.suffix)
+        if not self.hasTable(table):
+            return
         data1 = self.getValues(
-            "SELECT PeakCenter - start FROM %(track)s_%(slice)s_%(suffix)s")
+            "SELECT PeakCenter - start FROM %(table)s")
         data2 = self.getValues(
-            "SELECT end - PeakCenter FROM %(track)s_%(slice)s_%(suffix)s")
+            "SELECT end - PeakCenter FROM %(table)s")
         return {"distance": data1 + data2}
 
 
@@ -272,8 +293,12 @@ class LengthVsAverageValue(DefaultTracker):
     """
 
     def __call__(self, track, slice=None):
+        table = "%s_%s_%s" % (track, slice, self.suffix)
+        if not self.hasTable(table):
+            return
+
         data = self.get(
-            "SELECT length, avgval FROM %(track)s_%(slice)s_%(suffix)s")
+            "SELECT length, avgval FROM %(table)s")
         return odict(zip(("length", "avgval"), zip(*data)))
 
 
@@ -301,8 +326,12 @@ class LengthVsPeakValue(DefaultTracker):
     """
 
     def __call__(self, track, slice=None):
+        table = "%s_%s_%s" % (track, slice, self.suffix)
+        if not self.hasTable(table):
+            return
+
         data = self.get(
-            "SELECT length, peakval FROM %(track)s_%(slice)s_%(suffix)s")
+            "SELECT length, peakval FROM %(table)s")
         return odict(zip(("length", "peakval"), zip(*data)))
 
 
