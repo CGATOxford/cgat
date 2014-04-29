@@ -1,5 +1,4 @@
-"""
-bam2wiggle.py - convert bam to wig/bigwig file
+"""bam2wiggle.py - convert bam to wig/bigwig file
 ==============================================
 
 :Author: Andreas Heger
@@ -10,22 +9,26 @@ bam2wiggle.py - convert bam to wig/bigwig file
 Purpose
 -------
 
-convert a bam file to a bigwig or bedgraph file.   
+convert a bam file to a bigwig or bedgraph file.
 
-The script requires the executables :file:`wigToBigWig` and 
-:file:`bedToBigBed` to be in the user's PATH.
+Depending on options chosen, this script either computes the densities
+itself or makes use of faster solutions if possible. The script
+requires the executables :file:`wigToBigWig` and :file:`bedToBigBed`
+to be in the user's PATH.
 
-If no --shift or --extend option are given, the coverage is computed directly on reads. 
-Counting can be performed at a certain resolution.
-The counting currently is not aware of spliced reads, i.e., an inserted intron will be 
-included in the coverage.
+If no --shift or --extend option are given, the coverage is computed
+directly on reads.  Counting can be performed at a certain resolution.
 
-If --shift or --extend are given, the coverage is computed by shifting read
-alignment positions upstream for positive strand reads or downstream for negative
-strand reads and extend them by a fixed amount. 
+The counting currently is not aware of spliced reads, i.e., an
+inserted intron will be included in the coverage.
 
-For RNASEQ data it might be best to run genomeCoverageBed directly on the 
-bam file.
+If --shift or --extend are given, the coverage is computed by shifting
+read alignment positions upstream for positive strand reads or
+downstream for negative strand reads and extend them by a fixed
+amount.
+
+For RNASEQ data it might be best to run genomeCoverageBed directly on
+the bam file.
 
 Usage
 -----
@@ -99,8 +102,10 @@ class SpanWriter(object):
         if self.lastend and start > last_window_end:
             # no overlap, output previous span
             assert self.lastout != last_window_start, \
-                "start=%i, end=%i, laststart=%i, lastend=%i, last_window_start=%i" % \
-                (start, end, self.laststart, self.lastend, last_window_start)
+                ("start=%i, end=%i, laststart=%i, "
+                 "lastend=%i, last_window_start=%i") % \
+                (start, end, self.laststart,
+                 self.lastend, last_window_start)
             self.lastout = last_window_start
             v = self.val / float(self.span)
             outfile.write("%i\t%f\n" % (last_window_start, v))
@@ -127,7 +132,8 @@ class SpanWriter(object):
             self.val = 0
 
             # Output middle windows
-            for x in range(start + self.span - start % self.span, end - self.span, self.span):
+            for x in range(start + self.span - start % self.span,
+                           end - self.span, self.span):
                 assert self.lastout != x
                 outfile.write("%i\t%f\n" % (x, val))
                 self.lastout = x
@@ -145,14 +151,15 @@ class SpanWriter(object):
                 outfile.write("%i\t%f\n" % (end - self.span, val))
                 self.lastend = None
             else:
-                # special case, end ends on window and only single window - already
-                # output as start
+                # special case, end ends on window and only single
+                # window - already output as start
                 self.lastend = None
 
     def flush(self, outfile):
         if self.lastend:
-            outfile.write("%i\t%f\n" % (self.lastend - self.lastend % self.span,
-                                        self.val / (self.lastend % self.span)))
+            outfile.write("%i\t%f\n" %
+                          (self.lastend - self.lastend % self.span,
+                           self.val / (self.lastend % self.span)))
 
 
 def main(argv=None):
@@ -164,34 +171,49 @@ def main(argv=None):
 
     # setup command line parser
     parser = E.OptionParser(
-        version="%prog version: $Id: bam2wiggle.py 2832 2009-11-24 16:11:06Z andreas $", usage=globals()["__doc__"])
+        version="%prog version: $Id$",
+        usage=globals()["__doc__"])
 
-    parser.add_option("-o", "--output-format", dest="output_format", type="choice",
+    parser.add_option("-o", "--output-format", dest="output_format",
+                      type="choice",
                       choices=(
-                          "bedgraph", "wiggle", "bigbed", "bigwig", "bed"),
+                          "bedgraph", "wiggle", "bigbed",
+                          "bigwig", "bed"),
                       help="output format [default=%default]")
 
-    parser.add_option("-b", "--output-filename", dest="output_filename", type="string",
+    parser.add_option("-b", "--output-filename",
+                      dest="output_filename", type="string",
                       help="filename for output [default=%default]")
 
     parser.add_option("-s", "--shift", dest="shift", type="int",
-                      help="shift reads by a certain amount (ChIP-Seq) [%default]")
+                      help="shift reads by a certain amount (ChIP-Seq) "
+                      "[%default]")
 
     parser.add_option("-e", "--extend", dest="extend", type="int",
-                      help="extend reads by a certain amount (ChIP-Seq) [%default]")
+                      help="extend reads by a certain amount "
+                      "(ChIP-Seq) [%default]")
 
     parser.add_option("-p", "--span", dest="span", type="int",
-                      help="span of a window in wiggle tracks [%default]")
+                      help="span of a window in wiggle tracks "
+                      "[%default]")
 
-    parser.add_option("-m", "--merge-pairs", dest="merge_pairs", action="store_true",
-                      help="merge paired-ended reads into a single bed interval [default=%default]. ")
+    parser.add_option("-m", "--merge-pairs", dest="merge_pairs",
+                      action="store_true",
+                      help="merge paired-ended reads into a single "
+                      "bed interval [default=%default]. ")
 
-    parser.add_option("--max-insert-size", dest="max_insert_size", type="int",
-                      help="only merge if insert size less that # bases. 0 turns of this filter [default=%default].")
+    parser.add_option("--max-insert-size", dest="max_insert_size",
+                      type="int",
+                      help="only merge if insert size less that "
+                      "# bases. 0 turns of this filter "
+                      "[default=%default].")
 
-    parser.add_option("--min-insert-size", dest="min_insert_size", type="int",
-                      help="only merge paired-end reads if they are at least # bases apart. "
-                      " 0 turns of this filter. [default=%default]")
+    parser.add_option("--min-insert-size", dest="min_insert_size",
+                      type="int",
+                      help="only merge paired-end reads if they are "
+                      "at least # bases apart. "
+                      "0 turns of this filter. [default=%default]")
+
     parser.set_defaults(
         samfile=None,
         output_format="wiggle",
@@ -264,12 +286,13 @@ def main(argv=None):
         E.info("starting output to stdout")
 
     if options.output_format in ("wiggle", "bigwig"):
-        # wiggle is one-based, so add 1, also step-size is 1, so need to output
-        # all bases
+        # wiggle is one-based, so add 1, also step-size is 1, so need
+        # to output all bases
         if options.span == 1:
             outf = lambda outfile, contig, start, end, val: \
                 outfile.write(
-                    "".join(["%i\t%i\n" % (x, val) for x in xrange(start + 1, end + 1)]))
+                    "".join(["%i\t%i\n" % (x, val)
+                             for x in xrange(start + 1, end + 1)]))
         else:
             outf = SpanWriter(options.span)
 
@@ -285,14 +308,18 @@ def main(argv=None):
         output_filename = os.path.abspath(output_filename)
 
     if options.shift > 0 or options.extend > 0 or options.merge_pairs:
+        # Workflow 1: convert to bed intervals and use bedtools
+        # genomecov to build a coverage file.
+        # Convert to bigwig with UCSC tools bedGraph2BigWig
 
         if options.merge_pairs:
             E.info("merging pairs to temporary file")
-            counter = _bam2bed.merge_pairs(samfile,
-                                           outfile,
-                                           min_insert_size=options.min_insert_size,
-                                           max_insert_size=options.max_insert_size,
-                                           bed_format=3)
+            counter = _bam2bed.merge_pairs(
+                samfile,
+                outfile,
+                min_insert_size=options.min_insert_size,
+                max_insert_size=options.max_insert_size,
+                bed_format=3)
         else:
             # create bed file with shifted tags
             shift, extend = options.shift, options.extend
@@ -321,19 +348,25 @@ def main(argv=None):
         tmpfile_bed = os.path.join(tmpdir, "bed")
         E.info("computing coverage")
         # calculate coverage - format is bedgraph
-        statement = "genomeCoverageBed -bg -i %(tmpfile_wig)s -g %(tmpfile_sizes)s > %(tmpfile_bed)s" % locals()
+        statement = """bedtools genomecov -bg -i %(tmpfile_wig)s
+        -g %(tmpfile_sizes)s > %(tmpfile_bed)s""" % locals()
         E.run(statement)
 
         E.info("converting to bigwig")
-
         tmpfile_sorted = os.path.join(tmpdir, "sorted")
-        statement = "sort -k 1,1 -k2,2n %(tmpfile_bed)s > %(tmpfile_sorted)s; bedGraphToBigWig %(tmpfile_sorted)s %(tmpfile_sizes)s %(output_filename)s" % locals()
+        statement = """sort -k 1,1 -k2,2n %(tmpfile_bed)s
+        > %(tmpfile_sorted)s;
+        bedGraphToBigWig %(tmpfile_sorted)s
+        %(tmpfile_sizes)s
+        %(output_filename)s""" % locals()
         E.run(statement)
 
         shutil.rmtree(tmpdir)
 
     else:
-
+        # Workflow 2: use pysam column iterator to build a
+        # wig file. Then convert to bigwig of bedgraph file
+        # with UCSC tools.
         def column_iter(iterator):
 
             start = None
@@ -360,9 +393,9 @@ def main(argv=None):
 
             for start, end, val in column_iter(samfile.pileup(contig)):
 
-                # patch: there was a problem with bam files and reads overextending at the end.
-                # These are usually Ns, but need to check as otherwise
-                # wigToBigWig fails.
+                # patch: there was a problem with bam files and reads
+                # overextending at the end. These are usually Ns, but
+                # need to check as otherwise wigToBigWig fails.
                 if lcontig <= end:
                     E.warn("read extending beyond contig: %s: %i > %i" %
                            (contig, end, lcontig))

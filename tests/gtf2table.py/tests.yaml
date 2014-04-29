@@ -15,25 +15,25 @@ readpair-fullcounts:
     stdin: testpairs.gtf
     outputs: [stdout]
     references: [test_readpair_fullcounts.tsv.gz]
-    options: --counter=readpair-fullcounts --bam-file=%DIR%/paircounting.bam --min-read-quality=15
+    options: --counter=readpair-fullcounts --bam-file=%DIR%/paircounting.bam --min-mapping-quality=15
 
 readpair-counts:
     stdin: testpairs.gtf
     outputs: [stdout]
     references: [test_readpair_counts.tsv.gz]
-    options: --counter=readpair-counts --bam-file=%DIR%/paircounting.bam --min-read-quality=15
+    options: --counter=readpair-counts --bam-file=%DIR%/paircounting.bam --min-mapping-quality=15
 
 read-fullcounts:
     stdin: testpairs.gtf
     outputs: [stdout]
     references: [test_read_fullcounts.tsv.gz]
-    options: --counter=read-fullcounts --bam-file=%DIR%/paircounting.bam --min-read-quality=15
+    options: --counter=read-fullcounts --bam-file=%DIR%/paircounting.bam --min-mapping-quality=15
 
 read-counts:
     stdin: testpairs.gtf
     outputs: [stdout]
     references: [test_read_counts.tsv.gz]
-    options: --counter=read-counts --bam-file=%DIR%/paircounting.bam --min-read-quality=15
+    options: --counter=read-counts --bam-file=%DIR%/paircounting.bam --min-mapping-quality=15
 
 
       

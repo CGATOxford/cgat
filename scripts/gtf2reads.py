@@ -100,7 +100,10 @@ def getMutatedSequence(sequence, divergence):
 # ------------------------------------------------------------
 
 
-def main():
+def main(argv=None):
+
+    if argv is None:
+        argv = sys.argv
 
     parser = E.OptionParser(
         version="%prog version: $Id: gtf2reads.py 2781 2009-09-10 11:33:14Z andreas $", usage=globals()["__doc__"])
@@ -166,7 +169,7 @@ def main():
         sample_size=0,
     )
 
-    (options, args) = E.Start(parser)
+    (options, args) = E.Start(parser, argv)
 
     assert options.genome_file, "please supply an indexed genome."
 

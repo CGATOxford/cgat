@@ -1,22 +1,33 @@
 .. Test documentation master file, created by
    sphinx-quickstart on Mon Mar 23 15:27:57 2009.
 
-==========
- Contents
-==========
+.. _rnaseqdiffexpressionpipeline:
 
-Contents:
+=======================================
+RNASeq Differential Expression pipeline
+=======================================
+
+Table of Contents
 
 .. toctree::
    :maxdepth: 2
 
-   analysis.rst
-   pipeline.rst
-   usage.rst
+   pipeline/Methods.rst
+   pipeline/Status.rst
+   pipeline/GeneExpression.rst
+   pipeline/TagCounting.rst
+   pipeline/DifferentialGeneExpression.rst
+   pipeline/Genelists.rst
+ 
+.. errorlist::
 
-====================
- Indices and tables
-====================
+.. warninglist::
+
+
+
+  
+Indices and tables
+==================
 
 * :ref:`genindex`
 * :ref:`modindex`

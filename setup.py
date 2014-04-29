@@ -161,7 +161,6 @@ if major==2:
 elif major==3:
     pass
 
-
 import os
 import re
 
@@ -171,11 +170,11 @@ else:
     cgat_packages= find_packages( exclude=["scripts*"])
 
 # rename scripts to CGATScripts
-cgat_packages.append( "CGATScripts" )
+cgat_packages.append("CGATScripts")
 
-cgat_package_dirs = { 'CGAT': 'CGAT',
-                      'CGATScripts' : 'scripts',
-                      'CGATPipelines': 'CGATPipelines' }
+cgat_package_dirs = {'CGAT': 'CGAT',
+                     'CGATScripts': 'scripts',
+                     'CGATPipelines': 'CGATPipelines'}
 
 ##########################################################
 ##########################################################

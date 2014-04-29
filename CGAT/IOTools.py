@@ -237,11 +237,12 @@ def readTable(file,
               truncate=None,
               cumulate_out_of_range=True,
               ):
-    """read a table of values. There probably is a routine for this in Numpy, which
-    I haven't found yet.
+    """read a table of values. There probably is a routine for this in
+    Numpy, which I haven't found yet.
 
     If cumulate_out_of_range is set to true, the terminal bins will
     contain the cumulative values of bins out of range.
+
     """
 
     lines = filter(lambda x: x[0] != "#", file.readlines())

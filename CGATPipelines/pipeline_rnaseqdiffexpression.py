@@ -10,7 +10,7 @@ RNA-Seq Differential expression pipeline
 The RNA-Seq differential expression pipeline performs differential
 expression analysis. It requires three inputs:
 
-   1 one or more genesets in :term:`gtf` formatted files 
+   1 one or more genesets in :term:`gtf` formatted files
    2 mapped reads in :term:`bam` formatted files
    3 design files as :term:`tsv`-separated format
 
@@ -19,14 +19,19 @@ This pipeline works on a single genome.
 Overview
 ========
 
-The pipeline assumes the data derive from multiple tissues/conditions (:term:`experiment`) 
-with one or more biological and/or technical replicates (:term:`replicate`). A :term:`replicate`
-within each :term:`experiment` is a :term:`track`.
-
 The pipeline performs the following:
-   * compute tag counts on an exon, transcript and gene level for each of the genesets
+
+   * compute tag counts on an exon, transcript and gene level for each
+     of the genesets. The following tag counting methods are implemented:
+
+      * featureCounts_
+      * gtf2table
+
    * estimate FPKM using cufflinks for each of the gene sets
-   * perform differential expression analysis. The methods currently implemented are:
+
+   * perform differential expression analysis. The methods currently
+     implemented are:
+
       * DESeq
       * EdgeR
       * Cuffdiff
@@ -39,7 +44,6 @@ the quality of transcript models. For instance, if reads are short
 (35bp) and/or reads are not paired-ended, transcript models will be
 short and truncated.  In these cases it might be better to concentrate
 the analysis on only previously known transcript models.
-
 
 Transcripts are the natural choice to measure expression of. However
 other quantities might be of interest. Some quantities are biological
@@ -58,16 +62,15 @@ isoform
 gene
    Gene level, aggregates several isoform/transcripts
 tss
-   Transcription start site. Aggregate all isoforms starting from the same :term:`tss`.
+   Transcription start site. Aggregate all isoforms starting from the
+   same :term:`tss`.
 cds
-   Coding sequence expression. Ignore reads overlapping non-coding parts of transcripts (UTRs, etc.). Requires
-   annotation of the cds and thus only available for :file:`reference.gtf.gz`.
+   Coding sequence expression. Ignore reads overlapping non-coding
+   parts of transcripts (UTRs, etc.). Requires annotation of the cds
+   and thus only available for :file:`reference.gtf.gz`.
 
 Methods differ in their ability to measure transcription on all
 levels.
- 
-.. todo::
-   add promoters and splicing output
 
 Overprediction of differential expression for low-level expressed
 transcripts with :term:`cuffdiff` is a `known problem
@@ -82,7 +85,7 @@ information how to use CGAT pipelines.
 Configuration
 -------------
 
-The pipeline requires a configured :file:`pipeline.ini` file. 
+The pipeline requires a configured :file:`pipeline.ini` file.
 
 The sphinxreport report requires a :file:`conf.py` and
 :file:`sphinxreport.ini` file (see :ref:`PipelineReporting`). To start
@@ -97,13 +100,9 @@ Reads
 Reads are imported by placing :term:`bam` formatted files are linking
 to files in the :term:`working directory`.
 
-The default file format assumes the following convention:
+The default file format assumes the following convention::
 
-   <sample>-<condition>-<replicate>.<suffix>
-
-``sample`` and ``condition`` make up an :term:`experiment`, while
-``replicate`` denotes the :term:`replicate` within an
-:term:`experiment`.
+   <samplename>.bam
 
 Genesets
 ++++++++
@@ -115,7 +114,8 @@ Design matrices
 +++++++++++++++
 
 Design matrices are imported by placing :term:`tsv` formatted files
-into the :term:`working directory`.  The file has four columns::
+into the :term:`working directory`. A design matrix describes the
+experimental design to test. Each design file has four columns::
 
       track   include group   pair
       CW-CD14-R1      0       CD14    1
@@ -128,7 +128,7 @@ into the :term:`working directory`.  The file has four columns::
       FM-CD4-R4       0       CD4     2
 
 track
-     name of track - should correspond to column header in *infile*
+     name of track - should correspond to a sample name.
 include
      flag to indicate whether or not to include this data
 group
@@ -150,24 +150,17 @@ The pipeline requires the results from
 On top of the default CGAT setup, the pipeline requires the following
 software to be in the path:
 
-+--------------------+-------------------+------------------------------------------------+
-|*Program*           |*Version*          |*Purpose*                                       |
-+--------------------+-------------------+------------------------------------------------+
-|cufflinks_          |>=1.3.0            |transcription levels                            |
-+--------------------+-------------------+------------------------------------------------+
-|samtools            |>=0.1.16           |bam/sam files                                   |
-+--------------------+-------------------+------------------------------------------------+
-|bedtools            |                   |working with intervals                          |
-+--------------------+-------------------+------------------------------------------------+
-|R/DESeq             |                   |differential expression                         |
-+--------------------+-------------------+------------------------------------------------+
-|sra-tools           |                   |extracting reads from .sra files                |
-+--------------------+-------------------+------------------------------------------------+
-|picard              |>=1.42             |bam/sam files. The .jar files need to be in your|
-|                    |                   | CLASSPATH environment variable.                |
-+--------------------+-------------------+------------------------------------------------+
-|bamstats_           |>=1.22             |from CGR, Liverpool                             |
-+--------------------+-------------------+------------------------------------------------+
++-----------+----------+----------------------------+
+|*Program*  |*Version* |*Purpose*                   |
++-----------+----------+----------------------------+
+|cufflinks_ |>=1.3.0   |transcription levels        |
++-----------+----------+----------------------------+
+|samtools   |>=0.1.16  |bam/sam files               |
++-----------+----------+----------------------------+
+|bedtools   |          |working with intervals      |
++-----------+----------+----------------------------+
+|R/DESeq    |          |differential expression     |
++-----------+----------+----------------------------+
 
 Pipeline output
 ===============
@@ -176,7 +169,7 @@ FPKM values
 -----------
 
 The directory :file:`fpkm.dir` contains the output of running
-cufflinks against each set of reads for each geneset.
+cufflinks_ against each set of reads for each geneset.
 
 The syntax of the output files is ``<geneset>_<track>.cufflinks``. The
 FPKM values are uploaded into tables as ``<geneset>_<track>_fpkm`` for
@@ -193,34 +186,35 @@ such as :file:`deseq.dir`, :file:`edger.dir` or :file:`cuffdiff.dir`.
 The syntax of the output files is ``<design>_<geneset>_...``.
 
 :file:`.diff` files:
-    The .diff files are :term:`tsv` formatted tables with the result of the differential
-    expression analysis. 
+    The .diff files are :term:`tsv` formatted tables with the result
+    of the differential expression analysis.
 
     The column names are:
 
-    test_id 
+    test_id
        gene_id/transcript_id/tss_id, etc
-    treatment_name  
+    treatment_name
        name of the treatment
-    control_name    
+    control_name
        name of the control
-    !=_mean  
+    !=_mean
        mean expression value of treatment/control
-    !=_std   
+    !=_std
        standard deviation of treatment/control
-    pvalue  
+    pvalue
        pvalue of test
-    qvalue  
+    qvalue
        qvalue of test (FDR if the threshold was set at pvalue)
-    l2fold  
+    l2fold
        log2 of fold change
-    fold    
+    fold
        fold change, treatment / control
-    significant     
+    significant
        flag: 1 if called significant
     status
-       status of test. Values are 
-       OK: test ok, FAIL: test failed, NOCALL: no test (insufficient data, etc.).
+       status of test. Values are
+       OK: test ok, FAIL: test failed,
+       NOCALL: no test (insufficient data, etc.).
 
 The results are uploaded into the database as tables called
 ``<design>_<geneset>_<method>_<level>_<section>``.
@@ -273,6 +267,19 @@ Glossary
 .. _tophat: http://tophat.cbcb.umd.edu/
 .. _bamstats: http://www.agf.liv.ac.uk/454/sabkea/samStats_13-01-2011
 .. _deseq: http://www-huber.embl.de/users/anders/DESeq/
+.. _featurecounts: http://bioinf.wehi.edu.au/featureCounts/
+
+ChangeLog
+=========
+
+28.03.2014  Andreas Heger
+            added automated selection of paired counting to featureCounts
+            and gtf2table counting.
+
+11.4.2014   Andreas Heger
+            changed workflow. Multiple counters are applied and
+            differential expression is computed on all.
+
 
 Code
 ====
@@ -281,6 +288,7 @@ Code
 
 # load modules
 from ruffus import *
+from ruffus.combinatorics import *
 
 import CGAT.Experiment as E
 import CGAT.Database as Database
@@ -298,7 +306,7 @@ from rpy2.robjects import r as R
 import rpy2.robjects as ro
 
 import CGAT.Expression as Expression
-
+import CGAT.BamTools as BamTools
 import CGATPipelines.PipelineGeneset as PipelineGeneset
 import CGATPipelines.PipelineRnaseq as PipelineRnaseq
 
@@ -365,14 +373,7 @@ def connect():
 #########################################################################
 #########################################################################
 # Definition of targets
-# Differential expression: design vs geneset
-# BE WARNED:
-# TARGETS_DE is overwritten as part of loadAggregateExonLevelReadCounts
 
-TARGETS_DE = [((x, y, glob.glob("*.bam")),
-               "%s_%s.diff" % (P.snip(x, ".tsv"), P.snip(y, ".gtf.gz")))
-              for x, y in itertools.product(glob.glob("design*.tsv"),
-                                            glob.glob("*.gtf.gz"))]
 
 # Expression levels: geneset vs bam files
 TARGETS_FPKM = [(("%s.gtf.gz" % x.asFile(), "%s.bam" % y.asFile()),
@@ -389,18 +390,26 @@ TARGETS_FPKM = [(("%s.gtf.gz" % x.asFile(), "%s.bam" % y.asFile()),
 #########################################################################
 
 
-@files(os.path.join(PARAMS["annotations_dir"], "geneset_all.gtf.gz"), "geneset_mask.gtf")
+@files(os.path.join(PARAMS["annotations_dir"], "geneset_all.gtf.gz"),
+       "geneset_mask.gtf")
 def buildMaskGtf(infile, outfile):
-    '''
-    This takes ensembl annotations (geneset_all.gtf.gz) and writes out all entries that 
-    have a 'source' match to "rRNA" or 'contig' match to "chrM". for use with cufflinks
+    '''This takes ensembl annotations (geneset_all.gtf.gz) and writes out
+    all entries that have a 'source' match to "rRNA" or 'contig' match
+    to "chrM". for use with cufflinks
     '''
     geneset = IOTools.openFile(infile)
     outf = open(outfile, "wb")
     for entry in GTF.iterator(geneset):
-        if re.findall("rRNA", entry.source) or re.findall("chrM", entry.contig):
-            outf.write("\t".join((map(str, [entry.contig, entry.source, entry.feature, entry.start, entry.end, ".", entry.strand, ".", "transcript_id" + " " + '"' + entry.transcript_id + '"' + ";" + " " + "gene_id" + " " + '"' + entry.gene_id + '"'])))
-                       + "\n")
+        if re.findall("rRNA", entry.source) or re.findall(
+                "chrM", entry.contig):
+            outf.write("\t".join((map(
+                str,
+                [entry.contig, entry.source, entry.feature,
+                 entry.start, entry.end, ".", entry.strand,
+                 ".", "transcript_id" + " " + '"' +
+                 entry.transcript_id + '"' + ";" + " " +
+                 "gene_id" + " " + '"' + entry.gene_id + '"'])))
+                + "\n")
 
     outf.close()
 
@@ -498,10 +507,19 @@ def loadCufflinksFPKM(infile, outfile):
 #########################################################################
 #########################################################################
 #########################################################################
+CUFFDIFF_TARGETS_DE = [
+    (
+        (x, y, glob.glob("*.bam")),
+        "%s_%s.tsv.gz" % (P.snip(x, ".tsv"),
+                          P.snip(y, ".gtf.gz")))
+    for x, y in itertools.product(glob.glob("design*.tsv"),
+                                  glob.glob("*.gtf.gz"))
+]
 
 
 @follows(mkdir("cuffdiff.dir"), buildMaskGtf)
-@files([(x, os.path.join("cuffdiff.dir", y)) for x, y in TARGETS_DE])
+@files([(x, os.path.join("cuffdiff.dir", y))
+        for x, y in CUFFDIFF_TARGETS_DE])
 def runCuffdiff(infiles, outfile):
     '''perform differential expression analysis using cuffdiff.'''
 
@@ -532,7 +550,7 @@ def runCuffdiff(infiles, outfile):
 
 
 @transform(runCuffdiff,
-           suffix(".diff"),
+           suffix(".tsv.gz"),
            "_cuffdiff.load")
 def loadCuffdiff(infile, outfile):
     '''load results from differential expression analysis and produce
@@ -540,10 +558,12 @@ def loadCuffdiff(infile, outfile):
 
     Note: converts from ln(fold change) to log2 fold change.
 
-    The cuffdiff output is parsed. 
+    The cuffdiff output is parsed.
 
-    Pairwise comparisons in which one gene is not expressed (fpkm < fpkm_silent)
-    are set to status 'NOCALL'. These transcripts might nevertheless be significant.
+    Pairwise comparisons in which one gene is not expressed (fpkm <
+    fpkm_silent) are set to status 'NOCALL'. These transcripts might
+    nevertheless be significant.
+
     '''
 
     Expression.loadCuffdiff(infile, outfile)
@@ -556,18 +576,29 @@ def loadCuffdiff(infile, outfile):
 def buildExpressionStats(tables, method, outfile, outdir):
     '''build expression summary statistics.
 
-    Creates some diagnostic plots in
+    Creates also diagnostic plots in
 
     <exportdir>/<method> directory.
     '''
-
     dbhandle = sqlite3.connect(PARAMS["database"])
 
     def _split(tablename):
-        #parts = tablename.split("_")
-        design, geneset = re.match(
-            "(.+)_([^_]+)_%s" % method, tablename).groups()
-        return design, geneset
+        # this would be much easier, if feature_counts/gene_counts/etc.
+        # would not contain an underscore.
+        try:
+            design, geneset, counting_method = re.match(
+                "([^_]+)_vs_([^_]+)_(.*)_%s" % method,
+                tablename).groups()
+        except AttributeError:
+            try:
+                design, geneset = re.match(
+                    "([^_]+)_([^_]+)_%s" % method,
+                    tablename).groups()
+                counting_method = "na"
+            except AttributeError:
+                raise ValueError("can't parse tablename %s" % tablename)
+
+        return design, geneset, counting_method
 
         # return re.match("([^_]+)_", tablename ).groups()[0]
 
@@ -575,8 +606,13 @@ def buildExpressionStats(tables, method, outfile, outdir):
 
     outf = IOTools.openFile(outfile, "w")
     outf.write("\t".join(
-        ("design", "geneset", "level", "treatment_name",
-         "control_name", "tested",
+        ("design",
+         "geneset",
+         "level",
+         "treatment_name",
+         "counting_method",
+         "control_name",
+         "tested",
          "\t".join(["status_%s" % x for x in keys_status]),
          "significant",
          "twofold")) + "\n")
@@ -589,38 +625,56 @@ def buildExpressionStats(tables, method, outfile, outdir):
 
             tablename_diff = "%s_%s_diff" % (tablename, level)
             tablename_levels = "%s_%s_diff" % (tablename, level)
-            design, geneset = _split(tablename_diff)
+            design, geneset, counting_method = _split(tablename_diff)
             if tablename_diff not in all_tables:
                 continue
 
             def toDict(vals, l=2):
-                return collections.defaultdict(int, [(tuple(x[:l]), x[l]) for x in vals])
+                return collections.defaultdict(
+                    int,
+                    [(tuple(x[:l]), x[l]) for x in vals])
 
-            tested = toDict(Database.executewait(dbhandle,
-                                                 """SELECT treatment_name, control_name, COUNT(*) FROM %(tablename_diff)s 
-                                    GROUP BY treatment_name,control_name""" % locals() ).fetchall() )
-            status = toDict(Database.executewait(dbhandle,
-                                                 """SELECT treatment_name, control_name, status, COUNT(*) FROM %(tablename_diff)s 
-                                    GROUP BY treatment_name,control_name,status""" % locals() ).fetchall(), 3 )
-            signif = toDict(Database.executewait(dbhandle,
-                                                 """SELECT treatment_name, control_name, COUNT(*) FROM %(tablename_diff)s 
-                                    WHERE significant
-                                    GROUP BY treatment_name,control_name""" % locals() ).fetchall() )
-            fold2 = toDict(Database.executewait(dbhandle,
-                                                """SELECT treatment_name, control_name, COUNT(*) FROM %(tablename_diff)s 
-                                    WHERE (l2fold >= 1 or l2fold <= -1) AND significant
-                                    GROUP BY treatment_name,control_name,significant""" % locals() ).fetchall() )
+            tested = toDict(
+                Database.executewait(
+                    dbhandle,
+                    "SELECT treatment_name, control_name, "
+                    "COUNT(*) FROM %(tablename_diff)s "
+                    "GROUP BY treatment_name,control_name" % locals()
+                    ).fetchall())
+            status = toDict(Database.executewait(
+                dbhandle,
+                "SELECT treatment_name, control_name, status, "
+                "COUNT(*) FROM %(tablename_diff)s "
+                "GROUP BY treatment_name,control_name,status"
+                % locals()).fetchall(), 3)
+            signif = toDict(Database.executewait(
+                dbhandle,
+                "SELECT treatment_name, control_name, "
+                "COUNT(*) FROM %(tablename_diff)s "
+                "WHERE significant "
+                "GROUP BY treatment_name,control_name" % locals()
+                ).fetchall())
+
+            fold2 = toDict(Database.executewait(
+                dbhandle,
+                "SELECT treatment_name, control_name, "
+                "COUNT(*) FROM %(tablename_diff)s "
+                "WHERE (l2fold >= 1 or l2fold <= -1) AND significant "
+                "GROUP BY treatment_name,control_name,significant"
+                % locals()).fetchall())
 
             for treatment_name, control_name in tested.keys():
                 outf.write("\t".join(map(str, (
                     design,
                     geneset,
                     level,
+                    counting_method,
                     treatment_name,
                     control_name,
                     tested[(treatment_name, control_name)],
-                    "\t".join([str(status[(treatment_name, control_name, x)])
-                              for x in keys_status]),
+                    "\t".join(
+                        [str(status[(treatment_name, control_name, x)])
+                         for x in keys_status]),
                     signif[(treatment_name, control_name)],
                     fold2[(treatment_name, control_name)]))) + "\n")
 
@@ -628,11 +682,13 @@ def buildExpressionStats(tables, method, outfile, outdir):
             ###########################################
             ###########################################
             # plot length versus P-Value
-            data = Database.executewait(dbhandle,
-                                        '''SELECT i.sum, pvalue 
-                                 FROM %(tablename_diff)s, 
-                                 %(geneset)s_geneinfo as i 
-                                 WHERE i.gene_id = test_id AND significant''' % locals() ).fetchall()
+            data = Database.executewait(
+                dbhandle,
+                "SELECT i.sum, pvalue "
+                "FROM %(tablename_diff)s, "
+                "%(geneset)s_geneinfo as i "
+                "WHERE i.gene_id = test_id AND "
+                "significant" % locals()).fetchall()
 
             # require at least 10 datapoints - otherwise smooth scatter fails
             if len(data) > 10:
@@ -685,28 +741,32 @@ def buildCuffdiffPlots(infile, outfile):
         tablename_diff = prefix + "_%s_diff" % level
         tablename_levels = prefix + "_%s_levels" % level
 
-        # note that the ordering of EXPERIMENTS and the _diff table needs to be the same
-        # as only one triangle is stored of the pairwise results.
-        # do not plot "undefined" lfold values (where treatment_mean or control_mean = 0)
-        # do not plot lfold values where the confidence bounds contain 0.
+        # note that the ordering of EXPERIMENTS and the _diff table
+        # needs to be the same as only one triangle is stored of the
+        # pairwise results.  do not plot "undefined" lfold values
+        # (where treatment_mean or control_mean = 0) do not plot lfold
+        # values where the confidence bounds contain 0.
         for track1, track2 in itertools.combinations(EXPERIMENTS, 2):
             statement = """
-                        SELECT CASE WHEN d.treatment_mean < d.control_mean THEN d.treatment_mean 
-                                          ELSE d.control_mean END, 
-                               d.l2fold, d.significant
-                        FROM %(tablename_diff)s AS d
-                        WHERE treatment_name = '%(track1)s' AND 
-                              control_name = '%(track2)s' AND 
-                              status = 'OK' AND
-                              treatment_mean > 0 AND 
-                              control_mean > 0 
-                        """ % locals()
+            SELECT CASE WHEN d.treatment_mean < d.control_mean
+            THEN d.treatment_mean
+            ELSE d.control_mean END,
+            d.l2fold, d.significant
+            FROM %(tablename_diff)s AS d
+            WHERE treatment_name = '%(track1)s' AND
+            control_name = '%(track2)s' AND
+            status = 'OK' AND
+            treatment_mean > 0 AND
+            control_mean > 0
+            """ % locals()
 
             data = zip(*Database.executewait(dbhandle, statement))
 
             pngfile = "%(outdir)s/%(geneset)s_%(method)s_%(level)s_%(track1)s_vs_%(track2)s_significance.png" % locals()
-            # ian: Bug fix: moved R.png to after data check so that no plot is started if there is no data
-            #     this was leading to R falling over from too many open devices
+
+            # ian: Bug fix: moved R.png to after data check so that no
+            #     plot is started if there is no data this was leading
+            #     to R falling over from too many open devices
 
             if len(data) == 0:
                 E.warn("no plot for %s - %s -%s vs %s" %
@@ -764,13 +824,12 @@ def buildCodingExons(infile, outfile):
     This set is used for splice-site validation
     '''
 
-    to_cluster = True
     statement = '''
-    zcat %(infile)s 
+    zcat %(infile)s
     | awk '$2 == "protein_coding" && $3 == "CDS"'
-    | perl -p -e "s/CDS/exon/" 
-    | python %(scriptsdir)s/gtf2gtf.py --merge-exons --log=%(outfile)s.log 
-    | gzip 
+    | perl -p -e "s/CDS/exon/"
+    | python %(scriptsdir)s/gtf2gtf.py --merge-exons --log=%(outfile)s.log
+    | gzip
     > %(outfile)s
     '''
     P.run()
@@ -784,19 +843,21 @@ def buildCodingExons(infile, outfile):
            suffix(".gtf.gz"),
            ".unionintersection.bed.gz")
 def buildUnionIntersectionExons(infile, outfile):
-    '''build union/intersection genes according to Bullard et al. (2010) BMC Bioinformatics.
+    '''build union/intersection genes according to
+    Bullard et al. (2010) BMC Bioinformatics.
 
     Builds a single-segment bed file.
     '''
 
-    to_cluster = True
     statement = '''
     gunzip < %(infile)s
-    | python %(scriptsdir)s/gtf2gtf.py --intersect-transcripts --with-utr --log=%(outfile)s.log
-    | python %(scriptsdir)s/gff2gff.py --is-gtf --crop-unique  --log=%(outfile)s.log
+    | python %(scriptsdir)s/gtf2gtf.py --intersect-transcripts
+    --with-utr --log=%(outfile)s.log
+    | python %(scriptsdir)s/gff2gff.py --is-gtf
+    --crop-unique  --log=%(outfile)s.log
     | python %(scriptsdir)s/gff2bed.py --is-gtf --log=%(outfile)s.log
     | sort -k1,1 -k2,2n
-    | gzip 
+    | gzip
     > %(outfile)s
     '''
 
@@ -816,17 +877,19 @@ def buildUnionExons(infile, outfile):
     Exons across all transcripts of a gene are merged.
     They are then intersected between genes to remove any overlap.
 
-    Builds a single-segment bed file.    
+    Builds a single-segment bed file.
     '''
 
-    to_cluster = True
     statement = '''
     gunzip < %(infile)s
-    | python %(scriptsdir)s/gtf2gtf.py --merge-exons --log=%(outfile)s.log
-    | python %(scriptsdir)s/gff2gff.py --is-gtf --crop-unique  --log=%(outfile)s.log
-    | python %(scriptsdir)s/gff2bed.py --is-gtf --log=%(outfile)s.log
+    | python %(scriptsdir)s/gtf2gtf.py
+         --merge-exons --log=%(outfile)s.log
+    | python %(scriptsdir)s/gff2gff.py
+         --is-gtf --crop-unique  --log=%(outfile)s.log
+    | python %(scriptsdir)s/gff2bed.py
+         --is-gtf --log=%(outfile)s.log
     | sort -k1,1 -k2,2n
-    | gzip 
+    | gzip
     > %(outfile)s
     '''
 
@@ -842,33 +905,36 @@ def buildUnionExons(infile, outfile):
          ("gene_counts.dir/%s_vs_%s.tsv.gz" % (x.asFile(), y.asFile())))
         for x, y in itertools.product(TRACKS, GENESETS)])
 def buildGeneLevelReadCounts(infiles, outfile):
-    '''compute coverage of exons with reads.
+    '''compute read counts and coverage of exons with reads.
     '''
 
-    infile, exons = infiles
+    bamfile, exons = infiles
 
-    to_cluster = True
+    if BamTools.isPaired(bamfile):
+        counter = 'readpair-counts'
+    else:
+        counter = 'read-counts'
 
+    # ignore multi-mapping reads
     statement = '''
-    zcat %(exons)s 
-    | python %(scriptsdir)s/gtf2table.py 
+    zcat %(exons)s
+    | python %(scriptsdir)s/gtf2table.py
           --reporter=genes
-          --bam-file=%(infile)s 
+          --bam-file=%(bamfile)s
           --counter=length
           --prefix="exons_"
-          --counter=read-counts 
+          --counter=%(counter)s
           --prefix=""
           --counter=read-coverage
           --prefix=coverage_
+          --min-mapping-quality=%(counting_min_mapping_quality)i
+          --multi-mapping=ignore
+          --log=%(outfile)s.log
     | gzip
     > %(outfile)s
     '''
 
     P.run()
-
-#########################################################################
-#########################################################################
-#########################################################################
 
 
 @transform(buildGeneLevelReadCounts,
@@ -892,14 +958,14 @@ def aggregateGeneLevelReadCounts(infiles, outfile):
     # use anysense unique counts, needs to parameterized
     # for stranded/unstranded rnaseq data
     statement = '''python %(scriptsdir)s/combine_tables.py
-                                            --columns=1
-                                            --take=%(counting_type)s
-                                            --use-file-prefix
-                                            --regex-filename='(.+)_vs.+.tsv.gz'
-                                            --log=%(outfile)s.log
-                                             %(infiles)s 
-                  | sed 's/geneid/gene_id/'
-                  | gzip > %(outfile)s '''
+    --columns=1
+    --take=%(counting_type)s
+    --use-file-prefix
+    --regex-filename='(.+)_vs.+.tsv.gz'
+    --log=%(outfile)s.log
+    %(infiles)s
+    | sed 's/geneid/gene_id/'
+    | gzip > %(outfile)s '''
 
     P.run()
 
@@ -912,12 +978,10 @@ def aggregateGeneLevelReadCounts(infiles, outfile):
            regex(r"(\S+).bam"),
            r"extension_counts.dir/\1.extension_counts.tsv.gz")
 def buildGeneLevelReadExtension(infile, outfile):
-    '''compute extension of cds. 
+    '''compute extension of cds.
 
     Known UTRs are counted as well.
     '''
-
-    to_cluster = True
 
     cds = os.path.join(PARAMS["annotations_dir"],
                        PARAMS_ANNOTATIONS["interface_geneset_cds_gtf"])
@@ -935,16 +999,18 @@ def buildGeneLevelReadExtension(infile, outfile):
         remove_contigs = ""
 
     statement = '''
-    zcat %(cds)s 
+    zcat %(cds)s
     %(remove_contigs)s
-    | python %(scriptsdir)s/gtf2table.py 
+    | python %(scriptsdir)s/gtf2table.py
           --reporter=genes
-          --bam-file=%(infile)s 
+          --bam-file=%(infile)s
           --counter=position
           --counter=read-extension
+          --min-mapping-quality=%(counting_min_mapping_quality)i
           --output-filename-pattern=%(outfile)s.%%s.tsv.gz
           --filename-gff=%(territories)s
           --filename-gff=%(utrs)s
+          --log=%(outfile)s.log
     | gzip
     > %(outfile)s
     '''
@@ -961,8 +1027,7 @@ def buildGeneLevelReadExtension(infile, outfile):
          ("transcript_counts.dir/%s_vs_%s.tsv.gz" % (x.asFile(), y.asFile())))
         for x, y in itertools.product(TRACKS, GENESETS)])
 def buildTranscriptLevelReadCounts(infiles, outfile):
-    '''count reads falling into transcripts of protein coding 
-       gene models.
+    '''count reads falling into transcripts of protein coding gene models.
 
     .. note::
        In paired-end data sets each mate will be counted. Thus
@@ -970,26 +1035,33 @@ def buildTranscriptLevelReadCounts(infiles, outfile):
        counts.
 
     '''
-    infile, geneset = infiles
+    bamfile, geneset = infiles
 
-    to_cluster = True
+    if BamTools.isPaired(bamfile):
+        counter = 'readpair-counts'
+    else:
+        counter = 'read-counts'
 
     statement = '''
-    zcat %(geneset)s 
-    | python %(scriptsdir)s/gtf2table.py 
+    zcat %(geneset)s
+    | python %(scriptsdir)s/gtf2table.py
           --reporter=transcripts
-          --bam-file=%(infile)s 
+          --bam-file=%(bamfile)s
           --counter=length
           --prefix="exons_"
-          --counter=read-counts 
+          --counter=%(counter)s
           --prefix=""
           --counter=read-coverage
           --prefix=coverage_
+          --min-mapping-quality=%(counting_min_mapping_quality)i
+          --multi-mapping=ignore
+          --log=%(outfile)s.log
     | gzip
     > %(outfile)s
     '''
 
     P.run()
+
 #########################################################################
 #########################################################################
 #########################################################################
@@ -1019,38 +1091,14 @@ def buildFeatureCounts(infiles, outfile):
     feature are ignored.
 
     '''
-
-    infile, annotations = infiles
-
-    # featureCounts cannot handle gzipped in or out files
-    outfile = P.snip(outfile, ".gz")
-    annotations_tmp = P.getTempFilename()
-
-    # -p -B specifies count fragments rather than reads, and both
-    # reads must map to the feature
-    if PARAMS['featurecounts_paired'] == "1":
-        paired = "-p -B"
-    else:
-        paired = ""
-
-    job_options = "-pe dedicated %i" % PARAMS['featurecounts_threads']
-
-    statement = '''zcat %(annotations)s > %(annotations_tmp)s; 
-                   checkpoint;
-                   featureCounts %(featurecounts_options)s
-                                 -T %(featurecounts_threads)s
-                                 -s %(featurecounts_strand)s
-                                 -b 
-                                 -a %(annotations_tmp)s
-                                 -o %(outfile)s 
-                                 %(infile)s
-                    > %(outfile)s.log;
-                    checkpoint;
-                    gzip %(outfile)s;
-                    checkpoint;
-                    rm %(annotations_tmp)s '''
-
-    P.run()
+    bamfile, annotations = infiles
+    PipelineRnaseq.runFeatureCounts(
+        annotations,
+        bamfile,
+        outfile,
+        nthreads=PARAMS['featurecounts_threads'],
+        strand=PARAMS['featurecounts_strand'],
+        options=PARAMS['featurecounts_options'])
 
 #########################################################################
 #########################################################################
@@ -1074,32 +1122,34 @@ def aggregateFeatureCounts(infiles, outfile):
                                             --use-file-prefix
                                             --regex-filename='(.+)_vs.+.tsv.gz'
                                             --log=%(outfile)s.log
-                                             %(infiles)s 
+                                             %(infiles)s
                   | sed 's/geneid/gene_id/'
                   | gzip > %(outfile)s '''
 
     P.run()
-
-#########################################################################
-#########################################################################
-#########################################################################
 
 
 @transform(aggregateFeatureCounts,
            suffix(".tsv.gz"),
            ".load")
 def loadFeatureCounts(infile, outfile):
+    '''load individual feature counts into database'''
     P.load(infile, outfile, "--index=gene_id")
 
-#########################################################################
-#########################################################################
-#########################################################################
+
+@merge(buildFeatureCounts,
+       "feature_counts_summary.load")
+def loadFeatureCountsSummary(infiles, outfile):
+    '''load feature counts summary data into table.'''
+    infiles = [P.snip(x, ".gz") + ".summary" for x in infiles]
+    P.mergeAndLoad(infiles, outfile, options="--index=track")
 
 
-@transform(aggregateFeatureCounts,
+@transform((aggregateGeneLevelReadCounts,
+            aggregateFeatureCounts),
            suffix(".tsv.gz"),
            "_stats.tsv")
-def summarizeFeatureCountsAll(infile, outfile):
+def summarizeCounts(infile, outfile):
     '''perform summarization of read counts'''
 
     prefix = P.snip(outfile, ".tsv")
@@ -1112,16 +1162,15 @@ def summarizeFeatureCountsAll(infile, outfile):
               > %(outfile)s'''
     P.run()
 
-#########################################################################
-#########################################################################
-#########################################################################
 
-
-@transform("design*.tsv",
-           regex("(.*).tsv"),
-           add_inputs(aggregateFeatureCounts),
-           r"feature_counts.dir/\1_stats.tsv")
-def summarizeFeatureCountsPerDesign(infiles, outfile):
+@follows(mkdir("designs.dir"))
+@product("design*.tsv",
+         formatter(".*/(?P<PART1>.*).tsv$"),
+         (aggregateGeneLevelReadCounts,
+          aggregateFeatureCounts),
+         formatter(".*/(?P<PART2>.*).tsv.gz$"),
+         "designs.dir/{PART1[0][0]}_vs_{PART2[1][0]}_stats.tsv")
+def summarizeCountsPerDesign(infiles, outfile):
     '''perform summarization of read counts within experiments.
     '''
 
@@ -1141,7 +1190,8 @@ def summarizeFeatureCountsPerDesign(infiles, outfile):
 #########################################################################
 
 
-@transform((summarizeFeatureCountsAll, summarizeFeatureCountsPerDesign),
+@transform((summarizeCounts,
+            summarizeCountsPerDesign),
            suffix("_stats.tsv"), "_stats.load")
 def loadTagCountSummary(infile, outfile):
     '''load windows summary.'''
@@ -1150,58 +1200,54 @@ def loadTagCountSummary(infile, outfile):
            P.snip(outfile, "_stats.load") + "_correlation.load",
            options="--first-column=track")
 
-#########################################################################
-# IMS: switch exon counts to feature counts
-TARGETS_DE = [((x, y, glob.glob("*.bam"),
-                "feature_counts.dir/%s.feature_counts.tsv.gz" %
-                P.snip(y, ".gtf.gz", strip_path=True)),
-               "%s_%s.diff" % (P.snip(x, ".tsv"), P.snip(y, ".gtf.gz")))
-              for x, y in itertools.product(glob.glob("design*.tsv"),
-                                            glob.glob("*.gtf.gz"))]
 
-#########################################################################
-#########################################################################
-#########################################################################
+@follows(loadTagCountSummary,
+         loadFeatureCountsSummary,
+         aggregateGeneLevelReadCounts,
+         aggregateFeatureCounts)
+def counting():
+    pass
 
 
-@follows(mkdir("deseq.dir"), loadFeatureCounts)
-@files([(x, os.path.join("deseq.dir", y)) for x, y in TARGETS_DE])
+@follows(mkdir("deseq.dir"), counting)
+@product("design*.tsv",
+         formatter("(.*).tsv$"),
+         (aggregateGeneLevelReadCounts,
+          aggregateFeatureCounts),
+         formatter("(.*).tsv.gz$"),
+         "deseq.dir/{basename[0][0]}_vs_{basename[1][0]}.gz")
 def runDESeq(infiles, outfile):
     '''perform differential expression analysis using deseq.'''
 
-    design_file, geneset_file, bamfiles, count_file = infiles
+    design_file, count_file = infiles
 
-    track = P.snip(outfile, ".diff")
+    track = P.snip(outfile, ".tsv.gz")
 
     statement = '''python %(scriptsdir)s/runExpression.py
-              --method=deseq
-              --filename-tags=%(count_file)s
-              --filename-design=%(design_file)s
-              --output-filename-pattern=%(track)s_
-              --outfile=%(outfile)s
-              --fdr=%(deseq_fdr)f
-              --deseq-fit-type=%(deseq_fit_type)s
-              --deseq-dispersion-method=%(deseq_dispersion_method)s
-              --deseq-sharing-mode=%(deseq_sharing_mode)s
-              --filter-min-counts-per-row=%(tags_filter_min_counts_per_row)i
-              --filter-min-counts-per-sample=%(tags_filter_min_counts_per_sample)i
-              --filter-percentile-rowsums=%(tags_filter_percentile_rowsums)i
-              > %(outfile)s.log '''
+    --method=deseq
+    --filename-tags=%(count_file)s
+    --filename-design=%(design_file)s
+    --output-filename-pattern=%(track)s_
+    --outfile=%(outfile)s
+    --fdr=%(deseq_fdr)f
+    --deseq-fit-type=%(deseq_fit_type)s
+    --deseq-dispersion-method=%(deseq_dispersion_method)s
+    --deseq-sharing-mode=%(deseq_sharing_mode)s
+    --filter-min-counts-per-row=%(tags_filter_min_counts_per_row)i
+    --filter-min-counts-per-sample=%(tags_filter_min_counts_per_sample)i
+    --filter-percentile-rowsums=%(tags_filter_percentile_rowsums)i
+    > %(outfile)s.log '''
 
     P.run()
 
-#########################################################################
-#########################################################################
-#########################################################################
 
-
-@transform(runDESeq, suffix(".diff"), "_deseq.load")
+@transform(runDESeq, suffix(".tsv.gz"), "_deseq.load")
 def loadDESeq(infile, outfile):
     '''load differential expression results.
     '''
     # add gene level follow convention "<level>_diff"
     tablename = P.toTable(outfile) + "_gene_diff"
-    statement = '''cat %(infile)s
+    statement = '''zcat %(infile)s
             | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --allow-empty
               --index=test_id
@@ -1238,13 +1284,18 @@ def loadDESeqStats(infile, outfile):
 #########################################################################
 
 
-@follows(aggregateFeatureCounts, mkdir("edger.dir"))
-@files([(x, os.path.join("edger.dir", y)) for x, y in TARGETS_DE])
+@follows(counting, mkdir("edger.dir"))
+@product("design*.tsv",
+         formatter("(.*).tsv$"),
+         (aggregateGeneLevelReadCounts,
+          aggregateFeatureCounts),
+         formatter("(.*).tsv.gz$"),
+         "edger.dir/{basename[0][0]}_vs_{basename[1][0]}.gz")
 def runEdgeR(infiles, outfile):
     '''perform differential expression analysis using edger.'''
 
-    design_file, geneset_file, bamfiles, count_file = infiles
-    track = P.snip(outfile, ".diff")
+    design_file, count_file = infiles
+    track = P.snip(outfile, ".tsv.gz")
 
     statement = '''python %(scriptsdir)s/runExpression.py
     --method=edger
@@ -1265,13 +1316,13 @@ def runEdgeR(infiles, outfile):
 #########################################################################
 
 
-@transform(runEdgeR, suffix(".diff"), "_edger.load")
+@transform(runEdgeR, suffix(".tsv.gz"), "_edger.load")
 def loadEdgeR(infile, outfile):
     '''load differential expression results.
     '''
     # add gene level follow convention "<level>_diff"
     tablename = P.toTable(outfile) + "_gene_diff"
-    statement = '''cat %(infile)s
+    statement = '''zcat %(infile)s
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
     --allow-empty
     --index=test_id
@@ -1279,10 +1330,6 @@ def loadEdgeR(infile, outfile):
     > %(outfile)s
     '''
     P.run()
-
-#########################################################################
-#########################################################################
-#########################################################################
 
 
 @follows(loadGeneSetGeneInformation)
@@ -1292,20 +1339,12 @@ def buildEdgeRStats(infiles, outfile):
     outdir = os.path.dirname(infiles[0])
     buildExpressionStats(tablenames, "edger", outfile, outdir)
 
-#########################################################################
-#########################################################################
-#########################################################################
-
 
 @transform(buildEdgeRStats,
            suffix(".tsv"),
            ".load")
 def loadEdgeRStats(infile, outfile):
     P.load(infile, outfile)
-
-###################################################################
-###################################################################
-###################################################################
 
 
 @follows(loadCufflinks,
@@ -1318,14 +1357,13 @@ mapToTargets = {'cuffdiff': loadCuffdiffStats,
                 'deseq': loadDESeqStats,
                 'edger': loadEdgeRStats,
                 }
-TARGETS_DIFFEXPRESSION = [mapToTargets[x] for x in P.asList(PARAMS["methods"])]
+TARGETS_DIFFEXPRESSION = [mapToTargets[x] for x in
+                          P.asList(PARAMS["methods"])]
 
 
 @follows(*TARGETS_DIFFEXPRESSION)
 def diff_expression():
     pass
-
-#########################################################################
 
 
 @follows(diff_expression)
@@ -1336,27 +1374,29 @@ def loadDEStats(infiles, outfile):
                          missing_value=0,
                          regex_filename="(.*)_stats.tsv")
 
-###################################################################
-###################################################################
-###################################################################
 
-
-@jobs_limit(1, "R")
-@follows(mkdir("tagplots.dir"), aggregateFeatureCounts)
-@files([(x, os.path.join("tagplots.dir", y)) for x, y in TARGETS_DE])
-def plotRNASEQTagData(infiles, outfile):
+@follows(mkdir("tagplots.dir"))
+@product("design*.tsv",
+         formatter("(.*).tsv$"),
+         (aggregateGeneLevelReadCounts,
+          aggregateFeatureCounts),
+         formatter("(.*).tsv.gz$"),
+         "tagplots.dir/{basename[0][0]}_vs_{basename[1][0]}")
+def plotTagStats(infiles, outfile):
     '''perform differential expression analysis using deseq.'''
 
-    design_file = infiles[0]
-    geneset_file = infiles[1]
-    bamfiles = infiles[2]
+    design_file, counts_file = infiles
 
-    # IMS: now running on feature counts
-    infile = os.path.join("feature_counts.dir", P.snip(
-        geneset_file, ".gtf.gz") + ".feature_counts.tsv.gz")
-    Expression.plotTagStats(infile, design_file, outfile)
-
-    P.touch(outfile)
+    statement = '''
+    python %(scriptsdir)s/runExpression.py
+    --log=%(outfile)s.log
+    --filename-tags=%(counts_file)s
+    --filename-design=%(design_file)s
+    --method=plottagstats
+    --output-filename-pattern=%(outfile)s
+    > %(outfile)s
+    '''
+    P.run()
 
 mapToQCTargets = {'cuffdiff': runCuffdiff,
                   'deseq': runDESeq,
@@ -1367,9 +1407,9 @@ QCTARGETS = [mapToQCTargets[x] for x in P.asList(PARAMS["methods"])]
 
 @jobs_limit(1, "R")
 @transform(QCTARGETS,
-           suffix(".diff"),
+           suffix(".tsv.gz"),
            ".plots")
-def plotRNASEQDEData(infile, outfile):
+def plotDETagStats(infile, outfile):
     '''plot differential expression stats'''
     Expression.plotDETagStats(infile, outfile)
     P.touch(outfile)
@@ -1379,7 +1419,8 @@ def plotRNASEQDEData(infile, outfile):
 ###################################################################
 
 
-@follows(plotRNASEQTagData, plotRNASEQDEData,
+@follows(plotTagStats,
+         plotDETagStats,
          loadTagCountSummary,
          loadDEStats)
 def qc():
@@ -1418,50 +1459,13 @@ def update_report():
     E.info("updating documentation")
     P.run_report(clean=False)
 
-###################################################################
-###################################################################
-###################################################################
 
-
-@follows(mkdir("%s/bamfiles" % PARAMS["web_dir"]),
-         mkdir("%s/genesets" % PARAMS["web_dir"]),
-         mkdir("%s/classification" % PARAMS["web_dir"]),
-         mkdir("%s/differential_expression" % PARAMS["web_dir"]),
-         update_report,
-         )
+@follows(update_report)
 def publish():
     '''publish files.'''
     # publish web pages
     P.publish_report()
 
-    # publish additional data
-    web_dir = PARAMS["web_dir"]
-    project_id = P.getProjectId()
-
-    # directory, files
-    exportfiles = {
-        "bamfiles": glob.glob("*.bam") + glob.glob("*.bam.bai"),
-        "genesets": ["lincrna.gtf.gz", "abinitio.gtf.gz"],
-        "classification": glob.glob("*.class.tsv.gz"),
-        "differential_expression": glob.glob("*.cuffdiff.dir"),
-    }
-
-    bams = []
-
-    for targetdir, filenames in exportfiles.iteritems():
-        for src in filenames:
-            dest = "%s/%s/%s" % (web_dir, targetdir, src)
-            if dest.endswith(".bam"):
-                bams.append(dest)
-            dest = os.path.abspath(dest)
-            if not os.path.exists(dest):
-                os.symlink(os.path.abspath(src), dest)
-
-    # output ucsc links
-    for bam in bams:
-        filename = os.path.basename(bam)
-        track = P.snip(filename, ".bam")
-        print """track type=bam name="%(track)s" bigDataUrl=http://www.cgat.org/downloads/%(project_id)s/bamfiles/%(filename)s""" % locals()
 
 if __name__ == "__main__":
     sys.exit(P.main(sys.argv))

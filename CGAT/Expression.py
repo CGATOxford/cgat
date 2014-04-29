@@ -161,7 +161,8 @@ class WelchsTTest(object):
                                         alpha=0.05)
             except ValueError:
                 E.warn(
-                    "expressionDifferences: standard deviations are 0 for probeset %s - skipped" % probeset)
+                    "expressionDifferences: standard deviations are 0 for "
+                    "probeset %s - skipped" % probeset)
                 nskipped += 1
                 continue
 
@@ -229,7 +230,7 @@ class SAMR(object):
         R.assign("probesets", probesets)
 
         data = R(
-            '''data=list( x=x, y=y, geneid=1:length(probesets), genenames=probesets, logged2=TRUE)''' )
+            '''data=list( x=x, y=y, geneid=1:length(probesets), genenames=probesets, logged2=TRUE)''')
         result = R(
             '''samr.obj<-samr(data,  resp.type="Two class unpaired", nperms=100)''')
         R('''plot(samr.obj, delta=.4)''')
@@ -306,7 +307,8 @@ class SAM(object):
                            "var.equal": True})
         else:
             kwargs.update({"control":
-                           R('''samControl( n.delta = %(ndelta)s ) ''' % locals()) },)
+                           R('''samControl( n.delta = %(ndelta)s ) ''' %
+                             locals())},)
 
         # the option B needs to be not set if wilc.stat is chosen
 
@@ -332,7 +334,8 @@ class SAM(object):
         R.assign("a", a)
 
         fdr_data = collections.namedtuple("sam_fdr", (
-            "delta", "p0", "false", "significant", "fdr", "cutlow", "cutup", "j2", "j1"))
+            "delta", "p0", "false", "significant", "fdr", "cutlow",
+            "cutup", "j2", "j1"))
         cutoff_data = collections.namedtuple(
             "sam_cutoff", ("delta", "significant", "fdr"))
         gene_data = collections.namedtuple(
@@ -376,8 +379,8 @@ class SAM(object):
             raise ValueError("either supply ngenes or fdr")
 
         # collect (unadjusted) p-values and qvalues for all probesets
-        pvalues = dict( zip( probesets, R('''a@p.value''') ) )
-        qvalues = dict( zip( probesets, R('''a@q.value''') ) )
+        pvalues = dict(zip(probesets, R('''a@p.value''')))
+        qvalues = dict(zip(probesets, R('''a@q.value''')))
 
         if pattern:
             outfile = pattern % "sam.pdf"
@@ -399,20 +402,22 @@ class SAM(object):
             R.assign("summary", summary)
 
             significant_genes = set(
-                [probesets[int(x) - 1] for x in R('''summary@row.sig.genes''')] )
+                [probesets[int(x) - 1] for x
+                 in R('''summary@row.sig.genes''')])
             # E.debug( "significant genes=%s" % str(significant_genes))
 
             r_result = zip(*_totable(summary.do_slot('mat.sig')))
 
             if len(r_result) > 0:
 
-                assert len(r_result[0]) == 6, "expected six columns from siggenes module, got: %s" % len(
-                    r_result[0])
+                assert len(r_result[0]) == 6, \
+                    "expected six columns from siggenes module, got: %s" % \
+                    len(r_result[0])
 
                 for x in r_result:
                     if x[4] > fdr:
-                        E.warn("%s has qvalue (%f) larger than cutoff, but is significant significant." % (
-                            str(x), x[4]))
+                        E.warn("%s has qvalue (%f) larger than cutoff, but "
+                               "is significant significant." % (str(x), x[4]))
 
                 # except TypeError:
                 # only a single value
@@ -451,6 +456,8 @@ class SAM(object):
                                                      pvalue,
                                                      qvalue,
                                                      mean1 - mean2,
+                                                     math.pow(
+                                                         2, mean1 - mean2),
                                                      math.pow(
                                                          2, mean1 - mean2),
                                                      significant,
@@ -521,7 +528,7 @@ def loadTagData(tags_filename, design_filename):
 
     # Ensure pheno rows match count columns
     pheno = R(
-        '''pheno2 = pheno[match(colnames(counts_table),pheno[,1]),,drop=FALSE]''' )
+        '''pheno2 = pheno[match(colnames(counts_table),pheno[,1]),,drop=FALSE]''')
     missing = R('''colnames(counts_table)[is.na(pheno2)][1]''')
     if missing:
         E.warn("missing samples from design file are ignored: %s" % missing)
@@ -553,11 +560,11 @@ def filterTagData(filter_min_counts_per_row=1,
     '''
 
     # Remove windows with no data
-    R( '''max_counts = apply(countsTable,1,max)''' )
-    R( '''countsTable = countsTable[max_counts>%i,]''' %
-       filter_min_counts_per_row)
-    E.info( "removed %i empty rows" %
-            tuple( R('''sum(max_counts == 0)''')))
+    R('''max_counts = apply(countsTable,1,max)''')
+    R('''countsTable = countsTable[max_counts>%i,]''' %
+      filter_min_counts_per_row)
+    E.info("removed %i empty rows" %
+           tuple(R('''sum(max_counts == 0)''')))
     observations, samples = tuple(R('''dim(countsTable)'''))
     E.info("trimmed data: %i observations for %i samples" %
            (observations, samples))
@@ -586,15 +593,16 @@ def filterTagData(filter_min_counts_per_row=1,
     # percentile filtering
     if filter_percentile_rowsums > 0:
         percentile = float(filter_percentile_rowsums) / 100.0
-        R( '''sum_counts = rowSums( countsTable )''')
-        R( '''take = (sum_counts > quantile( sum_counts, probs = %(percentile)f))''' %
-           locals())
+        R('''sum_counts = rowSums( countsTable )''')
+        R('''take = (sum_counts > quantile( sum_counts, probs = %(percentile)f))''' %
+          locals())
         discard, keep = R('''table( take )''')
-        E.info("percentile filtering at level %f: keep=%i, discard=%i" % (filter_percentile_rowsums,
-                                                                          keep, discard))
+        E.info("percentile filtering at level %f: keep=%i, discard=%i" %
+               (filter_percentile_rowsums,
+                keep, discard))
         R('''countsTable = countsTable[take,]''')
 
-    observations, samples = tuple( R('''dim(countsTable)'''))
+    observations, samples = tuple(R('''dim(countsTable)'''))
 
     return observations, samples
 
@@ -657,7 +665,6 @@ def plotPairs():
             text(x, y, txt, cex = cex);
             }
        ''')
-    #R('''pairs(countsTable, lower.panel = panel.pearson, pch=".", log="xy")''')
     R('''pairs(countsTable,
                lower.panel = panel.pearson,
                pch=".",
@@ -668,16 +675,29 @@ def plotPairs():
 def plotPCA():
     '''plot a PCA plot from countsTable.'''
 
-    R('''library( RColorBrewer )''')
-    R('''library( lattice )''')
+    R('''library(ggplot2)''')
     R('''pca = prcomp(t(countsTable))''')
-    R('''if (length(groups) >= 3) colours = brewer.pal(nlevels(groups), "Paired") else colours = c("green", "blue")''')
-    R('''xyplot( PC2 ~ PC1, data = as.data.frame(pca$x ), 
-                 groups=groups, col = colours, 
-                 main = draw.key(key = list(rect = list(col = colours), text = list(levels(groups)))),
-                 cex=2,
-                 pch=16,
-                 )''')
+    R('''p1 = ggplot(
+    as.data.frame(pca$x),
+    aes(x=PC1, y=PC2, colour=groups, label=rownames(pca$x))) \
+    + geom_text(size=4, vjust=1) \
+    + geom_point()''')
+    R('''p2 = qplot(x=PC1, y=PC3,
+    data = as.data.frame(pca$x),
+    label=rownames(pca$x),
+    colour=groups)''')
+    R('''p3 = qplot(x=PC2, y=PC3,
+    data = as.data.frame(pca$x),
+    label=rownames(pca$x),
+    colour=groups)''')
+    # TODO: plot all in a multi-plot with proper scale
+    # the following squishes the plots
+    # R('''source('%s')''' %
+    #   os.path.join(os.path.dirname(E.__file__),
+    #                "../R",
+    #                "multiplot.R"))
+    # R('''multiplot(p1, p2, p3, cols=2)''')
+    R('''plot(p1)''')
 
 
 def runEdgeR(outfile,
@@ -691,15 +711,17 @@ def runEdgeR(outfile,
 
     Results are stored in *outfile* and files prefixed by *outfile_prefix*.
 
-    The dispersion is usually measuered from replicates. If there are no 
+    The dispersion is usually measuered from replicates. If there are no
     replicates, you need to set the *dispersion* explicitely.
 
     See page 13 of the EdgeR user guide::
 
-       2. Simply pick a reasonable dispersion value, based on your experience with similar data,
-       and use that. Although subjective, this is still more defensible than assuming Poisson
-       variation. Typical values are dispersion=0.4 for human data, dispersion=0.1 for data
-       on genetically identical model organisms or dispersion=0.01 for technical replicates.
+       2. Simply pick a reasonable dispersion value, based on your
+       experience with similar data, and use that. Although
+       subjective, this is still more defensible than assuming Poisson
+       variation. Typical values are dispersion=0.4 for human data,
+       dispersion=0.1 for data on genetically identical model
+       organisms or dispersion=0.01 for technical replicates.
 
     '''
 
@@ -718,16 +740,16 @@ def runEdgeR(outfile,
 
     if has_pairs:
         # output difference between groups
-        R.png( '''%(outfile_prefix)sbalance_groups.png''' % locals() )
+        R.png('''%(outfile_prefix)sbalance_groups.png''' % locals())
         first = True
         for g1, g2 in itertools.combinations(groups, 2):
-            R('''a = rowSums( countsTable[groups == '%s'] ) ''' % g1 )
-            R('''b = rowSums( countsTable[groups == '%s'] ) ''' % g2 )
+            R('''a = rowSums( countsTable[groups == '%s'] ) ''' % g1)
+            R('''b = rowSums( countsTable[groups == '%s'] ) ''' % g2)
             if first:
-                R('''plot( cumsum( sort(a - b) ), type = 'l') ''' )
+                R('''plot( cumsum( sort(a - b) ), type = 'l') ''')
                 first = False
             else:
-                R('''lines( cumsum( sort(a - b) )) ''' )
+                R('''lines( cumsum( sort(a - b) )) ''')
 
         R['dev.off']()
 
@@ -744,14 +766,14 @@ def runEdgeR(outfile,
                 # print R('''colnames( countsTable) ''')
                 # print R(''' pairs=='%s' ''' % pair)
                 # print R(''' groups=='%s' ''' % g1)
-                R('''a = rowSums( countsTable[pairs == '%s' & groups == '%s'] ) ''' % (
+                R('''a = rowSums( countsTable[pairs == '%s' & groups == '%s'])''' % (
                     pair, g1))
-                R('''b = rowSums( countsTable[pairs == '%s' & groups == '%s'] ) ''' % (
+                R('''b = rowSums( countsTable[pairs == '%s' & groups == '%s'])''' % (
                     pair, g2))
-                R('''c = cumsum( sort(a - b) )''' )
+                R('''c = cumsum( sort(a - b) )''')
                 R('''c = c - min(c)''')
                 if first:
-                    data = R( '''d = data.frame( %s = c)''' % key)
+                    data = R('''d = data.frame( %s = c)''' % key)
                     first = False
                 else:
                     R('''d$%s = c''' % key)
@@ -770,14 +792,14 @@ def runEdgeR(outfile,
             geom_line(aes(x=genes,y=value,group=comparison,color=comparison))''')
 
         try:
-            R.ggsave( '''%(outfile_prefix)sbalance_pairs.png''' % locals() )
+            R.ggsave('''%(outfile_prefix)sbalance_pairs.png''' % locals())
             R['dev.off']()
         except rpy2.rinterface.RRuntimeError, msg:
             E.warn("could not plot: %s" % msg)
 
     # build DGEList object
     # ignore message: "Calculating library sizes from column totals"
-    R( '''countsTable = suppressMessages(DGEList( countsTable, group = groups ))''' )
+    R('''countsTable = suppressMessages(DGEList( countsTable, group = groups ))''')
 
     # Relevel groups to make the results predictable - IMS
     if not ref_group is None:
@@ -790,11 +812,11 @@ def runEdgeR(outfile,
 
     # calculate normalisation factors
     E.info("calculating normalization factors")
-    R('''countsTable = calcNormFactors( countsTable )''' )
+    R('''countsTable = calcNormFactors( countsTable )''')
     E.info("output")
 
     # output MDS plot
-    R.png( '''%(outfile_prefix)smds.png''' % locals() )
+    R.png('''%(outfile_prefix)smds.png''' % locals())
     try:
         R('''plotMDS( countsTable )''')
     except rpy2.rinterface.RRuntimeError, msg:
@@ -803,9 +825,9 @@ def runEdgeR(outfile,
 
     # build design matrix
     if has_pairs:
-        R('''design = model.matrix( ~pairs + countsTable$samples$group )''' )
+        R('''design = model.matrix( ~pairs + countsTable$samples$group )''')
     else:
-        R('''design = model.matrix( ~countsTable$samples$group )''' )
+        R('''design = model.matrix( ~countsTable$samples$group )''')
 
     # R('''rownames(design) = rownames( countsTable$samples )''')
     # R('''colnames(design)[length(colnames(design))] = "CD4" ''' )
@@ -827,7 +849,7 @@ def runEdgeR(outfile,
           dispersion)
 
     # perform LR test
-    R('''lrt = glmLRT(fit)''' )
+    R('''lrt = glmLRT(fit)''')
 
     E.info("Generating output")
 
@@ -836,21 +858,21 @@ def runEdgeR(outfile,
     R('''countsTable.cpm <- cpm(countsTable,  normalized.lib.sizes=TRUE)''')
     R('''countsTable.cpm.melt <- melt(countsTable.cpm)''')
     R('''names(countsTable.cpm.melt) <- c("id","sample","ncpm")''')
-    R('''gz = gzfile( "%(outfile_prefix)scpm.tsv.gz", "w" )''' % locals() )
-    R('''write.table(countsTable.cpm.melt, file=gz, sep = "\t", row.names=FALSE, quote=FALSE)''' )
+    R('''gz = gzfile( "%(outfile_prefix)scpm.tsv.gz", "w" )''' % locals())
+    R('''write.table(countsTable.cpm.melt, file=gz, sep = "\t", row.names=FALSE, quote=FALSE)''')
     R('''close( gz )''')
 
     # compute adjusted P-Values
-    R('''padj = p.adjust( lrt$table$PValue, 'BH' )''' )
+    R('''padj = p.adjust( lrt$table$PValue, 'BH' )''')
 
     isna = R["is.na"]
 
     rtype = collections.namedtuple("rtype", "lfold logCPM LR pvalue")
 
     # output differences between pairs
-    R.png( '''%(outfile_prefix)smaplot.png''' % locals() )
-    R('''plotSmear( countsTable, pair=c('%s') )''' % "','".join( groups) )
-    R('''abline( h = c(-2,2), col = 'dodgerblue') ''' )
+    R.png('''%(outfile_prefix)smaplot.png''' % locals())
+    R('''plotSmear( countsTable, pair=c('%s') )''' % "','".join(groups))
+    R('''abline( h = c(-2,2), col = 'dodgerblue') ''')
     R['dev.off']()
 
     # I am assuming that logFC is the base 2 logarithm foldchange.
@@ -1038,7 +1060,8 @@ def deseqParseResults(control_name, treatment_name, fdr, vsd=False):
 
     retrieve deseq results from object 'res' in R namespace.
 
-    The 'res' object is a dataframe with the following columns (from the DESeq manual):
+    The 'res' object is a dataframe with the following columns (from the
+    DESeq manual):
 
     id: The ID of the observable, taken from the row names of the
           counts slots.
@@ -1424,12 +1447,8 @@ def readDesignFile(design_file):
             design[track] = Design._make((int(include), group, pair))
     return design
 
-#########################################################################
-#########################################################################
-#########################################################################
 
-
-def plotTagStats(infile, design_file, outfile):
+def plotTagStats(infile, design_file, outfile_prefix):
     '''provide summary plots for tag data.'''
 
     loadTagData(infile, design_file)
@@ -1452,21 +1471,24 @@ def plotTagStats(infile, design_file, outfile):
     R('''library('reshape')''')
 
     R('''d = melt( log10(countsTable + 1), variable_name = 'sample' )''')
+
+    # Note that ggsave does not work if there is
+    # X display.
+    R.png(outfile_prefix + ".densities.png")
     R('''gp = ggplot(d)''')
     R('''pp = gp + geom_density(aes(x=value, group=sample,
     color=sample, fill=sample), alpha=I(1/3))''')
-
-    R.ggsave(outfile + ".densities.png")
+    R('''plot(pp)''')
     R['dev.off']()
 
+    R.png(outfile_prefix + ".boxplots.png")
     R('''gp = ggplot(d)''')
     R('''pp = gp +
     geom_boxplot(aes(x=sample,y=value,color=sample,fill=sample),
     size=0.3,
     alpha=I(1/3)) +
     theme(axis.text.x = theme_text( angle=90, hjust=1, size=8 ) )''')
-
-    R.ggsave(outfile + ".boxplots.png")
+    R('''plot(pp)''')
     R['dev.off']()
 
 #########################################################################
@@ -1474,7 +1496,7 @@ def plotTagStats(infile, design_file, outfile):
 #########################################################################
 
 
-def plotDETagStats(infile, outfile):
+def plotDETagStats(infile, outfile_prefix):
     '''provide summary plots for tag data.
 
     Stratify boxplots and densities according to differential expression calls.
@@ -1484,22 +1506,22 @@ def plotDETagStats(infile, outfile):
 
     R('''library('ggplot2')''')
     R('''library('grid')''')
-    R('''data = read.table( '%s', header = TRUE, row.names=1 )''' % infile )
+    R('''data = read.table( '%s', header = TRUE, row.names=1 )''' % infile)
 
     R(''' gp = ggplot(data)''')
-    R('''a = gp + 
-        geom_density(aes(x=log10(treatment_mean+1),group=factor(significant),
-                                         color='factor(significant)',fill='factor(significant)'),alpha=I(1/3))''')
+    R('''a = gp + \
+    geom_density(aes(x=log10(treatment_mean+1),group=factor(significant),
+    color='factor(significant)',fill='factor(significant)'),alpha=I(1/3))''')
 
-    R('''b = gp + 
-        geom_density(aes(x=log10(control_mean+1),group=factor(significant),
-                                         color=factor(significant),fill=factor(significant)),alpha=I(1/3))''')
+    R('''b = gp + \
+    geom_density(aes(x=log10(control_mean+1),group=factor(significant),
+    color=factor(significant),fill=factor(significant)),alpha=I(1/3))''')
 
-    fn = outfile + ".densities.png"
+    fn = outfile_prefix + ".densities.png"
     R.png(fn)
     try:
         R('''grid.newpage()''')
-        R.pushViewport(R.viewport( layout=R('''grid.layout''')(2, 1)))
+        R.pushViewport(R.viewport(layout=R('''grid.layout''')(2, 1)))
         R('''print( a, vp = viewport( layout.pos.row = 1, layout.pos.col = 1 ) )''')
         R('''print( b, vp = viewport( layout.pos.row = 2, layout.pos.col = 1 ) )''')
     except rpy2.rinterface.RRuntimeError:
@@ -1507,17 +1529,17 @@ def plotDETagStats(infile, outfile):
     R['dev.off']()
 
     R('''grid.newpage()''')
-    R.pushViewport(R.viewport( layout=R('''grid.layout''')(2, 1)))
+    R.pushViewport(R.viewport(layout=R('''grid.layout''')(2, 1)))
 
-    R(''' gp = ggplot(data)''')
-    R('''a = gp + 
+    R('''gp = ggplot(data)''')
+    R('''a = gp + \
         geom_boxplot(aes(x=factor(significant), y=log10(treatment_mean+1),
                                          color=factor(significant),fill=factor(significant)),
                              size=0.3,
                              alpha=I(1/3))''')
 
-    R('''b = gp + 
-      geom_boxplot(aes(x=factor(significant), 
+    R('''b = gp + \
+      geom_boxplot(aes(x=factor(significant),
                        y=log10(control_mean+1),
                          color=factor(significant),
                          fill=factor(significant)),
@@ -1525,11 +1547,11 @@ def plotDETagStats(infile, outfile):
                          alpha=I(1/3)) +\
         opts( axis.text.x = theme_text( angle=90, hjust=1, size=8 ) )''')
 
-    fn = outfile + ".boxplots.png"
+    fn = outfile_prefix + ".boxplots.png"
     R.png(fn)
     try:
-        R('''print( a, vp = viewport( layout.pos.row = 1, layout.pos.col = 1 ) )''')
-        R('''print( b, vp = viewport( layout.pos.row = 2, layout.pos.col = 1 ) )''')
+        R('''print(a, vp = viewport(layout.pos.row = 1, layout.pos.col = 1))''')
+        R('''print(b, vp = viewport(layout.pos.row = 2, layout.pos.col = 1))''')
     except rpy2.rinterface.RRuntimeError:
         E.warn("could not create %s" % fn)
     R['dev.off']()
@@ -1539,10 +1561,11 @@ def parseCuffdiff(infile):
     '''parse a cuffdiff .diff output file.'''
     min_fpkm = PARAMS["cuffdiff_fpkm_expressed"]
 
-    CuffdiffResult = collections.namedtuple("CuffdiffResult",
-                                            "test_id gene_id gene  locus   sample_1 sample_2  "
-                                            " status  value_1 value_2 l2fold  "
-                                            "test_stat p_value q_value significant ")
+    CuffdiffResult = collections.namedtuple(
+        "CuffdiffResult",
+        "test_id gene_id gene  locus   sample_1 sample_2  "
+        " status  value_1 value_2 l2fold  "
+        "test_stat p_value q_value significant ")
 
     results = []
 
@@ -1552,7 +1575,8 @@ def parseCuffdiff(infile):
         data = CuffdiffResult._make(line[:-1].split("\t"))
         status = data.status
         significant = [0, 1][data.significant == "yes"]
-        if status == "OK" and (float(data.value_1) < min_fpkm or float(data.value_2) < min_fpkm):
+        if status == "OK" and (float(data.value_1) < min_fpkm or
+                               float(data.value_2) < min_fpkm):
             status = "NOCALL"
 
         try:
@@ -1665,7 +1689,7 @@ def loadCuffdiff(infile, outfile):
 
     #IMS: First read in lookup table for CuffDiff/Pipeline sample name
     #conversion
-    inf = IOTools.openFile(os.path.join(indir, "read_groups.info"))
+    inf = IOTools.openFile(os.path.join(indir, "read_groups.info.gz"))
     inf.readline()
     sample_lookup = {}
 
@@ -1843,7 +1867,8 @@ def runCuffdiff(bamfiles,
     # Error is:
     # BAM record error: found spliced alignment without XS attribute
     # AH: compress output in outdir
-    statement = '''date > %(outfile)s.log; hostname >> %(outfile)s.log;
+    statement = '''date > %(outfile)s.log;
+    hostname >> %(outfile)s.log;
     cuffdiff --output-dir %(outdir)s
              --verbose
              --num-threads %(threads)i
@@ -1857,7 +1882,7 @@ def runCuffdiff(bamfiles,
     | grep -v 'BAM record error'
     >> %(outfile)s.log;
     checkpoint;
-    gzip %(outdir)s/*;
+    gzip -f %(outdir)s/*;
     checkpoint;
     date >> %(outfile)s.log;
     '''
@@ -2022,7 +2047,7 @@ def outputTagSummary(filename_tags,
     # build correlation
     R('''correlations = cor(countsTable)''')
     outfilename = output_filename_pattern + "correlation.tsv"
-    E.info("outputting sample correlations to %s" % outfilename)
+    E.info("outputting sample correlations table to %s" % outfilename)
     R('''write.table(correlations, file='%(outfilename)s',
     sep="\t",
     row.names=TRUE,
@@ -2031,18 +2056,21 @@ def outputTagSummary(filename_tags,
 
     # output scatter plots
     outfilename = output_filename_pattern + "scatter.png"
+    E.info("outputting scatter plots to %s" % outfilename)
     R.png(outfilename, width=960, height=960)
     plotPairs()
     R['dev.off']()
 
     # output heatmap based on correlations
     outfilename = output_filename_pattern + "heatmap.svg"
+    E.info("outputting correlation heatmap to %s" % outfilename)
     R.svg(outfilename)
     plotCorrelationHeatmap(method="correlation")
     R['dev.off']()
 
     # output PCA
     outfilename = output_filename_pattern + "pca.svg"
+    E.info("outputting PCA plot to %s" % outfilename)
     R.svg(outfilename)
     plotPCA()
     R['dev.off']()
@@ -2050,6 +2078,7 @@ def outputTagSummary(filename_tags,
     # output an MDS plot
     R('''suppressMessages(library('limma'))''')
     outfilename = output_filename_pattern + "mds.svg"
+    E.info("outputting mds plot to %s" % outfilename)
     R.svg(outfilename)
     R('''plotMDS( countsTable )''')
     R['dev.off']()

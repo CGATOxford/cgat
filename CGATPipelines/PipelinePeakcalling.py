@@ -18,6 +18,7 @@ import collections
 import sqlite3
 import numpy
 import pysam
+import pybedtools
 
 ##########################
 import CGAT.Experiment as E
@@ -39,10 +40,6 @@ P.getParameters(
      "pipeline.ini"])
 
 PARAMS = P.PARAMS
-
-if os.path.exists("pipeline_conf.py"):
-    E.info("reading additional configuration from pipeline_conf.py")
-    execfile("pipeline_conf.py")
 
 ############################################################
 ############################################################
@@ -527,8 +524,18 @@ def buildBAMStats(infile, outfile):
 ############################################################
 ############################################################
 ############################################################
-def exportIntervalsAsBed(infile, outfile, tablename):
-    '''export macs peaks as bed files.
+def exportIntervalsAsBed(infile, outfile,
+                         tablename,
+                         bedfilter=None,
+                         merge=False):
+    '''export intervals from database as bed files.
+
+    If *bedfilter* is set, remove intervals overlapping
+    any of the intervals in the :term:`bed` formatted file.
+
+    If *merge* is set, merge overlapping intervals.
+
+    Returns a counter object.
     '''
 
     dbhandle = sqlite3.connect(PARAMS["database"])
@@ -541,26 +548,61 @@ def exportIntervalsAsBed(infile, outfile, tablename):
         track = P.snip(outfile, ".bed")
 
     cc = dbhandle.cursor()
-    statement = "SELECT contig, start, end, interval_id, peakval FROM %s ORDER by contig, start" % tablename
+    statement = """SELECT contig, start, end
+    FROM %s""" % tablename
     cc.execute(statement)
 
-    with IOTools.openFile("%s.bed" % track, "w") as outs:
+    bd = pybedtools.BedTool(list(cc.fetchall()))
+    tmpfile = P.getTempFilename()
+    bd.saveas(tmpfile)
+    cc.close()
 
-        for result in cc:
-            contig, start, end, interval_id, peakval = result
-            # peakval is truncated at a 1000 as this is the maximum permitted
-            # score in a bed file.
-            peakval = int(min(peakval, 1000))
-            outs.write("%s\t%i\t%i\t%s\t%i\n" %
-                       (contig, start, end, str(interval_id), peakval))
+    c = E.Counter()
+    bd = pybedtools.BedTool(tmpfile)
+    c.input = len(bd)
+    bd = pybedtools.BedTool(tmpfile)
+    latest = c.input
 
-        cc.close()
+    if bedfilter:
+
+        bd = bd.intersect(pybedtools.BedTool(bedfilter), v=True, wa=True)
+        bd.saveas(tmpfile)
+        bd = pybedtools.BedTool(tmpfile)
+
+        c.after_bedfilter = len(bd)
+        bd = pybedtools.BedTool(tmpfile)
+        
+        c.removed_bedfilter = latest - c.after_bedfilter
+        latest = c.after_bedfilter
+
+    if merge and latest > 0:
+        # empty bedfiles cause an error
+        # pybedtools not very intuitive.
+        bd = bd.sort()
+        bd.saveas(tmpfile)
+        bd = pybedtools.BedTool(tmpfile)
+
+        bd = bd.merge()
+        bd.saveas(tmpfile)
+        bd = pybedtools.BedTool(tmpfile)
+
+        c.after_merging = len(bd)
+        bd = pybedtools.BedTool(tmpfile)
+
+        c.removed_merging = latest - c.after_merging
+        latest = c.after_merging
+
+    c.output = latest        
+
+    bd.saveas(track + '.bed')
 
     if compress:
         E.info("compressing and indexing %s" % outfile)
-        to_cluster = True
         statement = 'bgzip -f %(track)s.bed; tabix -f -p bed %(outfile)s'
         P.run()
+
+    os.unlink(tmpfile)
+    return c
 
 ############################################################
 ############################################################
@@ -577,8 +619,9 @@ def exportMacsIntervalsAsBed(infile, outfile, foldchange):
     track = track[:-len("_macs")]
 
     cc = dbhandle.cursor()
-    statement = "SELECT contig, start, end, interval_id, fold FROM %(track)s_macs_intervals where fold >= %(foldchange)s ORDER by contig, start" % locals(
-    )
+    statement = """SELECT contig, start, end, interval_id, fold
+    FROM %(track)s_macs_intervals where fold >= %(foldchange)s
+    ORDER by contig, start""" % locals()
     cc.execute(statement)
 
     outs = open(outfile, "w")
@@ -1328,7 +1371,7 @@ def runZinba(infile,
 
 
 def loadMACS(infile, outfile, bamfile, controlfile=None):
-    '''load MACS results in *tablename*
+    '''load MACS results into database.
 
     This method loads only positive peaks. It filters peaks by p-value,
     q-value and fold change and loads the diagnostic data and
@@ -1719,10 +1762,6 @@ def loadMACS2(infile, outfile, bamfile, controlfile=None):
 
         P.run()
 
-############################################################
-############################################################
-############################################################
-
 
 def loadZinba(infile, outfile, bamfile,
               tablename=None,
@@ -1767,21 +1806,27 @@ def loadZinba(infile, outfile, bamfile,
 
         # filter peaks
         offset = getPeakShiftFromZinba(infile)
-        assert offset is not None, "could not determine peak shift from Zinba file %s" % infile
+        assert offset is not None, \
+            ("could not determine peak shift from Zinba file %s" %
+             infile)
 
         E.info("%s: found peak shift of %i" % (track, offset))
 
         if controlfile:
-            control = "--control-bam-file=%(controlfile)s --control-offset=%(offset)i" % locals()
+            control = ("--control-bam-file=%(controlfile)s "
+                       "--control-offset=%(offset)i" % locals())
 
         # Steve - Guessing these are actually "peak calls"
         tablename = P.toTable(outfile) + "_peaks"
 
-        headers = "contig,start,end,sig,maxloc,maxval,median,qvalue"
+        headers = "contig,start,end,interval_id,sig,maxloc,maxval,median,qvalue"
 
         statement = '''cat %(infilename)s
-                    | python %(scriptsdir)s/csv_cut.py Chrom Start Stop Sig Maxloc Max Median qValue
-                    | grep -v "Chrom"
+                    | python %(scriptsdir)s/csv_cut.py
+                         Chrom Start Stop Sig Maxloc Max Median qValue
+        | awk -v FS='\\t' -v OFS='\\t' \
+        '/Chrom/ {next; } \
+        {$4=sprintf("%%i\\t%%s", ++a, $4); print}'
                     | python %(scriptsdir)s/bed2table.py 
                                --counter=peaks
                                --bam-file=%(bamfile)s
@@ -1803,7 +1848,9 @@ def loadZinba(infile, outfile, bamfile,
 
         statement = '''cat %(infilename)s
                     | python %(scriptsdir)s/csv_cut.py Chrom pStart pStop Sig Maxloc Max Median qValue
-                    | grep -v "Chrom"
+        | awk -v FS='\\t' -v OFS='\\t' \
+        '/Chrom/ {next; } \
+        {$4=sprintf("%%i\\t%%s", ++a, $4); print}'
                     | python %(scriptsdir)s/bed2table.py 
                                --counter=peaks
                                --bam-file=%(bamfile)s

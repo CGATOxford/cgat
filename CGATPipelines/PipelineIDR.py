@@ -176,7 +176,7 @@ class callerIDRPeaks(object):
         """
 
         # get appropriate input
-        Sample = PipelineTracks.Sample3
+        Sample = PipelineTracks.AutoSample
         if pseudoreplicate:
             try:
                 track = P.snip(infile, "_00.bam")

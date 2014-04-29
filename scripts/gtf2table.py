@@ -3751,11 +3751,12 @@ def main(argv=None):
                       help="distance to be considered proximal to "
                       "an interval [default=%default].")
 
-    parser.add_option("--weight-multi-mapping",
-                      dest="weight_multi_mapping",
-                      action="store_true",
-                      help="weight multi-mapping reads in bam-files. "
-                      "Requires "
+    parser.add_option("--multi-mapping",
+                      dest="multi_mapping",
+                      type="choice",
+                      choices=('all', 'ignore', 'weight'),
+                      help="how to treat multi-mapping reads in "
+                      "bam-files. Requires "
                       "the NH flag to be set by the mapper "
                       "[default=%default].")
 
@@ -3778,10 +3779,10 @@ def main(argv=None):
                       help="library type of reads in bam file. "
                       "[default=%default]")
 
-    parser.add_option("--min-read-quality",
-                      dest="minimum_read_quality",
+    parser.add_option("--min-mapping-quality",
+                      dest="minimum_mapping_quality",
                       type="float",
-                      help="minimum read quality. Reads with a quality "
+                      help="minimum mapping quality. Reads with a quality "
                       "score of less will be ignored. "
                       "[default=%default]")
 
@@ -3798,10 +3799,10 @@ def main(argv=None):
         add_gtf_source=False,
         proximal_distance=10000,
         bam_files=None,
-        weight_multi_mapping=False,
+        multi_mapping='all',
         library_type='fr-unstranded',
         prefixes=[],
-        minimum_read_quality=0,
+        minimum_mapping_quality=0,
     )
 
     if not argv:
@@ -3895,44 +3896,43 @@ def main(argv=None):
         elif c == "read-overlap":
             counters.append(_gtf2table.CounterReadOverlap(
                 bam_files,
-                weight_multi_mapping=options.weight_multi_mapping,
-                minimum_read_quality=options.minimum_read_quality,
+                multi_mapping=options.multi_mapping,
+                minimum_mapping_quality=options.minimum_mapping_quality,
                 options=options,
                 prefix=prefix))
         elif c == "read-counts":
             counters.append(_gtf2table.CounterReadCounts(
                 bam_files,
-                weight_multi_mapping=options.weight_multi_mapping,
-                minimum_read_quality=options.minimum_read_quality,
+                multi_mapping=options.multi_mapping,
+                minimum_mapping_quality=options.minimum_mapping_quality,
                 options=options,
                 prefix=prefix))
         elif c == "read-fullcounts":
             counters.append(_gtf2table.CounterReadCountsFull(
                 bam_files,
-                weight_multi_mapping=options.weight_multi_mapping,
-                minimum_read_quality=options.minimum_read_quality,
+                multi_mapping=options.multi_mapping,
+                minimum_mapping_quality=options.minimum_mapping_quality,
                 options=options,
                 prefix=prefix))
         elif c == "readpair-counts":
             counters.append(_gtf2table.CounterReadPairCounts(
                 bam_files,
-                weight_multi_mapping=options.weight_multi_mapping,
+                multi_mapping=options.multi_mapping,
                 library_type=options.library_type,
-                minimum_read_quality=options.minimum_read_quality,
+                minimum_mapping_quality=options.minimum_mapping_quality,
                 options=options,
                 prefix=prefix))
         elif c == "readpair-fullcounts":
             counters.append(_gtf2table.CounterReadPairCountsFull(
                 bam_files,
-                weight_multi_mapping=options.weight_multi_mapping,
-                minimum_read_quality=options.minimum_read_quality,
+                multi_mapping=options.multi_mapping,
+                minimum_mapping_quality=options.minimum_mapping_quality,
                 options=options,
                 prefix=prefix))
         elif c == "bigwig-counts":
             counters.append(CounterBigwigCounts(
                 bigwig_file,
                 options=options, prefix=prefix))
-
         elif c == "splice-comparison":
             counters.append(CounterSpliceSiteComparison(
                 fasta=fasta,

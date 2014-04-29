@@ -108,7 +108,7 @@ import CGAT.Experiment as E
 
 class Result(object):
 
-    ''' 
+    '''
     The result class wraps up useful read information
     for the Aggregator class functions '''
 
@@ -403,10 +403,9 @@ class Aggregator(object):
             # only yield results if the proportion of reads in
             # an interval exceed a threshold
 
-            if (counter > 1
-                    and interval > last_interval
-                    and float(counter) / float(reads) >= threshold):
-
+            if counter > 1 and \
+               interval > last_interval and \
+               float(counter) / float(reads) >= threshold:
                 yield (self.samfile.getrname(record.contig),
                        last_interval,
                        interval,
@@ -461,7 +460,6 @@ def main(argv=None):
     # test presence of bam index file
 
     bam_index = "%s.bai" % args[0]
-
     if not os.path.exists(bam_index):
         raise IOError("there is no index file for %s" % args[0])
 

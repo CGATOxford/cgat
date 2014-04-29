@@ -777,6 +777,7 @@ def runBlastOnContigs(infile, outfile):
     runs a translated blast (x) and outputs blastx format
     or imput into MEGAN
     '''
+    to_cluster = False
     db = PARAMS["megan_db"]
     evalue = PARAMS["megan_evalue"]
     statement = '''cat %(infile)s 
@@ -1149,10 +1150,9 @@ def mapReadsAgainstMetavelvetContigs(infiles, outfile):
         genome = genome 
         job_options = " -l mem_free=%s" % (PARAMS["bwa_memory"])
         bwa_index_dir = index_dir
-        bwa_aln_options = PARAMS["bwa_aln_options"]
-        bwa_sampe_options = PARAMS["bwa_sampe_options"]
+        bwa_mem_options = PARAMS["bwa_mem_options"]
         bwa_threads = PARAMS["bwa_threads"]
-        m = PipelineMapping.BWA(remove_non_unique=True)
+        m = PipelineMapping.BWAMEM(remove_non_unique=True)
     statement = m.build((inf,), outfile)
     P.run()
 
@@ -1184,10 +1184,9 @@ def mapReadsAgainstIdbaContigs(infiles, outfile):
         genome = genome
         job_options = " -l mem_free=%s" % (PARAMS["bwa_memory"])
         bwa_index_dir = index_dir
-        bwa_aln_options = PARAMS["bwa_aln_options"]
-        bwa_sampe_options = PARAMS["bwa_sampe_options"]
+        bwa_mem_options = PARAMS["bwa_mem_options"]
         bwa_threads = PARAMS["bwa_threads"]
-        m = PipelineMapping.BWA(remove_non_unique=True)
+        m = PipelineMapping.BWAMEM(remove_non_unique=True)
     statement = m.build((inf,), outfile)
     P.run()
 
@@ -1219,10 +1218,9 @@ def mapReadsAgainstRayContigs(infiles, outfile):
         genome = genome
         job_options = " -l mem_free=%s" % (PARAMS["bwa_memory"])
         bwa_index_dir = index_dir
-        bwa_aln_options = PARAMS["bwa_aln_options"]
-        bwa_sampe_options = PARAMS["bwa_sampe_options"]
+        bwa_mem_options = PARAMS["bwa_mem_options"]
         bwa_threads = PARAMS["bwa_threads"]
-        m = PipelineMapping.BWA(remove_non_unique=True)
+        m = PipelineMapping.BWAMEM(remove_non_unique=True)
     statement = m.build((inf,), outfile)
     P.run()
 
@@ -1254,10 +1252,9 @@ def mapReadsAgainstSGAContigs(infiles, outfile):
         genome = genome
         job_options = " -l mem_free=%s" % (PARAMS["bwa_memory"])
         bwa_index_dir = index_dir
-        bwa_aln_options = PARAMS["bwa_aln_options"]
-        bwa_sampe_options = PARAMS["bwa_sampe_options"]
+        bwa_mem_options = PARAMS["bwa_mem_options"]
         bwa_threads = PARAMS["bwa_threads"]
-        m = PipelineMapping.BWA(remove_non_unique=True)
+        m = PipelineMapping.BWAMEM(remove_non_unique=True)
     statement = m.build((inf,), outfile)
     P.run()
 
@@ -1289,10 +1286,9 @@ def mapReadsAgainstSoapdenovoContigs(infiles, outfile):
         genome = genome
         job_options = " -l mem_free=%s" % (PARAMS["bwa_memory"])
         bwa_index_dir = index_dir
-        bwa_aln_options = PARAMS["bwa_aln_options"]
-        bwa_sampe_options = PARAMS["bwa_sampe_options"]
+        bwa_mem_options = PARAMS["bwa_mem_options"]
         bwa_threads = PARAMS["bwa_threads"]
-        m = PipelineMapping.BWA(remove_non_unique=True)
+        m = PipelineMapping.BWAMEM(remove_non_unique=True)
     statement = m.build((inf,), outfile)
     P.run()
 
@@ -1324,10 +1320,9 @@ def mapReadsAgainstSpadesContigs(infiles, outfile):
         genome = genome
         job_options = " -l mem_free=%s" % (PARAMS["bwa_memory"])
         bwa_index_dir = index_dir
-        bwa_aln_options = PARAMS["bwa_aln_options"]
-        bwa_sampe_options = PARAMS["bwa_sampe_options"]
+        bwa_mem_options = PARAMS["bwa_mem_options"]
         bwa_threads = PARAMS["bwa_threads"]
-        m = PipelineMapping.BWA(remove_non_unique=True)
+        m = PipelineMapping.BWAMEM(remove_non_unique=True)
     statement = m.build((inf,), outfile)
     P.run()
 
@@ -1353,13 +1348,16 @@ def buildAlignmentStats(infile, outfile):
     use bam2stats to get alignment statistics
     '''
     statement = '''cat %(infile)s | python %(scriptsdir)s/bam2stats.py 
-                   --log=%(outfile)s.log - 
-                   > %(outfile)s'''
+                 --force
+                 --output-filename-pattern=%(outfile)s.%%s
+                 --log=%(outfile)s.log 
+                 > %(outfile)s'''
     P.run()
 
 ###################################################################
 ###################################################################
 ###################################################################
+@jobs_limit(1, "db")
 @transform(buildAlignmentStats, suffix("_stats"), "_stats.load")
 def loadAlignmentStats(infile, outfile):
     '''
@@ -1400,7 +1398,7 @@ def loadPicardStats(infiles, outfile):
 @follows(*ALIGNMENT_TARGETS)
 @transform(ALIGNMENT_TARGETS,
            suffix(".bam"),
-           add_inputs(loadPicardStats),
+           add_inputs(loadAlignmentStats),
            ".coverage.gz")
 def buildCoverageOverContigs(infiles, outfile):
     '''
@@ -1409,20 +1407,42 @@ def buildCoverageOverContigs(infiles, outfile):
     to_cluster = True
 
     bam = infiles[0]
-    track = os.path.dirname(
-        bam)[:-len(".dir")] + "_" + P.snip(os.path.basename(bam), ".bam")
+    # genomecoveragebed does not like some of the 
+    # output from bwa. bwa outputs some reads
+    # that map off the end of contigs
+    # as having a leftmost position of 0. This is
+    # not ideal. Need to use temporary bam
+    # files with only mapped reads - this is 
+    # nasty and needs changing
+    tempdir = P.getTempDir(".")
+    tempname = P.getTempFilename(tempdir) + ".bam"
+    P.submit("CGATPipelines.PipelineMetagenomeAssembly", 
+             "filterBamOnPos", 
+             infiles = bam, 
+             outfiles = tempname)
 
-    # nnect to database
+    # tablename where alignment stats live
+    tablename = os.path.dirname(
+        bam)[:-len(".dir")] + "_" + P.snip(os.path.basename(bam), ".bam") + "_alignment_stats"
+
+    # hack to convert to table - add .load
+    tablename = P.toTable(tablename + ".load")
+    
+    # connect to database
     dbh = connect()
     cc = dbh.cursor()
 
-    # get number of passed filter aligned reads from picard stats
-    scale_factor = cc.execute("""SELECT PF_READS_ALIGNED FROM picard_stats_alignment_summary_metrics
-                              WHERE track == '%s'""" % track).fetchone()[0]
+    # get number of reads aligned from bam2stats
+    if PARAMS.get("coverage_scale"):
+        scale_factor = cc.execute("""SELECT counts FROM %s
+                                     WHERE category == 'reads_mapped'""" % tablename).fetchone()[0]
+        scale_factor = 1 / (float(scale_factor) / 1000000)
+        scale_options = "-scale %(scale_factor)f"
+    else:
+        scale_options = ""
 
-    scale_factor = 1 / (float(scale_factor) / 1000000)
-
-    statement = '''genomeCoverageBed -ibam %(bam)s -scale %(scale_factor)f -d | gzip > %(outfile)s'''
+    statement = '''genomeCoverageBed -ibam %(tempname)s %(scale_options)s -d | gzip > %(outfile)s;
+                   rm -rf %(tempdir)s'''
     P.run()
 
 ###################################################################
@@ -1432,10 +1452,16 @@ def buildCoverageOverContigs(infiles, outfile):
 def buildCoverageStats(infile, outfile):
     '''
     build coverage statistics - mean and standard deviation
+    we also bin the contigs here and produce coverage 
+    matrices  - there is no tracking of these outfiles however.
+    Contigs that do not have coverage are not included.
     '''
     job_options = " -l mem_free=30G"
     to_cluster = True
-    statement = '''zcat %(infile)s | python %(scriptsdir)s/coverage2stats.py --log=%(outfile)s.log | gzip > %(outfile)s'''
+    track = P.snip(infile, ".gz")
+    statement = '''zcat %(infile)s | python %(scriptsdir)s/coverage2stats.py --log=%(outfile)s.log
+                   --bin --bin-number=500 --output-filename-prefix=%(track)s 
+                   | gzip > %(outfile)s'''
     P.run()
 
 ###################################################################

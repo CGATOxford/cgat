@@ -222,7 +222,7 @@ class CounterReadCoverage(Counter):
     # to avoid out-of-memory
     max_length = 100000
 
-    def __init__(self, bamfiles, *args, minimum_read_quality = 0, **kwargs ):
+    def __init__(self, bamfiles, *args, minimum_mapping_quality = 0, **kwargs ):
         Counter.__init__(self, *args, **kwargs )
         if not bamfiles: raise ValueError("supply --bam-file options for readcoverage")
         self.mBamFiles = bamfiles
@@ -320,7 +320,7 @@ class CounterReadOverlap(Counter):
 
     Counts are separated into sense, antisense and any sense.
 
-    If ``weight_multi_mapping`` is set, counts are weigthed by the NH flag.
+    ``multi_mapping`` determines how multi-mapping reads are treated.
     '''
     
     header = (["%s_%s" % (x,y) for x,y in
@@ -329,23 +329,23 @@ class CounterReadOverlap(Counter):
     
     def __init__(self, bamfiles,
                  *args,
-                 weight_multi_mapping = False,
-                 minimum_read_quality = 0,
+                 multi_mapping = 'all',
+                 minimum_mapping_quality = 0,
                  **kwargs ):
         Counter.__init__(self, *args, **kwargs )
         if not bamfiles: 
             raise ValueError("supply --bam-file options for readcoverage")
         self.mBamFiles = bamfiles
-        self.weight_multi_mapping = weight_multi_mapping
-        self.minimum_read_quality = minimum_read_quality
+        self.multi_mapping = multi_mapping
+        self.minimum_mapping_quality = minimum_mapping_quality
 
-        if self.minimum_read_quality != 0:
+        if self.minimum_mapping_quality != 0:
             raise NotImplementedError('quality filtering not implemented')
 
     def count(self):
         '''count reads.'''
         # For performance reasons, two separate counting implementations.
-        if self.weight_multi_mapping:
+        if self.multi_mapping:
             self.countFloat()
         else:
             self.countInteger()
@@ -542,6 +542,7 @@ class CounterBAM(Counter):
     '''base class for counters counting reads overlapping
     exons from BAM files.
 
+    ``multi_mapping`` determines how multi-mapping reads are treated.
     '''
 
     # minimum intron size - splicing only checked if gap within
@@ -554,15 +555,15 @@ class CounterBAM(Counter):
 
     def __init__(self, bamfiles, 
                  *args,
-                 weight_multi_mapping = False,
-                 minimum_read_quality = 0,
+                 multi_mapping = 'all',
+                 minimum_mapping_quality = 0,
                  **kwargs ):
         Counter.__init__(self, *args, **kwargs )
         if not bamfiles: 
             raise ValueError("supply --bam-file options for readcoverage")
         self.mBamFiles = bamfiles
-        self.weight_multi_mapping = weight_multi_mapping
-        self.minimum_read_quality = minimum_read_quality
+        self.multi_mapping = multi_mapping
+        self.minimum_mapping_quality = minimum_mapping_quality
         self.header = [ '_'.join(x) 
                         for x in itertools.product( 
                                 self.headers_direction,
@@ -632,7 +633,7 @@ class CounterReadCountsFull(CounterBAM):
     Both unique and non-unique counts are collected. Uniqueness
     is simply checked through alignment start position.
 
-    If ``weight_multi_mapping`` is set, counts are weigthed by the NH
+    If ``multi_mapping`` is set, counts are weigthed by the NH
     flag.
     '''
     
@@ -664,8 +665,9 @@ class CounterReadCountsFull(CounterBAM):
             is_reverse = True
 
         cdef int min_intron_size = self.min_intron_size
-        cdef float minimum_read_quality = self.minimum_read_quality
-        cdef bint weight_multi_mapping = self.weight_multi_mapping
+        cdef float minimum_mapping_quality = self.minimum_mapping_quality
+        cdef bint weight_multi_mapping = self.multi_mapping == "weight"
+        cdef bint ignore_multi_mapping = self.multi_mapping == "ignore"
         cdef int max_bases_outside_exons = self.max_bases_outside_exons
 
         # status variables
@@ -739,7 +741,7 @@ class CounterReadCountsFull(CounterBAM):
             for read in samfile.fetch(contig,
                                       exons_start,
                                       exons_end):
-                if minimum_read_quality > 0 and read.mapq <= minimum_read_quality:
+                if minimum_mapping_quality > 0 and read.mapq <= minimum_mapping_quality:
                     quality_read_status += 1
                     continue
 
@@ -783,7 +785,8 @@ class CounterReadCountsFull(CounterBAM):
                                 (nblocks, max_nblocks)
 
                         block_first_start = block_start
-                        block_last_end = block_end
+                        
+                    block_last_end = block_end
 
                 # close of loop
                 nbases_total += block_last_end - block_first_start
@@ -842,12 +845,20 @@ class CounterReadCountsFull(CounterBAM):
                     # other
                     exons_status = 3
 
+                weight = 1.0
                 if weight_multi_mapping:
                     try:
                         nh = read.opt('NH')
                     except KeyError:
                         nh = 1
-                    weight = 1.0/nh
+                    weight = 1.0 / nh
+                elif ignore_multi_mapping:
+                    try:
+                        nh = read.opt('NH')
+                    except KeyError:
+                        nh = 1
+                    if nh > 1:
+                        weight = 0
 
                 counters[direction_status][exons_status][spliced_status] += weight
 
@@ -1067,7 +1078,7 @@ class CounterReadPairCountsFull(CounterBAM):
     Both unique and non-unique counts are collected. Uniqueness
     is simply checked through alignment start position.
 
-    If ``weight_multi_mapping`` is set, counts are weigthed by the NH
+    If ``multi_mapping`` is set, counts are weigthed by the NH
     flag.
 
     '''
@@ -1107,9 +1118,10 @@ class CounterReadPairCountsFull(CounterBAM):
             is_reverse = True
 
         cdef int min_intron_size = self.min_intron_size
-        cdef float minimum_read_quality = self.minimum_read_quality
+        cdef float minimum_mapping_quality = self.minimum_mapping_quality
         cdef int max_bases_outside_exons = self.max_bases_outside_exons
-        cdef bint weight_multi_mapping = self.weight_multi_mapping
+        cdef bint weight_multi_mapping = self.multi_mapping == "weight"
+        cdef bint ignore_multi_mapping = self.multi_mapping == "ignore"
 
         # status variables
         cdef int npair_status = len(self.headers_status)
@@ -1203,9 +1215,9 @@ class CounterReadPairCountsFull(CounterBAM):
                 reads_in_pair = list(reads_in_pair)
                 pair_status = 0
                 nreads_in_pair = len(reads_in_pair)
-                if minimum_read_quality > 0:
+                if minimum_mapping_quality > 0:
                     reads_in_pair = [x for x in reads_in_pair \
-                                     if x.mapq >= minimum_read_quality]
+                                     if x.mapq >= minimum_mapping_quality]
                     nreads_in_pair_after = len(reads_in_pair)
                     if nreads_in_pair != nreads_in_pair_after:
                         quality_read_status += nreads_in_pair - nreads_in_pair_after
@@ -1382,12 +1394,20 @@ class CounterReadPairCountsFull(CounterBAM):
                     # other
                     exons_status = 3
 
+                weight = 1.0
                 if weight_multi_mapping:
                     try:
                         nh = read.opt('NH')
                     except KeyError:
                         nh = 1
                     weight = 1.0 / nh
+                elif ignore_multi_mapping:
+                    try:
+                        nh = read.opt('NH')
+                    except KeyError:
+                        nh = 1
+                    if nh > 1:
+                        weight = 0
                 
                 counters[pair_status][direction_status][exons_status][spliced_status] += weight
 

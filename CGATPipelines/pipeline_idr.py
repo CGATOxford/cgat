@@ -1,3 +1,4 @@
+
 ##########################################################################
 #
 #   MRC FGU Computational Genomics Group
@@ -159,6 +160,7 @@ import os
 import itertools
 import re
 import sqlite3
+import glob
 
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
@@ -189,18 +191,13 @@ PARAMS_ANNOTATIONS = P.peekParameters(PARAMS["annotations_dir"],
 
 import CGATPipelines.PipelineTracks as PipelineTracks
 
-Sample = PipelineTracks.Sample3
+Sample = PipelineTracks.AutoSample
 
 # define tracks based on all samples in .bamfile that are not input or index
 TRACKS = PipelineTracks.Tracks(Sample).loadFromDirectory(
-    os.listdir(PARAMS["location_bamfiles"]),
+    glob.glob(os.path.join(PARAMS["location_bamfiles"], "*.bam")),
     "(\S+).bam",
-    exclude=["\S+.bai", ".+input.+"])
-
-#ALL = Sample()
-TISSUES = PipelineTracks.Aggregate(TRACKS, labels=("tissue", ))
-CONDITIONS = PipelineTracks.Aggregate(TRACKS, labels=("condition", ))
-EXPERIMENTS = PipelineTracks.Aggregate(TRACKS, labels=("condition", "tissue"))
+    exclude=[".+input.+"])
 
 
 @files(None, None)
@@ -345,9 +342,10 @@ def splitBamfiles(infile, sentinal):
     P.touch(sentinal)
 
 
+# AH: remove replicate requirement for input tracks
 @follows(mkdir("bamfiles_pooled"))
 @collate(filterBamfiles,
-         regex(r"(.+)/(.+)-input-R[0-9]+.sentinal"),
+         regex(r"(.+)/(.+)-input-.*.sentinal"),
          r"./bamfiles_pooled/\2-input-R0.sentinal")
 def poolInputBamfiles(infiles, sentinal):
     """

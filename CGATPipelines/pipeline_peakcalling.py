@@ -285,6 +285,10 @@ ChangeLog
     * SICER, SPP now use predicted fragment size instead
       of fragment size supplied in options.
 
+24/04/14 AH
+    * added background filtering to pipeline. All intervals are output as
+      well as intervals that do not overlap with regions of high input.
+
 Code
 ====
 
@@ -707,7 +711,35 @@ def buildBackgroundWindows(infile, outfile):
     P.run()
 
 
-######################################################################
+@merge(buildBackgroundWindows, "background.dir/background.bed.gz")
+def mergeBackgroundWindows(infiles, outfile):
+    '''build a single bed file of regions with elevated background.'''
+
+    if len(infiles) == 0:
+        # write a dummy file with a dummy chromosome
+        # an empty background file would otherwise cause
+        # errors downstream in bedtools intersect
+        outf = IOTools.openFile(outfile, "w")
+        outf.write("chrXXXX\t1\t2\n")
+        outf.close()
+        return
+
+    infiles = " ".join(infiles)
+    genomefile = os.path.join(
+        PARAMS["annotations_dir"], PARAMS_ANNOTATIONS['interface_contigs'])
+    statement = '''
+    zcat %(infiles)s 
+    | bedtools slop -i stdin
+                -b %(calling_background_extension)i
+                -g %(genomefile)s
+    | mergeBed
+    | bgzip
+    > %(outfile)s
+    '''
+
+    P.run()
+
+
 @follows(normalizeBAM)
 @files([("%s.call.bam" % (x.asFile()),
          "%s.data_quality" % x.asFile()) for x in TRACKS])
@@ -733,8 +765,6 @@ def checkDataQuality(infile, outfile):
     > %(outfile)s'''
     P.run()
 
-####################################################################
-
 
 @merge(checkDataQuality, "data_quality.load")
 def loadDataQuality(infiles, outfile):
@@ -743,8 +773,6 @@ def loadDataQuality(infiles, outfile):
     P.concatenateAndLoad(infiles, outfile,
                          regex_filename="(.*).data_quality",
                          has_titles=False)
-
-####################################################################
 
 
 @follows(normalizeBAM)
@@ -1450,7 +1478,8 @@ def estimateSPPQualityMetrics(infile, outfile):
         raise ValueError("could not find run_spp.R")
 
     statement = '''
-    Rscript %(executable)s -c=%(infile)s -i=%(controlfile)s -rf -savp -out=%(outfile)s
+    Rscript %(executable)s -c=%(infile)s -i=%(controlfile)s -rf \
+           -savp -out=%(outfile)s
     >& %(outfile)s.log'''
 
     P.run()
@@ -1651,9 +1680,77 @@ for x in P.asList(PARAMS["peakcallers"]):
 def calling():
     pass
 
-############################################################
-############################################################
-############################################################
+
+@follows(mkdir(os.path.join(PARAMS["exportdir"], "filtered_bedfiles")),
+         mkdir('filtering.dir'))
+@transform(CALLINGTARGETS, regex("(.*)/(.*).load"),
+           add_inputs(mergeBackgroundWindows),
+           (os.path.join(
+               PARAMS["exportdir"],
+               "filtered_bedfiles",
+               r"\2.peaks.bed.gz"),
+            os.path.join(
+                PARAMS["exportdir"],
+                "filtered_bedfiles",
+                r"\2.regions.bed.gz"),
+            os.path.join(
+                PARAMS["exportdir"],
+                "filtered_bedfiles",
+                r"\2.summits.bed.gz"),
+            r"filtering.dir/\2.tsv"))
+def exportFilteredIntervalsAsBed(infiles, outfiles):
+    '''export filtered intervals as bed files.
+
+    Intervals are filtered by:
+
+    * removing all intervals that overlap a background interval
+    * merging overlapping intervals
+    '''
+
+    infile, background_bed = infiles
+
+    outfile_peaks, outfile_regions, outfile_summits, \
+        outfile_summary = outfiles
+
+    track = P.snip(os.path.basename(infile), ".load")
+
+    logfile = IOTools.openFile(outfile_summary, "w")
+    logfile.write(
+        "category\tinput\toutput\tremoved_background\tremoved_merged\n")
+
+    for category, tablename, outfile in (
+            ('peaks', "%s_peaks" % P.quote(track),
+             outfile_peaks),
+            ('regions', "%s_regions" % P.quote(track),
+             outfile_regions),
+            ('summits', "%s_summits" % P.quote(track),
+             outfile_summits)):
+        dbh = connect()
+        if tablename in Database.getTables(dbh):
+            c = PipelinePeakcalling.exportIntervalsAsBed(
+                infile, outfile, tablename,
+                bedfilter=background_bed,
+                merge=True)
+            logfile.write("\t".join(map(str, (
+                category, c.input,
+                c.output,
+                c.removed_bedfilter,
+                c.removed_merging))) + "\n")
+        else:
+            E.warn("no table %s - empty bed file output" % tablename)
+            P.touch(outfile)
+
+    logfile.close()
+
+
+@merge(exportFilteredIntervalsAsBed, 'exported_intervals.load')
+def loadFilteredExportSummary(infiles, outfile):
+    '''load export summary.'''
+    infiles = [x[-1] for x in infiles]
+    P.concatenateAndLoad(infiles,
+                         outfile,
+                         regex_filename=('filtering.dir/(.*)_([^_]+).tsv'),
+                         cat="track,method")
 
 
 @follows(mkdir(os.path.join(PARAMS["exportdir"], "bedfiles")))
@@ -1676,33 +1773,17 @@ def exportIntervalsAsBed(infile, outfiles):
     outfile_peaks, outfile_regions, outfile_summits = outfiles
     track = P.snip(os.path.basename(infile), ".load")
 
-    dbh = connect()
-    tablename = "%s_peaks" % P.quote(track)
-    if tablename in Database.getTables(dbh):
-        PipelinePeakcalling.exportIntervalsAsBed(
-            infile, outfile_peaks, tablename)
-    else:
-        E.warn("no table %s - empty bed file output" % tablename)
-        P.touch(outfile_peaks)
-
-    dbh = connect()
-    tablename = "%s_regions" % P.quote(track)
-    if tablename in Database.getTables(dbh):
-        PipelinePeakcalling.exportIntervalsAsBed(
-            infile, outfile_regions, tablename)
-    else:
-        E.warn("no table %s - empty bed file output" % tablename)
-        P.touch(outfile_regions)
-
-    dbh = connect()
-    tablename = "%s_summits" % P.quote(track)
-    if tablename in Database.getTables(dbh):
-        PipelinePeakcalling.exportIntervalsAsBed(
-            infile, outfile_summits, tablename)
-    else:
-        E.warn("no table %s - empty bed file output" % tablename)
-        P.touch(outfile_summits)
-
+    for tablename, outfile in (
+            ("%s_peaks" % P.quote(track), outfile_peaks),
+            ("%s_regions" % P.quote(track), outfile_regions),
+            ("%s_summits" % P.quote(track), outfile_summits)):
+        dbh = connect()
+        if tablename in Database.getTables(dbh):
+            PipelinePeakcalling.exportIntervalsAsBed(
+                infile, outfile, tablename)
+        else:
+            E.warn("no table %s - empty bed file output" % tablename)
+            P.touch(outfile)
 
 ###################################################################
 ###################################################################
@@ -1736,8 +1817,6 @@ def getPeakShift(track, method):
            r"peakshapes.dir/\1.peakshape.tsv.gz")
 def buildPeakShapeTable(infile, outfile):
     '''build a table with peak shape parameters.'''
-
-    to_cluster = True
 
     # compute suffix (includes method name)
     track, method, section = re.match(
@@ -1816,8 +1895,10 @@ def allIntervalsAsBed(infile, outfile):
 def makeReproducibilityOfMethods(infiles, outfile):
     '''compute overlap between intervals.
 
-    Note the exon percentages are approximations assuming that there are
-    not more than one intervals in one set overlapping one in the other set.
+    Note the exon percentages are approximations assuming that there
+    are not more than one intervals in one set overlapping one in the
+    other set.
+
     '''
     PipelinePeakcalling.makeReproducibility(infiles, outfile)
 
@@ -1837,8 +1918,10 @@ def makeReproducibilityOfMethods(infiles, outfile):
 def makeReproducibilityOfReplicates(infiles, outfile):
     '''compute overlap between intervals.
 
-    Note the exon percentages are approximations assuming that there are
-    not more than one intervals in one set overlapping one in the other set.
+    Note the exon percentages are approximations assuming that there
+    are not more than one intervals in one set overlapping one in the
+    other set.
+
     '''
     PipelinePeakcalling.makeReproducibility(infiles, outfile)
 
@@ -1880,10 +1963,6 @@ def qc():
 def full():
     pass
 
-###################################################################
-###################################################################
-###################################################################
-
 
 @follows(mkdir("report"))
 def build_report():
@@ -1891,10 +1970,6 @@ def build_report():
 
     E.info("starting documentation build process from scratch")
     P.run_report(clean=True)
-
-###################################################################
-###################################################################
-###################################################################
 
 
 @follows(mkdir("report"))
@@ -1904,51 +1979,11 @@ def update_report():
     E.info("updating documentation")
     P.run_report(clean=False)
 
-###################################################################
-###################################################################
-###################################################################
 
-
-@follows(mkdir("%s/bamfiles" % PARAMS["web_dir"]),
-         mkdir("%s/genesets" % PARAMS["web_dir"]),
-         mkdir("%s/classification" % PARAMS["web_dir"]),
-         mkdir("%s/differential_expression" % PARAMS["web_dir"]),
-         update_report,
-         )
+@follows(update_report)
 def publish():
     '''publish files.'''
-    # publish web pages
     P.publish_report()
-
-    # publish additional data
-    web_dir = PARAMS["web_dir"]
-    project_id = P.getProjectId()
-
-    # directory, files
-    exportfiles = {
-        "bamfiles":
-        glob.glob("*.accepted.bam") + glob.glob("*.accepted.bam.bai"),
-        "genesets": ["lincrna.gtf.gz", "abinitio.gtf.gz"],
-        "classification": glob.glob("*.class.tsv.gz"),
-        "differential_expression": glob.glob("*.cuffdiff.dir"),
-    }
-
-    bams = []
-
-    for targetdir, filenames in exportfiles.iteritems():
-        for src in filenames:
-            dest = "%s/%s/%s" % (web_dir, targetdir, src)
-            if dest.endswith(".bam"):
-                bams.append(dest)
-            dest = os.path.abspath(dest)
-            if not os.path.exists(dest):
-                os.symlink(os.path.abspath(src), dest)
-
-    # output ucsc links
-    for bam in bams:
-        filename = os.path.basename(bam)
-        track = P.snip(filename, ".bam")
-        print """track type=bam name="%(track)s" bigDataUrl=http://www.cgat.org/downloads/%(project_id)s/bamfiles/%(filename)s""" % locals()
 
 if __name__ == "__main__":
     sys.exit(P.main(sys.argv))

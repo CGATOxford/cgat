@@ -68,17 +68,18 @@ def bamToBed(infile, outfile,
              min_insert_size=0,
              max_insert_size=1000):
     '''convert bam to bed with bedtools.'''
+    scriptsdir = "/ifs/devel/andreas/cgat/scripts"
 
     if BamTools.isPaired(infile):
         # output strand as well
-        statement = ['''cat %(infile)s
-        | python %(scriptsdir)s/bam2bed.py
-              --merge-pairs
-              --min-insert-size=%(min_insert_size)i
-              --max-insert-size=%(max_insert_size)i
-              --log=%(outfile)s.log
-              --bed-format=6
-        > %(outfile)s''' % locals()]
+        statement = ['cat %(infile)s '
+                     '| python %(scriptsdir)s/bam2bed.py '
+                     '--merge-pairs '
+                     '--min-insert-size=%(min_insert_size)i '
+                     '--max-insert-size=%(max_insert_size)i '
+                     '--log=%(outfile)s.log '
+                     '--bed-format=6 '
+                     '> %(outfile)s' % locals()]
     else:
         statement = "bamToBed -i %(infile)s > %(outfile)s" % locals()
 
@@ -189,6 +190,7 @@ def main(argv=None):
         min_insert_size=0,
         max_insert_size=1000,
         filelist="files.list",
+        selectchr="chr19",
         action="full",
         improvement=0.00001,
     )
@@ -201,7 +203,14 @@ def main(argv=None):
             "please specify a filename with sample data and an output file")
 
     filename_sample, filename_output = args[0], args[1]
-    filename_control = options.control_filename
+    
+    filename_sample = os.path.abspath(filename_sample)
+    filename_output = os.path.abspath(filename_output)
+
+    if options.control_filename:
+        filename_control = os.path.abspath(options.control_filename)
+    else:
+        filename_control = None
 
     # load Zinba
     R.library('zinba')
@@ -211,24 +220,30 @@ def main(argv=None):
     else:
         tmpdir = options.tempdir
 
-    E.debug("temporary files are in %s" % tmpdir)
+    E.info("changing to temporary directory %s" % tmpdir)
+    os.chdir(tmpdir)
 
     if options.input_format == "bam":
         E.info("converting bam files to bed")
         if not os.path.exists(os.path.join(tmpdir, "sample.bed")):
             filename_sample = bamToBed(
-                filename_sample, os.path.join(tmpdir, "sample.bed"))
+                filename_sample,
+                os.path.join(tmpdir, "sample.bed"))
         else:
-            E.info("using existing file %(tmpdir)s/sample.bed" % locals())
-            filename_sample = os.path.join(tmpdir, "sample.bed")
+            E.info("using existing file %(tmpdir)s/sample.bed" %
+                   locals())
+            filename_sample = os.path.join(
+                tmpdir, "sample.bed")
         if filename_control:
             if not os.path.exists(os.path.join(tmpdir, "control.bed")):
                 filename_control = bamToBed(
-                    filename_control, os.path.join(tmpdir, "control.bed"))
-            else:
-                E.info("using existing file %(tmpdir)s/control.bed" % locals())
-                filename_control = os.path.join(
+                    filename_control,
                     os.path.join(tmpdir, "control.bed"))
+            else:
+                E.info("using existing file %(tmpdir)s/control.bed" %
+                       locals())
+                filename_control = os.path.join(
+                    tmpdir, "control.bed")
 
     fragment_size = options.fragment_size
     threads = options.threads
@@ -240,9 +255,11 @@ def main(argv=None):
     contigs = E.run(
         "twoBitInfo %(bit_filename)s %(tmpdir)s/contig_sizes" % locals())
     contig2size = dict(
-        [x.split() for x in IOTools.openFile(os.path.join(tmpdir, "contig_sizes"))])
+        [x.split() for x in IOTools.openFile(
+            os.path.join(tmpdir, "contig_sizes"))])
 
     outdir = filename_output + "_files"
+    E.info('saving intermediate results in %s' % outdir)
     if not os.path.exists(outdir):
         os.mkdir(outdir)
 
@@ -255,6 +272,7 @@ def main(argv=None):
     cnvOffset = 0
     winGap = 0
     peakconfidence = 1.0 - fdr_threshold
+    selectchr = options.selectchr
 
     if not os.path.exists(os.path.join(tmpdir, "basecount")):
         E.info("computing counts")
@@ -285,9 +303,9 @@ def main(argv=None):
                      cnvWinSize=%(cnvWinSize)i,
                      cnvOffset=%(cnvOffset)i,
                      filelist='%(filelist)s',
-                     filetype='bed',  
+                     filetype='bed',
                      extension=%(fragment_size)s,
-                     outdir='%(outdir)s/') ''' % locals() )
+                     outdir='%(outdir)s/') ''' % locals())
 
     elif options.action == "model":
 
@@ -322,7 +340,7 @@ def main(argv=None):
                 printFullOut=1,
                 interaction=FALSE,
                 selectmodel=TRUE,
-                selectchr='chr19',
+                selectchr='%(selectchr)s',
                 selectcovs=c("input_count"),
                 selecttype="complete",
                 FDR=TRUE)''' % locals())
@@ -374,6 +392,7 @@ def main(argv=None):
                 pquant=1,
                 winGap=%(winGap)i,
                 initmethod="count",
+                selectchr='%(selectchr)s',
                 tol=%(tol)f,
                 method="mixture",
                 numProc=%(threads)i,
@@ -439,8 +458,14 @@ def main(argv=None):
             FDR=TRUE) ''' % locals())
     elif options.action == "full":
 
-        # run zinba, do not build window data
-        R('''zinba( refinepeaks=1,
+        # run zinba, build window data and refine peaks
+
+        # Note that zinba() uses 'chr22' to select model
+        # which is not present in mouse. So call run.zinba
+        # directly.
+        R('''run.zinba(
+        refinepeaks=1,
+        buildwin=1,
         seq='%(filename_sample)s',
         input='%(filename_control)s',
         filetype='bed',
@@ -448,13 +473,26 @@ def main(argv=None):
         twoBit='%(bit_filename)s',
         outfile='%(filename_output)s',
         extension=%(fragment_size)s,
+        winSize=%(winSize)i,
+        offset=%(offset)i,
         basecountfile='%(tmpdir)s/basecount',
         numProc=%(threads)i,
         threshold=%(fdr_threshold)f,
-        broad=FALSE,
-        printFullOut=0,
+        pquant=1,
+        winGap=%(winGap)i,
+        selectchr='%(selectchr)s',
         interaction=FALSE,
-        mode='peaks',
+        method="mixture",
+        cnvWinSize=%(cnvWinSize)i,
+        cnvOffset=%(cnvOffset)i,
+        selectmodel=TRUE,
+        selectcovs=c("input_count"),
+        selecttype="complete",
+        initmethod="count",
+        printFullOut=1,
+        diff=0,
+        pWinSize=200,
+        peakconfidence=%(peakconfidence)f,
         FDR=TRUE) ''' % locals())
 
     if not (options.tempdir or options.keep_temp):

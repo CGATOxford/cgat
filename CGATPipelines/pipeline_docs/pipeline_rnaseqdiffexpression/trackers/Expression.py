@@ -14,16 +14,16 @@ class TrackerGeneCounts(ProjectTracker):
 
 
 class TrackerRealEstate(TrackerGeneCounts):
+    '''return proportion of reads mapped to genes stratified by
+    expression level.'''
 
-    '''return proportion of reads mapped to genes stratified by expression level.'''
-
-    slices = ("anysense_unique_counts", "anysense_all_counts")
+    slices = ("counted_all",)
 
     def __call__(self, track, slice):
         statement = '''
         SELECT count(gene_id) AS ngenes,
                %(slice)s * count(gene_id) AS reads_times_genes
-        FROM %(track)s_gene_counts 
+        FROM %(track)s_gene_counts
         GROUP BY %(slice)s
         ORDER BY %(slice)s DESC'''
 

@@ -66,10 +66,14 @@ import CGAT.GTF as GTF
 import CGAT.Experiment as E
 
 
-def main():
+def main(argv=None):
     '''
     main function
     '''
+
+    if sys.argv is None:
+        argv = sys.argv
+
     parser = E.OptionParser(
         version="%prog version: $Id: gtf2tsv.py 2887 2010-04-07 08:48:04Z andreas $", usage=globals()["__doc__"])
 
@@ -91,7 +95,7 @@ def main():
         map=None,
     )
 
-    (options, args) = E.Start(parser)
+    (options, args) = E.Start(parser, argv=argv)
 
     if options.full:
 
