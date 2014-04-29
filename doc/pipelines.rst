@@ -15,15 +15,4 @@ Best practice for CGAT pipelines:
 7. The best way to manage pipeline improvements is by individuals using pipelines talking responsibility for incremental improvement. As best practice fellows should announce plans to modify particular pipelines and modules on the CGAT members list to avoid duplication of effort. Fellows should log the changes that they make in a change log and document both modules and pipelines in detail. 
 
 
-Meeting 24/02/2014 
--------------------
-
-Specific suggestion for code reorganisation:
-
-1. Splitting of pipeline_annotations.py to separate GO/KEGG genesets and Ensembl gene models
-2. Remove genesets from pipeline_mapping.py.
-3. Create a pipeline_genome.py that downloads and indexes a genome sequence in a number of ways.
-4. Extract all non-trivial code from key production pipelines into modules and break up pipelines to simplify workflows.
-5. Improve reports for production pipelines – better organisation, multiple levels of information...
-
 
