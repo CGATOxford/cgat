@@ -71,8 +71,8 @@ BamWindowSize:
 BamSortByPeakHeight:
     stdin: null
     options: --force --sort=peak-height <DIR>/small.bam <DIR>/onepeak.bed --control-file=<DIR>/small.bam
-    outputs: [stdout, matrix_unsorted.gz, control_unsorted.gz, matrix_peak_height.gz, control_peak_height.gz]
-    references: [BamSortByPeakHeight.tsv, BamSortByPeakHeight_matrix_unsorted.gz, BamSortByPeakHeight_control_unsorted.gz, BamSortByPeakHeight_matrix_peak_height.gz, BamSortByPeakHeight_control_peak_height.gz]
+    outputs: [stdout, matrix_peak_height.gz, control_peak_height.gz]
+    references: [BamSortByPeakHeight.tsv, BamSortByPeakHeight_matrix_peak_height.gz, BamSortByPeakHeight_control_peak_height.gz]
 
 
 
