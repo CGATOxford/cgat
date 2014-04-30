@@ -5,10 +5,45 @@ version:
     references: []
     options: --version
 
-small:
+small_gtf:
     stdin: hg19.small.gtf.gz 
     outputs: [stdout]
-    references: [small.fasta.gz]
+    references: [test.small.gtf.gz]
+    options: --genome-file=<DIR>/hg19.chr19 --is-gtf
+
+small_gff:
+    stdin: hg19.small.gtf.gz
+    outputs: [stdout]
+    references: [test.small.gff.gz]
     options: --genome-file=<DIR>/hg19.chr19
 
+small_gff_merge:
+    stdin: hg19.small.gtf.gz
+    outputs: [stdout]
+    references: [test.small.gff.merge.gz]
+    options: --genome-file=<DIR>/hg19.chr19 --merge
+
+small_max:
+    stdin: hg19.small.gtf.gz
+    outputs: [stdout]
+    references: [test.small.max.gz]
+    options: --genome-file=<DIR>/hg19.chr19 --max-length=100
+
+small_min:
+    stdin: hg19.small.gtf.gz
+    outputs: [stdout]
+    references: [test.small.min.gz]
+    options: --genome-file=<DIR>/hg19.chr19 --min-length=100
+
+feature_exon:
+    stdin: hg19.small.gtf.gz
+    outputs: [stdout]
+    references: [test.feature.exon.gz]
+    options: --genome-file=<DIR>/hg19.chr19 --feature=exon
+
+feature_cds:
+    stdin: hg19.small.gtf.gz
+    outputs: [stdout]
+    references: [test.feature.CDS.gz]
+    options: --genome-file=<DIR>/hg19.chr19 --feature=CDS
 

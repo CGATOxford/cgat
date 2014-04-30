@@ -18,15 +18,38 @@ The ouput can be optionally masked and filtered.
 Usage
 -----
 
-Example::
+If you want to convert a ``features.gff`` file with intervals information
+into a :term:`fasta` file containing the sequence of each interval, use this
+script as follows::
 
    python gff2fasta.py --genome-file=hg19 < features.gff > features.fasta
 
-Type::
+The input can also be a :term:`gtf` formatted file. In that case, use the
+``--is-gtf`` option::
 
-   python gff2fasta.py --help
+   python gff2fasta.py --genome-file=hg19 --is-gtf < features.gtf >\
+ features.fasta
 
-for command line help.
+If you want to merge the sequence of similar features together, please use
+``--merge``::
+
+   python gff2fasta.py --genome-file=hg19 --merge < features.gff >\
+ features.fasta
+
+It is possible to filter the output by selecting a minimum or maximum number
+of nucleotides in the resultant fasta sequence with ``--max-length`` or
+``--min-length`` respectively::
+
+   python gff2fasta.py --genome-file=hg19 --max-length=100\
+ < features.gff > features.fasta
+
+Or you can also filter the output by features name with the ``--feature``
+option::
+
+   python gff2fasta.py --genome-file=hg19 --feature=exon < features.gff\
+ > features.fasta
+
+
 
 Command line options
 --------------------
