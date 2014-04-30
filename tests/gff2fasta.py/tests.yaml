@@ -47,3 +47,21 @@ feature_cds:
     references: [test.feature.CDS.gz]
     options: --genome-file=<DIR>/hg19.chr19 --feature=CDS
 
+masker_dust:
+    stdin: hg19.small.gtf.gz
+    outputs: [stdout]
+    references: [test.dust.gz]
+    options: --genome-file=<DIR>/hg19.chr19 --masker=dust --filename-masks=<DIR>/hg19.small.gtf.gz --remove-masked-regions
+
+masker_dustmasker:
+    stdin: hg19.small.gtf.gz
+    outputs: [stdout]
+    references: [test.dustmasker.gz]
+    options: --genome-file=<DIR>/hg19.chr19 --masker=dustmasker --filename-masks=<DIR>/hg19.small.gtf.gz --remove-masked-regions
+
+masker_softmask:
+    stdin: hg19.small.gtf.gz
+    outputs: [stdout]
+    references: [test.softmask.gz]
+    options: --genome-file=<DIR>/hg19.chr19 --masker=softmask --filename-masks=<DIR>/hg19.small.gtf.gz --remove-masked-regions
+

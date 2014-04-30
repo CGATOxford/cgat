@@ -49,7 +49,14 @@ option::
    python gff2fasta.py --genome-file=hg19 --feature=exon < features.gff\
  > features.fasta
 
+On the other hand, low-complexity regions can be masked with the ``--masker``
+option and a given :term:`gff` formatted file::
 
+   python gff2fasta.py --genome-file=hg19 --masker=dust\
+ --filename-masks=intervals.gff < features.gff > features.fasta
+
+where ``--masker`` can take the following values: ``dust``, ``dustmasker``,
+and ``softmask``.
 
 Command line options
 --------------------
@@ -158,7 +165,7 @@ def main(argv=None):
     if options.filename_masks:
         masks = {}
         with open(options.filename_masks, "r") as infile:
-            e = GTF.readAsIntervals(GFF.iterator(infile))
+            e = GTF.readAsIntervals(GTF.iterator(infile))
 
         # convert intervals to intersectors
         for contig in e.keys():
