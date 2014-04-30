@@ -35,12 +35,11 @@ bigwigfileintervalaccuracy:
     outputs: [geneprofile.lengths.tsv.gz, geneprofile.matrix.tsv.gz]
     references: [test5.geneprofile.lengths.tsv.gz, test5.geneprofile.matrix.tsv.gz]
 
-#turn on test only after bug fixes.
-#controlfile:
-#    stdin: null
-#    options: --force --reporter=transcript --method=geneprofile --bamfile=<DIR>/multipleReadsSplicedOutAllIntronsAndSecondExon.bam --controlfile=<DIR>/multipleReadsSplicedOutAllIntronsAndSecondExon.bam --gtffile=<DIR>/twogenes.gtf.gz
-#    outputs: [geneprofile.lengths.tsv.gz, geneprofile.matrix.tsv.gz]
-#    references: [test6.geneprofile.lengths.tsv.gz, test6.geneprofile.matrix.tsv.gz]
+controlfile:
+    stdin: null
+    options: --force --reporter=transcript --method=geneprofile --bedfile=<DIR>/tss.bed.gz --controlfile=<DIR/tss.bed.gz --gtffile=<DIR>/twogenes.gtf.gz
+    outputs: [geneprofile.lengths.tsv.gz, geneprofile.matrix.tsv.gz]
+    references: [test6.geneprofile.lengths.tsv.gz, test6.geneprofile.matrix.tsv.gz]
 
 shiftreads:
     stdin: null
