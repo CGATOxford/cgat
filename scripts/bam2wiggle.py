@@ -5,47 +5,43 @@ bam2wiggle.py - convert bam to wig/bigwig file
 :Author: Andreas Heger
 :Release: $Id: bam2wiggle.py 2832 2009-11-24 16:11:06Z andreas $
 :Date: |today|
-:Tags: Genomics NGS Intervals Conversion BAM WIGGLE
+:Tags: Genomics NGS Intervals Conversion BAM WIGGLE BIGWIG BEDGRAPH
 
 Purpose
 -------
 
-convert a bam file to a bigwig or bedgraph file.   
+Convert a bam file to a profile in a genome browser track display 
+format such as wig, bigwig or bedgraph file. 
+This script is primarily designed to produce peak-shifted and 
+extended profiles such as from single-end ChIP-seq data. 
 
 The script requires the executables :file:`wigToBigWig` and 
 :file:`bedToBigBed` to be in the user's PATH.
 
-If no --shift or --extend option are given, the coverage is computed directly on reads. 
-Counting can be performed at a certain resolution.
-The counting currently is not aware of spliced reads, i.e., an inserted intron will be 
-included in the coverage.
-
 If --shift or --extend are given, the coverage is computed by shifting read
 alignment positions upstream for positive strand reads or downstream for negative
-strand reads and extend them by a fixed amount. 
+strand reads and extend them by a fixed amount. If no --shift or --extend option 
+are given, the coverage is computed directly on reads. 
 
-For RNASEQ data it might be best to run genomeCoverageBed directly on the 
-bam file.
+Counting can be performed at a specified resolution (span).
+
+The counting currently is not aware of spliced reads, i.e., an inserted intron 
+will be included in the coverage. For RNASEQ data it might be best to run 
+genomeCoverageBed directly on the bam file.
+
 
 Usage
 -----
 
 Type::
 
-   python bam2wiggle.py --output-format=bigwig in.bam out.bigwig
+   python bam2wiggle.py --output-format=bigwig --output-filename=out.bigwig in.bam 
 
 to convert the :term:`bam` file file:`in.bam` to :term:`bigwig` format 
 and save the result in :file:`out.bigwig`.
 
-Type::
-
-   python bam2wiggle.py --help
-
-for command line help.
-
 Command line options
 --------------------
-
 """
 
 import os
@@ -53,7 +49,6 @@ import sys
 import tempfile
 import shutil
 import subprocess
-
 import CGAT.Experiment as E
 import pysam
 import CGAT.IOTools as IOTools
@@ -70,18 +65,15 @@ except ImportError:
 class SpanWriter(object):
 
     '''output values within spans.
-
     values are collected according to a span and an average is
     output.
     '''
 
     def __init__(self, span):
         self.span = span
-
         self.laststart = 0
         self.lastend = None
         self.val = 0
-
         self.lastout = None
 
     def __call__(self, outfile, contig, start, end, val):
@@ -167,21 +159,21 @@ def main(argv=None):
         version="%prog version: $Id: bam2wiggle.py 2832 2009-11-24 16:11:06Z andreas $", usage=globals()["__doc__"])
 
     parser.add_option("-o", "--output-format", dest="output_format", type="choice",
-                      choices=(
-                          "bedgraph", "wiggle", "bigbed", "bigwig", "bed"),
-                      help="output format [default=%default]")
+                      choices=("bedgraph", "wiggle", "bigwig"),
+                      help="The desired output format for the conversion. "
+                      " Choose from bedgraph, wiggle or bigwig. [default=%default]")
 
     parser.add_option("-b", "--output-filename", dest="output_filename", type="string",
-                      help="filename for output [default=%default]")
+                      help="filename for output. Required for bigwig [default=%default]")
 
     parser.add_option("-s", "--shift", dest="shift", type="int",
-                      help="shift reads by a certain amount (ChIP-Seq) [%default]")
+                      help="shift reads by a specified number of bases (designed for ChIP-Seq peak shifting). Bigwig only. [%default]")
 
     parser.add_option("-e", "--extend", dest="extend", type="int",
-                      help="extend reads by a certain amount (ChIP-Seq) [%default]")
+                      help="extend reads by a specified number of bases (designed for ChIP-Seq read extension). Bigwig only. [%default]")
 
     parser.add_option("-p", "--span", dest="span", type="int",
-                      help="span of a window in wiggle tracks [%default]")
+                      help="The span of a window in wiggle/bigwig format [%default]")
 
     parser.add_option("-m", "--merge-pairs", dest="merge_pairs", action="store_true",
                       help="merge paired-ended reads into a single bed interval [default=%default]. ")
@@ -206,87 +198,88 @@ def main(argv=None):
 
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv)
-
     if len(args) >= 1:
         options.samfile = args[0]
-
-    if not options.samfile:
-        raise ValueError("please provide a bam file")
-
     if len(args) == 2:
         options.output_filename = args[1]
-
+    if not options.samfile:
+        raise ValueError("please provide a bam file")
+        
+    # Read BAM file using Pysam
     samfile = pysam.Samfile(options.samfile, "rb")
 
-    contig_sizes = dict(zip(samfile.references, samfile.lengths))
+    # Create temporary files / folders
+    tmpdir = tempfile.mkdtemp()
+    E.debug("temporary files are in %s" % tmpdir)
+    tmpfile_wig = os.path.join(tmpdir, "wig")
+    tmpfile_sizes = os.path.join(tmpdir, "sizes")
 
+    # Create dictionary of contig sizes
+    contig_sizes = dict(zip(samfile.references, samfile.lengths))
+    # write contig sizes
+    outfile_size = open(tmpfile_sizes, "w")
+    for contig, size in contig_sizes.items():
+        outfile_size.write("%s\t%s\n" % (contig, size))
+    outfile_size.close()
+    
+    # Shift and extend only available for bigwig format
     if options.shift or options.extend:
         if options.output_format != "bigwig":
             raise ValueError(
                 "shift and extend only available for bigwig output")
 
-    if options.output_format in ("bigwig", "bigbed"):
-
+    # Output filename required for bigwig / bigbed computation
+    if options.output_format == "bigwig":
         if not options.output_filename:
             raise ValueError(
-                "please output file for bigwig/bigbed computation.")
-
+                "please specify an output file for bigwig computation.")
+                
+        # Define executable to use for binary conversion
         if options.output_format == "bigwig":
             executable_name = "wigToBigWig"
-        elif options.output_format == "bigbed":
-            executable_name = "bedToBigBed"
         else:
             raise ValueError("unknown output format `%s`" %
                              options.output_format)
 
+        # check required executable file is in the path
         executable = IOTools.which(executable_name)
-
         if not executable:
             raise OSError("could not find %s in path." % executable_name)
 
-        tmpdir = tempfile.mkdtemp()
-        E.debug("temporary files are in %s" % tmpdir)
-
-        tmpfile_wig = os.path.join(tmpdir, "wig")
-        tmpfile_sizes = os.path.join(tmpdir, "sizes")
-
-        # write contig sizes
-        outfile_size = open(tmpfile_sizes, "w")
-        for contig, size in contig_sizes.items():
-            outfile_size.write("%s\t%s\n" % (contig, size))
-        outfile_size.close()
-
+        # Open outout file
         outfile = open(tmpfile_wig, "w")
         E.info("starting output to %s" % tmpfile_wig)
-
     else:
         outfile = options.stdout
         E.info("starting output to stdout")
 
+    # Set up output write functions
     if options.output_format in ("wiggle", "bigwig"):
-        # wiggle is one-based, so add 1, also step-size is 1, so need to output
-        # all bases
+        # wiggle is one-based, so add 1, also step-size is 1, so need to output all bases
         if options.span == 1:
             outf = lambda outfile, contig, start, end, val: \
                 outfile.write(
                     "".join(["%i\t%i\n" % (x, val) for x in xrange(start + 1, end + 1)]))
         else:
             outf = SpanWriter(options.span)
-
-    elif options.output_format in ("bed", "bigbed"):
+    elif options.output_format == "bedgraph":
         # bed is 0-based, open-closed
         outf = lambda outfile, contig, start, end, val: \
             outfile.write("%s\t%i\t%i\t%i\n" % (contig, start, end, val))
 
+    # initialise counters
     ninput, nskipped, ncontigs = 0, 0, 0
 
+    # set output file name
     output_filename = options.output_filename
     if output_filename:
         output_filename = os.path.abspath(output_filename)
 
+    # shift and extend or merge pairs. Output temp bed file
     if options.shift > 0 or options.extend > 0 or options.merge_pairs:
 
         if options.merge_pairs:
+            # merge pairs using bam2bed
             E.info("merging pairs to temporary file")
             counter = _bam2bed.merge_pairs(samfile,
                                            outfile,
@@ -294,7 +287,7 @@ def main(argv=None):
                                            max_insert_size=options.max_insert_size,
                                            bed_format=3)
         else:
-            # create bed file with shifted tags
+            # create bed file with shifted/extended tags
             shift, extend = options.shift, options.extend
             shift_extend = shift + extend
 
@@ -318,24 +311,21 @@ def main(argv=None):
 
         outfile.close()
 
+        # Convert bed file to coverage file (bedgraph)
         tmpfile_bed = os.path.join(tmpdir, "bed")
         E.info("computing coverage")
-        # calculate coverage - format is bedgraph
         statement = "genomeCoverageBed -bg -i %(tmpfile_wig)s -g %(tmpfile_sizes)s > %(tmpfile_bed)s" % locals()
         E.run(statement)
 
+        # Convert bedgraph to bigwig
         E.info("converting to bigwig")
-
         tmpfile_sorted = os.path.join(tmpdir, "sorted")
         statement = "sort -k 1,1 -k2,2n %(tmpfile_bed)s > %(tmpfile_sorted)s; bedGraphToBigWig %(tmpfile_sorted)s %(tmpfile_sizes)s %(output_filename)s" % locals()
         E.run(statement)
 
-        shutil.rmtree(tmpdir)
-
-    else:
+    else: # no shift/extend/merge
 
         def column_iter(iterator):
-
             start = None
             end = 0
             n = None
@@ -349,20 +339,25 @@ def main(argv=None):
                 end = t.pos
             yield start, end, n
 
+        #Bedgraph track definition
+        if options.output_format == "bedgraph":
+            outfile.write("track type=bedGraph\n")
+
         for contig in samfile.references:
             # if contig != "chrX": continue
             E.debug("output for %s" % contig)
             lcontig = contig_sizes[contig]
 
+            # Write wiggle header
             if options.output_format in ("wiggle", "bigwig"):
                 outfile.write("variableStep chrom=%s span=%i\n" %
                               (contig, options.span))
 
+            # Generate pileup per contig using pysam and iterate over columns
             for start, end, val in column_iter(samfile.pileup(contig)):
 
                 # patch: there was a problem with bam files and reads overextending at the end.
-                # These are usually Ns, but need to check as otherwise
-                # wigToBigWig fails.
+                # These are usually Ns, but need to check as otherwise wigToBigWig fails.
                 if lcontig <= end:
                     E.warn("read extending beyond contig: %s: %i > %i" %
                            (contig, end, lcontig))
@@ -374,15 +369,17 @@ def main(argv=None):
                     outf(outfile, contig, start, end, val)
             ncontigs += 1
 
+        # Close output file
         if type(outf) == type(SpanWriter):
             outf.flush(outfile)
-
         E.info("finished output")
 
+        # Report counters
         E.info("ninput=%i, ncontigs=%i, nskipped=%i" %
                (ninput, ncontigs, nskipped))
 
-        if options.output_format in ("bigwig", "bigbed"):
+        # Convert to binary formats
+        if options.output_format == "bigwig":
             outfile.close()
 
             E.info("starting %s conversion" % executable)
@@ -399,13 +396,12 @@ def main(argv=None):
             except OSError, msg:
                 E.warn("Error while executing bigwig: %s" % e)
                 return 1
-
-            shutil.rmtree(tmpdir)
-
             E.info("finished bigwig conversion")
 
-    E.Stop()
+    # Cleanup temp files
+    shutil.rmtree(tmpdir)
 
+    E.Stop()
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv))

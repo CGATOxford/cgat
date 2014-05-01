@@ -209,12 +209,14 @@ set_protein_to_transcript:
     references: [hg19.small.sort_gene_set_protein_to_transcript.gtf.gz]
     options: --set-protein-to-transcript
 
-
 set_renumber_duplicates:
     stdin: B_psuedomallei_combined_transcripts.gtf
     outputs: [stdout]
     references: [B_psuedomallei_combined_transcripts_no_duplicates.gtf]
     options: --rename-duplicates
 
-
-
+set_gene_to_transcript:
+    stdin: hg19.small.sort_gene.gtf.gz
+    outputs: [stdout]
+    references: [hg19.small.sort_gene_set_gene_to_transcript.gtf.gz]
+    options: --set-gene-to-transcript

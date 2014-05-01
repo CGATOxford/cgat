@@ -635,8 +635,9 @@ def main(argv=None):
 
             ninput += 1
 
-            gff.gene_id = gff.transcript_id
+            gff.setAttribute("gene_id", gff.transcript_id)
             options.stdout.write("%s\n" % str(gff))
+
             noutput += 1
             nfeatures += 1
 
