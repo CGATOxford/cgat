@@ -28,24 +28,4 @@ region_test:
     outputs: [stdout]
     references: [example_human_g1k_region.tsv]
     options: <DIR>/example_human_g1k.bam --region '1:69100:69200' 
-
-interval_100bp_test:
-    stdin: subsample.bam
-    outputs: [stdout]
-    references: [subsample-100-interval.bed, subsample-100.summary.txt]
-    options: <DIR>/subsample.bam --interval 100
-
-threshold_1%_test:
-    stdin: subsample.bam
-    outputs: [stdout]
-    references: [subsample-NH-interval.bed, subsample-NH.summary.txt]
-    options: <DIR>/subsample.bam --tag NH --threshold 0.01
-
-categorical_test:
-   stdin: subsample.bam
-   outputs: [stdout]
-   references: [subsample-cat.bed]
-   options: <DIR>/subsample.bam --condition cat
-
-
     
