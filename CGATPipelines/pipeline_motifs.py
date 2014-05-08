@@ -935,7 +935,8 @@ def exportMotifLocations(infiles, outfile):
 ###################################################################
 ###################################################################
 ###################################################################
-@follows(loadIntervals)
+@follows(loadMemeChipSummary,
+         loadIntervals)
 def full():
     '''run the full pipeline.'''
     pass

@@ -295,6 +295,10 @@ def outputResults(result, bins, options):
                 norm_result.sort(key=lambda x: float(x[1].score))
             except IndexError:
                 E.warn("score field not present - no output")
+                continue
+            except TypeError:
+                E.warn("score field not a valid number - no output")
+                continue
 
         writeMatrix(norm_result, sort)
 

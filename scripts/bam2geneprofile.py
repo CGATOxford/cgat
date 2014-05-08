@@ -575,94 +575,82 @@ def main(argv=None):
     counters = []
     for method in options.methods:
         if method == "utrprofile":
-            counters.append(_bam2geneprofile.UTRCounter(range_counter,
-                                                        options.resolution_upstream,
-                                                        options.resolution_upstream_utr,
-                                                        options.resolution_cds,
-                                                        options.resolution_downstream_utr,
-                                                        options.resolution_downstream,
-                                                        options.extension_upstream,
-                                                        options.extension_downstream,
-                                                        ))
+            counters.append(_bam2geneprofile.UTRCounter(
+                range_counter,
+                options.resolution_upstream,
+                options.resolution_upstream_utr,
+                options.resolution_cds,
+                options.resolution_downstream_utr,
+                options.resolution_downstream,
+                options.extension_upstream,
+                options.extension_downstream,
+            ))
 
         elif method == "geneprofile":
-            counters.append(_bam2geneprofile.GeneCounter(range_counter,
-                                                         options.resolution_upstream,
-                                                         options.resolution_cds,
-                                                         options.resolution_downstream,
-                                                         options.extension_upstream,
-                                                         options.extension_downstream,
-                                                         options.scale_flanks))
+            counters.append(_bam2geneprofile.GeneCounter(
+                range_counter,
+                options.resolution_upstream,
+                options.resolution_cds,
+                options.resolution_downstream,
+                options.extension_upstream,
+                options.extension_downstream,
+                options.scale_flanks))
 
         elif method == "geneprofilewithintrons":
-            counters.append(_bam2geneprofile.GeneCounterWithIntrons(range_counter,
-                                                                    options.resolution_upstream,
-                                                                    options.resolution_cds,
-                                                                    options.resolution_introns,
-                                                                    options.resolution_downstream,
-                                                                    options.extension_upstream,
-                                                                    options.extension_downstream,
-                                                                    options.scale_flanks))
+            counters.append(_bam2geneprofile.GeneCounterWithIntrons(
+                range_counter,
+                options.resolution_upstream,
+                options.resolution_cds,
+                options.resolution_introns,
+                options.resolution_downstream,
+                options.extension_upstream,
+                options.extension_downstream,
+                options.scale_flanks))
 
         elif method == "geneprofileabsolutedistancefromthreeprimeend":
-            counters.append(_bam2geneprofile.GeneCounterAbsoluteDistanceFromThreePrimeEnd(range_counter,
-                                                                                          options.resolution_upstream,
-                                                                                          options.resolution_downstream,
-                                                                                          options.resolution_exons_absolute_distance_topolya,
-                                                                                          options.resolution_introns_absolute_distance_topolya,
-                                                                                          # options.resolution_exons_absolute_distance_tostartsite,
-                                                                                          # options.resolution_introns_absolute_distance_tostartsite,
-                                                                                          # Tim 31th Aug 2013: a possible feature for future,  if five prime bias is of your interest.
-                                                                                          #(you need to create another class). It is not very difficult to derive from this class, but is not implemented yet
-                                                                                          # This future
-                                                                                          # feature is
-                                                                                          # slightly different
-                                                                                          # the TSS profile
-                                                                                          # already
-                                                                                          # implemented,
-                                                                                          # because in this
-                                                                                          # future feature
-                                                                                          # introns are
-                                                                                          # skipped,
-                                                                                          options.extension_upstream,
-                                                                                          options.extension_downstream,
-                                                                                          options.extension_exons_absolute_distance_topolya,
-                                                                                          options.extension_introns_absolute_distance_topolya,
-                                                                                          # options.extension_exons_absolute_distance_tostartsite,
-                                                                                          # options.extension_introns_absolute_distance_tostartsite,
-                                                                                          # Tim 31th Aug 2013: a possible feature for future,  if five prime bias is of your interest.
-                                                                                          #(you need to create another class). It is not very difficult to derive from this class, but is not implemented yet
-                                                                                          # This future
-                                                                                          # feature is
-                                                                                          # slightly different
-                                                                                          # the TSS profile
-                                                                                          # already
-                                                                                          # implemented,
-                                                                                          # because in this
-                                                                                          # future feature
-                                                                                          # introns are
-                                                                                          # skipped,
-                                                                                          options.scale_flanks))
+            # options.extension_exons_absolute_distance_tostartsite,
+            # options.extension_introns_absolute_distance_tostartsite,
+            # Tim 31th Aug 2013: a possible feature for future,  if five prime
+            # bias is of your interest.
+            # (you need to create another class). It is not very difficult to
+            # derive from this class, but is not implemented yet
+            # This future feature is slightly different the TSS profile
+            # already implemented, because in this future feature introns are
+            # skipped,
+            counters.append(
+                _bam2geneprofile.GeneCounterAbsoluteDistanceFromThreePrimeEnd(
+                    range_counter, options.resolution_upstream,
+                    options.resolution_downstream,
+                    options.resolution_exons_absolute_distance_topolya,
+                    options.resolution_introns_absolute_distance_topolya,
+                    options.extension_upstream,
+                    options.extension_downstream,
+                    options.extension_exons_absolute_distance_topolya,
+                    options.extension_introns_absolute_distance_topolya,
+                    options.scale_flanks))
 
         elif method == "tssprofile":
-            counters.append(_bam2geneprofile.TSSCounter(range_counter,
-                                                        options.extension_outward,
-                                                        options.extension_inward))
+            counters.append(_bam2geneprofile.TSSCounter(
+                range_counter,
+                options.extension_outward,
+                options.extension_inward))
 
         elif method == "intervalprofile":
-            counters.append(_bam2geneprofile.RegionCounter(range_counter,
-                                                           options.resolution_upstream,
-                                                           options.resolution_cds,
-                                                           options.resolution_downstream,
-                                                           options.extension_upstream,
-                                                           options.extension_downstream))
+            counters.append(_bam2geneprofile.RegionCounter(
+                range_counter,
+                options.resolution_upstream,
+                options.resolution_cds,
+                options.resolution_downstream,
+                options.extension_upstream,
+                options.extension_downstream))
 
         elif method == "midpointprofile":
-            counters.append(_bam2geneprofile.MidpointCounter(range_counter,
-                                                             options.resolution_upstream,
-                                                             options.resolution_downstream,
-                                                             options.extension_upstream,
-                                                             options.extension_downstream))
+            counters.append(_bam2geneprofile.MidpointCounter(
+                range_counter,
+                options.resolution_upstream,
+                options.resolution_downstream,
+                options.extension_upstream,
+                options.extension_downstream))
 
     # set normalization
     for c in counters:
@@ -674,8 +662,9 @@ def main(argv=None):
     if options.input_filename_counts:
         # read counts from file
         E.info("reading counts from %s" % options.input_filename_counts)
-        all_counts = pandas.read_csv(IOTools.openFile(options.input_filename_counts),
-                                     sep='\t', header=0, index_col=0)
+        all_counts = pandas.read_csv(
+            IOTools.openFile(options.input_filename_counts),
+            sep='\t', header=0, index_col=0)
 
         if len(counters) != 1:
             raise NotImplementedError(
@@ -687,7 +676,7 @@ def main(argv=None):
 
     else:
         E.info("starting counting with %i counters" % len(counters))
-        _bam2geneprofile.countFromGTF(counters, gtf_iterator)
+        feature_names = _bam2geneprofile.countFromGTF(counters, gtf_iterator)
 
     # output matrices
     if not options.profile_normalizations:

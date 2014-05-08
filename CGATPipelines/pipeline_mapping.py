@@ -1645,6 +1645,24 @@ def buildBed(infile, outfile):
     P.run()
 
 
+@merge(buildBigWig, "igv_sample_information.tsv")
+def buildIGVSampleInformation(infiles, outfile):
+    '''build a file with IGV sample information.'''
+
+    outf = IOTools.openFile(outfile, "w")
+    first = True
+    for fn in infiles:
+        fn = os.path.basename(fn)
+        parts = fn.split("-")
+        if first:
+            outf.write("sample\t%s\n" % "\t".join(
+                ["%i" % x for x in range(len(parts))]))
+            first = False
+        outf.write("%s\t%s\n" % (fn, "\t".join(parts)))
+
+    outf.close()
+
+
 @follows(loadReadCounts,
          loadPicardStats,
          loadBAMStats,
@@ -1726,6 +1744,9 @@ def views():
 @follows(mapping, qc, views, duplication)
 def full():
     pass
+
+
+
 
 
 ###################################################################

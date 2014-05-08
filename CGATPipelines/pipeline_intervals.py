@@ -280,7 +280,7 @@ def getAssociatedBAMFiles(track):
         %=all.bam
 
     '''
-    fn = track.asFile()
+    fn = os.path.basename(track.asFile())
     bamfiles = glob.glob("%s.bam" % fn)
 
     if bamfiles == []:
@@ -290,8 +290,8 @@ def getAssociatedBAMFiles(track):
         else:
             for pattern, value in P.CONFIG.items("bams"):
                 if "%" in pattern:
-                    p = re.sub("%", "\S+", pattern)
-                    if re.search(p, fn):
+                    p = re.sub("%", "\S+", pattern.lower())
+                    if re.search(p, fn.lower()):
                         bamfiles.extend(glob.glob(value))
 
     offsets = []
@@ -500,7 +500,7 @@ def loadIntervals(infile, outfile):
     tmpfile.close()
 
     tmpfilename = tmpfile.name
-    tablename = "%s_intervals" % track.asTable()
+    tablename = os.path.basename("%s_intervals" % track.asTable())
 
     statement = '''
     python %(scriptsdir)s/csv2db.py %(csv2db_options)s
@@ -1203,7 +1203,7 @@ def exportMotifSequences(infile, outfile):
     4. At most *motifs_max_size* sequences will be output.
 
     '''
-    track = P.snip(infile, "_intervals.load")
+    track = os.path.basename(P.snip(infile, "_intervals.load"))
     dbhandle = connect()
 
     p = P.substituteParameters(**locals())
