@@ -485,7 +485,8 @@ def buildReferenceTranscriptome(infile, outfile):
     '''
     P.run()
 
-    os.symlink(os.path.abspath(gtf_file), P.snip(os.path.abspath(gtf_file), ".gtf") + ".gff")
+    os.symlink(os.path.abspath(gtf_file),
+               P.snip(os.path.abspath(gtf_file), ".gtf") + ".gff")
 
     prefix = P.snip(outfile, ".fa")
 
@@ -1088,6 +1089,7 @@ if "merge_pattern_input" in PARAMS and PARAMS["merge_pattern_input"]:
                 for line in inf:
                     if not line.startswith("nreads"):
                         continue
+                    E.info("%s" % line[:-1])
                     nreads += int(line[:-1].split("\t")[1])
 
         outf = IOTools.openFile(outfile, "w")
@@ -1238,7 +1240,7 @@ def buildBAMStats(infiles, outfile):
     rna_file = os.path.join(PARAMS["annotations_dir"],
                             PARAMS_ANNOTATIONS["interface_rna_gff"])
 
-    job_options = "-l mem_free=8G"
+    job_options = "-l mem_free=12G"
 
     bamfile, readsfile = infiles
 
@@ -1354,7 +1356,7 @@ def loadContextStats(infiles, outfile):
     dbhandle = sqlite3.connect(PARAMS["database"])
 
 # The following is not necessary any more as context stats now also outputs a "total" column
-#    cc = Database.executewait( dbhandle, '''ALTER TABLE %(tablename)s ADD COLUMN mapped INTEGER''' % locals())
+#    cc = Database.execute
 #    statement = '''UPDATE %(tablename)s SET mapped =
 #                                       (SELECT b.alignments_mapped FROM bam_stats AS b
 #                                            WHERE %(tablename)s.track = b.track)''' % locals()#
@@ -1454,7 +1456,8 @@ def buildTranscriptLevelReadCounts(infiles, outfile):
                --counter=read-counts 
                --prefix=""
                --counter=read-coverage
-               --prefix=coverage_
+               --prefix=coverage_        
+               -v 0
             | gzip
           > %(outfile)s
          ''' % locals()

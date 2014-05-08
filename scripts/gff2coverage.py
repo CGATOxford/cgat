@@ -16,19 +16,94 @@ a :term:`gff` formatted file. The coverage is computed per feature.
 Usage
 -----
 
-Example::
+You can use two methods to compute the coverage: **genomic** and **histogram**.
 
-   python <script_name>.py --help
+Let us explain their usage with this ``small.gtf`` file::
 
-Type::
+   19 processed_transcript exon 16 16 . - . gene_id
+   19 processed_transcript exon 27 27 . - . gene_id
+   19 processed_transcript exon 8  8  . - . gene_id
+   19 processed_transcript exon 19 19 . - . gene_id
+   19 processed_transcript exon 5  5  . - . gene_id
 
-   python <script_name>.py --help
+and this toy example (``small.fasta``) of an indexed fasta file::
 
-for command line help.
+   >chr19
+   GCCGGCCTCTACCTGCAGCAGATGCCCTAT
+
+Both files (``small.gtf`` and ``small.fasta``) are included
+in the `GitHub <https://github.com/CGATOxford/cgat>`_ repository.
+
+genomic method
+++++++++++++++
+
+The **genomic** method computes the coverage of intervals
+accross the genome file given as input. Let us see how to
+apply the genomic method to the small examples above::
+
+   python gff2coverage.py --method=genomic --genome-file=small < small.gtf
+
+The output (wrapped to fit here) will be::
+
+   contig  source  feature  intervals  bases  p_coverage  total_p_coverage
+   19      trans.  exon     5          5      16.666667   16.666667
+
+As you can see the information displayed is the following: contig name,
+source, feature name, number of intervals within the contig, number of
+bases, percentage of coverage in the contig, and percentage of coverage
+in the genome file.
+
+histogram method
+++++++++++++++++
+
+On the contrary, if you want to compute the coverage of intervals
+within the :term:`gff` file itself summarized as an histogram and
+grouped by contig name, please use the histogram method.
+
+To use the histogram method with the input files above, please type::
+
+ python gff2coverage.py\
+ --method=histogram\
+ --window=5\
+ --features=exon\
+ --output-filename-pattern=%s.hist < small.gtf
+
+In this case the output (written to file ``19.hist``) is::
+
+   abs_pos  rel_pos  abs_exon  rel_exon
+   0        0.0000   1         0.2000
+   5        0.1852   2         0.4000
+   10       0.3704   2         0.4000
+   15       0.5556   4         0.8000
+   20       0.7407   4         0.8000
+   25       0.9259   5         1.0000
+
+The output is given as a pair of columns. The first pair of columns always
+appears and lists the cumulative numbers of nucleotides in each window or
+bin --absolute and relative values in the former and latter columns,
+respectively. The subsequent pair of columns depends on the values given to
+the ``--features`` option. In this example there is an extra column for the
+``exon`` feature but you could especify as many of them as you wanted among
+those features listed in your :term:`gff` file.
+
+On the other hand, the ``--num-bins`` option can be used instead of
+``--window`` along with ``--genome-file`` to define the number of bins for the
+resultant histogram. This parameter is used by default (with value: 1000)
+when using the histogram method.
+
+Please note the following:
+
+- you need to specify the feature name explicitly (with the ``--feature`` \
+option) to compute the genomic coverage of that feature. You can also use\
+a comma-separated list of feature names.
+
+- the output of the histogram method goes to a file (in the current working\
+directory) which is named as the contig name by default. To change this\
+behaviour, please use the ``--output-filename-pattern`` option where \
+``%s`` will be substituted by the contig name.
 
 Command line options
 --------------------
-
 '''
 
 import sys
