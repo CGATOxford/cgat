@@ -1624,6 +1624,12 @@ def main(args=sys.argv):
                       help="terminate immediately at the first exception "
                       "[default=%default].")
 
+    parser.add_option("-d", "--debug", dest="debug",
+                      action="store_true",
+                      help="output debugging information on console, "
+                      "and not the logfile "
+                      "[default=%default].")
+
     parser.set_defaults(
         pipeline_action=None,
         pipeline_format="svg",
@@ -1635,6 +1641,7 @@ def main(args=sys.argv):
         force=False,
         log_exceptions=False,
         exceptions_terminate_immediately=False,
+        debug=False,
     )
 
     (options, args) = E.Start(parser,
@@ -1761,33 +1768,36 @@ def main(args=sys.argv):
 
         except ruffus_exceptions.RethrownJobError, value:
 
-            E.error("%i tasks with errors, please see summary below:" %
-                    len(value.args))
-            for idx, e in enumerate(value.args):
-                task, job, error, msg, traceback = e
-                task = re.sub("__main__.", "", task)
-                job = re.sub("\s", "", job)
-                # display only single line messages
-                if len([x for x in msg.split("\n") if x != ""]) > 1:
-                    msg = ""
+            if not options.debug:
+                E.error("%i tasks with errors, please see summary below:" %
+                        len(value.args))
+                for idx, e in enumerate(value.args):
+                    task, job, error, msg, traceback = e
+                    task = re.sub("__main__.", "", task)
+                    job = re.sub("\s", "", job)
+                    # display only single line messages
+                    if len([x for x in msg.split("\n") if x != ""]) > 1:
+                        msg = ""
 
-                E.error("%i: Task=%s Error=%s %s: %s" %
-                        (idx, task, error, job, msg))
+                    E.error("%i: Task=%s Error=%s %s: %s" %
+                            (idx, task, error, job, msg))
 
-            E.error("full traceback is in %s" % options.logfile)
+                E.error("full traceback is in %s" % options.logfile)
 
-            # write full traceback to log file only by removing the stdout
-            # handler
-            lhStdout = logger.handlers[0]
-            logger.removeHandler(lhStdout)
-            logger.error("start of error messages")
-            logger.error(value)
-            logger.error("end of error messages")
-            logger.addHandler(lhStdout)
+                # write full traceback to log file only by removing the stdout
+                # handler
+                lhStdout = logger.handlers[0]
+                logger.removeHandler(lhStdout)
+                logger.error("start of error messages")
+                logger.error(value)
+                logger.error("end of error messages")
+                logger.addHandler(lhStdout)
 
-            # raise error
-            raise ValueError(
-                "pipeline failed with %i errors" % len(value.args))
+                # raise error
+                raise ValueError(
+                    "pipeline failed with %i errors" % len(value.args))
+            else:
+                raise
 
     elif options.pipeline_action == "dump":
         # convert to normal dictionary (not defaultdict) for parsing purposes
