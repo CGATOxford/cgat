@@ -31,8 +31,9 @@ help:
 
 clean:
 	-rm -rf _build/*
+	-rm -f _static/*.svg *.dot
 
-toolmap.svg:
+_static/toolmap.svg:
 	@echo building toolmap
 	python ../scripts/cgat2dot.py \
 		../scripts/bam2*.py ../scripts/bed2*.py \
@@ -40,10 +41,10 @@ toolmap.svg:
 		../scripts/fastq2*.py ../scripts/fastqs2*.py \
 		--log=toolmap.log \
 	> toolmap.dot
-	neato -Tsvg toolmap.dot > toolmap.svg
+	neato -Tsvg toolmap.dot > $@
 
 # remove the pyc file - otherwise errors when importing pipeline and other scripts
-html:
+html: _static/toolmap.svg
 	rm -f ../{CGAT,CGATPipelines,scripts}/*.pyc
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) _build/html
 	@echo
