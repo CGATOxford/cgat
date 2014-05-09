@@ -10,17 +10,18 @@ cgat_script_template.py - template for CGAT scripts
 Purpose
 -------
 
-<Overall purpose and function of the script>
+.. Overall purpose and function of the script>
 
 Options
 -------
 
-<Options for the script, with detail of how they are combined to provide \
-intended functionality>
+.. Options for the script, with detail of how they are combined
+.. to provide intended functionality
 
 Usage
 -----
-<Example use case>
+
+.. Example use case
 
 Example::
 
@@ -58,10 +59,9 @@ def main(argv=None):
     parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
-    parser.add_option("-t","--test", dest="test", type="string",
+    parser.add_option("-t", "--test", dest="test", type="string",
                       help="supply help")
 
-        
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv)
 

@@ -37,7 +37,7 @@ bigwigfileintervalaccuracy:
 
 controlfile:
     stdin: null
-    options: --force --reporter=transcript --method=geneprofile --bedfile=<DIR>/tss.bed.gz --controlfile=<DIR/tss.bed.gz --gtffile=<DIR>/twogenes.gtf.gz
+    options: --force --reporter=transcript --method=geneprofile --bedfile=<DIR>/tss.bed.gz --controlfile=<DIR>/tss.bed.gz --gtffile=<DIR>/twogenes.gtf.gz
     outputs: [geneprofile.lengths.tsv.gz, geneprofile.matrix.tsv.gz]
     references: [test6.geneprofile.lengths.tsv.gz, test6.geneprofile.matrix.tsv.gz]
 

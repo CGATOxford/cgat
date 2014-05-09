@@ -436,7 +436,9 @@ class CounterIntronsExons(_gtf2table.Counter):
         self.mNIntrons = len(segments) - 1
 
     def __str__(self):
-        return "\t".join((str(self.mNTranscripts), str(self.mNSegments), str(self.mNIntrons)))
+        return "\t".join((str(self.mNTranscripts),
+                          str(self.mNSegments),
+                          str(self.mNIntrons)))
 
 
 class CounterPosition(_gtf2table.Counter):
@@ -460,12 +462,13 @@ class CounterPosition(_gtf2table.Counter):
             self.start, self.end = "na", "na"
 
     def __str__(self):
-        return "\t".join([str(x) for x in (self.contig, self.strand, self.start, self.end)])
-
-# ----------------------------------------------------------------
+        return "\t".join([str(x) for x in
+                          (self.contig, self.strand,
+                           self.start, self.end)])
 
 
 class CounterLengths(_gtf2table.Counter):
+
     header = Stats.Summary().getHeaders()
 
     def __init__(self, *args, **kwargs):
@@ -478,8 +481,6 @@ class CounterLengths(_gtf2table.Counter):
 
     def __str__(self):
         return str(self.result)
-
-# ----------------------------------------------------------------
 
 
 class CounterSpliceSites(_gtf2table.Counter):
@@ -512,7 +513,10 @@ class CounterSpliceSites(_gtf2table.Counter):
                 r = self.getIntronType(s)
                 if r == "unknown":
                     r = self.getIntronType(
-                        string.translate(s, string.maketrans("ACGTacgt", "TGCAtgca"))[::-1])
+                        string.translate(s,
+                                         string.maketrans(
+                                             "ACGTacgt",
+                                             "TGCAtgca"))[::-1])
             else:
                 if Genomics.IsNegativeStrand(strand):
                     s = string.translate(
@@ -535,8 +539,6 @@ class CounterSpliceSites(_gtf2table.Counter):
         else:
             return "unknown"
 
-# ------------------------------------------------------------------------
-
 
 class CounterCompositionNucleotides(_gtf2table.Counter):
     header = SequenceProperties.SequencePropertiesNA().getHeaders()
@@ -552,8 +554,6 @@ class CounterCompositionNucleotides(_gtf2table.Counter):
 
     def __str__(self):
         return str(self.result)
-
-# ------------------------------------------------------------------------
 
 
 class CounterCompositionCpG(_gtf2table.Counter):
@@ -581,11 +581,8 @@ class CounterCompositionCpG(_gtf2table.Counter):
     def __str__(self):
         return str(self.result)
 
-# ------------------------------------------------------------------------
-
 
 class CounterOverlap(_gtf2table.Counter):
-
     """count overlap with segments in another file.
 
     nover1 and nover2 count "exons".
@@ -2034,9 +2031,8 @@ class ClassifierPolII(ClassifierIntervals):
 
     An interval is classified as:
 
-    is_transcribed: 
-        the longest interval covers *threshold_min_coverage* of the 
-        gene body.
+    is_transcribed:
+    the longest interval covers *threshold_min_coverage* of the gene body.
 
     """
 
@@ -2132,8 +2128,6 @@ class ClassifierPolII(ClassifierIntervals):
                   "%5.2f" % self.promotor_coverage])
 
         return "\t".join(h)
-
-# ------------------------------------------------------------------------
 
 
 class CounterBindingPattern(CounterOverlap):
@@ -3887,7 +3881,6 @@ def main(argv=None):
                 options=options,
                 prefix=prefix))
         elif c == "read-extension":
-	    minimum_read_quality=options.minimum_read_quality
             counters.append(CounterReadExtension(
                 bam_files,
                 filename_gff=options.filename_gff,
@@ -3904,7 +3897,7 @@ def main(argv=None):
             counters.append(_gtf2table.CounterReadCounts(
                 bam_files,
                 weight_multi_mapping=options.weight_multi_mapping,
-#               minimum_read_quality=options.minimum_read_quality,
+                minimum_read_quality=options.minimum_read_quality,
                 options=options,
                 prefix=prefix))
         elif c == "read-fullcounts":

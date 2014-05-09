@@ -1,5 +1,4 @@
-"""
-bam2wiggle.py - convert bam to wig/bigwig file
+"""bam2wiggle.py - convert bam to wig/bigwig file
 ==============================================
 
 :Author: Andreas Heger
@@ -10,24 +9,25 @@ bam2wiggle.py - convert bam to wig/bigwig file
 Purpose
 -------
 
-Convert a bam file to a profile in a genome browser track display 
-format such as wig, bigwig or bedgraph file. 
-This script is primarily designed to produce peak-shifted and 
-extended profiles such as from single-end ChIP-seq data. 
+Convert a bam file to a profile in a genome browser track display
+format such as wig, bigwig or bedgraph file.  This script is primarily
+designed to produce peak-shifted and extended profiles such as from
+single-end ChIP-seq data.
 
-The script requires the executables :file:`wigToBigWig` and 
+The script requires the executables :file:`wigToBigWig` and
 :file:`bedToBigBed` to be in the user's PATH.
 
-If --shift or --extend are given, the coverage is computed by shifting read
-alignment positions upstream for positive strand reads or downstream for negative
-strand reads and extend them by a fixed amount. If no --shift or --extend option 
-are given, the coverage is computed directly on reads. 
+If --shift or --extend are given, the coverage is computed by shifting
+read alignment positions upstream for positive strand reads or
+downstream for negative strand reads and extend them by a fixed
+amount. If no --shift or --extend option are given, the coverage is
+computed directly on reads.
 
 Counting can be performed at a specified resolution (span).
 
-The counting currently is not aware of spliced reads, i.e., an inserted intron 
-will be included in the coverage. For RNASEQ data it might be best to run 
-genomeCoverageBed directly on the bam file.
+The counting currently is not aware of spliced reads, i.e., an
+inserted intron will be included in the coverage. For RNASEQ data it
+might be best to run genomeCoverageBed directly on the bam file.
 
 
 Usage
@@ -35,13 +35,14 @@ Usage
 
 Type::
 
-   python bam2wiggle.py --output-format=bigwig --output-filename=out.bigwig in.bam 
+   python bam2wiggle.py --output-format=bigwig --output-filename=out.bigwig in.bam
 
-to convert the :term:`bam` file file:`in.bam` to :term:`bigwig` format 
+to convert the :term:`bam` file file:`in.bam` to :term:`bigwig` format
 and save the result in :file:`out.bigwig`.
 
 Command line options
 --------------------
+
 """
 
 import os
@@ -119,7 +120,8 @@ class SpanWriter(object):
             self.val = 0
 
             # Output middle windows
-            for x in range(start + self.span - start % self.span, end - self.span, self.span):
+            for x in range(start + self.span - start % self.span,
+                           end - self.span, self.span):
                 assert self.lastout != x
                 outfile.write("%i\t%f\n" % (x, val))
                 self.lastout = x
@@ -137,14 +139,15 @@ class SpanWriter(object):
                 outfile.write("%i\t%f\n" % (end - self.span, val))
                 self.lastend = None
             else:
-                # special case, end ends on window and only single window - already
-                # output as start
+                # special case, end ends on window and only single
+                # window - already output as start
                 self.lastend = None
 
     def flush(self, outfile):
         if self.lastend:
-            outfile.write("%i\t%f\n" % (self.lastend - self.lastend % self.span,
-                                        self.val / (self.lastend % self.span)))
+            outfile.write("%i\t%f\n" % (
+                self.lastend - self.lastend % self.span,
+                self.val / (self.lastend % self.span)))
 
 
 def main(argv=None):
@@ -204,7 +207,7 @@ def main(argv=None):
         options.output_filename = args[1]
     if not options.samfile:
         raise ValueError("please provide a bam file")
-        
+
     # Read BAM file using Pysam
     samfile = pysam.Samfile(options.samfile, "rb")
 
@@ -221,7 +224,7 @@ def main(argv=None):
     for contig, size in contig_sizes.items():
         outfile_size.write("%s\t%s\n" % (contig, size))
     outfile_size.close()
-    
+
     # Shift and extend only available for bigwig format
     if options.shift or options.extend:
         if options.output_format != "bigwig":
@@ -233,7 +236,7 @@ def main(argv=None):
         if not options.output_filename:
             raise ValueError(
                 "please specify an output file for bigwig computation.")
-                
+
         # Define executable to use for binary conversion
         if options.output_format == "bigwig":
             executable_name = "wigToBigWig"
@@ -255,11 +258,13 @@ def main(argv=None):
 
     # Set up output write functions
     if options.output_format in ("wiggle", "bigwig"):
-        # wiggle is one-based, so add 1, also step-size is 1, so need to output all bases
+        # wiggle is one-based, so add 1, also step-size is 1, so need
+        # to output all bases
         if options.span == 1:
             outf = lambda outfile, contig, start, end, val: \
                 outfile.write(
-                    "".join(["%i\t%i\n" % (x, val) for x in xrange(start + 1, end + 1)]))
+                    "".join(["%i\t%i\n" % (x, val)
+                             for x in xrange(start + 1, end + 1)]))
         else:
             outf = SpanWriter(options.span)
     elif options.output_format == "bedgraph":
@@ -320,11 +325,13 @@ def main(argv=None):
         # Convert bedgraph to bigwig
         E.info("converting to bigwig")
         tmpfile_sorted = os.path.join(tmpdir, "sorted")
-        statement = "sort -k 1,1 -k2,2n %(tmpfile_bed)s > %(tmpfile_sorted)s; bedGraphToBigWig %(tmpfile_sorted)s %(tmpfile_sizes)s %(output_filename)s" % locals()
+        statement = ("sort -k 1,1 -k2,2n %(tmpfile_bed)s > %(tmpfile_sorted)s;"
+                     "bedGraphToBigWig %(tmpfile_sorted)s %(tmpfile_sizes)s "
+                     "%(output_filename)s" % locals())
         E.run(statement)
 
-    else: # no shift/extend/merge
-
+    else:
+        # no shift/extend/merge
         def column_iter(iterator):
             start = None
             end = 0

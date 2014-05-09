@@ -1,8 +1,7 @@
-'''
-cgat2rdf.py - create rdf description of CGAT script
+'''cgat2rdf.py - create rdf description of CGAT script
 ====================================================
 
-:Author: 
+:Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
 :Tags: Python
@@ -21,7 +20,7 @@ Usage
 
 Example::
 
-   python cgat2rdf.py bam2stats.py 
+   python cgat2dot.py bam2stats.py
 
 Type::
 
@@ -31,44 +30,6 @@ for command line help.
 
 Documentation
 -------------
-
-This script takes a CGAT script and attempts to write an interface definition
-for this script. In order to guess the file types correctly, :file:`cgat2rdf.py`
-makes use of the following information:
-
-1. The script name. If the name of the script contains a "format2format.py", :file:`cgat2rdf.py`
-   will assume that the script works within a pipe: it takes stdin and stdout as 
-   input and output, respectively, and each are formatted according to the formats.
-   For example, ``bed2bed.py`` has a :term:`bed` formatted file as input and output,
-   while ``gtf2gff.py`` has a :term:`gtf` formatted file as input and outputs
-   a :term:`gff` file. Most formats are not parsed, though :file:`cgat2rdf.py` contains
-   some type mappings:
-
-+--------------------+--------------------+--------------------+
-|Format              |Maps to             |Content             |
-+--------------------+--------------------+--------------------+
-|tsv                 |tabular             |Tab-separated values|
-+--------------------+--------------------+--------------------+
-|table               |tabular             |ditto               |
-+--------------------+--------------------+--------------------+
-|stats               |tabular             |ditto               |
-+--------------------+--------------------+--------------------+
-|csv                 |tabular             |ditto               |
-+--------------------+--------------------+--------------------+
-
-   
-2. The command line options. :file:`cgat2rdf.py` will import the script it 
-   runs and captures the command line option parser information. Based on these
-   data, options are added to the interface. Atomic values such as int, float,
-   etc, are interpreted directly. For textual arguments, :file:`cgat2rdf.py`
-   tests if the :attr:`metavar` attribute has been set. When set, the content
-   of this attribute will determine the file type.
-
-The interface decription can be exported either as :term:`RDF` or in a variety
-of other formats:
-
-galaxy
-    Galaxy xml file.
 
 Command line options
 --------------------
@@ -228,6 +189,9 @@ def processScript(script_name, outfile, options):
     E.Start = LocalStart
     try:
         module.main(argv=["--help"])
+    except TypeError, msg:
+        E.warn('could not import %s: %s' % (basename, msg))
+        return
     except DummyError:
         pass
 
@@ -244,10 +208,11 @@ def processScript(script_name, outfile, options):
         BREAK_FORMATS[output_format] += 1
         output_format = nodename
 
-
-    url = "http://www.cgat.org/~andreas/documentation/cgat/scripts/%s.html" % basename
+    url = "http://www.cgat.org/~andreas/documentation/cgat/" \
+          "scripts/%s.html" % basename
     # Note that URL needs to be uppercase!
-    if input_format in PRINCIPAL_FORMATS and output_format in PRINCIPAL_FORMATS:
+    if input_format in PRINCIPAL_FORMATS and \
+       output_format in PRINCIPAL_FORMATS:
         edge_style = EDGE_STYLE_CONVERSION
     else:
         edge_style = EDGE_STYLE_DEFAULT
@@ -348,7 +313,6 @@ def processScript(script_name, outfile, options):
         param['value'] = getattr(defaults,  option.dest)
 
 
-
 def main(argv=None):
     """script main.
 
@@ -420,7 +384,7 @@ def main(argv=None):
 
     # general node format
     outfile.write('node [%s];\n' % NODE_STYLE_DEFAULT)
-        
+
     # go through script to provide edges
     for script_name in args:
         if not script_name.endswith(".py"):

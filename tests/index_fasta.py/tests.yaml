@@ -9,13 +9,13 @@ index_tar:
     stdin: null
     outputs: [test1_sc.fasta, test1_sc.idx]
     references: [test1.fasta, test1.idx]
-    options: test1_sc %DIR%/test1_sc.tar.gz > test1.log
+    options: --force test1_sc %DIR%/test1_sc.tar.gz > test1.log
 
 index_multiple_fasta:
     stdin: null
     outputs: [test2_sc.fasta, test2_sc.idx]
     references: [test1.fasta, test1.idx]
-    options: test2_sc %DIR%/chr*.fa > test2.log
+    options: --force test2_sc %DIR%/chr*.fa > test2.log
 
 # This test tests 3 things
 # 1. reading from stdin
@@ -26,7 +26,7 @@ index_stdin:
     outputs: [test3_sc.gz, test3_sc.cdx]
     binary: [test3_sc.gz]
     references: [test3.gz, test3.cdx]
-    options: test3_sc - --compression=gzip --file-format=tar.gz --random-access-points=1000000 > test3.log
+    options: test3_sc - --compression=gzip --force --file-format=tar.gz --random-access-points=1000000 > test3.log
 
 # This test tests the ability to clean and also
 # to use synonyms
@@ -34,14 +34,14 @@ clean:
     stdin: null
     outputs: [test4_sc.fasta, test4_sc.idx]
     references: [test4.fasta, test4.idx]
-    options: test4_sc %DIR%/with_x.fa --clean-sequence --synonyms=chrI=chr1 > test4.log
+    options: test4_sc %DIR%/with_x.fa --force --clean-sequence --synonyms=chrI=chr1 > test4.log
 
 #allowing duplicates
 allowdups:
     stdin: null
     outputs: [test5_sc.fasta, test5_sc.idx]
     references: [test5.fasta, test5.idx]
-    options: test5_sc %DIR%/chrI.fa %DIR%/1chr.fa --allow-duplicates > test5.log
+    options: --allow-duplicates --force test5_sc %DIR%/chrI.fa %DIR%/1chr.fa > test5.log
 
 
 #regex-ing identifiers
@@ -49,40 +49,43 @@ regexid:
     stdin: null
     outputs: [test6_sc.fasta, test6_sc.idx]
     references: [test6.fasta, test6.idx]
-    options: test6_sc %DIR%/test1_sc.tar.gz --regex-identifier="chr(.+)"
+    options: test6_sc %DIR%/test1_sc.tar.gz  --force --regex-identifier="chr(.+)"
 
 #verifying
 verify:
    stdin: null
    outputs: []
    references: []
-   options: --verify=%DIR%/test1 -L /dev/null %DIR%/test1
+   options: --verify=%DIR%/test1 --force --verify-iterations=100 -L /dev/null %DIR%/test1
 
 verify-binary:
    stdin: null
    outputs: []
    references: []
-   options: --verify=%DIR%/test1 -L /dev/null %DIR%/test3
+   options: --verify=%DIR%/test1 --force --verify-iterations=100 -L /dev/null %DIR%/test3
 
 #compress-index
-compress:
-   stdin: null
-   outputs: [test1.idx.dbm]
-   references: [test1_ref.idx.dbm]
-   options: --compress-index %DIR%/test1 --force
+# Compressed indices are binary, but binary
+# versions are not compatible. This test has
+# bin disabled for now.
+#compress:
+#   stdin: null
+#   outputs: [<DIR>/test1.idx.dbm]
+#   references: [test1_ref.idx.dbm]
+#   options: --compress-index --force %DIR%/test1 
 
 #benchmark-index
 benchmark:
    stdin: null
    outputs: [stdout]
    references: [test1_benchmark.txt]
-   options: -b --benchmark-num-iterations=100 -L /dev/null %DIR%/test1
+   options: -b --benchmark-num-iterations=100 --force -L /dev/null %DIR%/test1
 
 benchmark-binary:
    stdin: null
    outputs: [stdout]
    references: [test1_benchmark.txt]
-   options: -b --benchmark-num-iterations=100 -L /dev/null %DIR%/test3
+   options: -b --benchmark-num-iterations=100 --force -L /dev/null %DIR%/test3
 
 ###Testing Extraction
 
