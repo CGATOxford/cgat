@@ -52,7 +52,6 @@ k-mers. Which k-mer to use in the assembly process is therefore
 dependent on the data used and the expected complexity of the
 sample. We make no effort here to advise on k-mer length.
 
-  
 Usage
 =====
 
@@ -62,7 +61,7 @@ information how to use CGAT pipelines.
 Configuration
 -------------
 
-The pipeline requires a configured :file:`pipeline.ini` file. 
+The pipeline requires a configured :file:`pipeline.ini` file.
 
 The sphinxreport report requires a :file:`conf.py` and
 :file:`sphinxreport.ini` file (see :ref:`PipelineDocumenation`). To
@@ -218,7 +217,7 @@ import PipelineTracks
 
 # collect fastq.gz tracks
 TRACKS = PipelineTracks.Tracks(PipelineTracks.Sample3).loadFromDirectory(
-    glob.glob( "*.fastq.gz" ), "(\S+).fastq.gz" ) +\
+    glob.glob("*.fastq.gz"), "(\S+).fastq.gz") +\
     PipelineTracks.Tracks(PipelineTracks.Sample3).loadFromDirectory(
         glob.glob("*.fastq.1.gz"), "(\S+).fastq.1.gz")
 
@@ -238,9 +237,7 @@ BOWTIE = MAPPER == "bowtie"
 BOWTIE2 = MAPPER == "bowtie2"
 BWA = MAPPER == "bwa"
 
-###################################################################
-###################################################################
-###################################################################
+
 def connect():
     '''connect to database.
 
@@ -260,6 +257,7 @@ SEQUENCEFILES = ("*.fasta", "*.fasta.gz", "*.fasta.1.gz",
                  "*.fastq", "*.fastq.gz", "*.fastq.1.gz")
 SEQUENCEFILES_REGEX = regex(
     r"(\S+).(fasta$|fasta.gz|fasta.1.gz|fastq$|fastq.gz|fastq.1.gz)")
+
 
 ###################################################################
 # Should reads be pooled prior to assembly
@@ -283,9 +281,7 @@ def pool_out(infiles):
     outname = "pooled_reads.dir/agg-agg-agg.%s" % format
     return outname
 
-###################################################################
-###################################################################
-###################################################################
+
 @active_if('pool_reads' in PARAMS and PARAMS["pool_reads"])
 @follows(mkdir("pooled_reads.dir"))
 # bit of a hack
@@ -300,22 +296,17 @@ def poolReadsAcrossConditions(infiles, outfile):
                                                       outfile)
     P.run()
 
-###################################################################
-# Counting reads input
-###################################################################
+
 @transform(SEQUENCEFILES,
            SEQUENCEFILES_REGEX,
            r"\1.nreads")
 def countReads(infile, outfile):
     '''count number of reads in input files.'''
-    to_cluster = True
     m = PipelineMapping.Counter()
     statement = m.build((infile,), outfile)
     P.run()
 
-###################################################################
-###################################################################
-###################################################################
+
 @merge(countReads, "reads_summary.load")
 def loadReadCounts(infiles, outfile):
     '''load read counts into database.'''
@@ -332,19 +323,20 @@ def loadReadCounts(infiles, outfile):
     inname = outf.name
 
     tablename = P.toTable(outfile)
-    statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s --log=%(outfile)s.log 
+    statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s --log=%(outfile)s.log
                   < %(inname)s > %(outfile)s'''
     P.run()
     os.unlink(outf.name)
 
-###################################################################
+
 ###################################################################
 ###################################################################
 # Preprocess reads for IDBA
 ###################################################################
 @active_if("idba" in ASSEMBLERS and PARAMS["pool_reads"])
 @follows(mkdir("fasta.dir"))
-@transform(poolReadsAcrossConditions, regex("(\S+).fastq.*gz"), r"fasta.dir/\1.fa")
+@transform(poolReadsAcrossConditions, regex("(\S+).fastq.*gz"),
+           r"fasta.dir/\1.fa")
 def preprocessIdba(infile, outfile):
     '''
     preprocess pooled reads for IDBA
@@ -360,16 +352,14 @@ def preprocessIdba(infile, outfile):
         read2 = P.snip(infile, ".1.gz") + ".2.gz"
         assert os.path.exists(read2), "file does not exist %s" % read2
 
-        statement = '''python %(scriptsdir)s/fastqs2fasta.py 
-                   -a %(infile)s 
-                   -b %(read2)s 
-                   --log=%(infile)s.log 
+        statement = '''python %(scriptsdir)s/fastqs2fasta.py
+                   -a %(infile)s
+                   -b %(read2)s
+                   --log=%(infile)s.log
                    > %(outfile)s'''
         P.run()
 
-###################################################################
-###################################################################
-###################################################################
+
 @follows(mkdir("fasta.dir"))
 @transform(SEQUENCEFILES, SEQUENCEFILES_REGEX, r"fasta.dir/\1.fa")
 def preprocessReads(infile, outfile):
@@ -388,10 +378,10 @@ def preprocessReads(infile, outfile):
         assert os.path.exists(read2), "file does not exist %s" % read2
 
         log = infile.replace("fastq.", "")
-        statement = '''python %(scriptsdir)s/fastqs2fasta.py 
-                   -a %(infile)s 
-                   -b %(read2)s 
-                   --log=%(log)s.log 
+        statement = '''python %(scriptsdir)s/fastqs2fasta.py
+                   -a %(infile)s
+                   -b %(read2)s
+                   --log=%(log)s.log
                    > %(outfile)s'''
         P.run()
 
@@ -413,11 +403,8 @@ SEQUENCE_TARGETS = {
     0: (SEQUENCEFILES, SEQUENCEFILES_REGEX, "1.contigs.fa"),
     "": (SEQUENCEFILES, SEQUENCEFILES_REGEX, "1.contigs.fa")}
 
-###################################################################
-###################################################################
-###################################################################
+
 # assemble reads with meta-velvet
-###################################################################
 @active_if("metavelvet" in ASSEMBLERS)
 @follows(mkdir("metavelvet.dir"))
 @transform(SEQUENCE_TARGETS[PARAMS.get("pool_reads", "")][0],
@@ -432,9 +419,7 @@ def runMetavelvet(infile, outfile):
     statement = PipelineMetagenomeAssembly.Metavelvet().build(infile, PARAMS)
     P.run()
 
-###################################################################
-###################################################################
-###################################################################
+
 @jobs_limit(1, "R")
 @transform(runMetavelvet, suffix(".contigs.fa"), ".stats.pdf")
 def plotCoverageHistogram(infile, outfile):
@@ -449,9 +434,7 @@ def plotCoverageHistogram(infile, outfile):
     R('''weighted.hist(data$short1_cov, data$lgth, breaks=seq(0, 200, by=1))''')
     R["dev.off"]()
 
-###################################################################
-###################################################################
-###################################################################
+
 @transform(runMetavelvet, suffix(".contigs.fa"), ".stats.load")
 def loadMetavelvetRawStats(infile, outfile):
     '''
@@ -460,23 +443,20 @@ def loadMetavelvetRawStats(infile, outfile):
     inf = P.snip(infile, ".contigs.fa") + ".stats.txt"
     P.load(inf, outfile)
 
-###################################################################
-###################################################################
-###################################################################
+
 @transform(runMetavelvet, suffix(".contigs.fa"), ".summary.tsv")
 def buildMetavelvetStats(infile, outfile):
     '''
     build metavelvet stats:
     N50
-    Number of scaffolds 
+    Number of scaffolds
     Total scaffold length
     '''
     PipelineMetagenomeAssembly.contig_to_stats(infile, outfile, PARAMS)
 
-###################################################################
-###################################################################
-###################################################################
-@transform(buildMetavelvetStats, regex("(\S+).dir/(\S+).tsv"), r"\1.dir/\1-\2.load")
+
+@transform(buildMetavelvetStats, regex("(\S+).dir/(\S+).tsv"),
+           r"\1.dir/\1-\2.load")
 def loadMetavelvetStats(infile, outfile):
     '''
     load the metavelvet stats
@@ -489,9 +469,11 @@ def loadMetavelvetStats(infile, outfile):
 # assemble reads with idba
 ###################################################################
 IDBA_TARGETS = {1: (preprocessIdba, regex("(\S+)/(\S+).fa"),
-                    "2.contigs.fa"), 0: (preprocessReads,
-                                         regex("(\S+)/(\S+).fa"), "2.contigs.fa"), "": 
+                    "2.contigs.fa"),
+                0: (preprocessReads,
+                    regex("(\S+)/(\S+).fa"), "2.contigs.fa"), "":
                 (preprocessReads, regex("(\S+)/(\S+).fa"), "2.contigs.fa")}
+
 
 @active_if("idba" in ASSEMBLERS)
 @follows(mkdir("idba.dir"))
@@ -503,27 +485,22 @@ def runIdba(infile, outfile):
     '''
     run idba on each track
     '''
-    to_cluster = True
     job_options = " -l mem_free=30G"
     statement = PipelineMetagenomeAssembly.Idba().build(infile)
     P.run()
 
-###################################################################
-###################################################################
-###################################################################
+
 @transform(runIdba, suffix(".contigs.fa"), ".summary.tsv")
 def buildIdbaStats(infile, outfile):
     '''
     build idba stats:
     N50
-    Number of scaffolds 
+    Number of scaffolds
     Total scaffold length
     '''
     PipelineMetagenomeAssembly.contig_to_stats(infile, outfile, PARAMS)
 
-###################################################################
-###################################################################
-###################################################################
+
 @transform(buildIdbaStats, regex("(\S+).dir/(\S+).tsv"), r"\1.dir/\1-\2.load")
 def loadIdbaStats(infile, outfile):
     '''
@@ -531,9 +508,7 @@ def loadIdbaStats(infile, outfile):
     '''
     P.load(infile, outfile)
 
-###################################################################
-###################################################################
-###################################################################
+
 @active_if("ray" in ASSEMBLERS)
 @follows(mkdir("ray.dir"))
 @transform(SEQUENCE_TARGETS[PARAMS.get("pool_reads", "")][0],
@@ -544,16 +519,13 @@ def runRay(infile, outfile):
     '''
     run Ray on each track
     '''
-    to_cluster = True
     job_options = " -l h=!andromeda,h=!cgatgpu1,h=!cgatsmp1,h=!gandalf,h=!saruman \
                     -pe mpi 10 \
                     -q all.q "
     statement = PipelineMetagenomeAssembly.Ray().build(infile)
     P.run()
 
-###################################################################
-###################################################################
-###################################################################
+
 @active_if("sga" in ASSEMBLERS)
 @follows(mkdir("sga.dir"))
 @transform(SEQUENCE_TARGETS[PARAMS.get("pool_reads", "")][0],
@@ -564,14 +536,11 @@ def runSGA(infile, outfile):
     '''
     run SGA on each track
     '''
-    to_cluster = True
     job_options = " -l mem_free=30G "
     statement = PipelineMetagenomeAssembly.SGA().build(infile)
     P.run()
 
-###################################################################
-###################################################################
-###################################################################
+
 @active_if("soapdenovo" in ASSEMBLERS)
 @follows(mkdir("soapdenovo.dir"))
 @transform(SEQUENCE_TARGETS[PARAMS.get("pool_reads", "")][0],
@@ -583,9 +552,7 @@ def buildSoapdenovoConfig(infile, outfile):
     '''
     PipelineMetagenomeAssembly.SoapDenovo2().config(infile, outfile, PARAMS)
 
-###################################################################
-###################################################################
-###################################################################
+
 @transform(buildSoapdenovoConfig, suffix(".contigs.fa.cfg"), ".contigs.fa")
 def runSoapdenovo(infile, outfile):
     '''
@@ -595,9 +562,7 @@ def runSoapdenovo(infile, outfile):
     statement = PipelineMetagenomeAssembly.SoapDenovo2().build(infile)
     P.run()
 
-###################################################################
-###################################################################
-###################################################################
+
 @active_if("spades" in ASSEMBLERS)
 @follows(mkdir("spades.dir"))
 @transform(SEQUENCE_TARGETS[PARAMS.get("pool_reads", "")][0],
@@ -612,27 +577,23 @@ def runSpades(infile, outfile):
     statement = PipelineMetagenomeAssembly.Spades().build(infile)
     P.run()
 
-###################################################################
-###################################################################
-###################################################################
+
 ASSEMBLY_TARGETS = []
 assembly_targets = {"metavelvet": runMetavelvet,
-                    "idba": runIdba, 
-                    "ray": runRay, 
-                    "sga": runSGA, 
+                    "idba": runIdba,
+                    "ray": runRay,
+                    "sga": runSGA,
                     "soapdenovo": runSoapdenovo,
                     "spades": runSpades}
 for x in ASSEMBLERS:
     ASSEMBLY_TARGETS.append(assembly_targets[x])
 
-###################################################################
-###################################################################
-###################################################################
+
 @transform(ASSEMBLY_TARGETS, suffix(".contigs.fa"), ".filtered.contigs.fa")
 def filterContigs(infile, outfile):
     '''
     filter contigs if specified in .ini file. If not specified
-    then the pipeline will not remove any but will produce a new 
+    then the pipeline will not remove any but will produce a new
     outfile - this is not space efficient and SHOULD BE CHANGED
     '''
     if not PARAMS["filter"]:
@@ -642,9 +603,7 @@ def filterContigs(infile, outfile):
 
     PipelineMetagenomeAssembly.filterContigs(infile, outfile, length)
 
-###################################################################
-###################################################################
-###################################################################
+
 @transform(filterContigs, suffix(".fa"), ".summary.tsv")
 def buildContigStats(infile, outfile):
     '''
@@ -656,19 +615,16 @@ def buildContigStats(infile, outfile):
     '''
     PipelineMetagenomeAssembly.contig_to_stats(infile, outfile, PARAMS)
 
-###################################################################
-###################################################################
-###################################################################
-@transform(buildContigStats, regex("(\S+).dir/(\S+).tsv"), r"\1.dir/\1-\2.load")
+
+@transform(buildContigStats, regex("(\S+).dir/(\S+).tsv"),
+           r"\1.dir/\1-\2.load")
 def loadContigStats(infile, outfile):
     '''
     load the contig stats
     '''
     P.load(infile, outfile)
 
-###################################################################
-###################################################################
-###################################################################
+
 @split(loadContigStats, "*/contig.summary.tsv")
 def buildContigSummary(infiles, outfile):
     '''
@@ -700,12 +656,11 @@ def buildContigSummary(infiles, outfile):
                                  , median_length
                                  , max_length FROM %s""" % table).fetchone()
             outf.write("\t".join(
-                map(str, [track, data[0], data[1], data[2], data[3], data[4], data[5]])) + "\n")
+                map(str, [track, data[0], data[1], data[2],
+                          data[3], data[4], data[5]])) + "\n")
         outf.close()
 
-###################################################################
-###################################################################
-###################################################################
+
 @transform(buildContigSummary, suffix(".tsv"), ".load")
 def loadContigSummary(infile, outfile):
     '''
@@ -716,9 +671,7 @@ def loadContigSummary(infile, outfile):
     P.load(infile, outname)
     P.touch(outfile)
 
-###################################################################
-###################################################################
-###################################################################
+
 @transform(filterContigs, suffix(".fa"), ".lengths.tsv")
 def buildContigLengths(infile, outfile):
     '''
@@ -726,9 +679,7 @@ def buildContigLengths(infile, outfile):
     '''
     PipelineMetagenomeAssembly.build_scaffold_lengths(infile, outfile, PARAMS)
 
-###################################################################
-###################################################################
-###################################################################
+
 @transform(buildContigLengths, suffix(".lengths.tsv"), ".lengths.load")
 def loadContigLengths(infile, outfile):
     '''
@@ -739,24 +690,20 @@ def loadContigLengths(infile, outfile):
     P.load(infile, outname, "--index=scaffold_name")
     P.touch(outfile)
 
-###################################################################
-###################################################################
-###################################################################
+
 @transform(filterContigs, suffix(".fa"), ".gc.tsv")
 def buildContigGCContent(infile, outfile):
     '''
     build the GC content for each contig
     '''
-    statement = '''cat %(infile)s 
-                   | python %(scriptsdir)s/fasta2table.py 
+    statement = '''cat %(infile)s
+                   | python %(scriptsdir)s/fasta2table.py
                    --section=cpg
                    --log=%(outfile)s.log
                    > %(outfile)s'''
     P.run()
 
-###################################################################
-###################################################################
-###################################################################
+
 @transform(buildContigGCContent, suffix(".gc.tsv"), ".gc.load")
 def loadContigGCContent(infile, outfile):
     '''
@@ -767,9 +714,7 @@ def loadContigGCContent(infile, outfile):
     P.load(infile, outname, "--index=id")
     P.touch(outfile)
 
-###################################################################
-###################################################################
-###################################################################
+
 @transform(filterContigs, suffix(".fa"), ".blast")
 def runBlastOnContigs(infile, outfile):
     '''
@@ -779,37 +724,33 @@ def runBlastOnContigs(infile, outfile):
     '''
     db = PARAMS["megan_db"]
     evalue = PARAMS["megan_evalue"]
-    statement = '''cat %(infile)s 
-                  | python %(scriptsdir)s/farm.py --split-at-regex="^>(\S+)" 
-                    --log=%(outfile)s.log 
-                    --chunksize=100 "blastx -db %(db)s -evalue %(evalue)s" > %(outfile)s'''
+    statement = '''cat %(infile)s
+    | python %(scriptsdir)s/farm.py --split-at-regex="^>(\S+)"
+    --log=%(outfile)s.log
+    --chunksize=100 "blastx -db %(db)s -evalue %(evalue)s" > %(outfile)s'''
     P.run()
 
-###################################################################
-###################################################################
-###################################################################
+
 @transform(runBlastOnContigs, suffix(".blast"), ".lca")
 def runLCA(infile, outfile):
     '''
     run the lowest common ancestor algorithm
-    on the blast output to assign contigs to 
+    on the blast output to assign contigs to
     taxa - from mtools. Runs with defaults at
     the moment
     '''
-    statement = '''lcamapper.sh 
+    statement = '''lcamapper.sh
                    -i %(infile)s
                    -o %(outfile)s > %(outfile)s.log'''
     P.run()
 
-###################################################################
-###################################################################
-###################################################################
+
 @transform(runLCA, suffix(".lca"), ".taxa.gz")
 def parseLCA(infile, outfile):
     '''
     tabulate LCA output into nice format
     '''
-    statement = '''cat %(infile)s 
+    statement = '''cat %(infile)s
                    | python %(scriptsdir)s/lca2table.py
                      --summarise=individual
                      --log=%(outfile)s.log
@@ -817,9 +758,7 @@ def parseLCA(infile, outfile):
                    | gzip > %(outfile)s'''
     P.run()
 
-###################################################################
-###################################################################
-###################################################################
+
 @jobs_limit(1, "db")
 @transform(parseLCA, suffix(".gz"), ".load")
 def loadLCA(infile, outfile):
@@ -836,9 +775,7 @@ def loadLCA(infile, outfile):
                   > %(outfile)s'''
     P.run()
 
-###################################################################
-###################################################################
-###################################################################
+
 @transform(filterContigs, suffix(".fa"), ".tetra")
 def buildTetranucleotideFreq(infile, outfile):
     '''
@@ -849,9 +786,7 @@ def buildTetranucleotideFreq(infile, outfile):
                    -k 4 --log=%(outfile)s.log > %(outfile)s'''
     P.run()
 
-###################################################################
-###################################################################
-###################################################################
+
 @follows(loadContigStats,
          loadContigSummary,
          loadContigLengths,
@@ -861,13 +796,8 @@ def buildTetranucleotideFreq(infile, outfile):
 def assembly():
     pass
 
-###################################################################
-###################################################################
-###################################################################
+
 # gene finding using MetaGeneMark
-###################################################################
-###################################################################
-###################################################################
 @transform(filterContigs, suffix(".fa"), ".genes.tsv")
 def findGenesUsingMetaGeneMark(infile, outfile):
     '''
@@ -875,61 +805,50 @@ def findGenesUsingMetaGeneMark(infile, outfile):
     Output is tsv - similar to gff format but with
     sequences
     '''
-    to_cluster = True
     mparams = PARAMS["metagenemark_model_params"]
     statement = '''gmhmmp -a -d -f G -m %(mparams)s -o %(outfile)s %(infile)s'''
     P.run()
 
-###################################################################
-###################################################################
-###################################################################
+
 @transform(findGenesUsingMetaGeneMark, regex("(\S+).tsv"), r"\1.gff.gz")
 def parseGenesGff(infile, outfile):
     '''
     parse the genes file
     '''
-    to_cluster = True
-    statement = '''cat %(infile)s | python %(scriptsdir)s/formatMetagenemark.py 
-                                    --format gff 
-                                    --log=%(outfile)s.log 
+
+    statement = '''cat %(infile)s | python %(scriptsdir)s/formatMetagenemark.py
+                                    --format gff
+                                    --log=%(outfile)s.log
                                      | gzip > %(outfile)s'''
     P.run()
 
-###################################################################
-###################################################################
-###################################################################
+
 @transform(findGenesUsingMetaGeneMark, regex("(\S+).tsv"), r"\1.fasta.gz")
 def parseGenesFasta(infile, outfile):
     '''
     parse the genes file
     '''
-    to_cluster = True
-    statement = '''cat %(infile)s | python %(scriptsdir)s/formatMetagenemark.py 
-                                    --format fasta 
-                                    --log=%(outfile)s.log 
-                                    | sed 's/DNA /DNA_/g' 
+    statement = '''cat %(infile)s | python %(scriptsdir)s/formatMetagenemark.py
+                                    --format fasta
+                                    --log=%(outfile)s.log
+                                    | sed 's/DNA /DNA_/g'
                                     | gzip > %(outfile)s'''
     P.run()
 
-###################################################################
-###################################################################
-###################################################################
+
 @transform(findGenesUsingMetaGeneMark, regex("(\S+).tsv"), r"\1.aa.gz")
 def parseGenesAa(infile, outfile):
     '''
     parse the genes file
     '''
-    to_cluster = True
-    statement = '''cat %(infile)s | python %(scriptsdir)s/formatMetagenemark.py 
-                                    --format aa 
-                                    --log=%(outfile)s.log 
-                                    | sed 's/Protein /Protein_/g' 
+    statement = '''cat %(infile)s | python %(scriptsdir)s/formatMetagenemark.py
+                                    --format aa
+                                    --log=%(outfile)s.log
+                                    | sed 's/Protein /Protein_/g'
                                     | gzip > %(outfile)s'''
     P.run()
 
-###################################################################
-###################################################################
-###################################################################
+
 @transform(parseGenesAa, suffix(".aa.gz"), ".essential.hmm.gz")
 def assignEssentialGenesToContigs(infile, outfile):
     '''
@@ -940,25 +859,26 @@ def assignEssentialGenesToContigs(infile, outfile):
     tempdir = P.getTempDir(".")
 
     statement = '''zcat %(infile)s > %(tempdir)s/orfs.fa;
-                   hmmsearch --tblout %(tempdir)s/hmm.out --cut_tc
-                   --notextw  %(essential)s %(tempdir)s/orfs.fa;
-                    tail -n+4 %(tempdir)s/hmm.out | sed 's/ * / /g' | cut -f1,4 -d " " 
-                   | gzip > %(outfile)s'''
+    hmmsearch --tblout %(tempdir)s/hmm.out --cut_tc
+    --notextw  %(essential)s %(tempdir)s/orfs.fa;
+    tail -n+4 %(tempdir)s/hmm.out | sed 's/ * / /g' | cut -f 1,4 -d " "
+    | gzip > %(outfile)s'''
     P.run()
     statement = '''rm -rf %(tempdir)s'''
     P.run()
 
-###################################################################
-###################################################################
-###################################################################
-@transform(assignEssentialGenesToContigs, suffix(".gz"), add_inputs(parseGenesGff), ".contigs.gz")
+
+@transform(assignEssentialGenesToContigs, suffix(".gz"),
+           add_inputs(parseGenesGff), ".contigs.gz")
 def postprocessEssentialGeneAssignments(infiles, outfile):
     '''
-    need to add the contig that each orf is associates with to the 
+    need to add the contig that each orf is associates with to the
     file
     '''
     track = P.snip(infiles[0], ".essential.hmm.gz")
-    genes, gff = infiles[0], [inf for inf in infiles[1:] if inf.find(track) != -1][0]
+    genes, gff = infiles[0], [inf
+                              for inf in infiles[1:]
+                              if inf.find(track) != -1][0]
     protein2contig = {}
     for gff in GTF.iterator(IOTools.openFile(gff)):
         protein2contig["Protein_" + str(gff.gene_id)] = gff.contig
@@ -973,26 +893,23 @@ def postprocessEssentialGeneAssignments(infiles, outfile):
             "\t".join([protein2contig[protein], protein, profile]) + "\n")
     outf.close()
 
-###################################################################
-###################################################################
-###################################################################
+
 @transform(postprocessEssentialGeneAssignments, suffix(".gz"), ".load")
 def loadEssentialGeneAssignments(infile, outfile):
     '''
-    load assignments of essential genes 
+    load assignments of essential genes
     '''
     P.load(infile, outfile, "--index=contig")
 
-###################################################################
-###################################################################
-###################################################################
+
 @follows(mkdir("genes.dir"))
-@transform(parseGenesAa, regex("(\S+).dir/(\S+).aa.gz"), r"genes.dir/\1_\2.blast.result.gz")
+@transform(parseGenesAa,
+           regex("(\S+).dir/(\S+).aa.gz"),
+           r"genes.dir/\1_\2.blast.result.gz")
 def runBlastOnAminoAcidSequences(infile, outfile):
     '''
     look for homology with known genes
     '''
-    to_cluster = True
     db = PARAMS["blastp_db"]
     evalue = PARAMS["blastp_evalue"]
     if PARAMS["blastp_ungapped"]:
@@ -1000,17 +917,15 @@ def runBlastOnAminoAcidSequences(infile, outfile):
     else:
         ungapped = ""
 
-    statement = '''zcat %(infile)s 
-                  | python %(scriptsdir)s/farm.py --split-at-regex="^>(\S+)" 
-                    --log=%(outfile)s.log 
+    statement = '''zcat %(infile)s
+                  | python %(scriptsdir)s/farm.py --split-at-regex="^>(\S+)"
+                    --log=%(outfile)s.log
                     --chunksize=1000 "blastp -db %(db)s -evalue %(evalue)s
                     -outfmt '6 qseqid qlen sseqid sgi sacc slen qstart qend sstart send evalue bitscore score length pident mismatch gaps frames staxids sscinames'"
                     | gzip > %(outfile)s'''
     P.run()
 
-###################################################################
-###################################################################
-###################################################################
+
 @transform(runBlastOnAminoAcidSequences, suffix(".result"), r".result.load")
 def loadBlastOnAminoAcidSequences(infile, outfile):
     '''
@@ -1018,15 +933,14 @@ def loadBlastOnAminoAcidSequences(infile, outfile):
     '''
     P.load(infile, outfile)
 
-###################################################################
-###################################################################
-###################################################################
-@transform([parseGenesGff, parseGenesFasta, parseGenesAa], regex("(\S+).dir/(\S+).genes.(\S+).gz"), r"\1.dir/\1_\2.genes.\3.tsv.gz")
+
+@transform([parseGenesGff, parseGenesFasta, parseGenesAa],
+           regex("(\S+).dir/(\S+).genes.(\S+).gz"),
+           r"\1.dir/\1_\2.genes.\3.tsv.gz")
 def buildGeneTables(infile, outfile):
     '''
     build gene tables
     '''
-    to_cluster = True
     if infile.endswith(".gff.gz"):
         outf = gzip.open(outfile, "w")
         outf.write(
@@ -1035,16 +949,16 @@ def buildGeneTables(infile, outfile):
             outf.write(line)
         outf.close()
     else:
-        statement = '''zcat %(infile)s | python %(scriptsdir)s/fasta2table.py 
-                                         -s sequence 
-                                         --log=%(outfile)s.log | gzip > %(outfile)s'''
+        statement = '''zcat %(infile)s | python %(scriptsdir)s/fasta2table.py
+        -s sequence
+        --log=%(outfile)s.log | gzip > %(outfile)s'''
         P.run()
 
-###################################################################
-###################################################################
-###################################################################
-jobs_limit(1, "db")
-@transform(buildGeneTables, regex("(\S+)/(\S+).genes.(\S+).tsv.gz"), r"\1/\2.genes.\3.load")
+
+@jobs_limit(1, "db")
+@transform(buildGeneTables,
+           regex("(\S+)/(\S+).genes.(\S+).tsv.gz"),
+           r"\1/\2.genes.\3.load")
 def loadGeneTables(infile, outfile):
     '''
     load genes from metagenemaek analysis
@@ -1054,84 +968,66 @@ def loadGeneTables(infile, outfile):
     else:
         P.load(infile, outfile)
 
-###################################################################
-###################################################################
-###################################################################
+
 @follows(loadEssentialGeneAssignments,
          loadBlastOnAminoAcidSequences,
          loadGeneTables)
 def genes():
     pass
 
-###################################################################
-###################################################################
-###################################################################
+
 # build indices for mapping - this is for coverage analysis
-###################################################################
-###################################################################
-###################################################################
 @active_if(BOWTIE)
 @transform(filterContigs, suffix(".fa"), ".ebwt")
 def buildAssemblyBowtieIndices(infile, outfile):
     '''
     build bowtie indices
     '''
-    to_cluster = True
     outbase = P.snip(infile, ".fa")
     directory = os.path.dirname(infile)
     statement = '''bowtie-build -f %(infile)s %(outbase)s'''
     P.run()
     P.touch(outfile)
 
-###################################################################
-###################################################################
-###################################################################
+
 @active_if(BOWTIE2)
 @transform(filterContigs, suffix(".fa"), ".bt2")
 def buildAssemblyBowtie2Indices(infile, outfile):
     '''
     build bowtie indices
     '''
-    to_cluster = True
     outbase = P.snip(infile, ".fa")
     statement = '''bowtie2-build -f %(infile)s %(outbase)s'''
     P.run()
     P.touch(outfile)
 
-###################################################################
-###################################################################
-###################################################################
+
 @active_if(BWA)
 @transform(filterContigs, suffix(".fa"), ".fa.bwt")
 def buildAssemblyBWAIndices(infile, outfile):
     '''
     build bwa indices
     '''
-    to_cluster = True
     statement = '''bwa index %(infile)s'''
     P.run()
     P.touch(outfile)
 
-###################################################################
-###################################################################
-###################################################################
+
 # map
-###################################################################
 index = {"bowtie": buildAssemblyBowtieIndices,
          "bowtie2": buildAssemblyBowtie2Indices, "bwa": buildAssemblyBWAIndices}
 INDEX = index[MAPPER]
 
-###################################################################
-###################################################################
-###################################################################
+
 @active_if("metavelvet" in ASSEMBLERS)
-@transform(SEQUENCEFILES, SEQUENCEFILES_REGEX, add_inputs(INDEX, runMetavelvet), r"metavelvet.dir/\1.filtered.contigs.bam")
+@transform(SEQUENCEFILES, SEQUENCEFILES_REGEX,
+           add_inputs(INDEX, runMetavelvet),
+           r"metavelvet.dir/\1.filtered.contigs.bam")
 def mapReadsAgainstMetavelvetContigs(infiles, outfile):
     '''
     map reads against metavelvet contigs
     '''
     inf = infiles[0]
-    to_cluster = True
     index_dir = os.path.dirname(outfile)
 
     if "agg" not in infiles[1]:
@@ -1146,7 +1042,6 @@ def mapReadsAgainstMetavelvetContigs(infiles, outfile):
             executable=P.substituteParameters(**locals())["bowtie_executable"])
 
     elif infiles[1].endswith("bwt"):
-        genome = genome 
         job_options = " -l mem_free=%s" % (PARAMS["bwa_memory"])
         bwa_index_dir = index_dir
         bwa_aln_options = PARAMS["bwa_aln_options"]
@@ -1156,11 +1051,11 @@ def mapReadsAgainstMetavelvetContigs(infiles, outfile):
     statement = m.build((inf,), outfile)
     P.run()
 
-###################################################################
-###################################################################
-###################################################################
+
 @active_if("idba" in ASSEMBLERS)
-@transform(SEQUENCEFILES, SEQUENCEFILES_REGEX, add_inputs(INDEX, runIdba), r"idba.dir/\1.filtered.contigs.bam")
+@transform(SEQUENCEFILES, SEQUENCEFILES_REGEX,
+           add_inputs(INDEX, runIdba),
+           r"idba.dir/\1.filtered.contigs.bam")
 def mapReadsAgainstIdbaContigs(infiles, outfile):
     '''
     map reads against idba contigs
@@ -1191,11 +1086,11 @@ def mapReadsAgainstIdbaContigs(infiles, outfile):
     statement = m.build((inf,), outfile)
     P.run()
 
-###################################################################
-###################################################################
-###################################################################
+
 @active_if("ray" in ASSEMBLERS)
-@transform(SEQUENCEFILES, SEQUENCEFILES_REGEX, add_inputs(INDEX, runRay), r"ray.dir/\1.filtered.contigs.bam")
+@transform(SEQUENCEFILES, SEQUENCEFILES_REGEX,
+           add_inputs(INDEX, runRay),
+           r"ray.dir/\1.filtered.contigs.bam")
 def mapReadsAgainstRayContigs(infiles, outfile):
     '''
     map reads against Ray contigs
@@ -1226,11 +1121,12 @@ def mapReadsAgainstRayContigs(infiles, outfile):
     statement = m.build((inf,), outfile)
     P.run()
 
-###################################################################
-###################################################################
-###################################################################
+
 @active_if("sga" in ASSEMBLERS)
-@transform(SEQUENCEFILES, SEQUENCEFILES_REGEX, add_inputs(INDEX, runSGA), r"sga.dir/\1.filtered.contigs.bam")
+@transform(SEQUENCEFILES,
+           SEQUENCEFILES_REGEX,
+           add_inputs(INDEX, runSGA),
+           r"sga.dir/\1.filtered.contigs.bam")
 def mapReadsAgainstSGAContigs(infiles, outfile):
     '''
     map reads against Ray contigs
@@ -1261,11 +1157,11 @@ def mapReadsAgainstSGAContigs(infiles, outfile):
     statement = m.build((inf,), outfile)
     P.run()
 
-###################################################################
-###################################################################
-###################################################################
+
 @active_if("soapdenovo" in ASSEMBLERS)
-@transform(SEQUENCEFILES, SEQUENCEFILES_REGEX, add_inputs(INDEX, runSoapdenovo), r"soapdenovo.dir/\1.filtered.contigs.bam")
+@transform(SEQUENCEFILES, SEQUENCEFILES_REGEX,
+           add_inputs(INDEX, runSoapdenovo),
+           r"soapdenovo.dir/\1.filtered.contigs.bam")
 def mapReadsAgainstSoapdenovoContigs(infiles, outfile):
     '''
     map reads against Ray contigs
@@ -1296,11 +1192,11 @@ def mapReadsAgainstSoapdenovoContigs(infiles, outfile):
     statement = m.build((inf,), outfile)
     P.run()
 
-###################################################################
-###################################################################
-###################################################################
+
 @active_if("spades" in ASSEMBLERS)
-@transform(SEQUENCEFILES, SEQUENCEFILES_REGEX, add_inputs(INDEX, runSpades), r"spades.dir/\1.filtered.contigs.bam")
+@transform(SEQUENCEFILES, SEQUENCEFILES_REGEX,
+           add_inputs(INDEX, runSpades),
+           r"spades.dir/\1.filtered.contigs.bam")
 def mapReadsAgainstSpadesContigs(infiles, outfile):
     '''
     map reads against spades contigs
@@ -1331,35 +1227,31 @@ def mapReadsAgainstSpadesContigs(infiles, outfile):
     statement = m.build((inf,), outfile)
     P.run()
 
-###################################################################
-###################################################################
-###################################################################
+
 ALIGNMENT_TARGETS = []
-alignment_targets = {"metavelvet": mapReadsAgainstMetavelvetContigs, 
+alignment_targets = {"metavelvet": mapReadsAgainstMetavelvetContigs,
                      "idba": mapReadsAgainstIdbaContigs,
-                     "ray": mapReadsAgainstRayContigs, 
-                     "sga": mapReadsAgainstSGAContigs, 
+                     "ray": mapReadsAgainstRayContigs,
+                     "sga": mapReadsAgainstSGAContigs,
                      "soapdenovo": mapReadsAgainstSoapdenovoContigs,
                      "spades": mapReadsAgainstSpadesContigs}
 for x in ASSEMBLERS:
     ALIGNMENT_TARGETS.append(alignment_targets[x])
 
-###################################################################
-###################################################################
-###################################################################
-@transform(ALIGNMENT_TARGETS, regex("(\S+).dir/(\S+).bam"), r"\1.dir/\1_\2.alignment_stats")
+
+@transform(ALIGNMENT_TARGETS,
+           regex("(\S+).dir/(\S+).bam"),
+           r"\1.dir/\1_\2.alignment_stats")
 def buildAlignmentStats(infile, outfile):
     '''
     use bam2stats to get alignment statistics
     '''
-    statement = '''cat %(infile)s | python %(scriptsdir)s/bam2stats.py 
-                   --log=%(outfile)s.log - 
+    statement = '''cat %(infile)s | python %(scriptsdir)s/bam2stats.py
+                   --log=%(outfile)s.log -
                    > %(outfile)s'''
     P.run()
 
-###################################################################
-###################################################################
-###################################################################
+
 @transform(buildAlignmentStats, suffix("_stats"), "_stats.load")
 def loadAlignmentStats(infile, outfile):
     '''
@@ -1367,9 +1259,7 @@ def loadAlignmentStats(infile, outfile):
     '''
     P.load(infile, outfile)
 
-###################################################################
-###################################################################
-###################################################################
+
 @transform(ALIGNMENT_TARGETS, regex("(\S+).dir/(\S+).bam"), r"\1.dir/\1_\2.picard_stats")
 def buildPicardStats(infile, outfile):
     '''build alignment stats using picard.
@@ -1384,9 +1274,7 @@ def buildPicardStats(infile, outfile):
                                                 outfile,
                                                 reffile)
 
-###################################################################
-###################################################################
-###################################################################
+
 #@jobs_limit( 1, "db" )
 @merge(buildPicardStats, "picard_stats.load")
 def loadPicardStats(infiles, outfile):
@@ -1394,9 +1282,7 @@ def loadPicardStats(infiles, outfile):
 
     PipelineMappingQC.loadPicardAlignmentStats(infiles, outfile)
 
-###################################################################
-###################################################################
-###################################################################
+
 @follows(*ALIGNMENT_TARGETS)
 @transform(ALIGNMENT_TARGETS,
            suffix(".bam"),
@@ -1406,8 +1292,6 @@ def buildCoverageOverContigs(infiles, outfile):
     '''
     build histograms of the coverage over each of the contigs
     '''
-    to_cluster = True
-
     bam = infiles[0]
     track = os.path.dirname(
         bam)[:-len(".dir")] + "_" + P.snip(os.path.basename(bam), ".bam")
@@ -1425,26 +1309,23 @@ def buildCoverageOverContigs(infiles, outfile):
     statement = '''genomeCoverageBed -ibam %(bam)s -scale %(scale_factor)f -d | gzip > %(outfile)s'''
     P.run()
 
-###################################################################
-###################################################################
-###################################################################
+
 @transform(buildCoverageOverContigs, suffix(".gz"), ".stats.gz")
 def buildCoverageStats(infile, outfile):
     '''
     build coverage statistics - mean and standard deviation
     '''
     job_options = " -l mem_free=30G"
-    to_cluster = True
     statement = '''zcat %(infile)s | python %(scriptsdir)s/coverage2stats.py --log=%(outfile)s.log | gzip > %(outfile)s'''
     P.run()
 
-###################################################################
-###################################################################
-###################################################################
-@transform(buildCoverageStats, suffix(".gz"), add_inputs(buildContigLengths), ".postprocess.gz")
+
+@transform(buildCoverageStats, suffix(".gz"),
+           add_inputs(buildContigLengths),
+           ".postprocess.gz")
 def postprocessCoverageStats(infiles, outfile):
     '''
-    genomeCoverageBed outputs only non-zero depth. Add a "0" to 
+    genomeCoverageBed outputs only non-zero depth. Add a "0" to
     contigs that have zero coverage
     '''
     stats_file = infiles[0]
@@ -1472,14 +1353,13 @@ def postprocessCoverageStats(infiles, outfile):
         contig, length = data[0], data[1]
         if contig in contig2stats.keys():
             outf.write("%s\t%s\t%s\n" %
-                       (contig, contig2stats[contig][0], contig2stats[contig][1]))
+                       (contig, contig2stats[contig][0],
+                        contig2stats[contig][1]))
         else:
             outf.write("%s\t0\t0\n" % contig)
     outf.close()
 
-###################################################################
-###################################################################
-###################################################################
+
 @jobs_limit(1, "db")
 @transform(postprocessCoverageStats, suffix(".postprocess.gz"), ".load")
 def loadCoverageStats(infile, outfile):
@@ -1488,32 +1368,30 @@ def loadCoverageStats(infile, outfile):
     '''
     tablename = P.toTable(
         P.snip(os.path.dirname(infile), ".dir") + "_%s" % os.path.basename(outfile))
-    statement = '''zcat %(infile)s | python %(scriptsdir)s/csv2db.py 
-                -t %(tablename)s 
-                --index=contig 
+    statement = '''zcat %(infile)s | python %(scriptsdir)s/csv2db.py
+                -t %(tablename)s
+                --index=contig
                 --log=%(outfile)s.log > %(outfile)s'''
     P.run()
 
-###################################################################
-###################################################################
-###################################################################
+
 @follows(loadCoverageStats)
 def coverage():
     pass
 
+
 ####################
 # full targets
-####################
-@follows(loadReadCounts, 
+@follows(loadReadCounts,
          assembly,
          genes,
          coverage)
 def full():
     pass
 
+
 ####################
 # report building
-####################
 @follows(mkdir("report"))
 def build_report():
     '''build report from scratch.'''
@@ -1530,8 +1408,9 @@ def update_report():
 
 if __name__ == "__main__":
     if sys.argv[1] == "plot":
-        pipeline_printout_graph("test.pdf", "pdf", [full], no_key_legend=True,
-                                size=(4, 4),
-                                user_colour_scheme = {"colour_scheme_index": 1})
+        pipeline_printout_graph(
+            "test.pdf", "pdf", [full], no_key_legend=True,
+            size=(4, 4),
+            user_colour_scheme = {"colour_scheme_index": 1})
     else:
         sys.exit(P.main(sys.argv))

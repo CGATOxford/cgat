@@ -182,8 +182,8 @@ def buildLncRNAGeneSet(abinitio_lincrna, reference, refnoncoding, pseudogenes_gt
     # on the same strand is now output to a separate gtf.
     noncoding = GTF.readAndIndex(
         GTF.iterator(IOTools.openFile(refnoncoding_gtf)), with_value=True)
-    rej_gtf = os.path.join( os.path.dirname(outfile), 
-                            "lncrna_removed_nc_intersect.gtf.gz" )
+    rej_gtf = os.path.join(os.path.dirname(outfile),
+                           "lncrna_removed_nc_intersect.gtf.gz")
     rej_gtf = IOTools.openFile(rej_gtf, "w")
     for gtf in GTF.transcript_iterator(GTF.iterator(IOTools.openFile(infile_abinitio))):
         if gtf[0].transcript_id in remove_transcripts.keys():
@@ -196,7 +196,7 @@ def buildLncRNAGeneSet(abinitio_lincrna, reference, refnoncoding, pseudogenes_gt
                             rej_gtf.write(str(exon2) + "\n")
                         break
     rej_gtf.close()
-    
+
     outf = open("lncrna_removed.tsv", "w")
     outf.write("transcript_id" + "\t" + "removed" + "\n")
     for x, y in remove_transcripts.iteritems():
@@ -222,9 +222,9 @@ def buildLncRNAGeneSet(abinitio_lincrna, reference, refnoncoding, pseudogenes_gt
 
 
 #-------------------------------------------------------------------------
-def buildFilteredLncRNAGeneSet(flagged_gtf, 
-                               outfile, 
-                               genesets_previous, 
+def buildFilteredLncRNAGeneSet(flagged_gtf,
+                               outfile,
+                               genesets_previous,
                                filter_se="transcripts"):
     '''
     creates a filtered lincRNA geneset. This geneset will not include any
@@ -269,27 +269,29 @@ def buildFilteredLncRNAGeneSet(flagged_gtf,
         # check if there is overlap in the known sets in order to add
         # gene_status attribute
         if transcript[0].exon_status == "m":
-            if previous_multi.contains(transcript[0].contig, 
-                                       min([gtf.start for gtf in transcript]), 
+            if previous_multi.contains(transcript[0].contig,
+                                       min([gtf.start for gtf in transcript]),
                                        max([gtf.end for gtf in transcript])):
                 known.add(transcript[0].gene_id)
                 # add previous multi exonic lincRNA gene id
                 # to known set - to avoid addin gto gtf later
-                for gtf2 in previous_multi.get(transcript[0].contig, 
-                                               min([gtf.start for gtf in transcript]), 
+                for gtf2 in previous_multi.get(transcript[0].contig,
+                                               min([
+                                                   gtf.start for gtf in transcript]),
                                                max([gtf.end for gtf in transcript])):
                     known.add(gtf2[2][1])
             else:
                 novel.add(transcript[0].gene_id)
         elif filter_se == "locus" and transcript[0].exon_status_locus == "m":
-            if previous_multi.contains(transcript[0].contig, 
-                                       min([gtf.start for gtf in transcript]), 
+            if previous_multi.contains(transcript[0].contig,
+                                       min([gtf.start for gtf in transcript]),
                                        max([gtf.end for gtf in transcript])):
                 known.add(transcript[0].gene_id)
                 # add previous multi exonic lincRNA gene id
                 # to known set - to avoid addin gto gtf later
-                for gtf2 in previous_multi.get(transcript[0].contig, 
-                                               min([gtf.start for gtf in transcript]), 
+                for gtf2 in previous_multi.get(transcript[0].contig,
+                                               min([
+                                                   gtf.start for gtf in transcript]),
                                                max([gtf.end for gtf in transcript])):
                     known.add(gtf2[2][1])
             else:
@@ -348,10 +350,10 @@ def buildFilteredLncRNAGeneSet(flagged_gtf,
 #-------------------------------------------------------------------------
 
 
-def buildFinalLncRNAGeneSet(filteredLncRNAGeneSet, 
-                            cpc_table, 
-                            outfile, 
-                            filter_cpc=False, 
+def buildFinalLncRNAGeneSet(filteredLncRNAGeneSet,
+                            cpc_table,
+                            outfile,
+                            filter_cpc=False,
                             cpc_threshold=1,
                             rename_lncRNA=False):
     '''
@@ -362,14 +364,14 @@ def buildFinalLncRNAGeneSet(filteredLncRNAGeneSet,
     if filter_cpc:
         # set threshold for filtering transcripts on coding potential
         cpc_thresh = float(cpc_threshold)
-        
+
         # get the transcripts that are designated as coding
         coding_set = set()
         dbh = sqlite3.connect("csvdb")
         cc = dbh.cursor()
         for transcript_id in cc.execute("SELECT transcript_id"
                                         " FROM %s"
-                                        " WHERE CP_score > %f" 
+                                        " WHERE CP_score > %f"
                                         % (cpc_table, cpc_thresh)):
             coding_set.add(transcript_id[0])
 
@@ -577,14 +579,14 @@ def flagExonStatus(gtf_file, outfile):
     outf = IOTools.openFile(tmpf2, "w")
 
     # sort infile
-    statement = ( "zcat %(gtf_file)s |"
-                  " python %(scriptsdir)s/gtf2gtf.py"
-                  "  --sort=gene"
-                  "  --log=%(outfile)s.log"
-                  " > %(tmpf1)s" )
+    statement = ("zcat %(gtf_file)s |"
+                 " python %(scriptsdir)s/gtf2gtf.py"
+                 "  --sort=gene"
+                 "  --log=%(outfile)s.log"
+                 " > %(tmpf1)s")
     P.run()
 
-    ## create dictionary where key is transcript_id,
+    # create dictionary where key is transcript_id,
     # value is a list of gtf_proxy objects
     for gene in GTF.gene_iterator(GTF.iterator(IOTools.openFile(tmpf1))):
         trans_dict = collections.defaultdict(list)
@@ -592,13 +594,13 @@ def flagExonStatus(gtf_file, outfile):
         for transcript in gene:
             for exon in transcript:
                 trans_dict[exon.transcript_id].append(exon)
-                
-        # set exon status for transcripts 
+
+        # set exon status for transcripts
         for transcript in trans_dict.iterkeys():
             if len(trans_dict[transcript]) == 1:
                 exon_status = "s"
             else:
-                exon_status = "m" 
+                exon_status = "m"
 
             for exon in trans_dict[transcript]:
                 exon.setAttribute("exon_status", exon_status)
@@ -611,7 +613,7 @@ def flagExonStatus(gtf_file, outfile):
         if "m" in transcript_status:
             gene_exon_status = "m"
         else:
-            gene_exon_status = "s" 
+            gene_exon_status = "s"
 
         # write gene model to outfile
         for transcript in trans_dict.itervalues():
@@ -621,11 +623,11 @@ def flagExonStatus(gtf_file, outfile):
 
     outf.close()
 
-    statement = ( "cat %(tmpf2)s |"
-                  " python %(scriptsdir)s/gtf2gtf.py"
-                  "  --sort=transcript"
-                  "  --log=%(outfile)s.log |"
-                  " gzip > %(outfile)s" )
+    statement = ("cat %(tmpf2)s |"
+                 " python %(scriptsdir)s/gtf2gtf.py"
+                 "  --sort=transcript"
+                 "  --log=%(outfile)s.log |"
+                 " gzip > %(outfile)s")
     P.run()
 
     os.unlink(tmpf1)
@@ -821,9 +823,9 @@ def classifyLncRNAGenes(lincRNA_gtf, reference, outfile, dist=2):
             print "WARNING: no strand specified for %s" % transcript[0].transcript_id
 
     # iterate over lincRNA genes
-    outf_introns = os.path.join(os.path.dirname(outfile), 
+    outf_introns = os.path.join(os.path.dirname(outfile),
                                 "sense_intronic_removed.gtf.gz")
-    outf_introns = gzip.open( outf_introns, "w")
+    outf_introns = gzip.open(outf_introns, "w")
     gene_class = {}
 
     for gtf in GTF.merged_gene_iterator(GTF.iterator(IOTools.openFile(lincRNA_gtf))):
@@ -909,6 +911,8 @@ def classifyLncRNAGenes(lincRNA_gtf, reference, outfile, dist=2):
 ##########################################################################
 # An alternative method for classifying LncRNAs relative to supplied geneset
 ##########################################################################
+
+
 def write_to_temp(tempfile, interval_list, transcript, check_strand=True):
     if check_strand:
         for interval in interval_list:
@@ -1061,7 +1065,7 @@ def reClassifyLncRNAGenes(lncRNA_gtf,
                                                                    exon.end))])
             else:
                 E.warn("Contig %s not in reference exon index "
-                       "failed to retrieve intervals for %s" % (exon.contig, 
+                       "failed to retrieve intervals for %s" % (exon.contig,
                                                                 exon.gene_id))
             if exon.contig in intron.mIndex.keys():
                 intron_list.extend([x for x in list(intron.get(exon.contig,
@@ -1069,7 +1073,7 @@ def reClassifyLncRNAGenes(lncRNA_gtf,
                                                                exon.end))])
             else:
                 E.warn("Contig %s not in reference intron index, "
-                       "failed to retrieve intervals for %s" % (exon.contig, 
+                       "failed to retrieve intervals for %s" % (exon.contig,
                                                                 exon.gene_id))
             if exon.contig in plus_down.mIndex.keys():
                 plus_down_list.extend([x for x in list(plus_down.get(exon.contig,
@@ -1077,7 +1081,7 @@ def reClassifyLncRNAGenes(lncRNA_gtf,
                                                                      exon.end))])
             else:
                 E.warn("Contig %s not in plus downstream index, "
-                       "failed to retrieve intervals for %s" % (exon.contig, 
+                       "failed to retrieve intervals for %s" % (exon.contig,
                                                                 exon.gene_id))
             if exon.contig in minus_down.mIndex.keys():
                 minus_down_list.extend([x for x in list(minus_down.get(exon.contig,
@@ -1085,23 +1089,23 @@ def reClassifyLncRNAGenes(lncRNA_gtf,
                                                                        exon.end))])
             else:
                 E.warn("Contig %s not in minus downstream index, "
-                       "failed to retrieve intervals for %s" % (exon.contig, 
+                       "failed to retrieve intervals for %s" % (exon.contig,
                                                                 exon.gene_id))
             if exon.contig in plus_up.mIndex.keys():
                 plus_up_list.extend([x for x in list(plus_up.get(exon.contig,
                                                                  exon.start,
                                                                  exon.end))])
-            else: 
+            else:
                 E.warn("Contig %s not in plus upstream index, "
-                       "failed to retrieve intervals for %s" % (exon.contig, 
+                       "failed to retrieve intervals for %s" % (exon.contig,
                                                                 exon.gene_id))
             if exon.contig in minus_up.mIndex.keys():
                 minus_up_list.extend([x for x in list(minus_up.get(exon.contig,
                                                                    exon.start,
                                                                    exon.end))])
-            else: 
+            else:
                 E.warn("Contig %s not in minus upstream index, "
-                       "failed to retrieve intervals for %s" % (exon.contig, 
+                       "failed to retrieve intervals for %s" % (exon.contig,
                                                                 exon.gene_id))
 
         # check if any exon in lncRNA intersects an reference exon

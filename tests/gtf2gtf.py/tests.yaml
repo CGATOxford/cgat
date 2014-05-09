@@ -60,9 +60,9 @@ merge_transcripts_with_utr:
     options: --merge-transcripts --with-utr
 
 merge_genes:
-    stdin: sorted_transcript.gtf.gz
+    stdin: sorted_gene.gtf.gz
     outputs: [stdout]
-    references: [sorted_transcript_merge_genes.gtf.gz]
+    references: [sorted_gene_merge_genes.gtf.gz]
     options: --merge-genes
 
 join_exons:
