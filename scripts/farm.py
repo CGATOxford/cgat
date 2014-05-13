@@ -876,7 +876,7 @@ def getOptionParser():
 # --------------------------------------------------------------------
 
 
-def main():
+def main(argv=None):
 
     parser = getOptionParser()
 

@@ -100,7 +100,7 @@ def getMutatedSequence(sequence, divergence):
 # ------------------------------------------------------------
 
 
-def main():
+def main(argv=None):
 
     parser = E.OptionParser(
         version="%prog version: $Id: gtf2reads.py 2781 2009-09-10 11:33:14Z andreas $", usage=globals()["__doc__"])

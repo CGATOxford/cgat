@@ -31,7 +31,6 @@ pip-log.txt
 .tox
 nosetests.xml
 test_scripts.yaml
-hg19.chr19.gtf.gz
 
 # Translations
 *.mo
