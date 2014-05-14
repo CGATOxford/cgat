@@ -161,7 +161,7 @@ def main(argv=None):
                                        max_insert_size=options.max_insert_size,
                                        bed_format=options.bed_format)
 
-        options.stdlog.write("category\tcounts\n%s\n" % counter.asTable())
+        E.info("category\tcounts\n%s\n" % counter.asTable())
 
     else:
         if options.region is not None:
