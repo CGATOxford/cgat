@@ -219,10 +219,12 @@ fi
 mkdir -p $CGAT_HOME/external-tools
 cd $CGAT_HOME/external-tools
 
-# wigToBigWig
+# wigToBigWig and other UCSC tools
+# wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/wigToBigWig
 # wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/wigToBigWig
 wget --no-check-certificate https://www.cgat.org/downloads/public/external-tools/wigToBigWig
-chmod +x wigToBigWig
+wget --no-check-certificate https://www.cgat.org/downloads/public/external-tools/bedGraphToBigWig
+chmod +x wigToBigWig bedGraphToBigWig
 PATH=$PATH:$CGAT_HOME/external-tools
 
 # BEDtools
