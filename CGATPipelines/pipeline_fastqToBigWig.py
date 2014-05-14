@@ -37,8 +37,9 @@ performs the following tasks:
    * Align reads to the genome using Bowtie
    * Call peaks using MACS
    * Compare intervals across tracks
-   * Compare intervals with external bed files 
-   * Annotate intervals with respect to a reference gene set (Ensembl or RNAseq-derived)
+   * Compare intervals with external bed files
+   * Annotate intervals with respect to a reference gene set
+        (Ensembl or RNAseq-derived)
 
 Usage
 =====
@@ -147,44 +148,16 @@ Code
 ====
 
 """
+from ruffus import *
+
 import sys
-import tempfile
-import optparse
-import shutil
-import itertools
-import csv
-import math
-import random
-import re
 import glob
 import os
-import shutil
-import collections
-import gzip
-import sqlite3
-import pysam
-import CGAT.IndexedFasta as IndexedFasta
-import CGAT.IndexedGenome as IndexedGenome
-import CGAT.FastaIterator as FastaIterator
-import CGAT.Genomics as Genomics
-import CGAT.IOTools as IOTools
-import CGAT.MAST as MAST
-import CGAT.GTF as GTF
-import CGAT.Bed as Bed
-import cStringIO
-import numpy
-import CGAT.Masker as Masker
-import fileinput
-import gff2annotator
 import CGAT.Experiment as E
-import logging as L
 import PipelineChipseq as PIntervals
 import CGATPipelines.PipelineTracks as PipelineTracks
 import CGATPipelines.PipelineMapping as PipelineMapping
-import CGATPipelines.PipelineGO as PipelineGO
-from ruffus import *
-from rpy2.robjects import r as R
-import rpy2.robjects as ro
+
 
 USECLUSTER = True
 
