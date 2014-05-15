@@ -194,7 +194,7 @@ P.getParameters(
 
 PARAMS = P.PARAMS
 PARAMS_ANNOTATIONS = P.peekParameters(PARAMS["annotations_annotations_dir"],
-                                      "pipeline_annotations.py")
+                                      "pipeline_annotations.py", on_error_raise=__name__ == "__main__")
 PREVIOUS = P.asList(PARAMS["genesets_previous"])
 
 #########################################################################

@@ -1,5 +1,4 @@
-"""
-=================================
+"""=================================
 RNA-Seq Transcript Build pipeline
 =================================
 
@@ -16,9 +15,10 @@ This pipeline works on a single genome.
 Overview
 ========
 
-h_The pipeline assumes the data derive from multiple tissues/conditions (:term:`experiment`) 
-with one or more biological and/or technical replicates (:term:`replicate`). A :term:`replicate`
-within each :term:`experiment` is a :term:`track`.
+The pipeline assumes the data derive from multiple tissues/conditions
+(:term:`experiment`) with one or more biological and/or technical
+replicates (:term:`replicate`). A :term:`replicate` within each
+:term:`experiment` is a :term:`track`.
 
 The pipeline builds the following genesets for each input track:
 
@@ -28,53 +28,60 @@ The pipeline builds the following genesets for each input track:
 
       2. gene set per experiment. Data from individual replicates are combined.
 
-      3. a complete gene set (:file:`agg-agg-agg.gtf.gz`). 
+      3. a complete gene set (:file:`agg-agg-agg.gtf.gz`).
          Data from all experiments are combined
 
    * Derive gene sets:
 
-      1. full geneset (:file:`full.gtf.gz`)
-         all transcripts predicted by cuffcompare. Derived from :file:`agg-agg-agg.gtf.gz`
+      1. full geneset (:file:`full.gtf.gz`) all transcripts predicted
+         by cuffcompare. Derived from :file:`agg-agg-agg.gtf.gz`
 
       2. pruned geneset (:file:`pruned.gtf.gz`)
-         only transfrags are kept that are present in at least two samples. 
+         only transfrags are kept that ARE present in at least two samples.
          Derived from :file:`full.gtf.gz`.
 
       3. novel geneset (:file:`novel.gtf.gz`)
-         only transfrags that do not overlap any of the transcripts in the reference
-         gene set. This data set is derived from :file:`pruned.gtf.gz`.
- 
+         only transfrags that do not overlap any of the transcripts in
+         the reference gene set. This data set is derived from
+         :file:`pruned.gtf.gz`.
+
       4. lincRNA gene set (:file:`lincrna.gtf.gz`)
-         
 
 Novel gene set
 ---------------
 
 The novel gene set is build from the pruned gene set.
 
-Transcripts are removed based on features in the reference gene set. By default, these
-are features called ``protein_coding``, ``lincRNA`` or ``processed_transcript``.
-Transcripts that lie exclusively in repetetive sequence are removed, too.
+Transcripts are removed based on features in the reference gene
+set. By default, these are features called ``protein_coding``,
+``lincRNA`` or ``processed_transcript``.  Transcripts that lie
+exclusively in repetetive sequence are removed, too.
 
-Removal is aggressive  - as soon as one transcript of a gene/locus overlaps, all 
-transcripts of that gene/locus are gone.
+Removal is aggressive - as soon as one transcript of a gene/locus
+overlaps, all transcripts of that gene/locus are gone.
 
-The resultant set contains a number of novel transcripts. However, these
-transcripts will still overlap some known genomic features like pseudogenes.
+The resultant set contains a number of novel transcripts. However,
+these transcripts will still overlap some known genomic features like
+pseudogenes.
 
 LincRNA
 --------
 
-One of the main benefits of RNASeq over microarrays is that novel transcripts can be detected. A particular
-interest are currently novel long non-coding RNA. Unfortunately, it seems that these transcripts
-are often expressed at very low levels and possibly in a highly regulated manner, for example only in
-certain tissues. On top of their low abundance, they frequently seem to be co-localized with protein
-coding genes, making it hard to distinguish them from transcription artifacts.
+One of the main benefits of RNASeq over microarrays is that novel
+transcripts can be detected. A particular interest are currently novel
+long non-coding RNA. Unfortunately, it seems that these transcripts
+are often expressed at very low levels and possibly in a highly
+regulated manner, for example only in certain tissues. On top of their
+low abundance, they frequently seem to be co-localized with protein
+coding genes, making it hard to distinguish them from transcription
+artifacts.
 
-Success in identifying lincRNA will depend a lot on your input data. Long, paired-end reads are likely 
-to lead to success. Unfortunately, many exploratory studies go for single-ended, short read data.
-With such data, identification of novel spliced transcripts will be rare and the set of novel transcripts
-is likely to contain many false-positives.
+Success in identifying lincRNA will depend a lot on your input
+data. Long, paired-end reads are likely to lead to
+success. Unfortunately, many exploratory studies go for single-ended,
+short read data.  With such data, identification of novel spliced
+transcripts will be rare and the set of novel transcripts is likely to
+contain many false-positives.
 
 The pipeline constructs a set of novel lncRNA in the following manner:
    1. All transcript models overlapping protein coding transcripts are removed.
@@ -88,26 +95,30 @@ There are several sources of artifacts in lncRNA analysis
 Read mapping errors 
 ~~~~~~~~~~~~~~~~~~~
 
-Mapping errors are identifyable as sharp peaks in the
-coverage profile. Mapping errors occur if the true location of a read has more mismatches
-than the original location or it maps across an undetected splice-site. Most of the 
-highly-expressed lncRNA are due to mapping errors. Secondary locations very often overlap
-highly-expressed protein-coding genes. These errors are annoying for two reasons: they
-provide false positives, but at the same time prevent the reads to be counted towards
-the expression of the true gene.
+Mapping errors are identifyable as sharp peaks in the coverage
+profile. Mapping errors occur if the true location of a read has more
+mismatches than the original location or it maps across an undetected
+splice-site. Most of the highly-expressed lncRNA are due to mapping
+errors. Secondary locations very often overlap highly-expressed
+protein-coding genes. These errors are annoying for two reasons: they
+provide false positives, but at the same time prevent the reads to be
+counted towards the expression of the true gene.
 
 They can be detected in two ways:
 
-1. via a peak-like distribution of reads which should result in a low entropy of start position 
-density. Note that this possibly can remove transcripts that are close to the length of a single
-read.
+1. via a peak-like distribution of reads which should result in a low
+entropy of start position density. Note that this possibly can remove
+transcripts that are close to the length of a single read.
           
-2. via mapping against known protein coding transcripts. However, getting this mapping right
-is hard for two reasons. Firstly, mapping errors usually involve reads aligned with mismatches.
-Thus, the mapping has to be done either on the read-level (computationally expensive), or 
-on the transcript level after variant calling. (tricky, and also computationally expensive). 
-Secondly, as cufflinks extends transcripts generously, only a part of a transcript might actually
-be a mismapped part. Distinguishing partial true matches from random matches will be tricky.
+2. via mapping against known protein coding transcripts. However,
+getting this mapping right is hard for two reasons. Firstly, mapping
+errors usually involve reads aligned with mismatches.  Thus, the
+mapping has to be done either on the read-level (computationally
+expensive), or on the transcript level after variant calling. (tricky,
+and also computationally expensive).  Secondly, as cufflinks extends
+transcripts generously, only a part of a transcript might actually be
+a mismapped part. Distinguishing partial true matches from random
+matches will be tricky.
 
 Read mapping errors can also be avoided by
 
@@ -141,15 +152,17 @@ Input
 Mapped reads
 ++++++++++++
 
-The principal input of this pipeline is a collection of reads mapped to a reference genome.
-Mapped reads are imported by placing files are linking to files in the :term:`working directory`.
+The principal input of this pipeline is a collection of reads mapped
+to a reference genome.  Mapped reads are imported by placing files are
+linking to files in the :term:`working directory`.
 
 The default file format assumes the following convention:
 
    <sample>-<condition>-<replicate>.bam
 
-``sample`` and ``condition`` make up an :term:`experiment`, while ``replicate`` denotes
-the :term:`replicate` within an :term:`experiment`. 
+``sample`` and ``condition`` make up an :term:`experiment`, while
+``replicate`` denotes the :term:`replicate` within an
+:term:`experiment`.
 
 Optional inputs
 +++++++++++++++
@@ -157,11 +170,12 @@ Optional inputs
 Requirements
 ------------
 
-The pipeline requires the results from :doc:`pipeline_annotations`. Set the configuration variable 
+The pipeline requires the results from
+:doc:`pipeline_annotations`. Set the configuration variable
 :py:data:`annotations_database` and :py:data:`annotations_dir`.
 
-On top of the default CGAT setup, the pipeline requires the following software to be in the 
-path:
+On top of the default CGAT setup, the pipeline requires the following
+software to be in the path:
 
 +--------------------+-------------------+------------------------------------------------+
 |*Program*           |*Version*          |*Purpose*                                       |
@@ -209,7 +223,8 @@ For each :term:`experiment` there will be the following tables:
 Example
 =======
 
-Example data is available at http://www.cgat.org/~andreas/sample_data/pipeline_rnaseqtranscripts.tgz.
+Example data is available at
+http://www.cgat.org/~andreas/sample_data/pipeline_rnaseqtranscripts.tgz.
 To run the example, simply unpack and untar::
 
    wget http://www.cgat.org/~andreas/sample_data/pipeline_rnaseqtranscripts.tgz
@@ -217,7 +232,8 @@ To run the example, simply unpack and untar::
    cd pipeline_rnaseq
    python <srcdir>/pipeline_rnaseqtranscripts.py make full
 
-.. note:: 
+.. note::
+
    For the pipeline to run, install the :doc:`pipeline_annotations` as well.
 
 Glossary
@@ -241,37 +257,27 @@ from ruffus import *
 import CGAT.Experiment as E
 import logging as L
 import CGAT.Database as Database
-import CGAT.CSV as CSV
 
 import sys
 import os
 import re
 import shutil
 import itertools
-import math
 import glob
-import time
 import gzip
 import collections
 import random
 
-import numpy
 import sqlite3
 import CGAT.GTF as GTF
 import CGAT.IOTools as IOTools
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Tophat as Tophat
 from rpy2.robjects import r as R
-import rpy2.robjects as ro
-import rpy2.robjects.vectors as rovectors
 from rpy2.rinterface import RRuntimeError
 
-import CGAT.Expression as Expression
-
 import CGATPipelines.PipelineGeneset as PipelineGeneset
-import CGATPipelines.PipelineMapping as PipelineMapping
 import CGATPipelines.PipelineRnaseq as PipelineRnaseq
-import CGATPipelines.PipelineMappingQC as PipelineMappingQC
 import CGAT.Stats as Stats
 
 ###################################################
@@ -293,7 +299,7 @@ P.getParameters(
 PARAMS = P.PARAMS
 
 PARAMS_ANNOTATIONS = P.peekParameters(PARAMS["annotations_dir"],
-                                      "pipeline_annotations.py")
+                                      "pipeline_annotations.py", on_error_raise=__name__ == "__main__")
 
 ###################################################################
 ###################################################################

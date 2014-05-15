@@ -125,7 +125,7 @@ USECLUSTER = True
 
 # link up with annotations
 PARAMS_ANNOTATIONS = P.peekParameters(PARAMS["annotations_dir"],
-                                      "pipeline_annotations.py")
+                                      "pipeline_annotations.py", on_error_raise=__name__ == "__main__")
 
 # link up with ancestral repeats
 PARAMS_ANCESTRAL_REPEATS = P.peekParameters(PARAMS["ancestral_repeats_dir"],
