@@ -217,14 +217,14 @@ NCL = Extension(
     )
 
 # Nubiscan motif mapping
-Nubiscan = Extension(
-    "CGAT.Nubiscan.cnubiscan",                   
-    [ 'CGAT/Nubiscan/cnubiscan.pyx'],
-    library_dirs=[],
-    libraries=[],            
-    include_dirs = [numpy.get_include()], 
-    language="c",               
- )
+#Nubiscan = Extension(
+#    "CGAT.Nubiscan.cnubiscan",                   
+#    [ 'CGAT/Nubiscan/cnubiscan.pyx'],
+#    library_dirs=[],
+#    libraries=[],            
+#    include_dirs = [numpy.get_include()], 
+#    language="c",               
+# )
 
 # Automatically build script extensions
 pyx_files = glob.glob( "scripts/*.pyx" )
