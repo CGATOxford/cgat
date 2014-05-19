@@ -268,6 +268,7 @@ if [ "$OS" == "travis" ] ; then
    # bx-python
    export C_INCLUDE_PATH=/home/travis/virtualenv/python2.7/local/lib/python2.7/site-packages/numpy/core/include
 
+   python setup.py install
    python setup.py develop
    python scripts/cgat_rebuild_extensions.py
 
@@ -300,6 +301,7 @@ elif [ "$OS" == "ubuntu" -o "$OS" == "sl" ] ; then
    # bx-python
    export C_INCLUDE_PATH=$CGAT_HOME/virtualenv-1.10.1/cgat-venv/lib/python2.7/site-packages/numpy/core/include
 
+   python setup.py install
    python setup.py develop
    python scripts/cgat_rebuild_extensions.py
 
