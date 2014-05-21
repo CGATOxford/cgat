@@ -208,15 +208,31 @@ echo
 echo " Running nosetests for $1 "
 echo
 
-# Go to CGAT_HOME to continue with installation
-if [ -z "$CGAT_HOME" ] ; then
-   # install in default location
-   export CGAT_HOME=$HOME/CGAT-DEPS
-fi
+if [ "$OS" == "travis" ] ; then
 
-# create a new folder to store external tools
-mkdir -p $CGAT_HOME/external-tools
-cd $CGAT_HOME/external-tools
+   # installation directory in travis
+   INIT_DIR_DEPS=`pwd`
+
+   mkdir -p $INIT_DIR_DEPS/external-tools
+   cd $INIT_DIR_DEPS/external-tools
+
+elif [ "$OS" == "sl" -o "$OS" == "ubuntu" ] ; then
+
+   # Go to CGAT_HOME to continue with installation
+   if [ -z "$CGAT_HOME" ] ; then
+      # install in default location
+      export CGAT_HOME=$HOME/CGAT-DEPS
+   fi
+
+   # create a new folder to store external tools
+   mkdir -p $CGAT_HOME/external-tools
+   cd $CGAT_HOME/external-tools
+
+else
+
+   sanity_check_os
+
+fi # if-OS
 
 # wigToBigWig
 # wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/wigToBigWig
@@ -242,6 +258,11 @@ rm GCProfile_LINUX.tar
 cp GCProfile_LINUX/GCProfile .
 cp GCProfile_LINUX/gnuplot .
 
+
+if [ "$OS" == "travis" ] ; then
+   cd $INIT_DIR_DEPS;
+fi
+
 } # nosetests_external_deps
 
 
@@ -259,16 +280,10 @@ if [ "$OS" == "travis" ] ; then
    # prepare external dependencies
    nosetests_external_deps $OS
 
-   if [ -z "$CGAT_HOME" ] ; then
-      # default location for cgat installation
-      export CGAT_HOME=$HOME/CGAT-DEPS
-   fi
-
    # Set up other environment variables
    cd $INIT_DIR
-   export PATH=$PATH:$CGAT_HOME/external-tools:$CGAT_HOME/external-tools/bedtools-2.18.2/bin
+   export PATH=$PATH:$INIT_DIR/external-tools:$INIT_DIR/external-tools/bedtools-2.18.2/bin
    export PYTHONPATH=$PYTHONPATH:$INIT_DIR
-   source $CGAT_HOME/virtualenv-1.10.1/cgat-venv/bin/activate
 
    # bx-python
    export C_INCLUDE_PATH=/home/travis/virtualenv/python2.7/local/lib/python2.7/site-packages/numpy/core/include
