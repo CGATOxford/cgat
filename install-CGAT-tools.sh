@@ -240,6 +240,10 @@ wget --no-check-certificate https://www.cgat.org/downloads/public/external-tools
 chmod +x wigToBigWig
 #PATH=$PATH:$CGAT_HOME/external-tools
 
+# bedGraphToBigWig
+wget --no-check-certificate https://www.cgat.org/downloads/public/external-tools/bedGraphToBigWig
+chmod +x bedGraphToBigWig
+
 # BEDtools
 # curl -L https://github.com/arq5x/bedtools2/releases/download/v2.18.2/bedtools-2.18.2.tar.gz > bedtools-2.18.2.tar.gz
 wget --no-check-certificate https://www.cgat.org/downloads/public/external-tools/bedtools-2.18.2.tar.gz
