@@ -168,7 +168,7 @@ elif [ "$OS" == "travis" ] ; then
    pip install scipy
    pip install -r https://raw.github.com/CGATOxford/cgat/master/requires.txt
    pip install --upgrade setuptools
-   pip install CGAT ;
+   #pip install CGAT ;
 
 else
 

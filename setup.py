@@ -280,7 +280,7 @@ setup(## package information
     install_requires=install_requires,
     dependency_links=dependency_links,
     ## extension modules
-    ext_modules=[Components, NCL, Nubiscan] + script_extensions,
+    ext_modules=[Components, NCL] + script_extensions,
     cmdclass = {'build_ext': build_ext},
     ## other options
     zip_safe = False,
