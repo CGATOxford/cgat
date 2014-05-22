@@ -168,7 +168,7 @@ elif [ "$OS" == "travis" ] ; then
    pip install scipy
    pip install -r https://raw.github.com/CGATOxford/cgat/master/requires.txt
    pip install --upgrade setuptools
-   pip install CGAT ;
+   #pip install CGAT ;
 
 else
 
@@ -239,6 +239,10 @@ fi # if-OS
 wget --no-check-certificate https://www.cgat.org/downloads/public/external-tools/wigToBigWig
 chmod +x wigToBigWig
 #PATH=$PATH:$CGAT_HOME/external-tools
+
+# bedGraphToBigWig
+wget --no-check-certificate https://www.cgat.org/downloads/public/external-tools/bedGraphToBigWig
+chmod +x bedGraphToBigWig
 
 # BEDtools
 # curl -L https://github.com/arq5x/bedtools2/releases/download/v2.18.2/bedtools-2.18.2.tar.gz > bedtools-2.18.2.tar.gz
