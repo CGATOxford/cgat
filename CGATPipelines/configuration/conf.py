@@ -117,7 +117,8 @@ extensions = ['sphinx.ext.autodoc',
 
 if P.CONFIG.has_section('intersphinx'):
     intersphinx_mapping = dict(
-        [(x, (y, None)) for x, y in P.CONFIG.items('intersphinx')])
+        [(x, (os.path.abspath(y), None))
+         for x, y in P.CONFIG.items('intersphinx')])
 
 # Add any paths that contain templates here, relative to this directory.
 # Add any paths that contain templates here, relative to this directory.
