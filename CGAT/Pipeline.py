@@ -185,7 +185,8 @@ def getParameters(filenames=["pipeline.ini", ],
         # 1. config files into CGAT module directory?
         # 2. Pipeline.py into CGATPipelines module directory?
         dirname = os.path.join(
-            os.path.dirname(os.path.dirname(__file__)), "CGATPipelines")
+            os.path.dirname(os.path.dirname(__file__)),
+            "CGATPipelines")
         filenames.insert(0,
                          os.path.join(dirname,
                                       'configuration',
@@ -306,11 +307,6 @@ def isTrue(param, **kwargs):
         p = PARAMS
     value = p.get(param, 0)
     return value not in (0, '', 'false', 'False')
-
-
-#######################################################
-##
-#######################################################
 
 
 def checkFiles(filenames):
@@ -1415,8 +1411,20 @@ def clean(patterns, dry_run=False):
     return cleaned
 
 
-def peekParameters(workingdir, pipeline):
-    '''peak configuration parameters from an external directory.
+def peekParameters(workingdir,
+                   pipeline,
+                   on_error_raise=True):
+    '''peek configuration parameters from a *pipeline*
+    in *workingdir*.
+    
+    This method works by executing the pipeline in 
+    workingdir and dumping its configuration values.
+
+    Returns a dictionary of configuration values.
+
+    If on_error_raise is True, if either *pipeline*
+    or *workingdir* are not found, an error is raised.
+    Otherwise, an empty dictionary is returned.
     '''
 
     # Attempt to locate directory with pipeline source code. This is a
@@ -1430,7 +1438,8 @@ def peekParameters(workingdir, pipeline):
     else:
         # else: use location of Pipeline.py
         # remove CGAT part, add CGATPipelines
-        dirname = os.path.join(os.path.dirname(dirname), "CGATPipelines")
+        dirname = os.path.join(os.path.dirname(dirname),
+                               "CGATPipelines")
         # if not exists, assume we want version located
         # in directory of calling script.
         if not os.path.exists(dirname):
@@ -1439,12 +1448,22 @@ def peekParameters(workingdir, pipeline):
             dirname = os.path.dirname(v['__file__'])
 
     pipeline = os.path.join(dirname, pipeline)
-    assert os.path.exists(
-        pipeline), "can't find pipeline source %s" % (dirname, pipeline)
+    if not os.path.exists(pipeline):
+        if on_error_raise:
+            raise ValueError(
+                "can't find pipeline source %s" % (dirname, pipeline))
+        else:
+            return {}
+
     if workingdir == "":
         workingdir = os.path.abspath(".")
 
-    assert os.path.exists(workingdir), "can't find working dir %s" % workingdir
+    if not os.path.exists(workingdir):
+        if on_error_raise:
+            raise ValueError(
+                "can't find working dir %s" % workingdir)
+        else:
+            return {}
 
     statement = "python %s -f -v 0 dump" % pipeline
     process = subprocess.Popen(statement,
@@ -1630,6 +1649,11 @@ def main(args=sys.argv):
                       "and not the logfile "
                       "[default=%default].")
 
+    parser.add_option("-s", "--set", dest="variables_to_set",
+                      type="string", action="append",
+                      help="explicitely set paramater values "
+                      "[default=%default].")
+
     parser.set_defaults(
         pipeline_action=None,
         pipeline_format="svg",
@@ -1642,6 +1666,7 @@ def main(args=sys.argv):
         log_exceptions=False,
         exceptions_terminate_immediately=False,
         debug=False,
+        variables_to_set=[]
     )
 
     (options, args) = E.Start(parser,
@@ -1649,6 +1674,10 @@ def main(args=sys.argv):
 
     GLOBAL_OPTIONS, GLOBAL_ARGS = options, args
     PARAMS["dryrun"] = options.dry_run
+
+    for variables in options.variables_to_set:
+        variable, value = variables.split("=")
+        PARAMS[variable.strip()] = IOTools.convertValue(value.strip())
 
     version = None
 
