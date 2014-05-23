@@ -159,15 +159,20 @@ def main(argv=None):
 
     # setup command line parser
     parser = E.OptionParser(
-        version="%prog version: $Id: diff_bed.py 2866 2010-03-03 10:18:49Z andreas $", usage=globals()["__doc__"])
+        version="%prog version: $Id$",
+        usage=globals()["__doc__"])
 
-    parser.add_option("-e", "--exclusive", dest="exclusive", action="store_true",
-                      help="Intervals reported will be merged across the positive set"
-                           " and do not overlap any interval in any of the other sets"
-                           " [default=%default].")
+    parser.add_option("-e", "--exclusive", dest="exclusive",
+                      action="store_true",
+                      help="Intervals reported will be merged across the "
+                      "positive set"
+                      " and do not overlap any interval in any of the "
+                      " other sets"
+                      " [default=%default].")
 
     parser.add_option("-p", "--pattern-id", dest="pattern_id", type="string",
-                      help="pattern to convert a filename to an id [default=%default].")
+                      help="pattern to convert a filename "
+                      "to an id [default=%default].")
 
     parser.add_option("-m", "--method", dest="method", type="choice",
                       choices=("merged-combinations",

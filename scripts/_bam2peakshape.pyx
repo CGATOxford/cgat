@@ -103,7 +103,9 @@ cdef class Counter:
         counts_in_interval = counts_in_window[offset_left:-offset_right]
 
         if len(counts_in_interval) == 0:
-            raise ValueError( "empty interval: %i - %i for %s:%i-%i" % (offset_left, -offset_right, contig, start, end) )
+            E.warn("empty interval: %i - %i for %s:%i-%i" %
+                   (offset_left, -offset_right, contig, start, end) )
+            return None
 
         #################################################
         # compute peak shape parameters

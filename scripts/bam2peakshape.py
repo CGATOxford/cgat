@@ -336,11 +336,17 @@ def buildResults(bedfile, fg_file, control_file, counter, options):
         if c.input % options.report_step == 0:
             E.info("iteration: %i" % c.input)
 
-        features = counter.countInInterval(fg_file, bed.contig, bed.start, bed.end,
-                                           window_size=options.window_size,
-                                           bins=bins,
-                                           only_interval=options.only_interval,
-                                           centring_method=options.centring_method)
+        features = counter.countInInterval(
+            fg_file,
+            bed.contig, bed.start, bed.end,
+            window_size=options.window_size,
+            bins=bins,
+            only_interval=options.only_interval,
+            centring_method=options.centring_method)
+
+        if features is None:
+            c.skipped += 1
+            continue
 
         if control_file:
             control = counter.countAroundPos(control_file,
