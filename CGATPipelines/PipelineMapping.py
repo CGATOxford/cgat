@@ -1230,7 +1230,7 @@ class GSNAP(Mapper):
                 infiles_list = ",".join([x[0] for x in infiles])
                 files = "<( zcat %(infiles_list)s)" % locals()
             else:
-                files = "%(infiles)s" % locals()
+                files = infiles[0][0]
 
 #            statement = '''
 #            zcat %(infiles)s
