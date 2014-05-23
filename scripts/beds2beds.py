@@ -1,5 +1,4 @@
-"""
-beds2beds.py - decompose bed files
+"""beds2beds.py - decompose bed files
 ==================================
 
 :Author: Andreas Heger
@@ -20,8 +19,8 @@ unmerged-combinations
    for each :term:`bed` file, report intervals that overlap with intervals
    in every other :term:`bed` file.
 
-If the ``--exclusive`` option is set, report exclusive overlap. Only intervals 
-will be reported that overlap in a pairwise comparison but do not overlap with 
+If the ``--exclusive`` option is set, report exclusive overlap. Only intervals
+will be reported that overlap in a pairwise comparison but do not overlap with
 intervals in any of the other sets.
 
 This script requires bed files indexed by tabix_.
@@ -29,8 +28,9 @@ This script requires bed files indexed by tabix_.
 Usage
 -----
 
-For example, you have ChIP-Seq data for PolII and two transcription factors tf1 and tf2.
-The following statement will output four :term:`bed` files::
+For example, you have ChIP-Seq data for PolII and two transcription
+factors tf1 and tf2. The following statement will output four
+:term:`bed` files::
 
    python beds2beds.py polii.bed.gz tf1.bed.gz tf2.bed.gz
 
@@ -58,17 +58,13 @@ Command line options
 
 """
 
-import os
 import sys
 import re
-import optparse
 import itertools
 import collections
 
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
-import CGAT.Bed as Bed
-import numpy
 import pysam
 import CGAT.Intervals as Intervals
 
@@ -93,6 +89,8 @@ def isContainedInOne(contig, start, end, bedfiles):
         try:
             if len(list(bedfile.fetch(contig, start, end))) > 0:
                 return True
+        except KeyError:
+            pass
         except ValueError:
             pass
 
@@ -161,15 +159,20 @@ def main(argv=None):
 
     # setup command line parser
     parser = E.OptionParser(
-        version="%prog version: $Id: diff_bed.py 2866 2010-03-03 10:18:49Z andreas $", usage=globals()["__doc__"])
+        version="%prog version: $Id$",
+        usage=globals()["__doc__"])
 
-    parser.add_option("-e", "--exclusive", dest="exclusive", action="store_true",
-                      help="Intervals reported will be merged across the positive set"
-                           " and do not overlap any interval in any of the other sets"
-                           " [default=%default].")
+    parser.add_option("-e", "--exclusive", dest="exclusive",
+                      action="store_true",
+                      help="Intervals reported will be merged across the "
+                      "positive set"
+                      " and do not overlap any interval in any of the "
+                      " other sets"
+                      " [default=%default].")
 
     parser.add_option("-p", "--pattern-id", dest="pattern_id", type="string",
-                      help="pattern to convert a filename to an id [default=%default].")
+                      help="pattern to convert a filename "
+                      "to an id [default=%default].")
 
     parser.add_option("-m", "--method", dest="method", type="choice",
                       choices=("merged-combinations",

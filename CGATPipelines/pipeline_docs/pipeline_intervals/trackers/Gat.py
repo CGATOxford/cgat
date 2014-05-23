@@ -1,10 +1,3 @@
-import os
-import sys
-import re
-import types
-import itertools
-import math
-
 from IntervalReport import *
 
 
@@ -51,9 +44,9 @@ class GatLogFold(IntervalTracker):
     as_tables = True
 
     def __call__(self, track):
-        return self.getDict( """SELECT annotation, fold, 
-                                       CASE WHEN qvalue < %(fdr)f THEN 'red' ELSE 'blue' END AS colour
-                               FROM %(track)s ORDER BY fold""")
+        return self.getDict("""SELECT annotation, fold,
+        CASE WHEN qvalue < %(fdr)f THEN 'red' ELSE 'blue' END AS colour
+        FROM %(track)s ORDER BY fold""")
 
 
 class GatResults(GatTracker):

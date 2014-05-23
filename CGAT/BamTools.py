@@ -49,7 +49,8 @@ def estimateInsertSizeDistribution(bamfile,
 
 
 def estimateTagSize(bamfile,
-                    alignments=10):
+                    alignments=10,
+                    multiple="error"):
     '''estimate tag size from first alignments in file.'''
     samfile = pysam.Samfile(bamfile)
     sizes = [read.rlen for read in samfile.head(alignments)]
@@ -62,7 +63,10 @@ def estimateTagSize(bamfile,
         mi, ma = min(sizes), max(sizes)
 
     if mi != ma:
-        raise ValueError('multiple tag sizes in %s: %s' % (bamfile, sizes))
+        if multiple == "error":
+            raise ValueError('multiple tag sizes in %s: %s' % (bamfile, sizes))
+        elif multiple == "mean":
+            mi = int(sum(sizes) / len(sizes))
 
     return mi
 
