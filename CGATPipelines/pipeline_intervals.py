@@ -1020,16 +1020,16 @@ def buildGenesByIntervalsProfiles(infile, outfile):
         raise NotImplementedError(
             "peakshape with multiple bamfiles not implement")
     bamfile = bamfiles[0]
-
+    job_options = "-l mem_free=2G"
     outpat = outfile[:-len(".tsv.gz")]
-    statement = '''
 
+    statement = '''
     python %(scriptsdir)s/bam2geneprofile.py
                       --output-filename-pattern="%(outpat)s.%%s"
                       --force
                       --reporter=transcript
-                      --method=geneprofile 
-                      --method=tssprofile 
+                      --method=geneprofile
+                      --method=tssprofile
                       --normalize-profile=none
                       --normalize-profile=area
                       --normalize-profile=counts
@@ -2145,7 +2145,8 @@ def annotate_intervals():
          loadMotifInformation,
          loadMast,
          loadMotifInformation,
-         loadMotifSequenceComposition)
+         loadMotifSequenceComposition,
+         gat)
 def full():
     '''run the full pipeline.'''
     pass
@@ -2179,50 +2180,12 @@ def update_report():
 ###################################################################
 
 
-@follows(mkdir("%s/bedfiles" % PARAMS["web_dir"]),
-         update_report,
-         )
+@follows(update_report)
 def publish():
     '''publish files.'''
     # publish web pages
 
     P.publish_report()
-
-    # publish additional data
-    web_dir = PARAMS["web_dir"]
-    project_id = P.getProjectId()
-
-    # directory, files
-    exportfiles = {
-        "intervals": glob.glob(os.path.join(
-            PARAMS["exportdir"], "bed", "*.bed.gz")) +
-        glob.glob(os.path.join(PARAMS["exportdir"], "bed", "*.bed.gz.tbi")),
-    }
-
-    bams = []
-
-    for targetdir, filenames in exportfiles.iteritems():
-        if len(filenames) == 0:
-            E.warn("no files for target '%s'" % targetdir)
-        for src in filenames:
-            dest = "%s/%s/%s" % (web_dir, targetdir, os.path.basename(src))
-            if dest.endswith(".bam"):
-                bams.append(dest)
-            dest = os.path.abspath(dest)
-            destdir = os.path.dirname(dest)
-            if not os.path.exists(destdir):
-                os.makedirs(destdir)
-
-            if not os.path.exists(dest):
-                E.debug("creating symlink from %s to %s" % (src, dest))
-                os.symlink(os.path.abspath(src), dest)
-
-    # output ucsc links
-    for bam in bams:
-        filename = os.path.basename(bam)
-        track = P.snip(filename, ".bam")
-        print """track type=bam name="%(track)s" bigDataUrl=http://www.cgat.org/downloads/%(project_id)s/bamfiles/%(filename)s""" % \
-            locals()
 
 if __name__ == "__main__":
     sys.exit(P.main(sys.argv))

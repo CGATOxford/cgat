@@ -532,8 +532,6 @@ def buildWindows(infiles, outfile):
 
     coverage_bed, background_bed = infiles[:-1], infiles[-1]
 
-    to_cluster = True
-
     coverage_bed = " ".join(coverage_bed)
 
     if tiling_method == "varwidth":

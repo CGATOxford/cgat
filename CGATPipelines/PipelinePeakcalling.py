@@ -58,12 +58,19 @@ def getPeakShiftFromMacs(infile):
         rx = re.compile("#2 predicted fragment length is (\d+) bps")
         r2 = re.compile("#2 Use (\d+) as shiftsize, \d+ as fragment length")
         r3 = re.compile("#1 fragment size = (\d+)")
+        # when fragment length is set explicitely
+        r4 = re.compile("#2 Use (\d+) as fragment length")
+
         for line in ins:
             x = rx.search(line)
             if x:
                 shift = int(x.groups()[0])
                 break
             x = r3.search(line)
+            if x:
+                shift = int(x.groups()[0])
+                break
+            x = r4.search(line)
             if x:
                 shift = int(x.groups()[0])
                 break
