@@ -19,9 +19,16 @@ from SphinxReport import Utils
 ###################################################################
 # parameterization
 
-EXPORTDIR = P['intervals_exportdir']
-DATADIR = P['intervals_datadir']
-DATABASE = P['intervals_backend']
+#EXPORTDIR = P['intervals_exportdir']
+#DATADIR = P['intervals_datadir']
+#DATABASE = P['intervals_backend']
+
+EXPORTDIR = P.get('intervals_exportdir', P.get('exportdir', 'export'))
+DATADIR = P.get('intervals_datadir', P.get('datadir', '.'))
+DATABASE = P.get('intervals_backend', P.get('sql_backend', 'sqlite:///./csvdb'))
+#DATADIR = '.'
+
+
 
 ###########################################################################
 
