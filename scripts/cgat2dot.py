@@ -1,7 +1,7 @@
 '''cgat2rdf.py - create rdf description of CGAT script
-====================================================
+======================================================
 
-:Author: 
+:Author:
 :Release: $Id$
 :Date: |today|
 :Tags: Python
@@ -204,7 +204,6 @@ def processScript(script_name, outfile, options):
                        output_format))
         BREAK_FORMATS[output_format] += 1
         output_format = nodename
-
 
     url = "http://www.cgat.org/~andreas/documentation/cgat/scripts/%s.html" % basename
     # Note that URL needs to be uppercase!

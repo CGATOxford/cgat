@@ -1,5 +1,4 @@
-'''
-==============================
+'''==============================
 Long non-coding RNA pipeline
 ==============================
 
@@ -41,35 +40,48 @@ of the pipeline are as follows:
    sense_overlapping\n
 
 
-   This set of non-coding transcripts is required in the filtering of the ab initio geneset 
-   for LncRNA prediction. This is because many putative lncRNA have multiple associated
-   biotypes. For example MALAT1 is described as both a lncRNA and a processed transcript. To 
-   avoid removing known ncRNA we therefore check for existence of putative transcripts in this
-   set.
+   This set of non-coding transcripts is required in the filtering of
+   the ab initio geneset for LncRNA prediction. This is because many
+   putative lncRNA have multiple associated biotypes. For example
+   MALAT1 is described as both a lncRNA and a processed transcript. To
+   avoid removing known ncRNA we therefore check for existence of
+   putative transcripts in this set.
 
 * Build a putative lncRNA gene set.
-   The ab initio set of lncRNA are filtered to remove overlapping protein coding exons. This 
-   filtering is performed on the level of the transcript - although there may be multiple isoform
-   predictions per lncRNA, at this point the sensitivity of lncRNA prediction is increased. 
-   Antisense transcripts overlapping protein coding transcripts are retained.
-   
+
+    The ab initio set of lncRNA are
+   filtered to remove overlapping protein coding exons. This filtering
+   is performed on the level of the transcript - although there may be
+   multiple isoform predictions per lncRNA, at this point the
+   sensitivity of lncRNA prediction is increased.  Antisense
+   transcripts overlapping protein coding transcripts are retained.
+
 * Filter putative lncRNA gene set
-   Due to many fragments being produced from RNA-seq data, putative single exon lncRNA are flagged
-   with in the lncRNA gtf file so it is easy to filter for the more reliable multi-exonic lncRNA. 
-   Although many single exon lncRNA are likely to be artifacts, we assess the overlap of putative
-   single exon lncRNA with sets of lncRNA that have been previously identified. If an overlap is
-   found with a transcript in the reference set then the reference is added to the lncRNA gene set.
-   This means that true single exon lncRNA are still picked up - as long as there is previous evidence
-   to support their existence.
+   Due to many fragments being produced
+   from RNA-seq data, putative single exon lncRNA are flagged with in
+   the lncRNA gtf file so it is easy to filter for the more reliable
+   multi-exonic lncRNA.  Although many single exon lncRNA are likely
+   to be artifacts, we assess the overlap of putative single exon
+   lncRNA with sets of lncRNA that have been previously identified. If
+   an overlap is found with a transcript in the reference set then the
+   reference is added to the lncRNA gene set.  This means that true
+   single exon lncRNA are still picked up - as long as there is
+   previous evidence to support their existence.
 
 * Build final lncRNA gene set
-   The putative set of lncRNA are assessed for coding potential using the coding potential calculator
-   (CPC). Any lncRNA that are annotated as 'coding' in this analysis are removed from downstream analysis.
+
+   The putative set of lncRNA are assessed for coding potential using
+   the coding potential calculator (CPC). Any lncRNA that are
+   annotated as 'coding' in this analysis are removed from downstream
+   analysis.
 
 * Combine coding and non-coding gene sets
-   In order to assess expression levels between genes within samples i.e. protein coding vs. lncRNA, it
-   is required that the FPKM estimation be made on a complete geneset. Therefore the lncRNA geneset is 
-   concatenated to the protein coding gene set for use in downstream analysis.
+
+   In order to assess expression levels between genes within samples
+   i.e. protein coding vs. lncRNA, it is required that the FPKM
+   estimation be made on a complete geneset. Therefore the lncRNA
+   geneset is concatenated to the protein coding gene set for use in
+   downstream analysis.
 
 
 Usage
@@ -142,6 +154,7 @@ The pipeline produces three main files of interest:
 
 code
 =====
+
 '''
 
 ##########################################################
@@ -274,11 +287,12 @@ def tabSplit(line):
 
 
 @follows(mkdir("gtfs"))
-@merge([PARAMS["genesets_abinitio_coding"], 
-        PARAMS["genesets_reference"]], 
-       os.path.join("gtfs", 
-                    P.snip(PARAMS["genesets_abinitio_coding"], ".gtf.gz") 
-                    + "_coding.gtf.gz") )
+@merge([PARAMS["genesets_abinitio_coding"],
+        PARAMS["genesets_reference"]],
+       os.path.join(
+           "gtfs",
+           P.snip(PARAMS["genesets_abinitio_coding"], ".gtf.gz")
+           + "_coding.gtf.gz"))
 def buildCodingGeneSet(infiles, outfile):
     '''
     takes the output from cuffcompare of a transcript
@@ -416,20 +430,21 @@ def renameTranscriptsInPreviousSets(infile, outfile):
 ##########################################################################
 ##########################################################################
 if PARAMS["genesets_previous"]:
-    @transform(flagExonStatus, regex(r"(\S+)_flag.gtf.gz"), add_inputs(renameTranscriptsInPreviousSets), r"\1_filtered.gtf.gz")
+    @transform(flagExonStatus, regex(r"(\S+)_flag.gtf.gz"),
+               add_inputs(renameTranscriptsInPreviousSets), r"\1_filtered.gtf.gz")
     def buildFilteredLncRNAGeneSet(infiles, outfile):
         '''
-        Creates a filtered lncRNA geneset. That contains previously identified 
-        gene models supplied in contig file.        
+        Creates a filtered lncRNA geneset. That contains previously identified
+        gene models supplied in contig file.
         '''
-        assert PARAMS["filtering_remove_single_exon"] in ["loci", 
-                                                          "transcripts", 
+        assert PARAMS["filtering_remove_single_exon"] in ["loci",
+                                                          "transcripts",
                                                           None]
         PipelineLncRNA.buildFilteredLncRNAGeneSet(
-            infiles[0], 
-            outfile, 
+            infiles[0],
+            outfile,
             infiles[1:len(infiles)],
-            filter_se = PARAMS["filtering_remove_single_exon"])
+            filter_se=PARAMS["filtering_remove_single_exon"])
 
 else:
 
@@ -448,20 +463,20 @@ else:
 
         if not PARAMS["filtering_remove_single_exon"]:
             E.info("Both multi-exon and single-exon lncRNA are retained!")
-            statement = ( "cp %(infile)s %(outfile)s" )
-        elif  PARAMS["filtering_remove_single_exon"] == "loci":
+            statement = ("cp %(infile)s %(outfile)s")
+        elif PARAMS["filtering_remove_single_exon"] == "loci":
             E.info("Warning: removing all single-exon transcripts from lncRNA set")
-            statement = ( "zcat %(infile)s |"
-                          " grep 'exon_status_locus \"s\"'"
-                          " gzip > %(outfile)s" )
+            statement = ("zcat %(infile)s |"
+                         " grep 'exon_status_locus \"s\"'"
+                         " gzip > %(outfile)s")
         elif PARAMS["filtering_remove_single_exon"] == "transcripts":
             E.info("Warning: removing loci with only single-exon transcripts")
-            statement = ( "zcat %(infile)s |"
-                          " grep 'exon_status \"s\"'"
-                          " gzip > %(outfile)s" )
+            statement = ("zcat %(infile)s |"
+                         " grep 'exon_status \"s\"'"
+                         " gzip > %(outfile)s")
         else:
             raise ValueError("Unregocnised parameter %s" 
-                             % PARAMS["filtering_remove_single_exon"]  ) 
+                             % PARAMS["filtering_remove_single_exon"])
         P.run()
 
 ##########################################################################
@@ -600,8 +615,8 @@ def buildLncRNAGeneSetStats(infile, outfile):
                                    PipelineLncRNA.CounterMultiExonGenes(infile).count()])))
 
 
-@transform( buildRefcodingGeneSet,
-           regex(r"(\S+)/(\S+).gtf.gz"), 
+@transform(buildRefcodingGeneSet,
+           regex(r"(\S+)/(\S+).gtf.gz"),
            r"\2.stats")
 def buildRefcodingGeneSetStats(infile, outfile):
     '''
@@ -622,33 +637,31 @@ def buildRefcodingGeneSetStats(infile, outfile):
     tmpf = P.getTempFilename(".") + ".gz"
     PipelineLncRNA.flagExonStatus(infile, tmpf)
 
+    outf = IOTools.openFile(outfile, "w")
 
-    outf = open(outfile, "w")
-    outf.write("\t".join(["no_transcripts", 
-                          "no_genes", 
-                          "no_exons_per_transcript", 
+    outf.write("\t".join(["no_transcripts",
+                          "no_genes",
+                          "no_exons_per_transcript",
                           "no_exons_per_gene",
-                          "no_single_exon_transcripts", 
-                          "no_multi_exon_transcripts", 
-                          "no_single_exon_genes", 
+                          "no_single_exon_transcripts",
+                          "no_multi_exon_transcripts",
+                          "no_single_exon_genes",
                           "no_multi_exon_genes"]) + "\n")
-    outf.write("\t".join(map(str, [PipelineLncRNA.CounterTranscripts(tmpf).count(), 
-                                   PipelineLncRNA.CounterGenes(tmpf).count(), 
-                                   PipelineLncRNA.CounterExonsPerTranscript(tmpf).count(), 
-                                   PipelineLncRNA.CounterExonsPerGene(tmpf).count(), 
-                                   PipelineLncRNA.CounterSingleExonTranscripts(tmpf).count(), 
-                                   PipelineLncRNA.CounterMultiExonTranscripts(tmpf).count(), 
-                                   PipelineLncRNA.CounterSingleExonGenes(tmpf).count(), 
-                                   PipelineLncRNA.CounterMultiExonGenes(tmpf).count()])))
-
+    outf.write("\t".join(map(str, [
+        PipelineLncRNA.CounterTranscripts(tmpf).count(),
+        PipelineLncRNA.CounterGenes(tmpf).count(),
+        PipelineLncRNA.CounterExonsPerTranscript(tmpf).count(),
+        PipelineLncRNA.CounterExonsPerGene(tmpf).count(),
+        PipelineLncRNA.CounterSingleExonTranscripts(tmpf).count(),
+        PipelineLncRNA.CounterMultiExonTranscripts(tmpf).count(),
+        PipelineLncRNA.CounterSingleExonGenes(tmpf).count(),
+        PipelineLncRNA.CounterMultiExonGenes(tmpf).count()])))
 
     os.unlink(tmpf)
     os.unlink(tmpf + ".log")
     os.unlink(P.snip(tmpf, ".gz"))
 
-##########################################################################
-##########################################################################
-##########################################################################
+
 @transform([buildLncRNAGeneSetStats, buildRefcodingGeneSetStats],
            suffix(".stats"), 
            ".load")
@@ -660,7 +673,7 @@ def loadGeneSetStats(infile, outfile):
     statement = ("python %(scriptsdir)s/csv2db.py"
                  " -t %(tablename)s"
                  " --log=%(outfile)s.log"
-                 " < %(infile)s > %(outfile)s" )
+                 " < %(infile)s > %(outfile)s")
     P.run()
 
 ##########################################################################
@@ -913,12 +926,9 @@ def mergeLncRNAPhyloCSF(infiles, outfile):
                  '''
     P.run()
 
-##########################################################################
-##########################################################################
-##########################################################################
-# targets
+
 @follows(buildCodingGeneSet,
-         buildRefnoncodingGeneSet, 
+         buildRefnoncodingGeneSet,
          buildFinalLncRNAGeneSet,
          loadGeneSetStats,
          loadLncRNAClass,
