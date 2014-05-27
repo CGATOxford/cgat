@@ -18,7 +18,13 @@ import collections
 import sqlite3
 import numpy
 import pysam
-import pybedtools
+
+# pybedtools recompilation can fail causing
+# an import error when importing this script
+try:
+    import pybedtools
+except ImportError:
+    pass
 
 ##########################
 import CGAT.Experiment as E
