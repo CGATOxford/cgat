@@ -312,8 +312,6 @@ def publish_report(prefix="",
          "%(base_url)s/%(dest_report)s/_static" % locals())]
 
     _patterns.extend(patterns)
-    for p in _patterns:
-        print p[0].pattern, p[1]
 
     def _link(src, dest):
         '''create links.
