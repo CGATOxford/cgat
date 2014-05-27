@@ -30,8 +30,6 @@ import imp
 
 from nose.tools import ok_
 
-import CGAT.Experiment as E
-
 # DIRECTORIES to examine for python modules/scripts
 EXPRESSIONS = (
     ('tests', 'tests/*.py'),
@@ -78,13 +76,15 @@ def check_import(filename, outfile):
         outfile.write("FAIL %s\n%s\n" % (basename, msg))
         outfile.flush()
         traceback.print_exc(file=outfile)
-        ok_(False, '%s scripts/modules - ImportError' % basename)
+        ok_(False, '%s scripts/modules - ImportError: %s' %
+            (basename, msg))
     except Exception, msg:
         outfile.write("FAIL %s\n%s\n" % (basename, msg))
         outfile.flush()
 
         traceback.print_exc(file=outfile)
-        ok_(False, '%s scripts/modules - Exception' % basename)
+        ok_(False, '%s scripts/modules - Exception: %s' %
+            (basename, msg))
 
     ok_(True)
 

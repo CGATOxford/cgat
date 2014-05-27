@@ -10,11 +10,83 @@ genome:
     references: [genome.gff]
     options: --sort --genome-file=%DIR%/hg19.chr19 --method=genome
 
+genome_flank:
+    stdin: hg19.chr.gtf.gz
+    outputs: [stdout]
+    references: [genome_flank.gff]
+    options: --genome-file=%DIR%/hg19.chr19 --method=genome --sort --flank=10000
+
+genome_min_intron_length:
+    stdin: hg19.chr.gtf.gz
+    outputs: [stdout]
+    references: [genome_min_intron_length.gff]
+    options: --genome-file=%DIR%/hg19.chr19 --method=genome --sort --min-intron-length=2000 --flank=5000
+
+genes:
+    stdin: hg19.chr.gtf.gz
+    outputs: [stdout]
+    references: [genes.gff]
+    options: --genome-file=%DIR%/hg19.chr19 --method=genes
+
+genes_increment:
+    stdin: hg19.chr.gtf.gz
+    outputs: [stdout]
+    references: [genes_increment.gff]
+    options: --genome-file=%DIR%/hg19.chr19 --method=genes --increment=10000 --restrict-source=pseudogene
+
+territories:
+    stdin: hg19.chr19_merge_transcripts.gtf.gz
+    outputs: [stdout]
+    references: [territories.gff]
+    options: --sort --genome-files %DIR%/hg19.chr19 --method=territories
+
+tss_territories:
+    stdin: hg19.chr19_merge_transcripts.gtf.gz
+    outputs: [stdout]
+    references: [tss_territories.gff]
+    options: --sort --genome-files %DIR%/hg19.chr19 --method=tss-territories
+
 great_domains:
     stdin: hg19.chr19.gtf.gz
     outputs: [stdout]
     references: [great_domains.gff]
-    options: --genome-file=%DIR%/hg19.chr19 --method=great-domains
+    options: --genome-file=%DIR%/hg19.chr19 --method=great-domains --upstream=5000 --downstream=1000 --radius=1000000
+
+exons:
+    stdin: hg19.chr19.gtf.gz
+    outputs: [stdout]
+    references: [exons.gff]
+    options: --genome-file=%DIR%/hg19.chr19 --method=exons --restrict-source=lncRNA
+
+promotors:
+    stdin: hg19.chr19.gtf.gz
+    outputs: [stdout]
+    references: [promotors.gff]
+    options: --genome-file=%DIR%/hg19.chr19 --method=promotors --restrict-source=pseudogene --promotor=5000
+
+regulons:
+    stdin: hg19.chr19.gtf.gz
+    outputs: [stdout]
+    references: [regulons.gff]
+    options: --genome-file=%DIR%/hg19.chr19 --method=regulons --restrict-source=protein_coding --upstream=2500 --downstream=2500
+
+regulons_merged_promotors:
+    stdin: hg19.chr19.gtf.gz
+    outputs: [stdout]
+    references: [regulons_merged_promotors.gff]
+    options: --genome-file=%DIR%/hg19.chr19 --method=regulons --merge-promotors --promotor=10000
+
+tts_regulons:
+    stdin: hg19.chr19.gtf.gz
+    outputs: [stdout]
+    references: [tts_regulons.gff]
+    options: --genome-file=%DIR%/hg19.chr19 --method=tts-regulons --upstream=500 --downstream=500
+
+tts:
+    stdin: hg19.chr19.gtf.gz
+    outputs: [stdout]
+    references: [tts.gff]
+    options: --genome-file=%DIR%/hg19.chr19 --method=tts
 
 fromfile:
     stdin: null

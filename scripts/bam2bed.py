@@ -9,7 +9,24 @@
 Purpose
 -------
 
-Convert BAM files into BED files.
+This tool converts BAM files into BED files supplying the intervals
+for each read in the BAM file.  BAM files must have a corresponding
+index file ie. example.bam and example.bam.bai
+
+For example::
+
+   samtools view example.bam
+
+   READ1     163     1       13040   15      76M     =       13183   219     ...
+   READ1     83      1       13183   7       76M     =       13040   -219    ...
+   READ2     147     1       13207   0       76M     =       13120   -163    ...
+
+   python bam2bed.py example.bam
+
+   1       13039   13115   READ1     15      +
+   1       13119   13195   READ2     0       +
+   1       13182   13258   READ1     7       -
+   1       13206   13282   READ2     0       -
 
 By default, bam2bed outputs each read as a separate interval.  With
 the option ``--merge-pairs`` paired-end reads are merged and output as
@@ -18,10 +35,6 @@ pair.
 
 Usage
 -----
-
-To output read intervals that overlap chromosome 1, coordinates 13000-13100::
-
-   samtools view -ub example.bam 1:13000:13100 | python bam2bed.py
 
 To merge paired-end reads and output fragment interval ie. leftmost
 mapped base to rightmost mapped base::
@@ -35,12 +48,15 @@ mapped base to rightmost mapped base::
 
 This command converts the BAM file in.bam into a BED file named out.bed.
 
+To output read intervals that overlap chromosome 1, coordinates 13000-13100::
+
+   samtools view -ub example.bam 1:13000:13100 | python bam2bed.py
+
 Type::
 
    python bam2bed.py --help
 
 for command line help.
-
 
 Command line options
 --------------------

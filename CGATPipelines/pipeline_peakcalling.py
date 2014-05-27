@@ -728,7 +728,7 @@ def mergeBackgroundWindows(infiles, outfile):
     genomefile = os.path.join(
         PARAMS["annotations_dir"], PARAMS_ANNOTATIONS['interface_contigs'])
     statement = '''
-    zcat %(infiles)s 
+    zcat %(infiles)s
     | bedtools slop -i stdin
                 -b %(calling_background_extension)i
                 -g %(genomefile)s
@@ -1784,6 +1784,7 @@ def exportIntervalsAsBed(infile, outfiles):
         else:
             E.warn("no table %s - empty bed file output" % tablename)
             P.touch(outfile)
+
 
 ###################################################################
 ###################################################################

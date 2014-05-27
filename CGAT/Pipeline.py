@@ -578,7 +578,7 @@ def concatenateAndLoad(infiles,
 
     If given, *regex_filename* is applied to the filename to extract
     the track name. If the pattern contains multiple groups, they are
-    added as additional columns. For example, if *cat* is set to 
+    added as additional columns. For example, if *cat* is set to
     ``track,method`` and regex_filename is ``(.*)_(.*).tsv.gz``
     the columns ``track`` and method to the table.
 
@@ -1416,8 +1416,8 @@ def peekParameters(workingdir,
                    on_error_raise=True):
     '''peek configuration parameters from a *pipeline*
     in *workingdir*.
-    
-    This method works by executing the pipeline in 
+
+    This method works by executing the pipeline in
     workingdir and dumping its configuration values.
 
     Returns a dictionary of configuration values.
@@ -1744,8 +1744,6 @@ def main(args=sys.argv):
                 #   different processes
                 #
                 #session_mutex = manager.Lock()
-
-
                 L.info(E.GetHeader())
                 L.info("code location: %s" % PARAMS["scriptsdir"])
                 L.info("code version: %s" % version)

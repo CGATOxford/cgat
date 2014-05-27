@@ -165,38 +165,44 @@ def buildLncRNAGeneSet(abinitio_lincrna, reference, refnoncoding, pseudogenes_gt
             for exon in gtf:
                 transcript_id = exon.transcript_id
                 total_transcripts.add(transcript_id)
-                if indices[section].contains(exon.contig, exon.start, exon.end):
+                if indices[section].contains(
+                        exon.contig, exon.start, exon.end):
                     # check if any of the intersected intervals are on same
                     # stand as query exon
-                    for interval in indices[section].get(exon.contig, exon.start, exon.end):
-                        # only remove transcripts where an exon is on the same strand as the
-                        # interval it intersects
+                    for interval in indices[section].get(
+                            exon.contig, exon.start, exon.end):
+                        # only remove transcripts where an exon is on
+                        # the same strand as the interval it
+                        # intersects
                         if exon.strand == interval[2].strand:
                             remove_transcripts[transcript_id].add(section)
 
     E.info("removing %i out of %i transcripts" %
            (len(remove_transcripts), len(total_transcripts)))
 
-    # Jethro - removed the automatic retention of transcripts that intersect known non-coding
-    # intervals regardless of strand. Instead, any removed transcript that also intersects a lncRNA
-    # on the same strand is now output to a separate gtf.
+    # Jethro - removed the automatic retention of transcripts that
+    # intersect known non-coding intervals regardless of
+    # strand. Instead, any removed transcript that also intersects a
+    # lncRNA on the same strand is now output to a separate gtf.
     noncoding = GTF.readAndIndex(
         GTF.iterator(IOTools.openFile(refnoncoding_gtf)), with_value=True)
-    rej_gtf = os.path.join( os.path.dirname(outfile), 
-                            "lncrna_removed_nc_intersect.gtf.gz" )
+    rej_gtf = os.path.join(os.path.dirname(outfile),
+                           "lncrna_removed_nc_intersect.gtf.gz")
     rej_gtf = IOTools.openFile(rej_gtf, "w")
-    for gtf in GTF.transcript_iterator(GTF.iterator(IOTools.openFile(infile_abinitio))):
+    for gtf in GTF.transcript_iterator(GTF.iterator(
+            IOTools.openFile(infile_abinitio))):
         if gtf[0].transcript_id in remove_transcripts.keys():
             for exon in gtf:
                 if noncoding.contains(exon.contig, exon.start, exon.end):
-                    if exon.strand in [x[2].strand for x in list(noncoding.get(exon.contig,
-                                                                               exon.start,
-                                                                               exon.end))]:
+                    if exon.strand in [x[2].strand for x in
+                                       list(noncoding.get(exon.contig,
+                                                          exon.start,
+                                                          exon.end))]:
                         for exon2 in IOTools.flatten(gtf):
                             rej_gtf.write(str(exon2) + "\n")
                         break
     rej_gtf.close()
-    
+
     outf = open("lncrna_removed.tsv", "w")
     outf.write("transcript_id" + "\t" + "removed" + "\n")
     for x, y in remove_transcripts.iteritems():
@@ -348,28 +354,28 @@ def buildFilteredLncRNAGeneSet(flagged_gtf,
 #-------------------------------------------------------------------------
 
 
-def buildFinalLncRNAGeneSet(filteredLncRNAGeneSet, 
-                            cpc_table, 
-                            outfile, 
-                            filter_cpc=False, 
+def buildFinalLncRNAGeneSet(filteredLncRNAGeneSet,
+                            cpc_table,
+                            outfile,
+                            filter_cpc=False,
                             cpc_threshold=1,
                             rename_lncRNA=False):
-    '''
-    filters lncRNA set based on the coding potential as output from 
+    '''filters lncRNA set based on the coding potential as output from
     the CPC
+
     '''
 
     if filter_cpc:
         # set threshold for filtering transcripts on coding potential
         cpc_thresh = float(cpc_threshold)
-        
+
         # get the transcripts that are designated as coding
         coding_set = set()
         dbh = sqlite3.connect("csvdb")
         cc = dbh.cursor()
         for transcript_id in cc.execute("SELECT transcript_id"
                                         " FROM %s"
-                                        " WHERE CP_score > %f" 
+                                        " WHERE CP_score > %f"
                                         % (cpc_table, cpc_thresh)):
             coding_set.add(transcript_id[0])
 
@@ -577,11 +583,11 @@ def flagExonStatus(gtf_file, outfile):
     outf = IOTools.openFile(tmpf2, "w")
 
     # sort infile
-    statement = ( "zcat %(gtf_file)s |"
-                  " python %(scriptsdir)s/gtf2gtf.py"
-                  "  --sort=gene"
-                  "  --log=%(outfile)s.log"
-                  " > %(tmpf1)s" )
+    statement = ("zcat %(gtf_file)s |"
+                 " python %(scriptsdir)s/gtf2gtf.py"
+                 "  --sort=gene"
+                 "  --log=%(outfile)s.log"
+                 " > %(tmpf1)s")
     P.run()
 
     ## create dictionary where key is transcript_id,
@@ -592,13 +598,13 @@ def flagExonStatus(gtf_file, outfile):
         for transcript in gene:
             for exon in transcript:
                 trans_dict[exon.transcript_id].append(exon)
-                
-        # set exon status for transcripts 
+
+        # set exon status for transcripts
         for transcript in trans_dict.iterkeys():
             if len(trans_dict[transcript]) == 1:
                 exon_status = "s"
             else:
-                exon_status = "m" 
+                exon_status = "m"
 
             for exon in trans_dict[transcript]:
                 exon.setAttribute("exon_status", exon_status)
@@ -611,7 +617,7 @@ def flagExonStatus(gtf_file, outfile):
         if "m" in transcript_status:
             gene_exon_status = "m"
         else:
-            gene_exon_status = "s" 
+            gene_exon_status = "s"
 
         # write gene model to outfile
         for transcript in trans_dict.itervalues():
@@ -621,11 +627,11 @@ def flagExonStatus(gtf_file, outfile):
 
     outf.close()
 
-    statement = ( "cat %(tmpf2)s |"
-                  " python %(scriptsdir)s/gtf2gtf.py"
-                  "  --sort=transcript"
-                  "  --log=%(outfile)s.log |"
-                  " gzip > %(outfile)s" )
+    statement = ("cat %(tmpf2)s |"
+                 " python %(scriptsdir)s/gtf2gtf.py"
+                 "  --sort=transcript"
+                 "  --log=%(outfile)s.log |"
+                 " gzip > %(outfile)s")
     P.run()
 
     os.unlink(tmpf1)
@@ -639,10 +645,9 @@ def flagExonStatus(gtf_file, outfile):
 
 
 def classifyLncRNA(lincRNA_gtf, reference, outfile, dist=2):
-    '''
-    Classify lincRNA in terms of their proximity to 
-    protein coding genes - creates indices for intervals on the 
-    fly - maybe should be creating additional annotations:
+    '''Classify lincRNA in terms of their proximity to protein coding
+    genes - creates indices for intervals on the fly - maybe should be
+    creating additional annotations:
 
     antisense - GENE overlapping protein coding exons or introns on opposite strand
     antisense_upstream - GENE < Xkb from tss on opposite strand
@@ -652,6 +657,7 @@ def classifyLncRNA(lincRNA_gtf, reference, outfile, dist=2):
     intergenic - >Xkb from any protein coding gene
     intronic - overlaps protein coding gene intron on same strand
     antisense_intronic - overlaps protein coding intron on opposite strand
+
     '''
 
     # index the reference geneset
@@ -670,11 +676,13 @@ def classifyLncRNA(lincRNA_gtf, reference, outfile, dist=2):
 
     # iterate over reference transcripts and create intervals in memory
     outf = open("introns.bed", "w")
-    for transcript in GTF.transcript_iterator(GTF.iterator(IOTools.openFile(reference))):
+    for transcript in GTF.transcript_iterator(GTF.iterator(
+            IOTools.openFile(reference))):
         start = transcript[0].end
         for i in range(1, len(transcript)):
             intron.add(
-                transcript[i].contig, start, transcript[i].start, transcript[i].strand)
+                transcript[i].contig, start,
+                transcript[i].start, transcript[i].strand)
             start = transcript[i].end
 
         # create up and downstream intervals on plus strand
@@ -821,12 +829,13 @@ def classifyLncRNAGenes(lincRNA_gtf, reference, outfile, dist=2):
             print "WARNING: no strand specified for %s" % transcript[0].transcript_id
 
     # iterate over lincRNA genes
-    outf_introns = os.path.join(os.path.dirname(outfile), 
+    outf_introns = os.path.join(os.path.dirname(outfile),
                                 "sense_intronic_removed.gtf.gz")
-    outf_introns = gzip.open( outf_introns, "w")
+    outf_introns = gzip.open(outf_introns, "w")
     gene_class = {}
 
-    for gtf in GTF.merged_gene_iterator(GTF.iterator(IOTools.openFile(lincRNA_gtf))):
+    for gtf in GTF.merged_gene_iterator(GTF.iterator(
+            IOTools.openFile(lincRNA_gtf))):
         gene_id = gtf.gene_id
 
         # the first classification resolves any gene
@@ -904,7 +913,7 @@ def classifyLncRNAGenes(lincRNA_gtf, reference, outfile, dist=2):
     outf.close()
     outf_introns.close()
 
-##########################################################################
+
 ##########################################################################
 ##########################################################################
 # An alternative method for classifying LncRNAs relative to supplied geneset
