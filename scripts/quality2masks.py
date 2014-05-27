@@ -56,7 +56,7 @@ def fillAlignment(map_alignment, alignment):
             i += 1
 
 
-def main():
+def main(argv=None):
 
     parser = E.OptionParser(
         version="%prog version: $Id: quality2masks.py 2781 2009-09-10 11:33:14Z andreas $", usage=globals()["__doc__"])

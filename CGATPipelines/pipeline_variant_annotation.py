@@ -157,7 +157,7 @@ P.getParameters(["%s/pipeline.ini" %
 
 PARAMS = P.PARAMS
 PARAMS_ANNOTATIONS = P.peekParameters(PARAMS["annotations_dir"],
-                                      "pipeline_annotations.py")
+                                      "pipeline_annotations.py", on_error_raise=__name__ == "__main__")
 
 SEPARATOR = "|"
 

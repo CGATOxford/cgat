@@ -203,6 +203,8 @@ SEQUENCEFILES_REGEX = regex(
 ###################################################################
 # connecting to database
 ###################################################################
+
+
 def connect():
     '''connect to database.
 
@@ -218,6 +220,8 @@ def connect():
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 @transform(SEQUENCEFILES,
            SEQUENCEFILES_REGEX,
            r"\1.nreads")
@@ -257,6 +261,8 @@ def loadReadCounts(infiles, outfile):
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 @follows(mkdir("fasta.dir"))
 @transform(SEQUENCEFILES, SEQUENCEFILES_REGEX, r"fasta.dir/\1.fa")
 def preprocessReads(infile, outfile):
@@ -289,6 +295,8 @@ def preprocessReads(infile, outfile):
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 @follows(mkdir("metaphlan.dir"))
 @transform(preprocessReads, regex("(\S+)/(\S+).fa"), r"metaphlan.dir/\2.readmap")
 def buildMetaphlanReadmap(infile, outfile):
@@ -318,6 +326,8 @@ def buildMetaphlanReadmap(infile, outfile):
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 @transform(buildMetaphlanReadmap, suffix(".readmap"), ".readmap.load")
 def loadMetaphlanReadmaps(infile, outfile):
     '''
@@ -328,6 +338,8 @@ def loadMetaphlanReadmaps(infile, outfile):
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 @merge(loadMetaphlanReadmaps, "metaphlan.dir/taxonomic.counts")
 def countMetaphlanTaxonomicGroups(infiles, outfile):
     '''
@@ -352,6 +364,8 @@ def countMetaphlanTaxonomicGroups(infiles, outfile):
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 @follows(mkdir("metaphlan.dir"))
 @transform(preprocessReads, regex("(\S+)/(\S+).fa"), r"metaphlan.dir/\2.relab")
 def buildMetaphlanRelativeAbundance(infile, outfile):
@@ -381,6 +395,8 @@ def buildMetaphlanRelativeAbundance(infile, outfile):
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 @transform(buildMetaphlanRelativeAbundance, suffix(".relab"), ".relab.load")
 def loadMetaphlanRelativeAbundances(infile, outfile):
     '''
@@ -391,6 +407,8 @@ def loadMetaphlanRelativeAbundances(infile, outfile):
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 @merge(loadMetaphlanRelativeAbundances, "metaphlan.dir/taxonomic.abundances")
 def buildMetaphlanTaxonomicAbundances(infiles, outfile):
     '''
@@ -413,9 +431,11 @@ def buildMetaphlanTaxonomicAbundances(infiles, outfile):
 #########################################
 # metaphlan target
 #########################################
-@follows(loadMetaphlanRelativeAbundances, 
-         buildMetaphlanTaxonomicAbundances, 
-         countMetaphlanTaxonomicGroups, 
+
+
+@follows(loadMetaphlanRelativeAbundances,
+         buildMetaphlanTaxonomicAbundances,
+         countMetaphlanTaxonomicGroups,
          loadMetaphlanReadmaps)
 def metaphlan():
     pass
@@ -427,6 +447,8 @@ def metaphlan():
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 @follows(mkdir("lca.dir"))
 @transform(preprocessReads, regex("(\S+)/(\S+).fa"), r"lca.dir/\2.blast.gz")
 def runBlastOnRawSequences(infile, outfile):
@@ -451,6 +473,8 @@ def runBlastOnRawSequences(infile, outfile):
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 @transform(runBlastOnRawSequences, suffix(".blast.gz"), ".lca.gz")
 def runLCA(infile, outfile):
     '''
@@ -463,7 +487,7 @@ def runLCA(infile, outfile):
     '''
     track = P.snip(outfile, ".lca.gz")
     outf_tax = P.snip(outfile, ".gz")
-    outf_kegg = P.snip(outfile, ".lca.gz")+".kegg.gz"
+    outf_kegg = P.snip(outfile, ".lca.gz") + ".kegg.gz"
     statement = '''lcamapper.sh 
                    -k
                    -i %(infile)s
@@ -476,6 +500,8 @@ def runLCA(infile, outfile):
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 @transform(runLCA, suffix(".lca.gz"), ".level.count")
 def countLcaPerLevelTaxa(infile, outfile):
     '''
@@ -491,6 +517,8 @@ def countLcaPerLevelTaxa(infile, outfile):
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 @transform(countLcaPerLevelTaxa, suffix(".count"), ".count.load")
 def loadCountLcaPerLevelTaxa(infile, outfile):
     '''
@@ -501,6 +529,8 @@ def loadCountLcaPerLevelTaxa(infile, outfile):
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 @transform(runLCA, suffix(".lca.gz"), ".taxa.count")
 def countLcaTaxa(infile, outfile):
     '''
@@ -516,6 +546,8 @@ def countLcaTaxa(infile, outfile):
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 @transform(countLcaTaxa, suffix(".count"), ".count.load")
 def loadCountLcaTaxa(infile, outfile):
     '''
@@ -526,6 +558,8 @@ def loadCountLcaTaxa(infile, outfile):
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 @transform(runLCA, suffix(".lca.gz"), ".taxa.gz")
 def buildLCA(infile, outfile):
     '''
@@ -542,6 +576,8 @@ def buildLCA(infile, outfile):
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 @transform(buildLCA, suffix(".taxa.gz"), ".taxa.readcounts")
 def countContributingReads(infile, outfile):
     '''
@@ -556,12 +592,13 @@ def countContributingReads(infile, outfile):
     header = inf.readline().split("\t")
 
     # column indices
-    indices = [3,5,7,9,11,13] 
+    indices = [3, 5, 7, 9, 11, 13]
     total = 0
     for line in inf.readlines():
         total += 1
         data = line[:-1].split("\t")
-        phylum, _class, order, family, genus, species = [data[i] for i in indices]
+        phylum, _class, order, family, genus, species = [
+            data[i] for i in indices]
         if phylum != "NA":
             result["phylum"] += 1
         if _class != "NA":
@@ -578,12 +615,14 @@ def countContributingReads(infile, outfile):
     outf.write("level\tn_reads\tpct_reads\n")
     for level, count in result.iteritems():
         nreads, prop = count, float(count) / total
-        outf.write("\t".join([level, str(nreads), str(prop*100)]) + "\n")
+        outf.write("\t".join([level, str(nreads), str(prop * 100)]) + "\n")
     outf.close()
 
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 @transform(countContributingReads, suffix(".readcounts"), ".readcounts.load")
 def loadCountContributingReads(infile, outfile):
     '''
@@ -594,6 +633,8 @@ def loadCountContributingReads(infile, outfile):
 #########################################
 # LCA target
 #########################################
+
+
 @follows(buildLCA,
          loadCountLcaPerLevelTaxa,
          loadCountLcaTaxa,
@@ -604,13 +645,15 @@ def lca():
 ###################################################################
 ###################################################################
 ###################################################################
-## Counting KEGG associations
+# Counting KEGG associations
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 @follows(mkdir("kegg.dir"))
-@transform(PARAMS.get("kegg_tre"), 
-           regex("(\S+)/(\S+).tre"), 
+@transform(PARAMS.get("kegg_tre"),
+           regex("(\S+)/(\S+).tre"),
            add_inputs(PARAMS.get("kegg_map")),
            r"kegg.dir/\2.tsv")
 def buildKeggTable(infiles, outfile):
@@ -625,10 +668,12 @@ def buildKeggTable(infiles, outfile):
                    --log=%(outfile)s.log
                    > %(outfile)s'''
     P.run()
-    
+
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 @transform(buildKeggTable, suffix(".tsv"), ".load")
 def loadKeggTable(infile, outfile):
     '''
@@ -639,9 +684,11 @@ def loadKeggTable(infile, outfile):
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 @follows(mkdir("kegg.dir"))
-@transform(runLCA, 
-           regex("(\S+)/(\S+).lca.gz"), 
+@transform(runLCA,
+           regex("(\S+)/(\S+).lca.gz"),
            add_inputs(buildKeggTable),
            r"kegg.dir/\2.kegg.counts")
 def countKeggAssociations(infiles, outfile):
@@ -663,6 +710,8 @@ def countKeggAssociations(infiles, outfile):
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 @transform(countKeggAssociations, suffix(".counts"), ".counts.load")
 def loadCountKeggAssociations(infile, outfile):
     '''
@@ -673,9 +722,11 @@ def loadCountKeggAssociations(infile, outfile):
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 @follows(mkdir("kegg.dir"))
-@transform(runLCA, 
-           regex("(\S+)/(\S+).lca.gz"), 
+@transform(runLCA,
+           regex("(\S+)/(\S+).lca.gz"),
            add_inputs(buildKeggTable),
            r"kegg.dir/\2.kegg.ko.counts")
 def countKeggGenes(infiles, outfile):
@@ -697,6 +748,8 @@ def countKeggGenes(infiles, outfile):
 ###################################################################
 ###################################################################
 ###################################################################
+
+
 @transform(countKeggGenes, suffix(".ko.counts"), ".ko.counts.load")
 def loadCountKeggGenes(infile, outfile):
     '''
@@ -707,6 +760,8 @@ def loadCountKeggGenes(infile, outfile):
 #########################################
 # kegg target
 #########################################
+
+
 @follows(loadCountKeggAssociations)
 def kegg():
     pass
@@ -714,10 +769,9 @@ def kegg():
 #########################################
 # full target
 #########################################
-@follows(loadReadCounts
-         , metaphlan
-         , lca
-         , kegg)
+
+
+@follows(loadReadCounts, metaphlan, lca, kegg)
 def full():
     pass
 

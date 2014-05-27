@@ -55,7 +55,7 @@ import threadpool
 # --------------------------------------------------------------------
 
 
-def main():
+def main(argv=None):
 
     parser = farm.getOptionParser()
 

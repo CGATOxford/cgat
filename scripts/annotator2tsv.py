@@ -579,7 +579,7 @@ def doFDR(options, args):
                                   extra_values))
 
 
-def main():
+def main(argv=None):
     parser = E.OptionParser(
         version="%prog version: $Id: annotator2tsv.py 2861 2010-02-23 17:36:32Z andreas $", usage=globals()["__doc__"])
 

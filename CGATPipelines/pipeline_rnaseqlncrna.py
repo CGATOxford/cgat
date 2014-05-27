@@ -206,8 +206,10 @@ P.getParameters(
               "genesets_previous": ""})
 
 PARAMS = P.PARAMS
-PARAMS_ANNOTATIONS = P.peekParameters(PARAMS["annotations_annotations_dir"],
-                                      "pipeline_annotations.py")
+PARAMS_ANNOTATIONS = P.peekParameters(
+    PARAMS["annotations_annotations_dir"],
+    "pipeline_annotations.py",
+    on_error_raise=__name__ == "__main__")
 PREVIOUS = P.asList(PARAMS["genesets_previous"])
 
 #########################################################################
@@ -318,9 +320,9 @@ def buildCodingGeneSet(infiles, outfile):
 
 
 @follows(buildCodingGeneSet)
-@transform(PARAMS["genesets_refcoding"], 
-           regex(r"(\S+).gtf.gz"), 
-           add_inputs(buildCodingGeneSet), 
+@transform(PARAMS["genesets_refcoding"],
+           regex(r"(\S+).gtf.gz"),
+           add_inputs(buildCodingGeneSet),
            r"gtfs/\1.gtf.gz")
 def buildRefcodingGeneSet(infiles, outfile):
     '''
@@ -465,7 +467,8 @@ else:
             E.info("Both multi-exon and single-exon lncRNA are retained!")
             statement = ("cp %(infile)s %(outfile)s")
         elif PARAMS["filtering_remove_single_exon"] == "loci":
-            E.info("Warning: removing all single-exon transcripts from lncRNA set")
+            E.info(
+                "Warning: removing all single-exon transcripts from lncRNA set")
             statement = ("zcat %(infile)s |"
                          " grep 'exon_status_locus \"s\"'"
                          " gzip > %(outfile)s")
@@ -475,7 +478,7 @@ else:
                          " grep 'exon_status \"s\"'"
                          " gzip > %(outfile)s")
         else:
-            raise ValueError("Unregocnised parameter %s" 
+            raise ValueError("Unregocnised parameter %s"
                              % PARAMS["filtering_remove_single_exon"])
         P.run()
 
@@ -567,9 +570,9 @@ def buildFinalLncRNAGeneSet(infile, outfile):
     '''
 
     # filter based on coding potential and rename
-    PipelineLncRNA.buildFinalLncRNAGeneSet(infile, 
-                                           "lncrna_filtered_cpc_result", 
-                                           outfile, 
+    PipelineLncRNA.buildFinalLncRNAGeneSet(infile,
+                                           "lncrna_filtered_cpc_result",
+                                           outfile,
                                            PARAMS["filtering_cpc"],
                                            PARAMS["filtering_cpc_threshold"],
                                            PARAMS["final_geneset_rename"])
@@ -580,7 +583,7 @@ def buildFinalLncRNAGeneSet(infile, outfile):
 
 
 @transform(buildFinalLncRNAGeneSet,
-           regex(r"(\S+)/(\S+).gtf.gz"), 
+           regex(r"(\S+)/(\S+).gtf.gz"),
            r"\2.stats")
 def buildLncRNAGeneSetStats(infile, outfile):
     '''
@@ -597,21 +600,26 @@ def buildLncRNAGeneSetStats(infile, outfile):
     in the coding and lncRNA genesets
     '''
     outf = open(outfile, "w")
-    outf.write("\t".join(["no_transcripts", 
-                          "no_genes", 
-                          "no_exons_per_transcript", 
+    outf.write("\t".join(["no_transcripts",
+                          "no_genes",
+                          "no_exons_per_transcript",
                           "no_exons_per_gene",
-                          "no_single_exon_transcripts", 
-                          "no_multi_exon_transcripts", 
-                          "no_single_exon_genes", 
+                          "no_single_exon_transcripts",
+                          "no_multi_exon_transcripts",
+                          "no_single_exon_genes",
                           "no_multi_exon_genes"]) + "\n")
-    outf.write("\t".join(map(str, [PipelineLncRNA.CounterTranscripts(infile).count(), 
-                                   PipelineLncRNA.CounterGenes(infile).count(), 
-                                   PipelineLncRNA.CounterExonsPerTranscript(infile).count(), 
-                                   PipelineLncRNA.CounterExonsPerGene(infile).count(), 
-                                   PipelineLncRNA.CounterSingleExonTranscripts(infile).count(), 
-                                   PipelineLncRNA.CounterMultiExonTranscripts(infile).count(), 
-                                   PipelineLncRNA.CounterSingleExonGenes(infile).count(), 
+    outf.write("\t".join(map(str, [PipelineLncRNA.CounterTranscripts(infile).count(),
+                                   PipelineLncRNA.CounterGenes(infile).count(),
+                                   PipelineLncRNA.CounterExonsPerTranscript(
+                                       infile).count(),
+                                   PipelineLncRNA.CounterExonsPerGene(
+                                       infile).count(),
+                                   PipelineLncRNA.CounterSingleExonTranscripts(
+                                       infile).count(),
+                                   PipelineLncRNA.CounterMultiExonTranscripts(
+                                       infile).count(),
+                                   PipelineLncRNA.CounterSingleExonGenes(
+                                       infile).count(),
                                    PipelineLncRNA.CounterMultiExonGenes(infile).count()])))
 
 
@@ -633,12 +641,11 @@ def buildRefcodingGeneSetStats(infile, outfile):
     in the coding and lncRNA genesets
     '''
 
-    # calculate exon status for refcoding genes. 
+    # calculate exon status for refcoding genes.
     tmpf = P.getTempFilename(".") + ".gz"
     PipelineLncRNA.flagExonStatus(infile, tmpf)
 
     outf = IOTools.openFile(outfile, "w")
-
     outf.write("\t".join(["no_transcripts",
                           "no_genes",
                           "no_exons_per_transcript",
@@ -663,7 +670,7 @@ def buildRefcodingGeneSetStats(infile, outfile):
 
 
 @transform([buildLncRNAGeneSetStats, buildRefcodingGeneSetStats],
-           suffix(".stats"), 
+           suffix(".stats"),
            ".load")
 def loadGeneSetStats(infile, outfile):
     '''
@@ -681,9 +688,9 @@ def loadGeneSetStats(infile, outfile):
 ##########################################################################
 
 
-@transform(buildFinalLncRNAGeneSet, 
-           regex(r"(\S+).gtf.gz"), 
-           add_inputs(PARAMS["genesets_refcoding"]), 
+@transform(buildFinalLncRNAGeneSet,
+           regex(r"(\S+).gtf.gz"),
+           add_inputs(PARAMS["genesets_refcoding"]),
            r"\1.class.gtf.gz")
 def classifyLncRNA(infiles, outfile):
     '''

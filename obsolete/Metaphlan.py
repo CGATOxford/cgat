@@ -4,6 +4,7 @@ import collections
 
 
 class ContributingReads(TrackerSQL):
+
     '''
     returns the proportion of reads 
     that contribute to the relative abundance
@@ -16,7 +17,7 @@ class ContributingReads(TrackerSQL):
     '''
     pattern = "(.*)_readmap"
 
-    def __call__(self, track, slice = None):
+    def __call__(self, track, slice=None):
 
         if len(track.split("_")) == 4:
             dtrack = track.split("_")
@@ -30,11 +31,13 @@ class ContributingReads(TrackerSQL):
         total = cc.execute(total_stmt).fetchone()[0]
         # returns the number at the phylum level i.e max possible
         statement = """SELECT count(*) FROM %s_readmap""" % track
-        
-        return {"pct_reads": (float(self.execute(statement).fetchone()[0]) / int(total))*100,
+
+        return {"pct_reads": (float(self.execute(statement).fetchone()[0]) / int(total)) * 100,
                 "n_reads": float(self.execute(statement).fetchone()[0])}
 
+
 class SpeciesAbundanceDistribution(TrackerSQL):
+
     '''
     plot the distribution of SPECIES relative abundances
     '''
@@ -44,7 +47,7 @@ class SpeciesAbundanceDistribution(TrackerSQL):
         '''
         display the rel abundance distribution
         '''
-        result = {"species":[]}
+        result = {"species": []}
         statement = """SELECT rel_abundance FROM %s_relab
                        WHERE taxon_level == 'species'""" % track
         for rel in self.execute(statement).fetchall():
@@ -53,6 +56,7 @@ class SpeciesAbundanceDistribution(TrackerSQL):
 
 
 class RelativeAbundance(TrackerSQL):
+
     '''
     summarises the relative abundance at
     different taxonomic levels - results

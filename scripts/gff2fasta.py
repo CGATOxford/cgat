@@ -13,40 +13,64 @@ Purpose
 This script outputs the genomic sequences for intervals within
 a :term:`gff` formatted file.
 
-The ouput can be optionall masked and filtered.
+The ouput can be optionally masked and filtered.
 
 Usage
 -----
 
-Example::
+If you want to convert a ``features.gff`` file with intervals information
+into a :term:`fasta` file containing the sequence of each interval, use this
+script as follows::
 
    python gff2fasta.py --genome-file=hg19 < features.gff > features.fasta
 
-Type::
+The input can also be a :term:`gtf` formatted file. In that case, use the
+``--is-gtf`` option::
 
-   python gff2fasta.py --help
+   python gff2fasta.py --genome-file=hg19 --is-gtf < features.gtf >\
+ features.fasta
 
-for command line help.
+If you want to merge the sequence of similar features together, please use
+``--merge``::
+
+   python gff2fasta.py --genome-file=hg19 --merge < features.gff >\
+ features.fasta
+
+It is possible to filter the output by selecting a minimum or maximum number
+of nucleotides in the resultant fasta sequence with ``--max-length`` or
+``--min-length`` respectively::
+
+   python gff2fasta.py --genome-file=hg19 --max-length=100\
+ < features.gff > features.fasta
+
+Or you can also filter the output by features name with the ``--feature``
+option::
+
+   python gff2fasta.py --genome-file=hg19 --feature=exon < features.gff\
+ > features.fasta
+
+On the other hand, low-complexity regions can be masked with the ``--masker``
+option and a given :term:`gff` formatted file::
+
+   python gff2fasta.py --genome-file=hg19 --masker=dust\
+ --filename-masks=intervals.gff < features.gff > features.fasta
+
+where ``--masker`` can take the following values: ``dust``, ``dustmasker``,
+and ``softmask``.
 
 Command line options
 --------------------
-
 '''
+
 import sys
-import string
-import re
-import optparse
 import CGAT.Experiment as E
 import CGAT.GTF as GTF
 import CGAT.Genomics as Genomics
-import CGAT.AGP as AGP
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Intervals as Intervals
 import CGAT.Masker as Masker
 import bx.intervals.io
 import bx.intervals.intersection
-
-import CGAT.Experiment as E
 
 
 def main(argv=None):
@@ -58,8 +82,10 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv
 
-    parser = E.OptionParser(
-        version="%prog version: $Id: gff2fasta.py 2861 2010-02-23 17:36:32Z andreas $", usage=globals()["__doc__"])
+    parser = E.OptionParser(version="%prog version: "
+                            "$Id: gff2fasta.py 2861 2010-02-23 17:36:32Z "
+                            "andreas $",
+                            usage=globals()["__doc__"])
 
     parser.add_option("--is-gtf", dest="is_gtf", action="store_true",
                       help="input is gtf instead of gff.")
@@ -68,25 +94,30 @@ def main(argv=None):
                       help="filename with genome [default=%default].")
 
     parser.add_option("-m", "--merge", dest="merge", action="store_true",
-                      help="merge adjacent intervals with the same attributes. "
-                      "[default=%default]")
+                      help="merge adjacent intervals with the same attributes."
+                      " [default=%default]")
 
     parser.add_option("-e", "--feature", dest="feature", type="string",
-                      help="filter by a feature, for example 'exon', 'CDS'. If "
-                      "set to the empty string, all entries are output [%default].")
+                      help="filter by a feature, for example 'exon', 'CDS'."
+                      " If set to the empty string, all entries are output "
+                      "[%default].")
 
-    parser.add_option("-f", "--filename-masks", dest="filename_masks", type="string",
-                      metavar="gff",
-                      help="mask sequences with regions given in gff file [%default].")
+    parser.add_option("-f", "--filename-masks", dest="filename_masks",
+                      type="string", metavar="gff",
+                      help="mask sequences with regions given in gff file "
+                      "[%default].")
 
-    parser.add_option("--remove-masked-regions", dest="remove_masked_regions", action="store_true",
+    parser.add_option("--remove-masked-regions", dest="remove_masked_regions",
+                      action="store_true",
                       help="remove regions instead of masking [%default].")
 
     parser.add_option("--min-length", dest="min_length", type="int",
-                      help="set minimum length for sequences output [%default]")
+                      help="set minimum length for sequences output "
+                      "[%default]")
 
     parser.add_option("--max-length", dest="max_length", type="int",
-                      help="set maximum length for sequences output [%default]")
+                      help="set maximum length for sequences output "
+                      "[%default]")
 
     parser.add_option("--extend-at", dest="extend_at", type="choice",
                       choices=("none", "3", "5", "both", "3only", "5only"),
@@ -134,7 +165,7 @@ def main(argv=None):
     if options.filename_masks:
         masks = {}
         with open(options.filename_masks, "r") as infile:
-            e = GTF.readAsIntervals(GFF.iterator(infile))
+            e = GTF.readAsIntervals(GTF.iterator(infile))
 
         # convert intervals to intersectors
         for contig in e.keys():
@@ -171,11 +202,11 @@ def main(argv=None):
 
         if len(chunk) == 0:
             nskipped_noexons += 1
-            E.info("no features in entry from %s:%i..%i - %s" % (ichunk[0].contig,
-                                                                 ichunk[
-                                                                     0].start,
-                                                                 ichunk[0].end,
-                                                                 str(ichunk[0])))
+            E.info("no features in entry from "
+                   "%s:%i..%i - %s" % (ichunk[0].contig,
+                                       ichunk[0].start,
+                                       ichunk[0].end,
+                                       str(ichunk[0])))
             continue
 
         contig, strand = chunk[0].contig, chunk[0].strand
@@ -208,26 +239,33 @@ def main(argv=None):
                 if len(intervals) == 0:
                     nskipped_masked += 1
                     if options.loglevel >= 1:
-                        options.stdlog.write("# skipped because fully masked: %s: regions=%s masks=%s\n" %
-                                             (name, str([(x.start, x.end) for x in chunk]), masked_regions))
+                        options.stdlog.write("# skipped because fully masked: "
+                                             "%s: regions=%s masks=%s\n" %
+                                             (name,
+                                              str([(x.start,
+                                                    x.end) for x in chunk]),
+                                              masked_regions))
                     continue
 
         out = intervals
 
         if options.extend_at:
             if options.extend_at == "5only":
-                intervals = [
-                    (max(0, intervals[0][0] - options.extend_by), intervals[0][0])]
+                intervals = [(max(0, intervals[0][0] - options.extend_by),
+                             intervals[0][0])]
             elif options.extend_at == "3only":
-                intervals = [
-                    (intervals[-1][1], min(lcontig, intervals[-1][1] + options.extend_by))]
+                intervals = [(intervals[-1][1],
+                              min(lcontig,
+                                  intervals[-1][1] + options.extend_by))]
             else:
                 if options.extend_at in ("5", "both"):
-                    intervals[0] = (
-                        max(0, intervals[0][0] - options.extend_by), intervals[0][1])
+                    intervals[0] = (max(0,
+                                        intervals[0][0] - options.extend_by),
+                                    intervals[0][1])
                 if options.extend_at in ("3", "both"):
                     intervals[-1] = (intervals[-1][0],
-                                     min(lcontig, intervals[-1][1] + options.extend_by))
+                                     min(lcontig,
+                                         intervals[-1][1] + options.extend_by))
 
         if not positive:
             intervals = [(lcontig - x[1], lcontig - x[0])
@@ -239,24 +277,29 @@ def main(argv=None):
         # IMS: allow for masking of sequences
         s = Masker.maskSequences(s, options.masker)
         l = sum([len(x) for x in s])
-        if l < options.min_length or (options.max_length and l > options.max_length):
+        if (l < options.min_length or
+           (options.max_length and l > options.max_length)):
             nskipped_length += 1
             if options.loglevel >= 1:
-                options.stdlog.write("# skipped because length out of bounds %s: regions=%s len=%i\n" %
+                options.stdlog.write("# skipped because length out of bounds "
+                                     "%s: regions=%s len=%i\n" %
                                      (name, str(intervals), l))
-            continue
+                continue
 
         options.stdout.write(">%s %s:%s:%s\n%s\n" % (name,
                                                      contig,
                                                      strand,
                                                      ";".join(
-                                                         ["%i-%i" % x for x in out]),
+                                                         ["%i-%i" %
+                                                          x for x in out]),
                                                      "\n".join(s)))
 
         noutput += 1
 
-    E.info("ninput=%i, noutput=%i, nmasked=%i, nskipped_noexons=%i, nskipped_masked=%i, nskipped_length=%i" %
-           (ninput, noutput, nmasked, nskipped_noexons, nskipped_masked, nskipped_length))
+    E.info("ninput=%i, noutput=%i, nmasked=%i, nskipped_noexons=%i, "
+           "nskipped_masked=%i, nskipped_length=%i" %
+           (ninput, noutput, nmasked, nskipped_noexons,
+            nskipped_masked, nskipped_length))
 
     E.Stop()
 

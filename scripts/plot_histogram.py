@@ -51,7 +51,7 @@ import CGAT.IOTools as IOTools
 import numpy.ma
 
 
-def main():
+def main(argv=None):
 
     parser = E.OptionParser(
         version="%prog version: $Id: plot_histogram.py 2782 2009-09-10 11:40:29Z andreas $", usage=globals()["__doc__"])

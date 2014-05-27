@@ -111,7 +111,6 @@ import CGAT.GTF as GTF
 import CGAT.Database as Database
 
 import PipelineGeneset as PGeneset
-import PipelineAnnotator as PAnnotator
 
 # load options from the config file
 import CGAT.Pipeline as P
@@ -126,7 +125,7 @@ USECLUSTER = True
 
 # link up with annotations
 PARAMS_ANNOTATIONS = P.peekParameters(PARAMS["annotations_dir"],
-                                      "pipeline_annotations.py")
+                                      "pipeline_annotations.py", on_error_raise=__name__ == "__main__")
 
 # link up with ancestral repeats
 PARAMS_ANCESTRAL_REPEATS = P.peekParameters(PARAMS["ancestral_repeats_dir"],
@@ -1360,13 +1359,13 @@ def loadSummary(infile, outfile):
     statement = '''
     CREATE TABLE %(tablename)s AS
     SELECT
-         CAST(r.gene_id AS TEXT) AS gene_id, 
-				r.exons_sum as length, 
-				r.exons_pGC as pgc,
-                                %(stmt_select)s
-	FROM 
-          %(track)s_annotation AS r 
-	  %(stmt_from)s
+    CAST(r.gene_id AS TEXT) AS gene_id,
+    r.exons_sum as length,
+    r.exons_pGC as pgc,
+    %(stmt_select)s
+    FROM
+    %(track)s_annotation AS r
+    %(stmt_from)s
         WHERE %(stmt_where)s
     ''' % locals()
 

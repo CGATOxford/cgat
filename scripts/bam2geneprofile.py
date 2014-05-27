@@ -10,61 +10,192 @@ bam2geneprofile.py - build meta-gene profile for a set of transcripts/genes
 Purpose
 -------
 
-This script takes a :term:`gtf` formatted file and computes meta-gene profiles
-over various annotations derived from the :term:`gtf` file. 
+This script takes a :term:`gtf` formatted file, a short reads :term:`bam` 
+formatted file and computes meta-gene profiles over various annotations 
+derived from the :term:`gtf` file. 
 
 A meta-gene profile is an abstract genomic entity over which reads stored in a 
 :term:`bam` formatted file have been counted. A meta-gene might be an idealized
-eukaryotic gene (upstream, exonic sequence, downstream) or any other genomic landmark 
-of interest such as transcription start sites.
+eukaryotic gene (upstream, exonic sequence, downstream) or any other genomic 
+landmark of interest such as transcription start sites.
 
-The script can be used to visualize binding profiles of a chromatin mark in gene 
-bodies, binding of transcription factors in promotors or 3' bias in RNASeq data.
+The script can be used to visualize binding profiles of a chromatin mark in 
+gene bodies, binding of transcription factors in promotors or sequencing bias 
+(e.g. 3' bias) in RNA-Seq data.
 
 This script is designed with a slight emphasis on RNA-Seq datasets. For 
 example, it takes care of spliced reads, by using the CIGAR string in the BAM
-file to accurately define aligned bases (if the --base-accurate is specified), 
-currently this feature is turned off by default).
+file to accurately define aligned bases (if the --base-accurate is specified, 
+currently this feature is turned off by default for speed reasons).
 
-Alternatively, for the purpose of visualizing binding profiles of transcription factors
-ChIP-Seq without the need to use any genomic annotations (ENSEMBL, or refseq), you may
-also consider using :doc:`bam2peakshape`, which is
-designed with a slight emphasis on Chip-Seq datasets, for example, :doc:`bam2peakshape` is able to
-center the counting window to the summit of every individual peak. :doc:`bam2peakshape` is also able
-to: (1) plot the control RNA-Seq library to enable side-by-side comparison; (2) randomize
-the given regions to provide a semi-control.
+Alternatively, for the purpose of visualizing binding profiles of transcription
+factor ChIP-Seq without the need to use any genomic annotations (ENSEMBL, or 
+refseq), you may also consider using :doc:`bam2peakshape`, which is designed 
+with a slight emphasis on Chip-Seq datasets. For example, :doc:`bam2peakshape` 
+is able to center the counting window to the summit of every individual peak. 
+:doc:`bam2peakshape` is also able to: (1) plot the control ChIP-Seq library to 
+enable side-by-side comparison; (2) randomize the given regions to provide a 
+semi-control.
 
-Background
----------- 
 
-The :file:`bam2geneprofile.py` script reads in a set of transcripts from a :term:`gtf` 
-formatted file. For each transcript, overlapping reads from the provided :term:`bam` file 
-are collected. The counts within the transcript are then mapped onto the meta-gene
-structure and counts are aggregated over all transcripts in the :term:`gtf` file.
+
+Usage
+-----
+
+
+
+Quick start examples
+++++++++++++++++++++
+
+The following command will generate the gene profile plot similar to Fig 1(a) 
+in the published CGAT paper, but using a test dataset that is much smaller 
+and simpler than the dataset used for publishing the CGAT paper. ::
+
+    python ./scripts/bam2geneprofile.py 
+        --bamfile=./tests/bam2geneprofile.py/multipleReadsSplicedOutAllIntronsAndSecondExon.bam
+        --gtffile=./tests/bam2geneprofile.py/onegeneWithoutAnyCDS.gtf.gz
+        --method=geneprofile
+        --reporter=gene
+
+In the following, a slightly more involved example will use more features
+of this script. The following command generate the gene profile showing 
+base accuracy of upstream (500bp), exons, introns and downstream(500bp) of 
+a gene model from some user supplied RNA-Seq data and geneset. ::
+
+    python ./scripts/bam2geneprofile.py
+        --bamfile=./rnaseq.bam
+        --gtffile=./geneset.gtf.gz
+        --method=geneprofilewithintrons
+        --reporter=gene
+        --extension-upstream=500
+        --resolution-upstream=500
+        --extension-downstream=500
+        --resolution-downstream=500
+
+The output will contain read coverage over genes. The profile will contain 
+four separate segments:
+
+1. the upstream region of a gene ( set to be 500bp ), 
+   (``--extension-upstream=500``).
+
+2. the transcribed region of a gene. The transcribed region of every gene will
+   be scaled to 1000 bp ( default ), shrinking longer transcripts and 
+   expanding shorter transcripts.
+
+3. the intronic regions of a gene. These will be scaled to 1000b ( default ).
+
+4. the downstream region of a gene ( set to be 500bp ), 
+   (``--extension-downstream=500``).
+
+
+
+Detailed explaination
++++++++++++++++++++++
+
+The :file:`bam2geneprofile.py` script reads in a set of transcripts from a 
+:term:`gtf` formatted file. For each transcript, overlapping reads from the 
+provided :term:`bam` file are collected. The counts within the transcript 
+are then mapped onto the meta-gene structure and counts are aggregated 
+over all transcripts in the :term:`gtf` file.
 
 :term:`Bam` files need to be sorted by coordinate and indexed. 
 
-A meta-gene structure has two components - regions of variable size, such as exons, introns, etc,
-which nevertheless have a fixed start and end coordinate in a transcript. The other component
-are regions of fixed width, such a regions of a certain size upstream or downstream of a landmark such as
+A meta-gene structure has two components - regions of variable size, such as 
+exons, introns, etc, which nevertheless have a fixed start and end coordinate 
+in a transcript. The other component are regions of fixed width, such a 
+regions of a certain size upstream or downstream of a landmark such as
 a transcription start site.
 
-The size of the former class, regions of variable size, can be varied with ``--resolution`` options.
-For example, the option ``--resolution-upstream-utr=1000`` will create a meta-gene with 
-a 1000bp upstream UTR region. UTRs that are larger will be compressed, but UTRs that are smaller, will
-be stretched to fit the 1000bp meta-gene UTR region.
+The size of the former class, regions of variable size, can be varied with 
+``--resolution`` options. For example, the option 
+``--resolution-upstream-utr=1000`` will create a meta-gene with a 1000bp 
+upstream UTR region. UTRs that are larger will be compressed, and UTRs that 
+are smaller, will be stretched to fit the 1000bp meta-gene UTR region.
 
-The size of fixed-width regions can be set with ``--extension`` options. For example,
-the options ``--extension-upstream`` will set the size of the uptsream extension region
-to 1000bp. Note that no scaling is required when counting reads towards the meta-gene profile.
+The size of fixed-width regions can be set with ``--extension`` options. For 
+example, the options ``--extension-upstream`` will set the size of the 
+uptsream extension region to 1000bp. Note that no scaling is required when 
+counting reads towards the fixed-width meta-gene profile.
+
+
+
+Type::
+
+   python bam2geneprofile.py --help
+
+for command line help.
+
+
+
+
+Options
+-------
+
+The script provides a variety of different meta-gene structures i.e. 
+geneprofiles, selectable via using the option: (``--method``).
+
+
+
+Profiles
+++++++++
+
+Different profiles are accessible through the ``--method`` option. Multiple
+methods can be applied at the same time. While ``upstream`` and ``downstream``
+typically have a fixed size, the other regions such as ``CDS``, ``UTR`` will be
+scaled to a common size.
+
+utrprofile
+    UPSTREAM - UTR5 - CDS - UTR3 - DOWNSTREAM
+    gene models with UTR. Separate the coding section from the non-coding part.
+
+geneprofile 
+    UPSTREAM - EXON - DOWNSTREAM
+    simple exonic gene models
+
+geneprofilewithintrons 
+    UPSTREAM - EXON - INTRON - DOWNSTREAM
+    gene models containing also intronic sequence, only correct if used with 
+    ``--base-accuracy`` option.
+     
+geneprofileabsolutedistancefromthreeprimeend
+    UPSTREAM - EXON (absolute distance, see below) - INTRON (absolute distance
+    , see below)  - DOWNSTREAM (the downstream of the exons) region, the 
+    script counts over the mRNA transcript only, skipping introns. 
+    Designed to visualize the 3 prime bias in RNASeq data, only correct if 
+    used together with ``--base-accuracy`` option.
+    
+    absolute distance: In order to to visualize the 3 prime bias, genes are 
+    not supposed to be streched to equal length as it did in all other 
+    counting methods. In this counting method, we first set a fix length using
+    ``--extension-exons-absolute-distance-topolya``, the script will discard 
+    genes shorter than this fixed length. For genes (when all the exons 
+    stitched together) longer than this fixed length, the script will only 
+    count over this fixed length ( a absolute distance ) from three prime end, 
+    instead of compress the longer genes. Same goes for absolute distance 
+    intron counting.
+    
+tssprofile
+    UPSTREAM - DOWNSTREAM
+    transcription start/stop sites
+
+intervalprofile 
+    UPSTREAM - INTERVAL - DOWNSTREAM
+    Similar to geneprofile, but count over the complete span of the gene
+    (including introns).
+
+midpointprofile
+    UPSTREAM  - DOWNSTREAM
+    aggregate over midpoint of gene model
+
+
 
 Normalization
--------------
++++++++++++++
 
 Normalization can be applied in two stages of the computation.
 
-Count Vector
-++++++++++++
+Count vector normalization
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Before adding counts to the meta-gene profile, the profile for the
 individual transcript can be normalized. Without normalization, highly
@@ -99,8 +230,8 @@ The options above do not control for different read-depths or any
 local biases. To compare meta-gene profiles between samples,
 additional normalization is required.
 
-Meta-gene profile
-+++++++++++++++++
+Meta-gene profile normalization
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 To enable comparison between experiments, the meta-gene profile itself
 can be normalized.  Normalization a profile can help comparing the
@@ -123,123 +254,40 @@ then divided by this background-level. The assumption is that the
 meta-gene model is computed over a large enough area to include
 genomic background. 
 
-Options
--------
 
-The script provides a variety of different meta-gene structures i.e. geneprofiles, selectable
-via using the option: (``--method``).
-
-Profiles
-++++++++
-
-Different profiles are accessible through the ``--method`` option. Multiple
-methods can be applied at the same time. While ``upstream`` and ``downstream``
-typically have a fixed size, the other regions such as ``CDS``, ``UTR`` will be
-scaled to a common size.
-
-utrprofile
-    UPSTREAM - UTR5 - CDS - UTR3 - DOWNSTREAM
-    gene models with UTR. Separate the coding section from the non-coding part.
-
-geneprofile 
-    UPSTREAM - EXON - DOWNSTREAM
-    simple exonic gene models
-
-geneprofilewithintrons 
-    UPSTREAM - EXON - INTRON - DOWNSTREAM
-    gene models containing also intronic sequence, only correct if used with --base-accuracy
-     
-geneprofileabsolutedistancefromthreeprimeend
-    UPSTREAM - EXON(AbsoluteFromThreePrimeEnd) - INTRON(AbsoluteFromThreePrimeEnd) - DOWNSTREAM
-    For EXON region, the script counts over the mRNA transcript only, skipping introns. 
-    Designed to visualize the 3 prime bias in RNASeq data, only correct if used with --base-accuracy
-    
-tssprofile
-    UPSTREAM - DOWNSTREAM
-    transcription start/stop sites
-
-intervalprofile 
-    UPSTREAM - INTERVAL - DOWNSTREAM
-    Similar to geneprofile, but count over the complete span of the gene
-    (including introns).
-
-midpointprofile
-    UPSTREAM  - DOWNSTREAM
-    aggregate over midpoint of gene model
 
 Genes versus transcripts
 ++++++++++++++++++++++++
 
-The default is to collect reads on a per-transcript level. Alternatively, the script can
-merge all transcripts of a gene into a single virtual transcript. Note that this virtual transcript
-might not be a biologically plausible transcript. It is usually better to provide :file:`bam2geneprofile.py`
-with a set of representative transcripts per gene in order to avoid up-weighting genes with
-multiple transcripts.
+The default is to collect reads on a per-transcript level. Alternatively, 
+the script can merge all transcripts of a gene into a single virtual 
+transcript. Note that this virtual transcript might not be a biologically 
+plausible transcript. It is usually better to provide 
+:file:`bam2geneprofile.py` with a set of representative transcripts per gene 
+in order to avoid up-weighting genes with multiple transcripts.
+
+
 
 Control
 +++++++
 
-If control files (input tracks) are supplied, counts in the control file can be used
-to compute a fold-change.
+If control files (chip-seq input tracks) are supplied, counts in the control 
+file can be used to compute a fold-change.
+
+
 
 Bed and wiggle files
 ++++++++++++++++++++
 
-The densities can be computed from :term:`bed` or :term:`wiggle` formatted files.
-If a :term:`bed` formatted file is supplied, it must be compressed with and indexed with :file:`tabix`.
+The densities can be computed from :term:`bed` or :term:`wiggle` formatted 
+files. If a :term:`bed` formatted file is supplied, it must be compressed 
+with and indexed with :file:`tabix`.
 
 .. note::
    
    Paired-endedness is ignored. Both ends of a paired-ended read are treated 
    individually.
 
-Usage
------
-
-The following command will generate the gene profile plot similar to Fig 1(a) 
-in the published CGAT paper, but using a test dataset that is much smaller 
-and simpler than the dataset used for publishing the CGAT paper. ::
-
-    python ./scripts/bam2geneprofile.py 
-        --bamfile=./tests/bam2geneprofile.py/multipleReadsSplicedOutAllIntronsAndSecondExon.bam
-        --gtffile=./tests/bam2geneprofile.py/onegeneWithoutAnyCDS.gtf.gz
-        --method=geneprofile
-        --reporter=gene
-
-In the following, a slightly more involved example will use more features
-of this script. The following command generate the gene profile showing 
-base accuracy of upstream (500bp), exons, introns and downstream(500bp) of 
-a gene model from some user supplied RNA-Seq data and geneset. ::
-
-    python ./scripts/bam2geneprofile.py
-        --bamfile=./rnaseq.bam
-        --gtffile=./geneset.gtf.gz
-        --method=geneprofilewithintrons
-        --reporter=gene
-        --extension-upstream=500
-        --resolution-upstream=500
-        --extension-downstream=500
-        --resolution-downstream=500
-
-The output will contain read coverage over genes, merging all transcripts of
-a gene into a single chain of exons. The profile will contain four separate
-segments:
-
-1. the upstream region of a gene ( set to be 500bp ), (``--extension-upstream=500``).
-
-2. the transcribed region of a gene. The transcribed region of every gene will
-   be scaled to 1000 bp ( default ), shrinking longer transcripts and 
-   expanding shorter transcripts.
-
-3. the intronic regions of a gene. These will be scaled to 1000b ( default ).
-
-4. the downstream region of a gene ( set to be 500bp ), (``--extension-downstream=500``).
-
-Type::
-
-   python bam2geneprofile.py --help
-
-for command line help.
 
 Command line options
 --------------------
@@ -273,7 +321,7 @@ def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
-    """
+        """
 
     if not argv:
         argv = sys.argv
@@ -443,12 +491,8 @@ def main(argv=None):
         # region, a long region has the side effect of omit more genes. Tim
         # 31th Aug 2013
         resolution_introns_absolute_distance_topolya=500,
-        # 3kb is a good balance of seeing long enough 3 prime bias and not omit
-        # too many genes. Tim 31th Aug 2013
+        # extension can simply just be the same as resolution
         extension_exons_absolute_distance_topolya=3000,
-        # introns is only for assess the noise level, thus do ont need a long
-        # region, a long region has the side effect of omit more genes. Tim
-        # 31th Aug 2013
         extension_introns_absolute_distance_topolya=500,
         resolution_upstream_utr=1000,
         resolution_downstream_utr=1000,

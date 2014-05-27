@@ -1,7 +1,7 @@
 '''cgat2rdf.py - create rdf description of CGAT script
 ======================================================
 
-:Author:
+:Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
 :Tags: Python
@@ -189,6 +189,9 @@ def processScript(script_name, outfile, options):
     E.Start = LocalStart
     try:
         module.main(argv=["--help"])
+    except TypeError, msg:
+        E.warn('could not import %s: %s' % (basename, msg))
+        return
     except DummyError:
         pass
 
@@ -205,7 +208,9 @@ def processScript(script_name, outfile, options):
         BREAK_FORMATS[output_format] += 1
         output_format = nodename
 
-    url = "http://www.cgat.org/~andreas/documentation/cgat/scripts/%s.html" % basename
+    url = "http://www.cgat.org/~andreas/documentation/cgat/" \
+          "scripts/%s.html" % basename
+
     # Note that URL needs to be uppercase!
     if input_format in PRINCIPAL_FORMATS and \
        output_format in PRINCIPAL_FORMATS:

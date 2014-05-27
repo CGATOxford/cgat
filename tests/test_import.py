@@ -72,6 +72,7 @@ def check_import(filename, outfile):
 
     try:
         imp.load_source(basename, filename)
+
     except ImportError, msg:
         outfile.write("FAIL %s\n%s\n" % (basename, msg))
         outfile.flush()

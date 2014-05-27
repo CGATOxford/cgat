@@ -7,6 +7,16 @@ latest code can always be found in the code repository.
 Nevertheless, we occasionally prepare releases. Notes on
 each release are below.
 
+Release 0.2.1
+=============
+
+Bugfix release
+
+* Fixed a variety of bugs
+* Increased test coverage
+* Updated documentation
+* Added paired read counting to gtf2table
+
 Release 0.2
 ===========
 

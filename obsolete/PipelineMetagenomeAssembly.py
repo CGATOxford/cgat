@@ -125,6 +125,8 @@ class PairedData(Format):
 # pooling reads across
 # conditions
 #############################
+
+
 def pool_reads(infiles, outfile):
     '''
     pool raw reads across conditions
@@ -147,6 +149,8 @@ def pool_reads(infiles, outfile):
 #############################
 # filtering contigs by length
 #############################
+
+
 def filterContigs(infile, outfile, length):
     '''
     filter contigs by length
@@ -163,6 +167,8 @@ def filterContigs(infile, outfile, length):
 # function for performing
 # claculation of stats
 ############################
+
+
 def contig_to_stats(contigs_file, stats_file, params):
     '''
     calculate descriptive stats for a set
@@ -214,6 +220,8 @@ def contig_to_stats(contigs_file, stats_file, params):
 ###############################
 ###############################
 ###############################
+
+
 def build_scaffold_lengths(contigs_file, outfile, params):
     '''
     output the distribution of scaffold lengths
@@ -229,6 +237,8 @@ def build_scaffold_lengths(contigs_file, outfile, params):
 ############################
 # general assembler class
 ############################
+
+
 class Assembler(PairedData):
 
     '''
@@ -247,6 +257,8 @@ class Assembler(PairedData):
 ##########################
 # meta-velvet
 ##########################
+
+
 class Metavelvet(Assembler):
 
     '''
@@ -478,6 +490,8 @@ class Ray(Idba):
 ##########################
 # SGA
 ##########################
+
+
 class SGA(Idba):
 
     '''
@@ -613,6 +627,8 @@ class SGA(Idba):
 ##########################
 # SOAPdenovo2
 ##########################
+
+
 class SoapDenovo2(Idba):
 
     '''
@@ -706,16 +722,11 @@ class Spades(Idba):
             files = infile
             files_statement = "-s %s" % files
         else:
-            # spades doesn't like the fastq.1.gz type format
-            temp1 = os.path.join(tempdir, track+".1.fastq")
-            temp2 = os.path.join(tempdir, track+".2.fastq")
-            infile2 = paired[1]
-            unzip_statement = "zcat %(infile)s > %(temp1)s; zcat %(infile2)s > %(temp2)s" % locals()
-            files_statement = " -1 " + " -2 ".join( [temp1, temp2] )
+            files_statement = "-1 " + "-2 ".join([infile, paired[1]])
 
         # kmer to use
         k = "-k %(kmer)s"
-        
+
         # spades options
         spades_options = "%(spades_options)s"
 
@@ -724,7 +735,7 @@ class Spades(Idba):
                           mv %(tempdir)s/contigs.fasta %(outdir)s/%(track)s.contigs.fa; \
                           mv %(tempdir)s/scaffolds.fasta %(outdir)s/%(track)s.scaffolds.fa; \
                           mv %(tempdir)s/spades.log %(outdir)s/%(track)s.contigs.log""" % locals()
-        
+
         # statement - simple and default
         statement = '''%(unzip_statement)s; checkpoint; 
                        spades.py %(files_statement)s -o %(tempdir)s %(k)s %(spades_options)s; checkpoint;

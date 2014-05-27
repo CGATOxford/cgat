@@ -74,8 +74,8 @@ def check_script(test_name, script, stdin,
     # 3. Option string
     # 4. List of output files to collect
     # 5. List of reference files
+    workingdir - directory of test data
     '''
-
     tmpdir = tempfile.mkdtemp()
 
     stdout = os.path.join(tmpdir, 'stdout')
@@ -116,6 +116,9 @@ def check_script(test_name, script, stdin,
     for output, reference in zip(outputs, references):
         if output == "stdout":
             output = stdout
+        elif output.startswith("<DIR>/") or \
+                output.startswith("%DIR%/"):
+            output = os.path.join(workingdir, output[6:])
         else:
             output = os.path.join(tmpdir, output)
 

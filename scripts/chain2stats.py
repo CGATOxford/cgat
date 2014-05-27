@@ -10,27 +10,105 @@ chain2stats.py
 Purpose
 -------
 
-This script computes the coverage of the target and query genomes
-represented by a UCSC chain file.
+This script takes a UCSC :term: `chain` file and computes coverage across the
+target and query genomes.
+
+As different regions of a genome vary in the extent to which they are conserved
+between species, genomic local alignments will inevitably result in discrete 
+regions of successfully aligned sequence separated by regions of the genome 
+where alignment is not possible. Chains consist of gapless blocks of 
+successfully aligned regions, separated by regions where alignment is not 
+possible. This script is returns summary statistics that relate the proportion
+of the query and target genomes that are covered by chains in a chain file.
+
 
 Usage
 -----
 
-Example::
+  Example::
 
-   python chain2stats.py < sacCer3ToSacCer1.over.chain.gz
+  python chain2stats.py < mm10ToHg19.over.chain.gz
 
-Type::
+  Expected output::
 
-   python chain2stats.py --help
+  ********** chain2stats report starts **********
 
-for command line help.
+  Report for chains per chromosome gapped statistics
+  --------------------------------------------------
+  Target genome 91.31, query genome: 76.17
 
-Documentation
--------------
 
-For large chain file this script requires a substantial amount of
-memory for chromosome pair analysis.
+  Report for chains per chromosome ungapped statistics
+  ----------------------------------------------------
+  Target genome 37.02, query genome: 29.13
+
+
+  Report for chain lengths gapped
+  -------------------------------
+  number of chains = 76560
+
+  Stats for target chain lengths:
+  Mean:36,516, median:456, max:91,540,769, min:23
+
+  Stats for query chain lengths:
+  Mean:43,401, median:480, max:120,333,803, min:23
+
+
+  Report for chain lengths ungapped
+  ---------------------------------
+  number of chains = 33902022
+
+  Stats for target chain lengths:
+  Mean:30, median:21, max:17,154, min:1
+
+  Stats for query chain lengths:
+  Mean:30, median:21, max:17,154, min:1
+
+
+  ********** chain2stats report ends **********
+
+  Type::
+
+  python chain2stats.py --help
+
+  for command line help.
+
+
+Options
+-------
+
+By default chain2stats will report the percentage of target and query
+genomes that are covered by gapped and ungapped chains as well as summary
+statistics (mean, median, max, min) for gapped and ungapped chain lengths.
+Additional options available are:
+
+``--perchrom`` 
+    Will cause coverage to be calculated on a per chromosome basis
+
+``--identity``
+    Will report summary statistics (mean, median, max, min) for 
+    the percent identity between gapped regions. Requires ``--dbpath``,
+    ``--targetgenome``, and ``--querygenome`` to be set.
+
+``--dbpath``
+    Directory containing indexed fasta files for target and query 
+    genome.
+
+``--targetgenome``
+    Filename prefix for target genome fasta file.
+
+``--querygenome``
+    Filename prefix for query genome fasta file.
+
+``--report``
+    Write summary statistics for target and query genomes to separate
+    tab-delimited outfiles.
+
+``--errors``
+    Report inconsitencies between chain contig sizes and contig sizes in
+    the supplied fasta files. Requires ``--dbpath``, ``--targetgenome``,
+    and ``--querygenome`` to be set.
+
 
 Command line options
 ---------------------
@@ -406,9 +484,9 @@ class CounterPercentIdentify(ChainCounter):
 
     header = "Report on Percent Indentities"
 
-    def __init__(self, tname, qname):
-        self.tfasta = IndexedFasta(tname)
-        self.qfasta = IndexedFasta(qname)
+    def __init__(self, tpath, qpath):
+        self.tfasta = IndexedFasta.IndexedFasta(tpath)
+        self.qfasta = IndexedFasta.IndexedFasta(qpath)
         self.pids = []
         self.stats = 0
 
