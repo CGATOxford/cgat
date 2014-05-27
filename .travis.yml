@@ -13,7 +13,7 @@ env:
     - CGAT_TASK_ID=225
     - CGAT_TASK_ID=270
     - CGAT_TASK_ID=315
-    - TEST_IMPORT=1
+    # - TEST_IMPORT=1
 
 python:
   - "2.7"

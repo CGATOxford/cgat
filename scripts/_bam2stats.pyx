@@ -431,15 +431,15 @@ def count( Samfile samfile,
                     fastq_count = &fastq_counts[index]
                     read_name = qname
                     printf("%s\t%i\t%i\t%i\t%i\t%i\t%i\t%i\t%i\n",
-                            read_name,
-                            fastq_count.is_unmapped,
-                            fastq_count.mate_is_unmapped,
-                            fastq_count.is_paired,
-                            fastq_count.mapped_is_read1,
-                            fastq_count.mapped_is_read2,
-                            fastq_count.is_proper_pair,
-                            fastq_count.is_qcfail,
-                            fastq_count.is_duplicate )
+                           read_name,
+                           fastq_count.is_unmapped,
+                           fastq_count.mate_is_unmapped,
+                           fastq_count.is_paired,
+                           fastq_count.mapped_is_read1,
+                           fastq_count.mapped_is_read2,
+                           fastq_count.is_proper_pair,
+                           fastq_count.is_qcfail,
+                           fastq_count.is_duplicate)
 
 
     return (counter, t, 

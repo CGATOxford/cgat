@@ -280,7 +280,9 @@ if [ "$OS" == "travis" ] ; then
 
    # GCProfile
    #apt-get install -y libc6-i386 libstdc++5:i386
-
+   echo 'this is gcc version:'
+   gcc -v
+   
    # prepare external dependencies
    nosetests_external_deps $OS
 
