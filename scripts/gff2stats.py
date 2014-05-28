@@ -125,7 +125,7 @@ class counter_exons:
         tuple(["transcript_size_%s" % x for x in Stats.Summary.fields])
 
     def __init__(self, iter):
-        
+
         self.iter = iter
 
         self.counts_gene_ids = collections.defaultdict(int)

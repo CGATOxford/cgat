@@ -252,7 +252,7 @@ def main(argv=None):
         if options.extend_at:
             if options.extend_at == "5only":
                 intervals = [(max(0, intervals[0][0] - options.extend_by),
-                             intervals[0][0])]
+                              intervals[0][0])]
             elif options.extend_at == "3only":
                 intervals = [(intervals[-1][1],
                               min(lcontig,
@@ -278,7 +278,7 @@ def main(argv=None):
         s = Masker.maskSequences(s, options.masker)
         l = sum([len(x) for x in s])
         if (l < options.min_length or
-           (options.max_length and l > options.max_length)):
+                (options.max_length and l > options.max_length)):
             nskipped_length += 1
             if options.loglevel >= 1:
                 options.stdlog.write("# skipped because length out of bounds "

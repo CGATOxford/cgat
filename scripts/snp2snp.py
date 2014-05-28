@@ -65,7 +65,7 @@ def validateSNPs(options, fastafile):
     outf.write(
         "\tstatus\tcalls\tfiltered\tmin_coverage\tmax_coverage\tmin_quality\tmax_quality\t")
     outf.write("\t".join(("genotypes", "consensus_qualities",
-               "genotype_qualities", "mapping_qualities", "coverages")))
+                          "genotype_qualities", "mapping_qualities", "coverages")))
     outf.write("\n")
 
     min_coverage = options.min_coverage
@@ -83,7 +83,7 @@ def validateSNPs(options, fastafile):
             :8]
         pos, consensus_quality, genotype_quality, mapping_quality, read_depth = \
             map(int, (pos, consensus_quality,
-                genotype_quality, mapping_quality, read_depth))
+                      genotype_quality, mapping_quality, read_depth))
 
         if reference == "*":
             # todo: treat indels

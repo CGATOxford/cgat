@@ -328,7 +328,7 @@ def annotateGenome(iterator, fasta, options, default_code=DEFAULT_CODE):
     contig_sizes = fasta.getContigSizes(with_synonyms=False)
     E.info("allocating memory for %i contigs and %i bytes" %
            (len(contig_sizes), sum(contig_sizes.values()) * array.array("c").itemsize))
-          # AString.AString( "a").itemsize ))
+    # AString.AString( "a").itemsize ))
 
     for contig, size in contig_sizes.items():
         E.debug("allocating %s: %i bases" % (contig, size))

@@ -357,7 +357,7 @@ def joinTables(outfile, options, args):
             if options.input_has_titles and options.skip_titles:
                 titles = headers
             else:
-            # otherwise: print the headers out right away
+                # otherwise: print the headers out right away
                 outfile.write(string.join(headers, "\t") + "\n")
 
         order = range(0, len(tables) + 1)

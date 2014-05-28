@@ -1208,8 +1208,8 @@ def computeTermFrequencies(graph, go2genes):
     E.info("computing term frequencies")
     # compute counts
     for node in traversal.dfs_postorder(graph, source=root):
-    # older networkx:
-    # for node in traversal.dfs_postorder_nodes( graph, source = root ):
+        # older networkx:
+        # for node in traversal.dfs_postorder_nodes( graph, source = root ):
         counts[node] = set(go2genes[node])
         for x in graph.successors(node):
             counts[node].update(counts[x])
@@ -1581,9 +1581,9 @@ def main(argv):
         # filter pvalues
         synonyms = graph.synonyms
         term2pvalue = dict([(synonyms.get(x, x), y)
-                           for x, y in all_term2pvalue.iteritems()])
+                            for x, y in all_term2pvalue.iteritems()])
         term2log2fold = dict([(synonyms.get(x, x), y)
-                             for x, y in all_term2log2fold.iteritems()])
+                              for x, y in all_term2log2fold.iteritems()])
 
         if len(term2pvalue) == 0:
             E.warn("no data - no output produced")
@@ -1713,7 +1713,7 @@ def main(argv):
                                      linewidths=0.5)
 
         positions = dict([(x, numpy.array((y[0], y[1] - 0.02)))
-                         for x, y in layout.iteritems()])
+                          for x, y in layout.iteritems()])
 
         networkx.draw_networkx_labels(term_graph,
                                       positions,

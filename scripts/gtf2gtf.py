@@ -926,14 +926,14 @@ def main(argv=None):
                 all_exons = []
                 for transcript in gene:
                     all_exons.extend([(x.start, x.end)
-                                     for x in transcript if x.feature == "exon"])
+                                      for x in transcript if x.feature == "exon"])
                 exon_counts = {}
                 for key, exons in itertools.groupby(all_exons):
                     exon_counts[key] = len(list(exons))
                 transcript_counts = []
                 for transcript in gene:
                     count = sum([exon_counts[(x.start, x.end)]
-                                for x in transcript if x.feature == "exon"])
+                                 for x in transcript if x.feature == "exon"])
                     transcript_counts.append((count, transcript))
                 transcript_counts.sort()
                 return transcript_counts[-1][1]

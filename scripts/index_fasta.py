@@ -236,7 +236,8 @@ def main(argv=None):
     elif options.benchmark:
         import timeit
         timer = timeit.Timer(
-            stmt="IndexedFasta.benchmarkRandomFragment( fasta = fasta, size = %i)" % (options.benchmark_fragment_size),
+            stmt="IndexedFasta.benchmarkRandomFragment( fasta = fasta, size = %i)" % (
+                options.benchmark_fragment_size),
             setup="""from __main__ import IndexedFasta\nfasta=IndexedFasta.IndexedFasta( "%s" )""" % (args[0] ) )
 
         t = timer.timeit(number=options.benchmark_num_iterations)

@@ -138,7 +138,7 @@ def printValues(contig, max_size, window_size, values, options):
 
         for x in range(len(options.features)):
             outfile.write("\t%i\t%s" % (vv[x],
-                          options.value_format % (vv[x] / max_vv[x])))
+                                        options.value_format % (vv[x] / max_vv[x])))
         outfile.write("\n")
         bin += window_size
 

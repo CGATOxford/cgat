@@ -253,7 +253,7 @@ def main(argv=None):
                     combination_bed = [bedfiles[x] for x in combination]
                     other_bed = [bedfiles[x] for x in other]
                     tag = ":".join([tags[foreground]] + [tags[x]
-                                   for x in combination])
+                                                         for x in combination])
 
                     E.debug("fg=%i, combination=%s, other=%s" %
                             (foreground, combination, other))

@@ -736,8 +736,7 @@ def main(argv=None):
         for norm in options.profile_normalizations:
             # build matrix, apply normalization
             profile = counter.getProfile(normalize=norm,
-                                         background_region=
-                                         options.background_region)
+                                         background_region=options.background_region)
             profiles.append(profile)
 
         for x in range(1, len(profiles)):
@@ -830,18 +829,18 @@ def main(argv=None):
                 plt.figure()
                 plt.subplot(1, 3, 1)
                 plt.plot(range(-options.extension_outward,
-                         options.extension_inward), counter.aggregate_counts[0])
+                               options.extension_inward), counter.aggregate_counts[0])
                 plt.title(counter.fields[0])
                 plt.subplot(1, 3, 2)
                 plt.plot(range(-options.extension_inward,
-                         options.extension_outward), counter.aggregate_counts[1])
+                               options.extension_outward), counter.aggregate_counts[1])
                 plt.title(counter.fields[1])
                 plt.subplot(1, 3, 3)
                 plt.title("combined")
                 plt.plot(range(-options.extension_outward,
-                         options.extension_inward), counter.aggregate_counts[0])
+                               options.extension_inward), counter.aggregate_counts[0])
                 plt.plot(range(-options.extension_inward,
-                         options.extension_outward), counter.aggregate_counts[1])
+                               options.extension_outward), counter.aggregate_counts[1])
                 plt.legend(counter.fields[:2])
 
                 fn = E.getOutputFile(counter.name) + ".png"

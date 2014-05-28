@@ -371,7 +371,7 @@ def main(argv=None):
                 end = t.pos
             yield start, end, n
 
-        #Bedgraph track definition
+        # Bedgraph track definition
         if options.output_format == "bedgraph":
             outfile.write("track type=bedGraph\n")
 

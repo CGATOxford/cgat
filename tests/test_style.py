@@ -36,6 +36,7 @@ EXPRESSIONS = (
 IGNORE = set(('E101',
               'E201',
               'E202',
+              'E122',
               'E501',
               'E502',
               'W191',
@@ -59,9 +60,13 @@ def check_style(filename):
 
     # count errors/warning excluding
     # those to ignore
-    take = [y for x, y in report.counters.items() if x not in IGNORE]
+    take = [y for x, y in report.counters.items()
+            if x not in IGNORE]
+    found = ['%s:%i' % (x, y) for x, y
+             in report.counters.items() if x not in IGNORE]
     total = sum(take)
-    ok_(total == 0, 'pep8 style violations')
+    ok_(total == 0,
+        'pep8 style violations: %s' % ','.join(found))
 
 
 def test_style():

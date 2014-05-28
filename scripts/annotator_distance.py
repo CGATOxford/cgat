@@ -1226,7 +1226,7 @@ def main(argv=sys.argv):
         plt.figure()
         plt.title("segments per label")
         plt.barh(range(0, len(labels)), [segments_per_label[x]
-                 for x in labels], height=0.5)
+                                         for x in labels], height=0.5)
         plt.yticks(range(0, len(labels)), labels)
         plt.ylabel("segments per label")
         plt.xlabel("absolute frequency")

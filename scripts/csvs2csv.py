@@ -251,7 +251,7 @@ def main(argv=None):
             if options.titles and options.skip_titles:
                 titles = headers
             else:
-            # otherwise: print the headers out right away
+                # otherwise: print the headers out right away
                 sys.stdout.write(string.join(headers, "\t") + "\n")
 
         order = range(0, len(tables) + 1)

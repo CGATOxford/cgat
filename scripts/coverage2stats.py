@@ -107,7 +107,7 @@ def main(argv=None):
                 continue
             for i in range(len(bins)):
                 try:
-                    bin_mean = np.mean(coverage[int(bins[i]):int(bins[i+1])])
+                    bin_mean = np.mean(coverage[int(bins[i]):int(bins[i + 1])])
                 except IndexError:
                     continue
                 bin_means.append(bin_mean)

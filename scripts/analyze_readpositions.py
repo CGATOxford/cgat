@@ -136,7 +136,7 @@ def main(argv=None):
 
     if options.normalize:
         for x5, x3 in ((coverage_5prime,
-                       coverage_3prime),
+                        coverage_3prime),
                        (coverage_min5prime,
                         coverage_min3prime),
                        (coverage_full5prime,
@@ -152,7 +152,7 @@ def main(argv=None):
 
     outfile = options.stdout
     outfile.write("\t".join(("distance", "minlen-5'", "minlen-3'",
-                  "mincov-5'", "mincov-3'", "full-5'", "full-3'")) + "\n")
+                             "mincov-5'", "mincov-3'", "full-5'", "full-3'")) + "\n")
 
     for x in range(0, options.length):
         outfile.write("\t".join(["%6.4f" % x for x in
@@ -168,9 +168,9 @@ def main(argv=None):
     outfile3 = open(options.output_filename_pattern % "reads3", "w")
 
     outfile5.write("\t".join(["distance", ] + ["reads%i" % options.maximum_reads[y]
-                   for y in range(len(options.maximum_reads))]) + "\n")
+                                               for y in range(len(options.maximum_reads))]) + "\n")
     outfile3.write("\t".join(["distance", ] + ["reads%i" % options.maximum_reads[y]
-                   for y in range(len(options.maximum_reads))]) + "\n")
+                                               for y in range(len(options.maximum_reads))]) + "\n")
     for x in range(0, options.length):
         outfile5.write("%i\t%s\n" % (x, "\t".join(
             ["%6.4f" % histograms[y][0][x] for y in range(len(options.maximum_reads))])))

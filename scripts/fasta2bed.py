@@ -109,7 +109,7 @@ def segmentWindowsCpG(infile, window_size=100, min_cpg=1):
     # save cpgs to temporary file
     fh, fn = tempfile.mkstemp()
     os.write(fh, "\n".join(["%s\t%i\t%i\n" % (contig, start, end)
-             for contig, start, end, gc in cpgs]))
+                            for contig, start, end, gc in cpgs]))
     os.write(fh, "\n")
     os.close(fh)
 
