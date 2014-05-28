@@ -60,10 +60,8 @@ def check_style(filename):
 
     # count errors/warning excluding
     # those to ignore
-    take = [y for x, y in report.counters.items()
-            if x not in IGNORE]
-    found = ['%s:%i' % (x, y) for x, y
-             in report.counters.items() if x not in IGNORE]
+    take = [y for x, y in report.counters.items() if x not in IGNORE]
+    found = ['%s:%i' % (x, y) for x, y in report.counters.items() if x not in IGNORE]
     total = sum(take)
     ok_(total == 0,
         'pep8 style violations: %s' % ','.join(found))
