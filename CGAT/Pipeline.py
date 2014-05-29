@@ -98,7 +98,7 @@ if not os.path.exists(SCRIPTS_DIR):
 #######################################################
 #######################################################
 #######################################################
-## Setting/using parameters
+# Setting/using parameters
 #######################################################
 
 # possible to use defaultdict, but then statements will
@@ -1728,7 +1728,7 @@ def main(args=sys.argv):
                                       mode="a")
         handler.setFormatter(
             MultiLineFormatter(
-                '%(asctime)s %(levelname)self %(module)s.%(funcName)s.%(lineno)d %(message)s'))
+                '%(asctime)s %(levelname)s %(module)s.%(funcName)s.%(lineno)d %(message)s'))
         logger = logging.getLogger()
         logger.addHandler(handler)
 
@@ -1743,20 +1743,20 @@ def main(args=sys.argv):
                 #   make sure we are not logging at the same time in
                 #   different processes
                 #
-                #session_mutex = manager.Lock()
+                # session_mutex = manager.Lock()
                 L.info(E.GetHeader())
                 L.info("code location: %s" % PARAMS["scriptsdir"])
                 L.info("code version: %s" % version)
 
-                pipeline_run(options.pipeline_targets,
-                             multiprocess=options.multiprocess,
-                             logger=logger,
-                             verbose=options.loglevel,
-                             log_exceptions=options.log_exceptions,
-                             exceptions_terminate_immediately=
-                             options.exceptions_terminate_immediately,
-                             checksum_level=0,
-                             )
+                pipeline_run(
+                    options.pipeline_targets,
+                    multiprocess=options.multiprocess,
+                    logger=logger,
+                    verbose=options.loglevel,
+                    log_exceptions=options.log_exceptions,
+                    exceptions_terminate_immediately=options.exceptions_terminate_immediately,
+                    checksum_level=0,
+                )
 
                 L.info(E.GetFooter())
 

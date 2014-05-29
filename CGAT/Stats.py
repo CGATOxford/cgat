@@ -158,7 +158,7 @@ def doLogLikelihoodTest(complex_ll, complex_np,
     df = complex_np - simple_np
 
     if df <= 0:
-        raise ValueError, "difference of degrees of freedom not larger than 0"
+        raise ValueError("difference of degrees of freedom not larger than 0")
 
     p = scipy.stats.chisqprob(chi, df)
 
@@ -415,7 +415,7 @@ class DistributionalParameters:
         if key == "q3":
             return self.mQ3
 
-        raise KeyError, key
+        raise KeyError(key)
 
     def __str__(self):
         """return string representation of data."""
@@ -602,7 +602,7 @@ def getPi0(pvalues,
 
     m = len(pvalues)
 
-     # these next few functions are the various ways to estimate pi0
+    # these next few functions are the various ways to estimate pi0
     if len(vlambda) == 1:
         vlambda = vlambda[0]
         if vlambda < 0 or vlambda >= 1:
@@ -731,7 +731,7 @@ def doFDR(pvalues,
 
     m = len(pvalues)
 
-     # these next few functions are the various ways to estimate pi0
+    # these next few functions are the various ways to estimate pi0
     if len(vlambda) == 1:
         vlambda = vlambda[0]
         if vlambda < 0 or vlambda >= 1:
@@ -809,14 +809,14 @@ def doFDR(pvalues,
         raise ValueError("'fdr_level' must be within (0, 1].")
 
     # The estimated q-values calculated here
-    #u = numpy.argsort( p )
+    # u = numpy.argsort( p )
 
     # change by Alan
     # ranking function which returns number of observations less than or equal
     ro.globalenv['pvalues'] = ro.FloatVector(pvalues)
     R.assign("robust", robust)
     qvalues = R("""u <- order(pvalues)
-    qvalues.rank <- function(x) 
+    qvalues.rank <- function(x)
 {
       idx <- sort.list(x)
 
@@ -1503,12 +1503,13 @@ def adjustPValues(pvalues, method='fdr', n=None):
         m = numpy.maximum.accumulate((n - i) * p[o])
         p0 = m[ro]
     elif method == "hommel":
-    #     if (n > lp) p <- c(p, rep.int(1, n - lp))
-        i = numpy.arange(n)
-        o = numpy.argsort(p)
-        p = p[o]
-        ro = numpy.argsort(o)
-        raise NotImplementedError("hommel method not fully implemented")
+        raise NotImplementedError("hommel method not implemented")
+    # if (n > lp) p <- c(p, rep.int(1, n - lp))
+    #    i = numpy.arange(n)
+    #    o = numpy.argsort(p)
+    #    p = p[o]
+    #    ro = numpy.argsort(o)
+    #
     #     q <- pa <- rep.int(min(n * p/i), n)
     #     for (j in (n - 1):2) {
     #         ij <- seq_len(n - j + 1)

@@ -455,15 +455,12 @@ def WriteGeneStructureCorrespondence(mali, identifiers, exons, param_master_patt
     # list of number of exons
     anexons = []
 
-    ## exons in reference
+    # exons in reference
     ref_nexons = 0
     for x in range(len(identifiers)):
 
         key1 = identifiers[x]
         seq = mali[key1]
-
-        matches = []
-        unassigned = []
 
         is_perfect = False
 
@@ -481,9 +478,6 @@ def WriteGeneStructureCorrespondence(mali, identifiers, exons, param_master_patt
             if param_loglevel >= 3:
                 print "#############################################"
                 print "# comparing %s to %s" % (key1, key2)
-
-            mref = 0
-            mcmp = 0
 
             seq_master = mali[key2]
             ref_exons = exons[key2]
@@ -519,11 +513,12 @@ def WriteGeneStructureCorrespondence(mali, identifiers, exons, param_master_patt
                     print "# exon", str(e)
 
             # do exon comparison
-            comparison = Exons.CompareGeneStructures(cmp_exons,
-                                                     ref_exons,
-                                                     threshold_min_pide=0,
-                                                     threshold_slipping_exon_boundary=param_threshold_splipping_exon_boundary,
-                                                     threshold_terminal_exon=param_threshold_terminal_exon)
+            comparison = Exons.CompareGeneStructures(
+                cmp_exons,
+                ref_exons,
+                threshold_min_pide=0,
+                threshold_slipping_exon_boundary=param_threshold_splipping_exon_boundary,
+                threshold_terminal_exon=param_threshold_terminal_exon)
 
             if param_loglevel >= 3:
                 print comparison.Pretty(prefix="# EVAL: ")
@@ -567,7 +562,7 @@ def WriteGeneStructureCorrespondence(mali, identifiers, exons, param_master_patt
                     if (100 * comparison.mNumIdenticalExons) / max_nexons > param_evaluate_min_percent_exon_identity:
                         status.append("M")
                     else:
-                    # S : spuriously conserved
+                        # S : spuriously conserved
                         status.append("S")
                 else:
                     # U: unconserved

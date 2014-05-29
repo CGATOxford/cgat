@@ -210,7 +210,7 @@ cds
    annotation of the cds and thus only available for :file:`reference.gtf.gz`.
 
 Methods differ in their ability to measure transcription on all levels. 
- 
+
 .. todo::
    add promoters and splicing output
 
@@ -458,8 +458,9 @@ P.getParameters(
 
 PARAMS = P.PARAMS
 
-PARAMS_ANNOTATIONS = P.peekParameters(PARAMS["annotations_dir"],
-                                      "pipeline_annotations.py", on_error_raise=__name__ == "__main__")
+PARAMS_ANNOTATIONS = P.peekParameters(
+    PARAMS["annotations_dir"],
+    "pipeline_annotations.py", on_error_raise=__name__ == "__main__")
 
 ###################################################################
 ###################################################################
@@ -469,11 +470,11 @@ import CGATPipelines.PipelineTracks as PipelineTracks
 
 # collect sra nd fastq.gz tracks
 TRACKS = PipelineTracks.Tracks(PipelineTracks.Sample3).loadFromDirectory(
-    glob.glob( "*.sra" ), "(\S+).sra" ) +\
+    glob.glob("*.sra"), "(\S+).sra") +\
     PipelineTracks.Tracks(PipelineTracks.Sample3).loadFromDirectory(
-        glob.glob( "*.fastq.gz" ), "(\S+).fastq.gz" ) +\
+        glob.glob("*.fastq.gz"), "(\S+).fastq.gz") +\
     PipelineTracks.Tracks(PipelineTracks.Sample3).loadFromDirectory(
-        glob.glob( "*.fastq.1.gz" ), "(\S+).fastq.1.gz" ) +\
+        glob.glob("*.fastq.1.gz"), "(\S+).fastq.1.gz") +\
     PipelineTracks.Tracks(PipelineTracks.Sample3).loadFromDirectory(
         glob.glob("*.csfasta.gz"), "(\S+).csfasta.gz")
 
@@ -543,14 +544,14 @@ def writePrunedGTF(infile, outfile):
 
     if "geneset_remove_repetetive_rna" in PARAMS:
 
-        cmds.append( '''python %s/gtf2gtf.py
+        cmds.append('''python %s/gtf2gtf.py
         --remove-overlapping=%s
         --log=%s.log''' % (PARAMS["scriptsdir"],
                            rna_file, outfile))
 
     if "geneset_remove_contigs" in PARAMS:
-        cmds.append( '''awk '$1 !~ /%s/' ''' %
-                     PARAMS["geneset_remove_contigs"])
+        cmds.append('''awk '$1 !~ /%s/' ''' %
+                    PARAMS["geneset_remove_contigs"])
 
     cmds = " | ".join(cmds)
 
@@ -984,22 +985,22 @@ def buildIntronGeneModels(infile, outfile):
                                   PARAMS_ANNOTATIONS["interface_geneset_exons_gtf"])
 
     statement = '''gunzip
-        < %(infile)s 
-        | awk '$2 == "protein_coding"'
-	| python %(scriptsdir)s/gtf2gtf.py --sort=gene 
-	| python %(scriptsdir)s/gtf2gtf.py 
-               --exons2introns 
-               --intron-min-length=100 
-               --intron-border=10 
-               --log=%(outfile)s.log
-        | python %(scriptsdir)s/gff2gff.py
-               --crop=%(filename_exons)s
-               --log=%(outfile)s.log
-	| python %(scriptsdir)s/gtf2gtf.py 
-              --set-transcript-to-gene 
-              --log=%(outfile)s.log 
-	| perl -p -e 's/intron/exon/'
-        | gzip
+    < %(infile)s 
+    | awk '$2 == "protein_coding"'
+    | python %(scriptsdir)s/gtf2gtf.py --sort=gene 
+    | python %(scriptsdir)s/gtf2gtf.py 
+    --exons2introns 
+    --intron-min-length=100 
+    --intron-border=10 
+    --log=%(outfile)s.log
+    | python %(scriptsdir)s/gff2gff.py
+    --crop=%(filename_exons)s
+    --log=%(outfile)s.log
+    | python %(scriptsdir)s/gtf2gtf.py 
+    --set-transcript-to-gene 
+    --log=%(outfile)s.log 
+    | perl -p -e 's/intron/exon/'
+    | gzip
         > %(outfile)s
     '''
     P.run()
@@ -1094,8 +1095,8 @@ def buildReferenceTranscriptome(infile, outfile):
 
     # build color space index
     # statement = '''
-    #%(bowtie_executable)s-build -C -f %(outfile)s %(prefix)s_cs >> %(outfile)s.log 2>&1
-    #'''
+    # %(bowtie_executable)s-build -C -f %(outfile)s %(prefix)s_cs >> %(outfile)s.log 2>&1
+    # '''
 
     # P.run()
 
@@ -1293,17 +1294,12 @@ def buildJunctionsDB(infiles, outfile):
 
     # build color space index
     # statement = '''
-    #%(bowtie_executable)s-build -C -f %(outfile)s %(prefix)s_cs >> %(outfile)s.log 2>&1
-    #'''
+    # %(bowtie_executable)s-build -C -f %(outfile)s %(prefix)s_cs >> %(outfile)s.log 2>&1
+    # '''
 
     P.run()
 
 if "tophat_add_separate_junctions" in PARAMS and PARAMS["tophat_add_separate_junctions"]:
-#########################################################################
-#########################################################################
-#########################################################################
-##
-#########################################################################
     @transform(("*.fastq.1.gz",
                 "*.fastq.gz",
                 "*.sra",
@@ -1923,17 +1919,17 @@ def oldClassifyTranscripts(infiles, outfile):
     < %(infile)s 
     | python %(scriptsdir)s/gtf2gtf.py --sort=transcript
     | %(cmd-farm)s --split-at-column=1 --output-header --log=%(outfile)s.log --max-files=60 
-	"python %(scriptsdir)s/gtf2table.py 
-		--counter=position 
-		--counter=classifier 
-		--section=exons 
-		--counter=length 
-		--counter=splice 
-		--counter=splice-comparison 
-		--log=%(outfile)s.log 
-                --filename-format=gff
-		--filename-gff=%(annotation)s 
-		--genome-file=%(genome_dir)s/%(genome)s"
+    "python %(scriptsdir)s/gtf2table.py 
+    --counter=position 
+    --counter=classifier 
+    --section=exons 
+    --counter=length 
+    --counter=splice 
+    --counter=splice-comparison 
+    --log=%(outfile)s.log 
+    --filename-format=gff
+    --filename-gff=%(annotation)s 
+    --genome-file=%(genome_dir)s/%(genome)s"
     | gzip
     > %(outfile)s
     '''
@@ -2791,11 +2787,11 @@ def annotateTranscriptsMappability(infile, outfile):
     statement = """
     zcat < %(infile)s 
     | %(cmd-farm)s --split-at-column=1 --output-header --log=%(outfile)s.log --max-files=60 
-    "python %(scriptsdir)s/gtf2table.py 
-                --reporter=transcripts
-                --counter=bigwig-counts
-                --bigwig-file=%(geneset_mappability)s
-		--log=%(outfile)s.log"
+    "python %(scriptsdir)s/gtf2table.py
+    --reporter=transcripts
+    --counter=bigwig-counts
+    --bigwig-file=%(geneset_mappability)s
+    --log=%(outfile)s.log"
     | gzip
     > %(outfile)s"""
 
@@ -2826,22 +2822,20 @@ def loadTranscriptsMappability(infile, outfile):
 def annotateTranscripts(infile, outfile):
     '''classify transcripts with respect to the gene set.
     '''
-    to_cluster = USECLUSTER
-
     annotation_file = os.path.join(PARAMS["annotations_dir"],
                                    PARAMS_ANNOTATIONS["interface_annotation"])
 
     statement = """
-    zcat < %(infile)s 
-    | python %(scriptsdir)s/gtf2table.py 
-                --reporter=transcripts
-		--counter=position 
-		--counter=classifier
-		--section=exons 
-		--counter=length 
-		--log=%(outfile)s.log 
-		--filename-gff=%(annotation_file)s 
-		--genome-file=%(genome_dir)s/%(genome)s
+    zcat < %(infile)s
+    | python %(scriptsdir)s/gtf2table.py
+    --reporter=transcripts
+    --counter=position
+    --counter=classifier
+    --section=exons
+    --counter=length
+    --log=%(outfile)s.log
+    --filename-gff=%(annotation_file)s
+    --genome-file=%(genome_dir)s/%(genome)s
     | gzip
     > %(outfile)s"""
 
@@ -2955,7 +2949,7 @@ def buildReproducibility(infile, outfile):
     outdir = os.path.join(PARAMS["exportdir"], "cuffcompare")
 
     R('''library(RSQLite)''')
-    R('''drv = dbDriver( "SQLite" )''' )
+    R('''drv = dbDriver( "SQLite" )''')
     R('''con <- dbConnect(drv, dbname = 'csvdb')''')
     columns = ",".join([x.asTable() for x in replicates])
     data = R(
@@ -2967,7 +2961,7 @@ def buildReproducibility(infile, outfile):
 
     for rep1, rep2 in itertools.combinations(replicates, 2):
         a, b = rep1.asTable(), rep2.asTable()
-        r = R('''r = lm( %(a)s ~ %(b)s, data)''' % locals() )
+        r = R('''r = lm( %(a)s ~ %(b)s, data)''' % locals())
         R.png("%(outdir)s/%(outfile)s.pair.%(rep1)s_vs_%(rep2)s.png" %
               locals())
         R('''plot(data$%(a)s, data$%(b)s, pch='.', xlim=c(0,%(lim)i), ylim=c(0,%(lim)i),)''' %
@@ -3205,20 +3199,24 @@ def buildExpressionStats(tables, method, outfile):
             def toDict(vals, l=2):
                 return collections.defaultdict(int, [(tuple(x[:l]), x[l]) for x in vals])
 
-            tested = toDict(Database.executewait(dbhandle,
-                                                 """SELECT treatment_name, control_name, COUNT(*) FROM %(tablename_diff)s 
-                                    GROUP BY treatment_name,control_name""" % locals() ).fetchall() )
-            status = toDict(Database.executewait(dbhandle,
-                                                 """SELECT treatment_name, control_name, status, COUNT(*) FROM %(tablename_diff)s 
-                                    GROUP BY treatment_name,control_name,status""" % locals() ).fetchall(), 3 )
-            signif = toDict(Database.executewait(dbhandle,
-                                                 """SELECT treatment_name, control_name, COUNT(*) FROM %(tablename_diff)s 
-                                    WHERE significant
-                                    GROUP BY treatment_name,control_name""" % locals() ).fetchall() )
-            fold2 = toDict(Database.executewait(dbhandle,
-                                                """SELECT treatment_name, control_name, COUNT(*) FROM %(tablename_diff)s 
-                                    WHERE (l2fold >= 1 or l2fold <= -1) AND significant
-                                    GROUP BY treatment_name,control_name,significant""" % locals() ).fetchall() )
+            tested = toDict(Database.executewait(
+                dbhandle,
+                """SELECT treatment_name, control_name, COUNT(*) FROM %(tablename_diff)s 
+                GROUP BY treatment_name,control_name""" % locals()).fetchall())
+            status = toDict(Database.executewait(
+                dbhandle,
+                """SELECT treatment_name, control_name, status, COUNT(*) FROM %(tablename_diff)s 
+                GROUP BY treatment_name,control_name,status""" % locals()).fetchall(), 3)
+            signif = toDict(Database.executewait(
+                dbhandle,
+                """SELECT treatment_name, control_name, COUNT(*) FROM %(tablename_diff)s 
+                WHERE significant
+                GROUP BY treatment_name,control_name""" % locals()).fetchall())
+            fold2 = toDict(Database.executewait(
+                dbhandle,
+                """SELECT treatment_name, control_name, COUNT(*) FROM %(tablename_diff)s 
+                WHERE (l2fold >= 1 or l2fold <= -1) AND significant
+                GROUP BY treatment_name,control_name,significant""" % locals()).fetchall())
 
             for treatment_name, control_name in itertools.combinations(EXPERIMENTS, 2):
                 outf.write("\t".join(map(str, (
@@ -3238,9 +3236,9 @@ def buildExpressionStats(tables, method, outfile):
             # plot length versus P-Value
             data = Database.executewait(dbhandle,
                                         '''SELECT i.sum, pvalue 
-                                 FROM %(tablename_diff)s, 
-                                 %(geneset)s_geneinfo as i 
-                                 WHERE i.gene_id = test_id AND significant''' % locals() ).fetchall()
+                                        FROM %(tablename_diff)s,
+                                        %(geneset)s_geneinfo as i
+                                        WHERE i.gene_id = test_id AND significant''' % locals()).fetchall()
 
             # require at least 10 datapoints - otherwise smooth scatter fails
             if len(data) > 10:
@@ -4141,8 +4139,8 @@ def runDESeq(infile, outfile):
 
     # load data
     R('''suppressMessages(library('DESeq'))''')
-    R( '''countsTable <- read.delim( '%s', header = TRUE, row.names = 1, stringsAsFactors = TRUE )''' %
-       infile)
+    R('''countsTable <- read.delim( '%s', header = TRUE, row.names = 1, stringsAsFactors = TRUE )''' %
+      infile)
 
     # get conditions to test
     # note that tracks in R use a '.' as separator
@@ -4222,7 +4220,7 @@ def runDESeq(infile, outfile):
 
         R.png(build_filename2(section="significance", **locals()))
         R('''plot( res$baseMean, res$log2FoldChange, log="x", pch=20, cex=.1,
-                   col = ifelse( res$padj < %(cuffdiff_fdr)s, "red", "black" ) )''' % PARAMS )
+        col = ifelse( res$padj < %(cuffdiff_fdr)s, "red", "black" ))''' % PARAMS)
         R['dev.off']()
         results, counts = Expression.deseqParseResults(
             track1, track2, fdr=PARAMS["cuffdiff_fdr"])

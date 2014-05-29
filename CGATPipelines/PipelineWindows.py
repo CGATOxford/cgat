@@ -312,39 +312,19 @@ def outputAllWindows(infile, outfile):
     outf = IOTools.openFile(outfile, "w")
     for line in IOTools.iterate(IOTools.openFile(infile)):
         outf.write("\t".join(
-            (line.contig, line.start, line.end, "%6.4f" % float(line.l2fold))) + "\n")
+            (line.contig, line.start, line.end,
+             "%6.4f" % float(line.l2fold))) + "\n")
 
     outf.close()
 
-        # ###########################################
-        # ###########################################
-        # ###########################################
-        # plot length versus P-Value
-        # data = Database.executewait( dbhandle,
-        #                              '''SELECT end - start, pvalue
-        #                      FROM %(tablename)s
-        #                      WHERE significant'''% locals() ).fetchall()
 
-        # require at least 10 datapoints - otherwise smooth scatter fails
-        # if len(data) > 10:
-        #     data = zip(*data)
-
-        #     pngfile = "%(outdir)s/%(tileset)s_%(design)s_%(method)s_pvalue_vs_length.png" % locals()
-        #     R.png( pngfile )
-        #     R.smoothScatter( R.log10( ro.FloatVector(data[0]) ),
-        #                      R.log10( ro.FloatVector(data[1]) ),
-        #                      xlab = 'log10( length )',
-        #                      ylab = 'log10( pvalue )',
-        #                      log="x", pch=20, cex=.1 )
-
-        #     R['dev.off']()
-
-
-def outputRegionsOfInterest(infiles, outfile, max_per_sample=10, sum_per_group=40):
+def outputRegionsOfInterest(infiles, outfile,
+                            max_per_sample=10, sum_per_group=40):
     '''output windows according to various filters.
 
-    The output is a mock analysis similar to a differential expression 
+    The output is a mock analysis similar to a differential expression
     result.
+
     '''
     job_options = "-l mem_free=64G"
 

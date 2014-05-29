@@ -51,14 +51,13 @@ def buildCodingGeneSet(abinitio_coding, reference, outfile):
                 outf.write("%s\n" % str(gtf))
     outf.close()
 
-#-------------------------------------------------------------------------
-
 
 def buildRefcodingGeneSet(coding_set, refcoding_set, outfile):
-    '''
-    takes genes from an ab initio assembly and filters a reference coding set
-    for these genes. Allows for comparisons of known transcripts for those genes
-    that are assembled ab initio. Does this by gene name
+    '''takes genes from an ab initio assembly and filters a reference
+    coding set for these genes. Allows for comparisons of known
+    transcripts for those genes that are assembled ab initio. Does
+    this by gene name
+
     '''
     keep_genes = set()
     for gtf in GTF.iterator(IOTools.openFile(coding_set)):
@@ -69,8 +68,6 @@ def buildRefcodingGeneSet(coding_set, refcoding_set, outfile):
         if gtf.gene_name in keep_genes:
             outf.write("%s\n" % gtf)
     outf.close()
-
-#-------------------------------------------------------------------------
 
 
 def buildRefnoncodingGeneSet(reference, outfile):
@@ -88,8 +85,6 @@ def buildRefnoncodingGeneSet(reference, outfile):
     statement = '''zcat %(reference)s 
                    | awk '$2 == "lincRNA" || $2 == "non_coding" || $2 == "3prime_overlapping_ncrna" || $2 == "ncRNA_host"' | gzip > %(outfile)s'''
     P.run()
-
-#-------------------------------------------------------------------------
 
 
 def buildLncRNAGeneSet(abinitio_lincrna, reference, refnoncoding, pseudogenes_gtf, numts_gtf, outfile, min_length):
@@ -227,7 +222,6 @@ def buildLncRNAGeneSet(abinitio_lincrna, reference, refnoncoding, pseudogenes_gt
     os.unlink(temp.name)
 
 
-#-------------------------------------------------------------------------
 def buildFilteredLncRNAGeneSet(flagged_gtf,
                                outfile,
                                genesets_previous,
@@ -353,8 +347,6 @@ def buildFilteredLncRNAGeneSet(flagged_gtf,
                    | gzip > %(outfile)s'''
     P.run()
 
-#-------------------------------------------------------------------------
-
 
 def buildFinalLncRNAGeneSet(filteredLncRNAGeneSet,
                             cpc_table,
@@ -461,8 +453,6 @@ class CounterExons:
             c += 1
         return c
 
-#-------------------------------------------------------------------------
-
 
 class CounterTranscripts(CounterExons):
 
@@ -473,8 +463,6 @@ class CounterTranscripts(CounterExons):
 
         return c
 
-#-------------------------------------------------------------------------
-
 
 class CounterGenes(CounterExons):
 
@@ -483,8 +471,6 @@ class CounterGenes(CounterExons):
         for gtf in GTF.flat_gene_iterator(self.gtffile):
             c += 1
         return c
-
-#-------------------------------------------------------------------------
 
 
 class CounterExonsPerTranscript(CounterExons):
@@ -500,8 +486,6 @@ class CounterExonsPerTranscript(CounterExons):
             no_exons.append(len(transcript))
         return float(sum(no_exons)) / len(no_exons)
 
-#-------------------------------------------------------------------------
-
 
 class CounterExonsPerGene(CounterExons):
 
@@ -516,8 +500,6 @@ class CounterExonsPerGene(CounterExons):
             no_exons.append(len(gene))
         return float(sum(no_exons)) / len(no_exons)
 
-#-------------------------------------------------------------------------
-
 
 class CounterSingleExonTranscripts(CounterExons):
 
@@ -527,8 +509,6 @@ class CounterSingleExonTranscripts(CounterExons):
             if len(transcript) == 1:
                 c += 1
         return c
-
-#-------------------------------------------------------------------------
 
 
 class CounterMultiExonTranscripts(CounterExons):
@@ -540,8 +520,6 @@ class CounterMultiExonTranscripts(CounterExons):
                 c += 1
         return c
 
-#-------------------------------------------------------------------------
-
 
 class CounterSingleExonGenes(CounterExons):
 
@@ -552,8 +530,6 @@ class CounterSingleExonGenes(CounterExons):
             if gene[0].exon_status_locus == "s":
                 gene_ids.add(gene[0].gene_id)
         return len(gene_ids)
-
-#-------------------------------------------------------------------------
 
 
 class CounterMultiExonGenes(CounterExons):
@@ -568,8 +544,6 @@ class CounterMultiExonGenes(CounterExons):
             if gene[0].exon_status_locus == "m":
                 gene_ids.add(gene[0].gene_id)
         return len(gene_ids)
-
-#----------------------------------------------------------------------
 
 
 def flagExonStatus(gtf_file, outfile):
@@ -792,7 +766,7 @@ def classifyLncRNA(lincRNA_gtf, reference, outfile, dist=2):
 
 def classifyLncRNAGenes(lincRNA_gtf, reference, outfile, dist=2):
 
-      # index the reference geneset
+    # index the reference geneset
     ref = {}
     ref["ref"] = GTF.readAndIndex(
         GTF.iterator(IOTools.openFile(reference)), with_value=True)
@@ -807,11 +781,13 @@ def classifyLncRNAGenes(lincRNA_gtf, reference, outfile, dist=2):
     minus_down = IndexedGenome.IndexedGenome()
 
     # iterate over reference transcripts and create intervals in memory
-    for transcript in GTF.transcript_iterator(GTF.iterator(IOTools.openFile(reference))):
+    for transcript in GTF.transcript_iterator(
+            GTF.iterator(IOTools.openFile(reference))):
         start = transcript[0].end
         for i in range(1, len(transcript)):
             intron.add(
-                transcript[i].contig, start, transcript[i].start, transcript[i].strand)
+                transcript[i].contig, start,
+                transcript[i].start, transcript[i].strand)
             start = transcript[i].end
 
         # create up and downstream intervals on plus strand
@@ -1832,7 +1808,7 @@ def fill_region_alignment(alignment, index, primary_species, chrom, start, end, 
         else:
             blocks.append((score, idx, offset))
 
-    #gap_chars_tuple = tuple( GAP_CHARS )
+    # gap_chars_tuple = tuple( GAP_CHARS )
     gap_chars_str = ''.join(GAP_CHARS)
     # Loop through ordered blocks and layer by increasing score
     for block_dict in blocks:
@@ -1852,7 +1828,7 @@ def fill_region_alignment(alignment, index, primary_species, chrom, start, end, 
                     gap_offset = 0
                     # python2.4 doesn't accept a tuple for .startswith()
                     while True in [text.startswith(gap_char) for gap_char in GAP_CHARS]:
-                    # while text.startswith( gap_chars_tuple ):
+                        # while text.startswith( gap_chars_tuple ):
                         gap_offset += 1
                         text = text[1:]
                         if not text:
@@ -1946,8 +1922,9 @@ def iter_components_by_src(block, src):
 def sort_block_components_by_block(block1, block2):
     # orders the components in block1 by the index of the component in block2
     # block1 must be a subset of block2
-    #occurs in-place
-    return block1.components.sort(cmp=lambda x, y: block2.components.index(x) - block2.components.index(y))
+    # occurs in-place
+    return block1.components.sort(
+        cmp=lambda x, y: block2.components.index(x) - block2.components.index(y))
 
 
 ##########################################################################
@@ -1961,7 +1938,8 @@ def gtfToBed12(infile, outfile, model):
     model = "gene"
     outfile = IOTools.openFile(outfile, "w")
 
-    for all_exons in GTF.transcript_iterator(GTF.iterator(IOTools.openFile(infile, "r"))):
+    for all_exons in GTF.transcript_iterator(
+            GTF.iterator(IOTools.openFile(infile, "r"))):
         chrom = all_exons[0].contig
         # GTF.iterator returns start co-ordinates as zero-based
         start = str(all_exons[0].start)

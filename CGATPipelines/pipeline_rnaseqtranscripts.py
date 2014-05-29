@@ -109,7 +109,7 @@ They can be detected in two ways:
 1. via a peak-like distribution of reads which should result in a low
 entropy of start position density. Note that this possibly can remove
 transcripts that are close to the length of a single read.
-          
+
 2. via mapping against known protein coding transcripts. However,
 getting this mapping right is hard for two reasons. Firstly, mapping
 errors usually involve reads aligned with mismatches.  Thus, the
@@ -353,14 +353,14 @@ def writePrunedGTF(infile, outfile):
 
     if "geneset_remove_repetetive_rna" in PARAMS:
 
-        cmds.append( '''python %s/gtf2gtf.py
+        cmds.append('''python %s/gtf2gtf.py
         --remove-overlapping=%s
         --log=%s.log''' % (PARAMS["scriptsdir"],
                            rna_file, outfile))
 
     if "geneset_remove_contigs" in PARAMS:
-        cmds.append( '''awk '$1 !~ /%s/' ''' %
-                     PARAMS["geneset_remove_contigs"])
+        cmds.append('''awk '$1 !~ /%s/' ''' %
+                    PARAMS["geneset_remove_contigs"])
 
     cmds = " | ".join(cmds)
 
@@ -1782,7 +1782,7 @@ def buildAbinitioLincRNAGeneSet(infiles, outfile):
                 if not noncoding["noncoding"].contains(gtf.contig, gtf.start, gtf.end):
                     if indices[section].contains(gtf.contig, gtf.start, gtf.end):
 
-                    # retain antisense transcripts
+                        # retain antisense transcripts
                         for gtf2 in indices[section].get(gtf.contig, gtf.start, gtf.end):
                             if gtf.strand == gtf2[2].strand:
                                 remove_transcripts[transcript_id].add(section)
@@ -2134,7 +2134,7 @@ def buildReproducibility(infile, outfile):
     outdir = os.path.join(PARAMS["exportdir"], "cuffcompare")
 
     R('''library(RSQLite)''')
-    R('''drv = dbDriver( "SQLite" )''' )
+    R('''drv = dbDriver( "SQLite" )''')
     R('''con <- dbConnect(drv, dbname = 'csvdb')''')
     columns = ",".join([x.asTable() for x in replicates])
     data = R(
@@ -2146,7 +2146,7 @@ def buildReproducibility(infile, outfile):
 
     for rep1, rep2 in itertools.combinations(replicates, 2):
         a, b = rep1.asTable(), rep2.asTable()
-        r = R('''r = lm( %(a)s ~ %(b)s, data)''' % locals() )
+        r = R('''r = lm( %(a)s ~ %(b)s, data)''' % locals())
         R.png("%(outdir)s/%(outfile)s.pair.%(rep1)s_vs_%(rep2)s.png" %
               locals())
         R('''plot(data$%(a)s, data$%(b)s, pch='.', xlim=c(0,%(lim)i), ylim=c(0,%(lim)i),)''' %

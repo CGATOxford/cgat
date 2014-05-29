@@ -1002,21 +1002,21 @@ class TranscriptPredictorTwoStep(TranscriptPredictor):
         """
 
         # set region to check based on scanning result
-        ##
+        #
         # if not touching Terminus:
-        ##
+        #
         # 1. add fixed width - large boundary
-        ##
+        #
         # 2. increase refinement boundary according to query
         # gene size
-        ##
-        ##             ------           match
+        #
+        #              ------           match
         # +++++++++++++           query size
         # ++++++++++++     query size
         # ....................    region to test
-        ##
+        #
         # if touching Terminus:
-        ##
+        #
         # 1. just add small range.
 
         bracket_from = prediction.mSbjctGenomeFrom - self.mSbjctFrom
@@ -1196,7 +1196,7 @@ def EvaluatePrediction(prediction, query_exons, query_sequence):
                 status = "conserved double exon"
                 is_ok = True
         else:
-        # accept if both exons are identical
+            # accept if both exons are identical
             if comparison.mNumIdenticalExons == 2:
                 status = "semi-conserved double exon"
                 is_ok = True
@@ -1353,8 +1353,9 @@ def main(argv=None):
             open(global_options.filename_genome, "r"), do_reverse=0)
 
         for query_token in peptide_sequences:
-            if not peptide_sequences.has_key(query_token):
-                print "# WARNING: no genomic sequence found for query %s" % query_token
+            if query_token not in peptide_sequences:
+                print "# WARNING: no genomic sequence found "\
+                    "for query %s" % query_token
                 continue
 
             query_sequence = peptide_sequences[query_token]
@@ -1638,7 +1639,7 @@ def main(argv=None):
             predictor.SetFilenamePeptides(global_options.filename_peptides)
             predictor.SetFilenameGenome(global_options.filename_genome)
 
-            if exons.has_key(query_token):
+            if query_token in exons:
                 predictor.mExons = exons[query_token]
             else:
                 predictor.mExons = []
@@ -1673,19 +1674,23 @@ def main(argv=None):
 
                 (sbjct_from, sbjct_to, min_bracket_from, min_bracket_to) = \
                     map(int, (
-                        sbjct_from, sbjct_to, min_bracket_from, min_bracket_to))
+                        sbjct_from, sbjct_to,
+                        min_bracket_from, min_bracket_to))
 
                 (bracket_from, bracket_to,
-                 bracket_from_end, bracket_to_end) = map(lambda x: x - sbjct_from,
-                                                         (min_bracket_from,
-                                                          min_bracket_to,
-                                                          sbjct_from,
-                                                          sbjct_to))
+                 bracket_from_end, bracket_to_end) = map(
+                     lambda x: x - sbjct_from,
+                     (min_bracket_from,
+                      min_bracket_to,
+                      sbjct_from,
+                      sbjct_to))
 
                 if sbjct_sequence == "":
                     if last_sbjct_sequence is None:
-                        sbjct_sequence = fasta.getSequence(sbjct_token, sbjct_strand,
-                                                           sbjct_from, sbjct_to)
+                        sbjct_sequence = fasta.getSequence(sbjct_token,
+                                                           sbjct_strand,
+                                                           sbjct_from,
+                                                           sbjct_to)
                     else:
                         sbjct_sequence = last_sbjct_sequence
                 else:
@@ -1701,7 +1706,7 @@ def main(argv=None):
                 predictor.mBracketFroend = bracket_from_end
                 predictor.mBracketToEnd = bracket_to_end
 
-                if exons.has_key(query_token):
+                if query_token in exons:
                     predictor.mExons = exons[query_token]
                 else:
                     predictor.mExons = []

@@ -173,7 +173,7 @@ def buildUTRExtension(infile, outfile):
         parts = os.path.basename(filename).split(".")
 
         data = R(
-            '''data = read.table( gzfile( "%(filename)s"), header=TRUE, fill=TRUE, row.names=1)''' % locals() )
+            '''data = read.table( gzfile( "%(filename)s"), header=TRUE, fill=TRUE, row.names=1)''' % locals())
 
         ##########################################
         ##########################################
@@ -183,16 +183,16 @@ def buildUTRExtension(infile, outfile):
         # take only those with a 'complete' territory
         R('''d = data[-which( apply( data,1,function(x)any(is.na(x)))),]''')
         # save UTR
-        R('''utrs = d$utr''' )
+        R('''utrs = d$utr''')
         # remove length and utr column
         R('''d = d[-c(1,2)]''')
         # remove those which are completely empty, logtransform or scale data
         # and export
         R('''lraw = log10( d[-which( apply(d,1,function(x)all(x==0))),] + 1 )''')
 
-        utrs = R('''utrs = utrs[-which( apply(d,1,function(x)all(x==0)))]''' )
+        utrs = R('''utrs = utrs[-which( apply(d,1,function(x)all(x==0)))]''')
         scaled = R(
-            '''lscaled = t(scale(t(lraw), center=FALSE, scale=apply(lraw,1,max) ))''' )
+            '''lscaled = t(scale(t(lraw), center=FALSE, scale=apply(lraw,1,max)))''')
         exons = R('''lraw[,1]''')
 
         #######################################################
@@ -257,14 +257,14 @@ def buildUTRExtension(infile, outfile):
                    data[data == 0] = data[data == 0] + 0.001
                    data[data == 1] = data[data == 1] - 0.001
                    f = fitdistr( data, dbeta, list( shape1=0.5, shape2=0.5 ) )
-                   return (f) }''' )
+                   return (f) }''')
 
         fit_within_utr = R(
-            '''fit_within_utr = suppressMessages(doFit( within_utr))''' )
+            '''fit_within_utr = suppressMessages(doFit( within_utr))''')
         fit_outside_utr = R(
-            '''fit_outside_utr = suppressMessages(doFit( outside_utr))''' )
+            '''fit_outside_utr = suppressMessages(doFit( outside_utr))''')
         fit_other = R(
-            '''fit_otherTranscript = suppressMessages(doFit( otherTranscript))''' )
+            '''fit_otherTranscript = suppressMessages(doFit( otherTranscript))''')
 
         within_a, within_b = list(fit_within_utr.rx("estimate"))[0]
         outside_a, outside_b = list(fit_outside_utr.rx("estimate"))[0]
@@ -277,22 +277,19 @@ def buildUTRExtension(infile, outfile):
         outfilename = os.path.join(outdir, fn)
         R.png(outfilename, height=1000, width=1000)
 
-        R( '''par(mfrow=c(3,1))''' )
-        R( '''x=seq(0,1,0.02)''')
-        R( '''hist( within_utr, 50, col=rgb( 0,0,1,0.2) )''' )
-        R( '''par(new=TRUE)''')
-        R(
-            '''plot( x, dbeta( x, fit_within_utr$estimate['shape1'], fit_within_utr$estimate['shape2']), type='l', col='blue')''')
+        R('''par(mfrow=c(3,1))''')
+        R('''x=seq(0,1,0.02)''')
+        R('''hist( within_utr, 50, col=rgb( 0,0,1,0.2) )''')
+        R('''par(new=TRUE)''')
+        R('''plot( x, dbeta( x, fit_within_utr$estimate['shape1'], fit_within_utr$estimate['shape2']), type='l', col='blue')''')
 
-        R( '''hist( outside_utr, 50, col=rgb( 1,0,0,0.2 ) )''' )
-        R( '''par(new=TRUE)''')
-        R(
-            '''plot( x, dbeta( x, fit_outside_utr$estimate['shape1'], fit_outside_utr$estimate['shape2']), type='l', col='red')''')
+        R('''hist( outside_utr, 50, col=rgb( 1,0,0,0.2 ) )''')
+        R('''par(new=TRUE)''')
+        R('''plot( x, dbeta( x, fit_outside_utr$estimate['shape1'], fit_outside_utr$estimate['shape2']), type='l', col='red')''')
 
-        R( '''hist( otherTranscript, 50, col=rgb( 0,1,0,0.2 ) )''' )
-        R( '''par(new=TRUE)''')
-        R(
-            '''plot( x, dbeta( x, fit_otherTranscript$estimate['shape1'], fit_otherTranscript$estimate['shape2']), type='l', col='green')''')
+        R('''hist( otherTranscript, 50, col=rgb( 0,1,0,0.2 ) )''')
+        R('''par(new=TRUE)''')
+        R('''plot( x, dbeta( x, fit_otherTranscript$estimate['shape1'], fit_otherTranscript$estimate['shape2']), type='l', col='green')''')
         R['dev.off']()
 
         #####################################################
@@ -308,7 +305,7 @@ def buildUTRExtension(infile, outfile):
                                 shape2=c(fit_within_utr$estimate['shape2'],
                                          fit_outside_utr$estimate['shape2'],
                                          fit_otherTranscript$estimate['shape2'])) ''')
-        R('''hmm = dthmm(NULL, transitions, c(1,0,0), "beta", betaparams )''' )
+        R('''hmm = dthmm(NULL, transitions, c(1,0,0), "beta", betaparams )''')
 
         E.info("fitting starts")
         #####################################################
@@ -341,9 +338,9 @@ def buildUTRExtension(infile, outfile):
                     (old_utr, None, None, "notexpressed"))
                 continue
 
-            R('''obs = data[%i,][-c(1,2)]''' % (idx + 1) )
+            R('''obs = data[%i,][-c(1,2)]''' % (idx + 1))
             # remove na
-            obs = R('''obs = obs[!is.na(obs)]''' )
+            obs = R('''obs = obs[!is.na(obs)]''')
             if len(obs) <= 1 or max(obs) == 0:
                 new_utrs[gene_id] = Utr._make(
                     (old_utr, None, None, "no observations"))
@@ -494,7 +491,7 @@ def plotGeneLevelReadExtension(infile, outfile):
         parts = os.path.basename(filename).split(".")
 
         data = R(
-            '''data = read.table( gzfile( "%(filename)s"), header=TRUE, fill=TRUE, row.names=1)''' % locals() )
+            '''data = read.table( gzfile( "%(filename)s"), header=TRUE, fill=TRUE, row.names=1)''' % locals())
 
         ##########################################
         ##########################################
@@ -504,16 +501,16 @@ def plotGeneLevelReadExtension(infile, outfile):
         # take only those with a 'complete' territory
         R('''d = data[-which( apply( data,1,function(x)any(is.na(x)))),]''')
         # save UTR
-        R('''utrs = d$utr''' )
+        R('''utrs = d$utr''')
         # remove length and utr column
         R('''d = d[-c(1,2)]''')
         # remove those which are completely empty, logtransform or scale data
         # and export
         R('''lraw = log10( d[-which( apply(d,1,function(x)all(x==0))),] + 1 )''')
 
-        utrs = R('''utrs = utrs[-which( apply(d,1,function(x)all(x==0)))]''' )
+        utrs = R('''utrs = utrs[-which( apply(d,1,function(x)all(x==0)))]''')
         scaled = R(
-            '''lscaled = t(scale(t(lraw), center=FALSE, scale=apply(lraw,1,max) ))''' )
+            '''lscaled = t(scale(t(lraw), center=FALSE, scale=apply(lraw,1,max) ))''')
         exons = R('''lraw[,1]''')
 
         if len(utrs) == 0:
@@ -542,7 +539,7 @@ def plotGeneLevelReadExtension(infile, outfile):
         outfilename = os.path.join(outdir, fn)
 
         R.png(outfilename, height=2000, width=1000)
-        R('''myplot( lraw, utrs )''' )
+        R('''myplot( lraw, utrs )''')
         R['dev.off']()
 
         # plot scaled data
@@ -550,7 +547,7 @@ def plotGeneLevelReadExtension(infile, outfile):
         outfilename = os.path.join(outdir, fn)
 
         R.png(outfilename, height=2000, width=1000)
-        R('''myplot( lscaled, utrs )''' )
+        R('''myplot( lscaled, utrs )''')
         R['dev.off']()
 
     P.touch(outfile)
@@ -612,7 +609,7 @@ def filterAndMergeGTF(infile, outfile, remove_genes, merge=False):
     outf.close()
 
     # close-by exons need to be merged, otherwise
-     # cuffdiff fails for those on "." strand
+    # cuffdiff fails for those on "." strand
 
     if merge:
         statement = '''
@@ -733,7 +730,7 @@ def runFeatureCounts(annotations_file,
                      options=""):
     '''run feature counts on *annotations_file* with
     *bam_file*.
-    
+
     If the bam-file is paired, paired-end counting
     is enabled and the bam file automatically sorted.
     '''

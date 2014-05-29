@@ -879,7 +879,7 @@ def buildSTARStats(infiles, outfile):
             raise ValueError("incomplete run: %s" % infile)
 
         for line in IOTools.openFile(fn):
-            if not "|" in line:
+            if "|" not in line:
                 continue
             header, value = line.split("|")
             header = re.sub("%", "percent", header)
@@ -932,13 +932,13 @@ def mapReadsWithBowtieAgainstTranscriptome(infiles, outfile):
     # but otherwise matches to paralogs will be missed (and such
     # reads would be filtered out).
     job_options = "-pe dedicated %i -R y" % PARAMS["bowtie_threads"]
-    to_cluster = True
-    m = PipelineMapping.BowtieTranscripts(executable=P.substituteParameters(**locals())["bowtie_executable"],
-                                          strip_sequence=PARAMS["strip_sequence"])
+    m = PipelineMapping.BowtieTranscripts(
+        executable=P.substituteParameters(**locals())["bowtie_executable"],
+        strip_sequence=PARAMS["strip_sequence"])
     infile, reffile = infiles
     prefix = P.snip(reffile, ".fa")
     # IMS: moved reporting options to ini
-    #bowtie_options = "%s --best --strata -a" % PARAMS["bowtie_transcriptome_options"]
+    # bowtie_options = "%s --best --strata -a" % PARAMS["bowtie_transcriptome_options"]
     statement = m.build((infile,), outfile)
     P.run()
 
@@ -953,19 +953,19 @@ def mapReadsWithBowtieAgainstTranscriptome(infiles, outfile):
 @transform(SEQUENCEFILES,
            SEQUENCEFILES_REGEX,
            add_inputs(
-               os.path.join(PARAMS["bowtie_index_dir"], PARAMS["genome"] + ".fa")),
+               os.path.join(PARAMS["bowtie_index_dir"],
+                            PARAMS["genome"] + ".fa")),
            r"bowtie.dir/\1.bowtie.bam")
 def mapReadsWithBowtie(infiles, outfile):
     '''map reads with bowtie'''
 
     job_options = "-pe dedicated %i -R y" % PARAMS["bowtie_threads"]
-    to_cluster = True
     m = PipelineMapping.Bowtie(
         executable=P.substituteParameters(**locals())["bowtie_executable"],
         strip_sequence=PARAMS["strip_sequence"])
     infile, reffile = infiles
     # IMS remove reporting options to the ini
-    #bowtie_options = "%s --best --strata -a" % PARAMS["bowtie_options"]
+    # bowtie_options = "%s --best --strata -a" % PARAMS["bowtie_options"]
     statement = m.build((infile,), outfile)
     P.run()
 

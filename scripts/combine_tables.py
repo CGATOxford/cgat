@@ -215,7 +215,7 @@ def joinTables(outfile, options, args):
 
         if options.input_has_titles:
             data = string.split(lines[0][:-1], "\t")
-           # no titles have been defined so far
+            # no titles have been defined so far
             if not titles:
                 key = "-".join([data[x] for x in options.columns])
                 titles = [key]

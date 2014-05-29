@@ -142,24 +142,21 @@ class Tokenizer:
     def keepNumChr(self, words):
         newWords = ''
         for c in words:
-            if self.leftchar.has_key(c):
+            if c in self.leftchar:
                 newWords += c
         return newWords
 
     def tokenize_word(self, words):
-        before = words
         words = words.lower()
         words = self.pattern_plurals.sub('', words)
         words = self.pattern_possessives.sub('', words)
         words = self.keepNumChr(words)
         words = self.pattern_blanks.sub(' ', words)
-
-        #words = string.strip(words)
         return words
 
     def test(self, words):
         for c in words:
-            if not self.leftchar.has_key(c):
+            if c not in self.leftchar:
                 self.leftchar[c] = 1
 
     def returnUnexpChar(self):
@@ -550,20 +547,23 @@ class PorterStemmer:
 
 class GOOboXmlHandler (ContentHandler):
 
-    """ This class handles parsing the OBO XML file from the Gene Ontology Consortium and populate
-        a GOGraph object passed to the constructor of this class.  The handler only use the nodes from
-        the namespace (a branch of the GO) specificed in the GOGraph object.  Currently, only the edges
-        that reflect IS_A relationship between a pair of GO terms are parsed and added into the GOGraph
+    """This class handles parsing the OBO XML file from the Gene Ontology
+        Consortium and populate a GOGraph object passed to the
+        constructor of this class.  The handler only use the nodes
+        from the namespace (a branch of the GO) specificed in the
+        GOGraph object.  Currently, only the edges that reflect IS_A
+        relationship between a pair of GO terms are parsed and added
+        into the GOGraph
 
-        Modification by AH: 
+        Modification by AH:
         1. also add PART_OF relationships into the graph
         2. return a list of synonyms
 
         from gographer.GOOboXmlHandler.py
+
     """
-    # Constructor.
-    # @param    goGraph A reference to a GOGraph object to which the parsed GO nodes and edges
-    #                   will be added.
+    # Constructor.  @param goGraph A reference to a GOGraph object to
+    # which the parsed GO nodes and edges will be added.
 
     def __init__(self, goGraph):
         self.namespace = goGraph.getNameSpace()
@@ -610,8 +610,9 @@ class GOOboXmlHandler (ContentHandler):
             self.relationship_type = self.cdata.strip()
 
         elif name == "relationship" and not self.inTypedef:
-            # add relationships into graph - this includes 'part_of' but excludes
-            # 'negatively_regulates', 'positively_regulates' and 'regulates' and others
+            # add relationships into graph - this includes 'part_of'
+            # but excludes 'negatively_regulates',
+            # 'positively_regulates' and 'regulates' and others
             if self.relationship_type == "part_of":
                 self.parents.append(self.cdata.strip())
                 self.goNode.setParents(self.parents)
@@ -626,7 +627,8 @@ class GOOboXmlHandler (ContentHandler):
         elif name == "alt_id":
             self.synonyms[self.cdata.strip()] = self.goid
 
-        elif name == "term" and not self.obsolete and self.namespace == self.elementNamespace:
+        elif (name == "term" and not self.obsolete
+              and self.namespace == self.elementNamespace):
 
             '''# not sure what the follow trying to do
             if not self.elementNamespace in self.namespaces.keys():
@@ -637,23 +639,26 @@ class GOOboXmlHandler (ContentHandler):
 
             self.graph.add_node(self.goid, data=self.goNode)
             for parent in self.parents:
+                '''currently the only edges being added are to the children of the
+                current node
                 '''
-                currently the only edges being added are to the children of the current node
-                '''
-                if not parent in self.graph:
+                if parent not in self.graph:
                     self.graph.add_node(parent, data=GONode(parent))
                 self.graph.add_edge(
                     parent, self.goid, relationship="parent_of")
 
         # and not self.name.has_key(self.goid):
-        elif name == "name" and not self.obsolete and not self.goid is None and self.goNode.name is None:
+        elif (name == "name" and not self.obsolete
+              and self.goid is not None and self.goNode.name is None):
             self.goNode.setName(self.cdata.strip())
 
         # and not self.name.has_key(self.goid):
-        elif name == "defstr" and not self.obsolete and not self.goid is None:
+        elif (name == "defstr" and not self.obsolete
+              and self.goid is not None):
             self.goNode.setDescription(self.cdata.strip())
 
-        elif name == "term" and self.obsolete and self.namespace == self.elementNamespace:
+        elif (name == "term" and self.obsolete
+              and self.namespace == self.elementNamespace):
             self.obsoletes.add(self.goid)
 
     def characters(self, data):
@@ -1239,7 +1244,7 @@ def buildSimrelMatrix(go2genes, go2info, ancestors, p):
     and a mapping of go terms to genes.
 
     This method follows the procedure and syntax
-    according to Schlicker et al. (2006) 
+    according to Schlicker et al. (2006)
     BMC Bioinformatics 7:302
     '''
 
@@ -1464,51 +1469,66 @@ def main(argv):
     parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
-    parser.add_option("-o", "--filename-ontology", dest="filename_obo", type="string",
-                      help="filename with ontology information in obo-xml format. "
+    parser.add_option("-o", "--filename-ontology", dest="filename_obo",
+                      type="string",
+                      help="filename with ontology information "
+                      "in obo-xml format. "
                       " The latest version can always be"
                       " retrieved at `wget http://archive.geneontology.org/latest-termdb/go_daily-termdb.obo-xml.gz`."
                       " [default=%default].")
 
     parser.add_option("-g", "--filename-go", dest="filename_go", type="string",
                       help="filename with gene to go assignments "
-                      " This is a tab-separated file with the columns <namespace> <gene_id> <goid> <description> <evidence>."
+                      " This is a tab-separated file with the columns "
+                      " <namespace> <gene_id> <goid> <description> <evidence>."
                       " The evidence column is currently ignored. "
                       " [default=%default].")
 
-    parser.add_option("-p", "--filename-pvalues", dest="filename_pvalues", type="string",
+    parser.add_option("-p", "--filename-pvalues", dest="filename_pvalues",
+                      type="string",
                       help="filename with pvalues for each GO term "
-                      " This is a tab-separated file with the columns <goid> <pvalue>."
-                      " If a third column is present it will be interpreted as fold-change. "
+                      "This is a tab-separated file with the columns "
+                      "<goid> <pvalue>. "
+                      "If a third column is present it will be "
+                      "interpreted as fold-change. "
                       " [default=%default].")
 
-    parser.add_option("--ontology", dest="ontology", type="choice", action="append",
+    parser.add_option("--ontology", dest="ontology", type="choice",
+                      action="append",
                       choices=(
-                          "biol_process", "cell_location", "mol_function", "all"),
-                      help="ontologies to analyze. Ontologies are tested separately."
+                          "biol_process", "cell_location",
+                          "mol_function", "all"),
+                      help="ontologies to analyze. Ontologies are "
+                      "tested separately."
                       " 'all' will test all ontologies. "
                       " [default=%default].")
 
-    parser.add_option("--max-similarity", dest="max_simrel_threshold", type="float",
-                      help="cluster until simrel threshold is achieved [default=%default].")
+    parser.add_option("--max-similarity", dest="max_simrel_threshold",
+                      type="float",
+                      help="cluster until simrel threshold is achieved "
+                      "[default=%default].")
 
-    parser.add_option("--min-clusters", dest="min_clusters_threshold", type="float",
-                      help="cluster only until at most # clusters remain [default=%default].")
+    parser.add_option("--min-clusters", dest="min_clusters_threshold",
+                      type="float",
+                      help="cluster only until at most # clusters remain "
+                      "[default=%default].")
 
     parser.add_option("--palette", dest="palette", type="choice",
                       choices=("rainbow", "gray", "blue-white-red",
-                               "autumn", "bone", "cool", "copper", "flag", "gray",
+                               "autumn", "bone", "cool",
+                               "copper", "flag", "gray",
                                "hot", "hsv", "jet", "pink", "prism",
                                "spring", "summer", "winter", "spectral",
-                               "RdBu", "RdGy", "BrBG", "BuGn", "Blues", "Greens", "Reds", "Oranges", "Greys"),
+                               "RdBu", "RdGy", "BrBG", "BuGn", "Blues",
+                               "Greens", "Reds", "Oranges", "Greys"),
                       help="colour palette [default=%default]")
 
-    parser.add_option("--reverse-palette", dest="reverse_palette", action="store_true",
+    parser.add_option("--reverse-palette", dest="reverse_palette",
+                      action="store_true",
                       help="reverse colour palette [default=%default].")
 
     parser.set_defaults(filename_obo='go_daily-termdb.obo-xml.gz',
                         filename_go="go.tsv.gz",
-                        #filename_pvalues = "/ifs/projects/proj008/report/genelists.go.dir/rela_upstream-changed.biol_process.results",
                         filename_pvalues=None,
                         filename_bg=None,
                         filename_matrix=None,
