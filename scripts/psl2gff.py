@@ -45,7 +45,7 @@ import CGAT.Blat as Blat
 import CGAT.GTF as GTF
 
 
-def main():
+def main(argv=None):
 
     parser = E.OptionParser(
         version="%prog version: $Id: psl2gff.py 2781 2009-09-10 11:33:14Z andreas $", usage=globals()["__doc__"])

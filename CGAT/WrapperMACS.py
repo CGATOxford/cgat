@@ -1,4 +1,4 @@
- ##########################################################################
+##########################################################################
 #
 #   MRC FGU Computational Genomics Group
 #
@@ -103,7 +103,7 @@ Macs2Peak = collections.namedtuple(
 
 def iterateMacs2Peaks(infile):
     '''iterate over peaks.xls file and return parsed data.
-    
+
     pvalues and fdr are converted to values between 0 and 1
     from their -log10 values.
     '''

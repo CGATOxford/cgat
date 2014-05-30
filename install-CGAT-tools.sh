@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-
 # message to display when the OS is not correct
 sanity_check_os() {
    echo
@@ -169,7 +168,7 @@ elif [ "$OS" == "travis" ] ; then
    pip install scipy
    pip install -r https://raw.github.com/CGATOxford/cgat/master/requires.txt
    pip install --upgrade setuptools
-   pip install CGAT ;
+   #pip install CGAT ;
 
 else
 
@@ -209,21 +208,41 @@ echo
 echo " Running nosetests for $1 "
 echo
 
-# Go to CGAT_HOME to continue with installation
-if [ -z "$CGAT_HOME" ] ; then
-   # install in default location
-   CGAT_HOME=$HOME/CGAT-DEPS
-fi
+if [ "$OS" == "travis" ] ; then
 
-# create a new folder to store external tools
-mkdir -p $CGAT_HOME/external-tools
-cd $CGAT_HOME/external-tools
+   # installation directory in travis
+   INIT_DIR_DEPS=`pwd`
+
+   mkdir -p $INIT_DIR_DEPS/external-tools
+   cd $INIT_DIR_DEPS/external-tools
+
+elif [ "$OS" == "sl" -o "$OS" == "ubuntu" ] ; then
+
+   # Go to CGAT_HOME to continue with installation
+   if [ -z "$CGAT_HOME" ] ; then
+      # install in default location
+      export CGAT_HOME=$HOME/CGAT-DEPS
+   fi
+
+   # create a new folder to store external tools
+   mkdir -p $CGAT_HOME/external-tools
+   cd $CGAT_HOME/external-tools
+
+else
+
+   sanity_check_os
+
+fi # if-OS
 
 # wigToBigWig
 # wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/wigToBigWig
 wget --no-check-certificate https://www.cgat.org/downloads/public/external-tools/wigToBigWig
 chmod +x wigToBigWig
-PATH=$PATH:$CGAT_HOME/external-tools
+#PATH=$PATH:$CGAT_HOME/external-tools
+
+# bedGraphToBigWig
+wget --no-check-certificate https://www.cgat.org/downloads/public/external-tools/bedGraphToBigWig
+chmod +x bedGraphToBigWig
 
 # BEDtools
 # curl -L https://github.com/arq5x/bedtools2/releases/download/v2.18.2/bedtools-2.18.2.tar.gz > bedtools-2.18.2.tar.gz
@@ -232,7 +251,7 @@ tar xzvf bedtools-2.18.2.tar.gz
 rm bedtools-2.18.2.tar.gz
 cd bedtools-2.18.2
 make
-PATH=$PATH:$CGAT_HOME/external-tools/bedtools-2.18.2/bin
+#PATH=$PATH:$CGAT_HOME/external-tools/bedtools-2.18.2/bin
 
 # GCProfile
 cd ..
@@ -242,6 +261,12 @@ tar xvf GCProfile_LINUX.tar
 rm GCProfile_LINUX.tar
 cp GCProfile_LINUX/GCProfile .
 cp GCProfile_LINUX/gnuplot .
+
+
+if [ "$OS" == "travis" ] ; then
+   cd $INIT_DIR_DEPS;
+fi
+
 } # nosetests_external_deps
 
 
@@ -255,22 +280,29 @@ if [ "$OS" == "travis" ] ; then
 
    # GCProfile
    #apt-get install -y libc6-i386 libstdc++5:i386
-
+   echo 'this is gcc version:'
+   gcc -v
+   
    # prepare external dependencies
    nosetests_external_deps $OS
 
    # Set up other environment variables
    cd $INIT_DIR
+   export PATH=$PATH:$INIT_DIR/external-tools:$INIT_DIR/external-tools/bedtools-2.18.2/bin
    export PYTHONPATH=$PYTHONPATH:$INIT_DIR
 
    # bx-python
    export C_INCLUDE_PATH=/home/travis/virtualenv/python2.7/local/lib/python2.7/site-packages/numpy/core/include
 
+   # Python preparation
    python setup.py develop
+   python scripts/cgat_rebuild_extensions.py
 
    # run nosetests
    if [ "$TEST_IMPORT" == "1" ] ; then
       nosetests -v tests/test_import.py ;
+   elif [ "$TEST_STYLE" == "1" ] ; then
+      nosetests -v tests/test_style.py ;
    else
       nosetests -v tests/test_scripts.py ;
    fi
@@ -283,7 +315,12 @@ elif [ "$OS" == "ubuntu" -o "$OS" == "sl" ] ; then
    # Go to CGAT_GITHUB to continue with installation
    if [ -z "$CGAT_GITHUB" ] ; then
       # install in default location
-      CGAT_GITHUB=$HOME/CGAT-GITHUB
+      export CGAT_GITHUB=$HOME/CGAT-GITHUB
+   fi
+
+   if [ -z "$CGAT_HOME" ] ; then
+      # default location for cgat installation
+      export CGAT_HOME=$HOME/CGAT-DEPS
    fi
 
    # clone CGAT repository to run nosetests
@@ -291,14 +328,18 @@ elif [ "$OS" == "ubuntu" -o "$OS" == "sl" ] ; then
    cd $CGAT_GITHUB
 
    # Set up other environment variables
+   export PATH=$PATH:$CGAT_HOME/external-tools:$CGAT_HOME/external-tools/bedtools-2.18.2/bin
    export PYTHONPATH=$PYTHONPATH:$CGAT_GITHUB
    source $CGAT_HOME/virtualenv-1.10.1/cgat-venv/bin/activate
-
+   
    # bx-python
    export C_INCLUDE_PATH=$CGAT_HOME/virtualenv-1.10.1/cgat-venv/lib/python2.7/site-packages/numpy/core/include
 
+   # Python preparation
    python setup.py develop
+   python scripts/cgat_rebuild_extensions.py
 
+   # run tests
    /usr/bin/time -o test_import.time -v nosetests -v tests/test_import.py >& test_import.out
    /usr/bin/time -o test_scripts.time -v nosetests -v tests/test_scripts.py >& test_scripts.out ;
 
@@ -309,6 +350,39 @@ else
 fi # if-OS
 
 } # run_nosetests
+
+
+rerun_nosetests() {
+
+# Go to CGAT_GITHUB to continue with installation
+if [ -z "$CGAT_GITHUB" ] ; then
+   # default location for cgat installation
+   export CGAT_GITHUB=$HOME/CGAT-GITHUB
+fi
+
+if [ -z "$CGAT_HOME" ] ; then
+   # default location for cgat installation
+   export CGAT_HOME=$HOME/CGAT-DEPS
+fi
+
+cd $CGAT_GITHUB
+
+# set up environment variables
+export PATH=$PATH:$CGAT_HOME/external-tools:$CGAT_HOME/external-tools/bedtools-2.18.2/bin
+export PYTHONPATH=$PYTHONPATH:$CGAT_GITHUB
+source $CGAT_HOME/virtualenv-1.10.1/cgat-venv/bin/activate
+export C_INCLUDE_PATH=$CGAT_HOME/virtualenv-1.10.1/cgat-venv/lib/python2.7/site-packages/numpy/core/include
+
+# Python preparation
+python setup.py develop
+python scripts/cgat_rebuild_extensions.py
+
+# rerun tests
+/usr/bin/time -o test_import.time -v nosetests -v tests/test_import.py >& test_import.out
+/usr/bin/time -o test_scripts.time -v nosetests -v tests/test_scripts.py >& test_scripts.out ;
+
+} # rerun_nosetests
+
 
 # function to display help message
 help_message() {
@@ -343,6 +417,12 @@ echo
 echo " This will clone the CGAT repository from GitHub to: $HOME/CGAT-GITHUB by default. If you want to change that use --git-hub-dir as follows:"
 echo " ./install-CGAT-tools.sh --run-nosetests --git-hub-dir /path/to/folder"
 echo
+echo " If you wanted to re-run nosetests you can do so by typing:"
+echo " ./install-CGAT-tools.sh --rerun-nosetests"
+echo
+echo " If you installed the CGAT Code Collection with the '--cgat-deps-dir option' you need to include it again to re-run the tests:"
+echo " ./install-CGAT-tools.sh --rerun-nosetests --git-hub-dir /path/to/folder"
+echo 
 echo " NOTES: "
 echo " * Supported operating systems: Ubuntu 12.x and Scientific Linux 6.x "
 echo " ** An isolated virtual environment will be created to install Python dependencies "
@@ -369,6 +449,8 @@ PY_PKGS=
 NT_PKGS=
 # run nosetests
 NT_RUN=
+# rerun nosetests
+NT_RERUN=
 # variable to actually store the input parameters
 INPUT_ARGS=$(getopt -n "$0" -o ht1234g:c: --long "help,
                                                   travis,
@@ -376,6 +458,7 @@ INPUT_ARGS=$(getopt -n "$0" -o ht1234g:c: --long "help,
                                                   install-python-deps,
                                                   install-nosetests-deps,
                                                   run-nosetests,
+                                                  rerun-nosetests,
                                                   git-hub-dir:,
                                                   cgat-deps-dir:"  -- "$@")
 eval set -- "$INPUT_ARGS"
@@ -413,6 +496,11 @@ do
       NT_RUN=1
       shift ;
 
+  elif [ "$1" == "-5" -o "$1" == "--rerun-nosetests" ] ; then
+
+      NT_RERUN=1
+      shift ;
+
   elif [ "$1" == "-g" -o "$1" == "--git-hub-dir" ] ; then
 
       CGAT_GITHUB="$2"
@@ -446,29 +534,24 @@ else
   detect_os
   
   if [ "$OS_PKGS" == "1" ] ; then
-
     install_os_packages
-
   fi
 
   if [ "$PY_PKGS" == "1" ] ; then
-
     install_python_deps
-
   fi
 
   if [ "$NT_PKGS" == "1" ] ; then
-
     install_nosetests_deps
-
   fi
 
   if [ "$NT_RUN" == "1" ] ; then
-
     run_nosetests
-
   fi
 
+  if [ "$NT_RERUN" == "1" ] ; then
+    rerun_nosetests
+  fi
 
 fi # if-variables
 

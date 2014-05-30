@@ -8,5 +8,11 @@ version:
 chunks:
     stdin: hg19.small.gtf.gz
     outputs: [000001.chunk,000002.chunk,000003.chunk,000004.chunk,000005.chunk,000006.chunk]
-    references: []
+    references: [ref_000001.chunk,ref_000002.chunk,ref_000003.chunk,ref_000004.chunk,ref_000005.chunk,ref_000006.chunk]
     options: --min-chunk-size=10
+
+chunk-gff:
+    stdin: null
+    outputs: [chunk_1.gff,chunk_2.gff,chunk_3.gff,chunk_4.gff,chunk_5.gff]
+    references: [ref_chunk_1.gff,ref_chunk_2.gff,ref_chunk_3.gff,ref_chunk_4.gff,ref_chunk_5.gff]
+    options: -I %DIR%/../data/hg19_rna_head.gff.gz --output-pattern=chunk_%i.gff

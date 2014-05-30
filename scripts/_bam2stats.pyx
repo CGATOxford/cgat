@@ -3,6 +3,7 @@
 from pysam.csamtools cimport *
 from libc.string cimport strchr
 from libc.stdint cimport int8_t
+from libc.stdio cimport puts
 import collections, array, struct, sys
 import CGAT.Experiment as E
 
@@ -405,11 +406,11 @@ def count( Samfile samfile,
         if outfile_details:
             if outfile_details != sys.stdout:
                 # later: get access FILE * object
-                outfile_details.write( "read\tis_unmapped\tmate_is_unmapped\tis_paired\tmapped_is_read1\tmapped_is_read2\tis_proper_pair\tis_qcfail\tis_duplicate\n" )
+                outfile_details.write("read\tis_unmapped\tmate_is_unmapped\tis_paired\tmapped_is_read1\tmapped_is_read2\tis_proper_pair\tis_qcfail\tis_duplicate\n" )
                 for qname, index in reads.items():
                     fastq_count = &fastq_counts[index]
 
-                    outfile_details.write( "%s\t%s\n" % (qname, "\t".join( \
+                    outfile_details.write("%s\t%s\n" % (qname, "\t".join( \
                                 map(str,
                                     (fastq_count.is_unmapped,
                                      fastq_count.mate_is_unmapped,
@@ -423,20 +424,22 @@ def count( Samfile samfile,
 
             else:
                 # output to stdout much quicker
-                printf("read\tis_unmapped\tmate_is_unmapped\tis_paired\tmapped_is_read1\tmapped_is_read2\tis_proper_pair\tis_qcfail\tis_duplicate\n" )
+                # use puts to avoid the following error:
+                # format not a string literal and no format arguments
+                puts("read\tis_unmapped\tmate_is_unmapped\tis_paired\tmapped_is_read1\tmapped_is_read2\tis_proper_pair\tis_qcfail\tis_duplicate\n")
                 for qname, index in reads.items():
                     fastq_count = &fastq_counts[index]
                     read_name = qname
-                    printf( "%s\t%i\t%i\t%i\t%i\t%i\t%i\t%i\t%i\n",
-                            read_name,
-                            fastq_count.is_unmapped,
-                            fastq_count.mate_is_unmapped,
-                            fastq_count.is_paired,
-                            fastq_count.mapped_is_read1,
-                            fastq_count.mapped_is_read2,
-                            fastq_count.is_proper_pair,
-                            fastq_count.is_qcfail,
-                            fastq_count.is_duplicate )
+                    printf("%s\t%i\t%i\t%i\t%i\t%i\t%i\t%i\t%i\n",
+                           read_name,
+                           fastq_count.is_unmapped,
+                           fastq_count.mate_is_unmapped,
+                           fastq_count.is_paired,
+                           fastq_count.mapped_is_read1,
+                           fastq_count.mapped_is_read2,
+                           fastq_count.is_proper_pair,
+                           fastq_count.is_qcfail,
+                           fastq_count.is_duplicate)
 
 
     return (counter, t, 

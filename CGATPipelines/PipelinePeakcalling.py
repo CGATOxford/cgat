@@ -18,7 +18,13 @@ import collections
 import sqlite3
 import numpy
 import pysam
-import pybedtools
+
+# pybedtools recompilation can fail causing
+# an import error when importing this script
+try:
+    import pybedtools
+except ImportError:
+    pass
 
 ##########################
 import CGAT.Experiment as E
@@ -58,12 +64,19 @@ def getPeakShiftFromMacs(infile):
         rx = re.compile("#2 predicted fragment length is (\d+) bps")
         r2 = re.compile("#2 Use (\d+) as shiftsize, \d+ as fragment length")
         r3 = re.compile("#1 fragment size = (\d+)")
+        # when fragment length is set explicitely
+        r4 = re.compile("#2 Use (\d+) as fragment length")
+
         for line in ins:
             x = rx.search(line)
             if x:
                 shift = int(x.groups()[0])
                 break
             x = r3.search(line)
+            if x:
+                shift = int(x.groups()[0])
+                break
+            x = r4.search(line)
             if x:
                 shift = int(x.groups()[0])
                 break
@@ -548,7 +561,7 @@ def exportIntervalsAsBed(infile, outfile,
         track = P.snip(outfile, ".bed")
 
     cc = dbhandle.cursor()
-    statement = """SELECT contig, start, end
+    statement = """SELECT contig, max(0, start), end
     FROM %s""" % tablename
     cc.execute(statement)
 
@@ -594,6 +607,10 @@ def exportIntervalsAsBed(infile, outfile,
 
     c.output = latest        
 
+    # one final sort
+    bd = bd.sort()
+    bd.saveas(tmpfile)
+    bd = pybedtools.BedTool(tmpfile)
     bd.saveas(track + '.bed')
 
     if compress:
@@ -1023,7 +1040,6 @@ def runMACS(infile, outfile,
     The output bed files contain the P-value as their score field.
     Output bed files are compressed and indexed.
     '''
-    to_cluster = True
     job_options = "-l mem_free=8G"
 
     options = []
@@ -1310,16 +1326,15 @@ def runZinba(infile,
              fragment_size=None,
              tag_size=None):
     '''run Zinba for peak detection.'''
-
-    to_cluster = True
-
     E.info("zinba: running action %s" % (action))
 
     job_options = "-l mem_free=32G -pe dedicated %i -R y" % PARAMS[
         "zinba_threads"]
 
     # TODO: use closest size or build mapability file
-    assert 40 <= tag_size < 60, "not all tag sizes implemented"
+    if not 40 <= tag_size < 60:
+        E.warn("tag size out of range of 40-60: %i" % tag_size)
+
     tag_size = 50
     fragment_size = 200
 

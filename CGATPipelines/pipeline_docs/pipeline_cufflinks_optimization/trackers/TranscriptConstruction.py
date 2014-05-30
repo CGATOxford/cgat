@@ -18,13 +18,13 @@ class TranscriptConstruction(TrackerSQL):
             complete = self.getValue(
                 """SELECT COUNT(*) FROM %(track)s_accepted_chr19_class WHERE class = 'complete'""")
             fragments = self.getValue(
-                """SELECT COUNT(*) FROM %(track)s_accepted_chr19_class WHERE class like '%%fragment%%' """ )
+                """SELECT COUNT(*) FROM %(track)s_accepted_chr19_class WHERE class like '%%fragment%%' """)
             return int(float(complete) / (complete + fragments) * 100)
         elif slice == "protein_coding":
             complete = self.getValue(
-                """SELECT COUNT(*) FROM %(track)s_accepted_chr19_class WHERE class = 'complete' AND source = 'protein_coding' """ )
+                """SELECT COUNT(*) FROM %(track)s_accepted_chr19_class WHERE class = 'complete' AND source = 'protein_coding' """)
             fragments = self.getValue(
-                """SELECT COUNT(*) FROM %(track)s_accepted_chr19_class WHERE class like '%%fragment%%' AND source = 'protein_coding' """ )
+                """SELECT COUNT(*) FROM %(track)s_accepted_chr19_class WHERE class like '%%fragment%%' AND source = 'protein_coding' """)
             return int(float(complete) / (complete + fragments) * 100)
 
 
@@ -41,11 +41,11 @@ class TranscriptConstruction2(TrackerSQL):
         complete_gene_ids = self.getValues(
             """SELECT match_gene_id FROM %(track)s_accepted_chr19_class WHERE class = 'complete'""")
         fragment_gene_ids = self.getValues(
-            """SELECT match_gene_id FROM %(track)s_accepted_chr19_class WHERE class like '%%fragment%%' """ )
+            """SELECT match_gene_id FROM %(track)s_accepted_chr19_class WHERE class like '%%fragment%%' """)
 
         frag = []
         for gene_id in fragment_gene_ids:
-            if not gene_id in complete_gene_ids:
+            if gene_id not in complete_gene_ids:
                 frag.append(gene_id)
         complete = len(complete_gene_ids)
         fragments = len(frag)

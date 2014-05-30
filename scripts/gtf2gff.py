@@ -175,7 +175,7 @@ of the closest gene, but at most to --radius. In the case of overlapping genes,
 the extension is towards the next non-overlapping gene. 
 
 This is the "basal plus extension" rule in GERAT. Commonly used are 5+1 with 1 Mb extension. 
-To achieve this, set
+To achieve this, set (needs genome-file to run).
 
 ``--method=great-domains --upstream=5000 --downstream=1000 --radius=1000000``
 
@@ -207,7 +207,8 @@ positions
    as separate exons. Thus the output is not fully flat as some segments could be overlapping
    (see output variable ``noverlapping`` in the log file).
 
-The following example uses an ENSEMBL gene set::
+The following example uses an ENSEMBL gene set:: 
+(needs genome-file to run)
 
    gunzip < Mus_musculus.NCBIM37.55.gtf.gz | awk '$3 == "CDS"' | python gtf2gff.py --method=exons --restrict-source=protein_coding
 
@@ -250,7 +251,9 @@ Usage
 Type::
     python gtf2gff.py --method=genome --genome-file=hg19 < geneset.gtf > annotations.gff
 
-for command line help.
+For command line help::
+
+    python gtf2gff.py --help
 
 Command line options
 ---------------------

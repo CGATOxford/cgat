@@ -203,7 +203,7 @@ def main(argv=None):
             "please specify a filename with sample data and an output file")
 
     filename_sample, filename_output = args[0], args[1]
-    
+
     filename_sample = os.path.abspath(filename_sample)
     filename_output = os.path.abspath(filename_output)
 

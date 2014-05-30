@@ -223,13 +223,17 @@ class CounterPeaks(Counter):
                         continue
 
                     if read.is_reverse:
-#                        rstart = read.pos + read.alen - offset
-                       # offset = 2 * shift
+                        # rstart = read.pos + read.alen - offset
+                        # offset = 2 * shift
                         try:
                             rstart = read.pos + read.alen - offset
                         except TypeError, msg:
-                            raise TypeError("Error message =", msg, "read.pos =", read.pos, "read.alen =", read.alen,
-                                            "offset =", offset, "query name =", read.qname, "length of read =", read.rlen)
+                            raise TypeError("Error message =", msg,
+                                            "read.pos =", read.pos,
+                                            "read.alen =", read.alen,
+                                            "offset =", offset,
+                                            "query name =", read.qname,
+                                            "length of read =", read.rlen)
                     else:
                         rstart = read.pos + shift
 
@@ -257,7 +261,7 @@ class CounterPeaks(Counter):
         # such that it is a valid peak in the middle
         peakcenter = start + peaks[npeaks // 2]
 
-        return CounterPeaksResult(length, nreads, avgval, 
+        return CounterPeaksResult(length, nreads, avgval,
                                   peakval, npeaks, peakcenter)
 
     def count(self, bed):
@@ -335,6 +339,7 @@ class CounterCompositionCpG(CounterCompositionNucleotides):
 
 # ------------------------------------------------------------------------
 class ClassifierChIPSeq(gtf2table.Classifier):
+
     """classify ChIPSeq intervals based on a reference annotation.
 
     This assumes the input is a genome annotation derived from an

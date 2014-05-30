@@ -359,7 +359,7 @@ def getSpeciesTreeMergers(tree, full_map_strain2species, options):
         for species in mapped_species:
             if species_at_node[node_id][species] <= 1 or \
                     species_at_node[node_id][species] != total:
-                        continue
+                continue
 
             # merge species
             children = tree.get_leaves(node_id)

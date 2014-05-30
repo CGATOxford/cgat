@@ -1498,7 +1498,7 @@ class CounterReadPairCounts(CounterReadPairCountsFull):
             sense, antisense = 6, 2
         elif self.library_type == 'fr-firststrand':
             # FR1, FR2
-            sense, antisense = 1, 5
+            sense, antisense = 5, 1
         else:
             raise NotImplementedError('unknown library type %s' %
                                       self.library_type)

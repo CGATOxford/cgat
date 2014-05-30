@@ -9,26 +9,19 @@ from SphinxReport.Tracker import *
 from SphinxReport.Utils import PARAMS as P
 from collections import OrderedDict as odict
 
-import CGAT.IOTools as IOTools
-import CGAT.Stats as Stats
-
-from SphinxReport.ResultBlock import ResultBlock, ResultBlocks
-from SphinxReport import Utils
-
-###################################################################
-###################################################################
-# parameterization
-
-EXPORTDIR = P['intervals_exportdir']
-DATADIR = P['intervals_datadir']
-DATABASE = P['intervals_backend']
-
-###########################################################################
+EXPORTDIR = P.get('motifs_exportdir',
+                  P.get('report_exportdir', "export"))
+DATADIR = P.get('motifs_datadir',
+                P.get('report_datadir', "."))
+DATABASE = P.get('motifs_backend',
+                 P.get('report_backend', "sqlite:///./csvdb"))
 
 
 class IntervalTracker(TrackerSQL):
-
     '''Define convenience tracks for plots'''
 
     def __init__(self, *args, **kwargs):
-        TrackerSQL.__init__(self, *args, backend=DATABASE, **kwargs)
+        TrackerSQL.__init__(self,
+                            *args,
+                            backend=DATABASE,
+                            **kwargs)

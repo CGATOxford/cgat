@@ -101,6 +101,7 @@ import CGAT.Experiment as E
 
 
 class ProfileGenerator(object):
+
     '''basic profile generator from samfile
     using a list of Indicator functions to
     check if a read shoud be recorded or not.
@@ -108,6 +109,7 @@ class ProfileGenerator(object):
     This generator currently assumes that all
     alignments have the same length.
     '''
+
     def __init__(self, indicators):
         self.indicators = indicators
 

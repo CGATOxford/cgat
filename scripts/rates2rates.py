@@ -83,7 +83,7 @@ def readRates(infile):
     return matrix, headers
 
 
-def main():
+def main(argv=None):
 
     parser = E.OptionParser(
         version="%prog version: $Id: rates2rates.py 2781 2009-09-10 11:33:14Z andreas $", usage=globals()["__doc__"])

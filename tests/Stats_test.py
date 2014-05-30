@@ -25,10 +25,6 @@
 import numpy
 import scipy.stats
 import unittest
-
-#import Stats_old as Stats
-#from rpy import r as R
-
 import CGAT.Stats as Stats
 from rpy2.robjects import r as R
 import rpy2.robjects as ro
@@ -66,9 +62,10 @@ class TestStats(unittest.TestCase):
             simple_ll = numpy.sum(
                 numpy.log(scipy.stats.norm.pdf(sample, loc=0.0, scale=1.0)))
 
-            a = Stats.doLogLikelihoodTest(complex_ll, complex_np,
-                                          simple_ll, simple_np,
-                                          significance_threshold=self.mSignificance)
+            a = Stats.doLogLikelihoodTest(
+                complex_ll, complex_np,
+                simple_ll, simple_np,
+                significance_threshold=self.mSignificance)
 
             if a.mPassed:
                 npassed += 1
@@ -83,13 +80,28 @@ class TestFDRRAgainstR(unittest.TestCase):
     '''test python against qvalue implementation.
     '''
 
-    mPvalues = [0.033500000000000002, 0.035099999999999999, 0.055, 0.058500000000000003, 0.039199999999999999, 0.045199999999999997, 0.017600000000000001, 0.019099999999999999,
-                0.0001, 0.0001, 0.97299999999999998, 0.99429999999999996, 0.99709999999999999, 0.0001, 0.0001, 0.98829999999999996, 0.99529999999999996, 0.0001,
-                0.0001, 0.0001, 0.00050000000000000001, 0.00059999999999999995, 0.00050000000000000001, 0.00069999999999999999, 0.40250000000000002, 0.43680000000000002,
-                0.35560000000000003, 0.33410000000000001, 0.41260000000000002, 0.3644, 0.12039999999999999, 0.0001, 0.0001, 0.0465, 0.0001, 0.0001, 0.0001, 0.0001, 0.0086,
-                0.046300000000000001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0137, 0.0137, 0.0843, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001,
-                0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001,
-                0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001]
+    mPvalues = [0.033500000000000002, 0.035099999999999999, 0.055,
+                0.058500000000000003, 0.039199999999999999,
+                0.045199999999999997, 0.017600000000000001,
+                0.019099999999999999, 0.0001, 0.0001,
+                0.97299999999999998, 0.99429999999999996,
+                0.99709999999999999, 0.0001, 0.0001,
+                0.98829999999999996, 0.99529999999999996, 0.0001,
+                0.0001, 0.0001, 0.00050000000000000001,
+                0.00059999999999999995, 0.00050000000000000001,
+                0.00069999999999999999, 0.40250000000000002,
+                0.43680000000000002, 0.35560000000000003,
+                0.33410000000000001, 0.41260000000000002, 0.3644,
+                0.12039999999999999, 0.0001, 0.0001, 0.0465, 0.0001,
+                0.0001, 0.0001, 0.0001, 0.0086, 0.046300000000000001,
+                0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0137,
+                0.0137, 0.0843, 0.0001, 0.0001, 0.0001, 0.0001,
+                0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001,
+                0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001,
+                0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001,
+                0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001,
+                0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001,
+                0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001]
 
     def checkFDR(self, pi0_method):
 
@@ -179,11 +191,12 @@ class TestFDRPythonAgainstRDataset1(unittest.TestCase):
         self.assertTrue(getRelativeError(old.mPi0, new.mPi0) < self.max_error)
 
         for pvalue, a, b in zip(self.pvalues, old.mQValues, new.mQValues):
-            self.assertTrue(getRelativeError(a, b) < self.max_error,
-                            "qvalues: relative error %f > %f (pvalue=%f, %f, %f)" %
-                            (getRelativeError(a, b),
-                             self.max_error,
-                             pvalue, a, b))
+            self.assertTrue(
+                getRelativeError(a, b) < self.max_error,
+                "qvalues: relative error %f > %f (pvalue=%f, %f, %f)" %
+                (getRelativeError(a, b),
+                 self.max_error,
+                 pvalue, a, b))
 
     def testFDR(self):
         self.checkFDR()

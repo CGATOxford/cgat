@@ -335,7 +335,7 @@ P.getParameters(
 PARAMS = P.PARAMS
 
 PARAMS_ANNOTATIONS = P.peekParameters(PARAMS["annotations_dir"],
-                                      "pipeline_annotations.py")
+                                      "pipeline_annotations.py", on_error_raise=__name__ == "__main__")
 
 ###################################################################
 ###################################################################
@@ -728,7 +728,7 @@ def mergeBackgroundWindows(infiles, outfile):
     genomefile = os.path.join(
         PARAMS["annotations_dir"], PARAMS_ANNOTATIONS['interface_contigs'])
     statement = '''
-    zcat %(infiles)s 
+    zcat %(infiles)s
     | bedtools slop -i stdin
                 -b %(calling_background_extension)i
                 -g %(genomefile)s
@@ -800,7 +800,7 @@ def predictFragmentSize(infile, outfile):
 
     Thus it is computed here from the CIGAR string if rlen is 0.
     '''
-    tagsize = BamTools.estimateTagSize(infile)
+    tagsize = BamTools.estimateTagSize(infile, multiple="mean")
 
     if BamTools.isPaired(infile):
         mode = "PE"
@@ -899,7 +899,7 @@ def getTagSize(track):
 ######################################################################
 ######################################################################
 
-@follows(mkdir("macs.dir"), normalizeBAM)
+@follows(mkdir("macs.dir"), normalizeBAM, buildFragmentSizeTable)
 @files([("%s.call.bam" % (x.asFile()),
          "macs.dir/%s.macs" % x.asFile()) for x in TRACKS])
 def callPeaksWithMACS(infile, outfile):
@@ -908,11 +908,11 @@ def callPeaksWithMACS(infile, outfile):
     output bed files are compressed and indexed.
     '''
     track = P.snip(infile, ".call.bam")
-    if BamTools.isPaired(infile):
-        E.warn("macs will not work with paired-ended data: %s skipped" %
-               infile)
-        P.touch(outfile)
-        return
+    # if BamTools.isPaired(infile):
+    #     E.warn("macs will not work with paired-ended data: %s skipped" %
+    #            infile)
+    #     P.touch(outfile)
+    #     return
     controls = getControl(Sample(track))
     controlfile = getControlFile(Sample(track), controls, "%s.call.bam")
 
@@ -1014,7 +1014,7 @@ def loadMACSSummaryFDR(infile, outfile):
 ######################################################################
 ######################################################################
 
-@follows(mkdir("macs2.dir"), normalizeBAM)
+@follows(mkdir("macs2.dir"), normalizeBAM, buildFragmentSizeTable)
 @files([("%s.call.bam" % (x.asFile()),
          "macs2.dir/%s.macs2" % x.asFile()) for x in TRACKS])
 def callPeaksWithMACS2(infile, outfile):
@@ -1089,7 +1089,7 @@ def loadMACS2SummaryFDR(infile, outfile):
 ######################################################################
 
 
-@follows(mkdir("zinba.dir"), normalizeBAM)
+@follows(mkdir("zinba.dir"), normalizeBAM, buildFragmentSizeTable)
 @files([("%s.call.bam" % (x.asFile()),
          "zinba.dir/%s.zinba" % x.asFile()) for x in TRACKS])
 def callPeaksWithZinba(infile, outfile):
@@ -1147,7 +1147,7 @@ def loadZinba(infile, outfile):
 ##                                                                  ##
 ######################################################################
 ######################################################################
-@follows(mkdir("sicer.narrow.dir"), normalizeBAM)
+@follows(mkdir("sicer.narrow.dir"), normalizeBAM, buildFragmentSizeTable)
 @files([("%s.call.bam" % (x.asFile()),
          "sicer.narrow.dir/%s.narrow.sicer" % x.asFile()) for x in TRACKS])
 def callNarrowerPeaksWithSICER(infile, outfile):
@@ -1169,7 +1169,7 @@ def callNarrowerPeaksWithSICER(infile, outfile):
 ##                                                                  ##
 ######################################################################
 ######################################################################
-@follows(mkdir("sicer.broad.dir"), normalizeBAM)
+@follows(mkdir("sicer.broad.dir"), normalizeBAM, buildFragmentSizeTable)
 @files([("%s.call.bam" % (x.asFile()),
          "sicer.broad.dir/%s.broad.sicer" % x.asFile()) for x in TRACKS])
 def callBroaderPeaksWithSICER(infile, outfile):
@@ -1231,7 +1231,7 @@ def loadSICERSummary(infile, outfile):
 ######################################################################
 
 
-@follows(mkdir("peakranger.ranger.dir/"), normalizeBAM)
+@follows(mkdir("peakranger.ranger.dir/"), normalizeBAM, buildFragmentSizeTable)
 @files([("%s.call.bam" % (x.asFile()),
          "peakranger.ranger.dir/%s.peakranger" % x.asFile()) for x in TRACKS])
 def callPeaksWithPeakRanger(infile, outfile):
@@ -1279,7 +1279,7 @@ def loadPeakRangerSummary(infile, outfile):
 ######################################################################
 
 
-@follows(mkdir("peakranger.ccat.dir/"), normalizeBAM)
+@follows(mkdir("peakranger.ccat.dir/"), normalizeBAM, buildFragmentSizeTable)
 @files([("%s.call.bam" % (x.asFile()),
          "peakranger.ccat.dir/%s.ccat" % x.asFile()) for x in TRACKS])
 def callPeaksWithPeakRangerCCAT(infile, outfile):
@@ -1417,7 +1417,7 @@ def loadBroadPeak(infile, outfile):
 ######################################################################
 
 
-@follows(mkdir("spp.dir"), normalizeBAM)
+@follows(mkdir("spp.dir"), normalizeBAM, buildFragmentSizeTable)
 @files([("%s.call.bam" % (x.asFile()),
          "spp.dir/%s.spp" % x.asFile()) for x in TRACKS])
 def callPeaksWithSPP(infile, outfile):
@@ -1516,7 +1516,7 @@ def loadSPPQualityMetrics(infiles, outfile):
 ######################################################################
 
 
-@follows(mkdir("idr.dir"), normalizeBAM)
+@follows(mkdir("idr.dir"), normalizeBAM, buildFragmentSizeTable)
 @files([("%s.call.bam" % (x.asFile()),
          "idr.dir/%s.spp" % x.asFile()) for x in TRACKS])
 def callPeaksWithSPPForIDR(infile, outfile):
@@ -1785,6 +1785,7 @@ def exportIntervalsAsBed(infile, outfiles):
             E.warn("no table %s - empty bed file output" % tablename)
             P.touch(outfile)
 
+
 ###################################################################
 ###################################################################
 ###################################################################
@@ -1959,7 +1960,10 @@ def qc():
 ###################################################################
 
 
-@follows(calling, exportIntervalsAsBed, qc)
+@follows(calling,
+         qc,
+         exportIntervalsAsBed,
+         loadFilteredExportSummary)
 def full():
     pass
 

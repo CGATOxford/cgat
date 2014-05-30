@@ -64,7 +64,7 @@ def main(argv=None):
     parser.add_option("-n", "--number", dest="number", type="int",
                       help="width of plotting window")
     parser.add_option("-c", "--colour", dest="colour", type="choice", choices=("red",
-                      "purple", "blue", "grey", "black", "pink", "green"), help="colour choices")
+                                                                               "purple", "blue", "grey", "black", "pink", "green"), help="colour choices")
     parser.add_option(
         "--side", dest="side", action="store_true", help="set to draw sideways barplot")
     parser.add_option("-m", "--marigins", dest="margins",

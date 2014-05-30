@@ -683,7 +683,7 @@ def main(argv=None):
 
     if options.output_format == "map":
         options.stdout.write("\t".join(("query_id", "sbjct_id", "sstrand", "qcoverage", "scoverage",
-                             "pid", "qlen", "slen", "qfrom", "qto", "sfrom", "sto", "blocks", "qstarts", "sstarts")) + "\n")
+                                        "pid", "qlen", "slen", "qfrom", "qto", "sfrom", "sto", "blocks", "qstarts", "sstarts")) + "\n")
     elif options.output_format == "psl":
         options.stdout.write(Blat.Match().getHeader() + "\n")
 
