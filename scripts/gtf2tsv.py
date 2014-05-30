@@ -71,7 +71,7 @@ def main(argv=None):
     main function
     '''
 
-    if sys.argv is None:
+    if not sys.argv is None:
         argv = sys.argv
 
     parser = E.OptionParser(
