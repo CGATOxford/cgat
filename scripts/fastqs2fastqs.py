@@ -51,10 +51,11 @@ Command line options
 
 '''
 
-import sys, re
+import sys
+import re
 import CGAT.IOTools as IOTools
 import CGAT.Experiment as E
-import resource
+
 
 class PatternGetter:
 
@@ -62,8 +63,8 @@ class PatternGetter:
         self.pattern = re.compile(pattern)
 
     def __call__(self, id):
-
         return self.pattern.search(id).groups()[0]
+
 
 def plain_getter(id):
     return id
@@ -97,8 +98,8 @@ def main(argv=None):
                       "to a seperate file")
 
     parser.add_option("--id-pattern-1", dest="id_pattern_1",
-                      help="If specified will use the first group from the pattern"
-                              "to determine the ID for the first read",
+                      help="If specified will use the first group from the"
+                           "pattern to determine the ID for the first read",
                       default=None)
     parser.add_option("--id-pattern-2", dest="id_pattern_2",
                       help="As above but for read 2",
@@ -137,8 +138,8 @@ def main(argv=None):
 
     if options.method == "reconcile":
 
-        #IMS: switching to no store second set of read names and only use 
-        #lazily. Since generators don't have a size must keep track
+        # IMS: switching to no store second set of read names and only use
+        # lazily. Since generators don't have a size must keep track
         id_lengths = {fn1: 0, fn2: 0}
 
         def getIds(infile, id_getter=plain_getter):
@@ -156,7 +157,8 @@ def main(argv=None):
                 else:
                     yield r
 
-        def write(outfile, infile, take, unpaired_file=None, id_getter=plain_getter):
+        def write(outfile, infile, take, unpaired_file=None,
+                  id_getter=plain_getter):
             '''filter fastq files with ids in take.'''
             aread = infile.readline
             while True:
@@ -177,16 +179,16 @@ def main(argv=None):
         E.info("reading first in pair")
         inf1 = IOTools.openFile(fn1)
         ids1 = set(getIds(inf1, id1_getter))
-        
+      
         E.info("reading second in pair")
         inf2 = IOTools.openFile(fn2)
-        #IMS: No longer keep as a set, but lazily evaluate into intersection
-        #leads to large memory saving for large inf2, particularly if
-        #inf1 is small.
+        # IMS: No longer keep as a set, but lazily evaluate into intersection
+        # leads to large memory saving for large inf2, particularly if
+        # inf1 is small.
         ids2 = getIds(inf2, id2_getter)
-        
+       
         take = ids1.intersection(ids2)
-        
+
         E.info("first pair: %i reads, second pair: %i reads, "
                "shared: %i reads" %
                (id_lengths[fn1],
@@ -203,7 +205,7 @@ def main(argv=None):
             inf = IOTools.openFile(fn1)
             E.info("writing first in pair")
             write(outf, inf, take, unpaired_filename, id1_getter)
-                
+
         with IOTools.openFile(options.output_pattern % "2", "w") as outf:
             inf = IOTools.openFile(fn2)
             E.info("writing second in pair")
