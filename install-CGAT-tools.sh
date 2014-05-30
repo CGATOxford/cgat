@@ -341,6 +341,7 @@ elif [ "$OS" == "ubuntu" -o "$OS" == "sl" ] ; then
 
    # run tests
    /usr/bin/time -o test_import.time -v nosetests -v tests/test_import.py >& test_import.out
+   /usr/bin/time -o test_style.time -v nosetests -v tests/test_style.py >& test_style.out
    /usr/bin/time -o test_scripts.time -v nosetests -v tests/test_scripts.py >& test_scripts.out ;
 
 else
