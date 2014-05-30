@@ -1438,7 +1438,7 @@ def buildTranscriptLevelReadCounts(infiles, outfile):
 
     to_cluster = True
     statements = []
-
+    job_options = "-l mem_free=4G"
     for geneset in genesets:
 
         chrom = re.match(
