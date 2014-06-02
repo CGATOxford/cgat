@@ -158,7 +158,6 @@ elif [ "$OS" == "travis" ] ; then
    echo
 
    # Install Python prerequisites
-   pip install --upgrade pip
    pip install cython
    pip install numpy
    pip install pysam
@@ -167,7 +166,34 @@ elif [ "$OS" == "travis" ] ; then
    pip install pybedtools
    pip install matplotlib
    pip install scipy
-   pip install -r https://raw.github.com/CGATOxford/cgat/master/requires.txt
+
+   # removing remote requires.txt --start
+   #pip install -r https://raw.github.com/CGATOxford/cgat/master/requires.txt
+   pip install pyparsing==1.5.7
+   pip install MySQL-python
+   pip install PyGreSQL
+   pip install PyYAML
+   pip install SphinxReport
+   pip install alignlib-lite
+   pip install drmaa
+   pip install hgapi
+   pip install matplotlib-venn
+   pip install networkx
+   pip install openpyxl
+   pip install pandas
+   pip install rdflib
+   pip install rpy2
+   pip install ruffus
+   pip install sphinx
+   pip install sphinxcontrib-programoutput
+   pip install sqlalchemy
+   pip install threadpool
+   pip install web.py
+   pip install weblogo
+   pip install xlwt
+   pip install pep8
+
+   # removing remote requires.txt --end
    pip install --upgrade setuptools
    #pip install CGAT ;
 
