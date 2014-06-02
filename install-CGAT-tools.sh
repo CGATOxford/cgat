@@ -292,7 +292,7 @@ if [ "$OS" == "travis" ] ; then
    export PYTHONPATH=$PYTHONPATH:$INIT_DIR
 
    # bx-python
-   export C_INCLUDE_PATH=/home/travis/virtualenv/python2.7/local/lib/python2.7/site-packages/numpy/core/include
+   #export C_INCLUDE_PATH=/home/travis/virtualenv/python2.7/local/lib/python2.7/site-packages/numpy/core/include
 
    # Python preparation
    python setup.py develop
@@ -380,6 +380,7 @@ python scripts/cgat_rebuild_extensions.py
 
 # rerun tests
 /usr/bin/time -o test_import.time -v nosetests -v tests/test_import.py >& test_import.out
+/usr/bin/time -o test_style.time -v nosetests -v tests/test_style.py >& test_style.out
 /usr/bin/time -o test_scripts.time -v nosetests -v tests/test_scripts.py >& test_scripts.out ;
 
 } # rerun_nosetests
