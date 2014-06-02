@@ -179,7 +179,7 @@ elif [ "$OS" == "travis" ] ; then
    pip install hgapi
    pip install matplotlib-venn
    pip install networkx
-   pip install openpyxl
+   pip install openpyxl>=1.6.1,<2.0.0
    pip install pandas
    pip install rdflib
    pip install rpy2
