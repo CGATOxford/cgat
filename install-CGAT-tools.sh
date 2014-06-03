@@ -157,16 +157,6 @@ elif [ "$OS" == "travis" ] ; then
    echo " Installing Python dependencies in travis "
    echo
 
-   # Despite the fact that travis-ci provides pip
-   # we want to have the same pip version in every installation type
-   # so we can better debug installation problems
-   wget --no-check-certificate https://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.10.1.tar.gz
-   tar xvfz virtualenv-1.10.1.tar.gz
-   rm virtualenv-1.10.1.tar.gz
-   cd virtualenv-1.10.1
-   python virtualenv.py cgat-venv
-   source cgat-venv/bin/activate
-
    # Install Python prerequisites
    pip install cython
    pip install numpy
@@ -177,16 +167,43 @@ elif [ "$OS" == "travis" ] ; then
    pip install matplotlib
    pip install scipy
    pip install -r https://raw.github.com/CGATOxford/cgat/master/requires.txt
-   pip install --upgrade setuptools
+
+   # substitute requires.txt on travis installation --start
+   #pip install -r https://raw.github.com/CGATOxford/cgat/master/requires.txt
+   pip install pyparsing==1.5.7
+   pip install MySQL-python
+   pip install PyGreSQL
+   pip install PyYAML
+   pip install SphinxReport
+   pip install alignlib-lite
+   pip install drmaa
+   pip install hgapi
+   pip install matplotlib-venn
+   pip install networkx
+   pip install openpyxl>=1.6.1,<2.0.0
+   pip install jdcal
+   pip install pandas
+   pip install rdflib
+   pip install rpy2
+   pip install ruffus
+   pip install sphinx
+   pip install sphinxcontrib-programoutput
+   pip install sqlalchemy
+   pip install threadpool
+   pip install web.py
+   pip install weblogo
+   pip install xlwt
+   pip install pep8
+
+   # substitute requires.txt on travis installation --end
+   #pip install --upgrade setuptools
    #pip install CGAT ;
 
+   # debugging travis
    echo
    echo " Listing pip packages:"
    echo 
    pip list
-
-   # come back to initial working directory
-   cd $TRAVIS_INIT_DIR
 
 else
 
@@ -229,8 +246,8 @@ echo
 if [ "$OS" == "travis" ] ; then
 
    # use travis init dir to install external tools
-   mkdir -p $TRAVIS_INIT_DIR/external-tools
-   cd $TRAVIS_INIT_DIR/external-tools
+   mkdir -p $TRAVIS_BUILD_DIR/external-tools
+   cd $TRAVIS_BUILD_DIR/external-tools
 
 elif [ "$OS" == "sl" -o "$OS" == "ubuntu" ] ; then
 
@@ -280,7 +297,7 @@ cp GCProfile_LINUX/gnuplot .
 
 
 if [ "$OS" == "travis" ] ; then
-   cd $TRAVIS_INIT_DIR;
+   cd $TRAVIS_BUILD_DIR;
 fi
 
 } # nosetests_external_deps
@@ -291,9 +308,6 @@ run_nosetests() {
 
 if [ "$OS" == "travis" ] ; then
 
-   # installation where CGAT code collection is cloned
-   INIT_DIR=`pwd`
-
    # GCProfile
    #apt-get install -y libc6-i386 libstdc++5:i386
    echo 'this is gcc version:'
@@ -303,9 +317,9 @@ if [ "$OS" == "travis" ] ; then
    nosetests_external_deps $OS
 
    # Set up other environment variables
-   #cd $TRAVIS_INIT_DIR
-   export PATH=$PATH:$TRAVIS_INIT_DIR/external-tools:$TRAVIS_INIT_DIR/external-tools/bedtools-2.18.2/bin
-   #export PYTHONPATH=$PYTHONPATH:$TRAVIS_INIT_DIR
+   #cd $TRAVIS_BUILD_DIR
+   export PATH=$PATH:$TRAVIS_BUILD_DIR/external-tools:$TRAVIS_BUILD_DIR/external-tools/bedtools-2.18.2/bin
+   #export PYTHONPATH=$PYTHONPATH:$TRAVIS_BUILD_DIR
 
    # bx-python
    #export C_INCLUDE_PATH=/home/travis/virtualenv/python2.7/local/lib/python2.7/site-packages/numpy/core/include
@@ -456,17 +470,6 @@ if [ $# -eq 0 ] ; then
    help_message
 
 fi
-
-# we need to reference cwd on travis
-TRAVIS_INIT_DIR=`pwd`
-
-echo
-echo " TRAVIS_INIT_DIR"
-echo $TRAVIS_INIT_DIR
-echo
-echo " TRAVIS_BUILD_DIR"
-echo $TRAVIS_BUILD_DIR
-echo
 
 # these variables will store the information about input parameters
 # travis execution
