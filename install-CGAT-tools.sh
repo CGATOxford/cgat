@@ -166,7 +166,6 @@ elif [ "$OS" == "travis" ] ; then
    pip install pybedtools
    pip install matplotlib
    pip install scipy
-   pip install -r https://raw.github.com/CGATOxford/cgat/master/requires.txt
 
    # substitute requires.txt on travis installation --start
    #pip install -r https://raw.github.com/CGATOxford/cgat/master/requires.txt
@@ -180,7 +179,7 @@ elif [ "$OS" == "travis" ] ; then
    pip install hgapi
    pip install matplotlib-venn
    pip install networkx
-   pip install openpyxl>=1.6.1,<2.0.0
+   pip install openpyxl==1.8.5
    pip install jdcal
    pip install pandas
    pip install rdflib
