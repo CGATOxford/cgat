@@ -326,7 +326,7 @@ if [ "$OS" == "travis" ] ; then
    # Python preparation
    cd $TRAVIS_BUILD_DIR
    python setup.py develop
-   python scripts/cgat_rebuild_extensions.py
+   #python scripts/cgat_rebuild_extensions.py
 
    # run nosetests
    if [ "$TEST_IMPORT" == "1" ] ; then
