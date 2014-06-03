@@ -157,6 +157,16 @@ elif [ "$OS" == "travis" ] ; then
    echo " Installing Python dependencies in travis "
    echo
 
+   # Despite the fact that travis-ci provides pip
+   # we want to have the same pip version in every installation type
+   # so we can better debug installation problems
+   wget --no-check-certificate https://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.10.1.tar.gz
+   tar xvfz virtualenv-1.10.1.tar.gz
+   rm virtualenv-1.10.1.tar.gz
+   cd virtualenv-1.10.1
+   python virtualenv.py cgat-venv
+   source cgat-venv/bin/activate
+
    # Install Python prerequisites
    pip install cython
    pip install numpy
@@ -166,34 +176,7 @@ elif [ "$OS" == "travis" ] ; then
    pip install pybedtools
    pip install matplotlib
    pip install scipy
-
-   # removing remote requires.txt --start
-   #pip install -r https://raw.github.com/CGATOxford/cgat/master/requires.txt
-   pip install pyparsing==1.5.7
-   pip install MySQL-python
-   pip install PyGreSQL
-   pip install PyYAML
-   pip install SphinxReport
-   pip install alignlib-lite
-   pip install drmaa
-   pip install hgapi
-   pip install matplotlib-venn
-   pip install networkx
-   pip install openpyxl>=1.6.1,<2.0.0
-   pip install pandas
-   pip install rdflib
-   pip install rpy2
-   pip install ruffus
-   pip install sphinx
-   pip install sphinxcontrib-programoutput
-   pip install sqlalchemy
-   pip install threadpool
-   pip install web.py
-   pip install weblogo
-   pip install xlwt
-   pip install pep8
-
-   # removing remote requires.txt --end
+   pip install -r https://raw.github.com/CGATOxford/cgat/master/requires.txt
    pip install --upgrade setuptools
    #pip install CGAT ;
 
@@ -201,6 +184,9 @@ elif [ "$OS" == "travis" ] ; then
    echo " Listing pip packages:"
    echo 
    pip list
+
+   # come back to initial working directory
+   cd $TRAVIS_INIT_DIR
 
 else
 
@@ -242,11 +228,9 @@ echo
 
 if [ "$OS" == "travis" ] ; then
 
-   # installation directory in travis
-   INIT_DIR_DEPS=`pwd`
-
-   mkdir -p $INIT_DIR_DEPS/external-tools
-   cd $INIT_DIR_DEPS/external-tools
+   # use travis init dir to install external tools
+   mkdir -p $TRAVIS_INIT_DIR/external-tools
+   cd $TRAVIS_INIT_DIR/external-tools
 
 elif [ "$OS" == "sl" -o "$OS" == "ubuntu" ] ; then
 
@@ -296,7 +280,7 @@ cp GCProfile_LINUX/gnuplot .
 
 
 if [ "$OS" == "travis" ] ; then
-   cd $INIT_DIR_DEPS;
+   cd $TRAVIS_INIT_DIR;
 fi
 
 } # nosetests_external_deps
@@ -319,14 +303,15 @@ if [ "$OS" == "travis" ] ; then
    nosetests_external_deps $OS
 
    # Set up other environment variables
-   cd $INIT_DIR
-   export PATH=$PATH:$INIT_DIR/external-tools:$INIT_DIR/external-tools/bedtools-2.18.2/bin
-   export PYTHONPATH=$PYTHONPATH:$INIT_DIR
+   #cd $TRAVIS_INIT_DIR
+   export PATH=$PATH:$TRAVIS_INIT_DIR/external-tools:$TRAVIS_INIT_DIR/external-tools/bedtools-2.18.2/bin
+   #export PYTHONPATH=$PYTHONPATH:$TRAVIS_INIT_DIR
 
    # bx-python
    #export C_INCLUDE_PATH=/home/travis/virtualenv/python2.7/local/lib/python2.7/site-packages/numpy/core/include
 
    # Python preparation
+   cd $TRAVIS_BUILD_DIR
    python setup.py develop
    python scripts/cgat_rebuild_extensions.py
 
@@ -472,9 +457,20 @@ if [ $# -eq 0 ] ; then
 
 fi
 
+# we need to reference cwd on travis
+TRAVIS_INIT_DIR=`pwd`
+
+echo
+echo " TRAVIS_INIT_DIR"
+echo $TRAVIS_INIT_DIR
+echo
+echo " TRAVIS_BUILD_DIR"
+echo $TRAVIS_BUILD_DIR
+echo
+
 # these variables will store the information about input parameters
 # travis execution
-TRAVIS=
+TRAVIS_INSTALL=
 # install operating system's dependencies
 OS_PKGS=
 # install Python dependencies
@@ -486,7 +482,7 @@ NT_RUN=
 # rerun nosetests
 NT_RERUN=
 # variable to actually store the input parameters
-INPUT_ARGS=$(getopt -n "$0" -o ht1234g:c: --long "help,
+INPUT_ARGS=$(getopt -n "$0" -o ht12345g:c: --long "help,
                                                   travis,
                                                   install-os-packages,
                                                   install-python-deps,
@@ -507,7 +503,7 @@ do
 
   elif [ "$1" == "-t" -o "$1" == "--travis" ] ; then
       
-      TRAVIS=1
+      TRAVIS_INSTALL=1
       shift ;
 
   elif [ "$1" == "-1" -o "$1" == "--install-os-packages" ] ; then
@@ -555,7 +551,7 @@ do
 done # while-loop
 
 # perform actions according to the input parameters processed
-if [ "$TRAVIS" == "1" ] ; then
+if [ "$TRAVIS_INSTALL" == "1" ] ; then
 
   OS="travis"
   install_os_packages
