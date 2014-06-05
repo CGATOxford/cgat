@@ -455,7 +455,7 @@ def variantAnnotator(infiles, outfile):
     infile, bamlist, effFile = infiles
     dbsnp = PARAMS["gatk_dbsnp"]
     statement = '''GenomeAnalysisTK -T VariantAnnotator -R %%(bwa_index_dir)s/%%(genome)s.fa -I %(bamlist)s -A SnpEff --snpEffFile %(effFile)s -o %(outfile)s
-                   --variant %(infile)s -L %(infile)s --dbsnp %(dbsnp)s -A HaplotypeScore -A MappingQualityRankSumTest -A ReadPosRankSumTest -A AlleleBalanceBySample''' % locals()
+                       --variant %(infile)s -L %(infile)s --dbsnp %(dbsnp)s -A HaplotypeScore -A MappingQualityRankSumTest -A ReadPosRankSumTest -A AlleleBalanceBySample''' % locals()
     P.run()
 
 #########################################################################
@@ -562,6 +562,49 @@ def loadVariantAnnotation(infile, outfile):
     tablename = P.toTable(outfile)
     statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py --table %(tablename)s --retry --ignore-empty > %(outfile)s''' % locals()
     P.run()
+
+#########################################################################
+
+
+@transform(annotateVariantsSNPeff, regex(r"variants/(\S+).haplotypeCaller.snpeff.vcf"), r"variants/\1.haplotypeCaller.snpeff.table")
+def snpeffToTable(infile, outfile):
+    '''Converts snpeff file to table as this supplies all the annotations for a given variant - used for reports'''
+    to_cluster = USECLUSTER
+    statement = '''GenomeAnalysisTK -T VariantsToTable -R %%(bwa_index_dir)s/%%(genome)s.fa -V %(infile)s --showFiltered --allowMissingData -F CHROM -F POS -F ID -F REF -F ALT -F EFF -o %(outfile)s''' % locals()
+    P.run()
+
+#########################################################################
+
+
+@transform(snpeffToTable, regex(r"variants/(\S+).table"), r"variants/\1.table.load")
+def loadSnpeffAnnotation(infile, outfile):
+    '''Load snpeff annotations into database'''
+    scriptsdir = PARAMS["general_scriptsdir"]
+    tablename = P.toTable(outfile)
+    statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py --table %(tablename)s --retry --ignore-empty > %(outfile)s''' % locals()
+    P.run()
+
+#########################################################################
+
+# the following function is not working - not sure why yet
+@follows(loadVariantAnnotation, loadSnpeffAnnotation)
+@transform(loadSnpeffAnnotation, regex(r"variants/(\S+).haplotypeCaller.snpeff.table.load"), r"variants/\1.snpeff_snpsift.table.load")
+def createAnnotationsTable(infile, outfile):
+    '''Create new annotations table from snpeff and snpsift tables'''
+    dbh = sqlite3.connect(PARAMS["database"])
+    table = P.toTable(outfile)
+    track = P.snip(os.path.basename(outfile), ".snpeff_snpsift.table.load")
+    setrack = track.replace('.', '_')
+    if PARAMS["annotation_add_genes_of_interest"] == 1:
+        sstrack = setrack+'_genes'
+    else:
+        sstrack = setrack+'haplotypeCaller_snpsift'
+    cc = dbh.cursor()
+    cc.execute( """DROP TABLE IF EXISTS %(table)s """ % locals() )
+    cc.execute( """CREATE TABLE %(table)s AS SELECT * FROM %(sstrack)s_table INNER JOIN %(setrack)s_haplotypeCaller_snpeff_table ON %(sstrack)s_table.CHROM = %(setrack)s_haplotypeCaller_snpeff_table.CHROM AND %(sstrack)s_table.POS = %(setrack)s_haplotypeCaller_snpeff_table.POS AND %(sstrack)s_table.REF = %(setrack)s_haplotypeCaller_snpeff_table.REF AND %(sstrack)s_table.ALT = %(setrack)s_haplotypeCaller_snpeff_table.ALT""" % locals() )
+    cc.close()
+    P.touch(outfile)
+
 
 #########################################################################
 #########################################################################
@@ -723,11 +766,15 @@ def recessiveVariants(infiles, outfile):
                               'family', 'sample', 'father', 'mother', 'sex', 'status'])
     affecteds = []
     parents = []
+    unaffecteds = []
     for row in pedigree:
         if row['status'] == '2':
             affecteds += [row['sample']]
             parents += [row['father'], row['mother']]
+        elif row['status'] == '1' and row['sample'] not in parents:
+            unaffecteds += [row['sample']]
     affecteds_exp = '").getPL().2==0&&vc.getGenotype("'.join(affecteds)
+    unaffecteds_exp = '").getPL().2!=0&&vc.getGenotype("'.join(unaffecteds)
     if len(parents) == 0:
         parents_exp = ''
     else:
@@ -736,7 +783,7 @@ def recessiveVariants(infiles, outfile):
             '").getPL().1==0'
     # need a way of specifying that other unaffecteds eg. sibs can't be
     # homozygous for alt allele
-    statement = '''GenomeAnalysisTK -T SelectVariants -R %%(bwa_index_dir)s/%%(genome)s.fa --variant %(infile)s -o %(outfile)s -select 'vc.getGenotype("%(affecteds_exp)s").getPL().2==0%(parents_exp)s&&(SNPEFF_IMPACT=="HIGH"||SNPEFF_IMPACT=="MODERATE")' ;''' % locals(
+    statement = '''GenomeAnalysisTK -T SelectVariants -R %%(bwa_index_dir)s/%%(genome)s.fa --variant %(infile)s -o %(outfile)s -select 'vc.getGenotype("%(affecteds_exp)s").getPL().2==0&&vc.getGenotype("%(unaffecteds_exp)s").getPL().2!=0%(parents_exp)s&&(SNPEFF_IMPACT=="HIGH"||SNPEFF_IMPACT=="MODERATE")' ;''' % locals(
     )
     P.run()
 
@@ -872,7 +919,10 @@ def genesOfInterest():
 
 
 @follows(vcfToTable,
-         loadVariantAnnotation)
+         loadVariantAnnotation,
+         snpeffToTable,
+         loadSnpeffAnnotation,
+         createAnnotationsTable)
 def tabulation():
     pass
 
