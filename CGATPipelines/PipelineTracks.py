@@ -401,7 +401,9 @@ class Sample3(Sample):
 
 class Sample4(Sample):
 
-    '''a sample/track with four attributes: experiment, tissue, condition and replicate.
+    '''a sample/track with four attributes: experiment, tissue, condition
+    and replicate.
+
     '''
     attributes = ("experiment", "tissue", "condition", "replicate")
 
@@ -427,9 +429,38 @@ class AutoSample(Sample):
         if self.attributes is None:
             self.attributes = tuple(["attribute%i" % x for x in range(nparts)])
         else:
-            self.attributes = self.attributes + tuple(["attribute%i" % x
-                                                       for x in range(nparts - len(self.attributes))])
+            self.attributes = self.attributes + tuple(
+                ["attribute%i" % x
+                 for x in range(nparts - len(self.attributes))])
         Sample.__init__(self, filename=filename, tablename=tablename)
+
+    @property
+    def replicate(self):
+        '''return a replicate for this track.
+
+        Return 'replicate' attribute if it is defined, otherwise
+        looks for a field with the pattern "R\d+" and returns this.
+        '''
+        if 'replicate' in self.attributes:
+            return object.__getattribute__(self, "data")['replicate']
+        else:
+            for x in self.data.values():
+                if re.match("R\d+", x):
+                    return x
+            else:
+                raise KeyError("can't find replicate in %s" % str(self))
+
+    @replicate.setter
+    def replicate(self, value):
+        if 'replicate' in self.attributes:
+            object.__getattribute__(self, "data")['replicate'] = value
+        else:
+            for x, y in self.data.items():
+                if re.match("R\d+", y):
+                    object.__getattribute__(self, "data")[x] = value
+                    return
+            else:
+                raise KeyError("can't find replicate in %s" % str(self))
 
 
 class Aggregate:

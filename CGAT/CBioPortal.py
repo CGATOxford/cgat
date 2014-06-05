@@ -1,13 +1,10 @@
-
-
 ##########################################################################
 #
 # This module provides a class for interacting with this the Sloan-Kettering
 # Cancer Bioinfomatics Portal Web serice. Can also be run from the command line
 #
 ###########################################################################
-'''
-CBioPortal.py - Interface with the Sloan-Kettering cBioPortal webservice
+'''CBioPortal.py - Interface with the Sloan-Kettering cBioPortal webservice
 ========================================================================
 
 :Author: Ian Sudbery
@@ -15,25 +12,29 @@ CBioPortal.py - Interface with the Sloan-Kettering cBioPortal webservice
 :Date: |today|
 :Tags: Python
 
-The Sloan Kettering cBioPortal webservice provides access to a database of
-results of genomics experiments on various cancers. The database is organised
-into studies, each study contains a number of case lists, where each list contains
-the ids of a set of patients, and genetic profiles, each of which represents an assay
-conducted on the patients in the case list as part of the study.
+The Sloan Kettering cBioPortal webservice provides access to a
+database of results of genomics experiments on various cancers. The
+database is organised into studies, each study contains a number of
+case lists, where each list contains the ids of a set of patients, and
+genetic profiles, each of which represents an assay conducted on the
+patients in the case list as part of the study.
 
-The main class here is the CBioPortal class representing a connection to the cBioPortal
-Database. Query's are represented as methods of the class. Study ids or names or case lists
-can be provided to the constructor to the object, via the setDefaultStudy and 
-setDefaultCaseList methods or to the indevidual query methods. Where ever possible
-the validity of parameters is checked *before* the query is executed.
+The main class here is the CBioPortal class representing a connection
+to the cBioPortal Database. Query's are represented as methods of the
+class. Study ids or names or case lists can be provided to the
+constructor to the object, via the setDefaultStudy and
+setDefaultCaseList methods or to the indevidual query methods. Where
+ever possible the validity of parameters is checked *before* the query
+is executed.
 
-Whenever a query requires a genetic  profile id or a list of such ids, but none are
-given, the list of all profiles for which the show_in_analysis flag is set will be
-used. 
+Whenever a query requires a genetic profile id or a list of such ids,
+but none are given, the list of all profiles for which the
+show_in_analysis flag is set will be used.
 
-All of the commands provided in the webservice are implemented here and as far as 
-possible the name, syntax and paramter names of the query are identical to the
-raw commands to the webservice. These queries are:
+All of the commands provided in the webservice are implemented here
+and as far as possible the name, syntax and paramter names of the
+query are identical to the raw commands to the webservice. These
+queries are:
 
 * getCancerStudies,
 * getCaseLists,
@@ -45,7 +46,8 @@ raw commands to the webservice. These queries are:
 * getLink,
 * getOncoprintHTML.
 
-In addition two new queries are implememented that are not part of the webservice:
+In addition two new queries are implememented that are not part of the
+webservice:
 
 * getPercentAltered and
 * getTotalAltered
@@ -80,12 +82,12 @@ combined transparently.
 A commandline interface is provided for convenience, syntax::
 
    python CBioPortal.py [options] command(s)
+
 '''
 import urllib2
 import re
 import optparse
 import sys
-import os
 from CGAT import IOTools as IOTools
 from collections import OrderedDict as odict
 from CGAT import Experiment as E
@@ -383,8 +385,11 @@ class CBioPortal():
             start_position: start position of mutation.
             end_position: end position of mutation.
 
-       If a default study is set then a check will be performed to set if the supplied case id is from
-       the specified study. The study can be over written using the study and study_name parameters '''
+       If a default study is set then a check will be performed to set
+       if the supplied case id is from the specified study. The study
+       can be over written using the study and study_name parameters
+
+        '''
 
         study_id = self._getStudyId(study, study_name)
 
@@ -396,15 +401,16 @@ class CBioPortal():
             else:
                 profiles = self.profiles
 
-            if not genetic_profile_id in proiles:
+            if genetic_profile_id not in proiles:
                 raise ValueError(
                     "%s not a valid genetic profile for study %s" % (genetic_profile_id, gene_id))
         genetic_profile_id = ",".join(genetic_profile_id)
         gene_list = ",".join(gene_list)
-        mutation_data = self._executeQuery(command="getMutationData",
-                                           args=dict({"case_set_id": case_set_id,
-                                                      "genetic_profile_id": genetic_profile_id,
-                                                   "gene_list": gene_list}))
+        mutation_data = self._executeQuery(
+            command="getMutationData",
+            args=dict({"case_set_id": case_set_id,
+                       "genetic_profile_id": genetic_profile_id,
+                       "gene_list": gene_list}))
         return mutation_data
 
 ##########################################################################
@@ -543,7 +549,7 @@ class CBioPortal():
         study = self._getStudyId(study, study_name)
         if not study:
             raise ValueError("Study must be specified")
-        if not report in ["full", "oncoprint_html"]:
+        if report not in ["full", "oncoprint_html"]:
             raise ValueError("%s is not a valid report" % report)
 
         url = "/".join(self.url.split("/")[:-1])
@@ -606,7 +612,7 @@ class CBioPortal():
                 else:
                     case_lists = [x['case_list_id'] for x in self.cases]
 
-                if not case_set_id in case_lists:
+                if case_set_id not in case_lists:
                     raise ValueError(
                         "%s is not a valid case list for study %s" % (case_set_id, study_id))
             return case_set_id

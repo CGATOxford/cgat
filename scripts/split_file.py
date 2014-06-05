@@ -276,7 +276,8 @@ def main(argv=None):
     if param_loglevel >= 1:
         sys.stdout.write("# ninput=%i, noutput=%i, nfound=%i, nnotfound=%i, nfiles=%i\n" % (ninput,
                                                                                             noutput,
-                                                                                            len(found),
+                                                                                            len(
+                                                                                                found),
                                                                                             len(set(mymap).difference(
                                                                                                 found)),
                                                                                             len(filenames)))

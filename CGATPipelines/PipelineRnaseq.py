@@ -37,6 +37,7 @@ import collections
 
 import numpy
 import CGAT.GTF as GTF
+import CGAT.BamTools as BamTools
 import CGAT.IOTools as IOTools
 from rpy2.robjects import r as R
 import rpy2.robjects as ro
@@ -172,7 +173,7 @@ def buildUTRExtension(infile, outfile):
         parts = os.path.basename(filename).split(".")
 
         data = R(
-            '''data = read.table( gzfile( "%(filename)s"), header=TRUE, fill=TRUE, row.names=1)''' % locals() )
+            '''data = read.table( gzfile( "%(filename)s"), header=TRUE, fill=TRUE, row.names=1)''' % locals())
 
         ##########################################
         ##########################################
@@ -182,16 +183,16 @@ def buildUTRExtension(infile, outfile):
         # take only those with a 'complete' territory
         R('''d = data[-which( apply( data,1,function(x)any(is.na(x)))),]''')
         # save UTR
-        R('''utrs = d$utr''' )
+        R('''utrs = d$utr''')
         # remove length and utr column
         R('''d = d[-c(1,2)]''')
         # remove those which are completely empty, logtransform or scale data
         # and export
         R('''lraw = log10( d[-which( apply(d,1,function(x)all(x==0))),] + 1 )''')
 
-        utrs = R('''utrs = utrs[-which( apply(d,1,function(x)all(x==0)))]''' )
+        utrs = R('''utrs = utrs[-which( apply(d,1,function(x)all(x==0)))]''')
         scaled = R(
-            '''lscaled = t(scale(t(lraw), center=FALSE, scale=apply(lraw,1,max) ))''' )
+            '''lscaled = t(scale(t(lraw), center=FALSE, scale=apply(lraw,1,max)))''')
         exons = R('''lraw[,1]''')
 
         #######################################################
@@ -256,14 +257,14 @@ def buildUTRExtension(infile, outfile):
                    data[data == 0] = data[data == 0] + 0.001
                    data[data == 1] = data[data == 1] - 0.001
                    f = fitdistr( data, dbeta, list( shape1=0.5, shape2=0.5 ) )
-                   return (f) }''' )
+                   return (f) }''')
 
         fit_within_utr = R(
-            '''fit_within_utr = suppressMessages(doFit( within_utr))''' )
+            '''fit_within_utr = suppressMessages(doFit( within_utr))''')
         fit_outside_utr = R(
-            '''fit_outside_utr = suppressMessages(doFit( outside_utr))''' )
+            '''fit_outside_utr = suppressMessages(doFit( outside_utr))''')
         fit_other = R(
-            '''fit_otherTranscript = suppressMessages(doFit( otherTranscript))''' )
+            '''fit_otherTranscript = suppressMessages(doFit( otherTranscript))''')
 
         within_a, within_b = list(fit_within_utr.rx("estimate"))[0]
         outside_a, outside_b = list(fit_outside_utr.rx("estimate"))[0]
@@ -276,22 +277,19 @@ def buildUTRExtension(infile, outfile):
         outfilename = os.path.join(outdir, fn)
         R.png(outfilename, height=1000, width=1000)
 
-        R( '''par(mfrow=c(3,1))''' )
-        R( '''x=seq(0,1,0.02)''')
-        R( '''hist( within_utr, 50, col=rgb( 0,0,1,0.2) )''' )
-        R( '''par(new=TRUE)''')
-        R(
-            '''plot( x, dbeta( x, fit_within_utr$estimate['shape1'], fit_within_utr$estimate['shape2']), type='l', col='blue')''')
+        R('''par(mfrow=c(3,1))''')
+        R('''x=seq(0,1,0.02)''')
+        R('''hist( within_utr, 50, col=rgb( 0,0,1,0.2) )''')
+        R('''par(new=TRUE)''')
+        R('''plot( x, dbeta( x, fit_within_utr$estimate['shape1'], fit_within_utr$estimate['shape2']), type='l', col='blue')''')
 
-        R( '''hist( outside_utr, 50, col=rgb( 1,0,0,0.2 ) )''' )
-        R( '''par(new=TRUE)''')
-        R(
-            '''plot( x, dbeta( x, fit_outside_utr$estimate['shape1'], fit_outside_utr$estimate['shape2']), type='l', col='red')''')
+        R('''hist( outside_utr, 50, col=rgb( 1,0,0,0.2 ) )''')
+        R('''par(new=TRUE)''')
+        R('''plot( x, dbeta( x, fit_outside_utr$estimate['shape1'], fit_outside_utr$estimate['shape2']), type='l', col='red')''')
 
-        R( '''hist( otherTranscript, 50, col=rgb( 0,1,0,0.2 ) )''' )
-        R( '''par(new=TRUE)''')
-        R(
-            '''plot( x, dbeta( x, fit_otherTranscript$estimate['shape1'], fit_otherTranscript$estimate['shape2']), type='l', col='green')''')
+        R('''hist( otherTranscript, 50, col=rgb( 0,1,0,0.2 ) )''')
+        R('''par(new=TRUE)''')
+        R('''plot( x, dbeta( x, fit_otherTranscript$estimate['shape1'], fit_otherTranscript$estimate['shape2']), type='l', col='green')''')
         R['dev.off']()
 
         #####################################################
@@ -307,7 +305,7 @@ def buildUTRExtension(infile, outfile):
                                 shape2=c(fit_within_utr$estimate['shape2'],
                                          fit_outside_utr$estimate['shape2'],
                                          fit_otherTranscript$estimate['shape2'])) ''')
-        R('''hmm = dthmm(NULL, transitions, c(1,0,0), "beta", betaparams )''' )
+        R('''hmm = dthmm(NULL, transitions, c(1,0,0), "beta", betaparams )''')
 
         E.info("fitting starts")
         #####################################################
@@ -340,9 +338,9 @@ def buildUTRExtension(infile, outfile):
                     (old_utr, None, None, "notexpressed"))
                 continue
 
-            R('''obs = data[%i,][-c(1,2)]''' % (idx + 1) )
+            R('''obs = data[%i,][-c(1,2)]''' % (idx + 1))
             # remove na
-            obs = R('''obs = obs[!is.na(obs)]''' )
+            obs = R('''obs = obs[!is.na(obs)]''')
             if len(obs) <= 1 or max(obs) == 0:
                 new_utrs[gene_id] = Utr._make(
                     (old_utr, None, None, "no observations"))
@@ -493,7 +491,7 @@ def plotGeneLevelReadExtension(infile, outfile):
         parts = os.path.basename(filename).split(".")
 
         data = R(
-            '''data = read.table( gzfile( "%(filename)s"), header=TRUE, fill=TRUE, row.names=1)''' % locals() )
+            '''data = read.table( gzfile( "%(filename)s"), header=TRUE, fill=TRUE, row.names=1)''' % locals())
 
         ##########################################
         ##########################################
@@ -503,16 +501,16 @@ def plotGeneLevelReadExtension(infile, outfile):
         # take only those with a 'complete' territory
         R('''d = data[-which( apply( data,1,function(x)any(is.na(x)))),]''')
         # save UTR
-        R('''utrs = d$utr''' )
+        R('''utrs = d$utr''')
         # remove length and utr column
         R('''d = d[-c(1,2)]''')
         # remove those which are completely empty, logtransform or scale data
         # and export
         R('''lraw = log10( d[-which( apply(d,1,function(x)all(x==0))),] + 1 )''')
 
-        utrs = R('''utrs = utrs[-which( apply(d,1,function(x)all(x==0)))]''' )
+        utrs = R('''utrs = utrs[-which( apply(d,1,function(x)all(x==0)))]''')
         scaled = R(
-            '''lscaled = t(scale(t(lraw), center=FALSE, scale=apply(lraw,1,max) ))''' )
+            '''lscaled = t(scale(t(lraw), center=FALSE, scale=apply(lraw,1,max) ))''')
         exons = R('''lraw[,1]''')
 
         if len(utrs) == 0:
@@ -541,7 +539,7 @@ def plotGeneLevelReadExtension(infile, outfile):
         outfilename = os.path.join(outdir, fn)
 
         R.png(outfilename, height=2000, width=1000)
-        R('''myplot( lraw, utrs )''' )
+        R('''myplot( lraw, utrs )''')
         R['dev.off']()
 
         # plot scaled data
@@ -549,7 +547,7 @@ def plotGeneLevelReadExtension(infile, outfile):
         outfilename = os.path.join(outdir, fn)
 
         R.png(outfilename, height=2000, width=1000)
-        R('''myplot( lscaled, utrs )''' )
+        R('''myplot( lscaled, utrs )''')
         R['dev.off']()
 
     P.touch(outfile)
@@ -611,7 +609,7 @@ def filterAndMergeGTF(infile, outfile, remove_genes, merge=False):
     outf.close()
 
     # close-by exons need to be merged, otherwise
-     # cuffdiff fails for those on "." strand
+    # cuffdiff fails for those on "." strand
 
     if merge:
         statement = '''
@@ -656,7 +654,6 @@ def runCufflinks(infiles, outfile):
     '''
 
     gtffile, bamfile = infiles
-    to_cluster = True
 
     job_options = "-pe dedicated %i -R y" % PARAMS["cufflinks_threads"]
 
@@ -673,15 +670,22 @@ def runCufflinks(infiles, outfile):
     # note: cufflinks adds \0 bytes to gtf file - replace with '.'
     # increase max-bundle-length to 4.5Mb due to Galnt-2 in mm9 with a 4.3Mb
     # intron.
-    statement = '''mkdir %(tmpfilename)s; 
-    cd %(tmpfilename)s; 
-    cufflinks --label %(track)s      
+
+    # AH: removed log messages about BAM record error
+    # These cause logfiles to grow several Gigs and are
+    # frequent for BAM files not created by tophat.
+    # Error is:
+    # BAM record error: found spliced alignment without XS attribute
+    statement = '''mkdir %(tmpfilename)s;
+    cd %(tmpfilename)s;
+    cufflinks --label %(track)s
               --GTF <(gunzip < %(gtffile)s)
               --num-threads %(cufflinks_threads)i
               --frag-bias-correct %(bowtie_index_dir)s/%(genome)s.fa
               --library-type %(cufflinks_library_type)s
               %(cufflinks_options)s
-              %(bamfile)s 
+              %(bamfile)s
+    | grep -v 'BAM record error'
     >& %(outfile)s;
     perl -p -e "s/\\0/./g" < transcripts.gtf | gzip > %(outfile)s.gtf.gz;
     gzip < isoforms.fpkm_tracking > %(outfile)s.fpkm_tracking.gz;
@@ -716,3 +720,67 @@ def loadCufflinks(infile, outfile):
            "--rename-column=tracking_id:transcript_id")
 
     P.touch(outfile)
+
+
+def runFeatureCounts(annotations_file,
+                     bamfile,
+                     outfile,
+                     nthreads=4,
+                     strand=2,
+                     options=""):
+    '''run feature counts on *annotations_file* with
+    *bam_file*.
+
+    If the bam-file is paired, paired-end counting
+    is enabled and the bam file automatically sorted.
+    '''
+
+    # featureCounts cannot handle gzipped in or out files
+    outfile = P.snip(outfile, ".gz")
+    tmpdir = P.getTempDir()
+    annotations_tmp = os.path.join(tmpdir,
+                                   'geneset.gtf')
+    bam_tmp = os.path.join(tmpdir,
+                           bamfile)
+
+    # -p -B specifies count fragments rather than reads, and both
+    # reads must map to the feature
+    # for legacy reasons look at feature_counts_paired
+    if BamTools.isPaired(bamfile):
+        # select paired end mode, additional options
+        paired_options = "-p -B"
+        # remove .bam extension
+        bam_prefix = P.snip(bam_tmp, ".bam")
+        # sort by read name
+        paired_processing = \
+            """samtools 
+                sort -@ %(nthreads)i -n %(bamfile)s %(bam_prefix)s; 
+            checkpoint; """ % locals()
+        bamfile = bam_tmp 
+    else:
+        paired_options = ""
+        paired_processing = ""
+
+    job_options = "-pe dedicated %i" % nthreads
+
+    # AH: what is the -b option doing?
+    statement = '''mkdir %(tmpdir)s;
+                   zcat %(annotations_file)s > %(annotations_tmp)s;
+                   checkpoint;
+                   %(paired_processing)s
+                   featureCounts %(options)s
+                                 -T %(nthreads)i
+                                 -s %(strand)s
+                                 -b
+                                 -a %(annotations_tmp)s
+                                 %(paired_options)s
+                                 -o %(outfile)s
+                                 %(bamfile)s
+                    >& %(outfile)s.log;
+                    checkpoint;
+                    gzip -f %(outfile)s;
+                    checkpoint;
+                    rm -rf %(tmpdir)s
+    '''
+
+    P.run()

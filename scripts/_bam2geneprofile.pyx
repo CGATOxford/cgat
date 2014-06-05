@@ -127,6 +127,9 @@ class RangeCounterBAM(RangeCounter):
 
                 for read in samfile.fetch( contig, start, end ):
                     rstart = max( start, read.pos ) - start + current_offset
+                    # skip unmapped reads that are assigend a position.
+                    if read.aend is None:
+                        continue
                     rend = min( end, read.aend) - start + current_offset
                     for i from rstart <= i < rend: counts[i] += 1
 
@@ -524,7 +527,7 @@ class IntervalsCounter:
         '''add interval lengths to this counter.'''
 
         for x, interv in enumerate(lengths):
-            self.lengths[x].append( sum( [x[1]-x[0] for x in interv] ) )
+            self.lengths[x].append(sum( [x[1]-x[0] for x in interv]))
 
     def aggregate( self, *counts ):
 
@@ -533,9 +536,9 @@ class IntervalsCounter:
 
         # normalization across all regions
         if self.normalization == "total-max":
-            norm = float(max( [max(c) for c in counts if len(c) > 0] ))
+            norm = float(max([max(c) for c in counts if len(c) > 0]))
         elif self.normalization == "total-sum":
-            norm = float(sum( [sum(c) for c in counts ] ))
+            norm = float(sum([sum(c) for c in counts] ))
         else:
             norm = 0
 
@@ -543,7 +546,8 @@ class IntervalsCounter:
             agg, c = xx
             self.counts[x] += 1
 
-            if len(c) == 0: continue
+            if len(c) == 0:
+                continue
             
             if norm > 0:
                 # apply uniform normalization
@@ -1410,11 +1414,11 @@ def countFromGTF( counters,
     counts = [0] * len(counters)
 
     E.info("starting counting" )
-
+    names = []
     for iteration, gtf in enumerate(gtf_iterator):
         name = gtf[0].transcript_id
         E.debug( "processing %s" % (name))
-
+        names.append(names)
         gtf.sort( key = lambda x: x.start )
         c.input += 1
         for x, counter in enumerate(counters):
@@ -1425,7 +1429,7 @@ def countFromGTF( counters,
             E.debug( "iteration %i: counts=%s" % (iteration, ",".join( map( str, counters) ) ))
 
     E.info( "counts: %s: %s" % (str(c), ",".join( map(str,counts)))) 
-    return
+    return names
 
 
 def countFromCounts( counters,

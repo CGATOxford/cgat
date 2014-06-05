@@ -19,7 +19,8 @@ for expressed genes, isoforms, etc are shown
    :layout: column-2
    :width: 300
 
-   Distribution of FPKM values
+   Distribution of condidence intervals as estimated by cufflinks.
+   The confidence interval is defined as (CI_high - CI_lo) / fpkm / 2.
 
 .. report:: Expression.ExpressionFPKMConfidence
    :render: table

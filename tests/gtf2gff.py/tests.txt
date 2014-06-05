@@ -1,0 +1,43 @@
+# Temporary file in which to store cmdline statements used to create test files. 
+
+methods
++++++++
+
+--genes # note... using sort with this option causes an AssertionError because GTF.py strict=True is not met
+zcat hg19.chr19.gtf.gz | python ../../scripts/gtf2gff.py --method=genes --sort --genome-file=../data/hg19.chr19 > genes.gff
+
+--territories
+zcat hg19.chr19_merge_transcripts.gtf.gz | python ../../scripts/gtf2gff.py --method=territories --sort --genome-file=../data/hg19.chr19 > territories.gff
+
+--tss-territories
+zcat hg19.chr19_merge_transcripts.gtf.gz | python ../../scripts/gtf2gff.py --method=tss-territories --sort --genome-file=../data/hg19.chr19 > tss_territories.gff
+
+--great-domains
+zcat hg19.chr19.gtf.gz | python ../../scripts/gtf2gff.py --method=great-domains --upstream=5000 --downstream=1000 --radius=1000000 --genome-file=../data/hg19.chr19 > great_domains.gff
+
+--exons
+zcat hg19.chr19.gtf.gz | python ../../scripts/gtf2gff.py --method=exons --restrict-source=lncRNA --genome-file=../data/hg19.chr19  > exons.gff
+
+--promotors
+zcat hg19.chr19.gtf.gz | python ../../scripts/gtf2gff.py --method=promotors --restrict-source=pseudogene --genome-file=../data/hg19.chr19 --promotor=5000  > promotors.gff
+
+--regulons
+zcat hg19.chr19.gtf.gz | python ../../scripts/gtf2gff.py --method=regulons --restrict-source=protein_coding --genome-file=../data/hg19.chr19 --upstream=2500 --downstream=2500  > regulons.gff
+
+--tts-regulons
+zcat hg19.chr19.gtf.gz | python ../../scripts/gtf2gff.py --method=tts-regulons --genome-file=../data/hg19.chr19 --upstream=500 --downstream=500  > tts_regulons.gff
+
+--tts
+zcat hg19.chr19.gtf.gz | python ../../scripts/gtf2gff.py --method=tts --genome-file=../data/hg19.chr19 > tts.gff
+
+--genome-flank
+zcat hg19.chr19.gtf.gz | python ../../scripts/gtf2gff.py --method=genome --sort --genome-file=../data/hg19.chr19 --flank=10000  > genome_flank.gff
+
+--genome-min-intron-length
+zcat hg19.chr19.gtf.gz | python ../../scripts/gtf2gff.py --method=genome --sort --genome-file=../data/hg19.chr19 --flank=5000 --min-intron-length=2000 > genome_min_intron_length.gff
+
+--regulons-merge-promotors
+zcat hg19.chr19.gtf.gz | python ../../scripts/gtf2gff.py --method=regulons --genome-file=../data/hg19.chr19 --promotor=10000 --merge-promotors > regulons_merged_promotors.gff
+
+--genes-increment
+zcat hg19.chr19.gtf.gz | python ../../scripts/gtf2gff.py --method=genes --genome-file=../data/hg19.chr19 --increment=10000 --restrict-source=pseudogene

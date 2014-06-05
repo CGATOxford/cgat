@@ -80,6 +80,7 @@ def main(argv=None):
     amino_acids = ["M", "R", "Q", "E", "H", "I",
                    "L", "K", "F", "P", "S", "W", "Y", "V"]
     result = []
+    name = None
     for line in options.stdin.readlines():
         if not line.startswith("##") or line.find("date") != -1 or line.find("gff") != -1 or line.find("source") != -1:
             continue
@@ -96,9 +97,10 @@ def main(argv=None):
                     result.append(data)
                     prot_name = name
             elif pattern == "DNA":
-                if "".join(map(str, [data.find(x) != -1 for x in amino_acids])).find("True") == -1 and data.find("end") == -1 and data.find("%s" % pattern):
-                    result.append(data)
-                    prot_name = name
+                if name:
+                    if "".join(map(str, [data.find(x) != -1 for x in amino_acids])).find("True") == -1 and data.find("end") == -1 and data.find("%s" % pattern):
+                        result.append(data)
+                        prot_name = name
     if result:
         options.stdout.write(">%s\n%s\n" % (prot_name, "".join(result)))
 

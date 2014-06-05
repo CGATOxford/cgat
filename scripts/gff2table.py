@@ -103,7 +103,7 @@ def decorator_percent_gc(intervals, start, end, contig, fasta):
 
     for istart, iend in intervals:
         ngc += len(filter(lambda x: x in "GCgc",
-                   sequence[istart - start:iend - start]))
+                          sequence[istart - start:iend - start]))
         l += iend - istart
 
     return 100.0 * ngc / l, None

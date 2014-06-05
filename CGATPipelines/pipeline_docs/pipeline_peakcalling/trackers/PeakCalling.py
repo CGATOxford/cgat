@@ -4,12 +4,13 @@ The data are specific for each caller.
 '''
 
 import os
-import sys
-import re
-import types
-import itertools
 from SphinxReport.Tracker import *
 from PeakcallingReport import *
+
+
+class FilteringSummary(DefaultTracker, SingleTableTrackerRows):
+    table = 'exported_intervals'
+    fields = ('track', 'method')
 
 
 class MacsSummary(DefaultTracker):
@@ -20,7 +21,8 @@ class MacsSummary(DefaultTracker):
 
     def getTracks(self, subset=None):
         if self.tablename in self.getTables():
-            return self.getValues("SELECT track FROM %(tablename)s ORDER BY track")
+            return self.getValues(
+                "SELECT track FROM %(tablename)s ORDER BY track")
         else:
             return None
 
@@ -32,12 +34,13 @@ class MacsSummary(DefaultTracker):
 
         f = ",".join(fields)
         data = self.getFirstRow(
-            '''SELECT %(f)s FROM %(tablename)s WHERE track="%(track)s"''' )
+            '''SELECT %(f)s FROM %(tablename)s WHERE track="%(track)s"''')
         result = odict(zip(fields, data))
 
         if os.path.exists(resultsdir):
             result[
-                "peakshape"] = "`pdf <%(resultsdir)s/%(track)s_model.pdf>`_" % locals()
+                "peakshape"] = "`pdf <%(resultsdir)s/%(track)s_model.pdf>`_" %\
+                               locals()
 
         return result
 
@@ -51,7 +54,8 @@ class MacsDiagnostics(CallingTracker):
     def __call__(self, track, slice=None):
 
         data = self.get(
-            "SELECT fc,npeaks,p20,p30,p40,p50,p60,p70,p80,p90 FROM %(track)s_macs_diagnostics" % locals())
+            """SELECT fc,npeaks,p20,p30,p40,p50,p60,p70,p80,p90
+            FROM %(track)s_macs_diagnostics""" % locals())
 
         result = odict()
         for fc, npeaks, p20, p30, p40, p50, p60, p70, p80, p90 in data:

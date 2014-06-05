@@ -1127,9 +1127,9 @@ class BuilderPolyA(Builder):
             #nforward = sum([ sum([ y[1] for y in x[1]]) for x in tails.items() if x[0][1] == "+"] )
             #nreverse = sum([ sum([ y[1] for y in x[1]]) for x in tails.items() if x[0][1] == "-"] )
             nforward = sum([len(x[1])
-                           for x in tails.items() if x[0][1] == "+"])
+                            for x in tails.items() if x[0][1] == "+"])
             nreverse = sum([len(x[1])
-                           for x in tails.items() if x[0][1] == "-"])
+                            for x in tails.items() if x[0][1] == "-"])
 
             ninconsistent = min(nforward, nreverse)
 

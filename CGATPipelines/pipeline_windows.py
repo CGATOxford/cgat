@@ -172,7 +172,7 @@ P.getParameters(["%s/pipeline.ini" % os.path.splitext(__file__)[0],
 PARAMS = P.PARAMS
 
 PARAMS_ANNOTATIONS = P.peekParameters(PARAMS["annotations_dir"],
-                                      "pipeline_annotations.py")
+                                      "pipeline_annotations.py", on_error_raise=__name__ == "__main__")
 
 ###################################################################
 ###################################################################
@@ -531,8 +531,6 @@ def buildWindows(infiles, outfile):
     tiling_method = PARAMS["tiling_method"]
 
     coverage_bed, background_bed = infiles[:-1], infiles[-1]
-
-    to_cluster = True
 
     coverage_bed = " ".join(coverage_bed)
 

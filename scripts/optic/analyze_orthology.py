@@ -33,7 +33,7 @@ Purpose
 -------
 
 .. todo::
-   
+
    describe purpose of the script.
 
 Usage
@@ -58,21 +58,9 @@ Code
 '''
 import os
 import sys
-import string
 import re
-import getopt
 import time
-import sets
-import optparse
-import math
-import tempfile
 import copy
-
-"""program $Id: optic/analyze_orthology.py 2781 2009-09-10 11:33:14Z andreas $
-
-analyse orthology sets.
-
-"""
 
 import CGAT.Experiment as E
 import CGAT.Orthologs as Orthologs
@@ -82,11 +70,10 @@ import csv
 import scipy
 import scipy.stats
 import numpy
-import CGAT.Histogram as Histogram
 import alignlib_lite
-import CGAT.AlignedPairs as AlignedPairs
 import CGAT.TreeTools as TreeTools
 import CGAT.IOTools as IOTools
+import CGAT.AlignedPairs as AlignedPairs
 import gzip
 
 # ------------------------------------------------------------------------
@@ -708,8 +695,6 @@ def IsLineageSpecificDuplication(outfile, t1, t2, graph, separator="|",
 
     return max_within1 < min_between, max_within2 < min_between
 
-#-------------------------------------------------------------------------
-
 
 def GetAlignedPairs(genes, cds):
     """get nucleotide differences for a set of genes.
@@ -724,10 +709,10 @@ def GetAlignedPairs(genes, cds):
     alignator = alignlib_lite.makeAlignatorDPFull(
         alignlib_lite.ALIGNMENT_LOCAL, gop, gep, matrix)
 
-    #-------------------------------------------
     def MyAlignFunction(s1, s2, map_a2b):
         alignator.align(
-            map_a2b, alignlib_lite.makeSequence(s1), alignlib_lite.makeSequence(s2))
+            map_a2b, alignlib_lite.makeSequence(s1),
+            alignlib_lite.makeSequence(s2))
 
     gg = genes.keys()
 
@@ -2220,9 +2205,9 @@ def main(argv=None):
         if method == "orphans":
 
             # this only works with dmel as schema1
-# if not re.match( "dmel_vs_dmel", options.schema1 ):
-# print "# method orphans only implemented, if dmel_vs_dmel is first species."
-# continue
+            # if not re.match( "dmel_vs_dmel", options.schema1 ):
+            # print "# method orphans only implemented, if dmel_vs_dmel is first species."
+            # continue
 
             AnalyseOrphans(orphans1, outfile,
                            all_genes_schema1,

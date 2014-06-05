@@ -11,9 +11,15 @@ genomic:
     references: [genomic.test.hg19]
     options: --method=genomic --genome-file=%DIR%/small
 
-histogram:
+histogram_window:
     stdin: small.gtf
-    outputs: [19.hist]
-    references: [histogram.test.hg19]
-    options: --method=histogram --window=1 --genome-file=%DIR%/small --features=exon --output-filename-pattern="%s.hist"
+    outputs: [19.win]
+    references: [histogram.win.hg19]
+    options: --method=histogram --window=1 --features=exon --output-filename-pattern=%s.win
+
+histogram_bin:
+    stdin: small.gtf
+    outputs: [19.bin]
+    references: [histogram.bin.hg19]
+    options: --method=histogram --num-bins=6 --genome-file=%DIR%/small --features=exon --output-filename-pattern=%s.bin
 

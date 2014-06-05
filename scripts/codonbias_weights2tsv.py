@@ -94,7 +94,7 @@ def WriteChanges(genome1, genome2, changed, options):
 
         if options.sort == "percent-difference":
             output.append((-percent_difference, (genome1, genome2, aa,
-                          codon1, pref2, codon2, pref1, percent_difference, code)))
+                                                 codon1, pref2, codon2, pref1, percent_difference, code)))
         elif options.sort == "aa":
             output.append(
                 (aa, (genome1, genome2, aa, codon1, pref2, codon2, pref1, percent_difference, code)))

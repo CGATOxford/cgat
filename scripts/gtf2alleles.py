@@ -784,9 +784,9 @@ def buildAlleles(transcript,
     if variant_exons or variant_introns:
         for allele in range(0, 2):
             exons = dict([(x, y[allele])
-                         for x, y in variant_exons.iteritems()])
+                          for x, y in variant_exons.iteritems()])
             introns = dict([(x, y[allele])
-                           for x, y in variant_introns.iteritems()])
+                            for x, y in variant_introns.iteritems()])
             result.append(
                 _buildAllele(allele, transcript, exons, introns, offsets[allele]))
     else:

@@ -57,32 +57,40 @@ Command line options
 ---------------------
 
 '''
-import os
 import sys
-import string
-import re
-import optparse
 import CGAT.GTF as GTF
 import CGAT.Experiment as E
 
 
-def main():
+def main(argv=None):
     '''
     main function
     '''
-    parser = E.OptionParser(
-        version="%prog version: $Id: gtf2tsv.py 2887 2010-04-07 08:48:04Z andreas $", usage=globals()["__doc__"])
 
-    parser.add_option("-o", "--only-attributes", dest="only_attributes", action="store_true",
-                      help="output attributes as separate columns [default=%default].")
+    if argv is None:
+        argv = sys.argv
+
+    parser = E.OptionParser(
+        version="%prog version: $Id$",
+        usage=globals()["__doc__"])
+
+    parser.add_option("-o", "--only-attributes", dest="only_attributes",
+                      action="store_true",
+                      help="output attributes as separate columns "
+                      "[default=%default].")
     parser.add_option("-f", "--full", dest="full", action="store_true",
-                      help="output attributes as separate columns [default=%default].")
+                      help="output attributes as separate columns "
+                      "[default=%default].")
     parser.add_option("-i", "--invert", dest="invert", action="store_true",
-                      help="convert tab-separated table back to gtf [default=%default].")
+                      help="convert tab-separated table back to gtf "
+                      "[default=%default].")
     parser.add_option("-m", "--map", dest="map", type="choice",
                       choices=(
-                          "transcript2gene", "peptide2gene", "peptide2transcript"),
-                      help="output a map mapping transcripts to genes [default=%default].")
+                          "transcript2gene",
+                          "peptide2gene",
+                          "peptide2transcript"),
+                      help="output a map mapping transcripts to genes "
+                      "[default=%default].")
 
     parser.set_defaults(
         only_attributes=False,
@@ -91,7 +99,7 @@ def main():
         map=None,
     )
 
-    (options, args) = E.Start(parser)
+    (options, args) = E.Start(parser, argv=argv)
 
     if options.full:
 
@@ -111,7 +119,9 @@ def main():
         if options.only_attributes:
             header = ["gene_id", "transcript_id"] + attributes
         else:
-            header = ["contig", "source", "feature", "start", "end", "score", "strand", "frame", "gene_id",
+            header = ["contig", "source", "feature",
+                      "start", "end", "score", "strand",
+                      "frame", "gene_id",
                       "transcript_id", ] + attributes
 
         options.stdout.write("\t".join(header) + "\n")

@@ -103,7 +103,9 @@ cdef class Counter:
         counts_in_interval = counts_in_window[offset_left:-offset_right]
 
         if len(counts_in_interval) == 0:
-            raise ValueError( "empty interval: %i - %i for %s:%i-%i" % (offset_left, -offset_right, contig, start, end) )
+            E.warn("empty interval: %i - %i for %s:%i-%i" %
+                   (offset_left, -offset_right, contig, start, end) )
+            return None
 
         #################################################
         # compute peak shape parameters
@@ -261,11 +263,14 @@ cdef class CounterBam(Counter):
 
         if interval_width <= 0: 
             return 0, numpy.zeros(0)
+            
+        if contig not in samfile.references:
+            return 0, numpy.zeros(0)
 
         if shift:
             xstart, xend = max(0, start - offset), max(0, end - offset)
 
-            for read in samfile.fetch( contig, xstart, xend ):
+            for read in samfile.fetch(contig, xstart, xend):
                 if read.is_reverse: continue
                 nreads += 1
                 # extend reads from upstream pos
@@ -282,9 +287,15 @@ cdef class CounterBam(Counter):
             for read in samfile.fetch( contig, xstart, xend ):
                 if not read.is_reverse: continue
                 nreads += 1
-                # shift and extend reads from downstream pos
                 rend = read.aend
-                rstart = rend - 2 * offset
+                # shift and extend reads from downstream pos
+                try:
+                    rstart = rend - 2 * offset
+                except TypeError:
+                    # read.aend can be None if CIGAR string is missing
+                    # read is unmapped but has still a coordinate
+                    # assigned.
+                    continue
                 # truncate to interval
                 rstart = max( 0, rstart - xstart )
                 rend = min( interval_width, rend - xstart )
@@ -292,11 +303,18 @@ cdef class CounterBam(Counter):
                 for i from rstart <= i < rend: ccounts[i] += 1
 
         else:
-            for read in samfile.fetch( contig, start, end ):
+            for read in samfile.fetch(contig, start, end):
                 nreads += 1
                 # truncate to interval
-                rstart = max( 0, read.pos - start )
-                rend = min( interval_width, read.aend - start )
+                rstart = max(0, read.pos - start)
+                try:
+                    rend = min(interval_width, read.aend - start)
+                except TypeError:
+                    # aend can be None if CIGAR string is missing
+                    # read is unmapped but has still a coordinate
+                    # assigned.
+                    continue
+
                 for i from rstart <= i < rend: ccounts[i] += 1
 
         # transfer to numpy count object

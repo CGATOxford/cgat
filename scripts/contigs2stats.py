@@ -17,7 +17,7 @@ Usage
 
 Example::
 
-   zcat infile.fasta.gz | python contigs2fasta.py -n 50 > out.stats 
+   zcat infile.fasta.gz | python contigs2fasta.py -n 50 > out.stats
 
 Type::
 
@@ -30,10 +30,7 @@ Command line options
 
 '''
 
-import os
 import sys
-import re
-import optparse
 import numpy as np
 import CGAT.FastaIterator as FastaIterator
 
@@ -54,12 +51,22 @@ def main(argv=None):
                             usage=globals()["__doc__"])
 
     parser.add_option("-n", dest="N", type="int",
-                      help="e.g N50 - the length at which 50% of contigs are equal or above")
-    parser.add_option("-f", "--filter-length", dest="filter_length", type="int",
+                      help="e.g N50 - the length at which 50% of contigs are "
+                      "equal or above")
+    parser.add_option("-f", "--filter-length", dest="filter_length",
+                      type="int",
                       help="calculate stats on contigs longer than -f")
+    parser.add_option("--use-length", dest="use_length", action="store_true",
+                      help="use a predefined length on which to calculate "
+                      "the NX")
+    parser.add_option("-l", "--length", dest="length", type="int",
+                      help="if use-length is set then provide the "
+                      "length to calculate N50")
 
     parser.set_defaults(N=50,
-                        filter_length=0)
+                        filter_length=0,
+                        use_length=False,
+                        length=None)
 
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv)
@@ -87,7 +94,12 @@ def main(argv=None):
     # and caculate the NX
     index = 0
     cum_length = 0
-    total_length = sum(contig_lengths)
+    if options.use_length:
+        assert options.length, "must supply a length when --use-length is set"
+        total_length = options.length
+    else:
+        total_length = sum(contig_lengths)
+
     for length in sorted(contig_lengths, reverse=True):
         while cum_length <= total_length * (float(N) / 100):
             index += 1
@@ -96,8 +108,14 @@ def main(argv=None):
     # output the results
     options.stdout.write(
         "nscaffolds\tscaffold_length\tN%i\tmedian_length\tmean_length\tmax_length\n" % N)
-    options.stdout.write("%s\t%s\t%s\t%s\t%s\t%s\n" % (number_of_contigs, total_length, sorted(
-        contig_lengths, reverse=True)[index], str(median_length), str(mean_length), str(max_length)))
+    options.stdout.write("%s\t%s\t%s\t%s\t%s\t%s\n" % (
+        number_of_contigs,
+        total_length,
+        sorted(
+            contig_lengths, reverse=True)[index],
+        str(median_length),
+        str(mean_length),
+        str(max_length)))
 
     # write footer and output benchmark information.
     E.Stop()

@@ -1464,6 +1464,7 @@ class ClassifierRNASeq(_gtf2table.Counter):
 
 
 class ClassifierRNASeqSplicing(_gtf2table.Counter):
+
     """This is IMSs new style transcript classifier. It aims to give
     classifications that make more sense to biologists involved in
     splicing by using familiar catagories.
@@ -1804,9 +1805,9 @@ class ClassifierRNASeqSplicing(_gtf2table.Counter):
             shared_included_boundaries = Intervals.intersect(
                 boundaries, included_boundaries)
 
-                        # If there is a matched structure, i.e. all of the introns in the gene model are in an existing gene
-                        # model, then either we have a fragment of the complete transcript or some sort of retain intron
-                        # (or both)
+            # If there is a matched structure, i.e. all of the introns in the gene model are in an existing gene
+            # model, then either we have a fragment of the complete transcript or some sort of retain intron
+            # (or both)
             # if matched_structure and abs(overlap_exons - transcript_lexons) <
             # tolerance:
             if matched_structure and len(shared_introns) == len(transcript_introns):
@@ -1847,8 +1848,8 @@ class ClassifierRNASeqSplicing(_gtf2table.Counter):
                     cls = "alternate-5prime"
 
                     if len(Intervals.intersect([boundaries[-1]], transcript_boundaries[0:-1])) > 0:
-                    # is a fragment if the final boundary is in the transcript
-                    # but isn't its final one.
+                        # is a fragment if the final boundary is in the transcript
+                        # but isn't its final one.
                         cls = cls + "-fragment"
                     if not len(boundaries) == len(shared_included_boundaries) + 1:
                         cls = "alternative"
@@ -3053,7 +3054,7 @@ class CounterProximity(CounterOverlap):
     def __str__(self):
         s = Stats.Summary([x.value for x in self.mSegments])
         values = ";".join(["%s-%s:%s" % (x.start, x.end, x.value)
-                          for x in self.mSegments])
+                           for x in self.mSegments])
         length = sum([x.end - x.start for x in self.mSegments])
         lengths = ";".join([str(x.end - x.start) for x in self.mSegments])
         return "\t".join((str(s), str(length), lengths, values))
@@ -3751,11 +3752,12 @@ def main(argv=None):
                       help="distance to be considered proximal to "
                       "an interval [default=%default].")
 
-    parser.add_option("--weight-multi-mapping",
-                      dest="weight_multi_mapping",
-                      action="store_true",
-                      help="weight multi-mapping reads in bam-files. "
-                      "Requires "
+    parser.add_option("--multi-mapping",
+                      dest="multi_mapping",
+                      type="choice",
+                      choices=('all', 'ignore', 'weight'),
+                      help="how to treat multi-mapping reads in "
+                      "bam-files. Requires "
                       "the NH flag to be set by the mapper "
                       "[default=%default].")
 
@@ -3778,10 +3780,10 @@ def main(argv=None):
                       help="library type of reads in bam file. "
                       "[default=%default]")
 
-    parser.add_option("--min-read-quality",
-                      dest="minimum_read_quality",
+    parser.add_option("--min-mapping-quality",
+                      dest="minimum_mapping_quality",
                       type="float",
-                      help="minimum read quality. Reads with a quality "
+                      help="minimum mapping quality. Reads with a quality "
                       "score of less will be ignored. "
                       "[default=%default]")
 
@@ -3798,10 +3800,10 @@ def main(argv=None):
         add_gtf_source=False,
         proximal_distance=10000,
         bam_files=None,
-        weight_multi_mapping=False,
+        multi_mapping='all',
         library_type='fr-unstranded',
         prefixes=[],
-        minimum_read_quality=0
+        minimum_mapping_quality=0,
     )
 
     if not argv:
@@ -3895,44 +3897,43 @@ def main(argv=None):
         elif c == "read-overlap":
             counters.append(_gtf2table.CounterReadOverlap(
                 bam_files,
-                weight_multi_mapping=options.weight_multi_mapping,
-                minimum_read_quality=options.minimum_read_quality,
+                multi_mapping=options.multi_mapping,
+                minimum_mapping_quality=options.minimum_mapping_quality,
                 options=options,
                 prefix=prefix))
         elif c == "read-counts":
             counters.append(_gtf2table.CounterReadCounts(
                 bam_files,
-                weight_multi_mapping=options.weight_multi_mapping,
-                minimum_read_quality=options.minimum_read_quality,
+                multi_mapping=options.multi_mapping,
+                minimum_mapping_quality=options.minimum_mapping_quality,
                 options=options,
                 prefix=prefix))
         elif c == "read-fullcounts":
             counters.append(_gtf2table.CounterReadCountsFull(
                 bam_files,
-                weight_multi_mapping=options.weight_multi_mapping,
-                minimum_read_quality=options.minimum_read_quality,
+                multi_mapping=options.multi_mapping,
+                minimum_mapping_quality=options.minimum_mapping_quality,
                 options=options,
                 prefix=prefix))
         elif c == "readpair-counts":
             counters.append(_gtf2table.CounterReadPairCounts(
                 bam_files,
-                weight_multi_mapping=options.weight_multi_mapping,
+                multi_mapping=options.multi_mapping,
                 library_type=options.library_type,
-                minimum_read_quality=options.minimum_read_quality,
+                minimum_mapping_quality=options.minimum_mapping_quality,
                 options=options,
                 prefix=prefix))
         elif c == "readpair-fullcounts":
             counters.append(_gtf2table.CounterReadPairCountsFull(
                 bam_files,
-                weight_multi_mapping=options.weight_multi_mapping,
-                minimum_read_quality=options.minimum_read_quality,
+                multi_mapping=options.multi_mapping,
+                minimum_mapping_quality=options.minimum_mapping_quality,
                 options=options,
                 prefix=prefix))
         elif c == "bigwig-counts":
             counters.append(CounterBigwigCounts(
                 bigwig_file,
                 options=options, prefix=prefix))
-
         elif c == "splice-comparison":
             counters.append(CounterSpliceSiteComparison(
                 fasta=fasta,

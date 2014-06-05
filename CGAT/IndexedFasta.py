@@ -42,16 +42,10 @@ import sys
 import array
 import string
 import re
-import types
-import optparse
-import time
 import struct
 import math
 import tarfile
-import logging
-import platform
 import anydbm
-import math
 import random
 import zlib
 import gzip
@@ -164,7 +158,8 @@ class Translator:
         self.mRegEx = re.compile(" +")
 
     def __call__(self, sequence):
-        return "".join(self.mMapScore2Char[self.mMapScore2Score[int(x)]] for x in self.mRegEx.split(sequence.strip()))
+        return "".join(self.mMapScore2Char[self.mMapScore2Score[int(x)]]
+                       for x in self.mRegEx.split(sequence.strip()))
 
     def translate(self, sequence):
         raise NotImplementedError("translate not implemented.")
@@ -191,11 +186,12 @@ class TranslatorSolexa(Translator):
         Translator.__init__(self, *args, **kwargs)
         self.mMapScore2Char = [chr(64 + x) for x in range(0, 128)]
         self.mMapScore2Score = [
-            int(10.0 * math.log(1.0 + 10 ** (x / 10.0)) / math.log(10) + .499) for x in range(-64, 65)]
+            int(10.0 * math.log(1.0 + 10 ** (x / 10.0)) / math.log(10) + .499)
+            for x in range(-64, 65)]
 
     def translate(self, sequence):
         raise NotImplementedError("translate not implemented.")
-        return array.array("i", (ord(x) - 64))
+        # return array.array("i", (ord(x) - 64))
 
 
 class TranslatorRange200(Translator):
@@ -219,7 +215,8 @@ class TranslatorRange200(Translator):
 
     def __call__(self, sequence):
         try:
-            return "".join(self.mMapScore2Char[int(x)] for x in self.mRegEx.split(sequence.strip()))
+            return "".join(self.mMapScore2Char[int(x)]
+                           for x in self.mRegEx.split(sequence.strip()))
         except ValueError, msg:
             raise ValueError(msg + " parsing error in fragment: %s" % sequence)
 
@@ -240,7 +237,8 @@ class TranslatorBytes(Translator):
 
     def __call__(self, sequence):
         try:
-            return "".join(chr(int(x)) for x in self.mRegEx.split(sequence.strip()))
+            return "".join(chr(int(x)) for x in
+                           self.mRegEx.split(sequence.strip()))
         except ValueError, msg:
             print "parsing error in line: %s" % sequence
             print "message=%s" % str(msg)
@@ -283,6 +281,7 @@ class MultipleFastaIterator:
         def _iter(infile):
 
             identifier = None
+            is_new = False
 
             for line in infile:
                 if line.startswith("#"):
@@ -295,18 +294,22 @@ class MultipleFastaIterator:
                                 self.regexIdentifier, line[1:-1]).groups()[0]
                         except AttributeError:
                             raise ValueError(
-                                "could not parse identifier from line %s - check the input" % line[1:-1])
+                                "could not parse identifier from line %s "
+                                "- check the input" % line[1:-1])
                     else:
                         identifier = re.split("\s", line[1:-1])[0]
-
+                    is_new = True
                 else:
                     if not identifier:
                         raise ValueError(
-                            "refusing to emit sequence without identifier - check the input")
-                    yield identifier, line.strip()
+                            "refusing to emit sequence without identifier "
+                            "- check the input")
+                    yield is_new, identifier, line.strip()
+                    is_new = False
 
         for filename in self.filenames:
-            if self.format == "tar.gz" or self.format == "tar" or (self.format == "auto" and filename.endswith("tar.gz")):
+            if self.format == "tar.gz" or self.format == "tar" or \
+               (self.format == "auto" and filename.endswith("tar.gz")):
                 if filename == "-":
                     tf = tarfile.open(fileobj=sys.stdin, mode="r|*")
                 else:
@@ -324,7 +327,8 @@ class MultipleFastaIterator:
                 if tf != sys.stdin:
                     tf.close()
                 continue
-            elif self.format == "fasta.gz" or (self.format == "auto" and filename.endswith(".gz")):
+            elif self.format == "fasta.gz" or (self.format == "auto"
+                                               and filename.endswith(".gz")):
                 infile = gzip.open(filename, "r")
             elif filename == "-":
                 infile = sys.stdin
@@ -415,7 +419,8 @@ def createDatabase(db, iterator,
 
         index_name = db + ".cdx"
 
-        if write_chunks and random_access_points is None or random_access_points <= 0:
+        if write_chunks and random_access_points is None \
+           or random_access_points <= 0:
             raise ValueError("specify chunksize in --random-access-points")
 
     else:
@@ -432,7 +437,6 @@ def createDatabase(db, iterator,
 
     outfile_index = open(index_name, "w")
     if compression == "dictzip":
-        import dictzip
         if random_access_points is None or random_access_points <= 0:
             raise ValueError(
                 "specify dictzip chunksize in --random-access-points")
@@ -450,6 +454,7 @@ def createDatabase(db, iterator,
 
     fragments = []
     lfragment = 0
+
     last_identifier = None
 
     while 1:
@@ -462,16 +467,16 @@ def createDatabase(db, iterator,
         if not result:
             break
 
-        identifier, fragment = result
+        is_new, identifier, fragment = result
 
-        if identifier != last_identifier:
-
+        if is_new:
             # check for duplicate identifiers
             if identifier in identifiers:
                 if ignore_duplicates:
-                    raise ValueError, "ignore duplicates not implemented"
+                    raise ValueError("ignore duplicates not implemented")
                 elif allow_duplicates:
-                    # the current implementation will fail if the same identifiers
+                    # the current implementation will fail if the same
+                    # identifiers
                     # are directly succeeding each other
                     # better: add return to iterator that indicates a new
                     # identifier
@@ -480,8 +485,8 @@ def createDatabase(db, iterator,
                     identifiers[identifier] += 1
                     identifiers[out_identifier] = 1
                 else:
-                    raise ValueError, "%s occurs more than once" %\
-                        (identifier,)
+                    raise ValueError("%s occurs more than once" %
+                                     (identifier,))
             else:
                 identifiers[identifier] = 1
                 out_identifier = identifier
@@ -561,7 +566,7 @@ NAME_MAP = {
     'lzo': ('lzo',   'cdx', True),
     'dictzip': ('dz',    'idx', False),
     'zlib': ('zlib',  'cdx', True),
-    'gzip': ('gzip',  'cdx', True),
+    'gzip': ('gz',  'cdx', True),
     'bzip2': ('bz2',   'cdx', True),
     'debug': ('debug', 'cdx', True),
 }
@@ -589,7 +594,7 @@ class CGATIndexedFasta:
                 self.mNoSeek = NAME_MAP[x][2]
                 break
         else:
-            raise KeyError, "unknown database %s" % dbname
+            raise KeyError("unknown database %s" % dbname)
 
         self.mIsLoaded = False
         self.mSynonyms = {}
@@ -641,8 +646,8 @@ class CGATIndexedFasta:
         filename_index = self.mNameIndex + ".dbm"
 
         if compress:
-            if os.path.exists(filename_index):
-                raise OSError("file %s already exists" % filename_index)
+            #if os.path.exists(filename_index):
+            #    raise OSError("file %s already exists" % filename_index)
             self.mIndex = anydbm.open(filename_index, "n")
         elif os.path.exists(filename_index):
             self.mIndex = anydbm.open(filename_index, "r")
@@ -744,13 +749,26 @@ class CGATIndexedFasta:
         """return sequence length for sbjct_token."""
         if not self.mIsLoaded:
             self._loadIndex()
-        return struct.unpack("QQi", self.mIndex[self.getToken(contig)])[2]
+        data = self.mIndex[self.getToken(contig)]
+        try:
+            pos_id, pos_seq, lcontig = struct.unpack("QQi", data)
+        except struct.error:
+            pos_id, pos_seq, lcontig, points = data
+        return lcontig
 
     def getLengths(self):
         """return all sequence lengths."""
         if not self.mIsLoaded:
             self._loadIndex()
-        return [struct.unpack("QQi", x)[2] for x in self.mIndex.values()]
+        results = []
+        for contig in self.mIndex.values():
+            data = self.mIndex[self.getToken(contig)]
+            try:
+                pos_id, pos_seq, lcontig = struct.unpack("QQi", data)
+            except struct.error:
+                pos_id, pos_seq, lcontig, points = data
+            results.append(lcontig)
+        return results
 
     def compressIndex(self):
         """compress index.
@@ -780,8 +798,10 @@ class CGATIndexedFasta:
         return contig_sizes
 
     def setConverter(self, converter):
-        """set converter from coordinate system to 0-based, both strand, open/closed
-        coordinate system."""
+        """set converter from coordinate system to 0-based, both strand,
+        open/closed coordinate system.
+
+        """
         self.mConverter = converter
 
     def getSequence(self,
@@ -846,15 +866,17 @@ class CGATIndexedFasta:
         if first_pos == last_pos:
             return ""
 
-        assert first_pos < last_pos, "first position %i is larger than last position %i " % (
-            first_pos, last_pos)
+        assert first_pos < last_pos, \
+            "first position %i is larger than last position %i " % \
+            (first_pos, last_pos)
 
         p = AString()
 
         if self.mNoSeek:
             # read directly from position
             p.fromstring(
-                self.mDatabaseFile.read(block_size, data[3], first_pos, last_pos))
+                self.mDatabaseFile.read(block_size, data[3],
+                                        first_pos, last_pos))
         else:
             first_pos += pos_seq
             last_pos += pos_seq
@@ -864,8 +886,9 @@ class CGATIndexedFasta:
 
         if str(strand) in ("-", "0", "-1"):
             p.reverse()
-            p = AString(string.translate(p[:],
-                                         string.maketrans("ACGTacgt", "TGCAtgca")))
+            p = AString(string.translate(
+                p[:],
+                string.maketrans("ACGTacgt", "TGCAtgca")))
 
         if self.mTranslator:
             return self.mTranslator.translate(p)
@@ -892,7 +915,11 @@ class CGATIndexedFasta:
         token = random.choice(self.mIndex.keys())
         strand = random.choice(("+", "-"))
         data = self.mIndex[token]
-        pos_id, pos_seq, lcontig = struct.unpack("QQi", data)
+        try:
+            pos_id, pos_seq, lcontig = struct.unpack("QQi", data)
+        except struct.error:
+            pos_id, pos_seq, lcontig, points = data
+
         rpos = random.randint(0, lcontig)
         if size >= lcontig:
             start = 0
@@ -970,7 +997,10 @@ class PysamIndexedFasta(CGATIndexedFasta):
         contig = self.getToken(contig)
 
         data = self.mIndex[contig]
-        pos_id, dummy, lsequence = struct.unpack("QQi", data)
+        try:
+            pos_id, pos_seq, lsequence = struct.unpack("QQi", data)
+        except struct.error:
+            pos_id, pos_seq, lsequence, points = data
 
         # convert to 0-based positive strand coordinates
         if converter:
@@ -999,7 +1029,7 @@ class PysamIndexedFasta(CGATIndexedFasta):
 def IndexedFasta(dbname, *args, **kwargs):
     '''factory function for IndexedFasta objects.'''
 
-    if (os.path.exists( dbname ) or os.path.exists( dbname + ".fa" )) \
+    if (os.path.exists(dbname) or os.path.exists(dbname + ".fa")) \
             and (os.path.exists(dbname + ".fai") or
                  os.path.exists(dbname + ".fa.fai")):
         return PysamIndexedFasta(dbname, *args, **kwargs)
@@ -1151,12 +1181,12 @@ def verify(fasta1, fasta2, num_iterations, fragment_size,
     Get segment from fasta1 and check for presence in fasta2.
     """
     if not quiet:
-        options.stdout.write("verifying %s and %s using %i random segments of length %i\n" %
-                             (fasta1.getDatabaseName(),
-                              fasta2.getDatabaseName(),
-                              num_iterations,
-                              fragment_size))
-        options.stdout.flush()
+        stdout.write("verifying %s and %s using %i random segments of length %i\n" %
+                     (fasta1.getDatabaseName(),
+                      fasta2.getDatabaseName(),
+                      num_iterations,
+                      fragment_size))
+        stdout.flush()
     nerrors = 0
     for x in range(num_iterations):
         contig, strand, start, end = fasta1.getRandomCoordinates(fragment_size)
@@ -1164,8 +1194,8 @@ def verify(fasta1, fasta2, num_iterations, fragment_size,
         s2 = fasta2.getSequence(contig, strand, start, end)
         if s1 != s2:
             if not quiet:
-                options.stdout.write("discordant segment: %s:%s:%i:%i\n%s\n%s\n" %
-                                     (contig, strand, start, end, s1, s2))
+                stdout.write("discordant segment: %s:%s:%i:%i\n%s\n%s\n" %
+                             (contig, strand, start, end, s1, s2))
             nerrors += 1
     return nerrors
 

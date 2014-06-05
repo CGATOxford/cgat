@@ -161,7 +161,6 @@ if major==2:
 elif major==3:
     pass
 
-
 import os
 import re
 
@@ -171,11 +170,11 @@ else:
     cgat_packages= find_packages( exclude=["scripts*"])
 
 # rename scripts to CGATScripts
-cgat_packages.append( "CGATScripts" )
+cgat_packages.append("CGATScripts")
 
-cgat_package_dirs = { 'CGAT': 'CGAT',
-                      'CGATScripts' : 'scripts',
-                      'CGATPipelines': 'CGATPipelines' }
+cgat_package_dirs = {'CGAT': 'CGAT',
+                     'CGATScripts': 'scripts',
+                     'CGATPipelines': 'CGATPipelines'}
 
 ##########################################################
 ##########################################################
@@ -217,14 +216,14 @@ NCL = Extension(
     )
 
 # Nubiscan motif mapping
-Nubiscan = Extension(
-    "CGAT.Nubiscan.cnubiscan",                   
-    [ 'CGAT/Nubiscan/cnubiscan.pyx'],
-    library_dirs=[],
-    libraries=[],            
-    include_dirs = [numpy.get_include()], 
-    language="c",               
- )
+#Nubiscan = Extension(
+#    "CGAT.Nubiscan.cnubiscan",                   
+#    [ 'CGAT/Nubiscan/cnubiscan.pyx'],
+#    library_dirs=[],
+#    libraries=[],            
+#    include_dirs = [numpy.get_include()], 
+#    language="c",               
+# )
 
 # Automatically build script extensions
 pyx_files = glob.glob( "scripts/*.pyx" )
@@ -280,7 +279,7 @@ setup(## package information
     install_requires=install_requires,
     dependency_links=dependency_links,
     ## extension modules
-    ext_modules=[Components, NCL, Nubiscan] + script_extensions,
+    ext_modules=[Components, NCL] + script_extensions,
     cmdclass = {'build_ext': build_ext},
     ## other options
     zip_safe = False,
