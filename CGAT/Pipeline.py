@@ -90,6 +90,8 @@ class PipelineError(Exception):
 LIB_DIR = os.path.dirname(__file__)
 ROOT_DIR = os.path.dirname(LIB_DIR)
 SCRIPTS_DIR = os.path.join(ROOT_DIR, "scripts")
+PIPELINE_DIR = os.path.join(os.path.dirname(LIB_DIR), "CGATPipelines")
+
 # if Pipeline.py is from an installed version,
 # scripts are located in the "bin" directory.
 if not os.path.exists(SCRIPTS_DIR):
@@ -107,6 +109,7 @@ if not os.path.exists(SCRIPTS_DIR):
 PARAMS = {
     'scriptsdir': SCRIPTS_DIR,
     'toolsdir': SCRIPTS_DIR,
+    'pipelinedir': PIPELINE_DIR,
     'cmd-farm': """python %s/farm.py
                 --method=drmaa
                 --cluster-priority=-10
@@ -129,6 +132,7 @@ CONFIG = {}
 
 # local temporary directory to use
 TMPDIR = '/scratch'
+SHARED_TMPDIR = '/ifs/scratch'
 
 
 def configToDictionary(config):
@@ -376,25 +380,59 @@ def touch(filename, times=None):
         fhandle.close()
 
 
-def getTempFilename(dir=TMPDIR):
+def getTempFilename(dir=TMPDIR, shared=False):
     '''get a temporary filename.
 
-    The caller needs to delete it.
+    *dir* specifies the directory of the temporary
+    file and is set to the default temporary
+    location.
+
+    If *shared* is set, the tempory file will
+    be in a shared temporary location.
+
+    The caller needs to delete the temporary file.
     '''
+    if shared:
+        dir = SHARED_TMPDIR
+
     tmpfile = tempfile.NamedTemporaryFile(dir=dir, delete=False, prefix="ctmp")
     tmpfile.close()
     return tmpfile.name
 
 
-def getTempFile(dir=TMPDIR):
+def getTempFile(dir=TMPDIR, shared=False):
     '''get a temporary file.
 
-    The caller needs to delete it.
+    *dir* specifies the directory of the temporary
+    file and is set to the default temporary
+    location.
+
+    If *shared* is set, the tempory file will
+    be in a shared temporary location.
+
+    The caller needs to delete the temporary file.
     '''
+    if shared:
+        dir = SHARED_TMPDIR
+
     return tempfile.NamedTemporaryFile(dir=dir, delete=False, prefix="ctmp")
 
 
-def getTempDir(dir=TMPDIR):
+def getTempDir(dir=TMPDIR, shared=False):
+    '''get a temporary directory.
+
+    *dir* specifies the directory of the temporary
+    directory and is set to the default temporary
+    location.
+
+    If *shared* is set, the tempory directory will
+    be in a shared temporary location.
+
+    The caller needs to delete the temporary directory.
+    '''
+    if shared:
+        dir = SHARED_TMPDIR
+
     return tempfile.mkdtemp(dir=dir, prefix="ctmp")
 
 
@@ -1149,13 +1187,14 @@ def run(**kwargs):
             stdout, stderr = getStdoutStderr(stdout_path, stderr_path)
 
             if retval.exitStatus != 0:
-                raise PipelineError("---------------------------------------\n"
-                                    "Child was terminated by signal %i: \n"
-                                    "The stderr was: \n%s\n%s\n"
-                                    "---------------------------------------\n" %
-                                    (retval.exitStatus,
-                                     "".join(stderr),
-                                     statement))
+                raise PipelineError(
+                    "---------------------------------------\n"
+                    "Child was terminated by signal %i: \n"
+                    "The stderr was: \n%s\n%s\n"
+                    "---------------------------------------\n" %
+                    (retval.exitStatus,
+                     "".join(stderr),
+                     statement))
 
             try:
                 os.unlink(job_path)
