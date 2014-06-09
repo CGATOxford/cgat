@@ -46,6 +46,8 @@ EXCLUDE = (
     # recompilation or why it fails is unknown
     # (it seems using C compiler for C++ code).
     'pipeline_intervals',
+    'PipelinePeakcalling',
+    'pipeline_peakcalling',
     'bam2transcriptContribution',
     'beds2counts',
     'fasta2bed',
