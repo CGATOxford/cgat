@@ -1,5 +1,5 @@
-"""
-====================
+
+"""====================
 Exome pipeline
 ====================
 
@@ -8,13 +8,12 @@ Exome pipeline
 :Date: |today|
 :Tags: Python
 
-The exome pipeline imports unmapped reads from one or more 
-fastq or sra files and aligns them to the genome using BWA.
-Post alignment quality control is performed using Picard. 
-The pipeline then performs local realignment around indels 
-and base quality score recalibration using GATK.
-Next variants (SNVs and indels) are called, annotated, and
-filtered according to various inheritance models (de novo,
+The exome pipeline imports unmapped reads from one or more fastq or
+sra files and aligns them to the genome using BWA.  Post alignment
+quality control is performed using Picard.  The pipeline then performs
+local realignment around indels and base quality score recalibration
+using GATK.  Next variants (SNVs and indels) are called, annotated,
+and filtered according to various inheritance models (de novo,
 dominant, and recessive).
 
 
@@ -24,7 +23,8 @@ dominant, and recessive).
    4. Variant calling (SNVs & indels) using GATK HaplotypeCaller
    5. Variant annotation using SNPeff, GATK VariantAnnotator, and SnpSift
    6. Variant quality score recalibration (GATK)
-   7. Flags variants within genes of interest (such as known disease genes) (GATK) (optional)
+   7. Flags variants within genes of interest (such as known disease genes)
+      (GATK) (optional)
    8. Filters potential de novo variants
    9. Filters potential de novo variants using lower stringency criteria
    10. Filters potential dominant mutations
@@ -33,21 +33,28 @@ dominant, and recessive).
    13. Generates summary statistics for unfiltered vcf file
    14. Generates report
 
-Warning:
-   1. Great care should be taken in interpreting lower stringency de novo variants as it is expected almost all will
-      be false positives.  Users should examine them manually in the csvdb database and html report.
-   2. Great care should be taken when interpreting compound heterozygous changes.  Gemini is very permissive and users
-      should examine the genotypes in the csvdb table to make sure they are consistent with a recessive inheritance
-      pattern.
+.. note::
+
+   1. Great care should be taken in interpreting lower stringency de
+      novo variants as it is expected almost all will be false
+      positives. Users should examine them manually in the csvdb
+      database and html report.
+
+   2. Great care should be taken when interpreting compound
+      heterozygous changes.  Gemini is very permissive and users
+      should examine the genotypes in the csvdb table to make sure
+      they are consistent with a recessive inheritance pattern.
 
 To do:
-   1. Allow users to add other training sets for variant quality score recalibration
+   1. Allow users to add other training sets for variant quality score
+      recalibration
    2. Allow users to add annotations using SnpSift
 
 Usage
 =====
 
-See :ref:`PipelineSettingUp` and :ref:`PipelineRunning` on general information how to use CGAT pipelines.
+See :ref:`PipelineSettingUp` and :ref:`PipelineRunning` on general
+information how to use CGAT pipelines.
 
 Configuration
 -------------
@@ -55,46 +62,58 @@ Configuration
 Input
 -----
 
-Reads are imported by placing files or linking to files in the :term:`working directory`.
+Reads are imported by placing files or linking to files in the
+:term:`working directory`.
 
 The default file format assumes the following convention:
 
    <family>-<sample>-<condition>-<replicate>.<suffix>
 
-``family`` = "Single", "Trio", or "Multiplex" followed by numerical identifier.  ``sample`` and ``condition``
-make up an :term:`experiment`, while ``replicate`` denotes the :term:`replicate` within an :term:`experiment`. 
-The ``suffix`` determines the file type. The following suffixes/file types are possible:
+``family`` = "Single", "Trio", or "Multiplex" followed by numerical
+identifier.  ``sample`` and ``condition`` make up an
+:term:`experiment`, while ``replicate`` denotes the :term:`replicate`
+within an :term:`experiment`.  The ``suffix`` determines the file
+type. The following suffixes/file types are possible:
 
 sra
-   Short-Read Archive format. Reads will be extracted using the :file:`fastq-dump` tool.
+   Short-Read Archive format. Reads will be extracted using the
+   :file:`fastq-dump` tool.
 
 fastq.gz
    Single-end reads in fastq format.
 
 fastq.1.gz, fastq.2.gz
-   Paired-end reads in fastq format. The two fastq files must be sorted by read-pair.
+   Paired-end reads in fastq format. The two fastq files must be sorted
+   by read-pair.
 
 .. note::
 
-   Quality scores need to be of the same scale for all input files. Thus it might be
-   difficult to mix different formats.
+   Quality scores need to be of the same scale for all input
+   files. Thus it might be difficult to mix different formats.
 
-If you are submitting families then a .ped file for each family must be supplied within your working firectory. 
-This is a tab-delimited file named <family>.ped (where <family> is the family ID in the title of the corresponding 
-fastq files) with no header and one individual per line according to the following pattern:
+If you are submitting families then a .ped file for each family must
+be supplied within your working firectory.  This is a tab-delimited
+file named <family>.ped (where <family> is the family ID in the title
+of the corresponding fastq files) with no header and one individual
+per line according to the following pattern:
 
 family_id sample_id father_id mother_id sex phenotype
 
-family_id and sample_id should correspond to <family> and <family>-<sample> in the sra/fastq filenames, father_id and 
-mother_id should be '0' if unknown, sex should be '1' if male, '2' if female and '0' if unknown, and phenotype 
-should be '1' if unaffected, '2' if affected and '0' if unknown.
+family_id and sample_id should correspond to <family> and
+<family>-<sample> in the sra/fastq filenames, father_id and mother_id
+should be '0' if unknown, sex should be '1' if male, '2' if female and
+'0' if unknown, and phenotype should be '1' if unaffected, '2' if
+affected and '0' if unknown.
 
-If you are running the functions to look for compound heterozygotes in Multiplex families then there is a further
-requirement for the .ped files.  The phasing tools expect a trio and therefore any other family members (other than
-parents and one child) must be labelled as unrelated.  That is, the first additional family member could be labelled
-"family0" in the family_id column, and subsequent additional family members could be "family1", "family2" and so on.
-For example, a multiplex family called Multiplex1 may have two parents and two affected children.  The .ped file
-would look like this:
+If you are running the functions to look for compound heterozygotes in
+Multiplex families then there is a further requirement for the .ped
+files.  The phasing tools expect a trio and therefore any other family
+members (other than parents and one child) must be labelled as
+unrelated.  That is, the first additional family member could be
+labelled "family0" in the family_id column, and subsequent additional
+family members could be "family1", "family2" and so on.  For example,
+a multiplex family called Multiplex1 may have two parents and two
+affected children.  The .ped file would look like this:
 
 Multiplex1 ID1 0 0 1 1
 Multiplex1 ID2 0 0 2 1
@@ -104,14 +123,15 @@ Family0 ID4 ID1 ID2 2 2
 Documentation
 -------------
 
-If you would like the genes of interest to be flagged in your vcf, make add_genes_of_interest=1 (default=0) and
-provide a list of comma separated genes (without spaces) in the ini file.
+If you would like the genes of interest to be flagged in your vcf,
+make add_genes_of_interest=1 (default=0) and provide a list of comma
+separated genes (without spaces) in the ini file.
 
 Requirements
 ------------
 
-On top of the default CGAT setup, the pipeline requires the following software to be in the 
-path:
+On top of the default CGAT setup, the pipeline requires the following
+software to be in the path:
 
 +--------------------+-------------------+------------------------------------------------+
 |*Program*           |*Version*          |*Purpose*                                       |
@@ -139,8 +159,9 @@ path:
 Pipeline output
 ===============
 
-The major output is a csvdb containing quality control information by sample and variant information by family and 
-an html report with similar information.
+The major output is a csvdb containing quality control information by
+sample and variant information by family and an html report with
+similar information.
 
 Example
 =======
@@ -158,32 +179,13 @@ from ruffus import *
 from rpy2.robjects import r as R
 
 import CGAT.Experiment as E
-import logging as L
-import CGAT.Database as Database
 import sys
 import os
-import re
-import shutil
-import itertools
-import math
-import glob
-import time
-import gzip
-import collections
-import random
-import numpy
 import csv
 import sqlite3
-import CGAT.GTF as GTF
 import CGAT.IOTools as IOTools
-import CGAT.IndexedFasta as IndexedFasta
-import CGAT.Tophat as Tophat
-import rpy2.robjects as ro
-import CGATPipelines.PipelineGeneset as PipelineGeneset
 import CGATPipelines.PipelineMapping as PipelineMapping
 import CGATPipelines.PipelineMappingQC as PipelineMappingQC
-import CGAT.Stats as Stats
-import CGATPipelines.PipelineTracks as PipelineTracks
 import CGAT.Pipeline as P
 
 USECLUSTER = True
@@ -193,7 +195,9 @@ USECLUSTER = True
 #########################################################################
 # load options from the config file
 P.getParameters(
-    ["%s/pipeline.ini" % os.path.splitext(__file__)[0], "../exome.ini", "exome.ini"])
+    ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
+     "../exome.ini", "exome.ini"])
+
 PARAMS = P.PARAMS
 
 
@@ -223,7 +227,7 @@ def loadROI(infile, outfile):
               --ignore-empty
               --retry
               --header=%(header)s
-              --table=%(tablename)s 
+              --table=%(tablename)s
             > %(outfile)s  '''
     P.run()
 
@@ -239,7 +243,7 @@ def loadROI2Gene(infile, outfile):
             | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --ignore-empty
               --retry
-              --table=%(tablename)s 
+              --table=%(tablename)s
             > %(outfile)s  '''
     P.run()
 
@@ -255,7 +259,7 @@ def loadSamples(infile, outfile):
             | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --ignore-empty
               --retry
-              --table=%(tablename)s 
+              --table=%(tablename)s
             > %(outfile)s  '''
     P.run()
 
@@ -283,13 +287,16 @@ def mergeFastqs(infiles, outfile):
            regex(r"(\S+).(fastq.1.gz|fastq.gz|sra)"),
            r"bam/\1.bam")
 def mapReads(infiles, outfile):
-    '''Map reads to the genome using BWA (output=SAM), convert to BAM, sort and index BAM file, generate
-    alignment statistics and deduplicate using Picard'''
-    to_cluster = USECLUSTER
+    '''Map reads to the genome using BWA (output=SAM), convert to BAM,
+    sort and index BAM file, generate alignment statistics and
+    deduplicate using Picard
+    '''
+
     job_options = "-pe dedicated 2 -l mem_free=8G"
     track = P.snip(os.path.basename(outfile), ".bam")
     m = PipelineMapping.BWA(
-        remove_unique=PARAMS["bwa_remove_non_unique"], align_stats=True, dedup=True)
+        remove_unique=PARAMS["bwa_remove_non_unique"], align_stats=True,
+        dedup=True)
     statement = m.build((infiles,), outfile)
     P.run()
 
@@ -356,7 +363,7 @@ def loadCoverageStats(infiles, outfile):
                       --index=track
                       --table=%(tablename)s
                       --ignore-empty
-                      --retry 
+                      --retry
                    > %(outfile)s '''
     P.run()
 
@@ -470,39 +477,48 @@ def variantRecalibrator(infile, outfile):
     hapmap = PARAMS["gatk_hapmap"]
     omni = PARAMS["gatk_omni"]
     dbsnp = PARAMS["gatk_dbsnp"]
-    statement = '''GenomeAnalysisTK -T VariantRecalibrator -R %%(bwa_index_dir)s/%%(genome)s.fa -input %(infile)s
-                   -resource:hapmap,known=false,training=true,truth=true,prior=15.0 %(hapmap)s 
-                   -resource:omni,known=false,training=true,truth=false,prior=12.0 %(omni)s 
-                   -resource:dbsnp,known=true,training=false,truth=false,prior=6.0 %(dbsnp)s 
-                   -an QD -an HaplotypeScore -an MQRankSum -an ReadPosRankSum -an FS -an MQ --maxGaussians 4 --numBadVariants 3000
-                   -mode SNP 
-                   -recalFile %(outfile)s 
-                   -tranchesFile %(track)s.tranches 
-                   -rscriptFile %(track)s.plots.R ''' % locals()
+    statement = '''GenomeAnalysisTK -T VariantRecalibrator
+    -R %%(bwa_index_dir)s/%%(genome)s.fa -input %(infile)s
+    -resource:hapmap,known=false,training=true,truth=true,prior=15.0 %(hapmap)s
+    -resource:omni,known=false,training=true,truth=false,prior=12.0 %(omni)s
+    -resource:dbsnp,known=true,training=false,truth=false,prior=6.0 %(dbsnp)s
+    -an QD -an HaplotypeScore -an MQRankSum -an ReadPosRankSum -an FS -an MQ
+    --maxGaussians 4 --numBadVariants 3000
+    -mode SNP
+    -recalFile %(outfile)s
+    -tranchesFile %(track)s.tranches
+    -rscriptFile %(track)s.plots.R ''' % locals()
     P.run()
 
 #########################################################################
 
 
 @follows(variantRecalibrator)
-@transform(variantAnnotator, regex(r"variants/(\S+).haplotypeCaller.annotated.vcf"), add_inputs(r"variants/\1.haplotypeCaller.vqsr.recal", r"\1.haplotypeCaller.vqsr.tranches"), r"variants/\1.haplotypeCaller.vqsr.vcf")
+@transform(variantAnnotator,
+           regex(r"variants/(\S+).haplotypeCaller.annotated.vcf"),
+           add_inputs(r"variants/\1.haplotypeCaller.vqsr.recal",
+                      r"\1.haplotypeCaller.vqsr.tranches"),
+           r"variants/\1.haplotypeCaller.vqsr.vcf")
 def applyVariantRecalibration(infiles, outfile):
     '''Perform variant quality score recalibration using GATK '''
     to_cluster = USECLUSTER
     job_options = getGATKOptions()
     infile, recal, tranches = infiles
-    statement = '''GenomeAnalysisTK -T ApplyRecalibration -R %%(bwa_index_dir)s/%%(genome)s.fa -input %(infile)s
-                   --ts_filter_level 99.0 
-                   -tranchesFile %(tranches)s
-                   -recalFile %(recal)s
-                   -mode SNP 
-                   -o %(outfile)s ''' % locals()
+    statement = '''GenomeAnalysisTK -T ApplyRecalibration
+    -R %%(bwa_index_dir)s/%%(genome)s.fa -input %(infile)s
+    --ts_filter_level 99.0
+    -tranchesFile %(tranches)s
+    -recalFile %(recal)s
+    -mode SNP
+    -o %(outfile)s ''' % locals()
     P.run()
 
 #########################################################################
 
 
-@transform(applyVariantRecalibration, regex(r"variants/(\S+).haplotypeCaller.vqsr.vcf"), r"variants/\1.haplotypeCaller.snpsift.vcf")
+@transform(applyVariantRecalibration,
+           regex(r"variants/(\S+).haplotypeCaller.vqsr.vcf"),
+           r"variants/\1.haplotypeCaller.snpsift.vcf")
 def annotateVariantsSNPsift(infile, outfile):
     '''Add annotations using SNPsift'''
     to_cluster = USECLUSTER
@@ -511,10 +527,14 @@ def annotateVariantsSNPsift(infile, outfile):
     dbNSFP = PARAMS["annotation_snpsift_dbnsfp"]
 # The following statement is not fully implemented yet
 #    statement = '''SnpSift.sh geneSets -v /ifs/projects/proj016/data/1000Genomes/msigdb.v4.0.symbols.gmt %(infile)s > variants/%(track)s_temp1.vcf; checkpoint;''' % locals()
-    statement = '''SnpSift.sh dbnsfp -v %(dbNSFP)s %(infile)s > variants/%(track)s_temp1.vcf; checkpoint;''' % locals()
-    statement += '''SnpSift.sh annotate /ifs/projects/proj016/data/1000Genomes/00-All.vcf variants/%(track)s_temp1.vcf > %(outfile)s ;''' % locals(
-    )
+
+    statement = '''SnpSift.sh dbnsfp -v %(dbNSFP)s %(infile)s
+    > variants/%(track)s_temp1.vcf; checkpoint;''' % locals()
+
+    statement += '''SnpSift.sh annotate /ifs/projects/proj016/data/1000Genomes/00-All.vcf
+    variants/%(track)s_temp1.vcf > %(outfile)s ;''' % locals()
 #    statement += '''rm -f variants/*temp*vcf;'''
+
     P.run()
 
 #########################################################################
@@ -524,15 +544,22 @@ def annotateVariantsSNPsift(infile, outfile):
 
 
 @active_if(PARAMS["annotation_add_genes_of_interest"] == 1)
-@transform((annotateVariantsSNPsift), regex(r"variants/(\S+).haplotypeCaller.snpsift.vcf"), r"variants/\1.genes.vcf")
+@transform((annotateVariantsSNPsift),
+           regex(r"variants/(\S+).haplotypeCaller.snpsift.vcf"),
+           r"variants/\1.genes.vcf")
 def findGenes(infile, outfile):
-    '''Adds expression "GENE_OF_INTEREST" to the FILTER column of the vcf if variant is within a gene of interest 
-    as defined in the ini file'''
-    to_cluster = USECLUSTER
+    '''Adds expression "GENE_OF_INTEREST" to the FILTER column of the vcf
+    if variant is within a gene of interest as defined in the ini
+    file
+
+    '''
     geneList = P.asList(PARAMS["annotation_genes_of_interest"])
     expression = '\'||SNPEFF_GENE_NAME==\''.join(geneList)
-    statement = '''GenomeAnalysisTK -T VariantFiltration -R %%(bwa_index_dir)s/%%(genome)s.fa --variant %(infile)s --filterExpression "SNPEFF_GENE_NAME=='%(expression)s'" --filterName "GENE_OF_INTEREST" -o %(outfile)s''' % locals(
-    )
+    statement = '''GenomeAnalysisTK -T VariantFiltration
+    -R %%(bwa_index_dir)s/%%(genome)s.fa
+    --variant %(infile)s
+    --filterExpression "SNPEFF_GENE_NAME=='%(expression)s'"
+    --filterName "GENE_OF_INTEREST" -o %(outfile)s''' % locals()
     P.run()
 
 #########################################################################
@@ -566,29 +593,38 @@ def loadVariantAnnotation(infile, outfile):
 #########################################################################
 
 
-@transform(annotateVariantsSNPeff, regex(r"variants/(\S+).haplotypeCaller.snpeff.vcf"), r"variants/\1.haplotypeCaller.snpeff.table")
+@transform(annotateVariantsSNPeff,
+           regex(r"variants/(\S+).haplotypeCaller.snpeff.vcf"),
+           r"variants/\1.haplotypeCaller.snpeff.table")
 def snpeffToTable(infile, outfile):
-    '''Converts snpeff file to table as this supplies all the annotations for a given variant - used for reports'''
+    '''Converts snpeff file to table as this supplies all the annotations
+    for a given variant - used for reports'''
     to_cluster = USECLUSTER
-    statement = '''GenomeAnalysisTK -T VariantsToTable -R %%(bwa_index_dir)s/%%(genome)s.fa -V %(infile)s --showFiltered --allowMissingData -F CHROM -F POS -F ID -F REF -F ALT -F EFF -o %(outfile)s''' % locals()
+    statement = '''GenomeAnalysisTK -T VariantsToTable
+    -R %%(bwa_index_dir)s/%%(genome)s.fa -V %(infile)s
+    --showFiltered --allowMissingData
+    -F CHROM -F POS -F ID -F REF -F ALT -F EFF
+    -o %(outfile)s''' % locals()
     P.run()
 
-#########################################################################
 
-
-@transform(snpeffToTable, regex(r"variants/(\S+).table"), r"variants/\1.table.load")
+@transform(snpeffToTable, regex(r"variants/(\S+).table"),
+           r"variants/\1.table.load")
 def loadSnpeffAnnotation(infile, outfile):
     '''Load snpeff annotations into database'''
     scriptsdir = PARAMS["general_scriptsdir"]
     tablename = P.toTable(outfile)
-    statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py --table %(tablename)s --retry --ignore-empty > %(outfile)s''' % locals()
+    statement = '''cat %(infile)s
+    | python %(scriptsdir)s/csv2db.py --table %(tablename)s
+    --retry --ignore-empty > %(outfile)s''' % locals()
     P.run()
 
-#########################################################################
 
 # the following function is not working - not sure why yet
 @follows(loadVariantAnnotation, loadSnpeffAnnotation)
-@transform(loadSnpeffAnnotation, regex(r"variants/(\S+).haplotypeCaller.snpeff.table.load"), r"variants/\1.snpeff_snpsift.table.load")
+@transform(loadSnpeffAnnotation,
+           regex(r"variants/(\S+).haplotypeCaller.snpeff.table.load"),
+           r"variants/\1.snpeff_snpsift.table.load")
 def createAnnotationsTable(infile, outfile):
     '''Create new annotations table from snpeff and snpsift tables'''
     dbh = sqlite3.connect(PARAMS["database"])
@@ -600,8 +636,15 @@ def createAnnotationsTable(infile, outfile):
     else:
         sstrack = setrack+'haplotypeCaller_snpsift'
     cc = dbh.cursor()
-    cc.execute( """DROP TABLE IF EXISTS %(table)s """ % locals() )
-    cc.execute( """CREATE TABLE %(table)s AS SELECT * FROM %(sstrack)s_table INNER JOIN %(setrack)s_haplotypeCaller_snpeff_table ON %(sstrack)s_table.CHROM = %(setrack)s_haplotypeCaller_snpeff_table.CHROM AND %(sstrack)s_table.POS = %(setrack)s_haplotypeCaller_snpeff_table.POS AND %(sstrack)s_table.REF = %(setrack)s_haplotypeCaller_snpeff_table.REF AND %(sstrack)s_table.ALT = %(setrack)s_haplotypeCaller_snpeff_table.ALT""" % locals() )
+    cc.execute("""DROP TABLE IF EXISTS %(table)s """ % locals())
+    cc.execute("""CREATE TABLE %(table)s AS SELECT *
+    FROM %(sstrack)s_table
+    INNER JOIN %(setrack)s_haplotypeCaller_snpeff_table
+    ON %(sstrack)s_table.CHROM = %(setrack)s_haplotypeCaller_snpeff_table.CHROM
+    AND %(sstrack)s_table.POS = %(setrack)s_haplotypeCaller_snpeff_table.POS
+    AND %(sstrack)s_table.REF = %(setrack)s_haplotypeCaller_snpeff_table.REF
+    AND %(sstrack)s_table.ALT = %(setrack)s_haplotypeCaller_snpeff_table.ALT
+    """ % locals())
     cc.close()
     P.touch(outfile)
 

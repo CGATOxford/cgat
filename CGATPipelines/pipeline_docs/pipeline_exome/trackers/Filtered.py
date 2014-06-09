@@ -35,6 +35,7 @@ class deNovos(ExomeTracker):
         return self.getAll(
             "SELECT %(track)s_filtered_table.CHROM, %(track)s_filtered_table.POS, %(track)s_filtered_table.REF, %(track)s_filtered_table.ALT, %(track)s_filtered_table.ID, SNPEFF_CODON_CHANGE, SNPEFF_AMINO_ACID_CHANGE, SNPEFF_EXON_ID, SNPEFF_GENE_NAME, SNPEFF_TRANSCRIPT_ID, SNPEFF_EFFECT, SNPEFF_FUNCTIONAL_CLASS, SNPEFF_IMPACT, SNPEFF_GENE_BIOTYPE, EFF, dbNSFP_1000Gp1_AF, dbNSFP_ESP6500_AA_AF, dbNSFP_ESP6500_EA_AF, dbNSFP_29way_logOdds, dbNSFP_GERP___NR, dbNSFP_GERP___RS, dbNSFP_Interpro_domain, dbNSFP_Polyphen2_HVAR_pred, dbNSFP_SIFT_score, FILTER, BaseQRankSum, FS, HaplotypeScore, MQ, MQ0, MQRankSum, QD, ReadPosRankSum FROM %(track)s_filtered_table INNER JOIN %(track)s_haplotypeCaller_snpeff_table ON %(track)s_filtered_table.CHROM = %(track)s_haplotypeCaller_snpeff_table.CHROM AND %(track)s_filtered_table.POS = %(track)s_haplotypeCaller_snpeff_table.POS WHERE (dbNSFP_1000Gp1_AF is null OR dbNSFP_1000Gp1_AF<0.01) AND (dbNSFP_ESP6500_AA_AF is null OR dbNSFP_ESP6500_AA_AF<0.01) AND COMMON is null AND FILTER='PASS' " % locals())
 
+
 class comp_hets(ExomeTracker):
 
     pattern = "(.*)_compound_hets_table$"
