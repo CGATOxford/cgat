@@ -35,11 +35,9 @@ Code
 '''
 
 import re
-import sys
 import string
 import time
 import math
-import types
 import copy
 import random
 
@@ -182,7 +180,8 @@ class MaliData:
         self.mNChars = self.mNAll - self.mNMasked - self.mNGaps
 
     def __str__(self):
-        return "%i\t%i\t%i\t%i" % (self.mNAll, self.mNChars, self.mNGaps, self.mNMasked)
+        return "%i\t%i\t%i\t%i" % (self.mNAll, self.mNChars,
+                                   self.mNGaps, self.mNMasked)
 
 
 class Mali:
@@ -263,7 +262,7 @@ class Mali:
     def rename(self, old_name, new_name):
         """rename an entry."""
         if old_name not in self.mMali:
-            raise KeyError, "%s not in mali" % old_name
+            raise KeyError("%s not in mali" % old_name)
         self.mIdentifiers[self.mIdentifiers.index(old_name)] = new_name
         self.mMali[new_name] = self.mMali[old_name]
         del self.mMali[old_name]
@@ -343,8 +342,8 @@ class Mali:
 
         pattern_parse_ranges = re.compile("(\S+)/(\d+)-(\d+)")
 
-        # read profiles - a profile possibly consists of several entries per file
-        # so treat it differently
+        # read profiles - a profile possibly consists of several
+        # entries per file so treat it differently
         if format.lower() == "profile":
 
             while 1:
@@ -389,7 +388,7 @@ class Mali:
         # remove empty lines
         lines = filter(lambda x: x.strip(), lines)
         if not lines:
-            raise AttributeError, "empty alignment"
+            raise AttributeError("empty alignment")
 
         def getId(id, s):
             x = pattern_parse_ranges.match(id)
@@ -417,7 +416,10 @@ class Mali:
                     x += 1
 
                 self.addEntry(
-                    AlignedString(xid, int(data[0]) - 1, int(data[2]), data[1]))
+                    AlignedString(xid, 
+                                  int(data[0]) - 1,
+                                  int(data[2]),
+                                  data[1]))
 
         #######################################################################
         elif format.lower() == "fasta":
@@ -480,7 +482,7 @@ class Mali:
 
                 data = re.split("\s+", line)
                 if len(data) != 2:
-                    raise ValueError, "parsing error in line %s" % line
+                    raise ValueError("parsing error in line %s" % line)
 
                 id, fragment = data
                 if id not in fragments:
@@ -524,7 +526,7 @@ class Mali:
                 else:
 
                     if len(data) > 2:
-                        raise ValueError, "parsing error in line %s" % line
+                        raise ValueError("parsing error in line %s" % line)
                     elif len(data) == 1:
                         # treat empty alignments/lines
                         id = data[0]
@@ -567,10 +569,13 @@ class Mali:
             self.mLength = min(
                 map(lambda x: len(x.mString), self.mMali.values()))
 
-    def writeToFile(self, outfile, write_ranges=True, format="plain", options=None):
+    def writeToFile(self, outfile, write_ranges=True, format="plain",
+                    options=None):
         """write alignment to file.
 
-        If options is given, these lines are output into the multiple alignment.
+        If options is given, these lines are output into the multiple
+        alignment.
+
         """
         if format == "plain-fasta":
             format = "fasta"
@@ -683,7 +688,6 @@ class Mali:
 
         for s in self.mMali.values():
 
-            t0 = time.time()
             first = pattern_start.match(s.mString)
             if first:
                 first = first.groups()[0]
@@ -691,7 +695,6 @@ class Mali:
                 s.mFrom += nchars
                 s.mString = self.mGapChar * len(first) + s.mString[len(first):]
 
-            t0 = time.time()
             # search from the back end by reversing. This is much faster than
             # using $ from the back.
             last = pattern_start.match(s.mString[::-1])
@@ -793,8 +796,8 @@ class Mali:
         set minimum_matches to the number of sequences to remove columns
         with all gaps.
 
-        Patterns are matches in search_frame. For example, if frame is 3, 
-        whole codons are supplied to match_function.
+        Patterns are matches in search_frame. For example, if frame is
+        3, whole codons are supplied to match_function.
 
         delete_frame specifies the frame for deletion. If it is set to 3,
         codons are removed if already one column matches.
@@ -806,6 +809,7 @@ class Mali:
                 minimum_matches = 1,
                 search_frame = 3,
                 delete_frame = 3)
+
         """
         nmatches = [0] * self.getWidth()
 
@@ -946,14 +950,12 @@ class Mali:
                 c = s.mFrom
 
                 is_upper = True
-                is_first = False
                 transitions = map_id2transitions[identifier]
                 for x in s.mString:
                     if x in self.mGapChars:
                         pass
                     else:
                         if c in map_id2transitions[identifier]:
-                            is_first = True
                             if is_upper:
                                 is_upper = False
                             else:
@@ -1207,10 +1209,11 @@ class Mali:
         return True
 
     def clipByAnnotation(self, key, chars=""):
-        """restrict alignment to positions where 
-        annotation identified by key in chars.
+        """restrict alignment to positions where annotation identified by key
+        in chars.
 
         if chars is empty, nothing is clipped.
+
         """
         if key not in self.mAnnotations:
             return
@@ -1236,8 +1239,9 @@ class Mali:
     def filter(self, f):
         '''filter multiple alignment using function *f*.
 
-        The function *f* should return True for entries that 
-        should be kept and False for those that should be removed.
+        The function *f* should return True for entries that should be
+        kept and False for those that should be removed.
+
         '''
         ids, vals = [], []
         for id in self.mIdentifiers:
@@ -1251,15 +1255,15 @@ class Mali:
 
 class SequenceCollection(Mali):
 
-    """reads in a sequence collection, but permits
-    several entries per id. 
+    """reads in a sequence collection, but permits several entries per id.
 
-    Note that this might cause problems with interleaved 
-    formats like phylips or clustal.
+    Note that this might cause problems with interleaved formats like
+    phylips or clustal.
 
-    This mapping is achieved by appending a numeric
-    suffix. The suffix is retained for the life-time
-    of the object, but not output to a file.
+    This mapping is achieved by appending a numeric suffix. The suffix
+    is retained for the life-time of the object, but not output to a
+    file.
+
     """
 
     def __init__(self):
@@ -1326,7 +1330,10 @@ class SequenceCollection(Mali):
                     x += 1
 
                 self.addEntry(
-                    AlignedString(xid, int(data[0]) - 1, int(data[2]), data[1]))
+                    AlignedString(xid,
+                                  int(data[0]) - 1,
+                                  int(data[2]),
+                                  data[1]))
 
         #######################################################################
         elif format.lower() == "fasta":
@@ -1385,7 +1392,8 @@ def convertMali2Alignlib(mali):
 
 
 def convertAlignlib2Mali(mali, identifiers=None, seqs=None):
-    """convert a multiple alignment into an alignlib_lite.py_multiple alignment object."""
+    """convert a multiple alignment into an alignlib_lite.py_multiple
+    alignment object."""
     m = Mali()
 
     if not identifiers:

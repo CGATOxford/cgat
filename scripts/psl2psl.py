@@ -1,5 +1,4 @@
-'''
-psl2psl.py - manipulate psl files
+'''psl2psl.py - manipulate psl files
 ===================================
 
 :Author: Andreas Heger
@@ -22,17 +21,19 @@ merge
         This script will check for overlaps and will take the longest path
         through a set of overlapping paths.
 
-map 
-   map alignments. Similar to mapPsl, but will apply a map to both query
-   and target. This method requires the two options filter-query and filter-target.
-   Intervals are given in gff or gtf format. In the latter case, the alignment is 
-   threaded through the exons. 
+map
+   map alignments. Similar to mapPsl, but will apply a map to both
+   query and target. This method requires the two options filter-query
+   and filter-target.  Intervals are given in gff or gtf format. In
+   the latter case, the alignment is threaded through the exons.
 
 filter-keep
-   filter alignments. Only parts of the alignments are kept that are part of the intervals.
+   filter alignments. Only parts of the alignments are kept
+   that are part of the intervals.
 
 filter-remove
-   filter alignments. Only parts of the alignments are kept that are not part of the intervals.
+   filter alignments. Only parts of the alignments are kept
+   that are not part of the intervals.
 
 complement
    complement a psl sequence. For example this will convert exons to introns.
@@ -73,20 +74,16 @@ for command line help.
 
 Command line options
 --------------------
+
 '''
 
 
 import sys
-import re
-import string
-import optparse
 import time
-import os
 import collections
 import warnings
 
 import CGAT.Experiment as E
-import CGAT.Stats as Stats
 import CGAT.Genomics as Genomics
 import CGAT.Blat as Blat
 import CGAT.GTF as GTF
@@ -101,8 +98,6 @@ with warnings.catch_warnings():
     import networkx
 
 import alignlib_lite
-import bx.intervals.io
-import bx.intervals.intersection
 
 
 def readIntervals(infile, options):
@@ -128,8 +123,9 @@ def readIntervals(infile, options):
             ninput += 1
 
             if ninput % options.report_step == 0:
-                E.info("reading intervals - progress: ninput=%i, time=%i, avg=%f" %
-                       (ninput, time.time() - t, float(time.time() - t) / ninput))
+                E.info(
+                    "reading intervals - progress: ninput=%i, time=%i, avg=%f" %
+                    (ninput, time.time() - t, float(time.time() - t) / ninput))
 
     elif options.format == "gff":
 
@@ -188,7 +184,9 @@ def iterator_psl_intervals(options):
         if intervals_query:
             try:
                 qx = list(
-                    intervals_query.get(match.mQueryId, match.mQueryFrom, match.mQueryTo))
+                    intervals_query.get(match.mQueryId,
+                                        match.mQueryFrom,
+                                        match.mQueryTo))
             except KeyError:
                 qx = []
 
@@ -266,7 +264,9 @@ def pslMap(options):
     else:
         use_copy = True
 
-    ninput, noutput, ndiscarded, nskipped, nskipped_small_queries = 0, 0, 0, 0, 0
+    ninput, noutput, ndiscarded, nskipped, nskipped_small_queries = (
+        0, 0, 0, 0, 0)
+    nnooverlap = 0
 
     min_length = options.min_aligned
 
@@ -301,10 +301,13 @@ def pslMap(options):
             E.debug("working on query %s:%i-%i" %
                     (match.mQueryId, qstart, qend))
 
-            mqstart, mqend = (map_query2target.mapRowToCol(qstart,
-                                                           alignlib_lite.py_RIGHT),
-                              map_query2target.mapRowToCol(qend,
-                                                           alignlib_lite.py_LEFT))
+            mqstart, mqend = (
+                map_query2target.mapRowToCol(
+                    qstart,
+                    alignlib_lite.py_RIGHT),
+                map_query2target.mapRowToCol(
+                    qend,
+                    alignlib_lite.py_LEFT))
 
             if match.strand == "-":
                 qstart, qend = match.mQueryLength - \
@@ -326,7 +329,9 @@ def pslMap(options):
 
                         mtstart, mtend = map_query2target.mapColToRow(
                             tstart), map_query2target.mapColToRow(tend)
-                        E.debug("query: %i-%i (len=%i)-> %i-%i(len=%i); target: %i-%i (len=%i)-> %i-%i (len=%i)" %
+
+                        E.debug(
+                            "query: %i-%i (len=%i)-> %i-%i(len=%i); target: %i-%i (len=%i)-> %i-%i (len=%i)" %
                                 (qstart, qend,
                                  qend - qstart,
                                  mqstart, mqend,
@@ -347,7 +352,8 @@ def pslMap(options):
                     if map_query:
                         tmp = alignlib_lite.py_makeAlignmentBlocks()
                         alignlib_lite.py_copyAlignment(
-                            tmp, map_query2target, map_query, alignlib_lite.py_RR)
+                            tmp, map_query2target, map_query,
+                            alignlib_lite.py_RR)
                         if options.loglevel >= 5:
                             options.stdlog.write(
                                 "######## mapping query ###########\n")
@@ -398,9 +404,12 @@ def pslMap(options):
                     noutput += 1
                 else:
                     ndiscarded += 1
+                break
+            else:
+                nnooverlap += 1
 
-    E.info("map: ninput=%i, noutput=%i, nskipped=%i, ndiscarded=%i, nsmall_queries=%i" %
-           (ninput, noutput, nskipped, ndiscarded, nskipped_small_queries))
+    E.info("map: ninput=%i, noutput=%i, nskipped=%i, noverlap=%i, ndiscarded=%i, nsmall_queries=%i" %
+           (ninput, noutput, nskipped, nnooverlap, ndiscarded, nskipped_small_queries))
 
 
 def pslMerge(options):
