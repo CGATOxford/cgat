@@ -916,6 +916,120 @@ def mergeLncRNAPhyloCSF(infiles, outfile):
 ##########################################################################
 ##########################################################################
 ##########################################################################
+# calculate phyloCSF scores for ENSEMBL lincRNA
+@follows(mkdir("lincRNA_ensembl"))
+@transform( PARAMS["genesets_reference"], 
+            regex("reference.gtf.gz"),
+            r"lincRNA_ensembl/lincRNA.gtf.gz" )
+def extractEnsemblLincRNA(infile, outfile):
+    tmpf = P.getTempFile("/ifs/scratch")
+    for gtf in GTF.iterator(IOTools.openFile(infile)):
+        if gtf.source == "lincRNA":
+            tmpf.write(str(gtf) + "\n")
+        else:
+            continue
+    tmpf.close()
+    tmpf = tmpf.name
+
+    statement = ("cat %(tmpf)s |"
+                 " python %(scriptsdir)s/gtf2gtf.py"
+                 "  --sort=gene"
+                 "  --log=%(outfile)s.log |"
+                 " gzip > %(outfile)s")
+    P.run()
+
+    os.unlink(tmpf)
+
+
+@transform(extractEnsemblLincRNA, suffix(".gtf.gz"), ".bed.gz")
+def convertEnsemblGTFToBed12(infile, outfile):
+    PipelineLncRNA.gtfToBed12(infile, outfile, "transcript")
+
+
+@merge([convertEnsemblGTFToBed12, createMAFAlignment],
+       "./lincRNA_ensembl/lincRNA_transcripts.fasta.gz" )
+def extractEnsemblLincRNAFastaAlignments(infiles, outfile):
+    bed_file, maf_file = infiles
+    maf_tmp = P.getTempFilename("/ifs/scratch")
+    to_cluster = False
+    statement = ("gunzip -c %(maf_file)s > %(maf_tmp)s")
+    P.run()
+
+    target_genome = PARAMS["genome"]
+    query_genome = PARAMS["phyloCSF_query_genome"]
+
+    genome_file = os.path.join(PARAMS["genomedir"], PARAMS["genome"])
+
+    gene_models = PipelineLncRNA.extractMAFGeneBlocks(bed_file,
+                                                      maf_tmp,
+                                                      genome_file,
+                                                      outfile,
+                                                      target_genome,
+                                                      query_genome,
+                                                      keep_gaps=False)
+    E.info("%i gene_models extracted" % gene_models)
+    os.unlink(maf_tmp)
+
+
+@follows(mkdir("./lincRNA_ensembl/fasta"))
+@split( extractEnsemblLincRNAFastaAlignments, 
+        "./lincRNA_ensembl/fasta/*.fasta")
+def splitEnsemblLincRNAFasta(infile, outfiles):
+    out_dir = "./lincRNA_ensembl/fasta"
+
+    name_dict = {}
+    for mapping in PARAMS["phyloCSF_map_species_names"].split(","):
+        pair = mapping.split(":")
+        key = ">" + pair[0]
+        value = ">" + pair[1]
+        name_dict[key] = value
+    E.info("Name mapping: %s" % name_dict)
+
+    PipelineLncRNA.splitAlignedFasta(infile, out_dir, name_dict)
+
+
+@transform(splitEnsemblLincRNAFasta, suffix(".fasta"), ".phyloCSF")
+def runEnsemblLincRNAPhyloCSF(infile, outfile):
+    phylogeny = PARAMS["phyloCSF_phylogeny"]
+    n_frames = int(PARAMS["phyloCSF_n_frames"])
+    if PARAMS["phyloCSF_options"]:
+        options = PARAMS["phyloCSF_options"]
+    else:
+        options = ""
+
+    species = []
+    for mapping in PARAMS["phyloCSF_map_species_names"].split(","):
+        species.append(mapping.split(":")[1])
+    species = ",".join(species)
+
+    to_cluster = True
+    statement = ("PhyloCSF %(phylogeny)s"
+                 "  %(infile)s"
+                 "  --frames=%(n_frames)s"
+                 "  --species=%(species)s"
+                 " %(options)s"
+                 " > %(outfile)s")
+    P.run()
+
+
+@merge(runEnsemblLincRNAPhyloCSF, "./lincRNA_ensembl/lncRNA_phyloCSF.tsv")
+def mergeEnsemblLincRNAPhyloCSF(infiles, outfile):
+    file_names = " ".join([x for x in infiles])
+    statement = '''
+                python %(scriptsdir)s/combine_tables.py
+                 --no-titles
+                 --cat=CAT
+                 --missing=0
+                 --log=%(outfile)s.log
+                 %(file_names)s
+                > %(outfile)s
+                 '''
+    P.run()
+
+
+##########################################################################
+##########################################################################
+##########################################################################
 # targets
 @follows(buildCodingGeneSet,
          buildRefnoncodingGeneSet, 
