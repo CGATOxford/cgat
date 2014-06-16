@@ -28,7 +28,4 @@ region_test:
     outputs: [stdout]
     references: [example_human_g1k_region.tsv]
     options: <DIR>/example_human_g1k.bam --region '1:69100:69200' 
-
-
-
     

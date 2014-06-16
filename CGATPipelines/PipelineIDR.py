@@ -70,7 +70,6 @@ def filterBadLibraries(infiles, bad_samples):
 def mergeBams(infile_list, outfile):
     infile_list = " ".join(infile_list)
     out_stub = P.snip(outfile, ".bam")
-    to_cluster = True
     job_options = "-l mem_free=5G"
     statement = ("samtools merge - %(infile_list)s"
                  " | samtools sort - %(out_stub)s"

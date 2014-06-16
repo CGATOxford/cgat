@@ -218,10 +218,10 @@ class PredictionParserEntry:
         other = const_other.GetCopy()
 
         if not self.mExpand or not other.mExpand:
-            raise ValueError, "both object must be expanded."
+            raise ValueError("both object must be expanded.")
 
         if self.mQueryToken != other.mQueryToken:
-            raise ValueError, "can not add different query."
+            raise ValueError("can not add different query.")
 
         if self.mSbjctToken != other.mSbjctToken or \
                 self.mSbjctStrand != other.mSbjctStrand:
@@ -229,7 +229,7 @@ class PredictionParserEntry:
                 self.mSbjctToken += "-" + other.mSbjctToken
                 self.mSbjctStrand += other.mSbjctStrand
             else:
-                raise ValueError, "can not add different sbjct."
+                raise ValueError("can not add different sbjct.")
 
         query_overlap = max(0, min(self.mQueryTo, other.mQueryTo) -
                             max(self.mQueryFrom, other.mQueryFrom) + 1)
@@ -257,16 +257,16 @@ class PredictionParserEntry:
                                                overlap,
                                                self.mMapPeptide2Genome[-1][2] - overlap * 3)
             else:
-                raise ValueError, "can not add overlapping entries: overlap = %i, queries:\n%s\n%s\n" % (
-                    query_overlap, str(self), str(other))
+                raise ValueError("can not add overlapping entries: overlap = %i, queries:\n%s\n%s\n" % (
+                    query_overlap, str(self), str(other)))
 
         sbjct_overlap = max(0, min(self.mSbjctGenomeTo, other.mSbjctGenomeTo) -
                             max(self.mSbjctGenomeFrom, other.mSbjctGenomeFrom), 0)
 
         if sbjct_overlap > 0:
             if not combine_contig:
-                raise ValueError, "can not add overlapping entries: overlap = %i, sbjct:\n%s\n%s\n" % (
-                    sbjct_overlap, str(self), str(other))
+                raise ValueError("can not add overlapping entries: overlap = %i, sbjct:\n%s\n%s\n" % (
+                    sbjct_overlap, str(self), str(other)))
 
         if self.mSbjctToken == other.mSbjctToken:
             # join on the same contig
@@ -486,11 +486,10 @@ class PredictionParserEntry:
              self.mAlignmentString,
              self.mNAssembled) = table_row[:26]
         else:
-            raise ValueError, "unknown format: %i fields" % len(data)
-            sys.exit(0)
+            raise ValueError("unknown format: %i fields" % len(data))
 
         if self.mExpand:
-            self.mMapPeptide2Translation = alignlib_lite.py_makeAlignmentVector(
+            self.mMapPeptide2Translation = alignlib_lite.makeAlignmentVector(
             )
 
             if self.mQueryAli != "" and self.mSbjctAli != "":
@@ -582,11 +581,13 @@ class PredictionParserEntry:
              ) = data
             self.mAlignmentString = ""
         else:
-            raise ValueError, "unknown format: %i fields in line %s" % (
-                len(data), line[:-1])
+            raise ValueError("unknown format: %i fields in line %s" % (
+                len(data), line[:-1]))
 
-        (self.score, self.mQueryCoverage, self.mPercentIdentity, self.mPercentSimilarity) = map(
-            float, (self.score, self.mQueryCoverage, self.mPercentIdentity, self.mPercentSimilarity))
+        (self.score, self.mQueryCoverage,
+         self.mPercentIdentity, self.mPercentSimilarity) = map(
+            float, (self.score, self.mQueryCoverage,
+                    self.mPercentIdentity, self.mPercentSimilarity))
 
         (self.mQueryFrom, self.mQueryTo, self.mQueryLength,
          self.mSbjctFrom, self.mSbjctTo,
@@ -937,8 +938,9 @@ class PredictionParserGenewise(PredictionParser):
                     entry.mMapPeptide2Translation, row_seq, col_seq) * 100
                 entry.mPercentSimilarity = alignlib_lite.py_calculatePercentSimilarity(
                     entry.mMapPeptide2Translation) * 100
-                entry.mQueryCoverage = (entry.mMapPeptide2Translation.getRowTo() -
-                                        entry.mMapPeptide2Translation.getRowFrom() + 1 ) * 100 /\
+                entry.mQueryCoverage = (
+                    entry.mMapPeptide2Translation.getRowTo() -
+                    entry.mMapPeptide2Translation.getRowFrom() + 1) * 100 /\
                     entry.mQueryLength
 
             entry.mAlignmentString = string.join(map(
@@ -951,12 +953,12 @@ class PredictionParserGenewise(PredictionParser):
                 print string.join(lines, "")
                 sys.exit(1)
 
-            # get regions matching
-            # use summary information, as it is correct for genomic data.
-            # when -u is set (in contrast to -alb format)
-            # genewise starts counting at 1, thus subtract 1 from first position
-            # Note: When position starts with a gap, genewise says alignments starts
-            # from position 1 while the first aligned residue is position 2
+            # get regions matching use summary information, as it is
+            # correct for genomic data.  when -u is set (in contrast
+            # to -alb format) genewise starts counting at 1, thus
+            # subtract 1 from first position Note: When position
+            # starts with a gap, genewise says alignments starts from
+            # position 1 while the first aligned residue is position 2
             if entry.mMapPeptide2Genome[0][0] == "G":
                 entry.mQueryFrom += entry.mMapPeptide2Genome[0][1]
             if entry.mMapPeptide2Genome[-1][0] == "G":
@@ -1316,22 +1318,25 @@ class PredictionParserExonerate (PredictionParser):
                           entry.score, entry.mQueryLength))
 
             except ValueError:
-                raise InputError, "error while parsing ints: %s" % " ".join((entry.mQueryFrom, entry.mQueryTo,
-                                                                             entry.mSbjctGenomeFrom, entry.mSbjctGenomeTo,
-                                                                             entry.score, entry.mQueryLength))
+                raise InputError("error while parsing ints: %s" %
+                                 " ".join((entry.mQueryFrom, entry.mQueryTo,
+                                           entry.mSbjctGenomeFrom,
+                                           entry.mSbjctGenomeTo,
+                                           entry.score, entry.mQueryLength)))
 
             try:
-                entry.mPercentIdentity, entry.mPercentSimilarity = map(float,
-                                                                       (percent_identity, percent_similarity))
+                entry.mPercentIdentity, entry.mPercentSimilarity = map(
+                    float,
+                    (percent_identity, percent_similarity))
             except ValueError:
-                raise InputError, "error while parsing floats: %s, %s" % (
-                    percent_identity, percent_similarity)
+                raise (InputError, "error while parsing floats: %s, %s" % (
+                    percent_identity, percent_similarity))
 
             entry.mAlignmentString = vulgar
             try:
                 entry.mMapPeptide2Genome = Genomics.String2Alignment(vulgar)
             except ValueError:
-                raise InputError, "error while parsing alignment %s" % vulgar
+                raise InputError("error while parsing alignment %s" % vulgar)
 
             entry.mQueryCoverage = (
                 entry.mQueryTo - entry.mQueryFrom) * 100 / entry.mQueryLength
@@ -1408,10 +1413,11 @@ def Blocks2Alignment(query_block_starts,
 
     lquery = block_sizes[-1]
     lsbjct = block_sizes[-1]
-    alignlib_lite.py_addDiagonal2Alignment(map_peptide2translation,
-                                           query_peptide_pos,
-                                           query_peptide_pos + lquery,
-                                           sbjct_peptide_pos - query_peptide_pos)
+    alignlib_lite.py_addDiagonal2Alignment(
+        map_peptide2translation,
+        query_peptide_pos,
+        query_peptide_pos + lquery,
+        sbjct_peptide_pos - query_peptide_pos)
 
     lsbjct *= 3
     alignment.append(("M", lquery, lsbjct))
@@ -1453,10 +1459,6 @@ def Blocks2AlignmentCDNA(query_block_starts,
     intron = 0
     for x in range(len(block_sizes) - 1):
 
-# print "x=", x, query_block_starts[x], sbjct_block_starts[x], block_sizes[x],\
-##               query_block_starts[x+1] - ( query_block_starts[x] + block_sizes[x] ), \
-##               sbjct_block_starts[x+1] - ( sbjct_block_starts[x] + block_sizes[x] )
-
         # count in nucleotides
         nbases = block_sizes[x]
         lgap = query_block_starts[x + 1] - (query_block_starts[x] + nbases)
@@ -1465,21 +1467,16 @@ def Blocks2AlignmentCDNA(query_block_starts,
         # add slipped residues at the ends
         # add to query, make gap in sbjct smaller.
         # gaps are thus artificially reduced to multiples of 3
-##         nbases  += lgap
-##         lsbjct  += lgap
-##         lintron -= lgap
-##         lgap    -= lgap
-
+        #         nbases  += lgap
+        #         lsbjct  += lgap
+        #         lintron -= lgap
+        #         lgap    -= lgap
         naminos = (nbases - phase) / 3
 
         sbjct_pos += nbases
         query_pos += nbases
 
         phase = query_pos % 3
-
-# print "lgap=", lgap, "lintron=",lintron, "phase=", phase,\
-##               "qp=", query_peptide_pos, "sp=", sbjct_peptide_pos, "phase=", phase,\
-##               "nbases=",nbases, "naminos=",naminos
 
         alignment.append(("M", naminos, naminos * 3))
         matches += naminos * 3
@@ -1736,30 +1733,16 @@ class PredictionParserBlatCDNA (PredictionParser):
 
                 elif entry.mSbjctFrom != entry.mMapPeptide2Translation.getColFrom() or\
                         entry.mSbjctTo != entry.mMapPeptide2Translation.getColTo():
-                    raise AlignmentError("# alignment length discrepancy in sbjct: %i-%i vs %i-%i" %
-                                         (entry.mSbjctFrom, entry.mSbjctTo,
-                                          entry.mMapPeptide2Translation.getColFrom(
-                                          ),
-                                          entry.mMapPeptide2Translation.getColTo()))
+                    raise AlignmentError(
+                        "# alignment length discrepancy in sbjct: %i-%i vs %i-%i" %
+                        (entry.mSbjctFrom, entry.mSbjctTo,
+                         entry.mMapPeptide2Translation.getColFrom(
+                         ),
+                         entry.mMapPeptide2Translation.getColTo()))
 
             entry.mPercentIdentity = 100 * nmatches / (nmatches + nmismatches)
             entry.mPercentSimilarity = 100 * \
                 nmatches / (nmatches + nmismatches)
-
-##             peptide_sequence = ["X" * (query_block_starts[0]) + query_block_seqs[0]]
-##             p = query_block_starts[0] + block_sizes[0]
-
-# for x in range(1,len(query_block_starts)):
-##                 peptide_sequence.append("X" * (query_block_starts[x] - p) + query_block_seqs[x])
-##                 p = query_block_starts[x] + block_sizes[x]
-
-##             peptide_sequence = string.join( peptide_sequence, "")
-##             row_seq = alignlib_lite.py_makeSequence( peptide_sequence )
-##             col_seq = alignlib_lite.py_makeSequence( entry.mTranslation )
-##             alignlib_lite.py_rescoreAlignment( entry.mMapPeptide2Translation, row_seq, col_seq )
-
-##             entry.mPercentIdentity = alignlib_lite.py_calculatePercentIdentity( entry.mMapPeptide2Translation, row_seq, col_seq ) * 100
-##             entry.mPercentSimilarity = alignlib_lite.py_calculatePercentSimilarity( entry.mMapPeptide2Translation ) * 100
 
             matches.append(entry)
 
@@ -1969,7 +1952,7 @@ class PredictionParserExons (PredictionParser):
              sbjct_genome_from, sbjct_genome_to) = data
 
             (sbjct_genome_from, sbjct_genome_to,
-             peptide_from, peptide_to, phase ) = \
+             peptide_from, peptide_to, phase) = \
                 map(int, (sbjct_genome_from, sbjct_genome_to,
                           peptide_from, peptide_to, phase))
 
@@ -2085,7 +2068,7 @@ class PredictionParserGFF(PredictionParser):
              sbjct_genome_from, sbjct_genome_to) = data
 
             (sbjct_genome_from, sbjct_genome_to,
-             peptide_from, peptide_to, phase ) = \
+             peptide_from, peptide_to, phase) = \
                 map(int, (sbjct_genome_from, sbjct_genome_to,
                           peptide_from, peptide_to, phase))
 

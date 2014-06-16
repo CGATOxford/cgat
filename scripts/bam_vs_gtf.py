@@ -10,32 +10,44 @@ bam_vs_gtf.py - compare bam file against gene set
 Purpose
 -------
 
-Compare RNASeq reads in a BAM file against reference exons.
-
-The script outputs counts for exon over-/underrun. 
-
-For unspliced reads, any bases extending beyond exon boundaries are counted. 
-
-For spliced reads, both parts of the reads are examined for their overlap.
-As a consequence, counts are doubled for spliced reads.
-
+Compare RNASeq reads in a BAM file against reference exons to quantify exon overrun / underrun.
 This script is for validation purposes:
-
-   * Exon overrun should be minimal - reads should not 
-      extend beyond known exons.
-
+   * Exon overrun should be minimal - reads should not extend beyond known exons.
    * Spliced reads should link known exons.
-
-The script requires a list of non-overlapping exons.
-
-For read counts to be correct the NH flag to be set correctly.
+   
+Please note:
+   * For unspliced reads, any bases extending beyond exon boundaries are counted. 
+   * For spliced reads, both parts of the reads are examined for their overlap.
+        As a consequence, counts are doubled for spliced reads.
+   * The script requires a list of non-overlapping exons as input.
+   * For read counts to be correct the NH flag needs to be set correctly.
 
 Usage
 -----
 
 Example::
 
-   cat in.bam | python bam_vs_gtf.py --filename-gtf=exons.gtf.gz
+   samtools view tests/bam_vs_gtf.py/small.bam | head
+   cat tests/bam_vs_gtf.py/small.bam | python bam_vs_gtf.py --filename-gtf=tests/bam_vs_gtf.py/hg19.chr19.gtf.gz
+   
+category	counts
+spliced_bothoverlap	0
+unspliced_overlap	0
+unspliced_nooverrun	0
+unspliced	207
+unspliced_nooverlap	207
+spliced_overrun	0
+spliced_halfoverlap	0
+spliced_exact	0
+spliced_inexact	0
+unspliced_overrun	0
+spliced	18
+spliced_underrun	0
+mapped	225
+unmapped	0
+input	225
+spliced_nooverlap	18
+spliced_ignored	0
 
 Type::
 
@@ -45,6 +57,9 @@ for command line help.
 
 Command line options
 --------------------
+
+filename-exons / filename-gtf: a gtf formatted file containing the genomic coordinates of a set of non-overlapping exons, 
+such as from a reference genome annotation database (Ensembl, UCSC etc.).
 
 '''
 
@@ -72,8 +87,8 @@ def main(argv=None):
     parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
                             usage=globals()["__doc__"])
 
-    parser.add_option("-e", "--filename-exons", "--filename-gtf", dest="filename_exons", type="string",
-                      help="gtf formatted file with exons locations. [%default]")
+    parser.add_option("-e", "--filename-exons", "--filename-gtf", dest="filename_exons", type="string", metavar="gtf",
+                      help="gtf formatted file with non-overlapping exon locations. [%default]")
 
     parser.set_defaults(
         filename_exons=None,
@@ -101,9 +116,7 @@ def main(argv=None):
     nunspliced_ignored = 0
     nunspliced_nooverlap = 0
     nunspliced_overrun = [0] * (options.read_length + 10)
-
     overrun_offset = options.read_length + 10
-
     ninput = 0
     nunmapped = 0
 

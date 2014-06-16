@@ -1,5 +1,4 @@
-"""
-==============
+"""==============
 Motif pipeline
 ==============
 
@@ -19,12 +18,14 @@ analysis on a set of intervals.
 Usage
 =====
 
-See :ref:`PipelineSettingUp` and :ref:`PipelineRunning` on general information how to use CGAT pipelines.
+See :ref:`PipelineSettingUp` and :ref:`PipelineRunning` on general
+information how to use CGAT pipelines.
 
 Configuration
 -------------
 
-The pipeline requires a configured :file:`pipeline.ini` file. The pipeline looks for a configuration file in several places:
+The pipeline requires a configured :file:`pipeline.ini` file. The
+pipeline looks for a configuration file in several places:
 
    1. The default configuration in the :term:`code directory`.
    2. A shared configuration file :file:`../pipeline.ini`.
@@ -35,9 +36,10 @@ override a shared configuration setting and a default configuration
 setting.
 
 Configuration files follow the ini format (see the python
-`ConfigParser <http://docs.python.org/library/configparser.html>` documentation).
-The configuration file is organized by section and the variables are documented within 
-the file. In order to get a local configuration file in the current directory, type::
+`ConfigParser <http://docs.python.org/library/configparser.html>`
+documentation).  The configuration file is organized by section and
+the variables are documented within the file. In order to get a local
+configuration file in the current directory, type::
 
     python <codedir>/pipeline_motifs.py config
 
@@ -58,8 +60,9 @@ Input
 Intervals
 +++++++++
 
-Input are :term:`bed`-formatted files of intervals. Intervals should be at least 
-bed4 formatted, i.e., each interval should be labelled (uniquely).
+Input are :term:`bed`-formatted files of intervals. Intervals should
+be at least bed4 formatted, i.e., each interval should be labelled
+(uniquely).
 
 Reference motifs
 ++++++++++++++++
@@ -76,11 +79,11 @@ Requirements
 The pipeline requires the information from the following pipelines:
 
 :doc:`pipeline_annotations`
-   set the configuration variable :py:data:`annotations_database` and 
+   set the configuration variable :py:data:`annotations_database` and
    :py:data:`annotations_dir`.
 
-On top of the default CGAT setup, the pipeline requires the following software to be in the 
-path:
+On top of the default CGAT setup, the pipeline requires the following
+software to be in the path:
 
 +--------------------+-------------------+------------------------------------------------+
 |*Program*           |*Version*          |*Purpose*                                       |
@@ -105,7 +108,8 @@ To run the example, simply unpack and untar::
    cd pipeline_chipseq
    python <srcdir>/pipeline_chipseq.py make full
 
-.. note:: 
+.. note::
+
    For the pipeline to run, install the :doc:`pipeline_annotations` as well.
 
 Glossary
@@ -177,7 +181,7 @@ P.getParameters(
 PARAMS = P.PARAMS
 
 PARAMS_ANNOTATIONS = P.peekParameters(PARAMS["annotations_dir"],
-                                      "pipeline_annotations.py")
+                                      "pipeline_annotations.py", on_error_raise=__name__ == "__main__")
 
 ###################################################################
 ###################################################################
@@ -551,7 +555,7 @@ def suggestMotifDiscoveryBackground():
             yield (track + "_intervals.load", background, int(n), int(w), masker)
 
 
-@follows(mkdir("discovery.dir"))
+@follows(loadIntervals, mkdir("discovery.dir"))
 @files(suggestMotifDiscoveryForeground)
 def buildDiscoverySequences(infile, outfile, npeaks, width, masker):
     '''get the peak sequences, masking or not specificed in the ini file.
@@ -577,7 +581,7 @@ def buildDiscoverySequences(infile, outfile, npeaks, width, masker):
         P.touch(outfile)
 
 
-@follows(mkdir("discovery.dir"))
+@follows(loadIntervals, mkdir("discovery.dir"))
 @files(suggestMotifDiscoveryBackground)
 def buildBackgroundSequences(infile, outfile, npeaks, width, masker):
     '''get the peak sequences, masking or not specificed in the ini file.
@@ -935,7 +939,8 @@ def exportMotifLocations(infiles, outfile):
 ###################################################################
 ###################################################################
 ###################################################################
-@follows(loadIntervals)
+@follows(loadMemeChipSummary,
+         loadIntervals)
 def full():
     '''run the full pipeline.'''
     pass

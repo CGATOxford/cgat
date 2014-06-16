@@ -182,7 +182,7 @@ from CGAT.GO import *
 # ---------------------------------------------------------------------------
 
 
-def main():
+def main(argv=None):
 
     parser = E.OptionParser(
         version="%prog version: $Id: GO.py 2883 2010-04-07 08:46:22Z andreas $", usage=globals()["__doc__"])

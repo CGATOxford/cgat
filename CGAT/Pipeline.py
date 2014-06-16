@@ -90,6 +90,8 @@ class PipelineError(Exception):
 LIB_DIR = os.path.dirname(__file__)
 ROOT_DIR = os.path.dirname(LIB_DIR)
 SCRIPTS_DIR = os.path.join(ROOT_DIR, "scripts")
+PIPELINE_DIR = os.path.join(os.path.dirname(LIB_DIR), "CGATPipelines")
+
 # if Pipeline.py is from an installed version,
 # scripts are located in the "bin" directory.
 if not os.path.exists(SCRIPTS_DIR):
@@ -98,7 +100,7 @@ if not os.path.exists(SCRIPTS_DIR):
 #######################################################
 #######################################################
 #######################################################
-## Setting/using parameters
+# Setting/using parameters
 #######################################################
 
 # possible to use defaultdict, but then statements will
@@ -107,6 +109,7 @@ if not os.path.exists(SCRIPTS_DIR):
 PARAMS = {
     'scriptsdir': SCRIPTS_DIR,
     'toolsdir': SCRIPTS_DIR,
+    'pipelinedir': PIPELINE_DIR,
     'cmd-farm': """python %s/farm.py
                 --method=drmaa
                 --cluster-priority=-10
@@ -129,6 +132,7 @@ CONFIG = {}
 
 # local temporary directory to use
 TMPDIR = '/scratch'
+SHARED_TMPDIR = '/ifs/scratch'
 
 
 def configToDictionary(config):
@@ -185,7 +189,8 @@ def getParameters(filenames=["pipeline.ini", ],
         # 1. config files into CGAT module directory?
         # 2. Pipeline.py into CGATPipelines module directory?
         dirname = os.path.join(
-            os.path.dirname(os.path.dirname(__file__)), "CGATPipelines")
+            os.path.dirname(os.path.dirname(__file__)),
+            "CGATPipelines")
         filenames.insert(0,
                          os.path.join(dirname,
                                       'configuration',
@@ -308,11 +313,6 @@ def isTrue(param, **kwargs):
     return value not in (0, '', 'false', 'False')
 
 
-#######################################################
-##
-#######################################################
-
-
 def checkFiles(filenames):
     """check for the presence/absence of files"""
 
@@ -380,25 +380,59 @@ def touch(filename, times=None):
         fhandle.close()
 
 
-def getTempFilename(dir=TMPDIR):
+def getTempFilename(dir=TMPDIR, shared=False):
     '''get a temporary filename.
 
-    The caller needs to delete it.
+    *dir* specifies the directory of the temporary
+    file and is set to the default temporary
+    location.
+
+    If *shared* is set, the tempory file will
+    be in a shared temporary location.
+
+    The caller needs to delete the temporary file.
     '''
+    if shared:
+        dir = SHARED_TMPDIR
+
     tmpfile = tempfile.NamedTemporaryFile(dir=dir, delete=False, prefix="ctmp")
     tmpfile.close()
     return tmpfile.name
 
 
-def getTempFile(dir=TMPDIR):
+def getTempFile(dir=TMPDIR, shared=False):
     '''get a temporary file.
 
-    The caller needs to delete it.
+    *dir* specifies the directory of the temporary
+    file and is set to the default temporary
+    location.
+
+    If *shared* is set, the tempory file will
+    be in a shared temporary location.
+
+    The caller needs to delete the temporary file.
     '''
+    if shared:
+        dir = SHARED_TMPDIR
+
     return tempfile.NamedTemporaryFile(dir=dir, delete=False, prefix="ctmp")
 
 
-def getTempDir(dir=TMPDIR):
+def getTempDir(dir=TMPDIR, shared=False):
+    '''get a temporary directory.
+
+    *dir* specifies the directory of the temporary
+    directory and is set to the default temporary
+    location.
+
+    If *shared* is set, the tempory directory will
+    be in a shared temporary location.
+
+    The caller needs to delete the temporary directory.
+    '''
+    if shared:
+        dir = SHARED_TMPDIR
+
     return tempfile.mkdtemp(dir=dir, prefix="ctmp")
 
 
@@ -582,7 +616,7 @@ def concatenateAndLoad(infiles,
 
     If given, *regex_filename* is applied to the filename to extract
     the track name. If the pattern contains multiple groups, they are
-    added as additional columns. For example, if *cat* is set to 
+    added as additional columns. For example, if *cat* is set to
     ``track,method`` and regex_filename is ``(.*)_(.*).tsv.gz``
     the columns ``track`` and method to the table.
 
@@ -1153,13 +1187,14 @@ def run(**kwargs):
             stdout, stderr = getStdoutStderr(stdout_path, stderr_path)
 
             if retval.exitStatus != 0:
-                raise PipelineError("---------------------------------------\n"
-                                    "Child was terminated by signal %i: \n"
-                                    "The stderr was: \n%s\n%s\n"
-                                    "---------------------------------------\n" %
-                                    (retval.exitStatus,
-                                     "".join(stderr),
-                                     statement))
+                raise PipelineError(
+                    "---------------------------------------\n"
+                    "Child was terminated by signal %i: \n"
+                    "The stderr was: \n%s\n%s\n"
+                    "---------------------------------------\n" %
+                    (retval.exitStatus,
+                     "".join(stderr),
+                     statement))
 
             try:
                 os.unlink(job_path)
@@ -1415,8 +1450,20 @@ def clean(patterns, dry_run=False):
     return cleaned
 
 
-def peekParameters(workingdir, pipeline):
-    '''peak configuration parameters from an external directory.
+def peekParameters(workingdir,
+                   pipeline,
+                   on_error_raise=True):
+    '''peek configuration parameters from a *pipeline*
+    in *workingdir*.
+
+    This method works by executing the pipeline in
+    workingdir and dumping its configuration values.
+
+    Returns a dictionary of configuration values.
+
+    If on_error_raise is True, if either *pipeline*
+    or *workingdir* are not found, an error is raised.
+    Otherwise, an empty dictionary is returned.
     '''
 
     # Attempt to locate directory with pipeline source code. This is a
@@ -1430,7 +1477,8 @@ def peekParameters(workingdir, pipeline):
     else:
         # else: use location of Pipeline.py
         # remove CGAT part, add CGATPipelines
-        dirname = os.path.join(os.path.dirname(dirname), "CGATPipelines")
+        dirname = os.path.join(os.path.dirname(dirname),
+                               "CGATPipelines")
         # if not exists, assume we want version located
         # in directory of calling script.
         if not os.path.exists(dirname):
@@ -1439,12 +1487,22 @@ def peekParameters(workingdir, pipeline):
             dirname = os.path.dirname(v['__file__'])
 
     pipeline = os.path.join(dirname, pipeline)
-    assert os.path.exists(
-        pipeline), "can't find pipeline source %s" % (dirname, pipeline)
+    if not os.path.exists(pipeline):
+        if on_error_raise:
+            raise ValueError(
+                "can't find pipeline source %s" % (dirname, pipeline))
+        else:
+            return {}
+
     if workingdir == "":
         workingdir = os.path.abspath(".")
 
-    assert os.path.exists(workingdir), "can't find working dir %s" % workingdir
+    if not os.path.exists(workingdir):
+        if on_error_raise:
+            raise ValueError(
+                "can't find working dir %s" % workingdir)
+        else:
+            return {}
 
     statement = "python %s -f -v 0 dump" % pipeline
     process = subprocess.Popen(statement,
@@ -1624,6 +1682,17 @@ def main(args=sys.argv):
                       help="terminate immediately at the first exception "
                       "[default=%default].")
 
+    parser.add_option("-d", "--debug", dest="debug",
+                      action="store_true",
+                      help="output debugging information on console, "
+                      "and not the logfile "
+                      "[default=%default].")
+
+    parser.add_option("-s", "--set", dest="variables_to_set",
+                      type="string", action="append",
+                      help="explicitely set paramater values "
+                      "[default=%default].")
+
     parser.set_defaults(
         pipeline_action=None,
         pipeline_format="svg",
@@ -1635,6 +1704,8 @@ def main(args=sys.argv):
         force=False,
         log_exceptions=False,
         exceptions_terminate_immediately=False,
+        debug=False,
+        variables_to_set=[]
     )
 
     (options, args) = E.Start(parser,
@@ -1642,6 +1713,10 @@ def main(args=sys.argv):
 
     GLOBAL_OPTIONS, GLOBAL_ARGS = options, args
     PARAMS["dryrun"] = options.dry_run
+
+    for variables in options.variables_to_set:
+        variable, value = variables.split("=")
+        PARAMS[variable.strip()] = IOTools.convertValue(value.strip())
 
     version = None
 
@@ -1692,7 +1767,7 @@ def main(args=sys.argv):
                                       mode="a")
         handler.setFormatter(
             MultiLineFormatter(
-                '%(asctime)s %(levelname)self %(module)s.%(funcName)s.%(lineno)d %(message)s'))
+                '%(asctime)s %(levelname)s %(module)s.%(funcName)s.%(lineno)d %(message)s'))
         logger = logging.getLogger()
         logger.addHandler(handler)
 
@@ -1707,22 +1782,20 @@ def main(args=sys.argv):
                 #   make sure we are not logging at the same time in
                 #   different processes
                 #
-                #session_mutex = manager.Lock()
-
-
+                # session_mutex = manager.Lock()
                 L.info(E.GetHeader())
                 L.info("code location: %s" % PARAMS["scriptsdir"])
                 L.info("code version: %s" % version)
 
-                pipeline_run(options.pipeline_targets,
-                             multiprocess=options.multiprocess,
-                             logger=logger,
-                             verbose=options.loglevel,
-                             log_exceptions=options.log_exceptions,
-                             exceptions_terminate_immediately=
-                             options.exceptions_terminate_immediately,
-                             checksum_level=0,
-                             )
+                pipeline_run(
+                    options.pipeline_targets,
+                    multiprocess=options.multiprocess,
+                    logger=logger,
+                    verbose=options.loglevel,
+                    log_exceptions=options.log_exceptions,
+                    exceptions_terminate_immediately=options.exceptions_terminate_immediately,
+                    checksum_level=0,
+                )
 
                 L.info(E.GetFooter())
 
@@ -1761,33 +1834,36 @@ def main(args=sys.argv):
 
         except ruffus_exceptions.RethrownJobError, value:
 
-            E.error("%i tasks with errors, please see summary below:" %
-                    len(value.args))
-            for idx, e in enumerate(value.args):
-                task, job, error, msg, traceback = e
-                task = re.sub("__main__.", "", task)
-                job = re.sub("\s", "", job)
-                # display only single line messages
-                if len([x for x in msg.split("\n") if x != ""]) > 1:
-                    msg = ""
+            if not options.debug:
+                E.error("%i tasks with errors, please see summary below:" %
+                        len(value.args))
+                for idx, e in enumerate(value.args):
+                    task, job, error, msg, traceback = e
+                    task = re.sub("__main__.", "", task)
+                    job = re.sub("\s", "", job)
+                    # display only single line messages
+                    if len([x for x in msg.split("\n") if x != ""]) > 1:
+                        msg = ""
 
-                E.error("%i: Task=%s Error=%s %s: %s" %
-                        (idx, task, error, job, msg))
+                    E.error("%i: Task=%s Error=%s %s: %s" %
+                            (idx, task, error, job, msg))
 
-            E.error("full traceback is in %s" % options.logfile)
+                E.error("full traceback is in %s" % options.logfile)
 
-            # write full traceback to log file only by removing the stdout
-            # handler
-            lhStdout = logger.handlers[0]
-            logger.removeHandler(lhStdout)
-            logger.error("start of error messages")
-            logger.error(value)
-            logger.error("end of error messages")
-            logger.addHandler(lhStdout)
+                # write full traceback to log file only by removing the stdout
+                # handler
+                lhStdout = logger.handlers[0]
+                logger.removeHandler(lhStdout)
+                logger.error("start of error messages")
+                logger.error(value)
+                logger.error("end of error messages")
+                logger.addHandler(lhStdout)
 
-            # raise error
-            raise ValueError(
-                "pipeline failed with %i errors" % len(value.args))
+                # raise error
+                raise ValueError(
+                    "pipeline failed with %i errors" % len(value.args))
+            else:
+                raise
 
     elif options.pipeline_action == "dump":
         # convert to normal dictionary (not defaultdict) for parsing purposes

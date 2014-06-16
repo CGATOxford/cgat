@@ -483,7 +483,7 @@ def WriteGeneStructureCorrespondence(mali, identifiers, exons, param_master_patt
                     if (100 * comparison.mNumIdenticalExons) / max_nexons > param_evaluate_min_percent_exon_identity:
                         status.append("M")
                     else:
-                    # S : spuriously conserved
+                        # S : spuriously conserved
                         status.append("S")
                 else:
                     # U: unconserved

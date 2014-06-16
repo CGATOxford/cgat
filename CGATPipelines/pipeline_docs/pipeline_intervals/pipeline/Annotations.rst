@@ -38,7 +38,7 @@ Overview
 ========
 
 .. report:: Annotations.AllAnnotations
-   :render: matrix
+   :render: table
 
    Table with all annotations
 

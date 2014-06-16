@@ -1,5 +1,4 @@
-"""
-=================
+"""=================
 ChIP-Seq pipeline
 =================
 
@@ -59,8 +58,8 @@ Input
 Reads
 ++++++
 
-Input are :file:`.export.txt.gz`-formatted files from Illumina, :file:`fastq.gz` files,
-or :file:`csfasta.gz` files.
+Input are :file:`.export.txt.gz`-formatted files from Illumina,
+:file:`fastq.gz` files, or :file:`csfasta.gz` files.
 
 
 The files should be labeled in the following way::
@@ -68,7 +67,7 @@ The files should be labeled in the following way::
    sample-condition-replicate.<suffix>.gz
 
 For example::
- 
+
    GM00855-D3-R1.<suffix>.gz
    GM00855-D3-R2.<suffix>.gz
    GM00855-input-R1.<suffix>.gz
@@ -219,7 +218,7 @@ P.getParameters(
 PARAMS = P.PARAMS
 
 PARAMS_ANNOTATIONS = P.peekParameters(PARAMS["annotations_dir"],
-                                      "pipeline_annotations.py")
+                                      "pipeline_annotations.py", on_error_raise=__name__ == "__main__")
 
 ###################################################################
 ###################################################################
@@ -477,10 +476,6 @@ def makeMask(infile, outfile):
         fh.close()
     else:
         P.touch(outfile)
-
-############################################################
-############o################################################
-############################################################
 
 
 @transform(buildBAM, suffix(".genome.bam"), add_inputs(makeMask), ".prep.bam")
@@ -1280,20 +1275,6 @@ def buildReadCoverageTable(infiles, outfile):
             table[i][0] + "\t" + "\t".join((map(str, table[i][1]))) + "\n")
 
 
-   # table = numpy.empty((len(beds), len(bams)), dtype=numpy.int )
-    # for i in range(len(beds)):
-     #   for j in range(len(bams)):
-      #      table[i][j] = data[bams[j], beds[i]]
-
-   # table = zip(beds, table)
-
-   # out.write ("track" + "\t" + "\t".join(bams) + "\n")
-   # for i in range(len(beds)):
-    #    out.write(table[i][0] + "\t" + "\t".join((map(str, table[i][1]))) + "\n")
-
-###################################################################
-###################################################################
-###################################################################
 @transform(buildReadCoverageTable, suffix(".tsv"), ".load")
 def loadReadCoverageTable(infile, outfile):
     '''load read coverage table.'''
@@ -2046,19 +2027,17 @@ def annotateIntervals(infile, outfile):
     '''classify chipseq intervals according to their location 
     with respect to the gene set.
     '''
-    to_cluster = True
-
     annotation_file = os.path.join(PARAMS["annotations_dir"],
                                    PARAMS_ANNOTATIONS["interface_annotation_gff"])
 
     statement = """
-    zcat < %(infile)s 
-    | python %(scriptsdir)s/bed2table.py 
-		--counter=classifier-chipseq 
-		--counter=length 
-		--log=%(outfile)s.log 
-		--filename-gff=%(annotation_file)s 
-		--genome-file=%(genome_dir)s/%(genome)s
+    zcat < %(infile)s
+    | python %(scriptsdir)s/bed2table.py
+    --counter=classifier-chipseq
+    --counter=length
+    --log=%(outfile)s.log
+    --filename-gff=%(annotation_file)s
+    --genome-file=%(genome_dir)s/%(genome)s
     > %(outfile)s"""
 
     P.run()
@@ -2074,21 +2053,19 @@ def annotateIntervals(infile, outfile):
 def annotateTSS(infile, outfile):
     '''compute distance to TSS'''
 
-    to_cluster = True
-
     annotation_file = os.path.join(PARAMS["annotations_dir"],
                                    PARAMS_ANNOTATIONS["interface_tss_bed"])
 
     statement = """
-    zcat < %(infile)s 
-        | python %(scriptsdir)s/bed2gff.py --as-gtf 
-	| python %(scriptsdir)s/gtf2table.py 
-		--counter=distance-tss 
-		--log=%(outfile)s.log 
-		--filename-gff=%(annotation_file)s 
-                --filename-format="bed" 
-		--genome-file=%(genome_dir)s/%(genome)s
-	> %(outfile)s"""
+    zcat < %(infile)s
+    | python %(scriptsdir)s/bed2gff.py --as-gtf
+    | python %(scriptsdir)s/gtf2table.py
+    --counter=distance-tss
+    --log=%(outfile)s.log
+    --filename-gff=%(annotation_file)s
+    --filename-format="bed"
+    --genome-file=%(genome_dir)s/%(genome)s
+    > %(outfile)s"""
 
     P.run()
 
@@ -2103,20 +2080,18 @@ def annotateTSS(infile, outfile):
 def annotateRepeats(infile, outfile):
     '''count the overlap between intervals and repeats.'''
 
-    to_cluster = True
-
     annotation_file = os.path.join(PARAMS["annotations_dir"],
                                    PARAMS_ANNOTATIONS["interface_repeats_gff"])
 
     statement = """
     zcat < %(infile)s |\
-        python %(scriptsdir)s/bed2gff.py --as-gtf |\
-	python %(scriptsdir)s/gtf2table.py \
-		--counter=overlap \
-		--log=%(outfile)s.log \
-		--filename-gff=%(annotation_file)s \
-		--genome-file=%(genome_dir)s/%(genome)s
-	> %(outfile)s"""
+    python %(scriptsdir)s/bed2gff.py --as-gtf |\
+    python %(scriptsdir)s/gtf2table.py \
+    --counter=overlap \
+    --log=%(outfile)s.log \
+    --filename-gff=%(annotation_file)s \
+    --genome-file=%(genome_dir)s/%(genome)s
+    > %(outfile)s"""
 
     P.run()
 
@@ -2159,7 +2134,9 @@ def loadRepeats(infile, outfile):
 @follows(subtractUnstimulated)
 @files([("%s.bed.gz" % x.asFile(), "%s.readcounts" % x.asFile()) for x in TOSUBTRACT])
 def buildIntervalCounts(infile, outfile):
-    '''count read density in bed files comparing stimulated versus unstimulated binding.
+    '''count read density in bed files comparing stimulated versus
+    unstimulated binding.
+
     '''
     track = TRACKS.factory(filename=outfile[:-len(".readcounts")])
     unstim = getUnstimulated(track)
@@ -2208,13 +2185,13 @@ def viewBigwig(infiles, outfile):
 
     for src in infiles:
         dest = os.path.join(PARAMS["ucsc_dir"], src)
-        if not os.path.exists( dest ) or \
+        if not os.path.exists(dest) or \
                 os.path.getmtime(src) > os.path.getmtime(dest):
             shutil.copyfile(src, dest)
         track = src[:-len(".bigwig")]
         url = PARAMS["ucsc_url"] % src
-        outs.write( '''track type=bigWig name="%(track)s" description="%(track)s" bigDataUrl=%(url)s\n'''
-                    % locals())
+        outs.write('''track type=bigWig name="%(track)s" description="%(track)s" bigDataUrl=%(url)s\n'''
+                   % locals())
     outs.close()
 
 ############################################################
@@ -2236,7 +2213,7 @@ def viewIntervals(infiles, outfiles):
         track = infile[:-len(".bed")]
 
         outs.write(
-            '''track name="interval_%(track)s_%(version)s" description="Intervals in %(track)s - version %(version)s" visibility=2\n''' % locals() )
+            '''track name="interval_%(track)s_%(version)s" description="Intervals in %(track)s - version %(version)s" visibility=2\n''' % locals())
 
         with IOTools.openFile(infile, "r") as f:
             for bed in Bed.iterator(f):
@@ -2339,8 +2316,8 @@ def correlation():
 @follows(annotateIntervals, loadAnnotations,
          annotateTSS, loadTSS,
          annotateRepeats, loadRepeats,
-         #annotateTSSIntervalAssociations, loadTSSIntervalAssociations,
-         #annotateTSSIntervalDistance, loadTSSIntervalDistance,
+         # annotateTSSIntervalAssociations, loadTSSIntervalAssociations,
+         # annotateTSSIntervalDistance, loadTSSIntervalDistance,
          buildIntervalCounts, loadIntervalCounts)
 def annotation():
     '''run the annotation targets.'''
@@ -2459,7 +2436,7 @@ def publish():
         # "genesets": [ "lincrna.gtf.gz", "abinitio.gtf.gz" ],
         "intervals": glob.glob("*.bed"),
         # "classification": glob.glob("*.class.tsv.gz") ,
-        #"differential_expression" : glob.glob( "*.cuffdiff.dir" ),
+        # "differential_expression" : glob.glob( "*.cuffdiff.dir" ),
     }
 
     bams = []

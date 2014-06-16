@@ -135,7 +135,8 @@ def main(argv=None):
     ####################################################################
     # Read regions to extract
     ####################################################################
-    map_component2extracts = Malis.readExtracts(options, map_component2input_id)
+    map_component2extracts = Malis.readExtracts(
+        options, map_component2input_id)
 
     ####################################################################
     ####################################################################

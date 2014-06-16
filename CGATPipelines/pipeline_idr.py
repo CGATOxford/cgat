@@ -343,6 +343,7 @@ def splitBamfiles(infile, sentinal):
 
 
 # AH: remove replicate requirement for input tracks
+# AH: avoid merging if only one repliacte
 @follows(mkdir("bamfiles_pooled"))
 @collate(filterBamfiles,
          regex(r"(.+)/(.+)-input-.*.sentinal"),
@@ -356,9 +357,13 @@ def poolInputBamfiles(infiles, sentinal):
     outfile = P.snip(sentinal, ".sentinal") + ".bam"
     bad_samples = PARAMS["filter_remove_inputs"].split(",")
 
-    to_merge = IDR.filterBadLibraries(infiles, bad_samples)
+    if len(infiles) > 1:
+        to_merge = IDR.filterBadLibraries(infiles, bad_samples)
+        IDR.mergeBams(to_merge, outfile)
+    else:
+        os.symlink(infiles[0], outfile)
+        os.symlink(infiles[0] + ".bai", outfile + ".bai")
 
-    IDR.mergeBams(to_merge, outfile)
     P.touch(sentinal)
 
 
@@ -386,7 +391,7 @@ def splitPooledBamfiles(infile, sentinal):
     infile = P.snip(infile, ".sentinal") + ".bam"
     outfile = P.snip(sentinal, ".sentinal")
     params = '2'
-    module = P.snip(IDR.__file__, ".pyc")
+    module = P.snip(IDR.__file__, ".py")
 
     P.submit(module,
              "splitBam",
@@ -769,7 +774,7 @@ def loadIDROnPooledPseudoreplicates(infile, outfile):
        "./idr_individual_replicates/idr_summary_individual_replicates.tsv")
 def findNPeaksForIndividualReplicates(infiles, outfile):
     idr_thresh = PARAMS["idr_options_inter_replicate_threshold"]
-    module = P.snip(IDR.__file__, ".pyc")
+    module = P.snip(IDR.__file__, ".py")
 
     P.submit(module,
              "findNPeaks",
@@ -790,7 +795,7 @@ def loadNPeaksForIndividualReplicates(infile, outfile):
        "./idr_pseudoreplicates/idr_summary_pseudoreplicates.tsv")
 def findNPeaksForPseudoreplicates(infiles, outfile):
     idr_thresh = PARAMS["idr_options_self_consistency_threshold"]
-    module = P.snip(IDR.__file__, ".pyc")
+    module = P.snip(IDR.__file__, ".py")
 
     P.submit(module,
              "findNPeaks",
@@ -812,7 +817,7 @@ def loadNPeaksForPseudoreplicates(infile, outfile):
        "idr_summary_pooled_pseudoreplicates.tsv")
 def findNPeaksForPooledPseudoreplicates(infiles, outfile):
     idr_thresh = PARAMS["idr_options_pooled_consistency_threshold"]
-    module = P.snip(IDR.__file__, ".pyc")
+    module = P.snip(IDR.__file__, ".py")
 
     P.submit(module,
              "findNPeaks",

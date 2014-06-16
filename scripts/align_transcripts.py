@@ -431,20 +431,20 @@ def buildFragments(exons, input, pseudogenes, options, coordinate_factor=3,
                     # thread each sequence through the peptide alignment
                     if segment.mCds:
 
-##                         muscle = WrapperMuscle.Muscle()
-##                         mali = Mali.Mali()
-# for x in range(len(segment.mCds)):
-##                             mali.addSequence( segment.mMembers[x], 0, 0, segment.mCds[x] )
+                        ##                         muscle = WrapperMuscle.Muscle()
+                        ##                         mali = Mali.Mali()
+                        # for x in range(len(segment.mCds)):
+                        ##                             mali.addSequence( segment.mMembers[x], 0, 0, segment.mCds[x] )
 
-##                         aligned = muscle.Run( mali )
+                        ##                         aligned = muscle.Run( mali )
 
-##                         cds_consensus = aligned.getConsensus( mark_with_gaps = True )
+                        ##                         cds_consensus = aligned.getConsensus( mark_with_gaps = True )
 
-# if options.loglevel >= 6:
-# options.stdlog.write("# consensus cds alignment:\n")
-##                             aligned.writeToFile( options.stdlog )
-##                             options.stdlog.write( cds_consensus + "\n" )
-# options.stdlog.flush()
+                        # if options.loglevel >= 6:
+                        # options.stdlog.write("# consensus cds alignment:\n")
+                        ##                             aligned.writeToFile( options.stdlog )
+                        ##                             options.stdlog.write( cds_consensus + "\n" )
+                        # options.stdlog.flush()
 
                         cds_consensus = ["-"] * len(pep_consensus) * 3
 
@@ -1187,7 +1187,7 @@ sequences will be aligned to the cds sequences. This produces better coordinates
                     sequences[member].append("".join(s))
                     added.add(member)
             else:
-            # simply add the segment
+                # simply add the segment
                 for member in fragments[x].mMembers:
                     sequences[member].append(segment)
                     added.add(member)

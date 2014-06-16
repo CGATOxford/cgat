@@ -2,8 +2,8 @@
 Release notes
 =============
 
-The CGAT code is currently unreleased. It is available through
-repository access only.
+The full CGAT code collection is unreleased. Please use
+the latest version from the repository.
 
 Contributions
 =============
@@ -16,7 +16,6 @@ collection for convenience.
 * The NCL module draws from code written by ...
 * list_overlap.py
 * Iterators.py
-
 
 Contributors
 ------------

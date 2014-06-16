@@ -521,7 +521,8 @@ def main(argv=None):
                     # remove xlabel:
                     extra_options = re.sub(", xlab='[^']+'", "", extra_options)
                     extra_options += ", names.arg=headers, las=2"
-                    R("""op <- par(mar=c(11,4,4,2))""")  # the 10 allows the names.arg below the barplot
+                    R(
+                        """op <- par(mar=c(11,4,4,2))""")  # the 10 allows the names.arg below the barplot
 
                 R("""boxplot( matrix %s)""" % extra_options)
 
@@ -534,7 +535,8 @@ def main(argv=None):
                     # remove xlabel:
                     extra_options = re.sub(", xlab='[^']+'", "", extra_options)
                     extra_options += ", names.arg=headers, las=2"
-                    R("""op <- par(mar=c(11,4,4,2))""")  # the 10 allows the names.arg below the barplot
+                    R(
+                        """op <- par(mar=c(11,4,4,2))""")  # the 10 allows the names.arg below the barplot
 
                 R("""barplot(as.matrix(matrix), %s)""" % extra_options)
 
@@ -547,7 +549,8 @@ def main(argv=None):
                     # remove xlabel:
                     extra_options = re.sub(", xlab='[^']+'", "", extra_options)
                     extra_options += ", names.arg=headers, las=2"
-                    R("""op <- par(mar=c(11,4,4,2))""")  # the 10 allows the names.arg below the barplot
+                    R(
+                        """op <- par(mar=c(11,4,4,2))""")  # the 10 allows the names.arg below the barplot
 
                 R("""barplot(as.matrix(matrix), beside=TRUE %s)""" %
                   extra_options)

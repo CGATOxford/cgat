@@ -182,9 +182,9 @@ def writeSequencesForIntervals(track,
                                min_sequences=None,
                                order="peakval",
                                shift=None):
-    '''build a sequence set for motif discovery. Intervals are taken 
-    from the table <track>_intervals in the database *dbhandle* and 
-    save to *filename* in :term:`fasta` format.
+    '''build a sequence set for motif discovery. Intervals are taken from
+    the table <track>_intervals in the database *dbhandle* and save to
+    *filename* in :term:`fasta` format.
 
     If num_shuffles is set, shuffled copies are created as well with
     the shuffled number appended to the filename.
@@ -202,16 +202,19 @@ def writeSequencesForIntervals(track,
 
     If *num_sequences* is set, the first *num_sequences* will be used.
 
-    *masker* can be a combination of 
+    *masker* can be a combination of
         * dust, dustmasker: apply dustmasker
         * softmask: mask softmasked genomic regions
 
-    *order* is the order by which peaks should be sorted. Possible values
-    are 'peakval' (peak value, descending order), 'score' (peak score, descending order) 
+    *order* is the order by which peaks should be sorted. Possible
+    values are 'peakval' (peak value, descending order), 'score' (peak
+    score, descending order)
 
-    If *shift* is set, intervals will be shifted. ``leftright`` creates two intervals
-    on the left and right of the actual interval. The intervals will be centered around
-    the mid-point and truncated the same way as the main intervals.
+    If *shift* is set, intervals will be shifted. ``leftright``
+    creates two intervals on the left and right of the actual
+    interval. The intervals will be centered around the mid-point and
+    truncated the same way as the main intervals.
+
     '''
 
     fasta = IndexedFasta.IndexedFasta(

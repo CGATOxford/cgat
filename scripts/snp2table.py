@@ -604,7 +604,7 @@ class BaseAnnotatorCodon(BaseAnnotator):
                     variant_base = Genomics.complement(variant_base)
 
         self.mVariantAAs.extend([Genomics.translate(x)
-                                for x in self.mVariantCodons])
+                                 for x in self.mVariantCodons])
 
     def updateIndels(self, snp, is_negative_strand):
 

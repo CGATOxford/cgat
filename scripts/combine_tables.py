@@ -215,7 +215,7 @@ def joinTables(outfile, options, args):
 
         if options.input_has_titles:
             data = string.split(lines[0][:-1], "\t")
-           # no titles have been defined so far
+            # no titles have been defined so far
             if not titles:
                 key = "-".join([data[x] for x in options.columns])
                 titles = [key]
@@ -357,7 +357,7 @@ def joinTables(outfile, options, args):
             if options.input_has_titles and options.skip_titles:
                 titles = headers
             else:
-            # otherwise: print the headers out right away
+                # otherwise: print the headers out right away
                 outfile.write(string.join(headers, "\t") + "\n")
 
         order = range(0, len(tables) + 1)

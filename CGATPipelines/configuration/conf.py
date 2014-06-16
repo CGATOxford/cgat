@@ -15,25 +15,30 @@
 import sys
 import os
 
+import CGAT.Pipeline as P
+import CGATPipelines
+
 ################################################################
 ## Options related to CGAT pipelines 
 
 # path were documentation source resides.
 # Use environment variable SPHINX_DOCSDIR.
-# TODO: If unset, try to guess the location, but how?
+# If unset, take the location of CGATPipelines
 docsdir = os.environ.get("SPHINX_DOCSDIR",
-                         ".")
-
+                         os.path.join(os.path.dirname(CGATPipelines.__file__),
+                                      'pipeline_docs'))
 
 if not os.path.exists(docsdir):
     raise ValueError("documentation directory '%s' not found" % docsdir)
 
+themedir = os.path.join(os.path.dirname(CGATPipelines.__file__),
+                        'pipeline_docs',
+                        'themes')
+logopath = os.path.join(themedir, "cgat_logo.png")
 
 ################################################################
 # Import pipeline configuration from pipeline.ini in the current
 # directory and the common one.
-import CGAT.Pipeline as P
-import CGATPipelines
 
 # PATH were code for pipelines is stored
 pipelinesdir = os.path.dirname(CGATPipelines.__file__)
@@ -107,11 +112,13 @@ extensions = ['sphinx.ext.autodoc',
               'SphinxReport.report_directive',
               'sphinx.ext.inheritance_diagram',
               'SphinxReport.errors_directive',
+              'SphinxReport.warnings_directive',
               'SphinxReport.roles']
 
 if P.CONFIG.has_section('intersphinx'):
     intersphinx_mapping = dict(
-        [(x, (y, None)) for x, y in P.CONFIG.items('intersphinx')])
+        [(x, (os.path.abspath(y), None))
+         for x, y in P.CONFIG.items('intersphinx')])
 
 # Add any paths that contain templates here, relative to this directory.
 # Add any paths that contain templates here, relative to this directory.
@@ -194,7 +201,7 @@ html_theme = 'cgat'
 #html_theme_options = {}
 
 # Add any paths that contain custom themes here, relative to this directory.
-html_theme_path=[os.path.join(os.path.dirname(docsdir), "themes")]
+html_theme_path = [themedir]
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
@@ -205,7 +212,7 @@ html_theme_path=[os.path.join(os.path.dirname(docsdir), "themes")]
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
-html_logo = os.path.join( docsdir, "_templates", "cgat_logo.png" )
+html_logo = logopath
 
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32

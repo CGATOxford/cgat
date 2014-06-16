@@ -1,6 +1,5 @@
-'''
-mali2kaks.py - rate analysis with PAML
-======================================
+'''mali2kaks.py - rate analysis with PAML
+=========================================
 
 :Author: Andreas Heger
 :Release: $Id$
@@ -10,12 +9,12 @@ mali2kaks.py - rate analysis with PAML
 Purpose
 -------
 
-This script will do pairwise rate analysis on a set of multiply aligned
-sequences in :term:`fasta` format.
+This script will do pairwise rate analysis on a set of multiply
+aligned sequences in :term:`fasta` format.
 
-PAML bails if sequences in a multiple alignment are not overlapping. Thus this
-code checks for each pair the overlap. If a pair is not overlapping, it goes
-into pairwise mode.
+PAML bails if sequences in a multiple alignment are not
+overlapping. Thus this code checks for each pair the overlap. If a
+pair is not overlapping, it goes into pairwise mode.
 
 Usage
 -----
@@ -537,10 +536,10 @@ def runXrateSN(xgram, mali, options):
                                              o_dn, o_ds, o_omega,
                                              "na", "na", "na", "na",
                                              o_kappa, result.getLogLikelihood(
-                                             ),
-                                             "na",
-                                             o_rn, o_rs, o_t,
-                                             o_rn0, o_rs0, o_t0))))
+    ),
+        "na",
+        o_rn, o_rs, o_t,
+        o_rn0, o_rs0, o_t0))))
 
     if options.with_counts:
         info = Genomics.CalculatePairIndices(mali[ids[0]], mali[ids[1]])
@@ -708,8 +707,8 @@ def outputXRateResult(mali, result, rsi, rsv, rni, rnv, msg):
                                              o_dn, o_ds, o_omega,
                                              o_N, o_S, "na", "na",
                                              o_kappa, result.getLogLikelihood(
-                                             ),
-                                             "na"))))
+    ),
+        "na"))))
 
     if options.with_rho:
         options.stdout.write("\t" + "\t".join(map(str, (o_rn, o_rs, o_t,

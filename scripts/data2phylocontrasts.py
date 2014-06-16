@@ -1,5 +1,4 @@
-"""
-data2phylocontrasts.py - compute phylogenetic independent contrasts
+"""data2phylocontrasts.py - compute phylogenetic independent contrasts
 ==============================================================
 
 :Author: Andreas Heger
@@ -10,8 +9,8 @@ data2phylocontrasts.py - compute phylogenetic independent contrasts
 Purpose
 -------
 
-This script reads a tab-separated table and computes phylogenetic independent 
-contrasts according to Felsenstein (1985).
+This script reads a tab-separated table and computes phylogenetic
+independent contrasts according to Felsenstein (1985).
 
 In addition to the table, this script requires a tree with branch lengths.
 For each taxon in the tree, the tab-separated table should contain a
@@ -38,15 +37,9 @@ Command line options
 """
 
 import sys
-import re
-import string
-import os
-import optparse
 import math
 
 import CGAT.Experiment as E
-import scipy
-import scipy.stats
 import CGAT.WrapperPhylip as WrapperPhylip
 import CGAT.TreeTools as TreeTools
 
@@ -63,8 +56,6 @@ def calculateCorrelationCoefficient(a, b):
         s3 += b[i] * b[i]
     return s1 / math.sqrt(abs(s2) * abs(s3))
 
-# ------------------------------------------------------------------------
-
 
 def main(argv=None):
     """script main.
@@ -75,24 +66,29 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv
 
-    parser = E.OptionParser(version="%prog version: $Id: data2phylocontrasts.py 2782 2009-09-10 11:40:29Z andreas $",
+    parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
     parser.add_option("-c", "--columns", dest="columns", type="string",
                       help="columns to take for calculating histograms.")
-    parser.add_option("-t", "--filename-tree", dest="filename_tree", type="string",
+    parser.add_option("-t", "--filename-tree", dest="filename_tree",
+                      type="string",
                       help="filename with tree(s).")
     parser.add_option("--skip-header", dest="add_header", action="store_false",
                       help="do not add header to flat format.")
-    parser.add_option("--write-header", dest="write_header", action="store_true",
+    parser.add_option("--write-header", dest="write_header",
+                      action="store_true",
                       help="write header and exit.")
     parser.add_option("--debug", dest="debug", action="store_true",
                       help="debug mode")
-    parser.add_option("--display-tree", dest="display_tree", action="store_true",
+    parser.add_option("--display-tree", dest="display_tree",
+                      action="store_true",
                       help="display the tree")
 
-    parser.add_option("-m", "--method", dest="methods", type="choice", action="append",
-                      choices=("contrasts", "spearman", "pearson", "compute"),
+    parser.add_option("-m", "--method", dest="methods", type="choice",
+                      action="append",
+                      choices=("contrasts", "spearman", "pearson",
+                               "compute"),
                       help="methods to perform on contrasts.")
 
     parser.set_defaults(
@@ -202,17 +198,21 @@ def main(argv=None):
                         import rpy
                         from rpy import r as R
 
-                        # Various ways to calculate r. It is not possible to use
-                        # cor.test or lsfit directly, as you have to perform a
-                        # regression through the origin.
+                        # Various ways to calculate r. It is not
+                        # possible to use cor.test or lsfit directly,
+                        # as you have to perform a regression through
+                        # the origin.
 
-                        # uncomment to check pearson r against phylip's value
-                        ## r = calculateCorrelationCoefficient( columns[x], columns[y] )
+                        # uncomment to check pearson r against
+                        # phylip's value r =
+                        # calculateCorrelationCoefficient(columns[x],
+                        # columns[y])
 
                         # for significance, use linear regression models in R
                         rpy.set_default_mode(rpy.NO_CONVERSION)
                         linear_model = R.lm(
-                            R("y ~ x - 1"), data=R.data_frame(x=columns[x], y=columns[y]))
+                            R("y ~ x - 1"), data=R.data_frame(x=columns[x],
+                                                              y=columns[y]))
                         rpy.set_default_mode(rpy.BASIC_CONVERSION)
 
                         ss = R.summary(linear_model)
@@ -229,17 +229,19 @@ def main(argv=None):
                         else:
                             code = ""
 
-                        options.stdout.write("\t".join((headers[x], headers[y],
-                                                        options.value_format % phy_r,
-                                                        options.pvalue_format % p,
-                                                        code)) + "\n")
+                        options.stdout.write("\t".join(
+                            (headers[x], headers[y],
+                             options.value_format % phy_r,
+                             options.pvalue_format % p,
+                             code)) + "\n")
 
             elif method == "contrasts":
 
                 options.stdout.write("\t".join(headers) + "\n")
                 for d in result.mContrasts:
                     options.stdout.write(
-                        "\t".join(map(lambda x: options.value_format % x, d)) + "\n ")
+                        "\t".join(map(lambda x: options.value_format % x, d))
+                        + "\n ")
 
             elif method == "compute":
 
@@ -286,9 +288,11 @@ def main(argv=None):
                             assert(node_id == tree.root)
                             assert(len(node.succ) == 3)
                             update_data(
-                                node_id, node.data.branchlength, node.succ[0], node.succ[1])
+                                node_id, node.data.branchlength,
+                                node.succ[0], node.succ[1])
                             update_data(
-                                max_index - 1, node.data.branchlength, node_id, node.succ[2])
+                                max_index - 1, node.data.branchlength,
+                                node_id, node.succ[2])
                     else:
                         for c in range(ncolumns):
                             values[node_id][c] = float(
@@ -303,12 +307,14 @@ def main(argv=None):
                 for node_id in range(max_index):
                     if variances[node_id] is None:
                         continue
-                    options.stdout.write("%s\t%s\t%s\n" % (node_id,
-                                                           options.value_format % variances[
-                                                               node_id],
-                                                           "\t".join(
-                                                               map(lambda x: options.value_format % x, contrasts[node_id])),
-                                                           ))
+                    options.stdout.write("%s\t%s\t%s\n" % (
+                        node_id,
+                        options.value_format % variances[
+                            node_id],
+                        "\t".join(
+                            map(lambda x: options.value_format % x,
+                                contrasts[node_id])),
+                    ))
 
     E.Stop()
 

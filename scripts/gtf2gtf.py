@@ -635,8 +635,9 @@ def main(argv=None):
 
             ninput += 1
 
-            gff.gene_id = gff.transcript_id
+            gff.setAttribute("gene_id", gff.transcript_id)
             options.stdout.write("%s\n" % str(gff))
+
             noutput += 1
             nfeatures += 1
 
@@ -925,14 +926,14 @@ def main(argv=None):
                 all_exons = []
                 for transcript in gene:
                     all_exons.extend([(x.start, x.end)
-                                     for x in transcript if x.feature == "exon"])
+                                      for x in transcript if x.feature == "exon"])
                 exon_counts = {}
                 for key, exons in itertools.groupby(all_exons):
                     exon_counts[key] = len(list(exons))
                 transcript_counts = []
                 for transcript in gene:
                     count = sum([exon_counts[(x.start, x.end)]
-                                for x in transcript if x.feature == "exon"])
+                                 for x in transcript if x.feature == "exon"])
                     transcript_counts.append((count, transcript))
                 transcript_counts.sort()
                 return transcript_counts[-1][1]

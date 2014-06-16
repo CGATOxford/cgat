@@ -30,8 +30,6 @@ import imp
 
 from nose.tools import ok_
 
-import CGAT.Experiment as E
-
 # DIRECTORIES to examine for python modules/scripts
 EXPRESSIONS = (
     ('tests', 'tests/*.py'),
@@ -48,6 +46,8 @@ EXCLUDE = (
     # recompilation or why it fails is unknown
     # (it seems using C compiler for C++ code).
     'pipeline_intervals',
+    'PipelinePeakcalling',
+    'pipeline_peakcalling',
     'bam2transcriptContribution',
     'beds2counts',
     'fasta2bed',
@@ -74,17 +74,20 @@ def check_import(filename, outfile):
 
     try:
         imp.load_source(basename, filename)
+
     except ImportError, msg:
         outfile.write("FAIL %s\n%s\n" % (basename, msg))
         outfile.flush()
         traceback.print_exc(file=outfile)
-        ok_(False, '%s scripts/modules - ImportError' % basename)
+        ok_(False, '%s scripts/modules - ImportError: %s' %
+            (basename, msg))
     except Exception, msg:
         outfile.write("FAIL %s\n%s\n" % (basename, msg))
         outfile.flush()
 
         traceback.print_exc(file=outfile)
-        ok_(False, '%s scripts/modules - Exception' % basename)
+        ok_(False, '%s scripts/modules - Exception: %s' %
+            (basename, msg))
 
     ok_(True)
 

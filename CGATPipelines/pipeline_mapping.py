@@ -103,28 +103,28 @@ The pipeline requires the results from
 On top of the default CGAT setup, the pipeline requires the following
 software to be in the path:
 
-+--------------------+-------------------+------------------------------------------------+
-|*Program*           |*Version*          |*Purpose*                                       |
-+--------------------+-------------------+------------------------------------------------+
-|bowtie_             |>=0.12.7           |read mapping                                    |
-+--------------------+-------------------+------------------------------------------------+
-|tophat_             |>=1.4.0            |read mapping                                    |
-+--------------------+-------------------+------------------------------------------------+
-|gsnap_              |>=2012.07.20       |read mapping                                    |
-+--------------------+-------------------+------------------------------------------------+
-|samtools            |>=0.1.16           |bam/sam files                                   |
-+--------------------+-------------------+------------------------------------------------+
-|bedtools            |                   |working with intervals                          |
-+--------------------+-------------------+------------------------------------------------+
-|sra-tools           |                   |extracting reads from .sra files                |
-+--------------------+-------------------+------------------------------------------------+
-|picard              |>=1.42             |bam/sam files. The .jar files need to be in your|
-|                    |                   | CLASSPATH environment variable.                |
-+--------------------+-------------------+------------------------------------------------+
-|star_               |>=2.2.0c           |read mapping                                    |
-+--------------------+-------------------+------------------------------------------------+
-|bamstats_           |>=1.22             |from CGR, Liverpool                             |
-+--------------------+-------------------+------------------------------------------------+
++---------+------------+------------------------------------------------+
+|*Program*|*Version*   |*Purpose*                                       |
++---------+------------+------------------------------------------------+
+|bowtie_  |>=0.12.7    |read mapping                                    |
++---------+------------+------------------------------------------------+
+|tophat_  |>=1.4.0     |read mapping                                    |
++---------+------------+------------------------------------------------+
+|gsnap_   |>=2012.07.20|read mapping                                    |
++---------+------------+------------------------------------------------+
+|samtools |>=0.1.16    |bam/sam files                                   |
++---------+------------+------------------------------------------------+
+|bedtools |            |working with intervals                          |
++---------+------------+------------------------------------------------+
+|sra-tools|            |extracting reads from .sra files                |
++---------+------------+------------------------------------------------+
+|picard   |>=1.42      |bam/sam files. The .jar files need to be in your|
+|         |            | CLASSPATH environment variable.                |
++---------+------------+------------------------------------------------+
+|star_    |>=2.2.0c    |read mapping                                    |
++---------+------------+------------------------------------------------+
+|bamstats_|>=1.22      |from CGR, Liverpool                             |
++---------+------------+------------------------------------------------+
 
 Merging bam files
 -----------------
@@ -190,6 +190,7 @@ import re
 import glob
 import sqlite3
 import collections
+import glob
 # load options from the config file
 import CGAT.Experiment as E
 import CGAT.Pipeline as P
@@ -217,7 +218,7 @@ P.getParameters(
 PARAMS = P.PARAMS
 
 PARAMS_ANNOTATIONS = P.peekParameters(PARAMS["annotations_dir"],
-                                      "pipeline_annotations.py")
+                                      "pipeline_annotations.py", on_error_raise=__name__ == "__main__")
 
 
 ###################################################################
@@ -547,7 +548,7 @@ def buildJunctions(infile, outfile):
         E.info('found %i junctions before removing duplicates' % njunctions)
 
     # make unique
-    statement = '''mv %(outfile)s %(outfile)s.tmp; 
+    statement = '''mv %(outfile)s %(outfile)s.tmp;
                    cat < %(outfile)s.tmp | sort | uniq > %(outfile)s;
                    rm -f %(outfile)s.tmp; '''
     P.run()
@@ -567,7 +568,7 @@ def buildGSNAPSpliceSites(infile, outfile):
     '''
 
     outfile = P.snip(outfile, ".iit")
-    statement = '''zcat %(infile)s 
+    statement = '''zcat %(infile)s
     | gtf_splicesites | iit_store -o %(outfile)s
     > %(outfile)s.log
     '''
@@ -582,6 +583,7 @@ def buildGSNAPSpliceSites(infile, outfile):
 
 SEQUENCESUFFIXES = ("*.fastq.1.gz",
                     "*.fastq.gz",
+                    "*.fa.gz",
                     "*.sra",
                     "*.export.txt.gz",
                     "*.csfasta.gz",
@@ -592,7 +594,7 @@ SEQUENCEFILES = tuple([os.path.join(DATADIR, suffix_name)
                       for suffix_name in SEQUENCESUFFIXES])
 
 SEQUENCEFILES_REGEX = regex(
-    r".*/(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz|csfasta.F3.gz|export.txt.gz)")
+    r".*/(\S+).(fastq.1.gz|fastq.gz|fa.gz|sra|csfasta.gz|csfasta.F3.gz|export.txt.gz)")
 
 ###################################################################
 ###################################################################
@@ -877,7 +879,7 @@ def buildSTARStats(infiles, outfile):
             raise ValueError("incomplete run: %s" % infile)
 
         for line in IOTools.openFile(fn):
-            if not "|" in line:
+            if "|" not in line:
                 continue
             header, value = line.split("|")
             header = re.sub("%", "percent", header)
@@ -930,13 +932,13 @@ def mapReadsWithBowtieAgainstTranscriptome(infiles, outfile):
     # but otherwise matches to paralogs will be missed (and such
     # reads would be filtered out).
     job_options = "-pe dedicated %i -R y" % PARAMS["bowtie_threads"]
-    to_cluster = True
-    m = PipelineMapping.BowtieTranscripts(executable=P.substituteParameters(**locals())["bowtie_executable"],
-                                          strip_sequence=PARAMS["strip_sequence"])
+    m = PipelineMapping.BowtieTranscripts(
+        executable=P.substituteParameters(**locals())["bowtie_executable"],
+        strip_sequence=PARAMS["strip_sequence"])
     infile, reffile = infiles
     prefix = P.snip(reffile, ".fa")
     # IMS: moved reporting options to ini
-    #bowtie_options = "%s --best --strata -a" % PARAMS["bowtie_transcriptome_options"]
+    # bowtie_options = "%s --best --strata -a" % PARAMS["bowtie_transcriptome_options"]
     statement = m.build((infile,), outfile)
     P.run()
 
@@ -951,18 +953,19 @@ def mapReadsWithBowtieAgainstTranscriptome(infiles, outfile):
 @transform(SEQUENCEFILES,
            SEQUENCEFILES_REGEX,
            add_inputs(
-               os.path.join(PARAMS["bowtie_index_dir"], PARAMS["genome"] + ".fa")),
+               os.path.join(PARAMS["bowtie_index_dir"],
+                            PARAMS["genome"] + ".fa")),
            r"bowtie.dir/\1.bowtie.bam")
 def mapReadsWithBowtie(infiles, outfile):
     '''map reads with bowtie'''
 
     job_options = "-pe dedicated %i -R y" % PARAMS["bowtie_threads"]
-    to_cluster = True
-    m = PipelineMapping.Bowtie(executable=P.substituteParameters(**locals())["bowtie_executable"],
-                               strip_sequence=PARAMS["strip_sequence"])
+    m = PipelineMapping.Bowtie(
+        executable=P.substituteParameters(**locals())["bowtie_executable"],
+        strip_sequence=PARAMS["strip_sequence"])
     infile, reffile = infiles
     # IMS remove reporting options to the ini
-    #bowtie_options = "%s --best --strata -a" % PARAMS["bowtie_options"]
+    # bowtie_options = "%s --best --strata -a" % PARAMS["bowtie_options"]
     statement = m.build((infile,), outfile)
     P.run()
 
@@ -980,19 +983,22 @@ def mapReadsWithBowtie(infiles, outfile):
 def mapReadsWithBWA(infile, outfile):
     '''map reads with bwa'''
 
-    job_options = "-pe dedicated %i -R y -l mem_free=%s" % (PARAMS["bwa_threads"],
-                                                            PARAMS["bwa_memory"])
-    to_cluster = True
-    if PARAMS["bwa_algorithm"] == "aln":
+    job_options = "-pe dedicated %i -R y -l mem_free=%s" % \
+                  (PARAMS["bwa_threads"],
+                   PARAMS["bwa_memory"])
+
+    algorithm = P.substituteParameters(**locals())["bwa_algorithm"]
+    if algorithm == 'aln':
         m = PipelineMapping.BWA(
             remove_non_unique=PARAMS["remove_non_unique"],
             strip_sequence=PARAMS["strip_sequence"])
-    elif PARAMS["bwa_algorithm"] == "mem":
+
+    elif algorithm == "mem":
         m = PipelineMapping.BWAMEM(
             remove_non_unique=PARAMS["remove_non_unique"],
             strip_sequence=PARAMS["strip_sequence"])
     else:
-        raise ValueError("bwa algorithm parameter not set")
+        raise ValueError("bwa algorithm '%s' not known" % algorithm)
 
     statement = m.build((infile,), outfile)
     P.run()
@@ -1348,7 +1354,7 @@ def loadContextStats(infiles, outfile):
                 | python %(scriptsdir)s/table2table.py --transpose
                 | python %(scriptsdir)s/csv2db.py
                       --index=track
-                      --table=%(tablename)s 
+                      --table=%(tablename)s
                 > %(outfile)s
                 """
     P.run()
@@ -1425,7 +1431,7 @@ def splitCodingGeneSetByChr(infile, outfiles):
        add_inputs(splitCodingGeneSetByChr),
        r"\1.*.transcript_counts.tsv.gz")
 def buildTranscriptLevelReadCounts(infiles, outfile):
-    '''count reads falling into transcripts of protein coding 
+    '''count reads falling into transcripts of protein coding
        gene models.
 
     .. note::
@@ -1438,7 +1444,7 @@ def buildTranscriptLevelReadCounts(infiles, outfile):
 
     to_cluster = True
     statements = []
-
+    job_options = "-l mem_free=4G"
     for geneset in genesets:
 
         chrom = re.match(
@@ -1447,16 +1453,16 @@ def buildTranscriptLevelReadCounts(infiles, outfile):
         outfile = "%s.%s.transcript_counts.tsv.gz" % (bam, chrom)
 
         statement = '''
-               zcat %(geneset)s 
-             | python %%(scriptsdir)s/gtf2table.py 
+               zcat %(geneset)s
+             | python %%(scriptsdir)s/gtf2table.py
                --reporter=transcripts
-               --bam-file=%(infile)s 
+               --bam-file=%(infile)s
                --counter=length
                --prefix="exons_"
-               --counter=read-counts 
+               --counter=read-counts
                --prefix=""
                --counter=read-coverage
-               --prefix=coverage_        
+               --prefix=coverage_
                -v 0
             | gzip
           > %(outfile)s
@@ -1509,13 +1515,13 @@ def buildIntronLevelReadCounts(infiles, outfile):
         return
 
     statement = '''
-    zcat %(exons)s 
-    | python %(scriptsdir)s/gtf2table.py 
+    zcat %(exons)s
+    | python %(scriptsdir)s/gtf2table.py
           --reporter=genes
-          --bam-file=%(infile)s 
+          --bam-file=%(infile)s
           --counter=length
           --prefix="introns_"
-          --counter=read-counts 
+          --counter=read-counts
           --prefix=""
           --counter=read-coverage
           --prefix=coverage_
@@ -1648,6 +1654,24 @@ def buildBed(infile, outfile):
     P.run()
 
 
+@merge(buildBigWig, "igv_sample_information.tsv")
+def buildIGVSampleInformation(infiles, outfile):
+    '''build a file with IGV sample information.'''
+
+    outf = IOTools.openFile(outfile, "w")
+    first = True
+    for fn in infiles:
+        fn = os.path.basename(fn)
+        parts = fn.split("-")
+        if first:
+            outf.write("sample\t%s\n" % "\t".join(
+                ["%i" % x for x in range(len(parts))]))
+            first = False
+        outf.write("%s\t%s\n" % (fn, "\t".join(parts)))
+
+    outf.close()
+
+
 @follows(loadReadCounts,
          loadPicardStats,
          loadBAMStats,
@@ -1712,28 +1736,15 @@ def createViewMapping(infile, outfile):
 
     P.createView(dbh, tables, tablename, outfile, view_type)
 
-###################################################################
-###################################################################
-###################################################################
-
 
 @follows(createViewMapping)
 def views():
     pass
 
-###################################################################
-###################################################################
-###################################################################
-
 
 @follows(mapping, qc, views, duplication)
 def full():
     pass
-
-
-###################################################################
-###################################################################
-###################################################################
 
 
 @follows(mkdir("report"))
@@ -1743,10 +1754,6 @@ def build_report():
     E.info("starting documentation build process from scratch")
     P.run_report(clean=True)
 
-###################################################################
-###################################################################
-###################################################################
-
 
 @follows(mkdir("report"))
 def update_report():
@@ -1754,10 +1761,6 @@ def update_report():
 
     E.info("updating documentation")
     P.run_report(clean=False)
-
-###################################################################
-###################################################################
-###################################################################
 
 
 @follows(mkdir("%s/bamfiles" % PARAMS["web_dir"]),

@@ -1168,7 +1168,9 @@ def getCounts(contig, start, end, samfiles, offsets=[]):
             xstart, xend = max(0, start - shift), max(0, end + shift)
 
             for read in samfile.fetch(contig, xstart, xend):
-                pos = read.pos
+                # some unmapped reads might have a position
+                if read.is_unmapped:
+                    continue
                 if read.is_reverse:
                     # offset = 2 * shift
                     rstart = read.pos + read.alen - offset
