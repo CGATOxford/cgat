@@ -61,8 +61,13 @@ parses command line options in sys.argv, unless *argv* is given.
     parser.add_option("-n", "--dry-run", dest="dry_run", action="store_true",
                       help="do dry run, do not kill [default=%default].")
 
+    parser.add_option("-l", "--ignore-links", dest="ignore_links",
+                      action="store_true",
+                      help="do not zap symbolic links [default=%default].")
+
     parser.set_defaults(
         dry_run=False,
+        ignore_links=False,
     )
 
     # add common options (-h/--help, ...) and parse command line
@@ -86,12 +91,13 @@ parses command line options in sys.argv, unless *argv* is given.
         original = os.stat(fn)
 
         if os.path.islink(fn):
-            linkdest = os.readlink(fn)
-            E.info('breaking link from %s to %s' % (fn, linkdest))
-            if not options.dry_run:
-                os.unlink(fn)
-                f = open(fn, "w")
-                f.close()
+            if not options.ignore_links:
+                linkdest = os.readlink(fn)
+                E.info('breaking link from %s to %s' % (fn, linkdest))
+                if not options.dry_run:
+                    os.unlink(fn)
+                    f = open(fn, "w")
+                    f.close()
         else:
             E.info('truncating file %s' % fn)
             linkdest = ""
