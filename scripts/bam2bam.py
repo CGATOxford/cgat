@@ -98,6 +98,7 @@ import tempfile
 import shutil
 
 import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
 import pysam
 
 try:
@@ -228,6 +229,9 @@ def main(argv=None):
             else:
                 pysam_out = pysam.Samfile("-", "wb", template=pysam_in)
         else:
+            if IOTools.isEmpty(bamfile):
+                E.warn('skipping empty file %s' % bamfile)
+                continue
             tmpfile = tempfile.NamedTemporaryFile(delete=False, prefix="ctmp")
             tmpfile.close()
 
