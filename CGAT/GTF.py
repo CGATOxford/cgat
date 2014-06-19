@@ -616,7 +616,9 @@ def merged_gene_iterator(gff_iterator):
         yield gff
 
 
-def iterator_filtered(gff_iterator, feature=None, source=None, contig=None, interval=None, strand=None):
+def iterator_filtered(gff_iterator, feature=None,
+                      source=None, contig=None,
+                      interval=None, strand=None):
     """iterate over the contents of a gff file.
 
     yield only entries for a given feature
@@ -694,10 +696,10 @@ def iterator_sorted(gff_iterator, sort_order="gene"):
     '''sort input and yield sorted output.'''
     entries = list(gff_iterator)
     if sort_order == "gene":
+        entries.sort(key=lambda x: (x.gene_id, x.contig, x.start))
+    elif sort_order == "gene+transcript":
         entries.sort(
             key=lambda x: (x.gene_id, x.transcript_id, x.contig, x.start))
-    elif sort_order == "gene":
-        entries.sort(key=lambda x: (x.gene_id, x.contig, x.start))
     elif sort_order == "contig+gene":
         entries.sort(
             key=lambda x: (x.contig, x.gene_id, x.transcript_id, x.start))
@@ -859,7 +861,8 @@ def readAsIntervals(gff_iterator,
     """
 
     assert not (
-        with_values and with_records), "both with_values and with_records are true."
+        with_values and with_records),\
+        "both with_values and with_records are true."
     intervals = collections.defaultdict(list)
 
     if merge_genes:
