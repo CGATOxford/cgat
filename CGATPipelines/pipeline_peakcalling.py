@@ -1940,24 +1940,17 @@ def loadReproducibility(infile, outfile):
     '''
     P.load(infile, outfile, options="--allow-empty")
 
-############################################################
-############################################################
-############################################################
-
 
 @follows(loadReproducibility)
 def reproducibility():
     pass
 
 
-###################################################################
 @follows(loadBAMStats,
          loadDuplicationStats,
          loadSPPQualityMetrics)
 def qc():
     pass
-
-###################################################################
 
 
 @follows(calling,
@@ -1988,6 +1981,34 @@ def update_report():
 def publish():
     '''publish files.'''
     P.publish_report()
+
+
+@merge(None, "clean.log")
+def clean(infile, outfile):
+    '''remove various files of no interest.
+
+    '''
+    # Note that this is a patch to reduce disk usage.
+    # Longer term implement for each caller strategies
+    # for keeping or removing files and compression of
+    # all files that are being kept.
+
+    to_cluster = False
+
+    statement = '''
+    rm -f macs2.dir/*.bdg;
+    rm -rf zinba.dir/*.zinba_files;
+    rm -rf macs.dir/*_wiggle;
+    rm -f sicer.*.dir/*/*.wig;
+    rm -f sicer.*.dir/*/*.bed;
+    '''
+    P.run()
+
+    E.info('zapping .call.bam')
+    P.clean(glob.glob("*.call.bam"), 'zap.log')
+    E.info('zapping .prep.bam')
+    P.clean(glob.glob("*.prep.bam"), 'zap.log')
+
 
 if __name__ == "__main__":
     sys.exit(P.main(sys.argv))
