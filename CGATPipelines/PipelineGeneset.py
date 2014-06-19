@@ -193,7 +193,7 @@ def annotateGenome(infile, outfile,
     < %(infile)s
     | %(filter_cmd)s
     | grep "transcript_id"
-    | python %(scriptsdir)s/gtf2gtf.py --sort=gene
+    | python %(scriptsdir)s/gtf2gtf.py --sort=gene+transcript
     | python %(scriptsdir)s/gtf2gtf.py --merge-exons
         --with-utr --log=%(outfile)s.log
     | python %(scriptsdir)s/gtf2gtf.py --filter=longest-gene
@@ -243,7 +243,7 @@ def annotateGeneStructure(infile, outfile,
     < %(infile)s
     | %(filter_cmd)s
     | grep "transcript_id"
-    | python %(scriptsdir)s/gtf2gtf.py --sort=gene
+    | python %(scriptsdir)s/gtf2gtf.py --sort=gene+transcript
     | python %(scriptsdir)s/gtf2gtf.py --filter=representative-transcript
     | python %(scriptsdir)s/gtf2gtf.py --filter=longest-gene
         --log=%(outfile)s.log
@@ -334,7 +334,7 @@ def buildProteinCodingGenes(infile, outfile):
     | python %(scriptsdir)s/gtf2gtf.py
     --set-transcript-to-gene
     --log=%(outfile)s.log
-    | python %(scriptsdir)s/gtf2gtf.py --sort=gene
+    | python %(scriptsdir)s/gtf2gtf.py --sort=gene+transcript
     | gzip
     > %(outfile)s
     """
@@ -359,7 +359,7 @@ def loadGeneInformation(infile, outfile, only_proteincoding=False):
     gunzip < %(infile)s
     | %(filter_cmd)s
     | grep "transcript_id"
-    | python %(scriptsdir)s/gtf2gtf.py --sort=gene
+    | python %(scriptsdir)s/gtf2gtf.py --sort=gene+transcript
     | python %(scriptsdir)s/gtf2tsv.py --full --only-attributes -v 0
     | python %(toolsdir)s/csv_cut.py
     --remove exon_id transcript_id transcript_name protein_id exon_number
@@ -396,7 +396,7 @@ def loadTranscriptInformation(infile, outfile,
     | %(filter_cmd)s
     | awk '$3 == "CDS"'
     | grep "transcript_id"
-    | python %(scriptsdir)s/gtf2gtf.py --sort=gene
+    | python %(scriptsdir)s/gtf2gtf.py --sort=gene+transcript
     | python %(scriptsdir)s/gtf2tsv.py --full --only-attributes -v 0
     | python %(toolsdir)s/csv_cut.py --remove exon_id exon_number
     | %(scriptsdir)s/hsort 1 | uniq
