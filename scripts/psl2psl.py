@@ -124,8 +124,9 @@ def readIntervals(infile, options):
 
             if ninput % options.report_step == 0:
                 E.info(
-                    "reading intervals - progress: ninput=%i, time=%i, avg=%f" %
-                    (ninput, time.time() - t, float(time.time() - t) / ninput))
+                    "reading intervals - progress: ninput=%i, time=%i, avg=%f"
+                    % (ninput,
+                       time.time() - t, float(time.time() - t) / ninput))
 
     elif options.format == "gff":
 
@@ -137,8 +138,10 @@ def readIntervals(infile, options):
             ninput += 1
 
             if ninput % options.report_step == 0:
-                E.info("reading intervals - progress: ninput=%i, time=%i, avg=%f" %
-                       (ninput, time.time() - t, float(time.time() - t) / ninput))
+                E.info(
+                    "reading intervals - progress: ninput=%i, time=%i, avg=%f"
+                    % (ninput, time.time() - t,
+                       float(time.time() - t) / ninput))
 
     E.info("read intervals: %i contigs, %i intervals" % (len(index), ninput))
     return index
@@ -176,9 +179,8 @@ def iterator_psl_intervals(options):
         if options.test and ninput >= options.test:
             break
 
-        if options.loglevel >= 1 and ninput % options.report_step == 0:
-            options.stdlog.write("# progress: ninput=%i\n" % (ninput))
-            options.stdlog.flush()
+        if ninput % options.report_step == 0:
+            E.info("progress: ninput=%i" % (ninput))
 
         qx, tx = None, None
         if intervals_query:
@@ -193,14 +195,16 @@ def iterator_psl_intervals(options):
         if intervals_target:
             try:
                 tx = list(
-                    intervals_target.get(match.mSbjctId, match.mSbjctFrom, match.mSbjctTo))
+                    intervals_target.get(match.mSbjctId,
+                                         match.mSbjctFrom,
+                                         match.mSbjctTo))
             except KeyError:
                 tx = []
 
-        if options.loglevel >= 2:
+        if options.stdlog >= 2:
             options.stdlog.write(
                 "###################################################\n")
-            options.stdlog.write("# testing match %s\n" % (str(match)))
+            options.stdlog.write("# testing %s\n" % (str(match)))
             options.stdlog.write(
                 "###################################################\n")
 
@@ -208,7 +212,7 @@ def iterator_psl_intervals(options):
 
 
 def pslFilter(options, keep=True):
-    """filter psl entries. 
+    """filter psl entries.
 
     Only positions contained in intervals are kept, unless remove
     is set, in which case only positions not in intervals are kept.
@@ -264,9 +268,7 @@ def pslMap(options):
     else:
         use_copy = True
 
-    ninput, noutput, ndiscarded, nskipped, nskipped_small_queries = (
-        0, 0, 0, 0, 0)
-    nnooverlap = 0
+    c = E.Counter()
 
     min_length = options.min_aligned
 
@@ -274,7 +276,7 @@ def pslMap(options):
 
         map_query2target = match.getMapQuery2Target()
 
-        ninput += 1
+        c.input += 1
 
         # if no filter on qx or tx, use full segment
         if qx is None:
@@ -282,9 +284,13 @@ def pslMap(options):
         elif tx is None:
             tx = [(match.mSbjctFrom, match.mSbjctTo, 0)]
 
+        E.debug('matches in query: %s' % qx)
+        E.debug('matches in target: %s' % tx)
+
         # if no overlap: return
         if not qx or not tx:
-            nskipped += 1
+            c.skipped += 1
+            E.debug("no matches in query or target - skipped")
             continue
 
         for query in qx:
@@ -295,7 +301,7 @@ def pslMap(options):
             if qend - qstart < min_length:
                 E.debug("query too small - skipped at %s:%i-%i" %
                         (match.mQueryId, qstart, qend))
-                nskipped_small_queries += 1
+                c.skipped_small_queries += 1
                 continue
 
             E.debug("working on query %s:%i-%i" %
@@ -316,9 +322,13 @@ def pslMap(options):
             for target in tx:
 
                 tstart, tend, tval = target
-                if tstart >= mqend or tend <= mqstart:
+                if (tstart >= mqend or tend <= mqstart):
+                    E.debug("no overlap: %i-%i (%i-%i) - %i-%i" % (
+                        qstart, qend, mqstart, mqend, tstart, tend))
                     continue
                 if tend - tstart < min_length:
+                    E.debug("target length too short: %i-%i - %i-%i" % (
+                        qstart, qend, tstart, tend))
                     continue
 
                 new = alignlib_lite.py_makeAlignmentBlocks()
@@ -358,11 +368,17 @@ def pslMap(options):
                             options.stdlog.write(
                                 "######## mapping query ###########\n")
                             options.stdlog.write(
-                                "# %s\n" % str(alignlib_lite.py_AlignmentFormatEmissions(map_query2target)))
+                                "# %s\n" %
+                                str(alignlib_lite.py_AlignmentFormatEmissions(
+                                    map_query2target)))
                             options.stdlog.write(
-                                "# %s\n" % str(alignlib_lite.py_AlignmentFormatEmissions(map_query)))
+                                "# %s\n" % str(
+                                    alignlib_lite.py_AlignmentFormatEmissions(
+                                        map_query)))
                             options.stdlog.write(
-                                "# %s\n" % str(alignlib_lite.py_AlignmentFormatEmissions(tmp)))
+                                "# %s\n" % str(
+                                    alignlib_lite.py_AlignmentFormatEmissions(
+                                        tmp)))
                     else:
                         tmp = map_query2target
 
@@ -375,11 +391,17 @@ def pslMap(options):
                             options.stdlog.write(
                                 "######## mapping target ###########\n")
                             options.stdlog.write(
-                                "# before: %s\n" % str(alignlib_lite.py_AlignmentFormatEmissions(tmp)))
+                                "# before: %s\n" %
+                                str(alignlib_lite.py_AlignmentFormatEmissions(
+                                    tmp)))
                             options.stdlog.write(
-                                "# map   : %s\n" % str(alignlib_lite.py_AlignmentFormatEmissions(map_target)))
+                                "# map   : %s\n" %
+                                str(alignlib_lite.py_AlignmentFormatEmissions(
+                                    map_target)))
                             options.stdlog.write(
-                                "# after : %s\n" % str(alignlib_lite.py_AlignmentFormatEmissions(new)))
+                                "# after : %s\n" %
+                                str(alignlib_lite.py_AlignmentFormatEmissions(
+                                    new)))
                     else:
                         new = tmp
 
@@ -388,9 +410,12 @@ def pslMap(options):
                             (str(query), str(target), qstart, qend))
                     if options.loglevel >= 5:
                         E.debug(
-                            "input : %s" % str(alignlib_lite.py_AlignmentFormatEmissions(map_query2target)))
+                            "input : %s" % str(
+                                alignlib_lite.py_AlignmentFormatEmissions(
+                                    map_query2target)))
                         E.debug("final : %s" %
-                                str(alignlib_lite.py_AlignmentFormatEmissions(new)))
+                                str(alignlib_lite.py_AlignmentFormatEmissions(
+                                    new)))
 
                     if new.getLength() > 0:
                         n = match.copy()
@@ -401,15 +426,14 @@ def pslMap(options):
                     n = match.copy()
                     n.fromMap(new, use_strand=True)
                     options.stdout.write(str(n) + "\n")
-                    noutput += 1
+                    c.output += 1
                 else:
-                    ndiscarded += 1
+                    c.discarded += 1
                 break
             else:
-                nnooverlap += 1
+                c.nooverlap += 1
 
-    E.info("map: ninput=%i, noutput=%i, nskipped=%i, noverlap=%i, ndiscarded=%i, nsmall_queries=%i" %
-           (ninput, noutput, nskipped, nnooverlap, ndiscarded, nskipped_small_queries))
+    E.info("map: %s" % str(c))
 
 
 def pslMerge(options):
@@ -474,7 +498,9 @@ def pslMerge(options):
         new_matches = [matches[x] for x in path[1:-1]]
 
         if len(matches) != len(new_matches):
-            E.warn("query=%s, target=%s, strand=%s: removed overlapping/out-of-order segments: before=%i, after=%i" %
+            E.warn(("query=%s, target=%s, strand=%s: "
+                    "removed overlapping/out-of-order segments: "
+                    "before=%i, after=%i") %
                    (matches[0].mQueryId,
                     matches[0].mSbjctId,
                     matches[0].strand,
@@ -509,11 +535,14 @@ def pslMerge(options):
         if ninput % options.report_step == 0:
             E.info("progress: ninput=%i, noutput=%i" % (ninput, noutput))
 
-        if match.mQueryId != last_query or match.strand != last_strand or match.mSbjctId != last_target:
+        if match.mQueryId != last_query or\
+           match.strand != last_strand or\
+           match.mSbjctId != last_target:
             if last_query:
                 noutput += process(matches)
             matches = []
-            last_query, last_target, last_strand = match.mQueryId, match.mSbjctId, match.strand
+            last_query, last_target, last_strand = (
+                match.mQueryId, match.mSbjctId, match.strand)
 
         matches.append(match)
 

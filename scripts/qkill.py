@@ -10,7 +10,10 @@ qkill.py - kill jobs in the queue
 Purpose
 -------
 
-kill jobs from the sun grid engine according to certain criteria.
+kill jobs in the job queue according to certain criteria.
+
+This script requires the qstat and qdel commands in the
+user's PATH. The script works with Sun Grid Engine.
 
 Usage
 -----
@@ -26,10 +29,8 @@ Command line options
 
 """
 
-import os
 import sys
 import re
-import optparse
 import subprocess
 import CGAT.Experiment as E
 import xml.etree.ElementTree
@@ -47,10 +48,12 @@ def main(argv=None):
 
     # setup command line parser
     parser = E.OptionParser(
-        version="%prog version: $Id: cgat_script_template.py 2781 2009-09-10 11:33:14Z andreas $", usage=globals()["__doc__"])
+        version="%prog version: $Id$",
+        usage=globals()["__doc__"])
 
     parser.add_option("-p", "--pattern", dest="pattern", type="string",
-                      help="jobs matching `pattern` in their job description will be killed [default=%default].")
+                      help="jobs matching `pattern` in their job "
+                      "description will be killed [default=%default].")
 
     parser.add_option("-n", "--dry-run", dest="dry_run", action="store_true",
                       help="do dry run, do not kill [default=%default].")
@@ -64,7 +67,8 @@ def main(argv=None):
     (options, args) = E.Start(parser, argv=argv)
 
     output = StringIO.StringIO(
-        subprocess.Popen(["qstat", "-xml"], stdout=subprocess.PIPE).communicate()[0])
+        subprocess.Popen(["qstat", "-xml"],
+                         stdout=subprocess.PIPE).communicate()[0])
 
     tree = xml.etree.ElementTree.ElementTree(file=output)
 
