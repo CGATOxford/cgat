@@ -1429,26 +1429,46 @@ def writeConfigFiles(path):
         L.info("created new configuration file `%s` " % dest)
 
 
-def clean(patterns, dry_run=False):
+def clean(files, logfile):
     '''clean up files given by glob *patterns*.
 
-    returns list of files deleted together with their statinfo.
+    Information about the original file is written to
+    *logfile*.
     '''
+    fields = ('st_atime', 'st_blksize', 'st_blocks',
+              'st_ctime', 'st_dev', 'st_gid', 'st_ino',
+              'st_mode', 'st_mtime', 'st_nlink',
+              'st_rdev', 'st_size', 'st_uid')
 
-    cleaned = []
+    dry_run = PARAMS.get("dryrun", False)
 
-    for p in patterns:
-        files = glob.glob(p)
-        for x in files:
-            statinfo = os.stat(x)
-            cleaned.append((x, statinfo))
-            if dry_run:
-                continue
-            os.unlink(x)
-        L.info("%i files: %s" % (len(files), p))
+    if not dry_run:
+        if not os.path.exists(logfile):
+            outfile = IOTools.openFile(logfile, "w")
+            outfile.write("filename\tzapped\tlinkdest\t%s\n" %
+                          "\t".join(fields))
+        else:
+            outfile = IOTools.openFile(logfile, "a")
 
-    return cleaned
+    c = E.Counter()
+    for fn in files:
+        c.files += 1
+        if not dry_run:
+            stat, linkdest = IOTools.zapFile(fn)
+            if stat is not None:
+                c.zapped += 1
+                if linkdest is not None:
+                    c.links += 1
+                outfile.write("%s\t%s\t%s\t%s\n" % (
+                    fn,
+                    time.asctime(time.localtime(time.time())),
+                    linkdest,
+                    "\t".join([str(getattr(stat, x)) for x in fields])))
 
+    L.info("zapped: %s" % (c))
+    outfile.close()
+
+    return c
 
 def peekParameters(workingdir,
                    pipeline,
