@@ -443,26 +443,27 @@ def loadMappableBasesPerContig(infile, outfile):
 
 @files(PARAMS["ensembl_filename_gtf"], PARAMS['interface_geneset_all_gtf'])
 def buildGeneSet(infile, outfile):
-    '''build a gene set - firstly, reconciles chromosome names by 
-       removing those that do not occur in the specified genome assembly; 
-       secondly, removes chromosome names specified in pipeline.ini  '''
+    '''build a gene set - firstly, reconciles chromosome names by removing
+       those that do not occur in the specified genome assembly;
+       secondly, removes chromosome names specified in pipeline.ini
 
-    to_cluster = True
+    '''
 
-    statement = [ '''zcat %(infile)s
-    | python %(scriptsdir)s/gff2gff.py 
-                  --sanitize=genome 
-                  --skip-missing 
-                  --genome-file=%(genome_dir)s/%(genome)s 
-                  --log=%(outfile)s.log ''' ]
+    statement = ['''zcat %(infile)s
+    | grep 'transcript_id'
+    | python %(scriptsdir)s/gff2gff.py
+    --sanitize=genome
+    --skip-missing
+    --genome-file=%(genome_dir)s/%(genome)s
+    --log=%(outfile)s.log ''']
 
     if PARAMS["geneset_remove_contigs"]:
         # in quotation marks to avoid confusion with shell special
         # characters such as ( and |
         statement.append(
-            ''' --remove-contigs="%(geneset_remove_contigs)s" ''' )
+            ''' --remove-contigs="%(geneset_remove_contigs)s" ''')
 
-    statement.append( ''' | gzip > %(outfile)s ''' )
+    statement.append(''' | gzip > %(outfile)s ''')
 
     statement = " ".join(statement)
 
