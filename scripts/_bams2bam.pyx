@@ -1,8 +1,7 @@
-from pysam.csamtools cimport *
+from pysam.chtslib cimport *
 
 import collections, array, struct, sys
 import CGAT.Experiment as E
-
 
 
 def filter( Samfile genome_samfile,
@@ -70,7 +69,7 @@ def filter( Samfile genome_samfile,
     # if you decide
     cdef int ret = 1
     cdef int x
-    cdef bam1_t * b = <bam1_t*>calloc(1, sizeof( bam1_t) )
+    cdef bam1_t * b = <bam1_t*>calloc(1, sizeof( bam1_t))
     cdef uint64_t pos
     cdef uint8_t * v
     cdef int32_t nm
@@ -98,40 +97,40 @@ def filter( Samfile genome_samfile,
 
     # build list of junctions
     if c_test_junctions:
-        E.info( "building junction read index" )
+        E.info("building junction read index")
 
         def _gen2(): return array.array('B') 
-        junctions_index = collections.defaultdict( _gen2 )
+        junctions_index = collections.defaultdict(_gen2)
         ret = 1
         while ret > 0:
-            ret = samread( junctions_samfile.samfile, b)
+            ret = bam_read1(junctions_samfile.fp, b)
             if ret > 0:
                 # ignore unmapped reads
                 if b.core.flag & 4: continue
-                qname = bam1_qname( b )
+                qname = pysam_bam_get_qname(b)
                 v = bam_aux_get(b, tag)
                 nm = <int32_t>bam_aux2i(v)
-                junctions_index[qname].append( nm )
+                junctions_index[qname].append(nm)
 
         E.info( "built index for %i junction reads" % len(junctions_index))
 
-        map_tid2tid = <int*>calloc(len(junctions_samfile.references), sizeof(int) )
+        map_tid2tid = <int*>calloc(len(junctions_samfile.references), sizeof(int))
         
         for x, contig_name in enumerate(junctions_samfile.references):
-            map_tid2tid[x] = genome_samfile.gettid( contig_name )
+            map_tid2tid[x] = genome_samfile.gettid(contig_name)
 
     if c_test_transcripts:
         E.info( "building transcriptome read index" )
         # L = 4 bytes
         def _gen(): return array.array('L') 
-        transcriptome_index = collections.defaultdict( _gen )
+        transcriptome_index = collections.defaultdict(_gen)
         ret = 1
         while ret > 0:
-            ret = samread( transcripts_samfile.samfile, b)
+            ret = bam_read1(transcripts_samfile.fp, b)
             if ret > 0:
                 # ignore unmapped reads
                 if b.core.flag & 4: continue
-                qname = bam1_qname( b )
+                qname = pysam_bam_get_qname(b)
                 tid = b.core.tid
                 v = bam_aux_get(b, tag)
                 nm = <int32_t>bam_aux2i(v)

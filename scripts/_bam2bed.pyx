@@ -1,4 +1,4 @@
-from pysam.csamtools cimport *
+from pysam.chtslib cimport *
 
 import collections, array, struct, itertools
 import CGAT.Experiment as E
@@ -36,7 +36,7 @@ def merge_pairs( Samfile input_samfile,
     cdef int take_columns = 6
 
     # point to array of contig lengths
-    cdef uint32_t *contig_sizes = input_samfile.samfile.header.target_len
+    cdef uint32_t *contig_sizes = input_samfile.header.target_len
     
     if bed_format != None:
         if bed_format < 3 or bed_format > 6: 
