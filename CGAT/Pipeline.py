@@ -1470,6 +1470,7 @@ def clean(files, logfile):
 
     return c
 
+
 def peekParameters(workingdir,
                    pipeline,
                    on_error_raise=True):

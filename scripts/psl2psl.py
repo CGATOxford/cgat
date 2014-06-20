@@ -341,15 +341,16 @@ def pslMap(options):
                             tstart), map_query2target.mapColToRow(tend)
 
                         E.debug(
-                            "query: %i-%i (len=%i)-> %i-%i(len=%i); target: %i-%i (len=%i)-> %i-%i (len=%i)" %
-                                (qstart, qend,
-                                 qend - qstart,
-                                 mqstart, mqend,
-                                 mqend - mqstart,
-                                 tstart, tend,
-                                 tend - tstart,
-                                 mtstart, mtend,
-                                 mtend - mtstart))
+                            ("query: %i-%i (len=%i)-> %i-%i(len=%i); "
+                             "target: %i-%i (len=%i)-> %i-%i (len=%i)") %
+                            (qstart, qend,
+                             qend - qstart,
+                             mqstart, mqend,
+                             mqend - mqstart,
+                             tstart, tend,
+                             tend - tstart,
+                             mtstart, mtend,
+                             mtend - mtstart))
 
                     alignlib_lite.py_copyAlignment(
                         new,
@@ -576,7 +577,8 @@ def pslAddSequence(query_fasta, sbjct_fasta, options):
         new.fromPSL(match,
                     query_fasta.getSequence(
                         match.mQueryId, "+", match.mQueryFrom, match.mQueryTo),
-                    sbjct_fasta.getSequence(match.mSbjctId, "+", match.mSbjctFrom, match.mSbjctTo))
+                    sbjct_fasta.getSequence(
+                        match.mSbjctId, "+", match.mSbjctFrom, match.mSbjctTo))
 
         options.stdout.write(str(new) + "\n")
         noutput += 1
@@ -643,12 +645,12 @@ def pslComplement(query_fasta, target_fasta, options):
 
 
 def pslComplementQuery(options):
-    """complement psl entries. 
+    """complement psl entries.
 
-    Fill the regions from a second psl file. 
+    Fill the regions from a second psl file.
     """
 
-    iterator = Blat.BlatIterator(sys.stdin)
+    Iterator = Blat.BlatIterator(sys.stdin)
 
     ninput, noutput, ndiscarded, nskipped = 0, 0, 0, 0
 
@@ -736,13 +738,16 @@ def iterator_filter_overlapping_query(psls, options):
     of matching nucleotides is chosen.
     '''
 
-    # note: only takes the full ranges, but does not check for individual overlap of blocks
-    # use connected components and hasAlignmentOverlap
+    # note: only takes the full ranges, but does not check for
+    # individual overlap of blocks use connected components and
+    # hasAlignmentOverlap
     ninput, noutput, ndiscarded = 0, 0, 0
 
     last_contig = None
 
-    for block in Blat.iterator_query_overlap(psls, options.threshold_merge_distance):
+    for block in Blat.iterator_query_overlap(
+            psls,
+            options.threshold_merge_distance):
 
         # commented code is for base-level filtering, which is very slow
         # disabled for now
@@ -765,14 +770,16 @@ def iterator_filter_overlapping_query(psls, options):
             yield block[0]
             noutput += 1
 
-    E.info("iterator_filter_overlapping_query: ninput=%i, noutput=%i, ndiscarded=%i" %
+    E.info("iterator_filter_overlapping_query: ninput=%i, "
+           "noutput=%i, ndiscarded=%i" %
            (ninput, noutput, ndiscarded))
 
 
 def iterator_filter_overlapping_target(psls, options):
 
     ninput, noutput, ndiscarded = 0, 0, 0
-    for block in Blat.iterator_target_overlap(psls, options.threshold_merge_distance):
+    for block in Blat.iterator_target_overlap(
+            psls, options.threshold_merge_distance):
         l = len(block)
         ninput += l
         if l > 1:
@@ -781,7 +788,8 @@ def iterator_filter_overlapping_target(psls, options):
             yield block[0]
             noutput += 1
 
-    E.info("iterator_filter_overlapping_target: ninput=%i, noutput=%i, ndiscarded=%i" %
+    E.info("iterator_filter_overlapping_target: ninput=%i, noutput=%i, "
+           "ndiscarded=%i" %
            (ninput, noutput, ndiscarded))
 
 
@@ -913,15 +921,21 @@ def main(argv=None):
         argv = sys.argv
 
     parser = E.OptionParser(
-        version="%prog version: $Id: psl2psl.py 2781 2009-09-10 11:33:14Z andreas $", usage=globals()["__doc__"])
+        version="%prog version: $Id$",
+        usage=globals()["__doc__"])
 
-    parser.add_option("--filter-query", dest="filename_filter_query", type="string",
-                      help="filename with intervals in the query to filter (in gff format) [default=%default].")
+    parser.add_option("--filter-query", dest="filename_filter_query",
+                      type="string",
+                      help="filename with intervals in the query "
+                      "to filter (in gff format) [default=%default].")
 
-    parser.add_option("--filter-target", dest="filename_filter_target", type="string",
-                      help="filename with intervals in the target to filter (in gff format) [default=%default].")
+    parser.add_option("--filter-target", dest="filename_filter_target",
+                      type="string",
+                      help="filename with intervals in the target to "
+                      "filter (in gff format) [default=%default].")
 
-    parser.add_option("-m", "--method", dest="methods", type="choice", action="append",
+    parser.add_option("-m", "--method", dest="methods", type="choice",
+                      action="append",
                       choices=("map", "merge",
                                "add-sequence", "complement",
                                "select-query", "test",
@@ -931,7 +945,7 @@ def main(argv=None):
                                "filter-fasta",
                                "remove-overlapping-query",
                                "remove-overlapping-target"),
-                      help="""action to perform [default=%default].""" )
+                      help="""action to perform [default=%default].""")
 
     parser.add_option("--select", dest="select", type="choice",
                       choices=("most-nmatches", "least-nmatches",
@@ -946,36 +960,52 @@ def main(argv=None):
                       choices=("gff", "gtf"),
                       help="format of intervals [default=%default].")
 
-    parser.add_option("--filename-queries", dest="filename_queries", type="string",
+    parser.add_option("--filename-queries", dest="filename_queries",
+                      type="string",
                       help="fasta filename with queries.")
 
-    parser.add_option("--filename-target", dest="filename_sbjcts", type="string",
+    parser.add_option("--filename-target", dest="filename_sbjcts",
+                      type="string",
                       help="fasta filename with sbjct [default=%default].")
 
     parser.add_option("--id-format", dest="id_format", type="string",
-                      help="format of new identifiers for the rename function [default=%default].")
+                      help="format of new identifiers for the rename "
+                      "function [default=%default].")
 
     parser.add_option("--unique", dest="unique", action="store_true",
-                      help="in the rename function, make each match unique [default=%default].")
+                      help="in the rename function, make each match "
+                      "unique [default=%default].")
 
-    parser.add_option("--output-filename-map", dest="output_filename_map", type="string",
-                      help="filename with map of old to new labels for rename function [default=%default].")
+    parser.add_option("--output-filename-map", dest="output_filename_map",
+                      type="string",
+                      help="filename with map of old to new labels for "
+                      "rename function [default=%default].")
 
-    parser.add_option("--complement-min-length", dest="complement_min_length", type="int",
-                      help="minimum length for complemented blocks [default=%default].")
+    parser.add_option("--complement-min-length", dest="complement_min_length",
+                      type="int",
+                      help="minimum length for complemented blocks "
+                      "[default=%default].")
 
-    parser.add_option("--complement-border", dest="complement_border", type="int",
-                      help="number of residues to exclude before alignment at either end [default=%default].")
+    parser.add_option("--complement-border", dest="complement_border",
+                      type="int",
+                      help="number of residues to exclude before alignment "
+                      "at either end [default=%default].")
 
-    parser.add_option("--complement-aligner", dest="complement_aligner", type="choice",
+    parser.add_option("--complement-aligner", dest="complement_aligner",
+                      type="choice",
                       choices=("clustal", "dba", "dialign", "dialign-lgs"),
-                      help="aligner for complemented segments [default=%default].")
+                      help="aligner for complemented segments "
+                      "[default=%default].")
 
-    parser.add_option("--threshold-merge-distance", dest="threshold_merge_distance", type="int",
-                      help="distance in nucleotides at which two adjacent reads shall be merged even if they are not overlapping [%default].")
+    parser.add_option("--threshold-merge-distance",
+                      dest="threshold_merge_distance", type="int",
+                      help="distance in nucleotides at which two adjacent "
+                      "reads shall be merged even if they are not "
+                      "overlapping [%default].")
 
     parser.add_option("--test", dest="test", type="int",
-                      help="for debugging purposes - stop after x iterations [default=%default].")
+                      help="for debugging purposes - stop after x "
+                      "iterations [default=%default].")
 
     parser.set_defaults(filename_filter_target=None,
                         filename_filter_query=None,
@@ -1005,9 +1035,11 @@ def main(argv=None):
     else:
         sbjct_fasta = None
 
-    if "add-sequence" in options.methods and (sbjct_fasta is None or query_fasta is None):
+    if "add-sequence" in options.methods and \
+       (sbjct_fasta is None or query_fasta is None):
         raise ValueError(
-            "please supply both indexed query and target/genome sequence data.")
+            "please supply both indexed query and "
+            "target/genome sequence data.")
 
     iterator = Blat.iterator(options.stdin)
 
