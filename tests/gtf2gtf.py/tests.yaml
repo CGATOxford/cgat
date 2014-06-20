@@ -9,7 +9,7 @@ sort_gene:
     stdin: hg19.chr19.gtf.gz
     outputs: [stdout]
     references: [sorted_gene.gtf.gz]
-    options: --sort=gene
+    options: --sort=gene+transcript
 
 sort_contig_gene:
     stdin: hg19.chr19.gtf.gz
