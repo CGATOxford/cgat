@@ -47,8 +47,8 @@ import inspect
 import types
 import logging
 import shutil
-import glob
 import gzip
+import pipes
 import ConfigParser
 from CGAT import Database as Database
 
@@ -1288,11 +1288,20 @@ def run(**kwargs):
         if options.get("dryrun", False):
             return
 
+        # process substitution <() and >() does not
+        # work through subprocess directly. Thus,
+        # the statement needs to be wrapped in
+        # /bin/bash -c '...' in order for bash
+        # to interpret the substitution correctly.
         if "<(" in statement:
-            if "'" in statement:
+            shell = os.environ.get('SHELL', "/bin/bash")
+            if "bash" not in shell:
                 raise ValueError(
-                    "advanced bash syntax combined with single quotes")
-            statement = """/bin/bash -c '%s'""" % statement
+                    "require bash for advanced shell syntax: <()")
+            # Note: pipes.quote is deprecate in Py3, use shlex.quote
+            # which is not present in Py2.7.
+            statement = pipes.quote(statement)
+            statement = "%s -c %s" % (shell, statement)
 
         process = subprocess.Popen(
             expandStatement(
@@ -1830,7 +1839,8 @@ def main(args=sys.argv):
 
                 L.info(E.GetFooter())
 
-                GLOBAL_SESSION.exit()
+                if GLOBAL_SESSION is not None:
+                    GLOBAL_SESSION.exit()
 
             elif options.pipeline_action == "show":
                 pipeline_printout(
