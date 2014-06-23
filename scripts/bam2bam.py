@@ -118,17 +118,22 @@ def main(argv=None):
         argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+    parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
     parser.add_option("--set-nh", dest="set_nh", action="store_true",
-                      help="sets the NH flag. The file needs to be sorted by readname [%default]")
+                      help="sets the NH flag. The file needs to be "
+                      "sorted by readname [%default]")
 
-    parser.add_option("--unset-unmapped-mapq", dest="unset_unmapped_mapq", action="store_true",
-                      help="sets the mapping quality of unmapped reads to 0 [%default]")
+    parser.add_option("--unset-unmapped-mapq", dest="unset_unmapped_mapq",
+                      action="store_true",
+                      help="sets the mapping quality of unmapped "
+                      "reads to 0 [%default]")
 
-    parser.add_option("--set-sequence", dest="set_sequence", action="store_true",
-                      help="sets the sequence to 'A's (a valid base) and the quality to 'F's"
+    parser.add_option("--set-sequence", dest="set_sequence",
+                      action="store_true",
+                      help="sets the sequence to 'A's (a valid base) and "
+                      "the quality to 'F's "
                       ",which is defined in all fastq scoring schemes "
                       "[%default]")
 
@@ -161,13 +166,17 @@ def main(argv=None):
                       "to /tmp [%default]")
 
     parser.add_option("--fastq1", "-1", dest="fastq_pair1", type="string",
-                      help="fastq file with read information for first in pair or unpaired [%default]")
+                      help="fastq file with read information for first "
+                      "in pair or unpaired [%default]")
 
     parser.add_option("--fastq2", "-2", dest="fastq_pair2", type="string",
-                      help="fastq file with read information for second in pair [%default]")
+                      help="fastq file with read information for second "
+                      "in pair [%default]")
 
-    parser.add_option("--keep-first-base", dest="keep_first_base", action="store_true",
-                      help="keep first base of reads such that gtf2table.py will only consider the"
+    parser.add_option("--keep-first-base", dest="keep_first_base",
+                      action="store_true",
+                      help="keep first base of reads such that gtf2table.py "
+                      "will only consider the "
                       "first base in its counts")
 
     parser.set_defaults(
@@ -203,6 +212,10 @@ def main(argv=None):
     for bamfile in bamfiles:
 
         E.info('processing %s' % bamfile)
+
+        if os.path.islink(bamfile):
+            E.warn('ignoring link %s' % bamfile)
+            continue
 
         # reading bam from stdin does not work with only the "r" tag
         pysam_in = pysam.Samfile(bamfile, "rb")
