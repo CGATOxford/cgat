@@ -1,3 +1,4 @@
+
 """
 ===================
 Annotation pipeline
@@ -898,20 +899,22 @@ def buildSelenoList(infile, outfile):
 def buildGeneTerritories(infile, outfile):
     '''build gene territories from protein coding genes.'''
 
-    to_cluster = True
-
     statement = '''
     gunzip < %(infile)s
     | awk '$2 == "protein_coding"'
-    | python %(scriptsdir)s/gtf2gtf.py --sort=gene
-    | python %(scriptsdir)s/gtf2gtf.py --merge-transcripts --with-utr
-    | python %(scriptsdir)s/gtf2gtf.py --sort=position
-    | python %(scriptsdir)s/gtf2gff.py 
-          --genome-file=%(genome_dir)s/%(genome)s 
+    | python %(scriptsdir)s/gtf2gtf.py
+    --sort=gene
+    | python %(scriptsdir)s/gtf2gtf.py
+    --merge-transcripts --with-utr
+    | python %(scriptsdir)s/gtf2gtf.py
+    --sort=position
+    | python %(scriptsdir)s/gtf2gff.py
+          --genome-file=%(genome_dir)s/%(genome)s
           --log=%(outfile)s.log
           --radius=%(geneset_territories_radius)s
           --method=territories
-    | python %(scriptsdir)s/gtf2gtf.py --filter=longest-gene --log=%(outfile)s.log 
+    | python %(scriptsdir)s/gtf2gtf.py
+    --filter=longest-gene --log=%(outfile)s.log
     | gzip
     > %(outfile)s '''
 
@@ -926,110 +929,101 @@ def buildGeneTerritories(infile, outfile):
 def buildTSSTerritories(infile, outfile):
     '''build gene territories from protein coding genes.'''
 
-    to_cluster = True
-
     statement = '''
     gunzip < %(infile)s
     | awk '$2 == "protein_coding"'
-    | python %(scriptsdir)s/gtf2gtf.py --filter=representative-transcript --log=%(outfile)s.log
+    | python %(scriptsdir)s/gtf2gtf.py
+    --filter=representative-transcript --log=%(outfile)s.log
     | python %(scriptsdir)s/gtf2gtf.py --sort=position
-    | python %(scriptsdir)s/gtf2gff.py 
-          --genome-file=%(genome_dir)s/%(genome)s 
+    | python %(scriptsdir)s/gtf2gff.py
+          --genome-file=%(genome_dir)s/%(genome)s
           --log=%(outfile)s.log
           --radius=%(geneset_territories_radius)s
           --method=tss-territories
-    | python %(scriptsdir)s/gtf2gtf.py --filter=longest-gene --log=%(outfile)s.log 
+    | python %(scriptsdir)s/gtf2gtf.py
+    --sort=gene+transcript --log=%(outfile)s.log
+    | python %(scriptsdir)s/gtf2gtf.py
+    --filter=longest-gene --log=%(outfile)s.log
     | gzip
     > %(outfile)s '''
 
     P.run()
-
-############################################################
-############################################################
-############################################################
 
 
 @merge(buildFlatGeneSet, PARAMS["interface_greatdomains_gff"])
 def buildGREATRegulatoryDomains(infile, outfile):
     '''build gene territories from protein coding genes.'''
 
-    to_cluster = True
-
     statement = '''
     gunzip < %(infile)s
     | awk '$2 == "protein_coding"'
-    | python %(scriptsdir)s/gtf2gtf.py --filter=representative-transcript --log=%(outfile)s.log
-    | python %(scriptsdir)s/gtf2gff.py 
-          --genome-file=%(genome_dir)s/%(genome)s 
-          --log=%(outfile)s.log
-          --radius=%(great_radius)s
-          --method=great-domains
-          --upstream=%(great_upstream)i
-          --downstream=%(great_downstream)i
+    | python %(scriptsdir)s/gtf2gtf.py
+    --filter=representative-transcript
+    --log=%(outfile)s.log
+    | python %(scriptsdir)s/gtf2gff.py
+    --genome-file=%(genome_dir)s/%(genome)s
+    --log=%(outfile)s.log
+    --radius=%(great_radius)s
+    --method=great-domains
+    --upstream=%(great_upstream)i
+    --downstream=%(great_downstream)i
     | gzip
     > %(outfile)s '''
 
     P.run()
 
-############################################################
-############################################################
-############################################################
 
-
-@merge(buildCodingExonTranscripts, PARAMS["interface_promotors_bed"])
 def buildPromotorRegions(infile, outfile):
     '''annotate promotor regions from reference gene set.'''
     statement = """
-        gunzip < %(infile)s 
-        | python %(scriptsdir)s/gtf2gff.py --method=promotors --promotor=%(geneset_promotor_size)s --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
-        | python %(scriptsdir)s/gff2bed.py --is-gtf --name=transcript_id --log=%(outfile)s.log 
-        | gzip 
-        > %(outfile)s
+    gunzip < %(infile)s
+    | python %(scriptsdir)s/gtf2gff.py
+    --method=promotors --promotor=%(geneset_promotor_size)s
+    --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log
+    | python %(scriptsdir)s/gff2bed.py --is-gtf
+    --name=transcript_id --log=%(outfile)s.log
+    | gzip
+    > %(outfile)s
     """
 
     P.run()
-
-############################################################
-# TRANSCRIPTS
 
 
 @merge(buildCodingExonTranscripts, PARAMS["interface_transcripts_gtf"])
 def buildTranscripts(infile, outfile):
     '''annotate transcripts from reference gene set. '''
     statement = """
-        gunzip < %(infile)s 
-        | python %(scriptsdir)s/gtf2gtf.py --join-exons --log=%(outfile)s.log 
-        | gzip
-        > %(outfile)s """
+    gunzip < %(infile)s 
+    | python %(scriptsdir)s/gtf2gtf.py --join-exons --log=%(outfile)s.log
+    | gzip
+    > %(outfile)s """
     P.run()
-
-############################################################
 
 
 @follows(buildTranscripts)
-@merge(PARAMS["interface_transcripts_gtf"], PARAMS["interface_transcripts_bed"])
+@merge(PARAMS["interface_transcripts_gtf"],
+       PARAMS["interface_transcripts_bed"])
 def buildTranscriptsBed(infile, outfile):
     '''annotate transcripts from reference gene set. '''
     statement = """
-        zcat %(infile)s
-        | python %(scriptsdir)s/gff2bed.py --is-gtf --name=transcript_id --log=%(outfile)s.log 
-        | python %(scriptsdir)s/bed2bed.py --method=filter-genome --genome-file=%(genome_dir)s/%(genome)s --log %(outfile)s.log
-        | gzip
-        > %(outfile)s """
+    zcat %(infile)s
+    | python %(scriptsdir)s/gff2bed.py --is-gtf --name=transcript_id
+    --log=%(outfile)s.log 
+    | python %(scriptsdir)s/bed2bed.py --method=filter-genome
+    --genome-file=%(genome_dir)s/%(genome)s --log %(outfile)s.log
+    | gzip
+    > %(outfile)s """
     P.run()
-
-############################################################
-# NON-CODING TRANSCRIPTS
 
 
 @merge(buildNonCodingExonTranscripts, PARAMS["interface_noncoding_gtf"])
 def buildNoncodingTranscripts(infile, outfile):
-    '''annotate transcripts from reference gene set. '''
+    '''build non-coding transcripts '''
     statement = """
-        gunzip < %(infile)s 
-        | python %(scriptsdir)s/gtf2gtf.py --join-exons --log=%(outfile)s.log 
-        | gzip
-        > %(outfile)s """
+    gunzip < %(infile)s 
+    | python %(scriptsdir)s/gtf2gtf.py --join-exons --log=%(outfile)s.log
+    | gzip
+    > %(outfile)s """
     P.run()
 
 ############################################################
@@ -1040,42 +1034,43 @@ def buildNoncodingTranscripts(infile, outfile):
 def buildNoncodingTranscriptsBed(infile, outfile):
     '''annotate transcripts from reference gene set. '''
     statement = """
-        zcat < %(infile)s 
-        | python %(scriptsdir)s/gff2bed.py --is-gtf --name=transcript_id --log=%(outfile)s.log 
-        | python %(scriptsdir)s/bed2bed.py --method=filter-genome --genome-file=%(genome_dir)s/%(genome)s --log %(outfile)s.log
-        | gzip
-        > %(outfile)s """
+    zcat < %(infile)s
+    | python %(scriptsdir)s/gff2bed.py --is-gtf
+    --name=transcript_id --log=%(outfile)s.log
+    | python %(scriptsdir)s/bed2bed.py --method=filter-genome
+    --genome-file=%(genome_dir)s/%(genome)s --log %(outfile)s.log
+    | gzip
+    > %(outfile)s """
     P.run()
 
 ############################################################
 
 
 @follows(buildNoncodingTranscripts)
-@merge(PARAMS["interface_noncoding_gtf"], PARAMS["interface_noncoding_genes_bed"])
+@merge(PARAMS["interface_noncoding_gtf"],
+       PARAMS["interface_noncoding_genes_bed"])
 def buildNoncodingGenesBed(infile, outfile):
     '''annotate transcripts from reference gene set. '''
     statement = """
-        cat < %(infile)s 
-        | python %(scriptsdir)s/gff2bed.py --is-gtf --name=gene_id --log=%(outfile)s.log 
-        | python %(scriptsdir)s/bed2bed.py --method=filter-genome --genome-file=%(genome_dir)s/%(genome)s --log %(outfile)s.log
-        | gzip
-        > %(outfile)s """
+    cat < %(infile)s
+    | python %(scriptsdir)s/gff2bed.py --is-gtf
+    --name=gene_id --log=%(outfile)s.log
+    | python %(scriptsdir)s/bed2bed.py --method=filter-genome
+    --genome-file=%(genome_dir)s/%(genome)s --log %(outfile)s.log
+    | gzip
+    > %(outfile)s """
     P.run()
-
-############################################################
 
 
 @merge(buildLincRNAExonTranscripts, PARAMS["interface_lincrna_gtf"])
 def buildLincRNATranscripts(infile, outfile):
     '''annotate transcripts from reference gene set. '''
     statement = """
-        gunzip < %(infile)s 
-        | python %(scriptsdir)s/gtf2gtf.py --join-exons --log=%(outfile)s.log 
-        | gzip
-        > %(outfile)s """
+    gunzip < %(infile)s
+    | python %(scriptsdir)s/gtf2gtf.py --join-exons --log=%(outfile)s.log
+    | gzip
+    > %(outfile)s """
     P.run()
-
-############################################################
 
 
 @follows(buildLincRNATranscripts)
@@ -1276,12 +1271,15 @@ def loadRepeats(infile, outfile):
     #statement = """zcat %(infile)s | awk '{print $5-$4}' | awk '{ sum+=$1} END {print sum}' > %(outfile)s; """
 
     headers = "contig,start,stop,class"
-    statement = """zcat %(infile)s | python %(scriptsdir)s/gff2bed.py --name=class | grep -v "#" | cut -f1,2,3,4
-                   | python %(scriptsdir)s/csv2db.py 
-                         --table=repeats
-                         --header=%(headers)s
-                         --index=
-                 > %(outfile)s; """
+    statement = """zcat %(infile)s
+    | python %(scriptsdir)s/gff2bed.py --name=class | grep -v "#"
+    | cut -f1,2,3,4
+    | python %(scriptsdir)s/csv2db.py
+    --retry
+    --table=repeats
+    --header=%(headers)s
+    --index=class
+    > %(outfile)s; """
     P.run()
 
 #############################################################
