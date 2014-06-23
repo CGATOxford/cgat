@@ -1,5 +1,4 @@
-"""
-===========================
+"""===========================
 Ancestral repeats pipeline
 ===========================
 
@@ -24,27 +23,31 @@ This pipeline performs the following actions:
 Usage
 =====
 
-See :ref:`PipelineSettingUp` and :ref:`PipelineRunning` on general information how to use CGAT pipelines.
+See :ref:`PipelineSettingUp` and :ref:`PipelineRunning` on general
+information how to use CGAT pipelines.
 
 Configuration
 -------------
 
-The pipeline expects a :term:`query` and :term:`target` genome. These should be set in the general section.
-For each genome there should then be section on how to obtain the repeatmasker tracks. The default
+The pipeline expects a :term:`query` and :term:`target` genome. These
+should be set in the general section.  For each genome there should
+then be section on how to obtain the repeatmasker tracks. The default
 configuration file gives an example.
 
 Input
 -----
 
-The pipeline starts from an empty working directory. It will collect the input
-data from directories specified in the configuration files.
+The pipeline starts from an empty working directory. It will collect
+the input data from directories specified in the configuration files.
 
-The genomic alignment can both be build from :term:`axt` formatted pairwise alignments
-and from :term:`maf` formatted multiple alignmentns. However, the latter currently 
-only works if the :term:`query` genome is the reference species in the maf files. 
+The genomic alignment can both be build from :term:`axt` formatted
+pairwise alignments and from :term:`maf` formatted multiple
+alignmentns. However, the latter currently only works if the
+:term:`query` genome is the reference species in the maf files.
 
-This is a consequence of :file:`maf2Axt` requiring that the strand of the reference species 
-is always positive and I have not figured out how to invert maf alignments.
+This is a consequence of :file:`maf2Axt` requiring that the strand of
+the reference species is always positive and I have not figured out
+how to invert maf alignments.
 
 .. note::
    ENSEMBL import is not thoroughly tested.
@@ -68,7 +71,7 @@ The pipeline builds the following files:
 
 aligned_repeats.psl.gz
    :term:`psl` formatted files of alignments between ancestral repeats
- 
+
 aligned_repeats.rates.gz
    rates between ancestral repeats
 
@@ -82,7 +85,9 @@ alignment.psl.gz
 Example
 =======
 
-Example data is available at http://www.cgat.org/~andreas/sample_data/pipeline_ancestral_repeats.tgz.
+Example data is available at
+http://www.cgat.org/~andreas/sample_data/pipeline_ancestral_repeats.tgz.
+
 To run the example, simply unpack and untar::
 
    wget http://www.cgat.org/~andreas/sample_data/pipeline_ancestral_repeats.tgz
@@ -90,40 +95,20 @@ To run the example, simply unpack and untar::
    cd pipeline_ancestral_repeats
    python <srcdir>/pipeline_ancestral_repeats.py make full
 
-The example data builds ancestral repeats between human hg19:chr19 and mouse mm9:chr7.
+The example data builds ancestral repeats between human hg19:chr19 and
+mouse mm9:chr7.
 
 Code
 ====
 
-
 """
 import sys
-import tempfile
-import optparse
-import shutil
-import itertools
-import csv
-import math
-import random
-import re
-import glob
 import os
-import shutil
-import collections
 
 import CGAT.Experiment as E
 import logging as L
 
 from ruffus import *
-import csv
-import sqlite3
-import CGAT.IndexedFasta as IndexedFasta
-import CGAT.IndexedGenome as IndexedGenome
-import CGAT.FastaIterator as FastaIterator
-import CGAT.Genomics as Genomics
-import CGAT.GTF as GTF
-import CGAT.Blat as Blat
-import CGAT.IOTools as IOTools
 
 ###################################################
 ###################################################
@@ -161,7 +146,8 @@ def getGenomes():
 #########################################################################
 
 
-@files([("%s/%s.idx" % (PARAMS["genome_dir"], x), "%s.sizes" % x) for x in (PARAMS["query"], PARAMS["target"])])
+@files([("%s/%s.idx" % (PARAMS["genome_dir"], x), "%s.sizes" % x)
+        for x in (PARAMS["query"], PARAMS["target"])])
 def buildSizes(infile, outfile):
     '''extract size information from genomes.'''
     outf = open(outfile, "w")
@@ -178,11 +164,10 @@ def buildSizes(infile, outfile):
 if "axt_dir" in PARAMS:
     # build pairwise alignment from axt formatted data.'''
     @follows(buildSizes)
-    @merge("%s/*.axt.gz" % PARAMS["axt_dir"], PARAMS["interface_alignment_psl"])
+    @merge("%s/*.axt.gz" % PARAMS["axt_dir"],
+           PARAMS["interface_alignment_psl"])
     def buildGenomeAlignment(infiles, outfile):
         '''build pairwise genomic aligment from axt files.'''
-
-        to_cluster = USECLUSTER
 
         try:
             os.remove(outfile)
@@ -376,7 +361,9 @@ def importRepeatsFromUCSC(infile, outfile, ucsc_database, repeattypes, genome):
 ########################################################################
 
 
-def importRepeatsFromEnsembl(infile, outfile, ensembl_database, repeattypes, genome):
+def importRepeatsFromEnsembl(infile, outfile,
+                             ensembl_database,
+                             repeattypes, genome):
     '''import repeats from an ENSEMBL database.
     '''
     statement = '''
@@ -397,12 +384,9 @@ def importRepeatsFromEnsembl(infile, outfile, ensembl_database, repeattypes, gen
     '''
     P.run()
 
-#########################################################################
-#########################################################################
-########################################################################
 
-
-@files([(None, "%s_repeats.gff.gz" % x, x) for x in (PARAMS["query"], PARAMS["target"])])
+@files([(None, "%s_repeats.gff.gz" % x, x)
+        for x in (PARAMS["query"], PARAMS["target"])])
 def importRepeats(infile, outfile, track):
     '''import repeats from external sources.'''
 
@@ -431,21 +415,15 @@ def importRepeats(infile, outfile, track):
 def mergeRepeats(infile, outfile):
     '''merge adjacent repeats.'''
 
-    to_cluster = True
-
     statement = '''gunzip
-    < %(infile)s 
-    | python %(scriptsdir)s/gff2gff.py 
-            --merge-features=0,10,0,0 
-            --log=%(outfile)s.log 
+    < %(infile)s
+    | python %(scriptsdir)s/gff2gff.py
+            --merge-features=0,10,0,0
+            --log=%(outfile)s.log
     | gzip
     > %(outfile)s
     '''
     P.run()
-
-########################################################
-########################################################
-########################################################
 
 
 @follows(buildGenomeAlignment)
@@ -479,17 +457,17 @@ def buildAlignedRepeats(infiles, outfile):
     # P.run()
 
     statement = '''
-        gunzip < %(interface_alignment_psl)s
-        | python %(scriptsdir)s/psl2psl.py 
-	        --method=test 
-		--log=%(outfile)s.log 
-	| python %(scriptsdir)s/psl2psl.py 
-		--method=map 
-		--filter-query=%(infile_query)s
-		--filter-target=%(infile_target)s
-		--log=%(outfile)s.log
-         | gzip 
-         > %(outfile)s'''
+    gunzip < %(interface_alignment_psl)s
+    | python %(scriptsdir)s/psl2psl.py
+    --method=test
+    --log=%(outfile)s.log
+    | python %(scriptsdir)s/psl2psl.py
+    --method=map
+    --filter-query=%(infile_query)s
+    --filter-target=%(infile_target)s
+    --log=%(outfile)s.log
+    | gzip
+    > %(outfile)s'''
     P.run()
 
 ########################################################
@@ -501,22 +479,21 @@ def buildAlignedRepeats(infiles, outfile):
 def buildRepeatsRates(infile, outfile):
     '''compute rates for individual aligned repeats.'''
 
-    to_cluster = False
     genome_query, genome_target = getGenomes()
 
-    statement = '''gunzip < %(infile)s |
-    sort -k10,10 -k14,14 -k9,9 -k12,12n |
-    %(cmd-farm)s --split-at-lines=10000 --output-header --log=%(outfile)s.log
-          "python %(scriptsdir)s/psl2psl.py 
-		--log=%(outfile)s.log 
-		--method=add-sequence 
-		--filename-queries=%(genome_query)s
-		--filename-target=%(genome_target)s |
-	   python %(scriptsdir)s/psl2table.py 
-                --method=query-counts 
-                --method=baseml 
-                --baseml-model=REV" |
-    gzip > %(outfile)s
+    statement = '''gunzip < %(infile)s 
+    | sort -k10,10 -k14,14 -k9,9 -k12,12n
+    | %(cmd-farm)s --split-at-lines=10000 --output-header --log=%(outfile)s.log
+    "python %(scriptsdir)s/psl2psl.py
+    --log=%(outfile)s.log
+    --method=add-sequence
+    --filename-queries=%(genome_query)s
+    --filename-target=%(genome_target)s
+    | python %(scriptsdir)s/psl2table.py
+    --method=query-counts
+    --method=baseml
+    --baseml-model=REV"
+    | gzip > %(outfile)s
     '''
     P.run()
 
@@ -527,12 +504,10 @@ def buildRepeatsRates(infile, outfile):
 def computeAlignmentStats(infile, outfile):
     '''compute alignment coverage statistics'''
 
-    to_cluster = USECLUSTER
-
     statement = '''
-    gunzip < %(infile)s |
-    python %(scriptsdir)s/psl2stats.py 
-        --log=%(outfile)s.log 
+    gunzip < %(infile)s
+    | python %(scriptsdir)s/psl2stats.py
+    --log=%(outfile)s.log
     > %(outfile)s'''
 
     P.run()
@@ -566,13 +541,11 @@ def computeRepeatsCounts(infile, outfile):
 def buildRepeatDistribution(infile, outfile):
     '''count size and distance distribution of repeats.'''
 
-    to_cluster = USECLUSTER
-
     statement = '''gunzip
-    < %(infile)s 
-    | python %(scriptsdir)s/gff2histogram.py 
-        --output-filename-pattern="%(outfile)s.%%s" 
-        --method=all 
+    < %(infile)s
+    | python %(scriptsdir)s/gff2histogram.py
+    --output-filename-pattern="%(outfile)s.%%s"
+    --method=all
     > %(outfile)s
     '''
     P.run()
@@ -586,11 +559,10 @@ def buildRepeatDistribution(infile, outfile):
 def exportRatesAsGFF(infile, outfile):
     '''export gff file with rate as score.'''
 
-    to_cluster = USECLUSTER
     statement = '''gunzip
-    < %(infile)s 
-    | python %(toolsdir)s/csv_cut.py qName qStart qEnd distance converged 
-    | awk '!/qName/ && $5 {printf("%%s\\tancestral_repeat\\texon\\t%%s\\t%%s\\t%%s\\t+\\t.\\t.\\n", $1, $2, $3, $4);}' 
+    < %(infile)s
+    | python %(toolsdir)s/csv_cut.py qName qStart qEnd distance converged
+    | awk '!/qName/ && $5 {printf("%%s\\tancestral_repeat\\texon\\t%%s\\t%%s\\t%%s\\t+\\t.\\t.\\n", $1, $2, $3, $4);}'
     | gzip
     > %(outfile)s
     '''
