@@ -973,6 +973,8 @@ def buildGREATRegulatoryDomains(infile, outfile):
     P.run()
 
 
+@merge(buildCodingExonTranscripts,
+       PARAMS["interface_promotors_bed"])
 def buildPromotorRegions(infile, outfile):
     '''annotate promotor regions from reference gene set.'''
     statement = """
