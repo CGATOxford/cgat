@@ -233,20 +233,18 @@ elif "maf_dir" in PARAMS:
     def buildGenomeAlignment(infile, outfile):
         '''remove non-unique alignments in genomic infile.'''
 
-        to_cluster = True
-
         statement = '''gunzip < %(infile)s 
-             | sort -k10,10 -k12,12n
-             | python %(scriptsdir)s/psl2psl.py 
-                  --method=remove-overlapping-query
-                  --log=%(outfile)s.log 
-             | sort -k14,14 -k16,16n
-             | python %(scriptsdir)s/psl2psl.py 
-                  --method=remove-overlapping-target
-                  --log=%(outfile)s.log 
-             | gzip
-             >> %(outfile)s
-             '''
+        | sort -k10,10 -k12,12n
+        | python %(scriptsdir)s/psl2psl.py
+        --method=remove-overlapping-query
+        --log=%(outfile)s.log
+        | sort -k14,14 -k16,16n
+        | python %(scriptsdir)s/psl2psl.py
+        --method=remove-overlapping-target
+        --log=%(outfile)s.log
+        | gzip
+        >> %(outfile)s
+        '''
         P.run()
 
     @follows(buildSizes)
@@ -258,8 +256,6 @@ elif "maf_dir" in PARAMS:
             os.remove(outfile)
         except OSError:
             pass
-
-        to_cluster = USECLUSTER
 
         for infile in infiles:
             # skip maf files without Hsap on top.
@@ -343,14 +339,14 @@ def importRepeatsFromUCSC(infile, outfile, ucsc_database, repeattypes, genome):
     to_cluster = USECLUSTER
 
     statement = '''cat %(tmpfilename)s
-        | %(scriptsdir)s/gff_sort pos 
-        | python %(scriptsdir)s/gff2gff.py 
-            --sanitize=genome 
-            --skip-missing 
-            --genome-file=%(genome)s
-            --log=%(outfile)s.log 
-        | gzip
-        > %(outfile)s
+    | %(scriptsdir)s/gff_sort pos
+    | python %(scriptsdir)s/gff2gff.py
+    --sanitize=genome
+    --skip-missing
+    --genome-file=%(genome)s
+    --log=%(outfile)s.log
+    | gzip
+    > %(outfile)s
     '''
     P.run()
 
@@ -367,20 +363,20 @@ def importRepeatsFromEnsembl(infile, outfile,
     '''import repeats from an ENSEMBL database.
     '''
     statement = '''
-        perl %(scriptsdir)s/ensembl_repeats2gff.pl 
-              -h %(ensembl_host)s 
-              -u %(ensembl_user)s
-              -p %(ensembl_password)s
-              -d %(ensembl_database)s
-              --repeattypes %(repeattypes)s 
-	| %(scriptsdir)s/gff_sort pos 
-        | python %(scriptsdir)s/gff2gff.py 
-            --sanitize=genome
-            --skip-missing 
-            --genome-file=%(genome)s
-            --log=%(outfile)s.log 
-        | gzip
-        > %(outfile)s
+    perl %(scriptsdir)s/ensembl_repeats2gff.pl
+    -h %(ensembl_host)s
+    -u %(ensembl_user)s
+    -p %(ensembl_password)s
+    -d %(ensembl_database)s
+    --repeattypes %(repeattypes)s
+    | %(scriptsdir)s/gff_sort pos
+    | python %(scriptsdir)s/gff2gff.py
+    --sanitize=genome
+    --skip-missing
+    --genome-file=%(genome)s
+    --log=%(outfile)s.log
+    | gzip
+    > %(outfile)s
     '''
     P.run()
 
@@ -403,10 +399,6 @@ def importRepeats(infile, outfile, track):
                               PARAMS["%s_database" % track],
                               repeattypes=PARAMS["%s_repeattypes" % track],
                               genome=genome)
-
-#########################################################################
-#########################################################################
-########################################################################
 
 
 @transform(importRepeats,
@@ -440,7 +432,7 @@ def buildAlignedRepeats(infiles, outfile):
     granularity = 5000
 
     # need to escape pipe symbols within farm.py command
-    #to_cluster = False
+    # to_cluster = False
     # statement = r'''
     #     gunzip < %(interface_alignment_psl)s
     #     | %(cmd-farm)s --split-at-lines=%(granularity)i --log=%(outfile)s.log --binary

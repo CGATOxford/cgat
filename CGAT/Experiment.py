@@ -192,6 +192,7 @@ import textwrap
 import random
 import uuid
 
+
 class DefaultOptions:
     stdlog = sys.stdout
     stdout = sys.stdout
@@ -1120,7 +1121,8 @@ class Experiment:
 
             if self.mLogLevel >= 1:
                 print "-" * 50
-                print statement + " finished at " + time.asctime(time.localtime(time.time()))
+                print statement + " finished at " + \
+                    time.asctime(time.localtime(time.time()))
                 print "-" * 50
 
     def ParseCommandLine(self):
@@ -1152,8 +1154,8 @@ class Experiment:
         print "# valid long options are:", str(self.mLongOptions)
 
 
-def run(cmd, return_stdout=False, **kwargs):
-    '''executed a command line cmd.
+def run(statement, return_stdout=False, **kwargs):
+    '''executed a command line statement.
 
     returns the return code.
 
@@ -1166,7 +1168,7 @@ def run(cmd, return_stdout=False, **kwargs):
     '''
 
     # remove new lines
-    cmd = " ".join(re.sub("\t+", " ", cmd).split("\n")).strip()
+    statement = " ".join(re.sub("\t+", " ", statement).split("\n")).strip()
 
     if "<(" in statement:
         shell = os.environ.get('SHELL', "/bin/bash")
@@ -1175,12 +1177,12 @@ def run(cmd, return_stdout=False, **kwargs):
                 "require bash for advanced shell syntax: <()")
         # Note: pipes.quote is deprecate in Py3, use shlex.quote
         # which is not present in Py2.7.
-        cmd = "%s -c %s" % (shell, pipes.quote(cmd))
+        statement = "%s -c %s" % (shell, pipes.quote(statement))
 
     if return_stdout:
-        return subprocess.check_output(cmd, shell=True, **kwargs)
+        return subprocess.check_output(statement, shell=True, **kwargs)
     else:
-        retcode = subprocess.call(cmd, shell=True, **kwargs)
+        retcode = subprocess.call(statement, shell=True, **kwargs)
         if retcode < 0:
             raise OSError("process was terminated by signal %i" % -retcode)
         return retcode
