@@ -1064,7 +1064,14 @@ def getStdoutStderr(stdout_path, stderr_path, tries=5):
 def run(**kwargs):
     """run a statement.
 
-    runs it on the cluster using drmaa if to_cluster is set.
+    The method runs statement on the cluster using drmaa. The
+    cluster is bypassed if:
+        * ``to_cluster`` is set to None in the namespace fo
+          the calling function.
+        * ``--local`` has been specified on the command line
+        * no libdrmaa is present
+        * the global session is not initialized
+          (GLOBAL_SESSION is None)
 
     Troubleshooting:
        1. DRMAA creates sessions and their is a limited number
@@ -1200,7 +1207,8 @@ def run(**kwargs):
                 os.unlink(job_path)
             except OSError:
                 L.warn(
-                    "temporary job file %s not present for clean-up - ignored" % job_path)
+                    "temporary job file %s not present for "
+                    "clean-up - ignored" % job_path)
 
         session.deleteJobTemplate(jt)
 
@@ -1211,7 +1219,8 @@ def run(**kwargs):
     #     run on cluster
     elif (options.get("job_queue") or
           ("to_cluster" not in options or options.get("to_cluster"))) \
-            and (GLOBAL_OPTIONS and not GLOBAL_OPTIONS.without_cluster):
+            and (GLOBAL_OPTIONS and not GLOBAL_OPTIONS.without_cluster) or \
+            GLOBAL_SESSION is not None:
 
         statement = buildStatement(**options)
 
@@ -1795,9 +1804,10 @@ def main(args=sys.argv):
         try:
             if options.pipeline_action == "make":
 
-                # create the session proxy
-                GLOBAL_SESSION = drmaa.Session()
-                GLOBAL_SESSION.initialize()
+                if not options.without_cluster:
+                    # create the session proxy
+                    GLOBAL_SESSION = drmaa.Session()
+                    GLOBAL_SESSION.initialize()
 
                 #
                 #   make sure we are not logging at the same time in
