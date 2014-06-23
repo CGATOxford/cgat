@@ -49,14 +49,15 @@ RANGES = {
 class Record:
 
     def __init__(self, identifier, seq, quals, format=None):
-        self.identifier, self.seq, self.quals, format = identifier, seq, quals, format
+        self.identifier, self.seq, self.quals, format = (
+            identifier, seq, quals, format)
         self.format = None
 
     def __str__(self):
         return "@%s\n%s\n+\n%s" % (self.identifier, self.seq, self.quals)
 
     def guessFormat(self):
-        '''return quality score format - 
+        '''return quality score format -
         might return several if ambiguous.'''
 
         c = [ord(x) for x in self.quals]
@@ -82,7 +83,8 @@ class Record:
         elif self.format == "solexa":
             # from -5 to 40 (i.e., can be negative)
             log10x = log(10.0) + .499
-            return [int(10.0 * log(1.0 + 10 ** (ord(x) / 10.0), 10) / log10x) for x in self.quals]
+            return [int(10.0 * log(1.0 + 10 ** (ord(x) / 10.0), 10) / log10x)
+                    for x in self.quals]
         elif self.format == "phred64":
             return [ord(x) - 64 for x in self.quals]
 
@@ -175,7 +177,6 @@ def iterate_convert(infile, format, max_tries=10000, guess=None):
     quals = set(RANGES.keys())
     cache = []
     myiter = iterate(infile)
-    lengths = []
     for c, record in enumerate(myiter):
         quals.intersection_update(set(record.guessFormat()))
 
@@ -196,7 +197,8 @@ def iterate_convert(infile, format, max_tries=10000, guess=None):
         ref_format = guess
     else:
         raise ValueError(
-            "could not guess format - could be one of %s. If you know the format use the --format option" % str(quals))
+            "could not guess format - could be one of %s. "
+            "If you know the format use the --format option" % str(quals))
 
     for r in cache:
         r.format = ref_format
