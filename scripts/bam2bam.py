@@ -156,6 +156,12 @@ def main(argv=None):
     parser.add_option("--reference-bam", dest="reference_bam", type="string",
                       help="bam-file to filter with [%default]")
 
+    parser.add_option("--force", dest="force", action="store_true",
+                      help="force processing. Some methods such "
+                      "as strip/unstrip will stop processing if "
+                      "they think it not necessary "
+                      "[%default]")
+
     parser.add_option("--sam", dest="output_sam", action="store_true",
                       help="output in sam format [%default]")
 
@@ -187,6 +193,7 @@ def main(argv=None):
         reference_bam=None,
         strip=None,
         unstrip=None,
+        force=False,
         set_sequence=False,
         inplace=False,
         fastq_pair1=None,
@@ -265,8 +272,12 @@ def main(argv=None):
 
             options.stdlog.write("category\tcounts\n%s\n" % c.asTable())
         else:
+
             # set up the modifying iterators
             it = pysam_in.fetch(until_eof=True)
+
+            # function to check if processing should start
+            pre_check_f = lambda x: None
 
             if options.unset_unmapped_mapq:
                 def unset_unmapped_mapq(i):
@@ -310,10 +321,20 @@ def main(argv=None):
                         read.seq = None
                         yield read
 
+                def check_sequence(reads):
+                    if reads[0].seq is None:
+                        return 'no sequence present'
+                    return None
+
                 def strip_quality(i):
                     for read in i:
                         read.qual = None
                         yield read
+
+                def check_quality(reads):
+                    if reads[0].qual is None:
+                        return 'no quality information present'
+                    return None
 
                 def strip_match(i):
                     for read in i:
@@ -327,8 +348,10 @@ def main(argv=None):
 
                 if options.strip == "sequence":
                     it = strip_sequence(it)
+                    pre_check_f = check_sequence
                 elif options.strip == "quality":
                     it = strip_quality(it)
+                    pre_check_f = check_quality
                 elif options.strip == "match":
                     it = strip_match(it)
 
@@ -388,7 +411,23 @@ def main(argv=None):
                         yield read
                 it = keep_first_base(it)
 
-            # read and output
+            # read first read and check if processing should continue
+            # only possible when not working from stdin
+            if bamfile != "-":
+                # get first read for checking pre-conditions
+                first_reads = list(pysam_in.head(1))
+
+                msg = pre_check_f(first_reads)
+                if msg is not None:
+                    if options.force:
+                        E.warn('proccessing continues, though: %s' % msg)
+                    else:
+                        E.warn('processing not started: %s' % msg)
+                        pysam_in.close()
+                        pysam_out.close()
+                        continue
+
+            # continue processing till end
             for read in it:
                 pysam_out.write(read)
 
