@@ -17,10 +17,21 @@ on Nov.30 2011.
 import socket
 import os.path as op
 import os
+import subprocess
+import time
+
+def startIGV(command="igv.sh", port=None):
+    """start IGV on a specific port."""
+    args = [command]
+    if port is not None:
+        args.extend(['-p', str(port)])
+    process = subprocess.Popen(args,
+                               stdout=subprocess.PIPE)
+    time.sleep(10)
+    return process
 
 
 class IGV(object):
-
     r"""
     Simple wrapper to the IGV (http://www.broadinstitute.org/software/igv/home)
     socket interface (http://www.broadinstitute.org/software/igv/PortCommands)
@@ -41,7 +52,7 @@ class IGV(object):
         >>> igv.genome('hg19')
         'OK'
 
-        #>>> igv.load('http://www.broadinstitute.org/igvdata/1KG/pilot2Bams/NA12878.SLX.bam')
+        >>> igv.load('http://www.broadinstitute.org/igvdata/1KG/pilot2Bams/NA12878.SLX.bam')
         'OK'
         >>> igv.go('chr1:45,600-45,800')
         'OK'
@@ -87,7 +98,8 @@ class IGV(object):
         self.set_path(snapshot_dir)
 
     @classmethod
-    def start(cls, jnlp="igv.jnlp", url="http://www.broadinstitute.org/igv/projects/current/"):
+    def start(cls, jnlp="igv.jnlp",
+              url="http://www.broadinstitute.org/igv/projects/current/"):
         import subprocess
         p = subprocess.Popen("/usr/bin/javaws -Xnosplash %s%s" % (url, jnlp),
                              shell=True, stdout=subprocess.PIPE)
