@@ -20,6 +20,7 @@ import os
 import subprocess
 import time
 
+
 def startIGV(command="igv.sh", port=None):
     """start IGV on a specific port."""
     args = [command]

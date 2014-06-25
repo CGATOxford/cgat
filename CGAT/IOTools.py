@@ -500,6 +500,9 @@ def isEmpty(filename):
 
     raises OSError if file does not exist
     '''
+    # don't now about stdin
+    if filename == "-":
+        return False
     return os.stat(filename)[stat.ST_SIZE] == 0
 
 
