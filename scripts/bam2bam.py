@@ -96,9 +96,10 @@ import sys
 import itertools
 import tempfile
 import shutil
+import pysam
 
 import CGAT.Experiment as E
-import pysam
+import CGAT.IOTools as IOTools
 
 try:
     import pyximport
@@ -222,6 +223,10 @@ def main(argv=None):
 
         if os.path.islink(bamfile):
             E.warn('ignoring link %s' % bamfile)
+            continue
+
+        if IOTools.isEmpty(bamfile):
+            E.warn('ignoring empty file %s' % bamfile)
             continue
 
         # reading bam from stdin does not work with only the "r" tag
