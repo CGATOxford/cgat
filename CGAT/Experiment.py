@@ -1175,8 +1175,8 @@ def run(statement, return_stdout=False, **kwargs):
         if "bash" not in shell:
             raise ValueError(
                 "require bash for advanced shell syntax: <()")
-        # Note: pipes.quote is deprecate in Py3, use shlex.quote
-        # which is not present in Py2.7.
+        # Note: pipes.quote is deprecated. In Py3, use shlex.quote
+        # (not present in Py2.7)
         statement = "%s -c %s" % (shell, pipes.quote(statement))
 
     if return_stdout:
