@@ -1627,6 +1627,29 @@ def run_report(clean=True):
     L.info('the report is available at %s' % os.path.abspath(
         os.path.join(PARAMS['report_html'], "contents.html")))
 
+
+def publish_notebooks():
+    '''publish report into web directory.'''
+
+    dirs = getProjectDirectories()
+
+    notebookdir = dirs['notebookdir']
+    exportdir = dirs['exportdir']
+    exportnotebookdir = os.path.join(exportdir, "notebooks")
+
+    if not os.path.exists(exportnotebookdir):
+        os.makedirs(exportnotebookdir)
+
+    statement = '''
+    cd %(exportnotebookdir)s;
+    ipython nbconvert
+    %(notebookdir)s/*.ipynb
+    --to html
+    ''' % locals()
+
+    E.run(statement)
+
+
 USAGE = '''
 usage: %prog [OPTIONS] [CMD] [target]
 
