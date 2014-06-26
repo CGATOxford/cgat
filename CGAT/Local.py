@@ -39,7 +39,6 @@ import os
 import re
 import shutil
 import inspect
-import glob
 
 from CGAT import Experiment as E
 
@@ -52,7 +51,8 @@ def getProjectDirectories():
     project_name = getProjectName()
 
     result = {
-        'webdir': os.path.join(PROJECT_ROOT, PARAMS["web_dir"]),
+        'webdir': os.path.join(PROJECT_ROOT,
+                               PARAMS["web_dir"]),
         'exportdir': os.path.join(PARAMS["exportdir"]),
         'notebookdir': os.path.join(PROJECT_ROOT,
                                     project_name, "notebooks")
@@ -64,6 +64,7 @@ def getProjectDirectories():
                 "directory %s for %s does not exist" % (y, x))
 
     return result
+
 
 #######################################################
 # Duplicated functions from Pipeline.py - refactor
