@@ -2151,10 +2151,6 @@ def full():
     '''run the full pipeline.'''
     pass
 
-###################################################################
-###################################################################
-###################################################################
-
 
 @follows(mkdir("report"))
 def build_report():
@@ -2162,10 +2158,6 @@ def build_report():
 
     E.info("starting documentation build process from scratch")
     P.run_report(clean=True)
-
-###################################################################
-###################################################################
-###################################################################
 
 
 @follows(mkdir("report"))
@@ -2175,10 +2167,6 @@ def update_report():
     E.info("updating documentation")
     P.run_report(clean=False)
 
-###################################################################
-###################################################################
-###################################################################
-
 
 @follows(update_report)
 def publish():
@@ -2186,6 +2174,24 @@ def publish():
     # publish web pages
 
     P.publish_report()
+
+
+@merge(None, 'reset.log')
+def reset(infile, outfile):
+    '''reset pipeline to initial start.
+
+    This will remove all results from running this
+    pipeline!!!
+    '''
+    statement = '''
+    rm -rf export motifs peakshapes transcriptprofiles report;
+    rm -rf _cache _static _templates;
+    rm -f csvdb *.tss* *.meme* *.repeats* *.nuc* *.load;
+    rm -f *.annotations* *.contextstats* .motifs.fasta *overlapping_genes;
+    rm -f *.tsv.gz
+    '''
+    P.run()
+
 
 if __name__ == "__main__":
     sys.exit(P.main(sys.argv))
