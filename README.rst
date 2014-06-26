@@ -17,7 +17,7 @@ For questions, please subscribe and contact us at the
 <https://groups.google.com/forum/?fromgroups#!forum/cgat-user-group>`_.
 
 Documentation of CGAT tools is available 
-`here https://www.cgat.org/downloads/public/cgat/documentation/cgat.html#cgat>`_.
+`here <http://www.cgat.org/downloads/public/cgat/documentation/cgat.html#cgat>`_.
 
 CGAT Tools
 ==========

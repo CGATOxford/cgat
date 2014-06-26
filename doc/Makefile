@@ -118,7 +118,6 @@ publish:
 	@echo "copying data"																													      
 	rsync --size-only -acvz _build/html/ $(DIR_PUBLISH)																									   
 	@echo "setting permissions"																												      
-	cp htaccess $(DIR_PUBLISH)/.htaccess																											    
 	chmod -R a+x $(DIR_PUBLISH)																												      
 	chmod -R a+r $(DIR_PUBLISH)																												      
 	@echo "fixing URLs"																														
