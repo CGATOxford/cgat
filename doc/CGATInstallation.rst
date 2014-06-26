@@ -124,6 +124,8 @@ pre-installed:
 
 * :ref:`CGATInstallationVirtualBoxUbuntu`
 
+* :ref:`CGATLiveISO`
+
 * :ref:`CGATInstallationVagrant`
 
 * :ref:`CGATInstallationDocker`
