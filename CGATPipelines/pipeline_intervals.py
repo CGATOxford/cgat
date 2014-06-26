@@ -1751,7 +1751,8 @@ def runGATOnGeneAnnotations(infiles, outfile):
 def runGATOnSets(infiles, outfile, workspacefile, isochorefile):
     '''run gat on intervals against each other.'''
 
-    job_options = "-l mem_free=4G -pe dedicated 4 -R y"
+    job_threads = 4
+    job_options = "-l mem_free=4G"
 
     segments = os.path.join("gat_sets.dir", "segments.bed")
     annotations = os.path.join("gat_sets.dir", "annotations.bed")

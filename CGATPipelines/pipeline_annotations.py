@@ -1,6 +1,5 @@
 
-"""
-===================
+"""===================
 Annotation pipeline
 ===================
 
@@ -16,21 +15,22 @@ for use in other pipelines.
    * repeats (from UCSC repeatmasker tracks)
 
 This pipeline works on a single genome. Annotations are often shared
-between versions within the same project or even between projects, hence
-this separate pipeline. The output of this pipeline is used by various
-other pipelines, for example the the :doc:`pipeline_rnaseq` and the 
-:doc:`pipeline_chipseq`.
+between versions within the same project or even between projects,
+hence this separate pipeline. The output of this pipeline is used by
+various other pipelines, for example the the :doc:`pipeline_rnaseq`
+and the :doc:`pipeline_chipseq`.
 
 Overview
 ========
 
-The pipeline takes as input an ENSEMBL gene set and builds various gene sets
-of interest. 
+The pipeline takes as input an ENSEMBL gene set and builds various
+gene sets of interest.
 
 Usage
 =====
 
-See :ref:`PipelineSettingUp` and :ref:`PipelineRunning` on general information how to use CGAT pipelines.
+See :ref:`PipelineSettingUp` and :ref:`PipelineRunning` on general
+information how to use CGAT pipelines.
 
 Configuration
 -------------
@@ -355,35 +355,31 @@ def loadGenomeInformation(infile, outfile):
 ############################################################
 ############################################################
 # Mappability
-@files(os.path.join(PARAMS["gem_dir"], PARAMS["genome"] + ".gem"),  PARAMS["genome"] + ".mappability")
+@files(os.path.join(PARAMS["gem_dir"],
+                    PARAMS["genome"] + ".gem"),
+       PARAMS["genome"] + ".mappability")
 def calculateMappability(infile, outfile):
     '''Calculate mappability using GEM '''
     index = P.snip(infile, ".gem")
-    to_cluster = True
-    job_options = " -pe dedicated %i " % PARAMS["gem_threads"]
-    statement = '''gem-mappability -t %(gem_threads)s -m %(gem_mismatches)s 
-                                   --max-indel-length %(gem_max_indel_length)s 
-                                   -l %(gem_window_size)s 
-                                   -I %(index)s -o %(outfile)s '''
+    job_threads = PARAMS["gem_threads"]
+    statement = '''gem-mappability
+    -t %(gem_threads)s -m %(gem_mismatches)s
+    --max-indel-length %(gem_max_indel_length)s
+    -l %(gem_window_size)s
+    -I %(index)s -o %(outfile)s '''
     P.run()
-
-###################################################################
 
 
 @transform(calculateMappability, suffix(".mappability"), ".mappability.count")
 def countMappableBases(infile, outfile):
     '''Count mappable bases in genome'''
-    to_cluster = True
     statement = '''cat %(infile)s | tr -cd ! | wc -c > %(outfile)s'''
     P.run()
-
-###################################################################
 
 
 @transform(countMappableBases, suffix(".count"), ".count.load")
 def loadMappableBases(infile, outfile):
     '''load count of mappable bases in genome'''
-    to_cluster = True
     header = "total_mappable_bases"
     statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
                       --table=total_mappable_bases

@@ -1231,8 +1231,8 @@ def runZinba(infile, outfile, controlfile, action="full"):
 
     E.info("zinba: running action %s" % (action))
 
-    job_options = "-l mem_free=32G -pe dedicated %i -R y" % PARAMS[
-        "zinba_threads"]
+    job_options = "-l mem_free=32G"
+    job_threads = PARAMS["zinba_threads"]
 
     mappability_dir = os.path.join(PARAMS["zinba_mappability_dir"],
                                    PARAMS["genome"],

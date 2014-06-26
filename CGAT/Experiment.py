@@ -657,9 +657,9 @@ def Start(parser=None,
         parser.set_defaults(user="")
 
     if add_cluster_options:
-        parser.add_option("--use-cluster", dest="use_cluster",
+        parser.add_option("--no-cluster", "--local", dest="without_cluster",
                           action="store_true",
-                          help="use cluster [%default].")
+                          help="do no use cluster - run locally [%default].")
         parser.add_option("--cluster-priority", dest="cluster_priority",
                           type="int",
                           help="set job priority on cluster [%default].")
@@ -670,16 +670,22 @@ def Start(parser=None,
                           type="int",
                           help="number of jobs to submit to the queue execute "
                           "in parallel [%default].")
+        parser.add_option("--cluster-parallel",
+                          dest="cluster_parallel_environment",
+                          type="string",
+                          help="name of the parallel environment to use "
+                          "[%default].")
         parser.add_option("--cluster-options", dest="cluster_options",
                           type="string",
                           help="additional options for cluster jobs, passed "
                           "on to queuing system [%default].")
 
-        parser.set_defaults(use_cluster=False,
-                            cluster_queue="all.q",
-                            cluster_priority=-10,
-                            cluster_num_jobs=100,
-                            cluster_options="")
+        parser.set_defaults(without_cluster=False,
+                            cluster_queue=None,
+                            cluster_priority=None,
+                            cluster_num_jobs=None,
+                            cluster_parallel_environment=None,
+                            cluster_options=None)
 
     if add_output_options:
         parser.add_option("-P", "--output-filename-pattern",

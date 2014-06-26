@@ -1328,8 +1328,8 @@ def runZinba(infile,
     '''run Zinba for peak detection.'''
     E.info("zinba: running action %s" % (action))
 
-    job_options = "-l mem_free=32G -pe dedicated %i -R y" % PARAMS[
-        "zinba_threads"]
+    job_threads = PARAMS["zinba_threads"]
+    job_options = "-l mem_free=32G"
 
     # TODO: use closest size or build mapability file
     if not 40 <= tag_size < 60:
@@ -2304,7 +2304,7 @@ def runPeakRangerCCAT(infile, outfile, controlfile):
 def runSPP(infile, outfile, controlfile):
     '''run spp for peak detection.'''
 
-    job_options = "-pe dedicated %i -R y" % PARAMS["spp_threads"]
+    job_threads = PARAMS["spp_threads"]
     assert controlfile is not None, "spp requires a control"
 
     statement = '''

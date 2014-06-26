@@ -402,12 +402,13 @@ def loadTaggedReadCounts(infile, outfile):
 
 
 @follows(reconcileReadPairs, mkdir("transcriptome"))
-@transform("filtered/*.cutadapt.reconciled.read2.fastq.gz", regex(r"filtered/(\S+).cutadapt.reconciled.read2.fastq.gz"), r"transcriptome/\1.read2.bam")
+@transform("filtered/*.cutadapt.reconciled.read2.fastq.gz",
+           regex(r"filtered/(\S+).cutadapt.reconciled.read2.fastq.gz"),
+           r"transcriptome/\1.read2.bam")
 def alignReadsToTranscriptome(infile, outfile):
     '''map reads to transcriptome with bowtie'''
-    to_cluster = True
     track = P.snip(os.path.basename(outfile), ".bam")
-    job_options = "-pe dedicated %i -R y" % PARAMS["bowtie_threads"]
+    job_threads = PARAMS["bowtie_threads"]
     m = PipelineMapping.Bowtie()
     reffile = PARAMS["bowtie_transcriptome"]
     bowtie_options = PARAMS["bowtie_options"]

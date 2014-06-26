@@ -507,7 +507,7 @@ class Mapper(object):
                      for x in sorted(f)])
                 statement.append(
                     """fastq-dump --split-files --gzip --outdir
-                    "%(tmpdir_fastq)s %(infile)s""" % locals())
+                    %(tmpdir_fastq)s %(infile)s""" % locals())
 
             elif infile.endswith(".fastq.gz"):
                 format = Fastq.guessFormat(

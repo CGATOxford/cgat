@@ -277,8 +277,7 @@ def makeTrackDirectories(infile, outfile):
            r"\1.dir/\1.genome.bam")
 def mapReads(infiles, outfile):
     '''Map reads to the genome using BWA '''
-    to_cluster = True
-    job_options = "-pe dedicated %i -R y" % PARAMS["bwa_threads"]
+    job_threads = PARAMS["bwa_threads"]
     m = PipelineMapping.BWA()
     statement = m.build((infiles,), outfile)
     P.run()
