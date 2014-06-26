@@ -630,9 +630,9 @@ def mapReadsWithTophat(infiles, outfile):
     if "--butterfly-search" in PARAMS["tophat_options"]:
         # for butterfly search - require insane amount of
         # RAM.
-        job_options += " -l mem_free=50G"
+        job_options = " -l mem_free=50G"
     else:
-        job_options += " -l mem_free=%s" % PARAMS["tophat_memory"]
+        job_options = " -l mem_free=%s" % PARAMS["tophat_memory"]
 
     m = PipelineMapping.Tophat(
         executable=P.substituteParameters(**locals())["tophat_executable"],
@@ -676,11 +676,10 @@ def mapReadsWithTophat2(infiles, outfile):
     if "--butterfly-search" in PARAMS["tophat2_options"]:
         # for butterfly search - require insane amount of
         # RAM.
-        job_options += " -l mem_free=50G"
+        job_options = " -l mem_free=50G"
     else:
-        job_options += " -l mem_free=%s" % PARAMS["tophat2_memory"]
+        job_options = " -l mem_free=%s" % PARAMS["tophat2_memory"]
 
-    to_cluster = True
     m = PipelineMapping.Tophat2(
         executable=P.substituteParameters(**locals())["tophat2_executable"],
         strip_sequence=PARAMS["strip_sequence"])
@@ -1042,8 +1041,6 @@ if "merge_pattern_input" in PARAMS and PARAMS["merge_pattern_input"]:
             P.clone(infiles[0], outfile)
             P.clone(infiles[0] + ".bai", outfile + ".bai")
             return
-
-        to_cluster = True
 
         infiles = " ".join(infiles)
         statement = '''
@@ -1416,7 +1413,6 @@ def buildTranscriptLevelReadCounts(infiles, outfile):
     '''
     infile, genesets = infiles[0], infiles[1:]
 
-    to_cluster = True
     statements = []
     job_options = "-l mem_free=4G"
     for geneset in genesets:
