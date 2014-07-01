@@ -576,7 +576,9 @@ def main(argv=None):
                                   section='background',
                                   set=genelist_name)
 
-            outfile.write("gene_id\n%s\n" % ("\n".join(sorted(background[0]))))
+            # Jethro bug fix - see section 'build background' for assignment
+            #outfile.write("gene_id\n%s\n" % ("\n".join(sorted(background[0]))))
+            outfile.write("gene_id\n%s\n" % ("\n".join(sorted(background))))
             if options.output_filename_pattern:
                 outfile.close()
 
