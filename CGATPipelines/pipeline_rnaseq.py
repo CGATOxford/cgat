@@ -1153,8 +1153,7 @@ def mapReadsWithBowtieAgainstTranscriptome(infiles, outfile):
     # inflate the file sizes due to matches to alternative transcripts
     # but otherwise matches to paralogs will be missed (and such
     # reads would be filtered out).
-    job_options = "-pe dedicated %i -R y" % PARAMS["bowtie_threads"]
-    to_cluster = USECLUSTER
+    job_threads = PARAMS["bowtie_threads"]
     m = PipelineMapping.BowtieTranscripts(
         executable=P.substituteParameters(**locals())["bowtie_executable"])
     infile, reffile = infiles
@@ -1192,7 +1191,7 @@ def mapReadsWithTophat(infiles, outfile):
     it means that it ran out of memory.
 
     '''
-    job_options = "-pe dedicated %i -R y" % PARAMS["tophat_threads"]
+    job_threads = PARAMS["tophat_threads"]
 
     if "--butterfly-search" in PARAMS["tophat_options"]:
         # for butterfly search - require insane amount of
@@ -1326,8 +1325,7 @@ if "tophat_add_separate_junctions" in PARAMS and PARAMS["tophat_add_separate_jun
         # inflate the file sizes due to matches to alternative transcripts
         # but otherwise matches to paralogs will be missed (and such
         # reads would be filtered out).
-        job_options = "-pe dedicated %i -R y" % PARAMS["bowtie_threads"]
-        to_cluster = USECLUSTER
+        job_threads = PARAMS["bowtie_threads"]
         m = PipelineMapping.BowtieJunctions()
         infile, reffile, contigsfile = infiles
         prefix = P.snip(reffile, ".fa")
@@ -1843,8 +1841,7 @@ def buildGeneModels(infiles, outfile):
 
     infile, mask_file = infiles
 
-    to_cluster = USECLUSTER
-    job_options = "-pe dedicated %i -R y" % PARAMS["cufflinks_threads"]
+    job_threads = PARAMS["cufflinks_threads"]
 
     track = os.path.basename(P.snip(outfile, ".gtf.gz"))
 
@@ -1947,8 +1944,7 @@ def estimateExpressionLevelsInReference(infiles, outfile):
     '''estimate expression levels against a set of reference gene models.
     '''
 
-    to_cluster = USECLUSTER
-    job_options = "-pe dedicated %i -R y" % PARAMS["cufflinks_threads"]
+    job_threads = PARAMS["cufflinks_threads"]
 
     track = os.path.basename(outfile[:-len(".gtf")])
 
@@ -2998,7 +2994,7 @@ def loadReproducibility(infile, outfile):
 #     '''
 
 #     to_cluster = USECLUSTER
-#     job_options= "-pe dedicated %i -R y" % PARAMS["cuffdiff_threads"]
+#     job_threads = PARAMS["cuffdiff_threads"]
 
 #     reffile = "reference.gtf.gz"
 
@@ -3099,7 +3095,7 @@ def runCuffdiff(infiles, outfile):
     except OSError:
         pass
 
-    job_options = "-pe dedicated %i -R y" % PARAMS["cuffdiff_threads"]
+    job_threads = PARAMS["cuffdiff_threads"]
 
     # Nick - add mask gtf to not assess rRNA and ChrM
     options = PARAMS["cuffdiff_options"]

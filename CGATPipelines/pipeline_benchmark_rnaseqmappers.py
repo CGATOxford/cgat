@@ -256,9 +256,8 @@ def mapReadsWithBFAST(infiles, outfile):
 
     inifile, infile = infiles
 
-    to_cluster = True
-    job_options = "-pe dedicated %i -R y -l mem_free=16G" % PARAMS[
-        "bfast_threads"]
+    job_options = "-l mem_free=16G"
+    job_threads = PARAMS["bfast_threads"]
 
     update = False
     if not os.path.exists("%s.bmf" % outfile):
@@ -313,9 +312,8 @@ def mapReadsWithShrimp(infiles, outfile):
 
     inifile, infile = infiles
 
-    to_cluster = USECLUSTER
-    job_options = "-pe dedicated %i -R y -l mem_free=64G" % PARAMS[
-        "shrimp_threads"]
+    job_options = "-l mem_free=64G"
+    job_threads = PARAMS["shrimp_threads"]
 
     statement = '''
     gmapper-cs --full-threshold 80%% --threads %(shrimp_threads)i --fastq --report 5 --sam
@@ -344,9 +342,8 @@ def mapReadsWithNovoalign(infiles, outfile):
 
     inifile, infile = infiles
 
-    to_cluster = USECLUSTER
-    job_options = "-pe dedicated %i -R y -l mem_free=64G" % PARAMS[
-        "novoalign_threads"]
+    job_options = "-l mem_free=64G"
+    job_threads = PARAMS["novoalign_threads"]
 
     statement = '''
     novoalignCS 
@@ -377,9 +374,8 @@ def mapReadsWithBWA(infiles, outfile):
 
     inifile, infile = infiles
 
-    to_cluster = USECLUSTER
-    job_options = "-pe dedicated %i -R y -l mem_free=64G" % PARAMS[
-        "bwa_threads"]
+    job_options = "-l mem_free=64G"
+    job_threads = PARAMS["bwa_threads"]
 
     statement = '''
     bwa aln -t %(bwa_threads)s -c %(bwa_align_options)s %(bwa_genome_dir)s/%(genome)s_cs %(infile)s > %(outfile)s.sai
@@ -412,9 +408,8 @@ def mapReadsWithTophat(infiles, outfile):
 
     local_params = P.loadParameters(inifile)
 
-    to_cluster = USECLUSTER
-    job_options = "-pe dedicated %i -R y -l mem_free=16G" % PARAMS[
-        "tophat_threads"]
+    job_options = "-l mem_free=16G"
+    job_threads = PARAMS["tophat_threads"]
 
     tmpfile = P.getTempFilename(".")
 
@@ -469,9 +464,8 @@ def mapReadsWithBowtie(infiles, outfile):
 
     inifile, infile = infiles
 
-    to_cluster = USECLUSTER
-    job_options = "-pe dedicated %i -R y -l mem_free=16G" % PARAMS[
-        "bowtie_threads"]
+    job_options = "-l mem_free=16G"
+    job_threads = PARAMS["bowtie_threads"]
 
     tmpfile = P.getTempFilename()
 
@@ -625,9 +619,8 @@ def mapReadsWithBowtieAgainstTranscriptome(infiles, outfile):
     # inflate the file sizes due to matches to alternative transcripts
     # but otherwise matches to paralogs will be missed (and such
     # reads would be filtered out).
-    to_cluster = USECLUSTER
-    job_options = "-pe dedicated %i -R y -l mem_free=16G" % PARAMS[
-        "bowtie_threads"]
+    job_options = "-l mem_free=16G"
+    job_threads = PARAMS["bowtie_threads"]
 
     tmpfile = P.getTempFilename()
 
@@ -870,8 +863,8 @@ def mapReadsWithBowtieAgainstJunctions(infiles, outfile):
     The reads are converted to genomic coordinates.
     '''
 
-    job_options = "-pe dedicated %i -R y -l mem_free=16G" % PARAMS[
-        "bowtie_threads"]
+    job_options = "-l mem_free=16G"
+    job_threads = PARAMS["bowtie_threads"]
 
     tmpfile = P.getTempFilename()
 
@@ -879,7 +872,6 @@ def mapReadsWithBowtieAgainstJunctions(infiles, outfile):
     track = P.snip(outfile, ".bam")
     prefix = P.snip(reffile, ".fa")
 
-    to_cluster = USECLUSTER
     statement = '''
     gunzip < %(infile)s > %(tmpfile)s;
     checkpoint;

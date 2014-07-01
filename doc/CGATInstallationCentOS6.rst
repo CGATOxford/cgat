@@ -1,15 +1,18 @@
-.. _CGATInstallationUbuntu:
+.. _CGATInstallationCentOS6:
 
-=============================
-Ubuntu 12.04 LTS Installation
-=============================
+=======================
+CentOS 6.X Installation
+=======================
 
-This installation steps have been tested in Ubuntu 12.04 LTS.The 
-:ref:`UbuntuQuickInstallation` uses CGAT supplied scripts for
-installation, while :ref:`UbuntuManualInstallation` lists all the 
+CentOS is a Red Hat Enterprise Linux-based operating system
+and therefore the instructions below should apply to all
+other derivatives as well.
+
+The :ref:`CentOS6QuickInstallation` uses CGAT supplied scripts for
+installation, while :ref:`CentOS6ManualInstallation` lists all the 
 steps individually.
 
-.. _UbuntuQuickInstallation:
+.. _CentOS6QuickInstallation:
 
 Quick installation
 ==================
@@ -23,7 +26,7 @@ Download and place them into your home directory::
         wget https://raw.github.com/CGATOxford/cgat/master/install-CGAT-tools.sh
         chmod +x install-CGAT-tools.sh
 
-Install DEB dependencies
+Install RPM dependencies
 ------------------------
 
 Become root (or ask your system administrator to do it for you) and run::
@@ -56,34 +59,42 @@ When you are done, you may deactivate the CGAT virtual environment::
         deactivate
 
 
-.. _UbuntuManualInstallation:
+.. _CentOS6ManualInstallation:
 
 Manual installation
 ===================
 
-Install DEB dependencies
+Install RPM dependencies
 ------------------------
 
-You can either install them one by one or all at the same time with ``apt-get``::
+You can either install them one by one or all at the same time with ``yum``::
 
-        apt-get install gcc                  # required by python
-        apt-get install zlib1g-dev           # required by virtualenv
-        apt-get install libssl-dev           # required by pip
-        apt-get install libbz2-dev           # required by bx-python
-        apt-get install c++                  # required by pybedtools
-        apt-get install libfreetype6-dev     # required by matplotlib
-        apt-get install libpng12-dev         # required by matplotlib
-        apt-get install libblas-dev          # required by scipy
-        apt-get install libatlas-dev         # required by scipy
-        apt-get install liblapack-dev        # required by scipy
-        apt-get install gfortran             # required by scipyi
-        apt-get install libpq-dev            # required by PyGreSQL
-        apt-get install r-base-dev           # required by rpy2
-        apt-get install libreadline-dev      # required by rpy2
-        apt-get install libmysqlclient-dev   # required by MySQL-python
-        apt-get install libboost-dev         # required by alignlib
-        apt-get install libsqlite3-dev       # required by CGAT
-        apt-get install mercurial            # required by bx-python
+        yum install gcc                 # required by python
+        yum install zlib-devel          # required by virtualenv
+        yum install openssl-devel       # required by pip
+        yum install bzip2-devel         # required by bx-python
+        yum install gcc-c++             # required by pybedtools
+        yum install freetype-devel      # required by matplotlib
+        yum install libpng-devel        # required by matplotlib
+        yum install blas atlas lapack   # required by scipy
+        yum install gcc-gfortran        # required by scipyi
+        yum install postgresql-devel    # required by PyGreSQL
+        yum install R-core-devel        # required by rpy2
+        yum install readline-devel      # required by rpy2
+        yum install mysql-devel         # required by MySQL-python
+        yum install boost-devel         # required by alignlib
+        yum install sqlite-devel        # required by CGAT
+        yum install mercurial           # required by bx-python
+
+Please note that you may also need the EPEL (Extra Packages for Enterprise Linux) repository to install R::
+
+        wget http://dl.fedoraproject.org/pub/epel/6/i386/epel-release-6-8.noarch.rpm
+        rpm -i epel-release-6-8.noarch.rpm
+
+Now type this additional commands to get scipy working::
+
+        ln -s /usr/lib64/libblas.so.3 /usr/lib64/libblas.so
+        ln -s /usr/lib64/liblapack.so.3 /usr/lib64/liblapack.so
 
 Build Python 2.7.6
 ------------------

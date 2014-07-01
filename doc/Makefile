@@ -11,8 +11,8 @@ PAPEROPT_a4     = -D latex_paper_size=a4
 PAPEROPT_letter = -D latex_paper_size=letter
 ALLSPHINXOPTS   = -d _build/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 
-DIR_PUBLISH=/ifs/home/andreas/public_html/documentation/cgat/
-URL_SUB="s/\/ifs\/devel\/cgat\/doc/http:\/\/www.cgat.org\/~andreas\/documentation\/cgat/"                                                                                  
+DIR_PUBLISH=/ifs/public/cgat/documentation
+URL_SUB="s/\/ifs\/devel\/cgat\/doc/http:\/\/www.cgat.org\/downloads\/public\/cgat\/documentation/"                                                                                  
 
 .PHONY: help clean html dirhtml pickle json htmlhelp qthelp latex changes linkcheck doctest
 
@@ -118,7 +118,6 @@ publish:
 	@echo "copying data"																													      
 	rsync --size-only -acvz _build/html/ $(DIR_PUBLISH)																									   
 	@echo "setting permissions"																												      
-	cp htaccess $(DIR_PUBLISH)/.htaccess																											    
 	chmod -R a+x $(DIR_PUBLISH)																												      
 	chmod -R a+r $(DIR_PUBLISH)																												      
 	@echo "fixing URLs"																														

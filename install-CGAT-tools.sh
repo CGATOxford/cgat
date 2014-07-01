@@ -32,17 +32,24 @@ if [ -f /etc/os-release ]; then
 
 elif [ -f /etc/system-release ]; then
 
-   OS=$(cat /etc/system-release | awk ' {print $4;}' | awk '{sub("\\."," "); print $1;}')
-   if [ "$OS" != "6" ] ; then
+   OP1=$(cat /etc/system-release | awk ' {print $4;}' | awk '{sub("\\."," "); print $1;}')
+   OP2=$(cat /etc/system-release | awk ' {print $3;}' | awk '{sub("\\."," "); print $1;}')
+   if [ "$OP1" != "6" -o "$OP2" != "6" ] ; then
       echo
-      echo " Scientific Linux version not supported "
+      echo " Scientific Linux / CentOS version not supported "
       echo
-      echo " Only 6.x Scientific Linux has been tested so far "
+      echo " Only 6.x versions have been tested so far "
       echo
       exit 1;
    fi
 
-   OS="sl"
+   if [ "$OP1" == "6" ] ; then
+      OS="sl"
+   fi
+
+   if [ "OP2" == "6" ] ; then
+      OS="centos"
+   fi
 
 else
 
@@ -63,17 +70,19 @@ if [ "$OS" == "ubuntu" -o "$OS" == "travis" ] ; then
 
    sudo apt-get install -y gcc g++ zlib1g-dev libssl-dev libbz2-dev libfreetype6-dev libpng12-dev libblas-dev libatlas-dev liblapack-dev gfortran libpq-dev r-base-dev libreadline-dev libmysqlclient-dev libboost-dev libsqlite3-dev mercurial;
 
-elif [ "$OS" == "sl" ] ; then
+elif [ "$OS" == "sl" -o "$OS" == "centos" ] ; then
 
    echo 
-   echo " Installing packages for Scientific Linux "
+   echo " Installing packages for Scientific Linux / CentOS "
    echo
 
    yum -y install gcc zlib-devel openssl-devel bzip2-devel gcc-c++ freetype-devel libpng-devel blas atlas lapack gcc-gfortran postgresql-devel R-core-devel readline-devel mysql-devel boost-devel sqlite-devel mercurial
 
    # additional configuration for scipy
+   if [ "" == "sl" ] ; then
+      ln -s /usr/lib64/libatlas.so.3 /usr/lib64/libatlas.so
+   fi
    ln -s /usr/lib64/libblas.so.3 /usr/lib64/libblas.so
-   ln -s /usr/lib64/libatlas.so.3 /usr/lib64/libatlas.so
    ln -s /usr/lib64/liblapack.so.3 /usr/lib64/liblapack.so;
 
 else
@@ -88,7 +97,7 @@ fi # if-OS
 # otherwise, in $CGAT_HOME
 install_python_deps() {
 
-if [ "$OS" == "ubuntu" -o "$OS" == "sl" ] ; then
+if [ "$OS" == "ubuntu" -o "$OS" == "sl" -o "$OS" == "centos" ] ; then
 
    echo
    echo " Installing Python dependencies for $1 "
@@ -256,6 +265,16 @@ elif [ "$OS" == "sl" ] ; then
    # GCProfile
    yum install -y glibc.i686 compat-libstdc++-33.i686
 
+elif [ "$OS" == "centos"  ] ; then
+
+   # libpq
+   wget http://yum.postgresql.org/9.3/redhat/rhel-6-x86_64/pgdg-centos93-9.3-1.noarch.rpm
+   rpm -i pgdg-centos93-9.3-1.noarch.rpm
+   yum install -y postgresql93-devel
+
+   # GCProfile
+   yum install -y glibc.i686 compat-libstdc++-33.i686
+
 else
 
    sanity_check_os
@@ -276,7 +295,7 @@ if [ "$OS" == "travis" ] ; then
    mkdir -p $TRAVIS_BUILD_DIR/external-tools
    cd $TRAVIS_BUILD_DIR/external-tools
 
-elif [ "$OS" == "sl" -o "$OS" == "ubuntu" ] ; then
+elif [ "$OS" == "sl" -o "$OS" == "centos" -o "$OS" == "ubuntu" ] ; then
 
    # Go to CGAT_HOME to continue with installation
    if [ -z "$CGAT_HOME" ] ; then
@@ -366,7 +385,7 @@ if [ "$OS" == "travis" ] ; then
       nosetests -v tests/test_scripts.py ;
    fi
 
-elif [ "$OS" == "ubuntu" -o "$OS" == "sl" ] ; then
+elif [ "$OS" == "ubuntu" -o "$OS" == "sl" -o "$OS" == "centos" ] ; then
 
    # prepare external dependencies
    nosetests_external_deps $OS
@@ -485,7 +504,7 @@ echo " If you installed the CGAT Code Collection with the '--cgat-deps-dir optio
 echo " ./install-CGAT-tools.sh --rerun-nosetests --git-hub-dir /path/to/folder"
 echo 
 echo " NOTES: "
-echo " * Supported operating systems: Ubuntu 12.x and Scientific Linux 6.x "
+echo " * Supported operating systems: Ubuntu 12.x, Scientific Linux 6.x and CentOS 6.x "
 echo " ** An isolated virtual environment will be created to install Python dependencies "
 echo
 exit 1;

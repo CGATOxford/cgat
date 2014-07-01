@@ -65,7 +65,7 @@ The basic usage of this module within a script is::
                           help="supply help"  )
 
         ## add common options (-h/--help, ...) and parse
-        ## command line 
+        ## command line
         (options, args) = E.Start( parser )
 
         # do something
@@ -123,12 +123,20 @@ typical output::
 The header contains information about:
 
     * the script name (``beds2beds.py``)
-    * the command line options (``--force --exclusive --method=unmerged-combinations --output-filename-pattern=030m.intersection.tsv.dir/030m.intersection.tsv-%s.bed.gz --log=030m.intersection.tsv.log Irf5-030m-R1.bed.gz Rela-030m-R1.bed.gz``)
+
+    * the command line options (``--force --exclusive
+      --method=unmerged-combinations
+      --output-filename-pattern=030m.intersection.tsv.dir/030m.intersection.tsv-%s.bed.gz
+      --log=030m.intersection.tsv.log Irf5-030m-R1.bed.gz
+      Rela-030m-R1.bed.gz``)
+
     * the time when the job was started (``Thu Mar 29 13:06:33 2012``)
     * the location it was executed (``cgat150.anat.ox.ac.uk``)
     * a unique job id (``e1c16e80-03a1-4023-9417-f3e44e33bdcd``)
     * the pid of the job (``16649``)
-    * the system specification (``Linux 2.6.32-220.7.1.el6.x86_64 #1 SMP Fri Feb 10 15:22:22 EST 2012 x86_64``)
+
+    * the system specification (``Linux 2.6.32-220.7.1.el6.x86_64 #1
+      SMP Fri Feb 10 15:22:22 EST 2012 x86_64``)
 
 It is followed by a list of all options that have been set in the script.
 
@@ -137,9 +145,10 @@ signify the end of the experiment.
 
 .. autofunction:: Experiment.Stop
 
-:py:func:`Stop` will output to the log file that the script has concluded successfully. Below is typical output::
+:py:func:`Stop` will output to the log file that the script has
+concluded successfully. Below is typical output::
 
-    # job finished in 11 seconds at Thu Mar 29 13:06:44 2012 -- 11.36  0.45  0.00  0.01 -- e1c16e80-03a1-4023-9417-f3e44e33bdcd
+    # job finished in 11 seconds at Thu Mar 29 13:06:44 2012 -- 11.36 0.45 0.00 0.01 -- e1c16e80-03a1-4023-9417-f3e44e33bdcd
 
 The footer contains information about:
 
@@ -157,7 +166,7 @@ from a concatenation of log files.
 Benchmarking
 ------------
 
-
+TODO
 
 
 Complete reference
@@ -170,14 +179,18 @@ import re
 import sys
 import time
 import inspect
+import getopt
 import os
 import logging
 import collections
 import subprocess
+import functools
 import gzip
-
+import pipes
 import optparse
 import textwrap
+import random
+import uuid
 
 
 class DefaultOptions:
@@ -191,10 +204,6 @@ class DefaultOptions:
 global_starting_time = time.time()
 global_options = DefaultOptions()
 global_args = None
-# import hashlib
-# global_id = hashlib.md5(time.asctime(time.localtime(time.time()))).hexdigest()
-import random
-import uuid
 global_id = uuid.uuid4()
 global_benchmark = collections.defaultdict(int)
 
@@ -536,7 +545,8 @@ def Start(parser=None,
     *add_output_options* add commond options for working with multiple
      output files
 
-    *returns* a tuple (options,args) with options (a :py:class:`E.OptionParser` object
+    *returns* a tuple (options,args) with options
+        (a :py:class:`E.OptionParser` object
         and a list of positional arguments.
 
     The :py:func:`Start` method will also set up a file logger.
@@ -637,7 +647,8 @@ def Start(parser=None,
         )
 
     if add_psql_options:
-        parser.add_option("-C", "--connection", dest="psql_connection", type="string",
+        parser.add_option("-C", "--connection", dest="psql_connection",
+                          type="string",
                           help="psql connection string [%default].")
         parser.add_option("-U", "--user", dest="user", type="string",
                           help="database user name [%default].")
@@ -646,28 +657,44 @@ def Start(parser=None,
         parser.set_defaults(user="")
 
     if add_cluster_options:
-        parser.add_option("--use-cluster", dest="use_cluster", action="store_true",
-                          help="use cluster [%default].")
-        parser.add_option("--cluster-priority", dest="cluster_priority", type="int",
+        parser.add_option("--no-cluster", "--local", dest="without_cluster",
+                          action="store_true",
+                          help="do no use cluster - run locally [%default].")
+        parser.add_option("--cluster-priority", dest="cluster_priority",
+                          type="int",
                           help="set job priority on cluster [%default].")
-        parser.add_option("--cluster-queue", dest="cluster_queue", type="string",
+        parser.add_option("--cluster-queue", dest="cluster_queue",
+                          type="string",
                           help="set cluster queue [%default].")
-        parser.add_option("--cluster-num-jobs", dest="cluster_num_jobs", type="int",
-                          help="number of jobs to submit to the queue execute in parallel [%default].")
-        parser.add_option("--cluster-options", dest="cluster_options", type="string",
-                          help="additional options for cluster jobs, passed on to qrsh [%default].")
+        parser.add_option("--cluster-num-jobs", dest="cluster_num_jobs",
+                          type="int",
+                          help="number of jobs to submit to the queue execute "
+                          "in parallel [%default].")
+        parser.add_option("--cluster-parallel",
+                          dest="cluster_parallel_environment",
+                          type="string",
+                          help="name of the parallel environment to use "
+                          "[%default].")
+        parser.add_option("--cluster-options", dest="cluster_options",
+                          type="string",
+                          help="additional options for cluster jobs, passed "
+                          "on to queuing system [%default].")
 
-        parser.set_defaults(use_cluster=False,
-                            cluster_queue="all.q",
-                            cluster_priority=-10,
-                            cluster_num_jobs=100,
-                            cluster_options="")
+        parser.set_defaults(without_cluster=False,
+                            cluster_queue=None,
+                            cluster_priority=None,
+                            cluster_num_jobs=None,
+                            cluster_parallel_environment=None,
+                            cluster_options=None)
 
     if add_output_options:
-        parser.add_option("-P", "--output-filename-pattern", dest="output_filename_pattern", type="string",
-                          help="OUTPUT filename pattern for various methods [%default].")
+        parser.add_option("-P", "--output-filename-pattern",
+                          dest="output_filename_pattern", type="string",
+                          help="OUTPUT filename pattern for various methods "
+                          "[%default].")
 
-        parser.add_option("-F", "--force", dest="output_force", action="store_true",
+        parser.add_option("-F", "--force", dest="output_force",
+                          action="store_true",
                           help="force over-writing of existing files.")
 
         parser.set_defaults(output_filename_pattern="%s",
@@ -782,13 +809,14 @@ def Stop():
     if global_options.loglevel >= 1 and global_benchmark:
         t = time.time() - global_starting_time
         global_options.stdlog.write(
-            "######### Time spent in benchmarked functions ###################\n")
+            "######### Time spent in benchmarked functions #########\n")
         global_options.stdlog.write("# function\tseconds\tpercent\n")
         for key, value in global_benchmark.items():
             global_options.stdlog.write(
-                "# %s\t%6i\t%5.2f%%\n" % (key, value, (100.0 * float(value) / t)))
+                "# %s\t%6i\t%5.2f%%\n" % (key, value,
+                                          (100.0 * float(value) / t)))
         global_options.stdlog.write(
-            "#################################################################\n")
+            "#######################################################\n")
 
     if global_options.loglevel >= 1:
         global_options.stdlog.write(getFooter() + "\n")
@@ -796,17 +824,10 @@ def Stop():
     # close files
     if global_options.stdout != sys.stdout:
         global_options.stdout.close()
-    # do not close log, otherwise the following error occurs:
-    # Error in sys.exitfunc:
-    # Traceback (most recent call last):
-    #   File "/net/cpp-group/server/lib/python2.6/atexit.py", line 24, in _run_exitfuncs
-    #     func(*targs, **kargs)
-    #   File "/net/cpp-group/server/lib/python2.6/logging/__init__.py", line 1472, in shutdown
-    #     h.flush()
-    #   File "/net/cpp-group/server/lib/python2.6/logging/__init__.py", line 740, in flush
-    #     self.stream.flush()
-    # ValueError: I/O operation on closed file
-    # if global_options.stdlog != sys.stdout: global_options.stdlog.close()
+    # do not close log, otherwise error occurs in atext.py
+    # if global_options.stdlog != sys.stdout:
+    #   global_options.stdlog.close()
+
     if global_options.stderr != sys.stderr:
         global_options.stderr.close()
 
@@ -815,9 +836,10 @@ def Stop():
         outfile = open(global_options.timeit_file, "a")
 
         if global_options.timeit_header:
-            outfile.write("\t".join(("name", "wall", "user", "sys", "cuser", "csys",
-                                     "host", "system", "release", "machine",
-                                     "start", "end", "path", "cmd")) + "\n")
+            outfile.write("\t".join(
+                ("name", "wall", "user", "sys", "cuser", "csys",
+                 "host", "system", "release", "machine",
+                 "start", "end", "path", "cmd")) + "\n")
 
         csystem, host, release, version, machine = map(str, os.uname())
         uusr, usys, c_usr, c_sys = map(lambda x: "%5.2f" % x, os.times()[:4])
@@ -1060,15 +1082,17 @@ class Experiment:
         self.ProcessOptions(self.mOptlist)
 
     def DumpParameters(self):
-        """dump parameters of this object. All parameters start with a lower-case m."""
+        """dump parameters of this object. All parameters start with a
+        lower-case m."""
 
         members = self.__dict__
 
-        print "#--------------------------------------------------------------------------------------------"
+        print "#" + "-" * 50
         print "#" + string.join(sys.argv)
         print "# pid: %i, system:" % os.getpid(), string.join(os.uname(), ",")
-        print "#--------------------------------------------------------------------------------------------"
-        print "# Parameters for instance of <" + self.mName + "> on " + time.asctime(time.localtime(time.time()))
+        print "#" + "-" * 50
+        print "# Parameters for instance of <" + self.mName + \
+            "> on " + time.asctime(time.localtime(time.time()))
 
         member_keys = list(members.keys())
         member_keys.sort()
@@ -1076,12 +1100,9 @@ class Experiment:
             if member[0] == 'm':
                 print "# %-40s:" % member, members[member]
 
-        print "#--------------------------------------------------------------------------------------------"
+        print "#" + "-" * 50
         sys.stdout.flush()
 
-    #-----------------------------> Control functions <-----------------------
-
-    # ------------------------------------------------------------------------
     def ProcessOptions(self, optlist):
         """Sets options in this module. Please overload as necessary."""
 
@@ -1091,7 +1112,6 @@ class Experiment:
             elif o in ("-T", "--test"):
                 self.mTest = 1
 
-    # ------------------------------------------------------------------------
     def ProcessArguments(self, args):
         """Perform actions as given in command line arguments."""
 
@@ -1106,11 +1126,11 @@ class Experiment:
             exec statement
 
             if self.mLogLevel >= 1:
-                print "--------------------------------------------------------------------------------------------"
-                print statement + " finished at " + time.asctime(time.localtime(time.time()))
-                print "--------------------------------------------------------------------------------------------"
+                print "-" * 50
+                print statement + " finished at " + \
+                    time.asctime(time.localtime(time.time()))
+                print "-" * 50
 
-    # ------------------------------------------------------------------------
     def ParseCommandLine(self):
         """Call subroutine with command line arguments."""
 
@@ -1130,11 +1150,9 @@ class Experiment:
 
         return optlist, args
 
-    #-------------------------------------------------------------------------
     def Process(self):
         self.ProcessArguments(self.mArgs)
 
-    #-------------------------------------------------------------------------
     def PrintUsage(self):
         """print usage information."""
 
@@ -1142,8 +1160,8 @@ class Experiment:
         print "# valid long options are:", str(self.mLongOptions)
 
 
-def run(cmd, return_stdout=False, **kwargs):
-    '''executed a command line cmd.
+def run(statement, return_stdout=False, **kwargs):
+    '''executed a command line statement.
 
     returns the return code.
 
@@ -1156,18 +1174,21 @@ def run(cmd, return_stdout=False, **kwargs):
     '''
 
     # remove new lines
-    cmd = " ".join(re.sub("\t+", " ", cmd).split("\n")).strip()
+    statement = " ".join(re.sub("\t+", " ", statement).split("\n")).strip()
 
-    if "<(" in cmd:
-        if "'" in cmd:
+    if "<(" in statement:
+        shell = os.environ.get('SHELL', "/bin/bash")
+        if "bash" not in shell:
             raise ValueError(
-                "advanced bash syntax combined with single quotes")
-        cmd = """/bin/bash -c '%s'""" % cmd
+                "require bash for advanced shell syntax: <()")
+        # Note: pipes.quote is deprecated. In Py3, use shlex.quote
+        # (not present in Py2.7)
+        statement = "%s -c %s" % (shell, pipes.quote(statement))
 
     if return_stdout:
-        return subprocess.check_output(cmd, shell=True, **kwargs)
+        return subprocess.check_output(statement, shell=True, **kwargs)
     else:
-        retcode = subprocess.call(cmd, shell=True, **kwargs)
+        retcode = subprocess.call(statement, shell=True, **kwargs)
         if retcode < 0:
             raise OSError("process was terminated by signal %i" % -retcode)
         return retcode

@@ -38,6 +38,7 @@ API
 import os
 import sys
 import re
+import copy
 import subprocess
 import optparse
 import stat
@@ -47,8 +48,8 @@ import inspect
 import types
 import logging
 import shutil
-import glob
 import gzip
+import pipes
 import ConfigParser
 from CGAT import Database as Database
 
@@ -64,7 +65,6 @@ import hgapi
 
 # CGAT specific options - later to be removed
 from Local import *
-
 from ruffus import *
 
 # use threading instead of multiprocessing
@@ -76,17 +76,15 @@ import logging as L
 from CGAT import Experiment as E
 from CGAT import IOTools as IOTools
 
-# global options and arguments
+# global options and arguments - set but currently not
+# used as relevant sections are entered into the PARAMS
+# dictionary. Could be deprecated and removed.
 GLOBAL_OPTIONS, GLOBAL_ARGS = None, None
 
 # global drmaa session
 GLOBAL_SESSION = None
 
-
-class PipelineError(Exception):
-    pass
-
-# Sort out the important paths
+# Sort out script paths
 LIB_DIR = os.path.dirname(__file__)
 ROOT_DIR = os.path.dirname(LIB_DIR)
 SCRIPTS_DIR = os.path.join(ROOT_DIR, "scripts")
@@ -97,42 +95,60 @@ PIPELINE_DIR = os.path.join(os.path.dirname(LIB_DIR), "CGATPipelines")
 if not os.path.exists(SCRIPTS_DIR):
     SCRIPTS_DIR = os.path.join(sys.exec_prefix, "bin")
 
-#######################################################
-#######################################################
-#######################################################
-# Setting/using parameters
-#######################################################
 
-# possible to use defaultdict, but then statements will
-# fail on execution if a parameter does not exists, and not
-# while building the statement. Hence, use dict.
-PARAMS = {
+# Global variable for configuration file data
+CONFIG = {}
+# Global variable for parameter interpolation in
+# commands
+PARAMS = {}
+
+# A list of hard-coded parameters within the CGAT environment
+# These can be overwritten by command line options and
+# configuration files
+HARDCODED_PARAMS = {
     'scriptsdir': SCRIPTS_DIR,
     'toolsdir': SCRIPTS_DIR,
     'pipelinedir': PIPELINE_DIR,
-    'cmd-farm': """python %s/farm.py
+    # script to perform map/reduce like computation.
+    'cmd-farm': """python %(scriptsdir)s/farm.py
                 --method=drmaa
-                --cluster-priority=-10
-                --cluster-queue=all.q
-                --cluster-num-jobs=100
-                --bashrc=%s/bashrc.cgat
-                --cluster-options="" """ % (SCRIPTS_DIR, SCRIPTS_DIR),
+                --bashrc=%(scriptsdir)s/bashrc.cgat
+                --cluster-options=%(cluster_options)s
+                --cluster-queue=%(cluster_queue)s
+                --cluster-num-jobs=%(cluster_num_jobs)i
+                --cluster-priority=%(cluster_priority)i
+    """,
+    # command to get tab-separated output from sqlite3
     'cmd-sql': """sqlite3 -header -csv -separator $'\\t' """,
-    'cmd-run': """%s/run.py""" % SCRIPTS_DIR
+    # wrapper around non-CGAT scripts
+    'cmd-run': """%(scriptsdir)s/run.py""",
+    # directory used for temporary local files
+    'tmpdir': '/scratch',
+    # directory used for temporary files shared across machines
+    'shared_tmpdir': '/ifs/scratch',
+    # cluster options
+    'cluster_queue': 'all.q',
+    'cluster_priority': -10,
+    'cluster_num_jobs': 100,
+    'cluster_options': "",
+    # Parallel environment to use
+    'cluster_parallel_environment': 'dedicated',
 }
 
-# path until parameter sharing is resolved between CGAT module
-# and the pipelines module.
+# After all configuration files have been read, some
+# parameters need to be interpolated with other parameters
+# The list is below:
+INTERPOLATE_PARAMS = ('cmd-farm', 'cmd-run')
+
+# drop PARAMS variable into the Local module until parameter
+# sharing is resolved between the Local module
+# and the Pipeline module.
 from CGAT import Local as Local
 Local.PARAMS = PARAMS
 
-hostname = os.uname()[0]
 
-CONFIG = {}
-
-# local temporary directory to use
-TMPDIR = '/scratch'
-SHARED_TMPDIR = '/ifs/scratch'
+class PipelineError(Exception):
+    pass
 
 
 def configToDictionary(config):
@@ -153,6 +169,7 @@ def configToDictionary(config):
 
 def getParameters(filenames=["pipeline.ini", ],
                   defaults=None,
+                  user_ini=True,
                   default_ini=True):
     '''read a config file and return as a dictionary.
 
@@ -174,35 +191,63 @@ def getParameters(filenames=["pipeline.ini", ],
 
     The section [DEFAULT] is equivalent to [general].
 
-    If default_ini is set, the default initialization file
+    If *default_ini* is set, the default initialization file
     will be read from 'CGATPipelines/configuration/pipeline.ini'
 
+    If *user_ini* is set, configuration files will also be read from a
+    file called :file:`.cgat` in the user`s home directory.
+
+    The order of initialization is as follows:
+    1. hard-coded defaults
+    2. pipeline specific default file in the CGAT code installation
+    3. :file:`.cgat` in the users home directory
+    4. files supplied by the user in the order given
+
+    If the same configuration value appears in multiple
+    files, later configuration files will overwrite the
+    settings form earlier files.
     '''
 
     global CONFIG
+    global PARAMS
 
     CONFIG = ConfigParser.ConfigParser()
+
+    if user_ini:
+        # read configuration from a users home directory
+        fn = os.path.join(os.path.expanduser("~"),
+                          ".cgat")
+        if os.path.exists(fn):
+            filenames.insert(0, fn)
 
     if default_ini:
         # The link between CGATPipelines and Pipeline.py
         # needs to severed at one point.
         # 1. config files into CGAT module directory?
         # 2. Pipeline.py into CGATPipelines module directory?
-        dirname = os.path.join(
-            os.path.dirname(os.path.dirname(__file__)),
-            "CGATPipelines")
         filenames.insert(0,
-                         os.path.join(dirname,
+                         os.path.join(PIPELINE_DIR,
                                       'configuration',
                                       'pipeline.ini'))
 
     CONFIG.read(filenames)
 
     p = configToDictionary(CONFIG)
+
+    # create a copy of hard-coded PARAMS
+    PARAMS = copy.deepcopy(HARDCODED_PARAMS)
+
     if defaults:
         PARAMS.update(defaults)
     PARAMS.update(p)
 
+    # interpolate some params with other parameters
+    for param in INTERPOLATE_PARAMS:
+        try:
+            PARAMS[param] = PARAMS[param] % PARAMS
+        except TypeError(msg):
+            raise TypeError('could not interpolate %s: %s' %
+                            (PARAMS[param], msg))
     return PARAMS
 
 
@@ -380,58 +425,65 @@ def touch(filename, times=None):
         fhandle.close()
 
 
-def getTempFilename(dir=TMPDIR, shared=False):
+def getTempFilename(dir=None, shared=False):
     '''get a temporary filename.
 
-    *dir* specifies the directory of the temporary
-    file and is set to the default temporary
-    location.
+    *dir* specifies the directory of the temporary file and if not
+    given is set to the default temporary location.
 
-    If *shared* is set, the tempory file will
-    be in a shared temporary location.
+    If *shared* is set, the tempory file will be in a shared temporary
+    location.
 
     The caller needs to delete the temporary file.
     '''
-    if shared:
-        dir = SHARED_TMPDIR
+    if dir is None:
+        if shared:
+            dir = PARAMS['shared_tmpdir']
+        else:
+            dir = PARAMS['tmpdir']
 
     tmpfile = tempfile.NamedTemporaryFile(dir=dir, delete=False, prefix="ctmp")
     tmpfile.close()
     return tmpfile.name
 
 
-def getTempFile(dir=TMPDIR, shared=False):
+def getTempFile(dir=None, shared=False):
     '''get a temporary file.
 
-    *dir* specifies the directory of the temporary
-    file and is set to the default temporary
+    *dir* specifies the directory of the temporary file and if not
+    given is set to the default temporary location.
+
+    If *shared* is set, the tempory file will be in a shared temporary
     location.
 
-    If *shared* is set, the tempory file will
-    be in a shared temporary location.
-
     The caller needs to delete the temporary file.
+
     '''
-    if shared:
-        dir = SHARED_TMPDIR
+    if dir is None:
+        if shared:
+            dir = PARAMS['shared_tmpdir']
+        else:
+            dir = PARAMS['tmpdir']
 
     return tempfile.NamedTemporaryFile(dir=dir, delete=False, prefix="ctmp")
 
 
-def getTempDir(dir=TMPDIR, shared=False):
+def getTempDir(dir=None, shared=False):
     '''get a temporary directory.
 
-    *dir* specifies the directory of the temporary
-    directory and is set to the default temporary
-    location.
+    *dir* specifies the directory of the temporary file and if not
+    given is set to the default temporary location.
 
-    If *shared* is set, the tempory directory will
-    be in a shared temporary location.
+    If *shared* is set, the tempory file will be in a shared temporary
+    location.
 
     The caller needs to delete the temporary directory.
     '''
-    if shared:
-        dir = SHARED_TMPDIR
+    if dir is None:
+        if shared:
+            dir = PARAMS['shared_tmpdir']
+        else:
+            dir = PARAMS['tmpdir']
 
     return tempfile.mkdtemp(dir=dir, prefix="ctmp")
 
@@ -892,6 +944,13 @@ def execute(statement, **kwargs):
     else:
         cwd = kwargs["cwd"]
 
+    # cleaning up of statement
+    # remove new lines and superfluous spaces and tabs
+    statement = " ".join(re.sub("\t+", " ", statement).split("\n")).strip()
+    if statement.endswith(";"):
+        statement = statement[:-1]
+    print 'statement=', statement
+
     process = subprocess.Popen(statement % kwargs,
                                cwd=cwd,
                                shell=True,
@@ -958,10 +1017,8 @@ def buildStatement(**kwargs):
         raise ValueError("Error when creating command: %s, statement = %s" % (
             msg, kwargs.get("statement")))
 
-    # add bash as prefix to allow advanced shell syntax like 'wc -l <(
-    # gunzip < x.gz)'
-    # executable option to call() does not work. Note that there will
-    # be an extra indirection.
+    # cleaning up of statement
+    # remove new lines and superfluous spaces and tabs
     statement = " ".join(re.sub("\t+", " ", statement).split("\n")).strip()
     if statement.endswith(";"):
         statement = statement[:-1]
@@ -1064,7 +1121,14 @@ def getStdoutStderr(stdout_path, stderr_path, tries=5):
 def run(**kwargs):
     """run a statement.
 
-    runs it on the cluster using drmaa if to_cluster is set.
+    The method runs statement on the cluster using drmaa. The
+    cluster is bypassed if:
+        * ``to_cluster`` is set to None in the namespace fo
+          the calling function.
+        * ``--local`` has been specified on the command line
+        * no libdrmaa is present
+        * the global session is not initialized
+          (GLOBAL_SESSION is None)
 
     Troubleshooting:
        1. DRMAA creates sessions and their is a limited number
@@ -1084,20 +1148,35 @@ def run(**kwargs):
     options.update(getCallerLocals().items())
     options.update(kwargs.items())
 
-    def setupJob(session):
+    # insert a few legacy synonyms
+    options['cluster_options'] = options.get('job_options',
+                                             options['cluster_options'])
+    options['cluster_queue'] = options.get('job_queue',
+                                           options['cluster_queue'])
+    options['without_cluster'] = options.get('without_cluster')
+
+    def setupJob(session, options):
 
         jt = session.createJobTemplate()
         jt.workingDirectory = os.getcwd()
         jt.jobEnvironment = {'BASH_ENV': '~/.bashrc'}
         jt.args = []
-        jt.nativeSpecification = "-V -q %s -p %i -N %s %s" % \
-            (options.get("job_queue", GLOBAL_OPTIONS.cluster_queue),
-             options.get("job_priority", GLOBAL_OPTIONS.cluster_priority),
-             "_" +
-             re.sub("[:]", "_", os.path.basename(
-                 options.get("outfile", "ruffus"))),
-             options.get("job_options", GLOBAL_OPTIONS.cluster_options))
+        spec = [
+            "-V",
+            "-q %(cluster_queue)s",
+            "-p %(cluster_priority)i",
+            "-N %s" % ("_" +
+                       re.sub("[:]", "_",
+                              os.path.basename(
+                                  options.get("outfile", "ruffus")))),
+            "%(cluster_options)s"]
 
+        # if process has multiple threads, use a parallel environment
+        if 'job_threads' in options:
+            spec.append(
+                "-pe %(cluster_parallel_environment)s %(job_threads)i -R y")
+
+        jt.nativeSpecification = " ".join(spec) % options
         # keep stdout and stderr separate
         jt.joinFiles = False
 
@@ -1113,6 +1192,15 @@ def run(**kwargs):
     L.debug('task: pid %i: sge session = %s' % (pid, str(session)))
 
     ignore_pipe_errors = options.get('ignore_pipe_errors', False)
+
+    # run on cluster if:
+    # * to_cluster is not defined or set to True
+    # * command line option without_cluster is set to False
+    # * an SGE session is present
+    run_on_cluster = ("to_cluster" not in options or
+                      options.get("to_cluster")) and \
+        not options["without_cluster"] and \
+        GLOBAL_SESSION is not None
 
     def buildJobScript(statement):
         '''build job script from statement.
@@ -1157,7 +1245,7 @@ def run(**kwargs):
         if options.get("dryrun", False):
             return
 
-        jt = setupJob(session)
+        jt = setupJob(session, options)
 
         jobids, filenames = [], []
         for statement in statement_list:
@@ -1200,18 +1288,12 @@ def run(**kwargs):
                 os.unlink(job_path)
             except OSError:
                 L.warn(
-                    "temporary job file %s not present for clean-up - ignored" % job_path)
+                    "temporary job file %s not present for "
+                    "clean-up - ignored" % job_path)
 
         session.deleteJobTemplate(jt)
 
-    # Run a single parallel job if
-    #   1. job_queue is set, or
-    #   2. to_cluster is not defined or to_cluster is set to True.
-    # If the cluster has not been disabled through the command line, do not
-    #     run on cluster
-    elif (options.get("job_queue") or
-          ("to_cluster" not in options or options.get("to_cluster"))) \
-            and (GLOBAL_OPTIONS and not GLOBAL_OPTIONS.without_cluster):
+    elif run_on_cluster:
 
         statement = buildStatement(**options)
 
@@ -1220,7 +1302,7 @@ def run(**kwargs):
 
         job_path, stdout_path, stderr_path = buildJobScript(statement)
 
-        jt = setupJob(session)
+        jt = setupJob(session, options)
 
         jt.remoteCommand = job_path
         # later: allow redirection of stdout and stderr to files; can even be
@@ -1279,11 +1361,20 @@ def run(**kwargs):
         if options.get("dryrun", False):
             return
 
+        # process substitution <() and >() does not
+        # work through subprocess directly. Thus,
+        # the statement needs to be wrapped in
+        # /bin/bash -c '...' in order for bash
+        # to interpret the substitution correctly.
         if "<(" in statement:
-            if "'" in statement:
+            shell = os.environ.get('SHELL', "/bin/bash")
+            if "bash" not in shell:
                 raise ValueError(
-                    "advanced bash syntax combined with single quotes")
-            statement = """/bin/bash -c '%s'""" % statement
+                    "require bash for advanced shell syntax: <()")
+            # Note: pipes.quote is deprecated in Py3, use shlex.quote
+            # (not present in Py2.7).
+            statement = pipes.quote(statement)
+            statement = "%s -c %s" % (shell, statement)
 
         process = subprocess.Popen(
             expandStatement(
@@ -1429,25 +1520,46 @@ def writeConfigFiles(path):
         L.info("created new configuration file `%s` " % dest)
 
 
-def clean(patterns, dry_run=False):
+def clean(files, logfile):
     '''clean up files given by glob *patterns*.
 
-    returns list of files deleted together with their statinfo.
+    Information about the original file is written to
+    *logfile*.
     '''
+    fields = ('st_atime', 'st_blksize', 'st_blocks',
+              'st_ctime', 'st_dev', 'st_gid', 'st_ino',
+              'st_mode', 'st_mtime', 'st_nlink',
+              'st_rdev', 'st_size', 'st_uid')
 
-    cleaned = []
+    dry_run = PARAMS.get("dryrun", False)
 
-    for p in patterns:
-        files = glob.glob(p)
-        for x in files:
-            statinfo = os.stat(x)
-            cleaned.append((x, statinfo))
-            if dry_run:
-                continue
-            os.unlink(x)
-        L.info("%i files: %s" % (len(files), p))
+    if not dry_run:
+        if not os.path.exists(logfile):
+            outfile = IOTools.openFile(logfile, "w")
+            outfile.write("filename\tzapped\tlinkdest\t%s\n" %
+                          "\t".join(fields))
+        else:
+            outfile = IOTools.openFile(logfile, "a")
 
-    return cleaned
+    c = E.Counter()
+    for fn in files:
+        c.files += 1
+        if not dry_run:
+            stat, linkdest = IOTools.zapFile(fn)
+            if stat is not None:
+                c.zapped += 1
+                if linkdest is not None:
+                    c.links += 1
+                outfile.write("%s\t%s\t%s\t%s\n" % (
+                    fn,
+                    time.asctime(time.localtime(time.time())),
+                    linkdest,
+                    "\t".join([str(getattr(stat, x)) for x in fields])))
+
+    L.info("zapped: %s" % (c))
+    outfile.close()
+
+    return c
 
 
 def peekParameters(workingdir,
@@ -1588,6 +1700,29 @@ def run_report(clean=True):
     L.info('the report is available at %s' % os.path.abspath(
         os.path.join(PARAMS['report_html'], "contents.html")))
 
+
+def publish_notebooks():
+    '''publish report into web directory.'''
+
+    dirs = getProjectDirectories()
+
+    notebookdir = dirs['notebookdir']
+    exportdir = dirs['exportdir']
+    exportnotebookdir = os.path.join(exportdir, "notebooks")
+
+    if not os.path.exists(exportnotebookdir):
+        os.makedirs(exportnotebookdir)
+
+    statement = '''
+    cd %(exportnotebookdir)s;
+    ipython nbconvert
+    %(notebookdir)s/*.ipynb
+    --to html
+    ''' % locals()
+
+    E.run(statement)
+
+
 USAGE = '''
 usage: %prog [OPTIONS] [CMD] [target]
 
@@ -1659,18 +1794,12 @@ def main(args=sys.argv):
                       "are uncommited changes "
                       "in the repository [default=%default].")
 
-    parser.add_option("-l", "--local", dest="without_cluster",
-                      action="store_true",
-                      help="execute all jobs locally [default=%default].")
-
     parser.add_option("-p", "--multiprocess", dest="multiprocess", type="int",
-                      help="number of parallel processes to use (different "
-                      "from number of jobs to use for cluster jobs) "
+                      help="number of parallel processes to use on "
+                      "submit host "
+                      "(different from number of jobs to use for "
+                      "cluster jobs) "
                       "[default=%default].")
-
-    parser.add_option("-t", "--tempdir", dest="tempdir",
-                      type="string",
-                      help="temporary directory to use [default=%default].")
 
     parser.add_option("-e", "--exceptions", dest="log_exceptions",
                       action="store_true",
@@ -1712,7 +1841,24 @@ def main(args=sys.argv):
                               add_cluster_options=True)
 
     GLOBAL_OPTIONS, GLOBAL_ARGS = options, args
+
+    # At this point, the PARAMS dictionary has already been
+    # built. It now needs to be updated with selected command
+    # line options as these should always take precedence over
+    # configuration files.
+
     PARAMS["dryrun"] = options.dry_run
+    if options.cluster_queue is not None:
+        PARAMS["cluster_queue"] = options.cluster_queue
+    if options.cluster_priority is not None:
+        PARAMS["cluster_priority"] = options.cluster_priority
+    if options.cluster_num_jobs is not None:
+        PARAMS["cluster_num_jobs"] = options.cluster_num_jobs
+    if options.cluster_options is not None:
+        PARAMS["cluster_options"] = options.cluster_options
+    if options.cluster_parallel_environment is not None:
+        PARAMS["cluster_parallel_environment"] =\
+            options.cluster_parallel_environment
 
     for variables in options.variables_to_set:
         variable, value = variables.split("=")
@@ -1774,9 +1920,10 @@ def main(args=sys.argv):
         try:
             if options.pipeline_action == "make":
 
-                # create the session proxy
-                GLOBAL_SESSION = drmaa.Session()
-                GLOBAL_SESSION.initialize()
+                if not options.without_cluster:
+                    # create the session proxy
+                    GLOBAL_SESSION = drmaa.Session()
+                    GLOBAL_SESSION.initialize()
 
                 #
                 #   make sure we are not logging at the same time in
@@ -1799,7 +1946,8 @@ def main(args=sys.argv):
 
                 L.info(E.GetFooter())
 
-                GLOBAL_SESSION.exit()
+                if GLOBAL_SESSION is not None:
+                    GLOBAL_SESSION.exit()
 
             elif options.pipeline_action == "show":
                 pipeline_printout(

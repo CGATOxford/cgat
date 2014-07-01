@@ -317,15 +317,17 @@ class Match:
 
         map_query2target = alignlib_lite.py_makeAlignmentBlocks()
 
-        f = alignlib_lite.py_AlignmentFormatBlat("%i\t%i\t%i\t%i\t%s\t%s\t%s\n" % (
-            min(self.mQueryBlockStarts),
-            max(self.mQueryBlockStarts),
-            min(self.mSbjctBlockStarts),
-            max(self.mSbjctBlockStarts),
-            ",".join([str(x) for x in self.mQueryBlockStarts]) + ",",
-            ",".join([str(x) for x in self.mSbjctBlockStarts]) + ",",
-            ",".join([str(x) for x in self.mBlockSizes]) + ","))
+        f = alignlib_lite.py_AlignmentFormatBlat(
+            "%i\t%i\t%i\t%i\t%s\t%s\t%s\n" % (
+                min(self.mQueryBlockStarts),
+                max(self.mQueryBlockStarts),
+                min(self.mSbjctBlockStarts),
+                max(self.mSbjctBlockStarts),
+                ",".join([str(x) for x in self.mQueryBlockStarts]) + ",",
+                ",".join([str(x) for x in self.mSbjctBlockStarts]) + ",",
+                ",".join([str(x) for x in self.mBlockSizes]) + ","))
         f.copy(map_query2target)
+
         return map_query2target
 
     def getMapTarget2Query(self):

@@ -1,5 +1,5 @@
 '''gtf2gtf.py - manipulate transcript models
-=========================================
+============================================
 
 :Author: Andreas Heger
 :Release: $Id$
@@ -33,21 +33,23 @@ Sort gene sets
 ``--sort``
    Sorts entries in gtf file by one or more fields
 
-      +---------------+---------------------------------------+
-      | option        | order in which fields are sorted      |
-      +---------------|---------------------------------------+
-      | gene          | gene_id, transcript_id, contig, start |
-      +---------------+---------------------------------------+
-      | contig+gene   | contig, gene_id, transcript_id, start |
-      +---------------+---------------------------------------+
-      | transcript    | transcript_id, contig, start          |
-      +---------------+---------------------------------------+
-      | position      | contig, start                         |
-      +---------------+---------------------------------------+
-      | position+gene | contig( gene_id, start )              |
-      +---------------+---------------------------------------+
-      | gene+position | gene_id, contig, start                |
-      +---------------+---------------------------------------+
+      +-----------------+---------------------------------------+
+      | option          | order in which fields are sorted      |
+      +-----------------|---------------------------------------+
+      | gene            | gene_id, contig, start                |
+      +-----------------+---------------------------------------+
+      | gene+transcript | gene_id, transcript_id, contig, start |
+      +-----------------+---------------------------------------+
+      | contig+gene     | contig, gene_id, transcript_id, start |
+      +-----------------+---------------------------------------+
+      | transcript      | transcript_id, contig, start          |
+      +-----------------+---------------------------------------+
+      | position        | contig, start                         |
+      +-----------------+---------------------------------------+
+      | position+gene   | contig( gene_id, start )              |
+      +-----------------+---------------------------------------+
+      | gene+position   | gene_id, contig, start                |
+      +-----------------+---------------------------------------+
 
    N.B. position+gene sorts by gene_id, start, then subsequently sorts
    flattened gene lists by contig, start
@@ -297,6 +299,7 @@ def main(argv=None):
                       dest="sort",
                       type="choice",
                       choices=("gene",
+                               "gene+transcript",
                                "transcript",
                                "position",
                                "contig+gene",

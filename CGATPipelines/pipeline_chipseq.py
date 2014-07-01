@@ -407,9 +407,7 @@ if PARAMS["mapping_mapper"] == "bowtie":
     def buildBAM(infile, outfile):
         '''re-map eland formatted reads with bowtie
         '''
-        to_cluster = True
-
-        job_options = "-pe dedicated %i -R y" % PARAMS["bowtie_threads"]
+        job_threads = PARAMS["bowtie_threads"]
         m = PipelineMapping.Bowtie()
         reffile = PARAMS["samtools_genome"]
         statement = m.build((infile,), outfile)
@@ -431,9 +429,7 @@ elif PARAMS["mapping_mapper"] == "bwa":
     def buildBAM(infile, outfile):
         '''re-map eland formatted reads with bowtie
         '''
-        to_cluster = True
-
-        job_options = "-pe dedicated %i -R y" % PARAMS["bwa_threads"]
+        job_threads = PARAMS["bwa_threads"]
         m = PipelineMapping.BWA()
         statement = m.build((infile,), outfile)
         P.run()

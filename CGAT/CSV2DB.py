@@ -543,46 +543,65 @@ def buildParser():
     parser.add_option("-H", "--header", dest="header", type="string",
                       help="',' separated list of header for files without header [default=%default].")
 
-    parser.add_option("--replace-header", dest="replace_header", action="store_true",
-                      help="replace header with --header instead of adding it [default=%default].")
+    parser.add_option("--replace-header", dest="replace_header",
+                      action="store_true",
+                      help="replace header with --header instead of "
+                      "adding it [default=%default].")
 
-    parser.add_option("-l", "--lowercase", dest="lowercase", action="store_true",
-                      help="force lower case column names [default=%default].")
+    parser.add_option("-l", "--lowercase", dest="lowercase",
+                      action="store_true",
+                      help="force lower case column names "
+                      "[default=%default].")
 
-    parser.add_option("-u", "--ignore-duplicates", dest="ignore_duplicates", action="store_true",
-                      help="ignore columns with duplicate names [default=%default].")
+    parser.add_option("-u", "--ignore-duplicates", dest="ignore_duplicates",
+                      action="store_true",
+                      help="ignore columns with duplicate names "
+                      "[default=%default].")
 
-    parser.add_option("-s", "--ignore-same", dest="ignore_same", action="store_true",
-                      help="ignore columns with identical values [default=%default].")
+    parser.add_option("-s", "--ignore-same", dest="ignore_same",
+                      action="store_true",
+                      help="ignore columns with identical values "
+                      "[default=%default].")
 
-    parser.add_option("--ignore-column", dest="ignore_columns", type="string", action="append",
+    parser.add_option("--ignore-column", dest="ignore_columns", type="string",
+                      action="append",
                       help="ignore columns [default=%default].")
 
-    parser.add_option("--rename-column", dest="rename_columns", type="string", action="append",
+    parser.add_option("--rename-column", dest="rename_columns", type="string",
+                      action="append",
                       help="rename columns [default=%default].")
 
     parser.add_option("--first-column", dest="first_column", type="string",
-                      help="name of first column - permits loading CSV table where the first "
+                      help="name of first column - permits loading CSV "
+                      "table where the first "
                       "column name is the empty string [default=%default].")
 
-    parser.add_option("-e", "--ignore-empty", dest="ignore_empty", action="store_true",
-                      help="ignore columns which are all empty [default=%default].")
+    parser.add_option("-e", "--ignore-empty", dest="ignore_empty",
+                      action="store_true",
+                      help="ignore columns which are all empty "
+                      "[default=%default].")
 
-    parser.add_option("-q", "--quick", dest="insert_quick", action="store_true",
-                      help="try quick file based import - needs to be supported by the backend [default=%default].")
+    parser.add_option("-q", "--quick", dest="insert_quick",
+                      action="store_true",
+                      help="try quick file based import - needs to "
+                      "be supported by the backend [default=%default].")
 
     parser.add_option("-b", "--backend", dest="backend", type="choice",
                       choices=("pg", "sqlite"),
                       help="database backend to choose [default=%default].")
 
-    parser.add_option("-i", "--index", dest="indices", type="string", action="append",
-                      help="create an index for the named column [default=%default].")
+    parser.add_option("-i", "--index", dest="indices", type="string",
+                      action="append",
+                      help="create an index for the named column "
+                      "[default=%default].")
 
-    parser.add_option("-a", "--allow-empty", dest="allow_empty", action="store_true",
+    parser.add_option("-a", "--allow-empty", dest="allow_empty",
+                      action="store_true",
                       help="allow empty table [default=%default].")
 
     parser.add_option("--retry", dest="retry", action="store_true",
-                      help="retry if an SQL statement fails - warning: THIS MIGHT CAUSE DEADLOCKS [default=%default].")
+                      help="retry if an SQL statement fails - warning: "
+                      "THIS MIGHT CAUSE DEADLOCKS [default=%default].")
 
     parser.add_option("-z", "--from-zipped", dest="from_zipped", action="store_true",
                       help="input is zipped.")
