@@ -928,19 +928,29 @@ def mergeLncRNAPhyloCSF(infiles, outfile):
                  --cat=CAT
                  --missing=0
                  --log=%(outfile)s.log
-                 %(file_names)s
+                 %(file_name)s
                 > %(outfile)s
                  '''
     P.run()
 
-##########################################################################
+
+@transform(mergeLncRNAPhyloCSF, regex("(?:.*)/(.+).tsv"), r"\1.load")
+def loadLncRNAPhyloCSF(infile, outfile):
+    tmpf=P.getTempFilename("/ifs/scratch")
+    PipelineLncRNA.parsePhyloCSF(infile, tmpf)
+    P.load(tmpf, outfile, options="--index=gene_id")
+
+
 ##########################################################################
 ##########################################################################
 # calculate phyloCSF scores for ENSEMBL lincRNA
-@follows(mkdir("lincRNA_ensembl"))
+##########################################################################
+##########################################################################
+@active_if(PARAMS["control_data"] != "ensembl")
+@follows(mkdir("lncRNA_control"))
 @transform( PARAMS["genesets_reference"], 
             regex("reference.gtf.gz"),
-            r"lincRNA_ensembl/lincRNA.gtf.gz" )
+            r"lncRNA_control/lincRNA.gtf.gz" )
 def extractEnsemblLincRNA(infile, outfile):
     tmpf = P.getTempFile("/ifs/scratch")
     for gtf in GTF.iterator(IOTools.openFile(infile)):
@@ -961,14 +971,31 @@ def extractEnsemblLincRNA(infile, outfile):
     os.unlink(tmpf)
 
 
-@transform(extractEnsemblLincRNA, suffix(".gtf.gz"), ".bed.gz")
-def convertEnsemblGTFToBed12(infile, outfile):
+@active_if( PARAMS["control_data"] == "ensembl")
+@follows(mkdir("lncRNA_control"))
+@files( os.path.join( ".", PARAMS["control_data"]), 
+            os.path.join("lncRNA_control", PARAMS["control_data"]) )
+def extractControlLncRNA(infile, outfile):
+    assert os.path.exists(infile), "Control file is missing:" % infile
+    assert ".gtf" in os.path.basename(infile), "Control file must be gtf"
+    os.symlink(infile, outfile)
+
+
+@transform([extractEnsemblLincRNA, extractControlLncRNA],
+           regex("(.+).gtf(.*)"), 
+           r"\1.bed.gz")
+def convertControlGTFToBed12(infile, outfile):
+    """
+    Convert either ensembl lincRNA, or control gtf to bed12 format
+    """
     PipelineLncRNA.gtfToBed12(infile, outfile, "transcript")
 
 
-@merge([convertEnsemblGTFToBed12, createMAFAlignment],
-       "./lincRNA_ensembl/lincRNA_transcripts.fasta.gz" )
-def extractEnsemblLincRNAFastaAlignments(infiles, outfile):
+@collate(convertControlGTFToBed12,
+         regex("(.+)/(.+).bed.gz"),
+         add_inputs(createMAFAlignment),
+         r"\1/\2_transcripts.fasta.gz")
+def extractControllLncRNAFastaAlignments(infiles, outfile):
     bed_file, maf_file = infiles
     maf_tmp = P.getTempFilename("/ifs/scratch")
     to_cluster = False
@@ -991,11 +1018,11 @@ def extractEnsemblLincRNAFastaAlignments(infiles, outfile):
     os.unlink(maf_tmp)
 
 
-@follows(mkdir("./lincRNA_ensembl/fasta"))
-@split( extractEnsemblLincRNAFastaAlignments, 
-        "./lincRNA_ensembl/fasta/*.fasta")
-def splitEnsemblLincRNAFasta(infile, outfiles):
-    out_dir = "./lincRNA_ensembl/fasta"
+@follows(mkdir("./lncRNA_control/aligned_fasta"))
+@split( extractControllLncRNAFastaAlignments, 
+        "./lncRNA_control/aligned_fasta/*.fasta")
+def splitControlLncRNAFasta(infile, outfiles):
+    out_dir = "./lncRNA_control/aligned_fasta"
 
     name_dict = {}
     for mapping in PARAMS["phyloCSF_map_species_names"].split(","):
@@ -1008,8 +1035,8 @@ def splitEnsemblLincRNAFasta(infile, outfiles):
     PipelineLncRNA.splitAlignedFasta(infile, out_dir, name_dict)
 
 
-@transform(splitEnsemblLincRNAFasta, suffix(".fasta"), ".phyloCSF")
-def runEnsemblLincRNAPhyloCSF(infile, outfile):
+@transform(splitControlLncRNAFasta, suffix(".fasta"), ".phyloCSF")
+def runControlLncRNAPhyloCSF(infile, outfile):
     phylogeny = PARAMS["phyloCSF_phylogeny"]
     n_frames = int(PARAMS["phyloCSF_n_frames"])
     if PARAMS["phyloCSF_options"]:
@@ -1021,7 +1048,6 @@ def runEnsemblLincRNAPhyloCSF(infile, outfile):
     for mapping in PARAMS["phyloCSF_map_species_names"].split(","):
         species.append(mapping.split(":")[1])
     species = ",".join(species)
-
     to_cluster = True
     statement = ("PhyloCSF %(phylogeny)s"
                  "  %(infile)s"
@@ -1032,8 +1058,8 @@ def runEnsemblLincRNAPhyloCSF(infile, outfile):
     P.run()
 
 
-@merge(runEnsemblLincRNAPhyloCSF, "./lincRNA_ensembl/lncRNA_phyloCSF.tsv")
-def mergeEnsemblLincRNAPhyloCSF(infiles, outfile):
+@merge(runControlLncRNAPhyloCSF, "./lncRNA_control/control_phyloCSF.tsv")
+def mergeControlLncRNAPhyloCSF(infiles, outfile):
     file_names = " ".join([x for x in infiles])
     statement = '''
                 python %(scriptsdir)s/combine_tables.py
@@ -1044,6 +1070,72 @@ def mergeEnsemblLincRNAPhyloCSF(infiles, outfile):
                  %(file_names)s
                 > %(outfile)s
                  '''
+    P.run()
+
+
+@transform(mergeControlLncRNAPhyloCSF, regex("(?:.+)/(.+).tsv"), r"\1.load")
+def loadControlLncRNAPhyloCSF(infile, outfile):
+    tmpf=P.getTempFilename("/ifs/scratch")
+    PipelineLncRNA.parsePhyloCSF(infile, tmpf)
+    P.load(tmpf, outfile, options="--index=gene_id")
+
+
+##########################################################################
+##########################################################################
+# calculate CPC scores for ENSEMBL lincRNA
+##########################################################################
+##########################################################################
+
+# @follows(mkdir("lincRNA_ensembl"))
+# @transform( PARAMS["genesets_reference"], 
+#             regex("reference.gtf.gz"),
+#             r"lincRNA_ensembl/lincRNA.gtf.gz" )
+# def extractEnsemblLincRNA(infile, outfile):
+
+@follows(mkdir("lncRNA_control/fasta"))
+@transform([extractEnsemblLincRNA, extractControlLncRNA],
+           regex("(?:.+)/(.+).gtf(.*)"), 
+           r"lncRNA_control/fasta/\1.fasta" )
+def buildControlFasta(infile, outfile):
+    genome= os.path.join(PARAMS["general_genomedir"], 
+                         PARAMS["genome"] + ".fasta")
+    statement = ( "zcat %(infile)s |"
+                  " python %(scriptsdir)s/gff2fasta.py"
+                  "  --genome-file=%(genome)s"
+                  "  --log=%(outfile)s.log"
+                  "  --is-gtf"
+                  " > %(outfile)s" )
+    P.run()
+
+@transform(buildControlFasta, 
+           regex("(.+)/(.+)/(.*).fasta"), 
+           r"\1/cpc/control_cpc.result" )
+def runControlCPC(infile, outfile):
+    # farm.py is called from within cpc.sh
+    assert P.which("farm.py"), "farm.py needs to be in $PATH for cpc to run"
+    # Default cpc parameters don't work with later versions of blast
+    E.info("Running cpc with blast version:%s" % P.which("blastx"))
+
+    result_evidence = P.snip(outfile, ".result") + ".evidence"
+    working_dir = "lncRNA_control/cpc"
+    statement = ("%(scriptsdir)s/cpc.sh"
+                 " %(infile)s"
+                 " %(outfile)s"
+                 " %(working_dir)s"
+                 " %(result_evidence)s")
+    P.run()
+
+
+@transform(runControlCPC, regex("(?:.+)/(.+)/(.+).result"), r"\2.load")
+def loadControlCPCResults(infile, outfile):
+    tablename= filenameToTablename(os.path.basename(infile))
+    statement= ("cat %(infile)s |"
+                " python %(scriptsdir)s/csv2db.py"
+                "  -t %(tablename)s"
+                "  --log=%(outfile)s.log"
+                "  --header=transcript_id,feature,C_NC,CP_score"
+                "  --index=transcript_id"
+                " > %(outfile)s")
     P.run()
 
 
@@ -1059,7 +1151,6 @@ def mergeEnsemblLincRNAPhyloCSF(infiles, outfile):
          buildFullGeneSet)
 def GeneSets():
     pass
-
 
 @follows(mergeLncRNAPhyloCSF)
 def phyloCSF():

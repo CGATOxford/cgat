@@ -2285,7 +2285,7 @@ def removeGapsFromAlignedFasta(in_dir, out_dir, min_length=0):
                 out.close()
                 x += 1
 
-
+# not actually used... plus removing gaps is not a good idea
 def runPhyloCSF(in_fasta, tmp_dir, outfile):
     statement = ("zcat %(in_fasta)s |"
                  " %(scriptsdir)s/farm.py"
@@ -2300,3 +2300,20 @@ def runPhyloCSF(in_fasta, tmp_dir, outfile):
                  "  --removeRefGaps"
                  "  --species=%(species)s"
                  " > %(outfile)s")
+
+
+def parsePhyloCSF(infile, outfile):
+    """
+    Write phyloCSF result file out in a more readable format.
+    """
+    outf = IOTools.openFile(outfile, "w")
+    outf.write("gene_id\ttranscript_id\tscore\tstart\tend\n")
+
+    for line in IOTools.openFile(infile).readlines():
+        line = line.split()
+        gene_id_transcript_id = P.snip(os.path.basename(line[0]), ".phyloCSF")
+        gene_id, transcript_id = gene_id_transcript_id.split("__")
+        line_out = [gene_id, transcript_id, line[3], line[4], line[5]]
+        outf.write("\t".join(line_out) + "\n")
+
+    outf.close()
