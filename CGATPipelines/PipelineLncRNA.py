@@ -27,14 +27,14 @@ def buildCodingGeneSet(abinitio_coding, reference, outfile):
     '''
     takes the output from cuffcompare of a transcript
     assembly and filters for annotated protein coding
-    genes. 
+    genes.
 
     NB "pruned" refers to nomenclature in the transcript
     building pipeline - transcripts that appear in at least
     two samples.
 
     Because an abinitio assembly will often contain
-    fragments of known transcripts and describe them as 
+    fragments of known transcripts and describe them as
     novel, the default behaviour is to produce a set that
     is composed of 'complete' transcripts
     '''
@@ -43,7 +43,9 @@ def buildCodingGeneSet(abinitio_coding, reference, outfile):
 
     coding = {}
     coding["protein_coding"] = GTF.readAndIndex(GTF.iterator_filtered(
-        GTF.iterator(IOTools.openFile(reference)), source="protein_coding"), with_value=False)
+        GTF.iterator(
+            IOTools.openFile(
+                reference)), source="protein_coding"), with_value=False)
 
     for gtf in GTF.iterator(inf):
         if coding["protein_coding"].contains(gtf.contig, gtf.start, gtf.end):
@@ -82,37 +84,51 @@ def buildRefnoncodingGeneSet(reference, outfile):
     Processed transcript
     '''
 
-    statement = '''zcat %(reference)s 
-                   | awk '$2 == "lincRNA" || $2 == "non_coding" || $2 == "3prime_overlapping_ncrna" || $2 == "ncRNA_host"' | gzip > %(outfile)s'''
+    statement = ("zcat %(reference)s |"
+                 " awk '$2 == \"lincRNA\" "
+                 "      || $2 == \"non_coding\" "
+                 "      || $2 == \"3prime_overlapping_ncrna\" "
+                 "      || $2 == \"ncRNA_host\"'"
+                 " | gzip > %(outfile)s")
     P.run()
 
 
-def buildLncRNAGeneSet(abinitio_lincrna, reference, refnoncoding, pseudogenes_gtf, numts_gtf, outfile, min_length):
+def buildLncRNAGeneSet(abinitio_lincrna,
+                       reference,
+                       refnoncoding,
+                       pseudogenes_gtf,
+                       numts_gtf, outfile,
+                       min_length):
     '''
-    build lncRNA gene set. 
+    build lncRNA gene set.
 
-    In contrast to the pipeline, this lincRNA set does not contain
-    the reference noncoding gene set. It is transcripts in the abinitio set that
-    do not overlap at any protein coding, processed or pseudogene transcripts 
-    (exons+introns) in a reference gene set.
-    lincRNA genes are often expressed at low level and thus the resultant transcript
-    models are fragmentory. To avoid some double counting in downstream analyses
-    transcripts overlapping on the same strand are merged - this does not neccessarily seem to work well if 
-    not using the reference set.
+    In contrast to the pipeline, this lincRNA set does not contain the
+    reference noncoding gene set. It is transcripts in the abinitio set
+    that do not overlap at any protein coding, processed or pseudogene
+    transcripts (exons+introns) in a reference gene set.
+    lincRNA genes are often expressed at low level and thus the resultant
+    transcript models are fragmentory. To avoid some double counting in
+    downstream analyses transcripts overlapping on the same strand are merged
+    - this does not neccessarily seem to work well if not using the
+    reference set.
 
     Transcripts need to have a length of at least 200 bp.
-
     '''
 
-    infile_abinitio, reference_gtf, refnoncoding_gtf, pseudogenes_gtf, numts_gtf = \
-        abinitio_lincrna, reference, refnoncoding, pseudogenes_gtf, numts_gtf
+    infile_abinitio = abinitio_lincrna
+    reference_gtf = reference
+    refnoncoding_gtf = refnoncoding
+    pseudogenes_gtf = pseudogenes_gtf
+    numts_gtf = numts_gtf
 
     E.info("indexing geneset for filtering")
 
-    # 17/11/2012 Jethro added Ig genes to list. (NB 31 entries in $2 of reference.gtf.gz)
-    # 10/12/2012 Nick added CDS. This will then filter anything that overlaps with a CDS
-    # NB this is the annotation for RefSeq and so requires the user to have created a
-    # reference annotation that includes this annotation
+    # 17/11/2012 Jethro added Ig genes to list.
+    # (NB 31 entries in $2 of reference.gtf.gz)
+    # 10/12/2012 Nick added CDS.
+    # This will then filter anything that overlaps with a CDS
+    # NB this is the annotation for RefSeq and so requires the user to
+    # have created a reference annotation that includes this annotation.
     input_sections = ("protein_coding",
                       "processed_pseudogene",
                       "unprocessed_pseudogene",
@@ -130,8 +146,8 @@ def buildLncRNAGeneSet(abinitio_lincrna, reference, refnoncoding, pseudogenes_gt
     indices = {}
     for section in input_sections:
         indices[section] = GTF.readAndIndex(
-            GTF.iterator_filtered(GTF.iterator(IOTools.openFile(reference_gtf)),
-                                  source=section),
+            GTF.iterator_filtered(GTF.iterator(
+                IOTools.openFile(reference_gtf)), source=section),
             with_value=True)
     E.info("built indices for %i features" % len(indices))
 
@@ -149,7 +165,9 @@ def buildLncRNAGeneSet(abinitio_lincrna, reference, refnoncoding, pseudogenes_gt
     total_transcripts = set()
     remove_transcripts = collections.defaultdict(set)
     E.info("collecting genes to remove")
-    for gtf in GTF.transcript_iterator(GTF.iterator(IOTools.openFile(infile_abinitio))):
+    for gtf in GTF.transcript_iterator(
+            GTF.iterator(
+                IOTools.openFile(infile_abinitio))):
         # remove those transcripts too short to be classified as lncRNAs
         l = sum([x.end - x.start for x in gtf])
         if l < min_length:
@@ -214,7 +232,7 @@ def buildLncRNAGeneSet(abinitio_lincrna, reference, refnoncoding, pseudogenes_gt
 
     filename = temp.name
     statement = '''cat %(filename)s | python %(scriptsdir)s/gtf2gtf.py
-                   --sort=gene 
+                   --sort=gene
                    --log=%(outfile)s.log
                    | gzip > %(outfile)s'''
     P.run()
@@ -249,12 +267,18 @@ def buildFilteredLncRNAGeneSet(flagged_gtf,
             # use an indexed genome to assess novelty of lncRNA
             if len(transcript) > 1:
                 for gtf in transcript:
-                    previous_multi.add(
-                        gtf.contig, gtf.start, gtf.end, [transcript[0].strand, transcript[0].gene_id])
+                    previous_multi.add(gtf.contig,
+                                       gtf.start,
+                                       gtf.end,
+                                       [transcript[0].strand,
+                                        transcript[0].gene_id])
             # add single exons
             elif len(transcript) == 1:
-                previous_single.add(transcript[0].contig, transcript[0].start, transcript[
-                                    0].end, [transcript[0].strand, transcript[0].gene_id])
+                previous_single.add(transcript[0].contig,
+                                    transcript[0].start,
+                                    transcript[0].end,
+                                    [transcript[0].strand,
+                                     transcript[0].gene_id])
 
     # create sets for keeping and discarding genes
     temp = P.getTempFile(dir=".")
@@ -264,7 +288,8 @@ def buildFilteredLncRNAGeneSet(flagged_gtf,
 
     # iterate over the flagged GTF - flagged for exon status
     E.info("checking for overlap with previously identified sets")
-    for transcript in GTF.transcript_iterator(GTF.iterator(IOTools.openFile(flagged_gtf))):
+    for transcript in GTF.transcript_iterator(
+            GTF.iterator(IOTools.openFile(flagged_gtf))):
         gene_id = transcript[0].gene_id
         # check if there is overlap in the known sets in order to add
         # gene_status attribute
@@ -276,9 +301,10 @@ def buildFilteredLncRNAGeneSet(flagged_gtf,
                 # add previous multi exonic lincRNA gene id
                 # to known set - to avoid addin gto gtf later
                 for gtf2 in previous_multi.get(transcript[0].contig,
-                                               min([
-                                                   gtf.start for gtf in transcript]),
-                                               max([gtf.end for gtf in transcript])):
+                                               min([gtf.start
+                                                    for gtf in transcript]),
+                                               max([gtf.end
+                                                    for gtf in transcript])):
                     known.add(gtf2[2][1])
             else:
                 novel.add(transcript[0].gene_id)
@@ -289,10 +315,10 @@ def buildFilteredLncRNAGeneSet(flagged_gtf,
                 known.add(transcript[0].gene_id)
                 # add previous multi exonic lincRNA gene id
                 # to known set - to avoid addin gto gtf later
-                for gtf2 in previous_multi.get(transcript[0].contig,
-                                               min([
-                                                   gtf.start for gtf in transcript]),
-                                               max([gtf.end for gtf in transcript])):
+                for gtf2 in previous_multi.get(
+                        transcript[0].contig,
+                        min([gtf.start for gtf in transcript]),
+                        max([gtf.end for gtf in transcript])):
                     known.add(gtf2[2][1])
             else:
                 novel.add(transcript[0].gene_id)
@@ -328,7 +354,9 @@ def buildFilteredLncRNAGeneSet(flagged_gtf,
             # dont' write out ones that we build
             if gene_id in known:
                 continue
-            elif done.contains(gene[0].contig, min([gtf.start for gtf in gene]), max([gtf.end for gtf in gene])):
+            elif done.contains(gene[0].contig,
+                               min([gtf.start for gtf in gene]),
+                               max([gtf.end for gtf in gene])):
                 continue
             else:
                 for gtf in gene:
@@ -341,8 +369,8 @@ def buildFilteredLncRNAGeneSet(flagged_gtf,
     temp.close()
 
     filename = temp.name
-    statement = '''cat %(filename)s | python %(scriptsdir)s/gtf2gtf.py 
-                   --sort=transcript 
+    statement = '''cat %(filename)s | python %(scriptsdir)s/gtf2gtf.py
+                   --sort=transcript
                    --log=%(outfile)s.log
                    | gzip > %(outfile)s'''
     P.run()
@@ -549,8 +577,8 @@ class CounterMultiExonGenes(CounterExons):
 def flagExonStatus(gtf_file, outfile):
     '''
     Adds two attributes to a gtf, the first species transcript exon status,
-    the second specifies gene exon status. 
-    It is possible for genes to contain single-exon transcripts but not the 
+    the second specifies gene exon status.
+    It is possible for genes to contain single-exon transcripts but not the
     reciprocal.
     '''
 
@@ -625,7 +653,8 @@ def classifyLncRNA(lincRNA_gtf, reference, outfile, dist=2):
     genes - creates indices for intervals on the fly - maybe should be
     creating additional annotations:
 
-    antisense - GENE overlapping protein coding exons or introns on opposite strand
+    antisense - GENE overlapping protein coding exons or introns on opposite
+    strand
     antisense_upstream - GENE < Xkb from tss on opposite strand
     antisense_downstream - GENE < Xkb from gene end on opposite strand
     sense_upstream - GENE < Xkb from tss on same strand
@@ -663,23 +692,33 @@ def classifyLncRNA(lincRNA_gtf, reference, outfile, dist=2):
 
         # create up and downstream intervals on plus strand
         if transcript[0].strand == "+":
-            plus_up.add(transcript[0].contig, transcript[
-                        0].start - (dist * 1000), transcript[0].start, transcript[0].strand)
-            plus_down.add(transcript[0].contig, transcript[
-                          len(transcript) - 1].end,  transcript[len(transcript) - 1].end + (dist * 1000), transcript[0].strand)
+            plus_up.add(transcript[0].contig,
+                        transcript[0].start - (dist * 1000),
+                        transcript[0].start,
+                        transcript[0].strand)
+            plus_down.add(transcript[0].contig,
+                          transcript[len(transcript) - 1].end,
+                          transcript[len(transcript) - 1].end + (dist * 1000),
+                          transcript[0].strand)
 
         # create up and downstream intervals on minus strand
         elif transcript[0].strand == "-":
-            minus_up.add(transcript[0].contig, transcript[
-                         len(transcript) - 1].end,  transcript[len(transcript) - 1].end + (dist * 1000), transcript[0].strand)
-            minus_down.add(transcript[0].contig, transcript[
-                           0].start - (dist * 1000), transcript[0].start, transcript[0].strand)
+            minus_up.add(transcript[0].contig,
+                         transcript[len(transcript) - 1].end,
+                         transcript[len(transcript) - 1].end + (dist * 1000),
+                         transcript[0].strand)
+            minus_down.add(transcript[0].contig,
+                           transcript[0].start - (dist * 1000),
+                           transcript[0].start,
+                           transcript[0].strand)
         else:
-            print "WARNING: no strand specified for %s" % transcript[0].transcript_id
+            print "WARNING: no strand"
+            " specified for %s" % transcript[0].transcript_id
 
     # iterate over lincRNA transcripts
     transcript_class = {}
-    for transcript in GTF.transcript_iterator(GTF.iterator(IOTools.openFile(lincRNA_gtf))):
+    for transcript in GTF.transcript_iterator(
+            GTF.iterator(IOTools.openFile(lincRNA_gtf))):
         transcript_id = transcript[0].transcript_id
         for gtf in transcript:
 
@@ -693,7 +732,12 @@ def classifyLncRNA(lincRNA_gtf, reference, outfile, dist=2):
             # coding gene then that classification is prioritised over intronic
             # classification. upstream is prioritised over downstream
             # sense upstream is prioritised over antisense upstream
-            elif plus_up.contains(transcript[0].contig, transcript[0].start, transcript[len(transcript) - 1].end) and not intron.contains(transcript[0].contig, transcript[0].start, transcript[len(transcript) - 1].end):
+            elif plus_up.contains(transcript[0].contig,
+                                  transcript[0].start,
+                                  transcript[len(transcript) - 1].end) and not \
+                intron.contains(transcript[0].contig,
+                                transcript[0].start,
+                                transcript[len(transcript) - 1].end):
                 for gtf2 in plus_up.get(gtf.contig, gtf.start, gtf.end):
                     if gtf.strand == gtf2[2]:
                         transcript_class[transcript_id] = "sense_upstream"
@@ -702,16 +746,23 @@ def classifyLncRNA(lincRNA_gtf, reference, outfile, dist=2):
 
             # and not intron.contains(transcript[0].contig,
             # transcript[0].start, transcript[len(transcript) -1].end):
-            elif minus_up.contains(transcript[0].contig, transcript[0].start, transcript[len(transcript) - 1].end):
+            elif minus_up.contains(transcript[0].contig,
+                                   transcript[0].start,
+                                   transcript[len(transcript) - 1].end):
                 for gtf2 in minus_up.get(gtf.contig, gtf.start, gtf.end):
                     if gtf.strand == gtf2[2]:
                         transcript_class[transcript_id] = "sense_upstream"
                     elif gtf.strand != gtf2[2]:
                         transcript_class[transcript_id] = "antisense_upstream"
 
-            # downstream sense and antisense - downstream antisense is prioritised as
-            # less likely to be part of the coding transcript
-            elif plus_down.contains(transcript[0].contig, transcript[0].start, transcript[len(transcript) - 1].end) and not intron.contains(transcript[0].contig, transcript[0].start, transcript[len(transcript) - 1].end):
+            # downstream sense and antisense - downstream antisense is
+            # prioritised as less likely to be part of the coding transcript
+            elif plus_down.contains(transcript[0].contig,
+                                    transcript[0].start,
+                                    transcript[len(transcript) - 1].end) and not \
+                intron.contains(transcript[0].contig,
+                                transcript[0].start,
+                                transcript[len(transcript) - 1].end):
                 for gtf2 in plus_down.get(gtf.contig, gtf.start, gtf.end):
                     if gtf.strand != gtf2[2]:
                         transcript_class[
@@ -719,7 +770,12 @@ def classifyLncRNA(lincRNA_gtf, reference, outfile, dist=2):
                     elif gtf.strand == gtf2[2]:
                         transcript_class[transcript_id] = "sense_downstream"
 
-            elif minus_down.contains(transcript[0].contig, transcript[0].start, transcript[len(transcript) - 1].end) and not intron.contains(transcript[0].contig, transcript[0].start, transcript[len(transcript) - 1].end):
+            elif minus_down.contains(transcript[0].contig,
+                                     transcript[0].start,
+                                     transcript[len(transcript) - 1].end) and not \
+                intron.contains(transcript[0].contig,
+                                transcript[0].start,
+                                transcript[len(transcript) - 1].end):
                 for gtf2 in minus_down.get(gtf.contig, gtf.start, gtf.end):
                     if gtf.strand != gtf2[2]:
                         transcript_class[
@@ -728,7 +784,9 @@ def classifyLncRNA(lincRNA_gtf, reference, outfile, dist=2):
                         transcript_class[transcript_id] = "sense_downstream"
 
             # intronic sense and antisense - intronic antisense is prioritised
-            elif intron.contains(transcript[0].contig, transcript[0].start, transcript[len(transcript) - 1].end):
+            elif intron.contains(transcript[0].contig,
+                                 transcript[0].start,
+                                 transcript[len(transcript) - 1].end):
                 for gtf2 in intron.get(gtf.contig, gtf.start, gtf.end):
                     if gtf.strand != gtf2[2]:
                         transcript_class[transcript_id] = "antisense_intronic"
@@ -792,19 +850,28 @@ def classifyLncRNAGenes(lincRNA_gtf, reference, outfile, dist=2):
 
         # create up and downstream intervals on plus strand
         if transcript[0].strand == "+":
-            plus_up.add(transcript[0].contig, transcript[
-                        0].start - (dist * 1000), transcript[0].start, transcript[0].strand)
-            plus_down.add(transcript[0].contig, transcript[
-                          len(transcript) - 1].end,  transcript[len(transcript) - 1].end + (dist * 1000), transcript[0].strand)
+            plus_up.add(transcript[0].contig,
+                        transcript[0].start - (dist * 1000),
+                        transcript[0].start,
+                        transcript[0].strand)
+            plus_down.add(transcript[0].contig,
+                          transcript[len(transcript) - 1].end,
+                          transcript[len(transcript) - 1].end + (dist * 1000),
+                          transcript[0].strand)
 
         # create up and downstream intervals on minus strand
         elif transcript[0].strand == "-":
-            minus_up.add(transcript[0].contig, transcript[
-                         len(transcript) - 1].end,  transcript[len(transcript) - 1].end + (dist * 1000), transcript[0].strand)
-            minus_down.add(transcript[0].contig, transcript[
-                           0].start - (dist * 1000), transcript[0].start, transcript[0].strand)
+            minus_up.add(transcript[0].contig,
+                         transcript[len(transcript) - 1].end,
+                         transcript[len(transcript) - 1].end + (dist * 1000),
+                         transcript[0].strand)
+            minus_down.add(transcript[0].contig,
+                           transcript[0].start - (dist * 1000),
+                           transcript[0].start,
+                           transcript[0].strand)
         else:
-            print "WARNING: no strand specified for %s" % transcript[0].transcript_id
+            print("WARNING: no strand"
+                  " specified for %s" % transcript[0].transcript_id)
 
     # iterate over lincRNA genes
     outf_introns = os.path.join(os.path.dirname(outfile),
@@ -878,8 +945,8 @@ def classifyLncRNAGenes(lincRNA_gtf, reference, outfile, dist=2):
                         continue
                     gene_class[gene_id] = "sense_downstream"
 
-        # the third classification assumes all genes have been classified leaving
-        # intergenic genes
+        # the third classification assumes all genes have been
+        # classified leaving intergenic genes
         else:
             gene_class[gene_id] = "intergenic"
 
@@ -923,19 +990,19 @@ def reClassifyLncRNAGenes(lncRNA_gtf,
                           dstr_dist=5,
                           wdir="."):
     """
-    This re-write of classifyLncRNAGenes() does not throw out intronic loci, but 
-    labels them as either sense-intronic or sense-overlap.
-    It also fixes the bug that cause sense gene-models encompassing reference 
-    exons to be output as antisense. 
+    This re-write of classifyLncRNAGenes() does not throw out intronic loci,
+    but labels them as either sense-intronic or sense-overlap.
+    It also fixes the bug that cause sense gene-models encompassing
+    reference exons to be output as antisense.
     Because lncRNA boundaries intersect multiple intervals in indexes, rather
-    than classifying each lncRNA multiple times, lncRNA strand is instead 
-    compared to a list of interval strand values, if any of these are sense, 
-    then the lncRNA is classified as sense etc. 
+    than classifying each lncRNA multiple times, lncRNA strand is instead
+    compared to a list of interval strand values, if any of these are sense,
+    then the lncRNA is classified as sense etc.
 
-    Sense-intronic: when lncRNA loci start and end are contained within a single
-    intron. 
-    Sense-overlap: when lncRNA loci start and end are in different introns. Note 
-    that different introns do not necessarily come from different gene-models. 
+    Sense-intronic: when lncRNA loci start and end are contained within a
+    single intron. Sense-overlap: when lncRNA loci start and end are in
+    different introns. Note that different introns do not necessarily
+    come from different gene-models.
     """
 
     # index exons in the reference gene-set
@@ -1061,17 +1128,19 @@ def reClassifyLncRNAGenes(lncRNA_gtf,
                        "failed to retrieve intervals for %s" % (exon.contig,
                                                                 exon.gene_id))
             if exon.contig in plus_down.mIndex.keys():
-                plus_down_list.extend([x for x in list(plus_down.get(exon.contig,
-                                                                     exon.start,
-                                                                     exon.end))])
+                plus_down_list.extend([x for x in list(plus_down.get(
+                    exon.contig,
+                    exon.start,
+                    exon.end))])
             else:
                 E.warn("Contig %s not in plus downstream index, "
                        "failed to retrieve intervals for %s" % (exon.contig,
                                                                 exon.gene_id))
             if exon.contig in minus_down.mIndex.keys():
-                minus_down_list.extend([x for x in list(minus_down.get(exon.contig,
-                                                                       exon.start,
-                                                                       exon.end))])
+                minus_down_list.extend([x for x in list(minus_down.get(
+                    exon.contig,
+                    exon.start,
+                    exon.end))])
             else:
                 E.warn("Contig %s not in minus downstream index, "
                        "failed to retrieve intervals for %s" % (exon.contig,
@@ -1108,10 +1177,14 @@ def reClassifyLncRNAGenes(lncRNA_gtf,
             # intron
             elif intron_list and strand in [x[2][6] for x in intron_list]:
                 last = len(transcript) - 1
-                start_list = [(x[0], x[1]) for x in list(intron.get(transcript[
-                    0].contig, transcript[0].start, transcript[0].start + 1)) if x[2][6] == strand]
-                end_list = [(x[0], x[1]) for x in list(intron.get(transcript[
-                    last].contig, transcript[last].end, transcript[last].end + 1)) if x[2][6] == strand]
+                start_list = [(x[0], x[1]) for x in list(intron.get(
+                    transcript[0].contig,
+                    transcript[0].start,
+                    transcript[0].start + 1)) if x[2][6] == strand]
+                end_list = [(x[0], x[1]) for x in list(intron.get(
+                    transcript[last].contig,
+                    transcript[last].end,
+                    transcript[last].end + 1)) if x[2][6] == strand]
                 # if start and end of transcript are within the same sense
                 # introns, then lncRNA is classified as 'sense_intronic'
                 if set(start_list) == set(end_list):
@@ -1131,7 +1204,8 @@ def reClassifyLncRNAGenes(lncRNA_gtf,
                     temp_count[gene_class[gene_id]] += 1
 
             # ...check if lncRNA is sense downstream on the plus strand...
-            elif plus_down_list and strand in [x[2][6] for x in plus_down_list]:
+            elif plus_down_list and strand in [x[2][6] for x in
+                                               plus_down_list]:
                 gene_class[gene_id] = "sense_downstream"
                 write_to_temp(temp_files[gene_class[gene_id]],
                               plus_down_list,
@@ -1139,7 +1213,8 @@ def reClassifyLncRNAGenes(lncRNA_gtf,
                 temp_count[gene_class[gene_id]] += 1
 
             # ...check if lncRNA is sense downstream on the minus strand...
-            elif minus_down_list and strand in [x[2][6] for x in minus_down_list]:
+            elif minus_down_list and strand in [x[2][6] for x in
+                                                minus_down_list]:
                 gene_class[gene_id] = "sense_downstream"
                 write_to_temp(temp_files[gene_class[gene_id]],
                               minus_down_list,
@@ -1176,10 +1251,14 @@ def reClassifyLncRNAGenes(lncRNA_gtf,
         elif intron_list:
             if strand in [x[2][6] for x in intron_list]:
                 last = len(transcript) - 1
-                start_list = [(x[0], x[1]) for x in list(intron.get(transcript[
-                    0].contig, transcript[0].start, transcript[0].start + 1)) if x[2][6] == strand]
-                end_list = [(x[0], x[1]) for x in list(intron.get(transcript[
-                    last].contig, transcript[last].end, transcript[last].end + 1)) if x[2][6] == strand]
+                start_list = [(x[0], x[1]) for x in list(intron.get(
+                    transcript[0].contig,
+                    transcript[0].start,
+                    transcript[0].start + 1)) if x[2][6] == strand]
+                end_list = [(x[0], x[1]) for x in list(intron.get(
+                    transcript[last].contig,
+                    transcript[last].end,
+                    transcript[last].end + 1)) if x[2][6] == strand]
                 # if start and end of transcript are within the same sense
                 # introns, then lncRNA is classified as 'sense_intronic'
                 if set(start_list) == set(end_list):
@@ -1199,7 +1278,8 @@ def reClassifyLncRNAGenes(lncRNA_gtf,
                     temp_count[gene_class[gene_id]] += 1
 
             # ...check if lncRNA is sense downstream on the plus strand...
-            elif plus_down_list and strand in [x[2][6] for x in plus_down_list]:
+            elif plus_down_list and strand in [x[2][6] for x in
+                                               plus_down_list]:
                 gene_class[gene_id] = "sense_downstream"
                 write_to_temp(temp_files[gene_class[gene_id]],
                               plus_down_list,
@@ -1207,7 +1287,8 @@ def reClassifyLncRNAGenes(lncRNA_gtf,
                 temp_count[gene_class[gene_id]] += 1
 
             # ...check if lncRNA is sense downstream on the minus strand...
-            elif minus_down_list and strand in [x[2][6] for x in minus_down_list]:
+            elif minus_down_list and strand in [x[2][6] for x in
+                                                minus_down_list]:
                 gene_class[gene_id] = "sense_downstream"
                 write_to_temp(temp_files[gene_class[gene_id]],
                               minus_down_list,
@@ -1252,7 +1333,8 @@ def reClassifyLncRNAGenes(lncRNA_gtf,
                 temp_count[gene_class[gene_id]] += 1
 
             # ...check if lncRNA is sense downstream on the minus strand...
-            elif minus_down_list and strand in [x[2][6] for x in minus_down_list]:
+            elif minus_down_list and strand in [x[2][6] for x in
+                                                minus_down_list]:
                 gene_class[gene_id] = "sense_downstream"
                 write_to_temp(temp_files[gene_class[gene_id]],
                               minus_down_list,
@@ -1383,7 +1465,8 @@ def reClassifyLncRNAGenes(lncRNA_gtf,
     E.info("Total number of lncRNA loci in input gtf: %i" % input_transcripts)
 
     # sanity check:
-    assert total_classified == input_transcripts, "Not all lncRNAs in input gtf were successfully classified"
+    assert total_classified == input_transcripts, (
+        "Not all lncRNAs in input gtf were successfully classified")
 
     # close the tempfiles
     for handle in temp_file_names:
@@ -1410,11 +1493,13 @@ def reClassifyLncRNAGenes(lncRNA_gtf,
 # Extract pairwise MAF alignments
 ##########################################################################
 # This section of the pipeline makes use of galaxy's maf_utilties (written by
-# Dan Blankenberg - see galaxy-dist/lib/galaxy/tools/util) for indexing maf files
-# and for retrieving maf blocks that intersect gene models.
-# Because maf_utilities.py is not available outside of galaxy, required functions
-# have been copied directly (below). These functions have not been altered in the
-# hope that maf_utilities will one day be available as a stand-alone module.
+# Dan Blankenberg - see galaxy-dist/lib/galaxy/tools/util)
+# for indexing maf files and for retrieving maf blocks that
+# intersect gene models.
+# Because maf_utilities.py is not available outside of galaxy,
+# required functions have been copied directly (below).
+# These functions have not been altered in the hope that maf_utilities
+# will one day be available as a stand-alone module.
 
 # The following classes/functions have been lifted directly from maf_utilities:
 # RegionAlignment()
@@ -1462,8 +1547,11 @@ class RegionAlignment(object):
     MAX_SEQUENCE_SIZE = sys.maxint  # Maximum length of sequence allowed
 
     def __init__(self, size, species=[]):
-        assert size <= self.MAX_SEQUENCE_SIZE, "Maximum length allowed for an individual sequence has been exceeded (%i > %i)." % (
-            size, self.MAX_SEQUENCE_SIZE)
+        assert size <= self.MAX_SEQUENCE_SIZE, ("Maximum length allowed for an"
+                                                " individual sequence has been"
+                                                " exceeded (%i > %i)." % (
+                                                    size,
+                                                    self.MAX_SEQUENCE_SIZE))
         self.size = size
         self.sequences = {}
         if not isinstance(species, list):
@@ -1512,7 +1600,8 @@ class RegionAlignment(object):
     def set_range(self, index, species, bases):
         if index >= self.size or index < 0:
             raise Exception(
-                "Your index (%i) is out of range (0 - %i)." % (index, self.size - 1))
+                "Your index (%i) is out of range (0 - %i)." % (index,
+                                                               self.size - 1))
         if len(bases) == 0:
             raise Exception(
                 "A set of genomic positions can only have a positive length.")
@@ -1549,7 +1638,7 @@ class SplicedAlignment(object):
         if not isinstance(exon_ends, list):
             exon_ends = [exon_ends]
         assert len(exon_starts) == len(
-            exon_ends), "The number of starts does not match the number of sizes."
+            exon_ends), "Number of starts does not match the number of sizes."
         self.exons = []
         for i in range(len(exon_starts)):
             self.exons.append(
@@ -1633,8 +1722,11 @@ def build_maf_index_species_chromosomes(filename, index_species=None):
                     if forward_strand_end > forward_strand_start:
                         # require positive length; i.e. certain lines have
                         # start = end = 0 and cannot be indexed
-                        indexes.add(
-                            c.src, forward_strand_start, forward_strand_end, pos, max=c.src_size)
+                        indexes.add(c.src,
+                                    forward_strand_start,
+                                    forward_strand_end,
+                                    pos,
+                                    max=c.src_size)
     except Exception, e:
         # most likely a bad MAF
         log.debug('Building MAF index on %s failed: %s' % (filename, e))
@@ -1645,14 +1737,18 @@ def build_maf_index_species_chromosomes(filename, index_species=None):
 
 
 def build_maf_index(maf_file, species=None):
-    indexes, found_species, species_chromosomes, blocks = build_maf_index_species_chromosomes(
-        maf_file, species)
+    indexes, found_species, species_chromosomes, blocks = \
+        build_maf_index_species_chromosomes(maf_file, species)
     if indexes is not None:
         fd, index_filename = tempfile.mkstemp()
         out = os.fdopen(fd, 'w')
         indexes.write(out)
         out.close()
-        return (bx.align.maf.Indexed(maf_file, index_filename=index_filename, keep_open=True, parse_e_rows=False), index_filename)
+        return (bx.align.maf.Indexed(maf_file,
+                                     index_filename=index_filename,
+                                     keep_open=True,
+                                     parse_e_rows=False),
+                index_filename)
     return (None, None)
 
 
@@ -1666,9 +1762,13 @@ def component_overlaps_region(c, region):
 
 
 def chop_block_by_region(block, src, region, species=None, mincols=0):
-    # This chopping method was designed to maintain consistency with how start/end padding gaps have been working in Galaxy thus far:
-    #   behavior as seen when forcing blocks to be '+' relative to src sequence (ref) and using block.slice_by_component( ref, slice_start, slice_end )
-    #   whether-or-not this is the 'correct' behavior is questionable, but this will at least maintain consistency
+    # This chopping method was designed to maintain consistency with
+    # how start/end padding gaps have been working in Galaxy thus far:
+    #   behavior as seen when forcing blocks to be '+' relative to src
+    # sequence (ref) and
+    # using block.slice_by_component( ref, slice_start, slice_end )
+    #   whether-or-not this is the 'correct' behavior is questionable,
+    # but this will at least maintain consistency
     # comments welcome
     slice_start = block.text_size  # max for the min()
     slice_end = 0  # min for the max()
@@ -1719,7 +1819,8 @@ def orient_block_by_region(block, src, region, force_strand=None):
     # different strands, this would cause no reverse_complementing
     strands = [c.strand for c in iter_components_by_src(
         block, src) if component_overlaps_region(c, region)]
-    if strands and (force_strand is None and region.strand not in strands) or (force_strand is not None and force_strand not in strands):
+    if strands and (force_strand is None and region.strand not in strands) or \
+                   (force_strand is not None and force_strand not in strands):
         block = block.reverse_complement()
     return block
 
@@ -1736,7 +1837,9 @@ def iter_blocks_split_by_species(block, species=None):
             for c in spec_comps:
                 newer_block = deepcopy(new_block)
                 newer_block.add_component(deepcopy(c))
-                for value in __split_components_by_species(components_by_species, newer_block):
+                for value in \
+                    __split_components_by_species(components_by_species,
+                                                  newer_block):
                     yield value
         else:
             # no more components to add, yield this block
@@ -1762,7 +1865,8 @@ def iter_blocks_split_by_species(block, species=None):
         block.attributes))  # should we copy attributes?
     empty_block.text_size = block.text_size
     # call recursive function to split into each combo of spec/blocks
-    for value in __split_components_by_species(spec_dict.values(), empty_block):
+    for value in __split_components_by_species(spec_dict.values(),
+                                               empty_block):
         # restore original component order
         sort_block_components_by_block(value, block)
         yield value
@@ -1791,7 +1895,16 @@ def reduce_block_by_primary_genome(block, species, chromosome, region_start):
     return (start_offset, species_texts)
 
 
-def fill_region_alignment(alignment, index, primary_species, chrom, start, end, strand='+', species=None, mincols=0, overwrite_with_gaps=True):
+def fill_region_alignment(alignment,
+                          index,
+                          primary_species,
+                          chrom,
+                          start,
+                          end,
+                          strand='+',
+                          species=None,
+                          mincols=0,
+                          overwrite_with_gaps=True):
     region = bx.intervals.Interval(start, end)
     region.chrom = chrom
     region.strand = strand
@@ -1799,7 +1912,10 @@ def fill_region_alignment(alignment, index, primary_species, chrom, start, end, 
 
     # Order blocks overlaping this position by score, lowest first
     blocks = []
-    for block, idx, offset in index.get_as_iterator_with_index_and_offset(primary_src, start, end):
+    for block, idx, offset in \
+            index.get_as_iterator_with_index_and_offset(primary_src,
+                                                        start,
+                                                        end):
         score = float(block.score)
         for i in range(0, len(blocks)):
             if score < blocks[i][0]:
@@ -1813,8 +1929,10 @@ def fill_region_alignment(alignment, index, primary_species, chrom, start, end, 
     # Loop through ordered blocks and layer by increasing score
     for block_dict in blocks:
         # need to handle each occurance of sequence in block seperately
-        for block in iter_blocks_split_by_species(block_dict[1].get_at_offset(block_dict[2])):
-            if component_overlaps_region(block.get_component_by_src(primary_src), region):
+        for block in iter_blocks_split_by_species(
+                block_dict[1].get_at_offset(block_dict[2])):
+            if component_overlaps_region(
+                    block.get_component_by_src(primary_src), region):
                 block = chop_block_by_region(
                     block, primary_src, region, species, mincols)  # chop block
                 block = orient_block_by_region(
@@ -1827,7 +1945,8 @@ def fill_region_alignment(alignment, index, primary_species, chrom, start, end, 
                     text = text.rstrip(gap_chars_str)
                     gap_offset = 0
                     # python2.4 doesn't accept a tuple for .startswith()
-                    while True in [text.startswith(gap_char) for gap_char in GAP_CHARS]:
+                    while True in [text.startswith(
+                            gap_char) for gap_char in GAP_CHARS]:
                         # while text.startswith( gap_chars_tuple ):
                         gap_offset += 1
                         text = text[1:]
@@ -1841,7 +1960,9 @@ def fill_region_alignment(alignment, index, primary_species, chrom, start, end, 
                             for i, char in enumerate(text):
                                 if char not in GAP_CHARS:
                                     alignment.set_position(
-                                        start_offset + gap_offset + i, spec, char)
+                                        start_offset + gap_offset + i,
+                                        spec,
+                                        char)
     return alignment
 
 
@@ -1924,7 +2045,8 @@ def sort_block_components_by_block(block1, block2):
     # block1 must be a subset of block2
     # occurs in-place
     return block1.components.sort(
-        cmp=lambda x, y: block2.components.index(x) - block2.components.index(y))
+        cmp=lambda x, y: block2.components.index(x) -
+        block2.components.index(y))
 
 
 ##########################################################################
@@ -1988,7 +2110,8 @@ def gtfToBed12(infile, outfile, model):
 
 def filterMAF(infile, outfile, removed, filter_alignments=False):
     """
-    Iterates through the MAF file. If filter_alignments == int, then will remove MAF
+    Iterates through the MAF file.
+    If filter_alignments == int, then will remove MAF
     blocks for which length < int.
     """
     inf = bx.align.maf.Reader(open(infile))
@@ -1999,7 +2122,8 @@ def filterMAF(infile, outfile, removed, filter_alignments=False):
     included = 0
     if filter_alignments:
         for block in inf:
-            if len([x for x in block.column_iter() if x[0] != "-"]) < int(filter_alignments):
+            if len([x for x in block.column_iter() if x[0] != "-"]) < \
+               int(filter_alignments):
                 removed += 1
                 outf_rj.write(block)
             else:
@@ -2021,13 +2145,13 @@ def extractGeneBlocks(bedfile,
                       primary_species,
                       secondary_species):
     """
-    Is based on Dan Blankenburg's interval_to_maf_merged_fasta.py 
-    Receives a bed12 containing intervals of interest, and maf containing 
-    pairwise genomic alignment. Iterates through bed intervals and outputs 
+    Is based on Dan Blankenburg's interval_to_maf_merged_fasta.py
+    Receives a bed12 containing intervals of interest, and maf containing
+    pairwise genomic alignment. Iterates through bed intervals and outputs
     intervals in fasta format.
-    See comments in maf_utilities.py: maf blocks are always extracted in a 
-    positive strand orientation relative to the src alignment, reverse 
-    complementing is then done using method AlignedSequence method 
+    See comments in maf_utilities.py: maf blocks are always extracted in a
+    positive strand orientation relative to the src alignment, reverse
+    complementing is then done using method AlignedSequence method
     get_sequence_reverse_complement.
     MAF file is indexed on the fly using bx.align.maf.MultiIndexed
     """
@@ -2042,20 +2166,22 @@ def extractGeneBlocks(bedfile,
             starts, ends, fields = get_starts_ends_fields_from_gene_bed(line)
 
             # create spliced alignment (N.B. strand always +ve)
+            # for pep8
+            spc = [primary_species, secondary_species]
             alignment = get_spliced_region_alignment(index,
                                                      primary_species,
                                                      fields[0],
                                                      starts,
                                                      ends,
                                                      strand='+',
-                                                     species=[primary_species,
-                                                              secondary_species],
+                                                     species=spc,
                                                      mincols=0,
                                                      overwrite_with_gaps=False)
             primary_name = secondary_name = fields[3]
             alignment_strand = fields[5]
         except Exception, e:
-            print "Error loading exon positions from input line %i: %s" % (line_count, e)
+            print "Error loading exon positions from input line %i: %s" %\
+                (line_count, e)
             break
 
         # write the stiched sequence to outfile in the correct orientation
@@ -2104,13 +2230,13 @@ def extractMAFGeneBlocks(bedfile,
                          secondary_species,
                          keep_gaps=True):
     """
-    Is based on Dan Blankenburg's interval_to_maf_merged_fasta.py 
-    Receives a bed12 containing intervals of interest, and maf containing 
-    pairwise genomic alignment. Iterates through bed intervals and outputs 
+    Is based on Dan Blankenburg's interval_to_maf_merged_fasta.py
+    Receives a bed12 containing intervals of interest, and maf containing
+    pairwise genomic alignment. Iterates through bed intervals and outputs
     intervals in fasta format.
-    See comments in maf_utilities.py: maf blocks are always extracted in a 
-    positive strand orientation relative to the src alignment, reverse 
-    complementing is then done using method AlignedSequence method 
+    See comments in maf_utilities.py: maf blocks are always extracted in a
+    positive strand orientation relative to the src alignment, reverse
+    complementing is then done using method AlignedSequence method
     get_sequence_reverse_complement.
     MAF file is indexed on the fly using bx.align.maf.MultiIndexed
     """
@@ -2125,20 +2251,22 @@ def extractMAFGeneBlocks(bedfile,
             starts, ends, fields = get_starts_ends_fields_from_gene_bed(line)
 
             # create spliced alignment (N.B. strand always +ve)
+            # for pep8 purposes
+            spec = [primary_species, secondary_species]
             alignment = get_spliced_region_alignment(index,
                                                      primary_species,
                                                      fields[0],
                                                      starts,
                                                      ends,
                                                      strand='+',
-                                                     species=[primary_species,
-                                                              secondary_species],
+                                                     species=spec,
                                                      mincols=0,
                                                      overwrite_with_gaps=False)
             primary_name = secondary_name = fields[3]
             alignment_strand = fields[5]
         except Exception, e:
-            print "Error loading exon positions from input line %i: %s" % (line_count, e)
+            print "Error loading exon positions from input line %i: %s" % \
+                (line_count, e)
             break
 
         if keep_gaps:
@@ -2154,7 +2282,8 @@ def extractMAFGeneBlocks(bedfile,
             output.write(">%s.%s\n" % (secondary_species, secondary_name))
             if alignment_strand == "-":
                 output.write(
-                    alignment.get_sequence_reverse_complement(secondary_species))
+                    alignment.get_sequence_reverse_complement(
+                        secondary_species))
             else:
                 output.write(alignment.get_sequence(secondary_species))
             output.write("\n")
@@ -2179,7 +2308,8 @@ def extractMAFGeneBlocks(bedfile,
             output.write(">%s.%s\n" % (secondary_species, secondary_name))
             if alignment_strand == "-":
                 output.write(
-                    alignment.get_sequence_reverse_complement(secondary_species))
+                    alignment.get_sequence_reverse_complement(
+                        secondary_species))
             else:
                 output.write(alignment.get_sequence(secondary_species))
             output.write("\n")
@@ -2196,7 +2326,7 @@ def extractMAFGeneBlocks(bedfile,
 
 def splitAlignedFasta(infile, out_stub, name_dict):
     """
-    Receives a fasta file containing multiple sequence alignments. Splits into 
+    Receives a fasta file containing multiple sequence alignments. Splits into
     multiple outfiles, each containing sequence with the same interval_id.
     Identifiers must be in format >species.interval_id
     name_dict specifies the format for the outfile identifiers
@@ -2221,8 +2351,8 @@ def splitAlignedFasta(infile, out_stub, name_dict):
                 current_id = gene_id
                 out = os.path.join(out_stub, current_id + ".fasta")
                 if os.path.exists(out):
-                    raise IOError("There are two transcript with gene_id %s"
-                                  " and transcript_id %s" % current_id.split("__"))
+                    raise IOError("There are two transcript with gene_id %s &"
+                                  " transcript_id %s" % current_id.split("__"))
                 else:
                     out = open(out, "w")
                     out.write(name_dict[line.split(".")[0]] + "\n")
@@ -2233,13 +2363,12 @@ def splitAlignedFasta(infile, out_stub, name_dict):
 
 def removeGapsFromAlignedFasta(in_dir, out_dir, min_length=0):
     """
-    Receives a fasta file containing two or more aligned sequences, removes gaps
-    from the reference (first) alignment in file and removes corresponding gaps
-    intervals from subsequence sequence.
+    Receives a fasta file containing two or more aligned sequences,
+    removes gaps from the reference (first) alignment in file and
+    removes corresponding gaps intervals from subsequence sequence.
     Any region of sequence flanked by gaps that is smaller than a specified min
-    length may also be removed 
-    WARNING: using this function will likely cause frame shifts in resulting 
-    sequence.
+    length may also be removed  WARNING: using this function will likely cause
+    frame shifts in resulting sequence.
     """
     if not out_dir.endswith("/"):
         out_dir = out_dir + "/"
@@ -2285,8 +2414,11 @@ def removeGapsFromAlignedFasta(in_dir, out_dir, min_length=0):
                 out.close()
                 x += 1
 
-# not actually used... plus removing gaps is not a good idea
+
 def runPhyloCSF(in_fasta, tmp_dir, outfile):
+    """
+    not actually used... plus removing gaps is not a good idea
+    """
     statement = ("zcat %(in_fasta)s |"
                  " %(scriptsdir)s/farm.py"
                  "  --split-at-regex='\n(\s*)\n'"
