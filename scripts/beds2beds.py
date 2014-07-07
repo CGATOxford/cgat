@@ -218,9 +218,13 @@ def main(argv=None):
                 outf = IOTools.openFile(
                     E.getOutputFile(tag), "w", create_dir=True)
                 c = E.Counter()
-                for contig, start, end in combineMergedIntervals([bedfiles[x] for x in combination]):
+                for contig, start, end in combineMergedIntervals(
+                        [bedfiles[x] for x in combination]):
                     c.found += 1
-                    if is_exclusive and isContainedInOne(contig, start, end, other_bed):
+                    if is_exclusive and isContainedInOne(contig,
+                                                         start,
+                                                         end,
+                                                         other_bed):
                         c.removed += 1
                         continue
                     c.output += 1
@@ -243,12 +247,13 @@ def main(argv=None):
 
             background = [x for x in indices if x != foreground]
             for ncombinants in range(0, len(background) + 1):
-                for combination in itertools.combinations(background, ncombinants):
+                for combination in itertools.combinations(background,
+                                                          ncombinants):
                     other = [x for x in background if x not in combination]
                     combination_bed = [bedfiles[x] for x in combination]
                     other_bed = [bedfiles[x] for x in other]
                     tag = ":".join([tags[foreground]] + [tags[x]
-                                   for x in combination])
+                                                         for x in combination])
 
                     E.debug("fg=%i, combination=%s, other=%s" %
                             (foreground, combination, other))
@@ -262,7 +267,10 @@ def main(argv=None):
                             bedfiles[foreground],
                             combination_bed):
                         c.found += 1
-                        if is_exclusive and isContainedInOne(bed.contig, bed.start, bed.end, other_bed):
+                        if is_exclusive and isContainedInOne(bed.contig,
+                                                             bed.start,
+                                                             bed.end,
+                                                             other_bed):
                             c.removed += 1
                             continue
                         c.output += 1

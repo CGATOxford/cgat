@@ -182,7 +182,7 @@ from CGAT.GO import *
 # ---------------------------------------------------------------------------
 
 
-def main():
+def main(argv=None):
 
     parser = E.OptionParser(
         version="%prog version: $Id: GO.py 2883 2010-04-07 08:46:22Z andreas $", usage=globals()["__doc__"])
@@ -576,7 +576,9 @@ def main():
                                   section='background',
                                   set=genelist_name)
 
-            outfile.write("gene_id\n%s\n" % ("\n".join(sorted(background[0]))))
+            # Jethro bug fix - see section 'build background' for assignment
+            #outfile.write("gene_id\n%s\n" % ("\n".join(sorted(background[0]))))
+            outfile.write("gene_id\n%s\n" % ("\n".join(sorted(background))))
             if options.output_filename_pattern:
                 outfile.close()
 

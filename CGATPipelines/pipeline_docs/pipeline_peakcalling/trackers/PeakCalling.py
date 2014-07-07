@@ -12,6 +12,7 @@ class FilteringSummary(DefaultTracker, SingleTableTrackerRows):
     table = 'exported_intervals'
     fields = ('track', 'method')
 
+
 class MacsSummary(DefaultTracker):
 
     '''summary information from macs.'''
@@ -53,7 +54,8 @@ class MacsDiagnostics(CallingTracker):
     def __call__(self, track, slice=None):
 
         data = self.get(
-            "SELECT fc,npeaks,p20,p30,p40,p50,p60,p70,p80,p90 FROM %(track)s_macs_diagnostics" % locals())
+            """SELECT fc,npeaks,p20,p30,p40,p50,p60,p70,p80,p90
+            FROM %(track)s_macs_diagnostics""" % locals())
 
         result = odict()
         for fc, npeaks, p20, p30, p40, p50, p60, p70, p80, p90 in data:

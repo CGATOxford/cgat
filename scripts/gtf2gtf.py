@@ -1,5 +1,5 @@
 '''gtf2gtf.py - manipulate transcript models
-=========================================
+============================================
 
 :Author: Andreas Heger
 :Release: $Id$
@@ -33,21 +33,23 @@ Sort gene sets
 ``--sort``
    Sorts entries in gtf file by one or more fields
 
-      +---------------+---------------------------------------+
-      | option        | order in which fields are sorted      |
-      +---------------|---------------------------------------+
-      | gene          | gene_id, transcript_id, contig, start |
-      +---------------+---------------------------------------+
-      | contig+gene   | contig, gene_id, transcript_id, start |
-      +---------------+---------------------------------------+
-      | transcript    | transcript_id, contig, start          |
-      +---------------+---------------------------------------+
-      | position      | contig, start                         |
-      +---------------+---------------------------------------+
-      | position+gene | contig( gene_id, start )              |
-      +---------------+---------------------------------------+
-      | gene+position | gene_id, contig, start                |
-      +---------------+---------------------------------------+
+      +-----------------+---------------------------------------+
+      | option          | order in which fields are sorted      |
+      +-----------------|---------------------------------------+
+      | gene            | gene_id, contig, start                |
+      +-----------------+---------------------------------------+
+      | gene+transcript | gene_id, transcript_id, contig, start |
+      +-----------------+---------------------------------------+
+      | contig+gene     | contig, gene_id, transcript_id, start |
+      +-----------------+---------------------------------------+
+      | transcript      | transcript_id, contig, start          |
+      +-----------------+---------------------------------------+
+      | position        | contig, start                         |
+      +-----------------+---------------------------------------+
+      | position+gene   | contig( gene_id, start )              |
+      +-----------------+---------------------------------------+
+      | gene+position   | gene_id, contig, start                |
+      +-----------------+---------------------------------------+
 
    N.B. position+gene sorts by gene_id, start, then subsequently sorts
    flattened gene lists by contig, start
@@ -297,6 +299,7 @@ def main(argv=None):
                       dest="sort",
                       type="choice",
                       choices=("gene",
+                               "gene+transcript",
                                "transcript",
                                "position",
                                "contig+gene",
@@ -635,8 +638,9 @@ def main(argv=None):
 
             ninput += 1
 
-            gff.gene_id = gff.transcript_id
+            gff.setAttribute("gene_id", gff.transcript_id)
             options.stdout.write("%s\n" % str(gff))
+
             noutput += 1
             nfeatures += 1
 
@@ -925,14 +929,14 @@ def main(argv=None):
                 all_exons = []
                 for transcript in gene:
                     all_exons.extend([(x.start, x.end)
-                                     for x in transcript if x.feature == "exon"])
+                                      for x in transcript if x.feature == "exon"])
                 exon_counts = {}
                 for key, exons in itertools.groupby(all_exons):
                     exon_counts[key] = len(list(exons))
                 transcript_counts = []
                 for transcript in gene:
                     count = sum([exon_counts[(x.start, x.end)]
-                                for x in transcript if x.feature == "exon"])
+                                 for x in transcript if x.feature == "exon"])
                     transcript_counts.append((count, transcript))
                 transcript_counts.sort()
                 return transcript_counts[-1][1]

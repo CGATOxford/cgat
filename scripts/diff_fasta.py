@@ -18,16 +18,30 @@ identifiers and outputs
    * which sequences are identical
    * which sequences are prefixes/suffixes of each other
 
+Options
+-------
+-s, --correct-gap-shift
+   This option will correct shifts in alignment gaps between
+   two sequences being compared
+
+-1, --pattern1
+   regular expression pattern to extract identifier from in 
+   sequence 1
+
+-2, --pattern2
+   regular expression pattern to extract identifier from in
+   sequence 2
+
 Depending on the option ``--output`` the following are output:
 
-diff
-   identifiers of sequences that are different
+  diff
+     identifiers of sequences that are different
 
-seqdiff
-   sequences of sequences that are different
+  seqdiff
+     sequences of sequences that are different
 
-missed
-   seqences that are missing from set or the other
+  missed
+     seqences that are missing from set or the other
 
 This script is of specialized interest and has been used
 in the past to check if ENSEMBL gene models had been
@@ -38,7 +52,35 @@ Usage
 
 Example::
 
-   python diff_fasta.py a.fasta b.fasta 
+   cat a.fasta | head
+
+   >ENSACAP00000004922
+   MRSRNQGGESSSSGKFSKSKPIINTGENQNLQEDAKKKNKSSRKEE ...
+   >ENSACAP00000005213
+   EEEEDESNNSYLYQPLNQDPDQGPAAVEETAPSTEPALDINERLQA ...
+   >ENSACAP00000018122
+   LIRSSSMFHIMKHGHYISRFGSKPGLKCIGMHENGIIFNNNPALWK ... 
+   
+   python diff_fasta.py --output=missed --output=seqdiff a.fasta b.fasta 
+
+   cat diff.out
+   
+   # Legend:
+   # seqs1:          number of sequences in set 1
+   # seqs2:          number of sequences in set 2
+   # same:           number of identical sequences
+   # diff:           number of sequences with differences
+   # nmissed1:       sequences in set 1 that are not found in set 2
+   # nmissed2:       sequences in set 2 that are not found in set 1
+   # Type of sequence differences
+   # first:          only the first residue is different
+   # last:           only the last residue is different
+   # prefix:         one sequence is prefix of the other
+   # selenocysteine: difference due to selenocysteines
+   # masked:         difference due to masked residues
+   # fixed:          fixed differences
+   # other:          other differences
+
 
 Type::
 

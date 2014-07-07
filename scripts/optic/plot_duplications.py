@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##########################################################################
 '''
-optic/plot_duplications.py - 
+optic/plot_duplications.py -
 ======================================================
 
 :Author: Andreas Heger
@@ -33,7 +33,7 @@ Purpose
 -------
 
 .. todo::
-   
+
    describe purpose of the script.
 
 Usage
@@ -496,15 +496,6 @@ class DuplicationPlot:
                 # lines for interleaved spans: skip
                 if not ((self.mPreviousMin < mi and self.mPreviousMax > ma) or
                         (self.mPreviousMin > mi and self.mPreviousMax < ma)):
-##                     d = SVGdraw.pathdata( old_x2, old_y2 )
-##                     d.line( new_x2, new_y2 )
-##                     d.move( new_x1, new_y1 )
-##                     d.line( old_x1, old_y1 )
-##                     d.move( old_x2, old_y2 )
-# e = SVGdraw.path( d,
-##                                       fill = "none",
-##                                       stroke = "rgb(%i,%i,%i)" % BLACK,
-# stroke_width = self.mMarkerWidth / 2 )
 
                     e = SVGdraw.line(old_x1, old_y1,
                                      new_x1, new_y1,
@@ -512,13 +503,7 @@ class DuplicationPlot:
                                      stroke="rgb(%i,%i,%i)" % GREY,
                                      stroke_width=self.mMarkerWidth / 2)
                 else:
-                    # lines for covering spans, as these overlaps
                     e = None
-# e = SVGdraw.line( old_x1, old_y1,
-##                                       new_x1, new_y1,
-##                                       fill = "none",
-##                                       stroke = "rgb(%i,%i,%i)" % GREY,
-# stroke_width = self.mMarkerWidth / 2 )
 
             if e:
                 self.addElement(e, self.mPlaneJoins)

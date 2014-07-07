@@ -207,7 +207,7 @@ def maskColumns(mali, annotation_type, annotation_file):
         for site in result.mSites:
             if site.isPositive():
                 columns += list(range(3 * (site.mResidue - 1),
-                                3 * (site.mResidue - 1) + 3))
+                                      3 * (site.mResidue - 1) + 3))
 
     mali.maskColumns(columns)
 

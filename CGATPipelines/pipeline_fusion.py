@@ -161,7 +161,7 @@ P.getParameters(
 
 PARAMS = P.PARAMS
 PARAMS_ANNOTATIONS = P.peekParameters(PARAMS["annotations_dir"],
-                                      "pipeline_annotations.py")
+                                      "pipeline_annotations.py", on_error_raise=__name__ == "__main__")
 
 USECLUSTER = True
 ###################################################################
@@ -240,7 +240,7 @@ def mapReadsWithTophatFusion(infiles, outfile):
     A list with known splice junctions expect from rnaseq pipeline
     '''
 
-    job_options = "-pe dedicated %i -R y" % PARAMS["tophat_threads"]
+    job_threads = PARAMS["tophat_threads"]
 
     if "--butterfly-search" in PARAMS["tophat_options"]:
         # for butterfly search - require insane amount of
@@ -270,16 +270,16 @@ def mapReadsWithTophatFusion(infiles, outfile):
 @merge(mapReadsWithTophatFusion, 'export/tophatfusion_out/result.html')
 def postprocessTopHatFusion(infiles, outfile):
     ''' Uses tophat-fusion-post to postprocess and filter all of the
-        tophat-fusion output into one report. Slow as it is not 
+        tophat-fusion output into one report. Slow as it is not
         cluster aware and spawns a large number of blast tasks'''
 
-    to_cluster = USECLUSTER
-    job_options = ' -l mem_free=50G -pe dedicated %i -R y' % PARAMS[
-        "tophatfusion_postthreads"]
+    job_options = ' -l mem_free=50G'
+    job_threads = PARAMS["tophatfusion_postthreads"]
+
     statement = '''
                   module load bio/tophatfusion;
                   tophat-fusion-post -p %(tophatfusion_postthreads)s
-                                   %(tophatfusion_postoptions)s 
+                                   %(tophatfusion_postoptions)s
                                    %(bowtie_index_dir)s/%(genome)s
                   &> tophatfusion_out.log
                 '''
@@ -294,7 +294,9 @@ def postprocessTopHatFusion(infiles, outfile):
 
     # otherwise if it does, then delete any out directory that is
     # already there.
-    elif os.path.exists('export/tophatfusion_out') and os.path.isdir('export/tophatfusion_out'):
+    elif os.path.exists(
+            'export/tophatfusion_out') and os.path.isdir(
+                'export/tophatfusion_out'):
         shutil.rmtree('export/tophatfusion.out')
 
     shutil.move('tophatfusion_out', 'export')

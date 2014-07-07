@@ -196,7 +196,7 @@ class DuplicationPlot:
         self.mAngleResolution = 1
 
         if self.mTemplate == "screen":
-            ## screen is default
+            # screen is default
             pass
         elif self.mTemplate == "publication":
             # for publication: increase line widths and
@@ -1106,7 +1106,7 @@ if __name__ == "__main__":
                     data.append((c[0], c[2], c[3], "CG"))
 
             for species, transcript, gene, quality in data:
-                if not gene in map_gene2location:
+                if gene not in map_gene2location:
                     print >>sys.stderr, in_tree + "\n" + \
                         in_locations + "\n", map_gene2location
 

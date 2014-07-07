@@ -1,5 +1,5 @@
 '''
-gff2chunks.py - split a gff file into chunks
+split_gff - split a gff file into chunks
 =============================================
 
 :Author: Andreas Heger
@@ -10,24 +10,81 @@ gff2chunks.py - split a gff file into chunks
 Purpose
 -------
 
-This scripts splits a gff file into chunks. 
-The input file needs to be sorted appropriately.
+Split gff file into chunks. Overlapping entries will 
+always be output in the same chunk. Input is read from
+stdin unless otherwise specified. The input needs to
+be contig/start position sorted.
 
-The gff file is split into chunks ensuring that 
-overlapping intervals are part of the same chunk
+Options
+-------
+
+-p --output-pattern
+
+    Specifies how to name the output files. The placeholder
+    should be included and will specify where the chunk
+    number will go. 
+
+    E.g. -p output_chunk_%i.gff 
+
+    will produce output files:
+    output_chunck_1.gff
+    output_chunck_2.gff
+    output_chunck_3.gff
+    ...
+
+
+-i --min-chunk-size
+
+    This option specifies how big each chunck should
+    be, in terms of the number of gff lines to be
+    included. Because overlapping lines are always
+    output to the same file, this should be considered
+    a minimum size.
+
+-n, --dry-run
+
+    This options tells the script not to actaully write
+    any files, but it will output a list of the files
+    that would be output.
+
+-I, -L 
+
+    Use these options to redirect the stdin, stdout and
+    stderror to files. Gziped files will be handled
+    transparently
+
+Example
+-------
+
+    cgat splitgff -i 1 < in.gff
+
+where in.gff looks like:
+
+    chr1	.	exon	1	10	.	+	.
+    chr1	.	exon	8	100	.	+	.
+    chr1	.	exon	102	150	.	+	.
+
+will produce two files that look like:
+
+    000001.chunk:
+    chr1	.	exon	1	10	.	+	.
+    chr1	.	exon	8	100	.	+	.
+
+    000002.chunk:
+    chr1	.	exon	102	150	.	+	.
 
 Usage
 -----
 
-Example::
+   cgat splitgff [OPTIONS]
 
-   python gff2chunk.py < in.gff 
+Will read a gff file from stdin and split into multiple
+gff files. 
 
-Type::
+   cgat split_gff -I GFF [OPTIONS]
 
-   python gff2chunk.py --help
-
-for command line help.
+Will read the gff file GFF and split into multiple gff
+files. 
 
 Command line options
 --------------------
@@ -110,12 +167,12 @@ def main(argv=None):
         method="overlap",
         dry_run=False,
         output_pattern="%06i.chunk",
-        min_chunk_size=1,
+        min_chunk_size=2,
     )
 
     (options, args) = E.Start(parser)
 
-    gffs = GTF.iterator(sys.stdin)
+    gffs = GTF.iterator(options.stdin)
 
     ninput, noutput, nchunks = 0, 0, 0
 
@@ -127,7 +184,7 @@ def main(argv=None):
         chunk = []
         for gff in gffs:
             ninput += 1
-            if len(chunk) > options.min_chunk_size and \
+            if len(chunk) >= options.min_chunk_size and \
                     (gff.contig != last_contig or
                      gff.start > last_to):
                 noutput += outputChunk(chunk)

@@ -6,11 +6,11 @@
 include MANIFEST.in
 include LICENSE
 include INSTALL
-include README.txt
+include README.rst
 include KNOWN_BUGS
 include THANKS.txt
 
-include install_requisites.sh
+include install-CGAT-tools.sh
 include requires.txt
 
 exclude scripts/*

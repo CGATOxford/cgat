@@ -70,7 +70,7 @@ with <!-- TOC -->.
         os.path.basename(sys.argv[0]))
 
 
-def main():
+def main(argv=None):
     try:
         opts, args = getopt.getopt(sys.argv[1:], "", ["max-depth=",
                                                       "no-toc-links",

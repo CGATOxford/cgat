@@ -45,9 +45,30 @@ from CGAT import Experiment as E
 PROJECT_ROOT = '/ifs/projects'
 
 
+def getProjectDirectories():
+    '''return a dict directories relevant to this project.'''
+
+    project_name = getProjectName()
+
+    result = {
+        'webdir': os.path.join(PROJECT_ROOT,
+                               PARAMS["web_dir"]),
+        'exportdir': os.path.join(PARAMS["exportdir"]),
+        'notebookdir': os.path.join(PROJECT_ROOT,
+                                    project_name, "notebooks")
+    }
+
+    for x, y in result.items():
+        if not os.path.exists(y):
+            raise ValueError(
+                "directory %s for %s does not exist" % (y, x))
+
+    return result
+
+
 #######################################################
-## Duplicated functions from Pipeline.py - refactor
-## once Local.py is fully parameterized
+# Duplicated functions from Pipeline.py - refactor
+# once Local.py is fully parameterized
 #######################################################
 def getPipelineName():
     '''return the name of the pipeline.
@@ -167,7 +188,8 @@ def getModules(modules, scriptdirs, libdirs):
                         if re.match("import\s+(\S+)", line):
                             ll = re.search("import\s+(\S+)", line).groups()[0]
                             ll = filter(
-                                lambda x: x != "", map(lambda x: x.strip(), ll.split(",")))
+                                lambda x: x != "", map(lambda x: x.strip(),
+                                                       ll.split(",")))
                             for l in ll:
                                 new_modules.add(l + ".py")
 
@@ -312,8 +334,6 @@ def publish_report(prefix="",
          "%(base_url)s/%(dest_report)s/_static" % locals())]
 
     _patterns.extend(patterns)
-    for p in _patterns:
-        print p[0].pattern, p[1]
 
     def _link(src, dest):
         '''create links.
@@ -404,15 +424,17 @@ def publish_report(prefix="",
                 filename = os.path.basename(fn)
                 track = filename[:-len(".bw")]
                 outfile.write(
-                    """track type=bigWig name="%(track)s" bigDataUrl=http://www.cgat.org/downloads/%(project_id)s/%(targetdir)s/%(filename)s\n""" % locals() )
+                    """track type=bigWig name="%(track)s" bigDataUrl=http://www.cgat.org/downloads/%(project_id)s/%(targetdir)s/%(filename)s\n""" % locals())
 
             for targetdir, fn in beds:
                 filename = os.path.basename(fn)
                 track = filename[:-len(".bed.gz")]
                 outfile.write(
-                    """http://www.cgat.org/downloads/%(project_id)s/%(targetdir)s/%(filename)s\n""" % locals() )
+                    """http://www.cgat.org/downloads/%(project_id)s/%(targetdir)s/%(filename)s\n""" % locals())
 
         E.info("UCSC urls are in urls.txt")
 
     E.info(
         "report has been published at http://www.cgat.org/downloads/%(project_id)s/%(dest_report)s" % locals())
+
+

@@ -151,16 +151,16 @@ class Exon:
 
         if other.mSbjctStrand != self.mSbjctStrand or \
            other.mSbjctToken != self.mSbjctToken:
-            raise ValueError, "exons not on the same contig and strand."
+            raise ValueError("exons not on the same contig and strand.")
 
         if other.mGenomeTo >= self.mGenomeFrom:
-            raise ValueError, "other exon not preceding this exon"
+            raise ValueError("other exon not preceding this exon")
 
         difference_sbjct = self.mGenomeFrom - other.mGenomeTo
         difference_query = 0
 
         if difference_sbjct % 3 != 0:
-            raise ValueError, "can not merge exons with incompatible phases."
+            raise ValueError("can not merge exons with incompatible phases.")
 
         self.mGenomeFrom = other.mGenomeFrom
         self.mPeptideFrom = other.mPeptideFrom
@@ -347,11 +347,11 @@ def PostProcessExons(all_exons,
         # Check if last codon is complete, otherwise
         # add appropriate residues to genome_to
         # dangerous: might be due to pseudogene!
-##         e = exons[-1]
-# if e.mPeptideTo % 3 != 0:
-##             d = 3 - e.mPeptideTo % 3
-##             e.mPeptideTo += d
-##             e.mGenomeTo += d
+        #         e = exons[-1]
+        # if e.mPeptideTo % 3 != 0:
+        #             d = 3 - e.mPeptideTo % 3
+        #             e.mPeptideTo += d
+        #             e.mGenomeTo += d
 
         if reset:
             offset = exons[0].mGenomeFrom
@@ -411,12 +411,13 @@ def GetExonBoundariesFromTable(dbhandle,
 
     statement = """
     SELECT DISTINCT p.prediction_id, p.sbjct_token, p.sbjct_strand,
-    e.exon_frame, 0, e.exon_from, e.exon_to, e.genome_exon_from, e.genome_exon_to
+    e.exon_frame, 0, e.exon_from, e.exon_to,
+    e.genome_exon_from, e.genome_exon_to
     FROM %s AS p, %s AS e %s
     WHERE p.prediction_id = e.prediction_id AND e.exon_to > 0
     %s
     ORDER BY p.prediction_id, e.genome_exon_from
-    """ % (table_name_predictions, table_name_exons, extra_tables, extra )
+    """ % (table_name_predictions, table_name_exons, extra_tables, extra)
     cc = dbhandle.cursor()
     cc.execute(statement)
     result = cc.fetchall()
@@ -428,10 +429,10 @@ def GetExonBoundariesFromTable(dbhandle,
         e = Exon()
         e.Read("\t".join(map(str, r)) + "\n", contig_sizes)
 
-        if filter and not e.mQueryToken in filter:
+        if filter and e.mQueryToken not in filter:
             continue
 
-        if not all_exons.has_key(e.mQueryToken):
+        if e.mQueryToken not in all_exons:
             all_exons[e.mQueryToken] = []
         all_exons[e.mQueryToken].append(e)
 
@@ -541,9 +542,9 @@ def ReadExonBoundaries(file,
                extract_id=gtf_extract_id)
 
         l = e
-        if filter and not e.mQueryToken in filter:
+        if filter and e.mQueryToken not in filter:
             continue
-        if not all_exons.has_key(e.mQueryToken):
+        if e.mQueryToken not in all_exons:
             all_exons[e.mQueryToken] = []
         all_exons[e.mQueryToken].append(e)
 
@@ -1246,7 +1247,8 @@ def ClusterByExonIdentity(exons,
             overlap = min(e.mGenomeTo, l.mGenomeTo) - \
                 max(e.mGenomeFrom, l.mGenomeFrom)
             coverage = float(
-                overlap) / max((e.mGenomeTo - e.mGenomeFrom), (l.mGenomeTo - l.mGenomeFrom))
+                overlap) / max((e.mGenomeTo - e.mGenomeFrom),
+                               (l.mGenomeTo - l.mGenomeFrom))
 
             left_ok = abs(l.mGenomeFrom - e.mGenomeFrom) <= max_slippage
             right_ok = abs(l.mGenomeTo - e.mGenomeTo) <= max_slippage
@@ -1260,16 +1262,20 @@ def ClusterByExonIdentity(exons,
                     identity = True
                 # join if one boundary is correct for terminal exons
                 # (for up to three exon genes)
-                elif ( left_ok or right_ok ) and \
+                elif (left_ok or right_ok) and \
                         (num_exons[e.mQueryToken] < max_terminal_num_exons and
                          num_exons[l.mQueryToken] < max_terminal_num_exons) and \
                         coverage >= min_terminal_exon_coverage:
                     identity = True
                 # join, if all exons are overlapping (minimum coverage)
-                elif CheckContainedAinB(exons[l.mQueryToken], exons[e.mQueryToken],
-                                        min_terminal_exon_coverage, loglevel=loglevel) or \
-                    CheckContainedAinB(exons[e.mQueryToken], exons[l.mQueryToken],
-                                       min_terminal_exon_coverage, loglevel=loglevel):
+                elif CheckContainedAinB(exons[l.mQueryToken],
+                                        exons[e.mQueryToken],
+                                        min_terminal_exon_coverage,
+                                        loglevel=loglevel) or \
+                    CheckContainedAinB(exons[e.mQueryToken],
+                                       exons[l.mQueryToken],
+                                       min_terminal_exon_coverage,
+                                       loglevel=loglevel):
                     identity = True
 
         if loglevel >= 3:

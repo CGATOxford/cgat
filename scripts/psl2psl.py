@@ -1,5 +1,4 @@
-'''
-psl2psl.py - manipulate psl files
+'''psl2psl.py - manipulate psl files
 ===================================
 
 :Author: Andreas Heger
@@ -22,17 +21,19 @@ merge
         This script will check for overlaps and will take the longest path
         through a set of overlapping paths.
 
-map 
-   map alignments. Similar to mapPsl, but will apply a map to both query
-   and target. This method requires the two options filter-query and filter-target.
-   Intervals are given in gff or gtf format. In the latter case, the alignment is 
-   threaded through the exons. 
+map
+   map alignments. Similar to mapPsl, but will apply a map to both
+   query and target. This method requires the two options filter-query
+   and filter-target.  Intervals are given in gff or gtf format. In
+   the latter case, the alignment is threaded through the exons.
 
 filter-keep
-   filter alignments. Only parts of the alignments are kept that are part of the intervals.
+   filter alignments. Only parts of the alignments are kept
+   that are part of the intervals.
 
 filter-remove
-   filter alignments. Only parts of the alignments are kept that are not part of the intervals.
+   filter alignments. Only parts of the alignments are kept
+   that are not part of the intervals.
 
 complement
    complement a psl sequence. For example this will convert exons to introns.
@@ -73,20 +74,16 @@ for command line help.
 
 Command line options
 --------------------
+
 '''
 
 
 import sys
-import re
-import string
-import optparse
 import time
-import os
 import collections
 import warnings
 
 import CGAT.Experiment as E
-import CGAT.Stats as Stats
 import CGAT.Genomics as Genomics
 import CGAT.Blat as Blat
 import CGAT.GTF as GTF
@@ -101,8 +98,6 @@ with warnings.catch_warnings():
     import networkx
 
 import alignlib_lite
-import bx.intervals.io
-import bx.intervals.intersection
 
 
 def readIntervals(infile, options):
@@ -128,8 +123,10 @@ def readIntervals(infile, options):
             ninput += 1
 
             if ninput % options.report_step == 0:
-                E.info("reading intervals - progress: ninput=%i, time=%i, avg=%f" %
-                       (ninput, time.time() - t, float(time.time() - t) / ninput))
+                E.info(
+                    "reading intervals - progress: ninput=%i, time=%i, avg=%f"
+                    % (ninput,
+                       time.time() - t, float(time.time() - t) / ninput))
 
     elif options.format == "gff":
 
@@ -141,8 +138,10 @@ def readIntervals(infile, options):
             ninput += 1
 
             if ninput % options.report_step == 0:
-                E.info("reading intervals - progress: ninput=%i, time=%i, avg=%f" %
-                       (ninput, time.time() - t, float(time.time() - t) / ninput))
+                E.info(
+                    "reading intervals - progress: ninput=%i, time=%i, avg=%f"
+                    % (ninput, time.time() - t,
+                       float(time.time() - t) / ninput))
 
     E.info("read intervals: %i contigs, %i intervals" % (len(index), ninput))
     return index
@@ -180,29 +179,32 @@ def iterator_psl_intervals(options):
         if options.test and ninput >= options.test:
             break
 
-        if options.loglevel >= 1 and ninput % options.report_step == 0:
-            options.stdlog.write("# progress: ninput=%i\n" % (ninput))
-            options.stdlog.flush()
+        if ninput % options.report_step == 0:
+            E.info("progress: ninput=%i" % (ninput))
 
         qx, tx = None, None
         if intervals_query:
             try:
                 qx = list(
-                    intervals_query.get(match.mQueryId, match.mQueryFrom, match.mQueryTo))
+                    intervals_query.get(match.mQueryId,
+                                        match.mQueryFrom,
+                                        match.mQueryTo))
             except KeyError:
                 qx = []
 
         if intervals_target:
             try:
                 tx = list(
-                    intervals_target.get(match.mSbjctId, match.mSbjctFrom, match.mSbjctTo))
+                    intervals_target.get(match.mSbjctId,
+                                         match.mSbjctFrom,
+                                         match.mSbjctTo))
             except KeyError:
                 tx = []
 
-        if options.loglevel >= 2:
+        if options.stdlog >= 2:
             options.stdlog.write(
                 "###################################################\n")
-            options.stdlog.write("# testing match %s\n" % (str(match)))
+            options.stdlog.write("# testing %s\n" % (str(match)))
             options.stdlog.write(
                 "###################################################\n")
 
@@ -210,7 +212,7 @@ def iterator_psl_intervals(options):
 
 
 def pslFilter(options, keep=True):
-    """filter psl entries. 
+    """filter psl entries.
 
     Only positions contained in intervals are kept, unless remove
     is set, in which case only positions not in intervals are kept.
@@ -266,7 +268,7 @@ def pslMap(options):
     else:
         use_copy = True
 
-    ninput, noutput, ndiscarded, nskipped, nskipped_small_queries = 0, 0, 0, 0, 0
+    c = E.Counter()
 
     min_length = options.min_aligned
 
@@ -274,7 +276,7 @@ def pslMap(options):
 
         map_query2target = match.getMapQuery2Target()
 
-        ninput += 1
+        c.input += 1
 
         # if no filter on qx or tx, use full segment
         if qx is None:
@@ -282,9 +284,13 @@ def pslMap(options):
         elif tx is None:
             tx = [(match.mSbjctFrom, match.mSbjctTo, 0)]
 
+        E.debug('matches in query: %s' % qx)
+        E.debug('matches in target: %s' % tx)
+
         # if no overlap: return
         if not qx or not tx:
-            nskipped += 1
+            c.skipped += 1
+            E.debug("no matches in query or target - skipped")
             continue
 
         for query in qx:
@@ -295,16 +301,19 @@ def pslMap(options):
             if qend - qstart < min_length:
                 E.debug("query too small - skipped at %s:%i-%i" %
                         (match.mQueryId, qstart, qend))
-                nskipped_small_queries += 1
+                c.skipped_small_queries += 1
                 continue
 
             E.debug("working on query %s:%i-%i" %
                     (match.mQueryId, qstart, qend))
 
-            mqstart, mqend = (map_query2target.mapRowToCol(qstart,
-                                                           alignlib_lite.py_RIGHT),
-                              map_query2target.mapRowToCol(qend,
-                                                           alignlib_lite.py_LEFT))
+            mqstart, mqend = (
+                map_query2target.mapRowToCol(
+                    qstart,
+                    alignlib_lite.py_RIGHT),
+                map_query2target.mapRowToCol(
+                    qend,
+                    alignlib_lite.py_LEFT))
 
             if match.strand == "-":
                 qstart, qend = match.mQueryLength - \
@@ -313,9 +322,13 @@ def pslMap(options):
             for target in tx:
 
                 tstart, tend, tval = target
-                if tstart >= mqend or tend <= mqstart:
+                if (tstart >= mqend or tend <= mqstart):
+                    E.debug("no overlap: %i-%i (%i-%i) - %i-%i" % (
+                        qstart, qend, mqstart, mqend, tstart, tend))
                     continue
                 if tend - tstart < min_length:
+                    E.debug("target length too short: %i-%i - %i-%i" % (
+                        qstart, qend, tstart, tend))
                     continue
 
                 new = alignlib_lite.py_makeAlignmentBlocks()
@@ -326,15 +339,18 @@ def pslMap(options):
 
                         mtstart, mtend = map_query2target.mapColToRow(
                             tstart), map_query2target.mapColToRow(tend)
-                        E.debug("query: %i-%i (len=%i)-> %i-%i(len=%i); target: %i-%i (len=%i)-> %i-%i (len=%i)" %
-                                (qstart, qend,
-                                 qend - qstart,
-                                 mqstart, mqend,
-                                 mqend - mqstart,
-                                 tstart, tend,
-                                 tend - tstart,
-                                 mtstart, mtend,
-                                 mtend - mtstart))
+
+                        E.debug(
+                            ("query: %i-%i (len=%i)-> %i-%i(len=%i); "
+                             "target: %i-%i (len=%i)-> %i-%i (len=%i)") %
+                            (qstart, qend,
+                             qend - qstart,
+                             mqstart, mqend,
+                             mqend - mqstart,
+                             tstart, tend,
+                             tend - tstart,
+                             mtstart, mtend,
+                             mtend - mtstart))
 
                     alignlib_lite.py_copyAlignment(
                         new,
@@ -347,16 +363,23 @@ def pslMap(options):
                     if map_query:
                         tmp = alignlib_lite.py_makeAlignmentBlocks()
                         alignlib_lite.py_copyAlignment(
-                            tmp, map_query2target, map_query, alignlib_lite.py_RR)
+                            tmp, map_query2target, map_query,
+                            alignlib_lite.py_RR)
                         if options.loglevel >= 5:
                             options.stdlog.write(
                                 "######## mapping query ###########\n")
                             options.stdlog.write(
-                                "# %s\n" % str(alignlib_lite.py_AlignmentFormatEmissions(map_query2target)))
+                                "# %s\n" %
+                                str(alignlib_lite.py_AlignmentFormatEmissions(
+                                    map_query2target)))
                             options.stdlog.write(
-                                "# %s\n" % str(alignlib_lite.py_AlignmentFormatEmissions(map_query)))
+                                "# %s\n" % str(
+                                    alignlib_lite.py_AlignmentFormatEmissions(
+                                        map_query)))
                             options.stdlog.write(
-                                "# %s\n" % str(alignlib_lite.py_AlignmentFormatEmissions(tmp)))
+                                "# %s\n" % str(
+                                    alignlib_lite.py_AlignmentFormatEmissions(
+                                        tmp)))
                     else:
                         tmp = map_query2target
 
@@ -369,11 +392,17 @@ def pslMap(options):
                             options.stdlog.write(
                                 "######## mapping target ###########\n")
                             options.stdlog.write(
-                                "# before: %s\n" % str(alignlib_lite.py_AlignmentFormatEmissions(tmp)))
+                                "# before: %s\n" %
+                                str(alignlib_lite.py_AlignmentFormatEmissions(
+                                    tmp)))
                             options.stdlog.write(
-                                "# map   : %s\n" % str(alignlib_lite.py_AlignmentFormatEmissions(map_target)))
+                                "# map   : %s\n" %
+                                str(alignlib_lite.py_AlignmentFormatEmissions(
+                                    map_target)))
                             options.stdlog.write(
-                                "# after : %s\n" % str(alignlib_lite.py_AlignmentFormatEmissions(new)))
+                                "# after : %s\n" %
+                                str(alignlib_lite.py_AlignmentFormatEmissions(
+                                    new)))
                     else:
                         new = tmp
 
@@ -382,9 +411,12 @@ def pslMap(options):
                             (str(query), str(target), qstart, qend))
                     if options.loglevel >= 5:
                         E.debug(
-                            "input : %s" % str(alignlib_lite.py_AlignmentFormatEmissions(map_query2target)))
+                            "input : %s" % str(
+                                alignlib_lite.py_AlignmentFormatEmissions(
+                                    map_query2target)))
                         E.debug("final : %s" %
-                                str(alignlib_lite.py_AlignmentFormatEmissions(new)))
+                                str(alignlib_lite.py_AlignmentFormatEmissions(
+                                    new)))
 
                     if new.getLength() > 0:
                         n = match.copy()
@@ -395,12 +427,14 @@ def pslMap(options):
                     n = match.copy()
                     n.fromMap(new, use_strand=True)
                     options.stdout.write(str(n) + "\n")
-                    noutput += 1
+                    c.output += 1
                 else:
-                    ndiscarded += 1
+                    c.discarded += 1
+                break
+            else:
+                c.nooverlap += 1
 
-    E.info("map: ninput=%i, noutput=%i, nskipped=%i, ndiscarded=%i, nsmall_queries=%i" %
-           (ninput, noutput, nskipped, ndiscarded, nskipped_small_queries))
+    E.info("map: %s" % str(c))
 
 
 def pslMerge(options):
@@ -465,7 +499,9 @@ def pslMerge(options):
         new_matches = [matches[x] for x in path[1:-1]]
 
         if len(matches) != len(new_matches):
-            E.warn("query=%s, target=%s, strand=%s: removed overlapping/out-of-order segments: before=%i, after=%i" %
+            E.warn(("query=%s, target=%s, strand=%s: "
+                    "removed overlapping/out-of-order segments: "
+                    "before=%i, after=%i") %
                    (matches[0].mQueryId,
                     matches[0].mSbjctId,
                     matches[0].strand,
@@ -500,11 +536,14 @@ def pslMerge(options):
         if ninput % options.report_step == 0:
             E.info("progress: ninput=%i, noutput=%i" % (ninput, noutput))
 
-        if match.mQueryId != last_query or match.strand != last_strand or match.mSbjctId != last_target:
+        if match.mQueryId != last_query or\
+           match.strand != last_strand or\
+           match.mSbjctId != last_target:
             if last_query:
                 noutput += process(matches)
             matches = []
-            last_query, last_target, last_strand = match.mQueryId, match.mSbjctId, match.strand
+            last_query, last_target, last_strand = (
+                match.mQueryId, match.mSbjctId, match.strand)
 
         matches.append(match)
 
@@ -538,7 +577,8 @@ def pslAddSequence(query_fasta, sbjct_fasta, options):
         new.fromPSL(match,
                     query_fasta.getSequence(
                         match.mQueryId, "+", match.mQueryFrom, match.mQueryTo),
-                    sbjct_fasta.getSequence(match.mSbjctId, "+", match.mSbjctFrom, match.mSbjctTo))
+                    sbjct_fasta.getSequence(
+                        match.mSbjctId, "+", match.mSbjctFrom, match.mSbjctTo))
 
         options.stdout.write(str(new) + "\n")
         noutput += 1
@@ -605,12 +645,12 @@ def pslComplement(query_fasta, target_fasta, options):
 
 
 def pslComplementQuery(options):
-    """complement psl entries. 
+    """complement psl entries.
 
-    Fill the regions from a second psl file. 
+    Fill the regions from a second psl file.
     """
 
-    iterator = Blat.BlatIterator(sys.stdin)
+    Iterator = Blat.BlatIterator(sys.stdin)
 
     ninput, noutput, ndiscarded, nskipped = 0, 0, 0, 0
 
@@ -698,13 +738,16 @@ def iterator_filter_overlapping_query(psls, options):
     of matching nucleotides is chosen.
     '''
 
-    # note: only takes the full ranges, but does not check for individual overlap of blocks
-    # use connected components and hasAlignmentOverlap
+    # note: only takes the full ranges, but does not check for
+    # individual overlap of blocks use connected components and
+    # hasAlignmentOverlap
     ninput, noutput, ndiscarded = 0, 0, 0
 
     last_contig = None
 
-    for block in Blat.iterator_query_overlap(psls, options.threshold_merge_distance):
+    for block in Blat.iterator_query_overlap(
+            psls,
+            options.threshold_merge_distance):
 
         # commented code is for base-level filtering, which is very slow
         # disabled for now
@@ -727,14 +770,16 @@ def iterator_filter_overlapping_query(psls, options):
             yield block[0]
             noutput += 1
 
-    E.info("iterator_filter_overlapping_query: ninput=%i, noutput=%i, ndiscarded=%i" %
+    E.info("iterator_filter_overlapping_query: ninput=%i, "
+           "noutput=%i, ndiscarded=%i" %
            (ninput, noutput, ndiscarded))
 
 
 def iterator_filter_overlapping_target(psls, options):
 
     ninput, noutput, ndiscarded = 0, 0, 0
-    for block in Blat.iterator_target_overlap(psls, options.threshold_merge_distance):
+    for block in Blat.iterator_target_overlap(
+            psls, options.threshold_merge_distance):
         l = len(block)
         ninput += l
         if l > 1:
@@ -743,7 +788,8 @@ def iterator_filter_overlapping_target(psls, options):
             yield block[0]
             noutput += 1
 
-    E.info("iterator_filter_overlapping_target: ninput=%i, noutput=%i, ndiscarded=%i" %
+    E.info("iterator_filter_overlapping_target: ninput=%i, noutput=%i, "
+           "ndiscarded=%i" %
            (ninput, noutput, ndiscarded))
 
 
@@ -875,15 +921,21 @@ def main(argv=None):
         argv = sys.argv
 
     parser = E.OptionParser(
-        version="%prog version: $Id: psl2psl.py 2781 2009-09-10 11:33:14Z andreas $", usage=globals()["__doc__"])
+        version="%prog version: $Id$",
+        usage=globals()["__doc__"])
 
-    parser.add_option("--filter-query", dest="filename_filter_query", type="string",
-                      help="filename with intervals in the query to filter (in gff format) [default=%default].")
+    parser.add_option("--filter-query", dest="filename_filter_query",
+                      type="string",
+                      help="filename with intervals in the query "
+                      "to filter (in gff format) [default=%default].")
 
-    parser.add_option("--filter-target", dest="filename_filter_target", type="string",
-                      help="filename with intervals in the target to filter (in gff format) [default=%default].")
+    parser.add_option("--filter-target", dest="filename_filter_target",
+                      type="string",
+                      help="filename with intervals in the target to "
+                      "filter (in gff format) [default=%default].")
 
-    parser.add_option("-m", "--method", dest="methods", type="choice", action="append",
+    parser.add_option("-m", "--method", dest="methods", type="choice",
+                      action="append",
                       choices=("map", "merge",
                                "add-sequence", "complement",
                                "select-query", "test",
@@ -893,7 +945,7 @@ def main(argv=None):
                                "filter-fasta",
                                "remove-overlapping-query",
                                "remove-overlapping-target"),
-                      help="""action to perform [default=%default].""" )
+                      help="""action to perform [default=%default].""")
 
     parser.add_option("--select", dest="select", type="choice",
                       choices=("most-nmatches", "least-nmatches",
@@ -908,36 +960,52 @@ def main(argv=None):
                       choices=("gff", "gtf"),
                       help="format of intervals [default=%default].")
 
-    parser.add_option("--filename-queries", dest="filename_queries", type="string",
+    parser.add_option("--filename-queries", dest="filename_queries",
+                      type="string",
                       help="fasta filename with queries.")
 
-    parser.add_option("--filename-target", dest="filename_sbjcts", type="string",
+    parser.add_option("--filename-target", dest="filename_sbjcts",
+                      type="string",
                       help="fasta filename with sbjct [default=%default].")
 
     parser.add_option("--id-format", dest="id_format", type="string",
-                      help="format of new identifiers for the rename function [default=%default].")
+                      help="format of new identifiers for the rename "
+                      "function [default=%default].")
 
     parser.add_option("--unique", dest="unique", action="store_true",
-                      help="in the rename function, make each match unique [default=%default].")
+                      help="in the rename function, make each match "
+                      "unique [default=%default].")
 
-    parser.add_option("--output-filename-map", dest="output_filename_map", type="string",
-                      help="filename with map of old to new labels for rename function [default=%default].")
+    parser.add_option("--output-filename-map", dest="output_filename_map",
+                      type="string",
+                      help="filename with map of old to new labels for "
+                      "rename function [default=%default].")
 
-    parser.add_option("--complement-min-length", dest="complement_min_length", type="int",
-                      help="minimum length for complemented blocks [default=%default].")
+    parser.add_option("--complement-min-length", dest="complement_min_length",
+                      type="int",
+                      help="minimum length for complemented blocks "
+                      "[default=%default].")
 
-    parser.add_option("--complement-border", dest="complement_border", type="int",
-                      help="number of residues to exclude before alignment at either end [default=%default].")
+    parser.add_option("--complement-border", dest="complement_border",
+                      type="int",
+                      help="number of residues to exclude before alignment "
+                      "at either end [default=%default].")
 
-    parser.add_option("--complement-aligner", dest="complement_aligner", type="choice",
+    parser.add_option("--complement-aligner", dest="complement_aligner",
+                      type="choice",
                       choices=("clustal", "dba", "dialign", "dialign-lgs"),
-                      help="aligner for complemented segments [default=%default].")
+                      help="aligner for complemented segments "
+                      "[default=%default].")
 
-    parser.add_option("--threshold-merge-distance", dest="threshold_merge_distance", type="int",
-                      help="distance in nucleotides at which two adjacent reads shall be merged even if they are not overlapping [%default].")
+    parser.add_option("--threshold-merge-distance",
+                      dest="threshold_merge_distance", type="int",
+                      help="distance in nucleotides at which two adjacent "
+                      "reads shall be merged even if they are not "
+                      "overlapping [%default].")
 
     parser.add_option("--test", dest="test", type="int",
-                      help="for debugging purposes - stop after x iterations [default=%default].")
+                      help="for debugging purposes - stop after x "
+                      "iterations [default=%default].")
 
     parser.set_defaults(filename_filter_target=None,
                         filename_filter_query=None,
@@ -967,9 +1035,11 @@ def main(argv=None):
     else:
         sbjct_fasta = None
 
-    if "add-sequence" in options.methods and (sbjct_fasta is None or query_fasta is None):
+    if "add-sequence" in options.methods and \
+       (sbjct_fasta is None or query_fasta is None):
         raise ValueError(
-            "please supply both indexed query and target/genome sequence data.")
+            "please supply both indexed query and "
+            "target/genome sequence data.")
 
     iterator = Blat.iterator(options.stdin)
 

@@ -54,7 +54,12 @@ The script implements the following methods:
    an alternative :term:`bam` formatted file (``--filter-bam``).
 
 ``filter``
-   remove alignments based on a variety of flags.
+   remove alignments based on a variety of flags.  These may
+   be ``unique``, ``non-unique``, ``mapped``, ``NM`` or 
+   ``CM``.  If ``unique`` is given this wil NOT remove any
+   unmapped reads.  This can be achieved by providing the
+   ``filter`` option twice, once each with ``mapped`` and
+   ``unique``.
 
 ``strip``
    remove the sequence and/or quality scores from all reads in
@@ -91,9 +96,10 @@ import sys
 import itertools
 import tempfile
 import shutil
+import pysam
 
 import CGAT.Experiment as E
-import pysam
+import CGAT.IOTools as IOTools
 
 try:
     import pyximport
@@ -113,51 +119,71 @@ def main(argv=None):
         argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+    parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
     parser.add_option("--set-nh", dest="set_nh", action="store_true",
-                      help="sets the NH flag. The file needs to be sorted by readname [%default]")
+                      help="sets the NH flag. The file needs to be "
+                      "sorted by readname [%default]")
 
-    parser.add_option("--unset-unmapped-mapq", dest="unset_unmapped_mapq", action="store_true",
-                      help="sets the mapping quality of unmapped reads to 0 [%default]")
+    parser.add_option("--unset-unmapped-mapq", dest="unset_unmapped_mapq",
+                      action="store_true",
+                      help="sets the mapping quality of unmapped "
+                      "reads to 0 [%default]")
 
-    parser.add_option("--set-sequence", dest="set_sequence", action="store_true",
-                      help="sets the sequence to 'A's (a valid base) and the quality to 'F's"
+    parser.add_option("--set-sequence", dest="set_sequence",
+                      action="store_true",
+                      help="sets the sequence to 'A's (a valid base) and "
+                      "the quality to 'F's "
                       ",which is defined in all fastq scoring schemes "
                       "[%default]")
 
     parser.add_option("--strip", dest="strip", type="choice",
                       choices=("sequence", "quality", "match"),
-                      help = "remove parts of the bam-file. Note that stripping the sequence will "
+                      help = "remove parts of the bam-file. Note that "
+                      "stripping the sequence will "
                       "also strip the quality values [%default]")
 
     parser.add_option("--unstrip", dest="unstrip", action="store_true",
                       help="add sequence and quality into bam file [%default]")
 
-    parser.add_option("--filter", dest="filter", action="append", type="choice",
+    parser.add_option("--filter", dest="filter",
+                      action="append", type="choice",
                       choices=('NM', 'CM', 'mapped', 'unique', "non-unique"),
-                      help = "filter bam file. The option denotes the property that is  "
+                      help = "filter bam file. The option denotes "
+                      "the property that is  "
                       "used to determine better match [%default]")
 
     parser.add_option("--reference-bam", dest="reference_bam", type="string",
                       help="bam-file to filter with [%default]")
 
+    parser.add_option("--force", dest="force", action="store_true",
+                      help="force processing. Some methods such "
+                      "as strip/unstrip will stop processing if "
+                      "they think it not necessary "
+                      "[%default]")
+
     parser.add_option("--sam", dest="output_sam", action="store_true",
                       help="output in sam format [%default]")
 
     parser.add_option("--inplace", dest="inplace", action="store_true",
-                      help="modify bam files in-place. Bam files need to be given "
-                      "as arguments. Temporary bam files are written to /tmp [%default]")
+                      help="modify bam files in-place. Bam files need "
+                      "to be given "
+                      "as arguments. Temporary bam files are written "
+                      "to /tmp [%default]")
 
     parser.add_option("--fastq1", "-1", dest="fastq_pair1", type="string",
-                      help="fastq file with read information for first in pair or unpaired [%default]")
+                      help="fastq file with read information for first "
+                      "in pair or unpaired [%default]")
 
     parser.add_option("--fastq2", "-2", dest="fastq_pair2", type="string",
-                      help="fastq file with read information for second in pair [%default]")
+                      help="fastq file with read information for second "
+                      "in pair [%default]")
 
-    parser.add_option("--keep-first-base", dest="keep_first_base", action="store_true",
-                      help="keep first base of reads such that gtf2table.py will only consider the"
+    parser.add_option("--keep-first-base", dest="keep_first_base",
+                      action="store_true",
+                      help="keep first base of reads such that gtf2table.py "
+                      "will only consider the "
                       "first base in its counts")
 
     parser.set_defaults(
@@ -168,6 +194,7 @@ def main(argv=None):
         reference_bam=None,
         strip=None,
         unstrip=None,
+        force=False,
         set_sequence=False,
         inplace=False,
         fastq_pair1=None,
@@ -193,6 +220,14 @@ def main(argv=None):
     for bamfile in bamfiles:
 
         E.info('processing %s' % bamfile)
+
+        if os.path.islink(bamfile):
+            E.warn('ignoring link %s' % bamfile)
+            continue
+
+        if IOTools.isEmpty(bamfile):
+            E.warn('ignoring empty file %s' % bamfile)
+            continue
 
         # reading bam from stdin does not work with only the "r" tag
         pysam_in = pysam.Samfile(bamfile, "rb")
@@ -242,8 +277,12 @@ def main(argv=None):
 
             options.stdlog.write("category\tcounts\n%s\n" % c.asTable())
         else:
+
             # set up the modifying iterators
             it = pysam_in.fetch(until_eof=True)
+
+            # function to check if processing should start
+            pre_check_f = lambda x: None
 
             if options.unset_unmapped_mapq:
                 def unset_unmapped_mapq(i):
@@ -287,10 +326,20 @@ def main(argv=None):
                         read.seq = None
                         yield read
 
+                def check_sequence(reads):
+                    if reads[0].seq is None:
+                        return 'no sequence present'
+                    return None
+
                 def strip_quality(i):
                     for read in i:
                         read.qual = None
                         yield read
+
+                def check_quality(reads):
+                    if reads[0].qual is None:
+                        return 'no quality information present'
+                    return None
 
                 def strip_match(i):
                     for read in i:
@@ -304,8 +353,10 @@ def main(argv=None):
 
                 if options.strip == "sequence":
                     it = strip_sequence(it)
+                    pre_check_f = check_sequence
                 elif options.strip == "quality":
                     it = strip_quality(it)
+                    pre_check_f = check_quality
                 elif options.strip == "match":
                     it = strip_match(it)
 
@@ -365,7 +416,23 @@ def main(argv=None):
                         yield read
                 it = keep_first_base(it)
 
-            # read and output
+            # read first read and check if processing should continue
+            # only possible when not working from stdin
+            if bamfile != "-":
+                # get first read for checking pre-conditions
+                first_reads = list(pysam_in.head(1))
+
+                msg = pre_check_f(first_reads)
+                if msg is not None:
+                    if options.force:
+                        E.warn('proccessing continues, though: %s' % msg)
+                    else:
+                        E.warn('processing not started: %s' % msg)
+                        pysam_in.close()
+                        pysam_out.close()
+                        continue
+
+            # continue processing till end
             for read in it:
                 pysam_out.write(read)
 

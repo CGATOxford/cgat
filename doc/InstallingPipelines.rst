@@ -19,7 +19,7 @@ repository and activate it::
    python setup.py develop
 
 Please see the installation instructions for the 
-`CGAT Toolkit <http://www.cgat.org/~andreas/documentation/cgat/CGATInstallation.html>`_
+`CGAT Toolkit <http://www.cgat.org/downloads/public/cgat/documentation/CGATInstallation.html>`_
 if you run into problems.
 
 Once checked-out, you can get the latest changes via pulling::
@@ -323,7 +323,7 @@ that are usually shipped as a source package with the operating
 system such as sqlite_.
 
 Please see the installation instructions for the 
-`CGAT Toolkit <http://www.cgat.org/~andreas/documentation/cgat/CGATInstallation.html>`_.
+`CGAT Toolkit <http://www.cgat.org/downloads/public/cgat/documentation/CGATInstallation.html>`_.
 
 Python libraries
 ----------------

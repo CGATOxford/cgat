@@ -611,7 +611,7 @@ def groupTagData(ref_group=None):
     '''compute groups and pairs from tag data table.'''
 
     # Relevel the groups so that the reference comes first
-    if not ref_group is None:
+    if ref_group is not None:
         R('''groups <- relevel(groups, ref = "%s")''' % ref_group)
 
     groups = R('''levels(groups)''')
@@ -802,7 +802,7 @@ def runEdgeR(outfile,
     R('''countsTable = suppressMessages(DGEList( countsTable, group = groups ))''')
 
     # Relevel groups to make the results predictable - IMS
-    if not ref_group is None:
+    if ref_group is not None:
         R('''countsTable$samples$group <- relevel(countsTable$samples$group, ref = "%s")''' %
           ref_group)
     else:
@@ -1306,22 +1306,6 @@ def runDESeq(outfile,
         '%sgene_heatmap_top200.png' % outfile_prefix,
         R['as.matrix'](R.exprs(vsd).rx(select[:200], True)))
 
-    # Currently disabled
-    #for group in groups:
-    #    if has_replicates:
-            #R.png( '''%(outfile_prefix)s%(group)s_fit.png''' % locals() )
-            #R('''diagForT <- varianceFitDiagnostics( cds, "%s" )''' % group )
-            #R('''smoothScatter( log10(diagForT$baseMean),
-            #log10(diagForT$baseVar) )''')
-            #R('''lines( log10(fittedBaseVar) ~ log10(baseMean),
-            #diagForT[ order(diagForT$baseMean), ], col="red" )''')
-            # R['dev.off']()
-            #R.png( '''%(outfile_prefix)s%(group)s_residuals.png''' %
-            # locals()  )
-            #R('''residualsEcdfPlot( cds, "%s" )''' % group )
-            # R['dev.off']()
-    #        pass
-
     # Call diffential expression for all pairings of groups included in the
     # design
 
@@ -1686,9 +1670,8 @@ def loadCuffdiff(infile, outfile):
         P.run()
 
     # Jethro - load tables of sample specific cuffdiff fpkm values into csvdb
-
-    #IMS: First read in lookup table for CuffDiff/Pipeline sample name
-    #conversion
+    # IMS: First read in lookup table for CuffDiff/Pipeline sample name
+    # conversion
     inf = IOTools.openFile(os.path.join(indir, "read_groups.info.gz"))
     inf.readline()
     sample_lookup = {}
@@ -1733,9 +1716,9 @@ def loadCuffdiff(infile, outfile):
             if sample_id not in samples:
                 samples.append(sample_id)
 
-            #IMS: The following block keeps getting its indenting messed
-            #up. It is not part of the 'if sample_id not in samples' block
-            #plesae make sure it does not get made part of it
+            # IMS: The following block keeps getting its indenting messed
+            # up. It is not part of the 'if sample_id not in samples' block
+            # plesae make sure it does not get made part of it
             if gene_id not in genes:
                 genes[gene_id] = {}
                 genes[gene_id][sample_id] = fpkm
@@ -1770,8 +1753,8 @@ def loadCuffdiff(infile, outfile):
                 outf.write(genes[gene][samples[x]] + "\t")
                 x += 1
 
-            #IMS: Please be careful with this line. It keeps getting moved
-            #into the above while block where it does not belong
+            # IMS: Please be careful with this line. It keeps getting moved
+            # into the above while block where it does not belong
             outf.write(genes[gene][samples[len(samples) - 1]] + "\n")
 
         outf.close()
@@ -2358,8 +2341,8 @@ def outputSpikeIns(filename_tags,
 
         interval_id = 0
         for idx, coord in enumerate(zip(l10average_idx, l2fold_idx)):
-            #assert expression_bins[coord[0]-1] <= l10average[idx] < expression_bins[coord[0]]
-            #assert fold_change_bins[coord[1]-1] <= l2fold[idx] <  expression_bins[coord[1]]
+            # assert expression_bins[coord[0]-1] <= l10average[idx] < expression_bins[coord[0]]
+            # assert fold_change_bins[coord[1]-1] <= l2fold[idx] <  expression_bins[coord[1]]
 
             if output_counts[coord] >= max_counts_per_bin:
                 continue

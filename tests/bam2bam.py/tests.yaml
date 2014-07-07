@@ -28,3 +28,33 @@ unstrip:
     outputs: [stdout]
     references: [paired.bam]
     options: -v 0 --unstrip --fastq1=<DIR>/paired.fastq.1.gz --fastq2=<DIR>/paired.fastq.2.gz
+
+set_flag:
+    stdin: unstrip.bam
+    outputs: [stdout]
+    references: [nh_flag.bam]
+    options: -v 0 --set-nh
+
+filter_unique_mapped_sam:
+    stdin: nh_flag.bam
+    outputs: [stdout]
+    references: [filtered.sam]
+    options: -v 0 --filter=unique --filter=mapped --sam
+
+set_sequence:
+    stdin: strip_sequence.bam
+    outputs: [stdout]
+    references: [set_sequence.bam]
+    options: -v 0 --set-sequence    
+
+reference_bam:
+    stdin: sample_gsnap.bam
+    outputs: [stdout]
+    references: [bam_filtered.bam]
+    options: -v 0 --filter=NM --reference-bam=<DIR>/sample_star.bam
+
+unset_mapq:
+    stdin: mapq_set.bam
+    outputs: [stdout]
+    references: [mapq_unset.bam]
+    options: -v 0 --unset-unmapped-mapq

@@ -11,8 +11,24 @@ would like a use case then please post a request on the `CGAT users group`_ webs
    :maxdepth: 2
 
    recipes/gat
-   recipes/nfkb_profile
-   recipes/lncrna_cpg
    recipes/metagenome_contigs_kmers
 
+:download:`Recipe02 Plotting read-density in Intervals <recipes/Recipe02-BAMCoverageHistograms.html>`
+	  Illustrate how to plot read density in a large number of
+	  genomic intervals, for example in the ChIP-seq experiment.
+
+:download:`Recipe03 Calculating CpG content in promotors <recipes/Recipe03-CpGInLncRNA.html>`
+	  Illustrate how to caluclate CpG content from
+	  a gene list of genes.
+
+
+:download:`Recipe04 Plotting meta-gene profiles <recipes/Recipe04-MetaGeneProfiles.html>`
+	  Illustrate how to compute meta-gene profiles.
+
+:download:`Recipe05 Stripping Bam Files <recipes/Recipe05-StrippingBamFiles.html>`
+	  Illustrate how to remove sequence and/or
+	  quality information from BAM files and
+	  how to put it back.
+
 .. _CGAT users group: https://groups.google.com/forum/?fromgroups#!forum/cgat-user-group
+

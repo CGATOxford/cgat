@@ -52,8 +52,22 @@ Command line options
 '''
 
 import sys
+import re
 import CGAT.IOTools as IOTools
 import CGAT.Experiment as E
+
+
+class PatternGetter:
+
+    def __init__(self, pattern):
+        self.pattern = re.compile(pattern)
+
+    def __call__(self, id):
+        return self.pattern.search(id).groups()[0]
+
+
+def plain_getter(id):
+    return id
 
 
 def main(argv=None):
@@ -83,6 +97,14 @@ def main(argv=None):
                       help="whether or not to write out unpaired reads "
                       "to a seperate file")
 
+    parser.add_option("--id-pattern-1", dest="id_pattern_1",
+                      help="If specified will use the first group from the"
+                           "pattern to determine the ID for the first read",
+                      default=None)
+    parser.add_option("--id-pattern-2", dest="id_pattern_2",
+                      help="As above but for read 2",
+                      default=None)
+
     parser.add_option("-o", "--output-pattern",
                       dest="output_pattern", type="string",
                       help="pattern for output files [default=%default].")
@@ -104,30 +126,46 @@ def main(argv=None):
     fn1, fn2 = args
     c = E.Counter()
 
+    if options.id_pattern_1:
+        id1_getter = PatternGetter(options.id_pattern_1)
+    else:
+        id1_getter = plain_getter
+
+    if options.id_pattern_2:
+        id2_getter = PatternGetter(options.id_pattern_2)
+    else:
+        id2_getter = plain_getter
+
     if options.method == "reconcile":
 
-        def getIds(infile):
+        # IMS: switching to no store second set of read names and only use
+        # lazily. Since generators don't have a size must keep track
+        id_lengths = {fn1: 0, fn2: 0}
+
+        def getIds(infile, id_getter=plain_getter):
             '''return ids in infile.'''
             aread = infile.readline
             while True:
                 l = [aread().rstrip("\r\n") for i in range(4)]
                 if not l[0]:
                     break
-                r = l[0].split()[0]
+                r = id_getter(l[0].split()[0])
                 # decide if to chop read number off
+                id_lengths[infile.name] += 1
                 if options.chop:
                     yield r[:-1]
                 else:
                     yield r
 
-        def write(outfile, infile, take, unpaired_file=None):
+        def write(outfile, infile, take, unpaired_file=None,
+                  id_getter=plain_getter):
             '''filter fastq files with ids in take.'''
             aread = infile.readline
             while True:
                 l = [aread().rstrip("\r\n") for i in range(4)]
                 if not l[0]:
                     break
-                r = l[0].split()[0]
+                r = id_getter(l[0].split()[0])
                 if options.chop:
                     r = r[:-1]
                 if r not in take:
@@ -140,18 +178,21 @@ def main(argv=None):
 
         E.info("reading first in pair")
         inf1 = IOTools.openFile(fn1)
-        ids1 = set(getIds(inf1))
-
+        ids1 = set(getIds(inf1, id1_getter))
+      
         E.info("reading second in pair")
         inf2 = IOTools.openFile(fn2)
-        ids2 = set(getIds(inf2))
-
+        # IMS: No longer keep as a set, but lazily evaluate into intersection
+        # leads to large memory saving for large inf2, particularly if
+        # inf1 is small.
+        ids2 = getIds(inf2, id2_getter)
+       
         take = ids1.intersection(ids2)
 
         E.info("first pair: %i reads, second pair: %i reads, "
                "shared: %i reads" %
-               (len(ids1),
-                len(ids2),
+               (id_lengths[fn1],
+                id_lengths[fn2],
                 len(take)))
 
         if options.unpaired:
@@ -163,12 +204,12 @@ def main(argv=None):
         with IOTools.openFile(options.output_pattern % "1", "w") as outf:
             inf = IOTools.openFile(fn1)
             E.info("writing first in pair")
-            write(outf, inf, take, unpaired_filename)
+            write(outf, inf, take, unpaired_filename, id1_getter)
 
         with IOTools.openFile(options.output_pattern % "2", "w") as outf:
             inf = IOTools.openFile(fn2)
             E.info("writing second in pair")
-            write(outf, inf, take, unpaired_filename)
+            write(outf, inf, take, unpaired_filename, id2_getter)
 
         if options.unpaired:
             unpaired_filename.close()

@@ -169,7 +169,7 @@ P.getParameters(["%s/pipeline.ini" % os.path.splitext(__file__)[0],
 PARAMS = P.PARAMS
 
 PARAMS_ANNOTATIONS = P.peekParameters(PARAMS["annotations_dir"],
-                                      "pipeline_annotations.py")
+                                      "pipeline_annotations.py", on_error_raise=__name__ == "__main__")
 
 ###################################################################
 ###################################################################
@@ -277,8 +277,7 @@ def makeTrackDirectories(infile, outfile):
            r"\1.dir/\1.genome.bam")
 def mapReads(infiles, outfile):
     '''Map reads to the genome using BWA '''
-    to_cluster = True
-    job_options = "-pe dedicated %i -R y" % PARAMS["bwa_threads"]
+    job_threads = PARAMS["bwa_threads"]
     m = PipelineMapping.BWA()
     statement = m.build((infiles,), outfile)
     P.run()

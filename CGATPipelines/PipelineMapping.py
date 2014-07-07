@@ -37,7 +37,6 @@ Code
 '''
 
 import os
-import sys
 import shutil
 import glob
 import collections
@@ -111,11 +110,11 @@ def getSequencingInformation(track):
         if not os.path.exists(second_pair):
             raise IOError("could not find second pair %s for %s" %
                           (second_pair, first_pair))
-        second_length = getReadLength(second_pair)
+        second_length = getReadLengthFromFastq(second_pair)
 
     return SequenceInformation._make((second_pair is not None,
                                       first_pair, second_pair,
-                                      getReadLength(first_pair),
+                                      getReadLengthFromFastq(first_pair),
                                       second_length,
                                       colour))
 
@@ -130,7 +129,8 @@ def mergeAndFilterGTF(infile, outfile, logfile,
     Merge exons separated by small introns (< 5bp).
 
     Transcripts will be ignored that
-       * have very long introns (max_intron_size) (otherwise, cufflinks complains)
+       * have very long introns (max_intron_size) (otherwise,
+         cufflinks complains)
        * are located on contigs to be ignored (usually: chrM, _random, ...)
 
     Optionally remove transcripts based on repetitive sequences by supplying a
@@ -141,7 +141,7 @@ def mergeAndFilterGTF(infile, outfile, logfile,
     returns a dictionary of all gene_ids that have been kept.
     '''
 
-    #max_intron_size =  PARAMS["max_intron_size"]
+    # max_intron_size =  PARAMS["max_intron_size"]
 
     c = E.Counter()
 
@@ -186,7 +186,8 @@ def mergeAndFilterGTF(infile, outfile, logfile,
     logf = IOTools.openFile(logfile, "w")
     logf.write("gene_id\ttranscript_id\treason\n")
 
-    for all_exons in GTF.transcript_iterator(GTF.iterator(IOTools.openFile(infile))):
+    for all_exons in GTF.transcript_iterator(
+            GTF.iterator(IOTools.openFile(infile))):
 
         c.input += 1
 
@@ -195,13 +196,15 @@ def mergeAndFilterGTF(infile, outfile, logfile,
         if e.contig not in contigs:
             c.missing_contig += 1
             logf.write(
-                "\t".join((e.gene_id, e.transcript_id, "missing_contig")) + "\n")
+                "\t".join((e.gene_id, e.transcript_id,
+                           "missing_contig")) + "\n")
             continue
 
         if rx_contigs and rx_contigs.search(e.contig):
             c.remove_contig += 1
             logf.write(
-                "\t".join((e.gene_id, e.transcript_id, "remove_contig")) + "\n")
+                "\t".join((e.gene_id, e.transcript_id,
+                           "remove_contig")) + "\n")
             continue
 
         if rna_index and all_exons[0].source != 'protein_coding':
@@ -212,7 +215,8 @@ def mergeAndFilterGTF(infile, outfile, logfile,
                     break
             if found:
                 logf.write(
-                    "\t".join((e.gene_id, e.transcript_id, "overlap_rna")) + "\n")
+                    "\t".join((e.gene_id, e.transcript_id,
+                               "overlap_rna")) + "\n")
                 c.overlap_rna += 1
                 continue
 
@@ -222,7 +226,8 @@ def mergeAndFilterGTF(infile, outfile, logfile,
         all_exons.sort(key=lambda x: x.feature)
         new_exons = []
 
-        for feature, exons in itertools.groupby(all_exons, lambda x: x.feature):
+        for feature, exons in itertools.groupby(
+                all_exons, lambda x: x.feature):
 
             tmp = sorted(list(exons), key=lambda x: x.start)
 
@@ -251,7 +256,8 @@ def mergeAndFilterGTF(infile, outfile, logfile,
 
         if not is_ok:
             logf.write(
-                "\t".join((e.gene_id, e.transcript_id, "bad_transcript")) + "\n")
+                "\t".join((e.gene_id, e.transcript_id,
+                           "bad_transcript")) + "\n")
             c.skipped += 1
             continue
 
@@ -352,9 +358,6 @@ def resetGTFAttributes(infile, genome, gene_ids, outfile):
     os.unlink(tmpfile2)
 
 
-###############################################################################
-############################### Classes #######################################
-###############################################################################
 class Mapper(object):
 
     '''map reads.
@@ -441,18 +444,21 @@ class Mapper(object):
             if infile.endswith(".export.txt.gz"):
                 # single end illumina export
                 statement.append("""gunzip < %(infile)s
-                     | awk '$11 != "QC" || $10 ~ /(\d+):(\d+):(\d+)/ \
-                        { if ($1 != "")
-                             { readname=sprintf( "%%%%s_%%%%s:%%%%s:%%%%s:%%%%s:%%%%s", $1,$2,$3,$4,$5,$6);}
-                        else { readname=sprintf( "%%%%s:%%%%s:%%%%s:%%%%s:%%%%s", $1,$3,$4,$5,$6); }
-                       printf("@%%%%s\\n%%%%s\\n+\\n%%%%s\\n",readname,$9,$10);}'
-                     %(compress_cmd)s
-                     > %(tmpdir_fastq)s/%(track)s.fastq%(extension)s""" % locals())
+                | awk '$11 != "QC" || $10 ~ /(\d+):(\d+):(\d+)/ \
+                {if ($1 != "")
+                {readname=sprintf("%%%%s_%%%%s:%%%%s:%%%%s:%%%%s:%%%%s",
+                $1, $2, $3, $4, $5, $6);}
+                else {readname=sprintf("%%%%s:%%%%s:%%%%s:%%%%s:%%%%s",
+                $1, $3, $4, $5, $6);}
+                printf("@%%%%s\\n%%%%s\\n+\\n%%%%s\\n",readname,$9,$10);}'
+                %(compress_cmd)s
+                > %(tmpdir_fastq)s/%(track)s.fastq%(extension)s""" % locals())
                 fastqfiles.append(
                     ("%s/%s.fastq%s" % (tmpdir_fastq, track, extension),))
             elif infile.endswith(".fa.gz"):
                 statement.append(
-                    '''gunzip < %(infile)s > %(tmpdir_fastq)s/%(track)s.fa''' % locals())
+                    '''gunzip < %(infile)s %(compress_cmd)s
+                    > %(tmpdir_fastq)s/%(track)s.fa''' % locals())
                 fastqfiles.append(("%s/%s.fa" % (tmpdir_fastq, track),))
                 self.datatype = "fasta"
 
@@ -461,16 +467,23 @@ class Mapper(object):
                 outdir = P.getTempDir()
                 # --split-files is present in fastq-dump 2.1.7
                 P.execute(
-                    "fastq-dump --split-files --gzip -X 1000 --outdir %(outdir)s %(infile)s" % locals())
+                    """fastq-dump --split-files --gzip -X 1000
+                    --outdir %(outdir)s %(infile)s""" % locals())
                 # --split-files will create files called prefix_#.fastq.gz
                 # where # is the read number.
                 # The following cases are:
 
-                # * file cotains paired end data: output = prefix_1.fastq.gz, prefix_2.fastq.gz
-                #    * special case: unpaired reads in a paired end run end up in prefix.fastq.gz
-                #    * special case: if paired reads are stored in a single read, fastq-dump will split.
-                #       There might be a joining sequence. The output would thus be:
-                #       prefix_1.fastq.gz, prefix_2.fastq.gz and prefix_3.fastq.gz
+                # * file cotains paired end data:
+                #      output = prefix_1.fastq.gz, prefix_2.fastq.gz
+                #
+                #    * special case: unpaired reads in a paired end
+                #                    run end up in prefix.fastq.gz
+                #    * special case: if paired reads are stored in
+                #                    a single read, fastq-dump will split.
+                #       There might be a joining sequence. The output
+                #                 would thus be:
+                #       prefix_1.fastq.gz, prefix_2.fastq.gz, prefix_3.fastq.gz
+                #
                 #      You want files 1 and 3.
                 f = sorted(glob.glob(os.path.join(outdir, "*.fastq.gz")))
                 ff = [os.path.basename(x) for x in f]
@@ -490,18 +503,24 @@ class Mapper(object):
                 E.info("sra file contains the following files: %s" % f)
                 shutil.rmtree(outdir)
                 fastqfiles.append(
-                    ["%s/%s" % (tmpdir_fastq, os.path.basename(x)) for x in sorted(f)])
+                    ["%s/%s" % (tmpdir_fastq, os.path.basename(x))
+                     for x in sorted(f)])
                 statement.append(
-                    "fastq-dump --split-files --gzip --outdir %(tmpdir_fastq)s %(infile)s" % locals())
+                    """fastq-dump --split-files --gzip --outdir
+                    %(tmpdir_fastq)s %(infile)s""" % locals())
 
             elif infile.endswith(".fastq.gz"):
                 format = Fastq.guessFormat(
                     IOTools.openFile(infile, "r"), raises=False)
                 if 'sanger' not in format and self.convert:
                     statement.append("""gunzip < %(infile)s
-                                      | python %%(scriptsdir)s/fastq2fastq.py --change-format=sanger --guess-format=phred64 --log=%(outfile)s.log
-                                      %(compress_cmd)s
-                                      > %(tmpdir_fastq)s/%(track)s.fastq%(extension)s""" % locals())
+                    | python %%(scriptsdir)s/fastq2fastq.py
+                    --change-format=sanger
+                    --guess-format=phred64
+                    --log=%(outfile)s.log
+                    %(compress_cmd)s
+                    > %(tmpdir_fastq)s/%(track)s.fastq%(extension)s""" %
+                                     locals())
                     fastqfiles.append(
                         ("%s/%s.fastq%s" % (tmpdir_fastq, track, extension),))
                 else:
@@ -516,18 +535,24 @@ class Mapper(object):
                     if not os.path.exists(quality):
                         raise ValueError("no quality file for %s" % infile)
                     statement.append("""gunzip < %(infile)s
-                                          > %(tmpdir_fastq)s/%(track)s.csfasta%(extension)s""" % locals())
+                    > %(tmpdir_fastq)s/%(track)s.csfasta%(extension)s""" %
+                                     locals())
                     statement.append("""gunzip < %(quality)s
-                                          > %(tmpdir_fastq)s/%(track)s.qual%(extension)s""" % locals())
-                    fastqfiles.append(("%s/%s.csfasta%s" % (tmpdir_fastq, track, extension),
-                                       "%s/%s.qual%s" % (tmpdir_fastq, track, extension)))
+                    > %(tmpdir_fastq)s/%(track)s.qual%(extension)s""" %
+                                     locals())
+                    fastqfiles.append(("%s/%s.csfasta%s" %
+                                       (tmpdir_fastq, track, extension),
+                                       "%s/%s.qual%s" %
+                                       (tmpdir_fastq, track, extension)))
                     self.datatype = "solid"
                 else:
                     quality = P.snip(infile, ".csfasta.gz") + ".qual.gz"
 
-                    statement.append("""solid2fastq <(gunzip < %(infile)s) <(gunzip < %(quality)s)
-                                      %(compress_cmd)s
-                                      > %(tmpdir_fastq)s/%(track)s.fastq%(extension)""" % locals())
+                    statement.append("""solid2fastq
+                    <(gunzip < %(infile)s) <(gunzip < %(quality)s)
+                    %(compress_cmd)s
+                    > %(tmpdir_fastq)s/%(track)s.fastq%(extension)""" %
+                                     locals())
                     fastqfiles.append(
                         ("%s/%s.fastq%s" % (tmpdir_fastq, track, extension),))
 
@@ -538,24 +563,30 @@ class Mapper(object):
                     # order is important - mirrors tophat reads followed by
                     # quals
                     f = []
-                    for suffix in ("csfasta.F3", "csfasta.F5", "qual.F3", "qual.F5"):
+                    for suffix in ("csfasta.F3", "csfasta.F5",
+                                   "qual.F3", "qual.F5"):
                         fn = "%(bn)s.%(suffix)s" % locals()
                         if not os.path.exists(fn + ".gz"):
                             raise ValueError(
                                 "expected file %s.gz missing" % fn)
                         statement.append("""gunzip < %(fn)s.gz
-                                          %(compress_cmd)s
-                                          > %(tmpdir_fastq)s/%(track)s.%(suffix)s%(extension)s""" % locals())
+                        %(compress_cmd)s
+                        > %(tmpdir_fastq)s/%(track)s.%(suffix)s%(extension)s
+                        """ %
+                                         locals())
                         f.append(
-                            "%(tmpdir_fastq)s/%(track)s.%(suffix)s%(extension)s" % locals())
+                            "%(tmpdir_fastq)s/%(track)s.%(suffix)s%(extension)s" %
+                            locals())
                     fastqfiles.append(f)
                     self.datatype = "solid"
                 else:
                     quality = P.snip(infile, ".csfasta.gz") + ".qual.gz"
 
-                    statement.append("""solid2fastq <(gunzip < %(infile)s) <(gunzip < %(quality)s)
-                                      %(compress_cmd)s
-                                      > %(tmpdir_fastq)s/%(track)s.fastq%(extension)s""" % locals())
+                    statement.append("""solid2fastq
+                    <(gunzip < %(infile)s) <(gunzip < %(quality)s)
+                    %(compress_cmd)s
+                    > %(tmpdir_fastq)s/%(track)s.fastq%(extension)s""" %
+                                     locals())
                     fastqfiles.append(
                         ("%s/%s.fastq%s" % (tmpdir_fastq, track, extension),))
 
@@ -565,22 +596,30 @@ class Mapper(object):
                 infile2 = "%s.fastq.2.gz" % bn
                 if not os.path.exists(infile2):
                     raise ValueError(
-                        "can not find paired ended file '%s' for '%s'" % (infile2, infile))
+                        "can not find paired ended file "
+                        "'%s' for '%s'" % (infile2, infile))
 
                 format = Fastq.guessFormat(
                     IOTools.openFile(infile), raises=False)
                 if 'sanger' not in format:
                     statement.append("""gunzip < %(infile)s
-                                     | python %%(scriptsdir)s/fastq2fastq.py --change-format=sanger --guess-format=phred64 --log=%(outfile)s.log
-                                     %(compress_cmd)s
-                                     > %(tmpdir_fastq)s/%(track)s.1.fastq%(extension)s;
-                                     gunzip < %(infile2)s
-                                     | python %%(scriptsdir)s/fastq2fastq.py --change-format=sanger --guess-format=phred64 --log=%(outfile)s.log
-                                     %(compress_cmd)s
-                                     > %(tmpdir_fastq)s/%(track)s.2.fastq%(extension)s
-                                 """ % locals())
-                    fastqfiles.append(("%s/%s.1.fastq%s" % (tmpdir_fastq, track, extension),
-                                       "%s/%s.2.fastq%s" % (tmpdir_fastq, track, extension)))
+                    | python %%(scriptsdir)s/fastq2fastq.py
+                    --change-format=sanger
+                    --guess-format=phred64
+                    --log=%(outfile)s.log
+                    %(compress_cmd)s
+                    > %(tmpdir_fastq)s/%(track)s.1.fastq%(extension)s;
+                    gunzip < %(infile2)s
+                    | python %%(scriptsdir)s/fastq2fastq.py
+                    --change-format=sanger
+                    --guess-format=phred64
+                    --log=%(outfile)s.log
+                    %(compress_cmd)s
+                    > %(tmpdir_fastq)s/%(track)s.2.fastq%(extension)s
+                    """ % locals())
+                    fastqfiles.append(
+                        ("%s/%s.1.fastq%s" % (tmpdir_fastq, track, extension),
+                         "%s/%s.2.fastq%s" % (tmpdir_fastq, track, extension)))
 
                 else:
                     E.debug("%s: assuming quality score format %s" %
@@ -658,10 +697,13 @@ class FastQc(Mapper):
                 track = os.path.basename(re.sub(".fastq.*", "", x))
                 if self.nogroup:
                     statement.append(
-                        '''fastqc --outdir=%%(exportdir)s/fastqc --nogroup %(x)s >& %(outfile)s;''' % locals())
+                        '''fastqc --outdir=%%(exportdir)s/fastqc
+                        --nogroup
+                        %(x)s >& %(outfile)s;''' % locals())
                 else:
                     statement.append(
-                        '''fastqc --outdir=%%(exportdir)s/fastqc %(x)s >& %(outfile)s;''' % locals())
+                        '''fastqc --outdir=%%(exportdir)s/fastqc
+                        %(x)s >& %(outfile)s;''' % locals())
         return " ".join(statement)
 
 
@@ -768,7 +810,9 @@ class Counter(Mapper):
         for f in infiles:
             x = " ".join(f)
             statement.append(
-                '''zcat %(x)s | awk '{n+=1;} END {printf("nreads\\t%%%%i\\n",n/4);}' >> %(outfile)s;''' % locals())
+                '''zcat %(x)s
+                | awk '{n+=1;} END {printf("nreads\\t%%%%i\\n",n/4);}'
+                >> %(outfile)s;''' % locals())
         return " ".join(statement)
 
 
@@ -827,12 +871,12 @@ class BWA(Mapper):
             infiles = ",".join([self.quoteFile(x[0]) for x in infiles])
 
             statement.append('''
-            bwa aln %%(bwa_aln_options)s -t %%(bwa_threads)i %(index_prefix)s 
-            %(infiles)s > %(tmpdir)s/%(track)s.sai 2>>%(outfile)s.bwa.log;
-            
-            bwa samse %%(bwa_index_dir)s/%%(genome)s %(tmpdir)s/%(track)s.sai 
-            %(infiles)s > %(tmpdir)s/%(track)s.sam 
-            2>>%(outfile)s.bwa.log;
+            bwa aln %%(bwa_aln_options)s -t %%(bwa_threads)i 
+            %(index_prefix)s %(infiles)s
+            > %(tmpdir)s/%(track)s.sai 2>>%(outfile)s.bwa.log;
+            bwa samse %%(bwa_index_dir)s/%%(genome)s
+            %(tmpdir)s/%(track)s.sai %(infiles)s
+            > %(tmpdir)s/%(track)s.sam 2>>%(outfile)s.bwa.log;
             ''' % locals())
 
         elif nfiles == 2:
@@ -842,9 +886,11 @@ class BWA(Mapper):
             infiles2 = ",".join([self.quoteFile(x[1]) for x in infiles])
 
             statement.append('''
-            bwa aln %%(bwa_aln_options)s -t %%(bwa_threads)i %(index_prefix)s %(infiles1)s
+            bwa aln %%(bwa_aln_options)s -t %%(bwa_threads)i
+            %(index_prefix)s %(infiles1)s
             > %(tmpdir)s/%(track1)s.sai 2>>%(outfile)s.bwa.log; checkpoint;
-            bwa aln %%(bwa_aln_options)s -t %%(bwa_threads)i %(index_prefix)s %(infiles2)s
+            bwa aln %%(bwa_aln_options)s -t %%(bwa_threads)i
+            %(index_prefix)s %(infiles2)s
             > %(tmpdir)s/%(track2)s.sai 2>>%(outfile)s.bwa.log; checkpoint;
             bwa sampe %%(bwa_sampe_options)s %(index_prefix)s
                       %(tmpdir)s/%(track1)s.sai %(tmpdir)s/%(track2)s.sai
@@ -869,10 +915,12 @@ class BWA(Mapper):
         strip_cmd, unique_cmd = "", ""
 
         if self.remove_non_unique:
-            unique_cmd = '| python %%(scriptsdir)s/bam2bam.py --filter=unique --log=%(outfile)s.log' % locals()
+            unique_cmd = '''| python %%(scriptsdir)s/bam2bam.py
+            --filter=unique --log=%(outfile)s.log''' % locals()
 
         if self.strip_sequence:
-            strip_cmd = '| python %%(scriptsdir)s/bam2bam.py --strip=sequence --log=%(outfile)s.log' % locals()
+            strip_cmd = '''| python %%(scriptsdir)s/bam2bam.py
+            --strip=sequence --log=%(outfile)s.log''' % locals()
 
         statement = '''
                 samtools view -uS %(tmpdir)s/%(track)s.sam
@@ -883,18 +931,25 @@ class BWA(Mapper):
 
         if self.align_stats:
             statement += '''cat %(outfile)s
-                         | python %%(scriptsdir)s/bam2bam.py -v 0 --set-sequence --sam
-                         | CollectMultipleMetrics
-                                       INPUT=/dev/stdin
-                                       REFERENCE_SEQUENCE=%%(bwa_index_dir)s/%%(genome)s.fa
-                                       ASSUME_SORTED=true
-                                       OUTPUT=%(outf)s.picard_stats
-                                       VALIDATION_STRINGENCY=SILENT
-                       >& %(outf)s.picard_stats ;''' % locals()
+            | python %%(scriptsdir)s/bam2bam.py -v 0 --set-sequence --sam
+            | CollectMultipleMetrics
+            INPUT=/dev/stdin
+            REFERENCE_SEQUENCE=%%(bwa_index_dir)s/%%(genome)s.fa
+            ASSUME_SORTED=true
+            OUTPUT=%(outf)s.picard_stats
+            VALIDATION_STRINGENCY=SILENT
+            >& %(outf)s.picard_stats ;''' % locals()
 
         if self.dedup:
-            statement += '''MarkDuplicates INPUT=%(outfile)s ASSUME_SORTED=true METRICS_FILE=%(outfile)s.duplicate_metrics OUTPUT=%(tmpdir)s/%(track)s.deduped.bam REMOVE_DUPLICATES=true VALIDATION_STRINGENCY=SILENT ;''' % locals()
-            statement += '''rm -f %(outfile)s %(outfile)s.bai; mv %(tmpdir)s/%(track)s.deduped.bam %(outfile)s ;''' % locals()
+            statement += '''MarkDuplicates
+            INPUT=%(outfile)s
+            ASSUME_SORTED=true
+            METRICS_FILE=%(outfile)s.duplicate_metrics
+            OUTPUT=%(tmpdir)s/%(track)s.deduped.bam
+            REMOVE_DUPLICATES=true
+            VALIDATION_STRINGENCY=SILENT ;''' % locals()
+            statement += '''rm -f %(outfile)s %(outfile)s.bai;
+            mv %(tmpdir)s/%(track)s.deduped.bam %(outfile)s ;''' % locals()
             statement += '''samtools index %(outfile)s ;''' % locals()
 
         if self.read_group_header:
@@ -1017,9 +1072,11 @@ class Stampy(BWA):
             infiles = ",".join([self.quoteFile(x[0]) for x in infiles])
 
             statement.append('''
-            %(executable)s -v 3 -g %%(stampy_index_dir)s/%%(genome)s -h %%(stampy_index_dir)s/%%(genome)s
-                      --bwaoptions="-q10 %(bwa_index_prefix)s"
-                      -M %(infiles)s
+            %(executable)s -v 3
+            -g %%(stampy_index_dir)s/%%(genome)s
+            -h %%(stampy_index_dir)s/%%(genome)s
+            --bwaoptions="-q10 %(bwa_index_prefix)s"
+            -M %(infiles)s
             > %(tmpdir)s/%(track)s.sam 2>%(outfile)s.log;
             ''' % locals())
 
@@ -1150,11 +1207,12 @@ class Tophat(Mapper):
         tmpdir_tophat = self.tmpdir_tophat
 
         statement = '''
-            gzip < %(tmpdir_tophat)s/junctions.bed > %(track)s.junctions.bed.gz;
-            mv %(tmpdir_tophat)s/logs %(outfile)s.logs;
-            mv %(tmpdir_tophat)s/accepted_hits.bam %(outfile)s;
-            samtools index %(outfile)s;
-            ''' % locals()
+        gzip < %(tmpdir_tophat)s/junctions.bed
+        > %(track)s.junctions.bed.gz;
+        mv %(tmpdir_tophat)s/logs %(outfile)s.logs;
+        mv %(tmpdir_tophat)s/accepted_hits.bam %(outfile)s;
+        samtools index %(outfile)s;
+        ''' % locals()
 
         return statement
 
@@ -1350,8 +1408,8 @@ class GSNAP(Mapper):
 
             # patch for compressed files
             if infiles[0][0].endswith(".gz"):
-                files = "<( zcat %(infiles1)s ) <( zcat %(infiles2)s )" % locals(
-                )
+                files = "<( zcat %(infiles1)s ) <( zcat %(infiles2)s )" % \
+                        locals()
             else:
                 files = "%(infiles1)s %(infiles2)s" % locals()
 
@@ -1381,10 +1439,12 @@ class GSNAP(Mapper):
         strip_cmd, unique_cmd = "", ""
 
         if self.remove_non_unique:
-            unique_cmd = '| python %%(scriptsdir)s/bam2bam.py --filter=unique --log=%(outfile)s.log' % locals()
+            unique_cmd = '''| python %%(scriptsdir)s/bam2bam.py
+            --filter=unique --log=%(outfile)s.log''' % locals()
 
         if self.strip_sequence:
-            strip_cmd = '| python %%(scriptsdir)s/bam2bam.py --strip=sequence --log=%(outfile)s.log' % locals()
+            strip_cmd = '''| python %%(scriptsdir)s/bam2bam.py
+            --strip=sequence --log=%(outfile)s.log''' % locals()
 
         statement = '''
                 samtools view -uS %(tmpdir)s/%(track)s.sam
@@ -1456,8 +1516,8 @@ class STAR(Mapper):
 
             # patch for compressed files
             if infiles[0][0].endswith(".gz"):
-                files = "<( zcat %(infiles1)s ) <( zcat %(infiles2)s )" % locals(
-                )
+                files = "<( zcat %(infiles1)s ) <( zcat %(infiles2)s )" % \
+                        locals()
             else:
                 files = "%(infiles1)s %(infiles2)s" % locals()
 
@@ -1491,10 +1551,12 @@ class STAR(Mapper):
         strip_cmd, unique_cmd = "", ""
 
         if self.remove_non_unique:
-            unique_cmd = '| python %%(scriptsdir)s/bam2bam.py --filter=unique --log=%(outfile)s.log' % locals()
+            unique_cmd = '''| python %%(scriptsdir)s/bam2bam.py
+            --filter=unique --log=%(outfile)s.log''' % locals()
 
         if self.strip_sequence:
-            strip_cmd = '| python %%(scriptsdir)s/bam2bam.py --strip=sequence --log=%(outfile)s.log' % locals()
+            strip_cmd = '''| python %%(scriptsdir)s/bam2bam.py
+            --strip=sequence --log=%(outfile)s.log''' % locals()
 
         statement = '''
                 cp %(tmpdir)s/Log.std.out %(outfile)s.std.log;
@@ -1554,10 +1616,11 @@ class Bowtie(Mapper):
                 # single end,
                 # second file will colors (unpaired data)
                 data_options.append(
-                    "--quals %s" % ",".join([self.quoteFile(x) for x in infiles[1]]))
+                    "--quals %s" % ",".join([self.quoteFile(x)
+                                             for x in infiles[1]]))
                 nfiles -= 1
             elif nfiles == 4:
-                raise NotImplementeError()
+                raise NotImplementedError()
                 data_options.append(
                     "-Q1 %s -Q2 %s" % (",".join(infiles[2], infiles[3])))
                 nfiles -= 2
@@ -1581,15 +1644,16 @@ class Bowtie(Mapper):
         if nfiles == 1:
             infiles = ",".join([self.quoteFile(x) for x in infiles[0]])
             statement = '''
-                %(executable)s --quiet
-                       --threads %%(bowtie_threads)i
-                       %(data_options)s
-                       %%(bowtie_options)s
-                       %(index_prefix)s
-                       %(infiles)s
-                       2>%(outfile)s.log
-               | awk -v OFS="\\t" '{sub(/\/[12]$/,"",$1);print}'
-               | samtools import %%(reffile)s - %(tmpdir_fastq)s/out.bam 1>&2 2>> %(outfile)s.log;
+            %(executable)s --quiet
+            --threads %%(bowtie_threads)i
+            %(data_options)s
+            %%(bowtie_options)s
+            %(index_prefix)s
+            %(infiles)s
+            2>%(outfile)s.log
+            | awk -v OFS="\\t" '{sub(/\/[12]$/,"",$1);print}'
+            | samtools import %%(reffile)s - %(tmpdir_fastq)s/out.bam
+            1>&2 2>> %(outfile)s.log;
             ''' % locals()
 
         elif nfiles == 2:
@@ -1597,14 +1661,15 @@ class Bowtie(Mapper):
             infiles2 = ",".join([self.quoteFile(x) for x in infiles[1]])
 
             statement = '''
-                %(executable)s --quiet
-                       --threads %%(bowtie_threads)i
-                       %(data_options)s
-                       %%(bowtie_options)s
-                       %(index_prefix)s
-                       -1 %(infiles1)s -2 %(infiles2)s
-                       2>%(outfile)s.log
-               | samtools import %%(reffile)s - %(tmpdir_fastq)s/out.bam 1>&2 2>> %(outfile)s.log;
+            %(executable)s --quiet
+            --threads %%(bowtie_threads)i
+            %(data_options)s
+            %%(bowtie_options)s
+            %(index_prefix)s
+            -1 %(infiles1)s -2 %(infiles2)s
+            2>%(outfile)s.log
+            | samtools import %%(reffile)s - %(tmpdir_fastq)s/out.bam
+            1>&2 2>> %(outfile)s.log;
             ''' % locals()
         else:
             raise ValueError("unexpected number reads to map: %i " % nfiles)
@@ -1620,18 +1685,22 @@ class Bowtie(Mapper):
         unique_cmd, strip_cmd = "", ""
 
         if self.remove_non_unique:
-            unique_cmd = '| python %%(scriptsdir)s/bam2bam.py --filter=unique --log=%(outfile)s.log' % locals()
+            unique_cmd = '''| python %%(scriptsdir)s/bam2bam.py
+            --filter=unique --log=%(outfile)s.log''' % locals()
 
         if self.strip_sequence:
-            strip_cmd = '| python %%(scriptsdir)s/bam2bam.py --strip=sequence --log=%(outfile)s.log' % locals()
+            strip_cmd = '''| python %%(scriptsdir)s/bam2bam.py
+            --strip=sequence --log=%(outfile)s.log''' % locals()
 
         statement = '''cat %(tmpdir_fastq)s/out.bam
-                | python %%(scriptsdir)s/bam2bam.py --set-nh --log=%(outfile)s.log
-                %(unique_cmd)s
-                %(strip_cmd)s
-                | samtools sort - %(track)s;
-                samtools index %(outfile)s;
-             ''' % locals()
+        | python %%(scriptsdir)s/bam2bam.py
+        --set-nh
+        --log=%(outfile)s.log
+        %(unique_cmd)s
+        %(strip_cmd)s
+        | samtools sort - %(track)s;
+        samtools index %(outfile)s;
+        ''' % locals()
 
         return statement
 
@@ -1683,7 +1752,8 @@ class BowtieTranscripts(Mapper):
                 nfiles -= 1
             elif nfiles == 4:
                 data_options.append(
-                    "-Q1 <( zcat %s ) -Q2 <( zcat %s)" % (",".join(infiles[2], infiles[3])))
+                    "-Q1 <( zcat %s ) -Q2 <( zcat %s)" % (
+                        ",".join(infiles[2], infiles[3])))
                 nfiles -= 2
             else:
                 raise ValueError("unexpected number of files")
@@ -1697,15 +1767,16 @@ class BowtieTranscripts(Mapper):
         if nfiles == 1:
             infiles = ",".join(["<(zcat %s)" % x for x in infiles[0]])
             statement = '''
-                %(executable)s --quiet --sam
-                       --threads %%(bowtie_threads)i
-                       %(data_options)s
-                       %%(bowtie_options)s
-                       %(index_prefix)s
-                       %(infiles)s
-                       2>%(outfile)s.log
-               | awk -v OFS="\\t" '{sub(/\/[12]$/,"",$1);print}'
-               | samtools import %%(reffile)s - %(tmpdir_fastq)s/out.bam 1>&2 2>> %(outfile)s.log;
+            %(executable)s --quiet --sam
+            --threads %%(bowtie_threads)i
+            %(data_options)s
+            %%(bowtie_options)s
+            %(index_prefix)s
+            %(infiles)s
+            2>%(outfile)s.log
+            | awk -v OFS="\\t" '{sub(/\/[12]$/,"",$1);print}'
+            | samtools import %%(reffile)s - %(tmpdir_fastq)s/out.bam
+            1>&2 2>> %(outfile)s.log;
             ''' % locals()
 
         elif nfiles == 2:
@@ -1713,14 +1784,15 @@ class BowtieTranscripts(Mapper):
             infiles2 = ",".join(["<(zcat %s)" % x for x in infiles[1]])
 
             statement = '''
-                %(executable)s --quiet --sam
-                       --threads %%(bowtie_threads)i
-                       %(data_options)s
-                       %%(bowtie_options)s
-                       %(index_prefix)s
-                       -1 %(infiles1)s -2 %(infiles2)s
-                       2>%(outfile)s.log
-               | samtools import %%(reffile)s - %(tmpdir_fastq)s/out.bam 1>&2 2>> %(outfile)s.log;
+            %(executable)s --quiet --sam
+            --threads %%(bowtie_threads)i
+            %(data_options)s
+            %%(bowtie_options)s
+            %(index_prefix)s
+            -1 %(infiles1)s -2 %(infiles2)s
+            2>%(outfile)s.log
+            | samtools import %%(reffile)s - %(tmpdir_fastq)s/out.bam
+            1>&2 2>> %(outfile)s.log;
             ''' % locals()
         else:
             raise ValueError("unexpected number reads to map: %i " % nfiles)
@@ -1736,10 +1808,12 @@ class BowtieTranscripts(Mapper):
         strip_cmd, unique_cmd = "", ""
 
         if self.remove_non_unique:
-            unique_cmd = '| python %%(scriptsdir)s/bam2bam.py --filter=unique --log=%(outfile)s.log' % locals()
+            unique_cmd = '''| python %%(scriptsdir)s/bam2bam.py
+            --filter=unique --log=%(outfile)s.log''' % locals()
 
         if self.strip_sequence:
-            strip_cmd = '| python %%(scriptsdir)s/bam2bam.py --strip=sequence --log=%(outfile)s.log' % locals()
+            strip_cmd = '''| python %%(scriptsdir)s/bam2bam.py
+            --strip=sequence --log=%(outfile)s.log''' % locals()
 
         statement = '''cat %(tmpdir_fastq)s/out.bam
              %(unique_cmd)s
@@ -1768,21 +1842,27 @@ class BowtieJunctions(BowtieTranscripts):
         strip_cmd, unique_cmd = "", ""
 
         if self.remove_non_unique:
-            unique_cmd = '| python %%(scriptsdir)s/bam2bam.py --filter=unique --log=%(outfile)s.log' % locals()
+            unique_cmd = '''| python %%(scriptsdir)s/bam2bam.py
+            --filter=unique --log=%(outfile)s.log''' % locals()
 
         if self.strip_sequence:
-            strip_cmd = '| python %%(scriptsdir)s/bam2bam.py --strip=sequence --log=%(outfile)s.log' % locals()
+            strip_cmd = '''| python %%(scriptsdir)s/bam2bam.py
+            --strip=sequence --log=%(outfile)s.log''' % locals()
 
         statement = '''
-             cat %(tmpdir_fastq)s/out.bam
-             %(unique_cmd)s
-             %(strip_cmd)s
-             | python %%(scriptsdir)s/bam2bam.py --set-nh --log=%(outfile)s.log
-             | python %%(scriptsdir)s/rnaseq_junction_bam2bam.py --contig-sizes=%%(contigsfile)s --log=%(outfile)s.log
-             | samtools sort - %(track)s;
-             checkpoint;
-             samtools index %(outfile)s;
-             ''' % locals()
+        cat %(tmpdir_fastq)s/out.bam
+        %(unique_cmd)s
+        %(strip_cmd)s
+        | python %%(scriptsdir)s/bam2bam.py
+        --set-nh
+        --log=%(outfile)s.log
+        | python %%(scriptsdir)s/rnaseq_junction_bam2bam.py
+        --contig-sizes=%%(contigsfile)s
+        --log=%(outfile)s.log
+        | samtools sort - %(track)s;
+        checkpoint;
+        samtools index %(outfile)s;
+        ''' % locals()
 
         return statement
 

@@ -500,6 +500,9 @@ def isEmpty(filename):
 
     raises OSError if file does not exist
     '''
+    # don't now about stdin
+    if filename == "-":
+        return False
     return os.stat(filename)[stat.ST_SIZE] == 0
 
 
@@ -889,3 +892,42 @@ def iterate(infile):
         result = DATA(*line[:-1].split())
 
         yield result
+
+
+def zapFile(filename):
+    '''replace *filename* with empty file.
+
+    File attributes such as accession times are preserved.
+
+    If the file is a link, the link will be removed and
+    replaced with an empty file having the same attributes
+    as the file linked to.
+
+    returns a stat object of the file cleaned and the link
+    destination.
+
+    '''
+    # stat follows times to links
+    original = os.stat(filename)
+
+    # return if file already has size 0
+    if original.st_size == 0:
+        return None, None
+
+    if os.path.islink(filename):
+        linkdest = os.readlink(filename)
+        os.unlink(filename)
+        f = open(filename, "w")
+        f.close()
+    else:
+        linkdest = None
+        f = open(filename, "w")
+        f.truncate()
+        f.close()
+
+    # Set original times
+    os.utime(filename, (original.st_atime, original.st_mtime))
+    os.chmod(filename, original.st_mode)
+
+    return original, linkdest
+
