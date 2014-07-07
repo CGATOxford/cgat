@@ -982,15 +982,21 @@ def mapReadsWithBWA(infile, outfile):
 
     job_options = "-pe dedicated %i -R y -l mem_free=%s" % (PARAMS["bwa_threads"],
                                                             PARAMS["bwa_memory"])
+
+    print PARAMS
+
     to_cluster = True
     if PARAMS["bwa_algorithm"] == "aln":
         m = PipelineMapping.BWA(
             remove_non_unique=PARAMS["remove_non_unique"],
-            strip_sequence=PARAMS["strip_sequence"])
+            strip_sequence=PARAMS["strip_sequence"],
+            read_group_header=PARAMS["bwa_read_group_header"])
+
     elif PARAMS["bwa_algorithm"] == "mem":
         m = PipelineMapping.BWAMEM(
             remove_non_unique=PARAMS["remove_non_unique"],
-            strip_sequence=PARAMS["strip_sequence"])
+            strip_sequence=PARAMS["strip_sequence"],
+            read_group_header=PARAMS["bwa_read_group_header"])
     else:
         raise ValueError("bwa algorithm parameter not set")
 

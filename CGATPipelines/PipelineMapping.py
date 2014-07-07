@@ -665,6 +665,94 @@ class FastQc(Mapper):
         return " ".join(statement)
 
 
+class Sailfish(Mapper):
+
+    '''run Sailfish to quantify transcript abundance from fastq files'''
+
+    def __init__(self, compress=True, strand="", orient="",
+                 threads="", *args, **kwargs):
+        Mapper.__init__(self, *args, **kwargs)
+        self.compress = compress
+        self.strand = strand
+        self.orient = orient
+        self.threads = threads
+
+    def mapper(self, infiles, outfile):
+        '''build mapping statement on infiles'''
+
+        threads = self.threads
+
+        statement = ['''module load bio/sailfish;
+                        sailfish quant -i %%(index)s''' % locals()]
+
+        num_files = [len(x) for x in infiles]
+
+        if max(num_files) != min(num_files):
+            raise ValueError(
+                "mixing single and paired-ended data not possible.")
+
+        nfiles = max(num_files)
+
+        if nfiles == 1:
+            input_file = '''-r <(zcat %(infile)s)''' % locals()
+            library = ['''"T=SE:''']
+            if self.strand == "sense":
+                strandedness = '''S=S"'''
+            elif self.strand == "antisense":
+                strandedness = '''S=A"'''
+            elif self.strand == "unknown":
+                strandedness = '''S=U"'''
+            library.append(strandedness)
+
+        elif nfiles == 2:
+            print "infiles: ", infiles
+            infile1, infile2 = infiles[0]
+            input_file = '''-1 <(zcat %(infile1)s)
+                            -2 <(zcat %(infile2)s)''' % locals()
+
+            library = ['''"T=PE:''']
+
+            if self.orient == "towards":
+                orientation = '''O=><:'''
+            elif self.orient == "away":
+                orientation = '''O=<>:'''
+            elif self.orient == "same":
+                orientation = '''O=>>:'''
+            library.append(orientation)
+
+            if self.strand == "sense":
+                strandedness = '''S=SA"'''
+            elif self.strand == "antisense":
+                strandedness = '''S=AS"'''
+            elif self.strand == "unknown":
+                strandedness = '''S=U"'''
+            library.append(strandedness)
+        else:
+            # is this the correct error type?
+            raise ValueError("Incorrect number of input files")
+
+        library = "".join(library)
+
+        statement.append('''-l %(library)s %(input_file)s -o %%(outdir)s
+                             -f --threads %(threads)s;''' % locals())
+
+        statement = " ".join(statement)
+
+        return statement
+
+    def postprocess(self, infiles, outfile):
+        '''collect output data and postproces
+        Reformat header and rename outfile'''
+
+        statement = ('''sed -i "s/# Transcript/Transcript/g"
+                     %%(outdir)s/quant.sf;
+                     mv %%(outdir)s/quant.sf
+                     %%(outdir)s/%%(sample)s_quant.sf;'''
+                     % locals())
+
+        return statement
+
+
 class Counter(Mapper):
 
     '''count number of reads in fastq files.'''
@@ -694,12 +782,14 @@ class BWA(Mapper):
     which removes reads that don't have tag X0:i:1 (i.e. have > 1 best hit)
     '''
 
-    def __init__(self, remove_unique=False, align_stats=False, dedup=False, *args, **kwargs):
+    def __init__(self, remove_unique=False, align_stats=False, dedup=False,
+                 read_group_header=False, *args, **kwargs):
         Mapper.__init__(self, *args, **kwargs)
 
         self.remove_unique = remove_unique
         self.align_stats = align_stats
         self.dedup = dedup
+        self.read_group_header = read_group_header
 
     def mapper(self, infiles, outfile):
         '''build mapping statement on infiles.'''
@@ -732,15 +822,17 @@ class BWA(Mapper):
         tmpdir_fastq = self.tmpdir_fastq
 
         track = P.snip(os.path.basename(outfile), ".bam")
-
+        
         if nfiles == 1:
             infiles = ",".join([self.quoteFile(x[0]) for x in infiles])
 
             statement.append('''
-            bwa aln %%(bwa_aln_options)s -t %%(bwa_threads)i %(index_prefix)s %(infiles)s
-            > %(tmpdir)s/%(track)s.sai 2>>%(outfile)s.bwa.log;
-            bwa samse %%(bwa_index_dir)s/%%(genome)s %(tmpdir)s/%(track)s.sai %(infiles)s
-            > %(tmpdir)s/%(track)s.sam 2>>%(outfile)s.bwa.log;
+            bwa aln %%(bwa_aln_options)s -t %%(bwa_threads)i %(index_prefix)s 
+            %(infiles)s > %(tmpdir)s/%(track)s.sai 2>>%(outfile)s.bwa.log;
+            
+            bwa samse %%(bwa_index_dir)s/%%(genome)s %(tmpdir)s/%(track)s.sai 
+            %(infiles)s > %(tmpdir)s/%(track)s.sam 
+            2>>%(outfile)s.bwa.log;
             ''' % locals())
 
         elif nfiles == 2:
@@ -755,10 +847,8 @@ class BWA(Mapper):
             bwa aln %%(bwa_aln_options)s -t %%(bwa_threads)i %(index_prefix)s %(infiles2)s
             > %(tmpdir)s/%(track2)s.sai 2>>%(outfile)s.bwa.log; checkpoint;
             bwa sampe %%(bwa_sampe_options)s %(index_prefix)s
-                      %(tmpdir)s/%(track1)s.sai
-                      %(tmpdir)s/%(track2)s.sai
-                      %(infiles1)s
-                      %(infiles2)s
+                      %(tmpdir)s/%(track1)s.sai %(tmpdir)s/%(track2)s.sai
+                      %(infiles1)s %(infiles2)s
             > %(tmpdir)s/%(track)s.sam 2>>%(outfile)s.bwa.log;
             ''' % locals())
         else:
@@ -806,6 +896,15 @@ class BWA(Mapper):
             statement += '''MarkDuplicates INPUT=%(outfile)s ASSUME_SORTED=true METRICS_FILE=%(outfile)s.duplicate_metrics OUTPUT=%(tmpdir)s/%(track)s.deduped.bam REMOVE_DUPLICATES=true VALIDATION_STRINGENCY=SILENT ;''' % locals()
             statement += '''rm -f %(outfile)s %(outfile)s.bai; mv %(tmpdir)s/%(track)s.deduped.bam %(outfile)s ;''' % locals()
             statement += '''samtools index %(outfile)s ;''' % locals()
+
+        if self.read_group_header:
+            statement +='''AddOrReplaceReadGroups INPUT=%(outfile)s
+                           OUTPUT=%(tmpdir)s/%(track)s.readgroup.header
+                           RGLB=library RGPL=platform RGPU=flowcell
+                           RGSM=sample;''' % locals()
+            statement +='''rm -f %(outfile)s %(outfile)s.bai; mv %(tmpdir)s/%(track)s.readgroup.header
+                           %(outfile)s;''' % locals()
+            statement +='''samtools index %(outfile)s;''' % locals()
 
         return statement
 
