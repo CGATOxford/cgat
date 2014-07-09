@@ -1648,7 +1648,7 @@ def peekParameters(workingdir,
 
     # update interface
     if update_interface:
-        for key, value in dump:
+        for key, value in dump.items():
             if key.startswith("interface"):
                 dump[key] = os.path.join(workingdir, value)
 
