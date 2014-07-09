@@ -14,6 +14,7 @@ for the Annotation Pipeline is below:
 .. toctree::
    :maxdepth: 2
 
+   pipeline/Status.rst
    pipeline/Bed.rst
    pipeline/GTF.rst
    pipeline/GFF.rst

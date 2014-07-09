@@ -589,9 +589,6 @@ import CGATPipelines.PipelineUCSC as PipelineUCSC
 import CGATPipelines.PipelineKEGG as PipelineKEGG
 import CGAT.Intervals as Intervals
 
-# Todos
-# Sanity checks?
-# Status page in report, also: sanity checks?
 
 ###################################################
 ###################################################
@@ -1675,7 +1672,7 @@ if PARAMS["genome"].startswith("hg"):
     def _gwas():
         pass
 else:
-    @follows(None)
+    @files(((None, None),))
     def _gwas():
         pass
 
