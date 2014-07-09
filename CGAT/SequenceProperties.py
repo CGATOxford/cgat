@@ -35,6 +35,7 @@ Code
 ----
 
 '''
+from __future__ import division
 import os
 import sys
 import string
@@ -45,6 +46,7 @@ import optparse
 import math
 import hashlib
 import base64
+import itertools
 
 from CGAT import Genomics as Genomics
 from CGAT import IOTools as IOTools
@@ -356,6 +358,94 @@ class SequencePropertiesNA(SequenceProperties):
         fields.append("pGC")
         fields.append("pAT")
 
+        return fields
+
+
+###########################################################################
+
+
+class SequencePropertiesDN(SequenceProperties):
+    '''returns dinucleotide and CpG frequencies'''
+    def __init__(self, reference_usage=[]):
+
+        SequenceProperties.__init__(self)
+
+        self.mCountsCG = 0
+        self.mCountsApA = 0
+        self.mCountsApT = 0
+        self.mCountsApC = 0
+        self.mCountsApG = 0
+        self.mCountsTpA = 0
+        self.mCountsTpT = 0
+        self.mCountsTpC = 0
+        self.mCountsTpG = 0
+        self.mCountsCpA = 0
+        self.mCountsCpT = 0
+        self.mCountsCpC = 0
+        self.mCountsCpG = 0
+        self.mCountsGpA = 0
+        self.mCountsGpT = 0
+        self.mCountsGpC = 0
+        self.mCountsGpG = 0
+        #self.mCountsOthers = 0
+
+    def loadSequence(self, sequence):
+        """load sequence properties from a sequence."""
+        SequenceProperties.loadSequence(self, sequence)
+        seq = sequence.upper()
+
+        self.mCountsCG = (seq.count("C")+
+                          seq.count("G"))/self.mLength
+        self.mCountsApA = len(re.findall(r'(?=(AA))', seq))/self.mLength
+        self.mCountsApT = len(re.findall(r'(?=(AT))', seq))/self.mLength
+        self.mCountsApC = len(re.findall(r'(?=(AC))', seq))/self.mLength
+        self.mCountsApG = len(re.findall(r'(?=(AG))', seq))/self.mLength
+        self.mCountsTpA = len(re.findall(r'(?=(TA))', seq))/self.mLength
+        self.mCountsTpT = len(re.findall(r'(?=(TT))', seq))/self.mLength
+        self.mCountsTpC = len(re.findall(r'(?=(TC))', seq))/self.mLength
+        self.mCountsTpG = len(re.findall(r'(?=(TG))', seq))/self.mLength
+        self.mCountsCpA = len(re.findall(r'(?=(CA))', seq))/self.mLength
+        self.mCountsCpT = len(re.findall(r'(?=(CT))', seq))/self.mLength
+        self.mCountsCpC = len(re.findall(r'(?=(CC))', seq))/self.mLength
+        self.mCountsCpG = len(re.findall(r'(?=(CG))', seq))/self.mLength
+        self.mCountsGpA = len(re.findall(r'(?=(GA))', seq))/self.mLength
+        self.mCountsGpT = len(re.findall(r'(?=(GT))', seq))/self.mLength
+        self.mCountsGpC = len(re.findall(r'(?=(GC))', seq))/self.mLength
+        self.mCountsGpG = len(re.findall(r'(?=(GG))', seq))/self.mLength
+
+    def getFields(self):
+
+        fields = SequenceProperties.getFields(self)
+        fields.append("%s" % self.mLength)
+        fields.append("%s" % self.mCountsCG)
+        fields.append("%s" % self.mCountsApA)
+        fields.append("%s" % self.mCountsApT)
+        fields.append("%s" % self.mCountsApC)
+        fields.append("%s" % self.mCountsApG)
+        fields.append("%s" % self.mCountsTpA)
+        fields.append("%s" % self.mCountsTpT)
+        fields.append("%s" % self.mCountsTpC)
+        fields.append("%s" % self.mCountsTpG)
+        fields.append("%s" % self.mCountsCpA)
+        fields.append("%s" % self.mCountsCpT)
+        fields.append("%s" % self.mCountsCpC)
+        fields.append("%s" % self.mCountsCpG)
+        fields.append("%s" % self.mCountsGpA)
+        fields.append("%s" % self.mCountsGpT)
+        fields.append("%s" % self.mCountsGpC)
+        fields.append("%s" % self.mCountsGpG)
+
+        return fields
+
+    def getHeaders(self):
+
+        fields = SequenceProperties.getHeaders(self)
+
+        fields.extend(["length","GC_Content"])
+
+        for dinucleotide in itertools.product('ATCG', repeat=2):
+            fields.append("".join(dinucleotide))
+        
         return fields
 
 

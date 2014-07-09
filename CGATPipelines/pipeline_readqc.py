@@ -1,4 +1,4 @@
-##########################################################################
+2##########################################################################
 #
 #   MRC FGU Computational Genomics Group
 #
@@ -39,6 +39,16 @@ fastq and performs basic quality control steps:
    3. duplicates
 
 For further details see http://www.bioinformatics.bbsrc.ac.uk/projects/fastqc/
+
+Additionaly, optional bias analysis can be included through the configuration
+file. This analysis is designed to help identify sequence contexts which bias
+gene expression and asssess the consistency in the biases between samples.
+
+Bias analysis utilised Sailfish to estimate transcript abundance. This
+requires a multi-fasta transcripts file.
+
+For further details see http://www.cs.cmu.edu/~ckingsf/software/sailfish/
+
 
 Individual tasks are enabled in the configuration file.
 
@@ -157,7 +167,10 @@ import gzip
 import collections
 import random
 import numpy
+import pandas
 import sqlite3
+from scipy.stats import linregress
+from pandas import DataFrame
 import CGAT.GTF as GTF
 import CGAT.IOTools as IOTools
 import CGAT.IndexedFasta as IndexedFasta
@@ -192,6 +205,13 @@ PARAMS = P.PARAMS
 INPUT_FORMATS = ("*.fastq.1.gz", "*.fastq.gz", "*.sra", "*.csfasta.gz")
 REGEX_FORMATS = regex(r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz)")
 
+# AH: I would put these into the same configuration section
+# Include optional bias analysis for RNA-Seq
+BIAS_ANALYSIS = P.isTrue("bias_analysis")
+# AH: No need to define a global variable here for "transcripts"
+#     Keep globals to a minimum.
+transcripts = PARAMS["sailfish_transcripts"]
+
 #########################################################################
 #########################################################################
 #########################################################################
@@ -214,7 +234,6 @@ def runFastqc(infiles, outfile):
 #########################################################################
 ##
 #########################################################################
-
 
 def FastqcSectionIterator(infile):
     data = []
@@ -344,12 +363,182 @@ def buildFastQCSummaryBasicStatistics(infiles, outfile):
 def loadFastqcSummary(infile, outfile):
     P.load(infile, outfile, options="--index=track")
 
+####################################################
+# bias analysis
+####################################################
+# AH: sections not Pep8 conformant
+# AH: put all the conditional into one if statement
+
+
+@active_if(BIAS_ANALYSIS)
+@transform(PARAMS["sailfish_transcripts"],
+           regex("(\S+)"),
+           "index/transcriptome.sfi")
+def indexForSailfish(infile, outfile):
+    '''create a sailfish index'''
+
+    outdir = P.snip(outfile, "/transcriptome.sfi")
+    kmer = int(PARAMS["sailfish_kmer_size"])
+    tmp = P.getTempFilename()
+
+    statement = '''gunzip -c %(infile)s > %(tmp)s;
+                   module load bio/sailfish;
+                   sailfish index -t %(tmp)s 
+                   -k %(kmer)i -o %(outdir)s;
+                   rm -f %(tmp)s'''
+
+    P.run()
+
+@follows(indexForSailfish, mkdir("quantification"))
+@transform(INPUT_FORMATS,
+           REGEX_FORMATS,
+           add_inputs(indexForSailfish),
+           r"quantification/\1/\1_quant.sf")
+def runSailfish(infiles, outfile):
+    '''quantify abundance'''
+
+    to_cluster = True
+    job_options = "-pe dedicated %i -R y" % PARAMS["sailfish_threads"]
+
+    infile, index = infiles
+    index = P.snip(index, "/transcriptome.sfi")
+
+    sample = P.snip(os.path.basename(outfile), "_quant.sf")
+    outdir = "quantification/%(sample)s" % locals()
+    
+    m = PipelineMapping.Sailfish(strand=PARAMS["sailfish_strandedness"],
+                                 orient=PARAMS["sailfish_orientation"],
+                                 threads=PARAMS["sailfish_threads"])
+
+    statement = m.build((infile,), outfile)
+
+    P.run()
+
+@follows(runSailfish)
+@merge(runSailfish,
+       "quantification/summary.tsv.gz")
+def mergeSailfishResults(infiles,outfile):
+
+    statement='''python %(scriptsdir)s/combine_tables.py
+              --glob quantification/*/*quant.sf --columns 1 --take 7 
+              --use-file-prefix -v 0| gzip > %(outfile)s'''
+    P.run()
+
+
+# AH: output a compressed file (.tsv.gz)
+@active_if(BIAS_ANALYSIS)
+@transform(PARAMS["sailfish_transcripts"],
+           regex("(\S+)"),
+           "transcripts_attributes.tsv.gz")
+# take multifasta transcripts file and output file of attributes
+def characteriseTranscripts(infile,outfile):
+
+    statement = '''zcat %(infile)s | 
+                python %(scriptsdir)s/fasta2table.py
+                --split-fasta-identifier --section=dn -v 0
+                | gzip > %(outfile)s'''
+    P.run()
+
+
+# where should this code be moved to?
+@active_if(BIAS_ANALYSIS)
+@follows(characteriseTranscripts)
+@transform(characteriseTranscripts,
+           regex("transcripts_attributes.tsv.gz"),
+           add_inputs(mergeSailfishResults),
+           ["quantification/binned_means_correlation.tsv",
+            "quantification/binned_means_gradients.tsv"])
+def summariseBias(infiles, outfiles):
+
+    transcripts, expression = infiles
+    out_correlation, out_gradient = outfiles
+
+    atr = pandas.read_csv(transcripts, sep='\t')
+    exp = pandas.read_csv(expression, sep='\t', compression="gzip")
+    atr["length"] = numpy.log2(atr["length"])
+ 
+    log_exp = numpy.log2(exp.ix[:,1:]+0.1)
+    log_exp["id"] = exp[["Transcript"]]
+
+    bias_factors = list(atr.columns[1:])
+    samples = list(exp.columns[1:])
+
+    merged = atr.merge(log_exp, left_index="id", right_index="id")
+
+    def lin_reg_grad(x, y):
+        slope, intercept, r, p, stderr = linregress(x, y)
+        return slope
+
+    def aggregate_by_factor(df, attribute, sample_names, bins, function):
+
+        temp_dict = dict.fromkeys(sample_names, function)
+        temp_dict[attribute] = function
+
+        means_df = merged.groupby(pandas.qcut(df.ix[:, attribute], bins))
+        means_df = means_df.agg(temp_dict).sort(axis=1)
+        
+        corr_matrix = means_df.corr(method='pearson')
+        corr_matrix = corr_matrix[corr_matrix.index != attribute]
+
+        factor_gradients = []
+        for sample in samples:
+            factor_gradients.append(lin_reg_grad(y=means_df[sample],
+                                                 x=means_df[factor]))
+
+        return means_df, corr_matrix, factor_gradients
+
+    corr_matrices = {}
+    gradient_lists = {}
+
+    for factor in bias_factors:
+        means_binned, corr_matrix, gradients = aggregate_by_factor(
+            merged, factor, samples, PARAMS["bias_bin"], numpy.mean)
+        outfile_means = "%s%s%s" % ("quantification/means_binned_",
+                                    factor, ".tsv")
+        means_binned.to_csv(outfile_means, sep="\t",
+                            index=False, float_format='%.4f')
+
+        corr_matrices[factor] = list(corr_matrix[factor])
+        gradient_lists[factor] = gradients
+
+    corr_matrix_df = DataFrame.from_dict(corr_matrices,
+                                         orient='columns', dtype=None)
+    corr_matrix_df["sample"] = sorted(samples)
+
+    gradient_df = DataFrame.from_dict(gradient_lists,
+                                      orient='columns', dtype=None)
+    gradient_df["sample"] = sorted(samples)
+
+    corr_matrix_df.to_csv(out_correlation, sep="\t",
+                          index=False, float_format='%.6f')
+
+    gradient_df.to_csv(out_gradient, sep="\t",
+                       index=False, float_format='%.6f')
+
+@follows(summariseBias)
+@transform(summariseBias,
+           regex("quantification/(\S+).tsv"),
+           r"quantification/\1.load")
+def loadBiasSummary(infiles, outfiles):
+    for file in glob.glob("quantification/*.tsv"):
+        P.load(file, P.snip(file, ".tsv")+".load")
+
+# else:
+#    @follows(loadFastqc)
+#    def plotBias():
+#        pass
+
 #########################################################################
 
 
-@follows(loadFastqc, loadFastqcSummary)
+@follows(loadFastqc, loadFastqcSummary, loadBiasSummary)
 def full():
     pass
+
+@follows(loadBiasSummary)
+def bias():
+    pass
+
 
 #########################################################################
 

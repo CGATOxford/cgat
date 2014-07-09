@@ -154,3 +154,103 @@ class ProcessingDetails(ReadqcTracker):
 
 class ProcessingSummary(ReadqcTracker, SingleTableTrackerRows):
     table = "processing_summary"
+
+
+class CorrelationSummary(ReadqcTracker, SingleTableTrackerRows):
+    table = "binned_means_correlation"
+    fields = ("sample",)
+
+
+class GradientSummary(ReadqcTracker, SingleTableTrackerRows):
+    table = "binned_means_gradients"
+    fields = ("sample",)
+
+
+class GCContentSummary(ReadqcTracker, SingleTableTrackerRows):
+    table = "means_binned_GC_Content"
+    fields = ("GC_Content",)
+
+
+class LengthSummary(ReadqcTracker, SingleTableTrackerRows):
+    table = "means_binned_length"
+    fields = ("length",)
+
+
+class AASummary(ReadqcTracker, SingleTableTrackerRows):
+    table = "means_binned_AA"
+    fields = ("AA",)
+
+
+class ATSummary(ReadqcTracker, SingleTableTrackerRows):
+    table = "means_binned_AT"
+    fields = ("AT",)
+
+
+class ACSummary(ReadqcTracker, SingleTableTrackerRows):
+    table = "means_binned_AC"
+    fields = ("AC",)
+
+
+class AGSummary(ReadqcTracker, SingleTableTrackerRows):
+    table = "means_binned_AG"
+    fields = ("AG",)
+
+
+class TASummary(ReadqcTracker, SingleTableTrackerRows):
+    table = "means_binned_TA"
+    fields = ("TA",)
+
+
+class TTSummary(ReadqcTracker, SingleTableTrackerRows):
+    table = "means_binned_TT"
+    fields = ("TT",)
+
+
+class TCSummary(ReadqcTracker, SingleTableTrackerRows):
+    table = "means_binned_TC"
+    fields = ("TC",)
+
+
+class TGSummary(ReadqcTracker, SingleTableTrackerRows):
+    table = "means_binned_TG"
+    fields = ("TG",)
+
+
+class CASummary(ReadqcTracker, SingleTableTrackerRows):
+    table = "means_binned_CA"
+    fields = ("CA",)
+
+
+class CTSummary(ReadqcTracker, SingleTableTrackerRows):
+    table = "means_binned_CT"
+    fields = ("CT",)
+
+
+class CCSummary(ReadqcTracker, SingleTableTrackerRows):
+    table = "means_binned_CC"
+    fields = ("CC",)
+
+
+class CGSummary(ReadqcTracker, SingleTableTrackerRows):
+    table = "means_binned_CG"
+    fields = ("CG",)
+
+
+class GASummary(ReadqcTracker, SingleTableTrackerRows):
+    table = "means_binned_GA"
+    fields = ("GA",)
+
+
+class GTSummary(ReadqcTracker, SingleTableTrackerRows):
+    table = "means_binned_GT"
+    fields = ("GT",)
+
+
+class GCSummary(ReadqcTracker, SingleTableTrackerRows):
+    table = "means_binned_GC"
+    fields = ("GC",)
+
+
+class GGSummary(ReadqcTracker, SingleTableTrackerRows):
+    table = "means_binned_GG"
+    fields = ("GG",)
