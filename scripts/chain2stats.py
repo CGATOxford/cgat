@@ -25,53 +25,53 @@ of the query and target genomes that are covered by chains in a chain file.
 Usage
 -----
 
-  Example::
+Example::
 
-  python chain2stats.py < mm10ToHg19.over.chain.gz
+python chain2stats.py < mm10ToHg19.over.chain.gz
 
-  Expected output::
+Expected output::
 
-  ********** chain2stats report starts **********
+    ********** chain2stats report starts **********
 
-  Report for chains per chromosome gapped statistics
-  --------------------------------------------------
-  Target genome 91.31, query genome: 76.17
-
-
-  Report for chains per chromosome ungapped statistics
-  ----------------------------------------------------
-  Target genome 37.02, query genome: 29.13
+    Report for chains per chromosome gapped statistics
+    --------------------------------------------------
+    Target genome 91.31, query genome: 76.17
 
 
-  Report for chain lengths gapped
-  -------------------------------
-  number of chains = 76560
-
-  Stats for target chain lengths:
-  Mean:36,516, median:456, max:91,540,769, min:23
-
-  Stats for query chain lengths:
-  Mean:43,401, median:480, max:120,333,803, min:23
+    Report for chains per chromosome ungapped statistics
+    ----------------------------------------------------
+    Target genome 37.02, query genome: 29.13
 
 
-  Report for chain lengths ungapped
-  ---------------------------------
-  number of chains = 33902022
+    Report for chain lengths gapped
+    -------------------------------
+    number of chains = 76560
 
-  Stats for target chain lengths:
-  Mean:30, median:21, max:17,154, min:1
+    Stats for target chain lengths:
+    Mean:36,516, median:456, max:91,540,769, min:23
 
-  Stats for query chain lengths:
-  Mean:30, median:21, max:17,154, min:1
+    Stats for query chain lengths:
+    Mean:43,401, median:480, max:120,333,803, min:23
 
 
-  ********** chain2stats report ends **********
+    Report for chain lengths ungapped
+    ---------------------------------
+    number of chains = 33902022
 
-  Type::
+    Stats for target chain lengths:
+    Mean:30, median:21, max:17,154, min:1
 
-  python chain2stats.py --help
+    Stats for query chain lengths:
+    Mean:30, median:21, max:17,154, min:1
 
-  for command line help.
+
+    ********** chain2stats report ends **********
+
+    Type::
+
+    python chain2stats.py --help
+
+    for command line help.
 
 
 Options
