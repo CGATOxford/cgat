@@ -83,23 +83,15 @@ Code
 from ruffus import *
 
 import sys
-import glob
-import gzip
 import os
-import itertools
 import re
-import math
-import types
 import collections
-import time
-import optparse
-import shutil
 import sqlite3
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
-import CGAT.Database as Database
 import CGAT.FastaIterator as FastaIterator
 import CGAT.Bed as Bed
+import CGATPipelines.PipelineGeneset as PipelineGeneset
 
 ###################################################
 ###################################################
@@ -115,14 +107,12 @@ P.getParameters(
      "pipeline.ini"])
 
 PARAMS = P.PARAMS
-PARAMS_ANNOTATIONS = P.peekParameters(PARAMS["annotations_dir"],
-                                      "pipeline_annotations.py", on_error_raise=__name__ == "__main__")
+PARAMS_ANNOTATIONS = P.peekParameters(
+    PARAMS["annotations_dir"],
+    "pipeline_annotations.py",
+    on_error_raise=__name__ == "__main__")
 
-###################################################################
-###################################################################
-# Helper functions mapping tracks to conditions, etc
-###################################################################
-import CGATPipelines.PipelineGeneset as PipelineGeneset
+PipelineGeneset.PARAMS = PARAMS
 
 ###################################################################
 ###################################################################

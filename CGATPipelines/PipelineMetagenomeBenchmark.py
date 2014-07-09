@@ -1,36 +1,20 @@
-import sys
-import re
 import os
-import tempfile
 import collections
-import shutil
-import gzip
 import sqlite3
 
 import CGAT.IOTools as IOTools
 import CGAT.Pipeline as P
 import CGAT.Experiment as E
-import CGATPipelines.PipelineMapping as PipelineMapping
 import CGAT.FastaIterator as FastaIterator
 import CGAT.Fastq as Fastq
-import glob
-import collections
-import CGATPipelines.PipelineTracks as PipelineTracks
-import CGAT.Metaphlan as Metaphlan
-import numpy as np
-import shutil
 import pysam
-import sqlite3
 from rpy2.robjects import r as R
 
-P.getParameters(["pipeline.ini"])
 
-PARAMS = P.PARAMS
+# set in calling module
+PARAMS = {}
 
 
-################################################
-################################################
-################################################
 def buildTrueTaxonomicRelativeAbundances(infiles, outfile):
     '''
     get species level relative abundances for the simulateds

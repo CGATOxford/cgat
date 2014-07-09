@@ -167,38 +167,23 @@ Code
 """
 import sys
 import tempfile
-import optparse
-import shutil
 import itertools
-import csv
-import math
-import random
 import re
 import glob
 import os
 import shutil
-import collections
 
 import CGAT.Experiment as E
 import logging as L
 import CGAT.Database as Database
-from ruffus import *
-import csv
-import sqlite3
-import CGAT.IndexedFasta as IndexedFasta
 import CGAT.IndexedGenome as IndexedGenome
-import CGAT.FastaIterator as FastaIterator
-import CGAT.Genomics as Genomics
 import CGAT.IOTools as IOTools
-import CGAT.GTF as GTF
 import CGAT.Bed as Bed
 import pysam
 import numpy
-import gzip
 
 import PipelineChipseq as PipelineChipseq
 import PipelineMotifs as PipelineMotifs
-import PipelineGeneset as PGeneset
 import CGATPipelines.PipelineTracks as PipelineTracks
 import CGATPipelines.PipelineMapping as PipelineMapping
 
@@ -217,8 +202,10 @@ P.getParameters(
 
 PARAMS = P.PARAMS
 
-PARAMS_ANNOTATIONS = P.peekParameters(PARAMS["annotations_dir"],
-                                      "pipeline_annotations.py", on_error_raise=__name__ == "__main__")
+PARAMS_ANNOTATIONS = P.peekParameters(
+    PARAMS["annotations_dir"],
+    "pipeline_annotations.py",
+    on_error_raise=__name__ == "__main__")
 
 ###################################################################
 ###################################################################

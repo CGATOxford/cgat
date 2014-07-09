@@ -141,8 +141,6 @@ def mergeAndFilterGTF(infile, outfile, logfile,
     returns a dictionary of all gene_ids that have been kept.
     '''
 
-    # max_intron_size =  PARAMS["max_intron_size"]
-
     c = E.Counter()
 
     outf = gzip.open(outfile, "w")
@@ -166,21 +164,6 @@ def mergeAndFilterGTF(infile, outfile, logfile,
                 GTF.iterator(IOTools.openFile(rna_file, "r")))
             E.info("removing ribosomal RNA in %s" % rna_file)
 
-    #
-
-    # rx_contigs = None
-    # if "geneset_remove_contigs" in PARAMS:
-    #     rx_contigs = re.compile( PARAMS["geneset_remove_contigs"] )
-    #     E.info( "removing contigs %s" % PARAMS["geneset_remove_contigs"] )
-    # rna_index = None
-    # if "geneset_remove_repetetive_rna" in PARAMS:
-    #     rna_file = os.path.join( PARAMS["annotations_dir"],
-    #                              PARAMS_ANNOTATIONS["interface_rna_gff"] )
-    #     if not os.path.exists( rna_file ):
-    #         E.warn( "file '%s' to remove repetetive rna does not exist" % rna_file )
-    #     else:
-    #         rna_index = GTF.readAndIndex( GTF.iterator( IOTools.openFile( rna_file, "r" ) ) )
-    #         E.info( "removing ribosomal RNA in %s" % rna_file )
     gene_ids = {}
 
     logf = IOTools.openFile(logfile, "w")

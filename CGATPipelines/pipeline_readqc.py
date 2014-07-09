@@ -131,45 +131,13 @@ from ruffus import *
 import sys
 import os
 import re
-import shutil
-import itertools
-import math
 import glob
-import time
-import gzip
-import collections
-import random
 import cStringIO
 
 import CGAT.Experiment as E
-import logging as L
-import CGAT.Database as Database
-import sys
-import os
-import re
-import shutil
-import string
-import itertools
-import math
-import glob
-import time
-import gzip
-import collections
-import random
-import numpy
-import sqlite3
-import CGAT.GTF as GTF
 import CGAT.IOTools as IOTools
-import CGAT.IndexedFasta as IndexedFasta
-import CGAT.FastaIterator as FastaIterator
-import CGAT.Tophat as Tophat
-import rpy2.robjects as ro
-import CGATPipelines.PipelineGeneset as PipelineGeneset
 import CGATPipelines.PipelineMapping as PipelineMapping
-import CGAT.Stats as Stats
-import CGATPipelines.PipelineTracks as PipelineTracks
 import CGAT.Pipeline as P
-import CGAT.Fastq as Fastq
 import CGAT.CSV2DB as CSV2DB
 
 ###################################################

@@ -4,63 +4,21 @@ PipelineMedip.py - tasks associated with MedipSeq analysis
 
 '''
 
-import sys
-import tempfile
-import optparse
-import shutil
-import itertools
-import csv
-import math
-import random
 import re
-import glob
 import os
-import shutil
 import collections
 import sqlite3
-import cStringIO
 
 import CGAT.Experiment as E
 import CGAT.Pipeline as P
 
-import csv
-import CGAT.IndexedFasta as IndexedFasta
-import CGAT.IndexedGenome as IndexedGenome
-import CGAT.FastaIterator as FastaIterator
-import CGAT.Genomics as Genomics
 import CGAT.Database as Database
 import CGAT.IOTools as IOTools
-import CGAT.GTF as GTF
-import CGAT.Bed as Bed
-# import Stats
-
-import pysam
-import numpy
-import gzip
-import fileinput
 
 from rpy2.robjects import r as R
 import rpy2.robjects as ro
 
-###################################################
-###################################################
-###################################################
-# Pipeline configuration
-###################################################
-P.getParameters(
-    ["%s.ini" % __file__[:-len(".py")],
-     "../pipeline.ini",
-     "pipeline.ini"])
-
-PARAMS = P.PARAMS
-
-if os.path.exists("pipeline_conf.py"):
-    E.info("reading additional configuration from pipeline_conf.py")
-    execfile("pipeline_conf.py")
-
-#########################################################################
-#########################################################################
-#########################################################################
+PARAMS = {}
 
 
 def buildDMRStats(tables, method, outfile):

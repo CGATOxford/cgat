@@ -1,21 +1,22 @@
 '''
-PipelineKegg.py - Pipeline components related to KEGG analysis 
+PipelineKegg.py - Pipeline components related to KEGG analysis
 ==============================================================
 '''
 
 import CGAT.Experiment as E
 from rpy2.robjects import r as R
 import rpy2.robjects as ro
-import rpy2.robjects.numpy2ri
 import CGAT.IOTools as IOTools
 import re
 
 
 def importKEGGAssignments(outfile, mart, host, biomart_dataset):
-    ''' import the KEGG annotations from the R KEGG.db 
-    annotations package. Note that since KEGG is no longer
-    publically availible, this is not up-to-date and maybe removed
-    from bioconductor in future releases '''
+    '''import the KEGG annotations from the R KEGG.db annotations
+    package. Note that since KEGG is no longer publically availible,
+    this is not up-to-date and maybe removed from bioconductor in
+    future releases
+
+    '''
 
     R.library("KEGG.db")
     R.library("biomaRt")
@@ -26,8 +27,9 @@ def importKEGGAssignments(outfile, mart, host, biomart_dataset):
                      path="/biomart/martservice",
                      dataset=biomart_dataset)
 
-    entrez2ensembl = R.getBM(attributes=ro.StrVector(["ensembl_gene_id", "entrezgene"]),
-                             mart=mart)
+    entrez2ensembl = R.getBM(
+        attributes=ro.StrVector(["ensembl_gene_id", "entrezgene"]),
+        mart=mart)
 
     entrez = entrez2ensembl.rx2("entrezgene")
     ensembl = entrez2ensembl.rx2("ensembl_gene_id")
@@ -64,4 +66,5 @@ def importKEGGAssignments(outfile, mart, host, biomart_dataset):
             pathid = re.match("[a-z]+([0-9]+)", pathway).groups()[0]
             pathname = pathid2name[pathid]
             outf.write(
-                "\t".join(["kegg", ensid, str(pathway), pathname, "NA"]) + "\n")
+                "\t".join(["kegg", ensid, str(pathway),
+                           pathname, "NA"]) + "\n")

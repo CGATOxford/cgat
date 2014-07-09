@@ -217,10 +217,15 @@ P.getParameters(
 
 PARAMS = P.PARAMS
 
-PARAMS_ANNOTATIONS = P.peekParameters(
+PARAMS.update(P.peekParameters(
     PARAMS["annotations_dir"],
     "pipeline_annotations.py",
-    on_error_raise=__name__ == "__main__")
+    on_error_raise=__name__ == "__main__",
+    prefix="annotations_",
+    update_interface=True))
+
+PipelineGeneset.PARAMS = PARAMS
+PipelineMappingQC.PARAMS = PARAMS
 
 ###################################################################
 ###################################################################

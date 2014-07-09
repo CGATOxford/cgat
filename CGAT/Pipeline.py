@@ -631,7 +631,8 @@ def load(infile,
 
     if transpose:
         statement.append(
-            "python %(scriptsdir)s/table2table.py --transpose --set-transpose-field=%(transpose)s")
+            """python %(scriptsdir)s/table2table.py --transpose
+            --set-transpose-field=%(transpose)s""")
 
     if shuffle:
         statement.append("perl %(scriptsdir)s/randomize_lines.pl -h")
@@ -670,7 +671,7 @@ def concatenateAndLoad(infiles,
     the track name. If the pattern contains multiple groups, they are
     added as additional columns. For example, if *cat* is set to
     ``track,method`` and regex_filename is ``(.*)_(.*).tsv.gz``
-    the columns ``track`` and method to the table.
+    it will add the columns ``track`` and method to the table.
 
     '''
 
@@ -949,7 +950,6 @@ def execute(statement, **kwargs):
     statement = " ".join(re.sub("\t+", " ", statement).split("\n")).strip()
     if statement.endswith(";"):
         statement = statement[:-1]
-    print 'statement=', statement
 
     process = subprocess.Popen(statement % kwargs,
                                cwd=cwd,
@@ -1564,18 +1564,27 @@ def clean(files, logfile):
 
 def peekParameters(workingdir,
                    pipeline,
-                   on_error_raise=True):
+                   on_error_raise=True,
+                   prefix=None,
+                   update_interface=False):
     '''peek configuration parameters from a *pipeline*
     in *workingdir*.
 
-    This method works by executing the pipeline in
-    workingdir and dumping its configuration values.
+    This method works by executing the pipeline in workingdir,
+    dumping its configuration values and reading them into
+    a dictionary.
+
+    If either *pipeline* or *workingdir* are not found, an error is
+    raised. This behaviour can be changed by setting *on_error_raise*
+    to False. In that case, an empty dictionary is returned.
+
+    If *prefix* is set, all parameters will be prefixed by *prefix*.
+
+    If *update_interface* is True, this method will also prefix any
+    options in the ``[interface]`` section with *wordinkdir*.
 
     Returns a dictionary of configuration values.
 
-    If on_error_raise is True, if either *pipeline*
-    or *workingdir* are not found, an error is raised.
-    Otherwise, an empty dictionary is returned.
     '''
 
     # Attempt to locate directory with pipeline source code. This is a
@@ -1636,6 +1645,16 @@ def peekParameters(workingdir,
     for line in stdout.split("\n"):
         if line.startswith("dump"):
             exec(line)
+
+    # update interface
+    if update_interface:
+        for key, value in dump:
+            if key.startswith("interface"):
+                dump[key] = os.path.join(workingdir, value)
+
+    # prefix all parameters
+    if prefix is not None:
+        dump = dict([("%s%s" % (prefix, x), y) for x, y in dump.items()])
 
     return dump
 

@@ -14,20 +14,21 @@ functions.
 import CGAT.IOTools as IOTools
 
 from rpy2.robjects import r as R
-import rpy2.robjects as ro
 import rpy2.robjects.numpy2ri
 
 
-def importFromBiomart(outfile, columns,
+def importFromBiomart(outfile,
+                      columns,
                       biomart="ensembl",
                       dataset="hsapiens_gene_ensembl",
                       host='www.biomart.org'):
-    '''download a dataset from biomart and output as a 
+    '''download a dataset from biomart and output as a
     tab-separated table.
 
-    *columns* is a dictionary mapping biomart columns to columns
-    in the output tables. *biomart* and *dataset* denote the 
-    database and dataset to get the data from.
+    *columns* is a dictionary mapping biomart columns to columns in
+    the output tables. *biomart* and *dataset* denote the database and
+    dataset to get the data from.
+
     '''
 
     R.library("biomaRt")
@@ -53,12 +54,12 @@ def biomart_iterator(columns,
                      biomart="ensembl",
                      dataset="hsapiens_gene_ensembl",
                      host='www.biomart.org'):
-    '''download a dataset from biomart and output as a 
+    '''download a dataset from biomart and output as a
     tab-separated table.
 
     *columns* is a list with field to obtain.
 
-    *biomart* and *dataset* denote the 
+    *biomart* and *dataset* denote the
     database and dataset to get the data from.
 
     returns a iterator over rows.

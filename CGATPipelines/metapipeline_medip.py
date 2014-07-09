@@ -1,5 +1,4 @@
-"""
-=====================
+"""=====================
 MeDIP pipeline - Meta
 =====================
 
@@ -27,16 +26,16 @@ Configuration
 Input
 -----
 
-Source pipelines are added by linking them into the current directory. The pipeline expects the following
-naming convention:
+Source pipelines are added by linking them into the current
+directory. The pipeline expects the following naming convention:
 
    medip_<name>
 
 Requirements
 ------------
 
-On top of the default CGAT setup, the pipeline requires the following software to be in the 
-path:
+On top of the default CGAT setup, the pipeline requires the following
+software to be in the path:
 
 Pipeline output
 ===============
@@ -59,35 +58,13 @@ from ruffus import *
 
 import Experiment as E
 import logging as L
-import Database
 import sys
 import os
-import re
-import shutil
-import itertools
-import math
 import glob
-import time
-import gzip
-import collections
-import random
-import csv
-import numpy
 import sqlite3
-import GTF
-import IOTools
-import IndexedFasta
-import PipelineGeneset
-import PipelineMapping
-import Stats
 import PipelineTracks
-import PipelineMappingQC
-import PipelineMedip
 import Pipeline as P
-import Expression
 
-from rpy2.robjects import r as R
-import rpy2.robjects as ro
 
 #########################################################################
 #########################################################################
