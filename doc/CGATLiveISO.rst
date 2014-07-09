@@ -7,7 +7,7 @@ CGAT Live ISO
 Here is an ISO image of Ubuntu 12.04 LTS with the CGAT
 Code Collection v0.2.1 pre-installed:
 
-https://www.cgat.org/downloads/public/cgat/livecd/CGAT-Code-Collection-Live-0.2.1-x86_64.iso
+https://www.cgat.org/downloads/public/cgat/live-iso/CGAT-Code-Collection-Live-0.2.1-x86_64.iso
 
 You can use this ISO at least in three different ways
 to run a live image of the software:

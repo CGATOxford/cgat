@@ -1,4 +1,5 @@
-'''==============================
+'''
+==============================
 Long non-coding RNA pipeline
 ==============================
 
@@ -9,28 +10,30 @@ Overview
 The pipeline_rnaseqLncRNA.py pipeline aims to predict lncRNAs from an ab initio
 assembly of transcripts.
 
-It requires that raw reads have been mapped to a reference transcriptome and assembled
-into transcript models using cufflinks and therefore makes the assumption that the
-transcript building has gone to plan.
+It requires that raw reads have been mapped to a reference transcriptome 
+and assembled into transcript models using cufflinks and therefore makes the 
+assumption that the transcript building has gone to plan.
 
 
 Details
 ========
 
-Prediction of LncRNA are not based on a reference annotation to begin with, although 
-downstream comparisons are made to a reference non-coding gene set. The main features
-of the pipeline are as follows:
+Prediction of LncRNA are not based on a reference annotation to begin with,
+although downstream comparisons are made to a reference non-coding gene set. 
+The main features of the pipeline are as follows:
 
 * Build a coding gene set based on an ab initio assembly.
-   The ab initio assembly is filtered for protein coding genes. In this step only genes 
-   that are compatible with an annotated protein coding transcript are kept - this will
-   reduce noise that is associated with a large number of incomplete transfrags. The 
-   filtering is based on output from cuffcompare (class code "=").
+   The ab initio assembly is filtered for protein coding genes. 
+   In this step only genes that are compatible with an annotated protein 
+   coding transcript are kept - this will reduce noise that is associated 
+   with a large number of incomplete transfrags. The filtering is based on 
+   output from cuffcompare (class code "=").
 
 * build a non-coding gene set.
-   A reference non-coding set of transcripts is built by filtering a provided ensembl
-   reference set (usually a set that is built from the transcript building pipeline) for 
-   transcripts that do not belong to one of the following biotypes
+   A reference non-coding set of transcripts is built by filtering a 
+   provided ensembl reference set (usually a set that is built from the 
+   transcript building pipeline) for transcripts that do not belong to one of 
+   the following biotypes
 
    protein_coding\n
    ambiguous_orf\n
@@ -87,36 +90,39 @@ of the pipeline are as follows:
 Usage
 =====
 
-See :ref:`PipelineSettingUp` and :ref:`PipelineRunning` on general information how to use CGAT pipelines.
+See :ref:`PipelineSettingUp` and :ref:`PipelineRunning` on general information
+how to use CGAT pipelines.
 
 Configuration
 -------------
 
 The pipeline requires a configured :file:`pipeline.ini` file. 
 
-The sphinxreport report requires a :file:`conf.py` and :file:`sphinxreport.ini` file 
-(see :ref:`PipelineReporting`)
+The sphinxreport report requires a :file:`conf.py` and 
+:file:`sphinxreport.ini` file (see :ref:`PipelineReporting`)
 
 
 input
 -----
 
-The pipeline generally assumes that transcripts have been assembled using the pipeline_rnaseqtranscripts.py
-pipeline using cufflinks.
+The pipeline generally assumes that transcripts have been assembled 
+using the pipeline_rnaseqtranscripts.py pipeline using cufflinks.
 
-Files are supplied in the working directory. They are specified in the configuration file
-and refer to:
+Files are supplied in the working directory. 
+They are specified in the configuration file and refer to:
 
 * A coding geneset that is the output from a cufflinks transcript assembly.
 
     abinitio_coding = :file:`<name>.gtf.gz` 
 
-* An abinitio geneset that is the output from a cufflinks transcript assembly. This is to be used for lncRNA prediction. 
+* An abinitio geneset that is the output from a cufflinks transcript assembly. 
+  This is to be used for lncRNA prediction. 
   (note that this may be different to the abinitio_coding geneset). 
 
     abinitio_lncrna = :file:`<name>.gtf.gz`
 
-* A reference geneset containing known protein coding transcripts. This is used for comparisons in the report.
+* A reference geneset containing known protein coding transcripts. 
+  This is used for comparisons in the report.
 
     refcoding = :file:`<name>.gtf.gz`
 
@@ -124,8 +130,9 @@ and refer to:
 
     reference = :file:`<name>.gtf.gz`
 
-* An optional geneset containing previously identified lncRNA. If this is not supplied then the pipeline uses
-  a reference non-coding set from the ensembl reference.
+* An optional geneset containing previously identified lncRNA. 
+  If this is not supplied then the pipeline uses a reference non-coding
+  set from the ensembl reference.
 
     previous = :file:`<name>.gtf.gz`
 
@@ -135,21 +142,22 @@ Pipeline output
 
 The pipeline produces three main files of interest:
 
-+------------------------------------+--------------------------------------------------+
-|           Filename                 |             Description                          |
-+------------------------------------+--------------------------------------------------+
-|                                    |Ab initio set of lncRNA transcripts filtered for  |
-|:file:`lncrna_final.class.gtf.gz`   |single exon status (excl.previously observed) and |
-|                                    |classified relative to protein coding transcripts |
-+------------------------------------+--------------------------------------------------+
-|                                    |Ab inito assembled protein coding transcipts - for|
-|:file:`<name>_coding.gtf.gz`        |a comparable set to lncRNA transcripts            |
-|                                    |                                                  |
-+------------------------------------+--------------------------------------------------+
-|                                    |Combined set from the two sets above. to be used  |
-|:file:`transcripts.gtf.gz`          |for downstream FPKM estimation and differential   |
-|                                    |expression analysis                               |
-+------------------------------------+--------------------------------------------------+
++---------------------------------+------------------------------------------+
+|           Filename              |             Description                  |
++---------------------------------+------------------------------------------+
+|                                 |Ab initio set of lncRNA transcripts       |
+|:file:`lncrna_final.class.gtf.gz`|filtered for single exon status           |
+|                                 |(excl.previously observed) and classified |
+|                                 |relative to protein coding transcripts    |
++---------------------------------+------------------------------------------+
+|                                 |Ab inito assembled protein coding         |
+|:file:`<name>_coding.gtf.gz`     |transcipts - for a comparable set to      |
+|                                 |lncRNA transcripts                        |
++---------------------------------+------------------------------------------+
+|                                 |Combined set from the two sets above.     |
+|:file:`transcripts.gtf.gz`       |to be used for downstream FPKM estimation |
+|                                 |and differential expression analysis      |
++---------------------------------+------------------------------------------+
 
 
 code
@@ -196,8 +204,10 @@ import CGAT.IndexedGenome as IndexedGenome
 import CGATPipelines.PipelineLncRNA as PipelineLncRNA
 
 # get parameters
+#    ["%s.ini" % __file__[:-len(".py")], "pipeline.ini"],
 P.getParameters(
-    ["%s.ini" % __file__[:-len(".py")], "pipeline.ini"],
+    ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
+     "pipeline.ini"],
     defaults={"annotations_annotations_dir": "",
               "genesets_abinitio_coding": "pruned.gtf.gz",
               "genesets_abinitio_lncrna": "pruned.gtf.gz",
@@ -357,7 +367,9 @@ def buildRefnoncodingGeneSet(infile, outfile):
 
 
 @follows(mkdir("gtfs"))
-@merge((PARAMS["genesets_abinitio_lncrna"], PARAMS["genesets_reference"], buildRefnoncodingGeneSet,
+@merge((PARAMS["genesets_abinitio_lncrna"], 
+        PARAMS["genesets_reference"], 
+        buildRefnoncodingGeneSet,
         os.path.join(PARAMS["annotations_annotations_dir"],
                      PARAMS_ANNOTATIONS["interface_pseudogenes_gtf"]),
         os.path.join(PARAMS["annotations_annotations_dir"],
@@ -374,8 +386,13 @@ def buildLncRNAGeneSet(infiles, outfile):
 
     Transcripts need to have a length of at least 200 bp.
     '''
-    PipelineLncRNA.buildLncRNAGeneSet(infiles[0], infiles[1], infiles[2], infiles[
-                                      3], infiles[4], outfile, PARAMS["lncrna_min_length"])
+    PipelineLncRNA.buildLncRNAGeneSet(infiles[0], 
+                                      infiles[1], 
+                                      infiles[2], 
+                                      infiles[3], 
+                                      infiles[4], 
+                                      outfile, 
+                                      PARAMS["lncrna_min_length"])
 
 ##########################################################################
 ##########################################################################
@@ -386,7 +403,8 @@ def buildLncRNAGeneSet(infiles, outfile):
 def flagExonStatus(infile, outfile):
     '''
     Adds two attributes to the gtf entry:
-    exon_status_locus - specifies whether the gene model is multi- or single exon
+    exon_status_locus - specifies whether the gene model is multi- or 
+    single-exon 
     exon_status - specifies whether the transcript is mult- or single exon
     '''
 
@@ -432,8 +450,10 @@ def renameTranscriptsInPreviousSets(infile, outfile):
 ##########################################################################
 ##########################################################################
 if PARAMS["genesets_previous"]:
-    @transform(flagExonStatus, regex(r"(\S+)_flag.gtf.gz"),
-               add_inputs(renameTranscriptsInPreviousSets), r"\1_filtered.gtf.gz")
+    @transform(flagExonStatus, 
+               regex(r"(\S+)_flag.gtf.gz"),
+               add_inputs(renameTranscriptsInPreviousSets), 
+               r"\1_filtered.gtf.gz")
     def buildFilteredLncRNAGeneSet(infiles, outfile):
         '''
         Creates a filtered lncRNA geneset. That contains previously identified
@@ -454,21 +474,26 @@ else:
     # to be empty.
     # L.info("no previous lncRNA set provided: Using refnoncoding set")
 
-    @transform(flagExonStatus, regex(r"(\S+)_flag.gtf.gz"), r"\1_filtered.gtf.gz")
+    @transform(flagExonStatus, 
+               regex(r"(\S+)_flag.gtf.gz"), 
+               r"\1_filtered.gtf.gz")
     def buildFilteredLncRNAGeneSet(infile, outfile):
         '''
         Depending on on filtering_remove_single_exon will:
-        i) remove all single exon transcripts from all lncrna models (transcripts)
-        ii) remove lncrna loci that only contain single exon transcripts (loci)
-        iii) leave all single-exon and multi-exon loci in outfile (None)
+        i) remove all single exon transcripts from all lncrna models 
+        (transcripts)
+        ii) remove lncrna loci that only contain single exon transcripts 
+        (loci)
+        iii) leave all single-exon and multi-exon loci in outfile 
+        (None)
         '''
 
         if not PARAMS["filtering_remove_single_exon"]:
             E.info("Both multi-exon and single-exon lncRNA are retained!")
             statement = ("cp %(infile)s %(outfile)s")
         elif PARAMS["filtering_remove_single_exon"] == "loci":
-            E.info(
-                "Warning: removing all single-exon transcripts from lncRNA set")
+            E.info("Warning: removing all single-exon"
+                   " transcripts from lncRNA set")
             statement = ("zcat %(infile)s |"
                          " grep 'exon_status_locus \"s\"'"
                          " gzip > %(outfile)s")
@@ -487,7 +512,10 @@ else:
 ##########################################################################
 
 
-@transform(buildFilteredLncRNAGeneSet, suffix(".gtf.gz"), add_inputs(PARAMS["genesets_refcoding"]), ".class.gtf.gz")
+@transform(buildFilteredLncRNAGeneSet, 
+           suffix(".gtf.gz"), 
+           add_inputs(PARAMS["genesets_refcoding"]), 
+           ".class.gtf.gz")
 def classifyFilteredLncRNA(infiles, outfile):
     '''
     classifies all lincRNA before cpc filtering to define any classes that
@@ -503,7 +531,9 @@ def classifyFilteredLncRNA(infiles, outfile):
 
 
 @follows(mkdir("fasta"))
-@transform(buildFilteredLncRNAGeneSet, regex(r"gtfs/(\S+).gtf.gz"), r"fasta/\1.fasta")
+@transform(buildFilteredLncRNAGeneSet, 
+           regex(r"gtfs/(\S+).gtf.gz"), 
+           r"fasta/\1.fasta")
 def buildLncRNAFasta(infile, outfile):
     '''
     create fasta file from lncRNA geneset for testing coding
@@ -511,7 +541,12 @@ def buildLncRNAFasta(infile, outfile):
     '''
     genome = os.path.join(
         PARAMS["general_genomedir"], PARAMS["genome"] + ".fasta")
-    statement = '''zcat %(infile)s | python %(scriptsdir)s/gff2fasta.py --genome-file=%(genome)s --log=%(outfile)s.log --is-gtf > %(outfile)s'''
+    statement = ("zcat %(infile)s |"
+                 " python %(scriptsdir)s/gff2fasta.py"
+                 "  --genome-file=%(genome)s"
+                 "  --log=%(outfile)s.log"
+                 "  --is-gtf"
+                 " > %(outfile)s")
     P.run()
 
 ##########################################################################
@@ -550,8 +585,12 @@ def loadCPCResults(infile, outfile):
     load the results of the cpc analysis
     '''
     tablename = filenameToTablename(os.path.basename(infile))
-    statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s --log=%(outfile)s.log 
-                   --header=transcript_id,feature,C_NC,CP_score --index=transcript_id < %(infile)s > %(outfile)s'''
+    statement = ("python %(scriptsdir)s/csv2db.py"
+                 "  -t %(tablename)s"
+                 "  --log=%(outfile)s.log"
+                 "  --header=transcript_id,feature,C_NC,CP_score"
+                 "  --index=transcript_id"
+                 " < %(infile)s > %(outfile)s")
     P.run()
 
 ##########################################################################
@@ -560,7 +599,9 @@ def loadCPCResults(infile, outfile):
 
 
 @follows(loadCPCResults)
-@transform(buildFilteredLncRNAGeneSet, regex(r"(\S+)_filtered.gtf.gz"), r"\1_final.gtf.gz")
+@transform(buildFilteredLncRNAGeneSet, 
+           regex(r"(\S+)_filtered.gtf.gz"), 
+           r"\1_final.gtf.gz")
 def buildFinalLncRNAGeneSet(infile, outfile):
     '''
     the final lncRNA gene set consists of transcripts that pass
@@ -608,19 +649,23 @@ def buildLncRNAGeneSetStats(infile, outfile):
                           "no_multi_exon_transcripts",
                           "no_single_exon_genes",
                           "no_multi_exon_genes"]) + "\n")
-    outf.write("\t".join(map(str, [PipelineLncRNA.CounterTranscripts(infile).count(),
-                                   PipelineLncRNA.CounterGenes(infile).count(),
-                                   PipelineLncRNA.CounterExonsPerTranscript(
-                                       infile).count(),
-                                   PipelineLncRNA.CounterExonsPerGene(
-                                       infile).count(),
-                                   PipelineLncRNA.CounterSingleExonTranscripts(
-                                       infile).count(),
-                                   PipelineLncRNA.CounterMultiExonTranscripts(
-                                       infile).count(),
-                                   PipelineLncRNA.CounterSingleExonGenes(
-                                       infile).count(),
-                                   PipelineLncRNA.CounterMultiExonGenes(infile).count()])))
+
+    # For pep8 purposes
+    x = map(str, [PipelineLncRNA.CounterTranscripts(infile).count(),
+                  PipelineLncRNA.CounterGenes(infile).count(),
+                  PipelineLncRNA.CounterExonsPerTranscript(
+                      infile).count(),
+                  PipelineLncRNA.CounterExonsPerGene(
+                      infile).count(),
+                  PipelineLncRNA.CounterSingleExonTranscripts(
+                      infile).count(),
+                  PipelineLncRNA.CounterMultiExonTranscripts(
+                      infile).count(),
+                  PipelineLncRNA.CounterSingleExonGenes(
+                      infile).count(),
+                  PipelineLncRNA.CounterMultiExonGenes(
+                      infile).count()])
+    outf.write("\t".join(x))
 
 
 @transform(buildRefcodingGeneSet,
@@ -738,13 +783,20 @@ def loadLncRNAClass(infile, outfile):
     to_cluster = False
     # just load each transcript with its classification
     temp = P.getTempFile()
-    for transcript in GTF.transcript_iterator(GTF.iterator(IOTools.openFile(infile))):
+    inf = IOTools.openFile(infile)
+    for transcript in GTF.transcript_iterator(GTF.iterator(inf)):
         temp.write("%s\t%s\t%s\n" % (
-            transcript[0].transcript_id, transcript[0].gene_id, transcript[0].source))
+            transcript[0].transcript_id, 
+            transcript[0].gene_id, 
+            transcript[0].source))
     temp.close()
 
-    inf = temp.name
-    statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s --log=%(outfile)s.log --header=transcript_id,gene_id,class < %(inf)s > %(outfile)s'''
+    inf_1 = temp.name
+    statement = ("python %(scriptsdir)s/csv2db.py"
+                 "  -t %(tablename)s"
+                 "  --log=%(outfile)s.log"
+                 "  --header=transcript_id,gene_id,class"
+                 " < %(inf_1)s > %(outfile)s")
     P.run()
 
 ##########################################################################
@@ -762,8 +814,12 @@ def buildFullGeneSet(infiles, outfile):
     # change the source to be in keeping with classification
     # of transcripts - f coming from cufflinks assembly
     infs = " ".join(infiles)
-    statement = '''zcat %(infs)s | sed "s/Cufflinks/protein_coding/g"
-                   | python %(scriptsdir)s/gtf2gtf.py --sort=gene --log=%(outfile)s.log | gzip  > %(outfile)s'''
+    statement = ("zcat %(infs)s |"
+                 " sed 's/Cufflinks/protein_coding/g' |"
+                 " python %(scriptsdir)s/gtf2gtf.py"
+                 "  --sort=gene"
+                 "  --log=%(outfile)s.log |"
+                 " gzip  > %(outfile)s")
     P.run()
 
 ##########################################################################
@@ -928,12 +984,224 @@ def mergeLncRNAPhyloCSF(infiles, outfile):
                  --cat=CAT
                  --missing=0
                  --log=%(outfile)s.log
+                 %(file_name)s
+                > %(outfile)s
+                 '''
+    P.run()
+
+
+@transform(mergeLncRNAPhyloCSF, regex("(?:.*)/(.+).tsv"), r"\1.load")
+def loadLncRNAPhyloCSF(infile, outfile):
+    tmpf = P.getTempFilename("/ifs/scratch")
+    PipelineLncRNA.parsePhyloCSF(infile, tmpf)
+    P.load(tmpf, outfile, options="--index=gene_id")
+
+
+##########################################################################
+##########################################################################
+# calculate phyloCSF scores for ENSEMBL lincRNA
+##########################################################################
+##########################################################################
+@active_if(PARAMS.get("control_geneset_data") and
+           PARAMS["control_geneset_data"] != "ensembl")
+@follows(mkdir("lncRNA_control"))
+@transform(PARAMS["genesets_reference"], 
+           regex("reference.gtf.gz"),
+           r"lncRNA_control/lincRNA.gtf.gz")
+def extractEnsemblLincRNA(infile, outfile):
+    tmpf = P.getTempFile("/ifs/scratch")
+    for gtf in GTF.iterator(IOTools.openFile(infile)):
+        if gtf.source == "lincRNA":
+            tmpf.write(str(gtf) + "\n")
+        else:
+            continue
+    tmpf.close()
+    tmpf = tmpf.name
+
+    statement = ("cat %(tmpf)s |"
+                 " python %(scriptsdir)s/gtf2gtf.py"
+                 "  --sort=gene"
+                 "  --log=%(outfile)s.log |"
+                 " gzip > %(outfile)s")
+    P.run()
+
+    os.unlink(tmpf)
+
+
+@active_if(PARAMS.get("control_geneset_data") and
+           PARAMS["control_geneset_data"] == "ensembl")
+@follows(mkdir("lncRNA_control"))
+@files(os.path.join(".", PARAMS["control_genset_data"]),
+       os.path.join("lncRNA_control", PARAMS["control_geneset_data"]))
+def extractControlLncRNA(infile, outfile):
+    assert os.path.exists(infile), "Control file is missing:" % infile
+    assert ".gtf" in os.path.basename(infile), "Control file must be gtf"
+    os.symlink(infile, outfile)
+
+
+@transform([extractEnsemblLincRNA, extractControlLncRNA],
+           regex("(.+).gtf(.*)"), 
+           r"\1.bed.gz")
+def convertControlGTFToBed12(infile, outfile):
+    """
+    Convert either ensembl lincRNA, or control gtf to bed12 format
+    """
+    PipelineLncRNA.gtfToBed12(infile, outfile, "transcript")
+
+
+@collate(convertControlGTFToBed12,
+         regex("(.+)/(.+).bed.gz"),
+         add_inputs(createMAFAlignment),
+         r"\1/\2_transcripts.fasta.gz")
+def extractControllLncRNAFastaAlignments(infiles, outfile):
+    bed_file, maf_file = infiles
+    maf_tmp = P.getTempFilename("/ifs/scratch")
+    to_cluster = False
+    statement = ("gunzip -c %(maf_file)s > %(maf_tmp)s")
+    P.run()
+
+    target_genome = PARAMS["genome"]
+    query_genome = PARAMS["phyloCSF_query_genome"]
+
+    genome_file = os.path.join(PARAMS["genomedir"], PARAMS["genome"])
+
+    gene_models = PipelineLncRNA.extractMAFGeneBlocks(bed_file,
+                                                      maf_tmp,
+                                                      genome_file,
+                                                      outfile,
+                                                      target_genome,
+                                                      query_genome,
+                                                      keep_gaps=False)
+    E.info("%i gene_models extracted" % gene_models)
+    os.unlink(maf_tmp)
+
+
+@follows(mkdir("./lncRNA_control/aligned_fasta"))
+@split(extractControllLncRNAFastaAlignments,
+       "./lncRNA_control/aligned_fasta/*.fasta")
+def splitControlLncRNAFasta(infile, outfiles):
+    out_dir = "./lncRNA_control/aligned_fasta"
+
+    name_dict = {}
+    for mapping in PARAMS["phyloCSF_map_species_names"].split(","):
+        pair = mapping.split(":")
+        key = ">" + pair[0]
+        value = ">" + pair[1]
+        name_dict[key] = value
+    E.info("Name mapping: %s" % name_dict)
+
+    PipelineLncRNA.splitAlignedFasta(infile, out_dir, name_dict)
+
+
+@transform(splitControlLncRNAFasta, suffix(".fasta"), ".phyloCSF")
+def runControlLncRNAPhyloCSF(infile, outfile):
+    phylogeny = PARAMS["phyloCSF_phylogeny"]
+    n_frames = int(PARAMS["phyloCSF_n_frames"])
+    if PARAMS["phyloCSF_options"]:
+        options = PARAMS["phyloCSF_options"]
+    else:
+        options = ""
+
+    species = []
+    for mapping in PARAMS["phyloCSF_map_species_names"].split(","):
+        species.append(mapping.split(":")[1])
+    species = ",".join(species)
+    to_cluster = True
+    statement = ("PhyloCSF %(phylogeny)s"
+                 "  %(infile)s"
+                 "  --frames=%(n_frames)s"
+                 "  --species=%(species)s"
+                 " %(options)s"
+                 " > %(outfile)s")
+    P.run()
+
+
+@merge(runControlLncRNAPhyloCSF, "./lncRNA_control/control_phyloCSF.tsv")
+def mergeControlLncRNAPhyloCSF(infiles, outfile):
+    file_names = " ".join([x for x in infiles])
+    statement = '''
+                python %(scriptsdir)s/combine_tables.py
+                 --no-titles
+                 --cat=CAT
+                 --missing=0
+                 --log=%(outfile)s.log
                  %(file_names)s
                 > %(outfile)s
                  '''
     P.run()
 
 
+@transform(mergeControlLncRNAPhyloCSF, regex("(?:.+)/(.+).tsv"), r"\1.load")
+def loadControlLncRNAPhyloCSF(infile, outfile):
+    tmpf = P.getTempFilename("/ifs/scratch")
+    PipelineLncRNA.parsePhyloCSF(infile, tmpf)
+    P.load(tmpf, outfile, options="--index=gene_id")
+
+
+##########################################################################
+##########################################################################
+# calculate CPC scores for ENSEMBL lincRNA
+##########################################################################
+#########################################################################
+
+# @follows(mkdir("lincRNA_ensembl"))
+# @transform( PARAMS["genesets_reference"], 
+#             regex("reference.gtf.gz"),
+#             r"lincRNA_ensembl/lincRNA.gtf.gz" )
+# def extractEnsemblLincRNA(infile, outfile):
+
+@follows(mkdir("lncRNA_control/fasta"))
+@transform([extractEnsemblLincRNA, extractControlLncRNA],
+           regex("(?:.+)/(.+).gtf(.*)"), 
+           r"lncRNA_control/fasta/\1.fasta")
+def buildControlFasta(infile, outfile):
+    genome = os.path.join(PARAMS["general_genomedir"], 
+                          PARAMS["genome"] + ".fasta")
+    statement = ("zcat %(infile)s |"
+                 " python %(scriptsdir)s/gff2fasta.py"
+                 "  --genome-file=%(genome)s"
+                 "  --log=%(outfile)s.log"
+                 "  --is-gtf"
+                 " > %(outfile)s")
+    P.run()
+
+
+@transform(buildControlFasta,
+           regex("(.+)/(.+)/(.*).fasta"), 
+           r"\1/cpc/control_cpc.result")
+def runControlCPC(infile, outfile):
+    # farm.py is called from within cpc.sh
+    assert P.which("farm.py"), "farm.py needs to be in $PATH for cpc to run"
+    # Default cpc parameters don't work with later versions of blast
+    E.info("Running cpc with blast version:%s" % P.which("blastx"))
+
+    result_evidence = P.snip(outfile, ".result") + ".evidence"
+    working_dir = "lncRNA_control/cpc"
+    statement = ("%(scriptsdir)s/cpc.sh"
+                 " %(infile)s"
+                 " %(outfile)s"
+                 " %(working_dir)s"
+                 " %(result_evidence)s")
+    P.run()
+
+
+@transform(runControlCPC, regex("(?:.+)/(.+)/(.+).result"), r"\2.load")
+def loadControlCPCResults(infile, outfile):
+    tablename = filenameToTablename(os.path.basename(infile))
+    statement = ("cat %(infile)s |"
+                 " python %(scriptsdir)s/csv2db.py"
+                 "  -t %(tablename)s"
+                 "  --log=%(outfile)s.log"
+                 "  --header=transcript_id,feature,C_NC,CP_score"
+                 "  --index=transcript_id"
+                 " > %(outfile)s")
+    P.run()
+
+
+##########################################################################
+##########################################################################
+##########################################################################
+# targets
 @follows(buildCodingGeneSet,
          buildRefnoncodingGeneSet,
          buildFinalLncRNAGeneSet,
