@@ -806,7 +806,7 @@ def buildGenomeGCProfile(infile, outfile):
 def buildCpGBed(infile, outfile):
     '''build bed file with CpG locations.'''
 
-    statement = ''' 
+    statement = '''
     python %(scriptsdir)s/fasta2bed.py
         --method=cpg
         --log=%(outfile)s.log
@@ -1735,7 +1735,7 @@ def loadGOTable(infile, outfile):
 
 
 @follows(mkdir('ontologies.dir'),
-    downloadTranscriptInformation, loadGOAssignments)
+         downloadTranscriptInformation, loadGOAssignments)
 @files([(None, PARAMS["interface_go_geneontology"]), ])
 def createGOFromGeneOntology(infile, outfile):
     '''build GO assignments from GeneOntology.org'''
@@ -1982,7 +1982,7 @@ def buildNUMTs(infile, outfile):
     '''build list of NUMTs.'''
     PipelineGeneset.buildNUMTs(infile, outfile)
 
-#--------------------------------------------
+# --------------------------------------------
 # Below is a collection of functions that are
 # currently inactivated.
 
@@ -2083,7 +2083,8 @@ if 0:
 #     P.run()
 
 
-# @transform(calculateMappability, suffix(".mappability"), ".mappability.count")
+# @transform(calculateMappability, suffix(".mappability"),
+#            ".mappability.count")
 # def countMappableBases(infile, outfile):
 #     '''Count mappable bases in genome'''
 #     statement = '''cat %(infile)s | tr -cd ! | wc -c > %(outfile)s'''
@@ -2107,7 +2108,7 @@ if 0:
 # def splitMappabiliyFileByContig(infile, outfile):
 #     '''Count mappable bases in genome'''
 #     track = P.snip(os.path.basename(infile), ".mappability")
-#     statement = '''mkdir contigs; 
+#     statement = '''mkdir contigs;
 #     csplit -k -f contigs/contig %(infile)s '/^~[a-zA-Z]/' {100000}
 #     > %(outfile)s;
 #     rm contigs/contig00;'''
@@ -2136,7 +2137,7 @@ if 0:
 # def loadMappableBasesPerContig(infile, outfile):
 #     '''load count of mappable bases per contig '''
 #     header = "contig,mappable_bases"
-#     statement = '''cat %(infile)s 
+#     statement = '''cat %(infile)s
 #     | python %(scriptsdir)s/csv2db.py
 #     --table=mappable_bases_per_contig
 #     --header=%(header)s
@@ -2161,7 +2162,7 @@ def buildGFFSummary(infile, outfile):
            ".bedsummary.tsv.gz")
 def buildBedSummary(infile, outfile):
     '''summarize genomic coverage of bed file.'''
-    statement = '''zcat %(infile)s 
+    statement = '''zcat %(infile)s
     | python %(scriptsdir)s/bed2stats.py
     --per-contig
     --genome-file=%(genome_dir)s/%(genome)s
@@ -2175,7 +2176,7 @@ def buildBedSummary(infile, outfile):
            ".bednamesummary.tsv.gz")
 def buildBedNameSummary(infile, outfile):
     '''summarize genomic coverage of bed file.'''
-    statement = '''zcat %(infile)s 
+    statement = '''zcat %(infile)s
     | python %(scriptsdir)s/bed2stats.py
     --per-name
     --genome-file=%(genome_dir)s/%(genome)s
@@ -2189,7 +2190,7 @@ def buildBedNameSummary(infile, outfile):
            ".gtfsummary.tsv.gz")
 def buildGTFSummary(infile, outfile):
     '''summarize genomic coverage of bed file.'''
-    statement = '''zcat %(infile)s 
+    statement = '''zcat %(infile)s
     | python %(scriptsdir)s/gff2coverage.py
     --genome-file=%(genome_dir)s/%(genome)s
     | gzip > %(outfile)s
@@ -2202,7 +2203,7 @@ def buildGTFSummary(infile, outfile):
            ".gtfstats.tsv.gz")
 def buildGTFStats(infile, outfile):
     '''summarize genomic coverage of bed file.'''
-    statement = '''zcat %(infile)s 
+    statement = '''zcat %(infile)s
     | python %(scriptsdir)s/gff2stats.py
     --is-gtf
     | gzip > %(outfile)s
@@ -2215,7 +2216,7 @@ def buildGTFStats(infile, outfile):
            ".gffstats.tsv.gz")
 def buildGFFStats(infile, outfile):
     '''summarize genomic coverage of bed file.'''
-    statement = '''zcat %(infile)s 
+    statement = '''zcat %(infile)s
     | python %(scriptsdir)s/gff2stats.py
     | gzip > %(outfile)s
     '''

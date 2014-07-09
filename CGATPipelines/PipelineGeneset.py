@@ -32,6 +32,7 @@ import MySQLdb
 # dictionary
 PARAMS = {}
 
+
 def connectToUCSC():
     '''connect to UCSC mysql database.'''
     dbhandle = MySQLdb.Connect(host=PARAMS["ucsc_host"],
@@ -294,7 +295,7 @@ def buildFlatGeneSet(infile, outfile):
 
 def buildProteinCodingGenes(infile, outfile):
     '''build a collection of exons from the protein-coding
-    section of the ENSEMBL gene set. 
+    section of the ENSEMBL gene set.
 
     The exons include both CDS and UTR.
 
@@ -309,7 +310,7 @@ def buildProteinCodingGenes(infile, outfile):
     # and hence merging will fail.
     # --permit-duplicates is set so that these cases will be
     # assigned new merged gene ids.
-    statement = """gunzip 
+    statement = """gunzip
     < %(infile)s
     | awk '$2 == "protein_coding"'
     | grep "transcript_id"
@@ -384,7 +385,7 @@ def loadTranscriptInformation(infile, outfile,
     else:
         filter_cmd = "cat"
 
-    statement = '''gunzip 
+    statement = '''gunzip
     < %(infile)s
     | %(filter_cmd)s
     | awk '$3 == "CDS"'
@@ -435,7 +436,7 @@ def buildPeptideFasta(infile, outfile):
     '''
     dbname = outfile[:-len(".fasta")]
 
-    statement = '''gunzip 
+    statement = '''gunzip
     < %(infile)s
     | perl -p -e 'if ("^>") { s/ .*//};'
     | python %(scriptsdir)s/index_fasta.py
@@ -458,7 +459,7 @@ def loadPeptideSequences(infile, outfile):
     '''
     table = P.toTable(outfile)
 
-    statement = '''gunzip 
+    statement = '''gunzip
     < %(infile)s
     | perl -p -e 'if ("^>") { s/ .*//};'
     | python %(scriptsdir)s/fasta2table.py --section=length --section=sequence
@@ -502,7 +503,8 @@ def buildCDSFasta(infile, outfile):
     tmpfile.write("\n".join(
         ["%s\t%s" % x for x in
          cc.execute(
-             "SELECT DISTINCT protein_id, transcript_id FROM transcript_info")]))
+             "SELECT DISTINCT protein_id, transcript_id "
+             "FROM transcript_info")]))
     tmpfile.write("\n")
 
     tmpfile.close()
@@ -715,7 +717,7 @@ def loadProteinStats(infile, outfile):
 
     statement = '''
     gunzip < %(infile)s
-    | python %(scriptsdir)s/fasta2table.py 
+    | python %(scriptsdir)s/fasta2table.py
           --log=%(outfile)s
           --type=aa
           --section=length
@@ -790,7 +792,7 @@ def buildOverlapWithEnsembl(infile, outfile, filename_bed):
     ``infile`` is the output from :meth:`buildGenes`.
     '''
 
-    statement = '''gunzip 
+    statement = '''gunzip
         < %(infile)s
         | python %(scriptsdir)s/gtf2gtf.py --merge-transcripts
         | python %(scriptsdir)s/gff2bed.py --is-gtf
@@ -804,7 +806,7 @@ def buildOverlapWithEnsembl(infile, outfile, filename_bed):
 
 
 def compareGeneSets(infiles, outfile):
-    '''compute overlap of genes, exons and transcripts in ``infiles`` 
+    '''compute overlap of genes, exons and transcripts in ``infiles``
 
     ``infiles`` are protein coding gene sets.
     '''
@@ -947,7 +949,7 @@ def buildNUMTs(infile, outfile):
     tmpfile_mito = P.getTempFilename(".")
 
     statement = '''
-    python %(scriptsdir)s/index_fasta.py 
+    python %(scriptsdir)s/index_fasta.py
            --extract=%(numts_mitochrom)s
            --log=%(outfile)s.log
            %(genome_dir)s/%(genome)s
@@ -1048,7 +1050,7 @@ def sortGTF(infile, outfile, order="contig+gene"):
     else:
         compress = "cat"
 
-    statement = '''%(uncompress)s %(infile)s 
+    statement = '''%(uncompress)s %(infile)s
     | python %(scriptsdir)s/gtf2gtf.py --sort=%(order)s --log=%(outfile)s.log
     | %(compress)s > %(outfile)s'''
 
