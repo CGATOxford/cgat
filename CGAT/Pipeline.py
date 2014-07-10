@@ -235,7 +235,7 @@ def getParameters(filenames=["pipeline.ini", ],
     p = configToDictionary(CONFIG)
 
     # create a copy of hard-coded PARAMS
-    PARAMS = copy.deepcopy(HARDCODED_PARAMS)
+    PARAMS.update(HARDCODED_PARAMS)
 
     if defaults:
         PARAMS.update(defaults)
