@@ -211,6 +211,9 @@ def getParameters(filenames=["pipeline.ini", ],
     global CONFIG
     global PARAMS
 
+    # important: only update the PARAMS variable as
+    # it is referenced in other modules.
+
     CONFIG = ConfigParser.ConfigParser()
 
     if user_ini:
@@ -234,7 +237,7 @@ def getParameters(filenames=["pipeline.ini", ],
 
     p = configToDictionary(CONFIG)
 
-    # create a copy of hard-coded PARAMS
+    # update with hard-coded PARAMS
     PARAMS.update(HARDCODED_PARAMS)
 
     if defaults:
