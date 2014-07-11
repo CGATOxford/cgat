@@ -109,12 +109,14 @@ path:
 Pipeline output
 ===============
 
-The major output is a set of HTML pages and plots reporting on the quality of the sequence archive
+The major output is a set of HTML pages and plots reporting on the quality of
+the sequence archive
 
 Example
 =======
 
-Example data is available at http://www.cgat.org/~andreas/sample_data/pipeline_readqc.tgz.
+Example data is available at
+http://www.cgat.org/~andreas/sample_data/pipeline_readqc.tgz.
 To run the example, simply unpack and untar::
 
    wget http://www.cgat.org/~andreas/sample_data/pipeline_readqc.tgz
@@ -217,7 +219,8 @@ transcripts = PARAMS["sailfish_transcripts"]
 #########################################################################
 
 
-@follows(mkdir(PARAMS["exportdir"]), mkdir(os.path.join(PARAMS["exportdir"], "fastqc")))
+@follows(mkdir(PARAMS["exportdir"]), mkdir(os.path.join(PARAMS["exportdir"],
+                                                        "fastqc")))
 @transform(INPUT_FORMATS,
            REGEX_FORMATS,
            r"\1.fastqc")
@@ -234,6 +237,7 @@ def runFastqc(infiles, outfile):
 #########################################################################
 ##
 #########################################################################
+
 
 def FastqcSectionIterator(infile):
     data = []
@@ -264,7 +268,8 @@ def loadFastqc(infile, outfile):
         prefix = os.path.basename(os.path.dirname(fn))
         results = []
 
-        for name, status, header, data in FastqcSectionIterator(IOTools.openFile(fn)):
+        for name, status, header, data in FastqcSectionIterator(
+                IOTools.openFile(fn)):
             # do not collect basic stats, see loadFastQCSummary
             if name == "Basic Statistics":
                 continue
@@ -285,7 +290,8 @@ def loadFastqc(infile, outfile):
         options.allow_empty = True
 
         inf = cStringIO.StringIO(
-            "\n".join(["name\tstatus"] + ["\t".join(x) for x in results]) + "\n")
+            "\n".join(["name\tstatus"] +
+                      ["\t".join(x) for x in results]) + "\n")
         CSV2DB.run(inf, options)
 
     P.touch(outfile)
@@ -300,11 +306,13 @@ def collectFastQCSections(infiles, section):
         track = P.snip(infile, ".fastqc")
 
         filename = os.path.join(
-            PARAMS["exportdir"], "fastqc", track + "*_fastqc", "fastqc_data.txt")
+            PARAMS["exportdir"], "fastqc", track + "*_fastqc",
+            "fastqc_data.txt")
 
         for fn in glob.glob(filename):
             prefix = os.path.basename(os.path.dirname(fn))
-            for name, status, header, data in FastqcSectionIterator(IOTools.openFile(fn)):
+            for name, status, header, data in FastqcSectionIterator(
+                    IOTools.openFile(fn)):
                 if name == section:
                     results.append((track, status, header, data))
 
@@ -320,14 +328,16 @@ def buildFastQCSummaryStatus(infiles, outfile):
     for infile in infiles:
         track = P.snip(infile, ".fastqc")
         filename = os.path.join(
-            PARAMS["exportdir"], "fastqc", track + "*_fastqc", "fastqc_data.txt")
+            PARAMS["exportdir"], "fastqc", track + "*_fastqc",
+            "fastqc_data.txt")
 
         for fn in glob.glob(filename):
             prefix = os.path.basename(os.path.dirname(fn))
             results = []
 
             names, stats = [], []
-            for name, status, header, data in FastqcSectionIterator(IOTools.openFile(fn)):
+            for name, status, header, data in FastqcSectionIterator(
+                    IOTools.openFile(fn)):
                 stats.append(status)
                 names.append(name)
 
@@ -389,6 +399,7 @@ def indexForSailfish(infile, outfile):
 
     P.run()
 
+
 @follows(indexForSailfish, mkdir("quantification"))
 @transform(INPUT_FORMATS,
            REGEX_FORMATS,
@@ -405,7 +416,7 @@ def runSailfish(infiles, outfile):
 
     sample = P.snip(os.path.basename(outfile), "_quant.sf")
     outdir = "quantification/%(sample)s" % locals()
-    
+
     m = PipelineMapping.Sailfish(strand=PARAMS["sailfish_strandedness"],
                                  orient=PARAMS["sailfish_orientation"],
                                  threads=PARAMS["sailfish_threads"])
@@ -414,12 +425,13 @@ def runSailfish(infiles, outfile):
 
     P.run()
 
+
 @follows(runSailfish)
 @merge(runSailfish,
        "quantification/summary.tsv.gz")
-def mergeSailfishResults(infiles,outfile):
+def mergeSailfishResults(infiles, outfile):
 
-    statement='''python %(scriptsdir)s/combine_tables.py
+    statement = '''python %(scriptsdir)s/combine_tables.py
               --glob quantification/*/*quant.sf --columns 1 --take 7 
               --use-file-prefix -v 0| gzip > %(outfile)s'''
     P.run()
@@ -431,9 +443,9 @@ def mergeSailfishResults(infiles,outfile):
            regex("(\S+)"),
            "transcripts_attributes.tsv.gz")
 # take multifasta transcripts file and output file of attributes
-def characteriseTranscripts(infile,outfile):
+def characteriseTranscripts(infile, outfile):
 
-    statement = '''zcat %(infile)s | 
+    statement = '''zcat %(infile)s |
                 python %(scriptsdir)s/fasta2table.py
                 --split-fasta-identifier --section=dn -v 0
                 | gzip > %(outfile)s'''
@@ -456,8 +468,8 @@ def summariseBias(infiles, outfiles):
     atr = pandas.read_csv(transcripts, sep='\t')
     exp = pandas.read_csv(expression, sep='\t', compression="gzip")
     atr["length"] = numpy.log2(atr["length"])
- 
-    log_exp = numpy.log2(exp.ix[:,1:]+0.1)
+
+    log_exp = numpy.log2(exp.ix[:, 1:]+0.1)
     log_exp["id"] = exp[["Transcript"]]
 
     bias_factors = list(atr.columns[1:])
@@ -476,7 +488,7 @@ def summariseBias(infiles, outfiles):
 
         means_df = merged.groupby(pandas.qcut(df.ix[:, attribute], bins))
         means_df = means_df.agg(temp_dict).sort(axis=1)
-        
+
         corr_matrix = means_df.corr(method='pearson')
         corr_matrix = corr_matrix[corr_matrix.index != attribute]
 
@@ -515,6 +527,7 @@ def summariseBias(infiles, outfiles):
     gradient_df.to_csv(out_gradient, sep="\t",
                        index=False, float_format='%.6f')
 
+
 @follows(summariseBias)
 @transform(summariseBias,
            regex("quantification/(\S+).tsv"),
@@ -534,6 +547,7 @@ def loadBiasSummary(infiles, outfiles):
 @follows(loadFastqc, loadFastqcSummary, loadBiasSummary)
 def full():
     pass
+
 
 @follows(loadBiasSummary)
 def bias():

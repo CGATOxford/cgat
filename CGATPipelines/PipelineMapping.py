@@ -177,9 +177,11 @@ def mergeAndFilterGTF(infile, outfile, logfile,
     #     rna_file = os.path.join( PARAMS["annotations_dir"],
     #                              PARAMS_ANNOTATIONS["interface_rna_gff"] )
     #     if not os.path.exists( rna_file ):
-    #         E.warn( "file '%s' to remove repetetive rna does not exist" % rna_file )
+    #         E.warn( "file '%s' to remove repetetive rna does not exist" %
+    # rna_file )
     #     else:
-    #         rna_index = GTF.readAndIndex( GTF.iterator( IOTools.openFile( rna_file, "r" ) ) )
+    #         rna_index = GTF.readAndIndex( GTF.iterator( IOTools.openFile(
+    # rna_file, "r" ) ) )
     #         E.info( "removing ribosomal RNA in %s" % rna_file )
     gene_ids = {}
 
@@ -286,7 +288,9 @@ def resetGTFAttributes(infile, genome, gene_ids, outfile):
     # The p_id attribute is set if the fasta sequence is given.
     # However, there might be some errors in cuffdiff downstream:
     #
-    # cuffdiff: bundles.cpp:479: static void HitBundle::combine(const std::vector<HitBundle*, std::allocator<HitBundle*> >&, HitBundle&): Assertion `in_bundles[i]->ref_id() == in_bundles[i-1]->ref_id()' failed.
+    # cuffdiff: bundles.cpp:479: static void HitBundle::combine(const std::
+    # vector<HitBundle*, std::allocator<HitBundle*> >&, HitBundle&): Assertion
+    # `in_bundles[i]->ref_id() == in_bundles[i-1]->ref_id()' failed.
     #
     # I was not able to resolve this, it was a complex
     # bug dependent on both the read libraries and the input reference gtf
@@ -866,12 +870,12 @@ class BWA(Mapper):
         tmpdir_fastq = self.tmpdir_fastq
 
         track = P.snip(os.path.basename(outfile), ".bam")
-        
+
         if nfiles == 1:
             infiles = ",".join([self.quoteFile(x[0]) for x in infiles])
 
             statement.append('''
-            bwa aln %%(bwa_aln_options)s -t %%(bwa_threads)i 
+            bwa aln %%(bwa_aln_options)s -t %%(bwa_threads)i
             %(index_prefix)s %(infiles)s
             > %(tmpdir)s/%(track)s.sai 2>>%(outfile)s.bwa.log;
             bwa samse %%(bwa_index_dir)s/%%(genome)s
@@ -953,13 +957,14 @@ class BWA(Mapper):
             statement += '''samtools index %(outfile)s ;''' % locals()
 
         if self.read_group_header:
-            statement +='''AddOrReplaceReadGroups INPUT=%(outfile)s
-                           OUTPUT=%(tmpdir)s/%(track)s.readgroup.header
-                           RGLB=library RGPL=platform RGPU=flowcell
-                           RGSM=sample;''' % locals()
-            statement +='''rm -f %(outfile)s %(outfile)s.bai; mv %(tmpdir)s/%(track)s.readgroup.header
-                           %(outfile)s;''' % locals()
-            statement +='''samtools index %(outfile)s;''' % locals()
+            statement += '''AddOrReplaceReadGroups INPUT=%(outfile)s
+                            OUTPUT=%(tmpdir)s/%(track)s.readgroup.header
+                            RGLB=library RGPL=platform RGPU=flowcell
+                            RGSM=sample;''' % locals()
+            statement += '''rm -f %(outfile)s %(outfile)s.bai;
+                            mv %(tmpdir)s/%(track)s.readgroup.header
+                            %(outfile)s;''' % locals()
+            statement += '''samtools index %(outfile)s;''' % locals()
 
         return statement
 
@@ -1087,7 +1092,8 @@ class Stampy(BWA):
             infiles2 = ",".join([self.quoteFile(x[1]) for x in infiles])
 
             statement.append('''
-            %(executable)s -v 3 -g %%(stampy_index_dir)s/%%(genome)s -h %%(stampy_index_dir)s/%%(genome)s
+            %(executable)s -v 3 -g %%(stampy_index_dir)s/%%(genome)s
+            -h %%(stampy_index_dir)s/%%(genome)s
                       --bwaoptions="-q10 %(bwa_index_prefix)s"
                       -M %(infiles1)s %(infiles2)s
             > %(tmpdir)s/%(track)s.sam 2>%(outfile)s.log;
