@@ -949,7 +949,6 @@ def execute(statement, **kwargs):
     statement = " ".join(re.sub("\t+", " ", statement).split("\n")).strip()
     if statement.endswith(";"):
         statement = statement[:-1]
-    print 'statement=', statement
 
     process = subprocess.Popen(statement % kwargs,
                                cwd=cwd,
