@@ -642,26 +642,27 @@ class FastQc(Mapper):
 
     compress = True
 
-    def __init__(self, nogroup=False, *args, **kwargs):
+    def __init__(self, nogroup=False, outdir=".", *args, **kwargs):
         Mapper.__init__(self, *args, **kwargs)
         self.nogroup = nogroup
+        self.outdir = outdir
 
     def mapper(self, infiles, outfile):
         '''build mapping statement on infiles.
 
-        The output is created in exportdir
+        The output is created in outdir
         '''
-
+        outdir = self.outdir
         statement = []
         for f in infiles:
             for i, x in enumerate(f):
                 track = os.path.basename(re.sub(".fastq.*", "", x))
                 if self.nogroup:
                     statement.append(
-                        '''fastqc --outdir=%%(exportdir)s/fastqc --nogroup %(x)s >& %(outfile)s;''' % locals())
+                        '''fastqc --outdir=%(outdir)s --nogroup %(x)s >& %(outfile)s;''' % locals())
                 else:
                     statement.append(
-                        '''fastqc --outdir=%%(exportdir)s/fastqc %(x)s >& %(outfile)s;''' % locals())
+                        '''fastqc --outdir=%(outdir)s %(x)s >& %(outfile)s;''' % locals())
         return " ".join(statement)
 
 
