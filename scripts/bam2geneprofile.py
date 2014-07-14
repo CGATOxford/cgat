@@ -809,6 +809,7 @@ def main(argv=None):
                     cuts.append(len(counts))
 
                 plt.plot(range(len(points)), points)
+                
                 xx, xxx = 0, []
                 for x in cuts:
                     xxx.append(xx + x // 2)

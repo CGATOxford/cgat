@@ -17,7 +17,7 @@ For questions, please subscribe and contact us at the
 <https://groups.google.com/forum/?fromgroups#!forum/cgat-user-group>`_.
 
 Documentation of CGAT tools is available 
-`here <http://www.cgat.org/~andreas/documentation/cgat/cgat.html#cgat>`_.
+`here <http://www.cgat.org/downloads/public/cgat/documentation/cgat.html#cgat>`_.
 
 CGAT Tools
 ==========
@@ -37,7 +37,7 @@ CGAT Pipelines
 We have developed numerous pipelines in comparative genomics
 and NGS analysis. The pipelines are generally available and should
 be fairly portable. Some documentation of the pipelines is 
-`here <http://www.cgat.org/~andreas/documentation/cgat/Pipelines.html#pipelines>`_.
+`here <http://www.cgat.org/downloads/public/cgat/documentation/Pipelines.html#pipelines>`_.
 
 Note that we currently are not able to fully support and document the 
 pipelines. They are under continuous development and changing rapidly.

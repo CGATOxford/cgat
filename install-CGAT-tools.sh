@@ -32,17 +32,24 @@ if [ -f /etc/os-release ]; then
 
 elif [ -f /etc/system-release ]; then
 
-   OS=$(cat /etc/system-release | awk ' {print $4;}' | awk '{sub("\\."," "); print $1;}')
-   if [ "$OS" != "6" ] ; then
+   OP1=$(cat /etc/system-release | awk ' {print $4;}' | awk '{sub("\\."," "); print $1;}')
+   OP2=$(cat /etc/system-release | awk ' {print $3;}' | awk '{sub("\\."," "); print $1;}')
+   if [ "$OP1" != "6" -o "$OP2" != "6" ] ; then
       echo
-      echo " Scientific Linux version not supported "
+      echo " Scientific Linux / CentOS version not supported "
       echo
-      echo " Only 6.x Scientific Linux has been tested so far "
+      echo " Only 6.x versions have been tested so far "
       echo
       exit 1;
    fi
 
-   OS="sl"
+   if [ "$OP1" == "6" ] ; then
+      OS="sl"
+   fi
+
+   if [ "OP2" == "6" ] ; then
+      OS="centos"
+   fi
 
 else
 
@@ -63,17 +70,19 @@ if [ "$OS" == "ubuntu" -o "$OS" == "travis" ] ; then
 
    sudo apt-get install -y gcc g++ zlib1g-dev libssl-dev libbz2-dev libfreetype6-dev libpng12-dev libblas-dev libatlas-dev liblapack-dev gfortran libpq-dev r-base-dev libreadline-dev libmysqlclient-dev libboost-dev libsqlite3-dev mercurial;
 
-elif [ "$OS" == "sl" ] ; then
+elif [ "$OS" == "sl" -o "$OS" == "centos" ] ; then
 
    echo 
-   echo " Installing packages for Scientific Linux "
+   echo " Installing packages for Scientific Linux / CentOS "
    echo
 
    yum -y install gcc zlib-devel openssl-devel bzip2-devel gcc-c++ freetype-devel libpng-devel blas atlas lapack gcc-gfortran postgresql-devel R-core-devel readline-devel mysql-devel boost-devel sqlite-devel mercurial
 
    # additional configuration for scipy
+   if [ "" == "sl" ] ; then
+      ln -s /usr/lib64/libatlas.so.3 /usr/lib64/libatlas.so
+   fi
    ln -s /usr/lib64/libblas.so.3 /usr/lib64/libblas.so
-   ln -s /usr/lib64/libatlas.so.3 /usr/lib64/libatlas.so
    ln -s /usr/lib64/liblapack.so.3 /usr/lib64/liblapack.so;
 
 else
@@ -88,7 +97,7 @@ fi # if-OS
 # otherwise, in $CGAT_HOME
 install_python_deps() {
 
-if [ "$OS" == "ubuntu" -o "$OS" == "sl" ] ; then
+if [ "$OS" == "ubuntu" -o "$OS" == "sl" -o "$OS" == "centos" ] ; then
 
    echo
    echo " Installing Python dependencies for $1 "
@@ -100,27 +109,27 @@ if [ "$OS" == "ubuntu" -o "$OS" == "sl" ] ; then
       CGAT_HOME=$HOME/CGAT-DEPS
    fi
 
-   # Build Python 2.7.5
+   # Build Python 2.7
    mkdir -p $CGAT_HOME
    cd $CGAT_HOME
    mkdir python_build
    cd python_build
-   wget http://www.python.org/ftp/python/2.7.5/Python-2.7.5.tgz
-   tar xzvf Python-2.7.5.tgz
-   rm Python-2.7.5.tgz
-   cd Python-2.7.5
-   ./configure --prefix=$CGAT_HOME/Python-2.7.5
+   wget http://www.python.org/ftp/python/2.7.6/Python-2.7.6.tgz
+   tar xzvf Python-2.7.6.tgz
+   rm Python-2.7.6.tgz
+   cd Python-2.7.6
+   ./configure --prefix=$CGAT_HOME/Python-2.7.6
    make
    make install
    cd $CGAT_HOME
    rm -rf python_build/
 
    # Create virtual environment
-   wget --no-check-certificate https://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.10.1.tar.gz
-   tar xvfz virtualenv-1.10.1.tar.gz
-   rm virtualenv-1.10.1.tar.gz
-   cd virtualenv-1.10.1
-   $CGAT_HOME/Python-2.7.5/bin/python virtualenv.py cgat-venv
+   wget https://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.11.6.tar.gz
+   tar xvfz virtualenv-1.11.6.tar.gz
+   rm virtualenv-1.11.6.tar.gz
+   cd virtualenv-1.11.6
+   $CGAT_HOME/Python-2.7.6/bin/python virtualenv.py cgat-venv
    source cgat-venv/bin/activate
 
    # Install Python prerequisites
@@ -132,8 +141,36 @@ if [ "$OS" == "ubuntu" -o "$OS" == "sl" ] ; then
    pip install pybedtools
    pip install matplotlib
    pip install scipy
-   pip install -r https://raw.github.com/CGATOxford/cgat/master/requires.txt
-   pip install --upgrade setuptools
+
+   # substitute requires.txt on travis installation --start
+   #pip install -r https://raw.github.com/CGATOxford/cgat/master/requires.txt
+   pip install pyparsing==1.5.7
+   pip install MySQL-python
+   pip install PyGreSQL
+   pip install PyYAML
+   pip install SphinxReport==2.0
+   pip install alignlib-lite
+   pip install drmaa
+   pip install hgapi
+   pip install matplotlib-venn
+   pip install networkx
+   pip install openpyxl==1.8.5
+   pip install jdcal
+   pip install pandas
+   pip install rdflib
+   pip install rpy2
+   pip install ruffus
+   pip install sphinx
+   pip install sphinxcontrib-programoutput
+   pip install sqlalchemy
+   pip install threadpool
+   pip install web.py
+   pip install weblogo
+   pip install xlwt
+   pip install pep8
+
+   # substitute requires.txt on travis installation --end
+   #pip install --upgrade setuptools
    pip install CGAT
 
    # Test CGAT Code Collection
@@ -143,7 +180,7 @@ if [ "$OS" == "ubuntu" -o "$OS" == "sl" ] ; then
    echo
    echo
    echo "To start using the Python virtual environment with the CGAT code collection, type:"
-   echo "-> source $CGAT_HOME/virtualenv-1.10.1/cgat-venv/bin/activate"
+   echo "-> source $CGAT_HOME/virtualenv-1.11.6/cgat-venv/bin/activate"
    echo "-> cgat --help"
    echo
    echo "To finish the Python virtual environment, type:"
@@ -166,7 +203,6 @@ elif [ "$OS" == "travis" ] ; then
    pip install pybedtools
    pip install matplotlib
    pip install scipy
-   pip install -r https://raw.github.com/CGATOxford/cgat/master/requires.txt
 
    # substitute requires.txt on travis installation --start
    #pip install -r https://raw.github.com/CGATOxford/cgat/master/requires.txt
@@ -174,13 +210,13 @@ elif [ "$OS" == "travis" ] ; then
    pip install MySQL-python
    pip install PyGreSQL
    pip install PyYAML
-   pip install SphinxReport
+   pip install SphinxReport==2.0
    pip install alignlib-lite
    pip install drmaa
    pip install hgapi
    pip install matplotlib-venn
    pip install networkx
-   pip install openpyxl>=1.6.1,<2.0.0
+   pip install openpyxl==1.8.5
    pip install jdcal
    pip install pandas
    pip install rdflib
@@ -229,6 +265,16 @@ elif [ "$OS" == "sl" ] ; then
    # GCProfile
    yum install -y glibc.i686 compat-libstdc++-33.i686
 
+elif [ "$OS" == "centos"  ] ; then
+
+   # libpq
+   wget http://yum.postgresql.org/9.3/redhat/rhel-6-x86_64/pgdg-centos93-9.3-1.noarch.rpm
+   rpm -i pgdg-centos93-9.3-1.noarch.rpm
+   yum install -y postgresql93-devel
+
+   # GCProfile
+   yum install -y glibc.i686 compat-libstdc++-33.i686
+
 else
 
    sanity_check_os
@@ -249,7 +295,7 @@ if [ "$OS" == "travis" ] ; then
    mkdir -p $TRAVIS_BUILD_DIR/external-tools
    cd $TRAVIS_BUILD_DIR/external-tools
 
-elif [ "$OS" == "sl" -o "$OS" == "ubuntu" ] ; then
+elif [ "$OS" == "sl" -o "$OS" == "centos" -o "$OS" == "ubuntu" ] ; then
 
    # Go to CGAT_HOME to continue with installation
    if [ -z "$CGAT_HOME" ] ; then
@@ -279,18 +325,19 @@ chmod +x bedGraphToBigWig
 
 # BEDtools
 # curl -L https://github.com/arq5x/bedtools2/releases/download/v2.18.2/bedtools-2.18.2.tar.gz > bedtools-2.18.2.tar.gz
-wget --no-check-certificate https://www.cgat.org/downloads/public/external-tools/bedtools-2.18.2.tar.gz
-tar xzvf bedtools-2.18.2.tar.gz
-rm bedtools-2.18.2.tar.gz
-cd bedtools-2.18.2
+# wget https://github.com/arq5x/bedtools2/releases/download/v2.19.1/bedtools-2.19.1.tar.gz
+wget --no-check-certificate https://www.cgat.org/downloads/public/external-tools/bedtools-2.19.1.tar.gz
+tar xzf bedtools-2.19.1.tar.gz
+rm bedtools-2.19.1.tar.gz
+cd bedtools2-2.19.1
 make
-#PATH=$PATH:$CGAT_HOME/external-tools/bedtools-2.18.2/bin
+#PATH=$PATH:$CGAT_HOME/external-tools/bedtools2-2.19.1/bin
 
 # GCProfile
 cd ..
 # wget http://tubic.tju.edu.cn/GC-Profile/download/GCProfile_LINUX.tar
 wget --no-check-certificate https://www.cgat.org/downloads/public/external-tools/GCProfile_LINUX.tar
-tar xvf GCProfile_LINUX.tar
+tar xf GCProfile_LINUX.tar
 rm GCProfile_LINUX.tar
 cp GCProfile_LINUX/GCProfile .
 cp GCProfile_LINUX/gnuplot .
@@ -318,7 +365,7 @@ if [ "$OS" == "travis" ] ; then
 
    # Set up other environment variables
    #cd $TRAVIS_BUILD_DIR
-   export PATH=$PATH:$TRAVIS_BUILD_DIR/external-tools:$TRAVIS_BUILD_DIR/external-tools/bedtools-2.18.2/bin
+   export PATH=$PATH:$TRAVIS_BUILD_DIR/external-tools:$TRAVIS_BUILD_DIR/external-tools/bedtools2-2.19.1/bin
    #export PYTHONPATH=$PYTHONPATH:$TRAVIS_BUILD_DIR
 
    # bx-python
@@ -327,7 +374,7 @@ if [ "$OS" == "travis" ] ; then
    # Python preparation
    cd $TRAVIS_BUILD_DIR
    python setup.py develop
-   python scripts/cgat_rebuild_extensions.py
+   #python scripts/cgat_rebuild_extensions.py
 
    # run nosetests
    if [ "$TEST_IMPORT" == "1" ] ; then
@@ -338,7 +385,7 @@ if [ "$OS" == "travis" ] ; then
       nosetests -v tests/test_scripts.py ;
    fi
 
-elif [ "$OS" == "ubuntu" -o "$OS" == "sl" ] ; then
+elif [ "$OS" == "ubuntu" -o "$OS" == "sl" -o "$OS" == "centos" ] ; then
 
    # prepare external dependencies
    nosetests_external_deps $OS
@@ -359,16 +406,16 @@ elif [ "$OS" == "ubuntu" -o "$OS" == "sl" ] ; then
    cd $CGAT_GITHUB
 
    # Set up other environment variables
-   export PATH=$PATH:$CGAT_HOME/external-tools:$CGAT_HOME/external-tools/bedtools-2.18.2/bin
+   export PATH=$PATH:$CGAT_HOME/external-tools:$CGAT_HOME/external-tools/bedtools2-2.19.1/bin
    export PYTHONPATH=$PYTHONPATH:$CGAT_GITHUB
-   source $CGAT_HOME/virtualenv-1.10.1/cgat-venv/bin/activate
+   source $CGAT_HOME/virtualenv-1.11.6/cgat-venv/bin/activate
    
    # bx-python
-   export C_INCLUDE_PATH=$CGAT_HOME/virtualenv-1.10.1/cgat-venv/lib/python2.7/site-packages/numpy/core/include
+   export C_INCLUDE_PATH=$CGAT_HOME/virtualenv-1.11.6/cgat-venv/lib/python2.7/site-packages/numpy/core/include
 
    # Python preparation
    python setup.py develop
-   python scripts/cgat_rebuild_extensions.py
+   #python scripts/cgat_rebuild_extensions.py
 
    # run tests
    /usr/bin/time -o test_import.time -v nosetests -v tests/test_import.py >& test_import.out
@@ -400,10 +447,10 @@ fi
 cd $CGAT_GITHUB
 
 # set up environment variables
-export PATH=$PATH:$CGAT_HOME/external-tools:$CGAT_HOME/external-tools/bedtools-2.18.2/bin
+export PATH=$PATH:$CGAT_HOME/external-tools:$CGAT_HOME/external-tools/bedtools2-2.19.1/bin
 export PYTHONPATH=$PYTHONPATH:$CGAT_GITHUB
-source $CGAT_HOME/virtualenv-1.10.1/cgat-venv/bin/activate
-export C_INCLUDE_PATH=$CGAT_HOME/virtualenv-1.10.1/cgat-venv/lib/python2.7/site-packages/numpy/core/include
+source $CGAT_HOME/virtualenv-1.11.6/cgat-venv/bin/activate
+export C_INCLUDE_PATH=$CGAT_HOME/virtualenv-1.11.6/cgat-venv/lib/python2.7/site-packages/numpy/core/include
 
 # Python preparation
 python setup.py develop
@@ -433,9 +480,9 @@ echo " ./install-CGAT-tools.sh --install-python-deps --cgat-deps-dir /path/to/fo
 echo
 echo " At this stage the CGAT Code Collection is ready to go and you do not need further steps. Please type the following for more information:"
 if [ -z "$CGAT_HOME" ] ; then
-   echo " source $HOME/CGAT-DEPS/virtualenv-1.10.1/cgat-venv/bin/activate"
+   echo " source $HOME/CGAT-DEPS/virtualenv-1.11.6/cgat-venv/bin/activate"
 else
-   echo " source $CGAT_HOME/virtualenv-1.10.1/cgat-venv/bin/activate"
+   echo " source $CGAT_HOME/virtualenv-1.11.6/cgat-venv/bin/activate"
 fi 
 echo " cgat --help "
 echo
@@ -457,7 +504,7 @@ echo " If you installed the CGAT Code Collection with the '--cgat-deps-dir optio
 echo " ./install-CGAT-tools.sh --rerun-nosetests --git-hub-dir /path/to/folder"
 echo 
 echo " NOTES: "
-echo " * Supported operating systems: Ubuntu 12.x and Scientific Linux 6.x "
+echo " * Supported operating systems: Ubuntu 12.x, Scientific Linux 6.x and CentOS 6.x "
 echo " ** An isolated virtual environment will be created to install Python dependencies "
 echo
 exit 1;

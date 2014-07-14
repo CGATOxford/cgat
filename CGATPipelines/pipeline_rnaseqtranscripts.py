@@ -782,8 +782,7 @@ def buildTranscriptsWithCufflinks(infiles, outfile):
 
     infile, mask_file, reference_file = infiles
 
-    to_cluster = True
-    job_options = "-pe dedicated %i -R y" % PARAMS["cufflinks_threads"]
+    job_threads = PARAMS["cufflinks_threads"]
 
     track = os.path.basename(P.snip(outfile, ".gtf.gz"))
 
@@ -946,8 +945,6 @@ def mergeUsingCuffmerge(infiles, outfile):
     on each sample
     CURRENTLY THIS IS NOT WIRED INTO THE MAIN PIPELINE FLOW '''
 
-    to_cluster = True
-
     tmpdir = P.getTempDir(".")
 
     cmd_extract = "; ".join(
@@ -963,24 +960,25 @@ def mergeUsingCuffmerge(infiles, outfile):
 
     genome = os.path.join(PARAMS["bowtie_index_dir"], PARAMS["genome"]) + ".fa"
     genome = os.path.abspath(genome)
-    job_options = "-pe dedicated %i -R y" % PARAMS["cufflinks_threads"]
+    job_threads = PARAMS["cufflinks_threads"]
 
     # note: cuffcompare adds \0 bytes to gtf file - replace with '.'
     statement = '''
-        %(cmd_extract)s;
-       gunzip -c refcoding.gtf.gz > %(tmp2)s;
-       cuffmerge    -o %(outfile)s.dir
-                    -s %(genome)s
-                    -p %(cufflinks_threads)i
-                    -g %(tmp2)s
-                    %(tmp)s
-        >& %(outfile)s.log;
-        checkpoint;
-        perl -p -e "s/\\0/./g" < %(outfile)s.dir/merged.gtf | gzip > %(outfile)s;
-        checkpoint;
-        rm -f %(tmp2)s;
-        rm -rf %(outfile)s.dir;
-        '''
+    %(cmd_extract)s;
+    gunzip -c refcoding.gtf.gz > %(tmp2)s;
+    cuffmerge    -o %(outfile)s.dir
+    -s %(genome)s
+    -p %(cufflinks_threads)i
+    -g %(tmp2)s
+    %(tmp)s
+    >& %(outfile)s.log;
+    checkpoint;
+    perl -p -e "s/\\0/./g" < %(outfile)s.dir/merged.gtf |
+    gzip > %(outfile)s;
+    checkpoint;
+    rm -f %(tmp2)s;
+    rm -rf %(outfile)s.dir;
+    '''
     P.run()
 
     shutil.rmtree(tmpdir)

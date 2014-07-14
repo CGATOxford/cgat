@@ -91,4 +91,3 @@ Indices and tables
 * :ref:`modindex`
 * :ref:`search`
 
-.. _alignlib: http://wwwfgu.anat.ox.ac.uk/~andreas/alignlib

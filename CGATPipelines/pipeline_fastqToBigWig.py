@@ -208,9 +208,8 @@ for X in TRACKS:
            r"\1.bam")
 def buildBAM(infile, outfile):
     '''map reads with bowtie'''
-    to_cluster = True
     track = P.snip(os.path.basename(outfile), ".bam")
-    job_options = "-pe dedicated %i -R y" % PARAMS["bowtie_threads"]
+    job_threads = PARAMS["bowtie_threads"]
     m = PipelineMapping.Bowtie()
     reffile = PARAMS["samtools_genome"]
     statement = m.build((infile,), outfile)
@@ -222,7 +221,6 @@ def buildBAM(infile, outfile):
 @transform(buildBAM, suffix(".bam"), ".alignstats")
 def buildPicardAlignStats(infile, outfile):
     '''Gather BAM file alignment statistics using Picard '''
-    to_cluster = True
     track = P.snip(os.path.basename(infile), ".bam")
     statement = '''CollectAlignmentSummaryMetrics INPUT=%(infile)s REFERENCE_SEQUENCE=%%(samtools_genome)s ASSUME_SORTED=true OUTPUT=%(outfile)s VALIDATION_STRINGENCY=SILENT ''' % locals(
     )

@@ -217,9 +217,10 @@ P.getParameters(
 
 PARAMS = P.PARAMS
 
-PARAMS_ANNOTATIONS = P.peekParameters(PARAMS["annotations_dir"],
-                                      "pipeline_annotations.py", on_error_raise=__name__ == "__main__")
-
+PARAMS_ANNOTATIONS = P.peekParameters(
+    PARAMS["annotations_dir"],
+    "pipeline_annotations.py",
+    on_error_raise=__name__ == "__main__")
 
 ###################################################################
 ###################################################################
@@ -267,22 +268,10 @@ def connect():
 
     return dbh
 
-###################################################################
-###################################################################
-###################################################################
-##
-###################################################################
+
 if os.path.exists("pipeline_conf.py"):
     E.info("reading additional configuration from pipeline_conf.py")
     execfile("pipeline_conf.py")
-
-#########################################################################
-#########################################################################
-#########################################################################
-
-#########################################################################
-#########################################################################
-#########################################################################
 
 
 @active_if(SPLICED_MAPPING)
@@ -346,9 +335,6 @@ def buildReferenceGeneSet(infile, outfile):
     os.unlink(tmp_mergedfiltered)
 
 
-#########################################################################
-#########################################################################
-#########################################################################
 @active_if(SPLICED_MAPPING)
 @transform(buildReferenceGeneSet,
            suffix("reference.gtf.gz"),
@@ -639,14 +625,14 @@ def mapReadsWithTophat(infiles, outfile):
     it means that it ran out of memory.
 
     '''
-    job_options = "-pe dedicated %i -R y" % PARAMS["tophat_threads"]
+    job_threads = PARAMS["tophat_threads"]
 
     if "--butterfly-search" in PARAMS["tophat_options"]:
         # for butterfly search - require insane amount of
         # RAM.
-        job_options += " -l mem_free=50G"
+        job_options = " -l mem_free=50G"
     else:
-        job_options += " -l mem_free=%s" % PARAMS["tophat_memory"]
+        job_options = " -l mem_free=%s" % PARAMS["tophat_memory"]
 
     m = PipelineMapping.Tophat(
         executable=P.substituteParameters(**locals())["tophat_executable"],
@@ -685,16 +671,15 @@ def mapReadsWithTophat2(infiles, outfile):
     it means that it ran out of memory.
 
     '''
-    job_options = "-pe dedicated %i -R y" % PARAMS["tophat2_threads"]
+    job_threads = PARAMS["tophat2_threads"]
 
     if "--butterfly-search" in PARAMS["tophat2_options"]:
         # for butterfly search - require insane amount of
         # RAM.
-        job_options += " -l mem_free=50G"
+        job_options = " -l mem_free=50G"
     else:
-        job_options += " -l mem_free=%s" % PARAMS["tophat2_memory"]
+        job_options = " -l mem_free=%s" % PARAMS["tophat2_memory"]
 
-    to_cluster = True
     m = PipelineMapping.Tophat2(
         executable=P.substituteParameters(**locals())["tophat2_executable"],
         strip_sequence=PARAMS["strip_sequence"])
@@ -789,20 +774,12 @@ def buildTophatStats(infiles, outfile):
 
     outf.close()
 
-############################################################
-############################################################
-############################################################
-
 
 @jobs_limit(1, "db")
 @active_if(SPLICED_MAPPING)
 @transform(buildTophatStats, suffix(".tsv"), ".load")
 def loadTophatStats(infile, outfile):
     P.load(infile, outfile)
-
-############################################################
-############################################################
-############################################################
 
 
 @active_if(SPLICED_MAPPING)
@@ -818,14 +795,13 @@ def mapReadsWithGSNAP(infiles, outfile):
 
     infile, infile_splices = infiles
 
-    job_options = "-pe dedicated %i -R y -l mem_free=%s" % (PARAMS["gsnap_node_threads"],
-                                                            PARAMS["gsnap_memory"])
-
+    job_options = "-l mem_free=%s" % PARAMS["gsnap_memory"]
+    job_threads = PARAMS["gsnap_node_threads"]
     gsnap_mapping_genome = PARAMS["gsnap_genome"] or PARAMS["genome"]
 
-    to_cluster = True
-    m = PipelineMapping.GSNAP(executable=P.substituteParameters(**locals())["gsnap_executable"],
-                              strip_sequence=PARAMS["strip_sequence"])
+    m = PipelineMapping.GSNAP(
+        executable=P.substituteParameters(**locals())["gsnap_executable"],
+        strip_sequence=PARAMS["strip_sequence"])
 
     if PARAMS["gsnap_include_known_splice_sites"]:
         gsnap_options = PARAMS["gsnap_options"] + \
@@ -849,9 +825,8 @@ def mapReadsWithSTAR(infile, outfile):
 
     '''
 
-    job_options = "-pe dedicated %i -R y -l mem_free=%s" % \
-                  (PARAMS["star_threads"],
-                   PARAMS["star_memory"])
+    job_threads = PARAMS["star_threads"]
+    job_options = "mem_free=%s" % PARAMS["star_memory"]
 
     star_mapping_genome = PARAMS["star_genome"] or PARAMS["genome"]
 
@@ -931,7 +906,7 @@ def mapReadsWithBowtieAgainstTranscriptome(infiles, outfile):
     # inflate the file sizes due to matches to alternative transcripts
     # but otherwise matches to paralogs will be missed (and such
     # reads would be filtered out).
-    job_options = "-pe dedicated %i -R y" % PARAMS["bowtie_threads"]
+    job_threads = PARAMS["bowtie_threads"]
     m = PipelineMapping.BowtieTranscripts(
         executable=P.substituteParameters(**locals())["bowtie_executable"],
         strip_sequence=PARAMS["strip_sequence"])
@@ -959,7 +934,7 @@ def mapReadsWithBowtieAgainstTranscriptome(infiles, outfile):
 def mapReadsWithBowtie(infiles, outfile):
     '''map reads with bowtie'''
 
-    job_options = "-pe dedicated %i -R y" % PARAMS["bowtie_threads"]
+    job_threads = PARAMS["bowtie_threads"]
     m = PipelineMapping.Bowtie(
         executable=P.substituteParameters(**locals())["bowtie_executable"],
         strip_sequence=PARAMS["strip_sequence"])
@@ -983,20 +958,21 @@ def mapReadsWithBowtie(infiles, outfile):
 def mapReadsWithBWA(infile, outfile):
     '''map reads with bwa'''
 
-    job_options = "-pe dedicated %i -R y -l mem_free=%s" % \
-                  (PARAMS["bwa_threads"],
-                   PARAMS["bwa_memory"])
+    job_threads = PARAMS["bwa_threads"]
+    job_options = "-l mem_free=%s" % PARAMS["bwa_memory"]
 
-    algorithm = P.substituteParameters(**locals())["bwa_algorithm"]
-    if algorithm == 'aln':
+    to_cluster = True
+    if PARAMS["bwa_algorithm"] == "aln":
         m = PipelineMapping.BWA(
             remove_non_unique=PARAMS["remove_non_unique"],
-            strip_sequence=PARAMS["strip_sequence"])
+            strip_sequence=PARAMS["strip_sequence"],
+            read_group_header=PARAMS["bwa_read_group_header"])
 
-    elif algorithm == "mem":
+    elif PARAMS["bwa_algorithm"] == "mem":
         m = PipelineMapping.BWAMEM(
             remove_non_unique=PARAMS["remove_non_unique"],
-            strip_sequence=PARAMS["strip_sequence"])
+            strip_sequence=PARAMS["strip_sequence"],
+            read_group_header=PARAMS["bwa_read_group_header"])
     else:
         raise ValueError("bwa algorithm '%s' not known" % algorithm)
 
@@ -1017,9 +993,8 @@ def mapReadsWithBWA(infile, outfile):
 def mapReadsWithStampy(infile, outfile):
     '''map reads with stampy'''
 
-    job_options = "-pe dedicated %i -R y -l mem_free=%s" % \
-                  (PARAMS["stampy_threads"],
-                   PARAMS["stampy_memory"])
+    job_threads = PARAMS["stampy_threads"]
+    job_options = "-l mem_free=%s" % PARAMS["stampy_memory"]
     m = PipelineMapping.Stampy(strip_sequence=PARAMS["strip_sequence"])
     statement = m.build((infile,), outfile)
     P.run()
@@ -1068,8 +1043,6 @@ if "merge_pattern_input" in PARAMS and PARAMS["merge_pattern_input"]:
             P.clone(infiles[0], outfile)
             P.clone(infiles[0] + ".bai", outfile + ".bai")
             return
-
-        to_cluster = True
 
         infiles = " ".join(infiles)
         statement = '''
@@ -1442,7 +1415,6 @@ def buildTranscriptLevelReadCounts(infiles, outfile):
     '''
     infile, genesets = infiles[0], infiles[1:]
 
-    to_cluster = True
     statements = []
     job_options = "-l mem_free=4G"
     for geneset in genesets:
@@ -1782,6 +1754,7 @@ def publish():
 
     E.info("publishing UCSC data hub")
     PipelinePublishing.publish_tracks(export_files)
+
 
 if __name__ == "__main__":
     sys.exit(P.main(sys.argv))

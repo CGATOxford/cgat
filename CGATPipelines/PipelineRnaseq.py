@@ -655,7 +655,7 @@ def runCufflinks(infiles, outfile):
 
     gtffile, bamfile = infiles
 
-    job_options = "-pe dedicated %i -R y" % PARAMS["cufflinks_threads"]
+    job_threads = PARAMS["cufflinks_threads"]
 
     track = os.path.basename(P.snip(gtffile, ".gtf.gz"))
 
@@ -761,7 +761,7 @@ def runFeatureCounts(annotations_file,
         paired_options = ""
         paired_processing = ""
 
-    job_options = "-pe dedicated %i" % nthreads
+    job_threads = nthreads
 
     # AH: what is the -b option doing?
     statement = '''mkdir %(tmpdir)s;

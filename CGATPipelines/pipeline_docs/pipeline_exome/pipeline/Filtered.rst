@@ -44,6 +44,29 @@ cases.
    :render: xls-table
    :groupby: track
 
+For definition of column headings see bottom of page.
+
+Compound heterozygous variants
+==============================
+
+The following tables present potential compound heterozygous variants
+ie. the affected individual has at least two potentially pathogenic
+mutations - one on the maternal copy of the gene and one on the
+paternal copy.  These tables need to be carefully inspected as the
+algorithm for calling compound heterozygous changes (Gemini) does not
+exclude variants that do not segregate with disease in the family.
+For example, it will include variants that are heterozygous in mother,
+father, and affected offspring (even though this would make one of the
+unaffected parents an obligate carrier of both potentially pathogenic
+mutations.  Please carefully consider the final two columns of this
+table - gts (genotypes) and gt_types (0 = homozygous ref, 1 = het, 3 =
+homozygous alternative).  Genotypes correspond to the family samples
+in numerical then alphabetical order.
+
+.. report:: Filtered.comp_hets
+   :render: xls-table
+   :groupby: track
+
 Definition of column headings:
 CHROM = chromosome
 POS = genomic coordinate (hg19)
@@ -62,6 +85,7 @@ SNPEFF_FUNCTIONAL_CLASS = variant functional class eg. none, silent,
 SNPEFF_IMPACT = predicted variant impact eg. high, moderate, low,
 	      modifier
 SNPEFF_GENE_BIOTYPE = if available, eg. protein-coding, pseudogene
+EFF = annotations against all possible transcripts
 dbNSFP_1000Gp1_AF = frequency in 1000 genomes
 dbNSFP_ESP6500_AA_AF = frequency in ESP6500 African Americans
 dbNSFP_ESP6500_EA_AF = frequency in ESP6500 European Americans

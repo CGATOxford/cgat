@@ -110,8 +110,7 @@ bowtie_options = {'n0m1': "-n 0 -a --best --strata -m 1 -3 1", 'n1m1': "-n 1 -a 
 @files([(PARAMS["test_file"], "%s.bam" % x, bowtie_options.get(x)) for x in bowtie_options.keys()])
 def buildBAM(infile, outfile, options):
     '''map reads with bowtie'''
-    to_cluster = True
-    job_options = "-pe dedicated %i -R y" % PARAMS["bowtie_threads"]
+    job_threads = PARAMS["bowtie_threads"]
     m = PipelineMapping.Bowtie()
     reffile = PARAMS["samtools_genome"]
     bowtie_options = options

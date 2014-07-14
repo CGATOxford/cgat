@@ -1,5 +1,4 @@
-'''
-bam2peakshape.py - compute peak shape features from a bam-file
+'''bam2peakshape.py - compute peak shape features from a bam-file
 ==============================================================
 
 :Author: Andreas Heger
@@ -10,38 +9,41 @@ bam2peakshape.py - compute peak shape features from a bam-file
 Purpose
 -------
 
-This script takes a :term:`bed` formatted file with regions of interest,
-for example binding intervals from a ChIP-Seq experiment. Using a collection
-of aligned reads is a :term:`bam` formatted file or :term:`bigwig` formatted 
-file, the script outputs a collection of features describing the peak shape.
+This script takes a :term:`bed` formatted file with regions of
+interest, for example binding intervals from a ChIP-Seq
+experiment. Using a collection of aligned reads is a :term:`bam`
+formatted file or :term:`bigwig` formatted file, the script outputs a
+collection of features describing the peak shape.
 
 This script is designed with a slight emphasis on ChIP-Seq datasets.
-The main reason that this script is better suited for ChIP-Seq is that: 
-(1) It is able to center the counting window at the summit of every individual 
-peak; 
-(2) It is also able to use the control ChIP-Seq library to enable 
-side-by-side comparison of treatment vs control; 
-(3) It can randomly shift the set of input regions to generate a artificial 
-set of regions, in the absence of real ChIP-Seq control library, the random 
-regions can provide a peaks profile that can be used as the control.
+The main reason that this script is better suited for ChIP-Seq is
+that(1) it is able to center the counting window at the summit of
+every individual peak; (2) it is also able to use the control ChIP-Seq
+library to enable side-by-side comparison of treatment vs control;(3)
+it can randomly shift the set of input regions to generate a
+artificial set of regions, in the absence of real ChIP-Seq control
+library, the random regions can provide a peaks profile that can be
+used as the control.
 
-For example, given the peaks regions defined by analyzing some ChIP-Seq dataset
-(e.g. by using MACS), and without the need to use any additional genomic 
-annotations (e.g. ENSEMBL, refseq), we can visualise the binding profiles of 
-transcriptionfactors ChIP-Seq data relative to the center of each peak regions.
+For example, given the peaks regions defined by analyzing some
+ChIP-Seq dataset (e.g. by using MACS), and without the need to use any
+additional genomic annotations (e.g. ENSEMBL, refseq), we can
+visualise the binding profiles of transcriptionfactors ChIP-Seq data
+relative to the center of each peak regions.
 
 Alternatively, you may consider using :doc:`bam2geneprofile`, which is
-designed with a slight emphasis on analysing RNA-Seq datasets. Because: (1) it 
-takes care of spliced reads by using the CIGAR string in the BAM file to 
-accurately count the covered bases (when the --base-accurate is specified); 
-(2) it takes in gene model annotations; (3) it provides different methods of 
-using gene models. (4) It provides many advanced normalization schemes. etc.
+designed with a slight emphasis on analysing RNA-Seq
+datasets. Because: (1) it takes care of spliced reads by using the
+CIGAR string in the BAM file to accurately count the covered bases
+(when the --base-accurate is specified); (2) it takes in gene model
+annotations; (3) it provides different methods of using gene
+models. (4) It provides many advanced normalization schemes. etc.
 
-The script outputs a tab-separated table on stdout containing features for 
-each interval. A peak is defined as the location of the highest density in an 
-interval. The width of the peak (peak_width) is defined as the region around 
-the peak in which the density does not drop below a threshold of 
-peak_heigt * 90%.
+The script outputs a tab-separated table on stdout containing features
+for each interval. A peak is defined as the location of the highest
+density in an interval. The width of the peak (peak_width) is defined
+as the region around the peak in which the density does not drop below
+a threshold of peak_heigt * 90%.
 
 
 
@@ -51,12 +53,13 @@ Usage
 Detailed usage example
 ++++++++++++++++++++++
 
-The following command will generate the peak shape plot for the peak regions
-defined in :file:`onepeak.bed`, using the reads stored in :file:`small.bam`. 
-The command will also create a profile for the control library. 
-The control library in this example is re-using the same reads file 
-:file:`small.bam`, however, in your actual experiment, it should 
-be a different library (the input library for this ChIP-Seq experiment).  ::
+The following command will generate the peak shape plot for the peak
+regions defined in :file:`onepeak.bed`, using the reads stored in
+:file:`small.bam`.  The command will also create a profile for the
+control library.  The control library in this example is re-using the
+same reads file :file:`small.bam`, however, in your actual experiment,
+it should be a different library (the input library for this ChIP-Seq
+experiment).  ::
 
     python ./scripts/bam2peakshape.py \
         ./tests/bam2peakshape.py/small.bam \
@@ -64,7 +67,6 @@ be a different library (the input library for this ChIP-Seq experiment).  ::
         --control-file=./tests/bam2peakshape.py/small.bam \
         --only-interval \
         --normalization
-        
 
 
 Output files
@@ -118,10 +120,11 @@ Options
 Option: Shift
 +++++++++++++
 
-shift the each read by a certain distance, because in a ChIP-Seq experment, 
-the read is always at the edge of an sonicated fragment, the actual binding
-site is usually L/2 distance away from the read, where L is the length of
-sonicated fragment (determined either experimentally or computationally).
+shift the each read by a certain distance, because in a ChIP-Seq
+experment, the read is always at the edge of an sonicated fragment,
+the actual binding site is usually L/2 distance away from the read,
+where L is the length of sonicated fragment (determined either
+experimentally or computationally).
 
 This option is used only if the input reads are in :term:`bed` formatted file.
 If input reads are :term:`bigwig` formatted file, this option is ignored.
@@ -129,39 +132,35 @@ If input reads are :term:`bigwig` formatted file, this option is ignored.
 Option: Random shift
 ++++++++++++++++++++
 
-randomly shift the set of input regions to generate a artificial 
-set of regions. In the absence of real ChIP-Seq control library, the random 
-regions can provide a peaks profile that can be used as the control.
+randomly shift the set of input regions to generate a artificial set
+of regions. In the absence of real ChIP-Seq control library, the
+random regions can provide a peaks profile that can be used as the
+control.
 
 Option: Centring method
 +++++++++++++++++++++++
 
-"reads" will output in the way that the summit of the peaks are aligned. 
-"middle" will output in the way that the middle of the input bed 
-intervals are aligned.
+"reads" will output in the way that the summit of the peaks are
+aligned. "middle" will output in the way that the middle of the input
+bed intervals are aligned.
 
 Option: Only interval
 +++++++++++++++++++++
 
 Only count reads that are in the interval as defined by the input bed file.
 
-
 Option: Normalization=sum
 +++++++++++++++++++++++++
 
-normalize counts such that the sum of all counts in all features are exactly 
-1000000.
+normalize counts such that the sum of all counts in all features are
+exactly 1000000.
 
-The detail normalization algorithm as follows:
-norm = sum(all counts in all features)/1000000.0 
-normalized count = normalized count / norm
-
+The detail normalization algorithm as follows: norm = sum(all counts
+in all features)/1000000.0 normalized count = normalized count / norm
 
 .. todo::
-   
+
    paired-endedness is not fully implemented.
-
-
 
 Command line options
 --------------------
