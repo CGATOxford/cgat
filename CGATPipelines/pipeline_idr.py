@@ -552,12 +552,6 @@ def loadPeakSummaryForPooledPseudoreplicates(infile, outfile):
     P.load(infile, outfile)
 
 
-@follows(loadPeakSummaryForIndividualReplicates,
-         loadPeakSummaryForPseudoreplicates,
-         loadPeakSummaryForPooledPseudoreplicates)
-def loadPeakCallingSummary():
-    pass
-
 ##########################################################################
 ##########################################################################
 ##########################################################################
@@ -896,7 +890,9 @@ def callPeaksOnPooledReplicates(infile, outfile):
 
 
 @follows(callPeaksOnPooledReplicates,
-         summarizeIDR,
+         loadNPeaksForIndividualReplicates,
+         loadNPeaksForPseudoreplicates,
+         loadNPeaksForPooledPseudoreplicates,
          mkdir("peakfiles_final_conservative"),
          mkdir("peakfiles_final_optimum"))
 @split("./peakfiles_final/*.narrowPeak.gz",
@@ -964,7 +960,7 @@ def generatePeakSets(infile, outfiles):
     ignore_pipe_errors = True
     statement = ("zcat %(infile)s |"
                  " %(sort_statement)s |"
-                 " head -%(nPeaks)s |"
+                 " head -%(nPeaks_max)s |"
                  " gzip > %(outf_opt)s")
     P.run()
 
@@ -1017,7 +1013,10 @@ def preProcessBamfiles():
 
 @follows(callPeaksOnIndividualReplicates,
          callPeaksOnPseudoreplicates,
-         callPeaksOnPooledPseudoreplicates)
+         callPeaksOnPooledPseudoreplicates, 
+         loadPeakSummaryForIndividualReplicates, 
+         loadPeakSummaryForPseudoreplicates,
+         loadPeakSummaryForPooledPseudoreplicates)
 def callPeaks():
     pass
 
