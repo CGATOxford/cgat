@@ -1,4 +1,5 @@
 from pysam.chtslib cimport *
+from pysam.csamfile cimport *
 
 import collections, array, struct, itertools
 import CGAT.Experiment as E

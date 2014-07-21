@@ -1,6 +1,8 @@
 #cimport csamtools
 
 from pysam.chtslib cimport *
+from pysam.csamfile cimport *
+from pysam.cfaidx cimport *
 from libc.string cimport strchr
 from libc.stdint cimport int8_t
 from libc.stdio cimport puts
