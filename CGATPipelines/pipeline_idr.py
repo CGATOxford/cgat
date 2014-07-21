@@ -896,8 +896,7 @@ def callPeaksOnPooledReplicates(infile, outfile):
 
 
 @follows(callPeaksOnPooledReplicates,
-         loadNPeaksForIndividualReplicates,
-         loadNPeaksForPooledPseudoreplicates,
+         summarizeIDR,
          mkdir("peakfiles_final_conservative"),
          mkdir("peakfiles_final_optimum"))
 @split("./peakfiles_final/*.narrowPeak.gz",
@@ -910,24 +909,24 @@ def generatePeakSets(infile, outfiles):
     # retrieve maximum number of peaks obtained from inter-replicate IDR
     # (table created by loadNPeaksForIndividualReplicates)
     statement = ("SELECT"
-                 " experiment,"
+                 " Experiment,"
                  " max(n_peaks) AS nPeaks"
                  " FROM individual_replicates_nPeaks"
                  " GROUP BY experiment")
     df = PU.fetch_DataFrame(statement)
     # reassign experiment as index
-    df = df.set_index("experiment")
+    df = df.set_index("Experiment")
 
     # retrieve number of peaks obtained from pooled_pseudoreplicate IDR
     # (table created by loadNPeaksForPooledPseudoreplicates)
     statement = ("SELECT"
-                 " experiment,"
+                 " Experiment,"
                  " n_peaks AS nPeaks"
                  " FROM pooled_pseudoreplicates_nPeaks")
     df2 = PU.fetch_DataFrame(statement)
 
     # reassign experiment as index
-    df2 = df2.set_index("experiment")
+    df2 = df2.set_index("Experiment")
 
     # split the infile name to obtain experiment
     sample_id = os.path.basename(infile).split("_VS_")[0]
