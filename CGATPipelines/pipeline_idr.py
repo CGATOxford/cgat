@@ -183,7 +183,7 @@ P.getParameters(
 PARAMS = P.PARAMS
 PARAMS_ANNOTATIONS = P.peekParameters(
     PARAMS["annotations_dir"],
-    "pipeline_annotations.py", 
+    "pipeline_annotations.py",
     on_error_raise=__name__ == "__main__")
 
 ##########################################################################
@@ -267,6 +267,9 @@ def filterBamfiles(infile, sentinel):
     Currently assumes bamfiles are sorted prior to running the pipeline
     """
 
+    # create tempfile for Picard's MarkDuplicates
+    picard_tmp = os.mkdir(os.path.abspath(infile) + "_tmpdr")
+
     outfile = P.snip(sentinel, ".sentinel") + ".bam"
 
     # ensure bamfile is sorted,
@@ -296,10 +299,12 @@ def filterBamfiles(infile, sentinel):
                          " INPUT=@IN@"
                          " ASSUME_SORTED=true"
                          " REMOVE_DUPLICATES=true"
-                         " QUIET=true"
+                         " QUIET=false"
                          " OUTPUT=@OUT@"
                          " METRICS_FILE=/dev/null"
-                         " VALIDATION_STRINGENCY=SILENT")
+                         " VALIDATION_STRINGENCY=SILENT"
+                         " TMP_DIR=%(picard_tmp)s"
+                         " 2> %(outifle)s.log")
 
     # mask regions, if intervals supplied
     if PARAMS["filter_mask_intervals"]:
@@ -333,7 +338,10 @@ def splitBamfiles(infile, sentinel):
     infile = P.snip(infile, ".sentinel") + ".bam"
     outfile = P.snip(sentinel, ".sentinel")
     params = '2'
-    module = P.snip(IDR.__file__, ".pyc")
+    try:
+        module = P.snip(IDR.__file__, ".py")
+    except ValueError:
+        module = P.snip(IDR.__file__, ".pyc")
 
     P.submit(module,
              "splitBam",
@@ -393,7 +401,10 @@ def splitPooledBamfiles(infile, sentinel):
     infile = P.snip(infile, ".sentinel") + ".bam"
     outfile = P.snip(sentinel, ".sentinel")
     params = '2'
-    module = P.snip(IDR.__file__, ".py")
+    try:
+        module = P.snip(IDR.__file__, ".py")
+    except ValueError:
+        module = P.snip(IDR.__file__, ".pyc")
 
     P.submit(module,
              "splitBam",
@@ -773,10 +784,13 @@ def loadIDROnPooledPseudoreplicates(infile, outfile):
 
 @follows(runIDROnIndividualReplicates)
 @merge("./idr_individual_replicates/*-overlapped-peaks.txt",
-       "./idr_individual_replicates/idr_summary_individual_replicates.tsv")
+       "./idr_individual_replicates/individual_replicates.nPeaks.tsv")
 def findNPeaksForIndividualReplicates(infiles, outfile):
     idr_thresh = PARAMS["idr_options_inter_replicate_threshold"]
-    module = P.snip(IDR.__file__, ".py")
+    try:
+        module = P.snip(IDR.__file__, ".py")
+    except ValueError:
+        module = P.snip(IDR.__file__, ".pyc")
 
     P.submit(module,
              "findNPeaks",
@@ -794,10 +808,13 @@ def loadNPeaksForIndividualReplicates(infile, outfile):
 
 @follows(runIDROnPseudoreplicates)
 @merge("./idr_pseudoreplicates/*-overlapped-peaks.txt",
-       "./idr_pseudoreplicates/idr_summary_pseudoreplicates.tsv")
+       "./idr_pseudoreplicates/pseudoreplicates.nPeaks.tsv")
 def findNPeaksForPseudoreplicates(infiles, outfile):
     idr_thresh = PARAMS["idr_options_self_consistency_threshold"]
-    module = P.snip(IDR.__file__, ".py")
+    try:
+        module = P.snip(IDR.__file__, ".py")
+    except ValueError:
+        module = P.snip(IDR.__file__, ".pyc")
 
     P.submit(module,
              "findNPeaks",
@@ -815,11 +832,13 @@ def loadNPeaksForPseudoreplicates(infile, outfile):
 
 @follows(runIDROnPooledPseudoreplicates)
 @merge("./idr_pooled_pseudoreplicates/*-overlapped-peaks.txt",
-       "./idr_pooled_pseudoreplicates/"
-       "idr_summary_pooled_pseudoreplicates.tsv")
+       "./idr_pooled_pseudoreplicates/pooled_pseudoreplicates.nPeaks.tsv")
 def findNPeaksForPooledPseudoreplicates(infiles, outfile):
     idr_thresh = PARAMS["idr_options_pooled_consistency_threshold"]
-    module = P.snip(IDR.__file__, ".py")
+    try:
+        module = P.snip(IDR.__file__, ".py")
+    except ValueError:
+        module = P.snip(IDR.__file__, ".pyc")
 
     P.submit(module,
              "findNPeaks",
@@ -877,6 +896,8 @@ def callPeaksOnPooledReplicates(infile, outfile):
 
 
 @follows(callPeaksOnPooledReplicates,
+         loadNPeaksForIndividualReplicates,
+         loadNPeaksForPooledPseudoreplicates,
          mkdir("peakfiles_final_conservative"),
          mkdir("peakfiles_final_optimum"))
 @split("./peakfiles_final/*.narrowPeak.gz",
@@ -887,6 +908,7 @@ def generatePeakSets(infile, outfiles):
     outf_con, outf_opt = outfiles
 
     # retrieve maximum number of peaks obtained from inter-replicate IDR
+    # (table created by loadNPeaksForIndividualReplicates)
     statement = ("SELECT"
                  " experiment,"
                  " max(n_peaks) AS nPeaks"
@@ -897,6 +919,7 @@ def generatePeakSets(infile, outfiles):
     df = df.set_index("experiment")
 
     # retrieve number of peaks obtained from pooled_pseudoreplicate IDR
+    # (table created by loadNPeaksForPooledPseudoreplicates)
     statement = ("SELECT"
                  " experiment,"
                  " n_peaks AS nPeaks"
