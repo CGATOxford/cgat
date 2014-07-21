@@ -24,7 +24,8 @@
 SequenceProperties.py - compute properties of sequences
 =======================================================
 
-Classes for extracting and reporting sequence properties on nucleotide sequences.
+Classes for extracting and reporting sequence properties on
+nucleotide sequences.
 
 :Author: Andreas Heger
 :Release: $Id$
@@ -387,14 +388,14 @@ class SequencePropertiesDN(SequenceProperties):
         self.mCountsGpT = 0
         self.mCountsGpC = 0
         self.mCountsGpG = 0
-        #self.mCountsOthers = 0
+        # self.mCountsOthers = 0
 
     def loadSequence(self, sequence):
         """load sequence properties from a sequence."""
         SequenceProperties.loadSequence(self, sequence)
         seq = sequence.upper()
 
-        self.mCountsCG = (seq.count("C")+
+        self.mCountsCG = (seq.count("C") +
                           seq.count("G"))/self.mLength
         self.mCountsApA = len(re.findall(r'(?=(AA))', seq))/self.mLength
         self.mCountsApT = len(re.findall(r'(?=(AT))', seq))/self.mLength
@@ -441,11 +442,11 @@ class SequencePropertiesDN(SequenceProperties):
 
         fields = SequenceProperties.getHeaders(self)
 
-        fields.extend(["length","GC_Content"])
+        fields.extend(["length", "GC_Content"])
 
         for dinucleotide in itertools.product('ATCG', repeat=2):
             fields.append("".join(dinucleotide))
-        
+
         return fields
 
 
@@ -540,14 +541,18 @@ class SequencePropertiesCpg(SequenceProperties):
             fields.append(
                 "%f" % (float(self.mCountsOthers) / float(self.mLength)))
             fields.append(
-                "%f" % (float(self.mCountsC + self.mCountsG) / float(self.mLength)))
+                "%f" % (float(self.mCountsC + self.mCountsG) /
+                        float(self.mLength)))
             fields.append(
-                "%f" % (float(self.mCountsA + self.mCountsT) / float(self.mLength)))
+                "%f" % (float(self.mCountsA + self.mCountsT) /
+                        float(self.mLength)))
             fields.append(
                 "%f" % (float(self.mCountsCpG) / (float(self.mLength) / 2.0)))
             if (self.mCountsC * self.mCountsG) / self.mLength > 0:
                 fields.append("%f" % (
-                    (float(self.mCountsCpG)) / ((float(self.mCountsC) * float(self.mCountsG)) / float(self.mLength))))
+                    (float(self.mCountsCpG)) /
+                    ((float(self.mCountsC) * float(self.mCountsG)) /
+                     float(self.mLength))))
             else:
                 fields.append("%f" % 0.0)
         else:
@@ -608,7 +613,7 @@ class SequencePropertiesDegeneracy (SequenceProperties):
           as two or four-fold degenerate codons. This is encoded
           in the file Genomics.py.
 
-    Note that the number degenerate sites is computed across all codon 
+    Note that the number degenerate sites is computed across all codon
     positions.
     """
 
@@ -617,7 +622,8 @@ class SequencePropertiesDegeneracy (SequenceProperties):
         SequenceProperties.__init__(self)
 
         self.mNGC = 0
-        self.mNSites1D, self.mNSites2D, self.mNSites3D, self.mNSites4D = 0, 0, 0, 0
+        self.mNSites1D, self.mNSites2D, self.mNSites3D, self.mNSites4D = (
+            0, 0, 0, 0)
         self.mNGC3 = 0
         self.mN2DGC3 = 0
         self.mN3DGC3 = 0
@@ -730,8 +736,8 @@ class SequencePropertiesDegeneracy (SequenceProperties):
             'C'] + self.mCountsDegeneracy[2][4]['G']
 
         # count all degenerate sites at third codon position
-        self.mNSitesD3 = sum(self.mCountsDegeneracy[2][2].values() ) +\
-            sum(self.mCountsDegeneracy[2][3].values() ) +\
+        self.mNSitesD3 = sum(self.mCountsDegeneracy[2][2].values()) +\
+            sum(self.mCountsDegeneracy[2][3].values()) +\
             sum(self.mCountsDegeneracy[2][4].values())
 
         # number of GCs at degenerate third codon positions
@@ -1137,7 +1143,8 @@ class SequencePropertiesBias(SequencePropertiesCodons):
                                      'kl': self.getKL(usage)})
 
     def getMessageLength(self, usage):
-        """return message length of a sequence in terms of its reference usage."""
+        """return message length of a sequence
+        in terms of its reference usage."""
 
         ml = 0
 
@@ -1150,7 +1157,8 @@ class SequencePropertiesBias(SequencePropertiesCodons):
         """return entropy of a source in terms of a reference usage.
         Also called conditional entropy or encoding cost.
 
-        Note that here I compute the sum over 20 entropies, one for each amino acid.
+        Note that here I compute the sum over 20 entropies,
+        one for each amino acid.
 
         If not given, calculate entropy.
         """
