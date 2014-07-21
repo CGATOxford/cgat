@@ -1,5 +1,4 @@
-'''
-bam2geneprofile.py - build meta-gene profile for a set of transcripts/genes
+'''bam2geneprofile.py - build meta-gene profile for a set of transcripts/genes
 ===========================================================================
 
 :Author: Andreas Heger
@@ -10,32 +9,35 @@ bam2geneprofile.py - build meta-gene profile for a set of transcripts/genes
 Purpose
 -------
 
-This script takes a :term:`gtf` formatted file, a short reads :term:`bam` 
-formatted file and computes meta-gene profiles over various annotations 
-derived from the :term:`gtf` file. 
+This script takes a :term:`gtf` formatted file, a short reads
+:term:`bam` formatted file and computes meta-gene profiles over
+various annotations derived from the :term:`gtf` file.
 
-A meta-gene profile is an abstract genomic entity over which reads stored in a 
-:term:`bam` formatted file have been counted. A meta-gene might be an idealized
-eukaryotic gene (upstream, exonic sequence, downstream) or any other genomic 
-landmark of interest such as transcription start sites.
+A meta-gene profile is an abstract genomic entity over which reads
+stored in a :term:`bam` formatted file have been counted. A meta-gene
+might be an idealized eukaryotic gene (upstream, exonic sequence,
+downstream) or any other genomic landmark of interest such as
+transcription start sites.
 
-The script can be used to visualize binding profiles of a chromatin mark in 
-gene bodies, binding of transcription factors in promotors or sequencing bias 
-(e.g. 3' bias) in RNA-Seq data.
+The script can be used to visualize binding profiles of a chromatin
+mark in gene bodies, binding of transcription factors in promotors or
+sequencing bias (e.g. 3' bias) in RNA-Seq data.
 
-This script is designed with a slight emphasis on RNA-Seq datasets. For 
-example, it takes care of spliced reads, by using the CIGAR string in the BAM
-file to accurately define aligned bases (if the --base-accurate is specified, 
-currently this feature is turned off by default for speed reasons).
+This script is designed with a slight emphasis on RNA-Seq
+datasets. For example, it takes care of spliced reads, by using the
+CIGAR string in the BAM file to accurately define aligned bases (if
+the --base-accurate is specified, currently this feature is turned off
+by default for speed reasons).
 
-Alternatively, for the purpose of visualizing binding profiles of transcription
-factor ChIP-Seq without the need to use any genomic annotations (ENSEMBL, or 
-refseq), you may also consider using :doc:`bam2peakshape`, which is designed 
-with a slight emphasis on Chip-Seq datasets. For example, :doc:`bam2peakshape` 
-is able to center the counting window to the summit of every individual peak. 
-:doc:`bam2peakshape` is also able to: (1) plot the control ChIP-Seq library to 
-enable side-by-side comparison; (2) randomize the given regions to provide a 
-semi-control.
+Alternatively, for the purpose of visualizing binding profiles of
+transcription factor ChIP-Seq without the need to use any genomic
+annotations (ENSEMBL, or refseq), you may also consider using
+:doc:`bam2peakshape`, which is designed with a slight emphasis on
+Chip-Seq datasets. For example, :doc:`bam2peakshape` is able to center
+the counting window to the summit of every individual peak.
+:doc:`bam2peakshape` is also able to: (1) plot the control ChIP-Seq
+library to enable side-by-side comparison; (2) randomize the given
+regions to provide a semi-control.
 
 
 
@@ -47,9 +49,10 @@ Usage
 Quick start examples
 ++++++++++++++++++++
 
-The following command will generate the gene profile plot similar to Fig 1(a) 
-in the published CGAT paper, but using a test dataset that is much smaller 
-and simpler than the dataset used for publishing the CGAT paper. ::
+The following command will generate the gene profile plot similar to
+Fig 1(a) in the published CGAT paper, but using a test dataset that is
+much smaller and simpler than the dataset used for publishing the CGAT
+paper. ::
 
     python ./scripts/bam2geneprofile.py 
         --bamfile=./tests/bam2geneprofile.py/multipleReadsSplicedOutAllIntronsAndSecondExon.bam
@@ -57,10 +60,11 @@ and simpler than the dataset used for publishing the CGAT paper. ::
         --method=geneprofile
         --reporter=gene
 
-In the following, a slightly more involved example will use more features
-of this script. The following command generate the gene profile showing 
-base accuracy of upstream (500bp), exons, introns and downstream(500bp) of 
-a gene model from some user supplied RNA-Seq data and geneset. ::
+In the following, a slightly more involved example will use more
+features of this script. The following command generate the gene
+profile showing base accuracy of upstream (500bp), exons, introns and
+downstream(500bp) of a gene model from some user supplied RNA-Seq data
+and geneset. ::
 
     python ./scripts/bam2geneprofile.py
         --bamfile=./rnaseq.bam
@@ -72,8 +76,8 @@ a gene model from some user supplied RNA-Seq data and geneset. ::
         --extension-downstream=500
         --resolution-downstream=500
 
-The output will contain read coverage over genes. The profile will contain 
-four separate segments:
+The output will contain read coverage over genes. The profile will
+contain four separate segments:
 
 1. the upstream region of a gene ( set to be 500bp ), 
    (``--extension-upstream=500``).
@@ -117,24 +121,17 @@ example, the options ``--extension-upstream`` will set the size of the
 uptsream extension region to 1000bp. Note that no scaling is required when 
 counting reads towards the fixed-width meta-gene profile.
 
-
-
 Type::
 
    python bam2geneprofile.py --help
 
 for command line help.
 
-
-
-
 Options
 -------
 
-The script provides a variety of different meta-gene structures i.e. 
+The script provides a variety of different meta-gene structures i.e.
 geneprofiles, selectable via using the option: (``--method``).
-
-
 
 Profiles
 ++++++++
@@ -148,37 +145,40 @@ utrprofile
     UPSTREAM - UTR5 - CDS - UTR3 - DOWNSTREAM
     gene models with UTR. Separate the coding section from the non-coding part.
 
-geneprofile 
+geneprofile
     UPSTREAM - EXON - DOWNSTREAM
     simple exonic gene models
 
 geneprofilewithintrons 
     UPSTREAM - EXON - INTRON - DOWNSTREAM
-    gene models containing also intronic sequence, only correct if used with 
-    ``--base-accuracy`` option.
-     
+
+    gene models containing also intronic sequence, only correct if
+    used with ``--base-accuracy`` option.
+
 geneprofileabsolutedistancefromthreeprimeend
-    UPSTREAM - EXON (absolute distance, see below) - INTRON (absolute distance
-    , see below)  - DOWNSTREAM (the downstream of the exons) region, the 
-    script counts over the mRNA transcript only, skipping introns. 
-    Designed to visualize the 3 prime bias in RNASeq data, only correct if 
-    used together with ``--base-accuracy`` option.
-    
-    absolute distance: In order to to visualize the 3 prime bias, genes are 
-    not supposed to be streched to equal length as it did in all other 
-    counting methods. In this counting method, we first set a fix length using
-    ``--extension-exons-absolute-distance-topolya``, the script will discard 
-    genes shorter than this fixed length. For genes (when all the exons 
-    stitched together) longer than this fixed length, the script will only 
-    count over this fixed length ( a absolute distance ) from three prime end, 
-    instead of compress the longer genes. Same goes for absolute distance 
-    intron counting.
-    
+
+    UPSTREAM - EXON (absolute distance, see below) - INTRON (absolute
+    distance, see below) - DOWNSTREAM (the downstream of the exons)
+    region, the script counts over the mRNA transcript only, skipping
+    introns. Designed to visualize the 3 prime bias in RNASeq data,
+    only correct if used together with ``--base-accuracy`` option.
+
+    absolute distance: In order to to visualize the 3 prime bias,
+    genes are not supposed to be streched to equal length as it did in
+    all other counting methods. In this counting method, we first set
+    a fix length using
+    ``--extension-exons-absolute-distance-topolya``, the script will
+    discard genes shorter than this fixed length. For genes (when all
+    the exons stitched together) longer than this fixed length, the
+    script will only count over this fixed length ( a absolute
+    distance ) from three prime end, instead of compress the longer
+    genes. Same goes for absolute distance intron counting.
+
 tssprofile
     UPSTREAM - DOWNSTREAM
     transcription start/stop sites
 
-intervalprofile 
+intervalprofile
     UPSTREAM - INTERVAL - DOWNSTREAM
     Similar to geneprofile, but count over the complete span of the gene
     (including introns).
@@ -215,10 +215,10 @@ controlled with the command line option ``--normalization``. Its
 arguments are:
 
 * ``none``: no normalization
-* ``sum``: sum of counts within a region (exons,upstream, ...). 
+* ``sum``: sum of counts within a region (exons,upstream, ...).
   The area under the curve will sum to 1 for each region.
-* ``max``: maximum count within a region (exons,upstream, ...). 
-* ``total-sum``: sum of counts across all regions. The area 
+* ``max``: maximum count within a region (exons,upstream, ...).
+* ``total-sum``: sum of counts across all regions. The area
   under the curve will sum to 1 for
   the complete transcript.
 * ``total-max``: maximum count across all regions.
@@ -239,8 +239,8 @@ shapes of profiles between different experiments independent of the
 number of reads or transcripts used in the construction of the
 meta-gene profile.
 
-Meta-gene profile normalization is controlled via the ``--normalize-profile`` 
-option. Possible normalization are:
+Meta-gene profile normalization is controlled via the
+``--normalize-profile`` option. Possible normalization are:
 
 * none: no normalization
 * area: normalize such that the area under the meta-gene profile is 1.
@@ -249,44 +249,39 @@ option. Possible normalization are:
 
 A special normalization is activated with the ``background`` option.
 Here, the counts at the left and right most regions are used to
-estimate a background level for each transcript. The counts are
-then divided by this background-level. The assumption is that the
-meta-gene model is computed over a large enough area to include
-genomic background. 
-
-
+estimate a background level for each transcript. The counts are then
+divided by this background-level. The assumption is that the meta-gene
+model is computed over a large enough area to include genomic
+background.
 
 Genes versus transcripts
 ++++++++++++++++++++++++
 
-The default is to collect reads on a per-transcript level. Alternatively, 
-the script can merge all transcripts of a gene into a single virtual 
-transcript. Note that this virtual transcript might not be a biologically 
-plausible transcript. It is usually better to provide 
-:file:`bam2geneprofile.py` with a set of representative transcripts per gene 
-in order to avoid up-weighting genes with multiple transcripts.
-
-
+The default is to collect reads on a per-transcript
+level. Alternatively, the script can merge all transcripts of a gene
+into a single virtual transcript. Note that this virtual transcript
+might not be a biologically plausible transcript. It is usually better
+to provide :file:`bam2geneprofile.py` with a set of representative
+transcripts per gene in order to avoid up-weighting genes with
+multiple transcripts.
 
 Control
 +++++++
 
-If control files (chip-seq input tracks) are supplied, counts in the control 
-file can be used to compute a fold-change.
-
-
+If control files (chip-seq input tracks) are supplied, counts in the
+control file can be used to compute a fold-change.
 
 Bed and wiggle files
 ++++++++++++++++++++
 
-The densities can be computed from :term:`bed` or :term:`wiggle` formatted 
-files. If a :term:`bed` formatted file is supplied, it must be compressed 
-with and indexed with :file:`tabix`.
+The densities can be computed from :term:`bed` or :term:`wiggle`
+formatted files. If a :term:`bed` formatted file is supplied, it must
+be compressed with and indexed with :file:`tabix`.
 
 .. note::
-   
-   Paired-endedness is ignored. Both ends of a paired-ended read are treated 
-   individually.
+
+   Paired-endedness is ignored. Both ends of a paired-ended read are
+   treated individually.
 
 
 Command line options
@@ -296,9 +291,6 @@ Command line options
 
 import os
 import sys
-import re
-import optparse
-import collections
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import pysam
@@ -327,23 +319,29 @@ def main(argv=None):
         argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+    parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
-    parser.add_option("-m", "--method", dest="methods", type="choice", action="append",
+    parser.add_option("-m", "--method", dest="methods", type="choice",
+                      action="append",
                       choices=("geneprofile", "tssprofile", "utrprofile",
                                "intervalprofile", "midpointprofile",
                                "geneprofilewithintrons",
                                "geneprofileabsolutedistancefromthreeprimeend",
                                ),
-                      help = 'counters to use. Counters describe the meta-gene structure to use '
-                      '[%default]. \n Note using geneprofilewithintrons, or geneprofileabsolutedistancefromthreeprimeend will automatically turn on the --base-accuracy option')
+                      help = 'counters to use. Counters describe the '
+                      'meta-gene structure to use. '
+                      'Note using geneprofilewithintrons, or '
+                      'geneprofileabsolutedistancefromthreeprimeend will '
+                      'automatically turn on the --base-accuracy option'
+                      '[%default].')
 
-    parser.add_option("-b", "--bamfile", "--bedfile", "--bigwigfile", dest="infiles",
+    parser.add_option("-b", "--bamfile", "--bedfile", "--bigwigfile",
+                      dest="infiles",
                       metavar="BAM",
                       type="string", action="append",
-                      help="BAM/bed/bigwig files to use. Do not mix different types"
-                      "[%default]")
+                      help="BAM/bed/bigwig files to use. Do not mix "
+                      "different types [%default]")
 
     parser.add_option("-c", "--controlfile", dest="controlfiles",
                       metavar="BAM",
@@ -542,12 +540,14 @@ def main(argv=None):
     if len(options.infiles) == 0:
         raise ValueError("no bam/wig/bed files specified")
 
-    for methodsRequiresBaseAccuracy in ["geneprofilewithintrons",
-                                        "geneprofileabsolutedistancefromthreeprimeend",
-                                        ]:
-        # If you implemented any methods that you do not want the spliced out introns
-        # or exons appear to be covered by non-existent reads, it is better you let those
-        # methods imply --base-accurarcy by add them here.
+    for methodsRequiresBaseAccuracy in [
+            "geneprofilewithintrons",
+            "geneprofileabsolutedistancefromthreeprimeend",
+    ]:
+        # If you implemented any methods that you do not want the
+        # spliced out introns or exons appear to be covered by
+        # non-existent reads, it is better you let those methods imply
+        # --base-accurarcy by add them here.
         if methodsRequiresBaseAccuracy in options.methods:
             options.base_accuracy = True
 
@@ -569,29 +569,34 @@ def main(argv=None):
 
             format = "bam"
             if options.merge_pairs:
-                range_counter = _bam2geneprofile.RangeCounterBAM(bamfiles,
-                                                                 shifts=options.shifts,
-                                                                 extends=options.extends,
-                                                                 merge_pairs=options.merge_pairs,
-                                                                 min_insert_size=options.min_insert_size,
-                                                                 max_insert_size=options.max_insert_size,
-                                                                 controfiles=controlfiles,
-                                                                 control_factor=options.control_factor)
+                range_counter = _bam2geneprofile.RangeCounterBAM(
+                    bamfiles,
+                    shifts=options.shifts,
+                    extends=options.extends,
+                    merge_pairs=options.merge_pairs,
+                    min_insert_size=options.min_insert_size,
+                    max_insert_size=options.max_insert_size,
+                    controfiles=controlfiles,
+                    control_factor=options.control_factor)
+
             elif options.shifts or options.extends:
-                range_counter = _bam2geneprofile.RangeCounterBAM(bamfiles,
-                                                                 shifts=options.shifts,
-                                                                 extends=options.extends,
-                                                                 controlfiles=controlfiles,
-                                                                 control_factor=options.control_factor)
+                range_counter = _bam2geneprofile.RangeCounterBAM(
+                    bamfiles,
+                    shifts=options.shifts,
+                    extends=options.extends,
+                    controlfiles=controlfiles,
+                    control_factor=options.control_factor)
 
             elif options.base_accuracy:
-                range_counter = _bam2geneprofile.RangeCounterBAMBaseAccuracy(bamfiles,
-                                                                             controlfiles=controlfiles,
-                                                                             control_factor=options.control_factor)
+                range_counter = _bam2geneprofile.RangeCounterBAMBaseAccuracy(
+                    bamfiles,
+                    controlfiles=controlfiles,
+                    control_factor=options.control_factor)
             else:
-                range_counter = _bam2geneprofile.RangeCounterBAM(bamfiles,
-                                                                 controlfiles=controlfiles,
-                                                                 control_factor=options.control_factor)
+                range_counter = _bam2geneprofile.RangeCounterBAM(
+                    bamfiles,
+                    controlfiles=controlfiles,
+                    control_factor=options.control_factor)
 
         elif options.infiles[0].endswith(".bed.gz"):
             bedfiles = [pysam.Tabixfile(x) for x in options.infiles]
@@ -603,9 +608,10 @@ def main(argv=None):
                 controlfiles = None
 
             format = "bed"
-            range_counter = _bam2geneprofile.RangeCounterBed(bedfiles,
-                                                             controlfiles=controlfiles,
-                                                             control_factor=options.control_factor)
+            range_counter = _bam2geneprofile.RangeCounterBed(
+                bedfiles,
+                controlfiles=controlfiles,
+                control_factor=options.control_factor)
 
         elif options.infiles[0].endswith(".bw"):
             wigfiles = [BigWigFile(file=open(x)) for x in options.infiles]
