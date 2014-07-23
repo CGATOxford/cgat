@@ -190,7 +190,6 @@ import re
 import glob
 import sqlite3
 import collections
-import glob
 # load options from the config file
 import CGAT.Experiment as E
 import CGAT.Pipeline as P
@@ -217,10 +216,15 @@ P.getParameters(
 
 PARAMS = P.PARAMS
 
-PARAMS_ANNOTATIONS = P.peekParameters(
+PARAMS.update(P.peekParameters(
     PARAMS["annotations_dir"],
     "pipeline_annotations.py",
-    on_error_raise=__name__ == "__main__")
+    on_error_raise=__name__ == "__main__",
+    prefix="annotations_",
+    update_interface=True))
+
+PipelineGeneset.PARAMS = PARAMS
+PipelineMappingQC.PARAMS = PARAMS
 
 ###################################################################
 ###################################################################
@@ -277,7 +281,7 @@ if os.path.exists("pipeline_conf.py"):
 @active_if(SPLICED_MAPPING)
 @follows(mkdir("geneset.dir"))
 @merge(os.path.join(PARAMS["annotations_dir"],
-                    PARAMS_ANNOTATIONS["interface_geneset_all_gtf"]),
+                    PARAMS["annotations_interface_geneset_all_gtf"]),
        "geneset.dir/reference.gtf.gz")
 def buildReferenceGeneSet(infile, outfile):
     '''sanitize ENSEMBL transcripts file for cufflinks analysis.
@@ -311,7 +315,7 @@ def buildReferenceGeneSet(infile, outfile):
 
     if "geneset_remove_repetetive_rna" in PARAMS:
         rna_file = os.path.join(PARAMS["annotations_dir"],
-                                PARAMS_ANNOTATIONS["interface_rna_gff"])
+                                PARAMS["annotations_interface_rna_gff"])
     else:
         rna_file = None
 
@@ -363,7 +367,7 @@ def buildCodingGeneSet(infile, outfile):
 @active_if(SPLICED_MAPPING)
 @follows(mkdir("geneset.dir"))
 @merge(os.path.join(PARAMS["annotations_dir"],
-                    PARAMS_ANNOTATIONS["interface_geneset_flat_gtf"]),
+                    PARAMS["annotations_interface_geneset_flat_gtf"]),
        "geneset.dir/introns.gtf.gz")
 def buildIntronGeneModels(infile, outfile):
     '''build protein-coding intron-transcipts.
@@ -381,7 +385,7 @@ def buildIntronGeneModels(infile, outfile):
 
     filename_exons = os.path.join(
         PARAMS["annotations_dir"],
-        PARAMS_ANNOTATIONS["interface_geneset_exons_gtf"])
+        PARAMS["annotations_interface_geneset_exons_gtf"])
 
     statement = '''gunzip
         < %(infile)s
@@ -424,7 +428,7 @@ def loadGeneInformation(infile, outfile):
 @active_if(SPLICED_MAPPING)
 @follows(mkdir("geneset.dir"))
 @merge(os.path.join(PARAMS["annotations_dir"],
-                    PARAMS_ANNOTATIONS["interface_geneset_all_gtf"]),
+                    PARAMS["annotations_interface_geneset_all_gtf"]),
        "geneset.dir/coding_exons.gtf.gz")
 def buildCodingExons(infile, outfile):
     '''compile set of protein coding exons.
@@ -547,7 +551,7 @@ def buildJunctions(infile, outfile):
 @active_if(SPLICED_MAPPING)
 @follows(mkdir("gsnap.dir"))
 @files(os.path.join(PARAMS["annotations_dir"],
-                    PARAMS_ANNOTATIONS["interface_geneset_exons_gtf"]),
+                    PARAMS["annotations_interface_geneset_exons_gtf"]),
        "gsnap.dir/splicesites.iit")
 def buildGSNAPSpliceSites(infile, outfile):
     '''build file with known splice sites for GSNAP from all exons...
@@ -1217,7 +1221,7 @@ def buildBAMStats(infiles, outfile):
     '''
 
     rna_file = os.path.join(PARAMS["annotations_dir"],
-                            PARAMS_ANNOTATIONS["interface_rna_gff"])
+                            PARAMS["annotations_interface_rna_gff"])
 
     job_options = "-l mem_free=12G"
 
@@ -1274,7 +1278,7 @@ def loadBAMStats(infiles, outfile):
            suffix(".bam"),
            add_inputs(os.path.join(
                PARAMS["annotations_dir"],
-               PARAMS_ANNOTATIONS["interface_genomic_context_bed"])),
+               PARAMS["annotations_interface_genomic_context_bed"])),
            ".contextstats")
 def buildContextStats(infiles, outfile):
     '''build mapping context stats.
@@ -1550,7 +1554,7 @@ def buildBigWig(infile, outfile):
         tmpfile = P.getTempFilename()
         contig_sizes = os.path.join(
             PARAMS["annotations_dir"],
-            PARAMS_ANNOTATIONS["interface_contigs"])
+            PARAMS["annotations_interface_contigs"])
         job_options = "-l mem_free=3G"
         statement = '''bedtools genomecov
         -ibam %(infile)s

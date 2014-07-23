@@ -11,7 +11,7 @@ The ChIP-Seq pipeline imports reads from one or more ChIP-Seq experiments and
 performs the following tasks:
 
    * align reads to the genome
-   * call peaks 
+   * call peaks
    * annotate intervals with respect to a reference gene set
    * describe de-novo motifs
    * find motifs within intervals
@@ -19,12 +19,14 @@ performs the following tasks:
 Usage
 =====
 
-See :ref:`PipelineSettingUp` and :ref:`PipelineRunning` on general information how to use CGAT pipelines.
+See :ref:`PipelineSettingUp` and :ref:`PipelineRunning` on general
+information how to use CGAT pipelines.
 
 Configuration
 -------------
 
-The pipeline requires a configured :file:`pipeline.ini` file. The pipeline looks for a configuration file in several places:
+The pipeline requires a configured :file:`pipeline.ini` file. The
+pipeline looks for a configuration file in several places:
 
    1. The default configuration in the :term:`code directory`.
    2. A shared configuration file :file:`../pipeline.ini`.
@@ -35,21 +37,22 @@ override a shared configuration setting and a default configuration
 setting.
 
 Configuration files follow the ini format (see the python
-`ConfigParser <http://docs.python.org/library/configparser.html>` documentation).
-The configuration file is organized by section and the variables are documented within 
-the file. In order to get a local configuration file in the current directory, type::
+`ConfigParser <http://docs.python.org/library/configparser.html>`
+documentation).  The configuration file is organized by section and
+the variables are documented within the file. In order to get a local
+configuration file in the current directory, type::
 
     python <codedir>/pipeline_chipseq.py config
 
-The following sections and parameters probably should be changed from the default 
-values:
+The following sections and parameters probably should be changed from
+the default values:
 
 .. todo::
    describe important parameters
 
-The sphinxreport report requires a :file:`conf.py` and :file:`sphinxreport.ini` file 
-(see :ref:`PipelineReporting`). To start with, use the files supplied with the
-Example_ data.
+The sphinxreport report requires a :file:`conf.py` and
+:file:`sphinxreport.ini` file (see :ref:`PipelineReporting`). To start
+with, use the files supplied with the Example_ data.
 
 
 Input
@@ -74,35 +77,39 @@ For example::
    GM00855-unstim-R1.<suffix>.gz
    GM00855-unstim-R2.<suffix>.gz
 
-Note that neither ``sample``, ``condition`` or ``replicate`` should contain 
-``_`` (underscore) and ``.`` (dot) characters as these are used by the pipeline
-to delineate tasks.
+Note that neither ``sample``, ``condition`` or ``replicate`` should
+contain ``_`` (underscore) and ``.`` (dot) characters as these are
+used by the pipeline to delineate tasks.
 
 Optional inputs
 +++++++++++++++
 
-Optinally, peaks can be supplied as :term:`bed` formatted files. These peak files
-will then be processed in the same way as peaks called within the pipeline. Use the
-option ``tracks_extra`` to declare any additional tracks.
+Optionally, peaks can be supplied as :term:`bed` formatted
+files. These peak files will then be processed in the same way as
+peaks called within the pipeline. Use the option ``tracks_extra`` to
+declare any additional tracks.
 
-Additional peak files can be associated with one of the :term:`bam` files created
-by the pipeline. This permits counting the number of tags inside peaks, finding the
-peak summit, etc. In order to associated a peak file with a :term:`bam` formatted
-file, define a section in the pipeline.ini file. For example::
+Additional peak files can be associated with one of the :term:`bam`
+files created by the pipeline. This permits counting the number of
+tags inside peaks, finding the peak summit, etc. In order to
+associated a peak file with a :term:`bam` formatted file, define a
+section in the pipeline.ini file. For example::
 
 
    [mycalls.bed]
    track=tissue-sample-agg
 
-will process the file ``mycalls.bed`` exactly the same way as the track ``tissue-sample-agg``.
-Replicates can be specified explicitely::
+will process the file ``mycalls.bed`` exactly the same way as the
+track ``tissue-sample-agg``.  Replicates can be specified
+explicitely::
 
    [mycalls.bed]
    replicates=tissue1-sample1-R1,tissue1-sample1-R2
 
-will associate the file ``mycalls.bed`` with the replicates ``tissue1-sample1-R1`` 
-and ``tissue1-sample1-R2``. Note that globs don't work for this yet, all
-replicates have to be specified explicitely.
+will associate the file ``mycalls.bed`` with the replicates
+``tissue1-sample1-R1`` and ``tissue1-sample1-R2``. Note that globs
+don't work for this yet, all replicates have to be specified
+explicitely.
 
 Reference motifs
 ++++++++++++++++
@@ -122,8 +129,8 @@ The pipeline requires the information from the following pipelines:
    set the configuration variable :py:data:`annotations_database` and 
    :py:data:`annotations_dir`.
 
-On top of the default CGAT setup, the pipeline requires the following software to be in the 
-path:
+On top of the default CGAT setup, the pipeline requires the following
+software to be in the path:
 
 +--------------------+-------------------+------------------------------------------------+
 |*Program*           |*Version*          |*Purpose*                                       |
@@ -140,15 +147,17 @@ database :file:`csvdb`.
 Example
 =======
 
-Example data is available at http://www.cgat.org/~andreas/sample_data/pipeline_chipseq.tgz.
-To run the example, simply unpack and untar::
+Example data is available at
+http://www.cgat.org/~andreas/sample_data/pipeline_chipseq.tgz.  To run
+the example, simply unpack and untar::
 
    wget http://www.cgat.org/~andreas/sample_data/pipeline_chipseq.tgz
    tar -xvzf pipeline_chipseq.tgz
    cd pipeline_chipseq
    python <srcdir>/pipeline_chipseq.py make full
 
-.. note:: 
+.. note::
+
    For the pipeline to run, install the :doc:`pipeline_annotations` as well.
 
 Glossary
@@ -167,38 +176,25 @@ Code
 """
 import sys
 import tempfile
-import optparse
-import shutil
 import itertools
-import csv
-import math
-import random
 import re
 import glob
 import os
 import shutil
-import collections
+
+from ruffus import *
 
 import CGAT.Experiment as E
 import logging as L
 import CGAT.Database as Database
-from ruffus import *
-import csv
-import sqlite3
-import CGAT.IndexedFasta as IndexedFasta
 import CGAT.IndexedGenome as IndexedGenome
-import CGAT.FastaIterator as FastaIterator
-import CGAT.Genomics as Genomics
 import CGAT.IOTools as IOTools
-import CGAT.GTF as GTF
 import CGAT.Bed as Bed
 import pysam
 import numpy
-import gzip
 
 import PipelineChipseq as PipelineChipseq
 import PipelineMotifs as PipelineMotifs
-import PipelineGeneset as PGeneset
 import CGATPipelines.PipelineTracks as PipelineTracks
 import CGATPipelines.PipelineMapping as PipelineMapping
 
@@ -217,8 +213,10 @@ P.getParameters(
 
 PARAMS = P.PARAMS
 
-PARAMS_ANNOTATIONS = P.peekParameters(PARAMS["annotations_dir"],
-                                      "pipeline_annotations.py", on_error_raise=__name__ == "__main__")
+PARAMS_ANNOTATIONS = P.peekParameters(
+    PARAMS["annotations_dir"],
+    "pipeline_annotations.py",
+    on_error_raise=__name__ == "__main__")
 
 ###################################################################
 ###################################################################

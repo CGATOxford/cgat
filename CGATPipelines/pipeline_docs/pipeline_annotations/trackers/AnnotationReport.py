@@ -1,27 +1,19 @@
-import os
-import sys
-import re
-import types
-import itertools
-import glob
-
 from SphinxReport.Tracker import *
 from SphinxReport.Utils import PARAMS as P
-from SphinxReport.odict import OrderedDict as odict
+from collections import OrderedDict as odict
 
-from SphinxReport.ResultBlock import ResultBlock, ResultBlocks
-from SphinxReport import Utils
-
-###################################################################
 ###################################################################
 # parameterization
 
-EXPORTDIR = P.get('annotations_exportdir', P.get('exportdir', 'export'))
-DATADIR = P.get('annotations_datadir', P.get('datadir', '.'))
+EXPORTDIR = P.get(
+    'annotations_exportdir',
+    P.get('exportdir', 'export'))
+DATADIR = P.get(
+    'annotations_datadir',
+    P.get('datadir', '.'))
 DATABASE = P.get(
-    'annotations_backend', P.get('sql_backend', 'sqlite:///./csvdb'))
-
-###########################################################################
+    'annotations_backend',
+    P.get('sql_backend', 'sqlite:///./csvdb'))
 
 
 class AnnotationTracker(TrackerSQL):
@@ -32,29 +24,62 @@ class AnnotationTracker(TrackerSQL):
         TrackerSQL.__init__(self, *args, backend=DATABASE, **kwargs)
 
 
-class GenomicFeatureCoverage(TrackerSQL):
-
-    '''return coverage per feature.'''
-
-    tablename = "annotation_summary"
-
-    def getTracks(self):
-        return self.getValues("SELECT DISTINCT feature FROM %(tablename)s")
+class BedSummaryIntervals(TrackerSQL):
+    pattern = '(.*)_bedsummary'
 
     def __call__(self, track):
-        return self.getValue( """SELECT SUM( total_percent_coverage) FROM %(tablename)s 
-                               WHERE feature = '%(track)s'""" )
+        return self.getValue(
+            "SELECT sum(nintervals) FROM %(track)s_bedsummary")
 
 
-class ChromosomeFeatureCoverage(TrackerSQL):
-
-    '''return coverage per feature and chromosome.'''
-
-    tablename = "annotation_summary"
-
-    def getTracks(self):
-        return self.getValues("SELECT DISTINCT contig FROM %(tablename)s")
+class BedSummaryIntervalsPerContig(TrackerSQL):
+    pattern = '(.*)_bedsummary'
 
     def __call__(self, track):
-        return odict( self.get( """SELECT feature, SUM( percent_coverage) AS coverage FROM %(tablename)s 
-                               WHERE contig = '%(track)s' GROUP BY feature """ ) )
+        return self.getAll(
+            "SELECT track as contig, nintervals FROM %(track)s_bedsummary")
+
+
+class BedSummaryBases(TrackerSQL):
+    pattern = '(.*)_bedsummary'
+
+    def __call__(self, track):
+        return self.getValue(
+            "SELECT SUM(nbases) FROM %(track)s_bedsummary")
+
+
+class BedSummaryBasesPerContig(TrackerSQL):
+    pattern = '(.*)_bedsummary'
+
+    def __call__(self, track):
+        return self.getAll(
+            "SELECT track as contig, nbases FROM %(track)s_bedsummary")
+
+
+class GTFSummaryPerSource(TrackerSQL):
+    pattern = '(.*)_(gtf|gff)summary'
+
+    def __call__(self, track, slice):
+        if not self.hasTable("%s_%ssummary" % (track, slice)):
+            return None
+
+        return self.getAll(
+            """SELECT source,
+            SUM(bases) as bases,
+            SUM(intervals) as intervals,
+            SUM(total_percent_coverage) as percent_coverage
+            FROM %(track)s_%(slice)ssummary
+            GROUP BY source""")
+
+
+class GTFStats(SingleTableTrackerRows):
+    table = 'gtf_stats'
+
+
+class GFFStats(SingleTableTrackerRows):
+    table = 'gff_stats'
+
+
+class InfoTable(TrackerSQLCheckTables):
+    pattern = "(.*_info|.*_gtf)$"
+    slices = ["gene_id", "transcript_id", "gene_name"]

@@ -118,24 +118,17 @@ import itertools
 import CGAT.CSV as CSV
 import re
 import math
-import types
 import collections
-import time
-import optparse
-import shutil
 import numpy
 import sqlite3
 import CGAT.GTF as GTF
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
-import CGAT.Genomics as Genomics
 import CGAT.Database as Database
 import CGAT.FastaIterator as FastaIterator
-import PipelineGeneset as PGeneset
 import PipelineEnrichment as PEnrichment
-import PipelineGO as PGO
 import PipelineBiomart as PBiomart
-import PipelineDatabase as PDatabase
+import PipelineDatabase as PipelineDatabase
 import CGATPipelines.PipelineUCSC as PipelineUCSC
 import scipy.stats
 import CGAT.Stats as Stats
@@ -166,6 +159,9 @@ PARAMS_ANNOTATIONS = P.peekParameters(
     "pipeline_annotations.py",
     on_error_raise=__name__ == '__main__')
 
+
+PipelineDatabase.PARAMS = PARAMS
+PipelineUCSC.PARAMS = PARAMS
 
 ###################################################################
 ###################################################################
@@ -687,8 +683,9 @@ def loadGene2Omim(infile, outfile):
                 "mim_morbid_description"].strip()
             yield result
 
-    PDatabase.importFromIterator(
-        outfile, tablename, transform_data(data), columns=columns, indices=("gene_id", ))
+    PipelineDatabase.importFromIterator(
+        outfile, tablename, transform_data(data),
+        columns=columns, indices=("gene_id", ))
 
 
 @merge(None, "orthologs.load")
@@ -711,8 +708,9 @@ def loadHumanOrthologs(infile, outfile):
         data = PBiomart.biomart_iterator(
             columns.keys(), biomart="ensembl", dataset="hsapiens_gene_ensembl")
 
-        PDatabase.importFromIterator(
-            outfile, tablename, data, columns=columns, indices=("hs_gene_id", "gene_id", ))
+        PipelineDatabase.importFromIterator(
+            outfile, tablename, data,
+            columns=columns, indices=("hs_gene_id", "gene_id", ))
 
     else:
         # we are within human, create a set of default 1:1 orthologs

@@ -410,9 +410,7 @@ import os
 import re
 import shutil
 import itertools
-import math
 import glob
-import time
 import gzip
 import collections
 import random
@@ -461,6 +459,8 @@ PARAMS = P.PARAMS
 PARAMS_ANNOTATIONS = P.peekParameters(
     PARAMS["annotations_dir"],
     "pipeline_annotations.py", on_error_raise=__name__ == "__main__")
+
+PipelineGeneset.PARAMS = PARAMS
 
 ###################################################################
 ###################################################################

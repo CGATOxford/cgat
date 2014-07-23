@@ -25,15 +25,12 @@ import CGAT.Experiment as E
 import CGAT.GTF as GTF
 import CGAT.IndexedFasta as IndexedFasta
 
-import CGATPipelines.PipelineUCSC as PipelineUCSC
-
 # for UCSC import
 import MySQLdb
 
-try:
-    PARAMS = P.getParameters()
-except IOError:
-    pass
+# When importing this module, set PARAMS to your parameter
+# dictionary
+PARAMS = {}
 
 
 def connectToUCSC():
@@ -201,7 +198,7 @@ def annotateGenome(infile, outfile,
     | python %(scriptsdir)s/gtf2gtf.py --sort=position
     | python %(scriptsdir)s/gtf2gff.py --genome-file=%(genome_dir)s/%(genome)s
     --log=%(outfile)s.log
-    --flank=%(geneset_flank)s
+    --flank=%(enrichment_genes_flank)s
     --method=%(method)s
     | gzip
     > %(outfile)s
@@ -250,8 +247,8 @@ def annotateGeneStructure(infile, outfile,
     | python %(scriptsdir)s/gtf2gtf.py --sort=position
     | python %(scriptsdir)s/gtf2gff.py --genome-file=%(genome_dir)s/%(genome)s
     --log=%(outfile)s.log
-    --flank=%(genestructures_flank)i
-    --increment=%(genestructures_increment)i
+    --flank=%(enrichment_genestructures_flank)i
+    --increment=%(enrichment_genestructures_increment)i
     --method=%(method)s
     --detail=exons
     | gzip
@@ -298,7 +295,7 @@ def buildFlatGeneSet(infile, outfile):
 
 def buildProteinCodingGenes(infile, outfile):
     '''build a collection of exons from the protein-coding
-    section of the ENSEMBL gene set. 
+    section of the ENSEMBL gene set.
 
     The exons include both CDS and UTR.
 
@@ -313,7 +310,7 @@ def buildProteinCodingGenes(infile, outfile):
     # and hence merging will fail.
     # --permit-duplicates is set so that these cases will be
     # assigned new merged gene ids.
-    statement = """gunzip 
+    statement = """gunzip
     < %(infile)s
     | awk '$2 == "protein_coding"'
     | grep "transcript_id"
@@ -373,14 +370,11 @@ def loadGeneInformation(infile, outfile, only_proteincoding=False):
 
     P.run()
 
-############################################################
-############################################################
-############################################################
 
-
+# Note that this method is currently not used
 def loadTranscriptInformation(infile, outfile,
                               only_proteincoding=False):
-    '''load the transcript set.
+    '''load transcript information from a gtf file.
 
     *infile* is an ENSEMBL gtf file.
     '''
@@ -391,7 +385,7 @@ def loadTranscriptInformation(infile, outfile,
     else:
         filter_cmd = "cat"
 
-    statement = '''gunzip 
+    statement = '''gunzip
     < %(infile)s
     | %(filter_cmd)s
     | awk '$3 == "CDS"'
@@ -410,10 +404,6 @@ def loadTranscriptInformation(infile, outfile,
               --table=%(table)s
     > %(outfile)s'''
     P.run()
-
-############################################################
-############################################################
-############################################################
 
 
 def buildCDNAFasta(infile, outfile):
@@ -446,7 +436,7 @@ def buildPeptideFasta(infile, outfile):
     '''
     dbname = outfile[:-len(".fasta")]
 
-    statement = '''gunzip 
+    statement = '''gunzip
     < %(infile)s
     | perl -p -e 'if ("^>") { s/ .*//};'
     | python %(scriptsdir)s/index_fasta.py
@@ -469,7 +459,7 @@ def loadPeptideSequences(infile, outfile):
     '''
     table = P.toTable(outfile)
 
-    statement = '''gunzip 
+    statement = '''gunzip
     < %(infile)s
     | perl -p -e 'if ("^>") { s/ .*//};'
     | python %(scriptsdir)s/fasta2table.py --section=length --section=sequence
@@ -513,7 +503,8 @@ def buildCDSFasta(infile, outfile):
     tmpfile.write("\n".join(
         ["%s\t%s" % x for x in
          cc.execute(
-             "SELECT DISTINCT protein_id, transcript_id FROM transcript_info")]))
+             "SELECT DISTINCT protein_id, transcript_id "
+             "FROM transcript_info")]))
     tmpfile.write("\n")
 
     tmpfile.close()
@@ -568,8 +559,9 @@ def buildExons(infile, outfile):
     statement = '''
     gunzip < %(infile)s
     | awk '$3 == "exon"'
-    | python %(scriptsdir)s/gtf2gtf.py --remove-duplicates=gene
-    --log=%(outfile)s.log 
+    | python %(scriptsdir)s/gtf2gtf.py
+    --remove-duplicates=gene
+    --log=%(outfile)s.log
     | gzip > %(outfile)s
     '''
     P.run()
@@ -589,7 +581,7 @@ def buildCodingExons(infile, outfile):
     | awk '$3 == "exon"'
     | python %(scriptsdir)s/gtf2gtf.py
     --remove-duplicates=gene
-    --log=%(outfile)s.log 
+    --log=%(outfile)s.log
     | gzip > %(outfile)s
     '''
     P.run()
@@ -609,7 +601,8 @@ def buildNonCodingExons(infile, outfile):
     | awk '$3 == "exon"'
     | grep -v "protein_coding"
     | python %(scriptsdir)s/gtf2gtf.py
-    --remove-duplicates=gene --log=%(outfile)s.log 
+    --remove-duplicates=gene
+    --log=%(outfile)s.log
     | gzip > %(outfile)s
     '''
     P.run()
@@ -645,7 +638,8 @@ def buildCDS(infile, outfile):
     | awk '$2 == "protein_coding"'
     | awk '$3 == "CDS"'
     | python %(scriptsdir)s/gtf2gtf.py
-    --remove-duplicates=gene --log=%(outfile)s.log
+    --remove-duplicates=gene
+    --log=%(outfile)s.log
     | gzip > %(outfile)s
     '''
     P.run()
@@ -723,7 +717,7 @@ def loadProteinStats(infile, outfile):
 
     statement = '''
     gunzip < %(infile)s
-    | python %(scriptsdir)s/fasta2table.py 
+    | python %(scriptsdir)s/fasta2table.py
           --log=%(outfile)s
           --type=aa
           --section=length
@@ -777,15 +771,15 @@ def buildTSSRegions(infile, outfile):
     Similar to promotors, except that the witdth is set to 1.
     '''
     statement = """
-        gunzip < %(infile)s |\
-        python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log |\
-        python %(scriptsdir)s/gtf2gff.py --method=promotors --promotor=1 --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log > %(outfile)s
+    gunzip < %(infile)s
+    | python %(scriptsdir)s/gff2gff.py --sanitize=genome
+    --skip-missing
+    --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log
+    | python %(scriptsdir)s/gtf2gff.py --method=promotors
+    --promotor=1 --genome-file=%(genome_dir)s/%(genome)s
+    --log=%(outfile)s.log > %(outfile)s
     """
     P.run()
-
-############################################################
-############################################################
-############################################################
 
 
 def buildOverlapWithEnsembl(infile, outfile, filename_bed):
@@ -798,7 +792,7 @@ def buildOverlapWithEnsembl(infile, outfile, filename_bed):
     ``infile`` is the output from :meth:`buildGenes`.
     '''
 
-    statement = '''gunzip 
+    statement = '''gunzip
         < %(infile)s
         | python %(scriptsdir)s/gtf2gtf.py --merge-transcripts
         | python %(scriptsdir)s/gff2bed.py --is-gtf
@@ -810,13 +804,9 @@ def buildOverlapWithEnsembl(infile, outfile, filename_bed):
     '''
     P.run()
 
-############################################################
-############################################################
-############################################################
-
 
 def compareGeneSets(infiles, outfile):
-    '''compute overlap of genes, exons and transcripts in ``infiles`` 
+    '''compute overlap of genes, exons and transcripts in ``infiles``
 
     ``infiles`` are protein coding gene sets.
     '''
@@ -833,7 +823,7 @@ def compareGeneSets(infiles, outfile):
 ############################################################
 ############################################################
 ############################################################
-def buildPseudogenes(infiles, outfile):
+def buildPseudogenes(infiles, outfile, dbhandle):
     '''annotate genomic regions with reference gene set.
 
     *infile* is an ENSEMBL gtf file.
@@ -842,21 +832,21 @@ def buildPseudogenes(infiles, outfile):
 
     Pseudogenes are:
 
-    * gene_type or transcript_type contains the phrase "pseudo". This taken from
-      the database.
+    * gene_type or transcript_type contains the phrase "pseudo". This taken is
+      from the database.
 
-    * feature 'processed_transcript' with similarity to protein coding genes. Similarity
-      is assessed by aligning with exonerate.
+    * feature 'processed_transcript' with similarity to protein coding genes.
+      Similarity is assessed by aligning with exonerate.
 
     Pseudogenic transcripts can overlap with protein coding transcripts.
     '''
 
     infile_gtf, infile_peptides_fasta = infiles
 
-    tmpfile1 = P.getTempFilename(".")
+    tmpfile1 = P.getTempFilename(shared=True)
 
     statement = '''
-    zcat %(infile_gtf)s 
+    zcat %(infile_gtf)s
     | awk '$2 ~ /processed/'
     | python %(scriptsdir)s/gff2fasta.py
             --is-gtf
@@ -908,7 +898,6 @@ def buildPseudogenes(infiles, outfile):
     E.info("found %i best links" % len(best_matches))
     new_pseudos = set(best_matches.keys())
 
-    dbhandle = sqlite3.connect(PARAMS["database"])
     cc = dbhandle.cursor()
     known_pseudos = set([x[0] for x in cc.execute(
         """SELECT DISTINCT transcript_id
@@ -960,7 +949,7 @@ def buildNUMTs(infile, outfile):
     tmpfile_mito = P.getTempFilename(".")
 
     statement = '''
-    python %(scriptsdir)s/index_fasta.py 
+    python %(scriptsdir)s/index_fasta.py
            --extract=%(numts_mitochrom)s
            --log=%(outfile)s.log
            %(genome_dir)s/%(genome)s
@@ -1050,8 +1039,6 @@ def sortGTF(infile, outfile, order="contig+gene"):
 
     Ssee gtf2gtf.py for valid options for order.
     '''
-    cmds = []
-
     if infile.endswith(".gz"):
         uncompress = "zcat"
     else:
@@ -1063,8 +1050,7 @@ def sortGTF(infile, outfile, order="contig+gene"):
     else:
         compress = "cat"
 
-    # remove \0 bytes within gtf file
-    statement = '''%(uncompress)s %(infile)s 
+    statement = '''%(uncompress)s %(infile)s
     | python %(scriptsdir)s/gtf2gtf.py --sort=%(order)s --log=%(outfile)s.log
     | %(compress)s > %(outfile)s'''
 
@@ -1079,7 +1065,7 @@ def buildGenomicFunctionalAnnotation(gtffile, dbh, outfiles):
     Each bed entry is a gene territory. Bed entries are labeled
     by functional annotations associated with a gene.
 
-    Ambiguities in territories are resolved by outputting 
+    Ambiguities in territories are resolved by outputting
     annotations for all genes within a territory.
 
     The output file contains annotations for both GO and GOSlim. These
@@ -1115,7 +1101,8 @@ def buildGenomicFunctionalAnnotation(gtffile, dbh, outfiles):
             term2description["%s:%s" % (db, go_id)] = description
     outf.close()
     tmpfname = outf.name
-    statement = '''sort -k1,1 -k2,2n  < %(tmpfname)s | uniq | gzip > %(outfile_bed)s'''
+    statement = '''sort -k1,1 -k2,2n  < %(tmpfname)s | uniq
+    | gzip > %(outfile_bed)s'''
 
     P.run()
 
@@ -1124,3 +1111,116 @@ def buildGenomicFunctionalAnnotation(gtffile, dbh, outfiles):
     for term, description in term2description.iteritems():
         outf.write("%s\t%s\n" % (term, description))
     outf.close()
+
+
+def buildGenomicContext(infiles, outfile):
+    '''build a file with genomic context.
+
+    The output is a bed formatted file, annotating genomic segments
+    according to whether they are any of the ENSEMBL annotations.
+
+    It also adds the RNA and repeats annotations from the UCSC.
+
+    The annotations can be partially or fully overlapping.
+
+    Adjacent features (less than 10 bp apart) of the same type are merged.
+    '''
+
+    repeats_gff, rna_gff, annotations_gtf, geneset_flat_gff, \
+        cpgisland_bed, go_tsv = infiles
+
+    tmpfile = P.getTempFilename(shared=True)
+    tmpfiles = ["%s_%i" % (tmpfile, x) for x in range(6)]
+
+    distance = 10
+
+    # add ENSEMBL annotations
+    statement = """
+    zcat %(annotations_gtf)s
+    | python %(scriptsdir)s/gtf2gtf.py --sort=gene
+    | python %(scriptsdir)s/gtf2gtf.py --merge-exons --log=%(outfile)s.log
+    | python %(scriptsdir)s/gff2bed.py --name=source --is-gtf
+    --log=%(outfile)s.log
+    | sort -k 1,1 -k2,2n
+    | python %(scriptsdir)s/bed2bed.py --method=merge --merge-by-name
+    --merge-distance=%(distance)i --log=%(outfile)s.log
+    > %(tmpfile)s_0
+    """
+    P.run()
+
+    # rna
+    statement = '''
+    zcat %(repeats_gff)s %(rna_gff)s
+    | python %(scriptsdir)s/gff2bed.py --name=family --is-gtf -v 0
+    | sort -k1,1 -k2,2n
+    | python %(scriptsdir)s/bed2bed.py --method=merge --merge-by-name
+    --merge-distance=%(distance)i --log=%(outfile)s.log
+    > %(tmpfile)s_1'''
+    P.run()
+
+    # add aggregate intervals for repeats
+    statement = '''
+    zcat %(repeats_gff)s
+    | python %(scriptsdir)s/gff2bed.py --name=family --is-gtf -v 0
+    | awk -v OFS="\\t" '{$4 = "repeats"; print}'
+    | sort -k1,1 -k2,2n
+    | python %(scriptsdir)s/bed2bed.py --method=merge --merge-by-name
+    --merge-distance=%(distance)i --log=%(outfile)s.log
+    > %(tmpfile)s_2'''
+    P.run()
+
+    # add aggregate intervals for rna
+    statement = '''
+    zcat %(rna_gff)s
+    | python %(scriptsdir)s/gff2bed.py --name=family --is-gtf -v 0
+    | awk -v OFS="\\t" '{$4 = "repetetive_rna"; print}'
+    | sort -k1,1 -k2,2n
+    | python %(scriptsdir)s/bed2bed.py --method=merge --merge-by-name
+    --merge-distance=%(distance)i --log=%(outfile)s.log
+    > %(tmpfile)s_3 '''
+    P.run()
+
+    # add ribosomal protein coding genes
+    goids = ("GO:0003735", )
+
+    patterns = "-e %s" % ("-e ".join(goids))
+
+    statement = '''
+    zcat %(geneset_flat_gff)s
+    | python %(scriptsdir)s/gtf2gtf.py
+    --apply=<(zcat %(go_tsv)s | grep %(patterns)s | cut -f 2 | sort | uniq)
+    --filter=gene
+    --log=%(outfile)s.log
+    | python %(scriptsdir)s/gff2bed.py
+    --log=%(outfile)s.log
+    | awk -v OFS="\\t" '{$4 = "ribosomal_coding"; print}'
+    | sort -k1,1 -k2,2n
+    | python %(scriptsdir)s/bed2bed.py --method=merge --merge-by-name
+    --merge-distance=%(distance)i --log=%(outfile)s.log
+    > %(tmpfile)s_4
+    '''
+    P.run()
+
+    # CpG islands
+    statement = '''
+    zcat %(cpgisland_bed)s
+    | awk '{printf("%%s\\t%%i\\t%%i\\tcpgisland\\n", $1,$2,$3 )}'
+    > %(tmpfile)s_5
+    '''
+    P.run()
+
+    # sort and merge
+    # remove strand information as bedtools
+    # complains if there are annotations with
+    # different number of field
+    files = " ".join(tmpfiles)
+    statement = '''
+    sort --merge -k1,1 -k2,2n %(files)s
+    | cut -f 1-4
+    | gzip
+    > %(outfile)s
+    '''
+    P.run()
+
+    for x in tmpfiles:
+        os.unlink(x)

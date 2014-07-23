@@ -28,39 +28,13 @@ Code
 """
 
 import CGAT.Experiment as E
-import logging as L
-import CGAT.Database as Database
-import CGAT.CSV as CSV
-
-import sys
 import os
 import re
-import shutil
-import itertools
-import math
-import glob
-import time
-import gzip
-import collections
-import random
-
-import numpy
-import sqlite3
-import CGAT.GTF as GTF
 import CGAT.IOTools as IOTools
-import CGAT.IndexedFasta as IndexedFasta
-from rpy2.robjects import r as R
-import rpy2.robjects as ro
-import rpy2.robjects.vectors as rovectors
-import rpy2.rinterface as ri
-
 import CGAT.Pipeline as P
-import pysam
 
-try:
-    PARAMS = P.getParameters()
-except IOError:
-    pass
+# Set PARAMS in calling module
+PARAMS = {}
 
 
 def getPicardOptions():
@@ -73,7 +47,8 @@ def getNumReadsFromReadsFile(infile):
         line = inf.readline()
         if not line.startswith("nreads"):
             raise ValueError(
-                "parsing error in file '%s': expected first line to start with 'nreads'")
+                "parsing error in file '%s': "
+                "expected first line to start with 'nreads'")
         nreads = int(line[:-1].split("\t")[1])
     return nreads
 
@@ -104,7 +79,6 @@ def getNumReadsFromBAMFile(infile):
 def buildPicardInsertSizeStats(infile, outfile, genome_file):
     '''gather BAM file insert size statistics using Picard '''
 
-    to_cluster = True
     job_options = getPicardOptions()
 
     if getNumReadsFromBAMFile(infile) == 0:
@@ -113,12 +87,12 @@ def buildPicardInsertSizeStats(infile, outfile, genome_file):
         return
 
     statement = '''CollectInsertSizeMetrics
-                                       INPUT=%(infile)s 
-                                       REFERENCE_SEQUENCE=%(genome_file)s
-                                       ASSUME_SORTED=true 
-                                       OUTPUT=%(outfile)s 
-                                       VALIDATION_STRINGENCY=SILENT 
-                   >& %(outfile)s'''
+    INPUT=%(infile)s
+    REFERENCE_SEQUENCE=%(genome_file)s
+    ASSUME_SORTED=true
+    OUTPUT=%(outfile)s
+    VALIDATION_STRINGENCY=SILENT
+    >& %(outfile)s'''
 
     P.run()
 
@@ -126,7 +100,6 @@ def buildPicardInsertSizeStats(infile, outfile, genome_file):
 def buildPicardAlignmentStats(infile, outfile, genome_file):
     '''gather BAM file alignment statistics using Picard '''
 
-    to_cluster = True
     job_options = getPicardOptions()
 
     if getNumReadsFromBAMFile(infile) == 0:
@@ -137,23 +110,24 @@ def buildPicardAlignmentStats(infile, outfile, genome_file):
     # Picard seems to have problem if quality information is missing
     # or there is no sequence/quality information within the bam file.
     # Thus, add it explicitely.
-    statement = '''cat %(infile)s 
-                       | python %(scriptsdir)s/bam2bam.py -v 0 --set-sequence --sam 
-                       | CollectMultipleMetrics 
-                                       INPUT=/dev/stdin 
-                                       REFERENCE_SEQUENCE=%(genome_file)s
-                                       ASSUME_SORTED=true 
-                                       OUTPUT=%(outfile)s 
-                                       VALIDATION_STRINGENCY=SILENT 
-                       >& %(outfile)s'''
+    statement = '''cat %(infile)s
+    | python %(scriptsdir)s/bam2bam.py -v 0 --set-sequence --sam
+    | CollectMultipleMetrics
+    INPUT=/dev/stdin
+    REFERENCE_SEQUENCE=%(genome_file)s
+    ASSUME_SORTED=true
+    OUTPUT=%(outfile)s
+    VALIDATION_STRINGENCY=SILENT
+    >& %(outfile)s'''
 
     P.run()
 
 
 def buildPicardDuplicationStats(infile, outfile):
-    '''Record duplicate metrics using Picard, the marked records are discarded'''
+    '''Record duplicate metrics using Picard, the marked records
+    are discarded
+    '''
 
-    to_cluster = True
     job_options = getPicardOptions()
 
     if getNumReadsFromBAMFile(infile) == 0:
@@ -167,21 +141,21 @@ def buildPicardDuplicationStats(infile, outfile):
         tmpf = P.getTempFile(".")
         tmpfile_name = tmpf.name
         statement = '''samtools view -h %(infile)s
-                         | awk "!/\\tXT:/" 
-                         | samtools view /dev/stdin -S -b > %(tmpfile_name)s;
-                      ''' % locals()
+        | awk "!/\\tXT:/"
+        | samtools view /dev/stdin -S -b > %(tmpfile_name)s;
+        ''' % locals()
         data_source = tmpfile_name
     else:
         statement = ""
         data_source = infile
 
     statement += '''MarkDuplicates
-                       INPUT=%(data_source)s 
-                       ASSUME_SORTED=true 
-                       METRICS_FILE=%(outfile)s
-                       OUTPUT=/dev/null 
-                       VALIDATION_STRINGENCY=SILENT 
-                 '''
+    INPUT=%(data_source)s
+    ASSUME_SORTED=true
+    METRICS_FILE=%(outfile)s
+    OUTPUT=/dev/null
+    VALIDATION_STRINGENCY=SILENT
+    '''
 
     P.run()
 
@@ -192,7 +166,6 @@ def buildPicardDuplicationStats(infile, outfile):
 def buildPicardDuplicateStats(infile, outfile):
     '''Record duplicate metrics using Picard and keep the dedupped .bam file'''
 
-    to_cluster = True
     job_options = getPicardOptions()
 
     if getNumReadsFromBAMFile(infile) == 0:
@@ -201,18 +174,17 @@ def buildPicardDuplicateStats(infile, outfile):
         return
 
     statement = '''MarkDuplicates
-                                   INPUT=%(infile)s 
-                                   ASSUME_SORTED=true 
-                                   METRICS_FILE=%(outfile)s.duplicate_metrics
-                                   OUTPUT=%(outfile)s 
-                                   VALIDATION_STRINGENCY=SILENT 
-                 '''
+    INPUT=%(infile)s
+    ASSUME_SORTED=true
+    METRICS_FILE=%(outfile)s.duplicate_metrics
+    OUTPUT=%(outfile)s
+    VALIDATION_STRINGENCY=SILENT
+    '''
     P.run()
 
 
 def buildPicardGCStats(infile, outfile, genome_file):
     '''Gather BAM file GC bias stats using Picard '''
-    to_cluster = True
 
     job_options = getPicardOptions()
 
@@ -222,18 +194,20 @@ def buildPicardGCStats(infile, outfile, genome_file):
         return
 
     statement = '''CollectGcBiasMetrics
-                                       INPUT=%(infile)s 
-                                       REFERENCE_SEQUENCE=%(genome_file)s
-                                       OUTPUT=%(outfile)s 
-                                       VALIDATION_STRINGENCY=SILENT 
-                                       CHART_OUTPUT=%(outfile)s.pdf 
-                                       SUMMARY_OUTPUT=%(outfile)s.summary
-                   >& %(outfile)s'''
+    INPUT=%(infile)s
+    REFERENCE_SEQUENCE=%(genome_file)s
+    OUTPUT=%(outfile)s
+    VALIDATION_STRINGENCY=SILENT
+    CHART_OUTPUT=%(outfile)s.pdf
+    SUMMARY_OUTPUT=%(outfile)s.summary
+    >& %(outfile)s'''
 
     P.run()
 
 
-def loadPicardMetrics(infiles, outfile, suffix, pipeline_suffix=".picard_stats", tablename=False):
+def loadPicardMetrics(infiles, outfile, suffix,
+                      pipeline_suffix=".picard_stats",
+                      tablename=False):
     '''load picard metrics.'''
 
     if not tablename:
@@ -276,8 +250,9 @@ def loadPicardMetrics(infiles, outfile, suffix, pipeline_suffix=".picard_stats",
         else:
             f = lines[0][:-1].split("\t")
             if f != fields:
-                raise ValueError("file %s has different fields: expected %s, got %s" %
-                                 (filename, fields, f))
+                raise ValueError(
+                    "file %s has different fields: expected %s, got %s" %
+                    (filename, fields, f))
 
         first = False
         for i in range(1, len(lines)):
@@ -300,8 +275,10 @@ def loadPicardMetrics(infiles, outfile, suffix, pipeline_suffix=".picard_stats",
     os.unlink(tmpfilename)
 
 
-def loadPicardHistogram(infiles, outfile, suffix, column, pipeline_suffix=".picard_stats", tablename=False):
-    '''extract a histogram from a picard output file and load it into database.'''
+def loadPicardHistogram(infiles, outfile, suffix, column,
+                        pipeline_suffix=".picard_stats", tablename=False):
+    '''extract a histogram from a picard output file and load
+    it into database.'''
 
     if not tablename:
         tablename = "%s_%s" % (P.toTable(outfile), suffix)
@@ -329,7 +306,7 @@ def loadPicardHistogram(infiles, outfile, suffix, column, pipeline_suffix=".pica
                       --header=%(column)s,%(header)s
                       --replace-header
                       --index=track
-                      --table=%(tablename)s 
+                      --table=%(tablename)s
                 >> %(outfile)s
                 """
 
