@@ -826,7 +826,7 @@ def mapReadsWithSTAR(infile, outfile):
     '''
 
     job_threads = PARAMS["star_threads"]
-    job_options = "mem_free=%s" % PARAMS["star_memory"]
+    job_options = "-l mem_free=%s" % PARAMS["star_memory"]
 
     star_mapping_genome = PARAMS["star_genome"] or PARAMS["genome"]
 

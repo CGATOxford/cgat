@@ -1,6 +1,8 @@
 #cimport csamtools
 
-from pysam.csamtools cimport *
+from pysam.chtslib cimport *
+from pysam.csamfile cimport *
+from pysam.cfaidx cimport *
 from libc.string cimport strchr
 from libc.stdint cimport int8_t
 from libc.stdio cimport puts
@@ -118,27 +120,28 @@ def count( Samfile samfile,
 
             fastq_nreads += 1
         
-        E.info( "read %i reads" % fastq_nreads )
+        E.info("read %i reads" % fastq_nreads)
 
-        E.info( "allocating %i bytes" % (fastq_nreads * sizeof(CountsType) ) )
+        E.info("allocating %i bytes" % (fastq_nreads * sizeof(CountsType)))
 
-        fastq_counts = <CountsType *>calloc( fastq_nreads, sizeof( CountsType ) )
+        fastq_counts = <CountsType *>calloc(fastq_nreads, sizeof(CountsType))
         if fastq_counts == NULL:
-            raise ValueError( "could not allocate memory for %i bytes" % (fastq_nreads * sizeof(CountsType) ))
+            raise ValueError("could not allocate memory for %i bytes" %
+                             (fastq_nreads * sizeof(CountsType)))
  
     for read in samfile:
 
         if count_fastq:
-            read_name = bam1_qname( read._delegate )
+            read_name = pysam_bam_get_qname(read._delegate)
             # terminate string at first space to
             # truncate read names containing more than
             # just the id
-            position = strchr( read_name, ' ')
+            position = strchr(read_name, ' ')
             if position != NULL: 
                 position[0] = '\0'
 
             try:
-                fastq_count = &fastq_counts[ reads[read_name] ]
+                fastq_count = &fastq_counts[reads[read_name]]
             except KeyError:
                 fastq_notfound += 1
                 continue

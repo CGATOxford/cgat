@@ -55,7 +55,7 @@ The script implements the following methods:
 
 ``filter``
    remove alignments based on a variety of flags.  These may
-   be ``unique``, ``non-unique``, ``mapped``, ``NM`` or 
+   be ``unique``, ``non-unique``, ``mapped``, ``NM`` or
    ``CM``.  If ``unique`` is given this wil NOT remove any
    unmapped reads.  This can be achieved by providing the
    ``filter`` option twice, once each with ``mapped`` and
@@ -184,7 +184,7 @@ def main(argv=None):
                       action="store_true",
                       help="keep first base of reads such that gtf2table.py "
                       "will only consider the "
-                      "first base in its counts")
+                      "first base in its counts.")
 
     parser.set_defaults(
         filter=[],
@@ -205,8 +205,13 @@ def main(argv=None):
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv)
 
+    bamfiles = []
+
+    if options.stdin != sys.stdin:
+        bamfiles.append(options.stdin.name)
+
     if options.inplace:
-        bamfiles = args
+        bamfiles.extend(args)
         if len(bamfiles) == 0:
             raise ValueError(
                 "please one or more bam-files as command line arguments")
@@ -214,7 +219,8 @@ def main(argv=None):
         if "-" in bamfiles:
             raise ValueError(
                 "can not read from stdin if ``--inplace`` is selected")
-    else:
+
+    if len(bamfiles) == 0:
         bamfiles = ["-"]
 
     for bamfile in bamfiles:
@@ -238,6 +244,9 @@ def main(argv=None):
             else:
                 pysam_out = pysam.Samfile("-", "wb", template=pysam_in)
         else:
+            if IOTools.isEmpty(bamfile):
+                E.warn('skipping empty file %s' % bamfile)
+                continue
             tmpfile = tempfile.NamedTemporaryFile(delete=False, prefix="ctmp")
             tmpfile.close()
 

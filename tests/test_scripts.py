@@ -27,6 +27,7 @@ import re
 import glob
 import gzip
 import yaml
+import sys
 
 from nose.tools import assert_equal, ok_
 
@@ -106,7 +107,8 @@ def check_script(test_name, script, stdin,
     retval = subprocess.call(statement,
                              shell=True,
                              cwd=tmpdir)
-    assert retval == 0
+    assert_equal(retval, 0,
+                 "error in statement: %s" % statement)
 
     # for version tests, do not compare output
     if test_name == "version":
@@ -123,16 +125,17 @@ def check_script(test_name, script, stdin,
             output = os.path.join(tmpdir, output)
 
         if not os.path.exists(output):
-            raise OSError("output file '%s'  does not exist" % output)
+            raise OSError("output file '%s'  does not exist: %s" %
+                          (output, statement))
 
         reference = os.path.join(workingdir, reference)
         if not os.path.exists(reference):
-            raise OSError("reference file '%s' does not exist (%s)" %
-                          (reference, tmpdir))
+            raise OSError("reference file '%s' does not exist (%s): %s" %
+                          (reference, tmpdir, statement))
 
         for a, b in zip(_read(output), _read(reference)):
-            assert_equal(a, b, "files %s and %s are not the same" %
-                         (output, reference))
+            assert_equal(a, b, "files %s and %s are not the same: %s" %
+                         (output, reference, statement))
 
     shutil.rmtree(tmpdir)
 

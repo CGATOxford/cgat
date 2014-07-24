@@ -1,6 +1,7 @@
 # cython: profile=True
 #cimport csamtools
-from pysam.csamtools cimport *
+from pysam.chtslib cimport *
+from pysam.csamfile cimport *
 
 import collections, array, struct
 import CGAT.Experiment as E

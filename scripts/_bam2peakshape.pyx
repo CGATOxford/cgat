@@ -1,6 +1,6 @@
 #cimport csamtools
 
-from pysam.csamtools cimport *
+from pysam.csamfile cimport *
 import collections
 import CGAT.Experiment as E
 import numpy
