@@ -223,9 +223,6 @@ def filter_bam(Samfile input_samfile,
         noutput += 1
         output_samfile.write(read)
 
-        if noutput > 100:
-            break
-
     c = E.Counter()
     c.input = ninput
     c.removed_unique = nunique
