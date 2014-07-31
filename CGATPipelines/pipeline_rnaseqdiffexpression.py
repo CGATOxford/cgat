@@ -328,10 +328,12 @@ P.getParameters(
      "pipeline.ini"])
 
 PARAMS = P.PARAMS
-PARAMS_ANNOTATIONS = P.peekParameters(
+PARAMS.update(P.peekParameters(
     PARAMS["annotations_dir"],
     "pipeline_annotations.py",
-    on_error_raise=__name__ == "__main__")
+    on_error_raise=__name__ == "__main__",
+    prefix="annotations_",
+    update_interface=True))
 
 PipelineGeneset.PARAMS = PARAMS
 
@@ -389,17 +391,13 @@ TARGETS_FPKM = [(("%s.gtf.gz" % x.asFile(), "%s.bam" % y.asFile()),
 #########################################################################
 # preparation targets
 
-#########################################################################
-#########################################################################
-#########################################################################
-
-
-@files(os.path.join(PARAMS["annotations_dir"], "geneset_all.gtf.gz"),
+@files(PARAMS["annotations_interface_geneset_all_gtf"],
        "geneset_mask.gtf")
 def buildMaskGtf(infile, outfile):
     '''This takes ensembl annotations (geneset_all.gtf.gz) and writes out
     all entries that have a 'source' match to "rRNA" or 'contig' match
     to "chrM". for use with cufflinks
+
     '''
     geneset = IOTools.openFile(infile)
     outf = open(outfile, "wb")
@@ -416,10 +414,6 @@ def buildMaskGtf(infile, outfile):
                 + "\n")
 
     outf.close()
-
-#########################################################################
-#########################################################################
-#########################################################################
 
 
 @transform("*.gtf.gz",
@@ -819,8 +813,7 @@ def loadCuffdiffStats(infile, outfile):
 #########################################################################
 
 
-@merge(os.path.join(PARAMS["annotations_dir"],
-                    PARAMS_ANNOTATIONS["interface_geneset_all_gtf"]),
+@merge(PARAMS["annotations_interface_geneset_all_gtf"],
        "coding_exons.gtf.gz")
 def buildCodingExons(infile, outfile):
     '''compile set of protein coding exons.
@@ -987,14 +980,9 @@ def buildGeneLevelReadExtension(infile, outfile):
     Known UTRs are counted as well.
     '''
 
-    cds = os.path.join(PARAMS["annotations_dir"],
-                       PARAMS_ANNOTATIONS["interface_geneset_cds_gtf"])
-
-    territories = os.path.join(PARAMS["annotations_dir"],
-                               PARAMS_ANNOTATIONS["interface_territories_gff"])
-
-    utrs = os.path.join(PARAMS["annotations_dir"],
-                        PARAMS_ANNOTATIONS["interface_annotation_gff"])
+    cds = PARAMS["annotations_dir_interface_geneset_cds_gtf"]
+    territories = PARAMS["annotations_interface_territories_gff"]
+    utrs = PARAMS["annotations_interface_annotation_gff"]
 
     if "geneset_remove_contigs" in PARAMS:
         remove_contigs = '''| awk '$1 !~ /%s/' ''' % PARAMS[
