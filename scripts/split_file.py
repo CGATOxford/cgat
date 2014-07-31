@@ -11,7 +11,7 @@ Purpose
 -------
 
 .. todo::
-   
+
    describe purpose of the script.
 
 Usage
@@ -50,16 +50,17 @@ OPTIONS:
 -p, --pattern-output            pattern of output files (has to contain %s)
 -c, --column=                   split according to column
 -m, --map=                      split according to map
--d, --dry-run                   echo files that would be created, but do not create any.
+-d, --dry-run                   echo files that would be created,
+                                but do not create any.
 -e, --header                    add header to each file
 -r, --remove-key                remove key column
 -append                         append data to existing files.
---pattern-identifier            if given, use this pattern to extract id from column.
+--pattern-identifier            if given, use this pattern to extract
+                                id from column.
 --version                       output version information
 """ % (sys.argv[0], "s")
 
 import CGAT.Experiment as E
-
 
 
 def CreateOpen(file, mode="w", dry_run=False, header=None):
@@ -110,7 +111,6 @@ def main(argv=None):
     param_skip = None
     param_pattern_output = "%s.chunk"
     param_split_column = None
-    param_split_map = None
     param_filename_map = None
     param_dry_run = False
     param_header = False

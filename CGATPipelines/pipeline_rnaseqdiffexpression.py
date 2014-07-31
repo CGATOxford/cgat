@@ -226,19 +226,6 @@ performed on.  Level can be one of ``cds``,``isoform``,``tss`` and
 Section is ``diff`` for differential expression results
 (:file:`.diff`` files) and ``levels`` for expression levels.
 
-
-Example
-=======
-
-Example data is available at
-http://www.cgat.org/~andreas/sample_data/pipeline_rnaseqdiffexpression.tgz.
-To run the example, simply unpack and untar::
-
-   wget http://www.cgat.org/~andreas/sample_data/pipeline_rnaseqdiffexpression.tgz
-   tar -xvzf pipeline_rnaseq.tgz
-   cd pipeline_rnaseq
-   python <srcdir>/pipeline_rnaseq.py make full
-
 .. note::
 
    For the pipeline to run, install the :doc:`pipeline_annotations` as well.
@@ -375,21 +362,12 @@ def connect():
 
     return dbh
 
-#########################################################################
-#########################################################################
-#########################################################################
-# Definition of targets
-
 
 # Expression levels: geneset vs bam files
 TARGETS_FPKM = [(("%s.gtf.gz" % x.asFile(), "%s.bam" % y.asFile()),
                  "%s_%s.cufflinks" % (x.asFile(), y.asFile()))
                 for x, y in itertools.product(GENESETS, TRACKS)]
 
-#########################################################################
-#########################################################################
-#########################################################################
-# preparation targets
 
 @files(PARAMS["annotations_interface_geneset_all_gtf"],
        "geneset_mask.gtf")
@@ -421,8 +399,6 @@ def buildMaskGtf(infile, outfile):
            "_geneinfo.load")
 def loadGeneSetGeneInformation(infile, outfile):
     PipelineGeneset.loadGeneStats(infile, outfile)
-
-#########################################################################
 
 
 @follows(mkdir("fpkm.dir"))
@@ -692,7 +668,8 @@ def buildExpressionStats(tables, method, outfile, outdir):
             if len(data) > 10:
                 data = zip(*data)
 
-                pngfile = "%(outdir)s/%(design)s_%(geneset)s_%(level)s_pvalue_vs_length.png" % locals()
+                pngfile = ("%(outdir)s/%(design)s_%(geneset)s_%(level)s"
+                           "_pvalue_vs_length.png") % locals()
                 R.png(pngfile)
                 R.smoothScatter(R.log10(ro.FloatVector(data[0])),
                                 R.log10(ro.FloatVector(data[1])),
@@ -760,7 +737,9 @@ def buildCuffdiffPlots(infile, outfile):
 
             data = zip(*Database.executewait(dbhandle, statement))
 
-            pngfile = "%(outdir)s/%(geneset)s_%(method)s_%(level)s_%(track1)s_vs_%(track2)s_significance.png" % locals()
+            pngfile = ("%(outdir)s/%(geneset)s_%(method)s_"
+                       "%(level)s_%(track1)s_vs_%(track2)s_"
+                       "significance.png") % locals()
 
             # ian: Bug fix: moved R.png to after data check so that no
             #     plot is started if there is no data this was leading

@@ -1575,7 +1575,6 @@ if PARAMS["genome"].startswith("hg"):
             if pos == "":
                 c.no_pos += 1
                 continue
-                
 
             # translate chr23 to X
             if contig == "23":
