@@ -1010,8 +1010,8 @@ def downloadTranscriptInformation(infile, outfile):
 
     # validate: 1:1 mapping between gene_ids and gene_names
     dbh = connect()
-    cc = dbh.cursor()
-    data = cc.execute("""
+
+    data = Database.executewait(dbh, """
     SELECT gene_name, count(distinct gene_id) from %(tablename)s
     GROUP BY gene_name
     HAVING count(distinct gene_id) > 1""" % locals())
@@ -1024,15 +1024,14 @@ def downloadTranscriptInformation(infile, outfile):
 
     # adding final column back into transcript_info for dmelanogaster genomes
     if PARAMS["genome"].startswith("dm"):
-        dbh = connect()
-        cc = dbh.cursor()
-        cc.execute('''ALTER TABLE Table1 ADD COLUMN uniprot_name NULL''')
+        Database.executewait(
+            dbh,
+            '''ALTER TABLE Table1 ADD COLUMN uniprot_name NULL''')
 
     # adding final column back into transcript_info for scerevisiae genomes
     if PARAMS["genome"].startswith("sac"):
-        dbh = connect()
-        cc = dbh.cursor()
-        cc.execute(
+        Database.executewait(
+            dbh,
             '''ALTER TABLE transcript_info ADD COLUMN uniprot_name NULL''')
 
 
@@ -1139,8 +1138,7 @@ def loadProteinStats(infile, outfile):
 def buildSelenoList(infile, outfile):
     '''export a list of seleno cysteine transcripts.'''
 
-    dbhandle = sqlite3.connect(PARAMS["database"])
-    cc = dbhandle.cursor()
+    dbh = sqlite3.connect(PARAMS["database"])
     statement = '''
     SELECT DISTINCT transcript_id
     FROM transcript_info as t,
@@ -1150,7 +1148,9 @@ def buildSelenoList(infile, outfile):
     '''
     outf = open(outfile, "w")
     outf.write("transcript_id\n")
-    outf.write("\n".join([x[0] for x in cc.execute(statement)]) + "\n")
+    outf.write("\n".join(
+        [x[0]
+         for x in Database.executewait(dbh, statement)]) + "\n")
     outf.close()
 
 
@@ -1562,6 +1562,12 @@ if PARAMS["genome"].startswith("hg"):
             c.input += 1
             contig, pos, snp, disease = row['Chr_id'], row[
                 'Chr_pos'], row['SNPs'], row['Disease/Trait']
+
+            # skip SNPs on undefined contigs
+            if contig not in contigsizes:
+                c.no_contig += 1
+                continue
+
             if snp == "NR":
                 c.skipped += 1
                 continue
@@ -1569,6 +1575,7 @@ if PARAMS["genome"].startswith("hg"):
             if pos == "":
                 c.no_pos += 1
                 continue
+                
 
             # translate chr23 to X
             if contig == "23":
@@ -1639,6 +1646,12 @@ if PARAMS["genome"].startswith("hg"):
 
         track = P.snip(infile, ".log")
         intervals = []
+
+        fasta = IndexedFasta.IndexedFasta(
+            os.path.join(PARAMS["genome_dir"],
+                         PARAMS["genome"] + ".fasta"))
+        contigsizes = fasta.getContigSizes()
+
         c = E.Counter()
         for line in IOTools.openFile(track + "_snps.tsv.gz"):
             pubmed_id, rs, pvalue, block, ensgenes, short, icd10 = line[
@@ -1651,6 +1664,12 @@ if PARAMS["genome"].startswith("hg"):
                 E.warn("parsing error for %s" % block)
                 c.errors += 1
                 continue
+
+            # skip SNPs on undefined contigs
+            if contig not in contigsizes:
+                c.no_contig += 1
+                continue
+
             intervals.append((contig, int(start), int(end), short))
             c.parsed += 1
 
@@ -1973,6 +1992,7 @@ def buildPseudogenes(infile, outfile):
     PipelineGeneset.buildPseudogenes(infile, outfile, dbh)
 
 
+@follows(mkdir('geneset.dir'))
 @files((None,),
        PARAMS["interface_numts_gtf"])
 def buildNUMTs(infile, outfile):
@@ -2025,7 +2045,8 @@ if 0:
 
         cc = dbhandle.cursor()
         tables = set(
-            [x[0] for x in cc.execute(
+            [x[0] for x in cc.executewait(
+                dbhandle,
                 "SELECT name FROM sqlite_master WHERE type='table'")])
         cc.close()
 
@@ -2055,7 +2076,7 @@ if 0:
             statement = """SELECT chrom, chrostart, chroend FROM %s
             ORDER by chrom, chrostart""" % (
                 tablename)
-            cc.execute(statement)
+            cc.executewait(dbhandle, statement)
             for contig, start, end in cc:
                 outs.write("%s\t%i\t%i\n" % (contig, start, end))
         outs.close()
