@@ -404,7 +404,6 @@ def loadBAMStats(infiles, outfile):
                       --ignore-empty
                    %(filenames)s
                 | perl -p -e "s/bin/track/"
-                | perl -p -e "s/unique/unique_alignments/"
                 | python %(scriptsdir)s/table2table.py --transpose
                 | python %(scriptsdir)s/csv2db.py
                       --allow-empty

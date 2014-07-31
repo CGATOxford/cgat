@@ -24,6 +24,7 @@ import CGATPipelines.PipelineUCSC as PipelineUCSC
 
 PROJECT_ROOT = '/ifs/projects'
 
+# gets set by importing script
 PARAMS = {}
 
 
