@@ -876,7 +876,7 @@ def openFile(filename, mode="r", create_dir=False):
 
 
 def iterate(infile):
-    '''iterate over infile and return a namedtuple according to 
+    '''iterate over infile and return a namedtuple according to
     first row.'''
 
     n = 0
@@ -931,3 +931,28 @@ def zapFile(filename):
 
     return original, linkdest
 
+
+def iterator_split(infile, regex):
+    '''Return an iterator of file chunks based on a known logical start point
+    `regex` that splits the file into intuitive chunks.  This assumes the file
+    is structured in some fashion.  For arbitrary number of bytes use
+    file.read(`bytes`).
+    If a header is present it is returned as the first file chunk.
+
+    infile must be either an open file handle or an iterable.'''
+    
+    chunk_list = []
+
+    regex = re.compile(regex)
+
+    for x in infile:
+        if regex.search(x):
+            if len(chunk_list):
+                # return the current chunk and start a new one from this point
+                yield chunk_list
+            chunk_list = []
+            chunk_list.append(x)
+        else:
+            chunk_list.append(x)
+        
+    yield chunk_list

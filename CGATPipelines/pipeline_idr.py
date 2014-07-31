@@ -161,6 +161,7 @@ import itertools
 import re
 import sqlite3
 import glob
+import shutil
 
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
@@ -259,24 +260,21 @@ def connect():
 def filterBamfiles(infile, sentinel):
     """
     Pre-process bamfiles prior to peak calling.
-    i) remove unmapped readswith bam2bam.py
-    i) remove non-uniquely mapping reads with bam2bam.py (optional)
-    ii) remove duplicates with Picards MarkDuplicates (optional)
-    iii) remove reads from masked regions with bedtools intersect (optional)
-    iv) index
-    Currently assumes bamfiles are sorted prior to running the pipeline
+    i) sort bamfiles
+    ii) remove unmapped readswith bam2bam.py
+    iii) remove non-uniquely mapping reads with bam2bam.py (optional)
+    iv) remove duplicates with Picards MarkDuplicates (optional)
+    v) remove reads from masked regions with bedtools intersect (optional)
+    vi) index
     """
 
     # create tempfile for Picard's MarkDuplicates
-    picard_tmp = os.mkdir(os.path.abspath(infile) + "_tmpdr")
+    picard_tmp = picard_tmp = P.getTempDir("/scratch")
 
     outfile = P.snip(sentinel, ".sentinel") + ".bam"
 
     # ensure bamfile is sorted,
-    # prepending samtools sort causes crash.
-    # statement = [ "samtools sort @IN@ @OUT@", ]
-
-    statement = []
+    statement = ["samtools sort -f @IN@ @OUT@", ]
 
     # remove unmapped reads
     statement.append("python %(scriptsdir)s/bam2bam.py"
@@ -304,7 +302,7 @@ def filterBamfiles(infile, sentinel):
                          " METRICS_FILE=/dev/null"
                          " VALIDATION_STRINGENCY=SILENT"
                          " TMP_DIR=%(picard_tmp)s"
-                         " 2> %(outifle)s.log")
+                         " 2> %(outfile)s.log")
 
     # mask regions, if intervals supplied
     if PARAMS["filter_mask_intervals"]:
@@ -324,6 +322,7 @@ def filterBamfiles(infile, sentinel):
 
     P.run()
     P.touch(sentinel)
+    shutil.rmtree(picard_tmp)
 
 
 @follows(filterBamfiles, mkdir("bamfiles_pseudoreplicates"))
@@ -1013,8 +1012,8 @@ def preProcessBamfiles():
 
 @follows(callPeaksOnIndividualReplicates,
          callPeaksOnPseudoreplicates,
-         callPeaksOnPooledPseudoreplicates, 
-         loadPeakSummaryForIndividualReplicates, 
+         callPeaksOnPooledPseudoreplicates,
+         loadPeakSummaryForIndividualReplicates,
          loadPeakSummaryForPseudoreplicates,
          loadPeakSummaryForPooledPseudoreplicates)
 def callPeaks():
