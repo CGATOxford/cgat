@@ -39,6 +39,7 @@ import os
 import re
 import shutil
 import inspect
+import glob
 
 from CGAT import Experiment as E
 
@@ -217,21 +218,27 @@ def getModules(modules, scriptdirs, libdirs):
 def getProjectId():
     '''cgat specific method: get the (obfuscated) project id
     based on the current working directory.
+
+    web_dir should be link to the web directory in the project
+    directory which then links to the web directory in the sftp
+    directory which then links to the obfuscated directory.
+
+    pipeline:web_dir
+    -> /ifs/projects/.../web
+    -> /ifs/sftp/.../web
+    -> /ifs/sftp/.../aoeuCATAa (obfuscated directory)
+
     '''
     curdir = os.path.abspath(os.getcwd())
     if not curdir.startswith(PROJECT_ROOT):
         raise ValueError(
             "method getProjectId no called within %s" % PROJECT_ROOT)
-    prefixes = len(PROJECT_ROOT.split("/"))
-    # patch for projects in mini directory
-    if "/mini/" in curdir:
-        prefixes += 1
-    rootdir = "/" + os.path.join(*(curdir.split("/")[:prefixes + 1]))
-    f = os.path.join(rootdir, "sftp", "web")
-    if not os.path.exists(f):
-        raise OSError("web directory at '%s' does not exist" % f)
-    target = os.readlink(f)
-    return os.path.basename(target)
+
+    webdir = PARAMS['web_dir']
+    assert os.path.islink(webdir)
+    target = os.readlink(webdir)
+    assert os.path.islink(target)
+    return os.path.basename(os.readlink(target))
 
 
 def getProjectName():
