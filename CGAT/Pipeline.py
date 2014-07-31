@@ -1621,6 +1621,13 @@ def peekParameters(workingdir,
     if workingdir == "":
         workingdir = os.path.abspath(".")
 
+    # patch for the "config" target - use default
+    # pipeline directory if directory is not specified
+    # working dir is set to "?!"
+    if "config" in sys.argv and workingdir == "?!":
+        workingdir = os.path.join(PIPELINE_DIR,
+                                  snip(pipeline, ".py"))
+
     if not os.path.exists(workingdir):
         if on_error_raise:
             raise ValueError(

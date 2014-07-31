@@ -210,7 +210,6 @@ P.getParameters(
      "../pipeline.ini",
      "pipeline.ini"],
     defaults={
-        'annotations_dir': "",
         'paired_end': False})
 
 PARAMS = P.PARAMS
