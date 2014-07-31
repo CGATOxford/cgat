@@ -187,7 +187,7 @@ class callerIDRPeaks(object):
 
         # run peakcalling
         statement = self.getRunStatement(infile, outfile, controlfile)
-        ## check run statement
+        # check run statement
         # print ("\nRun statement for sample %s :\n %s" % (infile, statement))
         job_options = "-l mem_free=10G"
         P.run()
@@ -195,7 +195,7 @@ class callerIDRPeaks(object):
         # post process peakcalling results
         ignore_pipe_errors = True
         statement = self.postProcess(infile, outfile, controlfile)
-        ## check post process statement
+        # check post process statement
         # print ("\nPost-process statement for sample %s :"
         #        "\n %s" % (infile, statement))
         if statement:
