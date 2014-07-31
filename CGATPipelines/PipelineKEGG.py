@@ -7,6 +7,7 @@ import CGAT.Experiment as E
 from rpy2.robjects import r as R
 import rpy2.robjects as ro
 import CGAT.IOTools as IOTools
+import PipelineBiomart as PipelineBiomart
 import re
 
 
@@ -19,21 +20,18 @@ def importKEGGAssignments(outfile, mart, host, biomart_dataset):
     '''
 
     R.library("KEGG.db")
-    R.library("biomaRt")
 
     E.info("getting entrez to ensembl mapping ...")
-    mart = R.useMart(biomart=mart,
-                     host=host,
-                     path="/biomart/martservice",
-                     dataset=biomart_dataset)
+    entrez2ensembl = PipelineBiomart.biomart_iterator(
+        ("ensembl_gene_id", "entrezgene"),
+        biomart=mart,
+        dataset=biomart_dataset,
+        host=host,
+        path="/biomart/martservice")
 
-    entrez2ensembl = R.getBM(
-        attributes=ro.StrVector(["ensembl_gene_id", "entrezgene"]),
-        mart=mart)
-
-    entrez = entrez2ensembl.rx2("entrezgene")
-    ensembl = entrez2ensembl.rx2("ensembl_gene_id")
-    entrez2ensembl = dict(zip(entrez, ensembl))
+    entrez2ensembl = dict((x['entrezgene'],
+                           x['ensembl_gene_id'])
+                          for x in entrez2ensembl)
 
     E.info("Done")
 
@@ -49,7 +47,9 @@ def importKEGGAssignments(outfile, mart, host, biomart_dataset):
     outf = IOTools.openFile(outfile, "w")
     outf.write("ontology\tgene_id\tkegg_ID\tkegg_name\tevidence\n")
 
-    for gene in entrez2path.names:
+    # rx2 did not work in rpy2 2.4.2 - workaround uses
+    # absolute indices
+    for gene_column, gene in enumerate(entrez2path.names):
 
         try:
             gene = int(gene)
@@ -62,7 +62,7 @@ def importKEGGAssignments(outfile, mart, host, biomart_dataset):
         else:
             continue
 
-        for pathway in entrez2path.rx2(str(gene)):
+        for pathway in entrez2path[gene_column]:
             pathid = re.match("[a-z]+([0-9]+)", pathway).groups()[0]
             pathname = pathid2name[pathid]
             outf.write(
