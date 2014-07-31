@@ -124,7 +124,7 @@ def with_genes(fftot, ffa, ffb, asfile=True):
     return hypergeom(m, n, n1, n2)
 
 
-def main():
+def main(argv=None):
     p = E.OptionParser(__doc__,
                        version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $", )
     opts, args = p.parse_args()

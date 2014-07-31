@@ -161,6 +161,7 @@ import itertools
 import re
 import sqlite3
 import glob
+import shutil
 
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
@@ -181,8 +182,10 @@ P.getParameters(
      "pipeline.ini"])
 
 PARAMS = P.PARAMS
-PARAMS_ANNOTATIONS = P.peekParameters(PARAMS["annotations_dir"],
-                                      "pipeline_annotations.py")
+PARAMS_ANNOTATIONS = P.peekParameters(
+    PARAMS["annotations_dir"],
+    "pipeline_annotations.py",
+    on_error_raise=__name__ == "__main__")
 
 ##########################################################################
 ##########################################################################
@@ -253,25 +256,25 @@ def connect():
 @follows(mkdir("bamfiles_filtered"))
 @transform(os.path.join(PARAMS["location_bamfiles"], "*.bam"),
            regex("(.+)/(.+).bam"),
-           r"./bamfiles_filtered/\2.sentinal")
-def filterBamfiles(infile, sentinal):
+           r"./bamfiles_filtered/\2.sentinel")
+def filterBamfiles(infile, sentinel):
     """
     Pre-process bamfiles prior to peak calling.
-    i) remove unmapped readswith bam2bam.py
-    i) remove non-uniquely mapping reads with bam2bam.py (optional)
-    ii) remove duplicates with Picards MarkDuplicates (optional)
-    iii) remove reads from masked regions with bedtools intersect (optional)
-    iv) index
-    Currently assumes bamfiles are sorted prior to running the pipeline
+    i) sort bamfiles
+    ii) remove unmapped readswith bam2bam.py
+    iii) remove non-uniquely mapping reads with bam2bam.py (optional)
+    iv) remove duplicates with Picards MarkDuplicates (optional)
+    v) remove reads from masked regions with bedtools intersect (optional)
+    vi) index
     """
 
-    outfile = P.snip(sentinal, ".sentinal") + ".bam"
+    # create tempfile for Picard's MarkDuplicates
+    picard_tmp = picard_tmp = P.getTempDir("/scratch")
+
+    outfile = P.snip(sentinel, ".sentinel") + ".bam"
 
     # ensure bamfile is sorted,
-    # prepending samtools sort causes crash.
-    # statement = [ "samtools sort @IN@ @OUT@", ]
-
-    statement = []
+    statement = ["samtools sort -f @IN@ @OUT@", ]
 
     # remove unmapped reads
     statement.append("python %(scriptsdir)s/bam2bam.py"
@@ -294,10 +297,12 @@ def filterBamfiles(infile, sentinal):
                          " INPUT=@IN@"
                          " ASSUME_SORTED=true"
                          " REMOVE_DUPLICATES=true"
-                         " QUIET=true"
+                         " QUIET=false"
                          " OUTPUT=@OUT@"
                          " METRICS_FILE=/dev/null"
-                         " VALIDATION_STRINGENCY=SILENT")
+                         " VALIDATION_STRINGENCY=SILENT"
+                         " TMP_DIR=%(picard_tmp)s"
+                         " 2> %(outfile)s.log")
 
     # mask regions, if intervals supplied
     if PARAMS["filter_mask_intervals"]:
@@ -316,22 +321,26 @@ def filterBamfiles(infile, sentinal):
     statement = P.joinStatements(statement, infile)
 
     P.run()
-    P.touch(sentinal)
+    P.touch(sentinel)
+    shutil.rmtree(picard_tmp)
 
 
 @follows(filterBamfiles, mkdir("bamfiles_pseudoreplicates"))
-@transform([os.path.join("./bamfiles_filtered", x.asFile() + ".sentinal")
+@transform([os.path.join("./bamfiles_filtered", x.asFile() + ".sentinel")
             for x in TRACKS],
-           regex("./bamfiles_filtered/(.+).sentinal"),
-           r"./bamfiles_pseudoreplicates/\1.sentinal")
-def splitBamfiles(infile, sentinal):
+           regex("./bamfiles_filtered/(.+).sentinel"),
+           r"./bamfiles_pseudoreplicates/\1.sentinel")
+def splitBamfiles(infile, sentinel):
     """
     For all tracks, split the filtered bamfile in two using pysam
     """
-    infile = P.snip(infile, ".sentinal") + ".bam"
-    outfile = P.snip(sentinal, ".sentinal")
+    infile = P.snip(infile, ".sentinel") + ".bam"
+    outfile = P.snip(sentinel, ".sentinel")
     params = '2'
-    module = P.snip(IDR.__file__, ".pyc")
+    try:
+        module = P.snip(IDR.__file__, ".py")
+    except ValueError:
+        module = P.snip(IDR.__file__, ".pyc")
 
     P.submit(module,
              "splitBam",
@@ -339,22 +348,22 @@ def splitBamfiles(infile, sentinal):
              infile,
              outfile)
 
-    P.touch(sentinal)
+    P.touch(sentinel)
 
 
 # AH: remove replicate requirement for input tracks
 # AH: avoid merging if only one repliacte
 @follows(mkdir("bamfiles_pooled"))
 @collate(filterBamfiles,
-         regex(r"(.+)/(.+)-input-.*.sentinal"),
-         r"./bamfiles_pooled/\2-input-R0.sentinal")
-def poolInputBamfiles(infiles, sentinal):
+         regex(r"(.+)/(.+)-input-.*.sentinel"),
+         r"./bamfiles_pooled/\2-input-R0.sentinel")
+def poolInputBamfiles(infiles, sentinel):
     """
     Merge filtered input files for each tissue, with the option of excluding
     undesirable libraries.
     """
-    infiles = [P.snip(x, ".sentinal") + ".bam" for x in infiles]
-    outfile = P.snip(sentinal, ".sentinal") + ".bam"
+    infiles = [P.snip(x, ".sentinel") + ".bam" for x in infiles]
+    outfile = P.snip(sentinel, ".sentinel") + ".bam"
     bad_samples = PARAMS["filter_remove_inputs"].split(",")
 
     if len(infiles) > 1:
@@ -364,34 +373,37 @@ def poolInputBamfiles(infiles, sentinal):
         os.symlink(infiles[0], outfile)
         os.symlink(infiles[0] + ".bai", outfile + ".bai")
 
-    P.touch(sentinal)
+    P.touch(sentinel)
 
 
 @follows(mkdir("bamfiles_pooled"))
 @collate(filterBamfiles,
-         regex(r"(.+)/(.+)-((?!input).*)-R[0-9]+.sentinal"),
-         r"./bamfiles_pooled/\2-\3-R0.sentinal")
-def poolSampleBamfiles(infiles, sentinal):
+         regex(r"(.+)/(.+)-((?!input).*)-R[0-9]+.sentinel"),
+         r"./bamfiles_pooled/\2-\3-R0.sentinel")
+def poolSampleBamfiles(infiles, sentinel):
     """
     Merge filtered sample files for each tissue
     """
-    infiles = [P.snip(x, ".sentinal") + ".bam" for x in infiles]
-    outfile = P.snip(sentinal, ".sentinal") + ".bam"
+    infiles = [P.snip(x, ".sentinel") + ".bam" for x in infiles]
+    outfile = P.snip(sentinel, ".sentinel") + ".bam"
 
     IDR.mergeBams(infiles, outfile)
 
-    P.touch(sentinal)
+    P.touch(sentinel)
 
 
 @follows(mkdir("./bamfiles_pooled_pseudoreplicates"))
 @transform(poolSampleBamfiles,
-           regex("(.+)/(.+).sentinal"),
-           r"./bamfiles_pooled_pseudoreplicates/\2.sentinal")
-def splitPooledBamfiles(infile, sentinal):
-    infile = P.snip(infile, ".sentinal") + ".bam"
-    outfile = P.snip(sentinal, ".sentinal")
+           regex("(.+)/(.+).sentinel"),
+           r"./bamfiles_pooled_pseudoreplicates/\2.sentinel")
+def splitPooledBamfiles(infile, sentinel):
+    infile = P.snip(infile, ".sentinel") + ".bam"
+    outfile = P.snip(sentinel, ".sentinel")
     params = '2'
-    module = P.snip(IDR.__file__, ".py")
+    try:
+        module = P.snip(IDR.__file__, ".py")
+    except ValueError:
+        module = P.snip(IDR.__file__, ".pyc")
 
     P.submit(module,
              "splitBam",
@@ -399,7 +411,7 @@ def splitPooledBamfiles(infile, sentinal):
              infile,
              outfile)
 
-    P.touch(sentinal)
+    P.touch(sentinel)
 
 ##########################################################################
 ##########################################################################
@@ -411,12 +423,12 @@ def splitPooledBamfiles(infile, sentinal):
 @follows(filterBamfiles,
          poolInputBamfiles,
          mkdir("peakfiles_individual_replicates"))
-@transform([os.path.join("./bamfiles_filtered", x.asFile() + ".sentinal")
+@transform([os.path.join("./bamfiles_filtered", x.asFile() + ".sentinel")
             for x in TRACKS],
-           regex("(.+)/(.+).sentinal"),
-           r"./peakfiles_individual_replicates/\2_regionPeak.sentinal")
+           regex("(.+)/(.+).sentinel"),
+           r"./peakfiles_individual_replicates/\2_regionPeak.sentinel")
 def callPeaksOnIndividualReplicates(infile, outfile):
-    infile = P.snip(infile, ".sentinal") + ".bam"
+    infile = P.snip(infile, ".sentinel") + ".bam"
     # fetch peak calling parameters
     PARAMS_PEAKCALLER = get_peak_caller_parameters(
         PARAMS["options_peak_caller"])
@@ -458,7 +470,7 @@ def loadPeakSummaryForIndividualReplicates(infile, outfile):
          mkdir("peakfiles_pseudoreplicates"))
 @transform("./bamfiles_pseudoreplicates/*.bam",
            regex("(.+)/(.+).bam"),
-           r"./peakfiles_pseudoreplicates/\2_regionPeak.sentinal")
+           r"./peakfiles_pseudoreplicates/\2_regionPeak.sentinel")
 def callPeaksOnPseudoreplicates(infile, outfile):
     # fetch peak calling parameters
     PARAMS_PEAKCALLER = get_peak_caller_parameters(
@@ -500,7 +512,7 @@ def loadPeakSummaryForPseudoreplicates(infile, outfile):
          mkdir("peakfiles_pooled_pseudoreplicates"))
 @transform("./bamfiles_pooled_pseudoreplicates/*.bam",
            regex("(.+)/(.+).bam"),
-           r"./peakfiles_pooled_pseudoreplicates/\2.regionPeak.sentinal")
+           r"./peakfiles_pooled_pseudoreplicates/\2.regionPeak.sentinel")
 def callPeaksOnPooledPseudoreplicates(infile, outfile):
     # fetch peak calling parameters
     PARAMS_PEAKCALLER = get_peak_caller_parameters(
@@ -538,12 +550,6 @@ def summarizePeaksForPooledPseudoreplicates(infiles, outfile):
 def loadPeakSummaryForPooledPseudoreplicates(infile, outfile):
     P.load(infile, outfile)
 
-
-@follows(loadPeakSummaryForIndividualReplicates,
-         loadPeakSummaryForPseudoreplicates,
-         loadPeakSummaryForPooledPseudoreplicates)
-def loadPeakCallingSummary():
-    pass
 
 ##########################################################################
 ##########################################################################
@@ -771,10 +777,13 @@ def loadIDROnPooledPseudoreplicates(infile, outfile):
 
 @follows(runIDROnIndividualReplicates)
 @merge("./idr_individual_replicates/*-overlapped-peaks.txt",
-       "./idr_individual_replicates/idr_summary_individual_replicates.tsv")
+       "./idr_individual_replicates/individual_replicates.nPeaks.tsv")
 def findNPeaksForIndividualReplicates(infiles, outfile):
     idr_thresh = PARAMS["idr_options_inter_replicate_threshold"]
-    module = P.snip(IDR.__file__, ".py")
+    try:
+        module = P.snip(IDR.__file__, ".py")
+    except ValueError:
+        module = P.snip(IDR.__file__, ".pyc")
 
     P.submit(module,
              "findNPeaks",
@@ -792,10 +801,13 @@ def loadNPeaksForIndividualReplicates(infile, outfile):
 
 @follows(runIDROnPseudoreplicates)
 @merge("./idr_pseudoreplicates/*-overlapped-peaks.txt",
-       "./idr_pseudoreplicates/idr_summary_pseudoreplicates.tsv")
+       "./idr_pseudoreplicates/pseudoreplicates.nPeaks.tsv")
 def findNPeaksForPseudoreplicates(infiles, outfile):
     idr_thresh = PARAMS["idr_options_self_consistency_threshold"]
-    module = P.snip(IDR.__file__, ".py")
+    try:
+        module = P.snip(IDR.__file__, ".py")
+    except ValueError:
+        module = P.snip(IDR.__file__, ".pyc")
 
     P.submit(module,
              "findNPeaks",
@@ -813,11 +825,13 @@ def loadNPeaksForPseudoreplicates(infile, outfile):
 
 @follows(runIDROnPooledPseudoreplicates)
 @merge("./idr_pooled_pseudoreplicates/*-overlapped-peaks.txt",
-       "./idr_pooled_pseudoreplicates/"
-       "idr_summary_pooled_pseudoreplicates.tsv")
+       "./idr_pooled_pseudoreplicates/pooled_pseudoreplicates.nPeaks.tsv")
 def findNPeaksForPooledPseudoreplicates(infiles, outfile):
     idr_thresh = PARAMS["idr_options_pooled_consistency_threshold"]
-    module = P.snip(IDR.__file__, ".py")
+    try:
+        module = P.snip(IDR.__file__, ".py")
+    except ValueError:
+        module = P.snip(IDR.__file__, ".pyc")
 
     P.submit(module,
              "findNPeaks",
@@ -841,23 +855,23 @@ def loadNPeaksForPooledPseudoreplicates(infile, outfile):
 
 @follows(mkdir("bamfiles_final"))
 @collate(filterBamfiles,
-         regex(r"(.+)/(.+)-((?!input).*)-R[0-9]+.sentinal"),
-         r"./bamfiles_final/\2-\3-R0.sentinal")
-def reMergeBamfiles(infiles, sentinal):
-    infiles = [P.snip(x, ".sentinal") + ".bam" for x in infiles]
-    outfile = P.snip(sentinal, ".sentinal") + ".bam"
+         regex(r"(.+)/(.+)-((?!input).*)-R[0-9]+.sentinel"),
+         r"./bamfiles_final/\2-\3-R0.sentinel")
+def reMergeBamfiles(infiles, sentinel):
+    infiles = [P.snip(x, ".sentinel") + ".bam" for x in infiles]
+    outfile = P.snip(sentinel, ".sentinel") + ".bam"
     bad_samples = PARAMS["options_to_remove"].split(",")
 
     to_merge = IDR.filterBadLibraries(infiles, bad_samples)
 
     IDR.mergeBams(to_merge, outfile)
-    P.touch(sentinal)
+    P.touch(sentinel)
 
 
 @follows(reMergeBamfiles, mkdir("peakfiles_final"))
 @transform("./bamfiles_final/*.bam",
            regex("(.+)/(.+).bam"),
-           r"peakfiles_final/\2.narrowPeak.sentinal")
+           r"peakfiles_final/\2.narrowPeak.sentinel")
 def callPeaksOnPooledReplicates(infile, outfile):
     # fetch peak calling parameters
     PARAMS_PEAKCALLER = get_peak_caller_parameters(
@@ -875,6 +889,9 @@ def callPeaksOnPooledReplicates(infile, outfile):
 
 
 @follows(callPeaksOnPooledReplicates,
+         loadNPeaksForIndividualReplicates,
+         loadNPeaksForPseudoreplicates,
+         loadNPeaksForPooledPseudoreplicates,
          mkdir("peakfiles_final_conservative"),
          mkdir("peakfiles_final_optimum"))
 @split("./peakfiles_final/*.narrowPeak.gz",
@@ -885,24 +902,26 @@ def generatePeakSets(infile, outfiles):
     outf_con, outf_opt = outfiles
 
     # retrieve maximum number of peaks obtained from inter-replicate IDR
+    # (table created by loadNPeaksForIndividualReplicates)
     statement = ("SELECT"
-                 " experiment,"
+                 " Experiment,"
                  " max(n_peaks) AS nPeaks"
                  " FROM individual_replicates_nPeaks"
                  " GROUP BY experiment")
     df = PU.fetch_DataFrame(statement)
     # reassign experiment as index
-    df = df.set_index("experiment")
+    df = df.set_index("Experiment")
 
     # retrieve number of peaks obtained from pooled_pseudoreplicate IDR
+    # (table created by loadNPeaksForPooledPseudoreplicates)
     statement = ("SELECT"
-                 " experiment,"
+                 " Experiment,"
                  " n_peaks AS nPeaks"
                  " FROM pooled_pseudoreplicates_nPeaks")
     df2 = PU.fetch_DataFrame(statement)
 
     # reassign experiment as index
-    df2 = df2.set_index("experiment")
+    df2 = df2.set_index("Experiment")
 
     # split the infile name to obtain experiment
     sample_id = os.path.basename(infile).split("_VS_")[0]
@@ -940,7 +959,7 @@ def generatePeakSets(infile, outfiles):
     ignore_pipe_errors = True
     statement = ("zcat %(infile)s |"
                  " %(sort_statement)s |"
-                 " head -%(nPeaks)s |"
+                 " head -%(nPeaks_max)s |"
                  " gzip > %(outf_opt)s")
     P.run()
 
@@ -956,7 +975,7 @@ def generatePeakSets(infile, outfiles):
         "./bamfiles_pooled/*.bam",
         "./bamfiles_pseudoreplicates/*.bam",
         "./bamfiles_pooled_pseudoreplicates/*.bam"),
-       "./bamfiles_removed.sentinal")
+       "./bamfiles_removed.sentinel")
 def removeBamfiles(infiles, outfile):
     for bamfile in infiles:
         bam_index = bamfile + ".bai"
@@ -993,7 +1012,10 @@ def preProcessBamfiles():
 
 @follows(callPeaksOnIndividualReplicates,
          callPeaksOnPseudoreplicates,
-         callPeaksOnPooledPseudoreplicates)
+         callPeaksOnPooledPseudoreplicates,
+         loadPeakSummaryForIndividualReplicates,
+         loadPeakSummaryForPseudoreplicates,
+         loadPeakSummaryForPooledPseudoreplicates)
 def callPeaks():
     pass
 

@@ -106,5 +106,46 @@ Each time :file:`_bam2stats.pyx` is modified, a new compilation will take place.
 
 pyximport_ comes with cython_.
 
+Writing recipes
+===============
+
+Recipes are short use cases demonstrating the use of one or more
+CGAT utilities to address a specific problem.
+
+Recipes should be written as ipython_ notebooks. The recipe
+notebooks are stored in the :file:`recipes` directory in
+the repository. Each recipe is within its individual directory.
+This minimizes interference between each document, but also means
+that currently each notebook needs a separate notebook server to
+be developped.
+
+To build all recipes, type::
+
+    cd recipes
+    make html
+    make clean
+
+This will build html files that are deposited in the docs directory.
+
+The last cleaning up step is important in order to remove large files created
+during the notebook execution.
+
+.. note::
+   The commands above require the runipy python module. To install,
+   type::
+
+       pip install runipy
+
+Data for recipes can be made available in www.cgat.org/downloads/public/cgat/recipes.
+Ideally, recipes should make use of publicly available data sets such
+as ENCODE.
+
+Attempt to add a plot to the end of a recipe, using
+R commands to create the plot within the notebook.
+
+
+
+
+
 
 

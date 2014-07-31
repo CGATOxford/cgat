@@ -64,7 +64,7 @@ def writeHeader(outfile):
                              "nN", "nX", "nO")) + "\n")
 
 
-def main():
+def main(argv=None):
 
     parser = E.OptionParser(
         version="%prog version: $Id: fasta2gff.py 2861 2010-02-23 17:36:32Z andreas $")

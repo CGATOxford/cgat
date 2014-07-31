@@ -18,6 +18,7 @@ ReadQC pipeline
    pipeline/SequenceDuplicationLevels.rst
    pipeline/Filtering.rst
    pipeline/SequenceLength.rst
+   pipeline/BiasAnalysis.rst
    python/Trackers.rst
 
 .. errorlist::

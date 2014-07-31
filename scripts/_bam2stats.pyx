@@ -1,8 +1,11 @@
 #cimport csamtools
 
-from pysam.csamtools cimport *
+from pysam.chtslib cimport *
+from pysam.csamfile cimport *
+from pysam.cfaidx cimport *
 from libc.string cimport strchr
 from libc.stdint cimport int8_t
+from libc.stdio cimport puts
 import collections, array, struct, sys
 import CGAT.Experiment as E
 
@@ -56,9 +59,12 @@ def count( Samfile samfile,
 
     cdef int max_hi = 0
     # count nh, nm tags
-    nh_filtered, nm_filtered = collections.defaultdict( int ), collections.defaultdict( int )
-    nh_all, nm_all = collections.defaultdict( int ), collections.defaultdict( int )
-    mapq_filtered, mapq_all = collections.defaultdict( int ), collections.defaultdict( int )
+    nh_filtered = collections.defaultdict(int)
+    nm_filtered = collections.defaultdict(int)
+    nh_all = collections.defaultdict(int)
+    nm_all = collections.defaultdict(int)
+    mapq_filtered = collections.defaultdict(int)
+    mapq_all = collections.defaultdict(int)
 
     cdef int * flags_counts = <int*>calloc( len(FLAGS), sizeof(int) )
 
@@ -101,7 +107,7 @@ def count( Samfile samfile,
         # 2. custom hash implementation: worth the effort?
         # 3. Sorted list and binary search: too slow for many lookups
         reads = {}
-        fastqfile = Fastqfile( filename_fastq )
+        fastqfile = Fastqfile(filename_fastq)
         fastq_nreads = 0
         for fq in fastqfile:
             if fastq_nreads == 0:
@@ -117,27 +123,28 @@ def count( Samfile samfile,
 
             fastq_nreads += 1
         
-        E.info( "read %i reads" % fastq_nreads )
+        E.info("read names of %i reads or read pairs" % fastq_nreads)
 
-        E.info( "allocating %i bytes" % (fastq_nreads * sizeof(CountsType) ) )
+        E.info("allocating %i bytes" % (fastq_nreads * sizeof(CountsType)))
 
-        fastq_counts = <CountsType *>calloc( fastq_nreads, sizeof( CountsType ) )
+        fastq_counts = <CountsType *>calloc(fastq_nreads, sizeof(CountsType))
         if fastq_counts == NULL:
-            raise ValueError( "could not allocate memory for %i bytes" % (fastq_nreads * sizeof(CountsType) ))
+            raise ValueError("could not allocate memory for %i bytes" %
+                             (fastq_nreads * sizeof(CountsType)))
  
     for read in samfile:
 
         if count_fastq:
-            read_name = bam1_qname( read._delegate )
+            read_name = pysam_bam_get_qname(read._delegate)
             # terminate string at first space to
             # truncate read names containing more than
             # just the id
-            position = strchr( read_name, ' ')
+            position = strchr(read_name, ' ')
             if position != NULL: 
                 position[0] = '\0'
 
             try:
-                fastq_count = &fastq_counts[ reads[read_name] ]
+                fastq_count = &fastq_counts[reads[read_name]]
             except KeyError:
                 fastq_notfound += 1
                 continue
@@ -283,7 +290,7 @@ def count( Samfile samfile,
     
     if count_fastq:
 
-        E.info( "aggregating counts" )
+        E.info("fastq counting: aggregating counts")
         for qname, index in reads.items():
             fastq_count = &fastq_counts[index]
 
@@ -341,7 +348,7 @@ def count( Samfile samfile,
                     total_read2_is_missing += 1
                         
             else:
-                # reads without data, could be unpaired?
+                # reads without data, could be unpaired or missing
                 total_unpaired += 1
 
                 # counting for unpaired data
@@ -370,7 +377,8 @@ def count( Samfile samfile,
         ###################################################
         # Read Stats for SE and PE data
         # for SE data
-        if total_unpaired > 0:
+        if total_paired == 0:
+            E.info("reads: single end counting")
             counter.total_read = fastq_nreads
             counter.total_read_is_mapped_uniq = total_read_is_mapped_uniquely
             counter.total_read_is_mmap = total_read_is_mapped_multiply
@@ -380,12 +388,18 @@ def count( Samfile samfile,
             counter.total_read_is_missing = total_read_is_missing
         else:
             # for PE data
+            E.info("reads: paired end counting: paired = %i" % total_paired)
             counter.total_read = fastq_nreads * 2
-            counter.total_read_is_mapped_uniq = total_read1_is_mapped_uniquely + total_read2_is_mapped_uniquely
-            counter.total_read_is_mmap = total_read1_is_mapped_multiply + total_read2_is_mapped_multiply
-            counter.total_read_is_mapped = counter.total_read_is_mapped_uniq + counter.total_read_is_mmap
-            counter.total_read_is_unmapped = total_read1_is_unmapped + total_read2_is_unmapped
-            counter.total_read_is_missing = total_read1_is_missing + total_read2_is_missing
+            counter.total_read_is_mapped_uniq = total_read1_is_mapped_uniquely +\
+                                                total_read2_is_mapped_uniquely
+            counter.total_read_is_mmap = total_read1_is_mapped_multiply +\
+                                         total_read2_is_mapped_multiply
+            counter.total_read_is_mapped = counter.total_read_is_mapped_uniq +\
+                                           counter.total_read_is_mmap
+            counter.total_read_is_unmapped = total_read1_is_unmapped +\
+                                             total_read2_is_unmapped
+            counter.total_read_is_missing = total_read1_is_missing +\
+                                            total_read2_is_missing
 
         ###################################################
         ## stats for 1st/2nd read separately
@@ -405,11 +419,11 @@ def count( Samfile samfile,
         if outfile_details:
             if outfile_details != sys.stdout:
                 # later: get access FILE * object
-                outfile_details.write( "read\tis_unmapped\tmate_is_unmapped\tis_paired\tmapped_is_read1\tmapped_is_read2\tis_proper_pair\tis_qcfail\tis_duplicate\n" )
+                outfile_details.write("read\tis_unmapped\tmate_is_unmapped\tis_paired\tmapped_is_read1\tmapped_is_read2\tis_proper_pair\tis_qcfail\tis_duplicate\n" )
                 for qname, index in reads.items():
                     fastq_count = &fastq_counts[index]
 
-                    outfile_details.write( "%s\t%s\n" % (qname, "\t".join( \
+                    outfile_details.write("%s\t%s\n" % (qname, "\t".join( \
                                 map(str,
                                     (fastq_count.is_unmapped,
                                      fastq_count.mate_is_unmapped,
@@ -423,20 +437,22 @@ def count( Samfile samfile,
 
             else:
                 # output to stdout much quicker
-                printf("read\tis_unmapped\tmate_is_unmapped\tis_paired\tmapped_is_read1\tmapped_is_read2\tis_proper_pair\tis_qcfail\tis_duplicate\n" )
+                # use puts to avoid the following error:
+                # format not a string literal and no format arguments
+                puts("read\tis_unmapped\tmate_is_unmapped\tis_paired\tmapped_is_read1\tmapped_is_read2\tis_proper_pair\tis_qcfail\tis_duplicate\n")
                 for qname, index in reads.items():
                     fastq_count = &fastq_counts[index]
                     read_name = qname
-                    printf( "%s\t%i\t%i\t%i\t%i\t%i\t%i\t%i\t%i\n",
-                            read_name,
-                            fastq_count.is_unmapped,
-                            fastq_count.mate_is_unmapped,
-                            fastq_count.is_paired,
-                            fastq_count.mapped_is_read1,
-                            fastq_count.mapped_is_read2,
-                            fastq_count.is_proper_pair,
-                            fastq_count.is_qcfail,
-                            fastq_count.is_duplicate )
+                    printf("%s\t%i\t%i\t%i\t%i\t%i\t%i\t%i\t%i\n",
+                           read_name,
+                           fastq_count.is_unmapped,
+                           fastq_count.mate_is_unmapped,
+                           fastq_count.is_paired,
+                           fastq_count.mapped_is_read1,
+                           fastq_count.mapped_is_read2,
+                           fastq_count.is_proper_pair,
+                           fastq_count.is_qcfail,
+                           fastq_count.is_duplicate)
 
 
     return (counter, t, 

@@ -65,6 +65,7 @@ Developer's guide
    testing.rst
    styleguide.rst
    documenting.rst
+   pipelines.rst
    release.rst
    galaxy.rst
 
@@ -90,4 +91,3 @@ Indices and tables
 * :ref:`modindex`
 * :ref:`search`
 
-.. _alignlib: http://wwwfgu.anat.ox.ac.uk/~andreas/alignlib

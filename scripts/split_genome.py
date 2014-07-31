@@ -52,7 +52,7 @@ def Print(outfile, fragments, options):
     s = "".join(fragments)
     l = min(len(s), options.chunk_size)
     outfile.write("\n".join(s[x:x + options.width]
-                  for x in range(0, l, options.width)))
+                            for x in range(0, l, options.width)))
     outfile.write("\n")
     outfile.flush()
     return s[l:]

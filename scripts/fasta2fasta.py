@@ -526,7 +526,7 @@ def main(argv=None):
                         cur_record.title)
 
                 sequence = " ".join([sequence[x:x + 3]
-                                    for x in range(0, l, 3)])
+                                     for x in range(0, l, 3)])
 
             elif method == "apply-map":
                 id = re.match("^(\S+)", cur_record.title).groups()[0]

@@ -207,7 +207,7 @@ def readAndGroupTable(infile, options):
         new_fields = [fields[options.group_column]]
         for c in options.columns:
             new_fields += list(map(lambda x: "%s_%s" %
-                               (fields[c], x), Stats.DistributionalParameters().getHeaders()))
+                                   (fields[c], x), Stats.DistributionalParameters().getHeaders()))
 
     # convert values to floats (except for group_column)
     # Delete rows with unconvertable values and not in options.columns
@@ -600,7 +600,7 @@ def main(argv=None):
             id_columns = map(
                 lambda x: int(x) - 1, options.id_column.split(","))
             id_header = "\t".join([fields[id_column]
-                                  for id_column in id_columns])
+                                   for id_column in id_columns])
             options.columns = [
                 x for x in options.columns if x not in id_columns]
         else:
@@ -613,7 +613,7 @@ def main(argv=None):
 
             if options.id_column:
                 row_id = "\t".join([row[int(x) - 1]
-                                   for x in options.id_column.split(",")])
+                                    for x in options.id_column.split(",")])
             else:
                 row_id = str(x)
 

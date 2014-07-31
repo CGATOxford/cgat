@@ -14,20 +14,21 @@ functions.
 import CGAT.IOTools as IOTools
 
 from rpy2.robjects import r as R
-import rpy2.robjects as ro
 import rpy2.robjects.numpy2ri
 
 
-def importFromBiomart(outfile, columns,
+def importFromBiomart(outfile,
+                      columns,
                       biomart="ensembl",
                       dataset="hsapiens_gene_ensembl",
                       host='www.biomart.org'):
-    '''download a dataset from biomart and output as a 
+    '''download a dataset from biomart and output as a
     tab-separated table.
 
-    *columns* is a dictionary mapping biomart columns to columns
-    in the output tables. *biomart* and *dataset* denote the 
-    database and dataset to get the data from.
+    *columns* is a dictionary mapping biomart columns to columns in
+    the output tables. *biomart* and *dataset* denote the database and
+    dataset to get the data from.
+
     '''
 
     R.library("biomaRt")
@@ -52,13 +53,14 @@ def importFromBiomart(outfile, columns,
 def biomart_iterator(columns,
                      biomart="ensembl",
                      dataset="hsapiens_gene_ensembl",
-                     host='www.biomart.org'):
-    '''download a dataset from biomart and output as a 
+                     host='www.biomart.org',
+                     path="/biomart/martservice"):
+    '''download a dataset from biomart and output as a
     tab-separated table.
 
     *columns* is a list with field to obtain.
 
-    *biomart* and *dataset* denote the 
+    *biomart* and *dataset* denote the
     database and dataset to get the data from.
 
     returns a iterator over rows.
@@ -66,12 +68,20 @@ def biomart_iterator(columns,
 
     R.library("biomaRt")
 
-    mart = R.useMart(biomart=biomart, dataset=dataset, host=host)
+    mart = R.useMart(biomart=biomart,
+                     dataset=dataset,
+                     host=host,
+                     path=path)
+
+    # result is a dataframe
     result = R.getBM(attributes=rpy2.robjects.vectors.StrVector(columns),
                      mart=mart)
 
-    # result is a dataframe.
-    # rx returns a dataframe.
-    # rx()[0] returns a vector
-    for data in zip(*[result.rx(x)[0] for x in columns]):
+    # access via result.rx was broken in rpy2 2.4.2, thus try
+    # numeric access
+    assert tuple(result.colnames) == tuple(columns),\
+        "colnames in dataframe: %s different from expected: %s" % \
+        (str(tuple(result.colnames)), tuple(columns))
+
+    for data in zip(*[result[x] for x in range(len(columns))]):
         yield dict(zip(columns, data))

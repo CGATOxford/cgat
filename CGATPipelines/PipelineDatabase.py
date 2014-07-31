@@ -4,28 +4,11 @@ PipelineDatabase.py - utility functions for working with a database
 
 '''
 
-import sys
-import tempfile
-import optparse
-import shutil
-import itertools
-import csv
-import math
-import random
-import re
-import glob
 import os
-import shutil
-import collections
-
-import CGAT.Experiment as E
 import CGAT.Pipeline as P
-import CGAT.Stats as Stats
 
-try:
-    PARAMS = P.getParameters()
-except IOError:
-    pass
+# set from calling module
+PARAMS = {}
 
 
 def importFromIterator(
@@ -63,10 +46,10 @@ def importFromIterator(
     tmpfilename = tmpfile.name
 
     statement = '''
-       python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
-                     --table=%(tablename)s
-                     %(indices)s
-        < %(tmpfilename)s > %(outfile)s
+    python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+    --table=%(tablename)s
+    %(indices)s
+    < %(tmpfilename)s > %(outfile)s
     '''
 
     P.run()

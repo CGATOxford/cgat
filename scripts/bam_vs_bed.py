@@ -64,19 +64,23 @@ def main(argv=None):
         argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+    parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
-    parser.add_option("-m", "--min-overlap", dest="min_overlap", type="float",
+    parser.add_option("-m", "--min-overlap", dest="min_overlap",
+                      type="float",
                       help="minimum overlap [%default]")
 
-    parser.add_option("-k", "--keep-temp", dest="keep_temp", action="store_true",
+    parser.add_option("-k", "--keep-temp", dest="keep_temp",
+                      action="store_true",
                       help="do not delete temporary files [%default]")
 
-    parser.add_option("-a", "--filename-bam", dest="filename_bam", metavar="bam", type="string",
+    parser.add_option("-a", "--filename-bam", dest="filename_bam",
+                      metavar="bam", type="string",
                       help="bam-file to use [%default]")
 
-    parser.add_option("-b", "--filename-bed", dest="filename_bed", metavar="bam", type="string",
+    parser.add_option("-b", "--filename-bed", dest="filename_bed",
+                      metavar="bed", type="string",
                       help="bed-file to use [%default]")
 
     parser.set_defaults(
@@ -152,14 +156,16 @@ def main(argv=None):
                 sort_key = lambda x: x.name
 
     # use fields for bam/bed file (regions to count with)
-    data_fields = ["contig", "start", "end", "name",
-                   "score", "strand", "thickstart", "thickend", "rgb",
-                   "blockcount", "blockstarts", "blockends"][:ncolumns_bam]
+    data_fields = [
+        "contig", "start", "end", "name",
+        "score", "strand", "thickstart", "thickend", "rgb",
+        "blockcount", "blockstarts", "blockends"][:ncolumns_bam]
 
     # add fields for second bed (regions to count in)
-    data_fields.extend(["contig2", "start2", "end2", "name2",
-                        "score2", "strand2", "thickstart2", "thickend2", "rgb2",
-                        "blockcount2", "blockstarts2", "blockends2"][:ncolumns_bed])
+    data_fields.extend([
+        "contig2", "start2", "end2", "name2",
+        "score2", "strand2", "thickstart2", "thickend2", "rgb2",
+        "blockcount2", "blockstarts2", "blockends2"][:ncolumns_bed])
 
     # add bases overlap
     data_fields.append("bases_overlap")
@@ -172,9 +178,11 @@ def main(argv=None):
         E.warn("no data in %s" % filename_bam)
         return
 
-    # IMS: newer versions of intersectBed have a very high memory requirement unless
-    #     passed sorted bed files.
-    statement = """intersectBed %(format)s %(filename_bam)s -b <( zcat %(filename_bed)s | sort -k1,1 -k2,2n) -sorted -bed -wo -f %(min_overlap)f > %(tmpfilename)s""" % locals()
+    # IMS: newer versions of intersectBed have a very high memory
+    #     requirement unless passed sorted bed files.
+    statement = """intersectBed %(format)s %(filename_bam)s
+    -b <( zcat %(filename_bed)s | sort -k1,1 -k2,2n)
+    -sorted -bed -wo -f %(min_overlap)f > %(tmpfilename)s""" % locals()
 
     E.info("running %s" % statement)
     retcode = E.run(statement)

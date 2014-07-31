@@ -1,5 +1,4 @@
-'''
-gff2stats.py - count features, etc. in gff file
+'''gff2stats.py - count features, etc. in gff file
 ===============================================
 
 :Author: Andreas Heger
@@ -10,9 +9,31 @@ gff2stats.py - count features, etc. in gff file
 Purpose
 -------
 
-This script computes the number of intervals per feature,
-source, gene_id and transcript_id in one or more :term:`gff` 
+This script generates summary statistics over features,
+source, gene_id and transcript_id in one or more :term:`gff`
 or :term:`gtf` formatted files.
+
+Usage
+-----
+
+Input is either a gff or gtf file; gtf input must be specified
+with the --is-gtf option.
+
+Example::
+
+   python gff2stats.py --is-gtf example.gtf > example_sum.tsv
+
+   cat example.gtf
+
+   19  processed_transcript  exon  6634666509  .  -  .  gene_id "ENSG00000225373"; transcript_id "ENST00000592209" ...
+   19  processed_transcript  exon  6052160747  .  -  .  gene_id "ENSG00000225373"; transcript_id "ENST00000592209" ...
+   19  processed_transcript  exon  6010560162  .  -  .  gene_id "ENSG00000225373"; transcript_id "ENST00000592209" ...
+   19  processed_transcript  exon  6634666416  .  -  .  gene_id "ENSG00000225373"; transcript_id "ENST00000589741" ...
+
+   cat example_sum.tsv
+
+   track  contigs  strands  features  sources  genes  transcripts ...
+   stdin  1        2        4         23       2924   12752       ...
 
 For a gff file, the implemented counters are:
 
@@ -21,16 +42,24 @@ For a gff file, the implemented counters are:
 For a gtf file, the additional implemented counters are:
 
 1. number of genes, transcripts, single exon transcripts
-2. summary statistics for exon numbers, exon sizes, intron sizes and transcript sizes
+2. summary statistics for exon numbers, exon sizes, intron sizes and
+   transcript sizes
 
 The output is a tab-separated table.
 
-Usage
------
+Options
+-------
 
-Example::
+The default action of ``gff2stats`` is to count over contigs, strand,
+feature and source.  This assumes the input file is a gff file
 
-   python gff2stats.py --help
+There is a single option for this script::
+
+``is-gtf``
+   The input file is gtf format.  The output will therefore
+   contain summaries over exon numbers, exon sizes, intron sizes and
+   transcript sizes in addition to the the number of genes,
+   transcripts and single exon transcripts.
 
 Type::
 
@@ -43,9 +72,6 @@ Command line options
 
 '''
 import sys
-import string
-import re
-import optparse
 import collections
 import CGAT.Experiment as E
 import CGAT.GTF as GTF
@@ -89,10 +115,10 @@ class counter_gff:
 
 class counter_exons:
 
-    fields = ( "genes", "transcripts", "single_exon_transcripts", ) +\
-        tuple([ "exon_count_%s" % x for x in Stats.Summary.fields ] ) +\
-        tuple([ "exon_size_%s" % x for x in Stats.Summary.fields ] ) +\
-        tuple([ "intron_size_%s" % x for x in Stats.Summary.fields ] ) +\
+    fields = ("genes", "transcripts", "single_exon_transcripts",) +\
+        tuple(["exon_count_%s" % x for x in Stats.Summary.fields]) +\
+        tuple(["exon_size_%s" % x for x in Stats.Summary.fields]) +\
+        tuple(["intron_size_%s" % x for x in Stats.Summary.fields]) +\
         tuple(["transcript_size_%s" % x for x in Stats.Summary.fields])
 
     def __init__(self, iter):
@@ -162,7 +188,7 @@ class counter_exons:
 
 def main(argv=sys.argv):
 
-    parser = E.OptionParser(version="%prog version: $Id: gff2stats.py 2781 2009-09-10 11:33:14Z andreas $",
+    parser = E.OptionParser(version="%prog version: $Id",
                             usage=globals()["__doc__"])
 
     parser.add_option("--is-gtf", dest="is_gtf", action="store_true",

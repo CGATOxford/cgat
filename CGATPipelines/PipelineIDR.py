@@ -187,7 +187,7 @@ class callerIDRPeaks(object):
 
         # run peakcalling
         statement = self.getRunStatement(infile, outfile, controlfile)
-        ## check run statement
+        # check run statement
         # print ("\nRun statement for sample %s :\n %s" % (infile, statement))
         job_options = "-l mem_free=10G"
         P.run()
@@ -195,7 +195,7 @@ class callerIDRPeaks(object):
         # post process peakcalling results
         ignore_pipe_errors = True
         statement = self.postProcess(infile, outfile, controlfile)
-        ## check post process statement
+        # check post process statement
         # print ("\nPost-process statement for sample %s :"
         #        "\n %s" % (infile, statement))
         if statement:
@@ -265,7 +265,7 @@ class macs2IDRPeaks(callerIDRPeaks):
         # add additional parameters
         statement.append(self.PARAMS_PEAKCALLER["macs2_options_parameters"])
 
-        # write log information to sentinal file
+        # write log information to sentinel file
         statement.append(">& %(outfile)s")
 
         statement = (" ".join(statement) % locals())
@@ -419,7 +419,7 @@ def getIDRStatement(infile1,
 
 def getIDRPlotStatement(infiles, outfile, idr_wrapper):
     """
-    Receives list of infiles, the fist of which is a sentinal, the subsequent
+    Receives list of infiles, the fist of which is a sentinel, the subsequent
     files are *uri.sav files output from run-batch-consistency.r script.
     Returns a run statement for batch-consistency-plot.r as it is wrapped in
     WrapperIDR.py

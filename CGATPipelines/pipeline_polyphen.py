@@ -30,27 +30,12 @@ Code
 from ruffus import *
 import sys
 import glob
-import gzip
 import os
 import itertools
-import CGAT.CSV as CSV
-import re
-import math
-import types
-import collections
-import optparse
-import shutil
 import sqlite3
-import CGAT.GTF as GTF
 import CGAT.Experiment as E
 import CGAT.Pipeline as P
-import CGAT.IOTools as IOTools
-import CGAT.Genomics as Genomics
-import CGAT.Database as Database
-import CGAT.FastaIterator as FastaIterator
 import PipelineGeneset as PGeneset
-import CGAT.Stats as Stats
-import pysam
 
 ###################################################################
 ###################################################################
@@ -72,8 +57,7 @@ P.PARAMS.update(
 
 PARAMS = P.PARAMS
 
-if os.path.exists("conf.py"):
-    execfile("conf.py")
+PGeneset.PARAMS = PARAMS
 
 SEPARATOR = "|"
 

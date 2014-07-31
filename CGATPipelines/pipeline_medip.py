@@ -128,35 +128,20 @@ from ruffus import *
 
 import CGAT.Experiment as E
 import logging as L
-import CGAT.Database as Database
 import sys
 import os
 import re
-import shutil
 import itertools
-import math
 import glob
-import time
-import gzip
-import collections
-import random
-import csv
-import numpy
 import sqlite3
-import CGAT.GTF as GTF
 import CGAT.IOTools as IOTools
-import CGAT.IndexedFasta as IndexedFasta
-import CGATPipelines.PipelineGeneset as PipelineGeneset
 import CGATPipelines.PipelineMapping as PipelineMapping
-import CGAT.Stats as Stats
 import CGATPipelines.PipelineTracks as PipelineTracks
 import CGATPipelines.PipelineMappingQC as PipelineMappingQC
 import CGATPipelines.PipelineMedip as PipelineMedip
 import CGAT.Pipeline as P
-import CGAT.Expression as Expression
 
 from rpy2.robjects import r as R
-import rpy2.robjects as ro
 
 #########################################################################
 #########################################################################
@@ -168,8 +153,12 @@ P.getParameters(["%s/pipeline.ini" % os.path.splitext(__file__)[0],
 
 PARAMS = P.PARAMS
 
-PARAMS_ANNOTATIONS = P.peekParameters(PARAMS["annotations_dir"],
-                                      "pipeline_annotations.py")
+PARAMS_ANNOTATIONS = P.peekParameters(
+    PARAMS["annotations_dir"],
+    "pipeline_annotations.py",
+    on_error_raise=__name__ == "__main__")
+
+PipelineMedip.PARAMS = PARAMS
 
 ###################################################################
 ###################################################################
@@ -277,8 +266,7 @@ def makeTrackDirectories(infile, outfile):
            r"\1.dir/\1.genome.bam")
 def mapReads(infiles, outfile):
     '''Map reads to the genome using BWA '''
-    to_cluster = True
-    job_options = "-pe dedicated %i -R y" % PARAMS["bwa_threads"]
+    job_threads = PARAMS["bwa_threads"]
     m = PipelineMapping.BWA()
     statement = m.build((infiles,), outfile)
     P.run()

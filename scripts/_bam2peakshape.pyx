@@ -1,19 +1,21 @@
 #cimport csamtools
 
-from pysam.csamtools cimport *
+from pysam.csamfile cimport *
 import collections
 import CGAT.Experiment as E
 import numpy
 
-PeakShapeResult = collections.namedtuple( "PeakShapeResult",
-                                          "interval_width npeaks "
-                                          "peak_center peak_width peak_height peak_relative_pos "
-                                          "nreads "
-                                          "median closest_half_height furthest_halfheight "
-                                          "bins counts" )
+PeakShapeResult = collections.namedtuple(
+    "PeakShapeResult",
+    "interval_width npeaks "
+    "peak_center peak_width peak_height peak_relative_pos "
+    "nreads "
+    "median closest_half_height furthest_halfheight "
+    "bins counts" )
 
-PeakShapeCounts = collections.namedtuple( "PeakShapeCounts",
-                                          "nreads median counts" )
+PeakShapeCounts = collections.namedtuple(
+    "PeakShapeCounts",
+    "nreads median counts" )
 
 cdef class Counter:
     '''base class for counters computing densities 

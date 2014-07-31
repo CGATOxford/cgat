@@ -1464,6 +1464,7 @@ class ClassifierRNASeq(_gtf2table.Counter):
 
 
 class ClassifierRNASeqSplicing(_gtf2table.Counter):
+
     """This is IMSs new style transcript classifier. It aims to give
     classifications that make more sense to biologists involved in
     splicing by using familiar catagories.
@@ -1804,9 +1805,9 @@ class ClassifierRNASeqSplicing(_gtf2table.Counter):
             shared_included_boundaries = Intervals.intersect(
                 boundaries, included_boundaries)
 
-                        # If there is a matched structure, i.e. all of the introns in the gene model are in an existing gene
-                        # model, then either we have a fragment of the complete transcript or some sort of retain intron
-                        # (or both)
+            # If there is a matched structure, i.e. all of the introns in the gene model are in an existing gene
+            # model, then either we have a fragment of the complete transcript or some sort of retain intron
+            # (or both)
             # if matched_structure and abs(overlap_exons - transcript_lexons) <
             # tolerance:
             if matched_structure and len(shared_introns) == len(transcript_introns):
@@ -1847,8 +1848,8 @@ class ClassifierRNASeqSplicing(_gtf2table.Counter):
                     cls = "alternate-5prime"
 
                     if len(Intervals.intersect([boundaries[-1]], transcript_boundaries[0:-1])) > 0:
-                    # is a fragment if the final boundary is in the transcript
-                    # but isn't its final one.
+                        # is a fragment if the final boundary is in the transcript
+                        # but isn't its final one.
                         cls = cls + "-fragment"
                     if not len(boundaries) == len(shared_included_boundaries) + 1:
                         cls = "alternative"
@@ -3053,7 +3054,7 @@ class CounterProximity(CounterOverlap):
     def __str__(self):
         s = Stats.Summary([x.value for x in self.mSegments])
         values = ";".join(["%s-%s:%s" % (x.start, x.end, x.value)
-                          for x in self.mSegments])
+                           for x in self.mSegments])
         length = sum([x.end - x.start for x in self.mSegments])
         lengths = ";".join([str(x.end - x.start) for x in self.mSegments])
         return "\t".join((str(s), str(length), lengths, values))

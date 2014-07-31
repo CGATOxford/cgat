@@ -1,5 +1,4 @@
-'''
-GO.py - compute GO enrichment from gene lists
+'''GO.py - compute GO enrichment from gene lists
 =============================================
 
 :Author: Andreas Heger
@@ -10,14 +9,13 @@ GO.py - compute GO enrichment from gene lists
 Usage
 -----
 
-The script ``GO.py`` will test for enrichment or depletion 
-of GO categories within a gene list.
+The script ``GO.py`` will test for enrichment or depletion of GO
+categories within a gene list.
 
-The script uses a hypergeometric test to check if a particular
-GO category is enriched in a foreground set with respect
-to a background set. Multiple testing is controlled by 
-computing a empirical false discovery rate using a sampling 
-procedure.
+The script uses a hypergeometric test to check if a particular GO
+category is enriched in a foreground set with respect to a background
+set. Multiple testing is controlled by computing a empirical false
+discovery rate using a sampling procedure.
 
 A GO analysis proceeds in three steps:
 
@@ -26,10 +24,11 @@ A GO analysis proceeds in three steps:
    3. run one or more GO analyses for each of the foreground gene lists
 
 This script analyses multiple gene lists in parallel when a matrix of
-gene lists is provided. If multiple gene lists are provided, the FDR is 
-controlled per gene list and not overall. However, my intuition is that
-if the number of tests is large the results should be comparable as if 
-the FDR was controlled globally, though I have no proof for this.
+gene lists is provided. If multiple gene lists are provided, the FDR
+is controlled per gene list and not overall. However, my intuition is
+that if the number of tests is large the results should be comparable
+as if the FDR was controlled globally, though I have no proof for
+this.
 
 Building gene to GO assignments
 +++++++++++++++++++++++++++++++
@@ -39,33 +38,35 @@ is to down download GO assignments from the ENSEMBL database. The command
 below will download go assignments for the human gene set
 and save it in the file :file:`gene2go.data`::
 
-   python GO.py 
+   python runGO.py
       --filename-dump=gene2go.data
       --host=ensembldb.ensembl.org
-      --user=anonymous 
+      --user=anonymous
       --database=homo_sapiens_core_54_36p
-      --port=5306 
+      --port=5306
    > gene2go.log
 
-In order to use GOslim categories, an additional mapping step needs to be performed.
-The sequence of commands is::
+In order to use GOslim categories, an additional mapping step needs to
+be performed.  The sequence of commands is::
 
     wget http://www.geneontology.org/GO_slims/goslim_goa.obo
     wget http://www.geneontology.org/ontology/gene_ontology.obo
     map2slim -outmap go2goslim.map goslim_goa.obo gene_ontology.obo
-    python GO.py 
-                --go2goslim 
-                --filename-ontology=gene_ontology.obo 
-                --slims=go2goslim.map 
-                --log=goslim.log 
+    python runGO.py
+                --go2goslim
+                --filename-ontology=gene_ontology.obo
+                --slims=go2goslim.map
+                --log=goslim.log
         < gene2go.data > gene2goslim.data
 
-The first two commands obtain GOslim information. 
-`map2slim <http://search.cpan.org/~cmungall/go-perl/scripts/map2slim>`_
-is part of Chris Mungall's `go-perl <http://search.cpan.org/~cmungall/go-perl/>`_ module 
-and the last command converts the gene-to-GO assignment into gene-to-GOSlim assignments.
+The first two commands obtain GOslim information.  `map2slim
+<http://search.cpan.org/~cmungall/go-perl/scripts/map2slim>`_ is part
+of Chris Mungall's `go-perl
+<http://search.cpan.org/~cmungall/go-perl/>`_ module and the last
+command converts the gene-to-GO assignment into gene-to-GOSlim
+assignments.
 
-The gene-to-GO mapping can be constructed any other way. It is simply 
+The gene-to-GO mapping can be constructed any other way. It is simply
 a table of tab-separated values::
 
    go_type gene_id go_id   description     evidence
@@ -117,20 +118,22 @@ Running the GO analysis
 
 The command below runs a GO analysis, computing an FDR using 10.000 samples::
 
-    python GO.py 
+    python runGO.py
         --filename-input=gene2go.data
         --genes=foreground
-        --background=background 
+        --background=background
         --sample=10000
-        --fdr 
+        --fdr
         --filename-ontology=gene_ontology.obo
-        --output-filename-pattern='result/%(set)s.%(go)s.%(section)s' 
+        --output-filename-pattern='result/%(set)s.%(go)s.%(section)s'
    > go.log
 
-The output will be stored in the directory :file:`result` and output files will be
-created according to the pattern ``<set>.<go>.<section>``. ``<set>`` is the gene set
-that is analysed, ``<go>`` is one of ``biol_process``, ``mol_function`` and ``cell_location``.
-``<section>`` denotes the file contents. Files output are:
+The output will be stored in the directory :file:`result` and output
+files will be created according to the pattern
+``<set>.<go>.<section>``. ``<set>`` is the gene set that is analysed,
+``<go>`` is one of ``biol_process``, ``mol_function`` and
+``cell_location``.  ``<section>`` denotes the file contents. Files
+output are:
 
 +------------+----------------------------------------------+
 |``section`` | contents                                     |
@@ -149,43 +152,28 @@ that is analysed, ``<go>`` is one of ``biol_process``, ``mol_function`` and ``ce
 Other options
 +++++++++++++
 
-The script can accept other ontologies than just GO ontologies. 
+The script can accept other ontologies than just GO ontologies.
 
 Command line options
 --------------------
 
 '''
-import os
 import sys
-import string
-import re
-import getopt
-import time
-import optparse
-import math
-import tempfile
-import subprocess
-import random
 import collections
-
 import scipy
-import scipy.stats
-import scipy.special
-import numpy
-import CGAT.Stats as Stats
 import CGAT.Database as Database
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
-import CGAT.CSV as CSV
 from CGAT.GO import *
 
 # ---------------------------------------------------------------------------
 
 
-def main():
+def main(argv=None):
 
     parser = E.OptionParser(
-        version="%prog version: $Id: GO.py 2883 2010-04-07 08:46:22Z andreas $", usage=globals()["__doc__"])
+        version="%prog version: $Id$",
+        usage=globals()["__doc__"])
 
     dbhandle = Database.Database()
 
@@ -193,25 +181,33 @@ def main():
                       help="species to use [default=%default].")
 
     parser.add_option("-i", "--slims", dest="filename_slims", type="string",
-                      help="filename with GO SLIM categories [default=%default].")
+                      help="filename with GO SLIM categories "
+                      "[default=%default].")
 
     parser.add_option("-g", "--genes", dest="filename_genes", type="string",
-                      help="filename with genes to analyse [default=%default].")
+                      help="filename with genes to analyse "
+                      "[default=%default].")
 
-    parser.add_option("-b", "--background", dest="filename_background", type="string",
-                      help="filename with background genes to analyse [default=%default].")
+    parser.add_option("-b", "--background", dest="filename_background",
+                      type="string",
+                      help="filename with background genes to analyse "
+                      "[default=%default].")
 
-    parser.add_option("-m", "--minimum-counts", dest="minimum_counts", type="int",
-                      help="minimum count - ignore all categories that have fewer than # number of genes"
-                            " [default=%default].")
+    parser.add_option("-m", "--minimum-counts", dest="minimum_counts",
+                      type="int",
+                      help="minimum count - ignore all categories that have "
+                      "fewer than # number of genes"
+                      " [default=%default].")
 
     parser.add_option("-o", "--sort-order", dest="sort_order", type="choice",
                       choices=("fdr", "pvalue", "ratio"),
                       help="output sort order [default=%default].")
 
-    parser.add_option("--ontology", dest="ontology", type="string", action="append",
-                      help="go ontologies to analyze. Ontologies are tested separately."
-                      " [default=%default].")
+    parser.add_option("--ontology", dest="ontology", type="string",
+                      action="append",
+                      help="go ontologies to analyze. Ontologies are tested "
+                      "separately. "
+                      "[default=%default].")
 
     parser.add_option("-t", "--threshold", dest="threshold", type="float",
                       help="significance threshold [>1.0 = all ]. If --fdr is set, this refers to the fdr, otherwise it is a cutoff for p-values.")
@@ -576,7 +572,9 @@ def main():
                                   section='background',
                                   set=genelist_name)
 
-            outfile.write("gene_id\n%s\n" % ("\n".join(sorted(background[0]))))
+            # Jethro bug fix - see section 'build background' for assignment
+            #outfile.write("gene_id\n%s\n" % ("\n".join(sorted(background[0]))))
+            outfile.write("gene_id\n%s\n" % ("\n".join(sorted(background))))
             if options.output_filename_pattern:
                 outfile.close()
 

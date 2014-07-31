@@ -103,28 +103,28 @@ The pipeline requires the results from
 On top of the default CGAT setup, the pipeline requires the following
 software to be in the path:
 
-+--------------------+-------------------+------------------------------------------------+
-|*Program*           |*Version*          |*Purpose*                                       |
-+--------------------+-------------------+------------------------------------------------+
-|bowtie_             |>=0.12.7           |read mapping                                    |
-+--------------------+-------------------+------------------------------------------------+
-|tophat_             |>=1.4.0            |read mapping                                    |
-+--------------------+-------------------+------------------------------------------------+
-|gsnap_              |>=2012.07.20       |read mapping                                    |
-+--------------------+-------------------+------------------------------------------------+
-|samtools            |>=0.1.16           |bam/sam files                                   |
-+--------------------+-------------------+------------------------------------------------+
-|bedtools            |                   |working with intervals                          |
-+--------------------+-------------------+------------------------------------------------+
-|sra-tools           |                   |extracting reads from .sra files                |
-+--------------------+-------------------+------------------------------------------------+
-|picard              |>=1.42             |bam/sam files. The .jar files need to be in your|
-|                    |                   | CLASSPATH environment variable.                |
-+--------------------+-------------------+------------------------------------------------+
-|star_               |>=2.2.0c           |read mapping                                    |
-+--------------------+-------------------+------------------------------------------------+
-|bamstats_           |>=1.22             |from CGR, Liverpool                             |
-+--------------------+-------------------+------------------------------------------------+
++---------+------------+------------------------------------------------+
+|*Program*|*Version*   |*Purpose*                                       |
++---------+------------+------------------------------------------------+
+|bowtie_  |>=0.12.7    |read mapping                                    |
++---------+------------+------------------------------------------------+
+|tophat_  |>=1.4.0     |read mapping                                    |
++---------+------------+------------------------------------------------+
+|gsnap_   |>=2012.07.20|read mapping                                    |
++---------+------------+------------------------------------------------+
+|samtools |>=0.1.16    |bam/sam files                                   |
++---------+------------+------------------------------------------------+
+|bedtools |            |working with intervals                          |
++---------+------------+------------------------------------------------+
+|sra-tools|            |extracting reads from .sra files                |
++---------+------------+------------------------------------------------+
+|picard   |>=1.42      |bam/sam files. The .jar files need to be in your|
+|         |            | CLASSPATH environment variable.                |
++---------+------------+------------------------------------------------+
+|star_    |>=2.2.0c    |read mapping                                    |
++---------+------------+------------------------------------------------+
+|bamstats_|>=1.22      |from CGR, Liverpool                             |
++---------+------------+------------------------------------------------+
 
 Merging bam files
 -----------------
@@ -201,8 +201,7 @@ import CGATPipelines.PipelineMapping as PipelineMapping
 import CGATPipelines.PipelineMappingQC as PipelineMappingQC
 import CGATPipelines.PipelinePublishing as PipelinePublishing
 
-###################################################
-###################################################
+
 ###################################################
 # Pipeline configuration
 ###################################################
@@ -211,14 +210,20 @@ P.getParameters(
      "../pipeline.ini",
      "pipeline.ini"],
     defaults={
-        'annotations_dir': "",
         'paired_end': False})
 
 PARAMS = P.PARAMS
 
-PARAMS_ANNOTATIONS = P.peekParameters(PARAMS["annotations_dir"],
-                                      "pipeline_annotations.py")
+PARAMS.update(P.peekParameters(
+    PARAMS["annotations_dir"],
+    "pipeline_annotations.py",
+    on_error_raise=__name__ == "__main__",
+    prefix="annotations_",
+    update_interface=True))
 
+PipelineGeneset.PARAMS = PARAMS
+PipelineMappingQC.PARAMS = PARAMS
+PipelinePublishing.PARAMS = PARAMS
 
 ###################################################################
 ###################################################################
@@ -266,28 +271,16 @@ def connect():
 
     return dbh
 
-###################################################################
-###################################################################
-###################################################################
-##
-###################################################################
+
 if os.path.exists("pipeline_conf.py"):
     E.info("reading additional configuration from pipeline_conf.py")
     execfile("pipeline_conf.py")
-
-#########################################################################
-#########################################################################
-#########################################################################
-
-#########################################################################
-#########################################################################
-#########################################################################
 
 
 @active_if(SPLICED_MAPPING)
 @follows(mkdir("geneset.dir"))
 @merge(os.path.join(PARAMS["annotations_dir"],
-                    PARAMS_ANNOTATIONS["interface_geneset_all_gtf"]),
+                    PARAMS["annotations_interface_geneset_all_gtf"]),
        "geneset.dir/reference.gtf.gz")
 def buildReferenceGeneSet(infile, outfile):
     '''sanitize ENSEMBL transcripts file for cufflinks analysis.
@@ -321,7 +314,7 @@ def buildReferenceGeneSet(infile, outfile):
 
     if "geneset_remove_repetetive_rna" in PARAMS:
         rna_file = os.path.join(PARAMS["annotations_dir"],
-                                PARAMS_ANNOTATIONS["interface_rna_gff"])
+                                PARAMS["annotations_interface_rna_gff"])
     else:
         rna_file = None
 
@@ -345,9 +338,6 @@ def buildReferenceGeneSet(infile, outfile):
     os.unlink(tmp_mergedfiltered)
 
 
-#########################################################################
-#########################################################################
-#########################################################################
 @active_if(SPLICED_MAPPING)
 @transform(buildReferenceGeneSet,
            suffix("reference.gtf.gz"),
@@ -376,7 +366,7 @@ def buildCodingGeneSet(infile, outfile):
 @active_if(SPLICED_MAPPING)
 @follows(mkdir("geneset.dir"))
 @merge(os.path.join(PARAMS["annotations_dir"],
-                    PARAMS_ANNOTATIONS["interface_geneset_flat_gtf"]),
+                    PARAMS["annotations_interface_geneset_flat_gtf"]),
        "geneset.dir/introns.gtf.gz")
 def buildIntronGeneModels(infile, outfile):
     '''build protein-coding intron-transcipts.
@@ -394,7 +384,7 @@ def buildIntronGeneModels(infile, outfile):
 
     filename_exons = os.path.join(
         PARAMS["annotations_dir"],
-        PARAMS_ANNOTATIONS["interface_geneset_exons_gtf"])
+        PARAMS["annotations_interface_geneset_exons_gtf"])
 
     statement = '''gunzip
         < %(infile)s
@@ -437,7 +427,7 @@ def loadGeneInformation(infile, outfile):
 @active_if(SPLICED_MAPPING)
 @follows(mkdir("geneset.dir"))
 @merge(os.path.join(PARAMS["annotations_dir"],
-                    PARAMS_ANNOTATIONS["interface_geneset_all_gtf"]),
+                    PARAMS["annotations_interface_geneset_all_gtf"]),
        "geneset.dir/coding_exons.gtf.gz")
 def buildCodingExons(infile, outfile):
     '''compile set of protein coding exons.
@@ -470,6 +460,8 @@ def buildReferenceTranscriptome(infile, outfile):
 
     The sequences include both UTR and CDS.
 
+    Builds bowtie indices for tophat/tophat2 if
+    required.
     '''
     gtf_file = P.snip(infile, ".gz")
 
@@ -490,19 +482,26 @@ def buildReferenceTranscriptome(infile, outfile):
 
     prefix = P.snip(outfile, ".fa")
 
-    # build raw index
-    statement = '''
-    bowtie-build -f %(outfile)s %(prefix)s >> %(outfile)s.log 2>&1
-    '''
+    if 'tophat' in MAPPERS:
+        # build raw index
+        statement = '''
+        bowtie-build -f %(outfile)s %(prefix)s >> %(outfile)s.log 2>&1
+        '''
+        P.run()
 
-    P.run()
+        # build color space index - disabled
+        # statement = '''
+        # bowtie-build -C -f %(outfile)s %(prefix)s_cs
+        # >> %(outfile)s.log 2>&1
+        # '''
+        # P.run()
 
-    # build color space index
-    statement = '''
-    bowtie-build -C -f %(outfile)s %(prefix)s_cs >> %(outfile)s.log 2>&1
-    '''
-
-    P.run()
+    if 'tophat2' in MAPPERS:
+        statement = '''
+        bowtie-build -f %(outfile)s %(prefix)s >> %(outfile)s.log 2>&1
+        '''
+        P.run()
+        
 
 #########################################################################
 #########################################################################
@@ -547,7 +546,7 @@ def buildJunctions(infile, outfile):
         E.info('found %i junctions before removing duplicates' % njunctions)
 
     # make unique
-    statement = '''mv %(outfile)s %(outfile)s.tmp; 
+    statement = '''mv %(outfile)s %(outfile)s.tmp;
                    cat < %(outfile)s.tmp | sort | uniq > %(outfile)s;
                    rm -f %(outfile)s.tmp; '''
     P.run()
@@ -560,14 +559,14 @@ def buildJunctions(infile, outfile):
 @active_if(SPLICED_MAPPING)
 @follows(mkdir("gsnap.dir"))
 @files(os.path.join(PARAMS["annotations_dir"],
-                    PARAMS_ANNOTATIONS["interface_geneset_exons_gtf"]),
+                    PARAMS["annotations_interface_geneset_exons_gtf"]),
        "gsnap.dir/splicesites.iit")
 def buildGSNAPSpliceSites(infile, outfile):
     '''build file with known splice sites for GSNAP from all exons...
     '''
 
     outfile = P.snip(outfile, ".iit")
-    statement = '''zcat %(infile)s 
+    statement = '''zcat %(infile)s
     | gtf_splicesites | iit_store -o %(outfile)s
     > %(outfile)s.log
     '''
@@ -582,6 +581,7 @@ def buildGSNAPSpliceSites(infile, outfile):
 
 SEQUENCESUFFIXES = ("*.fastq.1.gz",
                     "*.fastq.gz",
+                    "*.fa.gz",
                     "*.sra",
                     "*.export.txt.gz",
                     "*.csfasta.gz",
@@ -592,7 +592,7 @@ SEQUENCEFILES = tuple([os.path.join(DATADIR, suffix_name)
                       for suffix_name in SEQUENCESUFFIXES])
 
 SEQUENCEFILES_REGEX = regex(
-    r".*/(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz|csfasta.F3.gz|export.txt.gz)")
+    r".*/(\S+).(fastq.1.gz|fastq.gz|fa.gz|sra|csfasta.gz|csfasta.F3.gz|export.txt.gz)")
 
 ###################################################################
 ###################################################################
@@ -637,14 +637,14 @@ def mapReadsWithTophat(infiles, outfile):
     it means that it ran out of memory.
 
     '''
-    job_options = "-pe dedicated %i -R y" % PARAMS["tophat_threads"]
+    job_threads = PARAMS["tophat_threads"]
 
     if "--butterfly-search" in PARAMS["tophat_options"]:
         # for butterfly search - require insane amount of
         # RAM.
-        job_options += " -l mem_free=50G"
+        job_options = " -l mem_free=50G"
     else:
-        job_options += " -l mem_free=%s" % PARAMS["tophat_memory"]
+        job_options = " -l mem_free=%s" % PARAMS["tophat_memory"]
 
     m = PipelineMapping.Tophat(
         executable=P.substituteParameters(**locals())["tophat_executable"],
@@ -683,16 +683,15 @@ def mapReadsWithTophat2(infiles, outfile):
     it means that it ran out of memory.
 
     '''
-    job_options = "-pe dedicated %i -R y" % PARAMS["tophat2_threads"]
+    job_threads = PARAMS["tophat2_threads"]
 
     if "--butterfly-search" in PARAMS["tophat2_options"]:
         # for butterfly search - require insane amount of
         # RAM.
-        job_options += " -l mem_free=50G"
+        job_options = " -l mem_free=50G"
     else:
-        job_options += " -l mem_free=%s" % PARAMS["tophat2_memory"]
+        job_options = " -l mem_free=%s" % PARAMS["tophat2_memory"]
 
-    to_cluster = True
     m = PipelineMapping.Tophat2(
         executable=P.substituteParameters(**locals())["tophat2_executable"],
         strip_sequence=PARAMS["strip_sequence"])
@@ -787,20 +786,12 @@ def buildTophatStats(infiles, outfile):
 
     outf.close()
 
-############################################################
-############################################################
-############################################################
-
 
 @jobs_limit(1, "db")
 @active_if(SPLICED_MAPPING)
 @transform(buildTophatStats, suffix(".tsv"), ".load")
 def loadTophatStats(infile, outfile):
     P.load(infile, outfile)
-
-############################################################
-############################################################
-############################################################
 
 
 @active_if(SPLICED_MAPPING)
@@ -816,14 +807,13 @@ def mapReadsWithGSNAP(infiles, outfile):
 
     infile, infile_splices = infiles
 
-    job_options = "-pe dedicated %i -R y -l mem_free=%s" % (PARAMS["gsnap_node_threads"],
-                                                            PARAMS["gsnap_memory"])
-
+    job_options = "-l mem_free=%s" % PARAMS["gsnap_memory"]
+    job_threads = PARAMS["gsnap_node_threads"]
     gsnap_mapping_genome = PARAMS["gsnap_genome"] or PARAMS["genome"]
 
-    to_cluster = True
-    m = PipelineMapping.GSNAP(executable=P.substituteParameters(**locals())["gsnap_executable"],
-                              strip_sequence=PARAMS["strip_sequence"])
+    m = PipelineMapping.GSNAP(
+        executable=P.substituteParameters(**locals())["gsnap_executable"],
+        strip_sequence=PARAMS["strip_sequence"])
 
     if PARAMS["gsnap_include_known_splice_sites"]:
         gsnap_options = PARAMS["gsnap_options"] + \
@@ -847,9 +837,8 @@ def mapReadsWithSTAR(infile, outfile):
 
     '''
 
-    job_options = "-pe dedicated %i -R y -l mem_free=%s" % \
-                  (PARAMS["star_threads"],
-                   PARAMS["star_memory"])
+    job_threads = PARAMS["star_threads"]
+    job_options = "-l mem_free=%s" % PARAMS["star_memory"]
 
     star_mapping_genome = PARAMS["star_genome"] or PARAMS["genome"]
 
@@ -877,7 +866,7 @@ def buildSTARStats(infiles, outfile):
             raise ValueError("incomplete run: %s" % infile)
 
         for line in IOTools.openFile(fn):
-            if not "|" in line:
+            if "|" not in line:
                 continue
             header, value = line.split("|")
             header = re.sub("%", "percent", header)
@@ -929,14 +918,14 @@ def mapReadsWithBowtieAgainstTranscriptome(infiles, outfile):
     # inflate the file sizes due to matches to alternative transcripts
     # but otherwise matches to paralogs will be missed (and such
     # reads would be filtered out).
-    job_options = "-pe dedicated %i -R y" % PARAMS["bowtie_threads"]
-    to_cluster = True
-    m = PipelineMapping.BowtieTranscripts(executable=P.substituteParameters(**locals())["bowtie_executable"],
-                                          strip_sequence=PARAMS["strip_sequence"])
+    job_threads = PARAMS["bowtie_threads"]
+    m = PipelineMapping.BowtieTranscripts(
+        executable=P.substituteParameters(**locals())["bowtie_executable"],
+        strip_sequence=PARAMS["strip_sequence"])
     infile, reffile = infiles
     prefix = P.snip(reffile, ".fa")
     # IMS: moved reporting options to ini
-    #bowtie_options = "%s --best --strata -a" % PARAMS["bowtie_transcriptome_options"]
+    # bowtie_options = "%s --best --strata -a" % PARAMS["bowtie_transcriptome_options"]
     statement = m.build((infile,), outfile)
     P.run()
 
@@ -951,18 +940,19 @@ def mapReadsWithBowtieAgainstTranscriptome(infiles, outfile):
 @transform(SEQUENCEFILES,
            SEQUENCEFILES_REGEX,
            add_inputs(
-               os.path.join(PARAMS["bowtie_index_dir"], PARAMS["genome"] + ".fa")),
+               os.path.join(PARAMS["bowtie_index_dir"],
+                            PARAMS["genome"] + ".fa")),
            r"bowtie.dir/\1.bowtie.bam")
 def mapReadsWithBowtie(infiles, outfile):
-    '''map reads with bowtie'''
+    '''map reads with bowtie. For bowtie2 set executable apppropriately.'''
 
-    job_options = "-pe dedicated %i -R y" % PARAMS["bowtie_threads"]
-    to_cluster = True
-    m = PipelineMapping.Bowtie(executable=P.substituteParameters(**locals())["bowtie_executable"],
-                               strip_sequence=PARAMS["strip_sequence"])
+    job_threads = PARAMS["bowtie_threads"]
+    m = PipelineMapping.Bowtie(
+        executable=P.substituteParameters(**locals())["bowtie_executable"],
+        strip_sequence=PARAMS["strip_sequence"])
     infile, reffile = infiles
     # IMS remove reporting options to the ini
-    #bowtie_options = "%s --best --strata -a" % PARAMS["bowtie_options"]
+    # bowtie_options = "%s --best --strata -a" % PARAMS["bowtie_options"]
     statement = m.build((infile,), outfile)
     P.run()
 
@@ -980,19 +970,23 @@ def mapReadsWithBowtie(infiles, outfile):
 def mapReadsWithBWA(infile, outfile):
     '''map reads with bwa'''
 
-    job_options = "-pe dedicated %i -R y -l mem_free=%s" % (PARAMS["bwa_threads"],
-                                                            PARAMS["bwa_memory"])
+    job_threads = PARAMS["bwa_threads"]
+    job_options = "-l mem_free=%s" % PARAMS["bwa_memory"]
+
     to_cluster = True
     if PARAMS["bwa_algorithm"] == "aln":
         m = PipelineMapping.BWA(
             remove_non_unique=PARAMS["remove_non_unique"],
-            strip_sequence=PARAMS["strip_sequence"])
+            strip_sequence=PARAMS["strip_sequence"],
+            read_group_header=PARAMS["bwa_read_group_header"])
+
     elif PARAMS["bwa_algorithm"] == "mem":
         m = PipelineMapping.BWAMEM(
             remove_non_unique=PARAMS["remove_non_unique"],
-            strip_sequence=PARAMS["strip_sequence"])
+            strip_sequence=PARAMS["strip_sequence"],
+            read_group_header=PARAMS["bwa_read_group_header"])
     else:
-        raise ValueError("bwa algorithm parameter not set")
+        raise ValueError("bwa algorithm '%s' not known" % algorithm)
 
     statement = m.build((infile,), outfile)
     P.run()
@@ -1011,9 +1005,8 @@ def mapReadsWithBWA(infile, outfile):
 def mapReadsWithStampy(infile, outfile):
     '''map reads with stampy'''
 
-    job_options = "-pe dedicated %i -R y -l mem_free=%s" % \
-                  (PARAMS["stampy_threads"],
-                   PARAMS["stampy_memory"])
+    job_threads = PARAMS["stampy_threads"]
+    job_options = "-l mem_free=%s" % PARAMS["stampy_memory"]
     m = PipelineMapping.Stampy(strip_sequence=PARAMS["strip_sequence"])
     statement = m.build((infile,), outfile)
     P.run()
@@ -1062,8 +1055,6 @@ if "merge_pattern_input" in PARAMS and PARAMS["merge_pattern_input"]:
             P.clone(infiles[0], outfile)
             P.clone(infiles[0] + ".bai", outfile + ".bai")
             return
-
-        to_cluster = True
 
         infiles = " ".join(infiles)
         statement = '''
@@ -1238,7 +1229,7 @@ def buildBAMStats(infiles, outfile):
     '''
 
     rna_file = os.path.join(PARAMS["annotations_dir"],
-                            PARAMS_ANNOTATIONS["interface_rna_gff"])
+                            PARAMS["annotations_interface_rna_gff"])
 
     job_options = "-l mem_free=12G"
 
@@ -1295,7 +1286,7 @@ def loadBAMStats(infiles, outfile):
            suffix(".bam"),
            add_inputs(os.path.join(
                PARAMS["annotations_dir"],
-               PARAMS_ANNOTATIONS["interface_genomic_context_bed"])),
+               PARAMS["annotations_interface_genomic_context_bed"])),
            ".contextstats")
 def buildContextStats(infiles, outfile):
     '''build mapping context stats.
@@ -1348,7 +1339,7 @@ def loadContextStats(infiles, outfile):
                 | python %(scriptsdir)s/table2table.py --transpose
                 | python %(scriptsdir)s/csv2db.py
                       --index=track
-                      --table=%(tablename)s 
+                      --table=%(tablename)s
                 > %(outfile)s
                 """
     P.run()
@@ -1425,7 +1416,7 @@ def splitCodingGeneSetByChr(infile, outfiles):
        add_inputs(splitCodingGeneSetByChr),
        r"\1.*.transcript_counts.tsv.gz")
 def buildTranscriptLevelReadCounts(infiles, outfile):
-    '''count reads falling into transcripts of protein coding 
+    '''count reads falling into transcripts of protein coding
        gene models.
 
     .. note::
@@ -1436,9 +1427,8 @@ def buildTranscriptLevelReadCounts(infiles, outfile):
     '''
     infile, genesets = infiles[0], infiles[1:]
 
-    to_cluster = True
     statements = []
-
+    job_options = "-l mem_free=4G"
     for geneset in genesets:
 
         chrom = re.match(
@@ -1447,16 +1437,16 @@ def buildTranscriptLevelReadCounts(infiles, outfile):
         outfile = "%s.%s.transcript_counts.tsv.gz" % (bam, chrom)
 
         statement = '''
-               zcat %(geneset)s 
-             | python %%(scriptsdir)s/gtf2table.py 
+               zcat %(geneset)s
+             | python %%(scriptsdir)s/gtf2table.py
                --reporter=transcripts
-               --bam-file=%(infile)s 
+               --bam-file=%(infile)s
                --counter=length
                --prefix="exons_"
-               --counter=read-counts 
+               --counter=read-counts
                --prefix=""
                --counter=read-coverage
-               --prefix=coverage_        
+               --prefix=coverage_
                -v 0
             | gzip
           > %(outfile)s
@@ -1509,13 +1499,13 @@ def buildIntronLevelReadCounts(infiles, outfile):
         return
 
     statement = '''
-    zcat %(exons)s 
-    | python %(scriptsdir)s/gtf2table.py 
+    zcat %(exons)s
+    | python %(scriptsdir)s/gtf2table.py
           --reporter=genes
-          --bam-file=%(infile)s 
+          --bam-file=%(infile)s
           --counter=length
           --prefix="introns_"
-          --counter=read-counts 
+          --counter=read-counts
           --prefix=""
           --counter=read-coverage
           --prefix=coverage_
@@ -1553,6 +1543,31 @@ def loadReadCounts(infiles, outfile):
     os.unlink(outf.name)
 
 
+@active_if(SPLICED_MAPPING)
+@transform(MAPPINGTARGETS,
+           suffix(".bam"),
+           add_inputs(buildCodingExons),
+           ".transcriptprofile.gz")
+def buildTranscriptProfiles(infiles, outfile):
+    '''build gene coverage profiles.'''
+
+    bamfile, gtffile = infiles
+
+    statement = '''python %(scriptsdir)s/bam2geneprofile.py
+    --output-filename-pattern="%(outfile)s.%%s"
+    --force
+    --reporter=transcript
+    --base-accuracy
+    --method=geneprofileabsolutedistancefromthreeprimeend
+    --normalize-profile=all
+    %(bamfile)s %(gtffile)s
+    | gzip
+    > %(outfile)s
+    '''
+
+    P.run()
+
+
 ###################################################################
 ###################################################################
 # various export functions
@@ -1572,7 +1587,7 @@ def buildBigWig(infile, outfile):
         tmpfile = P.getTempFilename()
         contig_sizes = os.path.join(
             PARAMS["annotations_dir"],
-            PARAMS_ANNOTATIONS["interface_contigs"])
+            PARAMS["annotations_interface_contigs"])
         job_options = "-l mem_free=3G"
         statement = '''bedtools genomecov
         -ibam %(infile)s
@@ -1678,7 +1693,8 @@ def general_qc():
 @follows(loadExonValidation,
          loadGeneInformation,
          loadTranscriptLevelReadCounts,
-         loadIntronLevelReadCounts)
+         loadIntronLevelReadCounts,
+         buildTranscriptProfiles)
 def spliced_qc():
     pass
 
@@ -1730,31 +1746,15 @@ def createViewMapping(infile, outfile):
 
     P.createView(dbh, tables, tablename, outfile, view_type)
 
-###################################################################
-###################################################################
-###################################################################
-
 
 @follows(createViewMapping)
 def views():
     pass
 
-###################################################################
-###################################################################
-###################################################################
-
 
 @follows(mapping, qc, views, duplication)
 def full():
     pass
-
-
-
-
-
-###################################################################
-###################################################################
-###################################################################
 
 
 @follows(mkdir("report"))
@@ -1764,10 +1764,6 @@ def build_report():
     E.info("starting documentation build process from scratch")
     P.run_report(clean=True)
 
-###################################################################
-###################################################################
-###################################################################
-
 
 @follows(mkdir("report"))
 def update_report():
@@ -1775,10 +1771,6 @@ def update_report():
 
     E.info("updating documentation")
     P.run_report(clean=False)
-
-###################################################################
-###################################################################
-###################################################################
 
 
 @follows(mkdir("%s/bamfiles" % PARAMS["web_dir"]),
@@ -1800,6 +1792,7 @@ def publish():
 
     E.info("publishing UCSC data hub")
     PipelinePublishing.publish_tracks(export_files)
+
 
 if __name__ == "__main__":
     sys.exit(P.main(sys.argv))

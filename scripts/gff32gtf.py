@@ -1,5 +1,4 @@
-'''
-gff32gtf.py - various methods for converting gff3 files to gtf
+'''gff32gtf.py - various methods for converting gff3 files to gtf
 ====================================================
 
 :Author: Ian Sudbery
@@ -16,20 +15,22 @@ format files.
 Background
 ----------
 
-While the various flavours of GFF format are supposedly backward compatible,
-this is broken by GTF2.2 and GFF3. GTF requires the presence of gene_id and 
-transcript_id fields for each record. This not so for GFF3. Further key,value
-tags in the attributes fields of GTF are " " delimited, but are "=" delimited in
-GFF. 
+While the various flavours of GFF format are supposedly backward
+compatible, this is broken by GTF2.2 and GFF3. GTF requires the
+presence of gene_id and transcript_id fields for each record. This not
+so for GFF3. Further key,value tags in the attributes fields of GTF
+are " " delimited, but are "=" delimited in GFF.
 
-Conversion is non-trivial. GFF3 records are hierachical. To find the gene_id and
-transcript_id one must traverse the hierarchy to the correct point. Futher 
-records can have multiple parents. 
+Conversion is non-trivial. GFF3 records are hierachical. To find the
+gene_id and transcript_id one must traverse the hierarchy to the
+correct point. Futher records can have multiple parents.
 
                                                -> Exon
-While the standard structure is Gene -> mRNA -|       , this is not manditory, 
+While the standard structure is Gene -> mRNA -|       ,
                                                -> CDS
-and it is possible the conversion will want to be done in a different way.
+
+this is not manditory, and it is possible the conversion will want to
+be done in a different way.
 
 Usage
 -----
@@ -43,13 +44,14 @@ Their are several ways in which the conversion can be done:
 hierachical
 +++++++++++
 
-By default this script will read in the entire GFF3 file, and then for each 
-entry traverse the hierarchy until an object of type GENE_TYPE ("gene" by 
-default") or an object with no parent is found. This becomes the "gene_id". Any 
-object of TRANSCRIPT_TYPE encountered on the way is set as the transcript_id. If
-not such object is encountered then the object directly below the gene object is
-used as the trancript_id. Objects that belong to multipe transcripts or genes 
-are duplicated.
+By default this script will read in the entire GFF3 file, and then for
+each entry traverse the hierarchy until an object of type GENE_TYPE
+("gene" by default") or an object with no parent is found. This
+becomes the "gene_id". Any object of TRANSCRIPT_TYPE encountered on
+the way is set as the transcript_id. If not such object is encountered
+then the object directly below the gene object is used as the
+trancript_id. Objects that belong to multipe transcripts or genes are
+duplicated.
 
 This method requires ID and Parent fields to be present.
 
@@ -68,7 +70,8 @@ gene_id=Parent
 set-pattern
 +++++++++++
 
-As above, but the fieldnames are set by a string format involving the fields of the record.
+As above, but the fieldnames are set by a string format involving the
+fields of the record.
 
 set-none
 ++++++++
@@ -80,10 +83,7 @@ Command line options
 
 '''
 
-import os
 import sys
-import re
-import optparse
 
 import CGAT.Experiment as E
 import CGAT.GFF3 as GFF3
@@ -92,20 +92,25 @@ import CGAT.IOTools as IOTools
 
 
 def search_hierarchy(ID, hierarchy, options):
-    ''' Returns a three element tuple of lists.
+    '''Returns a three element tuple of lists.
 
-        * The first two lists are the gene_ids and transcript_ids that are associated with specified IDs.
-        * The third is a list of possible transcript_ids - that is trancript_ids that are one level
-          below where the gene id came from.
+        * The first two lists are the gene_ids and transcript_ids that
+        * are associated with specified IDs.  The third is a list of
+        * possible transcript_ids - that is trancript_ids that are one
+        * level below where the gene id came from.
 
-        All three lists are guarenteed to be the same length, but both the transcript lists could contain
-        None values where no transcript_id has been found.
+        All three lists are guarenteed to be the same length, but both
+        the transcript lists could contain None values where no
+        transcript_id has been found.
 
-        Works by calling it self recursively, not efficient, but does deal with the problem of cicular references:
-        the recursion limit will be quickly reached.
+        Works by calling it self recursively, not efficient, but does
+        deal with the problem of cicular references: the recursion
+        limit will be quickly reached.
 
-        Can also raise ValueError if no feature of type options.gene_type is found and options.missing_gene is 
-        false '''
+        Can also raise ValueError if no feature of type
+        options.gene_type is found and options.missing_gene is false
+
+    '''
 
     gene_id = []
     transcript_id = []
@@ -184,14 +189,18 @@ def convert_hierarchy(first_gffs, second_gffs, options):
             else:
                 gff['Parent'] = []
 
-        hierarchy[gff['ID']] = {"type": gff.feature,
-                                "Parent": gff.asDict().get("Parent", []),
-                                "gene_id": gff.attributes.get(options.gene_field_or_pattern, gff['ID']),
-                                "transcript_id": gff.attributes.get(options.transcript_field_or_pattern, gff['ID'])}
+        hierarchy[gff['ID']] = {
+            "type": gff.feature,
+            "Parent": gff.asDict().get("Parent", []),
+            "gene_id": gff.attributes.get(
+                options.gene_field_or_pattern, gff['ID']),
+            "transcript_id": gff.attributes.get(
+                options.transcript_field_or_pattern, gff['ID'])}
 
     for gff in second_gffs:
 
-        if options.discard and ((options.missing_gene and not options.parent in gff) or (
+        if options.discard and (
+                (options.missing_gene and options.parent not in gff) or (
                 gff.feature in (options.gene_type, options.transcript_type))):
 
             continue
@@ -204,11 +213,14 @@ def convert_hierarchy(first_gffs, second_gffs, options):
         if options.missing_gene:
 
             transcript_ids = [poss if found is None else found
-                              for found, poss in zip(transcript_ids, poss_transcript_ids)]
+                              for found, poss in
+                              zip(transcript_ids, poss_transcript_ids)]
 
             transcript_ids = [gid if found is None else found
-                              for found, gid in zip(transcript_ids, gene_ids)]
-        elif None in transcript_id:
+                              for found, gid in
+                              zip(transcript_ids, gene_ids)]
+
+        elif None in transcript_ids:
             raise ValueError("failed to find transcript id for %s" % gff['ID'])
 
         for gene_id, transcript_id in zip(gene_ids, transcript_ids):

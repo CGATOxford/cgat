@@ -273,7 +273,6 @@ class Database:
     def GetPassword(self):
         return self.passwd
 
-    #-------------------------------------------------------------------------
     def SelectIntoOutfile(self, statement, filename):
         """Redirect SELECT-statement INTO outfile on local disc. As this
         is not directly possible via mysqld, mysql -e > outfile is used.
@@ -285,12 +284,13 @@ class Database:
         -N: skip column headers
         """
 
-        if os.system("mysql -N -h%s -u%s -P%i -e '%s' > %s" % (self.host, self.user,
-                                                               self.port,
-                                                               statement, filename)):
+        if os.system("mysql -N -h%s -u%s -P%i -e '%s' > %s" % (
+                self.host, self.user,
+                self.port,
+                statement,
+                filename)):
             print "--> error causing statement: %s" % statement
 
-    #-------------------------------------------------------------------------
     def LoadFile(self, filename, statement):
         """load a file using statement.
         """
@@ -308,7 +308,7 @@ def executewait(dbhandle, statement, error=None, retries=-1, wait=5):
 
     Retry ``retries`` times if set to a positive number.
     A retry of ``0`` indicates no retry, a negative number retries
-    infinitely. 
+    infinitely.
 
     The process waits ``wait`` seconds between each retry.
 
@@ -324,9 +324,9 @@ def executewait(dbhandle, statement, error=None, retries=-1, wait=5):
             cc.execute(statement)
         except error, msg:
             if retries == 0:
-                raise error, msg
+                raise
             if not re.search("locked", str(msg)):
-                raise error, msg
+                raise
             time.sleep(wait)
             retries -= 1
             continue

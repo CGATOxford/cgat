@@ -611,7 +611,7 @@ def groupTagData(ref_group=None):
     '''compute groups and pairs from tag data table.'''
 
     # Relevel the groups so that the reference comes first
-    if not ref_group is None:
+    if ref_group is not None:
         R('''groups <- relevel(groups, ref = "%s")''' % ref_group)
 
     groups = R('''levels(groups)''')
@@ -802,7 +802,7 @@ def runEdgeR(outfile,
     R('''countsTable = suppressMessages(DGEList( countsTable, group = groups ))''')
 
     # Relevel groups to make the results predictable - IMS
-    if not ref_group is None:
+    if ref_group is not None:
         R('''countsTable$samples$group <- relevel(countsTable$samples$group, ref = "%s")''' %
           ref_group)
     else:
@@ -865,8 +865,6 @@ def runEdgeR(outfile,
     # compute adjusted P-Values
     R('''padj = p.adjust( lrt$table$PValue, 'BH' )''')
 
-    isna = R["is.na"]
-
     rtype = collections.namedtuple("rtype", "lfold logCPM LR pvalue")
 
     # output differences between pairs
@@ -905,7 +903,8 @@ def runEdgeR(outfile,
         else:
             counts.all_under += 1
 
-        if isna(d.pvalue):
+        # is.na failed in rpy2 2.4.2
+        if d.pvalue != R('''NA'''):
             status = "OK"
         else:
             status = "FAIL"
@@ -978,10 +977,12 @@ def deseqPlotCorrelationHeatmap(outfile, vsd):
     not informed by the experimental design.
     '''
 
-    dists = R.dist(R.t(R.exprs(vsd)))
+    # rpy2.4.2 - passing of arrays seems to be broken - do it in R
+    # dists = R['as.matrix'](R.dist(R.t(R.exprs(vsd))))
+    dists = R('''as.matrix(dist(t(exprs(vsd))))''')
     R.png(outfile)
     R['heatmap.2'](
-        R['as.matrix'](dists),
+        dists,
         trace='none',
         margin=ro.IntVector((10, 10)))
     R['dev.off']()
@@ -1140,7 +1141,7 @@ def deseqParseResults(control_name, treatment_name, fdr, vsd=False):
         if d.baseMeanA == 0.0 and d.baseMeanB == 0.0:
             d = d._replace(foldChange=0, log2FoldChange=0)
 
-        if isna(d.pval):
+        if d.pval != R('''NA'''):
             status = "OK"
         else:
             status = "FAIL"
@@ -1271,20 +1272,23 @@ def runDESeq(outfile,
     vsd = R('''vsd = varianceStabilizingTransformation(cds_blind)''')
 
     # output normalized counts
+    # gzfile does not work with rpy 2.4.2
+    # so do it in R-space
     R('''write.table(counts(cds, normalized=TRUE),
-    file=gzfile('%(outfile_prefix)scounts.tsv.gz'),
+    file=gzfile('%(outfile_prefix)scounts.tsv.gz', 'w'),
     row.names=TRUE,
     col.names=NA,
     quote=FALSE,
     sep='\t') ''' % locals())
 
     # output variance stabilized counts
-    R['write.table'](R.exprs(vsd),
-                     file=R.gzfile('%svsd.tsv.gz' % outfile_prefix),
-                     row_names=True,
-                     col_names=rinterface.NA_Logical,
-                     quote=False,
-                     sep='\t')
+    R('''write.table(exprs(vsd),
+    file=gzfile('%(outfile_prefix)svsd.tsv.gz)', 'w'),
+    row.names=TRUE,
+    col.names=NA,
+    quote=FALSE,
+    sep='\t')
+    ''' % locals())
 
     # plot correlation heatmap of variance stabilized data
     deseqPlotCorrelationHeatmap(
@@ -1296,31 +1300,16 @@ def runDESeq(outfile,
                  vsd)
 
     # plot gene heatmap for all genes - order by average expression
-    select = R.order(R.rowMeans(R.counts(cds)), decreasing=True)
+    # subtract one to get numpy indices
+    select = R.order(R.rowMeans(R.counts(cds)), decreasing=True) - 1
     deseqPlotGeneHeatmap(
         '%sgene_heatmap.png' % outfile_prefix,
-        R['as.matrix'](R.exprs(vsd).rx(select, True)))
+        R['as.matrix'](R.exprs(vsd)[select]))
 
     # plot heatmap of top 200 expressed genes
     deseqPlotGeneHeatmap(
         '%sgene_heatmap_top200.png' % outfile_prefix,
-        R['as.matrix'](R.exprs(vsd).rx(select[:200], True)))
-
-    # Currently disabled
-    #for group in groups:
-    #    if has_replicates:
-            #R.png( '''%(outfile_prefix)s%(group)s_fit.png''' % locals() )
-            #R('''diagForT <- varianceFitDiagnostics( cds, "%s" )''' % group )
-            #R('''smoothScatter( log10(diagForT$baseMean),
-            #log10(diagForT$baseVar) )''')
-            #R('''lines( log10(fittedBaseVar) ~ log10(baseMean),
-            #diagForT[ order(diagForT$baseMean), ], col="red" )''')
-            # R['dev.off']()
-            #R.png( '''%(outfile_prefix)s%(group)s_residuals.png''' %
-            # locals()  )
-            #R('''residualsEcdfPlot( cds, "%s" )''' % group )
-            # R['dev.off']()
-    #        pass
+        R['as.matrix'](R.exprs(vsd)[select[:200]]))
 
     # Call diffential expression for all pairings of groups included in the
     # design
@@ -1368,16 +1357,17 @@ def runDESeq(outfile,
 
         # plot heatmap of differentially expressed genes
         # plot gene heatmap for all genes - order by average expression
-        select = res.rx2('padj').ro < fdr
+        padj_column = list(res.colnames).index('padj')
+        select = res[padj_column] < fdr
         if len(select) > 0:
             E.info('%s vs %s: plotting %i genes in heatmap' %
                    (treatment, control, len(select)))
-            data = R.exprs(vsd).rx(select, True)
+            data = R.exprs(vsd)[select]
             if not isinstance(data, rpy2.robjects.vectors.FloatVector):
-                order = R.order(R.rowMeans(data), decreasing=True)
+                order = R.order(R.rowMeans(data), decreasing=True) - 1
                 deseqPlotGeneHeatmap(
                     '%sgene_heatmap.png' % outfile_groups_prefix,
-                    R['as.matrix'](data.rx(order, True)),
+                    R['as.matrix'](data[order]),
                     Colv=False,
                     Rowv=True)
             else:
@@ -1398,8 +1388,8 @@ def runDESeq(outfile,
         # Jethro - previously plotting x = pvalues[orderInPlot][showInPlot]
         # pvalues[orderInPlot][showInPlot] contains all NA values from pvalues
         # which(showInPlot) doesn't... removing NA values
-        R('''true.pvalues  <- pvalues[orderInPlot][showInPlot]''')
-        R('''true.pvalues  <- true.pvalues[is.finite(true.pvalues)]''')
+        R('''true.pvalues <- pvalues[orderInPlot][showInPlot]''')
+        R('''true.pvalues <- true.pvalues[is.finite(true.pvalues)]''')
         R('''plot( seq( along=which(showInPlot)),
                    true.pvalues,
                    pch='.',
@@ -1487,7 +1477,7 @@ def plotTagStats(infile, design_file, outfile_prefix):
     geom_boxplot(aes(x=sample,y=value,color=sample,fill=sample),
     size=0.3,
     alpha=I(1/3)) +
-    theme(axis.text.x = theme_text( angle=90, hjust=1, size=8 ) )''')
+    theme(axis.text.x = element_text( angle=90, hjust=1, size=8 ) )''')
     R('''plot(pp)''')
     R['dev.off']()
 
@@ -1533,25 +1523,26 @@ def plotDETagStats(infile, outfile_prefix):
 
     R('''gp = ggplot(data)''')
     R('''a = gp + \
-        geom_boxplot(aes(x=factor(significant), y=log10(treatment_mean+1),
-                                         color=factor(significant),fill=factor(significant)),
-                             size=0.3,
-                             alpha=I(1/3))''')
+    geom_boxplot(aes(x=factor(significant),
+    y=log10(treatment_mean+1),
+    color=factor(significant),fill=factor(significant)),
+    size=0.3,
+    alpha=I(1/3))''')
 
     R('''b = gp + \
       geom_boxplot(aes(x=factor(significant),
-                       y=log10(control_mean+1),
-                         color=factor(significant),
-                         fill=factor(significant)),
-                         size=0.3,
-                         alpha=I(1/3)) +\
-        opts( axis.text.x = theme_text( angle=90, hjust=1, size=8 ) )''')
+    y=log10(control_mean+1),
+    color=factor(significant),
+    fill=factor(significant)),
+    size=0.3,
+    alpha=I(1/3)) +\
+    theme(axis.text.x=element_text(angle=90, hjust=1, size=8))''')
 
     fn = outfile_prefix + ".boxplots.png"
     R.png(fn)
     try:
-        R('''print(a, vp = viewport(layout.pos.row = 1, layout.pos.col = 1))''')
-        R('''print(b, vp = viewport(layout.pos.row = 2, layout.pos.col = 1))''')
+        R('''print(a, vp=viewport(layout.pos.row=1, layout.pos.col=1))''')
+        R('''print(b, vp=viewport(layout.pos.row=2, layout.pos.col=1))''')
     except rpy2.rinterface.RRuntimeError:
         E.warn("could not create %s" % fn)
     R['dev.off']()
@@ -1686,9 +1677,8 @@ def loadCuffdiff(infile, outfile):
         P.run()
 
     # Jethro - load tables of sample specific cuffdiff fpkm values into csvdb
-
-    #IMS: First read in lookup table for CuffDiff/Pipeline sample name
-    #conversion
+    # IMS: First read in lookup table for CuffDiff/Pipeline sample name
+    # conversion
     inf = IOTools.openFile(os.path.join(indir, "read_groups.info.gz"))
     inf.readline()
     sample_lookup = {}
@@ -1733,9 +1723,9 @@ def loadCuffdiff(infile, outfile):
             if sample_id not in samples:
                 samples.append(sample_id)
 
-            #IMS: The following block keeps getting its indenting messed
-            #up. It is not part of the 'if sample_id not in samples' block
-            #plesae make sure it does not get made part of it
+            # IMS: The following block keeps getting its indenting messed
+            # up. It is not part of the 'if sample_id not in samples' block
+            # plesae make sure it does not get made part of it
             if gene_id not in genes:
                 genes[gene_id] = {}
                 genes[gene_id][sample_id] = fpkm
@@ -1770,8 +1760,8 @@ def loadCuffdiff(infile, outfile):
                 outf.write(genes[gene][samples[x]] + "\t")
                 x += 1
 
-            #IMS: Please be careful with this line. It keeps getting moved
-            #into the above while block where it does not belong
+            # IMS: Please be careful with this line. It keeps getting moved
+            # into the above while block where it does not belong
             outf.write(genes[gene][samples[len(samples) - 1]] + "\n")
 
         outf.close()
@@ -2358,8 +2348,8 @@ def outputSpikeIns(filename_tags,
 
         interval_id = 0
         for idx, coord in enumerate(zip(l10average_idx, l2fold_idx)):
-            #assert expression_bins[coord[0]-1] <= l10average[idx] < expression_bins[coord[0]]
-            #assert fold_change_bins[coord[1]-1] <= l2fold[idx] <  expression_bins[coord[1]]
+            # assert expression_bins[coord[0]-1] <= l10average[idx] < expression_bins[coord[0]]
+            # assert fold_change_bins[coord[1]-1] <= l2fold[idx] <  expression_bins[coord[1]]
 
             if output_counts[coord] >= max_counts_per_bin:
                 continue

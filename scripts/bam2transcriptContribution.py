@@ -95,7 +95,7 @@ def main(argv=None):
     # open outfile and prepare headers
     outf = open(options.outfile, "w")
     outf.write("\t".join(["total alignments", "aligments in transcripts", "percent alignments in transcripts",
-               "total spliced alignments", "spliced alignments in transcripts", "percent spliced alignments in transcripts"]) + "\n")
+                          "total spliced alignments", "spliced alignments in transcripts", "percent spliced alignments in transcripts"]) + "\n")
 
     # calculate coverage over transcript file - NB split reads contribute twice to the transcript
     # use BedTool object

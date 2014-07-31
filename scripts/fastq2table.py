@@ -100,13 +100,13 @@ def main(argv=None):
                           'sanger', 'solexa', 'phred64', 'illumina-1.8', 'integer'),
                       help="The default behaviour of the script is to guess the quality format of the input fastq file. The user can specify \
                             the quality format of the input file using the --format option. The script will use this format if the \
-                            sequence qualities are ambiguous.[default=%default]."  )
+                            sequence qualities are ambiguous.[default=%default].")
 
     parser.add_option("-f", "--change-format", dest="change_format", type="choice",
                       choices=(
                           'sanger', 'solexa', 'phred64', 'illumina-1.8', 'integer'),
                       help="The script will guess the quality format of the input file and convert \
-                            quality scores to the destination format unless --format is specified [default=%default]."  )
+                            quality scores to the destination format unless --format is specified [default=%default].")
 
     parser.set_defaults(
         change_format=None,

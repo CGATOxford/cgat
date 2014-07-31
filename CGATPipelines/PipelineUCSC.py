@@ -1,5 +1,4 @@
-'''
-PipelineUCSC.py - utility functions for accessing UCSC data
+'''PipelineUCSC.py - utility functions for accessing UCSC data
 ===========================================================
 
 :Author: Andreas Heger
@@ -15,8 +14,8 @@ This module provides methods for accessing ucsc data.
 Usage
 -----
 
-This module reads the ``[ucsc]`` section of a configuration file requiring the following variables to be
-set:
+This module reads the ``[ucsc]`` section of a configuration file
+requiring the following variables to be set:
 
 host
     host to connect to
@@ -27,9 +26,6 @@ user
 database
     database to use
 
-
-
-
 Documentation
 -------------
 
@@ -39,29 +35,16 @@ Code
 '''
 
 # for UCSC import
-import sys
-import tempfile
-import optparse
-import shutil
-import itertools
-import csv
-import math
-import random
-import re
-import glob
 import os
-import shutil
 import collections
 import MySQLdb
-
 import CGAT.Experiment as E
 import CGAT.Pipeline as P
+import CGAT.GTF as GTF
 import CGAT.IOTools as IOTools
 
-try:
-    PARAMS = P.getParameters()
-except IOError:
-    pass
+# set from calling module
+PARAMS = {}
 
 ############################################################
 ############################################################
@@ -102,9 +85,11 @@ def getRepeatsFromUCSC(dbhandle, repclasses, outfile):
     for table in tables:
 
         cc = dbhandle.cursor()
-        sql = """SELECT genoName, 'repeat', 'exon', genoStart+1, genoEnd, '.', strand, '.', 
-                      CONCAT('class \\"', repClass, '\\"; family \\"', repFamily, '\\"; repName \\"', repName, '\\";' )
-               FROM %(table)s"""
+        sql = """SELECT genoName, 'repeat', 'exon', genoStart+1, genoEnd,
+        '.', strand, '.',
+        CONCAT('class \\"', repClass, '\\"; family \\"',
+        repFamily, '\\"; repName \\"', repName, '\\";')
+        FROM %(table)s"""
 
         if repclasses:
             repclasses_str = ",".join(
@@ -120,24 +105,22 @@ def getRepeatsFromUCSC(dbhandle, repclasses, outfile):
 
     tmpfile.close()
 
-    to_cluster = True
-
     # sort gff and make sure that names are correct
     tmpfilename = tmpfile.name
 
-    statement = [ '''cat %(tmpfilename)s
-        | %(scriptsdir)s/gff_sort pos 
-        | python %(scriptsdir)s/gff2gff.py 
-            --sanitize=genome 
-            --skip-missing 
-            --genome-file=%(genome_dir)s/%(genome)s
-            --log=%(outfile)s.log ''']
+    statement = ['''cat %(tmpfilename)s
+    | %(scriptsdir)s/gff_sort pos
+    | python %(scriptsdir)s/gff2gff.py
+    --sanitize=genome
+    --skip-missing
+    --genome-file=%(genome_dir)s/%(genome)s
+    --log=%(outfile)s.log ''']
 
-    if PARAMS["geneset_remove_contigs"]:
+    if PARAMS["ensembl_remove_contigs"]:
         statement.append(
-            ''' --remove-contigs="%(geneset_remove_contigs)s" ''' )
+            ''' --remove-contigs="%(ensembl_remove_contigs)s" ''')
 
-    statement.append( '''| gzip > %(outfile)s ''' )
+    statement.append('''| gzip > %(outfile)s ''')
 
     statement = " ".join(statement)
 
@@ -157,9 +140,10 @@ def importRefSeqFromUCSC(infile, outfile, remove_duplicates=True):
 
     Matches to chr_random are ignored (as does ENSEMBL).
 
-    Note that this approach does not work as a gene set, as refseq maps 
-    are not real gene builds and unalignable parts cause
+    Note that this approach does not work as a gene set, as refseq
+    maps are not real gene builds and unalignable parts cause
     differences that are not reconcilable.
+
     '''
 
     import MySQLdb
@@ -172,31 +156,32 @@ def importRefSeqFromUCSC(infile, outfile, remove_duplicates=True):
     duplicates = set()
 
     if remove_duplicates:
-        cc.execute( """SELECT name, COUNT(*) AS c FROM refGene 
-                        WHERE chrom NOT LIKE '%_random'
-                        GROUP BY name HAVING c > 1""" )
+        cc.execute("""SELECT name, COUNT(*) AS c FROM refGene
+        WHERE chrom NOT LIKE '%_random'
+        GROUP BY name HAVING c > 1""")
         duplicates = set([x[0] for x in cc.fetchall()])
         E.info("removing %i duplicates" % len(duplicates))
 
     # these are forward strand coordinates
     statement = '''
-        SELECT gene.name, link.geneName, link.name, gene.name2, product, 
-               protAcc, chrom, strand, cdsStart, cdsEnd, 
-               exonCount, exonStarts, exonEnds, exonFrames 
-        FROM refGene as gene, refLink as link 
-        WHERE gene.name = link.mrnaAcc 
-              AND chrom NOT LIKE '%_random'
-        ORDER by chrom, cdsStart 
-        '''
+    SELECT gene.name, link.geneName, link.name, gene.name2, product,
+    protAcc, chrom, strand, cdsStart, cdsEnd,
+    exonCount, exonStarts, exonEnds, exonFrames
+    FROM refGene as gene, refLink as link
+    WHERE gene.name = link.mrnaAcc
+    AND chrom NOT LIKE '%_random'
+    ORDER by chrom, cdsStart
+    '''
 
-    outf = gzip.open(outfile, "w")
+    outf = IOTools.openFile(outfile, "w")
 
     cc = dbhandle.cursor()
     cc.execute(statement)
 
-    SQLResult = collections.namedtuple('Result',
-                                       '''transcript_id, gene_id, gene_name, gene_id2, description,
-        protein_id, contig, strand, start, end, 
+    SQLResult = collections.namedtuple(
+        'Result',
+        '''transcript_id, gene_id, gene_name, gene_id2, description,
+        protein_id, contig, strand, start, end,
         nexons, starts, ends, frames''')
 
     counts = E.Counter()
@@ -263,12 +248,13 @@ def importRefSeqFromUCSC(infile, outfile, remove_duplicates=True):
 def getCpGIslandsFromUCSC(dbhandle, outfile):
     '''get CpG islands from UCSC and save as a bed file.
 
-    The name will be set to the UCSC name. 
+    The name will be set to the UCSC name.
     '''
 
     cc = dbhandle.cursor()
     table = "cpgIslandExt"
-    sql = """SELECT chrom, chromStart, chromEnd, name FROM %(table)s ORDER by chrom,chromStart"""
+    sql = """SELECT chrom, chromStart, chromEnd, name
+    FROM %(table)s ORDER by chrom, chromStart"""
     sql = sql % locals()
 
     E.debug("executing sql statement: %s" % sql)
@@ -324,7 +310,6 @@ def readTrackFile(infile):
                 track = value
                 continue
             block.append((key, value))
-    result = []
     return list(_yielder(data))
 
 

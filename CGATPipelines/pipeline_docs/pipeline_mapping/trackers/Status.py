@@ -29,7 +29,8 @@ class MappingStatus(Status):
 
         '''
         value = self.getValue(
-            "SELECT reads_mapped/CAST( reads_total AS FLOAT) from view_mapping WHERE track = '%(track)s'")
+            """SELECT reads_mapped/CAST(reads_total AS FLOAT)
+            from view_mapping WHERE track = '%(track)s'""")
 
         if value >= 0.8:
             status = "PASS"
@@ -41,19 +42,16 @@ class MappingStatus(Status):
         return status, "%5.2f%%" % (100.0 * value)
 
     def testPairMapping(self, track):
-        '''proportion of pairs mapped.
+        '''proportion of pairs mapped uniquely and in proper pairs.
 
         PASS : >=80% pairs mapped
         WARN : >=40% pairs mapped
         FAIL : < 40% pairs mapped
 
-        Note that the number of mapped pairs is the number of reads 
-        in proper pairs divided by 2. It is just an estimated and does
-        not reflect reads mapping to multiple locations.
         '''
 
         value = self.getValue("""SELECT
-        pairs_mapped / CAST(pairs_total AS FLOAT)
+        pairs_proper_unique / CAST(pairs_total AS FLOAT)
         FROM view_mapping
         WHERE track = '%(track)s'
         AND pairs_total > 0""")

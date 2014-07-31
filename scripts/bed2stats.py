@@ -70,7 +70,8 @@ class Counter:
                                    )
         else:
             return "%i\t%i\t%i\t%5.2f" % (len(self.intervals_per_contig),
-                                          sum(self.intervals_per_contig.values()),
+                                          sum(self.intervals_per_contig.values(
+                                          )),
                                           sum(self.bases_per_contig.values()),
                                           100.0 * bases / self.size
                                           )

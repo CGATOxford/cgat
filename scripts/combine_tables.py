@@ -121,12 +121,17 @@ def concatenateTables(outfile, options, args):
         titles = collections.OrderedDict()
         for table in tables:
             for key in table[0][:-1].split("\t"):
+                # skip any titles that conflict with
+                # the newly added titles
+                if key in row_head_titles:
+                    continue
                 titles[key] = 1
+
         outfile.write("%s\t%s\n" %
                       ("\t".join([x for x in row_head_titles]),
                        "\t".join(titles.keys())))
 
-        map_title2column = {}
+        map_title2column = collections.defaultdict(lambda: None)
         for x, title in enumerate(titles.keys()):
             map_title2column[title] = x
     else:
@@ -140,7 +145,6 @@ def concatenateTables(outfile, options, args):
             [(x, x) for x in range(min(ncolumns))])
 
     all_titles = set(titles.keys())
-
     for nindex, table in enumerate(tables):
         if options.input_has_titles:
             titles = table[0][:-1].split("\t")
@@ -151,8 +155,11 @@ def concatenateTables(outfile, options, args):
 
         for l in table:
             data = [missing_value] * len(all_titles)
-            for x, d in enumerate(l[:-1].split("\t")):
-                data[map_old2new[x]] = d
+            for x, value in enumerate(l[:-1].split("\t")):
+                if map_old2new[x] is None:
+                    continue
+
+                data[map_old2new[x]] = value
 
             row = "\t".join([str(x) for x in row_headers[nindex]] +
                             data) + "\n"
@@ -215,7 +222,7 @@ def joinTables(outfile, options, args):
 
         if options.input_has_titles:
             data = string.split(lines[0][:-1], "\t")
-           # no titles have been defined so far
+            # no titles have been defined so far
             if not titles:
                 key = "-".join([data[x] for x in options.columns])
                 titles = [key]
@@ -357,7 +364,7 @@ def joinTables(outfile, options, args):
             if options.input_has_titles and options.skip_titles:
                 titles = headers
             else:
-            # otherwise: print the headers out right away
+                # otherwise: print the headers out right away
                 outfile.write(string.join(headers, "\t") + "\n")
 
         order = range(0, len(tables) + 1)

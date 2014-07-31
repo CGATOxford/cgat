@@ -154,7 +154,6 @@ import pandas
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import CGAT.Pipeline as P
-import CGAT.BamTools as BamTools
 import CGATPipelines.PipelineWindows as PipelineWindows
 import CGATPipelines.PipelineTracks as PipelineTracks
 import CGATPipelines.PipelineMappingQC as PipelineMappingQC
@@ -171,8 +170,10 @@ P.getParameters(["%s/pipeline.ini" % os.path.splitext(__file__)[0],
 
 PARAMS = P.PARAMS
 
-PARAMS_ANNOTATIONS = P.peekParameters(PARAMS["annotations_dir"],
-                                      "pipeline_annotations.py")
+PARAMS_ANNOTATIONS = P.peekParameters(
+    PARAMS["annotations_dir"],
+    "pipeline_annotations.py",
+    on_error_raise=__name__ == "__main__")
 
 ###################################################################
 ###################################################################

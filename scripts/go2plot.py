@@ -301,7 +301,7 @@ def collect(infile, with_headers=False):
             p = punder
 
         data.append((100.0 * (float(spercent) / float(bpercent) - 1.0),
-                    abs(float(p)), float(bpercent), description))
+                     abs(float(p)), float(bpercent), description))
 
     return data
 

@@ -27,6 +27,9 @@ hid
 na
    nucleic acid composition
 
+dn
+   dinucleotide frequency
+
 cpg
    CpG counts
 
@@ -96,7 +99,7 @@ def main(argv=None):
 
     parser.add_option("-s", "--section", dest="sections", type="choice", action="append",
                       choices=("length", "hid", "na", "aa", "cpg",
-                               "degeneracy", "bias",
+                               "degeneracy", "bias", "dn",
                                "codons", "codon-usage", "codon-translator",
                                "gaps", "sequence"),
                       help="which sections to output [%default]")
@@ -107,7 +110,11 @@ def main(argv=None):
 
     parser.add_option("-e", "--regex-identifier", dest="regex_identifier", type="string",
                       help="regular expression to extract identifier from fasta description line.")
-
+        
+    parser.add_option("--split-fasta-identifier", dest="split_id",
+                      action="store_true",
+                      help="split fasta ids and use only text before first space")
+    
     parser.set_defaults(
         filename_weights=None,
         pseudocounts=1,
@@ -115,6 +122,7 @@ def main(argv=None):
         regex_identifier="(.+)",
         seqtype="na",
         gap_chars='xXnN',
+        split_id=False
     )
 
     (options, args) = E.Start(parser, argv=argv)
@@ -167,6 +175,8 @@ def main(argv=None):
                 s = SequencePropertiesNA()
             elif section == "cpg":
                 s = SequencePropertiesCpg()
+            elif section == "dn":
+                s = SequencePropertiesDN()
             elif section == "aa":
                 s = SequencePropertiesAA()
             elif section == "degeneracy":
@@ -217,7 +227,10 @@ def main(argv=None):
 
         id = rx.search(cur_record.title).groups()[0]
 
-        options.stdout.write("%s" % id)
+        if options.split_id is True:
+            options.stdout.write("%s" % id.split()[0])
+        else:
+            options.stdout.write("%s" % id)
         options.stdout.flush()
 
         for section in options.sections:

@@ -116,7 +116,8 @@ class multiway_groupby(object):
 
         # decide which is target key
         try:
-            self.targetkey = min([x[0] for x in self.current if x[0] is not None])
+            self.targetkey = min([x[0]
+                                  for x in self.current if x[0] is not None])
         except ValueError:
             # if all are None, sequence is empty
             self.targetkey = None

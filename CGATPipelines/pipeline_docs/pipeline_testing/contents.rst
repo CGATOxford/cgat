@@ -10,9 +10,9 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
-   analysis.rst
-   pipeline.rst
-   usage.rst
+   pipeline/Status.rst
+   pipeline/Running.rst
+   pipeline/Config.rst
 
 ====================
  Indices and tables

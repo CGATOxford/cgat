@@ -226,15 +226,15 @@ def main(argv=None):
 
     if missed_queries:
         writeSet(open(options.filename_output_pattern %
-                 "missed_queries", "w"), missed_queries)
+                      "missed_queries", "w"), missed_queries)
 
     if missed_sbjcts:
         writeSet(open(options.filename_output_pattern %
-                 "missed_sbjcts", "w"), missed_sbjcts)
+                      "missed_sbjcts", "w"), missed_sbjcts)
 
     if missed_self:
         writeSet(open(options.filename_output_pattern %
-                 "missed_self", "w"), missed_self)
+                      "missed_self", "w"), missed_self)
 
     E.Stop()
 

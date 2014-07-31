@@ -1,4 +1,5 @@
-from pysam.csamtools cimport *
+from pysam.chtslib cimport *
+from pysam.csamfile cimport *
 
 import collections, array, struct, itertools
 import CGAT.Experiment as E
@@ -32,41 +33,41 @@ cdef class SetNH:
                         t['NH'] = nh
                         read.tags = list(t.iteritems())
 
-def filter_bam( Samfile input_samfile,
-                Samfile output_samfile,
-                Samfile reference_samfile,
-                remove_nonunique = False,
-                remove_unique = False,
-                remove_contigs = None,
-                remove_unmapped = False,
-                remove_mismatches = False,
-                colour_mismatches = False ):
+def filter_bam(Samfile input_samfile,
+               Samfile output_samfile,
+               Samfile reference_samfile,
+               remove_nonunique = False,
+               remove_unique = False,
+               remove_contigs = None,
+               remove_unmapped = False,
+               remove_mismatches = False,
+               colour_mismatches = False ):
 
-    '''
-    To conserve memory, the tid and NM flag from *transcripts_samfile*
-    are packed into memory. As a consequence, this method requires 
+    '''To conserve memory, the tid and NM flag from *transcripts_samfile*
+    are packed into memory. As a consequence, this method requires
     max(NM) < 256 (2^8) and max(tid) < 16777216 (2^24)
 
-    If *remove_nonunique* is set, only uniquely matching reads will be output.
+    If *remove_nonunique* is set, only uniquely matching reads will be
+    output.
 
-    If *remove_contigs* is given, contigs that are in remove_contigs will
-    be removed. Note that this will only remove the alignment, but not
-    all alignments of a particuluar read and the NH flag will *NOT* be
-    updated.
+    If *remove_contigs* is given, contigs that are in remove_contigs
+    will be removed. Note that this will only remove the alignment,
+    but not all alignments of a particuluar read and the NH flag will
+    *NOT* be updated.
 
     If *remove_unmapped* is given, unmapped reads will be removed.
 
-    If *remove_mismatches* is set, only reads with number of mismatches
-    better than in reference_samfile will be kept.
+    If *remove_mismatches* is set, only reads with number of
+    mismatches better than in reference_samfile will be kept.
 
-    If *colour_mismatches* is set, the ``CM`` tag will be used
-    to count differences. By default, the ``NM`` tag is used.
-    The tag that is used needs to present in both *input_samfile*
-    and *reference_samfile*.
+    If *colour_mismatches* is set, the ``CM`` tag will be used to
+    count differences. By default, the ``NM`` tag is used.  The tag
+    that is used needs to present in both *input_samfile* and
+    *reference_samfile*.
 
     Detecting non-unique matches:
     
-    This method first checks for the NH flag - if set, a unique match 
+    This method first checks for the NH flag - if set, a unique match
     should have at most NH=1 hits.
 
     If not set, the method checks for BWA flags. Currently it checks
@@ -75,7 +76,7 @@ def filter_bam( Samfile input_samfile,
 
     * X1 = Number of suboptimal hits found by BWA
     * XT = Type: Unique/Repeat/N/Mate-sw
-    
+
     '''
 
     cdef int ninput = 0
@@ -96,7 +97,6 @@ def filter_bam( Samfile input_samfile,
     cdef AlignedRead read
     cdef AlignedRead match
 
-    E.info( "building index" )
     # build index
     # this method will start indexing from the current file position
     # if you decide
@@ -131,18 +131,22 @@ def filter_bam( Samfile input_samfile,
 
         # L = 1 byte (unsigned char)
         def _gen(): return array.array('B') 
-        index = collections.defaultdict( _gen )
+        index = collections.defaultdict(_gen)
 
         while ret > 0:
-            ret = samread( reference_samfile.samfile, b)
+            ret = bam_read1(reference_samfile.fp, b)
             if ret > 0:
                 # ignore unmapped reads
-                if b.core.flag & 4: continue
-                qname = bam1_qname( b )
+                if b.core.flag & 4:
+                    continue
+                qname = pysam_bam_get_qname(b)
                 tid = b.core.tid
                 v = bam_aux_get(b, tag)
-                nm = <int32_t>bam_aux2i(v)
-                index[qname].append( nm )
+                if v != NULL:
+                    nm = <int32_t>bam_aux2i(v)
+                else:
+                    nm = 0
+                index[qname].append(nm)
 
         E.info( "built index for %i reads" % len(index))
         bam_destroy1( b )
@@ -215,11 +219,9 @@ def filter_bam( Samfile input_samfile,
                 if nm > read_mismatches: 
                     nmismatches += 1
                     continue
-                
-        
 
         noutput += 1
-        output_samfile.write( read )
+        output_samfile.write(read)
 
     c = E.Counter()
     c.input = ninput
@@ -231,8 +233,8 @@ def filter_bam( Samfile input_samfile,
     c.removed_mismatches = nmismatches
 
     if nremove_contig_tids:
-        free( remove_contig_tids )
+        free(remove_contig_tids)
 
-    E.info( "filtering finished" )
+    E.info("filtering finished")
 
     return c

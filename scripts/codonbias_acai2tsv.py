@@ -264,7 +264,7 @@ def main(argv=None):
 
     if options.input_filename_map:
         data = map(lambda x: x[:-1].split("\t")[:2], filter(lambda x: x[0]
-                   != "#", open(options.input_filename_map, "r").readlines()))
+                                                            != "#", open(options.input_filename_map, "r").readlines()))
 
         for a, b in data:
             if options.invert_map:

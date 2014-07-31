@@ -15,22 +15,17 @@ API
 '''
 
 import os
-import sys
-import re
-import shutil
 import collections
-
 import CGAT.Experiment as E
 import CGAT.Pipeline as P
 import CGAT.IOTools as IOTools
 import CGATPipelines.PipelineUCSC as PipelineUCSC
 
-try:
-    PARAMS = P.getParameters()
-except IOError:
-    pass
 
 PROJECT_ROOT = '/ifs/projects'
+
+# gets set by importing script
+PARAMS = {}
 
 
 def publish_tracks(export_files,

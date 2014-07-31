@@ -500,6 +500,9 @@ def isEmpty(filename):
 
     raises OSError if file does not exist
     '''
+    # don't now about stdin
+    if filename == "-":
+        return False
     return os.stat(filename)[stat.ST_SIZE] == 0
 
 
@@ -873,7 +876,7 @@ def openFile(filename, mode="r", create_dir=False):
 
 
 def iterate(infile):
-    '''iterate over infile and return a namedtuple according to 
+    '''iterate over infile and return a namedtuple according to
     first row.'''
 
     n = 0
@@ -889,3 +892,67 @@ def iterate(infile):
         result = DATA(*line[:-1].split())
 
         yield result
+
+
+def zapFile(filename):
+    '''replace *filename* with empty file.
+
+    File attributes such as accession times are preserved.
+
+    If the file is a link, the link will be removed and
+    replaced with an empty file having the same attributes
+    as the file linked to.
+
+    returns a stat object of the file cleaned and the link
+    destination.
+
+    '''
+    # stat follows times to links
+    original = os.stat(filename)
+
+    # return if file already has size 0
+    if original.st_size == 0:
+        return None, None
+
+    if os.path.islink(filename):
+        linkdest = os.readlink(filename)
+        os.unlink(filename)
+        f = open(filename, "w")
+        f.close()
+    else:
+        linkdest = None
+        f = open(filename, "w")
+        f.truncate()
+        f.close()
+
+    # Set original times
+    os.utime(filename, (original.st_atime, original.st_mtime))
+    os.chmod(filename, original.st_mode)
+
+    return original, linkdest
+
+
+def iterator_split(infile, regex):
+    '''Return an iterator of file chunks based on a known logical start point
+    `regex` that splits the file into intuitive chunks.  This assumes the file
+    is structured in some fashion.  For arbitrary number of bytes use
+    file.read(`bytes`).
+    If a header is present it is returned as the first file chunk.
+
+    infile must be either an open file handle or an iterable.'''
+    
+    chunk_list = []
+
+    regex = re.compile(regex)
+
+    for x in infile:
+        if regex.search(x):
+            if len(chunk_list):
+                # return the current chunk and start a new one from this point
+                yield chunk_list
+            chunk_list = []
+            chunk_list.append(x)
+        else:
+            chunk_list.append(x)
+        
+    yield chunk_list

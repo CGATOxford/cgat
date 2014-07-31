@@ -1,6 +1,7 @@
 #cimport csamtools
 
-from pysam.csamtools cimport *
+from pysam.chtslib cimport *
+from pysam.csamfile cimport *
 import pysam
 
 import collections, array, struct, sys, itertools
@@ -10,37 +11,42 @@ import CGAT.GTF as GTF
 import CGAT.Stats as Stats
 import numpy
 
-CountResult = collections.namedtuple( "Counts", "upstream upstream_utr cds downstream_utr downstream" )
+CountResult = collections.namedtuple(
+    "Counts", "upstream upstream_utr cds downstream_utr downstream")
 
 class RangeCounter:
     
     def __init__(self, countfiles, 
-                 controlfiles = None, 
-                 control_factor = None, 
+                 controlfiles=None, 
+                 control_factor=None, 
                  *args, **kwargs ):
 
         self.countfiles = countfiles
         self.controlfiles = controlfiles
         self.control_factor = control_factor 
-        if self.control_factor == None:
-            if self.controlfiles != None:
+        if self.control_factor is None:
+            if self.controlfiles is not None:
                 # count number of tags in each file for normalization purposes
                 self.norm_fg, self.norm_bg = [], []
                 for f in self.countfiles:
-                    E.debug( "computing read total for %s" % f )
-                    self.norm_fg.append( self.getTotal( f ) )
+                    E.debug("computing read total for %s" % f)
+                    self.norm_fg.append(self.getTotal(f))
                 for f in self.controlfiles:
-                    E.debug( "computing read total for %s" % f )
-                    self.norm_bg.append( self.getTotal( f ) )
-                fg = sum( self.norm_fg )
-                bg = sum( self.norm_bg )
-                self.control_factor = float( fg ) / float( bg )
-                E.info( "normalization: fg=%i, bg=%f, factor=%f" % (fg, bg, self.control_factor) )
+                    E.debug("computing read total for %s" % f)
+                    self.norm_bg.append(self.getTotal(f))
+                fg = sum(self.norm_fg)
+                bg = sum(self.norm_bg)
+                if bg != 0:
+                    self.control_factor = float(fg) / float(bg)
+                else:
+                    raise ValueError('no background data for normalization')
+                E.info("normalization: fg=%i, bg=%f, factor=%f" %
+                       (fg, bg, self.control_factor))
 
-    def setup( self, ranges ):
-        self.counts = numpy.zeros( Intervals.getLength( ranges ) )
+    def setup(self, ranges):
+        self.counts = numpy.zeros(Intervals.getLength(ranges))
         if self.controlfiles:
-            self.counts_bg = numpy.zeros( Intervals.getLength( ranges ) )
+            self.counts_bg = numpy.zeros(Intervals.getLength(ranges))
 
     def getCounts( self, contig, ranges, length = 0 ):
         '''count from a set of ranges.
@@ -284,25 +290,32 @@ class RangeCounterBAMMerge(RangeCounterBAM):
                 for read in samfile.fetch( contig, xstart, xend ):
                     flag = read._delegate.core.flag 
                     # remove unmapped reads
-                    if flag & 4: continue
+                    if flag & 4:
+                        continue
                     # remove unpaired
-                    if not flag & 2: continue
+                    if not flag & 2:
+                        continue
                     # this is second pair of read - skip to avoid double counting
-                    if flag & 128: continue
+                    if flag & 128:
+                        continue
                     # remove reads on different contigs
-                    if read.tid != read.mrnm: continue
+                    if read.tid != read.mrnm:
+                        continue
                     # remove if insert size too large
-                    if (read.isize > max_insert_size) or (read.isize < min_insert_size) : continue
+                    if (read.isize > max_insert_size) or \
+                       (read.isize < min_insert_size):
+                        continue
                     if read.pos < read.mpos:
-                        rstart = max( start, read.pos)
-                        rend = min( end, read.mpos + read.rlen )
+                        rstart = max(start, read.pos)
+                        rend = min(end, read.mpos + read.rlen)
                     else:
-                        rstart = max( start, read.mpos)
-                        rend = min( end, read.pos + read.rlen )
+                        rstart = max(start, read.mpos)
+                        rend = min(end, read.pos + read.rlen)
                         
                     rstart += -start + current_offset
                     rend += -start + current_offset
-                    for i from rstart <= i < rend: counts[i] += 1
+                    for i from rstart <= i < rend:
+                        counts[i] += 1
   
                 current_offset += length
 
@@ -362,7 +375,8 @@ class RangeCounterBed(RangeCounter):
     def getTotal( self, bedfile ):
         '''return total number of tags in bedfile.'''
         cdef int total = 0
-        for x in bedfile.fetch(): total += 1
+        for x in bedfile.fetch():
+            total += 1
         return total
 
     def count(self, counts, files, contig, ranges ):
@@ -747,6 +761,7 @@ class GeneCounter( IntervalsCounter ):
 
         return 1
 
+
 class GeneCounterWithIntrons( IntervalsCounter ):
     '''count reads in exons, in introns and the upstream/downstream of genes/transcripts.
     
@@ -862,14 +877,14 @@ class GeneCounterAbsoluteDistanceFromThreePrimeEnd( IntervalsCounter ):
     in other genecounter mode in this script.  
 
     In other words, only count the reads that fall on the exons of the
-    (virtual maximal) mNRA transcript.  Note that the distance is
+    (virtual maximal) mRNA transcript.  Note that the distance is
     relative to TTS (three prime polyA tail) on the mNRA transcript,
     insteads of on the genomic assembly is used for the counting and
     plotting.
     
     For mRNA with multiple exons, the exons are first stiched together
     into one piece of mRNA (the virtual maximal transcript for each
-    gene). Subsequently, the mNRA is being used for counting. This is
+    gene). Subsequently, the mRNA is being used for counting. This is
     the (only) proper way to avoid counting in introns, which screw up
     the actual genebody coverage profile. And this only works with
     --base-accuracy option, because otherwise spliced reads will be
@@ -877,13 +892,13 @@ class GeneCounterAbsoluteDistanceFromThreePrimeEnd( IntervalsCounter ):
     will be counted as covered by reads.  (this option imply the
     --base-accuracy option).
     
-    Also count reads in introns (in exctly the same manner as if they
+    Also count reads in introns (in exactly the same manner as if they
     are exons described above ) of genes/transcripts from the three
     prime polyA tail.
     
     Note:
 
-    * Both protein coding transcripts, and non coding
+    * Both protein coding transcripts and non coding
     transcripts are counted.  i.e. both those with a CDS, and those
     without a CDS are counted.
     
@@ -944,23 +959,24 @@ class GeneCounterAbsoluteDistanceFromThreePrimeEnd( IntervalsCounter ):
         
         self.scale_flanks = scale_flanks
 
-        for field, length in zip(   ("upstream%dbp_zoomedTo%dbp"%(extension_upstream, resolution_upstream),
-                                     "exonsLast%dbp_zoomedTo%dbp"%(extension_exons_absolute_distance_topolya, resolution_exons_absolute_distance_topolya) ,
-                                     "intronsLast%dbp_zoomedTo%dbp"%(extension_introns_absolute_distance_topolya, resolution_introns_absolute_distance_topolya) ,
-                                     "downstream%dbp_zoomedTo%dbp"%(extension_downstream, resolution_downstream),
-                                    ),
-                                    (resolution_upstream,
-                                     resolution_exons_absolute_distance_topolya,
-                                     resolution_introns_absolute_distance_topolya,
-                                     resolution_downstream) 
-                                ):
-            self.add( field, length )
+        for field, length in zip(
+                ("upstream%dbp_zoomedTo%dbp"%(extension_upstream, resolution_upstream),
+                 "exonsLast%dbp_zoomedTo%dbp"%(extension_exons_absolute_distance_topolya, resolution_exons_absolute_distance_topolya) ,
+                 "intronsLast%dbp_zoomedTo%dbp"%(extension_introns_absolute_distance_topolya, resolution_introns_absolute_distance_topolya) ,
+                 "downstream%dbp_zoomedTo%dbp"%(extension_downstream, resolution_downstream),
+             ),
+                (resolution_upstream,
+                 resolution_exons_absolute_distance_topolya,
+                 resolution_introns_absolute_distance_topolya,
+                 resolution_downstream) 
+        ):
+            self.add(field, length)
 
             
-    #Tim 31th Aug 2013: Important function in this class to stich together the exons into one  complete of mRNA
+    #Tim 31th Aug 2013: Important function in this class to stich together the exons into one complete of mRNA
     def __chopAllTranscriptToAFixedLengthForTheThreePrimeBiasCounting(self, gtf , exons, extension_threePrimeBiasNotZoomed ):
         '''
-        works for both exons and introns, the varible name exons is only symolic here,
+        works for both exons and introns, the variable name exons is only symolic here,
         it means either exons, or introns depending on the regions you passed in 
         during function call
         
@@ -989,17 +1005,17 @@ class GeneCounterAbsoluteDistanceFromThreePrimeEnd( IntervalsCounter ):
                 exonSize = exon[1]-exon[0]
                 if leftoverBasepairAllowance > exonSize:
                     leftoverBasepairAllowance -= exonSize
-                    exons_chopped.append( exon )            # append is the correct way, coz we process the first exon first. 
+                    exons_chopped.append(exon)            # append is the correct way, coz we process the first exon first. 
                                                             # so subsequent exons shall be appended so that the basepair ordering 
                                                             # is in reverse ordering alone the gene body, likewise, the exon 
                                                             # ordering is also the reverse ordering alone the gene body. In the 
                                                             # end, just before counts are aggregated, there will be code:
                                                             # if "-": counts_exons_NotZoomedAndChopped_ForThreePrimeBias[::-1] to flip 
                                                             # everything in base pair resolution.
-                    E.debug( str(exons_chopped) )
+                    E.debug(str(exons_chopped))
                 else:
-                    E.debug( "Exon intervals preparation function: gene %s:%s, leftoverBasepairAllowance= %s " % (gtf[0].transcript_id, gtf[0].strand, leftoverBasepairAllowance)  )
-                    E.debug( "Exon intervals preparation function: The potential half exon: "+str(exon) )
+                    E.debug("Exon intervals preparation function: gene %s:%s, leftoverBasepairAllowance= %s " % (gtf[0].transcript_id, gtf[0].strand, leftoverBasepairAllowance)  )
+                    E.debug("Exon intervals preparation function: The potential half exon: "+str(exon) )
                     exon_chopped = (exon[0], exon[0]+leftoverBasepairAllowance)
                     exons_chopped.append( exon_chopped )    # append is the correct way, same as above
                     exon_choppedSize = exon_chopped[1]-exon_chopped[0]
