@@ -201,8 +201,7 @@ import CGATPipelines.PipelineMapping as PipelineMapping
 import CGATPipelines.PipelineMappingQC as PipelineMappingQC
 import CGATPipelines.PipelinePublishing as PipelinePublishing
 
-###################################################
-###################################################
+
 ###################################################
 # Pipeline configuration
 ###################################################
@@ -225,6 +224,7 @@ PARAMS.update(P.peekParameters(
 
 PipelineGeneset.PARAMS = PARAMS
 PipelineMappingQC.PARAMS = PARAMS
+PipelinePublishing.PARAMS = PARAMS
 
 ###################################################################
 ###################################################################
@@ -461,6 +461,8 @@ def buildReferenceTranscriptome(infile, outfile):
 
     The sequences include both UTR and CDS.
 
+    Builds bowtie indices for tophat/tophat2 if
+    required.
     '''
     gtf_file = P.snip(infile, ".gz")
 
@@ -481,19 +483,26 @@ def buildReferenceTranscriptome(infile, outfile):
 
     prefix = P.snip(outfile, ".fa")
 
-    # build raw index
-    statement = '''
-    bowtie-build -f %(outfile)s %(prefix)s >> %(outfile)s.log 2>&1
-    '''
+    if 'tophat' in MAPPERS:
+        # build raw index
+        statement = '''
+        bowtie-build -f %(outfile)s %(prefix)s >> %(outfile)s.log 2>&1
+        '''
+        P.run()
 
-    P.run()
+        # build color space index - disabled
+        # statement = '''
+        # bowtie-build -C -f %(outfile)s %(prefix)s_cs
+        # >> %(outfile)s.log 2>&1
+        # '''
+        # P.run()
 
-    # build color space index
-    statement = '''
-    bowtie-build -C -f %(outfile)s %(prefix)s_cs >> %(outfile)s.log 2>&1
-    '''
-
-    P.run()
+    if 'tophat2' in MAPPERS:
+        statement = '''
+        bowtie-build -f %(outfile)s %(prefix)s >> %(outfile)s.log 2>&1
+        '''
+        P.run()
+        
 
 #########################################################################
 #########################################################################
@@ -936,7 +945,7 @@ def mapReadsWithBowtieAgainstTranscriptome(infiles, outfile):
                             PARAMS["genome"] + ".fa")),
            r"bowtie.dir/\1.bowtie.bam")
 def mapReadsWithBowtie(infiles, outfile):
-    '''map reads with bowtie'''
+    '''map reads with bowtie. For bowtie2 set executable apppropriately.'''
 
     job_threads = PARAMS["bowtie_threads"]
     m = PipelineMapping.Bowtie(
@@ -1535,6 +1544,31 @@ def loadReadCounts(infiles, outfile):
     os.unlink(outf.name)
 
 
+@active_if(SPLICED_MAPPING)
+@transform(MAPPINGTARGETS,
+           suffix(".bam"),
+           add_inputs(buildCodingExons),
+           ".transcriptprofile.gz")
+def buildTranscriptProfiles(infiles, outfile):
+    '''build gene coverage profiles.'''
+
+    bamfile, gtffile = infiles
+
+    statement = '''python %(scriptsdir)s/bam2geneprofile.py
+    --output-filename-pattern="%(outfile)s.%%s"
+    --force
+    --reporter=transcript
+    --base-accuracy
+    --method=geneprofileabsolutedistancefromthreeprimeend
+    --normalize-profile=all
+    %(bamfile)s %(gtffile)s
+    | gzip
+    > %(outfile)s
+    '''
+
+    P.run()
+
+
 ###################################################################
 ###################################################################
 # various export functions
@@ -1660,7 +1694,8 @@ def general_qc():
 @follows(loadExonValidation,
          loadGeneInformation,
          loadTranscriptLevelReadCounts,
-         loadIntronLevelReadCounts)
+         loadIntronLevelReadCounts,
+         buildTranscriptProfiles)
 def spliced_qc():
     pass
 
