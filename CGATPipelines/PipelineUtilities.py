@@ -37,6 +37,7 @@ import CGAT.IOTools as IOTools
 import rpy2.robjects as R
 import pickle
 from pandas import DataFrame
+from pandas.io import sql
 
 try:
     PARAMS = P.getParameters()
@@ -127,7 +128,11 @@ def fetch_DataFrame(query, database=PARAMS.get("database", ""), attach=False):
         cc = dbhandle.cursor()
 
     if attach:
-        db_execute(cc, attach)
+        if type(attach) is str:
+            db_execute(cc, attach)
+        elif isinstance(attach, (tuple,list)):
+            for attach_statement in attach:
+                db_execute(cc,attach_statement)
 
     sqlresult = cc.execute(query).fetchall()
     cc.close()
@@ -140,6 +145,39 @@ def fetch_DataFrame(query, database=PARAMS.get("database", ""), attach=False):
     field_names = [d[0] for d in cc.description]
     pandas_DataFrame = DataFrame.from_records(sqlresult, columns=field_names)
     return pandas_DataFrame
+
+def write_DataFrame(dataframe, tablename, 
+                    database=PARAMS.get("database", ""), index=False ):
+    '''write a pandas dataframe to an sqlite db, index on given columns
+       index columns given as a string or list eg. "gene_id" or ["gene_id", "start"]
+    '''
+
+    dbhandle = sqlite3.connect(database)
+
+
+    #connection = sqlite3.connect(database)
+
+    sql.write_frame(dataframe, tablename, flavour='sqlite', con=dbhandle, if_exists='replace')
+
+    cc = dbhandle.cursor()
+    def indexStat(tablename,column):
+        istat = 'create index %(tablename)s_%(column)s on %(tablename)s(%(column)s)' % locals()
+        return istat
+
+    if index:
+        if type(index) is str:
+            istat = indexStat(tablename, index)
+            print istat
+            db_execute(cc, istat)
+        elif isinstance(index, (tuple,list)):
+            for column in index:
+                istat = indexStat(tablename, column)
+                db_execute(cc,istat)
+
+    cc.close()
+
+    return 
+
 
 
 def write(outfile, lines, header=False):
