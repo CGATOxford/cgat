@@ -4,15 +4,21 @@
 Testing
 =======
 
-This module describes the implementation of unit tests for the CGAT
-code collection.
+This module describes the implementation of tests for the CGAT
+code collection. The CGAT testing includes 
 
-Testing scripts
-===============
+* Regression testing of CGAT scripts
+* Testing CGAT code for style conformance to pep8
+* Testing CGAT code to be importable
+* Testing of CGAT pipelines
+* Unit testing of CGAT modules
 
-Scripts are tested by comparing the expected output with the latest
-output. The tests are implemented in the script
-:file:`test_scripts.py`. 
+Regression testing of scripts
+=============================
+
+Scripts are regression tested by comparing the expected output with
+the latest output. The tests are implemented in the script
+:file:`test_scripts.py`.
 
 This script collects tests from subdirectories in the :file:`tests`
 directory. Each test is named by the name of the script it tests.
@@ -127,14 +133,53 @@ a single script, for example ``beds2counts.py``, add the following::
 
    restrict:
          regex: beds2counts.py
-   
-Testing modules
-===============
 
-TODO e
+Testing for style
+=================
+
+All of CGAT python code are tested for pep8_ conformance using the
+pep8 tools. Not all pep8 rules are enforced, though we aim for
+increasing compatibility with pep8. Please see also the
+:ref:`styleguide`.
+
+The testing is controlled by the script :file:`test_style.py`.
+In order to run the tests, type::
+
+   nosetests tests/test_scripts.py
+
+
+Testing for import
+==================
+
+In order for documentation to be built or scripts to be 
+usable by the ``cgat`` frontend, scripts need to be importable
+from anywhere. Importability might fail if a script or module
+executes statements on improt or rely reading from input or
+configuration files that are not present or have non-sensical
+values.
+
+The testing is controlled by the script :file:`test_style.py`.
+In order to run the tests, type::
+
+   nosetests tests/test_import.py
 
 
 Testing pipelines
 =================
 
-TODO - describe pipeline_testing
+Testing of pipelines is described in the documentation of
+:doc:`pipelines/pipeline_testing`.
+
+In order to tests pipelines, enter an empty directory and
+configure the tests in a :file:`pipeline.ini` file and then
+run::
+
+   python <SRC>/CGATPipelines/pipeline_testing.py make full
+   
+Testing modules
+===============
+
+There are some unit tests for specific functions in modules, but
+a testing regime has not been formalized.
+
+.. _pep8: http://legacy.python.org/dev/peps/pep-0008/

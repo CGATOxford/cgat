@@ -1,27 +1,19 @@
 import os
-import sys
 import re
-import types
-import itertools
 import glob
 import collections
+from collections import OrderedDict as odict
 
 from SphinxReport.Tracker import *
 from SphinxReport.Utils import PARAMS as P
-from SphinxReport.odict import OrderedDict as odict
-
-from SphinxReport.ResultBlock import ResultBlock, ResultBlocks
-from SphinxReport import Utils
 
 ###################################################################
 ###################################################################
 # parameterization
 
-EXPORTDIR = P['testing_exportdir']
-DATADIR = P['testing_datadir']
-DATABASE = P['testing_backend']
-
-###########################################################################
+EXPORTDIR = P.get('testing_exportdir', P.get('exportdir', 'export'))
+DATADIR = P.get('testing_datadir', P.get('datadir', '.'))
+DATABASE = P.get('testing_backend', P.get('sql_backend', 'sqlite:///./csvdb'))
 
 
 class TestingTracker(TrackerSQL):
@@ -90,22 +82,21 @@ class PipelineStatus(Status):
         '''check if report completed successfully.
         '''
 
-        lines = open(track + ".log").readlines()
-        started = "not started"
+        lines = open(track + ".report").readlines()
+        started = [x for x in lines if x.startswith("# job started")]
+        finished = [x for x in lines if x.startswith("# job finished")]
+        error = [x for x in lines if "ERROR" in lines]
 
-        if len(lines) < 1:
-            return 'FAIL', started
+        if len(started) == 0:
+            return 'WARN', 'never started'
 
-        x = re.search("# job started at ([^-]*) on", lines[1])
-        if x:
-            started = x.groups()[1]
+        if len(finished) == 0:
+            return 'FAIL', 'started, but never finished'
 
-        x = re.search(
-            "# job finished in (\d+) seconds at ([^-]*) -- ", lines[-1])
-        if not x:
-            return 'FAIL', started
+        if error:
+            return 'FAIL', 'report caused errors'
         else:
-            return 'PASS', x.groups()[1]
+            return 'PASS', 'report completed'
 
 
 class ReportTable(TestingTracker):
@@ -161,40 +152,3 @@ class XReportTable(TestingTracker):
 
         return odict((("text", rst_text),))
 
-
-class X:
-
-    def __call__(self, track, slice=None):
-
-        edir = EXPORTDIR
-
-        toc_text = []
-        link_text = []
-
-        filenames = sorted([x.asFile() for x in TRACKS])
-
-        for fn in filenames:
-            if PE == "True":
-                fn1 = fn + ".1"
-                fn2 = fn + ".2"
-                toc_text.append("* %(fn1)s_" % locals())
-                toc_text.append("* %(fn2)s_" % locals())
-                link_text.append(
-                    ".. _%(fn1)s: %(edir)s/fastqc/%(fn1)s_fastqc/fastqc_report.html" % locals())
-                link_text.append(
-                    ".. _%(fn2)s: %(edir)s/fastqc/%(fn2)s_fastqc/fastqc_report.html" % locals())
-            else:
-                toc_text.append("* %(fn)s_" % locals())
-                link_text.append(
-                    ".. _%(fn)s: %(edir)s/fastqc/%(fn)s_fastqc/fastqc_report.html" % locals())
-
-        toc_text = "\n".join(toc_text)
-        link_text = "\n".join(link_text)
-
-        rst_text = '''
-%(toc_text)s
-
-%(link_text)s
-''' % locals()
-
-        return odict((("text", rst_text),))
