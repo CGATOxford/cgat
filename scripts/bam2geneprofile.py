@@ -88,7 +88,7 @@ contain four separate segments:
 
 3. the intronic regions of a gene. These will be scaled to 1000b ( default ).
 
-4. the downstream region of a gene ( set to be 500bp ), 
+4. the downstream region of a gene ( set to be 500bp ),
    (``--extension-downstream=500``).
 
 
@@ -96,30 +96,32 @@ contain four separate segments:
 Detailed explaination
 +++++++++++++++++++++
 
-The :file:`bam2geneprofile.py` script reads in a set of transcripts from a 
-:term:`gtf` formatted file. For each transcript, overlapping reads from the 
-provided :term:`bam` file are collected. The counts within the transcript 
-are then mapped onto the meta-gene structure and counts are aggregated 
-over all transcripts in the :term:`gtf` file.
+The :file:`bam2geneprofile.py` script reads in a set of transcripts
+from a :term:`gtf` formatted file. For each transcript, overlapping
+reads from the provided :term:`bam` file are collected. The counts
+within the transcript are then mapped onto the meta-gene structure and
+counts are aggregated over all transcripts in the :term:`gtf` file.
 
-:term:`Bam` files need to be sorted by coordinate and indexed. 
+:term:`Bam` files need to be sorted by coordinate and indexed.
 
-A meta-gene structure has two components - regions of variable size, such as 
-exons, introns, etc, which nevertheless have a fixed start and end coordinate 
-in a transcript. The other component are regions of fixed width, such a 
-regions of a certain size upstream or downstream of a landmark such as
-a transcription start site.
+A meta-gene structure has two components - regions of variable size,
+such as exons, introns, etc, which nevertheless have a fixed start and
+end coordinate in a transcript. The other component are regions of
+fixed width, such a regions of a certain size upstream or downstream
+of a landmark such as a transcription start site.
 
-The size of the former class, regions of variable size, can be varied with 
-``--resolution`` options. For example, the option 
-``--resolution-upstream-utr=1000`` will create a meta-gene with a 1000bp 
-upstream UTR region. UTRs that are larger will be compressed, and UTRs that 
-are smaller, will be stretched to fit the 1000bp meta-gene UTR region.
+The size of the former class, regions of variable size, can be varied
+with ``--resolution`` options. For example, the option
+``--resolution-upstream-utr=1000`` will create a meta-gene with a
+1000bp upstream UTR region. UTRs that are larger will be compressed,
+and UTRs that are smaller, will be stretched to fit the 1000bp
+meta-gene UTR region.
 
-The size of fixed-width regions can be set with ``--extension`` options. For 
-example, the options ``--extension-upstream`` will set the size of the 
-uptsream extension region to 1000bp. Note that no scaling is required when 
-counting reads towards the fixed-width meta-gene profile.
+The size of fixed-width regions can be set with ``--extension``
+options. For example, the options ``--extension-upstream`` will set
+the size of the uptsream extension region to 1000bp. Note that no
+scaling is required when counting reads towards the fixed-width
+meta-gene profile.
 
 Type::
 
@@ -149,7 +151,7 @@ geneprofile
     UPSTREAM - EXON - DOWNSTREAM
     simple exonic gene models
 
-geneprofilewithintrons 
+geneprofilewithintrons
     UPSTREAM - EXON - INTRON - DOWNSTREAM
 
     gene models containing also intronic sequence, only correct if
@@ -346,7 +348,8 @@ def main(argv=None):
     parser.add_option("-c", "--controlfile", dest="controlfiles",
                       metavar="BAM",
                       type="string", action="append",
-                      help="control/input to use. Should be of the same type as the bam/bed/bigwig file"
+                      help="control/input to use. Should be of the same "
+                      "type as the bam/bed/bigwig file"
                       " [%default]")
 
     parser.add_option("-g", "--gtffile", dest="gtffile", type="string",
@@ -354,14 +357,19 @@ def main(argv=None):
                       help="GTF file to use. "
                       "[%default]")
 
-    parser.add_option("-n", "--normalization", dest="normalization", type="choice",
+    parser.add_option("-n", "--normalization", dest="normalization",
+                      type="choice",
                       choices=("none", "max", "sum", "total-max", "total-sum"),
-                      help = "normalization to apply on each transcript profile before adding to meta-gene profile. "
+                      help = "normalization to apply on each transcript "
+                      "profile before adding to meta-gene profile. "
                       "[%default]")
 
-    parser.add_option("-p", "--normalize-profile", dest="profile_normalizations", type="choice", action="append",
+    parser.add_option("-p", "--normalize-profile",
+                      dest="profile_normalizations",
+                      type="choice", action="append",
                       choices=("all", "none", "area", "counts", "background"),
-                      help = "normalization to apply on meta-gene profile normalization. "
+                      help = "normalization to apply on meta-gene "
+                      "profile normalization. "
                       "[%default]")
 
     parser.add_option("-r", "--reporter", dest="reporter", type="choice",
@@ -373,37 +381,51 @@ def main(argv=None):
                       " contributing equally to the meta-gene profile."
                       " [%default]")
 
-    parser.add_option("-i", "--shift", dest="shifts", type="int", action="append",
-                      help="shift reads in :term:`bam` formatted file before computing densities (ChIP-Seq). "
+    parser.add_option("-i", "--shift", dest="shifts", type="int",
+                      action="append",
+                      help="shift reads in :term:`bam` formatted file "
+                      "before computing densities (ChIP-Seq). "
                       "[%default]")
 
-    parser.add_option("-a", "--merge-pairs", dest="merge_pairs", action="store_true",
-                      help="merge pairs in :term:`bam` formatted file before computing"
-                      " densities (ChIP-Seq)."
+    parser.add_option("-a", "--merge-pairs", dest="merge_pairs",
+                      action="store_true",
+                      help="merge pairs in :term:`bam` formatted "
+                      "file before computing "
+                      "densities (ChIP-Seq). "
                       "[%default]")
 
-    parser.add_option("-u", "--base-accuracy", dest="base_accuracy", action="store_true",
-                      help="compute densities with base accuracy. The default is to"
-                      " only use the start and end of the aligned region (RNA-Seq)"
-                      " [%default]")
-
-    parser.add_option("-e", "--extend", dest="extends", type="int", action="append",
-                      help="extend reads in :term:`bam` formatted file (ChIP-Seq). "
+    parser.add_option("-u", "--base-accuracy", dest="base_accuracy",
+                      action="store_true",
+                      help="compute densities with base accuracy. The default "
+                      "is to only use the start and end of the aligned region "
+                      "(RNA-Seq) "
                       "[%default]")
 
-    parser.add_option("--resolution-upstream", dest="resolution_upstream", type="int",
+    parser.add_option("-e", "--extend", dest="extends", type="int",
+                      action="append",
+                      help="extend reads in :term:`bam` formatted file "
+                      "(ChIP-Seq). "
+                      "[%default]")
+
+    parser.add_option("--resolution-upstream", dest="resolution_upstream",
+                      type="int",
                       help="resolution of upstream region in bp "
                       "[%default]")
 
-    parser.add_option("--resolution-downstream", dest="resolution_downstream", type="int",
+    parser.add_option("--resolution-downstream", dest="resolution_downstream",
+                      type="int",
                       help="resolution of downstream region in bp "
                       "[%default]")
 
-    parser.add_option("--resolution-upstream-utr", dest="resolution_upstream_utr", type="int",
+    parser.add_option("--resolution-upstream-utr",
+                      dest="resolution_upstream_utr",
+                      type="int",
                       help="resolution of upstream UTR region in bp "
                       "[%default]")
 
-    parser.add_option("--resolution-downstream-utr", dest="resolution_downstream_utr", type="int",
+    parser.add_option("--resolution-downstream-utr",
+                      dest="resolution_downstream_utr",
+                      type="int",
                       help="resolution of downstream UTR region in bp "
                       "[%default]")
 
@@ -411,20 +433,30 @@ def main(argv=None):
                       help="resolution of cds region in bp "
                       "[%default]")
 
-    parser.add_option("--resolution-introns", dest="resolution_introns", type="int",
+    parser.add_option("--resolution-introns",
+                      dest="resolution_introns", type="int",
                       help="resolution of introns region in bp "
                       "[%default]")
 
-    parser.add_option("--resolution-exons-absolute-distance-topolya", dest="resolution_exons_absolute_distance_topolya", type="int",
-                      help="resolution of exons absolute distance topolya in bp "
+    parser.add_option("--resolution-exons-absolute-distance-topolya",
+                      dest="resolution_exons_absolute_distance_topolya",
+                      type="int",
+                      help="resolution of exons absolute distance "
+                      "topolya in bp "
                       "[%default]")
 
-    parser.add_option("--resolution-introns-absolute-distance-topolya", dest="resolution_introns_absolute_distance_topolya", type="int",
-                      help="resolution of introns absolute distance topolya in bp "
+    parser.add_option("--resolution-introns-absolute-distance-topolya",
+                      dest="resolution_introns_absolute_distance_topolya",
+                      type="int",
+                      help="resolution of introns absolute distance "
+                      "topolya in bp "
                       "[%default]")
 
-    parser.add_option("--extension-exons-absolute-distance-topolya", dest="extension_exons_absolute_distance_topolya", type="int",
-                      help="extension for exons from the absolute distance from the topolya in bp"
+    parser.add_option("--extension-exons-absolute-distance-topolya",
+                      dest="extension_exons_absolute_distance_topolya",
+                      type="int",
+                      help="extension for exons from the absolute "
+                      "distance from the topolya in bp "
                       "[%default]")
 
     parser.add_option("--extension-introns-absolute-distance-topolya", dest="extension_introns_absolute_distance_topolya", type="int",
@@ -452,22 +484,30 @@ def main(argv=None):
                       "[%default]")
 
     parser.add_option("--control-factor", dest="control_factor", type="float",
-                      help="factor for normalizing control and fg data. Computed from data "
+                      help="factor for normalizing control and fg data. "
+                      "Computed from data "
                       "if not set. "
                       "[%default]")
 
-    parser.add_option("--output-all-profiles", dest="output_all_profiles", action="store_true",
-                      help="keep individual profiles for each transcript and output. "
+    parser.add_option("--output-all-profiles", dest="output_all_profiles",
+                      action="store_true",
+                      help="keep individual profiles for each "
+                      "transcript and output. "
                       "[%default]")
 
-    parser.add_option("--input-filename-counts", dest="input_filename_counts", type="string",
-                      help="filename with count data for each transcript. Use this instead "
-                      "of recomputing the profile. Useful for plotting the meta-gene profile "
+    parser.add_option("--input-filename-counts", dest="input_filename_counts",
+                      type="string",
+                      help="filename with count data for each transcript. "
+                      "Use this instead "
+                      "of recomputing the profile. Useful for plotting the "
+                      "meta-gene profile "
                       "from previously computed counts "
                       "[%default]")
 
-    parser.add_option("--background-region", dest="background-region", type="int",
-                      help="number of bins on either side of the profile to be considered "
+    parser.add_option("--background-region", dest="background-region",
+                      type="int",
+                      help="number of bins on either side of the profile "
+                      "to be considered "
                       "for background meta-gene normalizatian "
                       "[%default]")
 
@@ -741,8 +781,9 @@ def main(argv=None):
         profiles = []
         for norm in options.profile_normalizations:
             # build matrix, apply normalization
-            profile = counter.getProfile(normalize=norm,
-                                         background_region=options.background_region)
+            profile = counter.getProfile(
+                normalize=norm,
+                background_region=options.background_region)
             profiles.append(profile)
 
         for x in range(1, len(profiles)):
@@ -815,7 +856,7 @@ def main(argv=None):
                     cuts.append(len(counts))
 
                 plt.plot(range(len(points)), points)
-                
+
                 xx, xxx = 0, []
                 for x in cuts:
                     xxx.append(xx + x // 2)
@@ -836,18 +877,22 @@ def main(argv=None):
                 plt.figure()
                 plt.subplot(1, 3, 1)
                 plt.plot(range(-options.extension_outward,
-                               options.extension_inward), counter.aggregate_counts[0])
+                               options.extension_inward),
+                         counter.aggregate_counts[0])
                 plt.title(counter.fields[0])
                 plt.subplot(1, 3, 2)
                 plt.plot(range(-options.extension_inward,
-                               options.extension_outward), counter.aggregate_counts[1])
+                               options.extension_outward),
+                         counter.aggregate_counts[1])
                 plt.title(counter.fields[1])
                 plt.subplot(1, 3, 3)
                 plt.title("combined")
                 plt.plot(range(-options.extension_outward,
-                               options.extension_inward), counter.aggregate_counts[0])
+                               options.extension_inward),
+                         counter.aggregate_counts[0])
                 plt.plot(range(-options.extension_inward,
-                               options.extension_outward), counter.aggregate_counts[1])
+                               options.extension_outward),
+                         counter.aggregate_counts[1])
                 plt.legend(counter.fields[:2])
 
                 fn = E.getOutputFile(counter.name) + ".png"

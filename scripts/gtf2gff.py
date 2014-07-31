@@ -1,5 +1,4 @@
-"""
-gtf2gff.py - convert a transcript set to genomic features
+"""gtf2gff.py - convert a transcript set to genomic features
 =========================================================
 
 :Author: Andreas Heger
@@ -13,21 +12,22 @@ Purpose
 This scripts converts a transcript set in a :term:`gtf` formatted file into a set
 of features in a :term:`gff` formatted file. 
 
-In other words, a gene set (gtf), which constitutes a hierarchical set of 
-annotations, will be converted into a non-hierarchical list of genomic segments.
+In other words, a gene set (gtf), which constitutes a hierarchical set
+of annotations, will be converted into a non-hierarchical list of
+genomic segments.
 
-Various methods can be used to do the conversion (see command line argument 
-``--method``):
+Various methods can be used to do the conversion (see command line
+argument ``--method``):
 
 exons
-   annotate exons. Exonic segments are classified according 
-   to the transcript structure.
+   annotate exons. Exonic segments are classified according to the
+   transcript structure.
 
 genome/full
-   annotate genome with gene set. Genomic segments are labeled 
-   ``intronic``, ``intergenic``, etc. This annotation aggregates
-   the information of multiple genes such that each annotation
-   is either valid or ambiguous.
+   annotate genome with gene set. Genomic segments are labeled
+   ``intronic``, ``intergenic``, etc. This annotation aggregates the
+   information of multiple genes such that each annotation is either
+   valid or ambiguous.
 
 genes
     annotate genome using the information on a gene-by-gene basis.
@@ -43,14 +43,15 @@ promotors
    ``--promotor`` sets the region width.
 
 regulons
-   declare regulatory regions. Regulatory regions contain the region x kb of
-   upstream and downstream of a transciption start site. The options ``--upstream``
-   and ``-downstream`` set the region width.
+   declare regulatory regions. Regulatory regions contain the region x
+   kb of upstream and downstream of a transciption start site. The
+   options ``--upstream`` and ``-downstream`` set the region width.
 
 tts-regulons
-   declare tts regulatory regions. tts-regulatory regions contain the region x kb of
-   upstream and downstream of a transciption termination site. The options ``--upstream``
-   and ``-downstream`` set the region width.
+   declare tts regulatory regions. tts-regulatory regions contain the
+   region x kb of upstream and downstream of a transciption
+   termination site. The options ``--upstream`` and ``-downstream``
+   set the region width.
 
 territories
    build gene territories around full length genes.
@@ -73,13 +74,13 @@ cds
    a coding exon (also: CDS, start_codon).
 
 utr
-   a UTR (also: stop_codon) 
+   a UTR (also: stop_codon)
 
 5flank, 3flank, flank
-   an upstream/downstream segment of defined size. If 
-   the intergenic region is too small to accomodate a flank, the regions is
-   just 'flank'.
-                
+   an upstream/downstream segment of defined size. If the intergenic
+   region is too small to accomodate a flank, the regions is just
+   'flank'.
+
 intergenic
    intergenic region.
 
@@ -96,10 +97,11 @@ ambiguous
    in case of overlapping genes, regions are designated ambiguous
 
 unknown
-   unknown are ``intronic`` regions that are less than the minimum size 
-   of an intron (default: 30) and larger than the size of frameshift (default:4).
-   These could be either genuine small introns or they could be artefactual arising
-   from collapsing the exons within a gene model.
+   unknown are ``intronic`` regions that are less than the
+   minimum size of an intron (default: 30) and larger than the size of
+   frameshift (default:4).  These could be either genuine small
+   introns or they could be artefactual arising from collapsing the
+   exons within a gene model.
 
 All segments are annotated by their closest gene. Intergenic regions are
 annotated with their two neighbouring genes. The upstream gene is listed
@@ -126,22 +128,24 @@ exon
    an exon. Exons are further classified into first, middle and last exons.
 
 intronic
-   an intronic region. Intronic regions are further divided into first, middle, last.
-   
+   an intronic region. Intronic regions are further divided into
+   first, middle, last.
+
 upstream, downstream
-   upstream/downstream regions in 5 intervals of a total of 1kb (see option --flank to increase
-   the total size).
+   upstream/downstream regions in 5 intervals of a total of 1kb (see
+   option --flank to increase the total size).
 
 .. _territories:
 
 Territories
 +++++++++++
 
-If ``--method=territories``, the gene set is used to define gene territories. 
-Territories are segments around genes and are non-overlapping. Exons in a gene
-are merged and the resulting the region is enlarged by --radius. Overlapping
-territories are divided at the midpoint between the two genes. The maximum
-extent of a territory is limited by the option ``--radius``
+If ``--method=territories``, the gene set is used to define gene
+territories.  Territories are segments around genes and are
+non-overlapping. Exons in a gene are merged and the resulting the
+region is enlarged by --radius. Overlapping territories are divided at
+the midpoint between the two genes. The maximum extent of a territory
+is limited by the option ``--radius``
 
 .. note::
    The gtf file has to be sorted first by contig and then by position.
@@ -152,11 +156,13 @@ extent of a territory is limited by the option ``--radius``
 TSSTerritories
 ++++++++++++++
 
-If ``--method=tss-territories``, the gene set is used to define gene territories. 
-Instead of the full gene length as in :ref:`territories`, only the tss is used to 
-define a territory. Territories are segments around genes and are non-overlapping.
-Overlapping territories are divided at the midpoint between the two genes. The maximum
-extent of a territory is limited by the option ``--radius``.
+If ``--method=tss-territories``, the gene set is used to define gene
+territories.  Instead of the full gene length as in
+:ref:`territories`, only the tss is used to define a
+territory. Territories are segments around genes and are
+non-overlapping.  Overlapping territories are divided at the midpoint
+between the two genes. The maximum extent of a territory is limited by
+the option ``--radius``.
 
 .. note::
    The gtf file has to be sorted first by contig and then by position.
@@ -169,13 +175,15 @@ The domain definitions corresponds to the ``nearest gene`` rule in GREAT.
 GREAT-Domains
 +++++++++++++
 
-Define GREAT regulatory domains. Each TSS in a gene is associated with a 
-basal region. The basal region is then extended upstream to the basal region 
-of the closest gene, but at most to --radius. In the case of overlapping genes,
-the extension is towards the next non-overlapping gene. 
+Define GREAT regulatory domains. Each TSS in a gene is associated with
+a basal region. The basal region is then extended upstream to the
+basal region of the closest gene, but at most to --radius. In the case
+of overlapping genes, the extension is towards the next
+non-overlapping gene.
 
-This is the "basal plus extension" rule in GERAT. Commonly used are 5+1 with 1 Mb extension. 
-To achieve this, set (needs genome-file to run).
+This is the "basal plus extension" rule in GERAT. Commonly used are
+5+1 with 1 Mb extension.  To achieve this, set (needs genome-file to
+run).
 
 ``--method=great-domains --upstream=5000 --downstream=1000 --radius=1000000``
 
@@ -197,18 +205,20 @@ ntranscripts
 nused
    number of transcripts using this exon
 positions
-   positions of exon within transcripts. This is a ``,`` separated list of
-   tuples ``pos:total``. For example, ``1:10,5:8`` indicates an exon that appears
-   in first position in a ten exon transcript and fifth position in an eight
-   exon transcript. The position is according to the direction of transcription.
+   positions of exon within transcripts. This is a ``,`` separated
+   list of tuples ``pos:total``. For example, ``1:10,5:8`` indicates
+   an exon that appears in first position in a ten exon transcript and
+   fifth position in an eight exon transcript. The position is
+   according to the direction of transcription.
 
 .. note::
-   overlapping but non-identical exons, for example due to internal splice sites, are listed 
-   as separate exons. Thus the output is not fully flat as some segments could be overlapping
-   (see output variable ``noverlapping`` in the log file).
+   overlapping but non-identical exons, for example due to internal
+   splice sites, are listed as separate exons. Thus the output is not
+   fully flat as some segments could be overlapping (see output
+   variable ``noverlapping`` in the log file).
 
-The following example uses an ENSEMBL gene set:: 
-(needs genome-file to run)
+The following example uses an ENSEMBL gene set:: (needs genome-file to
+run)
 
    gunzip < Mus_musculus.NCBIM37.55.gtf.gz | awk '$3 == "CDS"' | python gtf2gff.py --method=exons --restrict-source=protein_coding
 
@@ -223,8 +233,9 @@ several promotors associated with it, but overlapping promotor regions
 of the same gene will be merged. A promoter can extend into an
 adjacent upstream gene.
 
-The ``--restrict-source`` option determines which GTF entries are output. The default
-is to output all entries but the user can choose from protein_coding, pseudogene or lncRNA.
+The ``--restrict-source`` option determines which GTF entries are
+output. The default is to output all entries but the user can choose
+from protein_coding, pseudogene or lncRNA.
 
 The size of the promotor region can be specified by the command line
 argument ``--promotor``.
@@ -236,15 +247,16 @@ If ``--method=regulons``, putative regulon regions are output. This is similar
 to a ``promotor``, but the region extends both upstream and downstream from
 the transcription start site.
 
-The ``--restrict-source`` option determines which GTF entries are output. The default
-is to output all entries but the user can choose from protein_coding, pseudogene or lncRNA.
+The ``--restrict-source`` option determines which GTF entries are
+output. The default is to output all entries but the user can choose
+from protein_coding, pseudogene or lncRNA.
 
 The size of the promotor region can be specified by the command line
 argument ``--upstream`` and ``--downstream``
 
-If ``--method=tts-regulons``, regulons will be defined around the transcription
-termination site.
- 
+If ``--method=tts-regulons``, regulons will be defined around the
+transcription termination site.
+
 Usage
 -----
 
@@ -260,11 +272,7 @@ Command line options
 
 """
 
-import os
 import sys
-import string
-import re
-import types
 import collections
 import itertools
 
@@ -331,7 +339,7 @@ def addIntergenicSegment(last, this, fasta, options):
             if options.ignore_missing:
                 return nadded
             else:
-                raise KeyError, msg
+                raise KeyError(msg)
         flank = min(last.end + options.flank, lcontig)
         nadded += addFlank(last.end, flank, last, options)
         nadded += addSegment("telomeric", flank, lcontig, last, options)
@@ -347,7 +355,8 @@ def addIntergenicSegment(last, this, fasta, options):
         if d > flank * 2:
             nadded += addFlank(last.end, last.end + flank, last, options)
             nadded += addSegment("intergenic", last.end +
-                                 flank, this.start - flank, (last, this), options)
+                                 flank, this.start - flank,
+                                 (last, this), options)
             nadded += addFlank(this.start - flank, this.start, this, options)
         else:
             # add short flank between two genes. If they can not agree
@@ -365,16 +374,13 @@ def addIntergenicSegment(last, this, fasta, options):
 
     return nadded
 
-# -----------------------------------------------------------------------------
-
 
 def buildTerritories(iterator, fasta, method, options):
-    """build gene territories. 
+    """build gene territories.
 
-    Exons in a gene are merged and the resulting 
-    segments enlarged by --radius. Territories
-    overlapping are divided in the midpoint between
-    the two genes.
+    Exons in a gene are merged and the resulting segments enlarged by
+    --radius. Territories overlapping are divided in the midpoint
+    between the two genes.
 
     If *method* is ``gene``, gene territories will be built.
     If *method* is ``tss``, tss territories will be built.
@@ -392,7 +398,8 @@ def buildTerritories(iterator, fasta, method, options):
     gff = None
 
     def _iterator(iterator):
-        """yield gene plus the locations of the end of the previous gene and start of next gene"""
+        """yield gene plus the locations of the end of the previous gene and
+        start of next gene"""
 
         last_end, prev_end = 0, 0
         last_contig = None
@@ -468,8 +475,6 @@ def buildTerritories(iterator, fasta, method, options):
     E.info("ninput=%i, noutput=%i, nambiguous=%i" %
            (ninput, noutput, nambiguous))
 
-# -----------------------------------------------------------------------------
-
 
 def annotateGenome(iterator, fasta, options):
     """perform a full segmentation of the genome (UTR, exon, intron ...)
@@ -498,20 +503,34 @@ def annotateGenome(iterator, fasta, options):
                         d = this.start - last.end
                         if d >= options.min_intron_length:
                             nadded += addSegment("intronic",
-                                                 last.end, this.start, last, options)
+                                                 last.end,
+                                                 this.start,
+                                                 last,
+                                                 options)
                         elif d <= options.max_frameshift_length:
                             nframeshifts += addSegment("frameshift",
-                                                       last.end, this.start, last, options)
+                                                       last.end,
+                                                       this.start,
+                                                       last,
+                                                       options)
                         else:
                             nunknown += addSegment("unknown",
-                                                   last.end, this.start, last, options)
+                                                   last.end,
+                                                   this.start,
+                                                   last,
+                                                   options)
                 else:
-                    if last.feature == this.feature and last.gene_id == this.gene_id:
-                        nambiguous += addSegment(last.feature,
-                                                 last.end, this.start, last, options)
+                    if last.feature == this.feature and \
+                       last.gene_id == this.gene_id:
+                        nambiguous += addSegment(
+                            last.feature,
+                            last.end, this.start,
+                            last, options)
                     else:
-                        nambiguous += addSegment("ambiguous",
-                                                 last.end, this.start, last, options)
+                        nambiguous += addSegment(
+                            "ambiguous",
+                            last.end, this.start,
+                            last, options)
                     is_ambiguous = False
                 last = this
             elif last.end > this.start:
@@ -527,9 +546,9 @@ def annotateGenome(iterator, fasta, options):
         options.stdout.write("%s\n" % str(this))
         noutput += 1
 
-    if options.loglevel >= 1:
-        options.stdlog.write("# ninput=%i, noutput=%i, nadded=%i, nambiguous=%i, nframeshifts=%i, nunknown=%i\n" % (
-            ninput, noutput, nadded, nambiguous, nframeshifts, nunknown))
+    E.info(
+        "ninput=%i, noutput=%i, nadded=%i, nambiguous=%i, nframeshifts=%i, nunknown=%i" %
+        (ninput, noutput, nadded, nambiguous, nframeshifts, nunknown))
 
 
 def annotateExons(iterator, fasta, options):
@@ -812,9 +831,10 @@ def annotateGREATDomains(iterator, fasta, options):
         # last_end = basal extension of previous group
         # next_start = basal_extension of next group
 
-        # extend region to previous/next group
-        # always extend dowstream, but upstream only extend if basal region of an interval is not already
-        # overlapping another basal region within the group
+        # extend region to previous/next group always extend
+        # dowstream, but upstream only extend if basal region of an
+        # interval is not already overlapping another basal region
+        # within the group
         save_end = 0
         for gtf in group:
             save_end = max(save_end, gtf.end)
@@ -867,16 +887,15 @@ def annotateTTS(iterator, fasta, options):
             mi, ma = min([x.start for x in transcript]), max(
                 [x.end for x in transcript])
             transcript_ids.append(transcript[0].transcript_id)
-            # if tts is directly at start/end of contig, the tss will be within an exon.
-            # otherwise, it is outside an exon.
+            # if tts is directly at start/end of contig, the tss will
+            # be within an exon.  otherwise, it is outside an exon.
             if is_negative_strand:
-                #tss.append( (min( lcontig-options.promotor, ma), min(lcontig, ma + options.promotor)) )
                 tts.append(
                     (max(0, mi - options.promotor), max(options.promotor, mi)))
             else:
-                #tss.append( (max(0,mi - options.promotor), max(options.promotor,mi)) )
                 tts.append(
-                    (min(ma, lcontig - options.promotor), min(lcontig, ma + options.promotor)))
+                    (min(ma, lcontig - options.promotor),
+                     min(lcontig, ma + options.promotor)))
 
         if options.merge_promotors:
             # merge the promotors (and rename - as sort order might have
@@ -898,17 +917,20 @@ def annotateTTS(iterator, fasta, options):
 
     if options.loglevel >= 1:
         options.stdlog.write(
-            "# ngenes=%i, ntranscripts=%i, ntss=%i\n" % (ngenes, ntranscripts, npromotors))
+            "# ngenes=%i, ntranscripts=%i, ntss=%i\n" %
+            (ngenes, ntranscripts, npromotors))
 
 
 def annotateGenes(iterator, fasta, options):
     """annotate gene structures
 
-    This method outputs intervals for first/middle/last exon/intron, UTRs and flanking regions.
+    This method outputs intervals for first/middle/last exon/intron,
+    UTRs and flanking regions.
 
-    This method annotates per transcript. In order to achieve a unique tiling, 
-    use only a single transcript per gene and remove any overlap between 
+    This method annotates per transcript. In order to achieve a unique tiling,
+    use only a single transcript per gene and remove any overlap between
     genes.
+
     """
 
     gene_iterator = GTF.gene_iterator(iterator)

@@ -761,6 +761,7 @@ class GeneCounter( IntervalsCounter ):
 
         return 1
 
+
 class GeneCounterWithIntrons( IntervalsCounter ):
     '''count reads in exons, in introns and the upstream/downstream of genes/transcripts.
     
@@ -876,14 +877,14 @@ class GeneCounterAbsoluteDistanceFromThreePrimeEnd( IntervalsCounter ):
     in other genecounter mode in this script.  
 
     In other words, only count the reads that fall on the exons of the
-    (virtual maximal) mNRA transcript.  Note that the distance is
+    (virtual maximal) mRNA transcript.  Note that the distance is
     relative to TTS (three prime polyA tail) on the mNRA transcript,
     insteads of on the genomic assembly is used for the counting and
     plotting.
     
     For mRNA with multiple exons, the exons are first stiched together
     into one piece of mRNA (the virtual maximal transcript for each
-    gene). Subsequently, the mNRA is being used for counting. This is
+    gene). Subsequently, the mRNA is being used for counting. This is
     the (only) proper way to avoid counting in introns, which screw up
     the actual genebody coverage profile. And this only works with
     --base-accuracy option, because otherwise spliced reads will be
@@ -891,13 +892,13 @@ class GeneCounterAbsoluteDistanceFromThreePrimeEnd( IntervalsCounter ):
     will be counted as covered by reads.  (this option imply the
     --base-accuracy option).
     
-    Also count reads in introns (in exctly the same manner as if they
+    Also count reads in introns (in exactly the same manner as if they
     are exons described above ) of genes/transcripts from the three
     prime polyA tail.
     
     Note:
 
-    * Both protein coding transcripts, and non coding
+    * Both protein coding transcripts and non coding
     transcripts are counted.  i.e. both those with a CDS, and those
     without a CDS are counted.
     
@@ -958,23 +959,24 @@ class GeneCounterAbsoluteDistanceFromThreePrimeEnd( IntervalsCounter ):
         
         self.scale_flanks = scale_flanks
 
-        for field, length in zip(   ("upstream%dbp_zoomedTo%dbp"%(extension_upstream, resolution_upstream),
-                                     "exonsLast%dbp_zoomedTo%dbp"%(extension_exons_absolute_distance_topolya, resolution_exons_absolute_distance_topolya) ,
-                                     "intronsLast%dbp_zoomedTo%dbp"%(extension_introns_absolute_distance_topolya, resolution_introns_absolute_distance_topolya) ,
-                                     "downstream%dbp_zoomedTo%dbp"%(extension_downstream, resolution_downstream),
-                                    ),
-                                    (resolution_upstream,
-                                     resolution_exons_absolute_distance_topolya,
-                                     resolution_introns_absolute_distance_topolya,
-                                     resolution_downstream) 
-                                ):
-            self.add( field, length )
+        for field, length in zip(
+                ("upstream%dbp_zoomedTo%dbp"%(extension_upstream, resolution_upstream),
+                 "exonsLast%dbp_zoomedTo%dbp"%(extension_exons_absolute_distance_topolya, resolution_exons_absolute_distance_topolya) ,
+                 "intronsLast%dbp_zoomedTo%dbp"%(extension_introns_absolute_distance_topolya, resolution_introns_absolute_distance_topolya) ,
+                 "downstream%dbp_zoomedTo%dbp"%(extension_downstream, resolution_downstream),
+             ),
+                (resolution_upstream,
+                 resolution_exons_absolute_distance_topolya,
+                 resolution_introns_absolute_distance_topolya,
+                 resolution_downstream) 
+        ):
+            self.add(field, length)
 
             
-    #Tim 31th Aug 2013: Important function in this class to stich together the exons into one  complete of mRNA
+    #Tim 31th Aug 2013: Important function in this class to stich together the exons into one complete of mRNA
     def __chopAllTranscriptToAFixedLengthForTheThreePrimeBiasCounting(self, gtf , exons, extension_threePrimeBiasNotZoomed ):
         '''
-        works for both exons and introns, the varible name exons is only symolic here,
+        works for both exons and introns, the variable name exons is only symolic here,
         it means either exons, or introns depending on the regions you passed in 
         during function call
         
@@ -1003,17 +1005,17 @@ class GeneCounterAbsoluteDistanceFromThreePrimeEnd( IntervalsCounter ):
                 exonSize = exon[1]-exon[0]
                 if leftoverBasepairAllowance > exonSize:
                     leftoverBasepairAllowance -= exonSize
-                    exons_chopped.append( exon )            # append is the correct way, coz we process the first exon first. 
+                    exons_chopped.append(exon)            # append is the correct way, coz we process the first exon first. 
                                                             # so subsequent exons shall be appended so that the basepair ordering 
                                                             # is in reverse ordering alone the gene body, likewise, the exon 
                                                             # ordering is also the reverse ordering alone the gene body. In the 
                                                             # end, just before counts are aggregated, there will be code:
                                                             # if "-": counts_exons_NotZoomedAndChopped_ForThreePrimeBias[::-1] to flip 
                                                             # everything in base pair resolution.
-                    E.debug( str(exons_chopped) )
+                    E.debug(str(exons_chopped))
                 else:
-                    E.debug( "Exon intervals preparation function: gene %s:%s, leftoverBasepairAllowance= %s " % (gtf[0].transcript_id, gtf[0].strand, leftoverBasepairAllowance)  )
-                    E.debug( "Exon intervals preparation function: The potential half exon: "+str(exon) )
+                    E.debug("Exon intervals preparation function: gene %s:%s, leftoverBasepairAllowance= %s " % (gtf[0].transcript_id, gtf[0].strand, leftoverBasepairAllowance)  )
+                    E.debug("Exon intervals preparation function: The potential half exon: "+str(exon) )
                     exon_chopped = (exon[0], exon[0]+leftoverBasepairAllowance)
                     exons_chopped.append( exon_chopped )    # append is the correct way, same as above
                     exon_choppedSize = exon_chopped[1]-exon_chopped[0]
