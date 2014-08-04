@@ -219,11 +219,9 @@ def filter_bam(Samfile input_samfile,
                 if nm > read_mismatches: 
                     nmismatches += 1
                     continue
-                
-        
 
         noutput += 1
-        output_samfile.write( read )
+        output_samfile.write(read)
 
     c = E.Counter()
     c.input = ninput
@@ -235,8 +233,8 @@ def filter_bam(Samfile input_samfile,
     c.removed_mismatches = nmismatches
 
     if nremove_contig_tids:
-        free( remove_contig_tids )
+        free(remove_contig_tids)
 
-    E.info( "filtering finished" )
+    E.info("filtering finished")
 
     return c

@@ -87,30 +87,19 @@ import optparse
 import shutil
 import itertools
 import csv
-import math
 import random
 import re
 import glob
 import os
-import shutil
-import collections
-import csv
 import gzip
 from ruffus import *
 import sqlite3
-
 import CGAT.Experiment as E
 import CGAT.Pipeline as P
-import CGAT.IndexedFasta as IndexedFasta
-import CGAT.IndexedGenome as IndexedGenome
-import CGAT.FastaIterator as FastaIterator
-import CGAT.Genomics as Genomics
 import CGAT.IOTools as IOTools
 import CGAT.Database as Database
 import CGAT.GTF as GTF
-import CGAT.Database as Database
 
-import PipelineGeneset as PGeneset
 
 # load options from the config file
 import CGAT.Pipeline as P
@@ -124,12 +113,15 @@ PARAMS = P.PARAMS
 USECLUSTER = True
 
 # link up with annotations
-PARAMS_ANNOTATIONS = P.peekParameters(PARAMS["annotations_dir"],
-                                      "pipeline_annotations.py", on_error_raise=__name__ == "__main__")
+PARAMS_ANNOTATIONS = P.peekParameters(
+    PARAMS["annotations_dir"],
+    "pipeline_annotations.py",
+    on_error_raise=__name__ == "__main__")
 
 # link up with ancestral repeats
-PARAMS_ANCESTRAL_REPEATS = P.peekParameters(PARAMS["ancestral_repeats_dir"],
-                                            "pipeline_ancestral_repeats.py")
+PARAMS_ANCESTRAL_REPEATS = P.peekParameters(
+    PARAMS["ancestral_repeats_dir"],
+    "pipeline_ancestral_repeats.py")
 
 ###################################################################
 ###################################################################

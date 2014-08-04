@@ -26,18 +26,9 @@ Code
 
 
 """
-import sys
-import tempfile
-import optparse
-import shutil
-import itertools
-import csv
-import math
-import random
 import re
 import glob
 import os
-import shutil
 import collections
 import sqlite3
 
@@ -47,15 +38,8 @@ import CGAT.Stats as Stats
 import CGAT.IOTools as IOTools
 import CGAT.CSV as CSV
 
-try:
-    PARAMS = P.getParameters()
-except IOError:
-    pass
-
-############################################################
-############################################################
-############################################################
-# get GO assignments
+# set from calling module
+PARAMS = {}
 
 
 def createGOFromENSEMBL(infile, outfile):
@@ -63,20 +47,15 @@ def createGOFromENSEMBL(infile, outfile):
 
     job_options = "-l mem_free=5G"
     statement = '''
-        python %(scriptsdir)s/runGO.py 
-                     --filename-dump=%(outfile)s 
-                     --host=%(go_host)s 
-                     --user=anonymous 
-                     --database=%(go_database)s 
-                     --port=%(go_port)i > %(outfile)s.log
-        '''
+    python %(scriptsdir)s/runGO.py
+    --filename-dump=%(outfile)s
+    --host=%(go_host)s
+    --user=anonymous
+    --database=%(go_database)s
+    --port=%(go_port)i > %(outfile)s.log
+    '''
 
     P.run()
-
-############################################################
-############################################################
-############################################################
-# get go assignments
 
 
 def createGOFromGeneOntology(infile, outfile):
@@ -85,7 +64,7 @@ def createGOFromGeneOntology(infile, outfile):
     GO terms are mapped to ensembl gene names via uniprot identifiers.
     '''
 
-    filename = "geneontology.goa.gz"
+    filename = os.path.join(os.path.dirname(outfile), "geneontology.goa.gz")
     if not os.path.exists(filename):
         statement = '''
     wget -O %(filename)s http://cvsweb.geneontology.org/cgi-bin/cvsweb.cgi/go/gene-associations/%(go_geneontology_file)s?rev=HEAD
@@ -94,12 +73,14 @@ def createGOFromGeneOntology(infile, outfile):
         P.run()
 
     # see http://www.geneontology.org/gene-associations/readme/goa.README
-    Data = collections.namedtuple("Data", "db db_object_id db_object_symbol qualifier goid dbreference evidence "
-                                  " with_id aspect "
-                                  " db_object_name synonym db_object_type "
-                                  " taxon_id date assigned_by "
-                                  " annotation_extension"
-                                  " gene_product_form_id")
+    Data = collections.namedtuple(
+        "Data",
+        "db db_object_id db_object_symbol qualifier goid dbreference evidence "
+        " with_id aspect "
+        " db_object_name synonym db_object_type "
+        " taxon_id date assigned_by "
+        " annotation_extension"
+        " gene_product_form_id")
 
     dbh = sqlite3.connect(PARAMS["database"])
     cc = dbh.cursor()
@@ -261,33 +242,36 @@ def getGODescriptions(infile):
 def createGOSlimFromENSEMBL(infile, outfile):
     '''get GO assignments from ENSEMBL'''
 
-    statement = '''wget %(go_url_goslim)s --output-document=goslim.obo'''
+    dirname = os.path.dirname(outfile)
+
+    statement = '''wget %(go_url_goslim)s
+    --output-document=%(dirname)s/goslim.obo'''
     P.run()
 
-    statement = '''wget %(go_url_ontology)s --output-document=go_ontology.obo'''
+    statement = '''wget %(go_url_ontology)s
+    --output-document=%(dirname)s/go_ontology.obo'''
     P.run()
 
-    to_cluster = True
     job_options = "-l mem_free=5G"
     statement = '''
-        map2slim -outmap %(outfile)s.map goslim.obo go_ontology.obo
+    map2slim -outmap %(outfile)s.map
+    %(dirname)s/goslim.obo
+    %(dirname)s/go_ontology.obo
     '''
     P.run()
 
     job_options = "-l mem_free=5G"
     statement = '''
-        zcat < %(infile)s
-        | python %(scriptsdir)s/runGO.py 
-                --go2goslim 
-                --filename-ontology=go_ontology.obo 
-                --slims=%(outfile)s.map 
-                --log=%(outfile)s.log 
-        | gzip
-        > %(outfile)s
-        '''
+    zcat < %(infile)s
+    | python %(scriptsdir)s/runGO.py
+    --go2goslim
+    --filename-ontology=%(dirname)s/go_ontology.obo
+    --slims=%(outfile)s.map
+    --log=%(outfile)s.log
+    | gzip
+    > %(outfile)s
+    '''
     P.run()
-
-############################################################
 
 
 def runGOFromFiles(outfile,
@@ -345,19 +329,15 @@ def runGOFromFiles(outfile,
     options = " ".join(options)
     statement = '''
     python %(scriptsdir)s/runGO.py 
-        --filename-input=%(go_file)s 
-        --genes=%(fg_file)s 
-        --output-filename-pattern='%(outdir)s/%%(set)s.%%(go)s.%%(section)s' 
-        --minimum-counts=%(minimum_counts)i 
-        --log=%(outfile)s.log
-        %(options)s
+    --filename-input=%(go_file)s
+    --genes=%(fg_file)s
+    --output-filename-pattern='%(outdir)s/%%(set)s.%%(go)s.%%(section)s'
+    --minimum-counts=%(minimum_counts)i
+    --log=%(outfile)s.log
+    %(options)s
     > %(outfile)s'''
 
     P.run()
-
-    dbhandle = sqlite3.connect(PARAMS["database"])
-
-############################################################
 
 
 def runGOFromDatabase(outfile, outdir,

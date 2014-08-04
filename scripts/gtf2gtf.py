@@ -907,7 +907,8 @@ def main(argv=None):
                         options.stdout.write("%s\n" % g)
                 else:
                     ndiscarded += 1
-        elif options.filter in ("longest-transcript", "representative-transcript"):
+        elif options.filter in ("longest-transcript",
+                                "representative-transcript"):
 
             iterator = GTF.gene_iterator(GTF.iterator(options.stdin))
 
@@ -929,7 +930,8 @@ def main(argv=None):
                 all_exons = []
                 for transcript in gene:
                     all_exons.extend([(x.start, x.end)
-                                      for x in transcript if x.feature == "exon"])
+                                      for x in transcript
+                                      if x.feature == "exon"])
                 exon_counts = {}
                 for key, exons in itertools.groupby(all_exons):
                     exon_counts[key] = len(list(exons))
@@ -948,7 +950,9 @@ def main(argv=None):
 
             for gene in iterator:
                 ninput += 1
-                transcript = _select(gene)
+                # sort in order to make reproducible which
+                # gene is chosen.
+                transcript = _select(sorted(gene))
                 noutput += 1
                 for g in transcript:
                     nfeatures += 1

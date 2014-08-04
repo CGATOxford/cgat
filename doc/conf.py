@@ -85,6 +85,10 @@ rst_epilog='''
 .. _sqlite: http://www.sqlite.org/
 .. _make: http://www.gnu.org/software/make
 .. _UCSC: http://genome.ucsc.edu
+.. _ENSEMBL: http://www.ensembl.org
+.. _GO: http://www.geneontology.org
+.. _gwascatalog: http://www.genome.gov/gwastudies/
+.. _distlid: http://distild.jensenlab.org/
 .. _mysql: https://mariadb.org/
 .. _postgres: http://www.postgresql.org/
 .. _bedtools: http://bedtools.readthedocs.org/en/latest/

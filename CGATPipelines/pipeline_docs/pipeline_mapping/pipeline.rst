@@ -20,7 +20,6 @@ Contents:
    pipeline/MappingAlignmentStatistics.rst
    pipeline/MappingComplexity.rst
    pipeline/ReferenceCoverage.rst
-   python/Trackers.rst
 
 .. need to sort out variables. Need to be in conf.py
 .. but there should be a generic way to push updates
@@ -39,7 +38,7 @@ Contents:
 .. ifconfig:: "tophat" in PARAMS['mappers'] or "star" in PARAMS['mappers'] or "gsnap" in PARAMS['mappers']
 
    .. toctree::
-      pipeline/Validation.rst
+      pipeline/RNASeq.rst
  
 .. errorlist::
 

@@ -112,31 +112,15 @@ Code
 """
 from ruffus import *
 import sys
-import glob
 import gzip
 import os
 import itertools
-import CGAT.CSV as CSV
 import re
 import math
-import types
 import collections
-import time
-import optparse
-import shutil
-import numpy
 import sqlite3
-import CGAT.GTF as GTF
 import CGAT.Experiment as E
-import CGAT.IOTools as IOTools
-import CGAT.Genomics as Genomics
 import CGAT.Database as Database
-import CGAT.FastaIterator as FastaIterator
-import PipelineGeneset as PGeneset
-import PipelineEnrichment as PEnrichment
-import PipelineGO as PGO
-import PipelineBiomart as PBiomart
-import PipelineDatabase as PDatabase
 import scipy.stats
 import CGAT.Stats as Stats
 import pysam
@@ -153,11 +137,14 @@ import rpy2.robjects.numpy2ri
 # Pipeline configuration
 import CGAT.Pipeline as P
 P.getParameters(["%s/pipeline.ini" %
-                os.path.splitext(__file__)[0], "../pipeline.ini", "pipeline.ini"])
+                os.path.splitext(__file__)[0], "../pipeline.ini",
+                 "pipeline.ini"])
 
 PARAMS = P.PARAMS
-PARAMS_ANNOTATIONS = P.peekParameters(PARAMS["annotations_dir"],
-                                      "pipeline_annotations.py", on_error_raise=__name__ == "__main__")
+PARAMS_ANNOTATIONS = P.peekParameters(
+    PARAMS["annotations_dir"],
+    "pipeline_annotations.py",
+    on_error_raise=__name__ == "__main__")
 
 SEPARATOR = "|"
 

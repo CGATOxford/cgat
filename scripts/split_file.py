@@ -11,7 +11,7 @@ Purpose
 -------
 
 .. todo::
-   
+
    describe purpose of the script.
 
 Usage
@@ -36,7 +36,6 @@ import re
 import string
 import os
 import getopt
-import time
 
 USAGE = """python %s < stdin > stdout
 
@@ -51,35 +50,17 @@ OPTIONS:
 -p, --pattern-output            pattern of output files (has to contain %s)
 -c, --column=                   split according to column
 -m, --map=                      split according to map
--d, --dry-run                   echo files that would be created, but do not create any.
+-d, --dry-run                   echo files that would be created,
+                                but do not create any.
 -e, --header                    add header to each file
 -r, --remove-key                remove key column
 -append                         append data to existing files.
---pattern-identifier            if given, use this pattern to extract id from column.
+--pattern-identifier            if given, use this pattern to extract
+                                id from column.
 --version                       output version information
 """ % (sys.argv[0], "s")
 
 import CGAT.Experiment as E
-
-param_long_options = ["verbose=", "help", "split-regex=", "after", "pattern-output=", "skip",
-                      "column=", "map=", "dry-run",
-                      "header", "remove-key", "append", "pattern-identifier=", "version"]
-
-param_short_options = "v:hr:ap:sc:dek"
-
-param_loglevel = 1
-param_split_at_regex = None
-param_after = None
-param_skip = None
-param_pattern_output = "%s.chunk"
-param_split_column = None
-param_split_map = None
-param_filename_map = None
-param_dry_run = False
-param_header = False
-param_remove_key = False
-param_append = "w"
-param_pattern_identifier = None
 
 
 def CreateOpen(file, mode="w", dry_run=False, header=None):
@@ -116,6 +97,26 @@ def main(argv=None):
 
     if argv is None:
         argv = sys.argv
+
+    param_long_options = [
+        "verbose=", "help", "split-regex=", "after", "pattern-output=", "skip",
+        "column=", "map=", "dry-run",
+        "header", "remove-key", "append", "pattern-identifier=", "version"]
+
+    param_short_options = "v:hr:ap:sc:dek"
+
+    param_loglevel = 1
+    param_split_at_regex = None
+    param_after = None
+    param_skip = None
+    param_pattern_output = "%s.chunk"
+    param_split_column = None
+    param_filename_map = None
+    param_dry_run = False
+    param_header = False
+    param_remove_key = False
+    param_append = "w"
+    param_pattern_identifier = None
 
     try:
         optlist, args = getopt.getopt(sys.argv[1:],
@@ -274,13 +275,13 @@ def main(argv=None):
         outfile.close()
 
     if param_loglevel >= 1:
-        sys.stdout.write("# ninput=%i, noutput=%i, nfound=%i, nnotfound=%i, nfiles=%i\n" % (ninput,
-                                                                                            noutput,
-                                                                                            len(
-                                                                                                found),
-                                                                                            len(set(mymap).difference(
-                                                                                                found)),
-                                                                                            len(filenames)))
+        sys.stdout.write(
+            "# ninput=%i, noutput=%i, nfound=%i, nnotfound=%i, nfiles=%i\n" % (
+                ninput,
+                noutput,
+                len(found),
+                len(set(mymap).difference(found)),
+                len(filenames)))
 
     print E.GetFooter()
 

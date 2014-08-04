@@ -59,9 +59,12 @@ def count( Samfile samfile,
 
     cdef int max_hi = 0
     # count nh, nm tags
-    nh_filtered, nm_filtered = collections.defaultdict( int ), collections.defaultdict( int )
-    nh_all, nm_all = collections.defaultdict( int ), collections.defaultdict( int )
-    mapq_filtered, mapq_all = collections.defaultdict( int ), collections.defaultdict( int )
+    nh_filtered = collections.defaultdict(int)
+    nm_filtered = collections.defaultdict(int)
+    nh_all = collections.defaultdict(int)
+    nm_all = collections.defaultdict(int)
+    mapq_filtered = collections.defaultdict(int)
+    mapq_all = collections.defaultdict(int)
 
     cdef int * flags_counts = <int*>calloc( len(FLAGS), sizeof(int) )
 
@@ -104,7 +107,7 @@ def count( Samfile samfile,
         # 2. custom hash implementation: worth the effort?
         # 3. Sorted list and binary search: too slow for many lookups
         reads = {}
-        fastqfile = Fastqfile( filename_fastq )
+        fastqfile = Fastqfile(filename_fastq)
         fastq_nreads = 0
         for fq in fastqfile:
             if fastq_nreads == 0:
@@ -120,7 +123,7 @@ def count( Samfile samfile,
 
             fastq_nreads += 1
         
-        E.info("read %i reads" % fastq_nreads)
+        E.info("read names of %i reads or read pairs" % fastq_nreads)
 
         E.info("allocating %i bytes" % (fastq_nreads * sizeof(CountsType)))
 
@@ -287,7 +290,7 @@ def count( Samfile samfile,
     
     if count_fastq:
 
-        E.info( "aggregating counts" )
+        E.info("fastq counting: aggregating counts")
         for qname, index in reads.items():
             fastq_count = &fastq_counts[index]
 
@@ -345,7 +348,7 @@ def count( Samfile samfile,
                     total_read2_is_missing += 1
                         
             else:
-                # reads without data, could be unpaired?
+                # reads without data, could be unpaired or missing
                 total_unpaired += 1
 
                 # counting for unpaired data
@@ -374,7 +377,8 @@ def count( Samfile samfile,
         ###################################################
         # Read Stats for SE and PE data
         # for SE data
-        if total_unpaired > 0:
+        if total_paired == 0:
+            E.info("reads: single end counting")
             counter.total_read = fastq_nreads
             counter.total_read_is_mapped_uniq = total_read_is_mapped_uniquely
             counter.total_read_is_mmap = total_read_is_mapped_multiply
@@ -384,12 +388,18 @@ def count( Samfile samfile,
             counter.total_read_is_missing = total_read_is_missing
         else:
             # for PE data
+            E.info("reads: paired end counting: paired = %i" % total_paired)
             counter.total_read = fastq_nreads * 2
-            counter.total_read_is_mapped_uniq = total_read1_is_mapped_uniquely + total_read2_is_mapped_uniquely
-            counter.total_read_is_mmap = total_read1_is_mapped_multiply + total_read2_is_mapped_multiply
-            counter.total_read_is_mapped = counter.total_read_is_mapped_uniq + counter.total_read_is_mmap
-            counter.total_read_is_unmapped = total_read1_is_unmapped + total_read2_is_unmapped
-            counter.total_read_is_missing = total_read1_is_missing + total_read2_is_missing
+            counter.total_read_is_mapped_uniq = total_read1_is_mapped_uniquely +\
+                                                total_read2_is_mapped_uniquely
+            counter.total_read_is_mmap = total_read1_is_mapped_multiply +\
+                                         total_read2_is_mapped_multiply
+            counter.total_read_is_mapped = counter.total_read_is_mapped_uniq +\
+                                           counter.total_read_is_mmap
+            counter.total_read_is_unmapped = total_read1_is_unmapped +\
+                                             total_read2_is_unmapped
+            counter.total_read_is_missing = total_read1_is_missing +\
+                                            total_read2_is_missing
 
         ###################################################
         ## stats for 1st/2nd read separately

@@ -3761,6 +3761,17 @@ def main(argv=None):
                       "the NH flag to be set by the mapper "
                       "[default=%default].")
 
+    parser.add_option("--use-barcodes",
+                      dest="use_barcodes",
+                      action="store_true",
+                      help="Use barcodes to count unique umi's. " 
+                            "UMI's are specified in the read identifier "
+                            "as the last field, where fields are separated "
+                            "by underscores, e.g. "
+                            "@READ:ILLUMINA:STUFF_NAMINGSTUFF_UMI. "
+                            "When true, unique counts are returned. "
+                            "Currently only compatible with count-reads")
+
     parser.add_option("--prefix", dest="prefixes",
                       type="string",
                       action="append",
@@ -3804,6 +3815,7 @@ def main(argv=None):
         library_type='fr-unstranded',
         prefixes=[],
         minimum_mapping_quality=0,
+        use_barcodes = False
     )
 
     if not argv:
@@ -3905,6 +3917,7 @@ def main(argv=None):
             counters.append(_gtf2table.CounterReadCounts(
                 bam_files,
                 multi_mapping=options.multi_mapping,
+                use_barcodes=options.use_barcodes,
                 minimum_mapping_quality=options.minimum_mapping_quality,
                 options=options,
                 prefix=prefix))

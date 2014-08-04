@@ -311,7 +311,8 @@ def main(argv=None):
     if options.filename_fastq and not os.path.exists(options.filename_fastq):
         raise IOError("file %s does not exist" % options.filename_fastq)
 
-    counter, flags_counts, nh_filtered, nh_all, nm_filtered, nm_all, mapq, mapq_all, max_hi = \
+    (counter, flags_counts, nh_filtered, nh_all,
+     nm_filtered, nm_all, mapq, mapq_all, max_hi) = \
         _bam2stats.count(pysam_in,
                          options.remove_rna,
                          rna,
@@ -321,7 +322,6 @@ def main(argv=None):
     if max_hi > 0 and max_hi != max(nh_all.keys()):
         E.warn("max_hi(%i) is inconsistent with max_nh (%i) - counts will be corrected"
                % (max_hi, max(nh_all.keys())))
-    flags = sorted(flags_counts.keys())
 
     outs = options.stdout
     outs.write("category\tcounts\tpercent\tof\n")
@@ -515,23 +515,39 @@ def main(argv=None):
         if options.filename_fastq:
             pairs_mapped = counter.total_pair_is_mapped
             outs.write("pairs_total\t%i\t%5.2f\tpairs_total\n" %
-                       (counter.total_pairs, 100.0 * counter.total_pairs / counter.total_pairs))
+                       (counter.total_pairs,
+                        100.0 * counter.total_pairs / counter.total_pairs))
             outs.write("pairs_mapped\t%i\t%5.2f\tpairs_total\n" %
-                       (pairs_mapped, 100.0 * pairs_mapped / counter.total_pairs))
-            outs.write("pairs_unmapped\t%i\t%5.2f\tpairs_total\n" %
-                       (counter.total_pair_is_unmapped, 100.0 * counter.total_pair_is_unmapped / counter.total_pairs))
-            outs.write("pairs_proper_unique\t%i\t%5.2f\tpairs_total\n" %
-                       (counter.total_pair_is_proper_uniq, 100.0 * counter.total_pair_is_proper_uniq / counter.total_pairs))
-            outs.write("pairs_incomplete\t%i\t%5.2f\tpairs_total\n" %
-                       (counter.total_pair_is_incomplete, 100.0 * counter.total_pair_is_incomplete / counter.total_pairs))
-            outs.write("pairs_proper_duplicate\t%i\t%5.2f\tpairs_total\n" %
-                       (counter.total_pair_is_proper_duplicate, 100.0 * counter.total_pair_is_proper_duplicate / counter.total_pairs))
-            outs.write("pairs_proper_multimapping\t%i\t%5.2f\tpairs_total\n" %
-                       (counter.total_pair_is_proper_mmap, 100.0 * counter.total_pair_is_proper_mmap / counter.total_pairs))
-            outs.write("pairs_not_proper_unique\t%i\t%5.2f\tpairs_total\n" %
-                       (counter.total_pair_not_proper_uniq, 100.0 * counter.total_pair_not_proper_uniq / counter.total_pairs))
-            outs.write("pairs_other\t%i\t%5.2f\tpairs_total\n" %
-                       (counter.total_pair_is_other, 100.0 * counter.total_pair_is_other / counter.total_pairs))
+                       (pairs_mapped,
+                        100.0 * pairs_mapped / counter.total_pairs))
+            outs.write(
+                "pairs_unmapped\t%i\t%5.2f\tpairs_total\n" %
+                (counter.total_pair_is_unmapped,
+                 100.0 * counter.total_pair_is_unmapped / counter.total_pairs))
+            outs.write(
+                "pairs_proper_unique\t%i\t%5.2f\tpairs_total\n" %
+                (counter.total_pair_is_proper_uniq,
+                 100.0 * counter.total_pair_is_proper_uniq / counter.total_pairs))
+            outs.write(
+                "pairs_incomplete\t%i\t%5.2f\tpairs_total\n" %
+                (counter.total_pair_is_incomplete,
+                 100.0 * counter.total_pair_is_incomplete / counter.total_pairs))
+            outs.write(
+                "pairs_proper_duplicate\t%i\t%5.2f\tpairs_total\n" %
+                (counter.total_pair_is_proper_duplicate,
+                 100.0 * counter.total_pair_is_proper_duplicate / counter.total_pairs))
+            outs.write(
+                "pairs_proper_multimapping\t%i\t%5.2f\tpairs_total\n" %
+                (counter.total_pair_is_proper_mmap,
+                 100.0 * counter.total_pair_is_proper_mmap / counter.total_pairs))
+            outs.write(
+                "pairs_not_proper_unique\t%i\t%5.2f\tpairs_total\n" %
+                (counter.total_pair_not_proper_uniq,
+                 100.0 * counter.total_pair_not_proper_uniq / counter.total_pairs))
+            outs.write(
+                "pairs_other\t%i\t%5.2f\tpairs_total\n" %
+                (counter.total_pair_is_other,
+                 100.0 * counter.total_pair_is_other / counter.total_pairs))
 
             nread1_total = counter.total_read1
             _write(outs,

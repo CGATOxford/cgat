@@ -164,9 +164,8 @@ import re
 import itertools
 import glob
 import cStringIO
-
-import CGAT.Experiment as E
 import string
+
 import CGAT.IOTools as IOTools
 import CGAT.FastaIterator as FastaIterator
 import CGATPipelines.PipelineMapping as PipelineMapping

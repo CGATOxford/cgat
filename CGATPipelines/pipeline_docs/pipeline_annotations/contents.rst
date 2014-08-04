@@ -1,18 +1,30 @@
 .. Test documentation master file, created by
    sphinx-quickstart on Mon Mar 23 15:27:57 2009.
 
-==========
- Contents
-==========
+.. _annotationpipeline:
 
-Contents:
+===================
+Annotation Pipeline
+===================
+
+The table of contents below lists the pipeline results.  See `CGAT
+Pipelines`_ for an overview of using CGAT pipelines. The documentation
+for the Annotation Pipeline is below:
 
 .. toctree::
    :maxdepth: 2
 
-   analysis.rst
-   pipeline.rst
-   usage.rst
+   pipeline/Status.rst
+   pipeline/Bed.rst
+   pipeline/GTF.rst
+   pipeline/GFF.rst
+   pipeline/Genesets.rst
+   pipeline/Config.rst
+
+.. automodule:: pipeline_annotations
+   :members:
+   :inherited-members:
+   :show-inheritance:
 
 ====================
  Indices and tables

@@ -1,5 +1,4 @@
-"""
-================================
+"""================================
 Optimizing cufflinks parameters
 ================================
 
@@ -19,19 +18,24 @@ Building transcripts is an important prerequisite for a number of projects that 
 especially where the emphasis is on transcript structure or the identification of non-coding
 transcripts (often lowly expressed).
 
-In addition to the general issues  associated with transcript building, we are often working on
-a variety of data from different library types and as such are not aware of the optimal set of
-parameters for a transcript assembly from the outset of an analysis. This is especially important when 
-we are faced with such things as high numbers of intronic reads from a non-polyA selected library
-or low depth. Ideally we want to optimize the number of spliced reads that are incorporated into
-transcript models, thus using the maximal amount of information that is present in any given datset.
+In addition to the general issues associated with transcript building,
+we are often working on a variety of data from different library types
+and as such are not aware of the optimal set of parameters for a
+transcript assembly from the outset of an analysis. This is especially
+important when we are faced with such things as high numbers of
+intronic reads from a non-polyA selected library or low depth. Ideally
+we want to optimize the number of spliced reads that are incorporated
+into transcript models, thus using the maximal amount of information
+that is present in any given datset.
 
 
-Another issue in transcript assembly is the time that is required to run an assembly on an entire
-transcriptome, creating a bottleneck in parameter optimization.
+Another issue in transcript assembly is the time that is required to
+run an assembly on an entire transcriptome, creating a bottleneck in
+parameter optimization.
 
-Given the above, the cufflinks optimization pipeline uses a reduced set of alignments (from a tophat run)
-to optimize a variety of user specified parameters. It performs the following tasks
+Given the above, the cufflinks optimization pipeline uses a reduced
+set of alignments (from a tophat run) to optimize a variety of user
+specified parameters. It performs the following tasks
 
     * Reduction of input bam files into chr19 only bamfiles
 
@@ -48,16 +52,17 @@ to optimize a variety of user specified parameters. It performs the following ta
 Usage
 =====
 
-See :ref:`PipelineSettingUp` and :ref:`PipelineRunning` on general information how to use CGAT pipelines.
+See :ref:`PipelineSettingUp` and :ref:`PipelineRunning` on general
+information how to use CGAT pipelines.
 
 Configuration
 -------------
 
-The pipeline requires a configured :file:`pipeline.ini` file. 
+The pipeline requires a configured :file:`pipeline.ini` file.
 
-The sphinxreport report requires a :file:`conf.py` and :file:`sphinxreport.ini` file 
-(see :ref:`PipelineReporting`). To start with, use the files supplied with the
-Example_ data.
+The sphinxreport report requires a :file:`conf.py` and
+:file:`sphinxreport.ini` file (see :ref:`PipelineReporting`). To start
+with, use the files supplied with the Example_ data.
 
 Input
 -----
@@ -65,25 +70,28 @@ Input
 Mapped reads
 ++++++++++++
 
-The principal input of this pipeline is a collection of reads mapped to a reference genome.
-Mapped reads are imported by placing files are linking to files in the :term:`working directory`.
+The principal input of this pipeline is a collection of reads mapped
+to a reference genome.  Mapped reads are imported by placing files are
+linking to files in the :term:`working directory`.
 
 The default file format assumes the following convention:
 
    <sample>-<condition>-<replicate>.bam
 
-``sample`` and ``condition`` make up an :term:`experiment`, while ``replicate`` denotes
-the :term:`replicate` within an :term:`experiment`. 
+``sample`` and ``condition`` make up an :term:`experiment`, while
+``replicate`` denotes the :term:`replicate` within an
+:term:`experiment`.
 
   
 Requirements
 ------------
 
-The pipeline requires the results from :doc:`pipeline_annotations`. Set the configuration variable 
+The pipeline requires the results from
+:doc:`pipeline_annotations`. Set the configuration variable
 :py:data:`annotations_database` and :py:data:`annotations_dir`.
 
-On top of the default CGAT setup, the pipeline requires the following software to be in the 
-path:
+On top of the default CGAT setup, the pipeline requires the following
+software to be in the path:
 
 +--------------------+-------------------+------------------------------------------------+
 |*Program*           |*Version*          |*Purpose*                                       |
@@ -94,7 +102,8 @@ path:
 Example
 =======
 
-Example data is available at http://www.cgat.org/~andreas/sample_data/pipeline_cufflinks_optimization.tgz.
+Example data is available at
+http://www.cgat.org/~andreas/sample_data/pipeline_cufflinks_optimization.tgz.
 To run the example, simply unpack and untar::
 
    wget http://www.cgat.org/~andreas/sample_data/pipeline_cufflinks_optimization.tgz
@@ -102,7 +111,8 @@ To run the example, simply unpack and untar::
    cd pipeline_cufflinks_optimization.dir
    python <srcdir>/pipeline_cufflinks_optimization.py make full
 
-.. note:: 
+.. note::
+
    For the pipeline to run, install the :doc:`pipeline_annotations` as well.
 
 Glossary
@@ -122,44 +132,20 @@ Code
 
 # load modules
 from ruffus import *
-
-import CGAT.Experiment as E
-import logging as L
-import CGAT.Database as Database
-import CGAT.CSV as CSV
-
 import sys
 import os
 import re
-import shutil
 import itertools
-import math
 import glob
-import time
 import gzip
-import collections
-import random
 import operator
-
-import numpy
 import sqlite3
-import CGAT.GTF as GTF
-import CGAT.IOTools as IOTools
-import CGAT.IndexedFasta as IndexedFasta
-import CGAT.Tophat as Tophat
 from rpy2.robjects import r as R
-import rpy2.robjects as ro
-import rpy2.robjects.vectors as rovectors
-from rpy2.rinterface import RRuntimeError
 import pysam
 
-import CGAT.Expression as Expression
-
-import CGATPipelines.PipelineGeneset as PipelineGeneset
-import CGATPipelines.PipelineMapping as PipelineMapping
-import CGATPipelines.PipelineRnaseq as PipelineRnaseq
-import CGATPipelines.PipelineMappingQC as PipelineMappingQC
-import CGAT.Stats as Stats
+import CGAT.Experiment as E
+import CGAT.GTF as GTF
+import CGAT.IOTools as IOTools
 
 ###################################################
 ###################################################
@@ -179,8 +165,10 @@ P.getParameters(
 
 PARAMS = P.PARAMS
 
-PARAMS_ANNOTATIONS = P.peekParameters(PARAMS["annotations_dir"],
-                                      "pipeline_annotations.py", on_error_raise=__name__ == "__main__")
+PARAMS_ANNOTATIONS = P.peekParameters(
+    PARAMS["annotations_dir"],
+    "pipeline_annotations.py",
+    on_error_raise=__name__ == "__main__")
 
 ###################################################################
 ###################################################################

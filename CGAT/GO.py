@@ -1014,7 +1014,8 @@ def GetCode(v):
 
 
 def convertGo2Goslim(options):
-    """read gene list with GO assignments and convert to GO slim categories."""
+    """read gene list with GO assignments and convert to GO slim
+    categories."""
 
     E.info("reading GO assignments from stdin")
     gene2gos, go2infos = ReadGene2GOFromFile(options.stdin)
@@ -1052,10 +1053,12 @@ def convertGo2Goslim(options):
     output_goids, output_genes = set(), set()
     noutput = 0
     options.stdout.write(
-        "\t".join(("go_type", "gene_id", "go_id", "description", "evidence")) + "\n")
-    for category, gene2go in gene2gos.iteritems():
+        "\t".join(("go_type", "gene_id", "go_id",
+                   "description", "evidence")) + "\n")
+
+    for category, gene2go in sorted(gene2gos.items()):
         gene2go = MapGO2Slims(gene2go, go_slims, ontology)
-        for gene_id, values in gene2go.iteritems():
+        for gene_id, values in sorted(gene2go.items()):
             output_genes.add(gene_id)
             for go in values:
                 output_goids.add(go.mGOId)
@@ -1067,10 +1070,12 @@ def convertGo2Goslim(options):
                                       "NA", ))
                 noutput += 1
 
-    E.info("ninput_genes=%i, ninput_goids=%i, noutput_gene=%i, noutput_goids=%i, noutput=%i" %
-           (len(input_genes), len(input_goids),
-            len(output_genes), len(output_goids),
-            noutput))
+    E.info(
+        ("ninput_genes=%i, ninput_goids=%i, noutput_gene=%i, "
+         "noutput_goids=%i, noutput=%i") %
+        (len(input_genes), len(input_goids),
+         len(output_genes), len(output_goids),
+         noutput))
 
 
 def outputResults(outfile,
@@ -1084,8 +1089,10 @@ def outputResults(outfile,
                   gene2name=None):
     '''output GO results to outfile.
 
-    If foreground is given, output a list of gene identifiers in the foreground.
-    If gene2name is given, output a columns with gene names (instead of identifiers)
+    If foreground is given, output a list of gene identifiers in the
+    foreground.  If gene2name is given, output a columns with gene
+    names (instead of identifiers)
+
     '''
 
     headers = ["code",

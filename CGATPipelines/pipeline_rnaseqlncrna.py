@@ -1031,7 +1031,7 @@ def extractEnsemblLincRNA(infile, outfile):
 @active_if(PARAMS.get("control_geneset_data") and
            PARAMS["control_geneset_data"] == "ensembl")
 @follows(mkdir("lncRNA_control"))
-@files(os.path.join(".", PARAMS["control_genset_data"]),
+@files(os.path.join(".", PARAMS["control_geneset_data"]),
        os.path.join("lncRNA_control", PARAMS["control_geneset_data"]))
 def extractControlLncRNA(infile, outfile):
     assert os.path.exists(infile), "Control file is missing:" % infile
