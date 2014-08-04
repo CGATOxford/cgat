@@ -1060,7 +1060,7 @@ def convertGo2Goslim(options):
         gene2go = MapGO2Slims(gene2go, go_slims, ontology)
         for gene_id, values in sorted(gene2go.items()):
             output_genes.add(gene_id)
-            for go in values:
+            for go in sorted(values, key=lambda x: x.mGOId):
                 output_goids.add(go.mGOId)
                 options.stdout.write("%s\t%s\t%s\t%s\t%s\n" %
                                      (go.mGOType,

@@ -675,7 +675,7 @@ def plotPairs():
 def plotPCA():
     '''plot a PCA plot from countsTable.'''
 
-    R('''library(ggplot2)''')
+    R('''suppressMessages(library(ggplot2))''')
     R('''pca = prcomp(t(countsTable))''')
     R('''p1 = ggplot(
     as.data.frame(pca$x),
@@ -753,8 +753,8 @@ def runEdgeR(outfile,
 
         R['dev.off']()
 
-        R('''library('ggplot2')''')
-        R('''library('reshape')''')
+        R('''suppressMessages(library('ggplot2'))''')
+        R('''suppressMessages(library('reshape'))''')
 
         # output difference between pairs within groups
         first = True
@@ -854,7 +854,7 @@ def runEdgeR(outfile,
     E.info("Generating output")
 
     # output cpm table
-    R('''library(reshape2)''')
+    R('''suppressMessages(library(reshape2))''')
     R('''countsTable.cpm <- cpm(countsTable,  normalized.lib.sizes=TRUE)''')
     R('''countsTable.cpm.melt <- melt(countsTable.cpm)''')
     R('''names(countsTable.cpm.melt) <- c("id","sample","ncpm")''')
@@ -1457,8 +1457,8 @@ def plotTagStats(infile, design_file, outfile_prefix):
 
     # import rpy2.robjects.lib.ggplot2 as ggplot2
 
-    R('''library('ggplot2')''')
-    R('''library('reshape')''')
+    R('''suppressMessages(library('ggplot2'))''')
+    R('''suppressMessages(library('reshape'))''')
 
     R('''d = melt( log10(countsTable + 1), variable_name = 'sample' )''')
 
@@ -1494,8 +1494,8 @@ def plotDETagStats(infile, outfile_prefix):
 
     # import rpy2.robjects.lib.ggplot2 as ggplot2
 
-    R('''library('ggplot2')''')
-    R('''library('grid')''')
+    R('''suppressMessages(library('ggplot2'))''')
+    R('''suppressMessages(library('grid'))''')
     R('''data = read.table( '%s', header = TRUE, row.names=1 )''' % infile)
 
     R(''' gp = ggplot(data)''')
