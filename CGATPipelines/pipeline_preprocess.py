@@ -30,9 +30,11 @@ Pre-process pipeline
 :Date: |today|
 :Tags: Python
 
-(See the readqc pipeline for details of the readqc functions (target ``readqc``).)
+(See the readqc pipeline for details of the readqc functions (target
+``readqc``).)
 
-The purpose of this pipeline is to pre-process reads (target ``full``). 
+The purpose of this pipeline is to pre-process reads (target
+``full``).
 
 Implemented tasks are:
 
@@ -46,7 +48,8 @@ Individual tasks are enabled in the configuration file.
 Usage
 =====
 
-See :ref:`PipelineSettingUp` and :ref:`PipelineRunning` on general information how to use CGAT pipelines.
+See :ref:`PipelineSettingUp` and :ref:`PipelineRunning` on general
+information how to use CGAT pipelines.
 
 Configuration
 -------------
@@ -88,35 +91,37 @@ The default file format assumes the following convention:
 following suffixes/file types are possible:
 
 sra
-   Short-Read Archive format. Reads will be extracted using the :file:`fastq-dump` tool.
+   Short-Read Archive format. Reads will be extracted using the
+   :file:`fastq-dump` tool.
 
 fastq.gz
    Single-end reads in fastq format.
 
 fastq.1.gz, fastq2.2.gz
-   Paired-end reads in fastq format. The two fastq files must be sorted by read-pair.
+   Paired-end reads in fastq format. The two fastq files must be
+   sorted by read-pair.
 
 .. note::
 
-   Quality scores need to be of the same scale for all input files. Thus it might be
-   difficult to mix different formats.
+   Quality scores need to be of the same scale for all input
+   files. Thus it might be difficult to mix different formats.
 
 Requirements
 ------------
 
-On top of the default CGAT setup, the pipeline requires the following software to be in the 
-path:
+On top of the default CGAT setup, the pipeline requires the following
+software to be in the path:
 
-+--------------------+-------------------+------------------------------------------------+
-|*Program*           |*Version*          |*Purpose*                                       |
-+--------------------+-------------------+------------------------------------------------+
-|fastqc              |>=0.9.0            |read quality control                            |
-+--------------------+-------------------+------------------------------------------------+
-|sra-tools           |                   |extracting reads from .sra files                |
-+--------------------+-------------------+------------------------------------------------+
-|picard              |>=1.38             |bam/sam files. The .jar files need to be in your|
-|                    |                   | CLASSPATH environment variable.                |
-+--------------------+-------------------+------------------------------------------------+
++------------+-----------+------------------------------------------------+
+|*Program*   |*Version*  |*Purpose*                                       |
++------------+-----------+------------------------------------------------+
+|fastqc      |>=0.9.0    |read quality control                            |
++------------+-----------+------------------------------------------------+
+|sra-tools   |           |extracting reads from .sra files                |
++------------+-----------+------------------------------------------------+
+|picard      |>=1.38     |bam/sam files. The .jar files need to be in your|
+|            |           | CLASSPATH environment variable.                |
++------------+-----------+------------------------------------------------+
 
 Pipeline output
 ===============
@@ -302,9 +307,6 @@ ILLUMINA_ADAPTORS = {
     "AATGATACGGCGACCACCGAGATCTACACGATCGGAAGAGCACACGTCTGAACTCCAGTCACATGCCATCCGACGATCATTGATGG"
 }
 
-#########################################################################
-#########################################################################
-#########################################################################
 
 @merge(None, "contaminants.fasta")
 def outputContaminants(infile, outfile):
@@ -422,7 +424,7 @@ def summarise(infile, outfile):
         print summary_files
 
     print "outfile" + outfile
-    
+
     statement = '''echo -en 'sample\\t' > %(outfile)s;
                 grep 'reads' %(initial_file)s >> %(outfile)s;''' % locals()
 
@@ -437,8 +439,6 @@ def summarise(infile, outfile):
     P.run()
 
 
-
- 
 @transform([x for x in
             glob.glob("*.fastq.gz") + glob.glob("*.fastq.1.gz") +
             glob.glob("*.fastq.2.gz")
@@ -462,7 +462,7 @@ def removeContaminants(infiles, outfile):
     adaptors = " ".join(adaptors)
 
     statement = '''
-    cutadapt 
+    cutadapt
     %(adaptors)s
     --overlap=%(contamination_min_overlap_length)i
     --format=fastq
@@ -472,10 +472,6 @@ def removeContaminants(infiles, outfile):
     | gzip > %(outfile)s
     '''
     P.run()
-
-#########################################################################
-#########################################################################
-#########################################################################
 
 
 def checkPairs(infile):
@@ -488,11 +484,6 @@ def checkPairs(infile):
         infile2 = None
 
     return infile2
-
-#########################################################################
-#########################################################################
-#########################################################################
-
 
 
 def parseCutadapt(lines):
@@ -543,7 +534,8 @@ def parseCutadapt(lines):
     for chunk in _chunker(lines):
         adapter = re.search("=== (.*) ===", chunk[0]).groups()[0]
         length, removed = re.search(
-            "Adapter '.*', length (\d+), was trimmed (\d+) times", chunk[2]).groups()
+            "Adapter '.*', length (\d+), was trimmed (\d+) times",
+            chunk[2]).groups()
 
         adapters[adapter] = length, removed
 
