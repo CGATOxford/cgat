@@ -557,6 +557,7 @@ class CounterBAM(Counter):
     def __init__(self, bamfiles, 
                  *args,
                  multi_mapping = 'all',
+                 use_barcodes = False,
                  minimum_mapping_quality = 0,
                  **kwargs ):
         Counter.__init__(self, *args, **kwargs )
@@ -564,6 +565,7 @@ class CounterBAM(Counter):
             raise ValueError("supply --bam-file options for readcoverage")
         self.mBamFiles = bamfiles
         self.multi_mapping = multi_mapping
+        self.use_barcodes = use_barcodes
         self.minimum_mapping_quality = minimum_mapping_quality
         self.header = [ '_'.join(x) 
                         for x in itertools.product( 
@@ -669,6 +671,7 @@ class CounterReadCountsFull(CounterBAM):
         cdef float minimum_mapping_quality = self.minimum_mapping_quality
         cdef bint weight_multi_mapping = self.multi_mapping == "weight"
         cdef bint ignore_multi_mapping = self.multi_mapping == "ignore"
+        cdef bint use_barcodes = self.use_barcodes
         cdef int max_bases_outside_exons = self.max_bases_outside_exons
 
         # status variables
@@ -730,13 +733,31 @@ class CounterReadCountsFull(CounterBAM):
         cdef AlignedRead read
 
         # define counters, add 1 for quality filtered reads
-        counters = numpy.zeros(ncounters, dtype=numpy.float)
-        counters.shape = (ndirection_status,
-                          nexons_status,
-                          nspliced_status)
+
+        def get_counters(n=ncounters,
+                         x=ndirection_status, 
+                         y=nexons_status,
+                         z=nspliced_status):
+            counters = numpy.zeros(n, dtype=numpy.float)
+            counters.shape = (x,y,z)
+            return counters
+            
+
+        # counters = numpy.zeros(ncounters, dtype=numpy.float)
+        # counters.shape = (ndirection_status,
+        #                   nexons_status,
+        #                   nspliced_status)
+
+
 
         # retrieve all reads
         reads = []
+
+        if use_barcodes == True:
+            barcode_counters = {}
+
+        else:
+            counters = get_counters()
 
         for samfile in self.mBamFiles:
             for read in samfile.fetch(contig,
@@ -744,7 +765,11 @@ class CounterReadCountsFull(CounterBAM):
                                       exons_end):
                 if minimum_mapping_quality > 0 and read.mapq <= minimum_mapping_quality:
                     quality_read_status += 1
-                    continue
+                    continue                   
+
+                if use_barcodes == True:
+                    barcode = read.qname.split("_")[-1]
+                    barcode_counters[barcode] = get_counters()
 
                 # Iterate over blocks within reads and 
                 # compute overlap with exons, introns, etc.
@@ -861,12 +886,27 @@ class CounterReadCountsFull(CounterBAM):
                     if nh > 1:
                         weight = 0
 
-                counters[direction_status][exons_status][spliced_status] += weight
+                    
+                counters_index=(direction_status, exons_status, spliced_status)
+
+                if use_barcodes == True:
+                    '''only the first read is counted'''
+                    if barcode_counters[barcode][counters_index] == 0:
+                        barcode_counters[barcode][counters_index] += weight
+                    else:
+                        continue
+                else:
+                    counters[counters_index] += weight
 
         free(block_starts)
         free(block_ends)
         free(exon_starts)
         free(exon_ends)
+
+        if use_barcodes == True:
+            counters = get_counters()
+            for key, value in barcode_counters.iteritems():
+                counters += value
 
         if not weight_multi_mapping:
             # convert to full counts
@@ -992,8 +1032,12 @@ class CounterReadCounts(CounterReadCountsFull):
             self.sense_inconsistent,
             self.sense_other,
             self.antisense,
+            self.nonsense,
             self.reads_below_quality,
             self.total_reads)))
+
+
+
         
 ##-----------------------------------------------------------------------------------
 class CounterReadPairCountsFull(CounterBAM):
@@ -1123,6 +1167,7 @@ class CounterReadPairCountsFull(CounterBAM):
         cdef int max_bases_outside_exons = self.max_bases_outside_exons
         cdef bint weight_multi_mapping = self.multi_mapping == "weight"
         cdef bint ignore_multi_mapping = self.multi_mapping == "ignore"
+
 
         # status variables
         cdef int npair_status = len(self.headers_status)
