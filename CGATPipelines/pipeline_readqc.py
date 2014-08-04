@@ -462,7 +462,7 @@ if BIAS_ANALYSIS:
         transcripts, expression = infiles
         out_correlation, out_gradient = outfiles
 
-        atr = pandas.read_csv(transcripts, sep='\t')
+        atr = pandas.read_csv(transcripts, sep='\t', compression="gzip")
         exp = pandas.read_csv(expression, sep='\t', compression="gzip")
         atr["length"] = numpy.log2(atr["length"])
 
