@@ -1031,6 +1031,119 @@ class BWAMEM(BWA):
 
         return " ".join(statement)
 
+class Bismark(Mapper):
+
+    '''run bismark to map reads against genome.
+
+    * colour space not implemented
+
+    if remove_unique is true, a filtering step is included in postprocess,
+    which removes reads that don't have tag X0:i:1 (i.e. have > 1 best hit)
+    '''
+
+    def __init__(self, remove_unique=False, align_stats=False, dedup=False,
+                 read_group_header=False, *args, **kwargs):
+        Mapper.__init__(self, *args, **kwargs)
+
+        self.remove_unique = remove_unique
+        self.align_stats = align_stats
+        self.dedup = dedup
+
+    def mapper(self, infiles, outfile):
+        '''build mapping statement on infiles.'''
+
+        num_files = [len(x) for x in infiles]
+
+        if max(num_files) != min(num_files):
+            raise ValueError(
+                "mixing single and paired-ended data not possible.")
+
+        nfiles = max(num_files)
+
+        tmpdir = os.path.join(self.tmpdir_fastq + "bwa")
+
+        bismark_index = "%(bismark_index_dir)s/%(bismark_genome)s"
+
+        tmpdir_fastq = self.tmpdir_fastq
+
+        track = P.snip(os.path.basename(outfile), ".bam")
+
+        if nfiles == 1:
+            infiles = infiles[0][0]
+            statement = '''
+            bismark %%(bismark_options)s -q --bowtie2 --output_dir %%(outdir)s
+            -p %%(job_threads)s --bam --phred33-quals
+            %(bismark_index)s %(infiles)s;
+            ''' % locals()
+
+        elif nfiles == 2:
+            infiles1 = infiles[0][0]
+            infiles2 = infiles[0][1]
+
+            statement = '''
+            bismark %%(bismark_options)s -q --bowtie2 --output_dir %%(outdir)s
+            -p %%(job_threads)s --bam --phred33-quals %(bismark_index)s
+            -1 %(infiles1)s -2 %(infiles2)s;
+            ''' % locals()
+        else:
+            raise ValueError(
+                "unexpected number read files to map: %i " % nfiles)
+
+        self.tmpdir = tmpdir
+
+        return statement
+
+    # what should the post processing be?
+    def postprocess2(self, infiles, outfile):
+        '''collect output data and postprocess.'''
+
+        track = P.snip(os.path.basename(outfile), ".bam")
+        outf = P.snip(outfile, ".bam")
+        tmpdir = self.tmpdir
+
+        strip_cmd, unique_cmd = "", ""
+
+        if self.remove_non_unique:
+            unique_cmd = '''| python %%(scriptsdir)s/bam2bam.py
+            --filter=unique --log=%(outfile)s.log''' % locals()
+
+        if self.strip_sequence:
+            strip_cmd = '''| python %%(scriptsdir)s/bam2bam.py
+            --strip=sequence --log=%(outfile)s.log''' % locals()
+
+        statement = '''
+                samtools view -uS %(tmpdir)s/%(track)s.sam
+                %(unique_cmd)s
+                %(strip_cmd)s
+                | samtools sort - %(outf)s 2>>%(outfile)s.bwa.log;
+                samtools index %(outfile)s;''' % locals()
+
+        if self.align_stats:
+            statement += '''cat %(outfile)s
+            | python %%(scriptsdir)s/bam2bam.py -v 0 --set-sequence --sam
+            | CollectMultipleMetrics
+            INPUT=/dev/stdin
+            REFERENCE_SEQUENCE=%%(bwa_index_dir)s/%%(genome)s.fa
+            ASSUME_SORTED=true
+            OUTPUT=%(outf)s.picard_stats
+            VALIDATION_STRINGENCY=SILENT
+            >& %(outf)s.picard_stats ;''' % locals()
+
+        if self.dedup:
+            statement += '''MarkDuplicates
+            INPUT=%(outfile)s
+            ASSUME_SORTED=true
+            METRICS_FILE=%(outfile)s.duplicate_metrics
+            OUTPUT=%(tmpdir)s/%(track)s.deduped.bam
+            REMOVE_DUPLICATES=true
+            VALIDATION_STRINGENCY=SILENT ;''' % locals()
+            statement += '''rm -f %(outfile)s %(outfile)s.bai;
+            mv %(tmpdir)s/%(track)s.deduped.bam %(outfile)s ;''' % locals()
+            statement += '''samtools index %(outfile)s ;''' % locals()
+
+        return statement
+
+
 
 class Stampy(BWA):
 
