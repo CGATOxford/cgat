@@ -103,10 +103,10 @@ def linkToEnsembl(id):
     ensembl_species = ensembl_info.species
 
     if id.startswith(ensembl_info.gene_prefix):
-        link = "`%(id)s <http://www.ensembl.org/%(ensembl_database)s/Gene/Summary?g=%(id)s>`_" \
+        link = "`%(id)s <http://www.ensembl.org/%(ensembl_species)s/Gene/Summary?g=%(id)s>`_" \
             % locals()
     elif id.startswith(ensembl_info.transcript_prefix):
-        link = "`%(id)s <http://www.ensembl.org/%(ensembl_database)s/Transcript/Summary?t=%(id)s>`_" \
+        link = "`%(id)s <http://www.ensembl.org/%(ensembl_species)s/Transcript/Summary?t=%(id)s>`_" \
             % locals()
     else:
         link = id
