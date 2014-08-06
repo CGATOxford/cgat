@@ -342,6 +342,8 @@ rm GCProfile_LINUX.tar
 cp GCProfile_LINUX/GCProfile .
 cp GCProfile_LINUX/gnuplot .
 
+echo 'external-tools contains'
+ls .
 
 if [ "$OS" == "travis" ] ; then
    cd $TRAVIS_BUILD_DIR;
