@@ -317,7 +317,7 @@ fi # if-OS
 # wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/wigToBigWig
 wget --no-check-certificate https://www.cgat.org/downloads/public/external-tools/wigToBigWig
 chmod +x wigToBigWig
-#PATH=$PATH:$CGAT_HOME/external-tools
+PATH=$PATH:$CGAT_HOME/external-tools
 
 # bedGraphToBigWig
 wget --no-check-certificate https://www.cgat.org/downloads/public/external-tools/bedGraphToBigWig
@@ -331,7 +331,7 @@ tar xzf bedtools-2.19.1.tar.gz
 rm bedtools-2.19.1.tar.gz
 cd bedtools2-2.19.1
 make
-#PATH=$PATH:$CGAT_HOME/external-tools/bedtools2-2.19.1/bin
+PATH=$PATH:$CGAT_HOME/external-tools/bedtools2-2.19.1/bin
 
 # GCProfile
 cd ..
