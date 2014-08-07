@@ -328,7 +328,7 @@ def main(argv=None):
 
     # setup command line parser
     parser = E.OptionParser(
-        version="%prog version: $Id"
+        version="%prog version: $Id",
         usage=globals()["__doc__"])
 
     parser.add_option(
