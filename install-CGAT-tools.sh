@@ -390,7 +390,7 @@ if [ "$OS" == "travis" ] ; then
    echo "TRAVIS Debugging"
    echo "GCProfile is `which GCProfile`"
    echo "bedtools is `which bedtools`"
-   echo "wigToBigWig is `which wigToBigWig`
+   echo "wigToBigWig is `which wigToBigWig`"
    echo "bedGraphToBigWig is `which bedGraphToBigWig`"
    echo "===================================="
 
