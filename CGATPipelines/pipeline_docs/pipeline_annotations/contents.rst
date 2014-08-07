@@ -26,6 +26,10 @@ for the Annotation Pipeline is below:
    :inherited-members:
    :show-inheritance:
 
+.. warniglist::
+
+.. errorlist::
+
 ====================
  Indices and tables
 ====================
