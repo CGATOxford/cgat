@@ -22,7 +22,7 @@ for the pipeline is below:
    pipeline/DifferentialMethylation.rst
    pipeline/Config.rst
 
-.. warniglist::
+.. warninglist::
 
 .. errorlist::
 

@@ -204,13 +204,15 @@ elif [ "$OS" == "travis" ] ; then
    pip install matplotlib
    pip install scipy
 
+   
+   # Install latest versions of packages
    # substitute requires.txt on travis installation --start
-   #pip install -r https://raw.github.com/CGATOxford/cgat/master/requires.txt
+   # pip install -r https://raw.github.com/CGATOxford/cgat/master/requires.txt
    pip install pyparsing==1.5.7
    pip install MySQL-python
    pip install PyGreSQL
    pip install PyYAML
-   pip install SphinxReport==2.0
+   pip install SphinxReport
    pip install alignlib-lite
    pip install drmaa
    pip install hgapi
@@ -341,14 +343,19 @@ tar xf GCProfile_LINUX.tar
 rm GCProfile_LINUX.tar
 cp GCProfile_LINUX/GCProfile .
 cp GCProfile_LINUX/gnuplot .
-chmod 775 GCProfile
+chmod +x GCProfile gnuplot
 
-echo 'external-tools contains'
+echo "===================================="
+echo "TRAVIS Debugging"
+echo "external-tools is `pwd`"
+echo "external tools contains"
 ls -l .
 
 if [ "$OS" == "travis" ] ; then
    cd $TRAVIS_BUILD_DIR;
 fi
+echo "===================================="
+
 
 } # nosetests_external_deps
 
@@ -359,7 +366,7 @@ run_nosetests() {
 if [ "$OS" == "travis" ] ; then
 
    # GCProfile
-   #apt-get install -y libc6-i386 libstdc++5:i386
+   # apt-get install -y libc6-i386 libstdc++5:i386
    echo 'this is gcc version:'
    gcc -v
    
@@ -378,6 +385,14 @@ if [ "$OS" == "travis" ] ; then
    cd $TRAVIS_BUILD_DIR
    python setup.py develop
    #python scripts/cgat_rebuild_extensions.py
+
+   echo "===================================="
+   echo "TRAVIS Debugging"
+   echo "GCProfile is `which GCProfile`"
+   echo "bedtools is `which bedtools`"
+   echo "wigToBigWig is `which wigToBigWig`
+   echo "bedGraphToBigWig is `which bedGraphToBigWig`"
+   echo "===================================="
 
    # run nosetests
    if [ "$TEST_IMPORT" == "1" ] ; then
