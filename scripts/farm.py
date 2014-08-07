@@ -687,11 +687,15 @@ def runDRMAA(data, environment):
         jt.jobEnvironment = e
 
         jt.args = []
-        jt.nativeSpecification = "-V -q %s -p %i -N %s %s" % \
-            (kwargs.get("job_queue", options.cluster_queue),
-             kwargs.get("job_priority", options.cluster_priority),
-             os.path.basename(kwargs.get("outfile", "farm.py")),
-             kwargs.get("job_options", options.cluster_options))
+        o = ["-V",
+             "-N %s" % os.path.basename(kwargs.get("outfile", "farm.py"))]
+        if options.cluster_queue:
+            o.append("-q %s" % options.cluster_queue)
+        if options.cluster_priority:
+            o.append("-p %i" % options.cluster_priority)
+        if options.cluster_options:
+            o.append(options.cluster_options)
+        jt.nativeSpecification = " ".join(o)
 
         # keep stdout and stderr separate
         jt.joinFiles = False
