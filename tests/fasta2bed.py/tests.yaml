@@ -9,7 +9,7 @@ gaps:
         stdin: in.fasta
         outputs: [stdout]
         references: [gaps.bed]
-        options:
+        options: --method=gaps
 
 cpg_windows:
         stdin: hg19.chr19.fasta
