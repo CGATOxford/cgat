@@ -897,7 +897,7 @@ class BWA(Mapper):
 
         strip_cmd, unique_cmd = "", ""
 
-        if self.remove_non_unique:
+        if self.remove_unique:
             unique_cmd = '''| python %%(scriptsdir)s/bam2bam.py
             --filter=unique --log=%(outfile)s.log''' % locals()
 
@@ -1017,9 +1017,6 @@ class Bismark(Mapper):
     '''run bismark to map reads against genome.
 
     * colour space not implemented
-
-    if remove_unique is true, a filtering step is included in postprocess,
-    which removes reads that don't have tag X0:i:1 (i.e. have > 1 best hit)
     '''
 
     def __init__(self, remove_unique=False, align_stats=False, dedup=False,
@@ -1047,14 +1044,12 @@ class Bismark(Mapper):
 
         tmpdir_fastq = self.tmpdir_fastq
 
-        track = P.snip(os.path.basename(outfile), ".bam")
-
         if nfiles == 1:
             infiles = infiles[0][0]
             statement = '''
             bismark %%(bismark_options)s -q --bowtie2 --output_dir %%(outdir)s
-            -p %%(job_threads)s --bam --phred33-quals
-            %(bismark_index)s %(infiles)s;
+            -p %%(job_threads)s --bam --phred33-quals %(bismark_index)s
+            %(infiles)s;
             ''' % locals()
 
         elif nfiles == 2:
@@ -1063,9 +1058,10 @@ class Bismark(Mapper):
 
             statement = '''
             bismark %%(bismark_options)s -q --bowtie2 --output_dir %%(outdir)s
-            -p %%(job_threads)s --bam --phred33-quals %(bismark_index)s
-            -1 %(infiles1)s -2 %(infiles2)s;
+            -p %%(job_threads)s --bam --non_directional
+            --phred33-quals %(bismark_index)s -1 %(infiles1)s -2 %(infiles2)s;
             ''' % locals()
+
         else:
             raise ValueError(
                 "unexpected number read files to map: %i " % nfiles)
@@ -1075,55 +1071,16 @@ class Bismark(Mapper):
         return statement
 
     # what should the post processing be?
-    def postprocess2(self, infiles, outfile):
-        '''collect output data and postprocess.'''
-
+    def postprocess(self, infiles, outfile):
         track = P.snip(os.path.basename(outfile), ".bam")
-        outf = P.snip(outfile, ".bam")
-        tmpdir = self.tmpdir
-
-        strip_cmd, unique_cmd = "", ""
-
-        if self.remove_non_unique:
-            unique_cmd = '''| python %%(scriptsdir)s/bam2bam.py
-            --filter=unique --log=%(outfile)s.log''' % locals()
-
-        if self.strip_sequence:
-            strip_cmd = '''| python %%(scriptsdir)s/bam2bam.py
-            --strip=sequence --log=%(outfile)s.log''' % locals()
-
-        statement = '''
-                samtools view -uS %(tmpdir)s/%(track)s.sam
-                %(unique_cmd)s
-                %(strip_cmd)s
-                | samtools sort - %(outf)s 2>>%(outfile)s.bwa.log;
-                samtools index %(outfile)s;''' % locals()
-
-        if self.align_stats:
-            statement += '''cat %(outfile)s
-            | python %%(scriptsdir)s/bam2bam.py -v 0 --set-sequence --sam
-            | CollectMultipleMetrics
-            INPUT=/dev/stdin
-            REFERENCE_SEQUENCE=%%(bwa_index_dir)s/%%(genome)s.fa
-            ASSUME_SORTED=true
-            OUTPUT=%(outf)s.picard_stats
-            VALIDATION_STRINGENCY=SILENT
-            >& %(outf)s.picard_stats ;''' % locals()
-
-        if self.dedup:
-            statement += '''MarkDuplicates
-            INPUT=%(outfile)s
-            ASSUME_SORTED=true
-            METRICS_FILE=%(outfile)s.duplicate_metrics
-            OUTPUT=%(tmpdir)s/%(track)s.deduped.bam
-            REMOVE_DUPLICATES=true
-            VALIDATION_STRINGENCY=SILENT ;''' % locals()
-            statement += '''rm -f %(outfile)s %(outfile)s.bai;
-            mv %(tmpdir)s/%(track)s.deduped.bam %(outfile)s ;''' % locals()
-            statement += '''samtools index %(outfile)s ;''' % locals()
+        for infile in infiles:
+            if infile.endswith(".fastq.gz"):
+                statement = ""
+            elif infile.endswith(".fastq.1.gz"):
+                statement = '''mv %%(outdir)s/%(track)s_pe.bam
+                           %%(outdir)s/%(track)s.bam;''' % locals()
 
         return statement
-
 
 
 class Stampy(BWA):
