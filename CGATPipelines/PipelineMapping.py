@@ -1012,6 +1012,7 @@ class BWAMEM(BWA):
 
         return " ".join(statement)
 
+
 class Bismark(Mapper):
 
     '''run bismark to map reads against genome.

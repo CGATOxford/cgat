@@ -1,9 +1,4 @@
-import os
-import sys
-import re
-import types
 import itertools
-import math
 import numpy
 
 from RnaseqDiffExpressionReport import *
@@ -15,19 +10,17 @@ class ExpressionStatus(Status):
     for protein coding transcripts.
     '''
 
-    pattern = "(.*)_transcript_counts"
+    pattern = "(.*)_gene_diff"
 
     # minimum expression level for transcripts to be
     # considered expressed
     min_fpkm = 1.0
 
-    tracks = ["%s_%s_%s" % (x.asTable(), y.asTable(), z.asTable())
-              for x, y, z in itertools.product(DESIGNS, GENESETS, METHODS)]
-
     def _testErrorBars(self, track, part):
 
         statement = '''SELECT (%(part)s_std) / %(part)s_mean / 2
-                       FROM %(track)s_gene_diff WHERE %(part)s_mean > %(min_fpkm)f'''
+        FROM %(track)s_gene_diff
+        WHERE %(part)s_mean > %(min_fpkm)f'''
 
         values = self.getValues(statement)
         value = numpy.median(values)
@@ -52,8 +45,9 @@ class ExpressionStatus(Status):
         divided by the absolute expression level divided by two.
 
         This test fails if more than half the isoforms can not be
-        estimated with an accuracy of at least half the expression 
+        estimated with an accuracy of at least half the expression
         value.
+
         '''
         return self._testErrorBars(track, "treatment")
 
@@ -68,8 +62,9 @@ class ExpressionStatus(Status):
         divided by the absolute expression level divided by two.
 
         This test fails if more than half the isoforms can not be
-        estimated with an accuracy of at least half the expression 
+        estimated with an accuracy of at least half the expression
         value.
+
         '''
         return self._testErrorBars(track, "control")
 
@@ -84,9 +79,10 @@ class DifferentialExpressionStatus(Status):
     def testTests(self, track):
         '''test if tests for differential expression are successful.
 
-        Unsuccessful test have status NO_CALL or FAIL, meaning that the
-        test failed or the expression levels of at least one gene was very
-        low. If that is the case, some statistical tests become very unreliable.
+        Unsuccessful test have status NO_CALL or FAIL, meaning that
+        the test failed or the expression levels of at least one gene
+        was very low. If that is the case, some statistical tests
+        become very unreliable.
 
         PASS: <= 10% of tests failed.
         WARN: <= 50% of tests failed

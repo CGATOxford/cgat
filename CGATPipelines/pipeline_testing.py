@@ -60,7 +60,7 @@ complete test setup::
    # regular expression of files to be excluded from
    # test for difference. Use | to separate multiple
    # regular expressions.
-   regex_no_diff=rates.gff.gz
+   regex_no_md5=rates.gff.gz
 
 This configuration will run the test ``mytest1``. The associated
 pipeline is :doc:`pipeline_mapping` and it will execute the target
@@ -316,9 +316,9 @@ def compareCheckSums(infiles, outfile):
         reffile = track + ".ref"
 
         # regular expression of files to test only for existence
-        regex_no_diff = PARAMS.get('%s_regex_no_diff' % track, None)
-        if regex_no_diff:
-            regex_no_diff = re.compile(regex_no_diff)
+        regex_no_md5 = PARAMS.get('%s_regex_no_md5' % track, None)
+        if regex_no_md5:
+            regex_no_md5 = re.compile(regex_no_md5)
 
         if not os.path.exists(reffile):
             raise ValueError('no reference data defined for %s' % track)
@@ -333,9 +333,9 @@ def compareCheckSums(infiles, outfile):
         extra = set(cmp_md5).difference(ref_md5)
         different = [x for x in shared_files if ref_md5[x] != cmp_md5[x]]
         # remove any files not to be checked for difference
-        if regex_no_diff:
+        if regex_no_md5:
             different = [x for x in different
-                         if not regex_no_diff.search(x)]
+                         if not regex_no_md5.search(x)]
 
         if len(missing) + len(extra) + len(different) == 0:
             status = "OK"

@@ -205,7 +205,7 @@ cdef __add( numpy.ndarray[DTYPE_INT_t, ndim=1]counts, positions, int offset, int
         for pos from 0 <= pos < length:
             counts[pos] += 1
 
-##-----------------------------------------------------------------------------------
+##------------------------------------------------------
 class CounterReadCoverage(Counter):
     '''compute read coverage for all exons in a transcript. 
 
@@ -216,8 +216,9 @@ class CounterReadCoverage(Counter):
     '''
     
     header = ("length",) +\
-        tuple( [ "%s_%s" % (x,y) for x,y in itertools.product( ("sense", "antisense", "anysense"),
-                                                               ( ("pcovered", "nreads", ) + Stats.Summary().getHeaders() )) ] )
+        tuple(["%s_%s" % (x,y) for x,y in itertools.product(
+            ("sense", "antisense", "anysense"),
+            (("pcovered", "nreads", ) + Stats.Summary().getHeaders()))])
                
     # discard segments with size > max_length in order
     # to avoid out-of-memory
@@ -574,9 +575,10 @@ class CounterBAM(Counter):
                                 self.headers_splicing)] +\
             ['quality_pairs', 'quality_reads']
 
-##-----------------------------------------------------------------------------------
+##----------------------------------------------------------------
 class CounterReadCountsFull(CounterBAM):
     '''compute number of reads overlapping with exoIsoform
+
     Requires bam files to compute that coverage. Multiple bam
     files can be supplied, these will be summed up.
 
@@ -921,7 +923,7 @@ class CounterReadCountsFull(CounterBAM):
             "\t".join(map(str, (self.reads_below_quality,)))
                                 
 
-##-----------------------------------------------------------------------------------
+##-------------------------------------------------------------
 class CounterReadCounts(CounterReadCountsFull):
     '''compute number of reads overlapping with exons.
 
@@ -1037,9 +1039,6 @@ class CounterReadCounts(CounterReadCountsFull):
             self.total_reads)))
 
 
-
-        
-##-----------------------------------------------------------------------------------
 class CounterReadPairCountsFull(CounterBAM):
     '''compute number of read pairs overlapping with exoIsoform
     Requires bam files to compute that coverage. Multiple bam

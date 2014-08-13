@@ -1,5 +1,4 @@
-"""
-===========================
+"""===========================
 Pipeline template
 ===========================
 
@@ -16,16 +15,17 @@ Overview
 Usage
 =====
 
-See :ref:`PipelineSettingUp` and :ref:`PipelineRunning` on general information how to use CGAT pipelines.
+See :ref:`PipelineSettingUp` and :ref:`PipelineRunning` on general
+information how to use CGAT pipelines.
 
 Configuration
 -------------
 
-The pipeline requires a configured :file:`pipeline.ini` file. 
+The pipeline requires a configured :file:`pipeline.ini` file.
 
-The sphinxreport report requires a :file:`conf.py` and :file:`sphinxreport.ini` file 
-(see :ref:`PipelineReporting`). To start with, use the files supplied with the
-Example_ data.
+The sphinxreport report requires a :file:`conf.py` and
+:file:`sphinxreport.ini` file (see :ref:`PipelineReporting`). To start
+with, use the files supplied with the Example_ data.
 
 Input
 -----
@@ -36,36 +36,23 @@ Optional inputs
 Requirements
 ------------
 
-The pipeline requires the results from :doc:`pipeline_annotations`. Set the configuration variable 
+The pipeline requires the results from
+:doc:`pipeline_annotations`. Set the configuration variable
 :py:data:`annotations_database` and :py:data:`annotations_dir`.
 
-On top of the default CGAT setup, the pipeline requires the following software to be in the 
-path:
+On top of the default CGAT setup, the pipeline requires the following
+software to be in the path:
 
-+--------------------+-------------------+------------------------------------------------+
-|*Program*           |*Version*          |*Purpose*                                       |
-+--------------------+-------------------+------------------------------------------------+
-|                    |                   |                                                |
-+--------------------+-------------------+------------------------------------------------+
++----------+-----------+---------------------------+
+|*Program* |*Version*  |*Purpose*                  |
++----------+-----------+---------------------------+
+|          |           |                           |
++----------+-----------+---------------------------+
 
 Pipeline output
 ===============
 
 The major output is in the database file :file:`csvdb`.
-
-Example
-=======
-
-Example data is available at http://www.cgat.org/~andreas/sample_data/pipeline_template.tgz.
-To run the example, simply unpack and untar::
-
-   wget http://www.cgat.org/~andreas/sample_data/pipeline_template.tgz
-   tar -xvzf pipeline_template.tgz
-   cd pipeline_template
-   python <srcdir>/pipeline_template.py make full
-
-.. note:: 
-   For the pipeline to run, install the :doc:`pipeline_annotations` as well.
 
 Glossary
 ========
@@ -80,17 +67,7 @@ Code
 from ruffus import *
 
 import sys
-import glob
-import gzip
 import os
-import itertools
-import re
-import math
-import types
-import collections
-import time
-import optparse
-import shutil
 import sqlite3
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
@@ -104,24 +81,23 @@ import CGAT.Database as Database
 
 # load options from the config file
 import CGAT.Pipeline as P
-P.getParameters(
+PARAMS = P.getParameters(
     ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
      "../pipeline.ini",
      "pipeline.ini"])
 
-PARAMS = P.PARAMS
-PARAMS_ANNOTATIONS = P.peekParameters(PARAMS["annotations_dir"],
-                                      "pipeline_annotations.py", on_error_raise=__name__ == "__main__")
+PARAMS.update(P.peekParameters(
+    PARAMS["annotations_dir"],
+    "pipeline_annotations.py",
+    on_error_raise=__name__ == "__main__",
+    prefix="annotations_",
+    update_interface=True))
 
-###################################################################
-###################################################################
-# Helper functions mapping tracks to conditions, etc
-###################################################################
-import CGATPipelines.PipelineTracks as PipelineTracks
 
-###################################################################
-###################################################################
-###################################################################
+# Update the PARAMS dictionary in any PipelineModules
+# e.g.:
+# import CGATPipelines.PipelineGeneset as PipelineGeneset
+# PipelineGeneset.PARAMS = PARAMS
 
 
 def connect():
@@ -142,13 +118,10 @@ def connect():
     return dbh
 
 ###################################################################
-###################################################################
-###################################################################
 # worker tasks
 ###################################################################
 
-###################################################################
-###################################################################
+
 ###################################################################
 # primary targets
 ###################################################################

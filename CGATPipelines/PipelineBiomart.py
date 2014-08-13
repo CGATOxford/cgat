@@ -54,7 +54,10 @@ def biomart_iterator(columns,
                      biomart="ensembl",
                      dataset="hsapiens_gene_ensembl",
                      host='www.biomart.org',
-                     path="/biomart/martservice"):
+                     path="/biomart/martservice",
+                     filters=None,
+                     values=None,
+                     archive=False):
     '''download a dataset from biomart and output as a
     tab-separated table.
 
@@ -71,11 +74,25 @@ def biomart_iterator(columns,
     mart = R.useMart(biomart=biomart,
                      dataset=dataset,
                      host=host,
-                     path=path)
+                     path=path,
+                     archive=archive)
+
+    if filters is not None:
+        filter_names = R.StrVector(filters)
+    else:
+        filter_names = ""
+
+    if values is not None:
+        filter_values = values
+    else:
+        filter_values = ""
 
     # result is a dataframe
-    result = R.getBM(attributes=rpy2.robjects.vectors.StrVector(columns),
-                     mart=mart)
+    result = R.getBM(
+        attributes=rpy2.robjects.vectors.StrVector(columns),
+        filters=filter_names,
+        values=filter_values,
+        mart=mart)
 
     # access via result.rx was broken in rpy2 2.4.2, thus try
     # numeric access

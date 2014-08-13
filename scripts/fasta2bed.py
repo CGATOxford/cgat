@@ -328,42 +328,56 @@ def main(argv=None):
 
     # setup command line parser
     parser = E.OptionParser(
-        version="%prog version: $Id: fasta2bed.py 2861 2010-02-23 17:36:32Z andreas $", usage=globals()["__doc__"])
+        version="%prog version: $Id",
+        usage=globals()["__doc__"])
 
-    parser.add_option("--gcprofile-gap-size", dest="gcprofile_gap_size", type="float",
-                      help="GCProfile: Choose n as the gap size to be filtered "
-                      "(If n > 1, n bp is set as the gap size to be filtered. "
-                      "If 0 < n < 1, for example, n = 0.01, means gaps less than 1% "
-                      "of the input sequence length will be filtered "
-                      "[default=%default].")
+    parser.add_option(
+        "--gcprofile-gap-size", dest="gcprofile_gap_size",
+        type="float",
+        help="GCProfile: Choose n as the gap size to be filtered "
+        "(If n > 1, n bp is set as the gap size to be filtered. "
+        "If 0 < n < 1, for example, n = 0.01, means gaps less than 1% "
+        "of the input sequence length will be filtered "
+        "[default=%default].")
 
-    parser.add_option("--gcprofile-min-length", dest="gcprofile_min_length", type="int",
-                      help="GCProfile: minimum length [default=%default]")
+    parser.add_option(
+        "--gcprofile-min-length", dest="gcprofile_min_length",
+        type="int",
+        help="GCProfile: minimum length [default=%default]")
 
-    parser.add_option("--gcprofile-halting-parameter", dest="gcprofile_halting_parameter", type="int",
-                      help="GCProfile: halting parameter [default=%default]")
+    parser.add_option(
+        "--gcprofile-halting-parameter",
+        dest="gcprofile_halting_parameter", type="int",
+        help="GCProfile: halting parameter [default=%default]")
 
-    parser.add_option("-m", "--method", dest="method", type="choice",
-                      choices=("GCProfile",
-                               "fixed-width-windows-gc",
-                               "cpg",
-                               "windows-cpg",
-                               "gaps",
-                               "ungapped",
-                               "windows"),
-                      help="Method to use for segmentation [default=%default]")
+    parser.add_option(
+        "-m", "--method", dest="method", type="choice",
+        choices=(
+            "GCProfile",
+            "fixed-width-windows-gc",
+            "cpg",
+            "windows-cpg",
+            "gaps",
+            "ungapped",
+            "windows"),
+        help="Method to use for segmentation [default=%default]")
 
-    parser.add_option("-w", "--window-size=", dest="window_size", type="int",
-                      help="window size for fixed-width windows [default=%default].")
+    parser.add_option(
+        "-w", "--window-size=", dest="window_size",
+        type="int",
+        help="window size for fixed-width windows [default=%default].")
 
-    parser.add_option("-s", "--window-shift=", dest="window_shift", type="int",
-                      help="shift size fixed-width windows [default=%default].")
+    parser.add_option(
+        "-s", "--window-shift=", dest="window_shift", type="int",
+        help="shift size fixed-width windows [default=%default].")
 
-    parser.add_option("--min-cpg", dest="min_cpg", type="int",
-                      help="minimum number of CpG for windows-cpg [default=%default]")
+    parser.add_option(
+        "--min-cpg", dest="min_cpg", type="int",
+        help="minimum number of CpG for windows-cpg [default=%default]")
 
-    parser.add_option("--min-length", dest="min_length", type="int",
-                      help="minimum length for ungapped regions [default=%default]")
+    parser.add_option(
+        "--min-length", dest="min_length", type="int",
+        help="minimum length for ungapped regions [default=%default]")
 
     parser.set_defaults(
         gcprofile_halting_parameter=1000,

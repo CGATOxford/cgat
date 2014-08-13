@@ -15,17 +15,15 @@ robust) as possible possible. Before changing the default behaviour of
 any of these functions please discuss!. Better to add new functions
 and then deprecate.
 
-Usage
------
+.. note::
 
-Type::
-
-   python <script_name>.py --help
-
-for command line help.
+   This module needs refactoring as it implements
+   some functionality found elsewhere such as the
+   Database commands and text IO commands.
 
 Code
 ----
+
 
 """
 import sqlite3
@@ -34,7 +32,6 @@ try:
 except AttributeError, OSError:
     pass
 import CGAT.IOTools as IOTools
-import rpy2.robjects as R
 import pickle
 from pandas import DataFrame
 from pandas.io import sql
@@ -45,11 +42,7 @@ except:
     PARAMS = {}
 
 
-#######################################################################
-#################### Database Queries #################################
-#######################################################################
-
-
+# ################### Database Queries ##############
 def db_execute(cc, statements):
     '''excute a statement or statements against a cursor'''
 
@@ -91,9 +84,13 @@ def fetch(query, database=PARAMS.get("database", ""), attach=False):
     return sqlresult
 
 
-def fetch_with_names(query, database=PARAMS.get("database", ""), attach=False):
-    '''Fetch query results and returns them as an array of row arrays, 
-       in which the first entry is an array of the field names'''
+def fetch_with_names(query,
+                     database=PARAMS.get("database", ""),
+                     attach=False):
+    '''Fetch query results and returns them as an array of row arrays, in
+       which the first entry is an array of the field names
+
+    '''
 
     try:
         cc = database.cursor()
@@ -118,7 +115,9 @@ def fetch_with_names(query, database=PARAMS.get("database", ""), attach=False):
     return data
 
 
-def fetch_DataFrame(query, database=PARAMS.get("database", ""), attach=False):
+def fetch_DataFrame(query,
+                    database=PARAMS.get("database", ""),
+                    attach=False):
     '''Fetch query results and returns them as a pandas dataframe'''
 
     try:
@@ -130,9 +129,9 @@ def fetch_DataFrame(query, database=PARAMS.get("database", ""), attach=False):
     if attach:
         if type(attach) is str:
             db_execute(cc, attach)
-        elif isinstance(attach, (tuple,list)):
+        elif isinstance(attach, (tuple, list)):
             for attach_statement in attach:
-                db_execute(cc,attach_statement)
+                db_execute(cc, attach_statement)
 
     sqlresult = cc.execute(query).fetchall()
     cc.close()
@@ -143,25 +142,32 @@ def fetch_DataFrame(query, database=PARAMS.get("database", ""), attach=False):
     # conversion
 
     field_names = [d[0] for d in cc.description]
-    pandas_DataFrame = DataFrame.from_records(sqlresult, columns=field_names)
+    pandas_DataFrame = DataFrame.from_records(
+        sqlresult,
+        columns=field_names)
     return pandas_DataFrame
 
-def write_DataFrame(dataframe, tablename, 
-                    database=PARAMS.get("database", ""), index=False ):
+
+def write_DataFrame(dataframe,
+                    tablename,
+                    database=PARAMS.get("database", ""),
+                    index=False):
     '''write a pandas dataframe to an sqlite db, index on given columns
-       index columns given as a string or list eg. "gene_id" or ["gene_id", "start"]
+       index columns given as a string or list eg. "gene_id" or
+       ["gene_id", "start"]
+
     '''
 
     dbhandle = sqlite3.connect(database)
 
-
-    #connection = sqlite3.connect(database)
-
-    sql.write_frame(dataframe, tablename, flavour='sqlite', con=dbhandle, if_exists='replace')
+    sql.write_frame(dataframe, tablename, flavour='sqlite',
+                    con=dbhandle, if_exists='replace')
 
     cc = dbhandle.cursor()
-    def indexStat(tablename,column):
-        istat = 'create index %(tablename)s_%(column)s on %(tablename)s(%(column)s)' % locals()
+
+    def indexStat(tablename, column):
+        istat = ('create index %(tablename)s_%(column)s '
+                 'on %(tablename)s(%(column)s)') % locals()
         return istat
 
     if index:
@@ -169,15 +175,12 @@ def write_DataFrame(dataframe, tablename,
             istat = indexStat(tablename, index)
             print istat
             db_execute(cc, istat)
-        elif isinstance(index, (tuple,list)):
+        elif isinstance(index, (tuple, list)):
             for column in index:
                 istat = indexStat(tablename, column)
-                db_execute(cc,istat)
+                db_execute(cc, istat)
 
     cc.close()
-
-    return 
-
 
 
 def write(outfile, lines, header=False):
@@ -192,10 +195,8 @@ def write(outfile, lines, header=False):
 
     handle.close()
 
+# ########################## Biomart Access
 
-###############################################################################
-########################### Biomart Access ####################################
-###############################################################################
 
 def biomart_iterator(attributes,
                      host,
@@ -206,44 +207,18 @@ def biomart_iterator(attributes,
                      ):
     ''' Modified from pipeline biomart... '''
 
-    r = R.r
-    r.library("biomaRt")
-    mart = r.useMart(biomart,
-                     dataset=dataset,
-                     host=host,
-                     path="/biomart/martservice",
-                     archive=False)
+    # Use PipelineBiomant.biomart_iterator
+    raise NotImplementedError(
+        "deprecated, use PipelineBiomart.biomart_iterator")
 
-    if filters is not None:
-        filter_names = R.StrVector(filters)
-    else:
-        filter_names = ""
-
-    if values is not None:
-        filter_values = values
-    else:
-        filter_values = ""
-
-    result = r.getBM(attributes=R.StrVector(attributes),
-                     filters=filter_names,
-                     values=filter_values,
-                     mart=mart)
-
-    # result is a dataframe.
-    # rx returns a dataframe.
-    # rx()[0] returns a vector
-    for data in zip(*[result.rx(x)[0] for x in attributes]):
-        yield dict(zip(attributes, data))
-
-###############################################################################
-########################### File Utitilies ####################################
-###############################################################################
+# ########################## File Utitilies
 
 
 def txtToDict(filename, key=None, sep="\t"):
-    ''' make a dictionary from a text file keyed 
+    ''' make a dictionary from a text file keyed
         on the specified column '''
 
+    # Please see function in IOTools: readDict()
     count = 0
     result = {}
     valueidx, keyidx = False, False
@@ -264,7 +239,9 @@ def txtToDict(filename, key=None, sep="\t"):
 
                 if not keyidx:
                     raise ValueError("key name not found in header")
-                #if not valueidx: raise ValueError("value name not found in header")
+                # if not valueidx:
+                #   raise ValueError(
+                #     "value name not found in header")
             else:
                 fields = [x.strip() for x in line.split(sep)]
                 fieldn = 0
@@ -281,9 +258,7 @@ def txtToDict(filename, key=None, sep="\t"):
 
     return(result)
 
-###############################################################################
-############################### Objects #######################################
-###############################################################################
+# ############################## Objects
 
 
 def save(file_name, obj):
