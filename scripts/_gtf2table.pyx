@@ -301,9 +301,10 @@ class CounterReadCoverage(Counter):
             # set to 1 to permit division below
             self.length = 1
 
-        for direction, counts, nreads in zip ( ("sense", "antisense", "anysense"),
-                                               (self.counts_sense, self.counts_antisense, self.counts_anysense),
-                                               (self.nreads_sense, self.nreads_antisense, self.nreads_anysense) ):
+        for direction, counts, nreads in zip (
+                ("sense", "antisense", "anysense"),
+                (self.counts_sense, self.counts_antisense, self.counts_anysense),
+                (self.nreads_sense, self.nreads_antisense, self.nreads_anysense) ):
             r.append( "%5.2f" % (100.0 * len(counts) / self.length) )
             r.append( "%i" % (nreads) )
             r.append( str( Stats.Summary( counts, mode = "int" ) ) )
@@ -680,6 +681,7 @@ class CounterReadCountsFull(CounterBAM):
         cdef int ndirection_status = len(self.headers_direction)
         cdef int nexons_status = len(self.headers_exons)
         cdef int nspliced_status = len(self.headers_splicing)
+        # 0: unspliced, 1: correctly spliced, 2: incorrectly spliced
         cdef int spliced_status = 0
         cdef int direction_status = 0
         cdef int exons_status = 0
@@ -889,7 +891,7 @@ class CounterReadCountsFull(CounterBAM):
                         weight = 0
 
                     
-                counters_index=(direction_status, exons_status, spliced_status)
+                counters_index = (direction_status, exons_status, spliced_status)
 
                 if use_barcodes == True:
                     '''only the first read is counted'''
@@ -963,8 +965,8 @@ class CounterReadCounts(CounterReadCountsFull):
         exonic = 0
         intronic = 2
         # splice axis
-        spliced = 0
-        unspliced = 1
+        spliced = 1
+        unspliced = 0
 
         work = self.counters
         self.total_reads = numpy.sum(work.flat)
@@ -1520,8 +1522,8 @@ class CounterReadPairCounts(CounterReadPairCountsFull):
         exonic = 0
         intronic = 2
         # splice axis
-        spliced = 0
-        unspliced = 1
+        spliced = 1
+        unspliced = 0
 
         self.total_pairs = numpy.sum(self.counters.flat)
 
