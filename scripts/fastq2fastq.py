@@ -66,11 +66,11 @@ def main(argv=None):
                             usage=globals()["__doc__"])
 
     parser.add_option("-f", "--change-format", dest="change_format", type="choice",
-                      choices=('sanger', 'solexa', 'phred64', 'integer'),
+                      choices=('sanger', 'solexa', 'phred64', 'integer', 'illumina-1.8'),
                       help="guess quality score format and set quality scores to format [default=%default].")
 
     parser.add_option("--guess-format", dest="guess_format", type="choice",
-                      choices=('sanger', 'solexa', 'phred64', 'integer'),
+                      choices=('sanger', 'solexa', 'phred64', 'integer', 'illumina-1.8'),
                       help="quality score format to assume if ambiguous [default=%default].")
 
     parser.add_option("--sample", dest="sample", type="float",
