@@ -32,6 +32,29 @@ import MySQLdb
 # dictionary
 PARAMS = {}
 
+ENSEMBL_INFO = collections.namedtuple(
+    "ENSEMBLINFO", "species gene_prefix transcript_prefix")
+
+# Map of UCSC genome prefixes to ENSEMBL gene sets
+MAP_UCSC2ENSEMBL = {
+    'hg': ENSEMBL_INFO._make(('Homo_sapiens',
+                              'ENSG',
+                              'ENST')),
+    'mm': ENSEMBL_INFO._make(('Mus_musculus',
+                              'ENSMUSG',
+                              'ENSMUST')),
+    'rn': ENSEMBL_INFO._make(('Rattus_norvegicus',
+                              'ENSRNOG',
+                              'ENSRNOT')),
+    }
+
+
+def mapUCSCToEnsembl(genome):
+    '''map the name of a UCSC genome (hg19, mm10) to
+    ENSEMBL URLs.'''
+    prefix = genome[:2]
+    return MAP_UCSC2ENSEMBL[prefix]
+
 
 def connectToUCSC():
     '''connect to UCSC mysql database.'''

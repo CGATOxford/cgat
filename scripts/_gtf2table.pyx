@@ -205,7 +205,7 @@ cdef __add( numpy.ndarray[DTYPE_INT_t, ndim=1]counts, positions, int offset, int
         for pos from 0 <= pos < length:
             counts[pos] += 1
 
-##-----------------------------------------------------------------------------------
+##------------------------------------------------------
 class CounterReadCoverage(Counter):
     '''compute read coverage for all exons in a transcript. 
 
@@ -216,8 +216,9 @@ class CounterReadCoverage(Counter):
     '''
     
     header = ("length",) +\
-        tuple( [ "%s_%s" % (x,y) for x,y in itertools.product( ("sense", "antisense", "anysense"),
-                                                               ( ("pcovered", "nreads", ) + Stats.Summary().getHeaders() )) ] )
+        tuple(["%s_%s" % (x,y) for x,y in itertools.product(
+            ("sense", "antisense", "anysense"),
+            (("pcovered", "nreads", ) + Stats.Summary().getHeaders()))])
                
     # discard segments with size > max_length in order
     # to avoid out-of-memory
@@ -300,9 +301,10 @@ class CounterReadCoverage(Counter):
             # set to 1 to permit division below
             self.length = 1
 
-        for direction, counts, nreads in zip ( ("sense", "antisense", "anysense"),
-                                               (self.counts_sense, self.counts_antisense, self.counts_anysense),
-                                               (self.nreads_sense, self.nreads_antisense, self.nreads_anysense) ):
+        for direction, counts, nreads in zip (
+                ("sense", "antisense", "anysense"),
+                (self.counts_sense, self.counts_antisense, self.counts_anysense),
+                (self.nreads_sense, self.nreads_antisense, self.nreads_anysense) ):
             r.append( "%5.2f" % (100.0 * len(counts) / self.length) )
             r.append( "%i" % (nreads) )
             r.append( str( Stats.Summary( counts, mode = "int" ) ) )
@@ -574,9 +576,10 @@ class CounterBAM(Counter):
                                 self.headers_splicing)] +\
             ['quality_pairs', 'quality_reads']
 
-##-----------------------------------------------------------------------------------
+##----------------------------------------------------------------
 class CounterReadCountsFull(CounterBAM):
     '''compute number of reads overlapping with exoIsoform
+
     Requires bam files to compute that coverage. Multiple bam
     files can be supplied, these will be summed up.
 
@@ -678,6 +681,7 @@ class CounterReadCountsFull(CounterBAM):
         cdef int ndirection_status = len(self.headers_direction)
         cdef int nexons_status = len(self.headers_exons)
         cdef int nspliced_status = len(self.headers_splicing)
+        # 0: unspliced, 1: correctly spliced, 2: incorrectly spliced
         cdef int spliced_status = 0
         cdef int direction_status = 0
         cdef int exons_status = 0
@@ -887,7 +891,7 @@ class CounterReadCountsFull(CounterBAM):
                         weight = 0
 
                     
-                counters_index=(direction_status, exons_status, spliced_status)
+                counters_index = (direction_status, exons_status, spliced_status)
 
                 if use_barcodes == True:
                     '''only the first read is counted'''
@@ -921,7 +925,7 @@ class CounterReadCountsFull(CounterBAM):
             "\t".join(map(str, (self.reads_below_quality,)))
                                 
 
-##-----------------------------------------------------------------------------------
+##-------------------------------------------------------------
 class CounterReadCounts(CounterReadCountsFull):
     '''compute number of reads overlapping with exons.
 
@@ -961,8 +965,8 @@ class CounterReadCounts(CounterReadCountsFull):
         exonic = 0
         intronic = 2
         # splice axis
-        spliced = 0
-        unspliced = 1
+        spliced = 1
+        unspliced = 0
 
         work = self.counters
         self.total_reads = numpy.sum(work.flat)
@@ -1037,9 +1041,6 @@ class CounterReadCounts(CounterReadCountsFull):
             self.total_reads)))
 
 
-
-        
-##-----------------------------------------------------------------------------------
 class CounterReadPairCountsFull(CounterBAM):
     '''compute number of read pairs overlapping with exoIsoform
     Requires bam files to compute that coverage. Multiple bam
@@ -1521,8 +1522,8 @@ class CounterReadPairCounts(CounterReadPairCountsFull):
         exonic = 0
         intronic = 2
         # splice axis
-        spliced = 0
-        unspliced = 1
+        spliced = 1
+        unspliced = 0
 
         self.total_pairs = numpy.sum(self.counters.flat)
 

@@ -269,18 +269,18 @@ def filterBamfiles(infile, sentinel):
     """
 
     # create tempfile for Picard's MarkDuplicates
-    picard_tmp = picard_tmp = P.getTempDir("/scratch")
+    picard_tmp = picard_tmp = P.getTempDir(PARAMS["scratchdir"])
 
     outfile = P.snip(sentinel, ".sentinel") + ".bam"
 
     # ensure bamfile is sorted,
-    statement = ["samtools sort -f @IN@ @OUT@", ]
+    statement = ["samtools sort @IN@ @OUT@", ]
 
     # remove unmapped reads
     statement.append("python %(scriptsdir)s/bam2bam.py"
                      " --filter=mapped"
                      " --log=%(outfile)s.log"
-                     " < @IN@"
+                     " < @IN@.bam"
                      " > @OUT@")
 
     # remove non-uniquely mapping reads, if requested

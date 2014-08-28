@@ -11,8 +11,8 @@ Contents:
    :maxdepth: 2
 
    pipeline/Status.rst
-   pipeline/Running.rst
    pipeline/Config.rst
+   pipeline/Methods.rst
 
 ====================
  Indices and tables

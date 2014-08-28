@@ -10,7 +10,7 @@ class TopDifferentiallyExpressedGenes(ProjectTracker):
     sort = ''
 
     def __call__(self, track, slice=None):
-        statement = '''SELECT a.gene_name,
+        statement = '''SELECT DISTINCT a.gene_name,
                               a.gene_id,
                               a.gene_biotype,
                               t.l2fold,
@@ -20,7 +20,7 @@ class TopDifferentiallyExpressedGenes(ProjectTracker):
                               t.qvalue,
                               s.contig, s.start, s.end
                               FROM %(track)s_gene_diff as t,
-                                   annotations.gene_info as a,
+                                   annotations.transcript_info as a,
                                    annotations.gene_stats as s
                               WHERE a.gene_id = t.test_id AND
                                     s.gene_id = t.test_id AND
@@ -55,7 +55,7 @@ class AllDifferentiallyExpressedGenes(ProjectTracker):
     pattern = '(.*)_gene_diff'
 
     def __call__(self, track, slice=None):
-        statement = '''SELECT a.gene_name,
+        statement = '''SELECT DISTINCT a.gene_name,
                               a.gene_id,
                               a.gene_biotype,
                               t.l2fold,
@@ -65,7 +65,7 @@ class AllDifferentiallyExpressedGenes(ProjectTracker):
                               t.qvalue,
                               s.contig, s.start, s.end
                               FROM %(track)s_gene_diff as t,
-                                   annotations.gene_info as a,
+                                   annotations.transcript_info as a,
                                    annotations.gene_stats as s
                               WHERE a.gene_id = t.test_id AND
                                     s.gene_id = t.test_id AND

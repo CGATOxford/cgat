@@ -1,4 +1,3 @@
-
 """===================
 Annotation pipeline
 ===================
@@ -722,6 +721,7 @@ def buildGenomeInformation(infile, outfile):
     P.run()
 
 
+@jobs_limit(1, "db")
 @transform(buildGenomeInformation, suffix(".tsv.gz"), ".load")
 def loadGenomeInformation(infile, outfile):
     '''load genome information.'''
@@ -863,6 +863,7 @@ def buildFlatGeneSet(infile, outfile):
     PipelineGeneset.buildFlatGeneSet(infile, outfile)
 
 
+@jobs_limit(1, "db")
 @follows(mkdir('ensembl.dir'))
 @files(PARAMS["ensembl_filename_gtf"], "ensembl.dir/gene_info.load")
 def loadGeneInformation(infile, outfile):
@@ -870,6 +871,7 @@ def loadGeneInformation(infile, outfile):
     PipelineGeneset.loadGeneInformation(infile, outfile)
 
 
+@jobs_limit(1, "db")
 @follows(mkdir('ensembl.dir'))
 @files(buildFlatGeneSet, "ensembl.dir/gene_stats.load")
 def loadGeneStats(infile, outfile):
@@ -896,6 +898,7 @@ def buildExonTranscripts(infile, outfile):
     PipelineGeneset.buildExons(infile, outfile)
 
 
+@jobs_limit(1, "db")
 @files(buildExonTranscripts, "ensembl.dir/transcript_stats.load")
 def loadExonStats(infile, outfile):
     '''load the transcript set stats.'''
@@ -936,6 +939,7 @@ def loadTranscripts(infile, outfile):
     PipelineGeneset.loadTranscripts(infile, outfile)
 
 
+@jobs_limit(1, "db")
 @files(buildCDSTranscripts, "ensembl.dir/cds_stats.load")
 def loadCDSStats(infile, outfile):
     '''load the transcript set stats.'''
@@ -943,6 +947,7 @@ def loadCDSStats(infile, outfile):
     PipelineGeneset.loadTranscriptStats(infile, outfile)
 
 
+@jobs_limit(1, "db")
 @follows(mkdir('ensembl.dir'))
 @files(buildGeneSet, "ensembl.dir/transcript_info.load")
 def downloadTranscriptInformation(infile, outfile):
@@ -1035,6 +1040,7 @@ def downloadTranscriptInformation(infile, outfile):
             '''ALTER TABLE transcript_info ADD COLUMN uniprot_name NULL''')
 
 
+@jobs_limit(1, "db")
 @follows(mkdir('ensembl.dir'))
 @files(PARAMS["ensembl_filename_gtf"],
        "ensembl.dir/ensembl_to_entrez.load")
@@ -1060,6 +1066,7 @@ def downloadEntrezToEnsembl(infile, outfile):
         indices=("gene_id", "entrez_id"))
 
 
+@jobs_limit(1, "db")
 @follows(mkdir('ensembl.dir'))
 @files(PARAMS["ensembl_filename_gtf"],
        "ensembl.dir/transcript_synonyms.load")
@@ -1124,6 +1131,7 @@ def buildCDSFasta(infile, outfile):
     PipelineGeneset.buildCDSFasta(infile, outfile)
 
 
+@jobs_limit(1, "db")
 @follows(mkdir('ensembl.dir'))
 @files(PARAMS["ensembl_filename_pep"],
        "ensembl.dir/protein_stats.load")
@@ -1360,6 +1368,7 @@ def importCpGIslandsFromUCSC(infile, outfile):
     PipelineUCSC.getCpGIslandsFromUCSC(dbhandle, outfile)
 
 
+@jobs_limit(1, "db")
 @transform(importRepeatsFromUCSC, suffix(".gff.gz"), ".gff.gz.load")
 def loadRepeats(infile, outfile):
     '''load total repeats length'''
@@ -1712,6 +1721,7 @@ def createGOSlim(infile, outfile):
     PipelineGO.createGOSlimFromENSEMBL(infile, outfile)
 
 
+@jobs_limit(1, "db")
 @transform((createGO, createGOSlim),
            suffix(".tsv.gz"),
            r"\1_assignments.load")
@@ -1743,6 +1753,7 @@ def buildGOTable(infile, outfile):
     PipelineGO.buildGOTable(infile, outfile)
 
 
+@jobs_limit(1, "db")
 @transform(buildGOTable, suffix(".tsv"), ".load")
 def loadGOTable(infile, outfile):
     '''load GO descriptions into database.'''
@@ -1783,6 +1794,7 @@ def importKEGGAssignments(infile, outfile):
     PipelineKEGG.importKEGGAssignments(outfile, mart, host, biomart_dataset)
 
 
+@jobs_limit(1, "db")
 @transform(importKEGGAssignments, suffix(".tsv.gz"), "_assignments.load")
 def loadKEGGAssignments(infile, outfile):
 

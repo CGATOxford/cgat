@@ -436,7 +436,9 @@ class CounterIntronsExons(_gtf2table.Counter):
         self.mNIntrons = len(segments) - 1
 
     def __str__(self):
-        return "\t".join((str(self.mNTranscripts), str(self.mNSegments), str(self.mNIntrons)))
+        return "\t".join((str(self.mNTranscripts),
+                          str(self.mNSegments),
+                          str(self.mNIntrons)))
 
 
 class CounterPosition(_gtf2table.Counter):
@@ -460,7 +462,8 @@ class CounterPosition(_gtf2table.Counter):
             self.start, self.end = "na", "na"
 
     def __str__(self):
-        return "\t".join([str(x) for x in (self.contig, self.strand, self.start, self.end)])
+        return "\t".join([str(x) for x in (
+            self.contig, self.strand, self.start, self.end)])
 
 # ----------------------------------------------------------------
 
@@ -512,7 +515,9 @@ class CounterSpliceSites(_gtf2table.Counter):
                 r = self.getIntronType(s)
                 if r == "unknown":
                     r = self.getIntronType(
-                        string.translate(s, string.maketrans("ACGTacgt", "TGCAtgca"))[::-1])
+                        string.translate(
+                            s,
+                            string.maketrans("ACGTacgt", "TGCAtgca"))[::-1])
             else:
                 if Genomics.IsNegativeStrand(strand):
                     s = string.translate(
@@ -700,12 +705,11 @@ class CounterOverlap(_gtf2table.Counter):
 
 
 class CounterOverlapStranded(CounterOverlap):
-
     """count overlap with segments in another file.
 
     nover1 and nover2 count "exons".
 
-    The overlap is stranded. 
+    The overlap is stranded.
 
     Negative values of overlap correspond antisense overlap with a feature.
 
@@ -809,7 +813,7 @@ class CounterOverlapTranscripts(CounterOverlap):
     # do not save records for intervals
     mWithRecords = True
 
-    ## input is gtf
+    # input is gtf
     mIsGTF = True
 
     def __init__(self, *args, **kwargs):
@@ -964,16 +968,23 @@ class Classifier(_gtf2table.Counter):
     ambiguous: can't say
 
     Type of a gene (only applies to known genes)
-    pc:        protein coding
-    utr:       is a utr transcript (not overlapping the coding part of a gene)
-    pseudo:    pseudogene
-    npc:       non of the above
+    pc
+       protein coding
+    utr
+       is a utr transcript (not overlapping the coding part of a gene)
+    pseudo
+       pseudogene
+    npc
+       non of the above
 
     Location of an unkown transcript:
-    intronic:     entirely intronic
-    associated:   in flank of a protein coding gene, but not in exons or introns
-                  (note that this changed from previous releases, where flank referred 
-                  to any feature).
+
+    intronic
+       entirely intronic
+    associated
+       in flank of a protein coding gene, but not in exons or introns
+       (note that this changed from previous releases, where flank
+       referred to any feature).
 
     """
 
@@ -1041,16 +1052,20 @@ class Classifier(_gtf2table.Counter):
             self.mCounters[key].update(self.mGFFs)
 
         def s_min(*args):
-            return sum([abs(self.mCounters[x].mPOverlap1) for x in args]) >= self.mThresholdMinCoverage
+            return sum([abs(self.mCounters[x].mPOverlap1)
+                        for x in args]) >= self.mThresholdMinCoverage
 
         def s_excl(*args):
-            return sum([abs(self.mCounters[x].mPOverlap1) for x in args]) < (100 - self.mThresholdMinCoverage)
+            return sum([abs(self.mCounters[x].mPOverlap1)
+                        for x in args]) < (100 - self.mThresholdMinCoverage)
 
         def s_full(*args):
-            return sum([abs(self.mCounters[x].mPOverlap1) for x in args]) >= self.mThresholdFullCoverage
+            return sum([abs(self.mCounters[x].mPOverlap1)
+                        for x in args]) >= self.mThresholdFullCoverage
 
         def s_some(*args):
-            return sum([abs(self.mCounters[x].mPOverlap1) for x in args]) >= self.mThresholdSomeCoverage
+            return sum([abs(self.mCounters[x].mPOverlap1)
+                        for x in args]) >= self.mThresholdSomeCoverage
 
         # classify wether it is know or unknown
         self.mIsKnown = s_min(":exon", ":CDS", ":UTR", ":UTR3", ":UTR5")
@@ -1058,10 +1073,13 @@ class Classifier(_gtf2table.Counter):
         self.mIsAmbiguous = not(self.mIsUnknown or self.mIsKnown)
 
         # check type of gene:
-        self.mIsNPC, self.mIsPC, self.mIsPseudo, self.mIsUTR = False, False, False, False
+        self.mIsNPC, self.mIsPC, self.mIsPseudo, self.mIsUTR = \
+            False, False, False, False
         if self.mIsKnown:
             self.mIsUTR = s_min(
-                "protein_coding:UTR", "protein_coding:UTR3", "protein_coding:UTR5")
+                "protein_coding:UTR",
+                "protein_coding:UTR3",
+                "protein_coding:UTR5")
             # for assigning as protein coding, also include the known UTR
             # do not include intronic sequence, as this conflicts with intronic
             # pseudo genes, which then leads to double assignments
@@ -2462,14 +2480,14 @@ class CounterOverrun(_gtf2table.Counter):
             internal_introns = Intervals.complement(intervals)
 
             # Truncate terminal CDS
-            #start, end = min( [x[0] for x in segments] ), max( [ x[1] for x in segments ] )
-            #intervals = [ ( max( start, x[0]), min( end,x[1]) ) for x in intervals ]
+            # start, end = min( [x[0] for x in segments] ), max( [ x[1] for x in segments ] )
+            # intervals = [ ( max( start, x[0]), min( end,x[1]) ) for x in intervals ]
 
             # remove exons those not overlapping exons and
             # truncate terminal exons in transcripts
-            #start, end = min( [x[0] for x in intervals] ), max( [ x[1] for x in intervals ] )
+            # start, end = min( [x[0] for x in intervals] ), max( [ x[1] for x in intervals ] )
             # print start, end, segments
-            #segments = [ ( max( start, x[0]), min( end,x[1]) ) for x in segments if not (x[0] < end or x[1] > start) ]
+            # segments = [ ( max( start, x[0]), min( end,x[1]) ) for x in segments if not (x[0] < end or x[1] > start) ]
 
             self.mNOverlapExonic = Intervals.calculateOverlap(
                 segments, intervals)
@@ -3764,13 +3782,13 @@ def main(argv=None):
     parser.add_option("--use-barcodes",
                       dest="use_barcodes",
                       action="store_true",
-                      help="Use barcodes to count unique umi's. " 
-                            "UMI's are specified in the read identifier "
-                            "as the last field, where fields are separated "
-                            "by underscores, e.g. "
-                            "@READ:ILLUMINA:STUFF_NAMINGSTUFF_UMI. "
-                            "When true, unique counts are returned. "
-                            "Currently only compatible with count-reads")
+                      help="Use barcodes to count unique umi's. "
+                      "UMI's are specified in the read identifier "
+                      "as the last field, where fields are separated "
+                      "by underscores, e.g. "
+                      "@READ:ILLUMINA:STUFF_NAMINGSTUFF_UMI. "
+                      "When true, unique counts are returned. "
+                      "Currently only compatible with count-reads")
 
     parser.add_option("--prefix", dest="prefixes",
                       type="string",
@@ -3815,7 +3833,7 @@ def main(argv=None):
         library_type='fr-unstranded',
         prefixes=[],
         minimum_mapping_quality=0,
-        use_barcodes = False
+        use_barcodes=False
     )
 
     if not argv:

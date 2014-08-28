@@ -34,6 +34,7 @@ import shutil
 import itertools
 import glob
 import collections
+import re
 
 import numpy
 import CGAT.GTF as GTF
@@ -696,10 +697,6 @@ def runCufflinks(infiles, outfile):
 
     shutil.rmtree(tmpfilename)
 
-#########################################################################
-#########################################################################
-#########################################################################
-
 
 def loadCufflinks(infile, outfile):
     '''load expression level measurements.'''
@@ -720,6 +717,38 @@ def loadCufflinks(infile, outfile):
            "--rename-column=tracking_id:transcript_id")
 
     P.touch(outfile)
+
+
+def mergeCufflinksFPKM(infiles, outfile,
+                       tracking="genes_tracking",
+                       identifier="gene_id"):
+    '''build aggregate table with cufflinks FPKM values.
+
+    * tracking* - select file type to merge:
+    genes_tracking: genes
+    fpkm_tracking: isoforms
+    '''
+
+    prefix = os.path.basename(outfile)
+    prefix = prefix[:prefix.index("_")]
+
+    headers = ",".join(
+        [re.match("fpkm.dir/.*_(.*).cufflinks", x).groups()[0]
+         for x in infiles])
+
+    statement = '''
+    python %(scriptsdir)s/combine_tables.py
+        --log=%(outfile)s.log
+        --columns=1
+        --skip-titles
+        --headers=%(headers)s
+        --take=FPKM fpkm.dir/%(prefix)s_*.%(tracking)s.gz
+    | perl -p -e "s/tracking_id/%(identifier)s/"
+    | %(scriptsdir)s/hsort 1
+    | gzip
+    > %(outfile)s
+    '''
+    P.run()
 
 
 def runFeatureCounts(annotations_file,
