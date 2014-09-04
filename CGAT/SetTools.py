@@ -73,14 +73,16 @@ def writeSets(outfile, list_of_sets, labels=None):
     outfile.write("id\t%s\n" % "\t".join(map(str, labels)))
 
     for i in sorted(list(all_ids)):
-        outfile.write("%s\t%s\n" % (i,
-                                    "\t".join(map(str, [[0, 1][i in x] for x in list_of_sets]))))
+        outfile.write("%s\t%s\n" % (
+            i,
+            "\t".join(map(str, [[0, 1][i in x] for x in list_of_sets]))))
 
 
 def unionIntersectionMatrix(list_of_sets):
     '''build union and intersection of a list of sets.
 
-    return a matrix with the upper diagonal the union and the lower diagonal the intersection.
+    return a matrix with the upper diagonal the union and the lower
+    diagonal the intersection.
     '''
 
     l = len(list_of_sets)
@@ -95,8 +97,6 @@ def unionIntersectionMatrix(list_of_sets):
             matrix[y][x] = len(inter)
 
     return matrix
-
-#------------------------------------------------------------------------
 
 
 def CompareSets(set1, set2):
@@ -136,8 +136,6 @@ def CompareSets(set1, set2):
         unique1 += set1[x1:]
 
     return unique1, unique2, common
-
-#------------------------------------------------------------------------
 
 
 def MakeNonRedundant(set):
