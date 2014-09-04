@@ -987,8 +987,109 @@ def loadTagCountSummary(infile, outfile):
            options="--first-column=track")
 
 #########################################################################
+#########################################################################
+#########################################################################
+@follows(buildWindows, countReadsWithinWindows)
+@transform("counts.dir/*.bed.gz",
+           regex("counts.dir/(.+)-(.+)-(.+).counts.bed.gz"),
+           r"counts.dir/\1-\2-\3.norm.bedGraph.gz")
+def NormalizeBed(infile, outfile):
+    '''
+    Normalize counts in bed file by total library size.
+    Return as bedGraph format
+    '''
 
+    # normalize count column by total library size
+    
+    to_cluster = True
+    
+    tmpfile = P.getTempFilename(shared=True)
 
+    P.submit(module='CGATPipelines.PipelineWindows',
+             function='NormalizeBed',
+             infiles=infile,
+             outfiles=tmpfile,
+             toCluster=True)
+
+    statement = '''cat %(tmpfile)s | cut -f 1,2,3,8 | gzip > %(outfile)s; rm -f %(tmpfile)s'''
+
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+@follows(NormalizeBed)
+@transform("counts.dir/*.norm.bedGraph.gz",
+           regex("counts.dir/(.+)-(.+)-(.+)_Input.bwa.norm.bedGraph.gz"),
+           add_inputs(r"counts.dir/\1-\2-\3.bwa.norm.bedGraph.gz"),
+           r"counts.dir/\1-\2-\3.vsInput.bedGraph.gz")
+def enrichVsInput(infile, outfile):
+    '''
+    Calculate enrichment vs Input and output as bedGraph format
+    '''
+
+    tmpfile = P.getTempFilename(shared=True)
+    P.submit(module='CGATPipelines.PipelineWindows',
+             function='enrichmentVsInput',
+             infiles=infile,
+             outfiles=tmpfile,
+             toCluster=True)
+
+    statement = '''cat %(tmpfile)s |  gzip > %(outfile)s; rm -f %(tmpfile)s'''
+
+    P.run()
+    
+#########################################################################
+#########################################################################
+#########################################################################
+@follows(mkdir("bigwig.dir"), enrichVsInput)
+@transform([enrichVsInput, NormalizeBed],
+           regex("counts.dir/(.+).bedGraph.gz"),
+           r"bigwig.dir/\1.bw")
+def convertBed2BigWig(infile, outfile):
+    '''
+    Use UCSC tools to convert bedGraph -> bigwig
+    '''
+
+    to_cluster = True
+
+    tmpfile = P.getTempFilename()
+
+    contig_file = PARAMS['annotations_dir'] + "/contigs.tsv"
+    
+    statement = '''zcat %(infile)s | sort -k 1,1 -k 2,2n > %(tmpfile)s; 
+                   bedGraphToBigWig %(tmpfile)s %(contig_file)s %(outfile)s;
+                   checkpoint ;
+                   rm -f %(tmpfile)s'''
+
+    P.run()
+#########################################################################
+#########################################################################
+#########################################################################
+@follows(mkdir("images.dir"), convertBed2BigWig)
+@transform(convertBed2BigWig,
+           regex("bigwig.dir/(.+)-(.+)-(.+).bw"),
+           r"images.dir/\1-\2-\3.hilbert.sentinel")
+def plotHilbertCurves(infile, outfile):
+    '''
+    Use the BioC package `HilbertVis` to generate hilbert curves of bigwig
+    files.  Generates one image file for each contig in the bigwig file.
+    '''
+    
+    to_cluster = True
+
+    statement = '''python %(scriptsdir)s/bigwig2hilbert.py -v 0
+                          --log=%(infile)s.log
+                          --images-dir=images.dir
+                          %(infile)s'''
+
+    P.run()
+
+    P.touch(outfile)
+
+#########################################################################
+#########################################################################
+#########################################################################
 def loadMethylationData(infile, design_file):
     '''load methylation data for deseq/edger analysis.
 
