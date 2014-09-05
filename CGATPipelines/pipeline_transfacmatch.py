@@ -161,6 +161,7 @@ import gzip
 import collections
 import random
 import pandas
+import pandas.io.sql as pdsql
 from rpy2.robjects import r as R
 from rpy2.robjects.packages import importr
 from rpy2.robjects.numpy2ri import numpy2ri
@@ -187,15 +188,18 @@ PARAMS = P.PARAMS
 INPUT_FILE = None
 # input intervals / gtf entries
 # they need to be in a single file
-INPUT_FORMATS = ("*.gtf.gz", "*.bed.gz")
+INPUT_FORMATS = (r"*.gtf.gz", r"*.bed.gz")
 REGEX_FORMATS = regex(r"(\S+).(gtf.gz|bed.gz)")
 input_file = []
 for x in INPUT_FORMATS:
     input_file += glob.glob(x)
-    assert len(input_file) <= 1, ("Multiple bed/gtf files in working directory"
-                                  " please make sure all intervals are in one"
-                                  " file")
-    INPUT_FILE = input_file[0]
+    if input_file:
+        assert len(input_file) <= 1, ("Multiple bed/gtf files in working directory"
+                                      " please make sure all intervals are in one"
+                                      " file")
+        INPUT_FILE = input_file[0]
+    else:
+        pass
 
 
 # foreground and background sets
@@ -309,6 +313,8 @@ def buildIntervalsFasta(infile, outfile):
         inf = infile
         concatenate = "zcat"
 
+    to_cluster = True
+
     # define statement
     # option to specify strand in config file.
     statement = ("%(concatenate)s %(inf)s |"
@@ -392,10 +398,13 @@ if PARAMS["background_match"]:
         track = re.match("GC_content.dir/"
                          "(.+)\.(?:background|foreground)\.gc\.load",
                          infiles[0]).groups()[0]
+
         # get list of foreground genes
         input_background = "%s.background.tsv" % track
+
         # get list of backround genes
         input_foreground = "%s.foreground.tsv" % track
+
         # get name of fasta file containing intervals
         fasta_file = os.path.basename(INPUT_FILE)[:-len(".gtf.gz")]
         fasta_file = os.path.join("fasta.dir", fasta_file)
@@ -434,6 +443,8 @@ if PARAMS["background_match"]:
         '''
         load the CpG compostion of matched background set
         '''
+
+        to_cluster = True
         tablename = filenameToTablename(
             P.snip(os.path.basename(outfile), ".load"))
         statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s
@@ -470,6 +481,7 @@ def runMatch(infiles, outfile):
     '''
     run transfac(R) match
     '''
+    to_cluster = True
     seq = infiles[0]
     mxlib = PARAMS["transfac_matrix"]
     mxprf = PARAMS["transfac_profile"]
@@ -501,6 +513,9 @@ def loadMatchResults(infile, outfile):
                                        details.matrix_score,
                                        details.sequence])) + "\n")
     temp.close()
+
+    to_cluster = True
+    job_options = "-l mem_free=64G"
 
     inf = temp.name
     tablename = filenameToTablename(os.path.basename(infile))
@@ -544,6 +559,11 @@ def loadMatchMetrics(infile, outfile):
     load match metrics
     '''
     tablename = filenameToTablename(os.path.basename(infile))
+
+    to_cluster = True
+
+    job_options = " -l mem_free=16G"
+
     statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s
                    --log=%(outfile)s.log
                    --index=seq_id
@@ -567,92 +587,148 @@ def Match():
 #            between foreground and background gene sets.
 ###############################################################################
 ###############################################################################
+if PARAMS['sig_testing_method'] == "fisher":
+
+    if PARAMS["background_match"]:
+        @follows(loadMatchResults,
+                 loadMatchedGCComposition,
+                 mkdir("match_test.dir"))
+        @jobs_limit(1, "FisherTest")
+        @collate([matchBackgroundForSequenceComposition, calculateGCContent],
+                 regex(".+/(.+)\.(?:foreground.gc|matched.background)\.tsv"),
+                 r"match_test.dir/\1.matched.significance")
+        def estimateEnrichmentOfTFBS(infiles, outfile):
+            '''
+            Estimate the significance of transcription factors that are associated
+            with a foreground set of intervals vs a background set matched for
+            sequence composition.
+            '''
+            E.info("Running Fisher's exact test for TF enrichment between %s" %
+                   " & ".join([os.path.basename(x) for x in infiles]))
+
+            # required files
+            match_table = "match_result"
+            
+            # we don't know which order the foreground and background will come in
+            background = [infile for infile in infiles if
+                          re.search("background", infile)][0]
+            foreground = ["%s.foreground.tsv" %
+                          re.match(".+/(.+)\.foreground\.gc\.tsv",
+                                   infile).groups()[0]
+                          for infile in infiles if re.search("foreground",
+                                                             infile)][0]
+
+            # run significance testing
+            # MM: added in directionality into FET - might only be looking for
+            # enrichment OR depletion so don't want to hammer those p-value
+            # too hard
+
+            pval_direct = PARAMS['fisher_direction']
+            
+            PipelineTFM.testSignificanceOfMatrices(background,
+                                                   foreground,
+                                                   PARAMS["database"],
+                                                   match_table,
+                                                   outfile,
+                                                   PARAMS["genesets_header"],
+                                                   pval_direct)
+
+            E.info("Completed Fisher's exact test for TF enrichment between %s" %
+                   " & ".join([os.path.basename(x) for x in infiles]))
 
 
-if PARAMS["background_match"]:
-    @follows(loadMatchResults,
+    else:
+        @follows(loadMatchResults, mkdir("match_test.dir"))
+        @jobs_limit(1, "FisherTest")
+        @collate(INPUT_BACKGROUND + INPUT_FOREGROUND,
+                 regex("(.+)\.(?:foreground|background)\.tsv"),
+                 r"match_test.dir/\1.significance")
+        def estimateEnrichmentOfTFBS(infiles, outfile):
+            '''
+            Estimate the significance of trnascription factors that are
+            associated with a foreground set of intervals vs a background set
+            '''
+            E.info("Running Fisher's exact test for TF enrichment between %s" %
+                   " & ".join([os.path.basename(x) for x in infiles]))
+
+            # required files
+            match_table = "match_result"
+            
+            # we don't know which order the foreground and backgorund will come in
+            background = [infile for infile in infiles if
+                          re.search("background", infile)][0]
+            foreground = [infile for infile in infiles if
+                          re.search("foreground", infile)][0]
+
+            # run significance testing
+            
+            PipelineTFM.testSignificanceOfMatrices(background,
+                                                   foreground,
+                                                   PARAMS["database"],
+                                                   match_table,
+                                                   outfile)
+            
+            E.info("Completed Fisher's exact test for TF enrichment between %s" %
+                   " & ".join([os.path.basename(x) for x in infiles]))
+
+elif PARAMS['sig_testing_method'] == "permutation":
+    @follows(loadMatchMetrics,
              loadMatchedGCComposition,
              mkdir("match_test.dir"))
-    @jobs_limit(1, "FisherTest")
     @collate([matchBackgroundForSequenceComposition, calculateGCContent],
-             regex(".+/(.+)\.(?:foreground.gc|matched.background)\.tsv"),
-             r"match_test.dir/\1.matched.significance")
+                 regex(".+/(.+)\.(?:foreground.gc|background.gc)\.tsv"),
+                 r"match_test.dir/\1.matched.significance")
     def estimateEnrichmentOfTFBS(infiles, outfile):
         '''
-        Estimate the significance of transcription factors that are associated
-        with a foreground set of intervals vs a background set matched for
-        sequence composition.
+        Test for enrichment of TFBS within a gene set by permutation.
         '''
-        E.info("Running Fisher's exact test for TF enrichment between %s" %
+
+        E.info("Running permutation testing for TFBS enrichment between %s" %
                " & ".join([os.path.basename(x) for x in infiles]))
 
-        # required files
+        dbh = sqlite3.connect(PARAMS['database'])
+        # table from sql db
         match_table = "match_result"
+        tfbs_state = '''SELECT seq_id, matrix_id FROM %s;''' % match_table
+        tfbs_table = pdsql.read_sql(tfbs_state, dbh, index_col='matrix_id')
 
-        # we don't know which order the foreground and background will come in
-        background = [infile for infile in infiles if
-                      re.search("background", infile)][0]
-        foreground = ["%s.foreground.tsv" %
-                      re.match(".+/(.+)\.foreground\.gc\.tsv",
-                               infile).groups()[0]
-                      for infile in infiles if re.search("foreground",
-                                                         infile)][0]
-        # run significance testing
-        PipelineTFM.testSignificanceOfMatrices(background,
-                                               foreground,
-                                               PARAMS["database"],
-                                               match_table,
-                                               outfile,
-                                               PARAMS["genesets_header"])
+        # get foreground and background gene files
+        # setup gc content dataframes
 
-        E.info("Completed Fisher's exact test for TF enrichment between %s" %
-               " & ".join([os.path.basename(x) for x in infiles]))
+        background = [infile for infile in infiles if re.search("background", infile)][0]
+        foreground = [infile for infile in infiles if re.search("foreground", infile)][0]
 
+        back_gc = pandas.read_table(background, sep="\t", index_col=0, header=0)
+        bg_gene_id = [x.split(" ")[0] for x in back_gc.index.tolist()]
+        back_gc['gene_id'] = bg_gene_id
+        back_gc.index = bg_gene_id
 
-else:
-    @follows(loadMatchResults, mkdir("match_test.dir"))
-    @jobs_limit(1, "FisherTest")
-    @collate(INPUT_BACKGROUND + INPUT_FOREGROUND,
-             regex("(.+)\.(?:foreground|background)\.tsv"),
-             r"match_test.dir/\1.significance")
-    def estimateEnrichmentOfTFBS(infiles, outfile):
-        '''
-        Estimate the significance of trnascription factors that are
-        associated with a foreground set of intervals vs a background set
-        '''
-        E.info("Running Fisher's exact test for TF enrichment between %s" %
-               " & ".join([os.path.basename(x) for x in infiles]))
+        fore_gc = pandas.read_table(foreground, sep="\t", index_col=0, header=0)
+        fg_gene_id = [x.split(" ")[0] for x in fore_gc.index.tolist()]
+        fore_gc['gene_id'] = fg_gene_id
+        fore_gc.index = fg_gene_id
 
-        # required files
-        match_table = "match_result"
+        # run permutation significance testing
 
-        # we don't know which order the foreground and backgorund will come in
-        background = [infile for infile in infiles if
-                      re.search("background", infile)][0]
-        foreground = [infile for infile in infiles if
-                      re.search("foreground", infile)][0]
+        perms = int(PARAMS['sig_testing_nperms'])
+        out_dict = PipelineTFM.permuteTFBSEnrich(tfbs_table=tfbs_table,
+                                                 fg_gc=fore_gc,
+                                                 bg_gc=back_gc,
+                                                 nPerms=perms)
+        
+        out_frame = pandas.DataFrame(out_dict).T
 
-        # run significance testing
-        PipelineTFM.testSignificanceOfMatrices(background,
-                                               foreground,
-                                               PARAMS["database"],
-                                               match_table,
-                                               outfile)
-
-        E.info("Completed Fisher's exact test for TF enrichment between %s" %
-               " & ".join([os.path.basename(x) for x in infiles]))
-
-
+        out_frame.to_csv(outfile, sep="\t", index_label='matrix_id')
 ###############################################################################
 ###############################################################################
 ###############################################################################
-
-
 @transform(estimateEnrichmentOfTFBS, suffix(".significance"), ".load")
 def loadEnrichmentOfTFBS(infile, outfile):
     '''
     load the results of the enrichment
     '''
+
+    to_cluster = True
     tablename = filenameToTablename(os.path.basename(infile))
     statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s
                   --log=%(outfile)s.log
@@ -672,6 +748,7 @@ def collateEnrichmentOfTFBS(infiles, outfile):
     '''
 
     def _fetch(table_name):
+        table_name = table_name.replace("-", "_")
         # retrieve table
         dbh = sqlite3.connect(PARAMS["database"])
         cc = dbh.cursor()
