@@ -1,8 +1,7 @@
-from SphinxReport.Tracker import *
+from SphinxReport import Tracker
 import glob
 from collections import OrderedDict as odict
-import SphinxReport.Utils
-import re
+
 
 class SortedTrackerImages(Tracker):
     '''
@@ -28,8 +27,10 @@ class SortedTrackerImages(Tracker):
 
     def sort_names(self, track_dict, **kwargs):
         '''sort globbed images by name'''
-
-        sort_dict = odict(sorted(track_dict.items(), key = lambda t: t[0]))
+        
+        track_items = track_dict.items()
+        sort_track = sorted(track_items, key=lambda t: t[0])
+        sort_dict = odict(sort_track)
 
         return sort_dict
 
