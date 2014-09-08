@@ -1699,6 +1699,9 @@ def run_report(clean=True):
 
     dirname, basename = os.path.split(getCaller().__file__)
 
+    report_engine = PARAMS.get("report_engine", "sphinxreport")
+    assert report_engine in ('sphinxreport', 'cgatreport')
+
     docdir = os.path.join(dirname, "pipeline_docs", snip(basename, ".py"))
     themedir = os.path.join(dirname, "pipeline_docs", "themes")
     relpath = os.path.relpath(docdir)
@@ -1739,7 +1742,7 @@ def run_report(clean=True):
     (export SPHINX_DOCSDIR=%(docdir)s;
     export SPHINX_THEMEDIR=%(themedir)s;
     %(xvfb_command)s
-    sphinxreport-build
+    %(report_engine)s-build
            --num-jobs=%(report_threads)s
            sphinx-build
                     -b html
