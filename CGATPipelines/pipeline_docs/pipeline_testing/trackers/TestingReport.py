@@ -113,7 +113,7 @@ class ReportTable(TestingTracker):
 
         report_file = os.path.join(track + ".dir", "report.log")
         fn = os.path.abspath(
-            os.path.join(track + ".dir", "report", "html", "pipeline.html"))
+            os.path.join(track + ".dir", "report", "html", "contents.html"))
 
         r = odict()
         r["link"] = "`%(track)s <%(fn)s>`_" % locals()
@@ -137,7 +137,7 @@ class XReportTable(TestingTracker):
         toc_text = []
         link_text = []
 
-        fn = os.path.join(track + ".dir", "report", "html", "pipeline.html")
+        fn = os.path.join(track + ".dir", "report", "html", "contents.html")
         toc_text.append("* %(track)s_" % locals())
         link_text.append(".. _%(track)s: %(fn)s" % locals())
 

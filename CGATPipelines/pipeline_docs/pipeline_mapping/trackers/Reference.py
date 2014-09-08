@@ -30,9 +30,10 @@ class TranscriptCoverage(ReferenceData):
     mXLabel = "overlap / %"
 
     def __call__(self, track, slice=None):
-        return self.getValues( """SELECT coverage_sense_pcovered 
-                                         FROM %(track)s_transcript_counts 
-                                         WHERE coverage_sense_nval > 0""" )
+        return self.getValues(
+            """SELECT coverage_sense_pcovered
+            FROM %(track)s_transcript_counts
+            WHERE coverage_sense_nval > 0""")
 
 
 class GeneCoverage(ReferenceData):
@@ -40,12 +41,13 @@ class GeneCoverage(ReferenceData):
     '''Coverage of reference genes - max transcript coverage per gene.'''
 
     def __call__(self, track, slice=None):
-        return self.getValues( """SELECT max(c.coverage_sense_pcovered) FROM 
-                                            %(track)s_transcript_counts as c,
-                                            %(reference)s_transcript2gene as i
-                                         WHERE c.coverage_sense_nval > 0
-                                   AND i.transcript_id = c.transcript_id 
-                                   GROUP BY i.gene_id""" )
+        return self.getValues(
+            """SELECT max(c.coverage_sense_pcovered) FROM
+            %(track)s_transcript_counts as c,
+            %(reference)s_transcript2gene as i
+            WHERE c.coverage_sense_nval > 0
+            AND i.transcript_id = c.transcript_id
+            GROUP BY i.gene_id""")
 
 # =================================================================
 # Coverage
@@ -54,36 +56,48 @@ class GeneCoverage(ReferenceData):
 
 class MeanVsMaxReadDepth(ReferenceData):
 
-    """maxmimum read depth versus mean read depth of :term:`reference` genes. 
-    Dots are coloured by the log(length) of a :term:`reference` gene."""
+    """maxmimum read depth versus mean read depth of :term:`reference`
+    genes.  Dots are coloured by the log(length) of a
+    :term:`reference` gene.
+
+    """
 
     mXLabel = "mean read depth"
     mYLabel = "maximum read depth"
 
     def __call__(self, track, slice=None):
         reference = self.reference
-        statement = "SELECT coverage_sense_mean, coverage_sense_max, exons_sum FROM %(track)s_transcript_counts" % locals(
-        )
+        statement = """
+        SELECT coverage_sense_mean, coverage_sense_max, exons_sum
+        FROM %(track)s_transcript_counts""" % locals()
+
         data = [(x[0], x[1], math.log(x[2]))
                 for x in self.get(statement) if x[2] > 0]
-        return odict(zip(("mean coverage", "max coverage", "length"), zip(*data)))
+        return odict(zip(("mean coverage", "max coverage", "length"),
+                         zip(*data)))
 
 
 class MeanVsMedianReadDepth(ReferenceData):
 
-    """maxmimum read depth versus mean read depth of :term:`reference` genes. 
-    Dots are coloured by the log(length) of a :term:`reference` gene."""
+    """maxmimum read depth versus mean read depth of :term:`reference`
+    genes.  Dots are coloured by the log(length) of a
+    :term:`reference` gene.
+
+    """
 
     mXLabel = "mean read depth"
     mYLabel = "median read depth"
 
     def __call__(self, track, slice=None):
         reference = self.reference
-        statement = "SELECT coverage_sense_mean, coverage_sense_median, exons_sum FROM %(track)s_transcript_counts" % locals(
-        )
+        statement = """
+        SELECT coverage_sense_mean, coverage_sense_median, exons_sum
+        FROM %(track)s_transcript_counts""" % locals()
+
         data = [(x[0], x[1], math.log(x[2]))
                 for x in self.get(statement) if x[2] > 0]
-        return odict(zip(("mean coverage", "median coverage", "length"), zip(*data)))
+        return odict(zip(("mean coverage", "median coverage", "length"),
+                         zip(*data)))
 
 # =================================================================
 # Directionality
@@ -103,8 +117,9 @@ class ReadDirectionality(MappingTracker):
 
     def __call__(self, track, slice=None):
         data = self.getValues(
-            """SELECT CAST( (antisense_unique_counts + 1) AS FLOAT) / (sense_unique_counts + 1)  
-                      FROM %(track)s_%(slice)s_counts """ )
+            """SELECT CAST( (coverage_antisense_nreads + 1) AS FLOAT) /
+            (coverage_sense_nreads + 1)
+            FROM %(track)s_%(slice)s_counts """)
         return odict((("direction", data),))
 
 
