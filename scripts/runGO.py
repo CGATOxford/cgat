@@ -332,10 +332,12 @@ def main(argv=None):
         infile = IOTools.openFile(options.filename_gene2name)
         gene2name = IOTools.readMap(infile, has_header=True)
         infile.close()
-        E.info("read %i gene names for %i gene identifiers" % (len(set(gene2name.values())),
-                                                               len(gene2name)))
+        E.info("read %i gene names for %i gene identifiers" %
+               (len(set(gene2name.values())),
+                len(gene2name)))
     else:
-        gene2name = None
+        # use identity mapping
+        gene2name = dict([(x, x) for x in gene2gos.keys()])
 
     #############################################################
     # read GO ontology from file
@@ -401,7 +403,8 @@ def main(argv=None):
         "nsample_counts",
         "nbackground_counts",
         "psample_assignments",
-        "pbackground_assignments")) + "\n")
+        "pbackground_assignments",
+        "messages")) + "\n")
 
     #############################################################
     # get go categories for genes
@@ -421,30 +424,35 @@ def main(argv=None):
             E.info("reading data from database ...")
 
             dbhandle.Connect(options)
-            gene2go, go2info = ReadGene2GOFromDatabase(dbhandle,
-                                                       test_ontology,
-                                                       options.database, options.species)
+            gene2go, go2info = ReadGene2GOFromDatabase(
+                dbhandle,
+                test_ontology,
+                options.database, options.species)
 
             E.info("finished")
 
         if len(go2info) == 0:
             E.warn(
-                "could not find information for terms - could be mismatch between ontologies")
+                "could not find information for terms - "
+                "could be mismatch between ontologies")
 
         ngenes, ncategories, nmaps, counts_per_category = CountGO(gene2go)
-        E.info("assignments found: %i genes mapped to %i categories (%i maps)" %
+        E.info("assignments found: %i genes mapped to %i categories "
+               "(%i maps)" %
                (ngenes, ncategories, nmaps))
 
         if options.minimum_counts > 0:
             to_remove = set(
-                [x for x, y in counts_per_category.iteritems() if y < options.minimum_counts])
+                [x for x, y in counts_per_category.iteritems()
+                 if y < options.minimum_counts])
             E.info("removing %i categories with less than %i genes" %
                    (len(to_remove), options.minimum_counts))
             removeCategories(gene2go, to_remove)
 
             ngenes, ncategories, nmaps, counts_per_category = CountGO(gene2go)
-            E.info("assignments after filtering: %i genes mapped to %i categories (%i maps)" % (
-                ngenes, ncategories, nmaps))
+            E.info("assignments after filtering: %i genes mapped "
+                   "to %i categories (%i maps)" % (
+                       ngenes, ncategories, nmaps))
 
         for genelist_name, foreground in genelists.iteritems():
 
@@ -471,7 +479,8 @@ def main(argv=None):
                         len(missing), str(missing))
             else:
                 if len(missing) != 0:
-                    E.warn("%i genes in foreground that are not in background - added to background of %i" %
+                    E.warn("%i genes in foreground that are not in "
+                           "background - added to background of %i" %
                            (len(missing), len(background)))
 
                 background.extend(missing)
@@ -496,10 +505,11 @@ def main(argv=None):
                     for x in go_slims.values():
                         for xx in x:
                             v.add(xx)
-                    options.stdlog.write("# read go slims from %s: go=%i, slim=%i\n" %
-                                         (options.filename_slims,
-                                          len(go_slims),
-                                          len(v)))
+                    options.stdlog.write(
+                        "# read go slims from %s: go=%i, slim=%i\n" %
+                        (options.filename_slims,
+                         len(go_slims),
+                         len(v)))
 
                 if options.filename_map_slims:
                     if options.filename_map_slims == "-":
@@ -520,8 +530,10 @@ def main(argv=None):
                 if options.loglevel >= 1:
                     ngenes, ncategories, nmaps, counts_per_category = CountGO(
                         gene2go)
-                    options.stdlog.write("# after go slim filtering: %i genes mapped to %i categories (%i maps)\n" % (
-                        ngenes, ncategories, nmaps))
+                    options.stdlog.write(
+                        "# after go slim filtering: %i genes mapped to "
+                        "%i categories (%i maps)\n" % (
+                            ngenes, ncategories, nmaps))
 
             #############################################################
             # Just dump out the gene list
@@ -573,7 +585,6 @@ def main(argv=None):
                                   set=genelist_name)
 
             # Jethro bug fix - see section 'build background' for assignment
-            #outfile.write("gene_id\n%s\n" % ("\n".join(sorted(background[0]))))
             outfile.write("gene_id\n%s\n" % ("\n".join(sorted(background))))
             if options.output_filename_pattern:
                 outfile.close()
@@ -679,8 +690,9 @@ def main(argv=None):
             if nbackground == 0:
                 nbackground = len(go_results.mBackgroundGenes)
 
-            outfile.write("# input go mappings for gene list '%s' and category '%s'\n" % (
-                genelist_name, test_ontology))
+            outfile.write(
+                "# input go mappings for gene list '%s' and category '%s'\n" %
+                (genelist_name, test_ontology))
             outfile.write("parameter\tvalue\tdescription\n")
             outfile.write("mapped_genes\t%i\tmapped genes\n" % ngenes)
             outfile.write(
@@ -688,19 +700,28 @@ def main(argv=None):
             outfile.write("mappings\t%i\tmappings\n" % nmaps)
             outfile.write("genes_in_fg\t%i\tgenes in foreground\n" %
                           len(foreground))
-            outfile.write("genes_in_fg_with_assignment\t%i\tgenes in foreground with GO assignments\n" % (
-                len(go_results.mSampleGenes)))
-            outfile.write("genes_in_bg\t%i\tinput background\n" % nbackground)
-            outfile.write("genes_in_bg_with_assignment\t%i\tgenes in background with GO assignments\n" % (
+            outfile.write(
+                "genes_in_fg_with_assignment\t%i\tgenes in foreground with GO assignments\n" %
+                (len(go_results.mSampleGenes)))
+            outfile.write(
+                "genes_in_bg\t%i\tinput background\n" % nbackground)
+            outfile.write(
+                "genes_in_bg_with_assignment\t%i\tgenes in background with GO assignments\n" % (
                 len(go_results.mBackgroundGenes)))
-            outfile.write("associations_in_fg\t%i\tassociations in sample\n" %
-                          go_results.mSampleCountsTotal)
-            outfile.write("associations_in_bg\t%i\tassociations in background\n" %
-                          go_results.mBackgroundCountsTotal)
-            outfile.write("percent_genes_in_fg_with_association\t%s\tpercent genes in sample with GO assignments\n" % (
-                IOTools.prettyPercent(len(go_results.mSampleGenes), len(foreground), "%5.2f")))
-            outfile.write("percent_genes_in_bg_with_associations\t%s\tpercent genes background with GO assignments\n" % (
-                IOTools.prettyPercent(len(go_results.mBackgroundGenes), nbackground, "%5.2f")))
+            outfile.write(
+                "associations_in_fg\t%i\tassociations in sample\n" %
+                go_results.mSampleCountsTotal)
+            outfile.write(
+                "associations_in_bg\t%i\tassociations in background\n" %
+                go_results.mBackgroundCountsTotal)
+            outfile.write(
+                "percent_genes_in_fg_with_association\t%s\tpercent genes in sample with GO assignments\n" % (
+                    IOTools.prettyPercent(len(go_results.mSampleGenes),
+                                          len(foreground), "%5.2f")))
+            outfile.write(
+                "percent_genes_in_bg_with_associations\t%s\tpercent genes background with GO assignments\n" % (
+                    IOTools.prettyPercent(len(go_results.mBackgroundGenes),
+                                          nbackground, "%5.2f")))
             outfile.write(
                 "significant\t%i\tsignificant results reported\n" % nselected)
             outfile.write(
@@ -754,8 +775,6 @@ def main(argv=None):
 
         if len(genelists) > 1:
 
-            ###################################################################
-            ###################################################################
             ###################################################################
             # output various summary files
             # significant results
