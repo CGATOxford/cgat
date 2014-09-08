@@ -1,4 +1,6 @@
-from MedipReport import *
+from MedipReport import ProjectTracker
+from SphinxReport.Tracker import SingleTableTrackerRows
+from SphinxReport.Tracker import SingleTableTrackerHistogram
 
 
 class TileSizeHistogram(SingleTableTrackerHistogram, ProjectTracker):
