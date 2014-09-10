@@ -60,7 +60,7 @@ complete test setup::
    # regular expression of files to be excluded from
    # test for difference. Use | to separate multiple
    # regular expressions.
-   regex_no_md5=rates.gff.gz
+   regex_only_exist=rates.gff.gz
 
 This configuration will run the test ``mytest1``. The associated
 pipeline is :doc:`pipeline_mapping` and it will execute the target
@@ -71,9 +71,11 @@ a checksum of the whole file ignoring any comments (lines starting
 with a ``#``).
 
 Some files will be different at every run, for example if they use
-some form of random initialization. Files matching the regular
-expressions in ``regex_only_exist`` will thus only be tested if they
-exist or not.
+some form of random initialization. Thus, the exact test can be
+relaxed for groups of files. Files matching the regular expression in
+``regex_linecount` will test if a file exists and the number of lines
+are identitical.  Files matching the regular expressions in
+``regex_exist`` will thus only be tested if they exist or not.
 
 The test expects a file called :file:`test_mytest1.tgz` with the
 test data at the download URL (parameter ``data_url``).
@@ -150,12 +152,12 @@ Code
 
 """
 from ruffus import *
-
 import sys
 import pipes
 import os
 import re
 import tarfile
+import pandas
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 
@@ -283,6 +285,39 @@ def buildCheckSums(infile, outfile):
         raise ValueError('no file types defined for test')
 
     regex_pattern = ".*\(%s\)" % "\|".join(suffixes)
+    regex_pattern = pipes.quote(regex_pattern)
+
+    # ignore log files as time stamps will
+    # be different
+    statement = '''find %(track)s.dir
+    -type f
+    -not -regex ".*.log"
+    -regex %(regex_pattern)s
+    -exec %(scriptsdir)s/cgat_file_apply.sh {} md5sum \;
+    | perl -p -e "s/ +/\\t/g"
+    > %(outfile)s'''
+    P.run()
+
+
+@transform((runPreparationTests, runTests),
+           suffix(".log"),
+           ".lines")
+def buildLineCounts(infile, outfile):
+    '''compute line counts.
+
+    Files are uncompressed before computing the number of lines.
+    '''
+
+    track = P.snip(infile, ".log")
+
+    suffixes = P.asList(PARAMS.get(
+        '%s_suffixes' % track,
+        PARAMS["suffixes"]))
+
+    if len(suffixes) == 0:
+        raise ValueError('no file types defined for test')
+
+    regex_pattern = ".*\(%s\)" % "\|".join(suffixes)
 
     regex_pattern = pipes.quote(regex_pattern)
 
@@ -292,52 +327,94 @@ def buildCheckSums(infile, outfile):
     -type f
     -not -regex ".*.log"
     -regex %(regex_pattern)s
-    -exec %(scriptsdir)s/cgat_md5sum.sh {} \;
+    -exec %(scriptsdir)s/cgat_file_apply.sh {} wc -l \;
     >> %(outfile)s'''
     P.run()
 
 
-@merge(buildCheckSums,
+@collate((buildCheckSums, buildLineCounts),
+         regex("([^.]*).(.*)"),
+         r"\1.stats")
+def mergeFileStatistics(infiles, outfile):
+    '''merge all file statistics.'''
+    infiles = " ".join(sorted(infiles))
+
+    statement = '''
+    echo -e "file\\tnlines\\tmd5\\txxx" > %(outfile)s;
+    join -t $'\\t' %(infiles)s >> %(outfile)s'''
+    P.run()
+
+
+@merge(mergeFileStatistics,
        "md5_compare.tsv")
 def compareCheckSums(infiles, outfile):
-    '''compare checksum files against
-    existing reference data.
+    '''compare checksum files against existing reference data.
     '''
 
     outf = IOTools.openFile(outfile, "w")
     outf.write("\t".join((
         ("track", "status",
          "nfiles", "nref",
-         "missing", "extra", "different",
-         "files_missing", "files_extra", "files_different"))) + "\n")
+         "missing", "extra",
+         "different",
+         "different_md5", "different_lines",
+         "files_missing", "files_extra",
+         "files_different_md5",
+         "files_different_lines"))) + "\n")
 
     for infile in infiles:
-        track = P.snip(infile, ".md5")
+        track = P.snip(infile, ".stats")
         reffile = track + ".ref"
 
         # regular expression of files to test only for existence
-        regex_no_md5 = PARAMS.get('%s_regex_no_md5' % track, None)
-        if regex_no_md5:
-            regex_no_md5 = re.compile(regex_no_md5)
+        regex_exist = PARAMS.get('%s_regex_exist' % track, None)
+        if regex_exist:
+            regex_exist = re.compile(regex_exist)
+
+        regex_linecount = PARAMS.get('%s_regex_linecount' % track, None)
+        if regex_linecount:
+            regex_linecount = re.compile(regex_linecount)
 
         if not os.path.exists(reffile):
             raise ValueError('no reference data defined for %s' % track)
 
-        cmp_data = [x.split()[:2] for x in IOTools.openFile(infile)]
-        ref_data = [x.split()[:2] for x in IOTools.openFile(reffile)]
-        cmp_md5 = dict(cmp_data)
-        ref_md5 = dict(ref_data)
-        shared_files = set(cmp_md5).intersection(ref_md5)
+        cmp_data = pandas.read_csv(IOTools.openFile(infile),
+                                   sep="\t",
+                                   index_col=0)
 
-        missing = set(ref_md5).difference(cmp_md5)
-        extra = set(cmp_md5).difference(ref_md5)
-        different = [x for x in shared_files if ref_md5[x] != cmp_md5[x]]
-        # remove any files not to be checked for difference
-        if regex_no_md5:
+        ref_data = pandas.read_csv(IOTools.openFile(reffile),
+                                   sep="\t",
+                                   index_col=0)
+
+        shared_files = set(cmp_data.index).intersection(ref_data.index)
+        missing = set(ref_data.index).difference(cmp_data.index)
+        extra = set(cmp_data.index).difference(ref_data.index)
+
+        different = set(shared_files)
+
+        # remove those for which only check for existence
+        if regex_exist:
             different = [x for x in different
-                         if not regex_no_md5.search(x)]
+                         if not regex_exist.search(x)]
 
-        if len(missing) + len(extra) + len(different) == 0:
+        # select those for which only check for number of lines
+        if regex_linecount:
+            check_lines = [x for x in different
+                           if regex_linecount.search(x)]
+            dd = (cmp_data['nlines'][check_lines] !=
+                  ref_data['nlines'][check_lines])
+
+            different_lines = set(dd.index[dd])
+            different = different.difference(check_lines)
+        else:
+            different_lines = set()
+
+        # remainder - check md5
+        dd = cmp_data['md5'][different] != ref_data['md5'][different]
+        different_md5 = set(dd.index[dd])
+
+        if len(missing) + len(extra) + \
+           len(different_md5) + len(different_lines) == 0:
             status = "OK"
         else:
             status = "FAIL"
@@ -345,14 +422,18 @@ def compareCheckSums(infiles, outfile):
         outf.write("\t".join(map(str, (
             track,
             status,
-            len(cmp_md5),
-            len(ref_md5),
+            len(cmp_data),
+            len(ref_data),
             len(missing),
             len(extra),
-            len(different),
+            len(different_md5) + len(different_lines),
+            len(different_md5),
+            len(different_lines),
             ",".join(missing),
             ",".join(extra),
-            ",".join(different)))) + "\n")
+            ",".join(different_md5),
+            ",".join(different_lines),
+        ))) + "\n")
 
     outf.close()
 
