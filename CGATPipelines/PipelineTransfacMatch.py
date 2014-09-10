@@ -350,8 +350,8 @@ def matchBgSequenceComposition(gc_load_files,
                     gc["foreground"][interval_id] = cpg_str
 
             else:
-                raise ValueError, ("Unrecognized table name %s. Should contain"
-                                   "'foreground' or 'background'" % tablename)
+                raise ValueError("Unrecognized table name %s. Should contain"
+                                 "'foreground' or 'background'" % tablename)
 
     # debug: pickle and dump the gc dict
     pickle_file = P.snip(foreground, ".foreground.tsv") + ".p"
@@ -425,9 +425,9 @@ def matchGenesByComposition(bg_gc, fg_gc):
 
     gc_dict = {}
     match_dict = {}
-    
+
     props = (x/100.0 for x in xrange(0, 101, 1))
-    
+
     bg_genes = bg_gc.index
     bg_cpg = bg_gc['pCpG']
     fg_cpg = fg_gc['pCpG']
@@ -537,16 +537,16 @@ def permuteTFBSEnrich(tfbs_table,
     fg_geneset = fg_gc.index.tolist()
     matched_genes = matchGenesByComposition(bg_gc, fg_gc)
     tfbs_all = set(tfbs_table.index)
-    
+
     for tfbs in tfbs_all:
         tfbs_res = {}
         tfbs_genes = TFBSgeneset(tfbs, tfbs_table)
         fg_genes_counters = countTFBSEnrichment(tfbs_genes, fg_geneset)
-        
+
         n_foregenes = fg_genes_counters[0]
         n_tfbsgenes = fg_genes_counters[1]
         total_fg = len(fg_geneset)
-        
+
         fore_enrich = n_foregenes/float(n_tfbsgenes)
         if fore_enrich > 0:
             null_perms = nullDistPermutations(tfbs_genes=tfbs_genes,
@@ -563,7 +563,6 @@ def permuteTFBSEnrich(tfbs_table,
         tfbs_res['nForegenes'] = n_foregenes
         tfbs_res['tForegenes'] = total_fg
         tfbs_res['nTFBSGenes'] = n_tfbsgenes
-        
         tfbs_res['propForeInTFBS'] = fore_enrich
         tfbs_res['null_median'] = null_median
         tfbs_res['pvalue'] = pvalue

@@ -213,9 +213,6 @@ def connect():
 
     return dbh
 
-#########################################################################
-#########################################################################
-
 
 def preprocessBAM(infile, outfile):
     '''returns a command line statement for pre-processing a BAM
@@ -256,8 +253,75 @@ def preprocessBAM(infile, outfile):
 
     return statement, current_file, tmpdir
 
-#########################################################################
-#########################################################################
+
+def getInput(track):
+    '''return a list of input tracks associated with track.
+
+    Associations can be defined in the .ini file in the section
+    [input]. For example, the following snippet associates track
+    track1 with the bamfiles :file:`track1.bam` and :file:`track2.bam`::
+
+       [input]
+       track1.bam=input1.bam,input2.bam
+
+    Glob expressions are permitted.
+
+    Default tracks can be specified using a placeholder ``%``. The
+    following will associate all tracks with the same bam file::
+
+        [bams]
+        %=all.bam
+
+
+    '''
+
+    input_files = []
+
+    # configparser by default converts option names to lower case
+    fn = track.asFile()
+    fn = fn.lower()
+
+    if "input_%s" % fn in PARAMS:
+        input_files.extend(P.asList(PARAMS["input_%s" % fn]))
+    elif P.CONFIG.has_section("input"):
+        for pattern, value in P.CONFIG.items("input"):
+            if "%" in pattern:
+                pattern = re.sub("%", "\S+", pattern)
+            if re.search(pattern, fn):
+                input_files.extend(P.asList(value))
+
+    return input_files
+
+
+def mapTrack2Input(tracks):
+    '''given a list of tracks, return a dictionary mapping a track to its input
+    '''
+
+    # select columns in foreground and background
+    map_track2input = {}
+    for idx, track in enumerate(tracks):
+
+        if track == "interval_id":
+            continue
+
+        try:
+            t = Sample(tablename=track)
+        except ValueError, msg:
+            print msg
+            continue
+
+        input_files = getInput(t)
+
+        # currently only implement one input file per track
+        assert len(input_files) <= 1, "%s more than input: %s" % (
+            track, input_files)
+
+        if len(input_files) == 0:
+            map_track2input[track] = None
+        else:
+            map_track2input[track] = Sample(filename=input_files[0]).asTable()
+
+    return map_track2input
 
 
 @follows(mkdir("tags.dir"))
@@ -350,6 +414,8 @@ def mergeBackgroundWindows(infiles, outfile):
 #########################################################################
 #########################################################################
 #########################################################################
+
+int_genomic_contex_bed = PARAMS_ANNOTATIONS['interface_genomic_context_bed']
 
 
 @transform(os.path.join(PARAMS["annotations_dir"],
@@ -641,9 +707,6 @@ def buildBigBed(infile, outfile):
     '''bed file with intervals that are covered by reads in any of the experiments.
     '''
 
-    to_cluster = True
-    to_cluster = False
-
     tmpfile = P.getTempFilename()
 
     contig_sizes = os.path.join(
@@ -681,10 +744,6 @@ def countReadsWithinWindows(infiles, outfile):
         outfile,
         counting_method=PARAMS['tiling_counting_method'])
 
-#########################################################################
-#########################################################################
-#########################################################################
-
 
 @merge(countReadsWithinWindows,
        r"counts.dir/counts.tsv.gz")
@@ -695,203 +754,87 @@ def aggregateWindowsReadCounts(infiles, outfile):
                                                outfile,
                                                regex="(.*).counts.bed.gz")
 
-#########################################################################
-#########################################################################
-#########################################################################
-
 
 @transform(aggregateWindowsReadCounts, suffix(".tsv.gz"), ".load")
 def loadWindowsReadCounts(infile, outfile):
     '''load a sample of window composition data for QC purposes.'''
     P.load(infile, outfile, limit=10000, shuffle=True)
 
-###################################################################
-###################################################################
-###################################################################
-#
-###################################################################
 
-
-def getInput(track):
-    '''return a list of input tracks associated with track.
-
-    Associations can be defined in the .ini file in the section
-    [input]. For example, the following snippet associates track
-    track1 with the bamfiles :file:`track1.bam` and :file:`track2.bam`::
-
-       [input]
-       track1.bam=input1.bam,input2.bam
-
-    Glob expressions are permitted.
-
-    Default tracks can be specified using a placeholder ``%``. The
-    following will associate all tracks with the same bam file::
-
-        [bams]
-        %=all.bam
-
-
-    '''
-
-    input_files = []
-
-    # configparser by default converts option names to lower case
-    fn = track.asFile()
-    fn = fn.lower()
-
-    if "input_%s" % fn in PARAMS:
-        input_files.extend(P.asList(PARAMS["input_%s" % fn]))
-    elif P.CONFIG.has_section("input"):
-        for pattern, value in P.CONFIG.items("input"):
-            if "%" in pattern:
-                pattern = re.sub("%", "\S+", pattern)
-            if re.search(pattern, fn):
-                input_files.extend(P.asList(value))
-
-    return input_files
-
-
-def mapTrack2Input(tracks):
-    '''given a list of tracks, return a dictionary mapping a track to its input
-    '''
-
-    # select columns in foreground and background
-    map_track2input = {}
-    for idx, track in enumerate(tracks):
-
-        if track == "interval_id":
-            continue
-
-        try:
-            t = Sample(tablename=track)
-        except ValueError, msg:
-            print msg
-            continue
-
-        input_files = getInput(t)
-
-        # currently only implement one input file per track
-        assert len(input_files) <= 1, "%s more than input: %s" % (
-            track, input_files)
-
-        if len(input_files) == 0:
-            map_track2input[track] = None
-        else:
-            map_track2input[track] = Sample(filename=input_files[0]).asTable()
-
-    return map_track2input
-
-#########################################################################
-#########################################################################
-#########################################################################
-
-
-@transform(loadWindowsReadCounts, suffix(".load"), "_l2foldchange_input.tsv")
+@transform(aggregateWindowsReadCounts,
+           suffix(".tsv.gz"),
+           "_l2foldchange_input.tsv.gz")
 def buildWindowsFoldChangesPerInput(infile, outfile):
     '''Compute fold changes for each sample compared to appropriate input.
 
-    If no input is present, simply divide by average.
-
+    If no input is present, simply divide by median.
     '''
 
     # get all data
-    dbh = connect()
-    cc = dbh.cursor()
-    cc.execute("SELECT * FROM counts")
-    data = cc.fetchall()
-
-    # transpose, remove interval_id column
-    data = zip(*data)
-    columns = [x[0] for x in cc.description]
-
-    map_track2input = mapTrack2Input(columns)
-    take_tracks = [x for x, y in enumerate(columns) if y in map_track2input]
-    take_input = [x for x, y in enumerate(
-        columns) if y in map_track2input.values() and y is not None]
-
-    # build data frame
-    dataframe = pandas.DataFrame(
-        dict([(columns[x], data[x]) for x in take_tracks]))
-    dataframe = dataframe.astype('float64')
-    dataframe_input = pandas.DataFrame(
-        dict([(columns[x], data[x]) for x in take_input]))
+    dataframe = pandas.read_csv(IOTools.openFile(infile),
+                                sep="\t",
+                                index_col=0)
 
     # add pseudocounts
     pseudocount = 1
-    for column in dataframe.columns:
-        dataframe[column] += pseudocount
-    for column in dataframe_input.columns:
-        dataframe_input[column] += pseudocount
+    dataframe += pseudocount
+
+    map_track2input = mapTrack2Input(dataframe.columns)
+    take_tracks = [x for x, y in enumerate(dataframe.columns)
+                   if y in map_track2input]
+
+    # build data frame
+    dataframe_tracks = dataframe[take_tracks]
 
     # compute normalization ratios
     # total_input / total_column
     ratios = {}
-    for column in dataframe.columns:
+    for column in dataframe_tracks.columns:
         i = map_track2input[column]
         if i is not None:
-            # ratios[column] = float(sum(dataframe_input[i])) /
-            # sum( dataframe[column] )
-            ratios[column] = dataframe_input[
-                i].median() / dataframe[column].median()
+            ratios[column] = \
+                float(sum(dataframe[i])) /\
+                sum(dataframe_tracks[column])
         else:
             ratios[column] = None
 
-    for column in dataframe.columns:
+    for column in dataframe_tracks.columns:
         if ratios[column] is not None:
             # normalize by input
-            dataframe[column] *= ratios[column] / \
-                dataframe_input[map_track2input[column]]
+            dataframe_tracks[column] *= ratios[column] / \
+                dataframe[map_track2input[column]]
         else:
             # normalize by median
-            dataframe[column] /= dataframe[column].median()
+            dataframe_tracks[column] /= \
+                dataframe_tracks[column].median()
 
-    dataframe = numpy.log2(dataframe)
-
-    dataframe.to_csv(outfile, sep="\t", index=False)
-
-#########################################################################
-#########################################################################
-#########################################################################
+    dataframe_tracks = numpy.log2(dataframe_tracks)
+    dataframe_tracks.to_csv(IOTools.openFile(outfile, "w"),
+                            sep="\t")
 
 
-@transform(loadWindowsReadCounts, suffix(".load"), "_l2foldchange_median.tsv")
+@transform(aggregateWindowsReadCounts, suffix(".tsv.gz"),
+           "_l2foldchange_median.tsv.gz")
 def buildWindowsFoldChangesPerMedian(infile, outfile):
     '''Compute l2fold changes for each sample compared to the median count
     in sample.
-
     '''
 
     # get all data
-    dbh = connect()
-    cc = dbh.cursor()
-    cc.execute("SELECT * FROM counts")
-    data = cc.fetchall()
-
-    # transpose, remove interval_id column
-    data = zip(*data)
-    columns = [x[0] for x in cc.description]
-
-    take_tracks = [x for x, y in enumerate(columns) if y != "interval_id"]
-    # build data frame
-    dataframe = pandas.DataFrame(
-        dict([(columns[x], data[x]) for x in take_tracks]))
-    dataframe = dataframe.astype('float64')
+    dataframe = pandas.read_csv(IOTools.openFile(infile),
+                                sep="\t",
+                                index_col=0)
 
     # add pseudocounts
     pseudocount = 1
-    for column in dataframe.columns:
-        dataframe[column] += pseudocount
+    dataframe += pseudocount
 
     for column in dataframe.columns:
         dataframe[column] /= dataframe[column].median()
 
     dataframe = numpy.log2(dataframe)
-
-    dataframe.to_csv(outfile, sep="\t", index=False)
-
-#########################################################################
-#########################################################################
-#########################################################################
+    dataframe.to_csv(IOTools.openFile(outfile, "w"),
+                     sep="\t")
 
 
 @transform((buildWindowsFoldChangesPerMedian, buildWindowsFoldChangesPerInput),
@@ -899,10 +842,6 @@ def buildWindowsFoldChangesPerMedian(infile, outfile):
 def loadWindowsFoldChanges(infile, outfile):
     '''load fold change stats'''
     P.load(infile, outfile)
-
-#########################################################################
-#########################################################################
-#########################################################################
 
 
 @transform(aggregateWindowsReadCounts,
@@ -1025,8 +964,8 @@ def enrichVsInput(infile, outfile):
              outfiles=tmpfile,
              toCluster=True)
 
-    statement = '''cat %(tmpfile)s |
-    gzip > %(outfile)s; rm -f %(tmpfile)s'''
+    statement = '''cat %(tmpfile)s
+    | gzip > %(outfile)s; rm -f %(tmpfile)s'''
 
     P.run()
 
@@ -1096,10 +1035,6 @@ def runDESeq(infiles, outfile):
                           outfile,
                           "deseq.dir",
                           method="deseq")
-
-#########################################################################
-#########################################################################
-#########################################################################
 
 
 @transform(runDESeq, suffix(".tsv.gz"), ".load")
@@ -1244,11 +1179,10 @@ def diff_windows():
 
 @transform(DIFFTARGETS, suffix(".gz"), ".cpg.tsv.gz")
 def computeWindowComposition(infile, outfile):
-    '''for the windows returned from differential analysis, compute CpG content
-    for QC purposes.
-    '''
+    '''for the windows returned from differential analysis, compute CpG
+    content for QC purposes.
 
-    to_cluster = True
+    '''
 
     statement = '''
     zcat %(infile)s
@@ -1286,8 +1220,6 @@ def mergeDMRWindows(infile, outfile):
     Sample/control labels are by default inverted to reflect
     that unmethylated windows are of principal interest.
     '''
-
-    to_cluster = True
 
     statement = '''
     zcat %(infile)s
@@ -1703,6 +1635,7 @@ def dmr():
 ############################################################
 # Genomic Context analysis
 ############################################################
+inter_genomic_context_bed = PARAMS_ANNOTATIONS['interface_genomic_context_bed']
 
 
 @follows(mkdir('contextstats.dir'))
@@ -1735,6 +1668,35 @@ def buildContextStats(infiles, outfile):
        | gzip
        > %(outfile)s
        '''
+
+    P.run()
+
+
+@transform(prepareTags,
+           regex("tags.dir/(.*).bed.gz"),
+           r"medips.dir/\1.medips")
+def runMEDIPS(infile, outfile):
+    '''run MEDIPS analysis -
+    outputs methylation profiles.
+    '''
+
+    job_options = "-l mem_free=23G"
+
+    statement = '''
+    zcat %(infile)s
+    | python %(scriptsdir)s/WrapperMEDIPS.py
+         --ucsc-genome=%(genome)s
+         --genome-file=%(genome_dir)s/%(genome)s
+         --bigwig
+         --input-format=bed
+         --extension=%(medips_extension)i
+         --fragment-length=%(medips_fragment_length)i
+         --force
+         --bin-size=%(medips_bin_size)i
+         --output-filename-pattern="%(outfile)s_%%s"
+         -
+    >& %(outfile)s
+    '''
 
     P.run()
 

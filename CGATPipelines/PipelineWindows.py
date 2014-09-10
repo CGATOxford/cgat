@@ -2,6 +2,9 @@ import os
 import re
 import collections
 import pandas
+from math import log
+import numpy as np
+import random
 
 import CGAT.Experiment as E
 import CGAT.Pipeline as P
@@ -114,7 +117,7 @@ def countReadsWithinWindows(bedfile,
                             windowfile,
                             outfile,
                             counting_method="midpoint"):
-    '''count reads given in *tagfile* within intervals in 
+    '''count reads given in *tagfile* within intervals in
     *windowfile*.
 
     Both files need to be :term:`bed` formatted.
@@ -125,7 +128,8 @@ def countReadsWithinWindows(bedfile,
     job_options = "-l mem_free=4G"
 
     if counting_method == "midpoint":
-        f = '''| awk '{a = $2+($3-$2)/2; printf("%s\\t%i\\t%i\\n", $1, a, a+1)}' '''
+        f = '''| awk '{a = $2+($3-$2)/2;
+        printf("%s\\t%i\\t%i\\n", $1, a, a+1)}' '''
     elif counting_method == "nucleotide":
         f = ""
     else:
@@ -176,7 +180,8 @@ def aggregateWindowsReadCounts(infiles,
     # +1 as awk is 1-based
     column = bed_columns - 4 + 1
 
-    src = " ".join(['''<( zcat %s | awk '{printf("%%s:%%i-%%i\\t%%i\\n", $1,$2,$3,$%s );}' ) ''' %
+    src = " ".join(['''<( zcat %s |
+              awk '{printf("%%s:%%i-%%i\\t%%i\\n", $1,$2,$3,$%s );}' ) ''' %
                     (x, column) for x in infiles])
     tmpfile = P.getTempFilename(".")
     statement = '''paste %(src)s > %(tmpfile)s'''
@@ -327,7 +332,7 @@ def outputRegionsOfInterest(infiles, outfile,
 
     # remove tracks not included in the design
     design = dict([(x, y) for x, y in design.items() if y.include])
-
+    des_i = design_items()
     # define the two groups
     groups = sorted(set([x.group for x in design.values()]))
 
@@ -335,36 +340,37 @@ def outputRegionsOfInterest(infiles, outfile,
     groupA, groupB = groups
     upper_levelA = "max( (%s) ) < %f" % (
         ",".join(
-            ["int(r['%s'])" % x for x, y in design.items() if y.group == groupA]),
+            ["int(r['%s'])" % x for x, y in des_i if y.group == groupA]),
         max_per_sample)
 
     sum_levelA = "sum( (%s) ) > %f" % (
         ",".join(
-            ["int(r['%s'])" % x for x, y in design.items() if y.group == groupB]),
+            ["int(r['%s'])" % x for x, y in des_i if y.group == groupB]),
         sum_per_group)
 
     upper_levelB = "max( (%s) ) < %f" % (
         ",".join(
-            ["int(r['%s'])" % x for x, y in design.items() if y.group == groupB]),
+            ["int(r['%s'])" % x for x, y in des_i if y.group == groupB]),
         max_per_sample)
 
     sum_levelB = "sum( (%s) ) > %f" % (
         ",".join(
-            ["int(r['%s'])" % x for x, y in design.items() if y.group == groupA]),
+            ["int(r['%s'])" % x for x, y in des_i if y.group == groupA]),
         sum_per_group)
 
     statement = '''
     zcat %(counts_file)s
-    | python %(scriptsdir)s/csv_select.py 
+    | python %(scriptsdir)s/csv_select.py
             --log=%(outfile)s.log
-            "(%(upper_levelA)s and %(sum_levelA)s) or (%(upper_levelB)s and %(sum_levelB)s)"
+            "(%(upper_levelA)s and %(sum_levelA)s) or
+                            (%(upper_levelB)s and %(sum_levelB)s)"
     | python %(scriptsdir)s/runExpression.py
-            --log=%(outfile)s.log          
+            --log=%(outfile)s.log
             --filename-design=%(design_file)s
             --filename-tags=-
             --method=mock
-            --filter-min-counts-per-sample=0 
-    | gzip 
+            --filter-min-counts-per-sample=0
+    | gzip
     > %(outfile)s
     '''
 
@@ -380,7 +386,7 @@ def runDE(infiles, outfile, outdir,
           spike_file=None):
     '''run DESeq or EdgeR.
 
-    The job is split into smaller sections. The order of the input 
+    The job is split into smaller sections. The order of the input
     data is randomized in order to avoid any biases due to chromosomes and
     break up local correlations.
 
@@ -394,12 +400,12 @@ def runDE(infiles, outfile, outdir,
     if spike_file is None:
         statement = "zcat %(counts_file)s"
     else:
-        statement = '''python %(scriptsdir)s/combine_tables.py 
+        statement = '''python %(scriptsdir)s/combine_tables.py
                            --missing-value=0
                            --cat=filename
                            --log=%(outfile)s.log
                            %(counts_file)s %(spike_file)s
-              | python %(scriptsdir)s/csv_cut.py 
+              | python %(scriptsdir)s/csv_cut.py
                            --remove filename
                            --log=%(outfile)s.log
         '''
@@ -413,9 +419,9 @@ def runDE(infiles, outfile, outdir,
     statement += '''
               | perl %(scriptsdir)s/randomize_lines.pl -h
               | %(cmd-farm)s
-                  --input-header 
-                  --output-header 
-                  --split-at-lines=200000 
+                  --input-header
+                  --output-header
+                  --split-at-lines=200000
                   --cluster-options="-l mem_free=8G"
                   --log=%(outfile)s.log
                   --output-pattern=%(outdir)s/%%s
@@ -436,9 +442,9 @@ def runDE(infiles, outfile, outdir,
               | grep -v "warnings"
               | perl %(scriptsdir)s/regtail.pl ^test_id
               | perl -p -e "s/qvalue/old_qvalue/"
-              | python %(scriptsdir)s/table2table.py 
+              | python %(scriptsdir)s/table2table.py
               --log=%(outfile)s.log
-              --method=fdr 
+              --method=fdr
               --column=pvalue
               --fdr-method=BH
               --fdr-add-column=qvalue
@@ -446,3 +452,60 @@ def runDE(infiles, outfile, outdir,
               > %(outfile)s '''
 
     P.run()
+
+
+def normalizeBed(infile, outfile):
+    '''
+    Normalize counts in a bed file to total library size.
+    Return as a bedGraph format.  Written as a function
+    to use P.submit to send to cluster.
+    '''
+
+    bed_frame = pandas.read_table(infile,
+                                  sep="\t",
+                                  compression="gzip",
+                                  header=None,
+                                  index_col=0)
+
+    # normalize count column by total library size
+
+    med = np.median(bed_frame[4])
+    normalize = lambda x: (x)/(float(med) + 1.0) + random.randint(0, 1)
+    bed_frame[7] = bed_frame[4].apply(normalize)
+
+    bed_frame.to_csv(outfile, sep="\t",
+                     header=None,
+                     columns=[1, 2, 7])
+
+
+def enrichmentVsInput(infile, outfile):
+    '''
+    Calculate the fold enrichment of the test data
+    vs. the input data
+    '''
+
+    test_frame = pandas.read_table(infile[1],
+                                   sep="\t",
+                                   compression="gzip",
+                                   header=None,
+                                   index_col=None)
+
+    input_frame = pandas.read_table(infile[0],
+                                    sep="\t",
+                                    compression="gzip",
+                                    header=None,
+                                    index_col=None)
+    merge_frame = pandas.merge(test_frame,
+                               input_frame,
+                               how='left',
+                               left_on=[0, 1, 2],
+                               right_on=[0, 1, 2])
+
+    foldchange = lambda x: log((x['3_y'] + 1.0)/(x['3_x'] + 1.0), 2)
+    merge_frame[4] = merge_frame.apply(foldchange, axis=1)
+
+    out_frame = merge_frame[[0, 1, 2, 4]]
+    out_frame.to_csv(outfile,
+                     sep="\t",
+                     header=None,
+                     index=None)

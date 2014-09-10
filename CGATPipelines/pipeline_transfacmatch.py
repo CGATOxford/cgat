@@ -194,9 +194,9 @@ input_file = []
 for x in INPUT_FORMATS:
     input_file += glob.glob(x)
     if input_file:
-        assert len(input_file) <= 1, ("Multiple bed/gtf files in working directory"
-                                      " please make sure all intervals are in one"
-                                      " file")
+        assert len(input_file) <= 1, ("Multiple bed/gtf files in working "
+                                      "directory please make sure all"
+                                      " intervals are in one file")
         INPUT_FILE = input_file[0]
     else:
         pass
@@ -599,17 +599,18 @@ if PARAMS['sig_testing_method'] == "fisher":
                  r"match_test.dir/\1.matched.significance")
         def estimateEnrichmentOfTFBS(infiles, outfile):
             '''
-            Estimate the significance of transcription factors that are associated
-            with a foreground set of intervals vs a background set matched for
-            sequence composition.
+            Estimate the significance of transcription factors that are
+            associated with a foreground set of intervals vs a background
+            set matched for sequence composition.
             '''
             E.info("Running Fisher's exact test for TF enrichment between %s" %
                    " & ".join([os.path.basename(x) for x in infiles]))
 
             # required files
             match_table = "match_result"
-            
-            # we don't know which order the foreground and background will come in
+
+            # we don't know which order the foreground and background
+            # will come in
             background = [infile for infile in infiles if
                           re.search("background", infile)][0]
             foreground = ["%s.foreground.tsv" %
@@ -624,7 +625,7 @@ if PARAMS['sig_testing_method'] == "fisher":
             # too hard
 
             pval_direct = PARAMS['fisher_direction']
-            
+
             PipelineTFM.testSignificanceOfMatrices(background,
                                                    foreground,
                                                    PARAMS["database"],
@@ -633,9 +634,9 @@ if PARAMS['sig_testing_method'] == "fisher":
                                                    PARAMS["genesets_header"],
                                                    pval_direct)
 
-            E.info("Completed Fisher's exact test for TF enrichment between %s" %
+            E.info("Completed Fisher's exact test for "
+                   "TF enrichment between %s" %
                    " & ".join([os.path.basename(x) for x in infiles]))
-
 
     else:
         @follows(loadMatchResults, mkdir("match_test.dir"))
@@ -653,22 +654,24 @@ if PARAMS['sig_testing_method'] == "fisher":
 
             # required files
             match_table = "match_result"
-            
-            # we don't know which order the foreground and backgorund will come in
+
+            # we don't know which order the foreground and backgorund
+            # will come in
             background = [infile for infile in infiles if
                           re.search("background", infile)][0]
             foreground = [infile for infile in infiles if
                           re.search("foreground", infile)][0]
 
             # run significance testing
-            
+
             PipelineTFM.testSignificanceOfMatrices(background,
                                                    foreground,
                                                    PARAMS["database"],
                                                    match_table,
                                                    outfile)
-            
-            E.info("Completed Fisher's exact test for TF enrichment between %s" %
+
+            E.info("Completed Fisher's exact test for "
+                   "TF enrichment between %s" %
                    " & ".join([os.path.basename(x) for x in infiles]))
 
 elif PARAMS['sig_testing_method'] == "permutation":
@@ -676,8 +679,8 @@ elif PARAMS['sig_testing_method'] == "permutation":
              loadMatchedGCComposition,
              mkdir("match_test.dir"))
     @collate([matchBackgroundForSequenceComposition, calculateGCContent],
-                 regex(".+/(.+)\.(?:foreground.gc|background.gc)\.tsv"),
-                 r"match_test.dir/\1.matched.significance")
+             regex(".+/(.+)\.(?:foreground.gc|background.gc)\.tsv"),
+             r"match_test.dir/\1.matched.significance")
     def estimateEnrichmentOfTFBS(infiles, outfile):
         '''
         Test for enrichment of TFBS within a gene set by permutation.
@@ -695,15 +698,23 @@ elif PARAMS['sig_testing_method'] == "permutation":
         # get foreground and background gene files
         # setup gc content dataframes
 
-        background = [infile for infile in infiles if re.search("background", infile)][0]
-        foreground = [infile for infile in infiles if re.search("foreground", infile)][0]
+        background = [inf for inf in infiles if re.search("background",
+                                                          inf)][0]
+        foreground = [inf for inf in infiles if re.search("foreground",
+                                                          inf)][0]
 
-        back_gc = pandas.read_table(background, sep="\t", index_col=0, header=0)
+        back_gc = pandas.read_table(background,
+                                    sep="\t",
+                                    index_col=0,
+                                    header=0)
         bg_gene_id = [x.split(" ")[0] for x in back_gc.index.tolist()]
         back_gc['gene_id'] = bg_gene_id
         back_gc.index = bg_gene_id
 
-        fore_gc = pandas.read_table(foreground, sep="\t", index_col=0, header=0)
+        fore_gc = pandas.read_table(foreground,
+                                    sep="\t",
+                                    index_col=0,
+                                    header=0)
         fg_gene_id = [x.split(" ")[0] for x in fore_gc.index.tolist()]
         fore_gc['gene_id'] = fg_gene_id
         fore_gc.index = fg_gene_id
@@ -715,13 +726,15 @@ elif PARAMS['sig_testing_method'] == "permutation":
                                                  fg_gc=fore_gc,
                                                  bg_gc=back_gc,
                                                  nPerms=perms)
-        
+
         out_frame = pandas.DataFrame(out_dict).T
 
         out_frame.to_csv(outfile, sep="\t", index_label='matrix_id')
 ###############################################################################
 ###############################################################################
 ###############################################################################
+
+
 @transform(estimateEnrichmentOfTFBS, suffix(".significance"), ".load")
 def loadEnrichmentOfTFBS(infile, outfile):
     '''
