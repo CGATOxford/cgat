@@ -127,9 +127,17 @@ GeneExpressionResult = collections.namedtuple(
 
 def writeExpressionResults(outfile, result):
     '''output expression results table.'''
-    outfile.write("%s\n" % "\t".join(GeneExpressionResult._fields))
-    for x in result:
-        outfile.write("%s\n" % "\t".join(map(str, x)))
+    if outfile == sys.stdout:
+        outf = outfile
+    else:
+        outf = IOTools.openFile(outfile, "w")
+
+    outf.write("%s\n" % "\t".join(GeneExpressionResult._fields))
+    for x in sorted(result):
+        outf.write("%s\n" % "\t".join(map(str, x)))
+
+    if outf != sys.stdout:
+        outf.close()
 
 
 class WelchsTTest(object):
@@ -746,10 +754,10 @@ def runEdgeR(outfile,
             R('''a = rowSums( countsTable[groups == '%s'] ) ''' % g1)
             R('''b = rowSums( countsTable[groups == '%s'] ) ''' % g2)
             if first:
-                R('''plot( cumsum( sort(a - b) ), type = 'l') ''')
+                R('''plot(cumsum(sort(a - b)), type = 'l') ''')
                 first = False
             else:
-                R('''lines( cumsum( sort(a - b) )) ''')
+                R('''lines(cumsum(sort(a - b))) ''')
 
         R['dev.off']()
 
@@ -858,8 +866,9 @@ def runEdgeR(outfile,
     R('''countsTable.cpm <- cpm(countsTable,  normalized.lib.sizes=TRUE)''')
     R('''countsTable.cpm.melt <- melt(countsTable.cpm)''')
     R('''names(countsTable.cpm.melt) <- c("id","sample","ncpm")''')
-    R('''gz = gzfile( "%(outfile_prefix)scpm.tsv.gz", "w" )''' % locals())
-    R('''write.table(countsTable.cpm.melt, file=gz, sep = "\t", row.names=FALSE, quote=FALSE)''')
+    R('''gz = gzfile("%(outfile_prefix)scpm.tsv.gz", "w" )''' % locals())
+    R('''write.table(countsTable.cpm.melt, file=gz, sep = "\t",
+                     row.names=FALSE, quote=FALSE)''')
     R('''close( gz )''')
 
     # compute adjusted P-Values
@@ -937,11 +946,7 @@ def runEdgeR(outfile,
             str(signif),
             status)))
 
-    if outfile == sys.stdout:
-        writeExpressionResults(outfile, results)
-    else:
-        with IOTools.openFile(outfile, "w") as outf:
-            writeExpressionResults(outf, results)
+    writeExpressionResults(outfile, results)
 
     outf = IOTools.openFile("%(outfile_prefix)ssummary.tsv" % locals(), "w")
     outf.write("category\tcounts\n%s\n" % counts.asTable())
@@ -1237,8 +1242,8 @@ def runDESeq(outfile,
 
     # plot fit - if method == "pooled":
     if dispersion_method == "pooled":
-        R.png('''%sdispersion_estimates_pooled.png''' %
-              (outfile_prefix))
+        R.png('%sdispersion_estimates_pooled.png' %
+              outfile_prefix)
         R.plotDispEsts(cds)
         R['dev.off']()
     else:
@@ -1271,19 +1276,21 @@ def runDESeq(outfile,
     # perform variance stabilization for log2 fold changes
     vsd = R('''vsd = varianceStabilizingTransformation(cds_blind)''')
 
-    # output normalized counts
-    # gzfile does not work with rpy 2.4.2
-    # so do it in R-space
-    R('''write.table(counts(cds, normalized=TRUE),
+    # output normalized counts (in order)
+    # gzfile does not work with rpy 2.4.2 in python namespace
+    # using R.gzfile, so do it in R-space
+    R('''c = counts(cds, normalized=TRUE);
+    write.table(c[rownames(c)],
     file=gzfile('%(outfile_prefix)scounts.tsv.gz', 'w'),
     row.names=TRUE,
     col.names=NA,
     quote=FALSE,
     sep='\t') ''' % locals())
 
-    # output variance stabilized counts
-    R('''write.table(exprs(vsd),
-    file=gzfile('%(outfile_prefix)svsd.tsv.gz)', 'w'),
+    # output variance stabilized counts (in order)
+    R('''c = exprs(vsd);
+    write.table(c[rownames(c)],
+    file=gzfile('%(outfile_prefix)svsd.tsv.gz', 'w'),
     row.names=TRUE,
     col.names=NA,
     quote=FALSE,
@@ -1414,11 +1421,7 @@ def runDESeq(outfile,
         outf.write("category\tcounts\n%s\n" % counts.asTable())
         outf.close()
 
-    if outfile == sys.stdout:
-        writeExpressionResults(outfile, all_results)
-    else:
-        with IOTools.openFile(outfile, "w") as outf:
-            writeExpressionResults(outf, all_results)
+    writeExpressionResults(outfile, all_results)
 
 Design = collections.namedtuple("Design", ("include", "group", "pair"))
 
@@ -1644,8 +1647,7 @@ def loadCuffdiff(infile, outfile):
         infile = os.path.join(indir, fn)
         results = parseCuffdiff(infile)
 
-        with IOTools.openFile(tmpname, "w") as outf:
-            writeExpressionResults(outf, results)
+        writeExpressionResults(tmpname, results)
 
         statement = '''cat %(tmpname)s
         | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
@@ -1880,11 +1882,7 @@ def runCuffdiff(bamfiles,
 
     results = parseCuffdiff(os.path.join(outdir, "gene_exp.diff.gz"))
 
-    if outfile == sys.stdout:
-        writeExpressionResults(outfile, results)
-    else:
-        with IOTools.openFile(outfile, "w") as outf:
-            writeExpressionResults(outf, results)
+    writeExpressionResults(outfile, results)
 
 
 def runMockAnalysis(outfile,
@@ -1946,11 +1944,7 @@ def runMockAnalysis(outfile,
 
         all_results.extend(results)
 
-    if outfile == sys.stdout:
-        writeExpressionResults(outfile, all_results)
-    else:
-        with IOTools.openFile(outfile, "w") as outf:
-            writeExpressionResults(outf, all_results)
+    writeExpressionResults(outfile, all_results)
 
 
 def outputTagSummary(filename_tags,
@@ -2262,11 +2256,7 @@ def runTTest(outfile,
                                                        significant,
                                                        "OK")))
 
-    if outfile == sys.stdout:
-        writeExpressionResults(outfile, results)
-    else:
-        with IOTools.openFile(outfile, "w") as outf:
-            writeExpressionResults(outf, results)
+    writeExpressionResults(outfile, results)
 
 
 def outputSpikeIns(filename_tags,

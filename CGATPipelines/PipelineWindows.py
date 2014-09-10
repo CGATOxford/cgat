@@ -332,7 +332,6 @@ def outputRegionsOfInterest(infiles, outfile,
 
     # remove tracks not included in the design
     design = dict([(x, y) for x, y in design.items() if y.include])
-    des_i = design_items()
     # define the two groups
     groups = sorted(set([x.group for x in design.values()]))
 
@@ -340,22 +339,26 @@ def outputRegionsOfInterest(infiles, outfile,
     groupA, groupB = groups
     upper_levelA = "max( (%s) ) < %f" % (
         ",".join(
-            ["int(r['%s'])" % x for x, y in des_i if y.group == groupA]),
+            ["int(r['%s'])" % x for x, y in design.items()
+             if y.group == groupA]),
         max_per_sample)
 
     sum_levelA = "sum( (%s) ) > %f" % (
         ",".join(
-            ["int(r['%s'])" % x for x, y in des_i if y.group == groupB]),
+            ["int(r['%s'])" % x for x, y in design.items()
+             if y.group == groupB]),
         sum_per_group)
 
     upper_levelB = "max( (%s) ) < %f" % (
         ",".join(
-            ["int(r['%s'])" % x for x, y in des_i if y.group == groupB]),
+            ["int(r['%s'])" % x for x, y in design.items()
+             if y.group == groupB]),
         max_per_sample)
 
     sum_levelB = "sum( (%s) ) > %f" % (
         ",".join(
-            ["int(r['%s'])" % x for x, y in des_i if y.group == groupA]),
+            ["int(r['%s'])" % x for x, y in design.items()
+             if y.group == groupA]),
         sum_per_group)
 
     statement = '''
