@@ -7,14 +7,13 @@
 Windows Pipeline
 =============================
 
-The table of contents below lists the pipeline results.  See `CGAT
-Pipelines`_ for an overview of using CGAT pipelines. The documentation
-for the pipeline is below:
+The table of contents below lists the pipeline results.  See 
+`CGAT Pipelines`_ for an overview of using CGAT pipelines. 
+The documentation for the pipeline is below:
 
 .. toctree::
    :maxdepth: 2
 
-   pipeline/Status.rst
    pipeline/CpGCoverage.rst
    pipeline/Signal.rst
    pipeline/Processing.rst
