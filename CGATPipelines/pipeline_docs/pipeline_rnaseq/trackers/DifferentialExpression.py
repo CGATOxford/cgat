@@ -5,9 +5,9 @@ import types
 import itertools
 import math
 
-from SphinxReport.Tracker import *
-from SphinxReport.Utils import PARAMS as P
-from SphinxReport.odict import OrderedDict as odict
+from CGATReport.Tracker import *
+from CGATReport.Utils import PARAMS as P
+from CGATReport.odict import OrderedDict as odict
 
 from RnaseqReport import *
 

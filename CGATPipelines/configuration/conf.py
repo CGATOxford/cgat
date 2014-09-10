@@ -108,12 +108,12 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.pngmath',
               'sphinx.ext.ifconfig',
               'sphinx.ext.intersphinx',
-              'SphinxReport.only_directives',
-              'SphinxReport.report_directive',
+              'CGATReport.only_directives',
+              'CGATReport.report_directive',
               'sphinx.ext.inheritance_diagram',
-              'SphinxReport.errors_directive',
-              'SphinxReport.warnings_directive',
-              'SphinxReport.roles']
+              'CGATReport.errors_directive',
+              'CGATReport.warnings_directive',
+              'CGATReport.roles']
 
 if P.CONFIG.has_section('intersphinx'):
     intersphinx_mapping = dict(

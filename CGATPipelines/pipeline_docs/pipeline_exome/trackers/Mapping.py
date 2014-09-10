@@ -4,7 +4,7 @@ import re
 import types
 import itertools
 
-from SphinxReport.Tracker import *
+from CGATReport.Tracker import *
 from collections import OrderedDict as odict
 from exomeReport import *
 

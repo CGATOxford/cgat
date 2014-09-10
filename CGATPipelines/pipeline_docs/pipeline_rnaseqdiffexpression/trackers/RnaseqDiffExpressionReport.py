@@ -5,8 +5,8 @@ import types
 import itertools
 import glob
 
-from SphinxReport.Tracker import *
-from SphinxReport.Utils import PARAMS as P
+from CGATReport.Tracker import *
+from CGATReport.Utils import PARAMS as P
 from collections import OrderedDict as odict
 
 from CGATPipelines.PipelineGeneset import mapUCSCToEnsembl

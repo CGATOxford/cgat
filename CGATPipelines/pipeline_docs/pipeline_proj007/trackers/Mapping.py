@@ -4,8 +4,8 @@ import re
 import types
 import itertools
 
-from SphinxReport.Tracker import *
-from SphinxReport.odict import OrderedDict as odict
+from CGATReport.Tracker import *
+from CGATReport.odict import OrderedDict as odict
 from cpgReport import *
 
 ##########################################################################

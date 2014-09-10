@@ -8,7 +8,7 @@ import numpy
 import CGAT.Stats as Stats
 import CGAT.IndexedGenome as IndexedGenome
 
-from SphinxReport.Tracker import *
+from CGATReport.Tracker import *
 from PeakcallingReport import *
 
 ##########################################################################

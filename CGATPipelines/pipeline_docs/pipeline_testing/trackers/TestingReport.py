@@ -4,8 +4,8 @@ import glob
 import collections
 from collections import OrderedDict as odict
 
-from SphinxReport.Tracker import *
-from SphinxReport.Utils import PARAMS as P
+from CGATReport.Tracker import *
+from CGATReport.Utils import PARAMS as P
 
 ###################################################################
 ###################################################################
@@ -28,7 +28,7 @@ LogFileSummary = collections.namedtuple(
 
 
 def summarizeLogFile(filename):
-    '''summarize a SphinxReport logfile.'''
+    '''summarize a CGATReport logfile.'''
 
     info, debug, warning, error = 0, 0, 0, 0
     with open(filename) as f:

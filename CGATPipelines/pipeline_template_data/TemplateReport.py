@@ -1,7 +1,7 @@
 import os, sys, re, types, itertools, glob
 
-from SphinxReport.Tracker import *
-from SphinxReport.Utils import PARAMS as P
+from CGATReport.Tracker import *
+from CGATReport.Utils import PARAMS as P
 from collections import OrderedDict as odict
 
 ###################################################################

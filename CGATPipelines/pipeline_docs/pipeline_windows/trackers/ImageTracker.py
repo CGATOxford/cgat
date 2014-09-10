@@ -1,4 +1,4 @@
-from SphinxReport.Tracker import Tracker
+from CGATReport.Tracker import Tracker
 import glob
 from collections import OrderedDict as odict
 

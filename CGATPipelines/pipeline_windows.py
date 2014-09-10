@@ -1174,8 +1174,6 @@ for x in METHODS:
 def diff_windows():
     pass
 
-#########################################################################
-
 
 @transform(DIFFTARGETS, suffix(".gz"), ".cpg.tsv.gz")
 def computeWindowComposition(infile, outfile):
@@ -1198,19 +1196,11 @@ def computeWindowComposition(infile, outfile):
 
     P.run()
 
-#########################################################################
-#########################################################################
-#########################################################################
-
 
 @transform(computeWindowComposition, suffix(".tsv.gz"), ".load")
 def loadWindowComposition(infile, outfile):
     '''load a sample of window composition data for QC purposes.'''
     P.load(infile, outfile, limit=10000)
-
-#########################################################################
-#########################################################################
-#########################################################################
 
 
 @transform(DIFFTARGETS, suffix(".gz"), ".merged.gz")

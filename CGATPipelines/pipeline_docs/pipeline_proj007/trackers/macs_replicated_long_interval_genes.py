@@ -10,8 +10,8 @@ import Stats
 import Histogram
 import cpgReport
 from macs_interval_lists import *
-from SphinxReport.Tracker import *
-from SphinxReport.odict import OrderedDict as odict
+from CGATReport.Tracker import *
+from CGATReport.odict import OrderedDict as odict
 
 ##########################################################################
 ##########################################################################

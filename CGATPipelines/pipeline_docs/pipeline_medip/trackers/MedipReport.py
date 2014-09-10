@@ -5,8 +5,8 @@ import types
 import itertools
 import glob
 
-from SphinxReport.Tracker import *
-from SphinxReport.odict import OrderedDict as odict
+from CGATReport.Tracker import *
+from CGATReport.odict import OrderedDict as odict
 
 # get from config file
 UCSC_DATABASE = "hg19"
@@ -18,7 +18,7 @@ EXPORTDIR = "export"
 ###################################################################
 # Run configuration script
 
-from SphinxReport.Utils import PARAMS as P
+from CGATReport.Utils import PARAMS as P
 EXPORTDIR = P.get('medip_exportdir', P.get('exportdir', 'export'))
 DATADIR = P.get('medip_datadir', P.get('datadir', '.'))
 DATABASE = P.get('medip_backend', P.get('sql_backend', 'sqlite:///./csvdb'))

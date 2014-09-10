@@ -5,7 +5,7 @@ import types
 import itertools
 import PeakcallingReport
 
-from SphinxReport.Tracker import *
+from CGATReport.Tracker import *
 from collections import OrderedDict as odict
 
 ##########################################################################

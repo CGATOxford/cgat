@@ -2,9 +2,9 @@
 
 import web, os
 
-from SphinxReport import Cache
-from SphinxReport import Utils
-from SphinxReport import DataTree
+from CGATReport import Cache
+from CGATReport import Utils
+from CGATReport import DataTree
 
 urls = ( '/data/(.*)', 'DataTable',
          '/index/(.*)', 'Index'  )

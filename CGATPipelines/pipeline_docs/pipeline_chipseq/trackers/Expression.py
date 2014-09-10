@@ -10,7 +10,7 @@ import numpy.ma
 from ChipseqReport import *
 
 
-from SphinxReport.Tracker import *
+from CGATReport.Tracker import *
 
 # for trackers_derived_sets and trackers_master
 if not os.path.exists("conf.py"):
