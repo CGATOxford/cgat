@@ -617,9 +617,10 @@ def groupTagData(ref_group=None):
     groups = R('''levels(groups)''')
     pairs = R('''levels(pairs)''')
 
-    # Test if replicates exist - at least to samples pre replicate
-    min_per_group = R('''min(table(groups)) ''')[0]
-    has_replicates = min_per_group >= 2
+    # Test if replicates exist - at least one group must have multiple samples
+    max_per_group = R('''max(table(groups)) ''')[0]
+
+    has_replicates = max_per_group >= 2
 
     # Test if pairs exist:
     npairs = R('''length(table(pairs)) ''')[0]
@@ -868,10 +869,11 @@ def runEdgeR(outfile,
     rtype = collections.namedtuple("rtype", "lfold logCPM LR pvalue")
 
     # output differences between pairs
-    R.png('''%(outfile_prefix)smaplot.png''' % locals())
-    R('''plotSmear( countsTable, pair=c('%s') )''' % "','".join(groups))
-    R('''abline( h = c(-2,2), col = 'dodgerblue') ''')
-    R['dev.off']()
+    if len(groups) == 2:
+        R.png('''%(outfile_prefix)smaplot.png''' % locals())
+        R('''plotSmear( countsTable, pair=c('%s') )''' % "','".join(groups))
+        R('''abline( h = c(-2,2), col = 'dodgerblue') ''')
+        R['dev.off']()
 
     # I am assuming that logFC is the base 2 logarithm foldchange.
     # Parse results and parse to file
@@ -1496,7 +1498,10 @@ def plotDETagStats(infile, outfile_prefix):
 
     R('''library('ggplot2')''')
     R('''library('grid')''')
-    R('''data = read.table( '%s', header = TRUE, row.names=1 )''' % infile)
+
+    # can't have rownames because if multi comparisons then will have
+    # replicated row names
+    R('''data = read.table( '%s', header = TRUE )''' % infile)
 
     R(''' gp = ggplot(data)''')
     R('''a = gp + \
