@@ -726,7 +726,6 @@ def toIntronIntervals(chunk):
     '''
     if len(chunk) == 0:
         return []
-    t = set([x.transcript_id for x in chunk])
     contig, strand, transcript_id = chunk[
         0].contig, chunk[0].strand, chunk[0].transcript_id
     for gff in chunk:
@@ -734,7 +733,8 @@ def toIntronIntervals(chunk):
         assert gff.contig == contig, "features on different contigs."
         assert gff.transcript_id == transcript_id, "more than one transcript submitted"
 
-    intervals = Intervals.combine([(x.start, x.end) for x in chunk])
+    intervals = Intervals.combine([(x.start, x.end)
+                                   for x in chunk if x.feature == "exon"])
     return Intervals.complement(intervals)
 
 
