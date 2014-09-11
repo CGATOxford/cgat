@@ -95,11 +95,11 @@ sphinxreport_images=( ( "hires", "hires.png", 200),
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest', 'sphinx.ext.coverage', 
               'sphinx.ext.pngmath', 'sphinx.ext.ifconfig',
-              'SphinxReport.only_directives', 
-              'SphinxReport.report_directive', 
+              'CGATReport.only_directives', 
+              'CGATReport.report_directive', 
               'sphinx.ext.inheritance_diagram',
-              'SphinxReport.errors_directive',
-              'SphinxReport.roles' ]
+              'CGATReport.errors_directive',
+              'CGATReport.roles' ]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = [os.path.relpath( '%s/_templates' % docsdir )]

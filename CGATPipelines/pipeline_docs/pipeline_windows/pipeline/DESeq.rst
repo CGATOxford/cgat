@@ -7,8 +7,6 @@ summaries of individual chunks.
 
 .. report:: DifferentialMethylation.TrackerDESeqSummary
    :render: table
-   :transform: stats
-   :groupby: all
       
    Table with a summary of DESeq results. Note that calls of
    significance here are based on separate FDR calculations

@@ -31,7 +31,7 @@ All histograms. In the plot the X axis represent the factor by which the present
    :xrange: 0,20
    :ytitle: additional actual coverage
 
-Individual plots
+   Individual plots
 
 .. report:: Mapping.DuplicationMetrics
    :render: line-plot
@@ -42,3 +42,6 @@ Individual plots
    :ytitle: additional actual coverage
    :layout: column-3
    :width: 200
+
+   Grouped plots
+

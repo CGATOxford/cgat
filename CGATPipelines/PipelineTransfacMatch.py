@@ -14,6 +14,8 @@ import os
 import CGAT.IOTools as IOTools
 import sqlite3
 import collections
+import pandas
+import pandas.io.sql as pdsql
 import CGAT.Pipeline as P
 import numpy as np
 from rpy2.robjects import r as R
@@ -148,7 +150,8 @@ def testSignificanceOfMatrices(background,
                                database,
                                match_table,
                                outfile,
-                               header_line=True):
+                               header_line=True,
+                               direction="two.sided"):
     '''
     Uses the fishers exact test to estimate the significance of
     transcription factor motifs in a foregound set of intervals
@@ -176,6 +179,7 @@ def testSignificanceOfMatrices(background,
     # all_tfs - set containing all the tf ids
     # NB. each tf id is only counted once for each sequence id,
     # regardless of no. times motif occurs in sequence
+
     ids_tfs = collections.defaultdict(set)
     all_tfs = set()
     for data in cc.execute("SELECT seq_id, matrix_id FROM %s" %
@@ -216,7 +220,7 @@ def testSignificanceOfMatrices(background,
         # print contingency
 
         # run fishers exact test in R
-        f = fisherpy(numpy2ri(contingency))
+        f = fisherpy(numpy2ri(contingency), alternative=direction)
 
         # get overlap numbers
         nforeground = contingency[0, 0]
@@ -323,22 +327,31 @@ def matchBgSequenceComposition(gc_load_files,
     # jj: cpg scores rounded to three dp.
     # background dict - key <cpg score>: val <set of gene_ids with that score>
     # foreground dict - key <gene_id>: val <cpg score>
+
     gc = {"background": collections.defaultdict(set), "foreground": {}}
     for tablename in tablenames:
-        for data in cc.execute("""SELECT id, %s FROM %s""" %
+
+        # MM: need to make sure `-` in filenames don't break the sql statement
+
+        tablename = tablename.replace("-", "_")
+        for data in cc.execute("""SELECT id, %s FROM %s;""" %
                                (bg_stat, tablename)):
             interval_id, cpg = data[0].split(" ")[0], data[1]
+
             # jj: store background in 1 percent bins
+
             cpg_str = "%.3f" % cpg
             if re.search("background", tablename):
                 if interval_id in background_set:
                     gc["background"][cpg_str].add(interval_id)
+
             elif re.search("foreground", tablename):
                 if interval_id in foreground_set:
                     gc["foreground"][interval_id] = cpg_str
+
             else:
-                raise ValueError, ("Unrecognized table name %s. Should contain"
-                                   "'foreground' or 'background'" % tablename)
+                raise ValueError("Unrecognized table name %s. Should contain"
+                                 "'foreground' or 'background'" % tablename)
 
     # debug: pickle and dump the gc dict
     pickle_file = P.snip(foreground, ".foreground.tsv") + ".p"
@@ -355,22 +368,28 @@ def matchBgSequenceComposition(gc_load_files,
     matched_background = set()
     X = 0
     for interval, cpg in gc["foreground"].iteritems():
+
         # print("Finding background for foreground gene: %s (%s)" %
         # (interval, cpg))
         if cpg in gc["background"].keys():
+
             # get set of bg gene_ids with relevant cpg score
             bg_gene_ids = gc["background"][cpg]
+
             # print "There are %i background genes in total" % len(bg_gene_ids)
             # remove foreground genes from background set
             bg_gene_ids = bg_gene_ids - foreground_set
+
             # print("There are %i background genes after removing foreground" %
             # len(bg_gene_ids))
 
             if bg_gene_ids:
                 # select one gene_id to add to matched_background
+
                 bg_id = random.sample(gc["background"][cpg], 1)[0]
                 matched_background.add(bg_id)
                 # remove selected background gene_id from set
+
                 gc["background"][cpg].remove(bg_id)
             else:
                 X += 1
@@ -393,3 +412,161 @@ def matchBgSequenceComposition(gc_load_files,
     print "Backfround set: %i" % len(matched_background)
     outf.write("\n".join(matched_background) + "\n")
     outf.close()
+
+
+def matchGenesByComposition(bg_gc, fg_gc):
+    '''
+    bg_gc and fg_gc are pandas DataFrames.
+
+    For each gene in the test (foreground) gene set, generate
+    a set of matched background genes based on pCpG.  Matching
+    genes are done so on a 1% pCpG interval.
+    '''
+
+    gc_dict = {}
+    match_dict = {}
+
+    props = (x/100.0 for x in xrange(0, 101, 1))
+
+    bg_genes = bg_gc.index
+    bg_cpg = bg_gc['pCpG']
+    fg_cpg = fg_gc['pCpG']
+
+    # bin all background genes into 1% pCpG intervals
+
+    for i in props:
+        matches = []
+        for x in bg_genes:
+            poss_ = round(bg_cpg.loc[x], 2)
+            if (poss_ >= i) and (poss_ <= (i + 0.01)):
+                matches.append(x)
+        gc_dict[i] = matches
+
+    for gene in fg_gc.index.tolist():
+        fore_pCpG = fg_cpg[gene]
+        match_dict[gene] = gc_dict[round(fore_pCpG, 2)]
+
+    return match_dict
+
+
+def TFBSgeneset(tfbs_id, tfbs_table):
+    '''
+    Pull out genes for each tfbs from the TFBS table
+    to test for enrichment.
+    '''
+
+    if len(tfbs_table.loc[tfbs_id]) > 1:
+        tfbs_genes = set(tfbs_table.loc[tfbs_id]['seq_id'].tolist())
+    elif len(tfbs_table.loc[tfbs_id]) == 1:
+        tfbs_genes = set(tfbs_table.loc[tfbs_id]['seq_id'])
+
+    return tfbs_genes
+
+
+def countTFBSEnrichment(tfbs_genes, gene_set):
+    '''
+    Count occurances of genes with TFBS
+    '''
+
+    in_counter = 0
+    for gene in gene_set:
+        if gene in tfbs_genes:
+            in_counter += 1
+
+    return in_counter, len(tfbs_genes)
+
+
+def genNullGeneSet(match_background):
+    '''
+    Generate a null gene set matched to the test gene set
+    based on pCpG and GC content.  The null gene set is
+    the same size as the test gene set.
+    '''
+
+    null_list = []
+    for gene in match_background.keys():
+        matches = match_background[gene]
+        if len(matches) > 1:
+            rand = random.randint(0, len(matches)-1)
+            null_list.append(matches[rand])
+        elif len(matches) == 0:
+            pass
+        else:
+            null_list.append(matches[0])
+
+    return null_list
+
+
+def nullDistPermutations(tfbs_genes, matched_genes, nPerms=1000):
+    '''
+    Randomly generate a null distribution of genes from the background
+    set, match for pCpG and total number of genes.  Calculate
+    enrichment of these genes for the given TFBS.  Permuate nPerm times.
+    Return a median enrichment and p-value from the empirical
+    cumulative frequency distribution.
+    '''
+
+    # instantiate the ecdf function from R
+
+    ecdf = R['ecdf']
+    null_dist = []
+    for i in xrange(0, nPerms):
+        null_genes = genNullGeneSet(matched_genes)
+        null_counts = countTFBSEnrichment(tfbs_genes, null_genes)
+        null_enrich = null_counts[0]/float(null_counts[1])
+        null_dist.append(null_enrich)
+
+    null_dist = robjects.FloatVector(null_dist)
+    null_ecdf = ecdf(null_dist)
+    out_dict = {}
+    out_dict['ecdf'] = null_ecdf
+    out_dict['median'] = np.median(null_enrich)
+
+    return out_dict
+
+
+def permuteTFBSEnrich(tfbs_table,
+                      fg_gc,
+                      bg_gc,
+                      nPerms):
+    '''
+    Generate p-value from empirical cumulative frequency distribution
+    for all TFBS by permutation.
+    '''
+    results_dict = {}
+    fg_geneset = fg_gc.index.tolist()
+    matched_genes = matchGenesByComposition(bg_gc, fg_gc)
+    tfbs_all = set(tfbs_table.index)
+
+    for tfbs in tfbs_all:
+        tfbs_res = {}
+        tfbs_genes = TFBSgeneset(tfbs, tfbs_table)
+        fg_genes_counters = countTFBSEnrichment(tfbs_genes, fg_geneset)
+
+        n_foregenes = fg_genes_counters[0]
+        n_tfbsgenes = fg_genes_counters[1]
+        total_fg = len(fg_geneset)
+
+        fore_enrich = n_foregenes/float(n_tfbsgenes)
+        if fore_enrich > 0:
+            null_perms = nullDistPermutations(tfbs_genes=tfbs_genes,
+                                              matched_genes=matched_genes,
+                                              nPerms=nPerms)
+            null_ecdf = null_perms['ecdf']
+            null_median = null_perms['median']
+            pvalue = 1.0 - null_ecdf(fore_enrich)[0]
+
+        else:
+            null_median = 0
+            pvalue = 1.0
+
+        tfbs_res['nForegenes'] = n_foregenes
+        tfbs_res['tForegenes'] = total_fg
+        tfbs_res['nTFBSGenes'] = n_tfbsgenes
+        tfbs_res['propForeInTFBS'] = fore_enrich
+        tfbs_res['null_median'] = null_median
+        tfbs_res['pvalue'] = pvalue
+
+        results_dict[tfbs] = tfbs_res
+
+    return results_dict

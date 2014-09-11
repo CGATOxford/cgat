@@ -5,7 +5,7 @@ import types
 import itertools
 import Annotations
 
-from SphinxReport.Tracker import *
+from CGATReport.Tracker import *
 from IntervalReport import *
 
 ##########################################################################

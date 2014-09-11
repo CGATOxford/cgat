@@ -11,7 +11,7 @@ Purpose
 -------
 
 .. todo::
-   
+
    describe purpose of the script.
 
 Usage
@@ -32,10 +32,7 @@ Command line options
 
 '''
 
-import os
 import sys
-import re
-import optparse
 
 import CGAT.Experiment as E
 import CGAT.GO as GO
@@ -55,8 +52,9 @@ def computeFDR(all_results,
     for key, data in all_results.iteritems():
         results.extend(data.mResults.values())
 
-    observed_min_pvalues = [min(x.mProbabilityOverRepresentation,
-                                x.mProbabilityUnderRepresentation) for x in results]
+    observed_min_pvalues = [min(
+        x.mProbabilityOverRepresentation,
+        x.mProbabilityUnderRepresentation) for x in results]
 
     if qvalue_method == "storey":
 
@@ -68,7 +66,8 @@ def computeFDR(all_results,
 
         if fdr_data.mPi0 < 0.1:
             E.warn(
-                "estimated proportion of true null hypotheses is less than 10%%  (%6.4f)" % fdr_data.mPi0)
+                "estimated proportion of true null hypotheses is "
+                "less than 10%%  (%6.4f)" % fdr_data.mPi0)
 
         for result, qvalue in zip(results, fdr_data.mQValues):
             result.fdr = qvalue
@@ -88,7 +87,7 @@ def outputOntologyResults(all_results, go2infos, options):
 
     headers = ["ontology",
                "genelist",
-               "code" ] +\
+               "code"] +\
         GO.GOResult().getHeaders() +\
         GO.GOInfo().getHeaders()
 
@@ -114,7 +113,8 @@ def outputOntologyResults(all_results, go2infos, options):
 
 
 def doOntologyAnalysis(gene_lists, options):
-    '''do ontology analysis - requires options.filename_assignments to be set.'''
+    '''do ontology analysis - requires
+    options.filename_assignments to be set.'''
 
     E.info("reading association of categories and genes from %s" %
            (options.filename_assignments))
@@ -137,10 +137,12 @@ def doOntologyAnalysis(gene_lists, options):
 
         if len(go2info) == 0:
             E.warn(
-                "could not find information for terms - could be mismatch between ontologies")
+                "could not find information for terms - "
+                "could be mismatch between ontologies")
 
         ngenes, ncategories, nmaps = GO.CountGO(gene2go)
-        E.info("%s: ontology assignments: %i genes mapped to %i categories (%i maps)" %
+        E.info("%s: ontology assignments: %i genes mapped "
+               "to %i categories (%i maps)" %
                (ontology, ngenes, ncategories, nmaps))
 
         for geneset, x in gene_lists.iteritems():
@@ -148,15 +150,18 @@ def doOntologyAnalysis(gene_lists, options):
 
             E.debug("working on %s - %s" % (ontology, geneset))
 
-            E.info("%s - %s: (unfiltered) foreground=%i, background=%i" % (ontology,
-                                                                           geneset,
-                                                                           len(foreground),
-                                                                           len(background)))
+            E.info(
+                "%s - %s: (unfiltered) foreground=%i, "
+                "background=%i" % (ontology,
+                                   geneset,
+                                   len(foreground),
+                                   len(background)))
 
             results = GO.AnalyseGO(gene2go, foreground, background)
 
             if len(results.mSampleGenes) == 0:
-                E.warn("%s - %s: no genes with GO categories - analysis aborted" %
+                E.warn("%s - %s: no genes with GO categories - "
+                       "analysis aborted" %
                        (ontology, geneset))
                 continue
 
@@ -184,60 +189,81 @@ def main(argv=None):
         argv = sys.argv
 
     parser = E.OptionParser(
-        version="%prog version: $Id: GO.py 2883 2010-04-07 08:46:22Z andreas $", usage=globals()["__doc__"])
+        version="%prog version: $Id",
+        usage=globals()["__doc__"])
 
     parser.add_option("-s", "--species", dest="species", type="string",
                       help="species to use [default=%default].")
 
     parser.add_option("-i", "--slims", dest="filename_slims", type="string",
-                      help="filename with GO SLIM categories [default=%default].")
+                      help="filename with GO SLIM categories "
+                      "[default=%default].")
 
     parser.add_option("-g", "--genes", dest="filename_genes", type="string",
-                      help="filename with genes to analyse [default=%default].")
+                      help="filename with genes to analyse "
+                      "[default=%default].")
 
     parser.add_option("-f", "--format", dest="filename_format", type="choice",
                       choices=("list", "matrix"),
                       help="filename format [default=%default].")
 
-    parser.add_option("-b", "--background", dest="filename_background", type="string",
-                      help="filename with background genes to analyse [default=%default].")
+    parser.add_option("-b", "--background", dest="filename_background",
+                      type="string",
+                      help="filename with background genes to analyse "
+                      "[default=%default].")
 
     parser.add_option("-o", "--sort-order", dest="sort_order", type="choice",
                       choices=("fdr", "pover", "ratio"),
                       help="output sort order [default=%default].")
 
-    parser.add_option("--ontology", dest="ontology", type="choice", action="append",
-                      choices=(
-                          "biol_process", "cell_location", "mol_function", "mgi"),
-                      help="go ontologies to analyze. Ontologies are tested separately."
-                      " [default=%default].")
+    parser.add_option(
+        "--ontology", dest="ontology", type="choice", action="append",
+        choices=(
+            "biol_process", "cell_location", "mol_function", "mgi"),
+        help="go ontologies to analyze. Ontologies are tested separately."
+        " [default=%default].")
 
-    parser.add_option("-t", "--threshold", dest="threshold", type="float",
-                      help="significance threshold [>1.0 = all ]. If --fdr is set, this refers to the fdr, otherwise it is a cutoff for p-values.")
+    parser.add_option(
+        "-t", "--threshold", dest="threshold", type="float",
+        help="significance threshold [>1.0 = all ]. If --fdr is set, this "
+        "refers to the fdr, otherwise it is a cutoff for p-values.")
 
-    parser.add_option("--filename-dump", dest="filename_dump", type="string",
-                      help="dump GO category assignments into a flatfile [default=%default].")
+    parser.add_option(
+        "--filename-dump", dest="filename_dump", type="string",
+        help="dump GO category assignments into a flatfile "
+        "[default=%default].")
 
-    parser.add_option("--filename-ontology", dest="filename_ontology", type="string",
-                      help="filename with ontology in OBO format [default=%default].")
+    parser.add_option(
+        "--filename-ontology", dest="filename_ontology",
+        type="string",
+        help="filename with ontology in OBO format [default=%default].")
 
-    parser.add_option("--filename-assignments", dest="filename_assignments", type="string",
-                      help="read ontology assignments from a flatfile [default=%default].")
+    parser.add_option(
+        "--filename-assignments", dest="filename_assignments", type="string",
+        help="read ontology assignments from a flatfile [default=%default].")
 
-    parser.add_option("--sample", dest="sample", type="int",
-                      help="do sampling (with # samples) [default=%default].")
+    parser.add_option(
+        "--sample", dest="sample", type="int",
+        help="do sampling (with # samples) [default=%default].")
 
-    parser.add_option("--filename-output-pattern", dest="output_filename_pattern", type="string",
-                      help="pattern with output filename pattern (should contain: %(go)s and %(section)s ) [default=%default]")
+    parser.add_option(
+        "--filename-output-pattern", dest="output_filename_pattern",
+        type="string",
+        help="pattern with output filename pattern (should contain: "
+        "%(go)s and %(section)s ) [default=%default]")
 
-    parser.add_option("--output-filename-pattern", dest="output_filename_pattern", type="string",
-                      help="pattern with output filename pattern (should contain: %(go)s and %(section)s ) [default=%default]")
+    parser.add_option(
+        "--output-filename-pattern", dest="output_filename_pattern",
+        type="string",
+        help="pattern with output filename pattern (should contain: "
+        "%(go)s and %(section)s ) [default=%default]")
 
     parser.add_option("--fdr", dest="fdr", action="store_true",
                       help="calculate and filter by FDR [default=%default].")
 
     parser.add_option("--go2goslim", dest="go2goslim", action="store_true",
-                      help="convert go assignments in STDIN to goslim assignments and write to STDOUT [default=%default].")
+                      help="convert go assignments in STDIN to goslim "
+                      "assignments and write to STDOUT [default=%default].")
 
     parser.add_option("--gene-pattern", dest="gene_pattern", type="string",
                       help="pattern to transform identifiers to GO gene names [default=%default].")
@@ -295,13 +321,16 @@ def main(argv=None):
     bg = None
 
     if options.filename_format == "list":
-        gene_lists["default"] = (GO.ReadGeneList(options.filename_genes,
-                                                 gene_pattern=options.gene_pattern),
-                                 None)
+        gene_lists["default"] = (
+            GO.ReadGeneList(
+                options.filename_genes,
+                gene_pattern=options.gene_pattern),
+            None)
 
     elif options.filename_format == "matrix":
-        bg, genes = GO.ReadGeneLists(options.filename_genes,
-                                     gene_pattern=options.gene_pattern)
+        bg, genes = GO.ReadGeneLists(
+            options.filename_genes,
+            gene_pattern=options.gene_pattern)
 
         # use default background
         gene_lists = dict([(x, (y, None)) for x, y in genes.iteritems()])
@@ -331,7 +360,8 @@ def main(argv=None):
                     key, len(missing), str(missing))
         else:
             if len(missing) != 0:
-                E.warn("%s: %i genes in foreground that are not in background - added to background of %i" %
+                E.warn("%s: %i genes in foreground that are not "
+                       "in background - added to background of %i" %
                        (key, len(missing), len(background)))
             background.extend(missing)
 

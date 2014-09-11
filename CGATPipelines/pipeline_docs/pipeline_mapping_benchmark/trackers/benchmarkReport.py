@@ -5,8 +5,8 @@ import types
 import itertools
 import glob
 
-from SphinxReport.Tracker import *
-from SphinxReport.odict import OrderedDict as odict
+from CGATReport.Tracker import *
+from CGATReport.odict import OrderedDict as odict
 
 # get from config file
 UCSC_DATABASE = "mm9"
@@ -18,7 +18,7 @@ EXPORTDIR = "export"
 ###################################################################
 # Run configuration script
 
-from SphinxReport.Utils import PARAMS as P
+from CGATReport.Utils import PARAMS as P
 EXPORTDIR = P['mapping_benchmark_exportdir']
 DATADIR = P['mapping_benchmark_datadir']
 DATABASE = P['mapping_benchmark_backend']
