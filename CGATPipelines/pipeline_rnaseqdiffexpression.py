@@ -421,25 +421,11 @@ def loadCufflinks(infile, outfile):
          r"fpkm.dir/\1_fpkm_genes.tsv.gz")
 def mergeCufflinksGeneFPKM(infiles, outfile):
     '''build aggregate table with cufflinks FPKM values.'''
-
-    prefix = os.path.basename(outfile)
-    prefix = prefix[:prefix.index("_")]
-
-    headers = ",".join(
-        [re.match("fpkm.dir/.*_(.*).cufflinks", x).groups()[0]
-         for x in infiles])
-
-    statement = '''
-    python %(scriptsdir)s/combine_tables.py
-        --columns=1
-        --skip-titles
-        --headers=%(headers)s
-        --take=FPKM fpkm.dir/%(prefix)s_*.genes_tracking.gz
-    | perl -p -e "s/tracking_id/gene_id/"
-    | gzip
-    > %(outfile)s
-    '''
-    P.run()
+    PipelineRnaseq.mergeCufflinksFPKM(
+        infiles,
+        outfile,
+        identifier="gene_id",
+        tracking="genes_tracking")
 
 
 @collate(runCufflinks,
@@ -447,25 +433,11 @@ def mergeCufflinksGeneFPKM(infiles, outfile):
          r"fpkm.dir/\1_fpkm_isoforms.tsv.gz")
 def mergeCufflinksIsoformFPKM(infiles, outfile):
     '''build aggregate table with cufflinks FPKM values.'''
-
-    prefix = os.path.basename(outfile)
-    prefix = prefix[:prefix.index("_")]
-
-    headers = ",".join(
-        [re.match("fpkm.dir/.*_(.*).cufflinks", x).groups()[0]
-         for x in infiles])
-
-    statement = '''
-    python %(scriptsdir)s/combine_tables.py
-        --columns=1
-        --skip-titles
-        --headers=%(headers)s
-        --take=FPKM fpkm.dir/%(prefix)s_*.fpkm_tracking.gz
-    | perl -p -e "s/tracking_id/transcript_id/"
-    | gzip
-    > %(outfile)s
-    '''
-    P.run()
+    PipelineRnaseq.mergeCufflinksFPKM(
+        infiles,
+        outfile,
+        identifier="transcript_id",
+        tracking="fpkm_tracking")
 
 
 @transform((mergeCufflinksGeneFPKM, mergeCufflinksIsoformFPKM),
@@ -1352,7 +1324,7 @@ def loadDEStats(infiles, outfile):
          (aggregateGeneLevelReadCounts,
           aggregateFeatureCounts),
          formatter("(.*).tsv.gz$"),
-         "tagplots.dir/{basename[0][0]}_vs_{basename[1][0]}")
+         "tagplots.dir/{basename[0][0]}_vs_{basename[1][0]}.log")
 def plotTagStats(infiles, outfile):
     '''perform differential expression analysis using deseq.'''
 
@@ -1360,7 +1332,6 @@ def plotTagStats(infiles, outfile):
 
     statement = '''
     python %(scriptsdir)s/runExpression.py
-    --log=%(outfile)s.log
     --filename-tags=%(counts_file)s
     --filename-design=%(design_file)s
     --method=plottagstats

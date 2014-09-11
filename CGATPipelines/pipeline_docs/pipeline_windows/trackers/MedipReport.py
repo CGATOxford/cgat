@@ -5,7 +5,7 @@ import types
 import itertools
 import glob
 
-from SphinxReport.Tracker import *
+from CGATReport.Tracker import *
 
 ###################################################################
 ###################################################################
@@ -13,7 +13,7 @@ from SphinxReport.Tracker import *
 ###################################################################
 # Run configuration script
 
-from SphinxReport.Utils import PARAMS as P
+from CGATReport.Utils import PARAMS as P
 
 EXPORTDIR = P.get('windows_exportdir', P.get('exportdir', 'export'))
 DATADIR = P.get('windows_datadir', P.get('datadir', '.'))

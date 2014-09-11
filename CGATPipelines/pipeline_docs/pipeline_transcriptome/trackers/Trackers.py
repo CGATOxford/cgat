@@ -7,7 +7,7 @@ import numpy
 import numpy.ma
 
 import sqlalchemy
-from SphinxReport.Tracker import *
+from CGATReport.Tracker import *
 
 from AnnotationReport import *
 

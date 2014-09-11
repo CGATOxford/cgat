@@ -3,7 +3,7 @@ import sys
 import os
 import collections
 
-from SphinxReport.Tracker import *
+from CGATReport.Tracker import *
 
 ##########################################################################
 ##########################################################################

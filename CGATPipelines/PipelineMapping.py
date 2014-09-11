@@ -897,7 +897,7 @@ class BWA(Mapper):
 
         strip_cmd, unique_cmd = "", ""
 
-        if self.remove_non_unique:
+        if self.remove_unique:
             unique_cmd = '''| python %%(scriptsdir)s/bam2bam.py
             --filter=unique --log=%(outfile)s.log''' % locals()
 
@@ -1011,6 +1011,77 @@ class BWAMEM(BWA):
         self.tmpdir = tmpdir
 
         return " ".join(statement)
+
+
+class Bismark(Mapper):
+
+    '''run bismark to map reads against genome.
+
+    * colour space not implemented
+    '''
+
+    def __init__(self, remove_unique=False, align_stats=False, dedup=False,
+                 read_group_header=False, *args, **kwargs):
+        Mapper.__init__(self, *args, **kwargs)
+
+        self.remove_unique = remove_unique
+        self.align_stats = align_stats
+        self.dedup = dedup
+
+    def mapper(self, infiles, outfile):
+        '''build mapping statement on infiles.'''
+
+        num_files = [len(x) for x in infiles]
+
+        if max(num_files) != min(num_files):
+            raise ValueError(
+                "mixing single and paired-ended data not possible.")
+
+        nfiles = max(num_files)
+
+        tmpdir = os.path.join(self.tmpdir_fastq + "bwa")
+
+        bismark_index = "%(bismark_index_dir)s/%(bismark_genome)s"
+
+        tmpdir_fastq = self.tmpdir_fastq
+
+        if nfiles == 1:
+            infiles = infiles[0][0]
+            statement = '''
+            bismark %%(bismark_options)s -q --bowtie2 --output_dir %%(outdir)s
+            -p %%(job_threads)s --bam --phred33-quals %(bismark_index)s
+            %(infiles)s;
+            ''' % locals()
+
+        elif nfiles == 2:
+            infiles1 = infiles[0][0]
+            infiles2 = infiles[0][1]
+
+            statement = '''
+            bismark %%(bismark_options)s -q --bowtie2 --output_dir %%(outdir)s
+            -p %%(job_threads)s --bam --non_directional
+            --phred33-quals %(bismark_index)s -1 %(infiles1)s -2 %(infiles2)s;
+            ''' % locals()
+
+        else:
+            raise ValueError(
+                "unexpected number read files to map: %i " % nfiles)
+
+        self.tmpdir = tmpdir
+
+        return statement
+
+    # what should the post processing be?
+    def postprocess(self, infiles, outfile):
+        track = P.snip(os.path.basename(outfile), ".bam")
+        for infile in infiles:
+            if infile.endswith(".fastq.gz"):
+                statement = ""
+            elif infile.endswith(".fastq.1.gz"):
+                statement = '''mv %%(outdir)s/%(track)s_pe.bam
+                           %%(outdir)s/%(track)s.bam;''' % locals()
+
+        return statement
 
 
 class Stampy(BWA):

@@ -1,5 +1,5 @@
 
-from SphinxReport.Tracker import *
+from CGATReport.Tracker import *
 from collections import OrderedDict as odict
 
 from RnaseqDiffExpressionReport import *

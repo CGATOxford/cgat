@@ -268,6 +268,27 @@ def loadParameters(filenames):
     return p
 
 
+def matchParameter(param):
+    '''find an exact match or prefix-match
+    in PARAM for param.
+
+    Returns the full parameter name.
+
+    Raises a KeyError if param can't be matched.
+    '''
+    if param in PARAMS:
+        return param
+
+    for key in PARAMS.keys():
+        if "%" in key:
+            rx = re.compile(re.sub("%", ".*", key))
+            if rx.search(param):
+                return key
+
+    raise KeyError("parameter '%s' can not be matched in dictionary" %
+                   param)
+
+
 def substituteParameters(**kwargs):
     '''return a local PARAMS dictionary.
 
@@ -838,7 +859,8 @@ def createView(dbhandle, tables, tablename, outfile, view_type="TABLE",
             dbhandle, "SELECT COUNT(DISTINCT %s) FROM %s" % (track, table))
         tracks.append(d.fetchone()[0])
         columns.append(
-            [x.lower() for x in Database.getColumnNames(dbhandle, table) if x != track])
+            [x.lower() for x in Database.getColumnNames(dbhandle, table)
+             if x != track])
 
     E.info("creating %s from the following tables: %s" %
            (tablename, str(zip(tablenames, tracks))))
@@ -849,7 +871,8 @@ def createView(dbhandle, tables, tablename, outfile, view_type="TABLE",
         ["%s as t%i" % (y[0], x) for x, y in enumerate(tables)])
     f = tables[0][1]
     where_statement = " AND ".join(
-        ["t0.%s = t%i.%s" % (f, x + 1, y[1]) for x, y in enumerate(tables[1:])])
+        ["t0.%s = t%i.%s" % (f, x + 1, y[1])
+         for x, y in enumerate(tables[1:])])
 
     all_columns, taken = [], set()
     for x, c in enumerate(columns):
@@ -866,9 +889,10 @@ def createView(dbhandle, tables, tablename, outfile, view_type="TABLE",
         taken.update(set(c))
 
     all_columns = ",".join(all_columns)
-    statement = '''CREATE %(view_type)s %(tablename)s AS SELECT t0.track, %(all_columns)s
-                   FROM %(from_statement)s
-                   WHERE %(where_statement)s
+    statement = '''
+    CREATE %(view_type)s %(tablename)s AS SELECT t0.track, %(all_columns)s
+    FROM %(from_statement)s
+    WHERE %(where_statement)s
     ''' % locals()
 
     Database.executewait(dbhandle, statement)
@@ -878,7 +902,8 @@ def createView(dbhandle, tables, tablename, outfile, view_type="TABLE",
 
     if nrows == 0:
         raise ValueError(
-            "empty view mapping, check statement = %s" % (statement % locals()))
+            "empty view mapping, check statement = %s" %
+            (statement % locals()))
     if nrows != min(tracks):
         E.warn("view creates duplicate rows, got %i, expected %i" %
                (nrows, min(tracks)))
@@ -1674,6 +1699,9 @@ def run_report(clean=True):
 
     dirname, basename = os.path.split(getCaller().__file__)
 
+    report_engine = PARAMS.get("report_engine", "sphinxreport")
+    assert report_engine in ('sphinxreport', 'cgatreport')
+
     docdir = os.path.join(dirname, "pipeline_docs", snip(basename, ".py"))
     themedir = os.path.join(dirname, "pipeline_docs", "themes")
     relpath = os.path.relpath(docdir)
@@ -1714,7 +1742,7 @@ def run_report(clean=True):
     (export SPHINX_DOCSDIR=%(docdir)s;
     export SPHINX_THEMEDIR=%(themedir)s;
     %(xvfb_command)s
-    sphinxreport-build
+    %(report_engine)s-build
            --num-jobs=%(report_threads)s
            sphinx-build
                     -b html

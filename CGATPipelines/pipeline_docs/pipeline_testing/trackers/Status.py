@@ -1,4 +1,4 @@
-from TestingReport import *
+from TestingReport import Status
 
 
 class ComparisonStatus(Status):

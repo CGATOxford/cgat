@@ -5,17 +5,14 @@ import types
 import itertools
 import glob
 
-from SphinxReport.Tracker import *
-from SphinxReport.Utils import PARAMS as P
+from CGATReport.Tracker import *
+from CGATReport.Utils import PARAMS as P
 from collections import OrderedDict as odict
+
+from CGATPipelines.PipelineGeneset import mapUCSCToEnsembl
 
 # get from config file
 UCSC_DATABASE = P["genome"]
-ENSEMBL_DATABASE = P["ensembl_database"]
-RX_ENSEMBL_GENE = re.compile(P["ensembl_gene_prefix"])
-RX_ENSEMBL_TRANSCRIPT = re.compile(P["ensembl_transcript_prefix"])
-
-REFERENCE = "refcoding"
 
 ###################################################################
 ###################################################################
@@ -100,22 +97,20 @@ def linkToUCSC(contig, start, end):
         % locals()
     return link
 
-###########################################################################
-
 
 def linkToEnsembl(id):
-    ensembl_database = ENSEMBL_DATABASE
-    if RX_ENSEMBL_GENE.match(id):
-        link = "`%(id)s <http://www.ensembl.org/%(ensembl_database)s/Gene/Summary?g=%(id)s>`_" \
+    ensembl_info = mapUCSCToEnsembl(UCSC_DATABASE)
+    ensembl_species = ensembl_info.species
+
+    if id.startswith(ensembl_info.gene_prefix):
+        link = "`%(id)s <http://www.ensembl.org/%(ensembl_species)s/Gene/Summary?g=%(id)s>`_" \
             % locals()
-    elif RX_ENSEMBL_TRANSCRIPT.match(id):
-        link = "`%(id)s <http://www.ensembl.org/%(ensembl_database)s/Transcript/Summary?t=%(id)s>`_" \
+    elif id.startswith(ensembl_info.transcript_prefix):
+        link = "`%(id)s <http://www.ensembl.org/%(ensembl_species)s/Transcript/Summary?t=%(id)s>`_" \
             % locals()
     else:
         link = id
     return link
-
-###########################################################################
 
 
 class ProjectTracker(TrackerSQL):

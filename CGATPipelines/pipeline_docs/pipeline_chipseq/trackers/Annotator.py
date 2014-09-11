@@ -9,7 +9,7 @@ import numpy.ma
 from ChipseqReport import *
 import Annotations
 
-from SphinxReport.Tracker import *
+from CGATReport.Tracker import *
 
 ##########################################################################
 ##########################################################################

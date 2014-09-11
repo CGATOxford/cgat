@@ -4,7 +4,7 @@ The data are specific for each caller.
 '''
 
 import os
-from SphinxReport.Tracker import *
+from CGATReport.Tracker import *
 from PeakcallingReport import *
 
 

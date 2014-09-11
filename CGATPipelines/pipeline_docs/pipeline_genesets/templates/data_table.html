@@ -1,0 +1,14 @@
+$def with (table,row_headers,col_headers)
+
+<table borde="1">
+<tr>
+<th></th>
+$for r in col_headers: <th>$r</th>
+</tr>
+$for h,row in zip(row_headers,table):
+    <tr>
+    <td>$h</td>
+    $for r in row: <td>$r</td>
+    </tr>
+</table>
+			    

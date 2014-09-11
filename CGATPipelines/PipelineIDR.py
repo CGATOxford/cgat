@@ -124,7 +124,7 @@ class callerIDRPeaks(object):
         Otherwise will return ValueError
         """
         n = track.clone()
-        n.condition = "input"  # is hardcoded into regex for ruffus tasks
+        n.data["attribute1"] = "input"  # is hardcoded into regex for ruffus tasks
 
         if n.replicate == "R0":
             # if track is pooled, then select pooled input
@@ -184,6 +184,10 @@ class callerIDRPeaks(object):
         else:
             track = P.snip(infile, ".bam")
         controlfile = self.getControlfile(Sample(track))
+
+        # following bugfix, check input file actually contains word 'input'
+        assert re.search("input", os.path.basename(controlfile)), \
+            "Input file doesn't contain 'input' in name: %s" % controlfile
 
         # run peakcalling
         statement = self.getRunStatement(infile, outfile, controlfile)

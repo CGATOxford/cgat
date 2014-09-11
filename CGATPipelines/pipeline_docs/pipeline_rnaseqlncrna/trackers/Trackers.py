@@ -1,4 +1,4 @@
-from SphinxReport.Tracker import *
+from CGATReport.Tracker import *
 
 
 class SimpleExampleData(Tracker):

@@ -6,7 +6,7 @@ import itertools
 import PeakcallingReport
 import Annotations
 
-from SphinxReport.Tracker import *
+from CGATReport.Tracker import *
 
 ##########################################################################
 ##########################################################################

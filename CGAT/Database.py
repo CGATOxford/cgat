@@ -346,3 +346,30 @@ def getTables(dbhandle):
     cc = executewait(
         dbhandle, """select name from sqlite_master where type='table'""")
     return tuple([x[0] for x in cc])
+
+
+def toTSV(dbhandle, outfile, statement, remove_none=True):
+    '''execute statement and save as tsv file
+    to disk.
+
+    If *remove_none* is true, empty/NULL values will be output as
+    empty values.
+
+    '''
+    cc = dbhandle.cursor()
+    cc.execute(statement)
+    outfile.write("\t".join([x[0] for x in cc.description]) + "\n")
+
+    def _str(x):
+        if x is None:
+            return ""
+        else:
+            return str(x)
+
+    if remove_none:
+        f = _str
+    else:
+        f = str
+
+    outfile.write("\n".join(
+        ["\t".join(map(f, x)) for x in cc]))
