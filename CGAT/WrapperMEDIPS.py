@@ -163,6 +163,13 @@ def main(argv=None):
                       help="BAM files for input correction. "
                       "Optional [%default].")
 
+    parser.add_option("--is-not-medip",
+                      dest="is_medip", action="store_false",
+                      help="data is not MeDIP data and is not expected "
+                      "to fit the calibration model. No CpG "
+                      "density normalized rms data is computed"
+                      "[default=%default].")
+
     parser.set_defaults(
         input_format="bam",
         ucsc_genome="Hsapiens.UCSC.hg19",
@@ -178,6 +185,7 @@ def main(argv=None):
         treatment_files=[],
         control_files=[],
         input_files=[],
+        is_medip=True,
     )
 
     # add common options (-h/--help, ...) and parse command line
@@ -202,10 +210,6 @@ def main(argv=None):
     R.library('MEDIPS')
     genome_file = 'BSgenome.%s' % options.ucsc_genome
     R.library(genome_file)
-
-    tmpdir = tempfile.mkdtemp()
-
-    E.debug("temporary files are in %s" % tmpdir)
 
     bin_size = options.bin_size
     window_size = options.window_size
@@ -269,7 +273,7 @@ def main(argv=None):
             R('''write.table(cr$cov.res, file=gzfile('%s','w'),
             sep='\t')''' %
               E.getOutputFile("%s_saturation_coveredpos.tsv.gz" % fn))
-            
+
     if 'enrichment' in options.toolset or do_all:
         E.info("CpG enrichment analysis")
         outfile = IOTools.openFile(E.getOutputFile("enrichment.tsv.gz"), "w")
@@ -304,7 +308,8 @@ def main(argv=None):
             outfile.write("\n")
             outfile.close()
 
-    if "dmr" in options.toolset or do_all:
+    if "dmr" in options.toolset or "correlation" in options.toolset \
+       or do_all:
         # build four sets
         for x, fn in enumerate(options.treatment_files):
             R('''treatment_R%(x)i = MEDIPS.createSet(
@@ -316,7 +321,8 @@ def main(argv=None):
             uniq=%(uniq)s)''' % locals())
         R('''treatment_set = c(%s)''' %
           ",".join(["treatment_R%i" % x
-                      for x in range(len(options.treatment_files))]))
+                    for x in range(len(options.treatment_files))]))
+
         if options.control_files:
             for x, fn in enumerate(options.control_files):
                 R('''control_R%(x)i = MEDIPS.createSet(
@@ -334,81 +340,117 @@ def main(argv=None):
         R('''CS = MEDIPS.couplingVector(pattern="CG",
         refObj = treatment_set[[1]])''')
 
-        R('''meth = MEDIPS.meth(
-        MSet1 = treatment_set,
-        MSet2 = control_set,
-        CSet = CS,
-        ISet1 = NULL,
-        ISet2 = NULL,
-        p.adj = "bonferroni",
-        diff.method = "edgeR",
-        prob.method = "poisson",
-        MeDIP = T,
-        CNV = F,
-        type = "rpkm",
-        minRowSum = 1)''')
+        if "correlation" in options.toolset or do_all:
+            R('''cor.matrix = MEDIPS.correlation(
+            c(treatment_set, control_set))''')
 
-        import pdb; pdb.set_trace()
-        
-        
+            R('''write.table(cor.matrix,
+            file='%s',
+            sep="\t")''' % E.getOutputFile("correlation"))
 
-    slotnames = (("extend", "extend", "%i"),
-                 ("distFunction", "distance_function", "%s"),
-                 ("slope", "slope", "%f"),
-                 ("fragmentLength", "fragment_length", "%i"),
-                 ("bin_size", "bin_size", "%i"),
-                 ("seq_pattern", "pattern", "%s"),
-                 ("number_regions", "nregions", "%i"),
-                 ("number_pattern", "npatterns", "%i"),
-                 ("cali_chr", "calibration_contig", "%s"),
-                 ("genome_name", "genome", "%s"))
+        if "dmr" in options.toolset or do_all:
+            # Data that does not fit the model causes 
+            # "Error in 1:max_signal_index : argument of length 0"
+            # The advice is to set MeDIP=FALSE
+            # See: http://comments.gmane.org/gmane.science.biology.informatics.conductor/52319 
 
-    return
+            if options.is_medip:
+                medip = "TRUE"
+            else:
+                medip = "FALSE"
 
-    E.info("compute calibration curve")
-    R('''CONTROL.SET = MEDIPS.calibrationCurve(data = CONTROL.SET)''')
+            R('''meth = MEDIPS.meth(
+            MSet1 = treatment_set,
+            MSet2 = control_set,
+            CSet = CS,
+            ISet1 = NULL,
+            ISet2 = NULL,
+            p.adj = "bonferroni",
+            diff.method = "edgeR",
+            prob.method = "poisson",
+            MeDIP = %(medip)s,
+            CNV = F,
+            type = "rpkm",
+            minRowSum = 1)''' % locals())
 
-    E.info("normalizing")
-    R('''CONTROL.SET = MEDIPS.normalize(data = CONTROL.SET)''')
+            # test windows for differential methylation
+            R('''tested = MEDIPS.selectSig(meth,
+            adj=T,
+            ratio=NULL,
+            p.value=0.1,
+            bg.counts=NULL,
+            CNV=F)''')
 
-    outfile = IOTools.openFile(E.getOutputFile("summary.tsv.gz"), "w")
-    outfile.write("category\tvalue\n")
+            R('''write.table(tested,
+            file=gzFile('%s', 'w')
+            sep="\t",
+            quote=F)''' % E.getOutputFile("windows"))
+
+            # select gain and merge adjacent windows
+            R('''gain = tested[which(tested[, grep("logFC", colnames(tested))] > 0),];
+                 gain_merged = MEDIPS.mergeFrames(frames=gain, distance=1)''')
+
+            R('''write.table(gain_merged,
+            file=gzFile('%s', 'w')
+            sep="\t",
+            row.names=FALSE,
+            col.names=FALSE)''' % E.getOutputFile("gain.bed.gz"))
+
+            # select loss and merge adjacent windows
+            R('''loss = tested[which(tested[, grep("logFC", colnames(tested))] < 0),];
+                 loss_merged = MEDIPS.mergeFrames(frames=gain, distance=1)''')
+
+            R('''write.table(loss_merged,
+            file=gzFile('%s', 'w')
+            sep="\t",
+            row.names=FALSE,
+            col.names=FALSE)''' % E.getOutputFile("loss.bed.gz"))
 
 
-    if "calibration" in options.toolset or do_all:
-        E.info("plotting calibration")
-        R.png(E.getOutputFile("calibration.png"))
-        R('''MEDIPS.plotCalibrationPlot(data = CONTROL.SET, linearFit = T, xrange=250)''')
-        R('''dev.off()''')
 
-    for slotname, label, pattern in slotnames:
-        value = tuple(R('''CONTROL.SET@%s''' % slotname ))
-        if len(value) == 0:
-            continue
-        outfile.write("%s\t%s\n" % (label, pattern %
-                                    tuple(R('''CONTROL.SET@%s''' % slotname ))[0] ) )
+    # E.info("compute calibration curve")
+    # R('''CONTROL.SET = MEDIPS.calibrationCurve(data = CONTROL.SET)''')
 
-    outfile.close()
+    # E.info("normalizing")
+    # R('''CONTROL.SET = MEDIPS.normalize(data = CONTROL.SET)''')
 
-    if "rpm" in options.toolset or do_all:
-        outputfile = E.getOutputFile("rpm.wig")
-        R('''MEDIPS.exportWIG(file = '%(outputfile)s', data = CONTROL.SET, raw = T, descr = "rpm")''' %
-          locals())
-        if options.bigwig:
-            bigwig(outputfile, contig_sizes)
-        else:
-            compress(outputfile)
+    # outfile = IOTools.openFile(E.getOutputFile("summary.tsv.gz"), "w")
+    # outfile.write("category\tvalue\n")
 
-    if "rms" in options.toolset or do_all:
-        outputfile = E.getOutputFile("rms.wig")
-        R('''MEDIPS.exportWIG(file = '%(outputfile)s', data = CONTROL.SET, raw = F, descr = "rms")''' %
-          locals())
-        if options.bigwig:
-            bigwig(outputfile, contig_sizes)
-        else:
-            compress(outputfile)
+    # if "calibration" in options.toolset or do_all:
+    #     E.info("plotting calibration")
+    #     R.png(E.getOutputFile("calibration.png"))
+    #     R('''MEDIPS.plotCalibrationPlot(data = CONTROL.SET, linearFit = T, xrange=250)''')
+    #     R('''dev.off()''')
 
-    shutil.rmtree(tmpdir)
+    # for slotname, label, pattern in slotnames:
+    #     value = tuple(R('''CONTROL.SET@%s''' % slotname ))
+    #     if len(value) == 0:
+    #         continue
+    #     outfile.write("%s\t%s\n" % (label, pattern %
+    #                                 tuple(R('''CONTROL.SET@%s''' % slotname ))[0] ) )
+
+    # outfile.close()
+
+    # if "rpm" in options.toolset or do_all:
+    #     outputfile = E.getOutputFile("rpm.wig")
+    #     R('''MEDIPS.exportWIG(file = '%(outputfile)s',
+    #     data = CONTROL.SET, raw = T, descr = "rpm")''' %
+    #       locals())
+    #     if options.bigwig:
+    #         bigwig(outputfile, contig_sizes)
+    #     else:
+    #         compress(outputfile)
+
+    # if "rms" in options.toolset or do_all:
+    #     outputfile = E.getOutputFile("rms.wig")
+    #     R('''MEDIPS.exportWIG(file = '%(outputfile)s',
+    #     data = CONTROL.SET, raw = F, descr = "rms")''' %
+    #       locals())
+    #     if options.bigwig:
+    #         bigwig(outputfile, contig_sizes)
+    #     else:
+    #         compress(outputfile)
 
     # write footer and output benchmark information.
     E.Stop()

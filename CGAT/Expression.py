@@ -867,6 +867,8 @@ def runEdgeR(outfile,
     R('''countsTable.cpm.melt <- melt(countsTable.cpm)''')
     R('''names(countsTable.cpm.melt) <- c("id","sample","ncpm")''')
     R('''gz = gzfile("%(outfile_prefix)scpm.tsv.gz", "w" )''' % locals())
+    R('''countsTable.cpm.melt = countsTable.cpm.melt[with(
+    countsTable.cpm.melt, order(id)),]''')
     R('''write.table(countsTable.cpm.melt, file=gz, sep = "\t",
                      row.names=FALSE, quote=FALSE)''')
     R('''close( gz )''')
@@ -1279,8 +1281,8 @@ def runDESeq(outfile,
     # output normalized counts (in order)
     # gzfile does not work with rpy 2.4.2 in python namespace
     # using R.gzfile, so do it in R-space
-    R('''c = counts(cds, normalized=TRUE);
-    write.table(c[rownames(c)],
+
+    R('''write.table(counts(cds, normalized=TRUE),
     file=gzfile('%(outfile_prefix)scounts.tsv.gz', 'w'),
     row.names=TRUE,
     col.names=NA,
@@ -1288,8 +1290,7 @@ def runDESeq(outfile,
     sep='\t') ''' % locals())
 
     # output variance stabilized counts (in order)
-    R('''c = exprs(vsd);
-    write.table(c[rownames(c)],
+    R('''write.table(exprs(vsd),
     file=gzfile('%(outfile_prefix)svsd.tsv.gz', 'w'),
     row.names=TRUE,
     col.names=NA,

@@ -295,6 +295,7 @@ def buildCheckSums(infile, outfile):
     -regex %(regex_pattern)s
     -exec %(scriptsdir)s/cgat_file_apply.sh {} md5sum \;
     | perl -p -e "s/ +/\\t/g"
+    | sort -k1,1
     > %(outfile)s'''
     P.run()
 
@@ -328,7 +329,8 @@ def buildLineCounts(infile, outfile):
     -not -regex ".*.log"
     -regex %(regex_pattern)s
     -exec %(scriptsdir)s/cgat_file_apply.sh {} wc -l \;
-    >> %(outfile)s'''
+    | sort -k1,1
+    > %(outfile)s'''
     P.run()
 
 
