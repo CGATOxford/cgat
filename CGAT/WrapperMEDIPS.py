@@ -352,10 +352,10 @@ def main(argv=None):
             sep="\t")''' % E.getOutputFile("correlation"))
 
         if "dmr" in options.toolset or do_all:
-            # Data that does not fit the model causes 
+            # Data that does not fit the model causes
             # "Error in 1:max_signal_index : argument of length 0"
             # The advice is to set MeDIP=FALSE
-            # See: http://comments.gmane.org/gmane.science.biology.informatics.conductor/52319 
+            # See: http://comments.gmane.org/gmane.science.biology.informatics.conductor/52319
 
             if options.is_medip:
                 medip = "TRUE"
@@ -408,32 +408,6 @@ def main(argv=None):
             sep="\t",
             row.names=FALSE,
             col.names=FALSE)''' % E.getOutputFile("loss.bed.gz"))
-
-
-
-    # E.info("compute calibration curve")
-    # R('''CONTROL.SET = MEDIPS.calibrationCurve(data = CONTROL.SET)''')
-
-    # E.info("normalizing")
-    # R('''CONTROL.SET = MEDIPS.normalize(data = CONTROL.SET)''')
-
-    # outfile = IOTools.openFile(E.getOutputFile("summary.tsv.gz"), "w")
-    # outfile.write("category\tvalue\n")
-
-    # if "calibration" in options.toolset or do_all:
-    #     E.info("plotting calibration")
-    #     R.png(E.getOutputFile("calibration.png"))
-    #     R('''MEDIPS.plotCalibrationPlot(data = CONTROL.SET, linearFit = T, xrange=250)''')
-    #     R('''dev.off()''')
-
-    # for slotname, label, pattern in slotnames:
-    #     value = tuple(R('''CONTROL.SET@%s''' % slotname ))
-    #     if len(value) == 0:
-    #         continue
-    #     outfile.write("%s\t%s\n" % (label, pattern %
-    #                                 tuple(R('''CONTROL.SET@%s''' % slotname ))[0] ) )
-
-    # outfile.close()
 
     # if "rpm" in options.toolset or do_all:
     #     outputfile = E.getOutputFile("rpm.wig")
