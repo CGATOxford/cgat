@@ -239,13 +239,16 @@ def main(argv=None):
               E.getOutputFile("%s_saturation_estimation.tsv" % fn))
 
             outfile = IOTools.openFile("%s_saturation.tsv" % fn, "w")
-            outfile.write("category\tvalue\n")
-            outfile.write("estimated_correlation\t%f\n" %
-                          R('''sr$maxEstCor''')[1])
-            outfile.write("true_correlation\t%f\n" %
-                          R('''sr$maxTruCor''')[1])
-            outfile.write("nreads\t%f\n" %
-                          R('''sr$numberReads''')[1])
+            outfile.write("category\tvalues\n")
+            outfile.write(
+                "estimated_correlation\t%s\n" %
+                ",".join(["%f" % x for x in R('''sr$maxEstCor''')]))
+            outfile.write(
+                "true_correlation\t%s\n" %
+                ",".join(["%f" % x for x in R('''sr$maxTruCor''')]))
+            outfile.write(
+                "nreads\t%s\n" %
+                ",".join(["%i" % x for x in R('''sr$numberReads''')]))
             outfile.close()
 
     if "coverage" in options.toolset or do_all:
