@@ -2175,7 +2175,7 @@ def run_pickled(params):
     
     function(*args, **kwargs)
     
-    # os.unlink(args_file)
+    os.unlink(args_file)
 
 if __name__ == "__main__":
     main()
