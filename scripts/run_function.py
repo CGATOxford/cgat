@@ -99,12 +99,13 @@ def main(argv=None):
         raise AttributeError(msg.message + "unknown function, available functions are: %s" %
                              ",".join([x for x in dir(module) if not x.startswith("_")]))
 
-    if options.input_filenames:
+    
+    if options.input_filenames and not options.input_filenames == ["None"]:
         infiles = options.input_filenames
     else:
         infiles = False
 
-    if options.output_filenames:
+    if options.output_filenames and not options.output_filenames == ["None"]:
         outfiles = options.output_filenames
     else:
         outfiles = False
@@ -116,11 +117,12 @@ def main(argv=None):
         params = False
 
     # deal with single file case
-    if len(infiles) == 1:
+    if infiles and len(infiles) == 1:
         infiles = infiles[0]
-    if len(outfiles) == 1:
+    if outfiles and len(outfiles) == 1:
         outfiles = outfiles[0]
 
+    
     # Make the function call
     if infiles and outfiles and params:
         function(infiles, outfiles, params)
