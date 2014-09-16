@@ -1500,14 +1500,12 @@ def plotDETagStats(infile, outfile_prefix):
 
     # import rpy2.robjects.lib.ggplot2 as ggplot2
 
-
     R('''suppressMessages(library('ggplot2'))''')
     R('''suppressMessages(library('grid'))''')
 
     # can't have rownames because if multi comparisons then will have
     # replicated row names
     R('''data = read.table( '%s', header = TRUE )''' % infile)
-
 
     R(''' gp = ggplot(data)''')
     R('''a = gp + \
