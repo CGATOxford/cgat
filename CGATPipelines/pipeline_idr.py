@@ -370,8 +370,8 @@ def poolInputBamfiles(infiles, sentinel):
         to_merge = IDR.filterBadLibraries(infiles, bad_samples)
         IDR.mergeBams(to_merge, outfile)
     else:
-        os.symlink(infiles[0], outfile)
-        os.symlink(infiles[0] + ".bai", outfile + ".bai")
+        os.symlink(os.path.abspath(infiles[0]), outfile)
+        os.symlink(os.path.abspath(infiles[0]) + ".bai", outfile + ".bai")
 
     P.touch(sentinel)
 
