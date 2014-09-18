@@ -602,7 +602,7 @@ def filterTagData(filter_min_counts_per_row=1,
     if filter_percentile_rowsums > 0:
         percentile = float(filter_percentile_rowsums) / 100.0
         R('''sum_counts = rowSums( countsTable )''')
-        R('''take = (sum_counts > quantile( sum_counts, probs = %(percentile)f))''' %
+        R('''take = (sum_counts > quantile(sum_counts, probs = %(percentile)f))''' %
           locals())
         discard, keep = R('''table( take )''')
         E.info("percentile filtering at level %f: keep=%i, discard=%i" %
@@ -807,16 +807,16 @@ def runEdgeR(outfile,
 
     # build DGEList object
     # ignore message: "Calculating library sizes from column totals"
-    R('''countsTable = suppressMessages(DGEList( countsTable, group = groups ))''')
+    R('''countsTable = suppressMessages(DGEList(countsTable, group=groups))''')
 
     # Relevel groups to make the results predictable - IMS
     if ref_group is not None:
-        R('''countsTable$samples$group <- relevel(countsTable$samples$group, ref = "%s")''' %
-          ref_group)
+        R('''countsTable$samples$group <- relevel(countsTable$samples$group,
+        ref = "%s")''' % ref_group)
     else:
         # if no ref_group provided use first group in groups
-        R('''countsTable$sample$group <- relevel(countsTable$samples$group, ref = "%s")''' %
-          groups[0])
+        R('''countsTable$sample$group <- relevel(countsTable$samples$group,
+        ref = "%s")''' % groups[0])
 
     # calculate normalisation factors
     E.info("calculating normalization factors")
@@ -867,11 +867,11 @@ def runEdgeR(outfile,
     R('''countsTable.cpm.melt <- melt(countsTable.cpm)''')
     R('''names(countsTable.cpm.melt) <- c("id","sample","ncpm")''')
     R('''gz = gzfile("%(outfile_prefix)scpm.tsv.gz", "w" )''' % locals())
-    R('''countsTable.cpm.melt = countsTable.cpm.melt[with(
-    countsTable.cpm.melt, order(id)),]''')
+    R('''countsTable.cpm.melt = countsTable.cpm.melt[
+    with(countsTable.cpm.melt, order(id, sample)),]''')
     R('''write.table(countsTable.cpm.melt, file=gz, sep = "\t",
                      row.names=FALSE, quote=FALSE)''')
-    R('''close( gz )''')
+    R('''close(gz)''')
 
     # compute adjusted P-Values
     R('''padj = p.adjust( lrt$table$PValue, 'BH' )''')
@@ -880,7 +880,7 @@ def runEdgeR(outfile,
 
     # output differences between pairs
     R.png('''%(outfile_prefix)smaplot.png''' % locals())
-    R('''plotSmear( countsTable, pair=c('%s') )''' % "','".join(groups))
+    R('''plotSmear(countsTable, pair=c('%s'))''' % "','".join(groups))
     R('''abline( h = c(-2,2), col = 'dodgerblue') ''')
     R['dev.off']()
 
@@ -1282,7 +1282,8 @@ def runDESeq(outfile,
     # gzfile does not work with rpy 2.4.2 in python namespace
     # using R.gzfile, so do it in R-space
 
-    R('''write.table(counts(cds, normalized=TRUE),
+    R('''t = counts(cds, normalized=TRUE);
+    write.table(t[order(rownames(t)),],
     file=gzfile('%(outfile_prefix)scounts.tsv.gz', 'w'),
     row.names=TRUE,
     col.names=NA,
@@ -1290,7 +1291,8 @@ def runDESeq(outfile,
     sep='\t') ''' % locals())
 
     # output variance stabilized counts (in order)
-    R('''write.table(exprs(vsd),
+    R('''t = exprs(vsd);
+    write.table(t[order(rownames(t)),],
     file=gzfile('%(outfile_prefix)svsd.tsv.gz', 'w'),
     row.names=TRUE,
     col.names=NA,
