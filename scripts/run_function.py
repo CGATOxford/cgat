@@ -10,7 +10,7 @@ run_function.py - run a function within a python module remotely
 Purpose
 -------
 
-This script allows a specificied function from a specified python module 
+This script allows a specificied function from a specified python module
 to be executed on the cluster with specified parameters.
 
 Usage
@@ -18,14 +18,14 @@ Usage
 
 A statement is specified in the normal way i.e.::
 
-   statement = """python %(scriptsdir)s/run_function.py 
+   statement = """python %(scriptsdir)s/run_function.py
                    -p infile,outfile,additional_param1
-                   -m modulefile 
+                   -m modulefile
                    -f function"""
 
    P.run()
 
-If the module is in your $PYTHONPATH you can just name it 
+If the module is in your $PYTHONPATH you can just name it
 directly. i.e "Pipeline" would specifiy Pipeline.py
 
 The script has currently only been tested with single input/output.
@@ -99,12 +99,12 @@ def main(argv=None):
         raise AttributeError(msg.message + "unknown function, available functions are: %s" %
                              ",".join([x for x in dir(module) if not x.startswith("_")]))
 
-    if options.input_filenames:
+    if options.input_filenames and not options.input_filenames == ["None"]:
         infiles = options.input_filenames
     else:
         infiles = False
 
-    if options.output_filenames:
+    if options.output_filenames and not options.output_filenames == ["None"]:
         outfiles = options.output_filenames
     else:
         outfiles = False
@@ -116,9 +116,9 @@ def main(argv=None):
         params = False
 
     # deal with single file case
-    if len(infiles) == 1:
+    if infiles and len(infiles) == 1:
         infiles = infiles[0]
-    if len(outfiles) == 1:
+    if outfiles and len(outfiles) == 1:
         outfiles = outfiles[0]
 
     # Make the function call

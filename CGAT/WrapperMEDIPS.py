@@ -309,7 +309,7 @@ def main(argv=None):
                     value = ""
                 outfile.write("\t%s" % pattern % value[0])
             outfile.write("\n")
-            outfile.close()
+        outfile.close()
 
     if "dmr" in options.toolset or "correlation" in options.toolset \
        or do_all:
@@ -385,16 +385,16 @@ def main(argv=None):
             CNV=F)''')
 
             R('''write.table(tested,
-            file=gzFile('%s', 'w')
+            file=gzfile('%s', 'w'),
             sep="\t",
-            quote=F)''' % E.getOutputFile("windows"))
+            quote=F)''' % E.getOutputFile("windows.gz"))
 
             # select gain and merge adjacent windows
             R('''gain = tested[which(tested[, grep("logFC", colnames(tested))] > 0),];
                  gain_merged = MEDIPS.mergeFrames(frames=gain, distance=1)''')
 
             R('''write.table(gain_merged,
-            file=gzFile('%s', 'w')
+            file=gzfile('%s', 'w'),
             sep="\t",
             row.names=FALSE,
             col.names=FALSE)''' % E.getOutputFile("gain.bed.gz"))
@@ -404,7 +404,7 @@ def main(argv=None):
                  loss_merged = MEDIPS.mergeFrames(frames=gain, distance=1)''')
 
             R('''write.table(loss_merged,
-            file=gzFile('%s', 'w')
+            file=gzfile('%s', 'w'),
             sep="\t",
             row.names=FALSE,
             col.names=FALSE)''' % E.getOutputFile("loss.bed.gz"))

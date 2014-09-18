@@ -51,6 +51,9 @@ import shutil
 import gzip
 import pipes
 import ConfigParser
+import pickle
+import importlib
+
 from CGAT import Database as Database
 
 # talking to a cluster
@@ -2088,6 +2091,91 @@ def main(args=sys.argv):
                          options.pipeline_action)
 
     E.Stop()
+
+
+def _pickle_args(args, kwargs):
+        ''' Pickle a set of function arguments. Removes any kwargs that are
+        arguements to submit first. Returns a tuple, the first member of which
+        is the key word arguements to submit, the second is a file name
+        with the picked call arguements '''
+
+        use_args = ["toCluster",
+                    "logfile",
+                    "jobOptions"]
+
+        submit_args = {}
+
+        for arg in use_args:
+            if arg in kwargs:
+                submit_args[arg] = kwargs[arg]
+                del kwargs[arg]
+
+        args_file = getTempFilename(shared=True)
+        pickle.dump([args, kwargs], open(args_file, "wb"))
+
+        return (submit_args, args_file)
+
+
+def cluster_runnable(func):
+    ''' A dectorator that allows a function to be run on the cluster.
+    The decorated function now takes extra arguements. The most important
+    is *submit*, but if true will submit the function to the cluster
+    via the Pipeline.submit framework. Arguments to the function are
+    pickled, so this will only work if arguments are picklable. Other
+    arguements to submit are also accepted.
+
+    Note that this allows the unusal combination of *submit* false, and
+    *toCluster* true. This will submit the function as an external job, 
+    but run it on the local machine. '''
+
+    function_name = func.__name__
+    
+    def submit_function(*args, **kwargs):
+
+        if "submit" in kwargs and kwargs["submit"]:
+            del kwargs["submit"]
+            submit_args, args_file = _pickle_args(args, kwargs)
+            module_file = os.path.abspath(
+                sys.modules[func.__module__].__file__)
+            submit(snip(__file__), "run_pickled",
+                   params=[snip(module_file), function_name, args_file],
+                   **submit_args)
+                    
+        else:
+            return func(*args, **kwargs)
+ 
+    return submit_function
+
+
+def run_pickled(params):
+    ''' run function who arguements have been pickled.
+    expects that params is [module_name, function_name, arguements_file] '''
+
+    module_name, func_name, args_file = params
+    location = os.path.dirname(module_name)
+    if location != "":
+        sys.path.append(location)
+
+    module_base_name = os.path.basename(module_name)
+    E.info("importing module '%s' " % module_base_name)
+    E.debug("sys.path is: %s" % sys.path)
+
+    module = importlib.import_module(module_base_name)
+    try:
+        function = getattr(module, func_name)
+    except AttributeError as msg:
+        raise AttributeError(msg.message +
+                             "unknown function, available functions are: %s" %
+                             ",".join([x for x in dir(module)
+                                       if not x.startswith("_")]))
+
+    args, kwargs = pickle.load(open(args_file, "rb"))
+    E.info("Arguments = %s" % str(args))
+    E.info("Keyword Arguements = %s" % str(kwargs))
+    
+    function(*args, **kwargs)
+    
+    os.unlink(args_file)
 
 if __name__ == "__main__":
     main()

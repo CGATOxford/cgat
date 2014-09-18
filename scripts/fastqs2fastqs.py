@@ -33,7 +33,7 @@ Example::
 
    python fastqs2fastqs.py \
             --method=reconcile \
-            --output-pattern=myReads_reconciled.%i.fastq \
+            --output-pattern=myReads_reconciled.%s.fastq \
             myReads.1.fastq.gz myReads.2.fastq.gz
 
 In this example we take a pair of fastq files, reconcile by read

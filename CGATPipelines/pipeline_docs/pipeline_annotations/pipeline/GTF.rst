@@ -86,22 +86,24 @@ intervals/bases for each source in the various files:
 
 .. report:: AnnotationReport.GTFSummaryPerSource
    :render: matrix-plot
-   :slices: gtf
-   :transform: filter,tolabels
    :logscale: z
-   :tf-fields: source,intervals
    :mpl-figure: figsize=(20,20)
+   :transform: pivot
+   :pivot-index: track
+   :pivot-column: source
+   :pivot-value: intervals
 
    Number of intervals
 
 
 .. report:: AnnotationReport.GTFSummaryPerSource
    :render: matrix-plot
-   :slices: gtf
-   :transform: filter,tolabels
    :logscale: z
-   :tf-fields: source,bases
    :mpl-figure: figsize=(20,20)
+   :transform: pivot
+   :pivot-index: track
+   :pivot-column: source
+   :pivot-value: bases
 
    Number of bases
 
