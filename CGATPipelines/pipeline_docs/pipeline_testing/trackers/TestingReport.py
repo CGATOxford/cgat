@@ -107,7 +107,7 @@ class ReportTable(TestingTracker):
 
         try:
             logfileresult = summarizeLogFile(
-                os.path.join(track + ".dir", "sphinxreport.log"))
+                os.path.join(track + ".dir", "cgatreport.log"))
         except IOError:
             return
 
@@ -131,7 +131,7 @@ class XReportTable(TestingTracker):
     def __call__(self, track):
 
         logfileresult = summarizeLogFile(
-            os.path.join(track + ".dir", "sphinxreport.log"))
+            os.path.join(track + ".dir", "cgatreport.log"))
         report_file = os.path.join(track + ".dir", "report.log")
 
         toc_text = []

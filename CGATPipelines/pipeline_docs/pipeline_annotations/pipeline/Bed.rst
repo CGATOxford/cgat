@@ -28,19 +28,25 @@ Per contig summaries
 
 .. report:: AnnotationReport.BedSummaryIntervalsPerContig
    :render: matrix-plot
-   :transform: tolabels
    :logscale: z
    :mpl-figure: figsize=(20,20)
    :transform-matrix: sort
+   :transform: pivot
+   :pivot-index: track
+   :pivot-value: nintervals
+   :pivot-column: contig
 
    Number of intervals in various annotation files
 
 .. report:: AnnotationReport.BedSummaryBasesPerContig
    :render: matrix-plot
-   :transform: tolabels
    :logscale: z
    :mpl-figure: figsize=(20,20)
    :transform-matrix: sort
+   :transform: pivot
+   :pivot-index: track
+   :pivot-value: nbases
+   :pivot-column: contig
 
    Number of nucleotides covered in various annotation
    files

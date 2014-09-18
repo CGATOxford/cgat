@@ -2,16 +2,14 @@ Bed formatted intervals
 =======================
 
 .. report:: AnnotationReport.BedSummaryIntervals
-   :render: matrix-plot
-   :transform: tolabels
+   :render: interleaved-bar-plot
    :logscale: z
    :width: 1000
 
    Number of intervals in various annotation files
 
 .. report:: AnnotationReport.BedSummaryBases
-   :render: matrix-plot
-   :transform: tolabels
+   :render: interleaved-bar-plot
    :logscale: z
    :width: 1000
 

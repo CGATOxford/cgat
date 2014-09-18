@@ -47,11 +47,10 @@ class MappingStatus(Status):
         PASS : >=80% pairs mapped
         WARN : >=40% pairs mapped
         FAIL : < 40% pairs mapped
-
         '''
 
         value = self.getValue("""SELECT
-        pairs_proper_unique / CAST(pairs_total AS FLOAT)
+        pairs_proper_unique_alignments / CAST(pairs_total AS FLOAT)
         FROM view_mapping
         WHERE track = '%(track)s'
         AND pairs_total > 0""")

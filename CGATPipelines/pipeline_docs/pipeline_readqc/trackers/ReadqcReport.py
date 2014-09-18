@@ -63,11 +63,13 @@ class TrackerFastQC(ReadqcTracker):
         tracks = sorted([x.asFile() for x in TRACKS])
         for track in tracks:
 
-            for x, fn in enumerate(glob.glob(os.path.join(EXPORTDIR, "fastqc", "%s*_fastqc" % track))):
+            for x, fn in enumerate(glob.glob(os.path.join(
+                    EXPORTDIR, "fastqc", "%s*_fastqc" % track))):
                 y = x + 1
                 toc_text.append("* %(track)s-%(y)i_" % locals())
                 link_text.append(
-                    ".. _%(track)s-%(y)i: %(fn)s/fastqc_report.html" % locals())
+                    ".. _%(track)s-%(y)i: %(fn)s/fastqc_report.html" %
+                    locals())
 
         toc_text = "\n".join(toc_text)
         link_text = "\n".join(link_text)
@@ -104,8 +106,8 @@ class FastQCDetails(ReadqcTracker):
         # note there are spaces behind the %(image)s directive to accomodate
         # for path substitution
         block = '''
-.. figure:: %(image)s                                     
-   :height: 300 
+.. figure:: %(image)s
+   :height: 300
 '''
 
         blocks = ResultBlocks()
@@ -126,7 +128,9 @@ class FastQCDetails(ReadqcTracker):
                 blocks.append(ResultBlock(text=block % locals(),
                                           title=os.path.basename(fn)))
 
-        return odict((("rst", "\n".join(Utils.layoutBlocks(blocks, layout="columns-2"))),))
+        return odict((("rst", "\n".join(Utils.layoutBlocks(
+            blocks,
+            layout="columns-2"))),))
 
 
 class FastqcSummary(ReadqcTracker):
@@ -135,7 +139,9 @@ class FastqcSummary(ReadqcTracker):
               "Total Sequences", "Sequence Length", "%GC")
 
     def __call__(self, track, slice):
-        return self.getAll("SELECT * FROM %(track)s_Basic_Statistics WHERE measure = '%(slice)s'")
+        return self.getAll(
+            """SELECT * FROM %(track)s_Basic_Statistics
+            WHERE measure = '%(slice)s'""")
 
 
 class FastqcSummary(ReadqcTracker, SingleTableTrackerRows):
@@ -148,8 +154,10 @@ class ProcessingDetails(ReadqcTracker):
     pattern = "(.*)_processed$"
 
     def __call__(self, track):
-        return self.getAll( """SELECT pair,input,output,pair, 100.0 * output / input as percent 
-                              FROM %(track)s_processed""" )
+        return self.getAll(
+            """SELECT pair,input,output,pair,
+            100.0 * output / input as percent 
+            FROM %(track)s_processed""")
 
 
 class ProcessingSummary(ReadqcTracker, SingleTableTrackerRows):

@@ -23,10 +23,12 @@ class ComparisonStatus(Status):
         The value indicates the number of files missing, exta
         or different.
         '''
+
         data = dict(self.getRow("""SELECT missing, extra, different
         FROM md5_compare WHERE track = '%(track)s'"""))
 
         total = sum(data.values())
+
         if total == 0:
             status = "PASS"
         elif data['missing'] == 0 and data['extra'] == 0:
