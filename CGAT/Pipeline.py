@@ -38,7 +38,6 @@ API
 import os
 import sys
 import re
-import copy
 import subprocess
 import optparse
 import stat
@@ -1496,7 +1495,7 @@ def clonePipeline(srcdir):
 
     E.info("cloning pipeline from %s to %s" % (srcdir, destdir))
 
-    copy_files = ("sphinxreport.ini", "conf.py", "pipeline.ini", "csvdb")
+    copy_files = ("conf.py", "pipeline.ini", "csvdb")
     ignore_prefix = (
         "report", "_cache", "export", "tmp", "ctmp", "_static", "_templates")
 
@@ -1698,11 +1697,11 @@ def peekParameters(workingdir,
 
 
 def run_report(clean=True):
-    '''run sphinxreport.'''
+    '''run CGATreport.'''
 
     dirname, basename = os.path.split(getCaller().__file__)
 
-    report_engine = PARAMS.get("report_engine", "sphinxreport")
+    report_engine = PARAMS.get("report_engine", "cgatreport")
     assert report_engine in ('sphinxreport', 'cgatreport')
 
     docdir = os.path.join(dirname, "pipeline_docs", snip(basename, ".py"))
