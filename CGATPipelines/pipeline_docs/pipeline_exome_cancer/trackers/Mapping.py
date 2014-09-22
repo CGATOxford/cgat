@@ -83,7 +83,6 @@ class PicardCoverageStats(ExomeTracker):
         return self.getAll(statement)
 
 
-
 # class AlignmentSummary( SingleTableTrackerRows ):
 #    table = "alignment_stats"
 

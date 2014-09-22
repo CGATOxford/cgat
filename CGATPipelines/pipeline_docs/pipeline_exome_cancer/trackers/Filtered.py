@@ -29,7 +29,7 @@ class snp(ExomeTracker):
         B.t_ref_count AS Tumor_Ref, B.t_alt_count AS Tumor_Alt
         FROM %(track)s_mutect_snp_annotated_tsv AS A
         JOIN %(track)s_call_stats_out AS B
-        JOIN cancergenes as C
+        LEFT OUTER JOIN cancergenes as C
         ON A.CHROM = B.contig AND A.POS = B.position
         AND A.SNPEFF_GENE_NAME = C.symbol
         WHERE A.FILTER!="REJECT" AND B.t_alt_count > 4;
@@ -59,7 +59,7 @@ class indel(ExomeTracker):
         A.NORMAL_TAR as Normal_Ref, A.NORMAL_TIR as Normal_Alt,
         A.TUMOR_TAR as Tumor_Ref, A.TUMOR_TIR as Tumor_Alt
         FROM %(track)s_indels_annotated_tsv AS A
-        JOIN cancergenes as B
+        LEFT OUTER JOIN cancergenes as B
         ON A.SNPEFF_GENE_NAME = B.symbol
         WHERE A.QSI_NT > 20 AND A.IHP < 12
         AND A.RC < 12 AND A.IC < 12;

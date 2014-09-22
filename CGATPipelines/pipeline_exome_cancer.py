@@ -164,12 +164,13 @@ USECLUSTER = True
 #########################################################################
 #########################################################################
 
+
 def connect():
     '''connect to database.
     Use this method to connect to additional databases.
     Returns a database connection.
     '''
-    dbh = sqlite3.connect( PARAMS["database"] )
+    dbh = sqlite3.connect(PARAMS["database"])
 
     return dbh
 
@@ -574,6 +575,7 @@ def loadPicardRealigenedAlignStats(infiles, outfile):
 # Variant Calling
 #########################################################################
 
+
 @follows(mkdir("normal_panel_variants"))
 @transform(realignMatchedSample,
            regex(r"bam/(\S+)-Control-(\S).realigned.bqsr.bam"),
@@ -771,6 +773,7 @@ def indelCaller(infile, outfile):
 # 2. subset control bam
 # 3. run mutect calling function with subset against unsubsetted tumour
 # 4. summary table
+
 
 @subdivide("downsample_coverage/NU16C-Control-1.realigned.bqsr.bam",
            regex("(\S+).bqsr.bam"),
@@ -1003,6 +1006,7 @@ def variantRecalibrator(infile, outfile):
 
 #########################################################################
 
+
 @transform(variantAnnotatorIndels,
            suffix(".annotated.vcf"),
            ".passed.annotated.vcf")
@@ -1047,6 +1051,7 @@ def snpvcfToTable(infile, outfile):
                    -GF GT -GF AD -GF SS -GF FA -GF AB -GF DP
                    -o %(outfile)s''' % locals()
     P.run()
+
 
 @transform(variantAnnotatorIndels,
            regex("variants/(\S+).annotated.vcf"),
@@ -1283,11 +1288,9 @@ def loadNCG(infile, outfile):
     P.run()
 
 
-
 #########################################################################
 #########################################################################
 #########################################################################
-
 
 @follows(loadMutectFilteringSummary,
          loadMutectExtendedOutput,
@@ -1303,6 +1306,7 @@ def test():
 @follows(runMutectOnDownsampled)
 def downsample():
     pass
+
 
 @follows(loadROI,
          loadROI2Gene,
@@ -1335,8 +1339,6 @@ def gatk():
          indelCaller)
 def callVariants():
     pass
-
-
 
 
 @follows(findGenes)

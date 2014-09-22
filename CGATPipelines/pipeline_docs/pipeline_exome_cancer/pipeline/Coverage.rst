@@ -30,7 +30,6 @@ sample.
 
 .. report:: Mapping.PicardTargetStats
    :render: r-ggplot
-   :transform: toframe
    :statement: aes(x=sample,y=reads) +
 	       geom_bar(stat='identity',fill="cadetblue3") +
 	       xlab('') +
@@ -46,7 +45,6 @@ The following plot shows the percentage of uniquely aligned reads per sample
 
 .. report:: Mapping.PicardTargetStats
    :render: r-ggplot
-   :transform: toframe
    :statement: aes(x=sample,y=100*pct_aligned) +
 	       geom_bar(stat='identity',fill="tomato4") +
 	       xlab('') +
@@ -62,7 +60,6 @@ The following plot shows the percentage of bases within the target regions
 
 .. report:: Mapping.PicardTargetStats
    :render: r-ggplot
-   :transform: toframe
    :statement: aes(x=sample,y=100*pct_on_target) +
 	       geom_bar(stat='identity',fill="olivedrab4") + 
 	       xlab('') +
@@ -79,7 +76,6 @@ The following plot shows the mean coverage at target regions per sample
 
 .. report:: Mapping.PicardTargetStats
    :render: r-ggplot
-   :transform: toframe
    :statement: aes(x=sample,y=mean_coverage) +
 	       geom_bar(stat='identity',fill="salmon4") +
 	       xlab('') +
@@ -95,7 +91,6 @@ The following plot shows the fold enrichment of target regions over background
 
 .. report:: Mapping.PicardTargetStats
    :render: r-ggplot
-   :transform: toframe
    :statement: aes(x=sample,y=fold_enrich) +
 	       geom_bar(stat='identity',fill="chocolate3") + 
 	       xlab('') +
@@ -107,12 +102,15 @@ The following plot shows the fold enrichment of target regions over background
 	       legend.text=element_text(size=20))
 
 
-# The following plot shows the percentage of taget bases covered at a
-# range of coverage thresholds for each sample.
-#
-# .. report:: Mapping.PicardCoverageStats
-#    :render: r-ggplot
-#  :transform: melt,toframe
+ The following plot shows the percentage of taget bases covered at a
+ range of coverage thresholds for each sample.
+
+.. report:: Mapping.PicardCoverageStats
+   :render: table
+   :transform: melt
+
+###########################
+# work out column names for melted table and change renderer to r-ggplot   
 #   :statement: aes(x=Data,y=value,group=sample) +
 #	       geom_line(aes(colour=sample)) +
 #	       xlab('') +
@@ -120,5 +118,5 @@ The following plot shows the fold enrichment of target regions over background
 #	       theme(
 #	       axis.text.x=element_text(size=15,angle=90),
 #	       axis.text.y=element_text(size=15),
-#	       axis.title.y=element_text(size=15))
-	       
+#	       axis.title.y=element_text(size=15)
+############################
