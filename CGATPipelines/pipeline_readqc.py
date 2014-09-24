@@ -348,6 +348,10 @@ def loadFastqcSummary(infile, outfile):
 # bias analysis
 ####################################################
 if BIAS_ANALYSIS:
+
+    if PARAMS["sailfish_transcripts"].endswidth(".gz"):
+        zipped = True
+
     @transform(PARAMS["sailfish_transcripts"],
                regex("(\S+)"),
                "index/transcriptome.sfi")
@@ -358,11 +362,14 @@ if BIAS_ANALYSIS:
         kmer = int(PARAMS["sailfish_kmer_size"])
         tmp = P.getTempFilename()
 
-        statement = '''gunzip -c %(infile)s > %(tmp)s;
-                       module load bio/sailfish;
-                       sailfish index -t %(tmp)s
-                       -k %(kmer)i -o %(outdir)s;
-                       rm -f %(tmp)s'''
+        if zipped:
+            statement = '''gunzip -c %(infile)s > %(tmp)s;
+                           checkpoint; sailfish index -t %(tmp)s'''
+        else:
+            statement = '''sailfish index -t %(infile)s'''
+
+        statement += '''-k %(kmer)i -o %(outdir)s;
+                        checkpoint; rm -f %(tmp)s'''
 
         P.run()
 
@@ -407,10 +414,15 @@ if BIAS_ANALYSIS:
     # take multifasta transcripts file and output file of attributes
     def characteriseTranscripts(infile, outfile):
 
-        statement = '''zcat %(infile)s
+        if zipped:
+            statement = '''zcat %(infile)s'''
+        else:
+            statement = '''cat %(infile)s'''
+        statement += '''
         | python %(scriptsdir)s/fasta2table.py
         --split-fasta-identifier --section=dn -v 0
         | gzip > %(outfile)s'''
+
         P.run()
 
     # where should this code be moved to?
