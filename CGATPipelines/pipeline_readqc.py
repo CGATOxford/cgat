@@ -349,7 +349,7 @@ def loadFastqcSummary(infile, outfile):
 ####################################################
 if BIAS_ANALYSIS:
 
-    if PARAMS["sailfish_transcripts"].endswidth(".gz"):
+    if PARAMS["sailfish_transcripts"].endswith(".gz"):
         zipped = True
 
     @transform(PARAMS["sailfish_transcripts"],
