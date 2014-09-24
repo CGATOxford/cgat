@@ -930,10 +930,11 @@ def buildLincRNAExonTranscripts(infile, outfile):
     try:
         PipelineGeneset.buildLincRNAExons(infile, outfile)
     except Exception:
-        if os.path.exists( outfile ):
-            assert len(IOTools.openFile(outfile).readlines())==0
+        if os.path.exists(outfile):
+            assert len(IOTools.openFile(outfile).readlines()) == 0
         else:
             raise Exception("Failed to create %s" % outfile)
+
 
 @transform((buildCDSTranscripts,
             buildCodingExonTranscripts,

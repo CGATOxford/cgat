@@ -635,7 +635,7 @@ def buildLincRNAExons(infile, outfile):
     '''build a collection of transcripts from the LincRNA portion of the
     ENSEMBL gene set. All exons are kept
     '''
-    
+
     statement = '''
     gunzip < %(infile)s
     | awk '$2 == "lincRNA"'
@@ -1140,6 +1140,7 @@ def buildGenomicFunctionalAnnotation(gtffile, dbh, outfiles):
     outf.close()
 
     os.unlink(tmpfname)
+
 
 def buildGenomicContext(infiles, outfile):
     '''build a file with genomic context.
