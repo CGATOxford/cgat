@@ -258,11 +258,15 @@ def getCpGIslandsFromUCSC(dbhandle, outfile):
     sql = sql % locals()
 
     E.debug("executing sql statement: %s" % sql)
-    cc.execute(sql)
-    outfile = IOTools.openFile(outfile, "w")
-    for data in cc.fetchall():
-        outfile.write("\t".join(map(str, data)) + "\n")
-    outfile.close()
+    try:
+        cc.execute(sql)
+        outfile = IOTools.openFile(outfile, "w")
+        for data in cc.fetchall():
+            outfile.write("\t".join(map(str, data)) + "\n")
+        outfile.close()
+    except Exception:
+        E.warn("Failed to connect to table %s. %s is empty" % (table, outfile))
+        P.touch(outfile)
 
 #############################################################
 #############################################################
