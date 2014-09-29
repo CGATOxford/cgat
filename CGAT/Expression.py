@@ -848,13 +848,13 @@ def runEdgeR(outfile,
         # estimate tagwise dispersion
         R('''countsTable = estimateGLMTagwiseDisp( countsTable, design )''')
         # fitting model to each tag
-        R('''fit = glmFit( countsTable, design )''')
+        R('''fit = glmFit(countsTable, design)''')
     else:
         # fitting model to each tag
         if dispersion is None:
             raise ValueError("no replicates and no dispersion")
         E.warn("no replicates - using a fixed dispersion value")
-        R('''fit = glmFit( countsTable, design, dispersion = %f )''' %
+        R('''fit = glmFit(countsTable, design, dispersion=%f)''' %
           dispersion)
 
     # perform LR test
@@ -864,18 +864,21 @@ def runEdgeR(outfile,
 
     # output cpm table
     R('''suppressMessages(library(reshape2))''')
-    R('''countsTable.cpm <- cpm(countsTable,  normalized.lib.sizes=TRUE)''')
-    R('''countsTable.cpm.melt <- melt(countsTable.cpm)''')
-    R('''names(countsTable.cpm.melt) <- c("id","sample","ncpm")''')
+    R('''countsTable.cpm <- cpm(countsTable, normalized.lib.sizes=TRUE)''')
+    R('''melted <- melt(countsTable.cpm)''')
+    R('''names(melted) <- c("test_id", "sample", "ncpm")''')
+    # melt columns are factors - convert to string for sorting
+    R('''melted$test_id = levels(melted$test_id)[as.numeric(melted$test_id)]''')
+    R('''melted$sample = levels(melted$sample)[as.numeric(melted$sample)]''')
+    # sort cpm table by test_id and sample
+    R('''sorted = melted[with(melted, order(test_id, sample)),]''')
     R('''gz = gzfile("%(outfile_prefix)scpm.tsv.gz", "w" )''' % locals())
-    R('''countsTable.cpm.melt = countsTable.cpm.melt[
-    with(countsTable.cpm.melt, order(id, sample)),]''')
-    R('''write.table(countsTable.cpm.melt, file=gz, sep = "\t",
+    R('''write.table(sorted, file=gz, sep = "\t",
                      row.names=FALSE, quote=FALSE)''')
     R('''close(gz)''')
 
     # compute adjusted P-Values
-    R('''padj = p.adjust( lrt$table$PValue, 'BH' )''')
+    R('''padj = p.adjust(lrt$table$PValue, 'BH')''')
 
     rtype = collections.namedtuple("rtype", "lfold logCPM LR pvalue")
 
