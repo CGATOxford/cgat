@@ -110,27 +110,28 @@ class FastQCDetails(ReadqcTracker):
    :height: 300
 '''
 
-        blocks = ResultBlocks()
-        tracks = sorted([x.asFile() for x in TRACKS])
-
-        for track in tracks:
+        result = odict()
+        for track in sorted([x.asFile() for x in TRACKS]):
 
             files = glob.glob(
                 os.path.join(EXPORTDIR, "fastqc", "%s*_fastqc" % track))
-            for x, fn in enumerate(sorted(files)):
-                y = x + 1
+            for fn in sorted(files):
 
                 image = os.path.abspath(
                     os.path.join(fn, "Images", "%s.png" % slice))
                 if not os.path.exists(image):
                     continue
 
-                blocks.append(ResultBlock(text=block % locals(),
-                                          title=os.path.basename(fn)))
+                result[os.path.basename(fn)] = {'rst': block % locals()}
 
-        return odict((("rst", "\n".join(Utils.layoutBlocks(
-            blocks,
-            layout="columns-2"))),))
+        return result
+
+        # blocks.append(ResultBlock(text=block % locals(),
+        #                                  title=os.path.basename(fn)))
+
+        # return odict((("rst", "\n".join(Utils.layoutBlocks(
+        #     blocks,
+        #     layout="columns-2"))),))
 
 
 class FastqcSummary(ReadqcTracker):
