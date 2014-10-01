@@ -17,9 +17,9 @@ For example::
 
    samtools view example.bam
 
-   READ1     163     1       13040   15      76M     =       13183   219     ...
-   READ1     83      1       13183   7       76M     =       13040   -219    ...
-   READ2     147     1       13207   0       76M     =       13120   -163    ...
+   READ1    163    1      13040   15     76M    =      13183   219     ...
+   READ1    83     1      13183   7      76M    =      13040   -219    ...
+   READ2    147    1      13207   0      76M    =      13120   -163    ...
 
    python bam2bed.py example.bam
 
@@ -33,24 +33,85 @@ the option ``--merge-pairs`` paired-end reads are merged and output as
 a single interval. The strand is set according to the first read in a
 pair.
 
-Usage
------
+Options
+-------
+
+-m, --merge-pairs
+    Output one region per fragment rather than one region per read,
+    thus a single region is create stretching from the start of the
+    frist read in pair to the end of the second.
+
+    Read pairs that meet the following criteria are removed:
+
+    * Reads where one of the pair is unmapped
+    * Reads that are not paired
+    * Reads where the pairs are mapped to different chromosomes
+    * Reads where the the insert size is not between the max and
+      min (see below)
+
+.. note:: This option is not compatible with --region.
+
+.. warning::
+
+    Merged fragements are always returned on the +ve strand.
+    Fragement end point is estimated as the alignment start position
+    of the second-in-pair read + the length of the first-in-pair
+    read. This may lead to inaccuracy.
+
+--max-insert-size, --min-insert-size
+    The maximum and minimum size of the insert that is allowed when
+    using the --merge-pairs option. Read pairs closer to gether or futher
+    apart than the min and max repsectively are skipped.
+
+
+-r, --region
+    Only output bed records for alignments in the specified region. The
+    region is specified in the samtools format. I.e. contig:start-finish.
+    This only works on an indexed file and therefore does work if the
+    input is stdin. Not compatible with --merge-pairs
+
+-b, --bed-format
+    What format to output the results in. The first n columns of the bed
+    file will be output.
+
+
+Examples
+--------
 
 To merge paired-end reads and output fragment interval ie. leftmost
 mapped base to rightmost mapped base::
 
-   cat example.bam | python bam2bed.py --merge-pairs
+   cat example.bam | cgat bam2bed --merge-pairs
 
    1       13119   13282   READ2     0       +
    1       13039   13258   READ1     7       +
 
-   python bam2bed.py in.bam > out.bed
-
-This command converts the BAM file in.bam into a BED file named out.bed.
-
 To output read intervals that overlap chromosome 1, coordinates 13000-13100::
 
-   samtools view -ub example.bam 1:13000:13100 | python bam2bed.py
+   cgat bam2bed example.bam --region=1:13000-13100
+
+The region and merge-pair options are not compatible. To use merge pairs on
+only a region of the genome use samtools view::
+
+   samtools view -ub example.bam 1:13000:13100 | cgat bam2bed --merge-pairs
+
+Note that this will select fragments were the first read-in-pair is in
+the region.
+
+Usage
+-----
+
+::
+
+   cgat bam2bed BAMFILE [--merge-pairs|--region] [options]
+   
+operates on the file BAMFILE::
+
+   cgat bam2bed [--merge-pairs] [options]
+
+operates on the stdin as does::
+
+   cgat bam2bed -I BAMFILE [--merge-pairs] [options]
 
 Type::
 
