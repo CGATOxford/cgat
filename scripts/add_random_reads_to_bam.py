@@ -1,5 +1,4 @@
-"""
-====================================================
+"""====================================================
 Add a number of random reads to an aligned bam file
 ====================================================
 
@@ -8,17 +7,21 @@ Add a number of random reads to an aligned bam file
 :Date: |today|
 :Tags: Python
 
-This program takes two input file: a Samtools indexed genome file and a bam file to add reads to.
-It also takes several input parameters: number of reads to be added, the read length, the insert size and the insert size standard deviation
-Currently the program only adds paired end reads, with both reads the same length
-The default insert size is 250, and insert size standard diviation is 20.
-The default read length is 50 and the number of reads to be added is 10,000.
+This program takes two input file: a Samtools indexed genome file and
+a bam file to add reads to.  It also takes several input parameters:
+number of reads to be added, the read length, the insert size and the
+insert size standard deviation Currently the program only adds paired
+end reads, with both reads the same length The default insert size is
+250, and insert size standard diviation is 20.  The default read
+length is 50 and the number of reads to be added is 10,000.
 
 
 Usage
 =====
 
-add_random_reads_to_bam.py -g <genome.fa> -b <input.bam>-o <output.bam> -i insert size -s insert size sd -r number of reads -l read length
+Example usage::
+
+   add_random_reads_to_bam.py -g <genome.fa> -b <input.bam>-o <output.bam> -i insert size -s insert size sd -r number of reads -l read length
 
 
 Code
@@ -27,25 +30,10 @@ Code
 """
 
 # load modules
-
-import logging as L
 import CGAT.Experiment as E
 import CGAT.Pipeline as P
 import sys
 import os
-import re
-import shutil
-import itertools
-import math
-import glob
-import time
-import gzip
-import collections
-import random
-import optparse
-import CGAT.GTF as GTF
-import CGAT.IOTools as IOTools
-import CGAT.IndexedFasta as IndexedFasta
 
 
 def main(argv=None):
@@ -59,22 +47,30 @@ def main(argv=None):
 
     # setup command line parser
     parser = E.OptionParser(
-        version="%prog version: $Id: snp2table.py 2861 2010-02-23 17:36:32Z davids $", usage=globals()["__doc__"])
+        version="%prog version: $Id$",
+        usage=globals()["__doc__"])
 
-    parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
-                      help="filename with Samtools indexed genome [default=%default].")
-    parser.add_option("-b", "--bam-file", dest="bam_file", type="string",
-                      help="filename of bam to add reads to [default=%default].")
-    parser.add_option("-i", "--insert-size", dest="isize", type="string",
-                      help="Insert size [default=%default].")
-    parser.add_option("-s", "--insert-sd", dest="isd", type="string",
-                      help="Insert size standard deviation [default=%default].")
-    parser.add_option("-r", "--nreads", dest="nreads", type="string",
-                      help="Number of random reads to add [default=%default].")
-    parser.add_option("-l", "--readlength", dest="readlength", type="string",
-                      help="length of reads to generate [default=%default].")
-    parser.add_option("-o", "--output", dest="output_file", type="string",
-                      help="output filename  [default=%default].")
+    parser.add_option(
+        "-g", "--genome-file", dest="genome_file", type="string",
+        help="filename with Samtools indexed genome [default=%default].")
+    parser.add_option(
+        "-b", "--bam-file", dest="bam_file", type="string",
+        help="filename of bam to add reads to [default=%default].")
+    parser.add_option(
+        "-i", "--insert-size", dest="isize", type="string",
+        help="Insert size [default=%default].")
+    parser.add_option(
+        "-s", "--insert-sd", dest="isd", type="string",
+        help="Insert size standard deviation [default=%default].")
+    parser.add_option(
+        "-r", "--nreads", dest="nreads", type="string",
+        help="Number of random reads to add [default=%default].")
+    parser.add_option(
+        "-l", "--readlength", dest="readlength", type="string",
+        help="length of reads to generate [default=%default].")
+    parser.add_option(
+        "-o", "--output", dest="output_file", type="string",
+        help="output filename  [default=%default].")
 
     parser.set_defaults(
         genome_file=None,
@@ -98,18 +94,20 @@ def main(argv=None):
     genome = options.genome_file
     bam = options.bam_file
     out = options.output_file
-    statement = '''java -jar -Xmx2048m /ifs/apps/bio/simseq-72ce499/SimSeq.jar 
-                       -1 %(readlen)s -2 %(readlen)s \
-                       --error  /ifs/apps/bio/simseq-72ce499/examples/hiseq_mito_default_bwa_mapping_mq10_1.txt \
-                       --error2 /ifs/apps/bio/simseq-72ce499/examples/hiseq_mito_default_bwa_mapping_mq10_2.txt \
-                       --insert_size %(isize)s \
-                       --insert_stdev %(isd)s \
-                       --read_number %(nreads)s \
-                       --read_prefix simseq_ \
-                       --reference %(genome)s \
-                       --duplicate_probability 0.0 \
-                       --out simseq.sam > simseq.log; ''' % locals()
+    statement = '''
+    java -jar -Xmx2048m /ifs/apps/bio/simseq-72ce499/SimSeq.jar 
+    -1 %(readlen)s -2 %(readlen)s \
+    --error  /ifs/apps/bio/simseq-72ce499/examples/hiseq_mito_default_bwa_mapping_mq10_1.txt \
+    --error2 /ifs/apps/bio/simseq-72ce499/examples/hiseq_mito_default_bwa_mapping_mq10_2.txt \
+    --insert_size %(isize)s \
+    --insert_stdev %(isd)s \
+    --read_number %(nreads)s \
+    --read_prefix simseq_ \
+    --reference %(genome)s \
+    --duplicate_probability 0.0 \
+    --out simseq.sam > simseq.log; ''' % locals()
     P.run()
+
     statement = '''samtools view -bS -t %(genome)s.fai -o simseq.bam simseq.sam; 
                    samtools sort simseq.bam simseq.srt;
                    samtools sort %(bam)s %(track)s.srt;
