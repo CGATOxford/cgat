@@ -10,9 +10,6 @@ GTF.py - Classes and methods for dealing with gtf formatted files
 The default GTF version is 2.2.
 """
 
-import string
-import sys
-import re
 import copy
 import types
 import collections
