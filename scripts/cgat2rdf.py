@@ -1,5 +1,4 @@
-'''
-cgat2rdf.py - create rdf description of CGAT script
+'''cgat2rdf.py - create rdf description of CGAT script
 ====================================================
 
 :Author: 
@@ -21,7 +20,7 @@ Usage
 
 Example::
 
-   python cgat2rdf.py bam2stats.py 
+   python cgat2rdf.py bam2stats.py
 
 Type::
 
@@ -32,17 +31,18 @@ for command line help.
 Documentation
 -------------
 
-This script takes a CGAT script and attempts to write an interface definition
-for this script. In order to guess the file types correctly, :file:`cgat2rdf.py`
-makes use of the following information:
+This script takes a CGAT script and attempts to write an interface
+definition for this script. In order to guess the file types
+correctly, :file:`cgat2rdf.py` makes use of the following information:
 
-1. The script name. If the name of the script contains a "format2format.py", :file:`cgat2rdf.py`
-   will assume that the script works within a pipe: it takes stdin and stdout as 
-   input and output, respectively, and each are formatted according to the formats.
-   For example, ``bed2bed.py`` has a :term:`bed` formatted file as input and output,
-   while ``gtf2gff.py`` has a :term:`gtf` formatted file as input and outputs
-   a :term:`gff` file. Most formats are not parsed, though :file:`cgat2rdf.py` contains
-   some type mappings:
+1. The script name. If the name of the script contains a
+   "format2format.py", :file:`cgat2rdf.py` will assume that the script
+   works within a pipe: it takes stdin and stdout as input and output,
+   respectively, and each are formatted according to the formats.  For
+   example, ``bed2bed.py`` has a :term:`bed` formatted file as input
+   and output, while ``gtf2gff.py`` has a :term:`gtf` formatted file
+   as input and outputs a :term:`gff` file. Most formats are not
+   parsed, though :file:`cgat2rdf.py` contains some type mappings:
 
 +--------------------+--------------------+--------------------+
 |Format              |Maps to             |Content             |
@@ -56,13 +56,13 @@ makes use of the following information:
 |csv                 |tabular             |ditto               |
 +--------------------+--------------------+--------------------+
 
-   
-2. The command line options. :file:`cgat2rdf.py` will import the script it 
-   runs and captures the command line option parser information. Based on these
-   data, options are added to the interface. Atomic values such as int, float,
-   etc, are interpreted directly. For textual arguments, :file:`cgat2rdf.py`
-   tests if the :attr:`metavar` attribute has been set. When set, the content
-   of this attribute will determine the file type.
+2. The command line options. :file:`cgat2rdf.py` will import the
+   script it runs and captures the command line option parser
+   information. Based on these data, options are added to the
+   interface. Atomic values such as int, float, etc, are interpreted
+   directly. For textual arguments, :file:`cgat2rdf.py` tests if the
+   :attr:`metavar` attribute has been set. When set, the content of
+   this attribute will determine the file type.
 
 The interface decription can be exported either as :term:`RDF` or in a variety
 of other formats:
@@ -97,7 +97,7 @@ from rdflib.namespace import RDF, RDFS, DCTERMS
 from rdflib import Literal, BNode, URIRef
 from rdflib.collection import Collection
 
-#DCTerms = Namespace('http://purl.org/dc/terms/')
+# DCTerms = Namespace('http://purl.org/dc/terms/')
 FOAF = Namespace('http://xmlns.com/foaf/1.1/')
 Component = Namespace('http://www.isi.edu/ikcap/Wingse/componentOntology.owl#')
 FO = Namespace('http://www.isi.edu/ikcap/Wingse/fileOntology.owl#')
@@ -169,9 +169,11 @@ class Generator:
                 d_node = BNode()
                 self._addTriple(d_node, RDF.type, CLP['dependency'])
                 self._addTriple(
-                    d_node, CLP['hasDependingItem'], BNode(_e(dep['depending_parameter'])))
+                    d_node, CLP['hasDependingItem'],
+                    BNode(_e(dep['depending_parameter'])))
                 self._addTriple(
-                    d_node, CLP['dependingCondition'], dep['depending_condition'])
+                    d_node, CLP['dependingCondition'],
+                    dep['depending_condition'])
                 self._addTriple(d_node, CLP['hasDependentItem'], ap_node)
                 self._addTriple(
                     d_node, CLP['dependentScope'], dep['dependent_scope'])
@@ -194,10 +196,12 @@ class Generator:
         self._addTriple(t_node, Component['hasExecutionRequirements'], r_node)
         self._addTriple(r_node, RDF.type, Component['ExecutionRequirements'])
         self._addTriple(
-            r_node, Component['requiresOperationSystem'], Component['Linux'])  # TODO
+            r_node, Component['requiresOperationSystem'],
+            Component['Linux'])  # TODO
         if data['interpreter'] != '(binary)':
             self._addTriple(
-                r_node, Component['requiresSoftware'], Component[data['interpreter']])
+                r_node, Component['requiresSoftware'],
+                Component[data['interpreter']])
         if data['grid_access_type'] != '-':
             self._addTriple(
                 r_node, CLP['gridAccessType'], data['grid_access_type'])
@@ -213,17 +217,20 @@ class Generator:
 
         argument_list = BNode('argument_list')
         self._addTriple(t_node, Component['hasArguments'], argument_list)
-        #self._addTriple(argument_list, RDF.type, Component['argumentAndPrefixList'])
+        # self._addTriple(argument_list, RDF.type,
+        # Component['argumentAndPrefixList'])
         argument_nodes = Collection(self.graph, argument_list)
 
         input_list = BNode('input_list')
         self._addTriple(t_node, Component['hasInputs'], input_list)
-        #self._addTriple(input_list, RDF.type, Component['FileOrCollectionList'])
+        # self._addTriple(input_list, RDF.type,
+        # Component['FileOrCollectionList'])
         input_nodes = Collection(self.graph, input_list)
 
         output_list = BNode('output_list')
         self._addTriple(t_node, Component['hasOutputs'], output_list)
-        #self._addTriple(output_list, RDF.type, Component['FileOrCollectionList'])
+        # self._addTriple(output_list, RDF.type,
+        # Component['FileOrCollectionList'])
         output_nodes = Collection(self.graph, output_list)
 
         for p in data['parameters']:
@@ -420,7 +427,7 @@ def processScript(script_name, outfile, options):
 
     # @prefix clp: <http://www.humgen.nl/climate/ontologies/clp#> .
     # @prefix co: <http://www.isi.edu/ikcap/Wingse/componentOntology.owl#> .
-    #@prefix dcterms: <http://purl.org/dc/terms/> .
+    # @prefix dcterms: <http://purl.org/dc/terms/> .
 
     # n = Namespace("http://example.org/people/")
     g = Generator()

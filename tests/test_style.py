@@ -1,5 +1,5 @@
-'''test_import - test importing all modules and pipelines
-=========================================================
+'''test_style - test coding style confirmation of CGAT code
+===========================================================
 
 :Author: Andreas Heger
 :Release: $Id$

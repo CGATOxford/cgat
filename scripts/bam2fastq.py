@@ -10,18 +10,29 @@ bam2fastq.py - output fastq files from a bam-file
 Purpose
 -------
 
-This script takes a :term:`bam` formatted file and converts it to two :term:`fastq`
-formatted files, one containing the forward reads and one containing the reverse reads.
+This script takes a :term:`bam` formatted file and converts it to two
+:term:`fastq` formatted files, one containing the forward reads and one
+containing the reverse reads.
+
+
+Options
+-------
+
+This script has no options beyond the standard.
+
+Example
+-------
+
+::
+   cgat bam2fastq in.bam out.1.fastq out.2.fastq
+
+This command converts the :term:`bam` formatted file in.bam into :term:`fastq`
+files containing forward reads (out.1.fastq) and reverse reads (out.2.fastq).
 
 Usage
 -----
 
-Example::
-
-   python bam2fastq.py in.bam out.1.fastq out.2.fastq
-
-This command converts the :term:`bam` formatted file in.bam into :term:`fastq` files 
-containing forward reads (out.1.fastq) and reverse reads (out.2.fastq).
+   cgat bam2fastq BAM FASTQ1 FASTQ2 [OPTIONS]
 
 Type::
 
