@@ -28,7 +28,7 @@ Usage
 Example::
 
    samtools view tests/bam_vs_gtf.py/small.bam | head
-   cat tests/bam_vs_gtf.py/small.bam | python bam_vs_gtf.py --filename-gtf=tests/bam_vs_gtf.py/hg19.chr19.gtf.gz
+   cat tests/bam_vs_gtf.py/small.bam | cgat bam_vs_gtf.py --filename-gtf=tests/bam_vs_gtf.py/hg19.chr19.gtf.gz
    
 category	counts
 spliced_bothoverlap	0
@@ -88,7 +88,7 @@ def main(argv=None):
                             usage=globals()["__doc__"])
 
     parser.add_option("-e", "--filename-exons", "--filename-gtf", dest="filename_exons", type="string", metavar="gtf",
-                      help="gtf formatted file with non-overlapping exon locations. [%default]")
+                      help="gtf formatted file with non-overlapping exon locations (required). [%default]")
 
     parser.set_defaults(
         filename_exons=None,
