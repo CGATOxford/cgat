@@ -29,13 +29,8 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
-import string
 import re
-import tempfile
-import subprocess
-import optparse
 
 import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
@@ -178,7 +173,7 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv
 
-    parser = E.OptionParser(version="%prog version: $Id: analyze_sequences.py 2865 2010-03-03 10:18:28Z andreas $",
+    parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
     parser.add_option("-s", "--species", dest="species", type="string",

@@ -31,10 +31,7 @@ Command line options
 
 '''
 import sys
-import string
 import re
-import optparse
-import collections
 import bisect
 import os
 
