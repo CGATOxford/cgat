@@ -31,21 +31,17 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
-import string
 import re
 import getopt
-import tempfile
-import time
-import popen2
 
 USAGE = """python %s [OPTIONS] < graph.in > graph.out
 
 Version: $Id: graph_blast2besthits.py 2782 2009-09-10 11:40:29Z andreas $
 
-Parse blast graph and only output best hits for each query per genome. Note that
-the blast graph has been sorted by query_token and sbjct_token.
+Parse blast graph and only output best hits for each query per
+genome. Note that the blast graph has been sorted by query_token and
+sbjct_token.
 
 Options:
 -h, --help                      print this message.
@@ -56,7 +52,8 @@ Options:
 -i, --pide-factor=              thresholding on pide (additive)
 """ % sys.argv[0]
 
-param_long_options = ["help", "verbose=", "pattern-genome=", "method=", "score-factor=", "pide-factor=",
+param_long_options = ["help", "verbose=", "pattern-genome=", "method=",
+                      "score-factor=", "pide-factor=",
                       "version"]
 
 param_short_options = "hv:p:f:i"
@@ -67,7 +64,6 @@ param_filename_self_scores = None
 
 import CGAT.Experiment as E
 import CGAT.BlastAlignments as BlastAlignments
-import math
 
 param_pattern_genome = "^([^|]+)|"
 param_method = "evalue"

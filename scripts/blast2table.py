@@ -1,5 +1,4 @@
-'''
-blast2table.py - output tabular results from BLAST/PSIBLAST runs
+'''blast2table.py - output tabular results from BLAST/PSIBLAST runs
 ================================================================
 
 :Author: Andreas Heger
@@ -59,12 +58,14 @@ for command line help.
 Blast parsing
 +++++++++++++
 
-The following command outputs blast results using the pairsdb alignment format::
+The following command outputs blast results using the pairsdb
+alignment format::
 
    blastp -query <(head -n 10 nrdb.fasta ) -db nrdb -outfmt "6 qseqid qstart qend sseqid sstart send evalue bitscore pident score qseq sseq" |
    python python blast2table.py --output-format=emissions
 
-The following command outputs blast results using the pairsdb alignment format::
+The following command outputs blast results using the pairsdb
+alignment format::
 
    blastp -query <(head -n 10 nrdb.fasta ) -db nrdb -outfmt "6 qseqid qstart qend sseqid sstart send evalue bitscore pident score qseq sseq" |
    python python blast2table.py --output-format=blocks
@@ -77,15 +78,16 @@ The following command outputs alignments from all iterations::
    psiblast -query <(head -n 2 nrdb.fasta ) -db nrdb -outfmt "6 qseqid qstart qend sseqid sstart send evalue bitscore pident score qseq sseq" -num_iterations=5
    python blast2table.py --alignment-format=blocks --iterations=all
 
-The following command outputs alignments from the last iteration only::
+The following command outputs alignments from the last iteration
+only::
 
    psiblast -query <(head -n 2 nrdb.fasta ) -db nrdb -outfmt "6 qseqid qstart qend sseqid sstart send evalue bitscore pident score qseq sseq" -num_iterations=5
    python blast2table.py --alignment-format=blocks --iterations=all
 
-The following command outputs alignments for the first iteration that they are found::
+The following command outputs alignments for the first iteration that
+they are found::
 
-   psiblast -query <(head -n 2 nrdb.fasta ) -db nrdb -outfmt "6 qseqid qstart qend sseqid sstart send evalue bitscore pident score qseq sseq" -num_iterations=5
-   python blast2table.py --alignment-format=blocks --iterations=first
+   psiblast -query <(head -n 2 nrdb.fasta ) -db nrdb -outfmt "6 qseqid qstart qend sseqid sstart send evalue bitscore pident score qseq sseq" -num_iterations=5 python blast2table.py --alignment-format=blocks --iterations=first
 
 '''
 
@@ -96,8 +98,10 @@ import optparse
 import collections
 import CGAT.Experiment as E
 
-BlastResult = collections.namedtuple("blastresult",
-                                     "qseqid qstart qend sseqid sstart send evalue bitscore pident score qseq sseq")
+BlastResult = collections.namedtuple(
+    "blastresult",
+    "qseqid qstart qend sseqid sstart send evalue "
+    "bitscore pident score qseq sseq")
 
 
 class Output(object):
@@ -253,7 +257,8 @@ def main(argv=None):
     parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
-    parser.add_option("-f", "--alignment-format", dest="alignment_format", type="choice",
+    parser.add_option("-f", "--alignment-format", dest="alignment_format",
+                      type="choice",
                       choices=("emissions", "blocks"),
                       help="output format options [default=%default].")
 
@@ -270,7 +275,7 @@ def main(argv=None):
         iterations=None,
     )
 
-    (options, args) = parser.parse_args()
+    (options, args) = E.Start(parser, argv=argv)
 
     if options.alignment_format == "emissions":
         outer = OutputEmissions
@@ -326,7 +331,8 @@ def main(argv=None):
                     if key not in output_pairs:
                         output_pairs[key] = r.iteration
                 filtered = (
-                    r for r in group if r.iteration <= output_pairs[(r.query, r.sbjct)])
+                    r for r in group if r.iteration <= output_pairs[
+                        (r.query, r.sbjct)])
 
             for r in filtered:
                 sys.stdout.write("%s\t%i\n" % (str(r), r.iteration))
