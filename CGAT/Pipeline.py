@@ -2130,7 +2130,7 @@ def cluster_runnable(func):
     function_name = func.__name__
     
     def submit_function(*args, **kwargs):
-
+        
         if "submit" in kwargs and kwargs["submit"]:
             del kwargs["submit"]
             submit_args, args_file = _pickle_args(args, kwargs)
