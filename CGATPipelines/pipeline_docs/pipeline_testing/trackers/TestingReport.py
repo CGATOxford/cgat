@@ -152,3 +152,28 @@ class XReportTable(TestingTracker):
 
         return odict((("text", rst_text),))
 
+
+class FilesWithProblems(TestingTracker):
+
+    tracks = [x[:-4] for x in glob.glob("*.dir")]
+
+    slices = ("files_different_lines",
+              "files_different_md5",
+              "files_extra", "files_missing")
+
+    def __call__(self, track, slice):
+
+        statement = """SELECT %(slice)s FROM md5_compare
+        WHERE track = '%(track)s'""" % locals()
+
+        data = self.getValue(statement)
+        if data is None:
+            return
+
+        files = data.split(",")
+        # do not use :download: as
+        # that will include the file in the report.
+        # and thus wastes space.
+        return ['`%s <file://%s>`_' %
+                (f,
+                 os.path.abspath(f)) for f in files]

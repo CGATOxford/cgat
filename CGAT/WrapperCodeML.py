@@ -871,7 +871,8 @@ class CodeML:
         known_versions = ("paml 3.14b, May 2005",
                           "paml 3.15, November 2005",
                           "paml version 4, June 2007",
-                          "paml version 4.4c, August 2010")
+                          "paml version 4.4c, August 2010",
+                          "paml version 4.8a, August 2014")
 
         if result.mVersion not in known_versions:
             raise ValueError("unknown paml version '%s'" % result.mVersion)
