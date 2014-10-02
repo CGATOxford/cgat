@@ -291,11 +291,14 @@ echo
 echo " Running nosetests for $1 "
 echo
 
+# create folder to install third-party tools
+EXTERNAL_DEPS_DIR=
 if [ "$OS" == "travis" ] ; then
 
    # use travis init dir to install external tools
    mkdir -p $TRAVIS_BUILD_DIR/external-tools
-   cd $TRAVIS_BUILD_DIR/external-tools
+   #cd $TRAVIS_BUILD_DIR/external-tools
+   EXTERNAL_DEPS_DIR=$TRAVIS_BUILD_DIR/external-tools
 
 elif [ "$OS" == "sl" -o "$OS" == "centos" -o "$OS" == "ubuntu" ] ; then
 
@@ -307,7 +310,8 @@ elif [ "$OS" == "sl" -o "$OS" == "centos" -o "$OS" == "ubuntu" ] ; then
 
    # create a new folder to store external tools
    mkdir -p $CGAT_HOME/external-tools
-   cd $CGAT_HOME/external-tools
+   #cd $CGAT_HOME/external-tools
+   EXTERNAL_DEPS_DIR=$CGAT_HOME/external-tools
 
 else
 
@@ -315,11 +319,15 @@ else
 
 fi # if-OS
 
+# go to new folder and install software
+cd $EXTERNAL_DEPS_DIR
+
 # wigToBigWig
 # wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/wigToBigWig
 wget --no-check-certificate https://www.cgat.org/downloads/public/external-tools/wigToBigWig
 chmod +x wigToBigWig
-PATH=$PATH:$CGAT_HOME/external-tools
+#PATH=$PATH:$CGAT_HOME/external-tools
+PATH=$PATH:$EXTERNAL_DEPS_DIR
 
 # bedGraphToBigWig
 wget --no-check-certificate https://www.cgat.org/downloads/public/external-tools/bedGraphToBigWig
@@ -331,9 +339,10 @@ chmod +x bedGraphToBigWig
 wget --no-check-certificate https://www.cgat.org/downloads/public/external-tools/bedtools-2.21.0.tar.gz
 tar xzf bedtools-2.21.0.tar.gz
 rm bedtools-2.21.0.tar.gz
-cd bedtools-2.21.0
+cd bedtools2
 make
-PATH=$PATH:$CGAT_HOME/external-tools/bedtools2-2.19.1/bin
+#PATH=$PATH:$CGAT_HOME/external-tools/bedtools2/bin
+PATH=$PATH:$EXTERNAL_DEPS_DIR/bedtools2/bin
 
 # GCProfile
 cd ..
