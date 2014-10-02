@@ -99,18 +99,19 @@ def main(argv=None):
         help="extract region for testing purposes. Format is "
         "contig:strand:from:to. "
         "The default coordinates are 0-based "
-        "open/closed coordinates on both strands. "
+        "open/closed coordinates on both strands, but can be changed "
+        "by --input-format. "
         "For example, 'chr1:+:10:12' will return "
-        "bases 11 to 12 on chr1. Elements from the end of the "
+        "bases 11 and 12 on chr1. Elements from the end of the "
         "string can be omitted. For example, 'chr1' will return "
-        " all of chromosome 'chr1'")
+        "all of chromosome 'chr1'.")
 
     input_format_choices = ("one-forward-open", "zero-both-open")
     parser.add_option("-i", "--input-format", dest="input_format",
                       type="choice",
                       choices=input_format_choices,
                       help="coordinate format of input. Valid choices are "
-                      "%s [default=%%default]." %
+                      "%s. See --extract. [default=%%default]." %
                       ", ".join(input_format_choices))
 
     parser.add_option(
@@ -195,8 +196,9 @@ def main(argv=None):
 
     group.add_option("--random-access-points", dest="random_access_points",
                      type="int",
-                     help="save random access points every # number "
-                     "of nucleotides [default=%default].")
+                     help="set random access points every # number "
+                     "of nucleotides for block compression schemes "
+                     "[default=%default].")
 
     group.add_option(
         "--compress-index", dest="compress_index",
