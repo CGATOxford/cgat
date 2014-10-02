@@ -868,6 +868,17 @@ def buildPseudogenes(infiles, outfile, dbhandle):
 
     infile_gtf, infile_peptides_fasta = infiles
 
+    # JJ - there are also 'nontranslated_CDS', but no explanation of these
+    if PARAMS["genome"].startswith("dm"):
+        E.warn("Ensembl dm genome annotations only contain source"
+               " 'pseudogenes' - skipping exonerate step")
+        statement = ("zcat %(infile_gtf)s |"
+                     " awk '$2 ~ /pseudogene/' |"
+                     " gzip > %(outfile)s")
+        P.run()
+        return
+
+
     tmpfile1 = P.getTempFilename(shared=True)
 
     statement = '''
