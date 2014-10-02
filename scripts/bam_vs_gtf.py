@@ -20,34 +20,55 @@ Please note:
    * For spliced reads, both parts of the reads are examined for their overlap.
         As a consequence, counts are doubled for spliced reads.
    * The script requires a list of non-overlapping exons as input.
-   * For read counts to be correct the NH flag needs to be set correctly.
+   * For read counts to be correct the NH (number of hits) flag needs to be set correctly.
 
 Usage
 -----
 
 Example::
 
+   # Preview the BAM file using Samtools view
    samtools view tests/bam_vs_gtf.py/small.bam | head
+   # Pipe input bam to script and specify gtf file as argument
    cat tests/bam_vs_gtf.py/small.bam | cgat bam_vs_gtf.py --filename-gtf=tests/bam_vs_gtf.py/hg19.chr19.gtf.gz
-   
-category	counts
-spliced_bothoverlap	0
-unspliced_overlap	0
-unspliced_nooverrun	0
-unspliced	207
-unspliced_nooverlap	207
-spliced_overrun	0
-spliced_halfoverlap	0
-spliced_exact	0
-spliced_inexact	0
-unspliced_overrun	0
-spliced	18
-spliced_underrun	0
-mapped	225
-unmapped	0
-input	225
-spliced_nooverlap	18
-spliced_ignored	0
+
++--------------------+---------+   
+|category            |counts   |
++====================+=========+
+|spliced_bothoverlap |0        |
++--------------------+---------+
+|unspliced_overlap	 |0        |
++--------------------+---------+
+|unspliced_nooverrun |0        |
++--------------------+---------+
+|unspliced	         |207      |
++--------------------+---------+
+|unspliced_nooverlap |207      |
++--------------------+---------+
+|spliced_overrun	 |0        |
++--------------------+---------+
+|spliced_halfoverlap |0        |
++--------------------+---------+
+|spliced_exact	     |0        |
++--------------------+---------+
+|spliced_inexact	 |0        |
++--------------------+---------+
+|unspliced_overrun	 |0        |
++--------------------+---------+
+|spliced	         |18       |
++--------------------+---------+
+|spliced_underrun	 |0        |
++--------------------+---------+
+|mapped	             |225      |
++--------------------+---------+
+|unmapped	         |0        |
++--------------------+---------+
+|input	             |225      |
++--------------------+---------+
+|spliced_nooverlap	 |18       |
++--------------------+---------+
+|spliced_ignored	 |0        |
++--------------------+---------+
 
 Type::
 
