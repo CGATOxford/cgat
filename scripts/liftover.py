@@ -1,5 +1,5 @@
 '''
-liftover.py - 
+liftover.py - simple liftover script
 ======================================================
 
 :Author: Andreas Heger
@@ -10,9 +10,7 @@ liftover.py -
 Purpose
 -------
 
-.. todo::
-   
-   describe purpose of the script.
+liftover coordinates using a liftover formatted file from the ucsc.
 
 Usage
 -----
@@ -31,21 +29,11 @@ Command line options
 --------------------
 
 '''
-import os
+
 import sys
-import string
-import re
-import optparse
-import time
-
-"""liftover coordinates using a liftover formatted file from the ucsc
-"""
-
-import CGAT.Experiment as E
 import numpy
-
-parser = E.OptionParser(
-    version="%prog version: $Id: liftover.py 2404 2009-01-12 11:22:36Z andreas $")
+import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
 
 
 def readLiftOver(infile, chromosome,
@@ -162,6 +150,9 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv
 
+    parser = E.OptionParser(
+        version="%prog version: $Id$")
+
     parser.add_option("-c", "--chromosome", dest="chromosome", type="string",
                       help="chromosome to take.")
 
@@ -182,12 +173,14 @@ def main(argv=None):
     if not options.chromosome:
         raise "please give a chromosome."
 
-    map_position, map_chromosome, map_chromosome2id, map_id2chromosome = readLiftOver(
-        open(options.filename_map, "r"), options.chromosome)
+    map_position, map_chromosome, map_chromosome2id, \
+        map_id2chromosome = readLiftOver(
+            IOTools.openFile(options.filename_map, "r"),
+            options.chromosome)
 
     l = 0
 
-    for line in sys.stdin:
+    for line in options.stdin:
 
         if line[0] == "#":
             continue

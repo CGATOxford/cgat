@@ -14,7 +14,7 @@ CGAT code collection.
 
 This script is best run within nosetests::
 
-   nosetests tests/test_commandline.py
+   nosetests tests/test_commandline.py --nocapture
 
 
 .. note::
@@ -29,9 +29,9 @@ This script is best run within nosetests::
 import glob
 import os
 import imp
-import sys
 from nose.tools import ok_
 import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
 
 # handle to original E.Start function
 ORIGINAL_START = None
@@ -45,7 +45,18 @@ EXPRESSIONS = (
 # ('optic', 'scripts/optic/*.py'),
 # ('gpipe', 'scripts/gpipe/*.py'))
 
-EXCLUDE = ("__init__.py",)
+EXCLUDE = ("__init__.py",
+           "cgat.py",
+           "bed2table.py",  # fails with glibc error
+           )
+
+# Filename with the black/white list of options.
+# The file is a tab-separated with the first column
+# an option name and the second field a marker.
+# Possible markers are:
+# ok = whitelist - this option is ok.
+# 'bad', 'rename', '?', '' - this option is not ok.
+FILENAME_OPTIONLIST = "tests/option_list.tsv"
 
 
 class DummyError(Exception):
@@ -82,43 +93,17 @@ def loadScript(script_name):
     return module
 
 
-def check_options(script_name):
+def check_option(option, script_name, map_option2action):
     '''import script and get command line options.
 
     Test command line options for conformity.
     '''
-
-    # check if script contains getopt
-    with IOTools.openFile(script_name) as inf:
-        if "getopt" in inf.read():
-            ok_(False, "script uses getopt directly: %s" % script_name)
-
-    module = loadScript(script_name)
-
-    E.Start = LocalStart
-
-    try:
-        module.main(argv=["--help"])
-    except AttributeError:
-        ok_(False, "no main method in %s" % script_name)
-    except SystemExit:
-        ok_(False, "script does not use E.Start(): %s" % script_name)
-    except DummyError:
-        pass
-
-    for option in PARSER.option_list:
-        # ignore options added by optparse
-        if option.dest is None:
-            continue
-
-        optstring = option.get_opt_string()
-        if optstring.startswith("--"):
-            optstring = optstring[2:]
-
-        if "file" in optstring:
-            components = optstring.split("-")
-            ok_(len(components) == 3,
-                "option %s has not three components" % optstring)
+    if option in map_option2action:
+        ok_(option in map_option2action,
+            'option %s:%s unknown')
+        ok_(map_option2action[option] == "ok",
+            'option %s:%s wrong: action="%s"' %
+            (script_name, option, map_option2action[option]))
 
 
 def test_cmdline():
@@ -128,7 +113,12 @@ def test_cmdline():
     global ORIGINAL_START
     ORIGINAL_START = E.Start
 
-    x = 0
+    # read the first two columns
+    map_option2action = IOTools.readMap(
+        IOTools.openFile(FILENAME_OPTIONLIST),
+        columns=(0, 1),
+        has_header=True)
+
     for label, expression in EXPRESSIONS:
 
         files = glob.glob(expression)
@@ -140,6 +130,38 @@ def test_cmdline():
             if os.path.basename(f) in EXCLUDE:
                 continue
 
-            check_options.description = os.path.abspath(f)
-            yield(check_options, os.path.abspath(f))
-            x += 1
+            script_name = os.path.abspath(f)
+
+            # check if script contains getopt
+            with IOTools.openFile(script_name) as inf:
+                if "getopt" in inf.read():
+                    continue
+                    ok_(False, "script uses getopt directly: %s" % script_name)
+
+            module = loadScript(script_name)
+            E.Start = LocalStart
+
+            try:
+                module.main(argv=["--help"])
+            except AttributeError:
+                continue
+                ok_(False, "no main method in %s" % script_name)
+            except SystemExit:
+                continue
+                ok_(False, "script does not use E.Start(): %s" % script_name)
+            except DummyError:
+                pass
+
+            for option in PARSER.option_list:
+                # ignore options added by optparse
+                if option.dest is None:
+                    continue
+
+                optstring = option.get_opt_string()
+                if optstring.startswith("--"):
+                    optstring = optstring[2:]
+
+                check_option.description = script_name + ":" + optstring
+
+                yield(check_option, optstring, os.path.abspath(f),
+                      map_option2action)

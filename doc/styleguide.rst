@@ -215,25 +215,29 @@ Other guidelines
 Script options
 ==============
 
-The purpose of this section of the style guide is to standardise many of the common
-options that the CGAT script collection uses.  
-This will add transparency and improve user-friendliness by adding a level of 
+The purpose of this section of the style guide is to standardise many
+of the common options that the CGAT script collection uses.  This will
+add transparency and improve user-friendliness by adding a level of
 familiarity across scripts.
 
-There are four option groups defined in  the guide.  Not all options will fit into
-one of these as many options are specific to a script.  This guide will also be a 
-useful reference for new script development by providing a common framework.
+There are four option groups defined in the guide.  Not all options
+will fit into one of these as many options are specific to a script.
+This guide will also be a useful reference for new script development
+by providing a common framework.
 
-The general structure for option names is three part, where each part can be 
-omitted to shorten option names::
-  e.g. ``--annotation-gtf-file``, ``--annotation-gtf``, ``--annotation``.  
+The general structure for option names is three part. Generally, aim
+to have the most significant bit first in the option as option names
+can be shortened on the command line if they are unambiguous. For
+example, ``--annotation-gtf-file`` can be abbreviated as
+``--annotation-gtf``, ``--annotation``, etc.
 
-In general single letter ``-A`` type options do not fit into this style guide 
-but are supported by argparse.  This helps to make options explicit where 
-possible but does not preclude their use.
+In general single letter ``-A`` type options can be used for very
+common options, but every option should have a long name and use
+of long names is preferred in pipelines.
 
-Option nomenclature that does not fit into one of the below groups should 
-be explicit.  For instance use ``--output-with-value`` instead of ``--with-value``.
+Option nomenclature that does not fit into one of the below groups
+should be explicit.  For instance use ``--output-with-value`` instead
+of ``--with-value``.
 
 Option groups:
   option components in '[]' are variable
@@ -242,42 +246,69 @@ Option groups:
 
     The file options support both input and ancillary files for scripts.  Some 
     scripts require multiple files of the same format.  In these instances 
-    ``[purpose]`` differentiates the different files within the script::
-
-      ``--[purpose]-[format]-file=[file]``
-        e.g. ``--annotation-gtf-file``
-	or ``--bam-file``
-	or ``--exons-gtf-file``
+    ``[purpose]`` differentiates the different files within the script.
+    ``--[purpose]-[format]-file=[file]`` e.g. ``--annotation-gtf-file``
+    or ``--bam-file`` or ``--exons-gtf-file``.
 
   * actions:
   
-    actions are generic and are generally choices.  The choices available will
-    be defined within the script itself.  These are generally defined by the 
-    method(s) option.  Scripts that support multiple actions can be supplied using 
-    ``--methods=[action1, action2,...]``, scripts that only support a single action 
-    use the ``--method=[action]``::
+    Actions denote the central methods a script applies to the data
+    set. Some scripts might only be able to apply a single action to a
+    data set, while others might allow a sequence of actions to be
+    performed. Scripts that support multiple actions should use the
+    ``--methods=[action1, action2,...]`` while scripts that only
+    support a single action use ``--method=[action]``::
   
       ``--method=[action1]``
       ``--methods=[action1, action2, ...]``
-        e.g. ``--method=normalize-profile``
-  
+        e.g. ``--method=filter-by-length``
+
+    Arguments that are relevant for a particular action should be
+    easily associated with the action. In the example above, the
+    minimum length could be given as::
+
+      ``--filter-min-length``
+
+    Do not hesitate to make arguments as explicit as possible. In
+    the above example, consider also using:
+    ``--method=filter-by-sequence-length`` and ``--filter-min-sequence-length``.
+      
   * parameters:
   
-    Some parameters are provided to scripts with a specific purpose.  To make these
-    as explicit as possible these also conform to the three-part naming convention::
+    Parameters are provided to scripts with a specific purpose.  To
+    make these as explicit as possible these also conform to the
+    three-part naming convention. If a parameter is used to restrict
+    the input or output, use::
 
       ``--[stat]-[attribute]-[type]=[value]``
-        e.g. ``--max-length-sequence=1000``
+        e.g. ``--min-insert-size=100``
+
+    If a parameter is used to set a value inside the script, use:
+
+       ``--[attribute]-[type]-[stat]=[value]``
+       e.g. ``--insert-size-mean``.
+       
 
   * outputs:
   
-    Output is generally fed to standard output, but some scripts use the output 
-    file name within the script or for additional output. These may also alter 
-    the behaviour of the output or assign an attribute based on the output, such
-    as a pattern to define a column or filename::
+    The prinicipal output of a script is generally fed to standard
+    output. Scripts that create multiple output files should define
+    them using the generic ``--output-filename-pattern``. Any ``%s``
+    pattern will be substituted inside the script with a section
+    name. Optionally, it might also append a suffix for the file
+    type. For example a script called with
+    ``--output-filename-pattern="test_%s"`` might create files such as
+    ``test_plot.png, test_removed.tsv`` for the sections ``plot`` and 
+    ``removed``.
 
-      ``--output-[name]-[transform]=[pattern]``
-        e.g. ``--output-filename-pattern="(.+)_[0-9]+"``
+    In order to facilicate the incorporation of multiple-output
+    scripts into pipelines, scripts should permit explicit
+    labeling of output files such as ``--output-filename-<section>``
+    where section corresponds to the sections used in the script.
+
+    .. note::
+       
+       TODO: This can be implemented generically in Experiment.py
 
 
 Documentation

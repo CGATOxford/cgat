@@ -72,7 +72,9 @@ def main(argv=None):
             alignment[x][1].append(line[:-1])
 
     for x in range(num_lines):
-        print ">%s\n%s" % (alignment[x][0], re.sub("\s", "", string.join(alignment[x][1], "")))
+        print ">%s\n%s" % (alignment[x][0],
+                           re.sub("\s", "",
+                                  string.join(alignment[x][1], "")))
 
     # write footer and output benchmark information.
     E.Stop()
