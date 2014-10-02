@@ -225,15 +225,19 @@ will fit into one of these as many options are specific to a script.
 This guide will also be a useful reference for new script development
 by providing a common framework.
 
-The general structure for option names is three part. Generally, aim
-to have the most significant bit first in the option as option names
-can be shortened on the command line if they are unambiguous. For
-example, ``--annotation-gtf-file`` can be abbreviated as
-``--annotation-gtf``, ``--annotation``, etc.
+The general structure for option names is multiple parts with parts
+separated by ``-``. Generally, aim to have the most significant bit
+first in the option as option names can be shortened on the command
+line if they are unambiguous. For example, ``--annotation-gtf-file``
+can be abbreviated as ``--annotation-gtf``, ``--annotation``, etc.
 
-In general single letter ``-A`` type options can be used for very
-common options, but every option should have a long name and use
-of long names is preferred in pipelines.
+Single-part options such as ``--colours`` are permitted if they are
+unambiguous in the context of the script.
+
+In general single letter (``-a``, ``-g``, ...) type options can be
+used for very common options, but every option should have a long name
+and use of long names is preferred in pipelines. If possible, use
+short letters that are consistent with "related" unix commands.
 
 Option nomenclature that does not fit into one of the below groups
 should be explicit.  For instance use ``--output-with-value`` instead
@@ -256,38 +260,28 @@ Option groups:
     set. Some scripts might only be able to apply a single action to a
     data set, while others might allow a sequence of actions to be
     performed. Scripts that support multiple actions should use the
-    ``--methods=[action1, action2,...]`` while scripts that only
-    support a single action use ``--method=[action]``::
-  
-      ``--method=[action1]``
-      ``--methods=[action1, action2, ...]``
-        e.g. ``--method=filter-by-length``
+    ``--methods=[action1, action2,...]``, for example
+    ``--methods=sort-by-name,filter-by-length``.
+    Scripts that only
+    support a single action use ``--method=[action]``, for example:
+    ``--method=select-longest-transcript``.
 
     Arguments that are relevant for a particular action should be
     easily associated with the action. In the example above, the
-    minimum length could be given as::
+    minimum length could be given as ``--filter-min-length``.
 
-      ``--filter-min-length``
-
-    Do not hesitate to make arguments as explicit as possible. In
-    the above example, consider also using:
+    Do not hesitate to make arguments as explicit as possible.
+    Consider also using:
     ``--method=filter-by-sequence-length`` and ``--filter-min-sequence-length``.
       
   * parameters:
   
     Parameters are provided to scripts with a specific purpose.  To
     make these as explicit as possible these also conform to the
-    three-part naming convention. If a parameter is used to restrict
-    the input or output, use::
-
-      ``--[stat]-[attribute]-[type]=[value]``
-        e.g. ``--min-insert-size=100``
-
-    If a parameter is used to set a value inside the script, use:
-
-       ``--[attribute]-[type]-[stat]=[value]``
-       e.g. ``--insert-size-mean``.
-       
+    three-part naming convention.  Very common is to set
+    minimum/maximum values. For these, follow a
+    ``--[object]-[attribute]-[stat]=[value]`` convention, e.g.,
+    ``--insert-size-min=100`` or ``--insert-size-std=20``.
 
   * outputs:
   
@@ -304,7 +298,9 @@ Option groups:
     In order to facilicate the incorporation of multiple-output
     scripts into pipelines, scripts should permit explicit
     labeling of output files such as ``--output-filename-<section>``
-    where section corresponds to the sections used in the script.
+    where section corresponds to the sections used in the script. In
+    the example above, the script should also accept options called
+    ``--output-filename-plot`` and ``--output-filename-removed``.
 
     .. note::
        
