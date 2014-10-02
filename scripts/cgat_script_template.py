@@ -12,12 +12,6 @@ Purpose
 
 .. Overall purpose and function of the script>
 
-Options
--------
-
-.. Options for the script, with detail of how they are combined
-.. to provide intended functionality
-
 Usage
 -----
 

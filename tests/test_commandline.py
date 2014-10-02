@@ -88,6 +88,11 @@ def check_options(script_name):
     Test command line options for conformity.
     '''
 
+    # check if script contains getopt
+    with IOTools.openFile(script_name) as inf:
+        if "getopt" in inf.read():
+            ok_(False, "script uses getopt directly: %s" % script_name)
+
     module = loadScript(script_name)
 
     E.Start = LocalStart
@@ -96,6 +101,8 @@ def check_options(script_name):
         module.main(argv=["--help"])
     except AttributeError:
         ok_(False, "no main method in %s" % script_name)
+    except SystemExit:
+        ok_(False, "script does not use E.Start(): %s" % script_name)
     except DummyError:
         pass
 
@@ -136,5 +143,3 @@ def test_cmdline():
             check_options.description = os.path.abspath(f)
             yield(check_options, os.path.abspath(f))
             x += 1
-            if x > 10:
-                break

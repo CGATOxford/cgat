@@ -207,7 +207,79 @@ Other guidelines
 * In order to build documentation, each script, module and pipeline needs to
   be importable. Thus, make sure that when your pipeline depends on
   specific files, it does not fail when imported but not executed.
+
+* There is a style guide for naming script options based on 5
+  groups.  These are designed to increase clarity and familiarity
+  across the script collection.
+
+Script options
+==============
+
+The purpose of this section of the style guide is to standardise many of the common
+options that the CGAT script collection uses.  
+This will add transparency and improve user-friendliness by adding a level of 
+familiarity across scripts.
+
+There are four option groups defined in  the guide.  Not all options will fit into
+one of these as many options are specific to a script.  This guide will also be a 
+useful reference for new script development by providing a common framework.
+
+The general structure for option names is three part, where each part can be 
+omitted to shorten option names::
+  e.g. ``--annotation-gtf-file``, ``--annotation-gtf``, ``--annotation``.  
+
+In general single letter ``-A`` type options do not fit into this style guide 
+but are supported by argparse.  This helps to make options explicit where 
+possible but does not preclude their use.
+
+Option nomenclature that does not fit into one of the below groups should 
+be explicit.  For instance use ``--output-with-value`` instead of ``--with-value``.
+
+Option groups:
+  option components in '[]' are variable
+
+  * files:
+
+    The file options support both input and ancillary files for scripts.  Some 
+    scripts require multiple files of the same format.  In these instances 
+    ``[purpose]`` differentiates the different files within the script::
+
+      ``--[purpose]-[format]-file=[file]``
+        e.g. ``--annotation-gtf-file``
+	or ``--bam-file``
+	or ``--exons-gtf-file``
+
+  * actions:
   
+    actions are generic and are generally choices.  The choices available will
+    be defined within the script itself.  These are generally defined by the 
+    method(s) option.  Scripts that support multiple actions can be supplied using 
+    ``--methods=[action1, action2,...]``, scripts that only support a single action 
+    use the ``--method=[action]``::
+  
+      ``--method=[action1]``
+      ``--methods=[action1, action2, ...]``
+        e.g. ``--method=normalize-profile``
+  
+  * parameters:
+  
+    Some parameters are provided to scripts with a specific purpose.  To make these
+    as explicit as possible these also conform to the three-part naming convention::
+
+      ``--[stat]-[attribute]-[type]=[value]``
+        e.g. ``--max-length-sequence=1000``
+
+  * outputs:
+  
+    Output is generally fed to standard output, but some scripts use the output 
+    file name within the script or for additional output. These may also alter 
+    the behaviour of the output or assign an attribute based on the output, such
+    as a pattern to define a column or filename::
+
+      ``--output-[name]-[transform]=[pattern]``
+        e.g. ``--output-filename-pattern="(.+)_[0-9]+"``
+
+
 Documentation
 =============
 
