@@ -44,18 +44,75 @@ of files being compared. The fields are:
 |nbases_unique |number of unique bases            |
 +--------------+----------------------------------+
 
-Fields starting with a ``p`` are the corresponding percentage values.
+Each of these fields will appear twice, once for each of the pair of files.
+Hence ngenes_unique1 will be the number of genes in set1 that have no exons
+that overlap with any exons in set2, and vice versa for ngenes_unique2. And
+on for each field in the table above. This makes a total of 9*2=18 fields
+containing counts, each starting with an n.
 
-Usage
+A further set of 18 fields each start with a ``p`` and are the corresponding 
+percentage values.
+
+Options
+-------
+
+-s, --ignore-strand
+    Ignore strand infomation so that bases overlap even if exons/genes are
+    on different strands
+
+-u, --update=FILENAME
+    Read in previous results from FILENAME and only output comparisons that
+    are missing.
+
+-p, --pattern-id=PATTERN
+    Provide a regular expression pattern for converting a filename into a
+    set name for the output. The regular expression should capture at least
+    one group. That group will be used to identify that file in the output
+    table (see examples)
+
+
+Examples
 -----
 
-For example::
+For example if we have two gtf_files that look like::
 
-   python diff_gtf.py *.gtf.gz > out.tsv
+   first_set_of_genes.gtf:
+   1	protein_coding	exon	1	10	.	+	.	gene_id "1"; transcript_id "1"
+   1	protein_coding	exon	20	30	.	+	.	gene_id "1"; transcript_id "1"
 
-To update results from a previous run, type::
+   second_set_of_genes.gtf:
+   1	protein_coding	exon	25	35	.	+	.	gene_id "1"; transcript_id "1"
+   2	protein_coding	exon	100	200	.	+	.	gene_id "2"; transcript_id "3"
+
+Then the command::
+
+   python diff_gtf.py *.gtf --pattern-id='(.+)_of_genes.gtf' > out.tsv
+
+would produce an output file that has a single row with set1 being "second_set"
+and set2 being "first_set" (these are extracted using that --pattern-id
+option). It will report that set1 contains 2 genes and set2 1 gene. That for
+each set one of these genes overlaps with the other set. For set1 it will
+report that 1 gene is unique and that no genes are unique for set2 and so on
+for exons and bases.
+
+If we want to add a third file to the comparison, "third_set_of_genes.gtf", we
+don't need to redo the comparison between first_set_of_genes.gtf and
+second_set_of_genes.gtf::
 
    python diff_gtf.py --update=out.tsv *.gtf.gz > new.tsv
+
+This will output a table with a row for third_set vs second_set and third_set
+vs second_set, along with the comparison of first_set and second_set that will
+simply be copied from the previous results.
+
+Usage::
+-----
+
+   cgat diff_gtf.py GTF GTF [GTF [GTF [...]]] [OPTIONS]
+   cgat diff_gtf GTF1 --update=OUTFILE [OPTIONS]
+
+where GTF is a gtf or compressed gtf formated file and OUTFILE is the results
+from a previous run.  At least two must be provided unless --update is present.
 
 Type::
 
@@ -236,7 +293,7 @@ class CounterGenes(Counter):
 
             if len(intervals) == 0:
                 continue
-
+	
             overlapping_genes.add(this.gene_id)
 
         infile.close()
@@ -282,17 +339,23 @@ def main(argv=None):
     parser = E.OptionParser(
         version="%prog version: $Id: diff_gtfs.py 2781 2009-09-10 11:33:14Z andreas $", usage=globals()["__doc__"])
 
-    parser.add_option("-s", "--ignore-strand", dest="ignore_strand", action="store_true",
+    parser.add_option("-s", "--ignore-strand", dest="ignore_strand",
+                      action="store_true",
                       help="ignore strand information [default=%default].")
 
     parser.add_option("-u", "--update", dest="filename_update", type="string",
-                      help="if filename is given, previous results will be read from there and only changed sets will be computed [default=%default].")
+                      help="if filename is given, previous results will be read"
+                           "from there and only changed sets will be computed "
+                           "[default=%default].")
 
     parser.add_option("-p", "--pattern-id", dest="pattern_id", type="string",
-                      help="pattern to convert a filename to an id [default=%default].")
+                      help="pattern to convert a filename to an id"
+                           "[default=%default].")
 
-    parser.add_option("-g", "--only-genes", dest="only_genes", action="store_true",
-                      help="only output gene stats (includes gene lists) [default=%default].")
+    parser.add_option("-g", "--only-genes", dest="only_genes",
+                      action="store_true",
+                      help="only output gene stats (includes gene lists)"
+                           " [default=%default].")
 
     parser.set_defaults(
         ignore_strand=False,

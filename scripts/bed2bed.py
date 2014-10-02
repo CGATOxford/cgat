@@ -9,7 +9,7 @@ This script provides various methods for merging (by position, by name
 or by score), filtering and moving bed formatted intervals and
 outputting the results as a bed file
 
-Options
+Methods
 -------
 
 This script provides several methods, each with a set of options
