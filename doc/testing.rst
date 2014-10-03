@@ -154,6 +154,11 @@ ensure consistency between scripts. To run this test, type::
 
    nosetests tests/test_commandline.py
 
+This test is based on a list of acceptable/unacceptable options in
+:file:`tests/option_list.tsv` that is within the repository. The list
+has been created by the script :file:`cgat_get_option_list.py` and
+been manually annotated.
+
 Testing for import
 ==================
 

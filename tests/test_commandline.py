@@ -28,10 +28,12 @@ This script is best run within nosetests::
 '''
 import glob
 import os
-import imp
+import shutil
+import importlib
 import yaml
 import re
 import sys
+
 from nose.tools import ok_
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
@@ -49,8 +51,8 @@ EXPRESSIONS = (
 # ('gpipe', 'scripts/gpipe/*.py'))
 
 EXCLUDE = ("__init__.py",
+           "version.py",
            "cgat.py",
-           "bed2table.py",  # fails with glibc error
            )
 
 # Filename with the black/white list of options.
@@ -105,18 +107,21 @@ def loadScript(script_name):
     # call other script
     prefix, suffix = os.path.splitext(script_name)
 
+    dirname = os.path.relpath(os.path.dirname(script_name))
     basename = os.path.basename(script_name)[:-3]
 
     if os.path.exists(prefix + ".pyc"):
         os.remove(prefix + ".pyc")
 
-    try:
-        module = imp.load_source(basename, script_name)
-    except ImportError, msg:
-        E.warn('could not import %s - skipped: %s' % (basename, msg))
-        return
+    modulename = ".".join((re.sub("/", ".", dirname), basename))
 
-    return module
+    try:
+        module = importlib.import_module(modulename)
+    except ImportError, msg:
+        sys.stderr.write('could not import %s - skipped: %s\n' % (basename, msg))
+        module = None
+
+    return module, modulename
 
 
 def check_option(option, script_name, map_option2action):
@@ -130,6 +135,11 @@ def check_option(option, script_name, map_option2action):
         ok_(map_option2action[option] == "ok",
             'option %s:%s wrong: action="%s"' %
             (script_name, option, map_option2action[option]))
+
+
+def failTest(msg):
+    '''create test that fails with *msg*.'''
+    ok_(False, msg)
 
 
 def test_cmdline():
@@ -152,6 +162,10 @@ def test_cmdline():
 
     files = filterFiles(files)
 
+    # files = [
+    #    'scripts/bam2bam.py',
+    #    'scripts/bam2geneprofile.py']
+
     for f in files:
         if os.path.isdir(f):
             continue
@@ -159,24 +173,33 @@ def test_cmdline():
             continue
 
         script_name = os.path.abspath(f)
+        pyxfile = (os.path.join(os.path.dirname(f), "_") +
+                   os.path.basename(f) + "x")
 
+        failTest.description = script_name
         # check if script contains getopt
         with IOTools.openFile(script_name) as inf:
             if "getopt" in inf.read():
+                yield (failTest,
+                       "script uses getopt directly: %s" % script_name)
                 continue
-                ok_(False, "script uses getopt directly: %s" % script_name)
 
-        module = loadScript(script_name)
+        module, modulename = loadScript(script_name)
+        if module is None:
+            yield (failTest,
+                   "module could not be imported: %s\n" % script_name)
+            continue
         E.Start = LocalStart
 
         try:
             module.main(argv=["--help"])
         except AttributeError:
-            continue
+            yield (failTest,
+                   "no main method in %s\n" % script_name)
             ok_(False, "no main method in %s" % script_name)
         except SystemExit:
-            continue
-            ok_(False, "script does not use E.Start(): %s" % script_name)
+            yield (failTest,
+                   "script does not use E.Start() %s\n" % script_name)
         except DummyError:
             pass
 
@@ -193,3 +216,15 @@ def test_cmdline():
 
             yield(check_option, optstring, os.path.abspath(f),
                   map_option2action)
+
+        # clear up
+        del sys.modules[modulename]
+
+        # scripts with pyximport need special handling.
+        #
+        # Multiple imports of pyximport seems to create
+        # some confusion - here, clear up sys.meta_path after
+        # each script
+        if os.path.exists(pyxfile):
+            sys.meta_path = []
+
