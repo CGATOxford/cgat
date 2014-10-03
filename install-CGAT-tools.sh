@@ -330,6 +330,7 @@ chmod +x wigToBigWig
 PATH=$PATH:$EXTERNAL_DEPS_DIR
 
 # bedGraphToBigWig
+# compiled new version
 wget --no-check-certificate https://www.cgat.org/downloads/public/external-tools/bedGraphToBigWig
 chmod +x bedGraphToBigWig
 
