@@ -68,7 +68,15 @@ if [ "$OS" == "ubuntu" -o "$OS" == "travis" ] ; then
    echo " Installing packages for Ubuntu "
    echo
 
-   sudo apt-get install -y gcc g++ zlib1g-dev libssl-dev libbz2-dev libfreetype6-dev libpng12-dev libblas-dev libatlas-dev liblapack-dev gfortran libpq-dev r-base-dev libreadline-dev libmysqlclient-dev libboost-dev libsqlite3-dev mercurial;
+   sudo apt-get install -y gcc g++ zlib1g-dev libssl-dev libssl1.0.0 libbz2-dev libfreetype6-dev libpng12-dev libblas-dev libatlas-dev liblapack-dev gfortran libpq-dev r-base-dev libreadline-dev libmysqlclient-dev libboost-dev libsqlite3-dev mercurial;
+
+   # additional configuration for travis
+   # to solve problem when re-compiling wigToBigWig and bedGraphToBigWig
+   # https://cgatwiki.anat.ox.ac.uk/xwiki/bin/view/CGAT/Recompiling+UCSC+tools
+   if [ "$OS" == "travis" ] ; then
+      ln -s /lib/x86_64-linux-gnu/libssl.so.1.0.0 /lib/x86_64-linux-gnu/libssl.so.10
+      ln -s /lib/x86_64-linux-gnu/libcrypto.so.1.0.0 /lib/x86_64-linux-gnu/libcrypto.so.10
+   fi
 
 elif [ "$OS" == "sl" -o "$OS" == "centos" ] ; then
 
@@ -79,7 +87,7 @@ elif [ "$OS" == "sl" -o "$OS" == "centos" ] ; then
    yum -y install gcc zlib-devel openssl-devel bzip2-devel gcc-c++ freetype-devel libpng-devel blas atlas lapack gcc-gfortran postgresql-devel R-core-devel readline-devel mysql-devel boost-devel sqlite-devel mercurial
 
    # additional configuration for scipy
-   if [ "" == "sl" ] ; then
+   if [ "$OS" == "sl" ] ; then
       ln -s /usr/lib64/libatlas.so.3 /usr/lib64/libatlas.so
    fi
    ln -s /usr/lib64/libblas.so.3 /usr/lib64/libblas.so
