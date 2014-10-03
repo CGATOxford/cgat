@@ -681,7 +681,7 @@ def Start(parser=None,
                          help="database user name [%default].")
         parser.set_defaults(psql_connection="fgu202:postgres")
         parser.set_defaults(user="")
-        parser.add_group(group)
+        parser.add_option_group(group)
 
     if add_cluster_options:
         group = OptionGroup(parser, "cluster options")
