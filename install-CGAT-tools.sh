@@ -325,6 +325,7 @@ cd $EXTERNAL_DEPS_DIR
 # wigToBigWig
 # wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/wigToBigWig
 # compiled new version
+# instructions: https://cgatwiki.anat.ox.ac.uk/xwiki/bin/view/CGAT/Recompiling+UCSC+tools
 wget --no-check-certificate https://www.cgat.org/downloads/public/external-tools/wigToBigWig
 chmod +x wigToBigWig
 #PATH=$PATH:$CGAT_HOME/external-tools
@@ -332,6 +333,7 @@ PATH=$PATH:$EXTERNAL_DEPS_DIR
 
 # bedGraphToBigWig
 # compiled new version
+# instructions: https://cgatwiki.anat.ox.ac.uk/xwiki/bin/view/CGAT/Recompiling+UCSC+tools
 wget --no-check-certificate https://www.cgat.org/downloads/public/external-tools/bedGraphToBigWig
 chmod +x bedGraphToBigWig
 
