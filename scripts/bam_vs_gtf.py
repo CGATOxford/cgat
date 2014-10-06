@@ -10,7 +10,11 @@ bam_vs_gtf.py - compare bam file against gene set
 Purpose
 -------
 
-Compare RNASeq reads in a BAM file against reference exons to quantify exon overrun / underrun.
+Compare RNASeq reads in a BAM file and compares it against reference exons to quantify exon overrun / underrun.
+
+Documentation
+-------------
+
 This script is for validation purposes:
    * Exon overrun should be minimal - reads should not extend beyond known exons.
    * Spliced reads should link known exons.
