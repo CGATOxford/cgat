@@ -41,6 +41,7 @@ _static/toolmap.svg:
 		../scripts/fastq2*.py ../scripts/fastqs2*.py \
 		--log=toolmap.log \
 	> toolmap.dot
+	-mkdir _static
 	neato -Tsvg toolmap.dot > $@
 
 toolmap.svg:

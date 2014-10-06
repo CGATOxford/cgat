@@ -646,8 +646,8 @@ class CGATIndexedFasta:
         filename_index = self.mNameIndex + ".dbm"
 
         if compress:
-            #if os.path.exists(filename_index):
-            #    raise OSError("file %s already exists" % filename_index)
+            # if os.path.exists(filename_index):
+            #     raise OSError("file %s already exists" % filename_index)
             self.mIndex = anydbm.open(filename_index, "n")
         elif os.path.exists(filename_index):
             self.mIndex = anydbm.open(filename_index, "r")
