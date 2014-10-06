@@ -1,5 +1,4 @@
-'''
-list_overlap.py - compute overlap between lists
+'''list_overlap.py - compute overlap between lists
 ===============================================
 
 :Author: 
@@ -10,9 +9,10 @@ list_overlap.py - compute overlap between lists
 Purpose
 -------
 
-taken from https://github.com/brentp/bio-playground/blob/master/utils/list_overlap_p.py
-find the probability that as high as `shared_genes` is random
-given the number of genes: `A_genes`, `B_genes` drawn from `total_genes`
+taken from
+https://github.com/brentp/bio-playground/blob/master/utils/list_overlap_p.py
+find the probability that as high as `shared_genes` is random given
+the number of genes: `A_genes`, `B_genes` drawn from `total_genes`
 e.g.:
 
 $ %prog shared_genes total_genes A_genes B_genes
@@ -55,7 +55,6 @@ Command line options
 
 '''
 
-import optparse
 import sys
 import os.path as op
 import scipy.stats as ss
@@ -90,7 +89,8 @@ True
         return 1.0
     mmin = m - 1
     mmax = min(n1, n2)
-    return ss.hypergeom.cdf(mmax, n, n1, n2) - ss.hypergeom.cdf(mmin, n, n1, n2)
+    return ss.hypergeom.cdf(mmax, n, n1, n2) - \
+        ss.hypergeom.cdf(mmin, n, n1, n2)
 
 
 def with_genes(fftot, ffa, ffb, asfile=True):
@@ -126,8 +126,10 @@ def with_genes(fftot, ffa, ffb, asfile=True):
 
 def main(argv=None):
     p = E.OptionParser(__doc__,
-                       version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $", )
-    opts, args = p.parse_args()
+                       version="%prog version: $Id$",)
+
+    opts, args = E.Start(parser=p)
+
     if (len(args) not in (3, 4)):
         sys.exit(not p.print_help())
     if len(args) == 4 and not all(a.isdigit() for a in args):
@@ -146,9 +148,10 @@ def main(argv=None):
         tot_genes, a_genes, b_genes = map(str.strip, args)
         print with_genes(tot_genes, a_genes, b_genes)
 
+    E.Stop()
 
 if __name__ == "__main__":
-    #import doctest
+    # import doctest
     # if doctest.testmod(optionflags=doctest.ELLIPSIS).failed == 0:
     #    main()
     main()

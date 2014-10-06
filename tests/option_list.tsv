@@ -1,0 +1,868 @@
+option	action	comment	alternative	files
+-n	bad			scripts/contigs2stats.py
+action	ok			scripts/runZinba.py
+add-diagonal	ok			scripts/r_table2scatter.py
+add-down-flank	rename		add-downstream-flank	scripts/gff2gff.py
+add-file-prefix	ok			scripts/combine_tables.py,scripts/csvs2csv.py
+add-flank	ok			scripts/gff2view.py
+add-gtf-source	ok			scripts/gtf2table.py
+add-percent	ok			scripts/bed2stats.py,scripts/gtfs2tsv.py,scripts/set_diff.py
+add-protein-id	ok			scripts/gtf2gtf.py
+add-up-flank	rename		add-upstream-flank	scripts/gff2gff.py
+aggregate-column	ok			scripts/data2stats.py
+alignability-threshold	rename		zinba-alignability-threshold	scripts/runZinba.py
+aligner	ok			scripts/bam2UniquePairs.py
+alignment-format	ok			scripts/blast2table.py
+alignment-method	ok			scripts/sequences2mali.py
+all-fields	?			scripts/bed2table.py
+allow-duplicates	ok			scripts/gff2psl.py,scripts/index_fasta.py,scripts/mali2mali.py,scripts/mali2table.py
+allow-empty	rename		allow-empty-file	scripts/csv2db.py,scripts/r_table2scatter.py
+alphabet	ok			scripts/mali2rates.py,scripts/mali2summary.py,scripts/mali2table.py
+analysis	bad			scripts/annotator_distance.py,scripts/codemls2tsv.py
+analysis-type	?			scripts/bam2bidirectionaltranscription.py
+annotation	bad			scripts/bam2bidirectionaltranscription.py
+annotations	bad			scripts/annotator2tsv.py,scripts/bed2annotator.py
+annotations-gtf	rename		annotations-gtf-file	scripts/annotator2tsv.py
+apply	rename		map-tsv-file	scripts/fastq2fastq.py,scripts/filter_tokens.py,scripts/gtf2gtf.py
+as-column	bad			scripts/table2table.py
+as-gtf	ok			scripts/bed2gff.py,scripts/psl2gff.py
+asymmetric	rename		is-asymmetric	scripts/sparse2full.py
+backend	ok			scripts/check_db.py,scripts/csv2db.py
+background	rename		background-tsv-file	scripts/genelist_analysis.py,scripts/runGO.py
+background-region	bad			scripts/bam2geneprofile.py
+bam	bad			scripts/bam2bidirectionaltranscription.py
+bam-file	ok			scripts/add_random_reads_to_bam.py,scripts/bam2transcriptContribution.py,scripts/bed2bed.py,scripts/bed2table.py,scripts/gtf2table.py
+bamfile	rename		bam-file	scripts/bam2geneprofile.py,scripts/bam2species_map.py
+bar-format	ok			scripts/plot_matrix.py
+base-accuracy	rename		use-base-accuracy	scripts/bam2geneprofile.py
+base-position	?			scripts/fastq2N.py
+baseml-model	ok			scripts/psl2table.py
+bashrc	ok			scripts/farm.py,scripts/nofarm.py
+bed-format	ok			scripts/bam2bed.py
+bed-headers	rename		output-bed-headers	scripts/bed2table.py
+benchmark	bad			scripts/index_fasta.py
+benchmark-fragment-size	ok			scripts/index_fasta.py
+benchmark-num-iterations	ok			scripts/index_fasta.py
+best-per-sbjct	rename		output-best-per-subject	scripts/psl2map.py
+bigwig	rename		bigwig-file	scripts/wig2bed.py
+bigwig-file	ok			scripts/gtf2table.py,scripts/wig2bed.py
+bin	split			scripts/coverage2stats.py,scripts/runSPP.py
+bin-edges	ok			scripts/bed2bed.py
+bin-number	rename		num-bins	scripts/bam2bidirectionaltranscription.py,scripts/coverage2stats.py
+bin-size	ok			scripts/bam2peakshape.py,scripts/gff2histogram.py,scripts/r_compare_distributions.py
+binary	rename		is-binary	scripts/farm.py,scripts/nofarm.py
+binning-method	ok			scripts/bed2bed.py
+bit-filename	rename		bit-file	scripts/runZinba.py
+block-size	ok			scripts/mali2bootstrap.py
+by-chrom	bad	should be a choice option: output-order=chrom		scripts/gff32gtf.py
+cat	bad	should be -method=cat		scripts/combine_tables.py
+cds	rename		cds-gtf-file	scripts/align_transcripts.py,scripts/peptides2cds.py
+centring-method	ok			scripts/bam2peakshape.py
+cexa	bad	more explicit		scripts/barplotGo.py
+cexn	bad	more explicit		scripts/barplotGo.py
+chainfile	rename		chain-file	scripts/chain2stats.py
+change-format	bad	should be -method		scripts/fastq2fastq.py,scripts/fastq2solid.py,scripts/fastq2summary.py,scripts/fastq2table.py
+chop	bad	should be -method		scripts/fastqs2fastqs.py
+chromosome	ok			scripts/liftover.py
+chunk-size	ok			scripts/gff2view.py,scripts/mask_fasta.py,scripts/split_genome.py,scripts/split_genomic_fasta_file.py
+chunksize	rename		chunk-size	scripts/farm.py,scripts/nofarm.py
+clean-sequence	?			scripts/index_fasta.py
+cluster-num-jobs	ok			scripts/farm.py,scripts/nofarm.py
+cluster-options	ok			scripts/farm.py,scripts/nofarm.py
+cluster-parallel	ok			scripts/farm.py,scripts/nofarm.py
+cluster-priority	ok			scripts/farm.py,scripts/nofarm.py
+cluster-queue	ok			scripts/farm.py,scripts/nofarm.py
+codon-table-format	ok			scripts/codonbias_acai2tsv.py
+codon-table-type	ok			scripts/codonbias_acai2tsv.py
+codon-usage	?			scripts/codonbias_acai2tsv.py
+col-names	ok			scripts/sparse2full.py
+collapse-table	bad	should be -method		scripts/table2table.py
+collect	bad	should be -method		scripts/farm.py,scripts/nofarm.py
+collection	?			scripts/cgat_cluster_distribute.py
+collection-distance	ok			scripts/psl2map.py
+collection-threshold	ok			scripts/psl2map.py
+colour	?			scripts/bams2bam.py,scripts/barplotGo.py,scripts/rnaseq_junction_bam2bam.py
+colours	ok			scripts/plot_matrix.py,scripts/r_table2scatter.py
+column	ok			scripts/check_db.py,scripts/genes2genes.py
+columns	ok			scripts/combine_tables.py,scripts/csvs2csv.py,scripts/data2multiple_anova.py,scripts/data2phylocontrasts.py,scripts/data2stats.py,scripts/filter_tokens.py,scripts/graph_group_links_by_taxonomy.py,scripts/histogram2histogram.py,scripts/modify_table.py,scripts/plot_matrix.py,scripts/r_table2scatter.py,scripts/table2table.py
+combine-groups	bad	should be -method		scripts/gff2gff.py
+complement-aligner	ok			scripts/psl2psl.py
+complement-border	ok			scripts/psl2psl.py
+complement-groups	ok			scripts/gff2gff.py
+complement-min-length	ok			scripts/psl2psl.py
+compress	bad	should be -method		scripts/snp2maf.py
+compress-index	bad	should be -method		scripts/index_fasta.py
+compression	?			scripts/index_fasta.py
+connection	bad	more explicit		scripts/analyze_codonbias_orthology.py,scripts/check_db.py,scripts/csv2db.py,scripts/psql_clone_database.py,scripts/r_compare_distributions.py,scripts/r_mann_whitney_u.py
+contig-sizes	rename		contigs-tsv-file	scripts/rnaseq_junction_bam2bam.py
+contigs	rename		contigs-tsv-file	scripts/gff2gff.py
+control-bam-file	ok			scripts/bed2table.py
+control-factor	?			scripts/bam2geneprofile.py
+control-file	rename		control-bam-file	scripts/bam2peakshape.py
+control-filename	bad	?		scripts/runSPP.py,scripts/runZinba.py
+control-offset	bad			scripts/bed2table.py
+controlfile	rename		control-bam-file	scripts/bam2geneprofile.py
+counter	ok			scripts/annotator_distance.py,scripts/bed2table.py,scripts/gtf2table.py
+coverage-mean	?	what does it do?		scripts/gtf2reads.py
+coverage-std	?	what does it do?		scripts/gtf2reads.py
+create	bad	should be -method		scripts/mysql_clone_database.py
+crop	bad	should be -method		scripts/gff2gff.py
+crop-unique	bad	should be -method		scripts/gff2gff.py
+data	bad			scripts/gff2histogram.py
+database	ok			scripts/analyze_go.py,scripts/analyze_sequences.py,scripts/check_db.py,scripts/csv2db.py,scripts/gtf2alleles.py,scripts/mysql_clone_database.py,scripts/mysql_copy_tables.py,scripts/probeset2gene.py,scripts/runGO.py,scripts/snp2maf.py
+dbpath	?			scripts/chain2stats.py
+debug	ok			scripts/data2multiple_anova.py,scripts/data2phylocontrasts.py,scripts/farm.py,scripts/nofarm.py
+decorator=	?			scripts/gff2table.py,scripts/gff_decorate.py
+default	rename		default-value	scripts/sparse2full.py
+default-diagonal	ok			scripts/sparse2full.py
+delimiter	ok			scripts/table2table.py
+deseq-dispersion-method	ok			scripts/runExpression.py
+deseq-fit-type	ok			scripts/runExpression.py
+deseq-sharing-mode	ok			scripts/runExpression.py
+destination	ok			scripts/cgat_build_report_page.py
+detail	?			scripts/gtf2gff.py
+dialect	rename		csv-dialect	scripts/csv2db.py
+display-tree	?			scripts/data2multiple_anova.py,scripts/data2phylocontrasts.py
+distance	rename		distance-method	scripts/mali2rates.py
+dominant-set	?			scripts/codonbias_acai2tsv.py
+downstream	bad	more explicit		scripts/gtf2gff.py
+dry-run	ok			scripts/cgat_clean.py,scripts/cgat_zap.py,scripts/clean.py,scripts/combine_files.py,scripts/farm.py,scripts/mysql_clone_database.py,scripts/nofarm.py,scripts/qkill.py,scripts/rename_links.py,scripts/split_gff.py
+ds-mean	ok			scripts/gtf2reads.py
+ds-std	ok			scripts/gtf2reads.py
+dump	ok			scripts/mali2kaks.py,scripts/mali2rates.py
+dynamic-bins	rename		use-dynamic-bins	scripts/gff2histogram.py
+echo	ok			scripts/modify_table.py
+end	bad			scripts/cgat_log2wiki.py
+env	ok			scripts/farm.py,scripts/nofarm.py
+error	bad			scripts/add_random_reads_to_bam.py,scripts/add_script_template.py,scripts/align_mali_vs_mali.py,scripts/align_transcripts.py,scripts/analyze_codonbias_orthology.py,scripts/analyze_go.py,scripts/analyze_sequences.py,scripts/annotator2tsv.py,scripts/annotator_distance.py,scripts/bam2UniquePairs.py,scripts/bam2bam.py,scripts/bam2bed.py,scripts/bam2bidirectionaltranscription.py,scripts/bam2fastq.py,scripts/bam2geneprofile.py,scripts/bam2peakshape.py,scripts/bam2profile.py,scripts/bam2species_map.py,scripts/bam2stats.py,scripts/bam2transcriptContribution.py,scripts/bam2wiggle.py,scripts/bam_vs_bam.py,scripts/bam_vs_bed.py,scripts/bam_vs_gtf.py,scripts/bams2bam.py,scripts/barplotGo.py,scripts/bed2annotator.py,scripts/bed2bed.py,scripts/bed2fasta.py,scripts/bed2gff.py,scripts/bed2graph.py,scripts/bed2plot.py,scripts/bed2psl.py,scripts/bed2stats.py,scripts/bed2table.py,scripts/beds2beds.py,scripts/beds2counts.py,scripts/bigwig2hilbert.py,scripts/blast2table.py,scripts/cat_tables.py,scripts/cgat2dot.py,scripts/cgat2rdf.py,scripts/cgat_build_report_page.py,scripts/cgat_clean.py,scripts/cgat_cluster_distribute.py,scripts/cgat_cwd2list.py,scripts/cgat_galaxy_wrapper.py,scripts/cgat_log2wiki.py,scripts/cgat_logfiles2tsv.py,scripts/cgat_make2help.py,scripts/cgat_pep8_code_quality.py,scripts/cgat_rebuild_extensions.py,scripts/cgat_ruffus_profile.py,scripts/cgat_script_template.py,scripts/cgat_zap.py,scripts/chain2psl.py,scripts/chain2stats.py,scripts/check_db.py,scripts/clean.py,scripts/codeml2tsv.py,scripts/codemls2tsv.py,scripts/codonbias_acai2tsv.py,scripts/codonbias_weights2tsv.py,scripts/combine_files.py,scripts/combine_gff.py,scripts/combine_tables.py,scripts/compare_clusters.py,scripts/compare_histograms.py,scripts/contigs2random_sample.py,scripts/contigs2stats.py,scripts/convert_time2seconds.py,scripts/coverage2stats.py,scripts/csv2db.py,scripts/csvs2csv.py,scripts/cwd2list.py,scripts/data2multiple_anova.py,scripts/data2phylocontrasts.py,scripts/data2stats.py,scripts/diff_bam.py,scripts/diff_bed.py,scripts/diff_chains.py,scripts/diff_gtf.py,scripts/ena2table.py,scripts/farm.py,scripts/fasta2distances.py,scripts/fasta2fasta.py,scripts/fasta2kmercontent.py,scripts/fasta2table.py,scripts/fasta2variants.py,scripts/fastas2fasta.py,scripts/fastq2N.py,scripts/fastq2fastq.py,scripts/fastq2solid.py,scripts/fastq2summary.py,scripts/fastq2table.py,scripts/fastqs2fasta.py,scripts/fastqs2fastq.py,scripts/fastqs2fastqs.py,scripts/filter_reads.py,scripts/filter_tokens.py,scripts/formatMetagenemark.py,scripts/genelist_analysis.py,scripts/genes2genes.py,scripts/genome_bed.py,scripts/geo2table.py,scripts/gff2bed.py,scripts/gff2coverage.py,scripts/gff2fasta.py,scripts/gff2gff.py,scripts/gff2histogram.py,scripts/gff2psl.py,scripts/gff2stats.py,scripts/gff2table.py,scripts/gff2view.py,scripts/gff32gtf.py,scripts/gff_compare.py,scripts/gff_decorate.py,scripts/gi2parents.py,scripts/graph_filter_links_redundant.py,scripts/graph_group_links_by_taxonomy.py,scripts/gtf2alleles.py,scripts/gtf2fasta.py,scripts/gtf2gff.py,scripts/gtf2gtf.py,scripts/gtf2overlap.py,scripts/gtf2reads.py,scripts/gtf2table.py,scripts/gtf2tsv.py,scripts/gtfs2graph.py,scripts/gtfs2tsv.py,scripts/histogram2histogram.py,scripts/histograms2kl.py,scripts/index2bed.py,scripts/index2gff.py,scripts/index_fasta.py,scripts/intervaltable2bed.py,scripts/jalview.py,scripts/liftover.py,scripts/maf2psl.py,scripts/mali2bootstrap.py,scripts/mali2cleaned_mali.py,scripts/mali2kaks.py,scripts/mali2mali.py,scripts/mali2malis.py,scripts/mali2predictions.py,scripts/mali2rates.py,scripts/mali2summary.py,scripts/mali2table.py,scripts/mali_phylip2fasta.py,scripts/mali_plain2aln.py,scripts/malis2mali.py,scripts/malis2malis.py,scripts/malis2masks.py,scripts/malis2profiles.py,scripts/maq2assembly.py,scripts/maq2psl.py,scripts/mask_fasta.py,scripts/matrix2matrix.py,scripts/matrix2stats.py,scripts/medip_merge_intervals.py,scripts/merge_tables.py,scripts/metaphlan2table.py,scripts/modify_table.py,scripts/mysql_clone_database.py,scripts/mysql_copy_tables.py,scripts/nofarm.py,scripts/nr2table.py,scripts/numbers2rgb.py,scripts/peptides2cds.py,scripts/plot_matrix.py,scripts/probeset2gene.py,scripts/psl2assembly.py,scripts/psl2chain.py,scripts/psl2fasta.py,scripts/psl2gff.py,scripts/psl2map.py,scripts/psl2psl.py,scripts/psl2stats.py,scripts/psl2table.py,scripts/psl2wiggle.py,scripts/psl2wiggle_stats.py,scripts/psql_clone_database.py,scripts/qkill.py,scripts/quality2masks.py,scripts/r_compare_distributions.py,scripts/r_mann_whitney_u.py,scripts/r_table2scatter.py,scripts/r_test.py,scripts/radar.py,scripts/rename_links.py,scripts/revigo.py,scripts/rnaseq_junction_bam2bam.py,scripts/run.py,scripts/runExpression.py,scripts/runGO.py,scripts/runSPP.py,scripts/runZinba.py,scripts/run_function.py,scripts/sequence2alignment.py,scripts/sequences2mali.py,scripts/set_diff.py,scripts/snp2counts.py,scripts/snp2maf.py,scripts/snp2snp.py,scripts/snp2table.py,scripts/solexa2stats.py,scripts/sparse2full.py,scripts/species_map2species_map.py,scripts/split_fasta.py,scripts/split_genome.py,scripts/split_genomic_fasta_file.py,scripts/split_gff.py,scripts/split_links.py,scripts/submit.py,scripts/table2graph.py,scripts/table2table.py,scripts/transfac2transfac.py,scripts/tree2taxa.py,scripts/tree_strain2species.py,scripts/trees2tree.py,scripts/trees2trees.py,scripts/vcf2vcf.py,scripts/vcfstats2db.py,scripts/wig2bed.py,scripts/wig2wig.py
+error-branchlength	ok			scripts/trees2tree.py
+error-mean	ok			scripts/gtf2reads.py
+error-std	ok			scripts/gtf2reads.py
+errors	ok			scripts/chain2stats.py
+exclude	ok			scripts/check_db.py,scripts/fasta2fasta.py
+exclusive	bad			scripts/beds2beds.py
+exons	rename		exons-file	scripts/align_transcripts.py
+exons2introns	bad	should be -method		scripts/gtf2gtf.py
+expand	bad	should be -method		scripts/bed2plot.py,scripts/table2table.py
+extend	ok		extend-by	scripts/bam2geneprofile.py,scripts/bam2wiggle.py,scripts/bed2plot.py,scripts/gff2gff.py,scripts/mask_fasta.py,scripts/split_genomic_fasta_file.py
+extend-at	?			scripts/bed2fasta.py,scripts/gff2fasta.py
+extend-by	ok			scripts/bed2fasta.py,scripts/gff2fasta.py
+extension-downstream	ok			scripts/bam2geneprofile.py
+extension-exons-absolute-distance-topolya	ok			scripts/bam2geneprofile.py
+extension-introns-absolute-distance-topolya	ok			scripts/bam2geneprofile.py
+extension-inward	ok			scripts/bam2geneprofile.py
+extension-outward	ok			scripts/bam2geneprofile.py
+extension-upstream	ok			scripts/bam2geneprofile.py
+extract	bad	should be -method		scripts/index_fasta.py
+fail	?			scripts/farm.py,scripts/nofarm.py
+fail-missing-gene	ok			scripts/gff32gtf.py
+fail-on-empty	ok			scripts/r_table2scatter.py
+fastq1	rename		first-fastq-file	scripts/bam2bam.py,scripts/fastqs2fasta.py
+fastq2	rename		second-fastq-file	scripts/bam2bam.py,scripts/fastqs2fasta.py
+fdr	bad	needs to be explicit value/threshold/method		scripts/genelist_analysis.py,scripts/runExpression.py,scripts/runGO.py
+fdr-add-column	ok			scripts/table2table.py
+fdr-method	ok			scripts/annotator2tsv.py,scripts/table2table.py
+fdr-qvalue	rename		fdr-threshold	scripts/annotator2tsv.py
+fdr-threshold	ok			scripts/runSPP.py,scripts/runZinba.py
+feature	ok			scripts/gff2fasta.py
+features	ok			scripts/bed2annotator.py,scripts/gff2coverage.py
+features=	bad			scripts/gff2table.py,scripts/gff_decorate.py
+fields	ok			scripts/analyze_codonbias_orthology.py,scripts/fasta2distances.py
+file	bad			scripts/mali2rates.py,scripts/plot_matrix.py,scripts/r_table2scatter.py,scripts/split_fasta.py,scripts/table2table.py
+file-col-names	ok			scripts/sparse2full.py
+file-format	ok			scripts/index_fasta.py
+file-pattern	ok			scripts/cgat_logfiles2tsv.py,scripts/clean.py
+file-row-names	ok			scripts/sparse2full.py
+file2	bad			scripts/r_table2scatter.py
+filename	bad			scripts/bam2UniquePairs.py
+filename-agp	rename		agp-file	scripts/gff2gff.py
+filename-annotate-regions	bad			scripts/malis2mali.py,scripts/malis2malis.py
+filename-annotations	rename		annotations-tsv-file	scripts/annotator_distance.py,scripts/snp2table.py
+filename-assignments	rename		assignments-tsv-file	scripts/genelist_analysis.py
+filename-bam	rename		bam-file	scripts/bam_vs_bed.py
+filename-bed	rename		bed-file	scripts/bam_vs_bed.py
+filename-columns	rename		columns-tsv-file	scripts/matrix2matrix.py
+filename-components	rename		components-tsv-file	scripts/mali2cleaned_mali.py,scripts/malis2mali.py,scripts/malis2malis.py
+filename-coordinates	rename		coordinates-tsv-file	scripts/mali2malis.py,scripts/malis2mali.py,scripts/maq2psl.py
+filename-data=	bad			scripts/gff2table.py,scripts/gff_decorate.py
+filename-design	rename		design-tsv-file	scripts/runExpression.py
+filename-dump	bad	move to output-filename-pattern		scripts/genelist_analysis.py,scripts/runGO.py
+filename-exons	rename		exons-file	scripts/bam_vs_gtf.py,scripts/gtf2alleles.py,scripts/mali2cleaned_mali.py,scripts/snp2counts.py,scripts/snp2table.py
+filename-extract-regions	split	bed or tsv?	regions-bed-file	scripts/malis2mali.py,scripts/malis2malis.py
+filename-fastq	rename		fastq-file	scripts/bam2stats.py
+filename-filter	rename		filter-tsv-file	scripts/malis2malis.py
+filename-filter-sbjct	rename		subjctfilter-tsv-file	scripts/psl2map.py
+filename-format	bad			scripts/bed2table.py,scripts/gtf2table.py
+filename-gene2name	rename		gene2name-map-tsv-file	scripts/runGO.py
+filename-genes	rename		genes-tsv-file	scripts/tree_strain2species.py
+filename-genome	rename		genome-file	scripts/snp2snp.py
+filename-gff	rename		gff-file	scripts/bed2table.py,scripts/gtf2table.py
+filename-go	rename		go-tsv-file	scripts/revigo.py
+filename-gtf	rename		gtf-file	scripts/annotator2tsv.py,scripts/bams2bam.py,scripts/probeset2gene.py
+filename-identifiers	rename		identifiers-tsv-file	scripts/malis2mali.py
+filename-input	bad			scripts/runGO.py
+filename-junctions	?		junctions-bed-file	scripts/bams2bam.py,scripts/snp2table.py
+filename-locations	?		locations-tsv-file	scripts/mali2predictions.py
+filename-mali	?			scripts/codemls2tsv.py,scripts/jalview.py
+filename-map	rename		map-tsv-file	scripts/bams2bam.py,scripts/quality2masks.py,scripts/sparse2full.py
+filename-map-mali	rename		mali-map-tsv-file	scripts/codemls2tsv.py
+filename-map-slims	?			scripts/genelist_analysis.py,scripts/runGO.py
+filename-mask-regions	?		maskregions-bed-file	scripts/malis2mali.py,scripts/malis2malis.py
+filename-masks	?		maskregions-bed-file	scripts/gff2fasta.py
+filename-mismapped	bad	use output-filename-pattern		scripts/bams2bam.py
+filename-ontology	?			scripts/genelist_analysis.py,scripts/revigo.py,scripts/runGO.py
+filename-output-pattern	bad	use Experiment.py		scripts/genelist_analysis.py,scripts/runGO.py
+filename-pattern-output	bad	use Experiment.py		scripts/split_genome.py
+filename-pileup	rename		pileup-file	scripts/gtf2alleles.py
+filename-pvalues	rename		pvalues-tsv-file	scripts/revigo.py
+filename-queries	rename		queries-tsv-file	scripts/psl2psl.py
+filename-query	rename		query-psl-file	scripts/psl2fasta.py
+filename-reference	?			scripts/gtf2alleles.py,scripts/snp2snp.py
+filename-regions	?			scripts/bams2bam.py
+filename-removed	bad	use output-filename-pattern		scripts/mali2cleaned_mali.py
+filename-rna	rename		mask-bed-file	scripts/bam2stats.py
+filename-rows	rename		rows-tsv-file	scripts/matrix2matrix.py
+filename-sample-reference	?			scripts/malis2mali.py,scripts/malis2malis.py
+filename-seleno	rename		seleno-tsv-file	scripts/gtf2alleles.py,scripts/snp2counts.py
+filename-stats	bad	use output-filename-pattern		scripts/bams2bam.py
+filename-strand	?			scripts/psl2gff.py
+filename-summary	bad	use output-filename-pattern		scripts/mali2cleaned_mali.py
+filename-synonyms	rename		synonyms-tsv-file	scripts/tree_strain2species.py
+filename-tags	rename		tags-tsv-file	scripts/runExpression.py
+filename-target	rename		target-psl-file	scripts/psl2fasta.py,scripts/psl2psl.py
+filename-transcriptome	rename		transcripts-gtf-file	scripts/bams2bam.py
+filename-tree	rename		tree-nh-file	scripts/data2multiple_anova.py,scripts/data2phylocontrasts.py,scripts/mali2rates.py
+filename-vcf	rename		vcf-file	scripts/gtf2alleles.py,scripts/snp2counts.py,scripts/snp2table.py
+filename-weights	rename		weights-tsv-file	scripts/fasta2table.py
+filename-windows	?		windows-bed-file	scripts/gff2table.py,scripts/gff_decorate.py
+files	?			scripts/bed2annotator.py
+filter	bad	should be -method		scripts/bam2bam.py,scripts/cgat_ruffus_profile.py,scripts/gtf2gtf.py,scripts/psl2assembly.py,scripts/transfac2transfac.py,scripts/trees2trees.py
+filter-by-monophyly	bad	should be -method		scripts/trees2trees.py
+filter-by-trees	bad	should be -method		scripts/trees2trees.py
+filter-length	bad	should be -method		scripts/contigs2stats.py
+filter-mali	bad	should be -method		scripts/codemls2tsv.py
+filter-max-length	bad	should be -method		scripts/trees2trees.py
+filter-min-counts-per-row	ok			scripts/runExpression.py
+filter-min-counts-per-sample	ok			scripts/runExpression.py
+filter-min-length	ok			scripts/trees2trees.py
+filter-ntaxa	ok			scripts/trees2trees.py
+filter-numcols	ok			scripts/sparse2full.py
+filter-numrows	ok			scripts/sparse2full.py
+filter-omega	ok			scripts/codeml2tsv.py,scripts/codemls2tsv.py
+filter-percentile-rowsums	ok			scripts/runExpression.py
+filter-probability	ok			scripts/codeml2tsv.py,scripts/codemls2tsv.py
+filter-query	ok			scripts/psl2psl.py
+filter-range	ok			scripts/gff2gff.py
+filter-simple-orthologs		should be -method		scripts/trees2trees.py
+filter-target	ok			scripts/psl2psl.py
+filter-terminal-max-length		should be -method		scripts/trees2trees.py
+filter-terminal-min-length		should be -method		scripts/trees2trees.py
+filters	bad			scripts/analyze_codonbias_orthology.py,scripts/fasta2distances.py
+first-column	bad			scripts/csv2db.py
+fix-alpha	bad	should be -method		scripts/mali2rates.py
+fix-kappa	bad	should be -method		scripts/mali2kaks.py,scripts/mali2rates.py
+fix-omega	bad	should be -method		scripts/mali2kaks.py
+fixed-width-windows=	?			scripts/index2bed.py
+flank	bad	--flank-extension?		scripts/gtf2gff.py
+flat	rename		flat-output	scripts/data2stats.py
+flatten-table	bad	should be -method		scripts/table2table.py
+force	rename		force-output	scripts/annotator_distance.py,scripts/bam2UniquePairs.py,scripts/bam2bam.py,scripts/bam2geneprofile.py,scripts/bam2peakshape.py,scripts/bam2stats.py,scripts/bam_vs_gtf.py,scripts/bams2bam.py,scripts/beds2beds.py,scripts/chain2stats.py,scripts/diff_bam.py,scripts/gff2coverage.py,scripts/gff2histogram.py,scripts/gff2stats.py,scripts/gtf2alleles.py,scripts/gtf2fasta.py,scripts/gtf2table.py,scripts/gtfs2tsv.py,scripts/index_fasta.py,scripts/medip_merge_intervals.py,scripts/revigo.py,scripts/rnaseq_junction_bam2bam.py,scripts/runExpression.py,scripts/snp2counts.py,scripts/snp2maf.py
+force-map	ok			scripts/align_transcripts.py
+force-merge	ok			scripts/psl2assembly.py
+force-output	ok			scripts/bam2stats.py
+format	bad	more specific		scripts/bam2peakshape.py,scripts/bed2plot.py,scripts/cgat2dot.py,scripts/cgat2rdf.py,scripts/combine_gff.py,scripts/data2stats.py,scripts/formatMetagenemark.py,scripts/genelist_analysis.py,scripts/gff2histogram.py,scripts/mali2rates.py,scripts/mask_fasta.py,scripts/matrix2matrix.py,scripts/psl2psl.py,scripts/r_table2scatter.py,scripts/sparse2full.py,scripts/split_genomic_fasta_file.py,scripts/table2table.py
+format-bin	rename		bin-format	scripts/histogram2histogram.py
+format-val	rename		value-format	scripts/histogram2histogram.py
+format=	bad	more specific		scripts/gtfs2tsv.py
+forward-coordinates	rename		is-forward-coordinates	scripts/gff2gff.py,scripts/maq2assembly.py
+forward-query	?			scripts/psl2fasta.py
+forward-strand	?			scripts/gff2gff.py
+fragment-size	ok			scripts/runZinba.py
+from-zipped	ok			scripts/csv2db.py,scripts/psl2assembly.py,scripts/psl2map.py,scripts/psl2wiggle_stats.py
+full	bad			scripts/gtf2tsv.py
+full2sparse	bad	should be -method		scripts/sparse2full.py
+function	?			scripts/graph_group_links_by_taxonomy.py,scripts/run_function.py
+gbrowser-assembly	ok			scripts/gff2view.py
+gene-id	ok			scripts/gff32gtf.py
+gene-mode	ok			scripts/mali2cleaned_mali.py
+gene-pattern	ok			scripts/genelist_analysis.py,scripts/runGO.py
+gene-type	ok			scripts/gff32gtf.py
+genes	?		genes-tsv-file	scripts/genelist_analysis.py,scripts/gtfs2graph.py,scripts/runGO.py
+genome-dir	ok			scripts/contigs2random_sample.py,scripts/species_map2species_map.py
+genome-file	ok			scripts/add_random_reads_to_bam.py,scripts/bed2annotator.py,scripts/bed2bed.py,scripts/bed2fasta.py,scripts/bed2psl.py,scripts/bed2stats.py,scripts/bed2table.py,scripts/genome_bed.py,scripts/gff2coverage.py,scripts/gff2fasta.py,scripts/gff2gff.py,scripts/gff2psl.py,scripts/gff2table.py,scripts/gff2view.py,scripts/gff_decorate.py,scripts/gtf2alleles.py,scripts/gtf2fasta.py,scripts/gtf2gff.py,scripts/gtf2reads.py,scripts/gtf2table.py,scripts/index2bed.py,scripts/index2gff.py,scripts/mali2predictions.py,scripts/maq2psl.py,scripts/psl2assembly.py,scripts/psl2wiggle.py,scripts/psl2wiggle_stats.py,scripts/snp2counts.py,scripts/snp2maf.py,scripts/snp2table.py,scripts/wig2bed.py,scripts/wig2wig.py
+genome-master	ok			scripts/mali2cleaned_mali.py
+gep	ok			scripts/align_mali_vs_mali.py
+get-genes	bad	should be -method		scripts/genelist_analysis.py,scripts/runGO.py
+get-preferred-codons	bad	should be -method		scripts/codonbias_acai2tsv.py
+gff-feature	bad	should be -method=filter		scripts/gtf2table.py
+gff-file	ok			scripts/index2bed.py
+gff-source	bad	should be -method=filter		scripts/gtf2table.py
+gi-accessions	bad	gi-tsv-file?		scripts/gi2parents.py
+glob	ok			scripts/cgat_logfiles2tsv.py,scripts/clean.py,scripts/combine_tables.py,scripts/csvs2csv.py,scripts/submit.py
+global-sort	rename		sort-global	scripts/codonbias_weights2tsv.py
+go2goslim	?			scripts/genelist_analysis.py,scripts/runGO.py
+gop	ok			scripts/align_mali_vs_mali.py
+group	bad	should be -method		scripts/table2table.py
+group-by-regex				scripts/farm.py,scripts/nofarm.py
+group-field				scripts/gff2gff.py
+group-function				scripts/table2table.py
+gtf	rename		gtf-file	scripts/align_transcripts.py
+gtf-a	rename		first-gtf-file	scripts/gtf2overlap.py
+gtf-b	rename		second-gtf-file	scripts/gtf2overlap.py
+gtf-file	ok			scripts/bam2transcriptContribution.py
+gtffile	rename		gtf-file	scripts/bam2geneprofile.py
+guess-format	ok			scripts/fastq2fastq.py,scripts/fastq2solid.py,scripts/fastq2summary.py,scripts/fastq2table.py
+hardcopy	ok			scripts/annotator_distance.py,scripts/plot_matrix.py,scripts/r_compare_distributions.py,scripts/r_mann_whitney_u.py,scripts/r_table2scatter.py
+has-header	ok			scripts/bed2table.py
+header	?		header-names	scripts/csv2db.py,scripts/psl2psl.py,scripts/r_compare_distributions.py,scripts/r_test.py
+headers	?		header-names	scripts/combine_tables.py,scripts/csvs2csv.py,scripts/data2stats.py,scripts/diff_bam.py,scripts/matrix2matrix.py,scripts/matrix2stats.py,scripts/plot_matrix.py,scripts/set_diff.py,scripts/table2graph.py,scripts/table2table.py
+height	split			scripts/barplotGo.py
+host	ok			scripts/analyze_go.py,scripts/analyze_sequences.py,scripts/bed2plot.py,scripts/mysql_clone_database.py,scripts/mysql_copy_tables.py,scripts/runGO.py
+id	?			scripts/psl2fasta.py
+id-column	ok			scripts/table2table.py
+id-format	ok			scripts/bed2gff.py,scripts/psl2psl.py
+id-pattern-1	ok			scripts/fastqs2fastqs.py
+id-pattern-2	ok			scripts/fastqs2fastqs.py
+identity	bad	identity-threshold?		scripts/chain2stats.py
+ignore-all-random	ok			scripts/psl2map.py
+ignore-column	ok			scripts/csv2db.py
+ignore-duplicates	ok			scripts/csv2db.py
+ignore-empty	ok			scripts/combine_tables.py,scripts/csv2db.py
+ignore-errors	ok			scripts/cgat_ruffus_profile.py,scripts/fasta2fasta.py
+ignore-links	ok			scripts/cgat_zap.py
+ignore-mismatches	ok			scripts/bams2bam.py,scripts/rnaseq_junction_bam2bam.py
+ignore-missing	ok			scripts/gtf2fasta.py,scripts/gtf2gff.py,scripts/malis2mali.py,scripts/malis2malis.py
+ignore-out-of-range	ok			scripts/gff2histogram.py
+ignore-same	ok			scripts/csv2db.py
+ignore-strand	ok			scripts/diff_gtf.py,scripts/gff2gff.py,scripts/gtfs2graph.py,scripts/gtfs2tsv.py
+ignore-titles	ok			scripts/combine_tables.py
+ignore-zeros	ok			scripts/data2stats.py
+images-dir	ok			scripts/bigwig2hilbert.py
+improvement	rename		zinba-improvement	scripts/runZinba.py
+include	bad			scripts/fasta2fasta.py
+increment	bad			scripts/gtf2gff.py
+index	rename		add-index	scripts/csv2db.py
+index-dir	rename		zinba-index-dir	scripts/runZinba.py
+indicator	bad			scripts/bam2profile.py
+infile	bad			scripts/barplotGo.py,scripts/fastq2N.py,scripts/r_test.py
+infile-map	bad			scripts/r_compare_distributions.py,scripts/r_mann_whitney_u.py
+infile1	bad			scripts/r_compare_distributions.py,scripts/r_mann_whitney_u.py
+infile2	bad			scripts/r_compare_distributions.py,scripts/r_mann_whitney_u.py,scripts/r_test.py
+infiles	bad			scripts/beds2counts.py
+inplace	ok			scripts/bam2bam.py
+input	bad			scripts/run_function.py
+input-file-codons	rename		codons-tsv-file	scripts/codonbias_acai2tsv.py
+input-file-genes	rename		genes-tsv-file	scripts/codonbias_acai2tsv.py
+input-file-sequences	rename		fasta-file	scripts/codonbias_acai2tsv.py
+input-file-subset	rename		subset-tsv-file	scripts/codonbias_acai2tsv.py
+input-file-trace	rename		trace-tsv-file	scripts/codonbias_acai2tsv.py
+input-filename-counts	rename		counts-tsv-file	scripts/bam2geneprofile.py
+input-filename-coverage	rename		coverage-tsv-file	scripts/psl2assembly.py
+input-filename-map	rename		map-tsv-file	scripts/bed2annotator.py
+input-filename-queries	rename		queries-tsv-file	scripts/gff2psl.py,scripts/psl2assembly.py,scripts/psl2map.py
+input-format	ok			scripts/index_fasta.py,scripts/mali2bootstrap.py,scripts/mali2kaks.py,scripts/mali2mali.py,scripts/mali2malis.py,scripts/mali2rates.py,scripts/mali2summary.py,scripts/mali2table.py,scripts/malis2mali.py,scripts/malis2malis.py,scripts/matrix2matrix.py,scripts/matrix2stats.py,scripts/runSPP.py,scripts/runZinba.py,scripts/sequences2mali.py,scripts/snp2counts.py,scripts/snp2table.py,scripts/sparse2full.py
+input-header	?			scripts/farm.py,scripts/nofarm.py
+input-pattern	?			scripts/split_fasta.py,scripts/submit.py
+input-reads	rename		fastq-file	scripts/bam2stats.py
+input-regex	ok			scripts/cgat2dot.py,scripts/cgat2rdf.py
+insert-sd	rename		insertsize-std	scripts/add_random_reads_to_bam.py
+insert-size	rename		insertsize-mean	scripts/add_random_reads_to_bam.py
+intersect-transcripts	bad	should be -method		scripts/gtf2gtf.py
+intervals	rename		intervals-bed-file	scripts/bam_vs_bam.py
+intron-border	ok			scripts/gtf2gtf.py
+intron-min-length	ok			scripts/gtf2gtf.py
+invert	ok			scripts/gtf2tsv.py,scripts/medip_merge_intervals.py
+invert-filter	ok			scripts/gtf2gtf.py
+invert-map	ok			scripts/codonbias_acai2tsv.py
+invert-match	ok			scripts/filter_tokens.py,scripts/table2table.py
+is-cds	ok			scripts/fasta2variants.py
+is-frequencies	ok			scripts/codonbias_weights2tsv.py
+is-gtf	ok			scripts/gff2bed.py,scripts/gff2fasta.py,scripts/gff2gff.py,scripts/gff2psl.py,scripts/gff2stats.py,scripts/gff2table.py,scripts/gff2view.py,scripts/gff_decorate.py,scripts/snp2maf.py
+is-int	ok			scripts/histogram2histogram.py
+iteration	?	iterations?		scripts/mali2kaks.py,scripts/matrix2stats.py
+iterations	ok			scripts/blast2table.py
+jalview-symbol	ok			scripts/codemls2tsv.py
+jalview-title	ok			scripts/jalview.py
+jalview-titles	ok			scripts/codemls2tsv.py
+join-column-name	ok			scripts/table2table.py
+join-exons		should be -method		scripts/gtf2gtf.py
+join-features		should be -method		scripts/gff2gff.py
+join-table		should be -method		scripts/table2table.py
+keep	bad	more explicit		scripts/bed2plot.py
+keep-all-best	ok			scripts/psl2map.py
+keep-ambiguous	ok			scripts/annotator_distance.py
+keep-empty	ok			scripts/combine_tables.py,scripts/csvs2csv.py
+keep-first-base	ok			scripts/bam2bam.py
+keep-forbidden	ok			scripts/psl2map.py
+keep-temp	ok			scripts/bam_vs_bed.py,scripts/runZinba.py
+keep-unique-matches	ok			scripts/psl2map.py
+kmer	rename		kmer-size	scripts/fasta2kmercontent.py
+labels	rename		plot-labels	scripts/plot_matrix.py,scripts/r_table2scatter.py
+legend	rename		plot-legend	scripts/r_compare_distributions.py,scripts/r_table2scatter.py
+length	split			scripts/bam2bidirectionaltranscription.py,scripts/contigs2stats.py
+level	ok			scripts/cgat_log2wiki.py
+library-selection	ok			scripts/ena2table.py
+library-source	ok			scripts/ena2table.py
+library-type	ok			scripts/gtf2table.py
+list	split			scripts/cgat2dot.py,scripts/cgat2rdf.py
+list-filter	ok			scripts/malis2malis.py
+log	ok			scripts/add_random_reads_to_bam.py,scripts/add_script_template.py,scripts/align_mali_vs_mali.py,scripts/align_transcripts.py,scripts/analyze_codonbias_orthology.py,scripts/analyze_go.py,scripts/analyze_sequences.py,scripts/annotator2tsv.py,scripts/annotator_distance.py,scripts/bam2UniquePairs.py,scripts/bam2bam.py,scripts/bam2bed.py,scripts/bam2bidirectionaltranscription.py,scripts/bam2fastq.py,scripts/bam2geneprofile.py,scripts/bam2peakshape.py,scripts/bam2profile.py,scripts/bam2species_map.py,scripts/bam2stats.py,scripts/bam2transcriptContribution.py,scripts/bam2wiggle.py,scripts/bam_vs_bam.py,scripts/bam_vs_bed.py,scripts/bam_vs_gtf.py,scripts/bams2bam.py,scripts/barplotGo.py,scripts/bed2annotator.py,scripts/bed2bed.py,scripts/bed2fasta.py,scripts/bed2gff.py,scripts/bed2graph.py,scripts/bed2plot.py,scripts/bed2psl.py,scripts/bed2stats.py,scripts/bed2table.py,scripts/beds2beds.py,scripts/beds2counts.py,scripts/bigwig2hilbert.py,scripts/blast2table.py,scripts/cat_tables.py,scripts/cgat2dot.py,scripts/cgat2rdf.py,scripts/cgat_build_report_page.py,scripts/cgat_clean.py,scripts/cgat_cluster_distribute.py,scripts/cgat_cwd2list.py,scripts/cgat_galaxy_wrapper.py,scripts/cgat_log2wiki.py,scripts/cgat_logfiles2tsv.py,scripts/cgat_make2help.py,scripts/cgat_pep8_code_quality.py,scripts/cgat_rebuild_extensions.py,scripts/cgat_ruffus_profile.py,scripts/cgat_script_template.py,scripts/cgat_zap.py,scripts/chain2psl.py,scripts/chain2stats.py,scripts/check_db.py,scripts/clean.py,scripts/codeml2tsv.py,scripts/codemls2tsv.py,scripts/codonbias_acai2tsv.py,scripts/codonbias_weights2tsv.py,scripts/combine_files.py,scripts/combine_gff.py,scripts/combine_tables.py,scripts/compare_clusters.py,scripts/compare_histograms.py,scripts/contigs2random_sample.py,scripts/contigs2stats.py,scripts/convert_time2seconds.py,scripts/coverage2stats.py,scripts/csv2db.py,scripts/csvs2csv.py,scripts/cwd2list.py,scripts/data2multiple_anova.py,scripts/data2phylocontrasts.py,scripts/data2stats.py,scripts/diff_bam.py,scripts/diff_bed.py,scripts/diff_chains.py,scripts/diff_gtf.py,scripts/ena2table.py,scripts/farm.py,scripts/fasta2distances.py,scripts/fasta2fasta.py,scripts/fasta2kmercontent.py,scripts/fasta2table.py,scripts/fasta2variants.py,scripts/fastas2fasta.py,scripts/fastq2N.py,scripts/fastq2fastq.py,scripts/fastq2solid.py,scripts/fastq2summary.py,scripts/fastq2table.py,scripts/fastqs2fasta.py,scripts/fastqs2fastq.py,scripts/fastqs2fastqs.py,scripts/filter_reads.py,scripts/filter_tokens.py,scripts/formatMetagenemark.py,scripts/genelist_analysis.py,scripts/genes2genes.py,scripts/genome_bed.py,scripts/geo2table.py,scripts/gff2bed.py,scripts/gff2coverage.py,scripts/gff2fasta.py,scripts/gff2gff.py,scripts/gff2histogram.py,scripts/gff2psl.py,scripts/gff2stats.py,scripts/gff2table.py,scripts/gff2view.py,scripts/gff32gtf.py,scripts/gff_compare.py,scripts/gff_decorate.py,scripts/gi2parents.py,scripts/graph_filter_links_redundant.py,scripts/graph_group_links_by_taxonomy.py,scripts/gtf2alleles.py,scripts/gtf2fasta.py,scripts/gtf2gff.py,scripts/gtf2gtf.py,scripts/gtf2overlap.py,scripts/gtf2reads.py,scripts/gtf2table.py,scripts/gtf2tsv.py,scripts/gtfs2graph.py,scripts/gtfs2tsv.py,scripts/histogram2histogram.py,scripts/histograms2kl.py,scripts/index2bed.py,scripts/index2gff.py,scripts/index_fasta.py,scripts/intervaltable2bed.py,scripts/jalview.py,scripts/liftover.py,scripts/maf2psl.py,scripts/mali2bootstrap.py,scripts/mali2cleaned_mali.py,scripts/mali2kaks.py,scripts/mali2mali.py,scripts/mali2malis.py,scripts/mali2predictions.py,scripts/mali2rates.py,scripts/mali2summary.py,scripts/mali2table.py,scripts/mali_phylip2fasta.py,scripts/mali_plain2aln.py,scripts/malis2mali.py,scripts/malis2malis.py,scripts/malis2masks.py,scripts/malis2profiles.py,scripts/maq2assembly.py,scripts/maq2psl.py,scripts/mask_fasta.py,scripts/matrix2matrix.py,scripts/matrix2stats.py,scripts/medip_merge_intervals.py,scripts/merge_tables.py,scripts/metaphlan2table.py,scripts/modify_table.py,scripts/mysql_clone_database.py,scripts/mysql_copy_tables.py,scripts/nofarm.py,scripts/nr2table.py,scripts/numbers2rgb.py,scripts/peptides2cds.py,scripts/plot_matrix.py,scripts/probeset2gene.py,scripts/psl2assembly.py,scripts/psl2chain.py,scripts/psl2fasta.py,scripts/psl2gff.py,scripts/psl2map.py,scripts/psl2psl.py,scripts/psl2stats.py,scripts/psl2table.py,scripts/psl2wiggle.py,scripts/psl2wiggle_stats.py,scripts/psql_clone_database.py,scripts/qkill.py,scripts/quality2masks.py,scripts/r_compare_distributions.py,scripts/r_mann_whitney_u.py,scripts/r_table2scatter.py,scripts/r_test.py,scripts/radar.py,scripts/rename_links.py,scripts/revigo.py,scripts/rnaseq_junction_bam2bam.py,scripts/run.py,scripts/runExpression.py,scripts/runGO.py,scripts/runSPP.py,scripts/runZinba.py,scripts/run_function.py,scripts/sequence2alignment.py,scripts/sequences2mali.py,scripts/set_diff.py,scripts/snp2counts.py,scripts/snp2maf.py,scripts/snp2snp.py,scripts/snp2table.py,scripts/solexa2stats.py,scripts/sparse2full.py,scripts/species_map2species_map.py,scripts/split_fasta.py,scripts/split_genome.py,scripts/split_genomic_fasta_file.py,scripts/split_gff.py,scripts/split_links.py,scripts/submit.py,scripts/table2graph.py,scripts/table2table.py,scripts/transfac2transfac.py,scripts/tree2taxa.py,scripts/tree_strain2species.py,scripts/trees2tree.py,scripts/trees2trees.py,scripts/vcf2vcf.py,scripts/vcfstats2db.py,scripts/wig2bed.py,scripts/wig2wig.py
+logfile	ok			scripts/cgat_ruffus_profile.py
+logscale	bad	should be -scale=log		scripts/annotator_distance.py,scripts/r_table2scatter.py
+lowercase	rename		lowercase-fields	scripts/csv2db.py
+mali-output-format	ok			scripts/psl2assembly.py
+map	split			scripts/codonbias_acai2tsv.py,scripts/combine_files.py,scripts/csv2db.py,scripts/farm.py,scripts/gtf2tsv.py,scripts/liftover.py,scripts/nofarm.py,scripts/peptides2cds.py,scripts/split_fasta.py
+mappability-dir	rename		zinba-mappability-dir	scripts/runZinba.py
+mapping	bad			scripts/probeset2gene.py
+marigins	rename		plot-margins	scripts/barplotGo.py
+mark-codons	ok			scripts/align_transcripts.py
+mask-acgtn	ok			scripts/malis2mali.py
+mask-char	ok			scripts/align_transcripts.py,scripts/mali2mali.py
+mask-lowercase	ok			scripts/psl2table.py
+mask-regions	ok			scripts/mask_fasta.py,scripts/split_genomic_fasta_file.py
+mask-stops	ok			scripts/align_transcripts.py
+masker	ok			scripts/bed2fasta.py,scripts/gff2fasta.py
+master	bad		master-identifier	scripts/align_transcripts.py,scripts/mali2predictions.py
+master-pattern	ok			scripts/align_transcripts.py
+master-species	ok			scripts/align_transcripts.py
+matching-mode	ok			scripts/psl2map.py
+max-files	ok			scripts/farm.py,scripts/nofarm.py
+max-insert-size	ok			scripts/bam2bed.py,scripts/bam2wiggle.py,scripts/runZinba.py
+max-length	ok			scripts/bed2annotator.py,scripts/bed2fasta.py,scripts/gff2fasta.py
+max-lines	ok			scripts/farm.py,scripts/nofarm.py
+max-percent-overlap	ok			scripts/mali2cleaned_mali.py
+max-similarity	ok			scripts/revigo.py
+max-value	ok			scripts/data2stats.py,scripts/gff2histogram.py,scripts/r_compare_distributions.py
+merge		should be -method		scripts/bed2annotator.py,scripts/combine_tables.py,scripts/csvs2csv.py,scripts/gff2fasta.py
+merge-by-name	ok			scripts/bed2bed.py
+merge-distance	ok			scripts/bed2bed.py
+merge-exons		should be -method		scripts/gtf2gtf.py
+merge-exons-distance	ok			scripts/gtf2gtf.py
+merge-features		should be -method		scripts/gff2gff.py
+merge-genes		should be -method		scripts/gtf2gtf.py
+merge-introns		should be -method		scripts/gtf2gtf.py
+merge-min-intervals	ok			scripts/bed2bed.py
+merge-mode	ok			scripts/tree_strain2species.py
+merge-pairs	ok			scripts/bam2bed.py,scripts/bam2geneprofile.py,scripts/bam2wiggle.py
+merge-promotors		should be -method		scripts/gtf2gff.py
+merge-transcripts	split	should be -method		scripts/bam2bidirectionaltranscription.py,scripts/gtf2gtf.py
+method	ok			scripts/annotator2tsv.py,scripts/bam2geneprofile.py,scripts/bed2bed.py,scripts/beds2beds.py,scripts/cgat_make2help.py,scripts/check_db.py,scripts/compare_histograms.py,scripts/data2multiple_anova.py,scripts/data2phylocontrasts.py,scripts/farm.py,scripts/fasta2fasta.py,scripts/fastqs2fastq.py,scripts/fastqs2fastqs.py,scripts/gff2coverage.py,scripts/gff2histogram.py,scripts/gff32gtf.py,scripts/gtf2fasta.py,scripts/gtf2gff.py,scripts/histogram2histogram.py,scripts/histograms2kl.py,scripts/jalview.py,scripts/mali2kaks.py,scripts/mali2mali.py,scripts/mali2rates.py,scripts/malis2mali.py,scripts/maq2assembly.py,scripts/matrix2matrix.py,scripts/matrix2stats.py,scripts/modify_table.py,scripts/nofarm.py,scripts/numbers2rgb.py,scripts/psl2assembly.py,scripts/psl2fasta.py,scripts/psl2psl.py,scripts/psl2table.py,scripts/r_compare_distributions.py,scripts/r_mann_whitney_u.py,scripts/r_test.py,scripts/radar.py,scripts/runExpression.py,scripts/sequences2mali.py,scripts/snp2snp.py,scripts/sparse2full.py,scripts/split_links.py,scripts/table2table.py,scripts/trees2tree.py,scripts/trees2trees.py,scripts/wig2bed.py,scripts/wig2wig.py
+methods	ok			scripts/codeml2tsv.py,scripts/codemls2tsv.py,scripts/codonbias_weights2tsv.py
+min-chunk-size	ok			scripts/split_gff.py
+min-clusters	ok			scripts/revigo.py
+min-coverage	ok			scripts/snp2snp.py
+min-exons-length	ok			scripts/gtf2gtf.py
+min-genomic-distance	ok			scripts/mali2cleaned_mali.py
+min-insert-size	ok			scripts/bam2bed.py,scripts/bam2wiggle.py,scripts/runZinba.py
+min-intron-length	ok			scripts/gtf2fasta.py,scripts/gtf2gff.py
+min-length	split		min-interval-length	scripts/bed2fasta.py,scripts/gff2fasta.py
+min-mapping-quality	ok			scripts/gtf2table.py
+min-overlap	ok			scripts/bam_vs_bed.py,scripts/mali2kaks.py,scripts/medip_merge_intervals.py
+min-percent-overlap	ok			scripts/mali2cleaned_mali.py
+min-read-length	ok			scripts/gtf2reads.py
+min-sites	ok			scripts/mali2rates.py
+min-size	ok			scripts/split_fasta.py
+min-support	ok			scripts/trees2trees.py
+min-value	ok			scripts/data2stats.py,scripts/gff2histogram.py,scripts/r_compare_distributions.py
+minimum-counts	rename		min-counts	scripts/runGO.py
+minimum-mali-length	rename		min-mali-length	scripts/malis2mali.py,scripts/malis2malis.py
+missing	split			scripts/combine_tables.py,scripts/csvs2csv.py,scripts/gff2histogram.py,scripts/matrix2matrix.py,scripts/plot_matrix.py
+mode	?			scripts/align_mali_vs_mali.py,scripts/bed2fasta.py,scripts/cgat_logfiles2tsv.py,scripts/codeml2tsv.py,scripts/gtf2reads.py,scripts/mali2cleaned_mali.py
+models	ok			scripts/codeml2tsv.py,scripts/codemls2tsv.py
+module	split			scripts/gtf2alleles.py,scripts/run_function.py,scripts/snp2counts.py
+multi-mapping	rename		multi-mapping-method	scripts/gtf2table.py
+name	bad	set-name?		scripts/gff2bed.py
+ncbi-map	?			scripts/gi2parents.py
+new-instance	?			scripts/bed2plot.py
+new-pattern	ok			scripts/rename_links.py
+no-clean	ok			scripts/mali2kaks.py
+no-cluster	ok			scripts/farm.py,scripts/nofarm.py
+no-discard	ok			scripts/gff32gtf.py
+no-empty-bins	ok			scripts/gff2histogram.py
+no-exons	ok			scripts/gff_compare.py
+no-fdr	ok			scripts/annotator_distance.py
+no-genes	ok			scripts/gff_compare.py
+no-header	ok			scripts/blast2table.py,scripts/gff2psl.py
+no-headers	ok			scripts/histogram2histogram.py,scripts/matrix2matrix.py,scripts/matrix2stats.py,scripts/plot_matrix.py,scripts/table2table.py
+no-normalize	ok			scripts/compare_histograms.py,scripts/histograms2kl.py
+no-nucleotides	ok			scripts/gff_compare.py
+no-out-of-range	ok			scripts/histogram2histogram.py
+no-replacement	ok			scripts/mali2bootstrap.py
+no-sort	ok			scripts/combine_files.py
+no-title	?			scripts/data2stats.py,scripts/set_diff.py
+no-titles	?			scripts/combine_tables.py,scripts/csvs2csv.py,scripts/filter_tokens.py
+no-venn	ok			scripts/gtf2overlap.py
+norm-test	?			scripts/r_compare_distributions.py
+normalization	split	more explicit	normalize-..	scripts/bam2geneprofile.py,scripts/bam2peakshape.py
+normalize	ok			scripts/plot_matrix.py
+normalize-profile	ok			scripts/bam2geneprofile.py
+nperchrom	bad			scripts/chain2stats.py
+nreads	bad			scripts/add_random_reads_to_bam.py
+nucl-map	bad			scripts/gi2parents.py
+num-bins	ok			scripts/annotator_distance.py,scripts/bed2bed.py,scripts/gff2coverage.py,scripts/r_compare_distributions.py
+num-samples	ok			scripts/annotator_distance.py
+num-sequences	ok			scripts/split_fasta.py
+number	bad			scripts/barplotGo.py
+number-format	ok			scripts/compare_histograms.py,scripts/histograms2kl.py
+numeric	bad	...-is-numeric		scripts/sparse2full.py
+offset	bad	more explicit		scripts/bed2bed.py,scripts/bed2table.py
+old-pattern	ok			scripts/rename_links.py
+only-attributes	rename		output-only-attributes	scripts/gtf2tsv.py
+only-genes	bad	output-only-genes?		scripts/diff_gtf.py
+only-interval	bad	more explicit		scripts/bam2peakshape.py
+ontology	ok			scripts/genelist_analysis.py,scripts/revigo.py,scripts/runGO.py
+options	bad	more explicit		scripts/r_table2scatter.py
+out-filename-pattern	rename		output-filename-pattern	scripts/gff_compare.py
+outbase	bad			scripts/bam2bidirectionaltranscription.py
+outfile	bad	use output-filename-pattern		scripts/bam2UniquePairs.py,scripts/bam2transcriptContribution.py,scripts/barplotGo.py,scripts/intervaltable2bed.py,scripts/runExpression.py
+outfile-pair	bad	use output-filename-pattern		scripts/fastq2fastq.py
+output	split			scripts/add_random_reads_to_bam.py,scripts/align_transcripts.py,scripts/bed2graph.py,scripts/gtf2alleles.py,scripts/run_function.py,scripts/split_links.py
+output-all-profiles	ok			scripts/bam2geneprofile.py
+output-details	ok			scripts/bam2stats.py
+output-empty	ok			scripts/data2stats.py
+output-filename	bad	use output-filename-pattern		scripts/bam2wiggle.py,scripts/psl2wiggle.py
+output-filename-coords	ok	also: use output-filename-pattern		scripts/align_transcripts.py
+output-filename-empty	ok	also: use output-filename-pattern		scripts/psl2map.py
+output-filename-map	ok	also: use output-filename-pattern		scripts/psl2psl.py,scripts/trees2trees.py
+output-filename-pattern	ok	use output-filename-pattern		scripts/align_transcripts.py,scripts/annotator_distance.py,scripts/bam2UniquePairs.py,scripts/bam2geneprofile.py,scripts/bam2peakshape.py,scripts/bam2stats.py,scripts/bam_vs_gtf.py,scripts/beds2beds.py,scripts/chain2stats.py,scripts/check_db.py,scripts/diff_bam.py,scripts/genelist_analysis.py,scripts/gff2coverage.py,scripts/gff2histogram.py,scripts/gff2stats.py,scripts/gtf2alleles.py,scripts/gtf2fasta.py,scripts/gtf2reads.py,scripts/gtf2table.py,scripts/gtfs2tsv.py,scripts/mali2bootstrap.py,scripts/maq2assembly.py,scripts/maq2psl.py,scripts/medip_merge_intervals.py,scripts/psl2assembly.py,scripts/psl2map.py,scripts/revigo.py,scripts/runExpression.py,scripts/snp2counts.py,scripts/snp2maf.py
+output-filename-prefix	bad			scripts/coverage2stats.py
+output-format	ok			scripts/align_transcripts.py,scripts/annotator2tsv.py,scripts/bam2wiggle.py,scripts/mali2bootstrap.py,scripts/mali2mali.py,scripts/mali2malis.py,scripts/mali2rates.py,scripts/malis2mali.py,scripts/malis2malis.py,scripts/matrix2matrix.py,scripts/matrix2stats.py,scripts/psl2map.py,scripts/psl2wiggle.py,scripts/sequences2mali.py,scripts/sparse2full.py
+output-format=	?			scripts/peptides2cds.py
+output-header	ok			scripts/farm.py,scripts/nofarm.py
+output-identifier	ok			scripts/peptides2cds.py
+output-matches	ok			scripts/diff_chains.py
+output-mismatches	ok			scripts/diff_chains.py
+output-pattern	bad	use output-filename-pattern		scripts/cgat2dot.py,scripts/cgat2rdf.py,scripts/compare_clusters.py,scripts/farm.py,scripts/fastqs2fastqs.py,scripts/mali2kaks.py,scripts/mali2rates.py,scripts/mask_fasta.py,scripts/nofarm.py,scripts/split_fasta.py,scripts/split_genomic_fasta_file.py,scripts/split_gff.py,scripts/submit.py,scripts/trees2trees.py
+output-pileup	ok			scripts/psl2assembly.py
+output-tag	ok			scripts/farm.py,scripts/nofarm.py
+output-unique	ok			scripts/diff_chains.py
+pair	?			scripts/fastq2fastq.py
+pairwise	?			scripts/mali2kaks.py,scripts/mali2rates.py,scripts/runGO.py
+palette	ok			scripts/plot_matrix.py,scripts/revigo.py
+paml-fix-alpha	ok			scripts/psl2table.py
+paml-fix-kappa	ok			scripts/psl2table.py
+paml-set-alpha	ok			scripts/psl2table.py
+paml-set-clean-data	ok			scripts/psl2table.py
+paml-set-kappa	ok			scripts/psl2table.py
+parameters	split			scripts/fasta2fasta.py,scripts/mali2mali.py,scripts/malis2mali.py,scripts/matrix2matrix.py,scripts/matrix2stats.py,scripts/radar.py,scripts/sequences2mali.py,scripts/table2table.py
+params	split			scripts/run_function.py
+parent-field	ok			scripts/gff32gtf.py
+password	ok			scripts/analyze_go.py,scripts/analyze_sequences.py,scripts/mysql_clone_database.py,scripts/mysql_copy_tables.py,scripts/runGO.py
+path	ok			scripts/cgat_build_report_page.py
+pattern	split			scripts/fastq2solid.py,scripts/qkill.py,scripts/snp2maf.py,scripts/transfac2transfac.py
+pattern-component	ok			scripts/malis2mali.py,scripts/malis2malis.py
+pattern-filter	ok			scripts/malis2mali.py,scripts/malis2malis.py
+pattern-id	rename		pattern-identifier	scripts/beds2beds.py,scripts/diff_bed.py,scripts/diff_gtf.py,scripts/gtfs2graph.py
+pattern-identifier	ok			scripts/malis2mali.py
+pattern-input-filenames	rename		input-pattern	scripts/codeml2tsv.py,scripts/codemls2tsv.py
+pattern-mali	?			scripts/mali2malis.py,scripts/mali2summary.py,scripts/malis2mali.py,scripts/malis2malis.py
+pattern-output	bad	use output-filename-pattern		scripts/malis2malis.py
+pattern-window	?			scripts/medip_merge_intervals.py
+peptides	rename		peptides-fasta-file	scripts/peptides2cds.py
+per-contig	split	--aggregate=		scripts/bed2stats.py,scripts/runZinba.py
+per-name	bad	--aggregate=		scripts/bed2stats.py
+per-track	bad	--aggregate=		scripts/bed2stats.py
+perchrom	bad	--aggregate=		scripts/chain2stats.py
+permit-duplicates	ok			scripts/gtf2gtf.py
+plot	ok			scripts/annotator_distance.py,scripts/plot_matrix.py,scripts/r_table2scatter.py
+polyA	bad	more explicit		scripts/psl2map.py
+port	ok			scripts/analyze_go.py,scripts/analyze_sequences.py,scripts/bed2plot.py,scripts/mysql_clone_database.py,scripts/mysql_copy_tables.py,scripts/runGO.py
+prefix	split			scripts/analyze_go.py,scripts/analyze_sequences.py,scripts/codeml2tsv.py,scripts/codemls2tsv.py,scripts/gtf2table.py,scripts/psl2wiggle_stats.py
+prefixes	bad			scripts/combine_tables.py
+promotor		should be -method		scripts/gtf2gff.py
+proportion	bad			scripts/fasta2kmercontent.py
+proximal-distance	ok			scripts/gtf2table.py
+pseudo-counts	rename		pseudocounts	scripts/runExpression.py
+pseudocounts	ok			scripts/compare_histograms.py,scripts/histograms2kl.py
+quality-file	bad	?		scripts/gtf2table.py,scripts/quality2masks.py
+quality-threshold	ok			scripts/quality2masks.py
+query	split	more explicit		scripts/annotator2tsv.py,scripts/bed2psl.py,scripts/maf2psl.py
+query-forward-coordinates	ok			scripts/psl2map.py
+query-prefix	ok			scripts/psl2fasta.py
+query-species	ok			scripts/genes2genes.py
+querygenome	rename		query-genome	scripts/chain2stats.py
+quick	ok			scripts/csv2db.py
+qvalue-lambda	rename		fdr-lambda	scripts/genelist_analysis.py
+qvalue-method	rename		fdr-method	scripts/genelist_analysis.py,scripts/runGO.py
+radius	split	territory-extension, ...		scripts/gtf2gff.py
+random	bad	?		scripts/malis2masks.py,scripts/quality2masks.py
+random-access-points	ok			scripts/index_fasta.py
+random-proportion	ok			scripts/malis2masks.py
+random-seed	ok			scripts/add_random_reads_to_bam.py,scripts/add_script_template.py,scripts/align_mali_vs_mali.py,scripts/align_transcripts.py,scripts/analyze_codonbias_orthology.py,scripts/analyze_go.py,scripts/analyze_sequences.py,scripts/annotator2tsv.py,scripts/annotator_distance.py,scripts/bam2UniquePairs.py,scripts/bam2bam.py,scripts/bam2bed.py,scripts/bam2bidirectionaltranscription.py,scripts/bam2fastq.py,scripts/bam2geneprofile.py,scripts/bam2peakshape.py,scripts/bam2profile.py,scripts/bam2species_map.py,scripts/bam2stats.py,scripts/bam2transcriptContribution.py,scripts/bam2wiggle.py,scripts/bam_vs_bam.py,scripts/bam_vs_bed.py,scripts/bam_vs_gtf.py,scripts/bams2bam.py,scripts/barplotGo.py,scripts/bed2annotator.py,scripts/bed2bed.py,scripts/bed2fasta.py,scripts/bed2gff.py,scripts/bed2graph.py,scripts/bed2plot.py,scripts/bed2psl.py,scripts/bed2stats.py,scripts/bed2table.py,scripts/beds2beds.py,scripts/beds2counts.py,scripts/bigwig2hilbert.py,scripts/blast2table.py,scripts/cat_tables.py,scripts/cgat2dot.py,scripts/cgat2rdf.py,scripts/cgat_build_report_page.py,scripts/cgat_clean.py,scripts/cgat_cluster_distribute.py,scripts/cgat_cwd2list.py,scripts/cgat_galaxy_wrapper.py,scripts/cgat_log2wiki.py,scripts/cgat_logfiles2tsv.py,scripts/cgat_make2help.py,scripts/cgat_pep8_code_quality.py,scripts/cgat_rebuild_extensions.py,scripts/cgat_ruffus_profile.py,scripts/cgat_script_template.py,scripts/cgat_zap.py,scripts/chain2psl.py,scripts/chain2stats.py,scripts/check_db.py,scripts/clean.py,scripts/codeml2tsv.py,scripts/codemls2tsv.py,scripts/codonbias_acai2tsv.py,scripts/codonbias_weights2tsv.py,scripts/combine_files.py,scripts/combine_gff.py,scripts/combine_tables.py,scripts/compare_clusters.py,scripts/compare_histograms.py,scripts/contigs2random_sample.py,scripts/contigs2stats.py,scripts/convert_time2seconds.py,scripts/coverage2stats.py,scripts/csv2db.py,scripts/csvs2csv.py,scripts/cwd2list.py,scripts/data2multiple_anova.py,scripts/data2phylocontrasts.py,scripts/data2stats.py,scripts/diff_bam.py,scripts/diff_bed.py,scripts/diff_chains.py,scripts/diff_gtf.py,scripts/ena2table.py,scripts/farm.py,scripts/fasta2distances.py,scripts/fasta2fasta.py,scripts/fasta2kmercontent.py,scripts/fasta2table.py,scripts/fasta2variants.py,scripts/fastas2fasta.py,scripts/fastq2N.py,scripts/fastq2fastq.py,scripts/fastq2solid.py,scripts/fastq2summary.py,scripts/fastq2table.py,scripts/fastqs2fasta.py,scripts/fastqs2fastq.py,scripts/fastqs2fastqs.py,scripts/filter_reads.py,scripts/filter_tokens.py,scripts/formatMetagenemark.py,scripts/genelist_analysis.py,scripts/genes2genes.py,scripts/genome_bed.py,scripts/geo2table.py,scripts/gff2bed.py,scripts/gff2coverage.py,scripts/gff2fasta.py,scripts/gff2gff.py,scripts/gff2histogram.py,scripts/gff2psl.py,scripts/gff2stats.py,scripts/gff2table.py,scripts/gff2view.py,scripts/gff32gtf.py,scripts/gff_compare.py,scripts/gff_decorate.py,scripts/gi2parents.py,scripts/graph_filter_links_redundant.py,scripts/graph_group_links_by_taxonomy.py,scripts/gtf2alleles.py,scripts/gtf2fasta.py,scripts/gtf2gff.py,scripts/gtf2gtf.py,scripts/gtf2overlap.py,scripts/gtf2reads.py,scripts/gtf2table.py,scripts/gtf2tsv.py,scripts/gtfs2graph.py,scripts/gtfs2tsv.py,scripts/histogram2histogram.py,scripts/histograms2kl.py,scripts/index2bed.py,scripts/index2gff.py,scripts/index_fasta.py,scripts/intervaltable2bed.py,scripts/jalview.py,scripts/liftover.py,scripts/maf2psl.py,scripts/mali2bootstrap.py,scripts/mali2cleaned_mali.py,scripts/mali2kaks.py,scripts/mali2mali.py,scripts/mali2malis.py,scripts/mali2predictions.py,scripts/mali2rates.py,scripts/mali2summary.py,scripts/mali2table.py,scripts/mali_phylip2fasta.py,scripts/mali_plain2aln.py,scripts/malis2mali.py,scripts/malis2malis.py,scripts/malis2masks.py,scripts/malis2profiles.py,scripts/maq2assembly.py,scripts/maq2psl.py,scripts/mask_fasta.py,scripts/matrix2matrix.py,scripts/matrix2stats.py,scripts/medip_merge_intervals.py,scripts/merge_tables.py,scripts/metaphlan2table.py,scripts/modify_table.py,scripts/mysql_clone_database.py,scripts/mysql_copy_tables.py,scripts/nofarm.py,scripts/nr2table.py,scripts/numbers2rgb.py,scripts/peptides2cds.py,scripts/plot_matrix.py,scripts/probeset2gene.py,scripts/psl2assembly.py,scripts/psl2chain.py,scripts/psl2fasta.py,scripts/psl2gff.py,scripts/psl2map.py,scripts/psl2psl.py,scripts/psl2stats.py,scripts/psl2table.py,scripts/psl2wiggle.py,scripts/psl2wiggle_stats.py,scripts/psql_clone_database.py,scripts/qkill.py,scripts/quality2masks.py,scripts/r_compare_distributions.py,scripts/r_mann_whitney_u.py,scripts/r_table2scatter.py,scripts/r_test.py,scripts/radar.py,scripts/rename_links.py,scripts/revigo.py,scripts/rnaseq_junction_bam2bam.py,scripts/run.py,scripts/runExpression.py,scripts/runGO.py,scripts/runSPP.py,scripts/runZinba.py,scripts/run_function.py,scripts/sequence2alignment.py,scripts/sequences2mali.py,scripts/set_diff.py,scripts/snp2counts.py,scripts/snp2maf.py,scripts/snp2snp.py,scripts/snp2table.py,scripts/solexa2stats.py,scripts/sparse2full.py,scripts/species_map2species_map.py,scripts/split_fasta.py,scripts/split_genome.py,scripts/split_genomic_fasta_file.py,scripts/split_gff.py,scripts/split_links.py,scripts/submit.py,scripts/table2graph.py,scripts/table2table.py,scripts/transfac2transfac.py,scripts/tree2taxa.py,scripts/tree_strain2species.py,scripts/trees2tree.py,scripts/trees2trees.py,scripts/vcf2vcf.py,scripts/vcfstats2db.py,scripts/wig2bed.py,scripts/wig2wig.py
+random-shift	ok			scripts/bam2peakshape.py
+randomize	ok			scripts/gff2view.py
+range	bad	more explicit		scripts/graph_group_links_by_taxonomy.py
+read-length-mean	ok			scripts/gtf2reads.py
+read-length-std	ok			scripts/gtf2reads.py
+read-twice	ok			scripts/gff32gtf.py
+readlength	bad		read-length	scripts/add_random_reads_to_bam.py
+recursive	ok			scripts/cgat_logfiles2tsv.py,scripts/rename_links.py
+reduce	ok			scripts/farm.py,scripts/nofarm.py
+reference	?			scripts/codonbias_acai2tsv.py,scripts/snp2maf.py
+reference-GTF	rename		reference-gtf-file	scripts/bam2transcriptContribution.py
+reference-bam	rename		reference-bam-file	scripts/bam2bam.py
+reference-group	ok			scripts/runExpression.py
+regex	ok			scripts/split_links.py
+regex-end	ok			scripts/combine_tables.py
+regex-filename	ok			scripts/combine_tables.py,scripts/csvs2csv.py
+regex-head	ok			scripts/check_db.py
+regex-id	rename		regex-identifier	scripts/annotator2tsv.py,scripts/trees2tree.py
+regex-identifier	ok			scripts/bam_vs_bam.py,scripts/fasta2table.py,scripts/index_fasta.py
+regex-reference	ok			scripts/gff_compare.py
+regex-start	ok			scripts/combine_tables.py
+regex-tail	ok			scripts/check_db.py
+regex-target	ok			scripts/gff_compare.py
+regex-token	ok			scripts/filter_tokens.py
+region	ok			scripts/bam2bed.py
+remove-all-gaps	bad	should be -method		scripts/malis2mali.py,scripts/malis2malis.py
+remove-any-gaps	bad	should be -method		scripts/malis2mali.py,scripts/malis2malis.py
+remove-contigs	bad	should be -method		scripts/bams2bam.py,scripts/gff2gff.py,scripts/rnaseq_junction_bam2bam.py
+remove-duplicates	bad	should be -method		scripts/gtf2gtf.py
+remove-frameshifts	bad	should be -method		scripts/align_transcripts.py
+remove-inconsistent	bad	should be -method		scripts/bed2bed.py
+remove-masked-regions	bad	should be -method		scripts/gff2fasta.py
+remove-overhangs	bad	should be -method		scripts/annotator_distance.py
+remove-overlapping	bad	should be -method		scripts/gtf2gtf.py
+remove-regex	bad	should be -method		scripts/index2bed.py
+remove-rna	bad	should be -method		scripts/bam2stats.py
+remove-stops	bad	should be -method		scripts/align_transcripts.py,scripts/mali2kaks.py
+rename	bad	should be -method		scripts/gtf2gtf.py
+rename-column	bad	should be -method		scripts/csv2db.py
+rename-duplicates	bad	should be -method		scripts/gtf2gtf.py
+renumber	bad	should be -method		scripts/farm.py,scripts/nofarm.py
+renumber-column	bad	should be -method		scripts/farm.py,scripts/nofarm.py
+renumber-genes	bad	should be -method		scripts/gtf2gtf.py
+renumber-ids	bad	should be -method		scripts/fastq2fastq.py
+renumber-transcripts	bad	should be -method		scripts/gtf2gtf.py
+reorder	bad	should be -method		scripts/vcf2vcf.py
+replace	bad	should be -method		scripts/modify_table.py
+replace-header	bad	should be -method		scripts/csv2db.py
+replicates	?			scripts/mali2kaks.py
+report	?			scripts/bam2UniquePairs.py,scripts/chain2stats.py
+reporter	ok			scripts/bam2geneprofile.py,scripts/gtf2table.py
+reset-strand	bad	should be -method		scripts/gtf2gtf.py
+resolution	ok			scripts/annotator_distance.py
+resolution-cds	ok			scripts/bam2geneprofile.py
+resolution-downstream	ok			scripts/bam2geneprofile.py
+resolution-downstream-utr	ok			scripts/bam2geneprofile.py
+resolution-exons-absolute-distance-topolya	ok			scripts/bam2geneprofile.py
+resolution-introns	ok			scripts/bam2geneprofile.py
+resolution-introns-absolute-distance-topolya	ok			scripts/bam2geneprofile.py
+resolution-upstream	ok			scripts/bam2geneprofile.py
+resolution-upstream-utr	ok			scripts/bam2geneprofile.py
+restrict	ok			scripts/diff_chains.py
+restrict-source	ok			scripts/gtf2gff.py
+resubmit	ok			scripts/farm.py,scripts/nofarm.py
+resume	ok			scripts/farm.py,scripts/nofarm.py
+retry	ok			scripts/csv2db.py
+reverse-palette	ok			scripts/plot_matrix.py,scripts/revigo.py
+reverse-set	ok			scripts/codonbias_acai2tsv.py
+row-names	ok			scripts/sparse2full.py
+rows	?			scripts/data2stats.py
+sam	rename		sam-file	scripts/bam2bam.py,scripts/bams2bam.py
+sample	ok			scripts/fastq2fastq.py,scripts/genelist_analysis.py,scripts/malis2mali.py,scripts/malis2malis.py
+sample-method	ok			scripts/malis2mali.py,scripts/malis2malis.py
+sample-proportion	ok			scripts/fasta2fasta.py
+sample-size	ok			scripts/gtf2gtf.py,scripts/gtf2reads.py,scripts/runGO.py
+sampler	ok			scripts/annotator_distance.py
+samples	rename		sample-size	scripts/mali2bootstrap.py
+sanitize	bad	should be -method		scripts/gff2gff.py
+save-R	rename		output-R-code	scripts/runExpression.py
+scale	bad			scripts/data2stats.py,scripts/matrix2matrix.py,scripts/table2table.py
+scale-flank-length	ok			scripts/bam2geneprofile.py
+scratchdir	rename		scratch-dir	scripts/cgat_cluster_distribute.py
+scripts-dir	ok			scripts/gtf2overlap.py
+section	ok			scripts/bed2annotator.py,scripts/fasta2table.py,scripts/gtf2table.py
+sections	ok			scripts/mali2table.py
+seed	ok			scripts/fastq2fastq.py
+segments	?		segments-bed-file	scripts/annotator2tsv.py,scripts/annotator_distance.py
+segments-format	ok			scripts/annotator_distance.py
+segments-gtf	?		segments-gtf-file	scripts/annotator2tsv.py
+select	ok			scripts/codonbias_acai2tsv.py,scripts/psl2psl.py
+selection-mode	ok			scripts/codemls2tsv.py
+separator	ok			scripts/table2table.py
+sequence	split			scripts/mask_fasta.py,scripts/split_genomic_fasta_file.py
+session	ok			scripts/bed2plot.py
+session-only	ok			scripts/bed2plot.py
+set-alpha	ok			scripts/mali2rates.py
+set-clean-data	ok			scripts/mali2kaks.py,scripts/mali2rates.py
+set-codon-frequencies	ok			scripts/mali2kaks.py
+set-gene-to-transcript	bad	should be -method		scripts/gtf2gtf.py
+set-kappa	ok			scripts/mali2kaks.py,scripts/mali2rates.py
+set-method	ok			scripts/mali2kaks.py
+set-nh	bad	should be -method		scripts/bam2bam.py
+set-omega	ok			scripts/mali2kaks.py
+set-optimization-threshold	ok			scripts/mali2kaks.py
+set-protein-to-transcript	bad	should be -method		scripts/gtf2gtf.py
+set-score2distance	bad	should be -method		scripts/gtf2gtf.py
+set-sequence	bad	should be -method		scripts/bam2bam.py
+set-sequence-type	ok			scripts/mali2kaks.py
+set-transcript-to-gene	bad	should be -method		scripts/gtf2gtf.py
+set-transpose-field	ok			scripts/table2table.py
+shift	rename		shift-size	scripts/bam2geneprofile.py,scripts/bam2peakshape.py,scripts/bam2wiggle.py
+shift-size	ok			scripts/genome_bed.py
+side	?			scripts/barplotGo.py
+significance-threshold	ok			scripts/codeml2tsv.py,scripts/codemls2tsv.py
+sites	ok			scripts/mali2rates.py
+skip-doubles	ok			scripts/malis2mali.py,scripts/malis2malis.py
+skip-empty	ok			scripts/data2stats.py,scripts/gff2table.py,scripts/gff_decorate.py
+skip-header	ok			scripts/data2multiple_anova.py,scripts/data2phylocontrasts.py,scripts/data2stats.py,scripts/set_diff.py
+skip-identifiers	ok			scripts/split_fasta.py
+skip-missing	ok			scripts/gff2gff.py
+skip-plot	ok			scripts/r_compare_distributions.py
+skip-separators	ok			scripts/sparse2full.py
+skip-titles	ok			scripts/combine_tables.py,scripts/csvs2csv.py
+skip-trees	ok			scripts/tree2taxa.py
+slims	bad			scripts/genelist_analysis.py,scripts/runGO.py
+snapshot-dir	ok			scripts/bed2plot.py
+sort	split			scripts/bam2peakshape.py,scripts/codonbias_weights2tsv.py,scripts/combine_tables.py,scripts/csvs2csv.py,scripts/fastq2fastq.py,scripts/gtf2gff.py,scripts/gtf2gtf.py
+sort-by-rows	ok			scripts/table2table.py
+sort-keys	ok			scripts/combine_tables.py,scripts/csvs2csv.py
+sort-order	ok			scripts/genelist_analysis.py,scripts/runGO.py
+source-dir	ok			scripts/cgat2dot.py,scripts/cgat2rdf.py
+span	rename		wiggle-span	scripts/bam2wiggle.py
+species	ok			scripts/analyze_go.py,scripts/analyze_sequences.py,scripts/genelist_analysis.py,scripts/runGO.py
+species-map	ok			scripts/contigs2random_sample.py
+species-tree	ok			scripts/tree_strain2species.py
+split-at-column	ok			scripts/farm.py,scripts/nofarm.py
+split-at-lines	ok			scripts/farm.py,scripts/nofarm.py
+split-at-regex	ok			scripts/farm.py,scripts/nofarm.py
+split-at-tag	ok			scripts/farm.py,scripts/nofarm.py
+split-exons	ok			scripts/align_transcripts.py
+split-fasta-identifier	ok			scripts/fasta2table.py
+split-fields	ok			scripts/table2table.py
+srange-max	rename		spp-srange-max	scripts/runSPP.py
+srange-min	rename		spp-srange-min	scripts/runSPP.py
+staggered	ok			scripts/psl2assembly.py
+start	ok			scripts/cgat_log2wiki.py
+start-at	ok			scripts/psl2assembly.py
+stats	bad	should be -method		scripts/r_table2scatter.py
+stdin	ok			scripts/add_random_reads_to_bam.py,scripts/add_script_template.py,scripts/align_mali_vs_mali.py,scripts/align_transcripts.py,scripts/analyze_codonbias_orthology.py,scripts/analyze_go.py,scripts/analyze_sequences.py,scripts/annotator2tsv.py,scripts/annotator_distance.py,scripts/bam2UniquePairs.py,scripts/bam2bam.py,scripts/bam2bed.py,scripts/bam2bidirectionaltranscription.py,scripts/bam2fastq.py,scripts/bam2geneprofile.py,scripts/bam2peakshape.py,scripts/bam2profile.py,scripts/bam2species_map.py,scripts/bam2stats.py,scripts/bam2transcriptContribution.py,scripts/bam2wiggle.py,scripts/bam_vs_bam.py,scripts/bam_vs_bed.py,scripts/bam_vs_gtf.py,scripts/bams2bam.py,scripts/barplotGo.py,scripts/bed2annotator.py,scripts/bed2bed.py,scripts/bed2fasta.py,scripts/bed2gff.py,scripts/bed2graph.py,scripts/bed2plot.py,scripts/bed2psl.py,scripts/bed2stats.py,scripts/bed2table.py,scripts/beds2beds.py,scripts/beds2counts.py,scripts/bigwig2hilbert.py,scripts/blast2table.py,scripts/cat_tables.py,scripts/cgat2dot.py,scripts/cgat2rdf.py,scripts/cgat_build_report_page.py,scripts/cgat_clean.py,scripts/cgat_cluster_distribute.py,scripts/cgat_cwd2list.py,scripts/cgat_galaxy_wrapper.py,scripts/cgat_log2wiki.py,scripts/cgat_logfiles2tsv.py,scripts/cgat_make2help.py,scripts/cgat_pep8_code_quality.py,scripts/cgat_rebuild_extensions.py,scripts/cgat_ruffus_profile.py,scripts/cgat_script_template.py,scripts/cgat_zap.py,scripts/chain2psl.py,scripts/chain2stats.py,scripts/check_db.py,scripts/clean.py,scripts/codeml2tsv.py,scripts/codemls2tsv.py,scripts/codonbias_acai2tsv.py,scripts/codonbias_weights2tsv.py,scripts/combine_files.py,scripts/combine_gff.py,scripts/combine_tables.py,scripts/compare_clusters.py,scripts/compare_histograms.py,scripts/contigs2random_sample.py,scripts/contigs2stats.py,scripts/convert_time2seconds.py,scripts/coverage2stats.py,scripts/csv2db.py,scripts/csvs2csv.py,scripts/cwd2list.py,scripts/data2multiple_anova.py,scripts/data2phylocontrasts.py,scripts/data2stats.py,scripts/diff_bam.py,scripts/diff_bed.py,scripts/diff_chains.py,scripts/diff_gtf.py,scripts/ena2table.py,scripts/farm.py,scripts/fasta2distances.py,scripts/fasta2fasta.py,scripts/fasta2kmercontent.py,scripts/fasta2table.py,scripts/fasta2variants.py,scripts/fastas2fasta.py,scripts/fastq2N.py,scripts/fastq2fastq.py,scripts/fastq2solid.py,scripts/fastq2summary.py,scripts/fastq2table.py,scripts/fastqs2fasta.py,scripts/fastqs2fastq.py,scripts/fastqs2fastqs.py,scripts/filter_reads.py,scripts/filter_tokens.py,scripts/formatMetagenemark.py,scripts/genelist_analysis.py,scripts/genes2genes.py,scripts/genome_bed.py,scripts/geo2table.py,scripts/gff2bed.py,scripts/gff2coverage.py,scripts/gff2fasta.py,scripts/gff2gff.py,scripts/gff2histogram.py,scripts/gff2psl.py,scripts/gff2stats.py,scripts/gff2table.py,scripts/gff2view.py,scripts/gff32gtf.py,scripts/gff_compare.py,scripts/gff_decorate.py,scripts/gi2parents.py,scripts/graph_filter_links_redundant.py,scripts/graph_group_links_by_taxonomy.py,scripts/gtf2alleles.py,scripts/gtf2fasta.py,scripts/gtf2gff.py,scripts/gtf2gtf.py,scripts/gtf2overlap.py,scripts/gtf2reads.py,scripts/gtf2table.py,scripts/gtf2tsv.py,scripts/gtfs2graph.py,scripts/gtfs2tsv.py,scripts/histogram2histogram.py,scripts/histograms2kl.py,scripts/index2bed.py,scripts/index2gff.py,scripts/index_fasta.py,scripts/intervaltable2bed.py,scripts/jalview.py,scripts/liftover.py,scripts/maf2psl.py,scripts/mali2bootstrap.py,scripts/mali2cleaned_mali.py,scripts/mali2kaks.py,scripts/mali2mali.py,scripts/mali2malis.py,scripts/mali2predictions.py,scripts/mali2rates.py,scripts/mali2summary.py,scripts/mali2table.py,scripts/mali_phylip2fasta.py,scripts/mali_plain2aln.py,scripts/malis2mali.py,scripts/malis2malis.py,scripts/malis2masks.py,scripts/malis2profiles.py,scripts/maq2assembly.py,scripts/maq2psl.py,scripts/mask_fasta.py,scripts/matrix2matrix.py,scripts/matrix2stats.py,scripts/medip_merge_intervals.py,scripts/merge_tables.py,scripts/metaphlan2table.py,scripts/modify_table.py,scripts/mysql_clone_database.py,scripts/mysql_copy_tables.py,scripts/nofarm.py,scripts/nr2table.py,scripts/numbers2rgb.py,scripts/peptides2cds.py,scripts/plot_matrix.py,scripts/probeset2gene.py,scripts/psl2assembly.py,scripts/psl2chain.py,scripts/psl2fasta.py,scripts/psl2gff.py,scripts/psl2map.py,scripts/psl2psl.py,scripts/psl2stats.py,scripts/psl2table.py,scripts/psl2wiggle.py,scripts/psl2wiggle_stats.py,scripts/psql_clone_database.py,scripts/qkill.py,scripts/quality2masks.py,scripts/r_compare_distributions.py,scripts/r_mann_whitney_u.py,scripts/r_table2scatter.py,scripts/r_test.py,scripts/radar.py,scripts/rename_links.py,scripts/revigo.py,scripts/rnaseq_junction_bam2bam.py,scripts/run.py,scripts/runExpression.py,scripts/runGO.py,scripts/runSPP.py,scripts/runZinba.py,scripts/run_function.py,scripts/sequence2alignment.py,scripts/sequences2mali.py,scripts/set_diff.py,scripts/snp2counts.py,scripts/snp2maf.py,scripts/snp2snp.py,scripts/snp2table.py,scripts/solexa2stats.py,scripts/sparse2full.py,scripts/species_map2species_map.py,scripts/split_fasta.py,scripts/split_genome.py,scripts/split_genomic_fasta_file.py,scripts/split_gff.py,scripts/split_links.py,scripts/submit.py,scripts/table2graph.py,scripts/table2table.py,scripts/transfac2transfac.py,scripts/tree2taxa.py,scripts/tree_strain2species.py,scripts/trees2tree.py,scripts/trees2trees.py,scripts/vcf2vcf.py,scripts/vcfstats2db.py,scripts/wig2bed.py,scripts/wig2wig.py
+stdout	ok			scripts/add_random_reads_to_bam.py,scripts/add_script_template.py,scripts/align_mali_vs_mali.py,scripts/align_transcripts.py,scripts/analyze_codonbias_orthology.py,scripts/analyze_go.py,scripts/analyze_sequences.py,scripts/annotator2tsv.py,scripts/annotator_distance.py,scripts/bam2UniquePairs.py,scripts/bam2bam.py,scripts/bam2bed.py,scripts/bam2bidirectionaltranscription.py,scripts/bam2fastq.py,scripts/bam2geneprofile.py,scripts/bam2peakshape.py,scripts/bam2profile.py,scripts/bam2species_map.py,scripts/bam2stats.py,scripts/bam2transcriptContribution.py,scripts/bam2wiggle.py,scripts/bam_vs_bam.py,scripts/bam_vs_bed.py,scripts/bam_vs_gtf.py,scripts/bams2bam.py,scripts/barplotGo.py,scripts/bed2annotator.py,scripts/bed2bed.py,scripts/bed2fasta.py,scripts/bed2gff.py,scripts/bed2graph.py,scripts/bed2plot.py,scripts/bed2psl.py,scripts/bed2stats.py,scripts/bed2table.py,scripts/beds2beds.py,scripts/beds2counts.py,scripts/bigwig2hilbert.py,scripts/blast2table.py,scripts/cat_tables.py,scripts/cgat2dot.py,scripts/cgat2rdf.py,scripts/cgat_build_report_page.py,scripts/cgat_clean.py,scripts/cgat_cluster_distribute.py,scripts/cgat_cwd2list.py,scripts/cgat_galaxy_wrapper.py,scripts/cgat_log2wiki.py,scripts/cgat_logfiles2tsv.py,scripts/cgat_make2help.py,scripts/cgat_pep8_code_quality.py,scripts/cgat_rebuild_extensions.py,scripts/cgat_ruffus_profile.py,scripts/cgat_script_template.py,scripts/cgat_zap.py,scripts/chain2psl.py,scripts/chain2stats.py,scripts/check_db.py,scripts/clean.py,scripts/codeml2tsv.py,scripts/codemls2tsv.py,scripts/codonbias_acai2tsv.py,scripts/codonbias_weights2tsv.py,scripts/combine_files.py,scripts/combine_gff.py,scripts/combine_tables.py,scripts/compare_clusters.py,scripts/compare_histograms.py,scripts/contigs2random_sample.py,scripts/contigs2stats.py,scripts/convert_time2seconds.py,scripts/coverage2stats.py,scripts/csv2db.py,scripts/csvs2csv.py,scripts/cwd2list.py,scripts/data2multiple_anova.py,scripts/data2phylocontrasts.py,scripts/data2stats.py,scripts/diff_bam.py,scripts/diff_bed.py,scripts/diff_chains.py,scripts/diff_gtf.py,scripts/ena2table.py,scripts/farm.py,scripts/fasta2distances.py,scripts/fasta2fasta.py,scripts/fasta2kmercontent.py,scripts/fasta2table.py,scripts/fasta2variants.py,scripts/fastas2fasta.py,scripts/fastq2N.py,scripts/fastq2fastq.py,scripts/fastq2solid.py,scripts/fastq2summary.py,scripts/fastq2table.py,scripts/fastqs2fasta.py,scripts/fastqs2fastq.py,scripts/fastqs2fastqs.py,scripts/filter_reads.py,scripts/filter_tokens.py,scripts/formatMetagenemark.py,scripts/genelist_analysis.py,scripts/genes2genes.py,scripts/genome_bed.py,scripts/geo2table.py,scripts/gff2bed.py,scripts/gff2coverage.py,scripts/gff2fasta.py,scripts/gff2gff.py,scripts/gff2histogram.py,scripts/gff2psl.py,scripts/gff2stats.py,scripts/gff2table.py,scripts/gff2view.py,scripts/gff32gtf.py,scripts/gff_compare.py,scripts/gff_decorate.py,scripts/gi2parents.py,scripts/graph_filter_links_redundant.py,scripts/graph_group_links_by_taxonomy.py,scripts/gtf2alleles.py,scripts/gtf2fasta.py,scripts/gtf2gff.py,scripts/gtf2gtf.py,scripts/gtf2overlap.py,scripts/gtf2reads.py,scripts/gtf2table.py,scripts/gtf2tsv.py,scripts/gtfs2graph.py,scripts/gtfs2tsv.py,scripts/histogram2histogram.py,scripts/histograms2kl.py,scripts/index2bed.py,scripts/index2gff.py,scripts/index_fasta.py,scripts/intervaltable2bed.py,scripts/jalview.py,scripts/liftover.py,scripts/maf2psl.py,scripts/mali2bootstrap.py,scripts/mali2cleaned_mali.py,scripts/mali2kaks.py,scripts/mali2mali.py,scripts/mali2malis.py,scripts/mali2predictions.py,scripts/mali2rates.py,scripts/mali2summary.py,scripts/mali2table.py,scripts/mali_phylip2fasta.py,scripts/mali_plain2aln.py,scripts/malis2mali.py,scripts/malis2malis.py,scripts/malis2masks.py,scripts/malis2profiles.py,scripts/maq2assembly.py,scripts/maq2psl.py,scripts/mask_fasta.py,scripts/matrix2matrix.py,scripts/matrix2stats.py,scripts/medip_merge_intervals.py,scripts/merge_tables.py,scripts/metaphlan2table.py,scripts/modify_table.py,scripts/mysql_clone_database.py,scripts/mysql_copy_tables.py,scripts/nofarm.py,scripts/nr2table.py,scripts/numbers2rgb.py,scripts/peptides2cds.py,scripts/plot_matrix.py,scripts/probeset2gene.py,scripts/psl2assembly.py,scripts/psl2chain.py,scripts/psl2fasta.py,scripts/psl2gff.py,scripts/psl2map.py,scripts/psl2psl.py,scripts/psl2stats.py,scripts/psl2table.py,scripts/psl2wiggle.py,scripts/psl2wiggle_stats.py,scripts/psql_clone_database.py,scripts/qkill.py,scripts/quality2masks.py,scripts/r_compare_distributions.py,scripts/r_mann_whitney_u.py,scripts/r_table2scatter.py,scripts/r_test.py,scripts/radar.py,scripts/rename_links.py,scripts/revigo.py,scripts/rnaseq_junction_bam2bam.py,scripts/run.py,scripts/runExpression.py,scripts/runGO.py,scripts/runSPP.py,scripts/runZinba.py,scripts/run_function.py,scripts/sequence2alignment.py,scripts/sequences2mali.py,scripts/set_diff.py,scripts/snp2counts.py,scripts/snp2maf.py,scripts/snp2snp.py,scripts/snp2table.py,scripts/solexa2stats.py,scripts/sparse2full.py,scripts/species_map2species_map.py,scripts/split_fasta.py,scripts/split_genome.py,scripts/split_genomic_fasta_file.py,scripts/split_gff.py,scripts/split_links.py,scripts/submit.py,scripts/table2graph.py,scripts/table2table.py,scripts/transfac2transfac.py,scripts/tree2taxa.py,scripts/tree_strain2species.py,scripts/trees2tree.py,scripts/trees2trees.py,scripts/vcf2vcf.py,scripts/vcfstats2db.py,scripts/wig2bed.py,scripts/wig2wig.py
+stop-at	ok			scripts/align_transcripts.py
+strict	ok			scripts/align_transcripts.py,scripts/genelist_analysis.py,scripts/runGO.py
+strip	bad	should be -method		scripts/bam2bam.py
+subdirs	bad	use-subdirs?		scripts/farm.py,scripts/nofarm.py
+subplots	bad	use-subplots?		scripts/plot_matrix.py
+subset	bad	subset-???-file		scripts/bed2annotator.py
+suffix	ok			scripts/combine_files.py
+synonyms	ok			scripts/index_fasta.py
+table	?			scripts/check_db.py,scripts/csv2db.py,scripts/intervaltable2bed.py,scripts/merge_tables.py
+tablename	?			scripts/gtf2alleles.py
+tag-count	ok			scripts/bam2bidirectionaltranscription.py
+take	ok			scripts/combine_tables.py
+target	ok			scripts/align_transcripts.py,scripts/bed2psl.py,scripts/gff2view.py,scripts/maf2psl.py
+target-dir	ok			scripts/mysql_copy_tables.py
+target-prefix	ok			scripts/psl2fasta.py
+target-species	ok			scripts/genes2genes.py
+targetgenome	rename		target-genome	scripts/chain2stats.py
+targets	ok			scripts/split_links.py
+tax-id	rename		tax-identifier	scripts/ena2table.py
+taxa-code	?			scripts/gi2parents.py
+temp-dir	ok			scripts/runZinba.py
+template	ok			scripts/add_script_template.py
+template-bam	rename		template-bam-file	scripts/rnaseq_junction_bam2bam.py
+template-identifier	ok			scripts/fasta2fasta.py
+test	ok			scripts/bigwig2hilbert.py,scripts/cgat_script_template.py,scripts/combine_tables.py,scripts/geo2table.py,scripts/graph_filter_links_redundant.py,scripts/gtf2reads.py,scripts/mali2rates.py,scripts/malis2mali.py,scripts/malis2malis.py,scripts/psl2assembly.py,scripts/psl2map.py,scripts/psl2psl.py,scripts/psl2wiggle_stats.py
+test-option	ok			scripts/cgat_rebuild_extensions.py,scripts/solexa2stats.py
+threads	ok			scripts/runSPP.py,scripts/runZinba.py
+threshold	split			scripts/genelist_analysis.py,scripts/plot_matrix.py,scripts/r_table2scatter.py,scripts/runGO.py,scripts/wig2bed.py
+threshold-good-query-coverage	ok			scripts/psl2map.py
+threshold-max-error-rate	ok			scripts/psl2map.py
+threshold-max-query-gapchars	ok			scripts/psl2map.py
+threshold-max-query-gaps	ok			scripts/psl2map.py
+threshold-max-sbjct-gapchars	ok			scripts/psl2map.py
+threshold-max-sbjct-gaps	ok			scripts/psl2map.py
+threshold-merge-distance	ok			scripts/psl2assembly.py,scripts/psl2psl.py
+threshold-merge-overlap	ok			scripts/psl2assembly.py
+threshold-min-matches	ok			scripts/psl2map.py
+threshold-min-pid	ok			scripts/psl2map.py
+threshold-min-query-coverage	ok			scripts/psl2map.py
+time	ok			scripts/cgat_ruffus_profile.py
+timeit	ok			scripts/add_random_reads_to_bam.py,scripts/add_script_template.py,scripts/align_mali_vs_mali.py,scripts/align_transcripts.py,scripts/analyze_codonbias_orthology.py,scripts/analyze_go.py,scripts/analyze_sequences.py,scripts/annotator2tsv.py,scripts/annotator_distance.py,scripts/bam2UniquePairs.py,scripts/bam2bam.py,scripts/bam2bed.py,scripts/bam2bidirectionaltranscription.py,scripts/bam2fastq.py,scripts/bam2geneprofile.py,scripts/bam2peakshape.py,scripts/bam2profile.py,scripts/bam2species_map.py,scripts/bam2stats.py,scripts/bam2transcriptContribution.py,scripts/bam2wiggle.py,scripts/bam_vs_bam.py,scripts/bam_vs_bed.py,scripts/bam_vs_gtf.py,scripts/bams2bam.py,scripts/barplotGo.py,scripts/bed2annotator.py,scripts/bed2bed.py,scripts/bed2fasta.py,scripts/bed2gff.py,scripts/bed2graph.py,scripts/bed2plot.py,scripts/bed2psl.py,scripts/bed2stats.py,scripts/bed2table.py,scripts/beds2beds.py,scripts/beds2counts.py,scripts/bigwig2hilbert.py,scripts/blast2table.py,scripts/cat_tables.py,scripts/cgat2dot.py,scripts/cgat2rdf.py,scripts/cgat_build_report_page.py,scripts/cgat_clean.py,scripts/cgat_cluster_distribute.py,scripts/cgat_cwd2list.py,scripts/cgat_galaxy_wrapper.py,scripts/cgat_log2wiki.py,scripts/cgat_logfiles2tsv.py,scripts/cgat_make2help.py,scripts/cgat_pep8_code_quality.py,scripts/cgat_rebuild_extensions.py,scripts/cgat_ruffus_profile.py,scripts/cgat_script_template.py,scripts/cgat_zap.py,scripts/chain2psl.py,scripts/chain2stats.py,scripts/check_db.py,scripts/clean.py,scripts/codeml2tsv.py,scripts/codemls2tsv.py,scripts/codonbias_acai2tsv.py,scripts/codonbias_weights2tsv.py,scripts/combine_files.py,scripts/combine_gff.py,scripts/combine_tables.py,scripts/compare_clusters.py,scripts/compare_histograms.py,scripts/contigs2random_sample.py,scripts/contigs2stats.py,scripts/convert_time2seconds.py,scripts/coverage2stats.py,scripts/csv2db.py,scripts/csvs2csv.py,scripts/cwd2list.py,scripts/data2multiple_anova.py,scripts/data2phylocontrasts.py,scripts/data2stats.py,scripts/diff_bam.py,scripts/diff_bed.py,scripts/diff_chains.py,scripts/diff_gtf.py,scripts/ena2table.py,scripts/farm.py,scripts/fasta2distances.py,scripts/fasta2fasta.py,scripts/fasta2kmercontent.py,scripts/fasta2table.py,scripts/fasta2variants.py,scripts/fastas2fasta.py,scripts/fastq2N.py,scripts/fastq2fastq.py,scripts/fastq2solid.py,scripts/fastq2summary.py,scripts/fastq2table.py,scripts/fastqs2fasta.py,scripts/fastqs2fastq.py,scripts/fastqs2fastqs.py,scripts/filter_reads.py,scripts/filter_tokens.py,scripts/formatMetagenemark.py,scripts/genelist_analysis.py,scripts/genes2genes.py,scripts/genome_bed.py,scripts/geo2table.py,scripts/gff2bed.py,scripts/gff2coverage.py,scripts/gff2fasta.py,scripts/gff2gff.py,scripts/gff2histogram.py,scripts/gff2psl.py,scripts/gff2stats.py,scripts/gff2table.py,scripts/gff2view.py,scripts/gff32gtf.py,scripts/gff_compare.py,scripts/gff_decorate.py,scripts/gi2parents.py,scripts/graph_filter_links_redundant.py,scripts/graph_group_links_by_taxonomy.py,scripts/gtf2alleles.py,scripts/gtf2fasta.py,scripts/gtf2gff.py,scripts/gtf2gtf.py,scripts/gtf2overlap.py,scripts/gtf2reads.py,scripts/gtf2table.py,scripts/gtf2tsv.py,scripts/gtfs2graph.py,scripts/gtfs2tsv.py,scripts/histogram2histogram.py,scripts/histograms2kl.py,scripts/index2bed.py,scripts/index2gff.py,scripts/index_fasta.py,scripts/intervaltable2bed.py,scripts/jalview.py,scripts/liftover.py,scripts/maf2psl.py,scripts/mali2bootstrap.py,scripts/mali2cleaned_mali.py,scripts/mali2kaks.py,scripts/mali2mali.py,scripts/mali2malis.py,scripts/mali2predictions.py,scripts/mali2rates.py,scripts/mali2summary.py,scripts/mali2table.py,scripts/mali_phylip2fasta.py,scripts/mali_plain2aln.py,scripts/malis2mali.py,scripts/malis2malis.py,scripts/malis2masks.py,scripts/malis2profiles.py,scripts/maq2assembly.py,scripts/maq2psl.py,scripts/mask_fasta.py,scripts/matrix2matrix.py,scripts/matrix2stats.py,scripts/medip_merge_intervals.py,scripts/merge_tables.py,scripts/metaphlan2table.py,scripts/modify_table.py,scripts/mysql_clone_database.py,scripts/mysql_copy_tables.py,scripts/nofarm.py,scripts/nr2table.py,scripts/numbers2rgb.py,scripts/peptides2cds.py,scripts/plot_matrix.py,scripts/probeset2gene.py,scripts/psl2assembly.py,scripts/psl2chain.py,scripts/psl2fasta.py,scripts/psl2gff.py,scripts/psl2map.py,scripts/psl2psl.py,scripts/psl2stats.py,scripts/psl2table.py,scripts/psl2wiggle.py,scripts/psl2wiggle_stats.py,scripts/psql_clone_database.py,scripts/qkill.py,scripts/quality2masks.py,scripts/r_compare_distributions.py,scripts/r_mann_whitney_u.py,scripts/r_table2scatter.py,scripts/r_test.py,scripts/radar.py,scripts/rename_links.py,scripts/revigo.py,scripts/rnaseq_junction_bam2bam.py,scripts/run.py,scripts/runExpression.py,scripts/runGO.py,scripts/runSPP.py,scripts/runZinba.py,scripts/run_function.py,scripts/sequence2alignment.py,scripts/sequences2mali.py,scripts/set_diff.py,scripts/snp2counts.py,scripts/snp2maf.py,scripts/snp2snp.py,scripts/snp2table.py,scripts/solexa2stats.py,scripts/sparse2full.py,scripts/species_map2species_map.py,scripts/split_fasta.py,scripts/split_genome.py,scripts/split_genomic_fasta_file.py,scripts/split_gff.py,scripts/split_links.py,scripts/submit.py,scripts/table2graph.py,scripts/table2table.py,scripts/transfac2transfac.py,scripts/tree2taxa.py,scripts/tree_strain2species.py,scripts/trees2tree.py,scripts/trees2trees.py,scripts/vcf2vcf.py,scripts/vcfstats2db.py,scripts/wig2bed.py,scripts/wig2wig.py
+timeit-header	ok			scripts/add_random_reads_to_bam.py,scripts/add_script_template.py,scripts/align_mali_vs_mali.py,scripts/align_transcripts.py,scripts/analyze_codonbias_orthology.py,scripts/analyze_go.py,scripts/analyze_sequences.py,scripts/annotator2tsv.py,scripts/annotator_distance.py,scripts/bam2UniquePairs.py,scripts/bam2bam.py,scripts/bam2bed.py,scripts/bam2bidirectionaltranscription.py,scripts/bam2fastq.py,scripts/bam2geneprofile.py,scripts/bam2peakshape.py,scripts/bam2profile.py,scripts/bam2species_map.py,scripts/bam2stats.py,scripts/bam2transcriptContribution.py,scripts/bam2wiggle.py,scripts/bam_vs_bam.py,scripts/bam_vs_bed.py,scripts/bam_vs_gtf.py,scripts/bams2bam.py,scripts/barplotGo.py,scripts/bed2annotator.py,scripts/bed2bed.py,scripts/bed2fasta.py,scripts/bed2gff.py,scripts/bed2graph.py,scripts/bed2plot.py,scripts/bed2psl.py,scripts/bed2stats.py,scripts/bed2table.py,scripts/beds2beds.py,scripts/beds2counts.py,scripts/bigwig2hilbert.py,scripts/blast2table.py,scripts/cat_tables.py,scripts/cgat2dot.py,scripts/cgat2rdf.py,scripts/cgat_build_report_page.py,scripts/cgat_clean.py,scripts/cgat_cluster_distribute.py,scripts/cgat_cwd2list.py,scripts/cgat_galaxy_wrapper.py,scripts/cgat_log2wiki.py,scripts/cgat_logfiles2tsv.py,scripts/cgat_make2help.py,scripts/cgat_pep8_code_quality.py,scripts/cgat_rebuild_extensions.py,scripts/cgat_ruffus_profile.py,scripts/cgat_script_template.py,scripts/cgat_zap.py,scripts/chain2psl.py,scripts/chain2stats.py,scripts/check_db.py,scripts/clean.py,scripts/codeml2tsv.py,scripts/codemls2tsv.py,scripts/codonbias_acai2tsv.py,scripts/codonbias_weights2tsv.py,scripts/combine_files.py,scripts/combine_gff.py,scripts/combine_tables.py,scripts/compare_clusters.py,scripts/compare_histograms.py,scripts/contigs2random_sample.py,scripts/contigs2stats.py,scripts/convert_time2seconds.py,scripts/coverage2stats.py,scripts/csv2db.py,scripts/csvs2csv.py,scripts/cwd2list.py,scripts/data2multiple_anova.py,scripts/data2phylocontrasts.py,scripts/data2stats.py,scripts/diff_bam.py,scripts/diff_bed.py,scripts/diff_chains.py,scripts/diff_gtf.py,scripts/ena2table.py,scripts/farm.py,scripts/fasta2distances.py,scripts/fasta2fasta.py,scripts/fasta2kmercontent.py,scripts/fasta2table.py,scripts/fasta2variants.py,scripts/fastas2fasta.py,scripts/fastq2N.py,scripts/fastq2fastq.py,scripts/fastq2solid.py,scripts/fastq2summary.py,scripts/fastq2table.py,scripts/fastqs2fasta.py,scripts/fastqs2fastq.py,scripts/fastqs2fastqs.py,scripts/filter_reads.py,scripts/filter_tokens.py,scripts/formatMetagenemark.py,scripts/genelist_analysis.py,scripts/genes2genes.py,scripts/genome_bed.py,scripts/geo2table.py,scripts/gff2bed.py,scripts/gff2coverage.py,scripts/gff2fasta.py,scripts/gff2gff.py,scripts/gff2histogram.py,scripts/gff2psl.py,scripts/gff2stats.py,scripts/gff2table.py,scripts/gff2view.py,scripts/gff32gtf.py,scripts/gff_compare.py,scripts/gff_decorate.py,scripts/gi2parents.py,scripts/graph_filter_links_redundant.py,scripts/graph_group_links_by_taxonomy.py,scripts/gtf2alleles.py,scripts/gtf2fasta.py,scripts/gtf2gff.py,scripts/gtf2gtf.py,scripts/gtf2overlap.py,scripts/gtf2reads.py,scripts/gtf2table.py,scripts/gtf2tsv.py,scripts/gtfs2graph.py,scripts/gtfs2tsv.py,scripts/histogram2histogram.py,scripts/histograms2kl.py,scripts/index2bed.py,scripts/index2gff.py,scripts/index_fasta.py,scripts/intervaltable2bed.py,scripts/jalview.py,scripts/liftover.py,scripts/maf2psl.py,scripts/mali2bootstrap.py,scripts/mali2cleaned_mali.py,scripts/mali2kaks.py,scripts/mali2mali.py,scripts/mali2malis.py,scripts/mali2predictions.py,scripts/mali2rates.py,scripts/mali2summary.py,scripts/mali2table.py,scripts/mali_phylip2fasta.py,scripts/mali_plain2aln.py,scripts/malis2mali.py,scripts/malis2malis.py,scripts/malis2masks.py,scripts/malis2profiles.py,scripts/maq2assembly.py,scripts/maq2psl.py,scripts/mask_fasta.py,scripts/matrix2matrix.py,scripts/matrix2stats.py,scripts/medip_merge_intervals.py,scripts/merge_tables.py,scripts/metaphlan2table.py,scripts/modify_table.py,scripts/mysql_clone_database.py,scripts/mysql_copy_tables.py,scripts/nofarm.py,scripts/nr2table.py,scripts/numbers2rgb.py,scripts/peptides2cds.py,scripts/plot_matrix.py,scripts/probeset2gene.py,scripts/psl2assembly.py,scripts/psl2chain.py,scripts/psl2fasta.py,scripts/psl2gff.py,scripts/psl2map.py,scripts/psl2psl.py,scripts/psl2stats.py,scripts/psl2table.py,scripts/psl2wiggle.py,scripts/psl2wiggle_stats.py,scripts/psql_clone_database.py,scripts/qkill.py,scripts/quality2masks.py,scripts/r_compare_distributions.py,scripts/r_mann_whitney_u.py,scripts/r_table2scatter.py,scripts/r_test.py,scripts/radar.py,scripts/rename_links.py,scripts/revigo.py,scripts/rnaseq_junction_bam2bam.py,scripts/run.py,scripts/runExpression.py,scripts/runGO.py,scripts/runSPP.py,scripts/runZinba.py,scripts/run_function.py,scripts/sequence2alignment.py,scripts/sequences2mali.py,scripts/set_diff.py,scripts/snp2counts.py,scripts/snp2maf.py,scripts/snp2snp.py,scripts/snp2table.py,scripts/solexa2stats.py,scripts/sparse2full.py,scripts/species_map2species_map.py,scripts/split_fasta.py,scripts/split_genome.py,scripts/split_genomic_fasta_file.py,scripts/split_gff.py,scripts/split_links.py,scripts/submit.py,scripts/table2graph.py,scripts/table2table.py,scripts/transfac2transfac.py,scripts/tree2taxa.py,scripts/tree_strain2species.py,scripts/trees2tree.py,scripts/trees2trees.py,scripts/vcf2vcf.py,scripts/vcfstats2db.py,scripts/wig2bed.py,scripts/wig2wig.py
+timeit-name	ok			scripts/add_random_reads_to_bam.py,scripts/add_script_template.py,scripts/align_mali_vs_mali.py,scripts/align_transcripts.py,scripts/analyze_codonbias_orthology.py,scripts/analyze_go.py,scripts/analyze_sequences.py,scripts/annotator2tsv.py,scripts/annotator_distance.py,scripts/bam2UniquePairs.py,scripts/bam2bam.py,scripts/bam2bed.py,scripts/bam2bidirectionaltranscription.py,scripts/bam2fastq.py,scripts/bam2geneprofile.py,scripts/bam2peakshape.py,scripts/bam2profile.py,scripts/bam2species_map.py,scripts/bam2stats.py,scripts/bam2transcriptContribution.py,scripts/bam2wiggle.py,scripts/bam_vs_bam.py,scripts/bam_vs_bed.py,scripts/bam_vs_gtf.py,scripts/bams2bam.py,scripts/barplotGo.py,scripts/bed2annotator.py,scripts/bed2bed.py,scripts/bed2fasta.py,scripts/bed2gff.py,scripts/bed2graph.py,scripts/bed2plot.py,scripts/bed2psl.py,scripts/bed2stats.py,scripts/bed2table.py,scripts/beds2beds.py,scripts/beds2counts.py,scripts/bigwig2hilbert.py,scripts/blast2table.py,scripts/cat_tables.py,scripts/cgat2dot.py,scripts/cgat2rdf.py,scripts/cgat_build_report_page.py,scripts/cgat_clean.py,scripts/cgat_cluster_distribute.py,scripts/cgat_cwd2list.py,scripts/cgat_galaxy_wrapper.py,scripts/cgat_log2wiki.py,scripts/cgat_logfiles2tsv.py,scripts/cgat_make2help.py,scripts/cgat_pep8_code_quality.py,scripts/cgat_rebuild_extensions.py,scripts/cgat_ruffus_profile.py,scripts/cgat_script_template.py,scripts/cgat_zap.py,scripts/chain2psl.py,scripts/chain2stats.py,scripts/check_db.py,scripts/clean.py,scripts/codeml2tsv.py,scripts/codemls2tsv.py,scripts/codonbias_acai2tsv.py,scripts/codonbias_weights2tsv.py,scripts/combine_files.py,scripts/combine_gff.py,scripts/combine_tables.py,scripts/compare_clusters.py,scripts/compare_histograms.py,scripts/contigs2random_sample.py,scripts/contigs2stats.py,scripts/convert_time2seconds.py,scripts/coverage2stats.py,scripts/csv2db.py,scripts/csvs2csv.py,scripts/cwd2list.py,scripts/data2multiple_anova.py,scripts/data2phylocontrasts.py,scripts/data2stats.py,scripts/diff_bam.py,scripts/diff_bed.py,scripts/diff_chains.py,scripts/diff_gtf.py,scripts/ena2table.py,scripts/farm.py,scripts/fasta2distances.py,scripts/fasta2fasta.py,scripts/fasta2kmercontent.py,scripts/fasta2table.py,scripts/fasta2variants.py,scripts/fastas2fasta.py,scripts/fastq2N.py,scripts/fastq2fastq.py,scripts/fastq2solid.py,scripts/fastq2summary.py,scripts/fastq2table.py,scripts/fastqs2fasta.py,scripts/fastqs2fastq.py,scripts/fastqs2fastqs.py,scripts/filter_reads.py,scripts/filter_tokens.py,scripts/formatMetagenemark.py,scripts/genelist_analysis.py,scripts/genes2genes.py,scripts/genome_bed.py,scripts/geo2table.py,scripts/gff2bed.py,scripts/gff2coverage.py,scripts/gff2fasta.py,scripts/gff2gff.py,scripts/gff2histogram.py,scripts/gff2psl.py,scripts/gff2stats.py,scripts/gff2table.py,scripts/gff2view.py,scripts/gff32gtf.py,scripts/gff_compare.py,scripts/gff_decorate.py,scripts/gi2parents.py,scripts/graph_filter_links_redundant.py,scripts/graph_group_links_by_taxonomy.py,scripts/gtf2alleles.py,scripts/gtf2fasta.py,scripts/gtf2gff.py,scripts/gtf2gtf.py,scripts/gtf2overlap.py,scripts/gtf2reads.py,scripts/gtf2table.py,scripts/gtf2tsv.py,scripts/gtfs2graph.py,scripts/gtfs2tsv.py,scripts/histogram2histogram.py,scripts/histograms2kl.py,scripts/index2bed.py,scripts/index2gff.py,scripts/index_fasta.py,scripts/intervaltable2bed.py,scripts/jalview.py,scripts/liftover.py,scripts/maf2psl.py,scripts/mali2bootstrap.py,scripts/mali2cleaned_mali.py,scripts/mali2kaks.py,scripts/mali2mali.py,scripts/mali2malis.py,scripts/mali2predictions.py,scripts/mali2rates.py,scripts/mali2summary.py,scripts/mali2table.py,scripts/mali_phylip2fasta.py,scripts/mali_plain2aln.py,scripts/malis2mali.py,scripts/malis2malis.py,scripts/malis2masks.py,scripts/malis2profiles.py,scripts/maq2assembly.py,scripts/maq2psl.py,scripts/mask_fasta.py,scripts/matrix2matrix.py,scripts/matrix2stats.py,scripts/medip_merge_intervals.py,scripts/merge_tables.py,scripts/metaphlan2table.py,scripts/modify_table.py,scripts/mysql_clone_database.py,scripts/mysql_copy_tables.py,scripts/nofarm.py,scripts/nr2table.py,scripts/numbers2rgb.py,scripts/peptides2cds.py,scripts/plot_matrix.py,scripts/probeset2gene.py,scripts/psl2assembly.py,scripts/psl2chain.py,scripts/psl2fasta.py,scripts/psl2gff.py,scripts/psl2map.py,scripts/psl2psl.py,scripts/psl2stats.py,scripts/psl2table.py,scripts/psl2wiggle.py,scripts/psl2wiggle_stats.py,scripts/psql_clone_database.py,scripts/qkill.py,scripts/quality2masks.py,scripts/r_compare_distributions.py,scripts/r_mann_whitney_u.py,scripts/r_table2scatter.py,scripts/r_test.py,scripts/radar.py,scripts/rename_links.py,scripts/revigo.py,scripts/rnaseq_junction_bam2bam.py,scripts/run.py,scripts/runExpression.py,scripts/runGO.py,scripts/runSPP.py,scripts/runZinba.py,scripts/run_function.py,scripts/sequence2alignment.py,scripts/sequences2mali.py,scripts/set_diff.py,scripts/snp2counts.py,scripts/snp2maf.py,scripts/snp2snp.py,scripts/snp2table.py,scripts/solexa2stats.py,scripts/sparse2full.py,scripts/species_map2species_map.py,scripts/split_fasta.py,scripts/split_genome.py,scripts/split_genomic_fasta_file.py,scripts/split_gff.py,scripts/split_links.py,scripts/submit.py,scripts/table2graph.py,scripts/table2table.py,scripts/transfac2transfac.py,scripts/tree2taxa.py,scripts/tree_strain2species.py,scripts/trees2tree.py,scripts/trees2trees.py,scripts/vcf2vcf.py,scripts/vcfstats2db.py,scripts/wig2bed.py,scripts/wig2wig.py
+title	split			scripts/plot_matrix.py,scripts/r_compare_distributions.py,scripts/r_table2scatter.py
+tmpdir	rename		temp-dir	scripts/farm.py,scripts/nofarm.py
+tokens	rename		tokens-tsv-file	scripts/filter_tokens.py
+track	ok			scripts/gff2bed.py
+tracks	ok			scripts/diff_bed.py,scripts/snp2maf.py
+transcript-id	ok			scripts/gff32gtf.py
+transcript-type	ok			scripts/gff32gtf.py
+transcripts2genes	bad	should be -method		scripts/gtf2gtf.py
+transform-counts	ok			scripts/annotator_distance.py
+transform=	?			scripts/gff2table.py,scripts/gff_decorate.py
+translate	bad	should be -method		scripts/align_transcripts.py
+translator	ok			scripts/index_fasta.py
+transpose	bad	should be -method		scripts/table2table.py
+transpose-format	ok			scripts/table2table.py
+tree	split			scripts/gi2parents.py,scripts/mali2kaks.py
+trim3		should be -method		scripts/fastq2fastq.py
+truncate	split	should be -method		scripts/annotator_distance.py,scripts/histogram2histogram.py
+type	bad			scripts/fasta2fasta.py,scripts/fasta2table.py,scripts/metaphlan2table.py,scripts/radar.py
+ucsc-assembly	ok			scripts/gff2view.py
+ucsc-user-tracks	ok			scripts/gff2view.py
+uniq	rename		unique	scripts/fastq2fastq.py
+unique	split			scripts/bam2bidirectionaltranscription.py,scripts/bams2bam.py,scripts/psl2psl.py,scripts/rnaseq_junction_bam2bam.py
+unpaired	ok			scripts/fastqs2fastqs.py
+unset-genes		should be -method		scripts/gtf2gtf.py
+unset-unmapped-mapq		should be -method		scripts/bam2bam.py
+unstrip		should be -method		scripts/bam2bam.py
+update	ok			scripts/diff_bed.py,scripts/diff_gtf.py,scripts/gtfs2graph.py
+upstream	bad	upstream-...		scripts/gtf2gff.py
+use-barcodes	ok			scripts/gtf2table.py
+use-file-prefix	ok			scripts/combine_tables.py
+use-input-id	ok			scripts/malis2mali.py,scripts/malis2malis.py
+use-length	ok			scripts/contigs2stats.py
+use-strand	ok			scripts/bam2peakshape.py,scripts/bed2fasta.py
+user	ok			scripts/analyze_codonbias_orthology.py,scripts/analyze_go.py,scripts/analyze_sequences.py,scripts/check_db.py,scripts/csv2db.py,scripts/mysql_clone_database.py,scripts/mysql_copy_tables.py,scripts/psql_clone_database.py,scripts/r_compare_distributions.py,scripts/r_mann_whitney_u.py,scripts/runGO.py
+utf8	ok			scripts/csv2db.py
+value	split			scripts/matrix2matrix.py,scripts/table2table.py
+value-name	ok			scripts/table2table.py
+variable-name	ok			scripts/table2table.py
+vcf-sample	ok			scripts/gtf2alleles.py,scripts/snp2counts.py,scripts/snp2table.py
+verbose	ok			scripts/add_random_reads_to_bam.py,scripts/add_script_template.py,scripts/align_mali_vs_mali.py,scripts/align_transcripts.py,scripts/analyze_codonbias_orthology.py,scripts/analyze_go.py,scripts/analyze_sequences.py,scripts/annotator2tsv.py,scripts/annotator_distance.py,scripts/bam2UniquePairs.py,scripts/bam2bam.py,scripts/bam2bed.py,scripts/bam2bidirectionaltranscription.py,scripts/bam2fastq.py,scripts/bam2geneprofile.py,scripts/bam2peakshape.py,scripts/bam2profile.py,scripts/bam2species_map.py,scripts/bam2stats.py,scripts/bam2transcriptContribution.py,scripts/bam2wiggle.py,scripts/bam_vs_bam.py,scripts/bam_vs_bed.py,scripts/bam_vs_gtf.py,scripts/bams2bam.py,scripts/barplotGo.py,scripts/bed2annotator.py,scripts/bed2bed.py,scripts/bed2fasta.py,scripts/bed2gff.py,scripts/bed2graph.py,scripts/bed2plot.py,scripts/bed2psl.py,scripts/bed2stats.py,scripts/bed2table.py,scripts/beds2beds.py,scripts/beds2counts.py,scripts/bigwig2hilbert.py,scripts/blast2table.py,scripts/cat_tables.py,scripts/cgat2dot.py,scripts/cgat2rdf.py,scripts/cgat_build_report_page.py,scripts/cgat_clean.py,scripts/cgat_cluster_distribute.py,scripts/cgat_cwd2list.py,scripts/cgat_galaxy_wrapper.py,scripts/cgat_log2wiki.py,scripts/cgat_logfiles2tsv.py,scripts/cgat_make2help.py,scripts/cgat_pep8_code_quality.py,scripts/cgat_rebuild_extensions.py,scripts/cgat_ruffus_profile.py,scripts/cgat_script_template.py,scripts/cgat_zap.py,scripts/chain2psl.py,scripts/chain2stats.py,scripts/check_db.py,scripts/clean.py,scripts/codeml2tsv.py,scripts/codemls2tsv.py,scripts/codonbias_acai2tsv.py,scripts/codonbias_weights2tsv.py,scripts/combine_files.py,scripts/combine_gff.py,scripts/combine_tables.py,scripts/compare_clusters.py,scripts/compare_histograms.py,scripts/contigs2random_sample.py,scripts/contigs2stats.py,scripts/convert_time2seconds.py,scripts/coverage2stats.py,scripts/csv2db.py,scripts/csvs2csv.py,scripts/cwd2list.py,scripts/data2multiple_anova.py,scripts/data2phylocontrasts.py,scripts/data2stats.py,scripts/diff_bam.py,scripts/diff_bed.py,scripts/diff_chains.py,scripts/diff_gtf.py,scripts/ena2table.py,scripts/farm.py,scripts/fasta2distances.py,scripts/fasta2fasta.py,scripts/fasta2kmercontent.py,scripts/fasta2table.py,scripts/fasta2variants.py,scripts/fastas2fasta.py,scripts/fastq2N.py,scripts/fastq2fastq.py,scripts/fastq2solid.py,scripts/fastq2summary.py,scripts/fastq2table.py,scripts/fastqs2fasta.py,scripts/fastqs2fastq.py,scripts/fastqs2fastqs.py,scripts/filter_reads.py,scripts/filter_tokens.py,scripts/formatMetagenemark.py,scripts/genelist_analysis.py,scripts/genes2genes.py,scripts/genome_bed.py,scripts/geo2table.py,scripts/gff2bed.py,scripts/gff2coverage.py,scripts/gff2fasta.py,scripts/gff2gff.py,scripts/gff2histogram.py,scripts/gff2psl.py,scripts/gff2stats.py,scripts/gff2table.py,scripts/gff2view.py,scripts/gff32gtf.py,scripts/gff_compare.py,scripts/gff_decorate.py,scripts/gi2parents.py,scripts/graph_filter_links_redundant.py,scripts/graph_group_links_by_taxonomy.py,scripts/gtf2alleles.py,scripts/gtf2fasta.py,scripts/gtf2gff.py,scripts/gtf2gtf.py,scripts/gtf2overlap.py,scripts/gtf2reads.py,scripts/gtf2table.py,scripts/gtf2tsv.py,scripts/gtfs2graph.py,scripts/gtfs2tsv.py,scripts/histogram2histogram.py,scripts/histograms2kl.py,scripts/index2bed.py,scripts/index2gff.py,scripts/index_fasta.py,scripts/intervaltable2bed.py,scripts/jalview.py,scripts/liftover.py,scripts/maf2psl.py,scripts/mali2bootstrap.py,scripts/mali2cleaned_mali.py,scripts/mali2kaks.py,scripts/mali2mali.py,scripts/mali2malis.py,scripts/mali2predictions.py,scripts/mali2rates.py,scripts/mali2summary.py,scripts/mali2table.py,scripts/mali_phylip2fasta.py,scripts/mali_plain2aln.py,scripts/malis2mali.py,scripts/malis2malis.py,scripts/malis2masks.py,scripts/malis2profiles.py,scripts/maq2assembly.py,scripts/maq2psl.py,scripts/mask_fasta.py,scripts/matrix2matrix.py,scripts/matrix2stats.py,scripts/medip_merge_intervals.py,scripts/merge_tables.py,scripts/metaphlan2table.py,scripts/modify_table.py,scripts/mysql_clone_database.py,scripts/mysql_copy_tables.py,scripts/nofarm.py,scripts/nr2table.py,scripts/numbers2rgb.py,scripts/peptides2cds.py,scripts/plot_matrix.py,scripts/probeset2gene.py,scripts/psl2assembly.py,scripts/psl2chain.py,scripts/psl2fasta.py,scripts/psl2gff.py,scripts/psl2map.py,scripts/psl2psl.py,scripts/psl2stats.py,scripts/psl2table.py,scripts/psl2wiggle.py,scripts/psl2wiggle_stats.py,scripts/psql_clone_database.py,scripts/qkill.py,scripts/quality2masks.py,scripts/r_compare_distributions.py,scripts/r_mann_whitney_u.py,scripts/r_table2scatter.py,scripts/r_test.py,scripts/radar.py,scripts/rename_links.py,scripts/revigo.py,scripts/rnaseq_junction_bam2bam.py,scripts/run.py,scripts/runExpression.py,scripts/runGO.py,scripts/runSPP.py,scripts/runZinba.py,scripts/run_function.py,scripts/sequence2alignment.py,scripts/sequences2mali.py,scripts/set_diff.py,scripts/snp2counts.py,scripts/snp2maf.py,scripts/snp2snp.py,scripts/snp2table.py,scripts/solexa2stats.py,scripts/sparse2full.py,scripts/species_map2species_map.py,scripts/split_fasta.py,scripts/split_genome.py,scripts/split_genomic_fasta_file.py,scripts/split_gff.py,scripts/split_links.py,scripts/submit.py,scripts/table2graph.py,scripts/table2table.py,scripts/transfac2transfac.py,scripts/tree2taxa.py,scripts/tree_strain2species.py,scripts/trees2tree.py,scripts/trees2trees.py,scripts/vcf2vcf.py,scripts/vcfstats2db.py,scripts/wig2bed.py,scripts/wig2wig.py
+verify	ok			scripts/index_fasta.py
+verify-iterations	ok			scripts/index_fasta.py
+weights	rename		weights-tsv-file	scripts/codonbias_acai2tsv.py
+weights-matrix2table	?			scripts/codonbias_acai2tsv.py
+width	split		plot-width	scripts/barplotGo.py,scripts/malis2mali.py
+wiggle-files	bad		wiggle-file	scripts/psl2wiggle_stats.py
+window-size	ok			scripts/bam2peakshape.py,scripts/genome_bed.py,scripts/gff2coverage.py,scripts/runSPP.py
+with-counts	ok			scripts/mali2kaks.py,scripts/mali2rates.py
+with-empty-bins	ok			scripts/gff2histogram.py
+with-knockouts	ok			scripts/gtf2alleles.py
+with-match	ok			scripts/psl2table.py
+with-ranges	ok			scripts/mali2mali.py
+with-rho	ok			scripts/mali2kaks.py
+with-title	ok			scripts/set_diff.py
+with-utr	ok			scripts/gtf2gtf.py
+with-values	ok			scripts/psl2wiggle_stats.py
+without-match	ok			scripts/psl2table.py
+without-ranges	ok			scripts/mali2mali.py
+workspace	rename		workspace-bed-file	scripts/annotator2tsv.py,scripts/annotator_distance.py
+workspace-builder	ok			scripts/annotator_distance.py
+workspace-labels	ok			scripts/annotator_distance.py
+write	?			scripts/mali2kaks.py,scripts/mali2rates.py
+write-equivalent	rename		output-equivalent	scripts/gtfs2tsv.py
+write-full	rename		output-full	scripts/gff_compare.py,scripts/gtfs2tsv.py
+write-header	rename		output-with-header	scripts/data2multiple_anova.py,scripts/data2phylocontrasts.py,scripts/data2stats.py,scripts/set_diff.py
+write-id	rename		output-id	scripts/graph_group_links_by_taxonomy.py
+write-matched-exons	rename		output-matched-exons	scripts/gff_compare.py
+write-missed-exons	rename		output-missed-exons	scripts/gff_compare.py
+write-missed-genes	rename		output-missed-genes	scripts/gff_compare.py
+write-values	rename		output-with-values	scripts/trees2tree.py
+xrange	?			scripts/annotator_distance.py,scripts/plot_matrix.py,scripts/r_table2scatter.py
+xrate-estimate-frequencies	ok			scripts/mali2kaks.py
+xrate-fix-frequencies	ok			scripts/mali2kaks.py
+xrate-fix-rates	ok			scripts/mali2kaks.py
+xrate-insert-frequencies	ok			scripts/mali2kaks.py
+xrate-min-increment	ok			scripts/mali2kaks.py,scripts/mali2rates.py
+xrate-model	ok			scripts/mali2kaks.py
+xrate-uniform-frequencies	ok			scripts/mali2kaks.py
+xticks	ok			scripts/plot_matrix.py
+yrange	ok			scripts/plot_matrix.py,scripts/r_table2scatter.py
+yticks	ok			scripts/plot_matrix.py
+z-threshold	rename		spp-z-threshold	scripts/runSPP.py
+zoom	ok			scripts/gff2view.py
+zrange	ok			scripts/plot_matrix.py

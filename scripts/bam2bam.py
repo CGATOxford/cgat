@@ -10,30 +10,13 @@ bam2bam.py - modify bam files
 Purpose
 -------
 
-This script reads a :term:`bam` formatted file from stdin and outputs a
-modified :term:`bam` formatted file on stdout.
+This script reads a :term:`bam` formatted file from stdin, performs 
+an action (see methods below) then outputs a modified :term:`bam` 
+formatted file on stdout.
 
 .. note::
-   You need to redirect logging information to a file or turn it off
+   You need to redirect logging information to a file (via -L) or turn it off
    via -v 0 in order to get a valid sam/bam file.
-
-Usage
------
-
-For example::
-
-   python bam2bam.py --filter=mapped < in.bam > out.bam
-
-will remove all unmapped reads from the bam-file. To remove
-unmapped reads from multiple bam-files, try::
-
-   python bam2bam.py --inplace --filter=mapped *.bam
-
-Type::
-
-   python bam2bam.py --help
-
-for command line help.
 
 Documentation
 -------------
@@ -49,17 +32,28 @@ The script implements the following methods:
    some tools set the mapping quality of unmapped reads. This
    causes a violation in the Picard tools.
 
-``remove-better``
-   remove alignments that are worse than alignments present in
-   an alternative :term:`bam` formatted file (``--filter-bam``).
-
 ``filter``
    remove alignments based on a variety of flags.  These may
-   be ``unique``, ``non-unique``, ``mapped``, ``NM`` or
-   ``CM``.  If ``unique`` is given this wil NOT remove any
+   be ``unique``, ``non-unique``, ``mapped``, ``NM`` or ``CM``. 
+   If ``unique`` is set, only uniquely mapping reads will be
+   output. If ``non-unique`` is set then only multi-mapping reads 
+   will be output. This method first checks for the NH flag - 
+   if set, a unique match should have at most NH=1 hits. 
+   If not set, the method checks for BWA flags. Currently it checks
+   if X0 is set (X0=Number of best hits found by BWA).    
+   If ``mapped`` is given, unmapped reads will be 
+   removed. If ``NM`` or ``CM`` is set, the alignment of reads in 
+   two sam files (input and reference) is compared and only reads 
+   with a lower number of mismatches in the input compared to the 
+   reference sam file will be kept. If ``CM`` is set, the 
+   colourspace mismatch tag (for ABI Solid reads) will be used to 
+   count differences to the reference sam file. By default, the 
+   ``NM`` (number of mismatches) tag is used. The tag that is used 
+   needs to present in both input sam file and the reference sam 
+   file. If ``unique`` is given this wil NOT remove any
    unmapped reads.  This can be achieved by providing the
    ``filter`` option twice, once each with ``mapped`` and
-   ``unique``.
+   ``unique``. 
 
 ``strip``
    remove the sequence and/or quality scores from all reads in
@@ -85,6 +79,25 @@ bam-files given as command line arguments in-place - a temporary
 copy will be written to :file:`/tmp` and once completed copied
 over the original file. The script will automatically re-index
 the modified files.
+
+Usage
+-----
+
+For example::
+
+   cgat bam2bam.py --filter=mapped < in.bam > out.bam
+
+will remove all unmapped reads from the bam-file. 
+
+To remove unmapped reads from multiple bam-files, try::
+
+   cgat bam2bam.py --inplace --filter=mapped *.bam
+
+Type::
+
+   python bam2bam.py --help
+
+for command line help.
 
 Command line options
 --------------------
@@ -123,8 +136,8 @@ def main(argv=None):
                             usage=globals()["__doc__"])
 
     parser.add_option("--set-nh", dest="set_nh", action="store_true",
-                      help="sets the NH flag. The file needs to be "
-                      "sorted by readname [%default]")
+                      help="sets the NH (number of alignments) flag. "
+                      "The file needs to be sorted by readname [%default]")
 
     parser.add_option("--unset-unmapped-mapq", dest="unset_unmapped_mapq",
                       action="store_true",
@@ -145,14 +158,14 @@ def main(argv=None):
                       "also strip the quality values [%default]")
 
     parser.add_option("--unstrip", dest="unstrip", action="store_true",
-                      help="add sequence and quality into bam file [%default]")
+                      help="add sequence and quality into bam file. "
+                      "Requires reference fastq file(s) [%default]")
 
     parser.add_option("--filter", dest="filter",
                       action="append", type="choice",
                       choices=('NM', 'CM', 'mapped', 'unique', "non-unique"),
-                      help = "filter bam file. The option denotes "
-                      "the property that is  "
-                      "used to determine better match [%default]")
+                      help = "filter to apply to remove alignments "
+                      "from a bam file [%default]")
 
     parser.add_option("--reference-bam", dest="reference_bam", type="string",
                       help="bam-file to filter with [%default]")
@@ -174,17 +187,19 @@ def main(argv=None):
 
     parser.add_option("--fastq1", "-1", dest="fastq_pair1", type="string",
                       help="fastq file with read information for first "
-                      "in pair or unpaired [%default]")
+                      "in pair or unpaired. Used for unstripping sequence "
+                      "and quality scores [%default]")
 
     parser.add_option("--fastq2", "-2", dest="fastq_pair2", type="string",
                       help="fastq file with read information for second "
-                      "in pair [%default]")
+                      "in pair. Used for unstripping sequence "
+                      "and quality scores  [%default]")
 
     parser.add_option("--keep-first-base", dest="keep_first_base",
                       action="store_true",
-                      help="keep first base of reads such that gtf2table.py "
-                      "will only consider the "
-                      "first base in its counts.")
+                      help="keep only the first base of reads so that "
+                      "read counting tools will only consider the "
+                      "first base in the counts.")
 
     parser.set_defaults(
         filter=[],

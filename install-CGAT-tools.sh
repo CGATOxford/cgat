@@ -68,7 +68,15 @@ if [ "$OS" == "ubuntu" -o "$OS" == "travis" ] ; then
    echo " Installing packages for Ubuntu "
    echo
 
-   sudo apt-get install -y gcc g++ zlib1g-dev libssl-dev libbz2-dev libfreetype6-dev libpng12-dev libblas-dev libatlas-dev liblapack-dev gfortran libpq-dev r-base-dev libreadline-dev libmysqlclient-dev libboost-dev libsqlite3-dev mercurial;
+   sudo apt-get install -y gcc g++ zlib1g-dev libssl-dev libssl1.0.0 libbz2-dev libfreetype6-dev libpng12-dev libblas-dev libatlas-dev liblapack-dev gfortran libpq-dev r-base-dev libreadline-dev libmysqlclient-dev libboost-dev libsqlite3-dev mercurial;
+
+   # additional configuration for travis
+   # to solve problem when re-compiling wigToBigWig and bedGraphToBigWig
+   # https://cgatwiki.anat.ox.ac.uk/xwiki/bin/view/CGAT/Recompiling+UCSC+tools
+   if [ "$OS" == "travis" ] ; then
+      ln -s /lib/x86_64-linux-gnu/libssl.so.1.0.0 /lib/x86_64-linux-gnu/libssl.so.10
+      ln -s /lib/x86_64-linux-gnu/libcrypto.so.1.0.0 /lib/x86_64-linux-gnu/libcrypto.so.10
+   fi
 
 elif [ "$OS" == "sl" -o "$OS" == "centos" ] ; then
 
@@ -79,7 +87,7 @@ elif [ "$OS" == "sl" -o "$OS" == "centos" ] ; then
    yum -y install gcc zlib-devel openssl-devel bzip2-devel gcc-c++ freetype-devel libpng-devel blas atlas lapack gcc-gfortran postgresql-devel R-core-devel readline-devel mysql-devel boost-devel sqlite-devel mercurial
 
    # additional configuration for scipy
-   if [ "" == "sl" ] ; then
+   if [ "$OS" == "sl" ] ; then
       ln -s /usr/lib64/libatlas.so.3 /usr/lib64/libatlas.so
    fi
    ln -s /usr/lib64/libblas.so.3 /usr/lib64/libblas.so
@@ -291,11 +299,14 @@ echo
 echo " Running nosetests for $1 "
 echo
 
+# create folder to install third-party tools
+EXTERNAL_DEPS_DIR=
 if [ "$OS" == "travis" ] ; then
 
    # use travis init dir to install external tools
    mkdir -p $TRAVIS_BUILD_DIR/external-tools
-   cd $TRAVIS_BUILD_DIR/external-tools
+   #cd $TRAVIS_BUILD_DIR/external-tools
+   EXTERNAL_DEPS_DIR=$TRAVIS_BUILD_DIR/external-tools
 
 elif [ "$OS" == "sl" -o "$OS" == "centos" -o "$OS" == "ubuntu" ] ; then
 
@@ -307,7 +318,8 @@ elif [ "$OS" == "sl" -o "$OS" == "centos" -o "$OS" == "ubuntu" ] ; then
 
    # create a new folder to store external tools
    mkdir -p $CGAT_HOME/external-tools
-   cd $CGAT_HOME/external-tools
+   #cd $CGAT_HOME/external-tools
+   EXTERNAL_DEPS_DIR=$CGAT_HOME/external-tools
 
 else
 
@@ -315,13 +327,21 @@ else
 
 fi # if-OS
 
+# go to new folder and install software
+cd $EXTERNAL_DEPS_DIR
+
 # wigToBigWig
 # wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/wigToBigWig
+# compiled new version
+# instructions: https://cgatwiki.anat.ox.ac.uk/xwiki/bin/view/CGAT/Recompiling+UCSC+tools
 wget --no-check-certificate https://www.cgat.org/downloads/public/external-tools/wigToBigWig
 chmod +x wigToBigWig
-PATH=$PATH:$CGAT_HOME/external-tools
+#PATH=$PATH:$CGAT_HOME/external-tools
+PATH=$PATH:$EXTERNAL_DEPS_DIR
 
 # bedGraphToBigWig
+# compiled new version
+# instructions: https://cgatwiki.anat.ox.ac.uk/xwiki/bin/view/CGAT/Recompiling+UCSC+tools
 wget --no-check-certificate https://www.cgat.org/downloads/public/external-tools/bedGraphToBigWig
 chmod +x bedGraphToBigWig
 
@@ -331,9 +351,10 @@ chmod +x bedGraphToBigWig
 wget --no-check-certificate https://www.cgat.org/downloads/public/external-tools/bedtools-2.21.0.tar.gz
 tar xzf bedtools-2.21.0.tar.gz
 rm bedtools-2.21.0.tar.gz
-cd bedtools-2.21.0
+cd bedtools2
 make
-PATH=$PATH:$CGAT_HOME/external-tools/bedtools2-2.19.1/bin
+#PATH=$PATH:$CGAT_HOME/external-tools/bedtools2/bin
+PATH=$PATH:$EXTERNAL_DEPS_DIR/bedtools2/bin
 
 # GCProfile
 cd ..

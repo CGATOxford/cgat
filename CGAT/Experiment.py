@@ -395,7 +395,21 @@ class OptionParser(optparse.OptionParser):
                             help="output help without usage information")
 
 
-#################################################################
+class OptionGroup(optparse.OptionGroup):
+    pass
+
+
+def callbackShortHelp(option, opt, value, parser):
+    '''output short help (only command line options).'''
+    # clear usage and description
+    parser.set_description(None)
+    parser.set_usage(None)
+    # output help
+    parser.print_help()
+    # exit
+    parser.exit()
+
+
 def openFile(filename, mode="r", create_dir=False):
     '''open file in *filename* with mode *mode*.
 
@@ -610,20 +624,32 @@ def Start(parser=None,
 
     global_starting_time = time.time()
 
-    parser.add_option("-v", "--verbose", dest="loglevel", type="int",
-                      help="loglevel [%default]. The higher, the more output.")
+    group = OptionGroup(parser, "Script timing options")
 
-    parser.add_option("--timeit", dest='timeit_file', type="string",
-                      help="store timeing information in file [%default].")
-    parser.add_option("--timeit-name", dest='timeit_name', type="string",
-                      help="name in timing file for this class of jobs "
-                      "[%default].")
-    parser.add_option("--timeit-header", dest='timeit_header',
-                      action="store_true",
-                      help="add header for timing information [%default].")
-    parser.add_option("--random-seed", dest='random_seed', type="int",
-                      help="random seed to initialize number generator "
-                      "with [%default].")
+    group.add_option("--timeit", dest='timeit_file', type="string",
+                     help="store timeing information in file [%default].")
+    group.add_option("--timeit-name", dest='timeit_name', type="string",
+                     help="name in timing file for this class of jobs "
+                     "[%default].")
+    group.add_option("--timeit-header", dest='timeit_header',
+                     action="store_true",
+                     help="add header for timing information [%default].")
+    parser.add_option_group(group)
+
+    group = OptionGroup(parser, "Common options")
+
+    group.add_option("--random-seed", dest='random_seed', type="int",
+                     help="random seed to initialize number generator "
+                     "with [%default].")
+
+    group.add_option("-v", "--verbose", dest="loglevel", type="int",
+                     help="loglevel [%default]. The higher, the more output.")
+
+    group.add_option("-?", dest="short_help", action="callback",
+                     callback=callbackShortHelp,
+                     help="output short help (command line options only.")
+
+    parser.add_option_group(group)
 
     if quiet:
         parser.set_defaults(loglevel=0)
@@ -647,38 +673,40 @@ def Start(parser=None,
         )
 
     if add_psql_options:
-        parser.add_option("-C", "--connection", dest="psql_connection",
-                          type="string",
-                          help="psql connection string [%default].")
-        parser.add_option("-U", "--user", dest="user", type="string",
-                          help="database user name [%default].")
-
+        group = OptionGroup(parser, "postgres options")
+        group.add_option("-C", "--connection", dest="psql_connection",
+                         type="string",
+                         help="psql connection string [%default].")
+        group.add_option("-U", "--user", dest="user", type="string",
+                         help="database user name [%default].")
         parser.set_defaults(psql_connection="fgu202:postgres")
         parser.set_defaults(user="")
+        parser.add_option_group(group)
 
     if add_cluster_options:
-        parser.add_option("--no-cluster", "--local", dest="without_cluster",
-                          action="store_true",
-                          help="do no use cluster - run locally [%default].")
-        parser.add_option("--cluster-priority", dest="cluster_priority",
-                          type="int",
-                          help="set job priority on cluster [%default].")
-        parser.add_option("--cluster-queue", dest="cluster_queue",
-                          type="string",
-                          help="set cluster queue [%default].")
-        parser.add_option("--cluster-num-jobs", dest="cluster_num_jobs",
-                          type="int",
-                          help="number of jobs to submit to the queue execute "
-                          "in parallel [%default].")
-        parser.add_option("--cluster-parallel",
-                          dest="cluster_parallel_environment",
-                          type="string",
-                          help="name of the parallel environment to use "
-                          "[%default].")
-        parser.add_option("--cluster-options", dest="cluster_options",
-                          type="string",
-                          help="additional options for cluster jobs, passed "
-                          "on to queuing system [%default].")
+        group = OptionGroup(parser, "cluster options")
+        group.add_option("--no-cluster", "--local", dest="without_cluster",
+                         action="store_true",
+                         help="do no use cluster - run locally [%default].")
+        group.add_option("--cluster-priority", dest="cluster_priority",
+                         type="int",
+                         help="set job priority on cluster [%default].")
+        group.add_option("--cluster-queue", dest="cluster_queue",
+                         type="string",
+                         help="set cluster queue [%default].")
+        group.add_option("--cluster-num-jobs", dest="cluster_num_jobs",
+                         type="int",
+                         help="number of jobs to submit to the queue execute "
+                         "in parallel [%default].")
+        group.add_option("--cluster-parallel",
+                         dest="cluster_parallel_environment",
+                         type="string",
+                         help="name of the parallel environment to use "
+                         "[%default].")
+        group.add_option("--cluster-options", dest="cluster_options",
+                         type="string",
+                         help="additional options for cluster jobs, passed "
+                         "on to queuing system [%default].")
 
         parser.set_defaults(without_cluster=False,
                             cluster_queue=None,
@@ -686,59 +714,69 @@ def Start(parser=None,
                             cluster_num_jobs=None,
                             cluster_parallel_environment=None,
                             cluster_options=None)
+        parser.add_option_group(group)
 
-    if add_output_options:
-        parser.add_option("-P", "--output-filename-pattern",
-                          dest="output_filename_pattern", type="string",
-                          help="OUTPUT filename pattern for various methods "
-                          "[%default].")
+    if add_output_options or add_pipe_options:
+        group = OptionGroup(parser, "Input/output options")
 
-        parser.add_option("-F", "--force", dest="output_force",
-                          action="store_true",
-                          help="force over-writing of existing files.")
+        if add_output_options:
+            group.add_option(
+                "-P", "--output-filename-pattern",
+                dest="output_filename_pattern", type="string",
+                help="OUTPUT filename pattern for various methods "
+                "[%default].")
 
-        parser.set_defaults(output_filename_pattern="%s",
-                            output_force=False)
+            group.add_option("-F", "--force-output", dest="output_force",
+                             action="store_true",
+                             help="force over-writing of existing files.")
 
-    if add_pipe_options:
-        parser.add_option("-I", "--stdin", dest="stdin", type="string",
-                          help="file to read stdin from [default = stdin].",
-                          metavar="FILE")
-        parser.add_option("-L", "--log", dest="stdlog", type="string",
-                          help="file with logging information "
-                          "[default = stdout].",
-                          metavar="FILE")
-        parser.add_option("-E", "--error", dest="stderr", type="string",
-                          help="file with error information "
-                          "[default = stderr].",
-                          metavar="FILE")
-        parser.add_option("-S", "--stdout", dest="stdout", type="string",
-                          help="file where output is to go "
-                          "[default = stdout].",
-                          metavar="FILE")
+            parser.set_defaults(output_filename_pattern="%s",
+                                output_force=False)
 
-        parser.set_defaults(stderr=sys.stderr)
-        parser.set_defaults(stdout=sys.stdout)
-        parser.set_defaults(stdlog=sys.stdout)
-        parser.set_defaults(stdin=sys.stdin)
+        if add_pipe_options:
+
+            group.add_option("-I", "--stdin", dest="stdin", type="string",
+                             help="file to read stdin from [default = stdin].",
+                             metavar="FILE")
+            group.add_option("-L", "--log", dest="stdlog", type="string",
+                             help="file with logging information "
+                             "[default = stdout].",
+                             metavar="FILE")
+            group.add_option("-E", "--error", dest="stderr", type="string",
+                             help="file with error information "
+                             "[default = stderr].",
+                             metavar="FILE")
+            group.add_option("-S", "--stdout", dest="stdout", type="string",
+                             help="file where output is to go "
+                             "[default = stdout].",
+                             metavar="FILE")
+
+            parser.set_defaults(stderr=sys.stderr)
+            parser.set_defaults(stdout=sys.stdout)
+            parser.set_defaults(stdlog=sys.stdout)
+            parser.set_defaults(stdin=sys.stdin)
+
+        parser.add_option_group(group)
 
     if add_mysql_options:
-        parser.add_option("-H", "--host", dest="host", type="string",
-                          help="mysql host [%default].")
-        parser.add_option("-D", "--database", dest="database", type="string",
-                          help="mysql database [%default].")
-        parser.add_option("-U", "--user", dest="user", type="string",
-                          help="mysql username [%default].")
-        parser.add_option("-P", "--password", dest="password", type="string",
-                          help="mysql password [%default].")
-        parser.add_option("-O", "--port", dest="port", type="int",
-                          help="mysql port [%default].")
+        group = OptionGroup(parser, "MYSQL connection options")
+        group.add_option("-H", "--host", dest="host", type="string",
+                         help="mysql host [%default].")
+        group.add_option("-D", "--database", dest="database", type="string",
+                         help="mysql database [%default].")
+        group.add_option("-U", "--user", dest="user", type="string",
+                         help="mysql username [%default].")
+        group.add_option("-P", "--password", dest="password", type="string",
+                         help="mysql password [%default].")
+        group.add_option("-O", "--port", dest="port", type="int",
+                         help="mysql port [%default].")
 
         parser.set_defaults(host="db",
                             port=3306,
                             user="",
                             password="",
                             database="")
+        parser.add_option_group(group)
 
     if return_parser:
         return parser

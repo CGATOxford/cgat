@@ -1,6 +1,6 @@
 '''
-gff2bed.py - convert from gff to bed
-====================================
+gff2bed.py - convert from gff/gtf to bed
+=========================================
 
 :Author: Andreas Heger
 :Release: $Id$
@@ -8,18 +8,42 @@ gff2bed.py - convert from gff to bed
 :Tags: Genomics Intervals GFF BED Conversion
 
 Purpose
--------
+--------
 
-convert gff or gtf to bed formatted files.
+This script converts GFF or GTF formatted files to BED formatted files. 
+
+Documentation
+--------------
+
+Users can select the field from the GTF file to be used in the name 
+field of the BED file using ``--name``. Choices include "gene_id", 
+"transcript_id", "class", "family", "feature", "source" and "repName". 
+To specify the input is in GTF format use --is-gtf. 
+
+BED files can contain multiple tracks. If required, users can use 
+the "feature" or "source" fields in the input GFF file to specifiy 
+different tracks in the BED file (default none). 
 
 Usage
------
+------
 
-Type::
+Example::
 
-   python gff2bed.py --help
+   # View input GTF file
+   head tests/gff2bed.py/mm9_ens67_geneset_100.gtf
+   
+   # Convert GTF to bed format using gene_id as name and group by GTF feature
+   cat tests/gff2bed.py/mm9_ens67_geneset_100.gtf | cgat gff2bed.py --is-gtf --name=gene_id --track=feature > mm9_ens67_geneset_100_feature.bed
 
-for command line usage.
++-------------------------------------------------------+ 
+|track name=CDS                                         |
++------+---------+---------+--------------------+---+---+
+|chr18 |3122494  |3123412  |ENSMUSG00000091539  |0  |-  |
++------+---------+---------+--------------------+---+---+
+|chr18 |3327491  |3327535  |ENSMUSG00000063889  |0  |-  |
++------+---------+---------+--------------------+---+---+
+|chr18 |3325358  |3325476  |ENSMUSG00000063889  |0  |-  |
++------+---------+---------+--------------------+---+---+
 
 Command line options
 --------------------
@@ -43,16 +67,17 @@ def main(argv=sys.argv):
                             usage=globals()["__doc__"])
 
     parser.add_option("--is-gtf", dest="is_gtf", action="store_true",
-                      help="input file is gtf [default=%default] ")
+                      help="input file is in gtf format [default=%default] ")
 
     parser.add_option("--name", dest="name", type="choice",
-                      help="field to use as the name field [%default]",
+                      help="field from the GFF/GTF file to use as the "
+                      "name field in the BED file [%default]",
                       choices=("gene_id", "transcript_id", "class", "family",
                                "feature", "source", "repName"))
 
     parser.add_option("--track", dest="track", type="choice",
                       choices=("feature", "source", None),
-                      help="use feature/source field to define tracks [default=%default] ")
+                      help="use feature/source field to define BED tracks [default=%default] ")
 
     parser.set_defaults(
         track=None,

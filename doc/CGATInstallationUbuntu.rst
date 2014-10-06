@@ -70,7 +70,7 @@ You can either install them one by one or all at the same time with ``apt-get``:
         apt-get install zlib1g-dev           # required by virtualenv
         apt-get install libssl-dev           # required by pip
         apt-get install libbz2-dev           # required by bx-python
-        apt-get install c++                  # required by pybedtools
+        apt-get install g++                  # required by pybedtools
         apt-get install libfreetype6-dev     # required by matplotlib
         apt-get install libpng12-dev         # required by matplotlib
         apt-get install libblas-dev          # required by scipy

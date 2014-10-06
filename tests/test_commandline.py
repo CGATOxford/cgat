@@ -14,7 +14,7 @@ CGAT code collection.
 
 This script is best run within nosetests::
 
-   nosetests tests/test_commandline.py
+   nosetests tests/test_commandline.py --nocapture
 
 
 .. note::
@@ -28,10 +28,15 @@ This script is best run within nosetests::
 '''
 import glob
 import os
-import imp
+import shutil
+import importlib
+import yaml
+import re
 import sys
+
 from nose.tools import ok_
 import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
 
 # handle to original E.Start function
 ORIGINAL_START = None
@@ -45,11 +50,46 @@ EXPRESSIONS = (
 # ('optic', 'scripts/optic/*.py'),
 # ('gpipe', 'scripts/gpipe/*.py'))
 
-EXCLUDE = ("__init__.py",)
+EXCLUDE = ("__init__.py",
+           "version.py",
+           "cgat.py",
+           )
+
+# Filename with the black/white list of options.
+# The file is a tab-separated with the first column
+# an option name and the second field a marker.
+# Possible markers are:
+# ok = whitelist - this option is ok.
+# 'bad', 'rename', '?', '' - this option is not ok.
+FILENAME_OPTIONLIST = "tests/option_list.tsv"
 
 
 class DummyError(Exception):
     pass
+
+
+def filterFiles(files):
+    '''filter list of files according to filters set in
+    configuration file tests/_test_commandline.yaml'''
+
+    if os.path.exists("tests/_test_commandline.yaml"):
+        config = yaml.load(open("tests/_test_commandline.yaml"))
+        if config is not None:
+            if "restrict" in config and config["restrict"]:
+                values = config["restrict"]
+                if "manifest" in values:
+                    # take scripts defined in the MANIFEST.in file
+                    scriptdirs = [x for x in open("MANIFEST.in")
+                                  if x.startswith("include scripts") and
+                                  x.endswith(".py\n")]
+                    take = set([re.sub("include\s*", "",
+                                       x[:-1]) for x in scriptdirs])
+                    files = [x for x in files if x in take]
+
+                if "regex" in values:
+                    rx = re.compile(values["regex"])
+                    files = filter(rx.search, files)
+    return files
 
 
 def LocalStart(parser, *args, **kwargs):
@@ -67,58 +107,39 @@ def loadScript(script_name):
     # call other script
     prefix, suffix = os.path.splitext(script_name)
 
-    dirname = os.path.dirname(script_name)
+    dirname = os.path.relpath(os.path.dirname(script_name))
     basename = os.path.basename(script_name)[:-3]
 
     if os.path.exists(prefix + ".pyc"):
         os.remove(prefix + ".pyc")
 
+    modulename = ".".join((re.sub("/", ".", dirname), basename))
+
     try:
-        module = imp.load_source(basename, script_name)
+        module = importlib.import_module(modulename)
     except ImportError, msg:
-        E.warn('could not import %s - skipped: %s' % (basename, msg))
-        return
+        sys.stderr.write('could not import %s - skipped: %s\n' % (basename, msg))
+        module = None
 
-    return module
+    return module, modulename
 
 
-def check_options(script_name):
+def check_option(option, script_name, map_option2action):
     '''import script and get command line options.
 
     Test command line options for conformity.
     '''
+    if option in map_option2action:
+        ok_(option in map_option2action,
+            'option %s:%s unknown')
+        ok_(map_option2action[option] == "ok",
+            'option %s:%s wrong: action="%s"' %
+            (script_name, option, map_option2action[option]))
 
-    # check if script contains getopt
-    with IOTools.openFile(script_name) as inf:
-        if "getopt" in inf.read():
-            ok_(False, "script uses getopt directly: %s" % script_name)
 
-    module = loadScript(script_name)
-
-    E.Start = LocalStart
-
-    try:
-        module.main(argv=["--help"])
-    except AttributeError:
-        ok_(False, "no main method in %s" % script_name)
-    except SystemExit:
-        ok_(False, "script does not use E.Start(): %s" % script_name)
-    except DummyError:
-        pass
-
-    for option in PARSER.option_list:
-        # ignore options added by optparse
-        if option.dest is None:
-            continue
-
-        optstring = option.get_opt_string()
-        if optstring.startswith("--"):
-            optstring = optstring[2:]
-
-        if "file" in optstring:
-            components = optstring.split("-")
-            ok_(len(components) == 3,
-                "option %s has not three components" % optstring)
+def failTest(msg):
+    '''create test that fails with *msg*.'''
+    ok_(False, msg)
 
 
 def test_cmdline():
@@ -128,18 +149,82 @@ def test_cmdline():
     global ORIGINAL_START
     ORIGINAL_START = E.Start
 
-    x = 0
+    # read the first two columns
+    map_option2action = IOTools.readMap(
+        IOTools.openFile(FILENAME_OPTIONLIST),
+        columns=(0, 1),
+        has_header=True)
+
+    files = []
     for label, expression in EXPRESSIONS:
+        f = glob.glob(expression)
+        files.extend(sorted(f))
 
-        files = glob.glob(expression)
-        files.sort()
+    files = filterFiles(files)
 
-        for f in files:
-            if os.path.isdir(f):
+    # files = [
+    #    'scripts/bam2bam.py',
+    #    'scripts/bam2geneprofile.py']
+
+    for f in files:
+        if os.path.isdir(f):
+            continue
+        if os.path.basename(f) in EXCLUDE:
+            continue
+
+        script_name = os.path.abspath(f)
+        pyxfile = (os.path.join(os.path.dirname(f), "_") +
+                   os.path.basename(f) + "x")
+
+        failTest.description = script_name
+        # check if script contains getopt
+        with IOTools.openFile(script_name) as inf:
+            if "getopt" in inf.read():
+                yield (failTest,
+                       "script uses getopt directly: %s" % script_name)
                 continue
-            if os.path.basename(f) in EXCLUDE:
+
+        module, modulename = loadScript(script_name)
+        if module is None:
+            yield (failTest,
+                   "module could not be imported: %s\n" % script_name)
+            continue
+        E.Start = LocalStart
+
+        try:
+            module.main(argv=["--help"])
+        except AttributeError:
+            yield (failTest,
+                   "no main method in %s\n" % script_name)
+            ok_(False, "no main method in %s" % script_name)
+        except SystemExit:
+            yield (failTest,
+                   "script does not use E.Start() %s\n" % script_name)
+        except DummyError:
+            pass
+
+        for option in PARSER.option_list:
+            # ignore options added by optparse
+            if option.dest is None:
                 continue
 
-            check_options.description = os.path.abspath(f)
-            yield(check_options, os.path.abspath(f))
-            x += 1
+            optstring = option.get_opt_string()
+            if optstring.startswith("--"):
+                optstring = optstring[2:]
+
+            check_option.description = script_name + ":" + optstring
+
+            yield(check_option, optstring, os.path.abspath(f),
+                  map_option2action)
+
+        # clear up
+        del sys.modules[modulename]
+
+        # scripts with pyximport need special handling.
+        #
+        # Multiple imports of pyximport seems to create
+        # some confusion - here, clear up sys.meta_path after
+        # each script
+        if os.path.exists(pyxfile):
+            sys.meta_path = []
+

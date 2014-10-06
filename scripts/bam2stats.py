@@ -261,24 +261,38 @@ def main(argv=None):
         argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+    parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
-    parser.add_option("-r", "--filename-rna", dest="filename_rna", type="string", metavar='GFF',
-                      help="gff formatted file with rna locations. Note that the computation currently "
-                      "does not take into account indels, so it is an approximate count only [%default]")
-    parser.add_option("-f", "--remove-rna", dest="remove_rna", action="store_true",
-                      help="as well as counting, also remove rna reads for duplicate and other counts [%default]")
-    parser.add_option("-i", "--input-reads", dest="input_reads", type="int",
-                      help="the number of reads - if given, used to provide percentages [%default]")
-    parser.add_option("--force-output", dest="force_output", action="store_true",
-                      help="output nh/nm stats even if there is only a single count [%default]")
-    parser.add_option("-d", "--output-details", dest="output_details", action="store_true",
-                      help="output per-read details [%default]")
-    parser.add_option("-q", "--filename-fastq", dest="filename_fastq",
-                      help="filename with sequences and quality scores. This file is only "
-                      "used to collect sequence identifiers. Thus, for paired end data a "
-                      "single file is sufficient [%default]")
+    parser.add_option(
+        "-r", "--filename-rna", dest="filename_rna", type="string",
+        metavar='GFF',
+        help="gff formatted file with rna locations. Note that the "
+        "computation "
+        "currently "
+        "does not take into account indels, so it is an approximate count "
+        "only "
+        "[%default]")
+
+    parser.add_option(
+        "-f", "--remove-rna", dest="remove_rna", action="store_true",
+        help="as well as counting, also remove rna reads for duplicate and "
+        "other counts [%default]")
+
+    parser.add_option(
+        "-i", "--input-reads", dest="input_reads", type="int",
+        help="the number of reads - if given, used to provide percentages "
+        "[%default]")
+
+    parser.add_option(
+        "-d", "--output-details", dest="output_details", action="store_true",
+        help="output per-read details [%default]")
+
+    parser.add_option(
+        "-q", "--filename-fastq", dest="filename_fastq",
+        help="filename with sequences and quality scores. This file is only "
+        "used to collect sequence identifiers. Thus, for paired end data a "
+        "single file is sufficient [%default]")
 
     parser.set_defaults(
         filename_rna=None,

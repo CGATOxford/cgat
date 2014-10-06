@@ -105,11 +105,11 @@ def main(argv=None):
 
     parser.add_option("-a", "--filename-bam", dest="filename_bam",
                       metavar="bam", type="string",
-                      help="bam-file to use [%default]")
+                      help="bam-file to use (required) [%default]")
 
     parser.add_option("-b", "--filename-bed", dest="filename_bed",
                       metavar="bed", type="string",
-                      help="bed-file to use [%default]")
+                      help="bed-file to use (required) [%default]")
 
     parser.set_defaults(
         min_overlap=0.5,
