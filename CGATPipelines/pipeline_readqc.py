@@ -349,7 +349,7 @@ def loadFastqcSummary(infile, outfile):
 ####################################################
 if BIAS_ANALYSIS:
 
-    if PARAMS["sailfish_transcripts"].endswidth(".gz"):
+    if PARAMS["sailfish_transcripts"].endswith(".gz"):
         zipped = True
 
     @transform(PARAMS["sailfish_transcripts"],
@@ -368,7 +368,7 @@ if BIAS_ANALYSIS:
         else:
             statement = '''sailfish index -t %(infile)s'''
 
-        statement += '''-k %(kmer)i -o %(outdir)s;
+        statement += ''' -k %(kmer)i -o %(outdir)s;
                         checkpoint; rm -f %(tmp)s'''
 
         P.run()

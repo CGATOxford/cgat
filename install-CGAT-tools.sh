@@ -12,7 +12,7 @@ sanity_check_os() {
 
 
 # function to detect the Operating System
-detect_os(){
+detect_os() {
 
 if [ -f /etc/os-release ]; then
 
@@ -328,10 +328,10 @@ chmod +x bedGraphToBigWig
 # BEDtools
 # curl -L https://github.com/arq5x/bedtools2/releases/download/v2.18.2/bedtools-2.18.2.tar.gz > bedtools-2.18.2.tar.gz
 # wget https://github.com/arq5x/bedtools2/releases/download/v2.19.1/bedtools-2.19.1.tar.gz
-wget --no-check-certificate https://www.cgat.org/downloads/public/external-tools/bedtools-2.19.1.tar.gz
-tar xzf bedtools-2.19.1.tar.gz
-rm bedtools-2.19.1.tar.gz
-cd bedtools2-2.19.1
+wget --no-check-certificate https://www.cgat.org/downloads/public/external-tools/bedtools-2.21.0.tar.gz
+tar xzf bedtools-2.21.0.tar.gz
+rm bedtools-2.21.0.tar.gz
+cd bedtools-2.21.0
 make
 PATH=$PATH:$CGAT_HOME/external-tools/bedtools2-2.19.1/bin
 
@@ -635,12 +635,12 @@ else
     install_os_packages
   fi
 
-  if [ "$PY_PKGS" == "1" ] ; then
-    install_python_deps
-  fi
-
   if [ "$NT_PKGS" == "1" ] ; then
     install_nosetests_deps
+  fi
+
+  if [ "$PY_PKGS" == "1" ] ; then
+    install_python_deps
   fi
 
   if [ "$NT_RUN" == "1" ] ; then

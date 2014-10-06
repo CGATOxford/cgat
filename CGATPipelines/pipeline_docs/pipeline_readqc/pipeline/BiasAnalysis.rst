@@ -1,6 +1,6 @@
-==============
+=====================
 Bias analysis results
-==============
+=====================
 
 This page presents the results of analysis of potential biasing
 factors. 

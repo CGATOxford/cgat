@@ -1,5 +1,4 @@
-'''
-beds2counts - compute overlap stats between multiple bed files
+'''beds2counts - compute overlap stats between multiple bed files
 =================================================================
 
 :Author: Nick Ilott
@@ -10,9 +9,10 @@ beds2counts - compute overlap stats between multiple bed files
 Purpose
 -------
 
-This script takes multiple bed files e.g. from multiple samples from the same experiment. It 
-assesses the overlap between samples and outputs a count for each merged interval corresponding
-to the number of samples that a particular interval was found in.
+This script takes multiple bed files e.g. from multiple samples from
+the same experiment. It assesses the overlap between samples and
+outputs a count for each merged interval corresponding to the number
+of samples that a particular interval was found in.
 
 
 Example
@@ -54,6 +54,7 @@ Usage
 
 Command line options
 --------------------
+
 '''
 import tempfile
 import sys
@@ -81,7 +82,7 @@ def main(argv=None):
         argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+    parser = E.OptionParser(version="%prog version: $Id",
                             usage=globals()["__doc__"])
 
     parser.add_option("-i", "--infiles", dest="infiles", type="string",
@@ -110,7 +111,7 @@ def main(argv=None):
     # merge the bed entries in the file
     name = tmp.name
     tmp_bed = pybedtools.BedTool(name)
-    tmp_bed.merge().saveas(tmp_merge.name)
+    tmp_bed.sort().merge().saveas(tmp_merge.name)
     tmp_merge.close()
 
     E.info("indexing bed entries")

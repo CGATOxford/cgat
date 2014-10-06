@@ -19,6 +19,11 @@ def importKEGGAssignments(outfile, mart, host, biomart_dataset):
 
     '''
 
+    if not re.match("rnorvegicus|scerevisiae|hsapiens|mmusculus", 
+                    biomart_dataset):
+        E.warn("KEGG.db doesn't map Entrez ids for %s, %s will"
+               " likely be empty" % (biomart_dataset, outfile))
+
     R.library("KEGG.db")
 
     E.info("getting entrez to ensembl mapping ...")

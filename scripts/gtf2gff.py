@@ -9,8 +9,8 @@
 Purpose
 -------
 
-This scripts converts a transcript set in a :term:`gtf` formatted file into a set
-of features in a :term:`gff` formatted file. 
+This scripts converts a transcript set in a :term:`gtf` formatted file
+into a set of features in a :term:`gff` formatted file.
 
 In other words, a gene set (gtf), which constitutes a hierarchical set
 of annotations, will be converted into a non-hierarchical list of
@@ -1057,15 +1057,19 @@ def main(argv=None):
         argv = sys.argv
 
     parser = E.OptionParser(
-        version="%prog version: $Id: gtf2gff.py 2861 2010-02-23 17:36:32Z andreas $", usage=globals()["__doc__"])
+        version="%prog version: $Id$",
+        usage=globals()["__doc__"])
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genome [default=%default].")
 
-    parser.add_option("-i", "--ignore-missing", dest="ignore_missing", action="store_true",
-                      help="Ignore transcripts on contigs that are not in the genome-file [default=%default].")
+    parser.add_option("-i", "--ignore-missing", dest="ignore_missing",
+                      action="store_true",
+                      help="Ignore transcripts on contigs that are not "
+                      "in the genome-file [default=%default].")
 
-    parser.add_option("-s", "--restrict-source", dest="restrict_source", type="choice",
+    parser.add_option("-s", "--restrict-source", dest="restrict_source",
+                      type="choice",
                       choices=("protein_coding", "pseudogene", "lncRNA"),
                       help="restrict input by source [default=%default].")
 

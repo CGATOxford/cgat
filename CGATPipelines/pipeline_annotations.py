@@ -926,7 +926,14 @@ def buildNonCodingExonTranscripts(infile, outfile):
 def buildLincRNAExonTranscripts(infile, outfile):
     '''build a collection of transcripts from the lincRNA
     section of the ENSEMBL gene set. '''
-    PipelineGeneset.buildLincRNAExons(infile, outfile)
+    # Jethro - some ensembl annotations contain no lincRNAs
+    try:
+        PipelineGeneset.buildLincRNAExons(infile, outfile)
+    except Exception:
+        if os.path.exists(outfile):
+            assert len(IOTools.openFile(outfile).readlines()) == 0
+        else:
+            raise Exception("Failed to create %s" % outfile)
 
 
 @transform((buildCDSTranscripts,
@@ -1031,7 +1038,7 @@ def downloadTranscriptInformation(infile, outfile):
     if PARAMS["genome"].startswith("dm"):
         Database.executewait(
             dbh,
-            '''ALTER TABLE Table1 ADD COLUMN uniprot_name NULL''')
+            '''ALTER TABLE %(tablename)s ADD COLUMN uniprot_name NULL''' % locals())
 
     # adding final column back into transcript_info for scerevisiae genomes
     if PARAMS["genome"].startswith("sac"):
@@ -1700,7 +1707,7 @@ if PARAMS["genome"].startswith("hg"):
         pass
 else:
     @files(((None, None),))
-    def _gwas():
+    def _gwas(infile, outfile):
         pass
 
 
@@ -1798,7 +1805,7 @@ def importKEGGAssignments(infile, outfile):
 @transform(importKEGGAssignments, suffix(".tsv.gz"), "_assignments.load")
 def loadKEGGAssignments(infile, outfile):
 
-    P.load(infile, outfile, options="-i gene_id -i kegg_id")
+    P.load(infile, outfile, options="-i gene_id -i kegg_id --allow-empty")
 
 
 # ---------------------------------------------------------------
@@ -2383,7 +2390,7 @@ def summary():
          enrichment,
          gwas)
 def full():
-    '''build all targets.'''
+    '''build all targets - note: run summary separately afterwards.'''
     pass
 
 ###################################################################

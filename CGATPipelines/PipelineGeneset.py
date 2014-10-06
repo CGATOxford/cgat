@@ -673,12 +673,14 @@ def loadTranscripts(infile, outfile):
     '''
     table = P.toTable(outfile)
 
+    # Jethro - some ensembl annotations contain no lincRNAs
     statement = '''
     gunzip < %(infile)s
     | python %(scriptsdir)s/gtf2tsv.py
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --index=transcript_id
               --index=gene_id
+              --allow-empty
               --table=%(table)s
     > %(outfile)s'''
     P.run()
@@ -1056,6 +1058,8 @@ def buildNUMTs(infile, outfile):
 
     E.info("filtering numts: %s" % str(c))
 
+    os.unlink(tmpfile_mito)
+
 
 def sortGTF(infile, outfile, order="contig+gene"):
     '''sort a gtf file - the sorting is performed on the cluster.
@@ -1134,6 +1138,8 @@ def buildGenomicFunctionalAnnotation(gtffile, dbh, outfiles):
     for term, description in term2description.iteritems():
         outf.write("%s\t%s\n" % (term, description))
     outf.close()
+
+    os.unlink(tmpfname)
 
 
 def buildGenomicContext(infiles, outfile):
