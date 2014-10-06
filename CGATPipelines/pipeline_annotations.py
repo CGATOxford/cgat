@@ -2390,7 +2390,7 @@ def summary():
          enrichment,
          gwas)
 def full():
-    '''build all targets.'''
+    '''build all targets - note: run summary separately afterwards.'''
     pass
 
 ###################################################################

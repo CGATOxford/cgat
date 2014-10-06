@@ -939,9 +939,13 @@ def main(argv=None):
                 for transcript in gene:
                     count = sum([exon_counts[(x.start, x.end)]
                                  for x in transcript if x.feature == "exon"])
-                    transcript_counts.append((count, transcript))
+                    # add transcript id to sort to provide a stable
+                    # segmentation.
+                    transcript_counts.append((count,
+                                              transcript[0].transcript_id,
+                                              transcript))
                 transcript_counts.sort()
-                return transcript_counts[-1][1]
+                return transcript_counts[-1][-1]
 
             if options.filter == "longest-transcript":
                 _select = selectLongestTranscript

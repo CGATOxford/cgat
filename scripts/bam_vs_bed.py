@@ -10,7 +10,7 @@ bam_vs_bed.py - count context that reads map to
 Purpose
 -------
 
-This script takes as input a :term:`BAM` file from an RNASeq experiment 
+This script takes as input a :term:`BAM` file from an RNASeq experiment
 and a :term:`bed` formatted file. The :term:`bed` formatted file needs
 at least four columns. The fourth (name) column is used to group counts.
 
