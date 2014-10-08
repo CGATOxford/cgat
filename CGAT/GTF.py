@@ -502,7 +502,7 @@ def transcript_iterator(gff_iterator, strict=True):
         yield matches
 
 
-def joined_iterator(gffs, group_field=None):
+def joined_iterator(gff_iterator, group_field=None):
     """iterate over the contents of a gff file.
 
     return a list of entries with the same group id.
@@ -521,7 +521,7 @@ def joined_iterator(gffs, group_field=None):
     else:
         group_function = lambda x: x[group_field]
 
-    for gff in gffs:
+    for gff in gff_iterator:
 
         group_id = group_function(gff)
 
@@ -651,6 +651,8 @@ def iterator_sorted_chunks(gff_iterator, sort_by="contig-start"):
        sort by position ignoring the strand
     contig-strand-start
        sort by position taking the strand into account
+    contig-strand-start-end
+       intervals with the same start position will be sorted by end position
 
     returns the chunks.
     """
@@ -671,7 +673,6 @@ def iterator_sorted_chunks(gff_iterator, sort_by="contig-start"):
             chunk.sort(key=lambda x: (x.contig, x.strand, x.start))
             yield chunk
     elif sort_by == "contig-strand-start-end":
-        # intervals with the same start position will be sorted by end position
         chunks = ([(x[0].contig, x[0].strand, min([y.start for y in x]), x)
                   for x in gff_iterator])
         chunks.sort()
