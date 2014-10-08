@@ -104,16 +104,21 @@ def check_script(test_name, script, stdin,
                  " %(options)s"
                  " > %(stdout)s'") % locals()
 
-    retval = subprocess.call(statement,
-                             shell=True,
-                             cwd=tmpdir)
-    assert_equal(retval, 0,
-                 "error in statement: %s" % statement)
+    process = subprocess.Popen(statement,
+                               shell=True,
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE,
+                               cwd=tmpdir)
+
+    process_stdout, process_stderr = process.communicate()
+
+    assert_equal(process.returncode, 0,
+                 "error in statement: %s; stderr=%s" %
+                 (statement, process_stderr))
 
     # for version tests, do not compare output
     if test_name == "version":
         return
-
     # compare line by line, ignoring comments
     for output, reference in zip(outputs, references):
         if output == "stdout":
