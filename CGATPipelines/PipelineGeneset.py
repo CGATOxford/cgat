@@ -878,7 +878,6 @@ def buildPseudogenes(infiles, outfile, dbhandle):
         P.run()
         return
 
-
     tmpfile1 = P.getTempFilename(shared=True)
 
     statement = '''
