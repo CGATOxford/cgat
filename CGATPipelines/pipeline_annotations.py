@@ -1345,7 +1345,7 @@ def importRNAAnnotationFromUCSC(infile, outfile):
     The results are stored as a :term:`gff` formatted file.
     '''
 
-    repclasses = "','".join(PARAMS["ucsc_rnatypes"].split(","))
+    repclasses = P.asList(PARAMS["ucsc_rnatypes"])
     dbhandle = PipelineUCSC.connectToUCSC()
     PipelineUCSC.getRepeatsFromUCSC(dbhandle, repclasses, outfile)
 
