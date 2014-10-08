@@ -1149,6 +1149,7 @@ def getStdoutStderr(stdout_path, stderr_path, tries=5):
 
 
 def _collectSingleJobFromCluster(session, job_id,
+                                 statement,
                                  stdout_path, stderr_path,
                                  job_path):
     '''runs a single job on the cluster.'''
@@ -1351,7 +1352,9 @@ def run(**kwargs):
             for job_id, statement, paths in zip(job_ids, statement_list,
                                                 filenames):
                 job_path, stdout_path, stderr_path = paths
-                _collectSingleJobFromCluster(session, job_id, stdout_path,
+                _collectSingleJobFromCluster(session, job_id,
+                                             statement,
+                                             stdout_path,
                                              stderr_path, job_path)
 
             session.deleteJobTemplate(jt)
@@ -1394,6 +1397,7 @@ def run(**kwargs):
                 L.debug("job has been submitted with job_id %s" % str(job_id))
 
                 _collectSingleJobFromCluster(session, job_id,
+                                             statement,
                                              stdout_path,
                                              stderr_path, job_path)
 
