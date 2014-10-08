@@ -33,6 +33,41 @@ the option ``--merge-pairs`` paired-end reads are merged and output as
 a single interval. The strand is set according to the first read in a
 pair.
 
+Usage
+----
+::
+
+   cgat bam2bed BAMFILE [--merge-pairs|--region] [options]
+   
+operates on the file BAMFILE::
+
+   cgat bam2bed [--merge-pairs] [options]
+
+operates on the stdin as does::
+
+   cgat bam2bed -I BAMFILE [--merge-pairs] [options]
+
+
+To merge paired-end reads and output fragment interval ie. leftmost
+mapped base to rightmost mapped base::
+
+   cat example.bam | cgat bam2bed --merge-pairs
+
+   1       13119   13282   READ2     0       +
+   1       13039   13258   READ1     7       +
+
+To output read intervals that overlap chromosome 1, coordinates 13000-13100::
+
+   cgat bam2bed example.bam --region=1:13000-13100
+
+The region and merge-pair options are not compatible. To use merge pairs on
+only a region of the genome use samtools view::
+
+   samtools view -ub example.bam 1:13000:13100 | cgat bam2bed --merge-pairs
+
+Note that this will select fragments were the first read-in-pair is in
+the region.
+
 Options
 -------
 
@@ -75,43 +110,6 @@ Options
     file will be output.
 
 
-Examples
---------
-
-To merge paired-end reads and output fragment interval ie. leftmost
-mapped base to rightmost mapped base::
-
-   cat example.bam | cgat bam2bed --merge-pairs
-
-   1       13119   13282   READ2     0       +
-   1       13039   13258   READ1     7       +
-
-To output read intervals that overlap chromosome 1, coordinates 13000-13100::
-
-   cgat bam2bed example.bam --region=1:13000-13100
-
-The region and merge-pair options are not compatible. To use merge pairs on
-only a region of the genome use samtools view::
-
-   samtools view -ub example.bam 1:13000:13100 | cgat bam2bed --merge-pairs
-
-Note that this will select fragments were the first read-in-pair is in
-the region.
-
-Usage
------
-
-::
-
-   cgat bam2bed BAMFILE [--merge-pairs|--region] [options]
-   
-operates on the file BAMFILE::
-
-   cgat bam2bed [--merge-pairs] [options]
-
-operates on the stdin as does::
-
-   cgat bam2bed -I BAMFILE [--merge-pairs] [options]
 
 Type::
 
