@@ -157,6 +157,18 @@ geneprofilewithintrons
     gene models containing also intronic sequence, only correct if
     used with ``--base-accuracy`` option.
 
+separateexonprofile
+    UPSTREAM - FIRST EXON - EXON - LAST EXON - DOWNSTREAM
+
+    gene models with the first and last exons separated out from all
+    other exons.  Only applicable to gene models with > 1 exons.
+
+separateexonprofilewithintrons
+    UPSTREAM - FIRST EXON - EXON - INTRON - LAST EXON - DOWNSTREAM
+
+    gene models with first and last exons separated out, and includes
+    all introns together.  Excludes genes with < 2 exons and no introns.
+
 geneprofileabsolutedistancefromthreeprimeend
 
     UPSTREAM - EXON (absolute distance, see below) - INTRON (absolute
@@ -330,6 +342,8 @@ def main(argv=None):
                                "intervalprofile", "midpointprofile",
                                "geneprofilewithintrons",
                                "geneprofileabsolutedistancefromthreeprimeend",
+                               "separateexonprofile",
+                               "separateexonprofilewithintrons",
                                ),
                       help = 'counters to use. Counters describe the '
                       'meta-gene structure to use. '
@@ -431,6 +445,14 @@ def main(argv=None):
 
     parser.add_option("--resolution-cds", dest="resolution_cds", type="int",
                       help="resolution of cds region in bp "
+                      "[%default]")
+
+    parser.add_option("--resolution-first-exon", dest="resolution_first", type="int",
+                      help="resolution of first exon in gene, in bp"
+                      "[%default]")
+
+    parser.add_option("--resolution-last-exon", dest="resolution_last", type="int",
+                      help="resolution of last exon in gene, in bp"
                       "[%default]")
 
     parser.add_option("--resolution-introns",
@@ -536,6 +558,8 @@ def main(argv=None):
         resolution_downstream_utr=1000,
         resolution_upstream=1000,
         resolution_downstream=1000,
+        resolution_first = 1000,
+        resolution_last = 1000,
         # mean length of transcripts: about 2.5 kb
         extension_upstream=2500,
         extension_downstream=2500,
@@ -742,6 +766,32 @@ def main(argv=None):
                 options.extension_upstream,
                 options.extension_downstream))
 
+        # add new method to split 1st and last exons out
+        # requires a representative transcript for reach gene
+        # gtf should be sorted gene-position
+        elif method == "separateexonprofile":
+            counters.append(_bam2geneprofile.SeparateExonCounter(
+                range_counter,
+                options.resolution_upstream,
+                options.resolution_first,
+                options.resolution_last,
+                options.resolution_cds,
+                options.resolution_downstream,
+                options.extension_upstream,
+                options.extension_downstream))
+
+        elif method == "separateexonprofilewithintrons":
+            counters.append(_bam2geneprofile.SeparateExonWithIntronCounter(
+                range_counter,
+                options.resolution_upstream,
+                options.resolution_first,
+                options.resolution_last,
+                options.resolution_cds,
+                options.resolution_introns,
+                options.resolution_downstream,
+                options.extension_upstream,
+                options.extension_downstream))
+
     # set normalization
     for c in counters:
         c.setNormalization(options.normalization)
@@ -830,14 +880,16 @@ def main(argv=None):
                           "geneprofilewithintrons",
                           "geneprofileabsolutedistancefromthreeprimeend",
                           "utrprofile",
-                          "intervalprofile"):
+                          "intervalprofile",
+                          "separateexonprofile",
+                          "separateexonprofilewithintrons"):
 
                 plt.figure()
                 plt.subplots_adjust(wspace=0.05)
                 max_scale = max([max(x) for x in counter.aggregate_counts])
 
                 for x, counts in enumerate(counter.aggregate_counts):
-                    plt.subplot(5, 1, x + 1)
+                    plt.subplot(6, 1, x + 1)
                     plt.plot(range(len(counts)), counts)
                     plt.title(counter.fields[x])
                     plt.ylim(0, max_scale)

@@ -68,7 +68,7 @@ if [ "$OS" == "ubuntu" -o "$OS" == "travis" ] ; then
    echo " Installing packages for Ubuntu "
    echo
 
-   sudo apt-get install -y gcc g++ zlib1g-dev libssl-dev libbz2-dev libfreetype6-dev libpng12-dev libblas-dev libatlas-dev liblapack-dev gfortran libpq-dev r-base-dev libreadline-dev libmysqlclient-dev libboost-dev libsqlite3-dev mercurial;
+   sudo apt-get install -y gcc g++ zlib1g-dev libssl-dev libssl1.0.0 libbz2-dev libfreetype6-dev libpng12-dev libblas-dev libatlas-dev liblapack-dev gfortran libpq-dev r-base-dev libreadline-dev libmysqlclient-dev libboost-dev libsqlite3-dev mercurial;
 
 elif [ "$OS" == "sl" -o "$OS" == "centos" ] ; then
 
@@ -79,7 +79,7 @@ elif [ "$OS" == "sl" -o "$OS" == "centos" ] ; then
    yum -y install gcc zlib-devel openssl-devel bzip2-devel gcc-c++ freetype-devel libpng-devel blas atlas lapack gcc-gfortran postgresql-devel R-core-devel readline-devel mysql-devel boost-devel sqlite-devel mercurial
 
    # additional configuration for scipy
-   if [ "" == "sl" ] ; then
+   if [ "$OS" == "sl" ] ; then
       ln -s /usr/lib64/libatlas.so.3 /usr/lib64/libatlas.so
    fi
    ln -s /usr/lib64/libblas.so.3 /usr/lib64/libblas.so
@@ -325,6 +325,7 @@ cd $EXTERNAL_DEPS_DIR
 # wigToBigWig
 # wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/wigToBigWig
 # compiled new version
+# instructions: https://cgatwiki.anat.ox.ac.uk/xwiki/bin/view/CGAT/Recompiling+UCSC+tools
 wget --no-check-certificate https://www.cgat.org/downloads/public/external-tools/wigToBigWig
 chmod +x wigToBigWig
 #PATH=$PATH:$CGAT_HOME/external-tools
@@ -332,6 +333,7 @@ PATH=$PATH:$EXTERNAL_DEPS_DIR
 
 # bedGraphToBigWig
 # compiled new version
+# instructions: https://cgatwiki.anat.ox.ac.uk/xwiki/bin/view/CGAT/Recompiling+UCSC+tools
 wget --no-check-certificate https://www.cgat.org/downloads/public/external-tools/bedGraphToBigWig
 chmod +x bedGraphToBigWig
 
