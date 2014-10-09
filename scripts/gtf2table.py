@@ -36,7 +36,7 @@ For example, to output information about exons in genes::
 |ENSG00000220978|1   |138 |138 |138.0000 |138.0 |0.0000  |138 |138 |138 |
 +---------------+----+----+----+---------+------+--------+----+----+----+
 
-The table contains exon length statisticts of each gene, the number (nval)
+The table contains exon length statistics of each gene, the number (nval),
 min, max, and total length(sum) of exons per gene. To count per transcript::
 
     zcat in.gtf.gz | cgat gtf2table -v 0 --reporter=transcripts --counter=length
@@ -74,8 +74,8 @@ To add also information about cpg-composition, add another counter::
 Note that we had to use the ``--genome-file`` option to supply the
 genomic sequence.
 
-Additional switches permit counting introns instead of exons (options
---section).
+Additional switches permit counting introns instead of exons (option
+``--section``).
 
 Annotations
 -----------
@@ -98,17 +98,12 @@ Generic annotations require no additional data source to annotate a
 transcript or gene.
 
 length
-   output exon length summary of gene.
+   output exon length summary of transcript/gene. This counter outputs the
+   number of exons in each transcript/gene together with exon length summary
+   statistics (minimal exon length, maximal exon length, total exon length).
 
 position
-   output genomic coordinates of gene
-
-
-splice
-   output splicing summary of gene
-
-splice-comparison
-   TODO
+   output genomic coordinates of transcript/gene (chromosome, start, end).
 
 Sequence derived annotations
 ++++++++++++++++++++++++++++
@@ -117,10 +112,14 @@ Sequence derived annotations require the genomic sequence to compute
 properties of the gene/transcript model (see option ``--genome-file``).
 
 composition-na
-   output nucleotide composition of gene
+   output nucleotide composition of transcript/gene
 
 composition-cgp
-   output cpg composition of gene
+   output cpg composition of transcript/gene
+
+splice
+   output splicing summary of transcript/gene. Outputs the number of
+   canonical and non-canonical splice sites.
 
 quality
    output base-quality information summary of gene. Needs quality scores.
@@ -216,7 +215,6 @@ distance-tss
    compute distance of genes to transcription start sites. Requires a
    second :term:`gtf` formatted file with genes.
 
-
 overlap-transcripts
     count overlap of genes with transcripts in another set.
     Requires a :term:`gtf` formatted file.
@@ -225,6 +223,12 @@ overrun
    output intron overrun, exons in the input gene set extending
    into the introns of a reference gene set. Requries a :term:`gtf`
    formatted file with a reference gene set.
+
+splice-comparison
+   Compare how splice site usage compares between a gene/transcript
+   with transcripts in a reference gene set. Outputs found, missed,
+   perfect, partial, incomplete splice sites and exon-skipping events.
+
 
 Short-read derived annotations
 ++++++++++++++++++++++++++++++
@@ -252,7 +256,9 @@ read-coverage
 
 read-extension
 
-   It is complicated.
+   Counter of special interest. This counter outputs the read density
+   in bins upstream, within and downstream of transcript models. The
+   counter can be used to predict the length of the 3' and 5' UTR.
 
 read-fullcounts
 
@@ -3165,7 +3171,8 @@ class CounterSpliceSiteComparison(CounterOverlap):
     """
 
     headerTemplate = ["splice_%s" % x for x in (
-        "total", "found", "missed", "perfect", "partial", "incomplete", "exon_skipping")]
+        "total", "found", "missed", "perfect",
+        "partial", "incomplete", "exon_skipping")]
 
     def __init__(self, *args, **kwargs):
         CounterOverlap.__init__(self, *args, **kwargs)
