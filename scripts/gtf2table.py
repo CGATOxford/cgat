@@ -1,5 +1,5 @@
 '''gtf2table.py - annotate genes/transcripts
-=========================================
+============================================
 
 :Author: Andreas Heger
 :Release: $Id$
@@ -9,43 +9,112 @@
 Purpose
 -------
 
-compute properties of genes or transcripts given in a :term:`gtf`
-formatted file and output them in tabular format.
+annotate genes or transcripts given in a :term:`gtf` formatted file
+and output them in tabular format.
 
-Quantities can be either computed per gene (all exons across all transcripts)
-or per transcript. The input needs to be sorted accordingly.
+Annotations can be either computed per gene (all exons across all
+transcripts) or per transcript. The input needs to be sorted
+accordingly.
 
-The following methods (see option ``--counter``) are available:
+The script iterates over each gene or transcript model in turn and
+outputs a row in a table for each. Multiple annotations can be
+computed at the same time adding additional columns to the table.
 
-bigwig-counts
-   collect density values from bigwig file and output
-   summary statistics and percentage of bases covered (``pcovered``)
-   by value in bigwig file.
+For example, to output information about exons in genes::
 
-binding-pattern
-   given a list of intervals, determine the binding
-   pattern within and surrounding the gene. For each gene, intervals
-   overlapping the CDS, introns, UTRs and the flank are collected and
-   recorded. The binding is summarized with a binding pattern, a
-   binary pattern indicating overlap/no overlap with 5' flank, 5' UTR,
-   CDS, Introns, 3' UTR, 3' flank.
+    zcat in.gtf.gz | cgat gtf2table -v 0 --counter=length
 
-classifier
-   classify transcripts according to genomic annotation
-   Requires a :term:`gff` file with genomic annotations
-   (see :doc:`gtf2gff`.)
++---------------+----+----+----+---------+------+--------+----+----+----+
+|gene_id        |nval|min |max |mean     |median|stddev  |sum |q1  |q3  |
++---------------+----+----+----+---------+------+--------+----+----+----+
+|ENSG00000225373|4   |39  |688 |253.0000 |142.5 |261.5922|1012|58  |688 |
++---------------+----+----+----+---------+------+--------+----+----+----+
+|ENSG00000267111|1   |744 |744 |744.0000 |744.0 |0.0000  |744 |744 |744 |
++---------------+----+----+----+---------+------+--------+----+----+----+
+|ENSG00000267588|3   |135 |489 |370.0000 |486.0 |166.1746|1110|135 |489 |
++---------------+----+----+----+---------+------+--------+----+----+----+
+|ENSG00000220978|1   |138 |138 |138.0000 |138.0 |0.0000  |138 |138 |138 |
++---------------+----+----+----+---------+------+--------+----+----+----+
 
-classifier-rnaseq
-   classify rnaseq transcripts with respect to a reference
-   geneset. Requires a :term:`gtf` file with a reference
-   gene set.
+The table contains exon length statisticts of each gene, the number (nval)
+min, max, and total length(sum) of exons per gene. To count per transcript::
 
-classifier-polii
-   classify according to PolII transcripts. A
-   gene/transcript is transcribed, if it is covered by large PolII
-   intervals over 80% of its length. A gene/transript is primed if its
-   promotor/UTR is covered by 50% of its length, while the rest of the
-   gene body isn't.
+    zcat in.gtf.gz | cgat gtf2table -v 0 --reporter=transcripts --counter=length
+
++---------------+----+---+---+--------+------+--------+----+---+---+
+|transcript_id  |nval|min|max|mean    |median|stddev  |sum |q1 |q3 |
++---------------+----+---+---+--------+------+--------+----+---+---+
+|ENST00000592209|3   |58 |227|149.6667|164.0 |69.7344 |449 |58 |227|
++---------------+----+---+---+--------+------+--------+----+---+---+
+|ENST00000589741|2   |71 |312|191.5000|191.5 |120.5000|383 |71 |312|
++---------------+----+---+---+--------+------+--------+----+---+---+
+|ENST00000391654|2   |39 |583|311.0000|311.0 |272.0000|622 |39 |583|
++---------------+----+---+---+--------+------+--------+----+---+---+
+|ENST00000587045|1   |173|173|173.0000|173.0 |0.0000  |173 |173|173|
++---------------+----+---+---+--------+------+--------+----+---+---+
+
+To add also information about cpg-composition, add another counter::
+
+    zcat in.gtf.gz | cgat gtf2table -v 0 --genome=hg19 --reporter=transcripts --counter=length --counter=composition-cpg
+
++---------------+----+---+---+--------+------+--------+----+---+---+---+---+---+---+--+----+---+---+----+--------+--------+--------+--------+--------+--------+--------+--------+--------+----------+
+|transcript_id  |nval|min|max|mean    |median|stddev  |sum |q1 |q3 |nC |nG |nA |nT |nN|nUnk|nGC|nAT|nCpG|pC      |pG      |pA      |pT      |pN      |pUnk    |pGC     |pAT     |pCpG    |CpG_ObsExp|
++---------------+----+---+---+--------+------+--------+----+---+---+---+---+---+---+--+----+---+---+----+--------+--------+--------+--------+--------+--------+--------+--------+--------+----------+
+|ENST00000592209|3   |58 |227|149.6667|164.0 |69.7344 |449 |58 |227|137|94 |96 |122|0 |0   |231|218|4   |0.305122|0.209354|0.213808|0.271715|0.000000|0.000000|0.514477|0.485523|0.017817|0.139463  |
++---------------+----+---+---+--------+------+--------+----+---+---+---+---+---+---+--+----+---+---+----+--------+--------+--------+--------+--------+--------+--------+--------+--------+----------+
+|ENST00000589741|2   |71 |312|191.5000|191.5 |120.5000|383 |71 |312|110|102|76 |95 |0 |0   |212|171|5   |0.287206|0.266319|0.198433|0.248042|0.000000|0.000000|0.553525|0.446475|0.026110|0.170677  |
++---------------+----+---+---+--------+------+--------+----+---+---+---+---+---+---+--+----+---+---+----+--------+--------+--------+--------+--------+--------+--------+--------+--------+----------+
+|ENST00000391654|2   |39 |583|311.0000|311.0 |272.0000|622 |39 |583|180|147|131|164|0 |0   |327|295|4   |0.289389|0.236334|0.210611|0.263666|0.000000|0.000000|0.525723|0.474277|0.012862|0.094029  |
++---------------+----+---+---+--------+------+--------+----+---+---+---+---+---+---+--+----+---+---+----+--------+--------+--------+--------+--------+--------+--------+--------+--------+----------+
+|ENST00000587045|1   |173|173|173.0000|173.0 |0.0000  |173 |173|173|46 |33 |36 |58 |0 |0   |79 |94 |1   |0.265896|0.190751|0.208092|0.335260|0.000000|0.000000|0.456647|0.543353|0.011561|0.113966  |
++---------------+----+---+---+--------+------+--------+----+---+---+---+---+---+---+--+----+---+---+----+--------+--------+--------+--------+--------+--------+--------+--------+--------+----------+
+|ENST00000589495|1   |744|744|744.0000|744.0 |0.0000  |744 |744|744|141|187|239|177|0 |0   |328|416|16  |0.189516|0.251344|0.321237|0.237903|0.000000|0.000000|0.440860|0.559140|0.043011|0.451473  |
++---------------+----+---+---+--------+------+--------+----+---+---+---+---+---+---+--+----+---+---+----+--------+--------+--------+--------+--------+--------+--------+--------+--------+----------+
+
+Note that we had to use the ``--genome-file`` option to supply the
+genomic sequence.
+
+Additional switches permit counting introns instead of exons (options
+--section).
+
+Annotations
+-----------
+
+The annotations might be derived from a property of the transcript or
+gene model itself (such as length, number of exons, etc), the genomic
+sequence (such as composition, etc) or require additional data sets.
+For example, to compute the coverage with reads, a :term:`bam` formatted
+file is required (see option ``--bam-file``). Or to compute the overlap
+with genomic densities, a :term:`bigwig` formatted file is required (see
+option ``--bigwig-file``).
+
+This section lists the counters available. They are grouped by data sources
+they require.
+
+Generic annotations
++++++++++++++++++++
+
+Generic annotations require no additional data source to annotate a
+transcript or gene.
+
+length
+   output exon length summary of gene.
+
+position
+   output genomic coordinates of gene
+
+
+splice
+   output splicing summary of gene
+
+splice-comparison
+   TODO
+
+Sequence derived annotations
+++++++++++++++++++++++++++++
+
+Sequence derived annotations require the genomic sequence to compute
+properties of the gene/transcript model (see option ``--genome-file``).
 
 composition-na
    output nucleotide composition of gene
@@ -53,31 +122,18 @@ composition-na
 composition-cgp
    output cpg composition of gene
 
-coverage
-   compute nucleotide coverage of input with segments in another file.
-   The values are output in 5' to 3' order for each nucleotide. Requires
-   a second :term:`gff` formatted file with features to cover.
+quality
+   output base-quality information summary of gene. Needs quality scores.
 
-distance
-   compute distance of genes to features in a second file. Requires
-   a second :term:`gff` formatted file with transcripts. The strand
-   information of the features is ignored.
+Interval derived annotations
+++++++++++++++++++++++++++++
 
-distance-genes
-   compute distance of genes to genes in a second file. Requires a
-   second :term:`gtf` formatted file with genes. The counter distinguishes
-   a variety of cases (closest upstream/downstream).
-
-distance-tss
-   compute distance of genes to transcription start sites. Requires a
-   second :term:`gtf` formatted file with genes.
-
-length
-   output exon length summary of gene.
-
-neighbours
-    output features in second stream that are in proximity to genes
-    in input. Requires a :term:`gtf` formatted file with genes.
+Annotations in the list below relate a gene or transcript to a set of
+intervals given as a second file. The second set of intervals is given
+by the option ``filename-gff``. By default, the intervals are expected
+to be given as a :term:`gff` formatted file, but alternative formats
+(:term:`gtf` and :term:`bed`) are possible (see option
+``--filename-format``)
 
 overlap
     compute overlap of genes in input with features in second stream.
@@ -89,17 +145,37 @@ overlap-stranded
     (sense/antisense). Requires a :term:`gff` formatted file with
     features.
 
-overlap-transcripts
-    count overlap of genes with transcripts in another set.
-    Requires a :term:`gtf` formatted file.
+territories
+    compute overlap of transcripts/genes with territories. Territories
+    are genomic, non-overlapping intervals. For each transcript the
+    counter outputs the status (U=unique match, A=ambiguous match
+    (overlap with multiple territories, 0=no match), the number of
+    territories it overlaps and the territories it overlaps.
 
-overrun
-   output intron overrun, exons in the input gene set extending
-   into the introns of a reference gene set. Requries a :term:`gtf`
-   formatted file with a reference gene set.
+coverage
 
-position
-   output genomic coordinates of gene
+   compute the coverage - per nucleotide - of the gene/transcript
+   models with intervals given in ``--filename-gff``.  Coverage values
+   are output in 5' to 3' together with summary statistics (bases
+   covered, minimum, maximum coverage, etc.). By using the options
+   ``--gff-feature`` or ``--gff-source`` the counting can be
+   rescricted to particular features in the :term:`gff` file.
+
+distance
+
+   compute distance of genes to features in a second file. Requires
+   a second :term:`gff` formatted file with transcripts. The strand
+   information of the features is ignored.
+
+binding-pattern
+
+   given a list of intervals, determine the binding pattern within and
+   surrounding the gene. For each gene, intervals overlapping the CDS,
+   introns, UTRs and the flank are collected and recorded. The binding
+   is summarized with a binding pattern, a binary pattern indicating
+   overlap/no overlap with 5' flank, 5' UTR, CDS, Introns, 3' UTR, 3'
+   flank. This method is useful to check where transcription factor binding
+   sites are located aronud a gene/transcript model.
 
 proximity
    report summary stats (lengths,values) of features in proximity to
@@ -110,39 +186,140 @@ proximity-exclusive
    as proximity, but exclude any ranges overlapping the gene set.
 
 proximity-lengthmatched
-  as proximity-exclusive, but length-match features with genes.
+   as proximity-exclusive, but length-match features with genes.
 
-quality
-   output base-quality information summary of gene. Needs quality scores.
+Gene set derived annotations
+++++++++++++++++++++++++++++
+
+distance-genes
+   compute distance of genes to genes in a second file. Requires a
+   second :term:`gtf` formatted file with genes. The counter distinguishes
+   a variety of cases (closest upstream/downstream).
+
+distance-tss
+   compute distance of genes to transcription start sites. Requires a
+   second :term:`gtf` formatted file with genes.
+
+neighbours
+    output features in second stream that are in proximity to genes
+    in input. Requires a :term:`gtf` formatted file with genes.
+
+overlap-transcripts
+    count overlap of genes with transcripts in another set.
+    Requires a :term:`gtf` formatted file.
+
+overrun
+   output intron overrun, exons in the input gene set extending
+   into the introns of a reference gene set. Requries a :term:`gtf`
+   formatted file with a reference gene set.
+
+Short-read derived annotations
+++++++++++++++++++++++++++++++
+
+Short-read derived annotations count the overlap of reads given
+in a :term:`bam` formatted file (see option ``--bam-file``) with
+gene or transcript models.
+
+read-overlap
+
+   output number of reads overlapping a transcript/gene model.
+   Outputs the number of reads overlapping the transcript/gene model.
+   Reads are counted separately for sense and antisense overlap.
 
 read-coverage
-   output read coverage summary statistics of gene
+
+   output read coverage summary statistics of transcript/gene model.
+   Outputs the number of reads overlapping the transcript/gene model,
+   the number of bases overlapped by reads and summary statistics of
+   the minimimum, maximum, etc. coverage per pase. Reads are counted
+   separately for sense and antisense overlap. The counter does not
+   take into account splice sites. As it does per-base counting,
+   it is slower than ``read-overlap`` and there is no need to
+   use both at the same time.
 
 read-extension
 
+   It is complicated.
+
+read-fullcounts
+
+   count number of reads overlapping a gene or transcript. Reads
+   are classified according to the type of overlap (sense/antisense),
+   full or partial match to exon, splice status (spliced/unspliced).
+   See below for more information.
+
+   Unique and non-unique matches are counted (by alignment start
+   position).
+
 read-counts
-   count number of reads overlapping a gene or transcript. Counts
-   uniquely by read name and counts duplicate and non-duplicate
-   (reads) separately.
+
+   count number of reads overlapping a gene or transcript. Summarizes
+   the output of read-fullcounts.
+
+readpair-fullcounts
+
+   count number of read pairs overlapping a gene or transcript. Pairs
+   are counted according to a variety of attributes (exonic
+   overlap/read pair status/splice status/...). See below for more
+   information.
 
 readpair-counts
+
    count number of read pairs overlapping a gene or
    transcript. Summarizes the output of readpair-fullcounts.
 
-readpair-fullcounts
-   count number of read pairs overlapping a gene or transcript.
-   Pairs are counted according to a variety of attributes
-   (exonic overlap/read pair status/splice status/...).
 
-splice
-   output splicing summary of gene
+Classifiers
+-----------
 
-splice-comparison
+Classifiers not only annotate the transcripts or gene model, but also
+aim to provide some classification based on these annotations. They
+require a secondary file (see option ``--filename-gff``) for the
+classification.
 
-territories
+classifier
+
+   classify transcripts according to genomic annotation.  Requires a
+   :term:`gff` file with genomic annotations (see :doc:`gtf2gff`)
+   delineating genomic regions as intronic, intergenic, exonic,
+   etc. This is useful for a rough classification of transcripts as
+   intergenic, intronic, etc.
+
+   Best used for ChIP-Seq data sets (each peak is a "transcript"). The
+   method is a little out of place in this script, but is here as it
+   uses much of the code implemented here.
+
+classifier-rnaseq
+
+   classify transcripts with respect to a reference geneset. The
+   classifiers aims to match a transcript up with the "most similar"
+   transcript in the reference gene set and dependending on
+   attributes, classifies it as a good match, alternative transcript,
+   fragment, etc. The classifier takes into account strand and prefers
+   sense matches to antisense matches.
+
+classifier-polii
+
+   classify according to PolII transcripts. A gene/transcript is
+   transcribed, if it is covered by large PolII intervals over 80% of
+   its length. A gene/transript is primed if its promotor/UTR is
+   covered by 50% of its length, while the rest of the gene body
+   isn't.
+
+Other annotations
+++++++++++++++++++
+
+The following methods (see option ``--counter``) are available:
+
+bigwig-counts
+
+   collect density values from a :term:`bigwig` formatted file and output
+   summary statistics and percentage of bases covered (``pcovered``)
+   by value in bigwig file. Requires option ``--bigwig-file``.
+
 
 Read counting
-+++++++++++++
+-------------
 
 The methods ``read-counts`` and ``readpair-counts`` count the number
 of reads inside a :term:`bam` formatted file that map inside a
@@ -885,7 +1062,8 @@ class CounterCoverage(CounterOverlap):
     """
 
     headerTemplate = [
-        "cov_%s" % x for x in Stats.Summary().getHeaders() + ("covered", "values",)]
+        "cov_%s" % x for x in Stats.Summary().getHeaders() +
+        ("covered", "values",)]
 
     # do not save value for intervals
     mWithValues = False
@@ -3905,8 +4083,12 @@ def main(argv=None):
                         options=options,
                         prefix=prefix))
         elif c == "splice":
+            if fasta is None:
+                raise ValueError('splice requires a genomic sequence')
             counters.append(CounterSpliceSites(fasta=fasta, prefix=prefix))
         elif c == "quality":
+            if fasta is None:
+                raise ValueError('quality requires a quality score sequence')
             counters.append(CounterQuality(fasta=quality, prefix=prefix))
         elif c == "overrun":
             counters.append(CounterOverrun(
@@ -3966,6 +4148,9 @@ def main(argv=None):
                 bigwig_file,
                 options=options, prefix=prefix))
         elif c == "splice-comparison":
+            if fasta is None:
+                raise ValueError('splice-comparison requires a genomic '
+                                 'sequence')
             counters.append(CounterSpliceSiteComparison(
                 fasta=fasta,
                 filename_gff=options.filename_gff,
@@ -3973,6 +4158,8 @@ def main(argv=None):
                 source=None,
                 options=options, prefix=prefix))
         elif c == "composition-na":
+            if fasta is None:
+                raise ValueError('composition-na requires a genomic sequence')
             for section in options.sections:
                 counters.append(CounterCompositionNucleotides(
                     fasta=fasta,
@@ -3980,6 +4167,8 @@ def main(argv=None):
                     options=options,
                     prefix=prefix))
         elif c == "composition-cpg":
+            if fasta is None:
+                raise ValueError('composition-cpg requires a genomic sequence')
             for section in options.sections:
                 counters.append(CounterCompositionCpG(
                     fasta=fasta,
