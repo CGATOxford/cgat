@@ -163,9 +163,9 @@ coverage
 
 distance
 
-   compute distance of genes to features in a second file. Requires
-   a second :term:`gff` formatted file with transcripts. The strand
-   information of the features is ignored.
+   compute distance of genes to features in a second file. Requires a
+   second :term:`gff` formatted file. The strand information of the
+   features is ignored.
 
 binding-pattern
 
@@ -178,15 +178,31 @@ binding-pattern
    sites are located aronud a gene/transcript model.
 
 proximity
-   report summary stats (lengths,values) of features in proximity to
+
+   report summary stats (lengths, values) of features in proximity to
    genes input gene set. Requires a :term:`gff` formatted file with
-   genomic features.
+   genomic features. This feature is useful when aiming to normalize a
+   value, such as a substitution rate of a transcript model, by
+   substitution rates of segments in the neighbourhood such as
+   ancestral repeats. The values are given in the ``score`` field of
+   the :term:`gff` formatted file. The radius for proximity is controlled
+   by the option ``--proximal-distance``.
 
 proximity-exclusive
-   as proximity, but exclude any ranges overlapping the gene set.
+
+   as proximity, but exclude any ranges in the :term:`gff` formatted file that
+   overlap the transcript/gene model.
 
 proximity-lengthmatched
-   as proximity-exclusive, but length-match features with genes.
+
+   as proximity-exclusive, but length-match features with
+   genes. Segments are declared equal in length if they are within
+   10% of the original segments length.
+
+neighbours
+    output features in second stream that are in proximity to genes
+    in input. This is similar to the ``proximity`` counters, but also
+    outputs the features that are in proximity.
 
 Gene set derived annotations
 ++++++++++++++++++++++++++++
@@ -200,9 +216,6 @@ distance-tss
    compute distance of genes to transcription start sites. Requires a
    second :term:`gtf` formatted file with genes.
 
-neighbours
-    output features in second stream that are in proximity to genes
-    in input. Requires a :term:`gtf` formatted file with genes.
 
 overlap-transcripts
     count overlap of genes with transcripts in another set.
@@ -3204,16 +3217,16 @@ class CounterSpliceSiteComparison(CounterOverlap):
 
 class CounterProximity(CounterOverlap):
 
-    """extract ranges in proximity to feature. 
+    """extract ranges in proximity to feature.
 
-    Outputs arrays and stats of the lengths and values 
-    of the features in proximity. 
+    Outputs arrays and stats of the lengths and values of the features
+    in proximity.
 
-    This counter is useful for normalizing 
-    a feature with features in the neighbourhood .
+    This counter is useful for normalizing a feature with features in the
+    neighbourhood .
 
-    Proximal ranges are within distance mMaxDistance and
-    may overlap the range in question.
+    Proximal ranges are within distance mMaxDistance and may overlap
+    the range in question.
     """
 
     headerTemplate = Stats.Summary().getHeaders(
@@ -3349,7 +3362,7 @@ class CounterProximityLengthMatched(CounterProximity):
 class CounterNeighbours(CounterProximity):
 
     """extract features in second stream that are in proximity 
-    to feature. 
+    to feature.
 
     This class is similar to CounterProxmitiy, but outputs
     the identifiers of the second stream and the distances
