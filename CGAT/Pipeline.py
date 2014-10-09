@@ -1148,17 +1148,65 @@ def getStdoutStderr(stdout_path, stderr_path, tries=5):
     return stdout, stderr
 
 
+def _collectSingleJobFromCluster(session, job_id,
+                                 statement,
+                                 stdout_path, stderr_path,
+                                 job_path):
+    '''runs a single job on the cluster.'''
+    try:
+        retval = session.wait(
+            job_id, drmaa.Session.TIMEOUT_WAIT_FOREVER)
+    except Exception, msg:
+        # ignore message 24 in PBS code 24: drmaa: Job
+        # finished but resource usage information and/or
+        # termination status could not be provided.":
+        if not msg.message.startswith("code 24"):
+            raise
+        retval = None
+
+    stdout, stderr = getStdoutStderr(stdout_path, stderr_path)
+
+    if retval and retval.exitStatus != 0:
+        raise PipelineError(
+            "---------------------------------------\n"
+            "Child was terminated by signal %i: \n"
+            "The stderr was: \n%s\n%s\n"
+            "-----------------------------------------" %
+            (retval.exitStatus,
+             "".join(stderr), statement))
+
+    try:
+        os.unlink(job_path)
+    except OSError:
+        L.warn(
+            ("temporary job file %s not present for "
+             "clean-up - ignored") % job_path)
+
+
 def run(**kwargs):
     """run a statement.
 
-    The method runs statement on the cluster using drmaa. The
-    cluster is bypassed if:
-        * ``to_cluster`` is set to None in the namespace fo
-          the calling function.
+    The method runs a single or multiple statements on the cluster
+    using drmaa. The cluster is bypassed if:
+
+        * ``to_cluster`` is set to None in the context of the
+          calling function.
+
         * ``--local`` has been specified on the command line
+          and the option ``without_cluster`` has been set as
+          a result.
+
         * no libdrmaa is present
-        * the global session is not initialized
-          (GLOBAL_SESSION is None)
+
+        * the global session is not initialized (GLOBAL_SESSION is
+          None)
+
+    To decide which statement to run, the method works by examining
+    the context of the calling function for a variable called
+    ``statement`` or ``statements``. If ``statement`` is defined,
+    a single job script is created and sent to the cluster. If
+    ``statements`` is defined, multiple job scripts are created
+    and sent to the cluster.
 
     Troubleshooting:
        1. DRMAA creates sessions and their is a limited number
@@ -1171,6 +1219,7 @@ def run(**kwargs):
           not been defined (the code should be ``hc`` for ``host:complex``
           and not ``hl`` for ``host:local``. Note that qrsh/qsub directly
           still works.
+
     """
 
     # combine options using correct preference
@@ -1264,167 +1313,144 @@ def run(**kwargs):
 
         return (job_path, stdout_path, stderr_path)
 
-    # run multiple jobs
-    if options.get("statements"):
+    if run_on_cluster:
+        # run multiple jobs
+        if options.get("statements"):
 
+            statement_list = []
+            for statement in options.get("statements"):
+                options["statement"] = statement
+                statement_list.append(buildStatement(**options))
+
+            if options.get("dryrun", False):
+                return
+
+            jt = setupJob(session, options)
+
+            job_ids, filenames = [], []
+            for statement in statement_list:
+
+                job_path, stdout_path, stderr_path = buildJobScript(statement)
+
+                jt.remoteCommand = job_path
+                jt.outputPath = ":" + stdout_path
+                jt.errorPath = ":" + stderr_path
+
+                os.chmod(job_path, stat.S_IRWXG | stat.S_IRWXU)
+
+                job_id = session.runJob(jt)
+                job_ids.append(job_id)
+                filenames.append((job_path, stdout_path, stderr_path))
+
+                L.debug("job has been submitted with job_id %s" % str(job_id))
+
+            L.debug("waiting for %i jobs to finish " % len(job_ids))
+            session.synchronize(job_ids, drmaa.Session.TIMEOUT_WAIT_FOREVER,
+                                False)
+
+            # collect and clean up
+            for job_id, statement, paths in zip(job_ids, statement_list,
+                                                filenames):
+                job_path, stdout_path, stderr_path = paths
+                _collectSingleJobFromCluster(session, job_id,
+                                             statement,
+                                             stdout_path,
+                                             stderr_path, job_path)
+
+            session.deleteJobTemplate(jt)
+
+        # run single job on cluster - this can be an array job
+        else:
+
+            statement = buildStatement(**options)
+
+            if options.get("dryrun", False):
+                return
+
+            job_path, stdout_path, stderr_path = buildJobScript(statement)
+
+            jt = setupJob(session, options)
+
+            jt.remoteCommand = job_path
+            # later: allow redirection of stdout and stderr to files;
+            # can even be across hosts?
+            jt.outputPath = ":" + stdout_path
+            jt.errorPath = ":" + stderr_path
+
+            if "job_array" in options and options["job_array"] is not None:
+                # run an array job
+                start, end, increment = options.get("job_array")
+                L.debug("starting an array job: %i-%i,%i" %
+                        (start, end, increment))
+                # sge works with 1-based, closed intervals
+                job_ids = session.runBulkJobs(jt, start + 1, end, increment)
+                L.debug("%i array jobs have been submitted as job_id %s" %
+                        (len(job_ids), job_ids[0]))
+                retval = session.synchronize(
+                    job_ids, drmaa.Session.TIMEOUT_WAIT_FOREVER, True)
+
+                stdout, stderr = getStdoutStderr(stdout_path, stderr_path)
+
+            else:
+                # run a single job
+                job_id = session.runJob(jt)
+                L.debug("job has been submitted with job_id %s" % str(job_id))
+
+                _collectSingleJobFromCluster(session, job_id,
+                                             statement,
+                                             stdout_path,
+                                             stderr_path, job_path)
+
+            session.deleteJobTemplate(jt)
+    else:
+        # run job locally on cluster
         statement_list = []
-        for statement in options.get("statements"):
-            options["statement"] = statement
+        if options.get("statements"):
+            for statement in options.get("statements"):
+                options["statement"] = statement
+                statement_list.append(buildStatement(**options))
+        else:
             statement_list.append(buildStatement(**options))
 
         if options.get("dryrun", False):
             return
 
-        jt = setupJob(session, options)
-
-        jobids, filenames = [], []
         for statement in statement_list:
+            # process substitution <() and >() does not
+            # work through subprocess directly. Thus,
+            # the statement needs to be wrapped in
+            # /bin/bash -c '...' in order for bash
+            # to interpret the substitution correctly.
+            if "<(" in statement:
+                shell = os.environ.get('SHELL', "/bin/bash")
+                if "bash" not in shell:
+                    raise ValueError(
+                        "require bash for advanced shell syntax: <()")
+                # Note: pipes.quote is deprecated in Py3, use shlex.quote
+                # (not present in Py2.7).
+                statement = pipes.quote(statement)
+                statement = "%s -c %s" % (shell, statement)
 
-            job_path, stdout_path, stderr_path = buildJobScript(statement)
+            process = subprocess.Popen(
+                expandStatement(
+                    statement,
+                    ignore_pipe_errors=ignore_pipe_errors),
+                cwd=os.getcwd(),
+                shell=True,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE)
 
-            jt.remoteCommand = job_path
-            jt.outputPath = ":" + stdout_path
-            jt.errorPath = ":" + stderr_path
+            # process.stdin.close()
+            stdout, stderr = process.communicate()
 
-            os.chmod(job_path, stat.S_IRWXG | stat.S_IRWXU)
-
-            jobid = session.runJob(jt)
-            jobids.append(jobid)
-            filenames.append((job_path, stdout_path, stderr_path))
-
-            L.debug("job has been submitted with jobid %s" % str(jobid))
-
-        L.debug("waiting for %i jobs to finish " % len(jobids))
-        session.synchronize(jobids, drmaa.Session.TIMEOUT_WAIT_FOREVER, False)
-
-        # collect and clean up
-        for jobid, statement, paths in zip(jobids, statement_list, filenames):
-            job_path, stdout_path, stderr_path = paths
-            retval = session.wait(jobid, drmaa.Session.TIMEOUT_WAIT_FOREVER)
-
-            stdout, stderr = getStdoutStderr(stdout_path, stderr_path)
-
-            if retval.exitStatus != 0:
-                raise PipelineError(
-                    "---------------------------------------\n"
-                    "Child was terminated by signal %i: \n"
-                    "The stderr was: \n%s\n%s\n"
-                    "---------------------------------------\n" %
-                    (retval.exitStatus,
-                     "".join(stderr),
-                     statement))
-
-            try:
-                os.unlink(job_path)
-            except OSError:
-                L.warn(
-                    "temporary job file %s not present for "
-                    "clean-up - ignored" % job_path)
-
-        session.deleteJobTemplate(jt)
-
-    elif run_on_cluster:
-
-        statement = buildStatement(**options)
-
-        if options.get("dryrun", False):
-            return
-
-        job_path, stdout_path, stderr_path = buildJobScript(statement)
-
-        jt = setupJob(session, options)
-
-        jt.remoteCommand = job_path
-        # later: allow redirection of stdout and stderr to files; can even be
-        # across hosts?
-        jt.outputPath = ":" + stdout_path
-        jt.errorPath = ":" + stderr_path
-
-        if "job_array" in options and options["job_array"] is not None:
-            # run an array job
-            start, end, increment = options.get("job_array")
-            L.debug("starting an array job: %i-%i,%i" %
-                    (start, end, increment))
-            # sge works with 1-based, closed intervals
-            jobids = session.runBulkJobs(jt, start + 1, end, increment)
-            L.debug("%i array jobs have been submitted as jobid %s" %
-                    (len(jobids), jobids[0]))
-            retval = session.synchronize(
-                jobids, drmaa.Session.TIMEOUT_WAIT_FOREVER, True)
-        else:
-            jobid = session.runJob(jt)
-            L.debug("job has been submitted with jobid %s" % str(jobid))
-            try:
-                retval = session.wait(
-                    jobid, drmaa.Session.TIMEOUT_WAIT_FOREVER)
-            except Exception, msg:
-                # ignore message 24 in PBS
-                # code 24: drmaa: Job finished but resource usage information
-                # and/or termination status could not be provided.":
-                if not msg.message.startswith("code 24"):
-                    raise
-                retval = None
-
-        stdout, stderr = getStdoutStderr(stdout_path, stderr_path)
-
-        if "job_array" not in options:
-            if retval and retval.exitStatus != 0:
+            if process.returncode != 0:
                 raise PipelineError(
                     "---------------------------------------\n"
                     "Child was terminated by signal %i: \n"
                     "The stderr was: \n%s\n%s\n"
                     "-----------------------------------------" %
-                    (retval.exitStatus,
-                     "".join(stderr), statement))
-
-        session.deleteJobTemplate(jt)
-        try:
-            os.unlink(job_path)
-            pass
-        except OSError:
-            L.warn(
-                ("temporary job file %s not present for "
-                 "clean-up - ignored") % job_path)
-    else:
-        statement = buildStatement(**options)
-
-        if options.get("dryrun", False):
-            return
-
-        # process substitution <() and >() does not
-        # work through subprocess directly. Thus,
-        # the statement needs to be wrapped in
-        # /bin/bash -c '...' in order for bash
-        # to interpret the substitution correctly.
-        if "<(" in statement:
-            shell = os.environ.get('SHELL', "/bin/bash")
-            if "bash" not in shell:
-                raise ValueError(
-                    "require bash for advanced shell syntax: <()")
-            # Note: pipes.quote is deprecated in Py3, use shlex.quote
-            # (not present in Py2.7).
-            statement = pipes.quote(statement)
-            statement = "%s -c %s" % (shell, statement)
-
-        process = subprocess.Popen(
-            expandStatement(
-                statement,
-                ignore_pipe_errors=ignore_pipe_errors),
-            cwd=os.getcwd(),
-            shell=True,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE)
-
-        # process.stdin.close()
-        stdout, stderr = process.communicate()
-
-        if process.returncode != 0:
-            raise PipelineError("---------------------------------------\n"
-                                "Child was terminated by signal %i: \n"
-                                "The stderr was: \n%s\n%s\n"
-                                "-----------------------------------------" %
-                                (-process.returncode, stderr, statement))
+                    (-process.returncode, stderr, statement))
 
 
 class MultiLineFormatter(logging.Formatter):
@@ -2116,21 +2142,23 @@ def _pickle_args(args, kwargs):
 
 
 def cluster_runnable(func):
-    ''' A dectorator that allows a function to be run on the cluster.
+    '''A dectorator that allows a function to be run on the cluster.
     The decorated function now takes extra arguements. The most important
     is *submit*, but if true will submit the function to the cluster
     via the Pipeline.submit framework. Arguments to the function are
     pickled, so this will only work if arguments are picklable. Other
     arguements to submit are also accepted.
 
-    Note that this allows the unusal combination of *submit* false, and
-    *toCluster* true. This will submit the function as an external job, 
-    but run it on the local machine. '''
+    Note that this allows the unusal combination of *submit* false,
+    and *toCluster* true. This will submit the function as an external
+    job, but run it on the local machine.
+
+    '''
 
     function_name = func.__name__
-    
-    def submit_function(*args, **kwargs):
 
+    def submit_function(*args, **kwargs):
+        
         if "submit" in kwargs and kwargs["submit"]:
             del kwargs["submit"]
             submit_args, args_file = _pickle_args(args, kwargs)
@@ -2139,10 +2167,9 @@ def cluster_runnable(func):
             submit(snip(__file__), "run_pickled",
                    params=[snip(module_file), function_name, args_file],
                    **submit_args)
-                    
         else:
             return func(*args, **kwargs)
- 
+
     return submit_function
 
 
@@ -2171,9 +2198,9 @@ def run_pickled(params):
     args, kwargs = pickle.load(open(args_file, "rb"))
     E.info("Arguments = %s" % str(args))
     E.info("Keyword Arguements = %s" % str(kwargs))
-    
+
     function(*args, **kwargs)
-    
+
     os.unlink(args_file)
 
 if __name__ == "__main__":
