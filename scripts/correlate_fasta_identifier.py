@@ -30,12 +30,9 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
 import string
-import re
 import getopt
-import tempfile
 
 param_loglevel = 0
 
@@ -56,7 +53,7 @@ def main(argv=None):
         optlist, args = getopt.getopt(
             sys.argv[1:], param_short_options, param_long_options)
     except getopt.error, msg:
-        print USAGE, msg
+        print globals()["__doc__"], msg
         sys.exit(2)
 
     for o, a in optlist:
@@ -66,12 +63,12 @@ def main(argv=None):
             print "version="
             sys.exit(0)
         elif o in ("-h", "--help"):
-            print USAGE
+            print globals()["__doc__"]
             sys.exit(0)
 
     if len(args) != 1:
         print "please supply filename with replacement identifiers."
-        print USAGE
+        print globals()["__doc__"]
         sys.exit(1)
 
     identifiers = []

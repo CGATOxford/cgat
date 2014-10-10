@@ -1,0 +1,2 @@
+chr1	repeat	exon	567999	568065	.	-	.	class "tRNA"; family "tRNA"; repName "tRNA-Ser-TCA(m)";
+chr1	repeat	exon	693613	693715	.	-	.	class "snRNA"; family "snRNA"; repName "U6";

@@ -1,0 +1,7 @@
+Test sets commonly used in tests. These files are included
+in the repository. Re-use as much as possible to reduce
+the size of the repository.
+
+Notes:
+
+chromosome names should be given in the UCSC convention chr19 (instead of 19)
