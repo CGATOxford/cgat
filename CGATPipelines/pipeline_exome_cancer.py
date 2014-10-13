@@ -158,6 +158,8 @@ import CGATPipelines.PipelineMapping as PipelineMapping
 import CGATPipelines.PipelineMappingQC as PipelineMappingQC
 import CGAT.Pipeline as P
 import glob
+import pandas as pd
+import itertools
 
 USECLUSTER = True
 
@@ -190,11 +192,12 @@ def getPicardOptions():
 
 
 def getGATKOptions():
-    return "-pe dedicated 6 -R y -l mem_free=4G -l picard=1"
+    # removed picard=1, surely not neccessary?
+    return "-pe dedicated 6 -R y -l mem_free=4G"
 
 
 def getMuTectOptions():
-    return "-pe dedicated 1 -R y -l mem_free=4G -l picard=1"
+    return "-pe dedicated 2 -R y -l mem_free=6G"
 
 
 #########################################################################
@@ -388,7 +391,7 @@ def GATKpreprocessing(infile, outfile):
     library = PARAMS["readgroup_library"]
     platform = PARAMS["readgroup_platform"]
     platform_unit = PARAMS["readgroup_platform_unit"]
-    threads = PARAMS["gatk_threads"]
+    # threads = PARAMS["gatk_threads"]
     dbsnp = PARAMS["gatk_dbsnp"]
     solid_options = PARAMS["gatk_solid_options"]
 
@@ -452,7 +455,7 @@ def GATKpreprocessing(infile, outfile):
 
 
 @transform(GATKpreprocessing,
-           regex("bam/(\S+)-Control-(\S+).bqsr.bam"),
+           regex("bam/(\S+)-Control-(\d+).bqsr.bam"),
            r"bam/\1-Control-\2.realigned.bqsr.bam")
 def realignMatchedSample(infile, outfile):
     ''' repeat realignments with merged bam of control and tumor
@@ -462,36 +465,47 @@ def realignMatchedSample(infile, outfile):
 
     to_cluster = USECLUSTER
     job_options = getGATKOptions()
+    # tmpdir_gatk = P.getTempDir('tmpbam')
     tmpdir_gatk = P.getTempDir('/ifs/scratch')
-    threads = PARAMS["gatk_threads"]
+    # threads = PARAMS["gatk_threads"]
 
     outfile_tumor = outfile.replace("Control", PARAMS["mutect_tumour"])
     infile_tumor = infile.replace("Control", PARAMS["mutect_tumour"])
 
+    infile_base = os.path.basename(infile)
+    infile_tumor_base = infile_base.replace("Control", PARAMS["mutect_tumour"])
+
     track = P.snip(os.path.basename(infile), ".bam")
     track_tumor = track.replace("Control", PARAMS["mutect_tumour"])
+
     library = PARAMS["readgroup_library"]
     platform = PARAMS["readgroup_platform"]
     platform_unit = PARAMS["readgroup_platform_unit"]
 
+    control_id = "Control.bam"
+    tumor_id = control_id.replace("Control", PARAMS["mutect_tumour"])
+
     statement = '''module unload apps/java/jre1.6.0_26; checkpoint;'''
     statement += '''AddOrReplaceReadGroups
                     INPUT=%(infile)s
-                    OUTPUT=%(tmpdir_gatk)s/control.bam
+                    OUTPUT=%(tmpdir_gatk)s/%(infile_base)s
                     RGLB=%(library)s RGPL=%(platform)s
                     RGPU=%(platform_unit)s RGSM=%(track)s
-                    ID=Control
+                    ID=%(track)s
                     VALIDATION_STRINGENCY=SILENT ;
                     checkpoint ;''' % locals()
-    statement += '''samtools view -H %(tmpdir_gatk)s/control.bam
-                    > %(tmpdir_gatk)s/header.sam;
-                    samtools view -H %(infile_tumor)s | grep "^@RG"
-                    >> %(tmpdir_gatk)s/header.sam;
-                    samtools merge
-                    -h %(tmpdir_gatk)s/header.sam
+    statement += '''AddOrReplaceReadGroups
+                    INPUT=%(infile_tumor)s
+                    OUTPUT=%(tmpdir_gatk)s/%(infile_tumor_base)s
+                    RGLB=%(library)s RGPL=%(platform)s
+                    RGPU=%(platform_unit)s RGSM=%(track_tumor)s
+                    ID=%(track_tumor)s
+                    VALIDATION_STRINGENCY=SILENT ;
+                    checkpoint ;''' % locals()
+    statement += '''samtools merge -rf
                     %(tmpdir_gatk)s/merged.bam
-                    %(tmpdir_gatk)s/control.bam
-                    %(infile_tumor)s
+                    %(tmpdir_gatk)s/%(infile_base)s
+                    %(tmpdir_gatk)s/%(infile_tumor_base)s
                     ; checkpoint ;''' % locals()
     statement += '''samtools index %(tmpdir_gatk)s/merged.bam;
                     checkpoint ;''' % locals()
@@ -500,7 +514,7 @@ def realignMatchedSample(infile, outfile):
                     -T RealignerTargetCreator
                     -o %(tmpdir_gatk)s/merged.indelrealignment.intervals
                     -R %%(bwa_index_dir)s/%%(genome)s.fa
-                    -I %(tmpdir_gatk)s/merged.bam ;
+                    -I %(tmpdir_gatk)s/merged.bam;
                     checkpoint ;''' % locals()
     statement += '''java -Xmx4g -jar
                     /ifs/apps/bio/GATK-2.7-2/GenomeAnalysisTK.jar
@@ -513,14 +527,14 @@ def realignMatchedSample(infile, outfile):
                     checkpoint ;''' % locals()
     statement += '''samtools view -hb
                     %(tmpdir_gatk)s/merged.indelrealigned.bam
-                    -r Control > %(outfile)s;
+                    -r %(track)s > %(outfile)s;
                     samtools view -hb
                     %(tmpdir_gatk)s/merged.indelrealigned.bam
-                    -r 1 > %(outfile_tumor)s;
+                    -r %(track_tumor)s > %(outfile_tumor)s;
                     samtools index %(outfile)s;
                     samtools index %(outfile_tumor)s;
                     checkpoint;''' % locals()
-    statement += '''rm -rf %(tmpdir_gatk)s ;'''
+    statement += '''rm -rf %(tmpdir_gatk)s;''' % locals()
     print statement
     P.run()
 
@@ -532,7 +546,7 @@ def runPicardOnRealigned(infile, outfile):
     to_cluster = USECLUSTER
     job_options = getGATKOptions()
     tmpdir_gatk = P.getTempDir('/ifs/scratch')
-    threads = PARAMS["gatk_threads"]
+    # threads = PARAMS["gatk_threads"]
 
     outfile_tumor = outfile.replace("Control", PARAMS["mutect_tumour"])
     infile_tumor = infile.replace("Control", PARAMS["mutect_tumour"])
@@ -683,6 +697,9 @@ def runMutect(infiles, outfile):
     --coverage_file %(coverage_wig_out)s
     --vcf %(outfile)s
     --min_qscore 20
+    --max_alt_alleles_in_normal_qscore_sum 150
+    --max_alt_alleles_in_normal_count 5
+    --max_alt_allele_in_normal_fraction 0.05
     --gap_events_threshold 2
     --tumor_lod %(tumor_LOD)s
     --enable_extended_output
@@ -733,6 +750,9 @@ def runMutectReverse(infiles, outfile):
     --coverage_file %(coverage_wig_out)s
     --vcf %(outfile)s
     --min_qscore 20
+    --max_alt_alleles_in_normal_qscore_sum 150
+    --max_alt_alleles_in_normal_count 5
+    --max_alt_allele_in_normal_fraction 0.05
     --gap_events_threshold 2
     --tumor_lod %(tumor_LOD)s
     --enable_extended_output
@@ -753,7 +773,8 @@ def indelCaller(infile, outfile):
     job_options = "-pe dedicated 12 -R y -l mem_free=1.9G"
     to_cluster = USECLUSTER
 
-    statement = '''/ifs/apps/bio/strelka-1.0.14/bin/configureStrelkaWorkflow.pl
+    statement = '''rm -rf %(outdir)s;
+                   /ifs/apps/bio/strelka-1.0.14/bin/configureStrelkaWorkflow.pl
                    --normal=%(infile)s
                    --tumor=%(infile_tumor)s
                    --ref=%%(bwa_index_dir)s/%%(genome)s.fa
@@ -774,8 +795,10 @@ def indelCaller(infile, outfile):
 # 3. run mutect calling function with subset against unsubsetted tumour
 # 4. summary table
 
+adeno_bam = "bam/NU16C-Control-1.realigned.bqsr.bam"
 
-@subdivide("downsample_coverage/NU16C-Control-1.realigned.bqsr.bam",
+
+@subdivide(adeno_bam,
            regex("(\S+).bqsr.bam"),
            [r"\1.0.1.bqsr.bam",
             r"\1.0.2.bqsr.bam",
@@ -790,16 +813,12 @@ def indelCaller(infile, outfile):
 def subsetControlBam(infile, outfiles):
     statements = []
     n = 0
-    for fraction in numpy.arange(0.1, 0.9, 0.1):
+    for fraction in numpy.arange(0.1, 1.1, 0.1):
         outfile = outfiles[n]
         n += 1
         statement = ('''samtools view -s %(fraction)s -b %(infile)s
                      > %(outfile)s''' % locals())
         P.run()
-
-    outfile = outfiles[n]
-    statement = '''ln -s %(infile)s %(outfile)s''' % locals()
-    P.run()
 
 
 @transform(subsetControlBam,
@@ -812,13 +831,13 @@ def indexSubsets(infile, outfile):
 
 @follows(indexSubsets)
 @transform(subsetControlBam,
-           regex(r"(\S+)-Control-1.realigned.(\S+).bqsr.bam"),
+           regex(r"bam/(\S+)-Control-1.realigned.(\S+).bqsr.bam"),
            add_inputs(mergeControlVariants),
-           r"\1-downsampled-\2.mutect.snp.vcf")
+           r"variants/\1-downsampled-\2.mutect.snp.vcf")
 def runMutectOnDownsampled(infiles, outfile):
     '''calls somatic SNPs using MuTect'''
     infile, normal_panel = infiles
-    infile_tumour = "downsample_coverage/NU16C-Adeno-1.realigned.bqsr.bam"
+    infile_tumour = adeno_bam
     # mutect repeatedly hangs-up with multithreading
     # furthermore, multithreading doesn't speed up even nearly linearly
     # threads = PARAMS["gatk_threads"]
@@ -852,6 +871,9 @@ def runMutectOnDownsampled(infiles, outfile):
     --coverage_file %(coverage_wig_out)s
     --vcf %(outfile)s
     --min_qscore 20
+    --max_alt_alleles_in_normal_qscore_sum 100
+    --max_alt_alleles_in_normal_count 6
+    --max_alt_allele_in_normal_fraction 0.05
     --gap_events_threshold 2
     --tumor_lod %(tumor_LOD)s
     --enable_extended_output
@@ -1101,14 +1123,14 @@ def loadVariantAnnotation(infile, outfile):
     P.run()
 
 
-# EXT_OUT = glob.glob("variants/*call_stats.out")
-
 @follows(runMutect)
 @transform("variants/*call_stats.out",
            regex(r"variants/(\S+)_call_stats.out"),
            r"variants/\1_call_stats.out.load")
 def loadMutectExtendedOutput(infile, outfile):
     '''Load mutect extended output into database'''
+
+    index = "CHROM, POS"
 
     dbh = connect()
     scriptsdir = PARAMS["general_scriptsdir"]
@@ -1272,12 +1294,14 @@ def loadMutectFilteringSummary(infile, outfile):
 
 
 # parameterise file location:
-@transform("../backup/NCG/cancergenes.tsv",
-           suffix(".tsv"),
-           ".load")
-def loadNCG(infile, outfile):
+@originate("cancergenes.load")
+def loadNCG(outfile):
     '''Load NCG into database'''
 
+    # infile = PARAMS["cancergenes_table"]
+    infile = "../backup/NCG/cancergenes.tsv"
+
+    index = "symbol"
     dbh = connect()
     scriptsdir = PARAMS["general_scriptsdir"]
     tablename = P.toTable(outfile)
@@ -1291,6 +1315,61 @@ def loadNCG(infile, outfile):
 #########################################################################
 #########################################################################
 #########################################################################
+# analyse mutational siganture
+
+
+@merge(runMutect,
+       "variants/mutational_signature.tsv")
+def mutationalSignature(infiles, outfile):
+
+    def lookup(b1, b2):
+        '''return lookup key for a pair of bases'''
+        return(b1 + "_" + b2)
+
+    outfile = open(outfile, "w")
+    bases = ["C", "G", "T", "A"]
+
+    outfile.write("%s\t%s\t%s\n" % ("patient_id", "base_change", "frequency"))
+
+    patient_freq = {}
+
+    for infile in infiles:
+        patient_id = P.snip(os.path.basename(infile), ".mutect.snp.vcf")
+        mutation_dict = {}
+        for comb in itertools.permutations(bases, 2):
+            mutation_dict[lookup(comb[0], comb[1])] = 0
+
+        with open(infile, "r") as f:
+            for line in f.readlines():
+                if not line.startswith('#'):
+                    values = line.split("\t")
+                    if values[6] == "PASS":
+                        tumor_depth = values[9].split(":")[1].split(",")
+                        if tumor_depth > 4:
+                            mutation_dict[lookup(values[3], values[4])] += 1
+
+        patient_freq[patient_id] = mutation_dict
+
+    for comb in itertools.permutations(bases, 2):
+        key = lookup(comb[0], comb[1])
+        for infile in infiles:
+            patient_id = P.snip(os.path.basename(infile), ".mutect.snp.vcf")
+            outfile.write("%s\t%s\t%s\n" % (patient_id, key,
+                                            patient_freq[patient_id][key]))
+
+    outfile.close()
+
+
+@transform(mutationalSignature,
+           suffix(".tsv"),
+           ".load")
+def loadMutationalSignature(infile, outfile):
+    P.load(infile, outfile)
+
+
+#########################################################################
+#########################################################################
+#########################################################################
 
 @follows(loadMutectFilteringSummary,
          loadMutectExtendedOutput,
@@ -1298,8 +1377,10 @@ def loadNCG(infile, outfile):
          loadCoverageStats,
          loadPicardRealigenedAlignStats,
          loadPicardAlignStats,
-         loadNCG)
-def test():
+         loadNCG,
+         loadMutationalSignature,
+         runMutectOnDownsampled)
+def full():
     pass
 
 
@@ -1364,7 +1445,7 @@ def vcfstats():
          genesOfInterest,
          tabulation,
          vcfstats)
-def full():
+def full2():
     pass
 
 #########################################################################

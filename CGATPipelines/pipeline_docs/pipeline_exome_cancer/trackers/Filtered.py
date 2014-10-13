@@ -11,7 +11,7 @@ from exomeReport import *
 
 class snp(ExomeTracker):
 
-    pattern = "(.*)_mutect_snp_annotated_tsv$"
+    pattern = "^\S{5,6}_mutect_snp_annotated_tsv$"
 
     def __call__(self, track, slice=None):
 
@@ -29,9 +29,9 @@ class snp(ExomeTracker):
         B.t_ref_count AS Tumor_Ref, B.t_alt_count AS Tumor_Alt
         FROM %(track)s_mutect_snp_annotated_tsv AS A
         JOIN %(track)s_call_stats_out AS B
-        LEFT OUTER JOIN cancergenes as C
         ON A.CHROM = B.contig AND A.POS = B.position
-        AND A.SNPEFF_GENE_NAME = C.symbol
+        LEFT OUTER JOIN cancergenes as C
+        ON A.SNPEFF_GENE_NAME = C.symbol
         WHERE A.FILTER!="REJECT" AND B.t_alt_count > 4;
         ''' % locals()
 
@@ -40,7 +40,7 @@ class snp(ExomeTracker):
 
 class indel(ExomeTracker):
 
-    pattern = "(.*)_indels_annotated_tsv$"
+    pattern = "^\S{5,6}_indels_annotated_tsv$"
 
     def __call__(self, track, slice=None):
 
@@ -70,7 +70,7 @@ class indel(ExomeTracker):
 
 class filterSummary(ExomeTracker):
 
-    pattern = "(.*)_mutect_filtering_summary$"
+    pattern = "^\S{5,6}_mutect_filtering_summary$"
 
     def __call__(self, track, slice=None):
 
