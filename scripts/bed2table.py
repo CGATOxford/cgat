@@ -26,7 +26,7 @@ composition-na
     compute nucleotide frequencies in intervals.
 
 composition-cpg
-    compute CpG densities and nucleotide frequencies in intervals.
+    compute CpG densities, CpG observed / expected nucleotide and dinucleotide frequencies in intervals.
 
 classifier-chipseq
    classify chipseq intervals. Requires a :term:`gff`
@@ -325,16 +325,9 @@ class CounterCompositionCpG(CounterCompositionNucleotides):
 
     def count(self, bed):
 
-        try:
-            s = self.fasta.getSequence(bed.contig, "+", bed.start, bed.end + 1)
-            next_char = s[-1]
-            s = s[:-1]
-        except ValueError:
-            s = self.fasta.getSequence(bed.contig, "+", bed.start, bed.end)
-            next_char = None
-
+        s = self.fasta.getSequence(bed.contig, "+", bed.start, bed.end)
         self.result = self.result_class()
-        self.result.loadSequence(s, next_char=next_char)
+        self.result.loadSequence(s)
 
 
 # ------------------------------------------------------------------------

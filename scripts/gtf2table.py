@@ -51,7 +51,8 @@ composition-na
    output nucleotide composition of gene
 
 composition-cgp
-   output cpg composition of gene
+   output CpG dernsity, CpG observed / expected as well as length, 
+   nucleotide composition and dinucleotide composition of gene.
 
 coverage
    compute nucleotide coverage of input with segments in another file.

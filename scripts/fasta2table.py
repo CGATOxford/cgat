@@ -1,5 +1,5 @@
 '''
-fasta2table.py - analyze sequences for codon bias and other sequence properties
+fasta2table.py - analyze sequence composition, codon usage, bias and degeneracy 
 ====================================================================================
 
 :Author: Andreas Heger
@@ -13,57 +13,93 @@ Purpose
 This script reads a collection of sequences in :term:`fasta` format, computes
 various sequence properties and outputs them to a tab-separated file.
 
-Counters implemented are:
+Documentation
+--------------
+
+The following sequence properties can be reported:
 
 length
-   sequence lengths
+   sequence length and number of codons (0 for amino-acid sequence)
 
 sequence
-   adds the sequence
+   Full nucleotide / amino-acid sequence
 
 hid
    a hash identifier for the sequence
 
 na
-   nucleic acid composition
+   nucleic acid composition, including GC/AT content and sequence length
 
 dn
-   dinucleotide frequency
+   dinucleotide counts
 
 cpg
-   CpG counts
-
-aa
-   amino acid composition
-
-codons
-   codon composition
-
-codon-usage
-    output codon frequencies for each sequence
-
-degeneracy
-    count the number of degenerate sites   
+   length and nucleic acid composition, dinucleotide counts, CpG density and CpG observed over expected
 
 gaps
     number of gaps and gapped/ungapped regions in the sequences
 
-The codon counters assume that sequences are codons. 
+aa
+   amino acid composition (nucleotide sequence must have length divisible by 3)
+
+degeneracy
+    count the number of degenerate sites (nucleotide sequence only, sequence must have length divisible by 3)
+    
+codons
+   codon composition (nucleotide sequence only, sequence must have length divisible by 3)
+
+codon-usage
+    output codon frequencies for each sequence (nucleotide sequence only, sequence must have length divisible by 3)
+
+codon-bias
+    output codon bias for each sequence (nucleotide sequence only, sequence must have length divisible by 3)
+
+codon-translator
+    translate codons for each sequence to their frequency (nucleotide sequence only, sequence must have length divisible by 3)
+
+Multiple counters can be calculated at the same by specifying 
+--section multiple times.
+
+The script can also process fasta description lines (starting >) either by 
+splitting each line at the first space and taking only the first 
+part (--split-fasta-identifier), or by any user-supplied python regular 
+expression (--regex-identifier). 
 
 Usage
 -----
 
 Example::
 
-   python fasta2table.py --sections=cpg < in.fasta > out.tsv
+   # View fasta file
+   head tests/fasta2table.py/na_test.fasta
+   
+   # Count CpG dinucleotides
+   cgat fasta2table.py --sections=na --split-fasta-identifier < tests/fasta2table.py/test.fasta > na.tsv
 
 In this example we input a fasta file and compute the sequence composition, i.e.
-%C, %G, %A, %T as well as dinucleotide (CpG) composition for each sequence in the 
-set.
+%C, %G, %A, %T as well for each sequence in the set.
+
++----------------+-------------+-------+-------+-------+-------+-----+-----+-------+-------+------+----------+----------+----------+----------+----------+----------+----------+----------+
+|id              |length       |nC     |nG     |nA     |nT     |nN   |nUnk |nGC    |nAT    |nCpG  |pC        |pG        |pA        |pT        |pN        |pUnk      |pGC       |pAT       |
++----------------+-------------+-------+-------+-------+-------+-----+-----+-------+-------+------+----------+----------+----------+----------+----------+----------+----------+----------+
+|contig-0        |110529       |26348  |22351  |34036  |27794  |0    |0    |48699  |61830  |4990  |0.238381  |0.202218  |0.307937  |0.251463  |0.000000  |0.000000  |0.440599  |0.559401  |
++----------------+-------------+-------+-------+-------+-------+-----+-----+-------+-------+------+----------+----------+----------+----------+----------+----------+----------+----------+
+|contig-1000000  |121046       |28432  |22851  |36540  |33223  |0    |0    |51283  |69763  |4814  |0.234886  |0.188779  |0.301869  |0.274466  |0.000000  |0.000000  |0.423665  |0.576335  |
++----------------+-------------+-------+-------+-------+-------+-----+-----+-------+-------+------+----------+----------+----------+----------+----------+----------+----------+----------+
+|contig-2000000  |61046        |11368  |14668  |16666  |18344  |0    |0    |26036  |35010  |2526  |0.186220  |0.240278  |0.273007  |0.300495  |0.000000  |0.000000  |0.426498  |0.573502  |
++----------------+-------------+-------+-------+-------+-------+-----+-----+-------+-------+------+----------+----------+----------+----------+----------+----------+----------+----------+
+|contig-3000000  |76120        |17653  |14496  |23591  |20380  |0    |0    |32149  |43971  |3099  |0.231910  |0.190436  |0.309919  |0.267735  |0.000000  |0.000000  |0.422346  |0.577654  |
++----------------+-------------+-------+-------+-------+-------+-----+-----+-------+-------+------+----------+----------+----------+----------+----------+----------+----------+----------+
+|contig-4000000  |66656        |12970  |14994  |19076  |19616  |0    |0    |27964  |38692  |2911  |0.194581  |0.224946  |0.286186  |0.294287  |0.000000  |0.000000  |0.419527  |0.580473  |
++----------------+-------------+-------+-------+-------+-------+-----+-----+-------+-------+------+----------+----------+----------+----------+----------+----------+----------+----------+
+|contig-5000000  |81994        |15755  |19061  |23070  |24108  |0    |0    |34816  |47178  |3571  |0.192148  |0.232468  |0.281362  |0.294022  |0.000000  |0.000000  |0.424616  |0.575384  |
++----------------+-------------+-------+-------+-------+-------+-----+-----+-------+-------+------+----------+----------+----------+----------+----------+----------+----------+----------+
+|contig-6000000  |106529       |16997  |21653  |21112  |22258  |0    |0    |38650  |43370  |5135  |0.207230  |0.263997  |0.257401  |0.271373  |0.000000  |0.000000  |0.471227  |0.528773  |
++----------------+-------------+-------+-------+-------+-------+-----+-----+-------+-------+------+----------+----------+----------+----------+----------+----------+----------+----------+
 
 Type::
 
-   python fasta2table.py --help
+   cgat fasta2table.py --help
 
 for command line help.
 
@@ -98,10 +134,9 @@ def main(argv=None):
                       help="filename with codon frequencies. Multiple filenames can be separated by comma.")
 
     parser.add_option("-s", "--section", dest="sections", type="choice", action="append",
-                      choices=("length", "hid", "na", "aa", "cpg",
-                               "degeneracy", "bias", "dn",
-                               "codons", "codon-usage", "codon-translator",
-                               "gaps", "sequence"),
+                      choices=("length", "sequence", "hid", "na", "aa", "cpg", "dn",
+                               "degeneracy", "gaps", 
+                               "codons", "codon-usage", "codon-translator", "codon-bias"),
                       help="which sections to output [%default]")
 
     parser.add_option("-t", "--type", dest="seqtype", type="choice",
@@ -113,7 +148,7 @@ def main(argv=None):
         
     parser.add_option("--split-fasta-identifier", dest="split_id",
                       action="store_true",
-                      help="split fasta ids and use only text before first space")
+                      help="split fasta description line (starting >) and use only text before first space")
     
     parser.set_defaults(
         filename_weights=None,
@@ -156,8 +191,7 @@ def main(argv=None):
                     d += b[codon] * math.log(b[codon] / p)
 
                 options.stdlog.write("# tablediff\t%s\t%s\t%f\n" % (options.filename_weights[x],
-                                                                    options.filename_weights[
-                                                                        y],
+                                                                    options.filename_weights[y],
                                                                     d))
 
     iterator = FastaIterator.FastaIterator(options.stdin)
@@ -173,15 +207,18 @@ def main(argv=None):
                 s = SequencePropertiesHid()
             elif section == "na":
                 s = SequencePropertiesNA()
+            elif section == "gaps":
+                s = SequencePropertiesGaps(options.gap_chars)
             elif section == "cpg":
                 s = SequencePropertiesCpg()
             elif section == "dn":
                 s = SequencePropertiesDN()
+            # these sections requires sequence length to be a multiple of 3
             elif section == "aa":
                 s = SequencePropertiesAA()
             elif section == "degeneracy":
                 s = SequencePropertiesDegeneracy()
-            elif section == "bias":
+            elif section == "codon-bias":
                 s = SequencePropertiesBias(reference_codons)
             elif section == "codons":
                 s = SequencePropertiesCodons()
@@ -189,8 +226,6 @@ def main(argv=None):
                 s = SequencePropertiesCodonUsage()
             elif section == "codon-translator":
                 s = SequencePropertiesCodonTranslator()
-            elif section == "gaps":
-                s = SequencePropertiesGaps(options.gap_chars)
             else:
                 raise ValueError("unknown section %s" % section)
         elif options.seqtype == "aa":
@@ -235,7 +270,8 @@ def main(argv=None):
 
         for section in options.sections:
             s = getCounter(section)
-            s.loadSequence(sequence)
+            s.loadSequence(sequence, cur_record.title, options.seqtype)
+            #s.loadSequence(sequence)
             totals[section].addProperties(s)
 
             options.stdout.write("\t" + "\t".join(s.getFields()))
