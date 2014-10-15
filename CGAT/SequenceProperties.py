@@ -200,10 +200,10 @@ class SequencePropertiesLength(SequenceProperties):
         return headers + ["length", "ncodons"]
         
 ###########################################################################
-class SequencePropertiesNA(SequencePropertiesLength):
+class SequencePropertiesNA(SequenceProperties):
     '''Nucleotide frequency counts'''
     def __init__(self, reference_usage=[]):
-        SequencePropertiesLength.__init__(self)
+        SequenceProperties.__init__(self)
         self.mCountsGC = 0
         self.mCountsAT = 0
         self.mCountsOthers = 0
@@ -214,7 +214,7 @@ class SequencePropertiesNA(SequencePropertiesLength):
             self.mCountsNA[x] = 0
 
     def addProperties(self, other):
-        SequencePropertiesLength.addProperties(self, other)
+        SequenceProperties.addProperties(self, other)
         self.mCountsGC += other.mCountsGC
         self.mCountsAT += other.mCountsAT
         self.mCountsOthers += other.mCountsOthers
@@ -223,7 +223,7 @@ class SequencePropertiesNA(SequencePropertiesLength):
 
     def loadSequence(self, sequence, title="Unknown", seqtype="na"):
         """load sequence properties from a sequence."""
-        SequencePropertiesLength.loadSequence(self, sequence, title, seqtype)
+        SequenceProperties.loadSequence(self, sequence, title, seqtype)
         # counts of nucleotides
         self.mCountsNA = {}
         for x in self.mAlphabet:
@@ -240,7 +240,7 @@ class SequencePropertiesNA(SequencePropertiesLength):
                 self.mCountsOthers += 1
 
     def getFields(self):
-        fields = SequencePropertiesLength.getFields(self)
+        fields = SequenceProperties.getFields(self)
         # Counts
         fields.append("%i" % self.mCountsOthers)
         fields.append("%i" % self.mCountsGC)
@@ -268,7 +268,7 @@ class SequencePropertiesNA(SequencePropertiesLength):
         return fields
 
     def getHeaders(self):
-        headers = SequencePropertiesLength.getHeaders(self)
+        headers = SequenceProperties.getHeaders(self)
         # Counts
         headers.append("nUnk")
         for x in self.mAlphabet:
@@ -339,7 +339,7 @@ class SequencePropertiesCpg(SequencePropertiesNA,SequencePropertiesDN):
         self.mCpG_ObsExp = 0
 
     def addProperties(self, other):
-        SequencePropertiesLength.addProperties(self, other)
+        SequencePropertiesDN.addProperties(self, other)
         SequencePropertiesNA.addProperties(self, other)
         self.mCpG_density += other.mCpG_density
         self.mCpG_ObsExp += other.mCpG_ObsExp
@@ -359,17 +359,13 @@ class SequencePropertiesCpg(SequencePropertiesNA,SequencePropertiesDN):
             self.mCpG_ObsExp = 0.0
         
     def getFields(self):
-
-        fields = SequencePropertiesNA.getFields(self)
-        fields.extend(SequencePropertiesDN.getFields(self))
+        fields = ["%s" % self.mCountsDinuc["CG"]]
         fields.append("%s" % self.mCpG_density)
         fields.append("%s" % self.mCpG_ObsExp)
         return fields
         
     def getHeaders(self):
-
-        headers = SequencePropertiesNA.getHeaders(self)
-        headers.extend(SequencePropertiesDN.getHeaders(self))
+        headers = ["CpG_count"]
         headers.append("CpG_density")
         headers.append("CpG_ObsExp")
         return headers

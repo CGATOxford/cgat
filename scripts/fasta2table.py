@@ -28,13 +28,13 @@ hid
    a hash identifier for the sequence
 
 na
-   nucleic acid composition, including GC/AT content and sequence length
+   nucleic acid composition, including GC/AT content
 
 dn
    dinucleotide counts
 
 cpg
-   length and nucleic acid composition, dinucleotide counts, CpG density and CpG observed over expected
+   CpG density and CpG observed/expected
 
 gaps
     number of gaps and gapped/ungapped regions in the sequences
@@ -74,7 +74,7 @@ Example::
    head tests/fasta2table.py/na_test.fasta
    
    # Count CpG dinucleotides
-   cgat fasta2table.py --sections=na --split-fasta-identifier < tests/fasta2table.py/test.fasta > na.tsv
+   cgat fasta2table --sections=length,na --split-fasta-identifier < tests/fasta2table.py/test.fasta > na.tsv
 
 In this example we input a fasta file and compute the sequence composition, i.e.
 %C, %G, %A, %T as well for each sequence in the set.
@@ -99,7 +99,7 @@ In this example we input a fasta file and compute the sequence composition, i.e.
 
 Type::
 
-   cgat fasta2table.py --help
+   cgat fasta2table --help
 
 for command line help.
 

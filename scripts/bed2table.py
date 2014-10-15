@@ -26,7 +26,7 @@ composition-na
     compute nucleotide frequencies in intervals.
 
 composition-cpg
-    compute CpG densities, CpG observed / expected nucleotide and dinucleotide frequencies in intervals.
+    compute CpG densities and CpG observed / expected in intervals.
 
 classifier-chipseq
    classify chipseq intervals. Requires a :term:`gff`
