@@ -13,13 +13,13 @@ genomic:
 
 histogram_window:
     stdin: small.gtf
-    outputs: [19.win]
+    outputs: [chr19.win]
     references: [histogram.win.hg19]
     options: --method=histogram --window=1 --features=exon --output-filename-pattern=%s.win
 
 histogram_bin:
     stdin: small.gtf
-    outputs: [19.bin]
+    outputs: [chr19.bin]
     references: [histogram.bin.hg19]
     options: --method=histogram --num-bins=6 --genome-file=%DIR%/small --features=exon --output-filename-pattern=%s.bin
 

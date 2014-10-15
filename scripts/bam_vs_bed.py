@@ -10,10 +10,9 @@ bam_vs_bed.py - count context that reads map to
 Purpose
 -------
 
-This script takes as its first input a :term:`BAM` file or :term:`bed` 
-(for example from an RNASeq experiment) and as a second input a  :term:`bed`
-formatted file. The :term:`bed` formatted file needsat least four columns.
- The fourth (name) column is used to group counts.
+This script takes as input a :term:`BAM` file from an RNASeq experiment
+and a :term:`bed` formatted file. The :term:`bed` formatted file needs
+at least four columns. The fourth (name) column is used to group counts.
 
 It counts the number of alignments overlapping in the first input
 file and that overlap each feature in the second file. Annotations in the
@@ -25,7 +24,7 @@ Options
 -------
 
 -a, --filename-bam / -b, --filename-bed
-    These are the input files. They can also be provided as provided as 
+    These are the input files. They can also be provided as provided as
     positional arguements, with the bam file being first and the (gziped
     or uncompressed) bed file coming second
 
@@ -68,10 +67,6 @@ Command line options
 
 import os
 import sys
-import re
-import optparse
-import time
-import subprocess
 import tempfile
 import collections
 import itertools

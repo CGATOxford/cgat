@@ -226,7 +226,8 @@ class CounterReadCoverage(Counter):
 
     def __init__(self, bamfiles, *args, minimum_mapping_quality = 0, **kwargs ):
         Counter.__init__(self, *args, **kwargs )
-        if not bamfiles: raise ValueError("supply --bam-file options for readcoverage")
+        if not bamfiles:
+            raise ValueError("supply --bam-file options for readcoverage")
         self.mBamFiles = bamfiles
 
     def count(self):

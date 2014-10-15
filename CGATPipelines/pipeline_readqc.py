@@ -368,7 +368,7 @@ if BIAS_ANALYSIS:
         else:
             statement = '''sailfish index -t %(infile)s'''
 
-        statement += '''-k %(kmer)i -o %(outdir)s;
+        statement += ''' -k %(kmer)i -o %(outdir)s;
                         checkpoint; rm -f %(tmp)s'''
 
         P.run()

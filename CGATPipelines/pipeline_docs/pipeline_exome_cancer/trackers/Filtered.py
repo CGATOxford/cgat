@@ -24,14 +24,13 @@ class snp(ExomeTracker):
         SNPEFF_AMINO_ACID_CHANGE AS AA_change,
         SNPEFF_CODON_CHANGE AS Codon_change,
         C.function, C.type as NCG, C.cancer_type,
-        C.duplicability,
         B.n_ref_count AS Normal_Ref, B.n_alt_count AS Normal_Alt,
         B.t_ref_count AS Tumor_Ref, B.t_alt_count AS Tumor_Alt
         FROM %(track)s_mutect_snp_annotated_tsv AS A
         JOIN %(track)s_call_stats_out AS B
-        LEFT OUTER JOIN cancergenes as C
         ON A.CHROM = B.contig AND A.POS = B.position
-        AND A.SNPEFF_GENE_NAME = C.symbol
+        LEFT OUTER JOIN cancergenes as C
+        ON A.SNPEFF_GENE_NAME = C.symbol
         WHERE A.FILTER!="REJECT" AND B.t_alt_count > 4;
         ''' % locals()
 
@@ -53,7 +52,6 @@ class indel(ExomeTracker):
         A.SNPEFF_AMINO_ACID_CHANGE AS AA_change,
         A.SNPEFF_CODON_CHANGE AS Codon_change,
         B.function, B.type as NCG, B.cancer_type,
-        B.duplicability,
         A.NORMAL_DP AS Normal_depth,
         A.TUMOR_DP AS Tumor_depth,
         A.NORMAL_TAR as Normal_Ref, A.NORMAL_TIR as Normal_Alt,

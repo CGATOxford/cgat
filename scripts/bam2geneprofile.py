@@ -54,7 +54,7 @@ Fig 1(a) in the published CGAT paper, but using a test dataset that is
 much smaller and simpler than the dataset used for publishing the CGAT
 paper. ::
 
-    python ./scripts/bam2geneprofile.py 
+    python ./scripts/bam2geneprofile.py
         --bamfile=./tests/bam2geneprofile.py/multipleReadsSplicedOutAllIntronsAndSecondExon.bam
         --gtffile=./tests/bam2geneprofile.py/onegeneWithoutAnyCDS.gtf.gz
         --method=geneprofile
@@ -79,16 +79,16 @@ and geneset. ::
 The output will contain read coverage over genes. The profile will
 contain four separate segments:
 
-1. the upstream region of a gene ( set to be 500bp ), 
+1. the upstream region of a gene ( set to be 500bp ),
    (``--extension-upstream=500``).
 
 2. the transcribed region of a gene. The transcribed region of every gene will
-   be scaled to 1000 bp ( default ), shrinking longer transcripts and 
+   be scaled to 1000 bp (default), shrinking longer transcripts and
    expanding shorter transcripts.
 
-3. the intronic regions of a gene. These will be scaled to 1000b ( default ).
+3. the intronic regions of a gene. These will be scaled to 1000b (default).
 
-4. the downstream region of a gene ( set to be 500bp ),
+4. the downstream region of a gene (set to be 500bp),
    (``--extension-downstream=500``).
 
 
@@ -156,6 +156,18 @@ geneprofilewithintrons
 
     gene models containing also intronic sequence, only correct if
     used with ``--base-accuracy`` option.
+
+separateexonprofile
+    UPSTREAM - FIRST EXON - EXON - LAST EXON - DOWNSTREAM
+
+    gene models with the first and last exons separated out from all
+    other exons.  Only applicable to gene models with > 1 exons.
+
+separateexonprofilewithintrons
+    UPSTREAM - FIRST EXON - EXON - INTRON - LAST EXON - DOWNSTREAM
+
+    gene models with first and last exons separated out, and includes
+    all introns together.  Excludes genes with < 2 exons and no introns.
 
 geneprofileabsolutedistancefromthreeprimeend
 
@@ -330,6 +342,8 @@ def main(argv=None):
                                "intervalprofile", "midpointprofile",
                                "geneprofilewithintrons",
                                "geneprofileabsolutedistancefromthreeprimeend",
+                               "separateexonprofile",
+                               "separateexonprofilewithintrons",
                                ),
                       help = 'counters to use. Counters describe the '
                       'meta-gene structure to use. '
@@ -372,14 +386,15 @@ def main(argv=None):
                       "profile normalization. "
                       "[%default]")
 
-    parser.add_option("-r", "--reporter", dest="reporter", type="choice",
-                      choices=("gene", "transcript"),
-                      help = "report results for genes or transcripts."
-                      " When 'genes` is chosen, exons across all transcripts for"
-                      " a gene are merged. When 'transcript' is chosen, counts are"
-                      " computed for each transcript separately with each transcript"
-                      " contributing equally to the meta-gene profile."
-                      " [%default]")
+    parser.add_option(
+        "-r", "--reporter", dest="reporter", type="choice",
+        choices=("gene", "transcript"),
+        help = "report results for genes or transcripts."
+        " When 'genes` is chosen, exons across all transcripts for"
+        " a gene are merged. When 'transcript' is chosen, counts are"
+        " computed for each transcript separately with each transcript"
+        " contributing equally to the meta-gene profile."
+        " [%default]")
 
     parser.add_option("-i", "--shift", dest="shifts", type="int",
                       action="append",
@@ -433,6 +448,16 @@ def main(argv=None):
                       help="resolution of cds region in bp "
                       "[%default]")
 
+    parser.add_option(
+        "--resolution-first-exon", dest="resolution_first", type="int",
+        help="resolution of first exon in gene, in bp"
+        "[%default]")
+
+    parser.add_option(
+        "--resolution-last-exon", dest="resolution_last", type="int",
+        help="resolution of last exon in gene, in bp"
+        "[%default]")
+
     parser.add_option("--resolution-introns",
                       dest="resolution_introns", type="int",
                       help="resolution of introns region in bp "
@@ -459,25 +484,31 @@ def main(argv=None):
                       "distance from the topolya in bp "
                       "[%default]")
 
-    parser.add_option("--extension-introns-absolute-distance-topolya", dest="extension_introns_absolute_distance_topolya", type="int",
-                      help="extension for introns from the absolute distance from the topolya in bp"
-                      "[%default]")
+    parser.add_option(
+        "--extension-introns-absolute-distance-topolya",
+        dest="extension_introns_absolute_distance_topolya", type="int",
+        help="extension for introns from the absolute distance from "
+        "the topolya in bp [%default]")
 
-    parser.add_option("--extension-upstream", dest="extension_upstream", type="int",
-                      help="extension upstream from the first exon in bp"
-                      "[%default]")
+    parser.add_option(
+        "--extension-upstream", dest="extension_upstream", type="int",
+        help="extension upstream from the first exon in bp"
+        "[%default]")
 
-    parser.add_option("--extension-downstream", dest="extension_downstream", type="int",
-                      help="extension downstream from the last exon in bp"
-                      "[%default]")
+    parser.add_option(
+        "--extension-downstream", dest="extension_downstream", type="int",
+        help="extension downstream from the last exon in bp"
+        "[%default]")
 
-    parser.add_option("--extension-inward", dest="extension_inward", type="int",
-                      help="extension inward from a TSS start site in bp"
-                      "[%default]")
+    parser.add_option(
+        "--extension-inward", dest="extension_inward", type="int",
+        help="extension inward from a TSS start site in bp"
+        "[%default]")
 
-    parser.add_option("--extension-outward", dest="extension_outward", type="int",
-                      help="extension outward from a TSS start site in bp"
-                      "[%default]")
+    parser.add_option(
+        "--extension-outward", dest="extension_outward", type="int",
+        help="extension outward from a TSS start site in bp"
+        "[%default]")
 
     parser.add_option("--scale-flank-length", dest="scale_flanks", type="int",
                       help="scale flanks to (integer multiples of) gene length"
@@ -536,6 +567,8 @@ def main(argv=None):
         resolution_downstream_utr=1000,
         resolution_upstream=1000,
         resolution_downstream=1000,
+        resolution_first=1000,
+        resolution_last=1000,
         # mean length of transcripts: about 2.5 kb
         extension_upstream=2500,
         extension_downstream=2500,
@@ -647,7 +680,6 @@ def main(argv=None):
             else:
                 controlfiles = None
 
-            format = "bed"
             range_counter = _bam2geneprofile.RangeCounterBed(
                 bedfiles,
                 controlfiles=controlfiles,
@@ -655,12 +687,11 @@ def main(argv=None):
 
         elif options.infiles[0].endswith(".bw"):
             wigfiles = [BigWigFile(file=open(x)) for x in options.infiles]
-            format = "bigwig"
             range_counter = _bam2geneprofile.RangeCounterBigWig(wigfiles)
 
         else:
             raise NotImplementedError(
-                "can't determine file type for %s" % bamfile)
+                "can't determine file type for %s" % str(options.infiles))
 
     counters = []
     for method in options.methods:
@@ -738,6 +769,32 @@ def main(argv=None):
             counters.append(_bam2geneprofile.MidpointCounter(
                 range_counter,
                 options.resolution_upstream,
+                options.resolution_downstream,
+                options.extension_upstream,
+                options.extension_downstream))
+
+        # add new method to split 1st and last exons out
+        # requires a representative transcript for reach gene
+        # gtf should be sorted gene-position
+        elif method == "separateexonprofile":
+            counters.append(_bam2geneprofile.SeparateExonCounter(
+                range_counter,
+                options.resolution_upstream,
+                options.resolution_first,
+                options.resolution_last,
+                options.resolution_cds,
+                options.resolution_downstream,
+                options.extension_upstream,
+                options.extension_downstream))
+
+        elif method == "separateexonprofilewithintrons":
+            counters.append(_bam2geneprofile.SeparateExonWithIntronCounter(
+                range_counter,
+                options.resolution_upstream,
+                options.resolution_first,
+                options.resolution_last,
+                options.resolution_cds,
+                options.resolution_introns,
                 options.resolution_downstream,
                 options.extension_upstream,
                 options.extension_downstream))
@@ -830,14 +887,16 @@ def main(argv=None):
                           "geneprofilewithintrons",
                           "geneprofileabsolutedistancefromthreeprimeend",
                           "utrprofile",
-                          "intervalprofile"):
+                          "intervalprofile",
+                          "separateexonprofile",
+                          "separateexonprofilewithintrons"):
 
                 plt.figure()
                 plt.subplots_adjust(wspace=0.05)
                 max_scale = max([max(x) for x in counter.aggregate_counts])
 
                 for x, counts in enumerate(counter.aggregate_counts):
-                    plt.subplot(5, 1, x + 1)
+                    plt.subplot(6, 1, x + 1)
                     plt.plot(range(len(counts)), counts)
                     plt.title(counter.fields[x])
                     plt.ylim(0, max_scale)

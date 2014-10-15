@@ -223,28 +223,39 @@ def setupTests(infile, outfile):
 
 
 def runTest(infile, outfile):
-    '''run a test.'''
+    '''run a test.
+
+    Multiple targets are run iteratively.
+    '''
 
     track = P.snip(outfile, ".log")
 
     pipeline_name = PARAMS.get(
         "%s_pipeline" % track,
         "pipeline_" + track[len("test_"):])
-    pipeline_targets = ' '.join(P.asList(
+
+    pipeline_targets = P.asList(
         PARAMS.get("%s_target" % track,
-                   "full")))
+                   "full"))
 
     # do not run on cluster, mirror
     # that a pipeline is started from
     # the head node
     to_cluster = False
 
-    statement = '''
-    (cd %(track)s.dir;
-    python %(pipelinedir)s/%(pipeline_name)s.py
-    %(pipeline_options)s make %(pipeline_targets)s) >& %(outfile)s
+    template_statement = '''
+    (cd %%(track)s.dir;
+    python %%(pipelinedir)s/%%(pipeline_name)s.py
+    %%(pipeline_options)s make %s) >& %%(outfile)s
     '''
-    P.run()
+    if len(pipeline_targets) == 1:
+        statement = template_statement % pipeline_targets[0]
+        P.run()
+    else:
+        statements = []
+        for pipeline_target in pipeline_targets:
+            statements.append(template_statement % pipeline_target)
+        P.run()
 
 
 @follows(setupTests)
