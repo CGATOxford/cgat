@@ -54,7 +54,7 @@ Fig 1(a) in the published CGAT paper, but using a test dataset that is
 much smaller and simpler than the dataset used for publishing the CGAT
 paper. ::
 
-    python ./scripts/bam2geneprofile.py 
+    python ./scripts/bam2geneprofile.py
         --bamfile=./tests/bam2geneprofile.py/multipleReadsSplicedOutAllIntronsAndSecondExon.bam
         --gtffile=./tests/bam2geneprofile.py/onegeneWithoutAnyCDS.gtf.gz
         --method=geneprofile
@@ -79,11 +79,11 @@ and geneset. ::
 The output will contain read coverage over genes. The profile will
 contain four separate segments:
 
-1. the upstream region of a gene ( set to be 500bp ), 
+1. the upstream region of a gene ( set to be 500bp ),
    (``--extension-upstream=500``).
 
 2. the transcribed region of a gene. The transcribed region of every gene will
-   be scaled to 1000 bp ( default ), shrinking longer transcripts and 
+   be scaled to 1000 bp ( default ), shrinking longer transcripts and
    expanding shorter transcripts.
 
 3. the intronic regions of a gene. These will be scaled to 1000b ( default ).
@@ -389,11 +389,11 @@ def main(argv=None):
     parser.add_option("-r", "--reporter", dest="reporter", type="choice",
                       choices=("gene", "transcript"),
                       help = "report results for genes or transcripts."
-                      " When 'genes` is chosen, exons across all transcripts for"
-                      " a gene are merged. When 'transcript' is chosen, counts are"
-                      " computed for each transcript separately with each transcript"
-                      " contributing equally to the meta-gene profile."
-                      " [%default]")
+                      " When 'genes` is chosen, exons across all transcripts"
+                      " for a gene are merged. When 'transcript' is chosen,"
+                      " counts are computed for each transcript separately "
+                      " with each transcript contributing equally to the "
+                      " meta-gene profile. [%default]")
 
     parser.add_option("-i", "--shift", dest="shifts", type="int",
                       action="append",
@@ -447,11 +447,13 @@ def main(argv=None):
                       help="resolution of cds region in bp "
                       "[%default]")
 
-    parser.add_option("--resolution-first-exon", dest="resolution_first", type="int",
+    parser.add_option("--resolution-first-exon", dest="resolution_first",
+                      type="int",
                       help="resolution of first exon in gene, in bp"
                       "[%default]")
 
-    parser.add_option("--resolution-last-exon", dest="resolution_last", type="int",
+    parser.add_option("--resolution-last-exon", dest="resolution_last",
+                      type="int",
                       help="resolution of last exon in gene, in bp"
                       "[%default]")
 
@@ -481,23 +483,30 @@ def main(argv=None):
                       "distance from the topolya in bp "
                       "[%default]")
 
-    parser.add_option("--extension-introns-absolute-distance-topolya", dest="extension_introns_absolute_distance_topolya", type="int",
-                      help="extension for introns from the absolute distance from the topolya in bp"
+    parser.add_option("--extension-introns-absolute-distance-topolya",
+                      dest="extension_introns_absolute_distance_topolya",
+                      type="int",
+                      help="extension for introns from the absolute distance "
+                      "from the topolya in bp"
                       "[%default]")
 
-    parser.add_option("--extension-upstream", dest="extension_upstream", type="int",
+    parser.add_option("--extension-upstream", dest="extension_upstream",
+                      type="int",
                       help="extension upstream from the first exon in bp"
                       "[%default]")
 
-    parser.add_option("--extension-downstream", dest="extension_downstream", type="int",
+    parser.add_option("--extension-downstream", dest="extension_downstream",
+                      type="int",
                       help="extension downstream from the last exon in bp"
                       "[%default]")
 
-    parser.add_option("--extension-inward", dest="extension_inward", type="int",
+    parser.add_option("--extension-inward", dest="extension_inward",
+                      type="int",
                       help="extension inward from a TSS start site in bp"
                       "[%default]")
 
-    parser.add_option("--extension-outward", dest="extension_outward", type="int",
+    parser.add_option("--extension-outward", dest="extension_outward",
+                      type="int",
                       help="extension outward from a TSS start site in bp"
                       "[%default]")
 
@@ -558,8 +567,8 @@ def main(argv=None):
         resolution_downstream_utr=1000,
         resolution_upstream=1000,
         resolution_downstream=1000,
-        resolution_first = 1000,
-        resolution_last = 1000,
+        resolution_first=1000,
+        resolution_last=1000,
         # mean length of transcripts: about 2.5 kb
         extension_upstream=2500,
         extension_downstream=2500,
@@ -816,7 +825,8 @@ def main(argv=None):
 
     else:
         E.info("starting counting with %i counters" % len(counters))
-        feature_names = _bam2geneprofile.countFromGTF(counters, gtf_iterator)
+        feature_names = _bam2geneprofile.countFromGTF(counters,
+                                                      gtf_iterator)
 
     # output matrices
     if not options.profile_normalizations:
