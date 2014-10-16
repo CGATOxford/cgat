@@ -55,6 +55,8 @@ from CGAT import IOTools as IOTools
 import Bio.Alphabet.IUPAC
 
 ###########################################################################
+
+
 class SequenceProperties(object):
 
     mPseudoCounts = 0
@@ -93,7 +95,10 @@ class SequenceProperties(object):
         return []
 
 ###########################################################################
+
+
 class SequencePropertiesSequence(SequenceProperties):
+
     '''Add full sequence '''
     #sequence = ""
 
@@ -122,8 +127,12 @@ class SequencePropertiesSequence(SequenceProperties):
         return headers + ["sequence"]
 
 ###########################################################################
+
+
 class SequencePropertiesHid(SequenceProperties):
+
     '''Add hash of sequence'''
+
     def __init__(self):
         SequenceProperties.__init__(self)
         self.mHid = ""
@@ -164,7 +173,10 @@ class SequencePropertiesHid(SequenceProperties):
         return headers + ["hid", ]
 
 ###########################################################################
+
+
 class SequencePropertiesLength(SequenceProperties):
+
     '''Add sequence length and number of codons (0 for amino-acid sequence)'''
     mPseudoCounts = 0
 
@@ -198,10 +210,14 @@ class SequencePropertiesLength(SequenceProperties):
     def getHeaders(self):
         headers = SequenceProperties.getHeaders(self)
         return headers + ["length", "ncodons"]
-        
+
 ###########################################################################
+
+
 class SequencePropertiesNA(SequenceProperties):
+
     '''Nucleotide frequency counts'''
+
     def __init__(self, reference_usage=[]):
         SequenceProperties.__init__(self)
         self.mCountsGC = 0
@@ -284,28 +300,33 @@ class SequencePropertiesNA(SequenceProperties):
         return headers
 
 ###########################################################################
+
+
 class SequencePropertiesDN(SequenceProperties):
+
     '''returns dinucleotide counts'''
+
     def __init__(self, reference_usage=[]):
 
         SequenceProperties.__init__(self)
         self.mCountsDinuc = {}
         self.mCountsOthers = 0
         self.mAlphabet = Bio.Alphabet.IUPAC.unambiguous_dna.letters
-        for dinucleotide in itertools.product(self.mAlphabet, repeat=2): self.mCountsDinuc["".join(dinucleotide)] = 0
+        for dinucleotide in itertools.product(self.mAlphabet, repeat=2):
+            self.mCountsDinuc["".join(dinucleotide)] = 0
 
     def addProperties(self, other):
         SequenceProperties.addProperties(self, other)
         self.mCountsOthers += other.mCountsOthers
         for dn, count in other.mCountsDinuc.items():
             self.mCountsDinuc[dn] += count
-            
+
     def loadSequence(self, sequence, title="Unknown", seqtype="na"):
         """load sequence properties from a sequence."""
         SequenceProperties.loadSequence(self, sequence, title, seqtype)
 
-        #for na in sequence.upper():
-        for dinuc in [sequence[x-2:x] for x in range(2, len(sequence)+1, 1)]:
+        # for na in sequence.upper():
+        for dinuc in [sequence[x - 2:x] for x in range(2, len(sequence) + 1, 1)]:
             try:
                 self.mCountsDinuc[dinuc] += 1
             except KeyError:
@@ -326,9 +347,12 @@ class SequencePropertiesDN(SequenceProperties):
             headers.append("".join(dinucleotide))
         headers.append("mCountsOthers")
         return headers
-        
+
 #######################################################################
-class SequencePropertiesCpg(SequencePropertiesNA,SequencePropertiesDN):
+
+
+class SequencePropertiesCpg(SequencePropertiesNA, SequencePropertiesDN):
+
     '''compute CpG density and observed / expected.'''
 
     def __init__(self, reference_usage=[]):
@@ -349,21 +373,25 @@ class SequencePropertiesCpg(SequencePropertiesNA,SequencePropertiesDN):
         SequencePropertiesDN.loadSequence(self, sequence, title, seqtype)
 
         if self.mLength > 0:
-            self.mCpG_density = (float(self.mCountsDinuc["CG"]) / (float(self.mLength) / 2.0))
+            self.mCpG_density = (float(self.mCountsDinuc["CG"])
+                                 / (float(self.mLength) / 2.0))
             if (self.mCountsNA["C"] * self.mCountsNA["G"]) / self.mLength > 0:
-                self.mCpG_ObsExp = ((float(self.mCountsDinuc["CG"])) / ((float(self.mCountsNA["C"]) * float(self.mCountsNA["G"])) / float(self.mLength)))
+                self.mCpG_ObsExp = ((float(self.mCountsDinuc["CG"]))
+                                    / ((float(self.mCountsNA["C"])
+                                        * float(self.mCountsNA["G"]))
+                                       / float(self.mLength)))
             else:
                 self.mCpG_ObsExp = 0.0
         else:
             self.mCpG_density = 0.0
             self.mCpG_ObsExp = 0.0
-        
+
     def getFields(self):
         fields = ["%s" % self.mCountsDinuc["CG"]]
         fields.append("%s" % self.mCpG_density)
         fields.append("%s" % self.mCpG_ObsExp)
         return fields
-        
+
     def getHeaders(self):
         headers = ["CpG_count"]
         headers.append("CpG_density")
@@ -371,6 +399,8 @@ class SequencePropertiesCpg(SequencePropertiesNA,SequencePropertiesDN):
         return headers
 
 #######################################################################
+
+
 class SequencePropertiesGaps(SequenceProperties):
 
     '''counter for genomic sequences.
@@ -437,9 +467,12 @@ class SequencePropertiesGaps(SequenceProperties):
         self.ngaps += other.ngaps
         self.nseq_regions += other.nseq_regions
         self.ngap_regions += other.ngap_regions
-        
+
 ###########################################################################
+
+
 class SequencePropertiesDegeneracy (SequencePropertiesLength):
+
     """count degeneracy.
 
     The degeneracies for amino acids are::
@@ -510,7 +543,9 @@ class SequencePropertiesDegeneracy (SequencePropertiesLength):
 
         SequencePropertiesLength.loadSequence(self, sequence, title, seqtype)
         if len(sequence) % 3:
-            raise ValueError("sequence length is not a multiple of 3 (length=%i) for sequence %s" % (len(sequence),title))
+            raise ValueError('''sequence length is not a multiple 
+                                of 3 (length=%i) for sequence %s'''
+                             % (len(sequence), title))
 
         # uppercase all letters
         sequence = sequence.upper()
@@ -643,27 +678,30 @@ class SequencePropertiesDegeneracy (SequencePropertiesLength):
     def getHeaders(self):
         headers = SequencePropertiesLength.getHeaders(self)
         return headers + ["nstops",
-                         "nsites1d",
-                         "nsites2d",
-                         "nsites3d",
-                         "nsites4d",
-                         "nsitesd3",
-                         "ngc",
-                         "ngc3",
-                         "ndgc3",
-                         "n2dgc3",
-                         "n3dgc3",
-                         "n4dgc3",
-                         "pgc",
-                         "pgc3",
-                         "pdgc3",
-                         "p2dgc3",
-                         "p3dgc3",
-                         "p4dgc3",
-                         ]
+                          "nsites1d",
+                          "nsites2d",
+                          "nsites3d",
+                          "nsites4d",
+                          "nsitesd3",
+                          "ngc",
+                          "ngc3",
+                          "ndgc3",
+                          "n2dgc3",
+                          "n3dgc3",
+                          "n4dgc3",
+                          "pgc",
+                          "pgc3",
+                          "pdgc3",
+                          "p2dgc3",
+                          "p3dgc3",
+                          "p4dgc3",
+                          ]
 
 ###########################################################################
+
+
 class SequencePropertiesAA(SequenceProperties):
+
     '''Composition of amino-acies in translated nucleotide sequence (frame 1 only)'''
     mPseudoCounts = 0
 
@@ -690,9 +728,11 @@ class SequencePropertiesAA(SequenceProperties):
         """load sequence properties from a sequence."""
 
         SequenceProperties.loadSequence(self, sequence, title, seqtype)
-        
+
         if len(sequence) % 3:
-            raise ValueError("sequence length is not a multiple of 3 (length=%i) for sequence %s" % (len(sequence),title))
+            raise ValueError('''sequence length is not a multiple of 3 
+                                (length=%i) for sequence %s'''
+                             % (len(sequence), title))
 
         # counts of amino acids
         self.mCountsAA = {}
@@ -725,7 +765,10 @@ class SequencePropertiesAA(SequenceProperties):
         return headers
 
 #######################################################################
+
+
 class SequencePropertiesAminoAcids(SequenceProperties):
+
     '''Composition of amino acid sequences.'''
 
     mPseudoCounts = 0
@@ -747,8 +790,7 @@ class SequencePropertiesAminoAcids(SequenceProperties):
             self.mCountsAA[aa] += count
 
     def loadSequence(self, sequence, title="Unknown", seqtype="na"):
-        """load sequence properties from a sequence.
-        """
+        """load sequence properties from a sequence. """
 
         SequenceProperties.loadSequence(self, sequence, title, seqtype)
 
@@ -795,6 +837,8 @@ class SequencePropertiesAminoAcids(SequenceProperties):
         return fields
 
 ###########################################################################
+
+
 class SequencePropertiesCodons(SequencePropertiesLength):
 
     mPseudoCounts = 0
@@ -823,7 +867,9 @@ class SequencePropertiesCodons(SequencePropertiesLength):
         """load sequence properties from a sequence."""
 
         if len(sequence) % 3:
-            raise ValueError("sequence length is not a multiple of 3 (length=%i) for sequence %s" % (len(sequence),title))
+            raise ValueError('''sequence length is not a multiple of 3 
+                                (length=%i) for sequence %s'''
+                             % (len(sequence), title))
 
         SequencePropertiesLength.loadSequence(self, sequence, title, seqtype)
 
@@ -860,6 +906,8 @@ class SequencePropertiesCodons(SequencePropertiesLength):
         return fields
 
 ###########################################################################
+
+
 class SequencePropertiesCodonUsage(SequencePropertiesCodons):
 
     mPseudoCounts = 0
@@ -909,6 +957,8 @@ class SequencePropertiesCodonUsage(SequencePropertiesCodons):
         return fields
 
 ###########################################################################
+
+
 class SequencePropertiesCodonTranslator(SequencePropertiesCodonUsage):
 
     """This class outputs the sequence with codons replaced by their frequencies.
@@ -953,6 +1003,8 @@ class SequencePropertiesCodonTranslator(SequencePropertiesCodonUsage):
         return fields
 
 ###########################################################################
+
+
 class SequencePropertiesBias(SequencePropertiesCodons):
 
     mPseudoCounts = 0
@@ -1034,6 +1086,8 @@ class SequencePropertiesBias(SequencePropertiesCodons):
         return headers
 
 ###########################################################################
+
+
 class SequencePropertiesCounts(SequenceProperties):
 
     def __init__(self, alphabet):
@@ -1093,8 +1147,10 @@ class SequencePropertiesCounts(SequenceProperties):
         headers.extend(["n%s" % x for x in self.mAlphabet])
         headers.extend(["p%s" % x for x in self.mAlphabet])
         return headers
-        
+
 ###########################################################################
+
+
 class SequencePropertiesEntropy(SequencePropertiesCounts):
 
     mPseudoCounts = 0
@@ -1150,4 +1206,3 @@ class SequencePropertiesEntropy(SequencePropertiesCounts):
         fields = SequenceProperties.getHeaders(self)
         fields.append("entropy")
         return fields
-
