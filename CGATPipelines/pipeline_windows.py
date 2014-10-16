@@ -742,7 +742,8 @@ def countReadsWithinWindows(infiles, outfile):
         bedfile,
         windowfile,
         outfile,
-        counting_method=PARAMS['tiling_counting_method'])
+        counting_method=PARAMS['tiling_counting_method'],
+        memory_free=PARAMS['tiling_counting_memory'])
 
 
 @merge(countReadsWithinWindows,
@@ -1538,13 +1539,16 @@ def buildIntervalProfileOfTranscripts(infiles, outfile):
                       --output-filename-pattern="%(outfile)s.%%s"
                       --force
                       --reporter=transcript
-                      --method=geneprofile
+                      --method=separateexonprofilewithintrons
                       --method=tssprofile
                       --normalize-profile=all
                       --output-all-profiles
                       --resolution-upstream=1000
                       --resolution-downstream=1000
                       --resolution-cds=1000
+                      --resolution-first-exon=1000
+                      --resolution-last-exon=1000
+                      --resolution-introns=1000
                       --extension-upstream=5000
                       --extension-downstream=5000
                       %(options)s
