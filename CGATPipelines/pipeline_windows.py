@@ -333,8 +333,8 @@ def mergeBackgroundWindows(infiles, outfile):
         return
 
     infiles = " ".join(infiles)
-    genomefile = os.path.join(
-        PARAMS["annotations_dir"], PARAMS_ANNOTATIONS['interface_contigs'])
+    genomefile = os.path.join(PARAMS["annotations_dir"],
+                              PARAMS_ANNOTATIONS['interface_contigs'])
     statement = '''
     zcat %(infiles)s
     | bedtools slop -i stdin
@@ -443,10 +443,10 @@ def buildReferenceCpGComposition(infiles, outfile):
     '''
 
     infile = infiles[0]
-    contig_sizes = os.path.join(
-        PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_contigs"])
-    gaps_bed = os.path.join(
-        PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_gaps_bed"])
+    contig_sizes = os.path.join(PARAMS["annotations_dir"],
+                                PARAMS_ANNOTATIONS["interface_contigs"])
+    gaps_bed = os.path.join(PARAMS["annotations_dir"],
+                            PARAMS_ANNOTATIONS["interface_gaps_bed"])
 
     # remove windows which are more than 50% N - column 17
     statement = '''bedtools shuffle
@@ -690,7 +690,6 @@ def countReadsWithinWindows(infiles, outfile):
 #########################################################################
 #########################################################################
 #########################################################################
->>>>>>> 6935af70624b48e4550e89fbfb8367dc8c24e1b2
 
 
 @merge(countReadsWithinWindows,
