@@ -394,18 +394,18 @@ def main(argv=None):
     if options.filename_rna:
         _write(outs,
                "alignments_rna",
-               counter.rna,
+               counter.alignments_rna,
                nalignments_mapped,
                'alignments_mapped')
         _write(outs,
                "alignments_no_rna",
-               counter.no_rna,
+               counter.alignments_no_rna,
                nalignments_mapped,
                'alignments_mapped')
 
     _write(outs,
            "alignments_filtered",
-           counter.filtered,
+           counter.alignments_filtered,
            nalignments_mapped,
            "alignments_mapped")
 

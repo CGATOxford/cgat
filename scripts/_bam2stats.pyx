@@ -5,7 +5,7 @@ from pysam.csamfile cimport *
 from pysam.cfaidx cimport *
 from libc.string cimport strchr
 from libc.stdint cimport int8_t
-from libc.stdio cimport puts
+from libc.stdio cimport puts, printf
 import collections, array, struct, sys
 import CGAT.Experiment as E
 
