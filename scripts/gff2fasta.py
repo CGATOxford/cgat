@@ -11,7 +11,7 @@ Purpose
 -------
 
 This script outputs the genomic sequences for intervals within
-a :term:`gff` formatted file.
+a :term:`gff` or :term: `gtf` formatted file.
 
 The ouput can be optionally masked and filtered.
 
@@ -57,6 +57,10 @@ option and a given :term:`gff` formatted file::
 
 where ``--masker`` can take the following values: ``dust``, ``dustmasker``,
 and ``softmask``.
+
+Options
+-------
+
 
 Command line options
 --------------------

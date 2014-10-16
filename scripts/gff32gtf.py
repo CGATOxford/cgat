@@ -271,28 +271,37 @@ def main(argv=None):
                       choices=(
                           "hierarchy", "set-field", "set-pattern", "set-none"),
                       help="Method to use for conversion")
+
     parser.add_option("-g", "--gene-type", dest="gene_type", type="string",
                       help="feature type to get gene_id from if possible [%default]")
+
     parser.add_option("-t", "--transcript-type", dest="transcript_type", type="string",
                       help="feature type to get transcript_id from if possible [%default]")
+
     parser.add_option("-d", "--no-discard", dest="discard", action="store_false",
                       help="Do not discard feature types specified by GENE_TYPE and TRANSCRIPT_TYPE")
+
     parser.add_option("--gene-id", dest="gene_field_or_pattern", type="string",
                       help="Either field or pattern for the gene_id [%default]")
+
     parser.add_option("--transcript-id", dest="transcript_field_or_pattern", type="string",
                       help="Either field or pattern for the transcript_id [%default]")
+
     parser.add_option("--parent-field", dest="parent", type="string",
                       help="field that specifies the parent relationship. Currently only"
                       "if left as Parent will features with multiple parents be parsed"
                       "correctly""")
+
     parser.add_option("--read-twice", dest="read_twice", action="store_true",
                       help="Instead of holding the whole file in memory, read once for parsing the "
                       "hierarchy, and then again for actaully doing the conversion. Means a real file "
                       "and not a pipe must be provided.""")
+
     parser.add_option("--by-chrom", dest="by_chrom", action="store_true",
                       help="Parse input file one choromosome at a time. Reduces memory usage, "
                       "but input must be sorted by chromosome and features may not split accross "
                       " multiple chromosomes""")
+
     parser.add_option("--fail-missing-gene", dest="missing_gene", action="store_false",
                       help="Fail if no feature of type GENE_TYPE is found instead of using "
                       "defaulting to highest object in hierarchy""")

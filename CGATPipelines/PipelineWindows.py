@@ -116,7 +116,8 @@ def convertReadsToIntervals(bamfile,
 def countReadsWithinWindows(bedfile,
                             windowfile,
                             outfile,
-                            counting_method="midpoint"):
+                            counting_method="midpoint",
+                            memory_free="4G"):
     '''count reads given in *tagfile* within intervals in
     *windowfile*.
 
@@ -125,7 +126,7 @@ def countReadsWithinWindows(bedfile,
     Counting is done using bedtools. The counting method
     can be 'midpoint' or 'nucleotide'.
     '''
-    job_options = "-l mem_free=4G"
+    job_options = "-l mem_free=%s" % memory_free
 
     if counting_method == "midpoint":
         f = '''| awk '{a = $2+($3-$2)/2;
