@@ -116,13 +116,14 @@ def segmentWindowsCpG(infile, window_size=100, min_cpg=1):
     cpgs = pybedtools.BedTool(fn)
     cpgs.set_chromsizes(contig_sizes)
     extended = cpgs.slop(b=window_size // 2)
-    merged = extended.merge(n=True)
+    merged = extended.merge(o="count", c=3)
     filtered = merged.filter(lambda x: int(x.name) >= min_cpg)
 
     os.unlink(fn)
 
     # return CpG content (not C+C content)
-    return [(x.chrom, x.start, x.stop, float(x.name) / (x.stop - x.start) / 2) for x in filtered]
+    return [(x.chrom, x.start, x.stop, float(x.name) / (x.stop - x.start) / 2)
+            for x in filtered]
 
 
 def segmentWithGCProfile(infile, options):

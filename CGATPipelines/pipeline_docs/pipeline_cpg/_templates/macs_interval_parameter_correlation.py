@@ -5,7 +5,7 @@ import numpy.ma
 import Stats
 import Histogram
 
-from SphinxReport.Tracker import *
+from CGATReport.Tracker import *
 from cpgReport import *
 
 ##################################################################################

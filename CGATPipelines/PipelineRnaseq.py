@@ -770,7 +770,7 @@ def runFeatureCounts(annotations_file,
     annotations_tmp = os.path.join(tmpdir,
                                    'geneset.gtf')
     bam_tmp = os.path.join(tmpdir,
-                           bamfile)
+                           os.path.basename(bamfile))
 
     # -p -B specifies count fragments rather than reads, and both
     # reads must map to the feature

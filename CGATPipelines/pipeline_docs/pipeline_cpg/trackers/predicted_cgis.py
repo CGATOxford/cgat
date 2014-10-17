@@ -9,9 +9,9 @@ import numpy.ma
 import Stats
 import Histogram
 
-from SphinxReport.Tracker import *
+from CGATReport.Tracker import *
 from cpgReport import *
-from SphinxReport.odict import OrderedDict as odict
+from CGATReport.odict import OrderedDict as odict
 
 ##########################################################################
 

@@ -6,8 +6,8 @@ import sys
 import os
 import collections
 
-from SphinxReport.Tracker import *
-import SphinxReport.Stats
+from CGATReport.Tracker import *
+import CGATReport.Stats
 
 
 class IntronicEnrichment(TrackerSQL):
@@ -38,7 +38,7 @@ class IntronicEnrichment(TrackerSQL):
              (self.getValue(statement_in % {"master": master, "track": ref}),
               self.getValue(statement_out % {"master": master, "track": ref}))))
 
-        result = SphinxReport.Stats.doChiSquaredTest(matrix)
+        result = CGATReport.Stats.doChiSquaredTest(matrix)
 
         return odict((("P", "%e" % result.mProbability),
                       ("df", "%i" % result.mDegreesFreedom),

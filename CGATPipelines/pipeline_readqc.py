@@ -44,7 +44,7 @@ Additionaly, optional bias analysis can be included through the configuration
 file. This analysis is designed to help identify sequence contexts which bias
 gene expression and asssess the consistency in the biases between samples.
 
-Bias analysis utilised Sailfish to estimate transcript abundance. This
+Bias analysis utilises Sailfish to estimate transcript abundance. This
 requires a multi-fasta transcripts file.
 
 For further details see http://www.cs.cmu.edu/~ckingsf/software/sailfish/
@@ -347,11 +347,11 @@ def loadFastqcSummary(infile, outfile):
 ####################################################
 # bias analysis
 ####################################################
-# AH: sections not Pep8 conformant
-# AH: put all the conditional into one if statement
-
-
 if BIAS_ANALYSIS:
+
+    if PARAMS["sailfish_transcripts"].endswith(".gz"):
+        zipped = True
+
     @transform(PARAMS["sailfish_transcripts"],
                regex("(\S+)"),
                "index/transcriptome.sfi")
@@ -362,11 +362,14 @@ if BIAS_ANALYSIS:
         kmer = int(PARAMS["sailfish_kmer_size"])
         tmp = P.getTempFilename()
 
-        statement = '''gunzip -c %(infile)s > %(tmp)s;
-                       module load bio/sailfish;
-                       sailfish index -t %(tmp)s 
-                       -k %(kmer)i -o %(outdir)s;
-                       rm -f %(tmp)s'''
+        if zipped:
+            statement = '''gunzip -c %(infile)s > %(tmp)s;
+                           checkpoint; sailfish index -t %(tmp)s'''
+        else:
+            statement = '''sailfish index -t %(infile)s'''
+
+        statement += ''' -k %(kmer)i -o %(outdir)s;
+                        checkpoint; rm -f %(tmp)s'''
 
         P.run()
 
@@ -378,7 +381,6 @@ if BIAS_ANALYSIS:
     def runSailfish(infiles, outfile):
         '''quantify abundance'''
 
-        to_cluster = True
         job_options = "-pe dedicated %i -R y" % PARAMS["sailfish_threads"]
 
         infile, index = infiles
@@ -405,7 +407,6 @@ if BIAS_ANALYSIS:
                   --use-file-prefix -v 0| gzip > %(outfile)s'''
         P.run()
 
-    # AH: output a compressed file (.tsv.gz)
     @active_if(BIAS_ANALYSIS)
     @transform(PARAMS["sailfish_transcripts"],
                regex("(\S+)"),
@@ -413,10 +414,15 @@ if BIAS_ANALYSIS:
     # take multifasta transcripts file and output file of attributes
     def characteriseTranscripts(infile, outfile):
 
-        statement = '''zcat %(infile)s |
-                    python %(scriptsdir)s/fasta2table.py
-                    --split-fasta-identifier --section=dn -v 0
-                    | gzip > %(outfile)s'''
+        if zipped:
+            statement = '''zcat %(infile)s'''
+        else:
+            statement = '''cat %(infile)s'''
+        statement += '''
+        | python %(scriptsdir)s/fasta2table.py
+        --split-fasta-identifier --section=dn -v 0
+        | gzip > %(outfile)s'''
+
         P.run()
 
     # where should this code be moved to?

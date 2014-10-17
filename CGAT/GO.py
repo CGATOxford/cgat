@@ -513,8 +513,9 @@ def MapGO2Slims(gene2go, go2slim, ontology=None):
                     if gg in map_go2info:
                         new_go.add(map_go2info[gg])
                     else:
-                        raise IndexError, "description for mapped go term not present: %s -> %s" % (
-                            go.mGOId, gg)
+                        raise IndexError(
+                            "description for mapped go term not present: %s -> %s" %
+                            (go.mGOId, gg))
         if new_go:
             filtered_gene2go[gene_id] = list(new_go)
 
@@ -580,16 +581,15 @@ def GetGOFrequencies(gene2go, genes):
 
 def AnalyseGO(gene2go,
               genes,
-              genes_background=(),
-              do_probabilities = True):
+              genes_background=None,
+              do_probabilities=True):
     """analyse go ids.
 
     goids: list of goids to analyse
     genes: sample set of genes
     genes_background: background set of genes (default: all)
     """
-
-    if genes_background == ():
+    if genes_background is None:
         genes_background = gene2go.keys()
 
     result = GOResults()
@@ -1090,7 +1090,9 @@ def outputResults(outfile,
     '''output GO results to outfile.
 
     If foreground is given, output a list of gene identifiers in the
-    foreground.  If gene2name is given, output a columns with gene
+    foreground. 
+
+    If gene2name is given, output a columns with gene
     names (instead of identifiers)
 
     '''
@@ -1168,7 +1170,8 @@ def outputResults(outfile,
         outfile.write("\n")
 
 
-def getSamples(gene2go, foreground, background, options, test_ontology, go2info):
+def getSamples(gene2go, foreground, background, options, test_ontology,
+               go2info):
 
     sample_size = options.sample
     # List of all minimum probabilities in simulation
@@ -1476,6 +1479,10 @@ def outputMultipleGeneListResults(results,
 
     col_headers = all_genelists_with_results
 
+    if len(results) == 0:
+        E.warn('no significant results - no matrices output')
+        return
+
     assert len(col_headers) == len(results)
 
     def _output(section, subsection, valuef, dtype):
@@ -1516,7 +1523,8 @@ def outputMultipleGeneListResults(results,
             dtype=numpy.int)
 
 
-def pairwiseGOEnrichment(results_per_genelist, labels, test_ontology, go2info, options):
+def pairwiseGOEnrichment(results_per_genelist, labels, test_ontology, go2info,
+                         options):
     '''compute pairwise enrichment between sets.
 
     The purpose of this method is to find if there are categories that are differently enriched

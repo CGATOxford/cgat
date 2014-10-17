@@ -70,20 +70,14 @@ Overrun in unspliced reads
 
 .. report:: Validation.ExonValidationSummary
    :render: interleaved-bar-plot
-   :slices: unspliced_overlap,unspliced_overrun
-
-   Overrun in unspliced reads
-
-.. report:: Validation.ExonValidationSummary
-   :render: interleaved-bar-plot
-   :transform-matrix: normalized-row-max
+   :transform-matrix: normalized-col-first
    :slices: unspliced_overlap,unspliced_overrun
 
    Overrun in unspliced reads
 
 .. report:: Validation.ExonValidationSummary
    :render: matrix
-   :transform-matrix: normalized-row-max
+   :transform-matrix: normalized-col-first
    :slices: unspliced_overlap,unspliced_overrun
 
    Overrun in unspliced reads

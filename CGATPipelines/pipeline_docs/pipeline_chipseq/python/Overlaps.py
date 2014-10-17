@@ -4,7 +4,7 @@ import IndexedGenome
 import PipelineTracks
 
 from ChipseqReport import *
-from SphinxReport.Tracker import *
+from CGATReport.Tracker import *
 
 ##################################################################################
 ##################################################################################

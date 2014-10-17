@@ -45,7 +45,6 @@ Ungrouped heatmaps
    :colorbar-format: %5.2f
    :zrange: 0.9,1.0
    :width: 200
-   :tight-layout:
    :layout: column-2
 
    Ungrouped heatmaps of sample similarity. Shown are heatmaps for

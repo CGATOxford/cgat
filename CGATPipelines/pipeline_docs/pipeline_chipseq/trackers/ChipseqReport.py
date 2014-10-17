@@ -13,8 +13,8 @@ from collections import OrderedDict as odict
 
 import CGAT.Stats as Stats
 import CGAT.IOTools as IOTools
-from SphinxReport.Tracker import *
-from SphinxReport.Utils import PARAMS as P
+from CGATReport.Tracker import *
+from CGATReport.Utils import PARAMS as P
 
 
 ###################################################################

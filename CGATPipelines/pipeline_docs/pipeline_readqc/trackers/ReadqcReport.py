@@ -5,12 +5,12 @@ import types
 import itertools
 import glob
 
-from SphinxReport.Tracker import *
-from SphinxReport.Utils import PARAMS as P
+from CGATReport.Tracker import *
+from CGATReport.Utils import PARAMS as P
 from collections import OrderedDict as odict
 
-from SphinxReport.ResultBlock import ResultBlock, ResultBlocks
-from SphinxReport import Utils
+from CGATReport.ResultBlock import ResultBlock, ResultBlocks
+from CGATReport import Utils
 
 ###################################################################
 ###################################################################
@@ -63,11 +63,13 @@ class TrackerFastQC(ReadqcTracker):
         tracks = sorted([x.asFile() for x in TRACKS])
         for track in tracks:
 
-            for x, fn in enumerate(glob.glob(os.path.join(EXPORTDIR, "fastqc", "%s*_fastqc" % track))):
+            for x, fn in enumerate(glob.glob(os.path.join(
+                    EXPORTDIR, "fastqc", "%s*_fastqc" % track))):
                 y = x + 1
                 toc_text.append("* %(track)s-%(y)i_" % locals())
                 link_text.append(
-                    ".. _%(track)s-%(y)i: %(fn)s/fastqc_report.html" % locals())
+                    ".. _%(track)s-%(y)i: %(fn)s/fastqc_report.html" %
+                    locals())
 
         toc_text = "\n".join(toc_text)
         link_text = "\n".join(link_text)
@@ -104,29 +106,32 @@ class FastQCDetails(ReadqcTracker):
         # note there are spaces behind the %(image)s directive to accomodate
         # for path substitution
         block = '''
-.. figure:: %(image)s                                     
-   :height: 300 
+.. figure:: %(image)s
+   :height: 300
 '''
 
-        blocks = ResultBlocks()
-        tracks = sorted([x.asFile() for x in TRACKS])
-
-        for track in tracks:
+        result = odict()
+        for track in sorted([x.asFile() for x in TRACKS]):
 
             files = glob.glob(
                 os.path.join(EXPORTDIR, "fastqc", "%s*_fastqc" % track))
-            for x, fn in enumerate(sorted(files)):
-                y = x + 1
+            for fn in sorted(files):
 
                 image = os.path.abspath(
                     os.path.join(fn, "Images", "%s.png" % slice))
                 if not os.path.exists(image):
                     continue
 
-                blocks.append(ResultBlock(text=block % locals(),
-                                          title=os.path.basename(fn)))
+                result[os.path.basename(fn)] = {'rst': block % locals()}
 
-        return odict((("rst", "\n".join(Utils.layoutBlocks(blocks, layout="columns-2"))),))
+        return result
+
+        # blocks.append(ResultBlock(text=block % locals(),
+        #                                  title=os.path.basename(fn)))
+
+        # return odict((("rst", "\n".join(Utils.layoutBlocks(
+        #     blocks,
+        #     layout="columns-2"))),))
 
 
 class FastqcSummary(ReadqcTracker):
@@ -135,7 +140,9 @@ class FastqcSummary(ReadqcTracker):
               "Total Sequences", "Sequence Length", "%GC")
 
     def __call__(self, track, slice):
-        return self.getAll("SELECT * FROM %(track)s_Basic_Statistics WHERE measure = '%(slice)s'")
+        return self.getAll(
+            """SELECT * FROM %(track)s_Basic_Statistics
+            WHERE measure = '%(slice)s'""")
 
 
 class FastqcSummary(ReadqcTracker, SingleTableTrackerRows):
@@ -148,8 +155,10 @@ class ProcessingDetails(ReadqcTracker):
     pattern = "(.*)_processed$"
 
     def __call__(self, track):
-        return self.getAll( """SELECT pair,input,output,pair, 100.0 * output / input as percent 
-                              FROM %(track)s_processed""" )
+        return self.getAll(
+            """SELECT pair,input,output,pair,
+            100.0 * output / input as percent 
+            FROM %(track)s_processed""")
 
 
 class ProcessingSummary(ReadqcTracker, SingleTableTrackerRows):

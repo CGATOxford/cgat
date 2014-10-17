@@ -1,9 +1,11 @@
-==============
+=====================
 Bias analysis results
-==============
+=====================
 
 This page presents the results of analysis of potential biasing
 factors. 
+
+.. AH: Removed toframe transformations for CGATReport.
 
 
 Summary plots
@@ -11,7 +13,7 @@ Summary plots
 
 .. report:: ReadqcReport.CorrelationSummary
    :render: r-ggplot
-   :transform: melt,toframe
+   :transform: melt
    :statement: aes(y=as.numeric(Data),x=as.factor(Track),colour=as.factor(Slice),group=as.factor(Slice))+geom_line()+scale_colour_discrete(name = guide_legend(title = 'bias factor'))+xlab('')+ylab('Correlation')+theme(axis.text.x=element_text(size=15,angle=90),axis.text.y=element_text(size=15),title=element_text(size=15),legend.text=element_text(size=15))
 
 
@@ -20,7 +22,7 @@ Summary plots
     
 .. report:: ReadqcReport.GradientSummary
    :render: r-ggplot
-   :transform: melt,toframe
+   :transform: melt
    :statement: aes(y=as.numeric(Data),x=as.factor(Track),colour=as.factor(Slice),group=as.factor(Slice))+geom_line()+scale_colour_discrete(name = guide_legend(title = 'bias factor'))+xlab('')+ylab('Gradient')+theme(axis.text.x=element_text(size=15,angle=90),axis.text.y=element_text(size=15),title=element_text(size=15),legend.text=element_text(size=15))
 
 

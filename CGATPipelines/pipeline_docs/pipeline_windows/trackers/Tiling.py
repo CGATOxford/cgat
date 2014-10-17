@@ -1,4 +1,6 @@
-from MedipReport import *
+from MedipReport import ProjectTracker
+from CGATReport.Tracker import SingleTableTrackerRows
+from CGATReport.Tracker import SingleTableTrackerHistogram
 
 
 class TileSizeHistogram(SingleTableTrackerHistogram, ProjectTracker):

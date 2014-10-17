@@ -4,8 +4,8 @@ import glob
 import collections
 from collections import OrderedDict as odict
 
-from SphinxReport.Tracker import *
-from SphinxReport.Utils import PARAMS as P
+from CGATReport.Tracker import *
+from CGATReport.Utils import PARAMS as P
 
 ###################################################################
 ###################################################################
@@ -28,7 +28,7 @@ LogFileSummary = collections.namedtuple(
 
 
 def summarizeLogFile(filename):
-    '''summarize a SphinxReport logfile.'''
+    '''summarize a CGATReport logfile.'''
 
     info, debug, warning, error = 0, 0, 0, 0
     with open(filename) as f:
@@ -107,13 +107,13 @@ class ReportTable(TestingTracker):
 
         try:
             logfileresult = summarizeLogFile(
-                os.path.join(track + ".dir", "sphinxreport.log"))
+                os.path.join(track + ".dir", "cgatreport.log"))
         except IOError:
             return
 
         report_file = os.path.join(track + ".dir", "report.log")
         fn = os.path.abspath(
-            os.path.join(track + ".dir", "report", "html", "pipeline.html"))
+            os.path.join(track + ".dir", "report", "html", "contents.html"))
 
         r = odict()
         r["link"] = "`%(track)s <%(fn)s>`_" % locals()
@@ -131,13 +131,13 @@ class XReportTable(TestingTracker):
     def __call__(self, track):
 
         logfileresult = summarizeLogFile(
-            os.path.join(track + ".dir", "sphinxreport.log"))
+            os.path.join(track + ".dir", "cgatreport.log"))
         report_file = os.path.join(track + ".dir", "report.log")
 
         toc_text = []
         link_text = []
 
-        fn = os.path.join(track + ".dir", "report", "html", "pipeline.html")
+        fn = os.path.join(track + ".dir", "report", "html", "contents.html")
         toc_text.append("* %(track)s_" % locals())
         link_text.append(".. _%(track)s: %(fn)s" % locals())
 
@@ -152,3 +152,28 @@ class XReportTable(TestingTracker):
 
         return odict((("text", rst_text),))
 
+
+class FilesWithProblems(TestingTracker):
+
+    tracks = [x[:-4] for x in glob.glob("*.dir")]
+
+    slices = ("files_different_lines",
+              "files_different_md5",
+              "files_extra", "files_missing")
+
+    def __call__(self, track, slice):
+
+        statement = """SELECT %(slice)s FROM md5_compare
+        WHERE track = '%(track)s'""" % locals()
+
+        data = self.getValue(statement)
+        if data is None:
+            return
+
+        files = data.split(",")
+        # do not use :download: as
+        # that will include the file in the report.
+        # and thus wastes space.
+        return ['`%s <file://%s>`_' %
+                (f,
+                 os.path.abspath(f)) for f in files]

@@ -39,7 +39,6 @@ import os
 import re
 import shutil
 import inspect
-import glob
 
 from CGAT import Experiment as E
 

@@ -5,7 +5,7 @@ import types
 import itertools
 import glob
 
-from SphinxReport.Tracker import *
+from CGATReport.Tracker import *
 
 ###################################################################
 ###################################################################
@@ -13,7 +13,7 @@ from SphinxReport.Tracker import *
 ###################################################################
 # Run configuration script
 
-from SphinxReport.Utils import PARAMS as P
+from CGATReport.Utils import PARAMS as P
 
 EXPORTDIR = P['metamedip_exportdir']
 DATADIR = P['metamedip_datadir']

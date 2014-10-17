@@ -50,7 +50,7 @@ The pipeline implements different tiling strategies.
 variable width
    variable width tiles. Tiles are defined based on regions that contain
    short reads and are present in a minimum number of samples.
-   
+
 fixwidth_nooverlap
    tiles of size ``tiling_window_size`` with adjacent tiles not overlapping.
 
@@ -109,22 +109,22 @@ Requirements
 On top of the default CGAT setup, the pipeline requires the following
 software to be in the path:
 
-+--------------------+-------------------+------------------------------------------------+
-|*Program*           |*Version*          |*Purpose*                                       |
-+--------------------+-------------------+------------------------------------------------+
-|Stampy              |>=0.9.0            |read mapping                                    |
-+--------------------+-------------------+------------------------------------------------+
-|BWA                 |                   |read mapping                                    |
-+--------------------+-------------------+------------------------------------------------+
-|SAMtools            |                   |filtering, SNV / indel calling                  |
-+--------------------+-------------------+------------------------------------------------+
-|BEDTools            |                   |filtering, SNV / indel calling                  |
-+--------------------+-------------------+------------------------------------------------+
-|sra-tools           |                   |extracting reads from .sra files                |
-+--------------------+-------------------+------------------------------------------------+
-|picard              |>=1.38             |bam/sam files. The .jar files need to be in your|
-|                    |                   | CLASSPATH environment variable.                |
-+--------------------+-------------------+------------------------------------------------+
++----------------+---------------+--------------------------------------------+
+|*Program*       |*Version*      |*Purpose*                                   |
++----------------+---------------+--------------------------------------------+
+|Stampy          |>=0.9.0        |read mapping                                |
++----------------+---------------+--------------------------------------------+
+|BWA             |               |read mapping                                |
++----------------+---------------+--------------------------------------------+
+|SAMtools        |               |filtering, SNV / indel calling              |
++----------------+---------------+--------------------------------------------+
+|BEDTools        |               |filtering, SNV / indel calling              |
++----------------+---------------+--------------------------------------------+
+|sra-tools       |               |extracting reads from .sra files            |
++----------------+---------------+--------------------------------------------+
+|picard          |>=1.38         |bam/sam files. The .jar files need to be in |
+|                |               | your  CLASSPATH environment variable.      |
++----------------+---------------+--------------------------------------------+
 
 Pipeline output
 ===============
@@ -249,8 +249,8 @@ def preprocessBAM(infile, outfile):
                     ASSUME_SORTED=true
                     METRICS_FILE=%(outfile)s.duplicate_metrics
                     REMOVE_DUPLICATES=TRUE
-                                               VALIDATION_STRINGENCY=SILENT
-                                               2>> %%(outfile)s.log ''' % locals())
+                    VALIDATION_STRINGENCY=SILENT
+                    2>> %%(outfile)s.log ''' % locals())
         nfiles += 1
         current_file = next_file
 
@@ -336,7 +336,7 @@ def mergeBackgroundWindows(infiles, outfile):
     genomefile = os.path.join(
         PARAMS["annotations_dir"], PARAMS_ANNOTATIONS['interface_contigs'])
     statement = '''
-    zcat %(infiles)s 
+    zcat %(infiles)s
     | bedtools slop -i stdin
                 -b %(filtering_background_extension)i
                 -g %(genomefile)s
@@ -351,12 +351,14 @@ def mergeBackgroundWindows(infiles, outfile):
 #########################################################################
 #########################################################################
 
+int_genomic_contex_bed = PARAMS_ANNOTATIONS['interface_genomic_context_bed']
+
 
 @transform(os.path.join(PARAMS["annotations_dir"],
                         PARAMS_ANNOTATIONS["interface_cpg_bed"]),
            regex(".*/([^/]*).bed.gz"),
            add_inputs(os.path.join(PARAMS["annotations_dir"],
-                                   PARAMS_ANNOTATIONS["interface_genomic_context_bed"])),
+                                   int_genomic_contex_bed)),
            "cpg_context.tsv.gz")
 def buildCpGAnnotation(infiles, outfile):
     '''annotate the location of CpGs within the genome.'''
@@ -364,8 +366,9 @@ def buildCpGAnnotation(infiles, outfile):
     cpg_bed, context_bed = infiles
 
     statement = '''
-    python %(scriptsdir)s/bam_vs_bed.py --min-overlap=0.5 %(cpg_bed)s %(context_bed)s
-    | gzip 
+    python %(scriptsdir)s/bam_vs_bed.py
+           --min-overlap=0.5 %(cpg_bed)s %(context_bed)s
+    | gzip
     > %(outfile)s'''
 
     P.run()
@@ -496,7 +499,7 @@ def buildCpGCoverage(infiles, outfile):
     job_options = "-l mem_free=16G"
 
     statement = '''
-    zcat %(infile)s 
+    zcat %(infile)s
     | coverageBed -a stdin -b %(cpg_file)s -counts
     | cut -f 6
     | python %(scriptsdir)s/data2histogram.py
@@ -607,9 +610,9 @@ def buildWindowStats(infile, outfile):
 
     statement = '''
     zcat %(infile)s
-    | python %(scriptsdir)s/gff2histogram.py 
+    | python %(scriptsdir)s/gff2histogram.py
                    --force
-                   --format=bed 
+                   --format=bed
                    --data=size
                    --method=hist
                    --method=stats
@@ -677,10 +680,12 @@ def buildBigBed(infile, outfile):
 def countReadsWithinWindows(infiles, outfile):
     '''build read counds for windows.'''
     bedfile, windowfile = infiles
+    count_method = PARAMS['tiling_counting_method']
     PipelineWindows.countReadsWithinWindows(bedfile,
                                             windowfile,
                                             outfile,
-                                            counting_method=PARAMS['tiling_counting_method'])
+                                            counting_method=count_method,
+                                            jobOptions="-l mem_free=32G")
 
 #########################################################################
 #########################################################################
@@ -830,7 +835,6 @@ def buildWindowsFoldChangesPerInput(infile, outfile):
     for column in dataframe.columns:
         i = map_track2input[column]
         if i is not None:
-            # ratios[column] = float(sum(dataframe_input[i])) / sum( dataframe[column] )
             ratios[column] = dataframe_input[
                 i].median() / dataframe[column].median()
         else:
@@ -987,6 +991,114 @@ def loadTagCountSummary(infile, outfile):
            options="--first-column=track")
 
 #########################################################################
+#########################################################################
+#########################################################################
+
+
+@follows(buildWindows, countReadsWithinWindows)
+@transform(aggregateWindowsReadCounts,
+           suffix(".tsv.gz"),
+           ".norm.tsv.gz")
+def NormalizeBed(infile, outfile):
+    '''
+    Normalize counts in bed file by total library size.
+    Return as bedGraph format
+    '''
+
+    # normalize count column by total library size
+
+    tmpfile = P.getTempFilename(shared=True)
+
+    P.submit(module='CGATPipelines.PipelineWindows',
+             function='normalizeBed',
+             infiles=infile,
+             outfiles=tmpfile,
+             toCluster=True,
+             jobOptions="-l mem_free=20G")
+
+    statement = '''cat %(tmpfile)s |
+                   gzip > %(outfile)s; rm -f %(tmpfile)s'''
+
+    P.run()
+
+#########################################################################
+#########################################################################
+#########################################################################
+
+
+@follows(NormalizeBed)
+@transform("counts.dir/*.norm.bedGraph.gz",
+           regex("counts.dir/(.+)-(.+)-(.+)_Input.bwa.norm.bedGraph.gz"),
+           add_inputs(r"counts.dir/\1-\2-\3.bwa.norm.bedGraph.gz"),
+           r"counts.dir/\1-\2-\3.vsInput.bedGraph.gz")
+def enrichVsInput(infile, outfile):
+    '''
+    Calculate enrichment vs Input and output as bedGraph format
+    '''
+
+    tmpfile = P.getTempFilename(shared=True)
+    P.submit(module='CGATPipelines.PipelineWindows',
+             function='enrichmentVsInput',
+             infiles=infile,
+             outfiles=tmpfile,
+             toCluster=True)
+
+    statement = '''cat %(tmpfile)s |  gzip > %(outfile)s; rm -f %(tmpfile)s'''
+
+    P.run()
+#########################################################################
+#########################################################################
+#########################################################################
+
+
+@follows(mkdir("bigwig.dir"), NormalizeBed)
+@transform("counts.dir/*.bedGraph.gz",
+           regex("counts.dir/(.+).bedGraph.gz"),
+           r"bigwig.dir/\1.bw")
+def convertBed2BigWig(infile, outfile):
+    '''
+    Use UCSC tools to convert bedGraph -> bigwig
+    '''
+
+    tmpfile = P.getTempFilename()
+
+    contig_file = PARAMS['annotations_dir'] + "/contigs.tsv"
+
+    statement = '''zcat %(infile)s | sort -k 1,1 -k 2,2n > %(tmpfile)s;
+                   bedGraphToBigWig %(tmpfile)s %(contig_file)s %(outfile)s;
+                   checkpoint ;
+                   rm -f %(tmpfile)s'''
+
+    P.run()
+#########################################################################
+#########################################################################
+#########################################################################
+
+
+@follows(mkdir("images.dir"), convertBed2BigWig)
+@transform(convertBed2BigWig,
+           regex("bigwig.dir/(.+)-(.+)-(.+).bw"),
+           r"images.dir/\1-\2-\3.hilbert.sentinel")
+def plotHilbertCurves(infile, outfile):
+    '''
+    Use the BioC package `HilbertVis` to generate hilbert curves of bigwig
+    files.  Generates one image file for each contig in the bigwig file.
+    '''
+
+    to_cluster = True
+
+    statement = '''python %(scriptsdir)s/bigwig2hilbert.py -v 0
+                          --log=%(infile)s.log
+                          --images-dir=images.dir
+                          %(infile)s'''
+
+    P.run()
+
+    P.touch(outfile)
+
+#########################################################################
+#########################################################################
+#########################################################################
 
 
 def loadMethylationData(infile, design_file):
@@ -994,28 +1106,27 @@ def loadMethylationData(infile, design_file):
 
     This method creates various R objects:
 
-    countsTable : data frame with counts. 
+    countsTable : data frame with counts.
     groups : vector with groups
 
     '''
 
     E.info("reading data")
-    R( '''counts_table = read.delim( '%(infile)s', header = TRUE, 
-                                                   row.names = 1, 
-                                                   stringsAsFactors = TRUE )''' % locals() )
+    R('''counts_table=read.delim('%(infile)s', header=TRUE,'''
+      '''row.names=1, stringsAsFactors=TRUE )''' % locals())
 
     E.info("read data: %i observations for %i samples" %
            tuple(R('''dim(counts_table)''')))
 
     # Load comparisons from file
-    R('''pheno = read.delim( '%(design_file)s', header = TRUE, stringsAsFactors = TRUE )''' %
-      locals())
+    R('''pheno = read.delim('%(design_file)s', '''
+      '''header = TRUE, stringsAsFactors = TRUE )''' % locals())
 
     # Make sample names R-like - substitute - for . and add the .prep suffix
     R('''pheno[,1] = gsub('-', '.', pheno[,1]) ''')
 
     # Ensure pheno rows match count columns
-    R('''pheno2 = pheno[match(colnames(counts_table),pheno[,1]),,drop=FALSE]''' )
+    R('''pheno2 = pheno[match(colnames(counts_table),pheno[,1]),drop=FALSE]''')
 
     # Subset data & set conditions
     R('''includedSamples <- pheno2$include == '1' ''')
@@ -1032,7 +1143,7 @@ def loadMethylationData(infile, design_file):
     pairs = R('''levels(pairs)''')
 
     E.info("filtered data: %i observations for %i samples" %
-           tuple( R('''dim(countsTable)''') ) )
+           tuple(R('''dim(countsTable)''')))
 
     return groups, pairs
 
@@ -1110,12 +1221,12 @@ def buildSpikeIns(infiles, outfile):
     statement = '''
     zcat %(counts_file)s
     | python %(scriptsdir)s/runExpression.py
-            --log=%(outfile)s.log          
+            --log=%(outfile)s.log
             --filename-design=%(design_file)s
             --filename-tags=-
             --method=spike
             --output-filename-pattern=%(outfile)s_
-    | gzip 
+    | gzip
     > %(outfile)s
     '''
     P.run()
@@ -1300,7 +1411,8 @@ def outputSpikeCounts(outfile, infile_name, max_expression, max_fold):
     fold_change_bins = numpy.arange(-max_fold, max_fold, 0.5)
 
     d2hist_counts, xedges, yedges = numpy.histogram2d(l10average, l2fold,
-                                                      bins=(expression_bins, fold_change_bins))
+                                                      bins=(expression_bins,
+                                                            fold_change_bins))
 
     dd = pandas.DataFrame(d2hist_counts)
     dd.index = list(xedges[:-1])
@@ -1528,9 +1640,9 @@ def buildDMRWindowStats(infile, outfile):
     statement = '''
     zcat %(infile)s
     | grep -v 'contig'
-    | python %(scriptsdir)s/gff2histogram.py 
+    | python %(scriptsdir)s/gff2histogram.py
                    --force
-                   --format=bed 
+                   --format=bed
                    --data=size
                    --method=hist
                    --method=stats
@@ -1671,13 +1783,14 @@ def dmr():
 ############################################################
 # Genomic Context analysis
 ############################################################
+inter_genomic_context_bed = PARAMS_ANNOTATIONS['interface_genomic_context_bed']
 
 
 @follows(mkdir('contextstats.dir'))
 @transform('*.bam',
            regex("(.*).bam"),
            add_inputs(os.path.join(PARAMS["annotations_dir"],
-                                   PARAMS_ANNOTATIONS["interface_genomic_context_bed"])),
+                                   inter_genomic_context_bed)),
            r"contextstats.dir/\1.contextstats.tsv.gz")
 def buildContextStats(infiles, outfile):
     '''build mapping context stats.

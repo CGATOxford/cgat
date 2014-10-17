@@ -47,7 +47,6 @@ class MappingStatus(Status):
         PASS : >=80% pairs mapped
         WARN : >=40% pairs mapped
         FAIL : < 40% pairs mapped
-
         '''
 
         value = self.getValue("""SELECT

@@ -1,6 +1,6 @@
 
 
-from SphinxReport.Tracker import *
+from CGATReport.Tracker import *
 import sqlite3
 
 

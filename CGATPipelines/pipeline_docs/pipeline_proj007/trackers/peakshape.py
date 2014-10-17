@@ -7,7 +7,7 @@ import math
 import numpy
 import IOTools
 
-from SphinxReport.Tracker import *
+from CGATReport.Tracker import *
 from cpgReport import *
 
 ##########################################################################

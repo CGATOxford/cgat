@@ -1,5 +1,5 @@
 from PeakcallingReport import *
-from SphinxReport.Tracker import *
+from CGATReport.Tracker import *
 
 
 class BamSummary(CallingTracker, SingleTableTrackerRows):
