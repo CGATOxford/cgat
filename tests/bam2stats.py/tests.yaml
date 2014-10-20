@@ -16,3 +16,9 @@ fastq:
         outputs: [stdout, details]
         references: [fastq.tsv, details]
         options: --output-details --filename-fastq=<DIR>/paired.fastq.1.gz --force
+
+rna:
+        stdin: paired.bam
+        outputs: [stdout]
+        references: [rna.tsv, rna.mapq, rna.nm]
+        options: --filename-fastq=<DIR>/paired.fastq.1.gz --force --filename-rna=<DIR>/hg19_rna.gff.gz --remove-rna --output-filename-pattern=rna.%s

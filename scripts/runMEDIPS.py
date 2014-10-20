@@ -20,8 +20,9 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##########################################################################
-'''WrapperMEDIPS.py - wrap MEDIPS methylation analysis
-===================================================
+'''
+runMEDIPS.py - wrap MEDIPS analysis
+===================================
 
 :Author: Andreas Heger
 :Release: $Id$
@@ -31,15 +32,7 @@
 Purpose
 -------
 
-perform Medip-Seq data analysis using the MEDIPS R package.
-
-Note that the appropriate UCSC genome file has to have been downloaded
-previously in Bioconductor::
-
-   source("http://bioconductor.org/biocLite.R")
-   biocLite("BSgenome.Hsapiens.UCSC.hg19")
-   biocLite("BSgenome.Rnorvegicus.UCSC.rn5")
-   ...
+Runs MEDIPS from the commandline.
 
 Usage
 -----
@@ -47,21 +40,20 @@ Usage
 Documentation
 -------------
 
-Code
-----
+Command line options
+--------------------
 
 '''
 
 import os
 import sys
 import tempfile
-import shutil
 
-from CGAT import Experiment as E
-from CGAT import IOTools as IOTools
-from CGAT import IndexedFasta as IndexedFasta
-
+# for zinba
 from rpy2.robjects import r as R
+
+import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
 
 
 def compress(infile):
