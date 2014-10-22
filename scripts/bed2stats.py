@@ -122,6 +122,8 @@ def main(argv=None):
         raise NotImplementedError("--add-percent option requires --per-contig")
 
     counts = collections.defaultdict(Counter)
+    total = Counter()
+    output_totals = True
 
     if options.per_track:
         keyf = lambda x: x.track
@@ -131,9 +133,11 @@ def main(argv=None):
         keyf = lambda x: x.contig
     else:
         keyf = lambda x: "all"
+        output_totals = False
 
     for bed in Bed.iterator(options.stdin):
         counts[keyf(bed)].add(bed)
+        total.add(bed)
 
     outf = options.stdout
 
@@ -151,6 +155,10 @@ def main(argv=None):
 
         outf.write("%s\t%s\n" % (key, str(count)))
 
+    if output_totals:
+        if options.add_percent:
+            count.setSize(total_bases)
+        outf.write("%s\t%s\n" % ("total", str(total)))
     E.Stop()
 
 if __name__ == '__main__':
