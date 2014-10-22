@@ -305,6 +305,8 @@ class Entry:
                  abs(self.start - other.start < max_slippage)))
 
 
+
+
 def Overlap(entry1, entry2, min_overlap=0):
     """returns true, if entry1 and entry2 overlap.
     """

@@ -19,6 +19,7 @@ The documentation for the pipeline is below:
    pipeline/Processing.rst
    pipeline/Profiles.rst
    pipeline/DifferentialMethylation.rst
+   pipeline/Medips.rst
    pipeline/Config.rst
 
 .. warninglist::

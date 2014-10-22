@@ -150,6 +150,7 @@ import csv
 import numpy
 import sqlite3
 import pandas
+import math
 
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
@@ -213,52 +214,6 @@ def connect():
 
     return dbh
 
-#########################################################################
-#########################################################################
-
-
-def preprocessBAM(infile, outfile):
-    '''returns a command line statement for pre-processing a BAM
-    file for further processing.
-    '''
-    tmpdir = P.getTempFilename()
-
-    nfiles = 0
-
-    if "filtering_quality" in PARAMS and PARAMS["filtering_quality"] > 0:
-        next_file = "%(tmpdir)s/bam_%(nfiles)i.bam" % locals()
-        statement.append('''samtools view -q %%(filtering_quality)i -b
-                            %(current_file)s
-                            2>> %%(outfile)s.log
-                            > %(next_file)s ''' % locals())
-        nfiles += 1
-        current_file = next_file
-
-    if "filtering_dedup" in PARAMS and PARAMS["filtering_dedup"]:
-        # Picard's MarkDuplicates requries an explicit bam file.
-        next_file = "%(tmpdir)s/bam_%(nfiles)i.bam" % locals()
-
-        dedup_method = PARAMS["filtering_dedup_method"]
-
-        if dedup_method == 'samtools':
-            statement.append('''samtools rmdup - - ''')
-
-        elif dedup_method == 'picard':
-            statement.append('''MarkDuplicates INPUT=%(current_file)s
-                    OUTPUT=%(next_file)s
-                    ASSUME_SORTED=true
-                    METRICS_FILE=%(outfile)s.duplicate_metrics
-                    REMOVE_DUPLICATES=TRUE
-                    VALIDATION_STRINGENCY=SILENT
-                    2>> %%(outfile)s.log ''' % locals())
-        nfiles += 1
-        current_file = next_file
-
-    return statement, current_file, tmpdir
-
-#########################################################################
-#########################################################################
-
 
 @follows(mkdir("tags.dir"))
 @transform('*.bam',
@@ -274,9 +229,18 @@ def prepareTags(infile, outfile):
         filtering_dedup='filtering_dedup' in PARAMS,
         filtering_dedup_method=PARAMS['filtering_dedup_method'])
 
-#########################################################################
-#########################################################################
-#########################################################################
+
+@transform(prepareTags, suffix(".bed.gz"), ".tsv")
+def countTags(infile, outfile):
+    '''count the tags in each sample.'''
+    PipelineWindows.countTags(infile, outfile)
+
+
+@merge(countTags, "tag_counts.load")
+def loadTagCounts(infiles, outfile):
+    '''load tag counts into database.'''
+    P.mergeAndLoad(infiles, outfile, columns=(0, 2),
+                   suffix=".tsv")
 
 
 @merge(prepareTags, "picard_duplicates.load")
@@ -285,10 +249,6 @@ def loadPicardDuplicateStats(infiles, outfile):
     '''
     PipelineMappingQC.loadPicardDuplicateStats(
         infiles, outfile, pipeline_suffix=".bed.gz")
-
-#########################################################################
-#########################################################################
-#########################################################################
 
 
 @follows(mkdir("background.dir"))
@@ -340,25 +300,21 @@ def mergeBackgroundWindows(infiles, outfile):
     | bedtools slop -i stdin
                 -b %(filtering_background_extension)i
                 -g %(genomefile)s
-    | mergeBed
+    | sort -k 1,1 -k2,2n
+    | bedtools merge -i -
     | bgzip
     > %(outfile)s
     '''
 
     P.run()
 
-#########################################################################
-#########################################################################
-#########################################################################
-
-int_genomic_contex_bed = PARAMS_ANNOTATIONS['interface_genomic_context_bed']
-
 
 @transform(os.path.join(PARAMS["annotations_dir"],
                         PARAMS_ANNOTATIONS["interface_cpg_bed"]),
            regex(".*/([^/]*).bed.gz"),
-           add_inputs(os.path.join(PARAMS["annotations_dir"],
-                                   int_genomic_contex_bed)),
+           add_inputs(os.path.join(
+               PARAMS["annotations_dir"],
+               PARAMS_ANNOTATIONS['interface_genomic_context_bed'])),
            "cpg_context.tsv.gz")
 def buildCpGAnnotation(infiles, outfile):
     '''annotate the location of CpGs within the genome.'''
@@ -373,26 +329,18 @@ def buildCpGAnnotation(infiles, outfile):
 
     P.run()
 
-#########################################################################
-#########################################################################
-#########################################################################
-
 
 @transform(buildCpGAnnotation, suffix(".tsv.gz"), ".load")
 def loadCpGAnnotation(infile, outfile):
     '''load CpG annotations.'''
     P.load(infile, outfile)
 
-#########################################################################
-#########################################################################
-#########################################################################
-
 
 @transform(prepareTags, suffix(".bed.gz"), ".covered.bed.gz")
 def buildCoverageBed(infile, outfile):
     '''build bed file with regions covered by reads.
 
-    Intervals containing only few reads (tiling_min_reads) are removed.
+    Intervals containing only few tags (tiling_min_reads) are removed.
     '''
 
     statement = '''
@@ -408,14 +356,10 @@ def buildCoverageBed(infile, outfile):
     '''
     P.run()
 
-#########################################################################
-#########################################################################
-#########################################################################
-
 
 @transform(buildCoverageBed, suffix(".bed.gz"), ".tsv.gz")
 def buildCpGComposition(infile, outfile):
-    '''compute CpG density across regions covered by reads.
+    '''compute CpG density across regions covered by tags.
     '''
 
     statement = '''
@@ -466,16 +410,35 @@ def buildReferenceCpGComposition(infiles, outfile):
     # | awk '$1 == "contig" || $17 < 0.5'
 
 
+@transform((buildCpGComposition,
+            buildReferenceCpGComposition),
+           suffix(".tsv.gz"), ".cpghist.tsv.gz")
+def histogramCpGComposition(infile, outfile):
+    '''build histogram of CpG density in all regions covered by reads.'''
+    statement = '''
+    zcat %(infile)s
+    | python %(scriptsdir)s/csv_cut.py pCpG
+    | python %(scriptsdir)s/data2histogram.py --bin-size=0.01
+    | gzip
+    > %(outfile)s
+    '''
+    P.run()
+
+
+@merge(histogramCpGComposition, "pcpg_in_coveredregions.load")
+def loadCpgCompositionHistogram(infiles, outfile):
+    '''load histograms of CpG Density in regions covered by reads.'''
+    P.mergeAndLoad(infiles, outfile,
+                   regex="/(.*).cpghist.tsv.gz",
+                   row_wise=False)
+
+
 @transform((buildCpGComposition, buildReferenceCpGComposition),
            suffix(".tsv.gz"),
            ".composition.load")
 def loadCpGComposition(infile, outfile):
     '''load CpG Composition data.'''
     P.load(infile, outfile)
-
-#########################################################################
-#########################################################################
-#########################################################################
 
 
 @transform(prepareTags,
@@ -508,21 +471,18 @@ def buildCpGCoverage(infiles, outfile):
      '''
     P.run()
 
-#########################################################################
-#########################################################################
-#########################################################################
 
-
-@merge(buildCpGCoverage, "cpg_coverage.load")
+@merge(buildCpGCoverage, "cpg_coverage_by_reads.load")
 def loadCpGCoverage(infiles, outfile):
-    '''load cpg coverag data.'''
+    '''load cpg coverage data - number of reads covering a CpG.'''
     P.mergeAndLoad(infiles, outfile,
                    regex="/(.*).cpg_coverage.gz",
                    row_wise=False)
 
-#########################################################################
-#########################################################################
-#########################################################################
+
+@follows(loadCpGCoverage, loadCpGComposition, loadCpGAnnotation)
+def gc():
+    pass
 
 
 @merge((buildCoverageBed, mergeBackgroundWindows), "windows.bed.gz")
@@ -666,11 +626,6 @@ def buildBigBed(infile, outfile):
     except OSError:
         pass
 
-#########################################################################
-#########################################################################
-#########################################################################
-#########################################################################
-
 
 @follows(mkdir("counts.dir"))
 @transform(prepareTags,
@@ -684,12 +639,7 @@ def countReadsWithinWindows(infiles, outfile):
     PipelineWindows.countReadsWithinWindows(bedfile,
                                             windowfile,
                                             outfile,
-                                            counting_method=count_method,
-                                            jobOptions="-l mem_free=32G")
-
-#########################################################################
-#########################################################################
-#########################################################################
+                                            counting_method=count_method)
 
 
 @merge(countReadsWithinWindows,
@@ -700,10 +650,6 @@ def aggregateWindowsReadCounts(infiles, outfile):
     PipelineWindows.aggregateWindowsReadCounts(infiles,
                                                outfile,
                                                regex="(.*).counts.bed.gz")
-
-#########################################################################
-#########################################################################
-#########################################################################
 
 
 @transform(aggregateWindowsReadCounts, suffix(".tsv.gz"), ".load")
@@ -853,10 +799,6 @@ def buildWindowsFoldChangesPerInput(infile, outfile):
 
     dataframe.to_csv(outfile, sep="\t", index=False)
 
-#########################################################################
-#########################################################################
-#########################################################################
-
 
 @transform(loadWindowsReadCounts, suffix(".load"), "_l2foldchange_median.tsv")
 def buildWindowsFoldChangesPerMedian(infile, outfile):
@@ -893,20 +835,12 @@ def buildWindowsFoldChangesPerMedian(infile, outfile):
 
     dataframe.to_csv(outfile, sep="\t", index=False)
 
-#########################################################################
-#########################################################################
-#########################################################################
-
 
 @transform((buildWindowsFoldChangesPerMedian, buildWindowsFoldChangesPerInput),
            suffix(".tsv"), ".load")
 def loadWindowsFoldChanges(infile, outfile):
     '''load fold change stats'''
     P.load(infile, outfile)
-
-#########################################################################
-#########################################################################
-#########################################################################
 
 
 @transform(aggregateWindowsReadCounts,
@@ -924,10 +858,6 @@ def summarizeAllWindowsReadCounts(infile, outfile):
               --log=%(outfile)s.log
               > %(outfile)s'''
     P.run()
-
-#########################################################################
-#########################################################################
-#########################################################################
 
 
 @transform("design*.tsv",
@@ -999,7 +929,7 @@ def loadTagCountSummary(infile, outfile):
 @transform(aggregateWindowsReadCounts,
            suffix(".tsv.gz"),
            ".norm.tsv.gz")
-def NormalizeBed(infile, outfile):
+def normalizeBed(infile, outfile):
     '''
     Normalize counts in bed file by total library size.
     Return as bedGraph format
@@ -1026,7 +956,7 @@ def NormalizeBed(infile, outfile):
 #########################################################################
 
 
-@follows(NormalizeBed)
+@follows(normalizeBed)
 @transform("counts.dir/*.norm.bedGraph.gz",
            regex("counts.dir/(.+)-(.+)-(.+)_Input.bwa.norm.bedGraph.gz"),
            add_inputs(r"counts.dir/\1-\2-\3.bwa.norm.bedGraph.gz"),
@@ -1046,12 +976,9 @@ def enrichVsInput(infile, outfile):
     statement = '''cat %(tmpfile)s |  gzip > %(outfile)s; rm -f %(tmpfile)s'''
 
     P.run()
-#########################################################################
-#########################################################################
-#########################################################################
 
 
-@follows(mkdir("bigwig.dir"), NormalizeBed)
+@follows(mkdir("bigwig.dir"), normalizeBed)
 @transform("counts.dir/*.bedGraph.gz",
            regex("counts.dir/(.+).bedGraph.gz"),
            r"bigwig.dir/\1.bw")
@@ -1070,9 +997,6 @@ def convertBed2BigWig(infile, outfile):
                    rm -f %(tmpfile)s'''
 
     P.run()
-#########################################################################
-#########################################################################
-#########################################################################
 
 
 @follows(mkdir("images.dir"), convertBed2BigWig)
@@ -1084,9 +1008,6 @@ def plotHilbertCurves(infile, outfile):
     Use the BioC package `HilbertVis` to generate hilbert curves of bigwig
     files.  Generates one image file for each contig in the bigwig file.
     '''
-
-    to_cluster = True
-
     statement = '''python %(scriptsdir)s/bigwig2hilbert.py -v 0
                           --log=%(infile)s.log
                           --images-dir=images.dir
@@ -1095,10 +1016,6 @@ def plotHilbertCurves(infile, outfile):
     P.run()
 
     P.touch(outfile)
-
-#########################################################################
-#########################################################################
-#########################################################################
 
 
 def loadMethylationData(infile, design_file):
@@ -1203,9 +1120,6 @@ def loadDESeq(infile, outfile):
     P.touch(outfile)
 
 
-#########################################################################
-#########################################################################
-#########################################################################
 @follows(mkdir("spike.dir"))
 @transform("design*.tsv",
            regex("(.*).tsv"),
@@ -1230,10 +1144,6 @@ def buildSpikeIns(infiles, outfile):
     > %(outfile)s
     '''
     P.run()
-
-#########################################################################
-#########################################################################
-#########################################################################
 
 
 @follows(mkdir("edger.dir"))
@@ -1263,10 +1173,6 @@ def runEdgeR(infiles, outfile):
                           "edger.dir",
                           method="edger")
 
-#########################################################################
-#########################################################################
-#########################################################################
-
 
 @transform(runEdgeR, suffix(".tsv.gz"), ".load")
 def loadEdgeR(infile, outfile):
@@ -1285,9 +1191,6 @@ def loadEdgeR(infile, outfile):
     P.touch(outfile)
 
 
-#########################################################################
-#########################################################################
-#########################################################################
 @follows(mkdir("roi.dir"))
 @transform("design*.tsv",
            regex("(.*).tsv"),
@@ -1317,8 +1220,6 @@ for x in METHODS:
 def diff_windows():
     pass
 
-#########################################################################
-
 
 @transform(DIFFTARGETS, suffix(".gz"), ".cpg.tsv.gz")
 def computeWindowComposition(infile, outfile):
@@ -1342,19 +1243,11 @@ def computeWindowComposition(infile, outfile):
 
     P.run()
 
-#########################################################################
-#########################################################################
-#########################################################################
-
 
 @transform(computeWindowComposition, suffix(".tsv.gz"), ".load")
 def loadWindowComposition(infile, outfile):
     '''load a sample of window composition data for QC purposes.'''
     P.load(infile, outfile, limit=10000)
-
-#########################################################################
-#########################################################################
-#########################################################################
 
 
 @transform(DIFFTARGETS, suffix(".gz"), ".merged.gz")
@@ -1364,9 +1257,6 @@ def mergeDMRWindows(infile, outfile):
     Sample/control labels are by default inverted to reflect
     that unmethylated windows are of principal interest.
     '''
-
-    to_cluster = True
-
     statement = '''
     zcat %(infile)s
     | grep -v "^spike"
@@ -1380,13 +1270,13 @@ def mergeDMRWindows(infile, outfile):
 
     P.run()
 
-#########################################################################
-#########################################################################
-#########################################################################
 
-
-def outputSpikeCounts(outfile, infile_name, max_expression, max_fold):
-
+def outputSpikeCounts(outfile, infile_name,
+                      expression_nbins=None,
+                      fold_nbins=None,
+                      expression_bins=None,
+                      fold_bins=None):
+    
     df = pandas.read_csv(infile_name,
                          sep="\t",
                          index_col=0)
@@ -1406,13 +1296,23 @@ def outputSpikeCounts(outfile, infile_name, max_expression, max_fold):
         l10average = numpy.log((treatment_mean + control_mean) / 2)
         l2fold = numpy.log2(treatment_mean / control_mean)
 
-    # compute expression bins
-    expression_bins = numpy.arange(0, max_expression, 0.5)
-    fold_change_bins = numpy.arange(-max_fold, max_fold, 0.5)
+    if expression_nbins is not None:
+        mm = math.ceil(max(l10average))
+        expression_bins = numpy.arange(0, mm, mm / expression_nbins)
 
-    d2hist_counts, xedges, yedges = numpy.histogram2d(l10average, l2fold,
-                                                      bins=(expression_bins,
-                                                            fold_change_bins))
+    if fold_nbins is not None:
+        mm = math.ceil(max(abs(min(l2fold)), abs(max(l2fold))))
+        # ensure that range is centered on exact 0
+        n = math.ceil(fold_nbins / 2.0)
+        fold_bins = numpy.concatenate(
+            (-numpy.arange(0, mm, mm / n)[:0:-1],
+             numpy.arange(0, mm, mm / n)))
+
+    # compute expression bins
+    d2hist_counts, xedges, yedges = numpy.histogram2d(
+        l10average, l2fold,
+        bins=(expression_bins,
+              fold_bins))
 
     dd = pandas.DataFrame(d2hist_counts)
     dd.index = list(xedges[:-1])
@@ -1427,14 +1327,30 @@ def outputSpikeCounts(outfile, infile_name, max_expression, max_fold):
 def buildSpikeResults(infile, outfile):
     '''build matrices with results from spike-in and upload
     into database.
+
+    The method will output several files:
+
+    .spiked.gz: Number of intervals that have been spiked-in 
+               for each bin of expression and fold-change
+
+    .power.gz: Global power analysis - aggregates over all
+        ranges of fold-change and expression and outputs the
+        power, the proportion of intervals overall that 
+        could be detected as differentially methylated.
+
+        This is a table with the following columns:
+
+        fdr - fdr threshold
+        power - power level, number of intervals detectable
+        intervals - number of intervals in observed data at given
+                    level of fdr and power.
+        intervals_percent - percentage of intervals in observed data 
+              at given level of fdr and power
+
     '''
 
-    max_expression = 5.0
-    max_fold = 4.0
-
-    ########################################
-    # output and load spiked results
-    tmpfile_name = P.getTempFilename(".")
+    expression_bins = 10
+    fold_bins = 10
 
     spikefile = P.snip(infile, '.tsv.gz') + '.spike.gz'
 
@@ -1443,40 +1359,51 @@ def buildSpikeResults(infile, outfile):
         P.touch(outfile)
         return
 
+    ########################################
+    # output and load spiked results
+    tmpfile_name = P.getTempFilename(shared=True)
+
     statement = '''zcat %(spikefile)s
     | grep -e "^spike" -e "^test_id"
     > %(tmpfile_name)s
     '''
     P.run()
 
+    E.debug("outputting spiked counts")
     (spiked, spiked_d2hist_counts, xedges, yedges,
      spiked_l10average, spiked_l2fold) = \
         outputSpikeCounts(P.snip(outfile, ".power.gz") + ".spiked.gz",
                           tmpfile_name,
-                          max_expression,
-                          max_fold)
+                          expression_bins,
+                          fold_bins)
 
     ########################################
     # output and load unspiked results
-    tmpfile_name = P.getTempFilename(".")
-
     statement = '''zcat %(infile)s
     | grep -v -e "^spike"
     > %(tmpfile_name)s
     '''
     P.run()
+    E.debug("outputting unspiked counts")
 
     (unspiked, unspiked_d2hist_counts, unspiked_xedges,
      unspiked_yedges, unspiked_l10average, unspiked_l2fold) = \
         outputSpikeCounts(P.snip(outfile, ".power.gz") + ".unspiked.gz",
                           tmpfile_name,
-                          max_expression,
-                          max_fold)
+                          expression_bins=xedges,
+                          fold_bins=yedges)
+
+    E.debug("computing power")
 
     assert xedges.all() == unspiked_xedges.all()
 
     tmpfile = IOTools.openFile(tmpfile_name, "w")
-    tmpfile.write("expression\tfold\tfdr\tcounts\tpercent\n")
+    tmpfile.write("\t".join(
+        ("expression",
+         "fold",
+         "fdr",
+         "counts",
+         "percent")) + "\n")
 
     fdr_thresholds = [0.01, 0.05] + list(numpy.arange(0.1, 1.0, 0.1))
     power_thresholds = numpy.arange(0.1, 1.1, 0.1)
@@ -1491,18 +1418,20 @@ def buildSpikeResults(infile, outfile):
     for fdr in fdr_thresholds:
         take = spiked['qvalue'] < fdr
 
+        # compute 2D histogram in spiked data below fdr threshold
         spiked_d2hist_fdr, xedges, yedges = \
             numpy.histogram2d(spiked_l10average[take],
-                              spiked_l2fold[
-                                  take],
+                              spiked_l2fold[take],
                               bins=(xedges, yedges))
 
+        # convert to percentage of spike-ins per bin
         spiked_d2hist_fdr_normed = spiked_d2hist_fdr / spiked_d2hist_counts
         spiked_d2hist_fdr_normed = numpy.nan_to_num(spiked_d2hist_fdr_normed)
 
-        # set values without data to 0
+        # set values without data to -1
         spiked_d2hist_fdr_normed[spiked_d2hist_counts == 0] = -1.0
 
+        # output to table for database upload
         for x, y in itertools.product(range(len(xedges) - 1),
                                       range(len(yedges) - 1)):
             tmpfile.write("\t".join(map(
@@ -1513,7 +1442,11 @@ def buildSpikeResults(infile, outfile):
 
         # take elements in spiked_hist_fdr above a certain threshold
         for power in power_thresholds:
+            # select 2D bins at a given power level
             power_take = spiked_d2hist_fdr_normed >= power
+
+            # select the counts in the unspiked data according
+            # to this level
             power_counts = unspiked_d2hist_counts[power_take]
 
             outf.write("\t".join(map(
@@ -1550,8 +1483,6 @@ def loadSpikeResults(infile, outfile):
     P.load(infile, outfile, options='--index=fdr,power --allow-empty',
            tablename=tablename)
 
-#########################################################################
-
 
 @transform(mergeDMRWindows, suffix(".merged.gz"), ".stats")
 def buildDMRStats(infile, outfile):
@@ -1559,8 +1490,6 @@ def buildDMRStats(infile, outfile):
     method = os.path.dirname(infile)
     method = P.snip(method, ".dir")
     PipelineWindows.buildDMRStats(infile, outfile, method=method)
-
-#########################################################################
 
 
 @transform(mergeDMRWindows, suffix(".merged.gz"), ".fdr")
@@ -1570,15 +1499,11 @@ def buildFDRStats(infile, outfile):
     method = P.snip(method, ".dir")
     PipelineWindows.buildFDRStats(infile, outfile, method=method)
 
-#########################################################################
-
 
 @transform(mergeDMRWindows, suffix(".merged.gz"), ".merged.gz.all.bed.gz")
 def outputAllWindows(infile, outfile):
     '''output all bed windows.'''
     PipelineWindows.outputAllWindows(infile, outfile)
-
-#########################################################################
 
 
 @transform(outputAllWindows, suffix(".all.bed.gz"),
@@ -1614,8 +1539,6 @@ def outputTopWindows(infile, outfiles):
     '''
     P.run()
 
-#########################################################################
-
 
 @merge(buildDMRStats, "dmr_stats.load")
 def loadDMRStats(infiles, outfile):
@@ -1623,10 +1546,6 @@ def loadDMRStats(infiles, outfile):
     P.concatenateAndLoad(infiles, outfile,
                          missing_value=0,
                          regex_filename=".*\/(.*).tsv.stats")
-
-#########################################################################
-#########################################################################
-#########################################################################
 
 
 @transform(mergeDMRWindows,
@@ -1742,10 +1661,6 @@ def buildIntervalProfileOfTranscripts(infiles, outfile):
 
 #     P.run()
 
-#########################################################################
-#########################################################################
-#########################################################################
-
 
 @transform(mergeDMRWindows, regex("(.*)\.(.*).merged.gz"), r"\1_\2.bed.gz")
 def buildMRBed(infile, outfile):
@@ -1778,19 +1693,13 @@ def buildMRBed(infile, outfile):
 def dmr():
     pass
 
-############################################################
-############################################################
-############################################################
-# Genomic Context analysis
-############################################################
-inter_genomic_context_bed = PARAMS_ANNOTATIONS['interface_genomic_context_bed']
-
 
 @follows(mkdir('contextstats.dir'))
 @transform('*.bam',
            regex("(.*).bam"),
-           add_inputs(os.path.join(PARAMS["annotations_dir"],
-                                   inter_genomic_context_bed)),
+           add_inputs(os.path.join(
+               PARAMS["annotations_dir"],
+               PARAMS_ANNOTATIONS['interface_genomic_context_bed'])),
            r"contextstats.dir/\1.contextstats.tsv.gz")
 def buildContextStats(infiles, outfile):
     '''build mapping context stats.
@@ -1819,13 +1728,31 @@ def buildContextStats(infiles, outfile):
     P.run()
 
 
-@follows(diff_windows, dmr)
+@follows(mkdir("medips.dir"))
+@transform("*.bam",
+           regex("(.*).bam"),
+           r"medips.dir/\1.tsv.gz")
+def runMEDIPSQC(infile, outfile):
+    '''run MEDIPS single file analysis
+    '''
+
+    PipelineWindows.runMEDIPSQC(infile, outfile)
+
+
+@follows(mkdir("medips.dir"))
+@transform("design*.tsv",
+           regex("(.*).tsv"),
+           r"medips.dir/\1.tsv.gz")
+def runMEDIPSDMR(infile, outfile):
+    '''run MEDIPS single file analysis
+    '''
+
+    PipelineWindows.runMEDIPSDMR(infile, outfile)
+
+
+@follows(gc, loadPicardDuplicateStats, diff_windows, dmr)
 def full():
     pass
-
-###################################################################
-###################################################################
-###################################################################
 
 
 @follows(mkdir("report"))
