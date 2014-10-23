@@ -59,3 +59,8 @@ outputallprofiles:
     outputs: [geneprofile.lengths.tsv.gz, geneprofile.matrix.tsv.gz, geneprofile.profiles.tsv.gz]
     references: [test9.geneprofile.lengths.tsv.gz, test9.geneprofile.matrix.tsv.gz, test9.geneprofile.profiles.tsv.gz]
 
+separateexons:
+    stdin: null
+    options: --force --bamfile <DIR>/multipleReadsSplicedOutAllIntronsAndSecondExon.bam --gtffile <DIR>/onegene.gtf.gz --reporter=gene --method=separateexonprofilewithintrons --output-filename-pattern="test10.%s"
+    outputs: [test10.separateexonprofilewithintrons.lengths.tsv.gz, test10.separateexonprofilewithintrons.matrix.tsv.gz]
+    references: [test10.separateexonprofilewithintrons.lengths.tsv.gz, test10.separateexonprofilewithintrons.matrix.tsv.gz]

@@ -293,8 +293,8 @@ def mergeBackgroundWindows(infiles, outfile):
         return
 
     infiles = " ".join(infiles)
-    genomefile = os.path.join(
-        PARAMS["annotations_dir"], PARAMS_ANNOTATIONS['interface_contigs'])
+    genomefile = os.path.join(PARAMS["annotations_dir"],
+                              PARAMS_ANNOTATIONS['interface_contigs'])
     statement = '''
     zcat %(infiles)s
     | bedtools slop -i stdin
@@ -387,10 +387,10 @@ def buildReferenceCpGComposition(infiles, outfile):
     '''
 
     infile = infiles[0]
-    contig_sizes = os.path.join(
-        PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_contigs"])
-    gaps_bed = os.path.join(
-        PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_gaps_bed"])
+    contig_sizes = os.path.join(PARAMS["annotations_dir"],
+                                PARAMS_ANNOTATIONS["interface_contigs"])
+    gaps_bed = os.path.join(PARAMS["annotations_dir"],
+                            PARAMS_ANNOTATIONS["interface_gaps_bed"])
 
     # remove windows which are more than 50% N - column 17
     statement = '''bedtools shuffle
@@ -635,11 +635,11 @@ def buildBigBed(infile, outfile):
 def countReadsWithinWindows(infiles, outfile):
     '''build read counds for windows.'''
     bedfile, windowfile = infiles
-    count_method = PARAMS['tiling_counting_method']
-    PipelineWindows.countReadsWithinWindows(bedfile,
-                                            windowfile,
-                                            outfile,
-                                            counting_method=count_method)
+    PipelineWindows.countReadsWithinWindows(
+        bedfile,
+        windowfile,
+        outfile,
+        counting_method=PARAMS['tiling_counting_method'])
 
 
 @merge(countReadsWithinWindows,
@@ -1614,13 +1614,16 @@ def buildIntervalProfileOfTranscripts(infiles, outfile):
                       --output-filename-pattern="%(outfile)s.%%s"
                       --force
                       --reporter=transcript
-                      --method=geneprofile
+                      --method=separateexonprofilewithintrons
                       --method=tssprofile
                       --normalize-profile=all
                       --output-all-profiles
                       --resolution-upstream=1000
                       --resolution-downstream=1000
                       --resolution-cds=1000
+                      --resolution-first-exon=1000
+                      --resolution-last-exon=1000
+                      --resolution-introns=1000
                       --extension-upstream=5000
                       --extension-downstream=5000
                       %(options)s

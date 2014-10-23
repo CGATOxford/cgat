@@ -128,8 +128,7 @@ def countTags(infile, outfile):
 def countReadsWithinWindows(bedfile,
                             windowfile,
                             outfile,
-                            counting_method="midpoint",
-                            jobOptions="-l mem_free=4G"):
+                            counting_method="midpoint"):
     '''count reads given in *tagfile* within intervals in
     *windowfile*.
 
@@ -139,7 +138,7 @@ def countReadsWithinWindows(bedfile,
     can be 'midpoint' or 'nucleotide'.
     '''
 
-    job_options = jobOptions
+    job_options = "-l mem_free=4G"
 
     if counting_method == "midpoint":
         f = '''| awk '{a = $2+($3-$2)/2;

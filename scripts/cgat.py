@@ -13,7 +13,7 @@ To use a specific tool, type::
 
 Tools are grouped by keywords. For this message and a list of
 available keywords type::
-    
+
     cgat --help
 
 For a list of tools matching a certain keyword, type::

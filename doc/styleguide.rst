@@ -207,7 +207,106 @@ Other guidelines
 * In order to build documentation, each script, module and pipeline needs to
   be importable. Thus, make sure that when your pipeline depends on
   specific files, it does not fail when imported but not executed.
+
+* There is a style guide for naming script options based on 5
+  groups.  These are designed to increase clarity and familiarity
+  across the script collection.
+
+Script options
+==============
+
+The purpose of this section of the style guide is to standardise many
+of the common options that the CGAT script collection uses.  This will
+add transparency and improve user-friendliness by adding a level of
+familiarity across scripts.
+
+There are four option groups defined in the guide.  Not all options
+will fit into one of these as many options are specific to a script.
+This guide will also be a useful reference for new script development
+by providing a common framework.
+
+The general structure for option names is multiple parts with parts
+separated by ``-``. Generally, aim to have the most significant bit
+first in the option as option names can be shortened on the command
+line if they are unambiguous. For example, ``--annotation-gtf-file``
+can be abbreviated as ``--annotation-gtf``, ``--annotation``, etc.
+
+Single-part options such as ``--colours`` are permitted if they are
+unambiguous in the context of the script.
+
+In general single letter (``-a``, ``-g``, ...) type options can be
+used for very common options, but every option should have a long name
+and use of long names is preferred in pipelines. If possible, use
+short letters that are consistent with "related" unix commands.
+
+Option nomenclature that does not fit into one of the below groups
+should be explicit.  For instance use ``--output-with-value`` instead
+of ``--with-value``.
+
+Option groups:
+  option components in '[]' are variable
+
+  * files:
+
+    The file options support both input and ancillary files for scripts.  Some 
+    scripts require multiple files of the same format.  In these instances 
+    ``[purpose]`` differentiates the different files within the script.
+    ``--[purpose]-[format]-file=[file]`` e.g. ``--annotation-gtf-file``
+    or ``--bam-file`` or ``--exons-gtf-file``.
+
+  * actions:
   
+    Actions denote the central methods a script applies to the data
+    set. Some scripts might only be able to apply a single action to a
+    data set, while others might allow a sequence of actions to be
+    performed. Scripts that support multiple actions should use the
+    ``--methods=[action1, action2,...]``, for example
+    ``--methods=sort-by-name,filter-by-length``.
+    Scripts that only
+    support a single action use ``--method=[action]``, for example:
+    ``--method=select-longest-transcript``.
+
+    Arguments that are relevant for a particular action should be
+    easily associated with the action. In the example above, the
+    minimum length could be given as ``--filter-min-length``.
+
+    Do not hesitate to make arguments as explicit as possible.
+    Consider also using:
+    ``--method=filter-by-sequence-length`` and ``--filter-min-sequence-length``.
+      
+  * parameters:
+  
+    Parameters are provided to scripts with a specific purpose.  To
+    make these as explicit as possible these also conform to the
+    three-part naming convention.  Very common is to set
+    minimum/maximum values. For these, follow a
+    ``--[object]-[attribute]-[stat]=[value]`` convention, e.g.,
+    ``--insert-size-min=100`` or ``--insert-size-std=20``.
+
+  * outputs:
+  
+    The prinicipal output of a script is generally fed to standard
+    output. Scripts that create multiple output files should define
+    them using the generic ``--output-filename-pattern``. Any ``%s``
+    pattern will be substituted inside the script with a section
+    name. Optionally, it might also append a suffix for the file
+    type. For example a script called with
+    ``--output-filename-pattern="test_%s"`` might create files such as
+    ``test_plot.png, test_removed.tsv`` for the sections ``plot`` and 
+    ``removed``.
+
+    In order to facilicate the incorporation of multiple-output
+    scripts into pipelines, scripts should permit explicit
+    labeling of output files such as ``--output-filename-<section>``
+    where section corresponds to the sections used in the script. In
+    the example above, the script should also accept options called
+    ``--output-filename-plot`` and ``--output-filename-removed``.
+
+    .. note::
+       
+       TODO: This can be implemented generically in Experiment.py
+
+
 Documentation
 =============
 

@@ -14,22 +14,49 @@ This script takes as input a :term:`BAM` file from an RNASeq experiment
 and a :term:`bed` formatted file. The :term:`bed` formatted file needs
 at least four columns. The fourth (name) column is used to group counts.
 
-It counts the number of alignments overlapping between the :term:`bam`
-file and the :term:`bed` file. Annotations in the :term:`bed` file can
-be overlapping - they are counted independently.
+It counts the number of alignments overlapping in the first input
+file and that overlap each feature in the second file. Annotations in the
+:term:`bed` file can be overlapping - they are counted independently.
 
 This scripts requires bedtools to be installed.
 
-Usage
------
+Options
+-------
+
+-a, --filename-bam / -b, --filename-bed
+    These are the input files. They can also be provided as provided as
+    positional arguements, with the bam file being first and the (gziped
+    or uncompressed) bed file coming second
+
+-m, --min-overlap
+    Using this option will only count reads if they overlap with a bed entry
+    by a certain minimum fraction of the read.
+
+-k, --keep-temp
+    As part of the process a temporary file contain each of the overlaps
+    is generated. Normally this file is deleted upon successful completion.
+    Use this option to retain this file.
+
+Example
+-------
 
 Example::
 
    python bam_vs_bed.py in.bam in.bed.gz
 
+Usage
+-----
+
 Type::
 
-   python bam_vs_bed.py --help
+   cgat bam_vs_bed BAM BED [OPTIONS] 
+   cgat bam_vs_bed --filename-bam=BAM --filename-bed=BED [OPTIONS]
+
+where BAM is either a bam or bed file and BED is a bed file.
+
+Type::
+
+   cgat bam_vs_bed --help
 
 for command line help.
 
@@ -40,10 +67,6 @@ Command line options
 
 import os
 import sys
-import re
-import optparse
-import time
-import subprocess
 import tempfile
 import collections
 import itertools
@@ -77,11 +100,11 @@ def main(argv=None):
 
     parser.add_option("-a", "--filename-bam", dest="filename_bam",
                       metavar="bam", type="string",
-                      help="bam-file to use [%default]")
+                      help="bam-file to use (required) [%default]")
 
     parser.add_option("-b", "--filename-bed", dest="filename_bed",
                       metavar="bed", type="string",
-                      help="bed-file to use [%default]")
+                      help="bed-file to use (required) [%default]")
 
     parser.set_defaults(
         min_overlap=0.5,
