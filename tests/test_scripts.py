@@ -27,17 +27,14 @@ import re
 import glob
 import gzip
 import yaml
-import sys
-import logging
 import time
-
-
-from nose.tools import assert_equal, ok_
+from nose.tools import ok_
 
 SUBDIRS = ("gpipe", "optic")
 
 # Setup logging
 LOGFILE = open("test_scripts.log", "a")
+DEBUG = os.environ.get("CGAT_DEBUG", False)
 
 
 def check_main(script):
@@ -166,8 +163,10 @@ def check_script(test_name, script, stdin,
                                     test_name,
                                     t2-t1))
     LOGFILE.flush()
-    shutil.rmtree(tmpdir)
+    if not DEBUG:
+        shutil.rmtree(tmpdir)
     ok_(not fail, msg)
+
 
 def test_scripts():
     '''yield list of scripts to test.'''
