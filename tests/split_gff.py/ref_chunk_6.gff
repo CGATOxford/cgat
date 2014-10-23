@@ -1,0 +1,2 @@
+chr1	repeat	exon	10007377	10007620	.	+	.	class "RNA"; family "RNA"; repName "7SK";
+chr1	repeat	exon	10020615	10020684	.	-	.	class "srpRNA"; family "srpRNA"; repName "7SLRNA";
