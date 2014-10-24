@@ -1,4 +1,4 @@
-option	action	comment	alternative	files
+option	action	comment	identifiers-tsv-file	files
 -n	bad			scripts/contigs2stats.py
 action	ok			scripts/runZinba.py
 add-diagonal	ok			scripts/r_table2scatter.py
@@ -363,7 +363,7 @@ input-filename-queries	rename		queries-tsv-file	scripts/gff2psl.py,scripts/psl2a
 input-format	ok			scripts/index_fasta.py,scripts/mali2bootstrap.py,scripts/mali2kaks.py,scripts/mali2mali.py,scripts/mali2malis.py,scripts/mali2rates.py,scripts/mali2summary.py,scripts/mali2table.py,scripts/malis2mali.py,scripts/malis2malis.py,scripts/matrix2matrix.py,scripts/matrix2stats.py,scripts/runSPP.py,scripts/runZinba.py,scripts/sequences2mali.py,scripts/snp2counts.py,scripts/snp2table.py,scripts/sparse2full.py
 input-header	?			scripts/farm.py,scripts/nofarm.py
 input-pattern	?			scripts/split_fasta.py,scripts/submit.py
-input-reads	rename		fastq-file	scripts/bam2stats.py
+input-reads	rename		num-reads	scripts/bam2stats.py
 input-regex	ok			scripts/cgat2dot.py,scripts/cgat2rdf.py
 insert-sd	rename		insertsize-std	scripts/add_random_reads_to_bam.py
 insert-size	rename		insertsize-mean	scripts/add_random_reads_to_bam.py
@@ -497,7 +497,7 @@ normalization	split	more explicit	normalize-..	scripts/bam2geneprofile.py,script
 normalize	ok			scripts/plot_matrix.py
 normalize-profile	ok			scripts/bam2geneprofile.py
 nperchrom	bad			scripts/chain2stats.py
-nreads	bad			scripts/add_random_reads_to_bam.py
+nreads	replace		num-reads	scripts/add_random_reads_to_bam.py
 nucl-map	bad			scripts/gi2parents.py
 num-bins	ok			scripts/annotator_distance.py,scripts/bed2bed.py,scripts/gff2coverage.py,scripts/r_compare_distributions.py
 num-samples	ok			scripts/annotator_distance.py
