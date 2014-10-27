@@ -807,7 +807,8 @@ def mergeAndLoad(infiles,
     tablename = toTable(outfile)
 
     if row_wise:
-        transform = """| perl -p -e "s/bin/track/" | python %(scriptsdir)s/table2table.py --transpose""" % PARAMS
+        transform = """| perl -p -e "s/bin/track/"
+        | python %(scriptsdir)s/table2table.py --transpose""" % PARAMS
     else:
         transform = ""
 

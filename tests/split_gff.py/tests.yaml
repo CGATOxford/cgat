@@ -15,4 +15,4 @@ chunk-gff:
     stdin: null
     outputs: [chunk_1.gff,chunk_2.gff,chunk_3.gff,chunk_4.gff,chunk_5.gff,chunk_6.gff,chunk_7.gff,chunk_8.gff,chunk_9.gff,chunk_10.gff]
     references: [ref_chunk_1.gff,ref_chunk_2.gff,ref_chunk_3.gff,ref_chunk_4.gff,ref_chunk_5.gff,ref_chunk_6.gff,ref_chunk_7.gff,ref_chunk_8.gff,ref_chunk_9.gff,ref_chunk_10.gff]
-    options: -I <DIR>/hg19_rna.gff.gz --output-pattern=chunk_%i.gff
+    options: -I %DIR%/../data/hg19_rna.gff.gz --output-pattern=chunk_%i.gff

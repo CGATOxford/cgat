@@ -5,8 +5,7 @@ import pandas
 from math import log
 import numpy as np
 import numpy.ma as ma
-import random
-from scipy.stats.mstats import gmean
+import itertools
 
 import CGAT.Experiment as E
 import CGAT.Pipeline as P
@@ -115,11 +114,21 @@ def convertReadsToIntervals(bamfile,
     os.unlink(tmpdir)
 
 
+def countTags(infile, outfile):
+    '''count number of pairs in bed-file.'''
+
+    statement = '''zcat %(infile)s
+    | python %(scriptsdir)s/bed2stats.py
+    --per-contig
+    --log=%(outfile)s.log
+    >& %(outfile)s'''
+    P.run()
+
+
 def countReadsWithinWindows(bedfile,
                             windowfile,
                             outfile,
-                            counting_method="midpoint",
-                            jobOptions="-l mem_free=4G"):
+                            counting_method="midpoint"):
     '''count reads given in *tagfile* within intervals in
     *windowfile*.
 
@@ -129,7 +138,7 @@ def countReadsWithinWindows(bedfile,
     can be 'midpoint' or 'nucleotide'.
     '''
 
-    job_options = jobOptions
+    job_options = "-l mem_free=4G"
 
     if counting_method == "midpoint":
         f = '''| awk '{a = $2+($3-$2)/2;
@@ -430,7 +439,7 @@ def runDE(infiles, outfile, outdir,
                   --output-header
                   --split-at-lines=200000
                   --cluster-options="-l mem_free=8G"
-                  --log=%(outfile)s.log
+                  --log=%(outfile)s.log2
                   --output-pattern=%(outdir)s/%%s
                   --subdirs
               "python %(scriptsdir)s/runExpression.py
@@ -539,3 +548,67 @@ def enrichmentVsInput(infile, outfile):
                      sep="\t",
                      header=None,
                      index=None)
+
+
+def runMEDIPSQC(infile, outfile):
+    '''run MEDIPS QC targets.'''
+
+    # note that the wrapper adds the filename
+    # to the output filenames.
+    job_options = "-l mem_free=10G"
+
+    statement = """python %(scriptsdir)s/runMEDIPS.py
+            --ucsc-genome=%(medips_genome)s
+            --treatment=%(infile)s
+            --toolset=saturation
+            --toolset=coverage
+            --toolset=enrichment
+            --shift=%(medips_shift)s
+            --extend=%(medips_extension)s
+            --output-filename-pattern="medips.dir/%%s"
+            --log=%(outfile)s.log
+            | gzip
+            > %(outfile)s
+            """
+    P.run()
+
+
+def runMEDIPSDMR(design_file, outfile):
+    '''run differential MEDIPS analysis according to
+    designfile.
+    '''
+    job_options = "-l mem_free=30G"
+
+    design = Expression.readDesignFile(design_file)
+
+    # remove data tracks not needed
+    design = [(x, y) for x, y in design.items() if y.include]
+
+    # build groups
+    groups = set([y.group for x, y in design])
+
+    statements = []
+    for pair1, pair2 in itertools.combinations(groups, 2):
+        treatment = ["%s.bam" % x for x, y in design if y.group == pair1]
+        control = ["%s.bam" % x for x, y in design if y.group == pair2]
+
+        treatment = ",".join(treatment)
+        control = ",".join(control)
+        # outfile contains directory prefix
+        statements.append(
+            """python %(scriptsdir)s/runMEDIPS.py
+            --ucsc-genome=%(medips_genome)s
+            --treatment=%(treatment)s
+            --control=%(control)s
+            --toolset=dmr
+            --shift=%(medips_shift)s
+            --extend=%(medips_extension)s
+            --output-filename-pattern="%(outfile)s_%(pair1)s_vs_%(pair2)s_%%s"
+            --fdr-threshold=%(medips_fdr)f
+            --log=%(outfile)s.log
+            | gzip
+            > %(outfile)s
+            """)
+
+    P.run()
+

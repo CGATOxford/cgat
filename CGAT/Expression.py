@@ -1013,8 +1013,14 @@ def deseqPlotGeneHeatmap(outfile,
     if len(data) == 0:
         return
 
+    # do not print if not enough values in one
+    # direction (single row or column)
+    if min(data.shape) < 2:
+        return
+
     R.png(outfile, width=500, height=2000)
     hmcol = R.colorRampPalette(R['brewer.pal'](9, "GnBu"))(100)
+
     R['heatmap.2'](
         data,
         col=hmcol,
@@ -1237,8 +1243,8 @@ def runDESeq(outfile,
         E.info("no replicates - estimating variance with method='blind'")
         dispersion_method = "blind"
 
-    E.info("Dispersion method = %s, fit type =%s" %
-           (dispersion_method, fit_type))
+    E.info("dispersion_method=%s, fit_type=%s, sharing_mode=%s" %
+           (dispersion_method, fit_type, sharing_mode))
     R('''cds <- estimateDispersions( cds,
     method='%(dispersion_method)s',
     fitType='%(fit_type)s',
@@ -2099,10 +2105,6 @@ def dumpTagData(filename_tags, filename_design, outfile):
                       sep='\t',
                       quote=FALSE)''' % locals())
 
-#########################################################################
-#########################################################################
-#########################################################################
-
 
 def loadTagDataPandas(tags_filename, design_filename):
     '''load tag data for deseq/edger analysis.
@@ -2356,7 +2358,6 @@ def outputSpikeIns(filename_tags,
                 continue
 
             output_counts[coord] += 1
-
             outf_info.write("spike%i\t%f\t%f\n" % (interval_id,
                                                    l10average[idx],
                                                    l2fold[idx]))

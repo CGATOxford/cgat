@@ -34,6 +34,7 @@ Command line options
 import sys
 import string
 import re
+import CGAT.Experiment as E
 
 
 def main(argv=None):
@@ -46,7 +47,7 @@ def main(argv=None):
         argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+    parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
     # add common options (-h/--help, ...) and parse command line
@@ -71,7 +72,9 @@ def main(argv=None):
             alignment[x][1].append(line[:-1])
 
     for x in range(num_lines):
-        print ">%s\n%s" % (alignment[x][0], re.sub("\s", "", string.join(alignment[x][1], "")))
+        print ">%s\n%s" % (alignment[x][0],
+                           re.sub("\s", "",
+                                  string.join(alignment[x][1], "")))
 
     # write footer and output benchmark information.
     E.Stop()

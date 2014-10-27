@@ -231,7 +231,7 @@ def processScript(script_name, outfile, options):
 
     # @prefix clp: <http://www.humgen.nl/climate/ontologies/clp#> .
     # @prefix co: <http://www.isi.edu/ikcap/Wingse/componentOntology.owl#> .
-    #@prefix dcterms: <http://purl.org/dc/terms/> .
+    # @prefix dcterms: <http://purl.org/dc/terms/> .
 
     defaults = PARSER.get_default_values()
 

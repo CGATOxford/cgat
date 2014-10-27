@@ -14,7 +14,7 @@ This script converts a :term:`bed`-formatted file to a :term:`gff` or :term:`gtf
 
 It aims to populate the appropriate fields in the :term:`gff` file with columns in the :term:`bed` file.
 
-If ``--is-gtf`` is set and a name column in the :term:`bed` file is present, its contents will be set 
+If ``--as-gtf`` is set and a name column in the :term:`bed` file is present, its contents will be set 
 as ``gene_id`` and ``transcript_id``. Otherwise, a numeric ``gene_id`` or ``transcript_id`` will be set 
 according to ``--id-format``.
 
@@ -23,11 +23,37 @@ Usage
 
 Example::
 
-   python bed2gff.py < in.bed > out.gff
+   # Preview input bed file
+   zcat tests/bed2gff.py/bed3/bed.gz | head
+   # Convert BED to GFF format
+   cgat bed2gff.py < tests/bed2gff.py/bed3/bed.gz > test1.gff
+   # View converted file (excluding logging information)
+   cat test1.gtf | grep -v "#" | head
+
+
++------+-----+------+-------+-------+---+---+---+---------------------------------------+
+|chr1  |bed  |exon  |501    |1000   |.  |.  |.  |gene_id "None"; transcript_id "None";  |
++------+-----+------+-------+-------+---+---+---+---------------------------------------+
+|chr1  |bed  |exon  |15001  |16000  |.  |.  |.  |gene_id "None"; transcript_id "None";  |
++------+-----+------+-------+-------+---+---+---+---------------------------------------+
+
+
+Example::   
+   
+   # Convert BED to GTF format
+   cgat bed2gff.py --as-gtf < tests/bed2gff.py/bed3/bed.gz > test2.gtf
+   # View converted file (excluding logging information)
+   cat test2.gtf | grep -v "#" | head
+
++------+-----+------+-------+-------+---+---+---+-----------------------------------------------+   
+chr1   |bed  |exon  |501    |1000   |.  |.  |.  |gene_id "00000001"; transcript_id "00000001";  |
++------+-----+------+-------+-------+---+---+---+-----------------------------------------------+
+chr1   |bed  |exon  |15001  |16000  |.  |.  |.  |gene_id "00000002"; transcript_id "00000002";  |
++------+-----+------+-------+-------+---+---+---+-----------------------------------------------+
 
 Type::
 
-   python bed2gff.py --help
+   cgat bed2gff.py --help
 
 for command line help.
 

@@ -40,17 +40,10 @@ import os
 import shutil
 import glob
 import collections
-import re
-import gzip
-import itertools
 import CGAT.Pipeline as P
-import logging as L
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
-import CGAT.GTF as GTF
 import CGAT.Fastq as Fastq
-import CGAT.IndexedFasta as IndexedFasta
-import CGATPipelines.PipelineGeneset as PipelineGeneset
 import pysam
 
 SequenceInformation = collections.namedtuple("SequenceInformation",
@@ -361,7 +354,7 @@ class Preprocessor(object):
                     """ % locals())
                     fastqfiles.extend(
                         "%s/%s.1.fastq%s" % (tmpdir_fastq, track, extension),
-                         "%s/%s.2.fastq%s" % (tmpdir_fastq, track, extension))
+                        "%s/%s.2.fastq%s" % (tmpdir_fastq, track, extension))
 
                 else:
                     E.debug("%s: assuming quality score format %s" %
@@ -411,7 +404,7 @@ class Preprocessor(object):
                 tool_cmd = "testing_testing"
                 # insert error statement here.
                 pass
-            
+
             total_cmd += tool_cmd
             processed_files.append(infile,)
         return total_cmd, processed_files
@@ -426,7 +419,7 @@ class Preprocessor(object):
         elif len(initial_file) == 2:
             num_files = 2
             initial_file1, initial_file2 = initial_file
-            
+
         if num_files == 1:
             postprocess_cmd = '''zcat %(initial_file)s |
                           python %%(scriptsdir)s/fastq2summary.py
@@ -602,6 +595,3 @@ class trimgalore(processer):
                                           post_cmd])
 
         return statement, fastq_outfiles
-
-
-    
