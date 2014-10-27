@@ -51,7 +51,7 @@ merge_transcripts:
     stdin: hg19.small.sort_gene.gtf.gz
     outputs: [stdout]
     references: [hg19.small.sort_gene_merge_transcripts.gtf.gz]
-    options: --merge-transcript
+    options: --merge-transcripts
 
 merge_transcripts_with_utr:
     stdin: hg19.small.sort_gene.gtf.gz
@@ -84,7 +84,7 @@ intersect_transcripts_with_utr:
     references: [hg19.small.sort_gene_intersect_transcripts_with_utr.gtf.gz]
     options: --intersect-transcripts --with-utr
 
-merge_introns:
+/merge_introns:
     stdin: hg19.small.sort_gene.gtf.gz
     outputs: [stdout]
     references: [hg19.small.sort_gene_merge_introns.gtf.gz]
@@ -166,13 +166,13 @@ rename_gene:
     stdin: hg19.small.sort_gene.gtf.gz
     outputs: [stdout]
     references: [hg19.small.sort_gene_rename.gtf.gz]
-    options: --rename=gene --apply=<DIR>/hg19.small.gene_map.tsv
+    options: --rename-genes --apply=<DIR>/hg19.small.gene_map.tsv
 
 rename_transcript:
     stdin: hg19.small.sort_gene.gtf.gz
     outputs: [stdout]
     references: [hg19.small.sort_gene_rename_transcript.gtf.gz]
-    options: --rename=gene --apply=<DIR>/hg19.small.transcript_map.tsv
+    options: --rename-genes --apply=<DIR>/hg19.small.transcript_map.tsv
 
 add_protein_id:
     stdin: hg19.small.sort_gene.gtf.gz
