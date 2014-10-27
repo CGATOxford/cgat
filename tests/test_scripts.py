@@ -27,11 +27,14 @@ import re
 import glob
 import gzip
 import yaml
-import sys
-
-from nose.tools import assert_equal, ok_
+import time
+from nose.tools import ok_
 
 SUBDIRS = ("gpipe", "optic")
+
+# Setup logging
+LOGFILE = open("test_scripts.log", "a")
+DEBUG = os.environ.get("CGAT_DEBUG", False)
 
 
 def check_main(script):
@@ -79,6 +82,8 @@ def check_script(test_name, script, stdin,
     '''
     tmpdir = tempfile.mkdtemp()
 
+    t1 = time.time()
+
     stdout = os.path.join(tmpdir, 'stdout')
     if stdin:
         if stdin.endswith(".gz"):
@@ -104,40 +109,63 @@ def check_script(test_name, script, stdin,
                  " %(options)s"
                  " > %(stdout)s'") % locals()
 
-    retval = subprocess.call(statement,
-                             shell=True,
-                             cwd=tmpdir)
-    assert_equal(retval, 0,
-                 "error in statement: %s" % statement)
+    process = subprocess.Popen(statement,
+                               shell=True,
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE,
+                               cwd=tmpdir)
+
+    process_stdout, process_stderr = process.communicate()
+
+    fail = False
+    msg = ""
+
+    if process.returncode != 0:
+        fail = True
+        msg = "error in statement: %s; stderr=%s" %\
+              (statement, process_stderr)
 
     # for version tests, do not compare output
     if test_name == "version":
-        return
+        pass
+    elif not fail:
+        # compare line by line, ignoring comments
+        for output, reference in zip(outputs, references):
+            if output == "stdout":
+                output = stdout
+            elif output.startswith("<DIR>/") or \
+                    output.startswith("%DIR%/"):
+                output = os.path.join(workingdir, output[6:])
+            else:
+                output = os.path.join(tmpdir, output)
 
-    # compare line by line, ignoring comments
-    for output, reference in zip(outputs, references):
-        if output == "stdout":
-            output = stdout
-        elif output.startswith("<DIR>/") or \
-                output.startswith("%DIR%/"):
-            output = os.path.join(workingdir, output[6:])
-        else:
-            output = os.path.join(tmpdir, output)
+            if not os.path.exists(output):
+                fail = True
+                msg = "output file '%s'  does not exist: %s" %\
+                      (output, statement)
 
-        if not os.path.exists(output):
-            raise OSError("output file '%s'  does not exist: %s" %
-                          (output, statement))
+            reference = os.path.join(workingdir, reference)
+            if not fail and not os.path.exists(reference):
+                fail = True
+                msg = "reference file '%s' does not exist (%s): %s" %\
+                      (reference, tmpdir, statement)
 
-        reference = os.path.join(workingdir, reference)
-        if not os.path.exists(reference):
-            raise OSError("reference file '%s' does not exist (%s): %s" %
-                          (reference, tmpdir, statement))
+            if not fail:
+                for a, b in zip(_read(output), _read(reference)):
+                    if a != b:
+                        fail = True
+                        msg = "files %s and %s are not the same: %s" %\
+                              (output, reference, statement)
+                        break
 
-        for a, b in zip(_read(output), _read(reference)):
-            assert_equal(a, b, "files %s and %s are not the same: %s" %
-                         (output, reference, statement))
-
-    shutil.rmtree(tmpdir)
+    t2 = time.time()
+    LOGFILE.write("%s\t%s\t%f\n" % (script,
+                                    test_name,
+                                    t2-t1))
+    LOGFILE.flush()
+    if not DEBUG:
+        shutil.rmtree(tmpdir)
+    ok_(not fail, msg)
 
 
 def test_scripts():

@@ -1300,7 +1300,6 @@ def loadNCG(outfile):
 
     # infile = PARAMS["cancergenes_table"]
     infile = "../backup/NCG/cancergenes.tsv"
-
     index = "symbol"
     dbh = connect()
     scriptsdir = PARAMS["general_scriptsdir"]
@@ -1324,7 +1323,7 @@ def mutationalSignature(infiles, outfile):
 
     def lookup(b1, b2):
         '''return lookup key for a pair of bases'''
-        return(b1 + "_" + b2)
+        return(b1 + ":" + b2)
 
     outfile = open(outfile, "w")
     bases = ["C", "G", "T", "A"]
@@ -1378,8 +1377,7 @@ def loadMutationalSignature(infile, outfile):
          loadPicardRealigenedAlignStats,
          loadPicardAlignStats,
          loadNCG,
-         loadMutationalSignature,
-         runMutectOnDownsampled)
+         loadMutationalSignature)
 def full():
     pass
 

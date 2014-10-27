@@ -5,12 +5,18 @@ version:
     references: []
     options: --version
 
-length:
+cpg:
     stdin: hg19.small.gtf.gz
     outputs: [stdout]
     references: [test1.tsv]
-    options: --counter=length --counter=position --counter=composition-na --counter=composition-cpg --genome-file=%DIR%/hg19.chr19
-    
+    options: --counter=position --counter=composition-cpg --genome-file=%DIR%/hg19.chr19
+
+na:
+    stdin: hg19.small.gtf.gz
+    outputs: [stdout]
+    references: [test2.tsv]
+    options: --counter=position --counter=composition-na --genome-file=%DIR%/hg19.chr19
+
 readpair-fullcounts:
     stdin: testpairs.gtf
     outputs: [stdout]
@@ -35,5 +41,3 @@ read-counts:
     references: [test_read_counts.tsv.gz]
     options: --counter=read-counts --bam-file=%DIR%/paircounting.bam --min-mapping-quality=15
 
-
-      

@@ -70,14 +70,6 @@ if [ "$OS" == "ubuntu" -o "$OS" == "travis" ] ; then
 
    sudo apt-get install -y gcc g++ zlib1g-dev libssl-dev libssl1.0.0 libbz2-dev libfreetype6-dev libpng12-dev libblas-dev libatlas-dev liblapack-dev gfortran libpq-dev r-base-dev libreadline-dev libmysqlclient-dev libboost-dev libsqlite3-dev mercurial;
 
-   # additional configuration for travis
-   # to solve problem when re-compiling wigToBigWig and bedGraphToBigWig
-   # https://cgatwiki.anat.ox.ac.uk/xwiki/bin/view/CGAT/Recompiling+UCSC+tools
-   if [ "$OS" == "travis" ] ; then
-      ln -s /lib/x86_64-linux-gnu/libssl.so.1.0.0 /lib/x86_64-linux-gnu/libssl.so.10
-      ln -s /lib/x86_64-linux-gnu/libcrypto.so.1.0.0 /lib/x86_64-linux-gnu/libcrypto.so.10
-   fi
-
 elif [ "$OS" == "sl" -o "$OS" == "centos" ] ; then
 
    echo 

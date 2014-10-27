@@ -20,8 +20,7 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##########################################################################
-'''
-gtf2tsv.py - convert gtf file to a tab-separated table
+'''gtf2tsv.py - convert gtf file to a tab-separated table
 ======================================================
 
 :Author: Andreas Heger
@@ -32,24 +31,57 @@ gtf2tsv.py - convert gtf file to a tab-separated table
 Purpose
 -------
 
-convert gtf formatted file to tab-separated table with column headers for 
-table import.
+convert a gtf formatted file to tab-separated table. The difference to
+a plain :term:`gtf` formatted file is that column headers are added,
+which can be useful when importing the gene models into a database.
 
 Note that coordinates are converted to 0-based open/closed notation (all on
 the forward strand).
 
-If -a/--attributes is set, attributes are converted into separate columns.
+By default, the gene_id and transcript_id are extracted from the attributes
+field into separated columns.  If ``-f/--full`` is set, all fields in the
+attributes will be split into separate columns.
+
+The script also implements the reverse operation, converting a tab-separated
+table into a :term:`gtf` formatted file.
+
+When using the ``-m, --map`` option, the script will output a table
+mapping gene identifiers to transcripts or peptides.
 
 Usage
 -----
 
 Example::
 
-   python gtf2tsv.py < in.gtf > out.tsv
+   cgat gtf2tsv < in.gtf
+
++------+--------------------------------+-----------+------+------+-----+------+-----+---------------+---------------+-------------------------------------------------------------------------------------------------------------------------------------+
+|contig|source                          |feature    |start |end   |score|strand|frame|gene_id        |transcript_id  |attributes                                                                                                                           |
++------+--------------------------------+-----------+------+------+-----+------+-----+---------------+---------------+-------------------------------------------------------------------------------------------------------------------------------------+
+|chr19 |processed_transcript            |exon       |66345 |66509 |.    |-     |.    |ENSG00000225373|ENST00000592209|exon_number "1"; gene_name "AC008993.5"; gene_biotype "pseudogene"; transcript_name "AC008993.5-002"; exon_id "ENSE00001701708"      |
++------+--------------------------------+-----------+------+------+-----+------+-----+---------------+---------------+-------------------------------------------------------------------------------------------------------------------------------------+
+|chr19 |processed_transcript            |exon       |60520 |60747 |.    |-     |.    |ENSG00000225373|ENST00000592209|exon_number "2"; gene_name "AC008993.5"; gene_biotype "pseudogene"; transcript_name "AC008993.5-002"; exon_id "ENSE00002735807"      |
++------+--------------------------------+-----------+------+------+-----+------+-----+---------------+---------------+-------------------------------------------------------------------------------------------------------------------------------------+
+|chr19 |processed_transcript            |exon       |60104 |60162 |.    |-     |.    |ENSG00000225373|ENST00000592209|exon_number "3"; gene_name "AC008993.5"; gene_biotype "pseudogene"; transcript_name "AC008993.5-002"; exon_id "ENSE00002846866"      |
++------+--------------------------------+-----------+------+------+-----+------+-----+---------------+---------------+-------------------------------------------------------------------------------------------------------------------------------------+
+
+To build a map between gene and transcrip identiers, type::
+
+   cgat bam2tsv --map=transcript2gene < in.gtf
+
++---------------+---------------+
+|transcript_id  |gene_id        |
++---------------+---------------+
+|ENST00000269812|ENSG00000141934|
++---------------+---------------+
+|ENST00000318050|ENSG00000176695|
++---------------+---------------+
+|ENST00000327790|ENSG00000141934|
++---------------+---------------+
 
 Type::
 
-   python gtf2tsv.py --help
+   cgat gtf2tsv --help
 
 for command line help.
 

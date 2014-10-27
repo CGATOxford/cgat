@@ -109,22 +109,22 @@ Requirements
 On top of the default CGAT setup, the pipeline requires the following
 software to be in the path:
 
-+-----------+-----------+------------------------------------------------+
-|*Program*  |*Version*  |*Purpose*                                       |
-+-----------+-----------+------------------------------------------------+
-|Stampy     |>=0.9.0    |read mapping                                    |
-+-----------+-----------+------------------------------------------------+
-|BWA        |           |read mapping                                    |
-+-----------+-----------+------------------------------------------------+
-|SAMtools   |           |filtering, SNV / indel calling                  |
-+-----------+-----------+------------------------------------------------+
-|BEDTools   |           |filtering, SNV / indel calling                  |
-+-----------+-----------+------------------------------------------------+
-|sra-tools  |           |extracting reads from .sra files                |
-+-----------+-----------+------------------------------------------------+
-|picard     |>=1.38     |bam/sam files. The .jar files need to be in your|
-|           |           | CLASSPATH environment variable.                |
-+-----------+-----------+------------------------------------------------+
++----------------+---------------+--------------------------------------------+
+|*Program*       |*Version*      |*Purpose*                                   |
++----------------+---------------+--------------------------------------------+
+|Stampy          |>=0.9.0        |read mapping                                |
++----------------+---------------+--------------------------------------------+
+|BWA             |               |read mapping                                |
++----------------+---------------+--------------------------------------------+
+|SAMtools        |               |filtering, SNV / indel calling              |
++----------------+---------------+--------------------------------------------+
+|BEDTools        |               |filtering, SNV / indel calling              |
++----------------+---------------+--------------------------------------------+
+|sra-tools       |               |extracting reads from .sra files            |
++----------------+---------------+--------------------------------------------+
+|picard          |>=1.38         |bam/sam files. The .jar files need to be in |
+|                |               | your  CLASSPATH environment variable.      |
++----------------+---------------+--------------------------------------------+
 
 Pipeline output
 ===============
@@ -213,6 +213,9 @@ def connect():
 
     return dbh
 
+#########################################################################
+#########################################################################
+
 
 def preprocessBAM(infile, outfile):
     '''returns a command line statement for pre-processing a BAM
@@ -242,86 +245,19 @@ def preprocessBAM(infile, outfile):
 
         elif dedup_method == 'picard':
             statement.append('''MarkDuplicates INPUT=%(current_file)s
-            OUTPUT=%(next_file)s
-            ASSUME_SORTED=true
-            METRICS_FILE=%(outfile)s.duplicate_metrics
-            REMOVE_DUPLICATES=TRUE
-            VALIDATION_STRINGENCY=SILENT
-            2>> %%(outfile)s.log ''' % locals())
+                    OUTPUT=%(next_file)s
+                    ASSUME_SORTED=true
+                    METRICS_FILE=%(outfile)s.duplicate_metrics
+                    REMOVE_DUPLICATES=TRUE
+                    VALIDATION_STRINGENCY=SILENT
+                    2>> %%(outfile)s.log ''' % locals())
         nfiles += 1
         current_file = next_file
 
     return statement, current_file, tmpdir
 
-
-def getInput(track):
-    '''return a list of input tracks associated with track.
-
-    Associations can be defined in the .ini file in the section
-    [input]. For example, the following snippet associates track
-    track1 with the bamfiles :file:`track1.bam` and :file:`track2.bam`::
-
-       [input]
-       track1.bam=input1.bam,input2.bam
-
-    Glob expressions are permitted.
-
-    Default tracks can be specified using a placeholder ``%``. The
-    following will associate all tracks with the same bam file::
-
-        [bams]
-        %=all.bam
-
-
-    '''
-
-    input_files = []
-
-    # configparser by default converts option names to lower case
-    fn = track.asFile()
-    fn = fn.lower()
-
-    if "input_%s" % fn in PARAMS:
-        input_files.extend(P.asList(PARAMS["input_%s" % fn]))
-    elif P.CONFIG.has_section("input"):
-        for pattern, value in P.CONFIG.items("input"):
-            if "%" in pattern:
-                pattern = re.sub("%", "\S+", pattern)
-            if re.search(pattern, fn):
-                input_files.extend(P.asList(value))
-
-    return input_files
-
-
-def mapTrack2Input(tracks):
-    '''given a list of tracks, return a dictionary mapping a track to its input
-    '''
-
-    # select columns in foreground and background
-    map_track2input = {}
-    for idx, track in enumerate(tracks):
-
-        if track == "interval_id":
-            continue
-
-        try:
-            t = Sample(tablename=track)
-        except ValueError, msg:
-            print msg
-            continue
-
-        input_files = getInput(t)
-
-        # currently only implement one input file per track
-        assert len(input_files) <= 1, "%s more than input: %s" % (
-            track, input_files)
-
-        if len(input_files) == 0:
-            map_track2input[track] = None
-        else:
-            map_track2input[track] = Sample(filename=input_files[0]).asTable()
-
-    return map_track2input
+#########################################################################
+#########################################################################
 
 
 @follows(mkdir("tags.dir"))
@@ -397,8 +333,8 @@ def mergeBackgroundWindows(infiles, outfile):
         return
 
     infiles = " ".join(infiles)
-    genomefile = os.path.join(
-        PARAMS["annotations_dir"], PARAMS_ANNOTATIONS['interface_contigs'])
+    genomefile = os.path.join(PARAMS["annotations_dir"],
+                              PARAMS_ANNOTATIONS['interface_contigs'])
     statement = '''
     zcat %(infiles)s
     | bedtools slop -i stdin
@@ -421,9 +357,8 @@ int_genomic_contex_bed = PARAMS_ANNOTATIONS['interface_genomic_context_bed']
 @transform(os.path.join(PARAMS["annotations_dir"],
                         PARAMS_ANNOTATIONS["interface_cpg_bed"]),
            regex(".*/([^/]*).bed.gz"),
-           add_inputs(os.path.join(
-               PARAMS["annotations_dir"],
-               PARAMS_ANNOTATIONS["interface_genomic_context_bed"])),
+           add_inputs(os.path.join(PARAMS["annotations_dir"],
+                                   int_genomic_contex_bed)),
            "cpg_context.tsv.gz")
 def buildCpGAnnotation(infiles, outfile):
     '''annotate the location of CpGs within the genome.'''
@@ -432,7 +367,7 @@ def buildCpGAnnotation(infiles, outfile):
 
     statement = '''
     python %(scriptsdir)s/bam_vs_bed.py
-    --min-overlap=0.5 %(cpg_bed)s %(context_bed)s
+           --min-overlap=0.5 %(cpg_bed)s %(context_bed)s
     | gzip
     > %(outfile)s'''
 
@@ -508,10 +443,10 @@ def buildReferenceCpGComposition(infiles, outfile):
     '''
 
     infile = infiles[0]
-    contig_sizes = os.path.join(
-        PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_contigs"])
-    gaps_bed = os.path.join(
-        PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_gaps_bed"])
+    contig_sizes = os.path.join(PARAMS["annotations_dir"],
+                                PARAMS_ANNOTATIONS["interface_contigs"])
+    gaps_bed = os.path.join(PARAMS["annotations_dir"],
+                            PARAMS_ANNOTATIONS["interface_gaps_bed"])
 
     # remove windows which are more than 50% N - column 17
     statement = '''bedtools shuffle
@@ -559,6 +494,7 @@ def buildCpGCoverage(infiles, outfile):
     # could be done in very little memory.
 
     infile, cpg_file = infiles
+    to_cluster = True
 
     job_options = "-l mem_free=16G"
 
@@ -669,6 +605,9 @@ def buildWindows(infiles, outfile):
            ".stats")
 def buildWindowStats(infile, outfile):
     '''compute tiling window size statistics from bed file.'''
+
+    use_cluster = True
+
     statement = '''
     zcat %(infile)s
     | python %(scriptsdir)s/gff2histogram.py
@@ -707,6 +646,9 @@ def buildBigBed(infile, outfile):
     '''bed file with intervals that are covered by reads in any of the experiments.
     '''
 
+    to_cluster = True
+    to_cluster = False
+
     tmpfile = P.getTempFilename()
 
     contig_sizes = os.path.join(
@@ -742,7 +684,12 @@ def countReadsWithinWindows(infiles, outfile):
         bedfile,
         windowfile,
         outfile,
-        counting_method=PARAMS['tiling_counting_method'])
+        counting_method=PARAMS['tiling_counting_method'],
+        memory_free=PARAMS['tiling_counting_memory'])
+
+#########################################################################
+#########################################################################
+#########################################################################
 
 
 @merge(countReadsWithinWindows,
@@ -754,87 +701,201 @@ def aggregateWindowsReadCounts(infiles, outfile):
                                                outfile,
                                                regex="(.*).counts.bed.gz")
 
+#########################################################################
+#########################################################################
+#########################################################################
+
 
 @transform(aggregateWindowsReadCounts, suffix(".tsv.gz"), ".load")
 def loadWindowsReadCounts(infile, outfile):
     '''load a sample of window composition data for QC purposes.'''
     P.load(infile, outfile, limit=10000, shuffle=True)
 
+###################################################################
+###################################################################
+###################################################################
+#
+###################################################################
 
-@transform(aggregateWindowsReadCounts,
-           suffix(".tsv.gz"),
-           "_l2foldchange_input.tsv.gz")
+
+def getInput(track):
+    '''return a list of input tracks associated with track.
+
+    Associations can be defined in the .ini file in the section
+    [input]. For example, the following snippet associates track
+    track1 with the bamfiles :file:`track1.bam` and :file:`track2.bam`::
+
+       [input]
+       track1.bam=input1.bam,input2.bam
+
+    Glob expressions are permitted.
+
+    Default tracks can be specified using a placeholder ``%``. The
+    following will associate all tracks with the same bam file::
+
+        [bams]
+        %=all.bam
+
+
+    '''
+
+    input_files = []
+
+    # configparser by default converts option names to lower case
+    fn = track.asFile()
+    fn = fn.lower()
+
+    if "input_%s" % fn in PARAMS:
+        input_files.extend(P.asList(PARAMS["input_%s" % fn]))
+    elif P.CONFIG.has_section("input"):
+        for pattern, value in P.CONFIG.items("input"):
+            if "%" in pattern:
+                pattern = re.sub("%", "\S+", pattern)
+            if re.search(pattern, fn):
+                input_files.extend(P.asList(value))
+
+    return input_files
+
+
+def mapTrack2Input(tracks):
+    '''given a list of tracks, return a dictionary mapping a track to its input
+    '''
+
+    # select columns in foreground and background
+    map_track2input = {}
+    for idx, track in enumerate(tracks):
+
+        if track == "interval_id":
+            continue
+
+        try:
+            t = Sample(tablename=track)
+        except ValueError, msg:
+            print msg
+            continue
+
+        input_files = getInput(t)
+
+        # currently only implement one input file per track
+        assert len(input_files) <= 1, "%s more than input: %s" % (
+            track, input_files)
+
+        if len(input_files) == 0:
+            map_track2input[track] = None
+        else:
+            map_track2input[track] = Sample(filename=input_files[0]).asTable()
+
+    return map_track2input
+
+#########################################################################
+#########################################################################
+#########################################################################
+
+
+@transform(loadWindowsReadCounts, suffix(".load"), "_l2foldchange_input.tsv")
 def buildWindowsFoldChangesPerInput(infile, outfile):
     '''Compute fold changes for each sample compared to appropriate input.
 
-    If no input is present, simply divide by median.
+    If no input is present, simply divide by average.
+
     '''
 
     # get all data
-    dataframe = pandas.read_csv(IOTools.openFile(infile),
-                                sep="\t",
-                                index_col=0)
+    dbh = connect()
+    cc = dbh.cursor()
+    cc.execute("SELECT * FROM counts")
+    data = cc.fetchall()
+
+    # transpose, remove interval_id column
+    data = zip(*data)
+    columns = [x[0] for x in cc.description]
+
+    map_track2input = mapTrack2Input(columns)
+    take_tracks = [x for x, y in enumerate(columns) if y in map_track2input]
+    take_input = [x for x, y in enumerate(
+        columns) if y in map_track2input.values() and y is not None]
+
+    # build data frame
+    dataframe = pandas.DataFrame(
+        dict([(columns[x], data[x]) for x in take_tracks]))
+    dataframe = dataframe.astype('float64')
+    dataframe_input = pandas.DataFrame(
+        dict([(columns[x], data[x]) for x in take_input]))
 
     # add pseudocounts
     pseudocount = 1
-    dataframe += pseudocount
-
-    map_track2input = mapTrack2Input(dataframe.columns)
-    take_tracks = [x for x, y in enumerate(dataframe.columns)
-                   if y in map_track2input]
-
-    # build data frame
-    dataframe_tracks = dataframe[take_tracks]
+    for column in dataframe.columns:
+        dataframe[column] += pseudocount
+    for column in dataframe_input.columns:
+        dataframe_input[column] += pseudocount
 
     # compute normalization ratios
     # total_input / total_column
     ratios = {}
-    for column in dataframe_tracks.columns:
+    for column in dataframe.columns:
         i = map_track2input[column]
         if i is not None:
-            ratios[column] = \
-                float(sum(dataframe[i])) /\
-                sum(dataframe_tracks[column])
+            ratios[column] = dataframe_input[
+                i].median() / dataframe[column].median()
         else:
             ratios[column] = None
 
-    for column in dataframe_tracks.columns:
+    for column in dataframe.columns:
         if ratios[column] is not None:
             # normalize by input
-            dataframe_tracks[column] *= ratios[column] / \
-                dataframe[map_track2input[column]]
+            dataframe[column] *= ratios[column] / \
+                dataframe_input[map_track2input[column]]
         else:
             # normalize by median
-            dataframe_tracks[column] /= \
-                dataframe_tracks[column].median()
+            dataframe[column] /= dataframe[column].median()
 
-    dataframe_tracks = numpy.log2(dataframe_tracks)
-    dataframe_tracks.to_csv(IOTools.openFile(outfile, "w"),
-                            sep="\t")
+    dataframe = numpy.log2(dataframe)
+
+    dataframe.to_csv(outfile, sep="\t", index=False)
+
+#########################################################################
+#########################################################################
+#########################################################################
 
 
-@transform(aggregateWindowsReadCounts, suffix(".tsv.gz"),
-           "_l2foldchange_median.tsv.gz")
+@transform(loadWindowsReadCounts, suffix(".load"), "_l2foldchange_median.tsv")
 def buildWindowsFoldChangesPerMedian(infile, outfile):
     '''Compute l2fold changes for each sample compared to the median count
     in sample.
+
     '''
 
     # get all data
-    dataframe = pandas.read_csv(IOTools.openFile(infile),
-                                sep="\t",
-                                index_col=0)
+    dbh = connect()
+    cc = dbh.cursor()
+    cc.execute("SELECT * FROM counts")
+    data = cc.fetchall()
+
+    # transpose, remove interval_id column
+    data = zip(*data)
+    columns = [x[0] for x in cc.description]
+
+    take_tracks = [x for x, y in enumerate(columns) if y != "interval_id"]
+    # build data frame
+    dataframe = pandas.DataFrame(
+        dict([(columns[x], data[x]) for x in take_tracks]))
+    dataframe = dataframe.astype('float64')
 
     # add pseudocounts
     pseudocount = 1
-    dataframe += pseudocount
+    for column in dataframe.columns:
+        dataframe[column] += pseudocount
 
     for column in dataframe.columns:
         dataframe[column] /= dataframe[column].median()
 
     dataframe = numpy.log2(dataframe)
-    dataframe.to_csv(IOTools.openFile(outfile, "w"),
-                     sep="\t")
+
+    dataframe.to_csv(outfile, sep="\t", index=False)
+
+#########################################################################
+#########################################################################
+#########################################################################
 
 
 @transform((buildWindowsFoldChangesPerMedian, buildWindowsFoldChangesPerInput),
@@ -842,6 +903,10 @@ def buildWindowsFoldChangesPerMedian(infile, outfile):
 def loadWindowsFoldChanges(infile, outfile):
     '''load fold change stats'''
     P.load(infile, outfile)
+
+#########################################################################
+#########################################################################
+#########################################################################
 
 
 @transform(aggregateWindowsReadCounts,
@@ -911,6 +976,10 @@ def dumpWindowsReadCounts(infiles, outfile):
 
     P.run()
 
+#########################################################################
+#########################################################################
+#########################################################################
+
 
 @transform((summarizeWindowsReadCounts, summarizeAllWindowsReadCounts),
            suffix("_stats.tsv"), "_stats.load")
@@ -921,33 +990,43 @@ def loadTagCountSummary(infile, outfile):
            P.snip(outfile, "_stats.load") + "_correlation.load",
            options="--first-column=track")
 
+#########################################################################
+#########################################################################
+#########################################################################
+
 
 @follows(buildWindows, countReadsWithinWindows)
-@transform("counts.dir/*.bed.gz",
-           regex("counts.dir/(.+)-(.+)-(.+).counts.bed.gz"),
-           r"counts.dir/\1-\2-\3.norm.bedGraph.gz")
-def normalizeBed(infile, outfile):
+@transform(aggregateWindowsReadCounts,
+           suffix(".tsv.gz"),
+           ".norm.tsv.gz")
+def NormalizeBed(infile, outfile):
     '''
     Normalize counts in bed file by total library size.
     Return as bedGraph format
     '''
 
     # normalize count column by total library size
+
     tmpfile = P.getTempFilename(shared=True)
 
     P.submit(module='CGATPipelines.PipelineWindows',
              function='normalizeBed',
              infiles=infile,
              outfiles=tmpfile,
-             toCluster=True)
+             toCluster=True,
+             jobOptions="-l mem_free=20G")
 
-    statement = '''cat %(tmpfile)s | cut -f 1,2,3,8
-    | gzip > %(outfile)s; rm -f %(tmpfile)s'''
+    statement = '''cat %(tmpfile)s |
+                   gzip > %(outfile)s; rm -f %(tmpfile)s'''
 
     P.run()
 
+#########################################################################
+#########################################################################
+#########################################################################
 
-@follows(normalizeBed)
+
+@follows(NormalizeBed)
 @transform("counts.dir/*.norm.bedGraph.gz",
            regex("counts.dir/(.+)-(.+)-(.+)_Input.bwa.norm.bedGraph.gz"),
            add_inputs(r"counts.dir/\1-\2-\3.bwa.norm.bedGraph.gz"),
@@ -964,20 +1043,23 @@ def enrichVsInput(infile, outfile):
              outfiles=tmpfile,
              toCluster=True)
 
-    statement = '''cat %(tmpfile)s
-    | gzip > %(outfile)s; rm -f %(tmpfile)s'''
+    statement = '''cat %(tmpfile)s |  gzip > %(outfile)s; rm -f %(tmpfile)s'''
 
     P.run()
+#########################################################################
+#########################################################################
+#########################################################################
 
 
-@follows(mkdir("bigwig.dir"), enrichVsInput)
-@transform([enrichVsInput, normalizeBed],
+@follows(mkdir("bigwig.dir"), NormalizeBed)
+@transform("counts.dir/*.bedGraph.gz",
            regex("counts.dir/(.+).bedGraph.gz"),
            r"bigwig.dir/\1.bw")
 def convertBed2BigWig(infile, outfile):
     '''
     Use UCSC tools to convert bedGraph -> bigwig
     '''
+
     tmpfile = P.getTempFilename()
 
     contig_file = PARAMS['annotations_dir'] + "/contigs.tsv"
@@ -988,6 +1070,9 @@ def convertBed2BigWig(infile, outfile):
                    rm -f %(tmpfile)s'''
 
     P.run()
+#########################################################################
+#########################################################################
+#########################################################################
 
 
 @follows(mkdir("images.dir"), convertBed2BigWig)
@@ -999,6 +1084,9 @@ def plotHilbertCurves(infile, outfile):
     Use the BioC package `HilbertVis` to generate hilbert curves of bigwig
     files.  Generates one image file for each contig in the bigwig file.
     '''
+
+    to_cluster = True
+
     statement = '''python %(scriptsdir)s/bigwig2hilbert.py -v 0
                           --log=%(infile)s.log
                           --images-dir=images.dir
@@ -1007,6 +1095,57 @@ def plotHilbertCurves(infile, outfile):
     P.run()
 
     P.touch(outfile)
+
+#########################################################################
+#########################################################################
+#########################################################################
+
+
+def loadMethylationData(infile, design_file):
+    '''load methylation data for deseq/edger analysis.
+
+    This method creates various R objects:
+
+    countsTable : data frame with counts.
+    groups : vector with groups
+
+    '''
+
+    E.info("reading data")
+    R('''counts_table=read.delim('%(infile)s', header=TRUE,'''
+      '''row.names=1, stringsAsFactors=TRUE )''' % locals())
+
+    E.info("read data: %i observations for %i samples" %
+           tuple(R('''dim(counts_table)''')))
+
+    # Load comparisons from file
+    R('''pheno = read.delim('%(design_file)s', '''
+      '''header = TRUE, stringsAsFactors = TRUE )''' % locals())
+
+    # Make sample names R-like - substitute - for . and add the .prep suffix
+    R('''pheno[,1] = gsub('-', '.', pheno[,1]) ''')
+
+    # Ensure pheno rows match count columns
+    R('''pheno2 = pheno[match(colnames(counts_table),pheno[,1]),drop=FALSE]''')
+
+    # Subset data & set conditions
+    R('''includedSamples <- pheno2$include == '1' ''')
+    R('''countsTable <- counts_table[ , includedSamples ]''')
+    R('''conds <- pheno2$group[ includedSamples ]''')
+
+    # Subset data & set conditions
+    R('''includedSamples <- pheno2$include == '1' ''')
+    R('''countsTable <- counts_table[ , includedSamples ]''')
+    R('''groups <- factor(pheno2$group[ includedSamples ])''')
+    R('''pairs = factor(pheno2$pair[ includedSamples ])''')
+
+    groups = R('''levels(groups)''')
+    pairs = R('''levels(pairs)''')
+
+    E.info("filtered data: %i observations for %i samples" %
+           tuple(R('''dim(countsTable)''')))
+
+    return groups, pairs
 
 
 @follows(mkdir("deseq.dir"), mkdir("deseq.dir/plots"))
@@ -1035,6 +1174,10 @@ def runDESeq(infiles, outfile):
                           outfile,
                           "deseq.dir",
                           method="deseq")
+
+#########################################################################
+#########################################################################
+#########################################################################
 
 
 @transform(runDESeq, suffix(".tsv.gz"), ".load")
@@ -1174,13 +1317,16 @@ for x in METHODS:
 def diff_windows():
     pass
 
+#########################################################################
+
 
 @transform(DIFFTARGETS, suffix(".gz"), ".cpg.tsv.gz")
 def computeWindowComposition(infile, outfile):
-    '''for the windows returned from differential analysis, compute CpG
-    content for QC purposes.
-
+    '''for the windows returned from differential analysis, compute CpG content
+    for QC purposes.
     '''
+
+    to_cluster = True
 
     statement = '''
     zcat %(infile)s
@@ -1196,11 +1342,19 @@ def computeWindowComposition(infile, outfile):
 
     P.run()
 
+#########################################################################
+#########################################################################
+#########################################################################
+
 
 @transform(computeWindowComposition, suffix(".tsv.gz"), ".load")
 def loadWindowComposition(infile, outfile):
     '''load a sample of window composition data for QC purposes.'''
     P.load(infile, outfile, limit=10000)
+
+#########################################################################
+#########################################################################
+#########################################################################
 
 
 @transform(DIFFTARGETS, suffix(".gz"), ".merged.gz")
@@ -1210,6 +1364,8 @@ def mergeDMRWindows(infile, outfile):
     Sample/control labels are by default inverted to reflect
     that unmethylated windows are of principal interest.
     '''
+
+    to_cluster = True
 
     statement = '''
     zcat %(infile)s
@@ -1254,9 +1410,9 @@ def outputSpikeCounts(outfile, infile_name, max_expression, max_fold):
     expression_bins = numpy.arange(0, max_expression, 0.5)
     fold_change_bins = numpy.arange(-max_fold, max_fold, 0.5)
 
-    d2hist_counts, xedges, yedges = numpy.histogram2d(
-        l10average, l2fold,
-        bins=(expression_bins, fold_change_bins))
+    d2hist_counts, xedges, yedges = numpy.histogram2d(l10average, l2fold,
+                                                      bins=(expression_bins,
+                                                            fold_change_bins))
 
     dd = pandas.DataFrame(d2hist_counts)
     dd.index = list(xedges[:-1])
@@ -1479,6 +1635,8 @@ def loadDMRStats(infiles, outfile):
 def buildDMRWindowStats(infile, outfile):
     '''compute window size statistics of DMR from bed file.'''
 
+    to_cluster = True
+
     statement = '''
     zcat %(infile)s
     | grep -v 'contig'
@@ -1538,13 +1696,16 @@ def buildIntervalProfileOfTranscripts(infiles, outfile):
                       --output-filename-pattern="%(outfile)s.%%s"
                       --force
                       --reporter=transcript
-                      --method=geneprofile
+                      --method=separateexonprofilewithintrons
                       --method=tssprofile
                       --normalize-profile=all
                       --output-all-profiles
                       --resolution-upstream=1000
                       --resolution-downstream=1000
                       --resolution-cds=1000
+                      --resolution-first-exon=1000
+                      --resolution-last-exon=1000
+                      --resolution-introns=1000
                       --extension-upstream=5000
                       --extension-downstream=5000
                       %(options)s
@@ -1631,9 +1792,8 @@ inter_genomic_context_bed = PARAMS_ANNOTATIONS['interface_genomic_context_bed']
 @follows(mkdir('contextstats.dir'))
 @transform('*.bam',
            regex("(.*).bam"),
-           add_inputs(os.path.join(
-               PARAMS["annotations_dir"],
-               PARAMS_ANNOTATIONS["interface_genomic_context_bed"])),
+           add_inputs(os.path.join(PARAMS["annotations_dir"],
+                                   inter_genomic_context_bed)),
            r"contextstats.dir/\1.contextstats.tsv.gz")
 def buildContextStats(infiles, outfile):
     '''build mapping context stats.
@@ -1658,35 +1818,6 @@ def buildContextStats(infiles, outfile):
        | gzip
        > %(outfile)s
        '''
-
-    P.run()
-
-
-@transform(prepareTags,
-           regex("tags.dir/(.*).bed.gz"),
-           r"medips.dir/\1.medips")
-def runMEDIPS(infile, outfile):
-    '''run MEDIPS analysis -
-    outputs methylation profiles.
-    '''
-
-    job_options = "-l mem_free=23G"
-
-    statement = '''
-    zcat %(infile)s
-    | python %(scriptsdir)s/WrapperMEDIPS.py
-         --ucsc-genome=%(genome)s
-         --genome-file=%(genome_dir)s/%(genome)s
-         --bigwig
-         --input-format=bed
-         --extension=%(medips_extension)i
-         --fragment-length=%(medips_fragment_length)i
-         --force
-         --bin-size=%(medips_bin_size)i
-         --output-filename-pattern="%(outfile)s_%%s"
-         -
-    >& %(outfile)s
-    '''
 
     P.run()
 

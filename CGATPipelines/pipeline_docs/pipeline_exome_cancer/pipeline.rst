@@ -11,8 +11,5 @@ Contents:
    pipeline/Coverage.rst
    pipeline/Filtered.rst
 
-.. errorlist::
-
-
-.. pipeline/Coverage.rst
+.. errorlist::   
    

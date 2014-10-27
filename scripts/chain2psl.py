@@ -1,5 +1,4 @@
-"""
-chain2psl.py - convert a chain file to a psl file
+"""chain2psl.py - convert a chain file to a psl file
 =================================================
 
 :Author: Andreas Heger
@@ -10,32 +9,40 @@ chain2psl.py - convert a chain file to a psl file
 Purpose
 -------
 
-convert a `chain <http://www.breyer.com/ucsc/htdocs/goldenPath/help/chain.html>`_ 
-formatted file to a `psl <http://genome.ucsc.edu/FAQ/FAQformat.html#format2>`_
-formatted file.
+convert a UCSC `chain
+<http://www.breyer.com/ucsc/htdocs/goldenPath/help/chain.html>`_
+formatted file to a UCSC `psl
+<http://genome.ucsc.edu/FAQ/FAQformat.html#format2>`_ formatted file.
 
-This tool is equivalent to chainToPsl except that it will not compute the number
-of matching, mismatching, etc. bases and thus does not require the sequences.
+This tool is equivalent to the UCSC tool chainToPsl except that it
+will not compute the number of matching, mismatching, etc. bases and
+thus does not require the sequences.
 
-The nomenclature the UCSC uses is for its chain files is :file:`targetToQuery.chain` for 
-mapping ``query`` to ``target`` (reference). According to the UCSC documentation, 
-``target`` is the first entry in ``chain`` files. 
+The nomenclature the UCSC uses for its chain files is
+:file:`targetToQuery.chain` for mapping ``query`` to ``target``
+(reference). According to the UCSC documentation, ``target`` is the
+first entry in ``chain`` files.
 
-I have been using the nomenclature ``QueryToTarget.psl``. In following this convention,
-the correct way to converting a psl file is::
+We have been using the nomenclature ``QueryToTarget.psl``. In following
+this convention, the correct way to converting a psl file is::
 
    python chain2psl.py < targetToQuery.chain > QueryToTarget.psl
 
-If you would like to keep the TargetToQuery convention, you will need to add a pslSwap::
+If you would like to keep the TargetToQuery convention, you will need
+to add a pslSwap::
 
    python chain2psl.py < targetToQuery.chain | pslSwap stdin stdout > targetToQuery.psl
 
 Usage
 -----
 
+For example::
+
+   cgat chain2psl.py < in.chain > out.psl
+
 Type::
 
-   python chain2psl.py --help
+   cgat chain2psl.py --help
 
 for command line help.
 
@@ -44,11 +51,7 @@ Command line options
 
 """
 
-import os
 import sys
-import re
-import optparse
-
 import CGAT.Experiment as E
 import CGAT.Blat as Blat
 import alignlib_lite
@@ -64,7 +67,7 @@ def main(argv=None):
         argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser(version="%prog version: $Id: chain2psl.py 2899 2010-04-13 14:37:37Z andreas $",
+    parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
     # add common options (-h/--help, ...) and parse command line
@@ -111,7 +114,7 @@ def main(argv=None):
          alignment_id) = lines[0][:-1].split()
 
         (psl.mQueryStart, psl.mQueryEnd, psl.mQueryLength,
-         psl.mSbjctStart, psl.mSbjctEnd, psl.mSbjctLength ) = \
+         psl.mSbjctStart, psl.mSbjctEnd, psl.mSbjctLength) = \
             [int(x) for x in
              (query_start,
               query_end,
