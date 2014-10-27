@@ -166,13 +166,13 @@ rename_gene:
     stdin: hg19.small.sort_gene.gtf.gz
     outputs: [stdout]
     references: [hg19.small.sort_gene_rename.gtf.gz]
-    options: --rename-genes --apply=<DIR>/hg19.small.gene_map.tsv
+    options: --method=rename-genes --apply=<DIR>/hg19.small.gene_map.tsv
 
 rename_transcript:
     stdin: hg19.small.sort_gene.gtf.gz
     outputs: [stdout]
     references: [hg19.small.sort_gene_rename_transcript.gtf.gz]
-    options: --rename-genes --apply=<DIR>/hg19.small.transcript_map.tsv
+    options: --method=rename-genes --apply=<DIR>/hg19.small.transcript_map.tsv
 
 add_protein_id:
     stdin: hg19.small.sort_gene.gtf.gz
