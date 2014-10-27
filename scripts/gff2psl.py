@@ -12,6 +12,16 @@ Purpose
 
 This scripts converts from a :term:`gff` formatted
 file to a :term:`psl` formatted file.
+The output can be modified by the following command line options:
+
+--allow-duplicates
+    keep duplicate entries from gff/gtf input file
+
+--genome-file
+    restrict output to gff/gtf entries with contigs in fasta file
+
+--input-filename-queries
+    restrict output to queries in fasta file
 
 Usage
 -----
@@ -25,6 +35,7 @@ Type::
    python gff2psl.py --help
 
 for command line help.
+genome-file
 
 Command line options
 --------------------
