@@ -7,7 +7,7 @@ add-file-prefix	ok			scripts/combine_tables.py,scripts/csvs2csv.py
 add-flank	ok			scripts/gff2view.py
 add-gtf-source	ok			scripts/gtf2table.py
 add-percent	ok			scripts/bed2stats.py,scripts/gtfs2tsv.py,scripts/set_diff.py
-add-protein-id	rename		method=add-protein-id	scripts/gtf2gtf.py
+add-protein-id	rename		method=add-protein-id --map-tsv-file	scripts/gtf2gtf.py
 add-up-flank	rename		add-upstream-flank	scripts/gff2gff.py
 aggregate-column	ok			scripts/data2stats.py
 alignability-threshold	rename		zinba-alignability-threshold	scripts/runZinba.py
@@ -236,7 +236,7 @@ filename-vcf	rename		vcf-file	scripts/gtf2alleles.py,scripts/snp2counts.py,scrip
 filename-weights	rename		weights-tsv-file	scripts/fasta2table.py
 filename-windows	?		windows-bed-file	scripts/gff2table.py,scripts/gff_decorate.py
 files	?			scripts/bed2annotator.py
-filter	bad	should be -method		scripts/bam2bam.py,scripts/cgat_ruffus_profile.py,scripts/gtf2gtf.py,scripts/psl2assembly.py,scripts/transfac2transfac.py,scripts/trees2trees.py
+filter	rename	should be -method	method=filter --filter-method	scripts/bam2bam.py,scripts/cgat_ruffus_profile.py,scripts/gtf2gtf.py,scripts/psl2assembly.py,scripts/transfac2transfac.py,scripts/trees2trees.py
 filter-by-monophyly	bad	should be -method		scripts/trees2trees.py
 filter-by-trees	bad	should be -method		scripts/trees2trees.py
 filter-length	bad	should be -method		scripts/contigs2stats.py
@@ -367,7 +367,7 @@ input-reads	rename		num-reads	scripts/bam2stats.py
 input-regex	ok			scripts/cgat2dot.py,scripts/cgat2rdf.py
 insert-sd	rename		insertsize-std	scripts/add_random_reads_to_bam.py
 insert-size	rename		insertsize-mean	scripts/add_random_reads_to_bam.py
-intersect-transcripts	bad	should be -method		scripts/gtf2gtf.py
+intersect-transcripts	rename		method=intersect-transcripts	scripts/gtf2gtf.py
 intervals	rename		intervals-bed-file	scripts/bam_vs_bam.py
 intron-border	ok			scripts/gtf2gtf.py
 intron-min-length	ok			scripts/gtf2gtf.py
@@ -617,23 +617,23 @@ region	ok			scripts/bam2bed.py
 remove-all-gaps	bad	should be -method		scripts/malis2mali.py,scripts/malis2malis.py
 remove-any-gaps	bad	should be -method		scripts/malis2mali.py,scripts/malis2malis.py
 remove-contigs	bad	should be -method		scripts/bams2bam.py,scripts/gff2gff.py,scripts/rnaseq_junction_bam2bam.py
-remove-duplicates	split	method, --duplicate-feature		scripts/gtf2gtf.py
+remove-duplicates	rename		method=remove-duplicates --duplicate-feature	scripts/gtf2gtf.py
 remove-frameshifts	bad	should be -method		scripts/align_transcripts.py
 remove-inconsistent	bad	should be -method		scripts/bed2bed.py
 remove-masked-regions	bad	should be -method		scripts/gff2fasta.py
 remove-overhangs	bad	should be -method		scripts/annotator_distance.py
-remove-overlapping	rename	 	method=remove-overlapping	scripts/gtf2gtf.py
+remove-overlapping	rename	 	method=remove-overlapping --gff-file	scripts/gtf2gtf.py
 remove-regex	bad	should be -method		scripts/index2bed.py
 remove-rna	bad	should be -method		scripts/bam2stats.py
 remove-stops	bad	should be -method		scripts/align_transcripts.py,scripts/mali2kaks.py
-rename	rename	 	method=rename	scripts/gtf2gtf.py
+rename	rename	WARNING-ambiguous	method=rename-genes	scripts/gtf2gtf.py
 rename-column	bad	should be -method		scripts/csv2db.py
 rename-duplicates	rename		method=rename-duplicates	scripts/gtf2gtf.py
 renumber	bad	should be -method		scripts/farm.py,scripts/nofarm.py
 renumber-column	bad	should be -method		scripts/farm.py,scripts/nofarm.py
-renumber-genes	rename		method=renumber-genes	scripts/gtf2gtf.py
+renumber-genes	rename		method=renumber-genes --pattern	scripts/gtf2gtf.py
 renumber-ids	bad	should be -method		scripts/fastq2fastq.py
-renumber-transcripts	rename	 	method=renumber-transcripts	scripts/gtf2gtf.py
+renumber-transcripts	rename	 	method=renumber-transcripts --pattern	scripts/gtf2gtf.py
 reorder	bad	should be -method		scripts/vcf2vcf.py
 replace	bad	should be -method		scripts/modify_table.py
 replace-header	bad	should be -method		scripts/csv2db.py
@@ -715,7 +715,7 @@ skip-titles	ok			scripts/combine_tables.py,scripts/csvs2csv.py
 skip-trees	ok			scripts/tree2taxa.py
 slims	bad			scripts/genelist_analysis.py,scripts/runGO.py
 snapshot-dir	ok			scripts/bed2plot.py
-sort	complex-split	--method, --sort-order	sort-order	scripts/bam2peakshape.py,scripts/codonbias_weights2tsv.py,scripts/combine_tables.py,scripts/csvs2csv.py,scripts/fastq2fastq.py,scripts/gtf2gff.py,scripts/gtf2gtf.py
+sort	rename	WARNING-complex	method=sort --sort-order	scripts/bam2peakshape.py,scripts/codonbias_weights2tsv.py,scripts/combine_tables.py,scripts/csvs2csv.py,scripts/fastq2fastq.py,scripts/gtf2gff.py,scripts/gtf2gtf.py
 sort-by-rows	ok			scripts/table2table.py
 sort-keys	ok			scripts/combine_tables.py,scripts/csvs2csv.py
 sort-order	ok			scripts/genelist_analysis.py,scripts/runGO.py
@@ -805,7 +805,7 @@ ucsc-user-tracks	ok			scripts/gff2view.py
 uniq	rename		unique	scripts/fastq2fastq.py
 unique	split			scripts/bam2bidirectionaltranscription.py,scripts/bams2bam.py,scripts/psl2psl.py,scripts/rnaseq_junction_bam2bam.py
 unpaired	ok			scripts/fastqs2fastqs.py
-unset-genes	rename		method=unset-genes	scripts/gtf2gtf.py
+unset-genes	rename		method=unset-genes --pattern	scripts/gtf2gtf.py
 unset-unmapped-mapq		should be -method		scripts/bam2bam.py
 unstrip		should be -method		scripts/bam2bam.py
 update	ok			scripts/diff_bed.py,scripts/diff_gtf.py,scripts/gtfs2graph.py

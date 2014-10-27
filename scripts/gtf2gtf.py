@@ -209,7 +209,7 @@ Options for altering fields within :term:`gtf`.
     the start of the feature.  (Assumes input file is sorted by
     transcript-id)
 
-``--rename-duplicates``
+``rename-duplicates``
     Rename duplicate gene_ids and transcript_ids by addition of
     numerical suffix
 
@@ -410,6 +410,7 @@ def main(argv=None):
                           "set-gene-to-transcript",
                           "set-protein-to-transcript",
                           "set-score-to-distance",
+                          "sort",
                           "transcript2genes",
                           "unset-genes"),
                       help="Method to apply [default=%default].")
@@ -532,7 +533,7 @@ def main(argv=None):
                         E.info("discarded duplicates for %s: %i" %
                                (id, counts[id]))
 
-    elif options.sort:
+    elif "sort" == options.method:
 
         for gff in GTF.iterator_sorted(GTF.iterator(options.stdin),
                                        sort_order=options.sort_order):
@@ -541,7 +542,7 @@ def main(argv=None):
             noutput += 1
             nfeatures += 1
 
-    elif options.set_gene2transcript:
+    elif "set-gene2transcript" == options.method:
 
         for gff in GTF.iterator(options.stdin):
 
@@ -553,7 +554,7 @@ def main(argv=None):
             noutput += 1
             nfeatures += 1
 
-    elif options.set_protein2transcript:
+    elif "set-protein2transcript" == options.method:
 
         for gff in GTF.iterator(options.stdin):
             ninput += 1
@@ -562,7 +563,7 @@ def main(argv=None):
             noutput += 1
             nfeatures += 1
 
-    elif options.add_protein_id:
+    elif "add-protein-id" == options.method:
 
         transcript2protein = IOTools.readMap(
             IOTools.openFile(options.filename_filter, "r"))
@@ -588,7 +589,7 @@ def main(argv=None):
         E.info("transcripts removed due to missing protein ids: %i" %
                len(missing))
 
-    elif options.join_exons:
+    elif "join-exons" == options.method:
 
         for exons in GTF.transcript_iterator(GTF.iterator(options.stdin)):
             ninput += 1
@@ -610,7 +611,7 @@ def main(argv=None):
             y.gene_id = geneid
             options.stdout.write("%s\n" % str(y))
 
-    elif options.merge_genes:
+    elif "merge_genes" == options.method:
         # merges overlapping genes
         #
         gffs = GTF.iterator_sorted_chunks(
@@ -679,7 +680,7 @@ def main(argv=None):
 
             noutput += 1
 
-    elif options.renumber_genes:
+    elif options.method == "renumber-genes":
 
         map_old2new = {}
         for gtf in GTF.iterator(options.stdin):
@@ -691,7 +692,7 @@ def main(argv=None):
             options.stdout.write("%s\n" % str(gtf))
             noutput += 1
 
-    elif options.unset_genes:
+    elif options.method == "unset-genes":
 
         map_old2new = {}
         for gtf in GTF.iterator(options.stdin):
@@ -703,7 +704,7 @@ def main(argv=None):
             options.stdout.write("%s\n" % str(gtf))
             noutput += 1
 
-    elif options.renumber_transcripts:
+    elif options.method == "renumber-transcripts":
 
         map_old2new = {}
         for gtf in GTF.iterator(options.stdin):
@@ -716,7 +717,7 @@ def main(argv=None):
             options.stdout.write("%s\n" % str(gtf))
             noutput += 1
 
-    elif options.transcripts2genes:
+    elif options.method == "transcripts2genes":
 
         transcripts = set()
         genes = set()
@@ -744,9 +745,9 @@ def main(argv=None):
 
         if options.method == "rename-transcripts":
             is_gene_id = False
-        elif options.method == "rename-transripts":
+        elif options.method == "rename-genes":
             is_gene_id = True
-
+            
         for gff in GTF.iterator(options.stdin):
             ninput += 1
 
@@ -771,7 +772,7 @@ def main(argv=None):
             noutput += 1
             options.stdout.write("%s\n" % str(gff))
 
-    elif "filter" == options.method:
+    elif options.method == "filter":
 
         keep_genes = set()
         if options.filter_method == "longest-gene":
@@ -873,7 +874,7 @@ def main(argv=None):
                     nfeatures += 1
                     options.stdout.write("%s\n" % g)
 
-        elif options.filter_metod in ("gene", "transcript"):
+        elif options.filter_method in ("gene", "transcript"):
 
             if options.filename_filter:
 
@@ -882,8 +883,8 @@ def main(argv=None):
                 E.info("read %i ids" % len(ids))
 
                 ids = set(ids)
-                by_gene = options.filter == "gene"
-                by_transcript = options.filter == "transcript"
+                by_gene = options.filter_method == "gene"
+                by_transcript = options.filter_method == "transcript"
                 invert = options.invert_filter
 
                 ignore_strand = options.ignore_strand
@@ -908,10 +909,10 @@ def main(argv=None):
 
             elif options.sample_size:
 
-                if options.filter == "gene":
+                if options.filter_method == "gene":
                     iterator = GTF.flat_gene_iterator(
                         GTF.iterator(options.stdin))
-                elif options.filter == "transcript":
+                elif options.filter_method == "transcript":
                     iterator = GTF.transcript_iterator(
                         GTF.iterator(options.stdin))
                 if options.min_exons_length:
@@ -935,7 +936,7 @@ def main(argv=None):
                 assert False, "please supply either a filename "
                 "with ids to filter with (--map-tsv-file) or a sample-size."
 
-    elif options.exons2introns:
+    elif options.method == "exons2introns":
 
         for gffs in GTF.flat_gene_iterator(GTF.iterator(options.stdin)):
 
@@ -977,7 +978,7 @@ def main(argv=None):
             else:
                 ndiscarded += 1
 
-    elif options.set_score2distance:
+    elif options.method == "set-score-to-distance":
 
         for gffs in GTF.transcript_iterator(GTF.iterator(options.stdin)):
             ninput += 1
@@ -1000,7 +1001,7 @@ def main(argv=None):
                 nfeatures += 1
             noutput += 1
 
-    elif options.remove_overlapping:
+    elif options.method == "remove-overlapping":
 
         index = GTF.readAndIndex(
             GTF.iterator(IOTools.openFile(options.filename_gff, "r")))
@@ -1021,7 +1022,7 @@ def main(argv=None):
                     nfeatures += 1
                     options.stdout.write("%s\n" % str(e))
 
-    elif options.intersect_transcripts:
+    elif options.method == "intersect-transcripts":
 
         for gffs in GTF.gene_iterator(GTF.iterator(options.stdin),
                                       strict=options.strict):
@@ -1092,7 +1093,8 @@ def main(argv=None):
 
             options.stdout.write("%s\n" % gtf)
 
-    else:
+    elif options.method in ("merge-exons", "merge-introns",
+                            "merge-transcripts"):
         for gffs in GTF.flat_gene_iterator(
                 GTF.iterator(options.stdin),
                 strict=options.strict):
@@ -1106,12 +1108,14 @@ def main(argv=None):
             strands = set([x.strand for x in gffs])
             contigs = set([x.contig for x in gffs])
             if len(strands) > 1:
-                raise ValueError("can not merge gene '%s' on multiple strands: %s" % (
-                    gffs[0].gene_id, str(strands)))
+                raise ValueError(
+                    "can not merge gene '%s' on multiple strands: %s" % (
+                        gffs[0].gene_id, str(strands)))
 
             if len(contigs) > 1:
-                raise ValueError("can not merge gene '%s' on multiple contigs: %s" % (
-                    gffs[0].gene_id, str(contigs)))
+                raise ValueError(
+                    "can not merge gene '%s' on multiple contigs: %s" % (
+                        gffs[0].gene_id, str(contigs)))
 
             strand = Genomics.convertStrand(gffs[0].strand)
 
@@ -1144,7 +1148,7 @@ def main(argv=None):
 
             result = []
 
-            if options.merge_exons:
+            if options.method == "merge-exons":
                 # need to combine per feature - skip
                 # utr_ranges = Intervals.combineAtDistance(
                 # utr_ranges,
@@ -1174,7 +1178,7 @@ def main(argv=None):
                     entry.end = end
                     result.append(entry)
 
-            elif options.merge_transcripts:
+            elif options.method == "merge-transcripts":
 
                 entry = GTF.Entry()
                 entry.copy(gffs[0])
@@ -1184,7 +1188,7 @@ def main(argv=None):
                 entry.end = output_ranges[-1][1]
                 result.append(entry)
 
-            elif options.merge_introns:
+            elif options.method == "merge-introns":
 
                 if len(output_ranges) >= 2:
                     entry = GTF.Entry()
