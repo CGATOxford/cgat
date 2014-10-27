@@ -131,7 +131,7 @@ detail see command line options.
 Input gtfs need to be sorted so that features for a gene or transcript
  appear consecutively within the file. This can be achevied using ``--sort``.
 
-``--filter``
+``filter``
     When filtering on the basis of 'gene-id' or 'transcript-id' a
     filename containing ids to be removed may provided using
     ``--map-tsv-file``. Alternatively, a random subsample of
@@ -147,12 +147,12 @@ Input gtfs need to be sorted so that features for a gene or transcript
     When filtering on the basis of gene-id, transcript-id or longest-gene,
     ``--invert-filter`` may be used to invert the selection.
 
-``--remove-overlapping``
+``remove-overlapping``
     Given a second :term:`gff` formatted file (``--file-gff``) removes
     any features overlapping. Any transcripts that intersect intervals
     in the supplied file are removed.  (Does not account for strand.)
 
-``--remove-duplicates``
+``remove-duplicates``
     Remove duplicate features from :term:`gtf` file. The type of
     feature to be removed is set by the option ``-duplicate-feature``.
     Setting ``--duplicate-feature`` to 'gene', 'transcript', or
@@ -167,40 +167,43 @@ Setting fields
 
 Options for altering fields within :term:`gtf`.
 
-``--rename``
-    When a mapping file is provided using ``--map-tsv-file``, renames either
-    gene-id or transcript-id. Outputs a :term:`gtf` file with field
-    renamed. Any entry in input :term:`gtf` not appearing in mapping
-    file is discarded.
+``rename-genes``
+    With a mapping file is provided using ``--map-tsv-file``, renames
+    the gene_id to the one supplied. Outputs a :term:`gtf` file with
+    field renamed. Any entry in input :term:`gtf` not appearing in
+    mapping file is discarded.
 
-``--add-protein-id``
+``rename-transcripts``
+    as ``rename-genes``, but renames the transcript_id.
+
+``add-protein-id``
     Takes a map of transcript_id to protein_id from the a tsv file
     (see option ``--map-tsv-file``) and appends the protein_id
     provided to the attributes field.  Any entry with a transcript_id
     not appearing in the tsv file is discarded.
 
-``--renumber-genes``
+``renumber-genes``
     Renumber genes from 1 using the pattern provided in ``--pattern``.
 
-``--renumber-transcripts``
+``renumber-transcripts``
     Renumber transcripts from 1 using the pattern provided in
     ``--pattern``.
 
-``--unset-genes``
+``unset-genes``
     Renumber genes from 1 using the pattern provided in ``--pattern``.
     Transcripts with the same gene-id in the input :term:`gtf` file will
     have different gene-ids in the output :term:`gtf` file.
 
-``--set-transcript-to-gene``
+``set-transcript-to-gene``
     Will set the transcript-id to the gene-id for each feature.
 
-``--set-gene-to-transcript``
+``set-gene-to-transcript``
     Will set the gene-id to the transcript-id for each each feature.
 
-``--set-protein-to-transcript``
+``set-protein-to-transcript``
     Will append transcript_id to attributes field as 'protein_id'
 
-``--set-score-to-distance``
+``set-score-to-distance``
     Will reset the score field (field 6) of each feature in input
     :term:`gtf` to be the distance from transcription start site to
     the start of the feature.  (Assumes input file is sorted by
@@ -387,27 +390,28 @@ def main(argv=None):
 
     parser.add_option("-m", "--method", dest="method", type="choice",
                       choices=(
+                          "add-protein-id",
+                          "exons2introns",
+                          "filter",
+                          "intersect-transcripts",
+                          "join-exons",
                           "merge-exons",
                           "merge-transcripts",
                           "merge-genes",
-                          "join-exons",
-                          "intersect-transcripts",
                           "merge-introns",
-                          "exons-file2introns",
-                          "transcript2genes",
-                          "filter",
                           "remove-overlapping",
                           "remove-duplicates",
-                          "rename",
-                          "add-protein-id",
+                          "rename-genes",
+                          "rename-transcripts",
+                          "rename-duplicates",
                           "renumber-genes",
                           "renumber-transcripts",
-                          "unset-genes",
                           "set-transcript-to-gene",
                           "set-gene-to-transcript",
                           "set-protein-to-transcript",
                           "set-score-to-distance",
-                          "rename-duplicates"),
+                          "transcript2genes",
+                          "unset-genes"),
                       help="Method to apply [default=%default].")
 
     parser.set_defaults(
@@ -733,14 +737,14 @@ def main(argv=None):
         E.info("transcripts2genes: transcripts=%i, genes=%i" %
                (len(transcripts), len(genes)))
 
-    elif options.rename:
+    elif options.method in ("rename-genes", "rename-transcripts"):
 
         map_old2new = IOTools.readMap(
             IOTools.openFile(options.filename_filter, "r"))
 
-        if options.rename == "transcript":
+        if options.method == "rename-transcripts":
             is_gene_id = False
-        elif options.rename == "gene":
+        elif options.method == "rename-transripts":
             is_gene_id = True
 
         for gff in GTF.iterator(options.stdin):
