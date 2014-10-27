@@ -10,6 +10,7 @@ Contents:
    pipeline/Mapping.rst
    pipeline/Coverage.rst
    pipeline/Filtered.rst
+   pipeline/Signature.rst
    
 .. errorlist::
 
