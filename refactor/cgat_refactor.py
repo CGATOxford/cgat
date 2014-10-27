@@ -63,6 +63,18 @@ import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 
 
+def checkUnique(l):
+    '''check if elements is list l are unique.'''
+    # check for unique mapping
+    values = list(sorted(l))
+    unique = set(values)
+    if len(values) != len(unique):
+        raise ValueError(
+            "non-unique option mappings")
+    else:
+        E.info("option list is unique")
+
+
 def updateFiles(dirs, map_old2new, counter, suffixes, dry_run=False):
     '''iterate through all files in dirs and
     replace patterns is map_old2new'''
@@ -81,6 +93,8 @@ def updateFiles(dirs, map_old2new, counter, suffixes, dry_run=False):
 
                 changed = False
                 for old_name, new_name in map_old2new.items():
+                    old_name += """(['`\s"])"""
+                    new_name += r"\1"
                     new_data = re.sub(old_name, new_name, old_data)
                     if old_data != new_data:
                         changed = True
@@ -220,15 +234,8 @@ def main(argv=None):
         # select all options that need to renamed
         selected = table[table.action == "rename"]
 
-        # check for unique mapping
-        values = list(sorted(selected["option"]))
-        unique = set(values)
-        if len(values) != len(unique):
-            raise ValueError(
-                "non-unique option mappings in file %s" %
-                options.rename_options)
-        else:
-            E.info("option list in %s is unique" % options.rename_options)
+        # check if all are unique
+        checkUnique(selected["options"])
 
         # build map adding "--" prefix
         map_old2new = dict(zip(
