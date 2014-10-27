@@ -75,14 +75,24 @@ def checkUnique(l):
         E.info("option list is unique")
 
 
-def updateFiles(dirs, map_old2new, counter, suffixes, dry_run=False):
+def updateFiles(dirs, map_old2new, counter,
+                suffixes,
+                regex_restrict=None,
+                dry_run=False):
     '''iterate through all files in dirs and
     replace patterns is map_old2new'''
+
+    if regex_restrict:
+        rx = re.compile(regex_restrict)
+    else:
+        rx = None
 
     for d in dirs:
         for root, dirs, files in os.walk(d):
             for f in files:
                 _, ext = os.path.splitext(f)
+                if rx and not rx.search(f):
+                    continue
                 if ext not in suffixes:
                     continue
 
@@ -93,7 +103,8 @@ def updateFiles(dirs, map_old2new, counter, suffixes, dry_run=False):
 
                 changed = False
                 for old_name, new_name in map_old2new.items():
-                    old_name += """(['`\s"])"""
+                    # only replace at word boundaries
+                    old_name += """(['`\s"=])"""
                     new_name += r"\1"
                     new_data = re.sub(old_name, new_name, old_data)
                     if old_data != new_data:
@@ -141,6 +152,9 @@ def main(argv=None):
                       action="store_true",
                       help="dry run, do not implement any changes")
 
+    parser.add_option("--restrict-regex", dest="regex_restrict", type="string",
+                      help="regular expression to restrict refactoring to")
+
     parser.add_option("-d", "--directories", dest="dirs", action="append",
                       type="string",
                       help="directories to change files in [%defaul]")
@@ -153,6 +167,7 @@ def main(argv=None):
         dirs=[],
         suffixes=[],
         dry_run=False,
+        regex_restrict=None,
     )
 
     # add common options (-h/--help, ...) and parse command line
@@ -235,7 +250,7 @@ def main(argv=None):
         selected = table[table.action == "rename"]
 
         # check if all are unique
-        checkUnique(selected["options"])
+        checkUnique(selected["option"])
 
         # build map adding "--" prefix
         map_old2new = dict(zip(
@@ -244,6 +259,7 @@ def main(argv=None):
 
         updateFiles(options.dirs, map_old2new, counter,
                     suffixes=options.suffixes,
+                    regex_restrict=options.regex_restrict,
                     dry_run=options.dry_run)
 
     E.info(str(counter))
