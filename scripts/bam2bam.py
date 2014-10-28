@@ -175,7 +175,7 @@ def main(argv=None):
                       "without mismatches (requires NM tag to be present). "
                       "[%default]")
 
-    parser.add_option("--filter-method", dest="filter_method",
+    parser.add_option("--filter-method", dest="filter_methods",
                       action="append", type="choice",
                       choices=('NM', 'CM', 'mapped', 'unique', "non-unique"),
                       help = "filter method to apply to remove alignments "
@@ -214,7 +214,7 @@ def main(argv=None):
         methods=[],
         output_sam=False,
         reference_bam=None,
-        filter_method=[],
+        filter_methods=[],
         strip_method="all",
         force=False,
         inplace=False,
@@ -335,7 +335,8 @@ def main(argv=None):
                         yield read
                 it = set_sequence(it)
 
-            if "strip" in options.methods:
+            if "strip-sequence" in options.methods or "strip-quality" in \
+               options.methods:
                 def strip_sequence(i):
                     for read in i:
                         read.seq = None
@@ -366,12 +367,13 @@ def main(argv=None):
                             read.seq = None
                         yield read
 
-                if options.strip_method == "sequence":
-                    it = strip_sequence(it)
-                    pre_check_f = check_sequence
-                elif options.strip_method == "quality":
-                    it = strip_quality(it)
-                    pre_check_f = check_quality
+                if options.strip_method == "all":
+                    if "strip-sequence" in options.methods:
+                        it = strip_sequence(it)
+                        pre_check_f = check_sequence
+                    elif "strip-quality" in options.methods:
+                        it = strip_quality(it)
+                        pre_check_f = check_quality
                 elif options.strip_method == "match":
                     it = strip_match(it)
 
@@ -414,7 +416,7 @@ def main(argv=None):
                 else:
                     it = unstrip_unpaired(it)
 
-            if "set-nh" in options:
+            if "set-nh" in options.methods:
                 it = _bam2bam.SetNH(it)
 
             # keep first base of reads by changing the cigarstring to
