@@ -7,11 +7,44 @@ gff2gff.py - manipulate gff files
 :Date: |today|
 :Tags: Genomics Intervals GFF Manipulation
 
+
 Purpose
 -------
 
 This scripts reads a :term:`gff` formatted file, operates
 on it and outputs the new intervals in :term:`gff` format.
+
+
+Command line options:
+---------------------
+
+``--filename-agp``
+    agp file to map coordinates from contigs to scaffolds
+
+``--complement-groups``
+    use exons to write introns
+
+``--group-field``
+    gff field/attribute to group by, e.g gene_id, transrcipt_id
+
+``--combine-groups``
+    combine groups
+
+``--skip-missing``
+    skip entries on missing contigs. This prevents exception from being raised
+
+
+Contigs can either be provided in an indexed fasta genome file
+``--genome-file`` or a file containing contig sizes ``--contigs``
+
+
+Output options:
+
+``--forward-coordinates``
+    translate to forward coordinates
+
+``--forward-strand``
+    convert to forward strand
 
 Extension options:
 
@@ -49,15 +82,23 @@ Filtering options:
    remove contig matching to a series of regular expressions.
 
 
-
 Usage
 -----
 
-Make sure that a :term:`gff` formatted file contains only features on placed chromosomes::
+Make sure that a :term:`gff` formatted file contains only
+features on placed chromosomes::
 
-   cat in.gff 
-   | gff2gff.py --sanitize=genome --genome-file=hg19 --skip-missing 
+As an example, to sanatise hg19 chromosome names and remove
+chromosome matching the regular expression patterns
+"ChrUn" or "_random", use the following:
+
+   cat in.gff
+   | gff2gff.py --sanitize=genome --genome-file=hg19 --skip-missing
    | gff2gff.py --remove-contigs="chrUn,_random" > gff.out
+
+The "--skip-missing" option prevents an exception being
+raised if entries are found on missing chromosomes
+
 
 Type::
 

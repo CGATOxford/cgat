@@ -1049,7 +1049,7 @@ class Bismark(Mapper):
             infiles = infiles[0][0]
             statement = '''
             bismark %%(bismark_options)s -q --bowtie2 --output_dir %%(outdir)s
-            -p %%(job_threads)s --bam --phred33-quals %(bismark_index)s
+            -p %%(bismark_threads)s --bam --phred33-quals %(bismark_index)s
             %(infiles)s;
             ''' % locals()
 
@@ -1059,7 +1059,7 @@ class Bismark(Mapper):
 
             statement = '''
             bismark %%(bismark_options)s -q --bowtie2 --output_dir %%(outdir)s
-            -p %%(job_threads)s --bam --non_directional
+            -p %%(bismark_threads)s --bam --non_directional
             --phred33-quals %(bismark_index)s -1 %(infiles1)s -2 %(infiles2)s;
             ''' % locals()
 

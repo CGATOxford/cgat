@@ -192,11 +192,12 @@ def getPicardOptions():
 
 
 def getGATKOptions():
-    return "-pe dedicated 6 -R y -l mem_free=4G -l picard=1"
+    # removed picard=1, surely not neccessary?
+    return "-pe dedicated 6 -R y -l mem_free=4G"
 
 
 def getMuTectOptions():
-    return "-pe dedicated 1 -R y -l mem_free=4G -l picard=1"
+    return "-pe dedicated 2 -R y -l mem_free=6G"
 
 
 #########################################################################
@@ -794,8 +795,10 @@ def indelCaller(infile, outfile):
 # 3. run mutect calling function with subset against unsubsetted tumour
 # 4. summary table
 
+adeno_bam = "bam/NU16C-Control-1.realigned.bqsr.bam"
 
-@subdivide("downsample_coverage/NU16C-Control-1.realigned.bqsr.bam",
+
+@subdivide(adeno_bam,
            regex("(\S+).bqsr.bam"),
            [r"\1.0.1.bqsr.bam",
             r"\1.0.2.bqsr.bam",
@@ -810,16 +813,12 @@ def indelCaller(infile, outfile):
 def subsetControlBam(infile, outfiles):
     statements = []
     n = 0
-    for fraction in numpy.arange(0.1, 0.9, 0.1):
+    for fraction in numpy.arange(0.1, 1.1, 0.1):
         outfile = outfiles[n]
         n += 1
         statement = ('''samtools view -s %(fraction)s -b %(infile)s
                      > %(outfile)s''' % locals())
         P.run()
-
-    outfile = outfiles[n]
-    statement = '''ln -s %(infile)s %(outfile)s''' % locals()
-    P.run()
 
 
 @transform(subsetControlBam,
@@ -832,13 +831,13 @@ def indexSubsets(infile, outfile):
 
 @follows(indexSubsets)
 @transform(subsetControlBam,
-           regex(r"(\S+)-Control-1.realigned.(\S+).bqsr.bam"),
+           regex(r"bam/(\S+)-Control-1.realigned.(\S+).bqsr.bam"),
            add_inputs(mergeControlVariants),
-           r"\1-downsampled-\2.mutect.snp.vcf")
+           r"variants/\1-downsampled-\2.mutect.snp.vcf")
 def runMutectOnDownsampled(infiles, outfile):
     '''calls somatic SNPs using MuTect'''
     infile, normal_panel = infiles
-    infile_tumour = "downsample_coverage/NU16C-Adeno-1.realigned.bqsr.bam"
+    infile_tumour = adeno_bam
     # mutect repeatedly hangs-up with multithreading
     # furthermore, multithreading doesn't speed up even nearly linearly
     # threads = PARAMS["gatk_threads"]
@@ -872,6 +871,9 @@ def runMutectOnDownsampled(infiles, outfile):
     --coverage_file %(coverage_wig_out)s
     --vcf %(outfile)s
     --min_qscore 20
+    --max_alt_alleles_in_normal_qscore_sum 100
+    --max_alt_alleles_in_normal_count 6
+    --max_alt_allele_in_normal_fraction 0.05
     --gap_events_threshold 2
     --tumor_lod %(tumor_LOD)s
     --enable_extended_output
@@ -1121,14 +1123,14 @@ def loadVariantAnnotation(infile, outfile):
     P.run()
 
 
-# EXT_OUT = glob.glob("variants/*call_stats.out")
-
 @follows(runMutect)
 @transform("variants/*call_stats.out",
            regex(r"variants/(\S+)_call_stats.out"),
            r"variants/\1_call_stats.out.load")
 def loadMutectExtendedOutput(infile, outfile):
     '''Load mutect extended output into database'''
+
+    index = "CHROM, POS"
 
     dbh = connect()
     scriptsdir = PARAMS["general_scriptsdir"]
@@ -1298,6 +1300,7 @@ def loadNCG(outfile):
 
     # infile = PARAMS["cancergenes_table"]
     infile = "../backup/NCG/cancergenes.tsv"
+    index = "symbol"
     dbh = connect()
     scriptsdir = PARAMS["general_scriptsdir"]
     tablename = P.toTable(outfile)
