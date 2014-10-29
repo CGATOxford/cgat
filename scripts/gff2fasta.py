@@ -61,6 +61,41 @@ and ``softmask``.
 Options
 -------
 
+``--is-gtf``
+  Tells the script to expect a :term:`gtf` format file
+
+``--genome-file``
+  PATH to Fasta file of genome build to use
+
+``--merge``
+  Merge features in :term:`gtf`/:term:`gff` file that are adjacent and share
+  attributes
+
+``--filter``
+  Filter on a :term:`gff` feature such as ``exon`` or ``CDS``
+
+``--filename-masks``
+  Mask sequences in intervals in :term:`gff` file
+
+``--remove-masked-regions``
+  Remove sequences in intervals in :term:`gff` file rather than masking them
+
+``--min-length``
+  Minimum output sequence length
+
+``--max-length``
+  Maximum output sequence length
+
+``--extend-at``
+  Extend sequence at 3', 5' or both end.  Optionally '3only' or '5only' will
+  return only the 3' or 5' extended sequence
+
+``--extend-by``
+  Used in conjunction with ``--extend-at``, the number of nucleotides to extend
+  by
+
+``--masker``
+  Masker type to use: dust, dustmasker, soft or none
 
 Command line options
 --------------------
