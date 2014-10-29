@@ -7,6 +7,8 @@ bed2fasta.py - get sequences from bed file
 :Date: |today|
 :Tags: Genomics Intervals Sequences Conversion BED FASTA 
 
+
+
 Purpose
 -------
 
@@ -23,8 +25,24 @@ Options
 |-m, --masker      |Masks out a collection of sequences, for      |
 |                  |example repeat sequences                      |
 +------------------+----------------------------------------------+
-
-
+|--min-length      |Set a minimum sequence length                 |
++------------------+----------------------------------------------+
+|--max-length      |Set a maximum sequence length                 |
++------------------+----------------------------------------------+
+|--use-strand      |Return reverse complement sequence            |
++------------------+----------------------------------------------+
+|-o, --mode        |Choose output format. "intervals" generates a |
+|                  |single sequence for each bed interval.        |
+|                  |"leftright" generates two sequences, one in   |
+|                  |each direction, for each bed interval         |
++------------------+----------------------------------------------+
+|--extend-at       |Extend the returned fasta sequence at choosen |
+|                  |end. Choices are "3", "5", "both", "3only",   |
+|                  |"5only" If 3only or 5only are set,            |
+|                  |only the added sequence is returned           |
++------------------+----------------------------------------------+
+|--extend-by       |Extend by # bases                             |
++------------------+----------------------------------------------+
 
 Usage
 -----

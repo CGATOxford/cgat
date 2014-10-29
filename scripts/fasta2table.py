@@ -1,5 +1,4 @@
-'''
-fasta2table.py - analyze sequence composition, codon usage, bias and degeneracy 
+'''fasta2table.py - analyze sequence composition, codon usage, bias and degeneracy 
 ====================================================================================
 
 :Author: Andreas Heger
@@ -43,27 +42,32 @@ aa
    amino acid composition (nucleotide sequence must have length divisible by 3)
 
 degeneracy
-    count the number of degenerate sites (nucleotide sequence only, sequence must have length divisible by 3)
-    
+    count the number of degenerate sites (nucleotide sequence only,
+    sequence must have length divisible by 3)
+
 codons
-   codon composition (nucleotide sequence only, sequence must have length divisible by 3)
+   codon composition (nucleotide sequence only, sequence must have
+   length divisible by 3)
 
 codon-usage
-    output codon frequencies for each sequence (nucleotide sequence only, sequence must have length divisible by 3)
+    output codon frequencies for each sequence (nucleotide sequence
+    only, sequence must have length divisible by 3)
 
 codon-bias
-    output codon bias for each sequence (nucleotide sequence only, sequence must have length divisible by 3)
+    output codon bias for each sequence (nucleotide sequence only,
+    sequence must have length divisible by 3)
 
 codon-translator
-    translate codons for each sequence to their frequency (nucleotide sequence only, sequence must have length divisible by 3)
+    translate codons for each sequence to their frequency (nucleotide
+    sequence only, sequence must have length divisible by 3)
 
 Multiple counters can be calculated at the same by specifying 
 --section multiple times.
 
-The script can also process fasta description lines (starting >) either by 
-splitting each line at the first space and taking only the first 
-part (--split-fasta-identifier), or by any user-supplied python regular 
-expression (--regex-identifier). 
+The script can also process fasta description lines (starting >)
+either by splitting each line at the first space and taking only the
+first part (--split-fasta-identifier), or by any user-supplied python
+regular expression (--regex-identifier).
 
 Usage
 -----
@@ -72,7 +76,7 @@ Example::
 
    # View fasta file
    head tests/fasta2table.py/na_test.fasta
-   
+
    # Count CpG dinucleotides
    cgat fasta2table --sections=length,na --split-fasta-identifier < tests/fasta2table.py/test.fasta > na.tsv
 
@@ -107,19 +111,14 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
-import string
 import re
-import tempfile
-import subprocess
-import optparse
 import math
 
 import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.IOTools as IOTools
-from CGAT.SequenceProperties import *
+import CGAT.SequenceProperties as SequenceProperties
 import CGAT.FastaIterator as FastaIterator
 
 # ------------------------------------------------------------------------
@@ -127,29 +126,38 @@ import CGAT.FastaIterator as FastaIterator
 
 def main(argv=None):
 
-    parser = E.OptionParser(version="%prog version: $Id: analyze_codonbias_shannon.py 2864 2010-03-03 10:18:16Z andreas $",
+    parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
-    parser.add_option("-w", "--filename-weights", dest="filename_weights", type="string",
-                      help="filename with codon frequencies. Multiple filenames can be separated by comma.")
+    parser.add_option(
+        "-w", "--filename-weights", dest="filename_weights",
+        type="string",
+        help="filename with codon frequencies. Multiple filenames "
+        "can be separated by comma.")
 
-    parser.add_option("-s", "--section", dest="sections", type="choice", action="append",
-                      choices=("length", "sequence", "hid", "na", "aa", "cpg", "dn",
-                               "degeneracy", "gaps", 
-                               "codons", "codon-usage", "codon-translator", "codon-bias"),
-                      help="which sections to output [%default]")
+    parser.add_option(
+        "-s", "--section", dest="sections", type="choice", action="append",
+        choices=("length", "sequence", "hid", "na", "aa", "cpg", "dn",
+                 "degeneracy", "gaps",
+                 "codons", "codon-usage", "codon-translator", "codon-bias"),
+        help="which sections to output [%default]")
 
-    parser.add_option("-t", "--type", dest="seqtype", type="choice",
-                      choices=("na", "aa"),
-                      help="type of sequence: na=nucleotides, aa=amino acids [%default].")
+    parser.add_option(
+        "-t", "--type", dest="seqtype", type="choice",
+        choices=("na", "aa"),
+        help="type of sequence: na=nucleotides, aa=amino acids [%default].")
 
-    parser.add_option("-e", "--regex-identifier", dest="regex_identifier", type="string",
-                      help="regular expression to extract identifier from fasta description line.")
-        
-    parser.add_option("--split-fasta-identifier", dest="split_id",
-                      action="store_true",
-                      help="split fasta description line (starting >) and use only text before first space")
-    
+    parser.add_option(
+        "-e", "--regex-identifier", dest="regex_identifier", type="string",
+        help="regular expression to extract identifier from fasta "
+        "description line.")
+
+    parser.add_option(
+        "--split-fasta-identifier", dest="split_id",
+        action="store_true",
+        help="split fasta description line (starting >) and use "
+        "only text before first space")
+
     parser.set_defaults(
         filename_weights=None,
         pseudocounts=1,
@@ -172,7 +180,9 @@ def main(argv=None):
                 reference_codons.append(Genomics.GetUniformCodonUsage())
             else:
                 reference_codons.append(
-                    IOTools.ReadMap(open(filename, "r"), has_header=True, map_functions=(str, float)))
+                    IOTools.ReadMap(IOTools.openFile(filename, "r"),
+                                    has_header=True,
+                                    map_functions=(str, float)))
 
         # print codon table differences
         options.stdlog.write(
@@ -190,9 +200,10 @@ def main(argv=None):
                         continue
                     d += b[codon] * math.log(b[codon] / p)
 
-                options.stdlog.write("# tablediff\t%s\t%s\t%f\n" % (options.filename_weights[x],
-                                                                    options.filename_weights[y],
-                                                                    d))
+                options.stdlog.write("# tablediff\t%s\t%s\t%f\n" %
+                                     (options.filename_weights[x],
+                                      options.filename_weights[y],
+                                      d))
 
     iterator = FastaIterator.FastaIterator(options.stdin)
 
@@ -200,43 +211,44 @@ def main(argv=None):
 
         if options.seqtype == "na":
             if section == "length":
-                s = SequencePropertiesLength()
+                s = SequenceProperties.SequencePropertiesLength()
             elif section == "sequence":
-                s = SequencePropertiesSequence()
+                s = SequenceProperties.SequencePropertiesSequence()
             elif section == "hid":
-                s = SequencePropertiesHid()
+                s = SequenceProperties.SequencePropertiesHid()
             elif section == "na":
-                s = SequencePropertiesNA()
+                s = SequenceProperties.SequencePropertiesNA()
             elif section == "gaps":
-                s = SequencePropertiesGaps(options.gap_chars)
+                s = SequenceProperties.SequencePropertiesGaps(
+                    options.gap_chars)
             elif section == "cpg":
-                s = SequencePropertiesCpg()
+                s = SequenceProperties.SequencePropertiesCpg()
             elif section == "dn":
-                s = SequencePropertiesDN()
+                s = SequenceProperties.SequencePropertiesDN()
             # these sections requires sequence length to be a multiple of 3
             elif section == "aa":
-                s = SequencePropertiesAA()
+                s = SequenceProperties.SequencePropertiesAA()
             elif section == "degeneracy":
-                s = SequencePropertiesDegeneracy()
+                s = SequenceProperties.SequencePropertiesDegeneracy()
             elif section == "codon-bias":
-                s = SequencePropertiesBias(reference_codons)
+                s = SequenceProperties.SequencePropertiesBias(reference_codons)
             elif section == "codons":
-                s = SequencePropertiesCodons()
+                s = SequenceProperties.SequencePropertiesCodons()
             elif section == "codon-usage":
-                s = SequencePropertiesCodonUsage()
+                s = SequenceProperties.SequencePropertiesCodonUsage()
             elif section == "codon-translator":
-                s = SequencePropertiesCodonTranslator()
+                s = SequenceProperties.SequencePropertiesCodonTranslator()
             else:
                 raise ValueError("unknown section %s" % section)
         elif options.seqtype == "aa":
             if section == "length":
-                s = SequencePropertiesLength()
+                s = SequenceProperties.SequencePropertiesLength()
             elif section == "sequence":
-                s = SequencePropertiesSequence()
+                s = SequenceProperties.SequencePropertiesSequence()
             elif section == "hid":
-                s = SequencePropertiesHid()
+                s = SequenceProperties.SequencePropertiesHid()
             elif section == "aa":
-                s = SequencePropertiesAminoAcids()
+                s = SequenceProperties.SequencePropertiesAminoAcids()
             else:
                 raise ValueError("unknown section %s" % section)
         return s
@@ -252,6 +264,9 @@ def main(argv=None):
 
     options.stdout.write("\n")
     options.stdout.flush()
+
+    s = getCounter("hid")
+    s.loadSequence("AAAAAAAAA", "na")
 
     for cur_record in iterator:
 
@@ -270,8 +285,7 @@ def main(argv=None):
 
         for section in options.sections:
             s = getCounter(section)
-            s.loadSequence(sequence, cur_record.title, options.seqtype)
-            #s.loadSequence(sequence)
+            s.loadSequence(sequence, options.seqtype)
             totals[section].addProperties(s)
 
             options.stdout.write("\t" + "\t".join(s.getFields()))

@@ -37,20 +37,14 @@ Code
 
 '''
 from __future__ import division
-import os
-import sys
 import string
 import re
-import tempfile
-import subprocess
-import optparse
 import math
 import hashlib
 import base64
 import itertools
 
 from CGAT import Genomics as Genomics
-from CGAT import IOTools as IOTools
 
 import Bio.Alphabet.IUPAC
 
@@ -64,7 +58,6 @@ class SequenceProperties(object):
     def __init__(self):
 
         self.mLength = 0
-        self.mTitle = "Unknown"
         self.mSeqType = "na"
         self.mSequence = ""
 
@@ -75,14 +68,12 @@ class SequenceProperties(object):
     def updateProperties(self):
         pass
 
-    def loadSequence(self, in_sequence, title="Unknown", seqtype="na"):
+    def loadSequence(self, sequence, seqtype="na"):
         """load sequence properties from a sequence."""
 
-        sequence = re.sub("[ -.]", "", in_sequence).upper()
-        self.mTitle = title
         self.mSeqType = seqtype
-        self.mSequence = sequence
-        self.mLength = len(sequence)
+        self.mSequence = re.sub("[ -.]", "", sequence).upper()
+        self.mLength = len(self.mSequence)
 
     def __str__(self):
         return "\t".join(self.getFields())
@@ -100,11 +91,11 @@ class SequenceProperties(object):
 class SequencePropertiesSequence(SequenceProperties):
 
     '''Add full sequence '''
-    #sequence = ""
+    # sequence = ""
 
     def __init__(self):
         SequenceProperties.__init__(self)
-        #self.mSequence = ""
+        # self.mSequence = ""
 
     def addProperties(self, other):
         """add properties."""
@@ -113,10 +104,10 @@ class SequencePropertiesSequence(SequenceProperties):
     def updateProperties(self):
         SequenceProperties.updateProperties(self)
 
-    def loadSequence(self, sequence, title="Unknown", seqtype="na"):
+    def loadSequence(self, sequence, seqtype="na"):
         """load sequence properties from a sequence."""
-        SequenceProperties.loadSequence(self, sequence, title, seqtype)
-        #self.mSequence = sequence
+        SequenceProperties.loadSequence(self, sequence, seqtype)
+        # self.mSequence = sequence
 
     def getFields(self):
         fields = SequenceProperties.getFields(self)
@@ -137,16 +128,9 @@ class SequencePropertiesHid(SequenceProperties):
         SequenceProperties.__init__(self)
         self.mHid = ""
 
-    def addProperties(self, other):
-        """add properties."""
-        SequenceProperties.addProperties(self, other)
-
-    def updateProperties(self):
-        SequenceProperties.updateProperties(self)
-
-    def loadSequence(self, sequence, title="Unknown", seqtype="na"):
-        """load sequence properties from a sequence."""
-        SequenceProperties.loadSequence(self, sequence, title, seqtype)
+    def loadSequence(self, sequence, seqtype="na"):
+        """load hid sequence properties from a sequence."""
+        SequenceProperties.loadSequence(self, sequence, seqtype)
 
         # do the encryption
         h = hashlib.md5(sequence).digest()
@@ -193,9 +177,9 @@ class SequencePropertiesLength(SequenceProperties):
     def updateProperties(self):
         SequenceProperties.updateProperties(self)
 
-    def loadSequence(self, sequence, title="Unknown", seqtype="na"):
+    def loadSequence(self, sequence, seqtype="na"):
         """load sequence properties from a sequence."""
-        SequenceProperties.loadSequence(self, sequence, title, seqtype)
+        SequenceProperties.loadSequence(self, sequence, seqtype)
         self.mLength = len(sequence)
         if self.mSeqType == "na":
             self.mNCodons = len(sequence) / 3
@@ -237,9 +221,9 @@ class SequencePropertiesNA(SequenceProperties):
         for na, count in other.mCountsNA.items():
             self.mCountsNA[na] += count
 
-    def loadSequence(self, sequence, title="Unknown", seqtype="na"):
+    def loadSequence(self, sequence, seqtype="na"):
         """load sequence properties from a sequence."""
-        SequenceProperties.loadSequence(self, sequence, title, seqtype)
+        SequenceProperties.loadSequence(self, sequence, seqtype)
         # counts of nucleotides
         self.mCountsNA = {}
         for x in self.mAlphabet:
@@ -321,9 +305,9 @@ class SequencePropertiesDN(SequenceProperties):
         for dn, count in other.mCountsDinuc.items():
             self.mCountsDinuc[dn] += count
 
-    def loadSequence(self, sequence, title="Unknown", seqtype="na"):
+    def loadSequence(self, sequence, seqtype="na"):
         """load sequence properties from a sequence."""
-        SequenceProperties.loadSequence(self, sequence, title, seqtype)
+        SequenceProperties.loadSequence(self, sequence, seqtype)
 
         # for na in sequence.upper():
         for dinuc in [sequence[x - 2:x] for x in range(2, len(sequence) + 1, 1)]:
@@ -368,9 +352,9 @@ class SequencePropertiesCpg(SequencePropertiesNA, SequencePropertiesDN):
         self.mCpG_density += other.mCpG_density
         self.mCpG_ObsExp += other.mCpG_ObsExp
 
-    def loadSequence(self, sequence, title="Unknown", seqtype="na"):
-        SequencePropertiesNA.loadSequence(self, sequence, title, seqtype)
-        SequencePropertiesDN.loadSequence(self, sequence, title, seqtype)
+    def loadSequence(self, sequence, seqtype="na"):
+        SequencePropertiesNA.loadSequence(self, sequence, seqtype)
+        SequencePropertiesDN.loadSequence(self, sequence, seqtype)
 
         if self.mLength > 0:
             self.mCpG_density = (float(self.mCountsDinuc["CG"])
@@ -430,9 +414,9 @@ class SequencePropertiesGaps(SequenceProperties):
         headers = SequenceProperties.getHeaders(self)
         return headers + ["ngaps", "nseq_regions", "ngap_regions"]
 
-    def loadSequence(self, sequence, title="Unknown", seqtype="na"):
+    def loadSequence(self, sequence, seqtype="na"):
         """load sequence properties from a sequence."""
-        SequenceProperties.loadSequence(self, sequence, title, seqtype)
+        SequenceProperties.loadSequence(self, sequence, seqtype)
 
         totals = {'A': 0, 'C': 0, 'G': 0, 'T': 0, 'X': 0, 'N': 0}
 
@@ -538,14 +522,14 @@ class SequencePropertiesDegeneracy (SequencePropertiesLength):
             for y, count in other.mCounts[x].items():
                 self.mCounts[x][y] += count
 
-    def loadSequence(self, sequence, title="Unknown", seqtype="na"):
+    def loadSequence(self, sequence, seqtype="na"):
         """load sequence properties from a sequence."""
 
-        SequencePropertiesLength.loadSequence(self, sequence, title, seqtype)
+        SequencePropertiesLength.loadSequence(self, sequence, seqtype)
         if len(sequence) % 3:
-            raise ValueError('''sequence length is not a multiple 
-                                of 3 (length=%i) for sequence %s'''
-                             % (len(sequence), title))
+            raise ValueError(
+                '''sequence length is not a multiple of 3 (length=%i)''' %
+                (len(sequence)))
 
         # uppercase all letters
         sequence = sequence.upper()
@@ -724,15 +708,15 @@ class SequencePropertiesAA(SequenceProperties):
         for aa, count in other.mCountsAA.items():
             self.mCountsAA[aa] += count
 
-    def loadSequence(self, sequence, title="Unknown", seqtype="na"):
+    def loadSequence(self, sequence, seqtype="na"):
         """load sequence properties from a sequence."""
 
-        SequenceProperties.loadSequence(self, sequence, title, seqtype)
+        SequenceProperties.loadSequence(self, sequence, seqtype)
 
         if len(sequence) % 3:
-            raise ValueError('''sequence length is not a multiple of 3 
-                                (length=%i) for sequence %s'''
-                             % (len(sequence), title))
+            raise ValueError(
+                '''sequence length is not a multiple of 3 (length=%i)''' %
+                (len(sequence)))
 
         # counts of amino acids
         self.mCountsAA = {}
@@ -789,10 +773,10 @@ class SequencePropertiesAminoAcids(SequenceProperties):
         for aa, count in other.mCountsAA.items():
             self.mCountsAA[aa] += count
 
-    def loadSequence(self, sequence, title="Unknown", seqtype="na"):
+    def loadSequence(self, sequence, seqtype="na"):
         """load sequence properties from a sequence. """
 
-        SequenceProperties.loadSequence(self, sequence, title, seqtype)
+        SequenceProperties.loadSequence(self, sequence, seqtype)
 
         # set to zero
         for x in Bio.Alphabet.IUPAC.extended_protein.letters:
@@ -863,15 +847,15 @@ class SequencePropertiesCodons(SequencePropertiesLength):
 
         SequencePropertiesLength.updateProperties(self)
 
-    def loadSequence(self, sequence, title="Unknown", seqtype="na"):
+    def loadSequence(self, sequence, seqtype="na"):
         """load sequence properties from a sequence."""
 
         if len(sequence) % 3:
-            raise ValueError('''sequence length is not a multiple of 3 
-                                (length=%i) for sequence %s'''
-                             % (len(sequence), title))
+            raise ValueError(
+                '''sequence length is not a multiple of 3
+                (length=%i)''' % (len(sequence)))
 
-        SequencePropertiesLength.loadSequence(self, sequence, title, seqtype)
+        SequencePropertiesLength.loadSequence(self, sequence, seqtype)
 
         # uppercase all letters and count codons
         self.mCodonCounts = Genomics.CountCodons(sequence.upper())
@@ -975,9 +959,9 @@ class SequencePropertiesCodonTranslator(SequencePropertiesCodonUsage):
 
         self.mSequence += other.mSequence
 
-    def loadSequence(self, sequence, title="Unknown", seqtype="na"):
+    def loadSequence(self, sequence, seqtype="na"):
         """load sequence properties from a sequence."""
-        SequencePropertiesCodons.loadSequence(self, sequence, title, seqtype)
+        SequencePropertiesCodons.loadSequence(self, sequence, seqtype)
 
         self.mSequence = sequence
 
@@ -1106,10 +1090,10 @@ class SequencePropertiesCounts(SequenceProperties):
             self.mCounts[na] += count
         self.mCountsOthers += self.mCountsOthers
 
-    def loadSequence(self, sequence, title="Unknown", seqtype="na"):
+    def loadSequence(self, sequence, seqtype="na"):
         """load sequence properties from a sequence."""
 
-        SequenceProperties.loadSequence(self, sequence)
+        SequenceProperties.loadSequence(self, sequence, seqtype)
 
         # counts of amino acids
         self.mCounts = {}
