@@ -85,10 +85,10 @@ colour	?			scripts/bams2bam.py,scripts/barplotGo.py,scripts/rnaseq_junction_bam2
 colours	ok			scripts/plot_matrix.py,scripts/r_table2scatter.py
 column	ok			scripts/check_db.py,scripts/genes2genes.py
 columns	ok			scripts/combine_tables.py,scripts/csvs2csv.py,scripts/data2multiple_anova.py,scripts/data2phylocontrasts.py,scripts/data2stats.py,scripts/filter_tokens.py,scripts/graph_group_links_by_taxonomy.py,scripts/histogram2histogram.py,scripts/modify_table.py,scripts/plot_matrix.py,scripts/r_table2scatter.py,scripts/table2table.py
-combine-groups	bad	should be -method		scripts/gff2gff.py
+combine-groups	rename		method=combine-groups	scripts/gff2gff.py
 complement-aligner	ok			scripts/psl2psl.py
 complement-border	ok			scripts/psl2psl.py
-complement-groups	ok			scripts/gff2gff.py
+complement-groups	rename		method=complement-groups	scripts/gff2gff.py
 complement-min-length	ok			scripts/psl2psl.py
 compress	bad	should be -method		scripts/snp2maf.py
 compress-index	bad	should be -method		scripts/index_fasta.py
@@ -106,8 +106,8 @@ counter	ok			scripts/annotator_distance.py,scripts/bed2table.py,scripts/gtf2tabl
 coverage-mean	?	what does it do?		scripts/gtf2reads.py
 coverage-std	?	what does it do?		scripts/gtf2reads.py
 create	bad	should be -method		scripts/mysql_clone_database.py
-crop	bad	should be -method		scripts/gff2gff.py
-crop-unique	bad	should be -method		scripts/gff2gff.py
+crop	replace		method=crop	scripts/gff2gff.py
+crop-unique	replace	 	method=crop-unique	scripts/gff2gff.py
 data	bad			scripts/gff2histogram.py
 database	ok			scripts/analyze_go.py,scripts/analyze_sequences.py,scripts/check_db.py,scripts/csv2db.py,scripts/gtf2alleles.py,scripts/mysql_clone_database.py,scripts/mysql_copy_tables.py,scripts/probeset2gene.py,scripts/runGO.py,scripts/snp2maf.py
 dbpath	?			scripts/chain2stats.py
@@ -262,7 +262,7 @@ first-column	bad			scripts/csv2db.py
 fix-alpha	bad	should be -method		scripts/mali2rates.py
 fix-kappa	bad	should be -method		scripts/mali2kaks.py,scripts/mali2rates.py
 fix-omega	bad	should be -method		scripts/mali2kaks.py
-fixed-width-windows=	?			scripts/index2bed.py
+fixed-width-windows	?			scripts/index2bed.py
 flank	bad	--flank-extension?		scripts/gtf2gff.py
 flat	rename		flat-output	scripts/data2stats.py
 flatten-table	bad	should be -method		scripts/table2table.py
@@ -274,7 +274,7 @@ format	bad	more specific		scripts/bam2peakshape.py,scripts/bed2plot.py,scripts/c
 format-bin	rename		bin-format	scripts/histogram2histogram.py
 format-val	rename		value-format	scripts/histogram2histogram.py
 format=	bad	more specific		scripts/gtfs2tsv.py
-forward-coordinates	rename		is-forward-coordinates	scripts/gff2gff.py,scripts/maq2assembly.py
+forward-coordinates	rename	WARNING-ambiguous	is-forward-coordinates	scripts/gff2gff.py,scripts/maq2assembly.py
 forward-query	?			scripts/psl2fasta.py
 forward-strand	?			scripts/gff2gff.py
 fragment-size	ok			scripts/runZinba.py
@@ -532,7 +532,7 @@ output-header	ok			scripts/farm.py,scripts/nofarm.py
 output-identifier	ok			scripts/peptides2cds.py
 output-matches	ok			scripts/diff_chains.py
 output-mismatches	ok			scripts/diff_chains.py
-output-pattern	bad	use output-filename-pattern		scripts/cgat2dot.py,scripts/cgat2rdf.py,scripts/compare_clusters.py,scripts/farm.py,scripts/fastqs2fastqs.py,scripts/mali2kaks.py,scripts/mali2rates.py,scripts/mask_fasta.py,scripts/nofarm.py,scripts/split_fasta.py,scripts/split_genomic_fasta_file.py,scripts/split_gff.py,scripts/submit.py,scripts/trees2trees.py
+output-pattern	rename	use output-filename-pattern	output-filename-pattern	scripts/cgat2dot.py,scripts/cgat2rdf.py,scripts/compare_clusters.py,scripts/farm.py,scripts/fastqs2fastqs.py,scripts/mali2kaks.py,scripts/mali2rates.py,scripts/mask_fasta.py,scripts/nofarm.py,scripts/split_fasta.py,scripts/split_genomic_fasta_file.py,scripts/split_gff.py,scripts/submit.py,scripts/trees2trees.py
 output-pileup	ok			scripts/psl2assembly.py
 output-tag	ok			scripts/farm.py,scripts/nofarm.py
 output-unique	ok			scripts/diff_chains.py
@@ -666,7 +666,7 @@ sample-proportion	ok			scripts/fasta2fasta.py
 sample-size	ok			scripts/gtf2gtf.py,scripts/gtf2reads.py,scripts/runGO.py
 sampler	ok			scripts/annotator_distance.py
 samples	rename		sample-size	scripts/mali2bootstrap.py
-sanitize	bad	should be -method		scripts/gff2gff.py
+sanitize	rename		method=sanitize	scripts/gff2gff.py
 save-R	rename		output-R-code	scripts/runExpression.py
 scale	bad			scripts/data2stats.py,scripts/matrix2matrix.py,scripts/table2table.py
 scale-flank-length	ok			scripts/bam2geneprofile.py
