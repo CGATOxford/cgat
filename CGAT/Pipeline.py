@@ -1761,6 +1761,10 @@ def run_report(clean=True):
     else:
         erase_return = ""
 
+    # in the latest, xvfb always returns with an error, thus
+    # ignore these.
+    erase_return == "|| true"
+
     if clean:
         clean = """rm -rf report _cache _static;"""
     else:
