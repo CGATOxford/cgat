@@ -4,7 +4,7 @@
 :Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
-:Tags: Genomics Intervals GFF Summary
+:Tags: Genomics Intervals GFF GTF Summary
 
 Purpose
 -------
@@ -35,7 +35,8 @@ Example::
    track  contigs  strands  features  sources  genes  transcripts ...
    stdin  1        2        4         23       2924   12752       ...
 
-For a gff file, the implemented counters are:
+
+The counter used is dependent on the file type.  For a gff file, the implemented counters are:
 
 1. number of intervals per contig, strand, feature and source
 
@@ -55,7 +56,7 @@ feature and source.  This assumes the input file is a gff file
 
 There is a single option for this script::
 
-``is-gtf``
+``--is-gtf``
    The input file is gtf format.  The output will therefore
    contain summaries over exon numbers, exon sizes, intron sizes and
    transcript sizes in addition to the the number of genes,

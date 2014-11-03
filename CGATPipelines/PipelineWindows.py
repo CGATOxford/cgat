@@ -5,7 +5,7 @@ import pandas
 from math import log
 import numpy as np
 import random
-
+import numpy.ma as ma
 import CGAT.Experiment as E
 import CGAT.Pipeline as P
 import CGAT.BamTools as BamTools
@@ -468,18 +468,44 @@ def normalizeBed(infile, outfile):
     bed_frame = pandas.read_table(infile,
                                   sep="\t",
                                   compression="gzip",
-                                  header=None,
+                                  header=0,
                                   index_col=0)
 
     # normalize count column by total library size
+    # have to explicitly convert data_frame to numpy
+    # array with int64/float64 data type.  Otherwise
+    # numpy.log will through an Attribute error (wrong
+    # error to report) as it cannot handle python longs
 
-    med = np.median(bed_frame[4])
-    normalize = lambda x: (x)/(float(med) + 1.0) + random.randint(0, 1)
-    bed_frame[7] = bed_frame[4].apply(normalize)
+    bed_frame = bed_frame.fillna(0.0)
+    val_array = np.array(bed_frame.values, dtype=np.int64)
+    geom_mean = geoMean(val_array)
+    ratio_frame = bed_frame.apply(lambda x: x/geom_mean,
+                                  axis=0)
+    size_factors = ratio_frame.apply(np.median,
+                                     axis=0)
+    normalize_frame = bed_frame/size_factors
+    # replace infs and -infs with Nas, then 0s
+    normalize_frame.replace([np.inf, -np.inf], np.nan, inplace=True)
+    normalize_frame = normalize_frame.fillna(0.0)
+    normalize_frame.to_csv(outfile, sep="\t", index_label="interval")
 
-    bed_frame.to_csv(outfile, sep="\t",
-                     header=None,
-                     columns=[1, 2, 7])
+
+def geoMean(array):
+    '''
+    Return the geometric mean over an array
+    '''
+
+    if isinstance(array, pandas.core.frame.DataFrame):
+        array = array.as_matrix()
+    else:
+        pass
+    non_zero = ma.masked_values(array,
+                                0)
+    log_a = ma.log(non_zero)
+    geom_mean = ma.exp(log_a.mean())
+
+    return geom_mean
 
 
 def enrichmentVsInput(infile, outfile):
