@@ -17,7 +17,7 @@ Usage
 
 Example::
 
-   python bam_vs_bam.py in1.bam in2.bam 
+   python bam_vs_bam.py in1.bam in2.bam
 
 This command generates a tab delimited output with columns chromosome,
 base coordinate, number of overlapping reads in in1.bam, and number of
@@ -32,15 +32,18 @@ for command line help.
 Documentation
 -------------
 
-This tools allows users to obtain per base coverage over the genome
-for one or more BAM files.  The output includes all bases in the
-supplied reference fasta except those with no coverage in the input
-BAM or BAMs.
+This tools allows users to compare the per base coverage between
+two BAM files. The output includes all bases in the supplied reference
+fasta except those with no coverage in the input BAMs.
 
-At present the --interval or -i option has not been implemented.  
+At present the --interval or -i option has not been implemented.
 
 Command line options
 --------------------
+
+``--regex-identifier``
+    supply a regex to extract an identifier from the filenames.
+    defualts to using the filename
 
 """
 
@@ -68,10 +71,12 @@ def main(argv=None):
     parser = E.OptionParser(
         version="%prog version: $Id: bam_vs_bam.py 2861 2010-02-23 17:36:32Z andreas $", usage=globals()["__doc__"])
 
-    parser.add_option("-i", "--intervals", dest="filename_intervals", type="string",
-                      help="filename with intervals to use [default=%default].")
+    parser.add_option("-i", "--intervals", dest="filename_intervals",
+                      type="string",
+                      help="filename with intervals to use[default=%default].")
 
-    parser.add_option("-e", "--regex-identifier", dest="regex_identifier", type="string",
+    parser.add_option("-e", "--regex-identifier", dest="regex_identifier",
+                      type="string",
                       help="regular expression to extract identifier from filename [default=%default].")
 
     parser.set_defaults(
@@ -91,7 +96,8 @@ def main(argv=None):
 
     if options.filename_intervals:
         raise NotImplementedError(
-            "It is not yet possible to specify intervals of interest.  Repeat command without intervals option.")
+            "It is not yet possible to specify intervals of interest.\
+            Repeat command without intervals option.")
 
     titles = [re.search(options.regex_identifier, x).groups()[0] for x in args]
 
