@@ -12,11 +12,15 @@ Purpose
 
 This script takes two sets of fasta sequences and matches the
 identifiers. It then compares the sequences with the same
-identifiers and outputs
+identifiers and, depending on the output options selected, 
+outputs
 
    * which sequences are missing
    * which sequences are identical
    * which sequences are prefixes/suffixes of each other
+
+An explanatory field is appended to output sequence identifiers.
+An explanation of the different field values is provided in the log.
 
 Options
 -------
@@ -38,10 +42,10 @@ Depending on the option ``--output`` the following are output:
      identifiers of sequences that are different
 
   seqdiff
-     sequences of sequences that are different
+     identifiers of sequences that are different plus sequence
 
   missed
-     seqences that are missing from set or the other
+    identifiers of seqences that are missing from one set or the other
 
 This script is of specialized interest and has been used
 in the past to check if ENSEMBL gene models had been
