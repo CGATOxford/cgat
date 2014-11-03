@@ -1697,10 +1697,10 @@ def main(argv=None):
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genome [default=%default].")
 
-    parser.add_option("--input-filename-queries", dest="input_filename_queries", type="string",
+    parser.add_option("--queries-tsv-file", dest="input_filename_queries", type="string",
                       help="fasta filename with queries [default=%default].")
 
-    parser.add_option("--input-filename-coverage", dest="input_filename_coverage", type="string",
+    parser.add_option("--coverage-tsv-file", dest="input_filename_coverage", type="string",
                       help="tabular table with coverage information [default=%default].")
 
     parser.add_option("-p", "--output-filename-pattern", dest="output_filename_pattern", type="string",
@@ -1731,7 +1731,7 @@ def main(argv=None):
     parser.add_option("--force-merge", dest="force_merge", type="int",
                       help="in case of staggered alignments, force merge if there are # alignments. This avoids costly computation of components in large sets. If 0, do not apply the threshold [%default].")
 
-    parser.add_option("--filter", dest="filters", type="choice", action="append",
+    parser.add_option("--method=filter --filter-method", dest="filters", type="choice", action="append",
                       choices=(
                           "duplicates", "imperfect", "exon-extenders", "transcript-mergers"),
                       help="filters to apply [%default].")
@@ -1825,7 +1825,7 @@ def main(argv=None):
         elif method == "polyA":
             if not queries_fasta:
                 raise ValueError(
-                    "need --input-filename-queries for polyA tail prediction.")
+                    "need --queries-tsv-file for polyA tail prediction.")
             methods.append(BuilderPolyA(genome_fasta, queries_fasta, options))
 
     for method in methods:

@@ -62,10 +62,10 @@ def main(argv=None):
     parser.add_option("-r", "--regex-token", dest="regex_token", type="string",
                       help="regular expression for tokens (has to create one pair of brackets).")
 
-    parser.add_option("-f", "-a", "--apply", "--filename-tokens", dest="filename_tokens", type="string",
+    parser.add_option("-f", "-a", "--map-tsv-file", "--filename-tokens", dest="filename_tokens", type="string",
                       help="filename with tokens.")
 
-    parser.add_option("-o", "--tokens", "--tokens", dest="tokens", type="string",
+    parser.add_option("-o", "--tokens-tsv-file", "--tokens-tsv-file", dest="tokens", type="string",
                       help="',' separated list of tokens [default=%default].")
 
     parser.add_option("-c", "--columns", dest="columns", type="string",

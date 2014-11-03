@@ -324,10 +324,10 @@ def loadIntervals(infile, outfile):
                            --all-fields 
                            --log=%(outfile)s
                 | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
-                       --index=contig,start
-                       --index=interval_id
+                       --add-index=contig,start
+                       --add-index=interval_id
                        --table=%(tablename)s
-                       --allow-empty 
+                       --allow-empty-file 
                 > %(outfile)s'''
 
     P.run()
@@ -613,7 +613,7 @@ def filterTransfac(infile, outfile):
 
     statement = '''cat %(infile)s 
                 | python %(scriptsdir)s/transfac2transfac.py 
-                         --filter=V
+                         --method=filter --filter-method=V
                          --log=%(outfile)s.log
                 >  %(outfile)s
                 '''
@@ -764,7 +764,7 @@ def loadMotifInformation(infiles, outfile):
 
     outf.close()
 
-    P.load(outf.name, outfile, "--allow-empty")
+    P.load(outf.name, outfile, "--allow-empty-file")
 
     os.unlink(outf.name)
 

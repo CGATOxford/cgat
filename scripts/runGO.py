@@ -121,7 +121,7 @@ The command below runs a GO analysis, computing an FDR using 10.000 samples::
     python runGO.py
         --filename-input=gene2go.data
         --genes=foreground
-        --background=background
+        --background-tsv-file=background
         --sample=10000
         --fdr
         --filename-ontology=gene_ontology.obo
@@ -188,12 +188,12 @@ def main(argv=None):
                       help="filename with genes to analyse "
                       "[default=%default].")
 
-    parser.add_option("-b", "--background", dest="filename_background",
+    parser.add_option("-b", "--background-tsv-file", dest="filename_background",
                       type="string",
                       help="filename with background genes to analyse "
                       "[default=%default].")
 
-    parser.add_option("-m", "--minimum-counts", dest="minimum_counts",
+    parser.add_option("-m", "--min-counts", dest="minimum_counts",
                       type="int",
                       help="minimum count - ignore all categories that have "
                       "fewer than # number of genes"
@@ -215,7 +215,7 @@ def main(argv=None):
     parser.add_option("--filename-dump", dest="filename_dump", type="string",
                       help="dump GO category assignments into a flatfile [default=%default].")
 
-    parser.add_option("--filename-gene2name", dest="filename_gene2name", type="string",
+    parser.add_option("--gene2name-map-tsv-file", dest="filename_gene2name", type="string",
                       help="optional filename mapping gene identifiers to gene names [default=%default].")
 
     parser.add_option("--filename-ontology", dest="filename_ontology", type="string",
@@ -250,7 +250,7 @@ def main(argv=None):
                       help="require all genes in foreground to be part of background. "
                       "If not set, genes in foreground will be added to the background [default=%default].")
 
-    parser.add_option("-q", "--qvalue-method", dest="qvalue_method", type="choice",
+    parser.add_option("-q", "--fdr-method", dest="qvalue_method", type="choice",
                       choices=("empirical", "storey", "BH"),
                       help="method to perform multiple testing correction by controlling the fdr [default=%default].")
 
@@ -258,7 +258,7 @@ def main(argv=None):
                       help="compute pairwise enrichment for multiple gene lists. "
                       "[default=%default].")
 
-    # parser.add_option( "--qvalue-lambda", dest="qvalue_lambda", type="float",
+    # parser.add_option( "--fdr-lambda", dest="qvalue_lambda", type="float",
     #                   help="fdr computation: lambda [default=%default]."  )
 
     # parser.add_option( "--qvalue-pi0-method", dest="qvalue_pi0_method", type="choice",

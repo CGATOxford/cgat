@@ -616,20 +616,20 @@ def filterAndMergeGTF(infile, outfile, remove_genes, merge=False):
         statement = '''
         %(scriptsdir)s/gff_sort pos < %(tmpfilename)s
         | python %(scriptsdir)s/gtf2gtf.py
-            --unset-genes="NONC%%06i"
+            --method=unset-genes --pattern="NONC%%06i"
             --log=%(outfile)s.log
         | python %(scriptsdir)s/gtf2gtf.py
-            --merge-genes
+            --method=merge-genes
             --log=%(outfile)s.log
         | python %(scriptsdir)s/gtf2gtf.py
-            --merge-exons
+            --method=merge-exons
             --merge-exons-distance=5
             --log=%(outfile)s.log
         | python %(scriptsdir)s/gtf2gtf.py
-            --renumber-genes="NONC%%06i"
+            --method=renumber-genes --pattern="NONC%%06i"
             --log=%(outfile)s.log
         | python %(scriptsdir)s/gtf2gtf.py
-            --renumber-transcripts="NONC%%06i"
+            --method=renumber-transcripts --pattern="NONC%%06i"
             --log=%(outfile)s.log
         | %(scriptsdir)s/gff_sort genepos 
         | gzip > %(outfile)s
@@ -704,7 +704,7 @@ def loadCufflinks(infile, outfile):
     track = P.snip(outfile, ".load")
     P.load(infile + ".genes_tracking.gz",
            outfile=track + "_genefpkm.load",
-           options="--index=gene_id "
+           options="--add-index=gene_id "
            "--ignore-column=tracking_id "
            "--ignore-column=class_code "
            "--ignore-column=nearest_ref_id")
@@ -712,7 +712,7 @@ def loadCufflinks(infile, outfile):
     track = P.snip(outfile, ".load")
     P.load(infile + ".fpkm_tracking.gz",
            outfile=track + "_fpkm.load",
-           options="--index=tracking_id "
+           options="--add-index=tracking_id "
            "--ignore-column=nearest_ref_id "
            "--rename-column=tracking_id:transcript_id")
 

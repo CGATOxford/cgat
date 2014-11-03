@@ -207,10 +207,10 @@ def main(argv=None):
     parser = E.OptionParser(
         version="%prog version: $Id: diff_gtf.py 2781 2009-09-10 11:33:14Z andreas $", usage=globals()["__doc__"])
 
-    parser.add_option("-e", "--write-equivalent", dest="write_equivalent",
+    parser.add_option("-e", "--output-equivalent", dest="write_equivalent",
                       help="write equivalent entries [default=%default].", action="store_true")
 
-    parser.add_option("-f", "--write-full", dest="write_full",
+    parser.add_option("-f", "--output-full", dest="write_full",
                       help="write full gff entries [default=%default].", action="store_true")
 
     parser.add_option("-o", "--format=", dest="format",

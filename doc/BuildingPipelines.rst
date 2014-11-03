@@ -237,7 +237,7 @@ can be given via the optional *options* argument::
 
    @transform( 'data_*.tsv.gz', suffix('.tsv.gz'), '.load' )
    def loadTables( infile, outfile ):
-      P.load( infile, outfile, "--index=gene_id" )
+      P.load( infile, outfile, "--add-index=gene_id" )
 
 Connecting to a database
 ------------------------

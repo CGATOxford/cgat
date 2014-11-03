@@ -90,7 +90,7 @@ def main(argv=None):
     parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
                             usage=globals()["__doc__"])
 
-    parser.add_option("-g", "--filename-gtf", dest="filename_gtf", type="string",
+    parser.add_option("-g", "--gtf-file", dest="filename_gtf", type="string",
                       help="filename with gene models in gtf format [%default]")
 
     parser.add_option("-m", "--filename-mismapped", dest="filename_mismapped", type="string",
@@ -102,10 +102,10 @@ def main(argv=None):
     parser.add_option("-r", "--filename-regions", dest="filename_regions", type="string",
                       help="filename with regions to remove in bed format [%default]")
 
-    parser.add_option("-t", "--filename-transcriptome", dest="filename_transcriptome", type="string",
+    parser.add_option("-t", "--transcripts-gtf-file", dest="filename_transcriptome", type="string",
                       help="bam file with reads mapped against transcripts [%default]")
 
-    parser.add_option("-p", "--filename-map", dest="filename_map", type="string",
+    parser.add_option("-p", "--map-tsv-file", dest="filename_map", type="string",
                       help="filename mapping transcript numbers (used by --filename-transciptome) to transcript names (used by --filename-gtf) [%default]")
 
     parser.add_option("-s", "--filename-stats", dest="filename_stats", type="string",
@@ -120,13 +120,13 @@ def main(argv=None):
     parser.add_option("-c", "--remove-contigs", dest="remove_contigs", type="string",
                       help="','-separated list of contigs to remove [%default]")
 
-    parser.add_option("-f", "--force", dest="force", action="store_true",
+    parser.add_option("-f", "--force-output", dest="force", action="store_true",
                       help="force overwriting of existing files [%default]")
 
     parser.add_option("-u", "--unique", dest="unique", action="store_true",
                       help="remove reads not matching uniquely [%default]")
 
-    parser.add_option("--sam", dest="output_sam", action="store_true",
+    parser.add_option("--sam-file", dest="output_sam", action="store_true",
                       help="output in sam format [%default]")
 
     parser.set_defaults(

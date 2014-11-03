@@ -21,7 +21,7 @@ Usage
 
 Example::
 
-   python fastqs2fasta.py --fastq1 in.fastq.1.gz --fastq2 in.fastq.2.gz > out.fasta
+   python fastqs2fasta.py --first-fastq-file in.fastq.1.gz --second-fastq-file in.fastq.2.gz > out.fasta
 
 Type::
 
@@ -68,9 +68,9 @@ def main(argv=None):
     parser = E.OptionParser(version="%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $",
                             usage=globals()["__doc__"])
 
-    parser.add_option("-a", "--fastq1", dest="fastq1", type="string",
+    parser.add_option("-a", "--first-fastq-file", dest="fastq1", type="string",
                       help="supply read1 fastq file")
-    parser.add_option("-b", "--fastq2", dest="fastq2", type="string",
+    parser.add_option("-b", "--second-fastq-file", dest="fastq2", type="string",
                       help="supply read2 fastq file")
 
     # add common options (-h/--help, ...) and parse command line

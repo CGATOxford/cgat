@@ -75,7 +75,7 @@ Options:
 -h, --help                      print this message.
 -v, --verbose=                  loglevel.
 -g, --genome=                   file with the genomic DNA (FASTA).
--p, --peptides=                 file with peptide sequences (FASTA).
+-p, --peptides-fasta-file=                 file with peptide sequences (FASTA).
 -o, --correct-offset                use offset information in sbjct_token to correct genomic location.
 -f, --format=                   input format [exonerate|predictions]
 -c, --force-contiguous          force contiguous blocks
@@ -334,7 +334,7 @@ def main(argv=None):
             sys.exit(0)
         elif o in ("-g", "--genome"):
             param_filename_genome = a
-        elif o in ("-p", "--peptides"):
+        elif o in ("-p", "--peptides-fasta-file"):
             param_filename_peptides = a
         elif o in ("-o", "--correct-offset"):
             param_correct_offset = 1

@@ -220,7 +220,7 @@ def main(argv=None):
     parser.add_option("--prefix", dest="prefix", type="string",
                       help="prefix for rows.")
 
-    parser.add_option("--pattern-input-filenames", dest="pattern_input_filenames", type="string",
+    parser.add_option("--input-pattern", dest="pattern_input_filenames", type="string",
                       help="input pattern.")
 
     parser.add_option("--filter-probability", dest="filter_probability", type="float",
@@ -245,7 +245,7 @@ def main(argv=None):
     parser.add_option("--filename-mali", dest="filename_mali", type="string",
                       help="filename with multiple alignment used for calculating sites - used for filtering")
 
-    parser.add_option("--filename-map-mali", dest="filename_map_mali", type="string",
+    parser.add_option("--mali-map-tsv-file", dest="filename_map_mali", type="string",
                       help="filename with multiple alignment to map sites onto.")
 
     parser.add_option("--jalview-titles", dest="jalview_titles", type="string",

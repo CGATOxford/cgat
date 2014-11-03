@@ -83,7 +83,7 @@ Options:
 -f, --format=                   input format [predictions]
 -i, --max-intron                maximum intron length
 -d, --max-difference            maximum difference between peptide and genomic gap
--c, --contigs=                  filename with contig sizes
+-c, --contigs-tsv-file=                  filename with contig sizes
 -o, --max-overlap=              maximum overlap
 -s, --filename-sizes=           filename with sizes
 """ % sys.argv[0]
@@ -446,7 +446,7 @@ def main(argv=None):
             param_max_difference = int(a)
         elif o in ("-o", "--max-overlap"):
             param_max_overlap = int(a)
-        elif o in ("-c", "--contigs"):
+        elif o in ("-c", "--contigs-tsv-file"):
             param_filename_contigs = a
         elif o in ("-g", "--genome-file"):
             param_genome_file = a

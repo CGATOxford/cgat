@@ -56,7 +56,7 @@ def main(argv=None):
     parser = E.OptionParser(
         version="%prog version: $Id: plot_histogram.py 2782 2009-09-10 11:40:29Z andreas $", usage=globals()["__doc__"])
 
-    parser.add_option("-l", "--legend", dest="legend", type="string",
+    parser.add_option("-l", "--plot-legend", dest="legend", type="string",
                       help="legend for plot [default=%default].")
     parser.add_option("-t", "--title", dest="title", type="string",
                       help="title for plot [default=%default].")

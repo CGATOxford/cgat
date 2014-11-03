@@ -16,13 +16,13 @@ itself or makes use of faster solutions if possible. The script
 requires the executables :file:`wigToBigWig` and :file:`bedToBigBed`
 to be in the user's PATH.
 
-If no --shift or --extend option are given, the coverage is computed
+If no --shift-size or --extend option are given, the coverage is computed
 directly on reads.  Counting can be performed at a certain resolution.
 
 The counting currently is not aware of spliced reads, i.e., an
 inserted intron will be included in the coverage.
 
-If --shift or --extend are given, the coverage is computed by shifting
+If --shift-size or --extend are given, the coverage is computed by shifting
 read alignment positions upstream for positive strand reads or
 downstream for negative strand reads and extend them by a fixed
 amount.
@@ -175,7 +175,7 @@ def main(argv=None):
                       dest="output_filename", type="string",
                       help="filename for output [default=%default]")
 
-    parser.add_option("-s", "--shift", dest="shift", type="int",
+    parser.add_option("-s", "--shift-size", dest="shift", type="int",
                       help="shift reads by a certain amount (ChIP-Seq) "
                       "[%default]")
 
@@ -183,7 +183,7 @@ def main(argv=None):
                       help="extend reads by a certain amount "
                       "(ChIP-Seq) [%default]")
 
-    parser.add_option("-p", "--span", dest="span", type="int",
+    parser.add_option("-p", "--wiggle-span", dest="span", type="int",
                       help="span of a window in wiggle tracks "
                       "[%default]")
 

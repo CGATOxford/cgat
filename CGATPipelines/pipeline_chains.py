@@ -170,7 +170,7 @@ def convertChainToPsl(infile, outfile):
 
     statement = '''gunzip
     < %(infile)s 
-    | %(cmd-farm)s --split-at-regex="^chain" --chunksize=1000 --max-lines=1000000 --log=%(outfile)s.log
+    | %(cmd-farm)s --split-at-regex="^chain" --chunk-size=1000 --max-lines=1000000 --log=%(outfile)s.log
     " python %(scriptsdir)s/chain2psl.py --log=%(outfile)s.log
       | pslSwap stdin stdout "
     | gzip
@@ -210,8 +210,8 @@ if "maf_dir" in PARAMS and "maf_tracks" in PARAMS:
                  | python %(scriptsdir)s/psl2psl.py 
                       --method=filter-fasta 
                       --method=sanitize
-                      --filename-queries=%(genomefile)s
-                      --filename-target=%(genome)s
+                      --queries-tsv-file=%(genomefile)s
+                      --target-psl-file=%(genome)s
                       --log=%(outfile)s.log 
                  | gzip 
                  >> %(outfile)s
@@ -258,8 +258,8 @@ if "maf_dir" in PARAMS and "maf_tracks" in PARAMS:
                  | python %(scriptsdir)s/psl2psl.py 
                       --method=filter-fasta 
                       --method=sanitize
-                      --filename-queries=%(genomefile)s
-                      --filename-target=%(genome)s
+                      --queries-tsv-file=%(genomefile)s
+                      --target-psl-file=%(genome)s
                       --log=%(outfile)s.log 
                  | gzip 
                  >> %(outfile)s

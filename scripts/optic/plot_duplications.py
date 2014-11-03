@@ -788,7 +788,7 @@ def main(argv=None):
                       help="page title.")
     parser.add_option("-f", "--footer", dest="footer", type="string",
                       help="page footer.")
-    parser.add_option("-c", "--contig-sizes", dest="filename_contig_sizes", type="string",
+    parser.add_option("-c", "--contigs-tsv-file", dest="filename_contig_sizes", type="string",
                       help="filname with contig sizes.")
     parser.add_option("-r", "--radius", dest="radius", type="int",
                       help="radius.")

@@ -551,10 +551,10 @@ def main(argv=None):
     parser.add_option("-t", "--translate", dest="filename_translation", type="string",
                       help="filename on where to store translated sequences.")
 
-    parser.add_option("-e", "--exons", dest="filename_exons", type="string",
+    parser.add_option("-e", "--exons-file", dest="filename_exons", type="string",
                       help="filename on where to exon information.")
 
-    parser.add_option("-g", "--gtf", dest="filename_gtf", type="string",
+    parser.add_option("-g", "--gtf-file", dest="filename_gtf", type="string",
                       help="filename with exon information in gtf format.")
 
     parser.add_option("-c", "--mark-codons", dest="mark_codons", action="store_true",
@@ -586,7 +586,7 @@ def main(argv=None):
     parser.add_option("--force-map", dest="force_map", action="store_true",
                       help="force mapping of sequences that have changed to previous sequence.")
 
-    parser.add_option("--cds", dest="filename_cds", type="string",
+    parser.add_option("--cds-gtf-file", dest="filename_cds", type="string",
                       help="""filename with cds - useful if you expect pseudogenes in your set. The peptide
 sequences will be aligned to the cds sequences. This produces better coordinates."""  )
 

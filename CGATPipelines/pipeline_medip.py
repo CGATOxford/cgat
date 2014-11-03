@@ -418,7 +418,7 @@ def loadPicardGCStats(infiles, outfile):
     statement = '''cat %(tmpfilename)s
                    | python %(scriptsdir)s/csv2db.py
                       %(csv2db_options)s
-                      --index=track
+                      --add-index=track
                       --table=%(tablename)s 
                    > %(outfile)s '''
     P.run()
@@ -474,11 +474,11 @@ def runMEDIPS(infile, outfile):
     | python %(scriptsdir)s/WrapperMEDIPS.py
          --ucsc-genome=%(genome)s
          --genome-file=%(genome_dir)s/%(genome)s
-         --bigwig
+         --bigwig-file
          --input-format=bed 
          --extension=%(medips_extension)i
          --fragment-length=%(medips_fragment_length)i
-         --force
+         --force-output
          --bin-size=%(medips_bin_size)i
          --output-filename-pattern="%(outfile)s_%%s"
          -
@@ -640,7 +640,7 @@ def buildNonoverlappingFixedWidthTiles(infile, outfile):
     statement = '''python %(scriptsdir)s/genome_bed.py
                       -g %(genome_dir)s/%(genome)s
                       --window=%(tiling_nonoverlapping_window)i
-                      --shift=%(shift)i
+                      --shift-size=%(shift)i
                       --log=%(outfile)s.log
                 | awk '$1 !~ /%(tiling_remove_contigs)s/'
                 | gzip
@@ -657,7 +657,7 @@ def buildOverlappingFixedWidthTiles(infile, outfile):
     statement = '''python %(scriptsdir)s/genome_bed.py
                       -g %(genome_dir)s/%(genome)s
                       --window=%(tiling_overlapping_window)i
-                      --shift=%(shift)i
+                      --shift-size=%(shift)i
                       --log=%(outfile)s.log
                 | awk '$1 !~ /%(tiling_remove_contigs)s/'
                 | gzip
@@ -689,7 +689,7 @@ def buildTileStats(infile, outfile):
     statement = '''
     zcat %(infile)s
     | python %(scriptsdir)s/gff2histogram.py 
-                   --force
+                   --force-output
                    --format=bed 
                    --data=size
                    --method=hist
@@ -937,12 +937,12 @@ def runDE(infiles, outfile, method):
                   --split-at-lines=100000 
                   --cluster-options="-l mem_free=8G"
                   --log=%(outfile)s.log
-                  --output-pattern=%(outdir)s%%s
+                  --output-filename-pattern=%(outdir)s%%s
                   --subdirs
               "python %(scriptsdir)s/runExpression.py
               --method=%(method)s
-              --filename-tags=-
-              --filename-design=%(design_file)s
+              --tags-tsv-file=-
+              --design-tsv-file=%(design_file)s
               --output-filename-pattern=%%DIR%%/
               --deseq-fit-type=%(deseq_fit_type)s
               --deseq-dispersion-method=%(deseq_dispersion_method)s
@@ -1057,7 +1057,7 @@ def buildDMRWindowStats(infile, outfile):
     zcat %(infile)s
     | grep -v 'contig'
     | python %(scriptsdir)s/gff2histogram.py 
-                   --force
+                   --force-output
                    --format=bed 
                    --data=size
                    --method=hist
@@ -1089,7 +1089,7 @@ def loadTileStats(infiles, outfile):
            %(files)s
     | python %(scriptsdir)s/csv2db.py 
            %(csv2db_options)s
-           --index=track
+           --add-index=track
            --table=%(tablename)s 
     > %(outfile)s"""
     P.run()
@@ -1106,7 +1106,7 @@ def loadTileStats(infiles, outfile):
            %(files)s
     | python %(scriptsdir)s/csv2db.py 
            %(csv2db_options)s
-           --index=track
+           --add-index=track
            --table=%(tablename)s 
     >> %(outfile)s"""
 
@@ -1155,7 +1155,7 @@ def computeDMROverlap(infiles, outfile):
     # note: need to quote track names
     statement = '''
         python %(scriptsdir)s/diff_bed.py 
-              --pattern-id=".*/(.*).dmr.bed.gz"
+              --pattern-identifier=".*/(.*).dmr.bed.gz"
               --log=%(outfile)s.log 
               %(options)s %(infiles)s 
         | awk -v OFS="\\t" '!/^#/ { gsub( /-/,"_", $1); gsub(/-/,"_",$2); } {print}'

@@ -22,7 +22,7 @@ def addOptions(parser):
     parser.add_option("-b", "--pattern-component", dest="pattern_component", type="string",
                       help="how to extract identifier of mali from component name.")
 
-    parser.add_option("-c", "--filename-components", dest="filename_components", type="string",
+    parser.add_option("-c", "--components-tsv-file", dest="filename_components", type="string",
                       help="filename of components to choose for each multiple alignment.")
 
     parser.add_option("-e", "--pattern-filter", dest="pattern_filter", type="string",
@@ -81,7 +81,7 @@ the multiple alignment. The label should be a single letter. If the file is empt
     parser.add_option("--filename-sample-reference", dest="filename_sample_reference", type="string",
                       help="filename to with reference components. The components should be part of the file supplied by --filename-components.")
 
-    parser.add_option("--minimum-mali-length", dest="minimum_mali_length", type="int",
+    parser.add_option("--min-mali-length", dest="minimum_mali_length", type="int",
                       help="minimum multiple alignment length.")
 
     parser.set_defaults(

@@ -107,7 +107,7 @@ def main(argv=sys.argv):
                       choices=("seconds", "milliseconds"),
                       help="time to show [default=%default]")
 
-    parser.add_option("-f", "--filter", dest="filter", type="choice",
+    parser.add_option("-f", "--method=filter --filter-method", dest="filter", type="choice",
                       choices=("unfinished", "running", "completed", "all"),
                       help="apply filter to output [default=%default]")
 

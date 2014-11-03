@@ -214,7 +214,7 @@ def buildCodingExons(infile, outfile):
     zcat %(infile)s 
     | awk '$2 == "protein_coding" && $3 == "CDS"'
     | perl -p -e "s/CDS/exon/" 
-    | python %(scriptsdir)s/gtf2gtf.py --merge-exons --log=%(outfile)s.log 
+    | python %(scriptsdir)s/gtf2gtf.py --method=merge-exons --log=%(outfile)s.log 
     | gzip 
     > %(outfile)s
     '''
@@ -234,7 +234,7 @@ def buildCodingRegions(infile, outfile):
     zcat %(infile)s 
     | awk '$2 == "protein_coding" && $3 == "CDS"'
     | perl -p -e "s/CDS/exon/" 
-    | python %(scriptsdir)s/gtf2gtf.py --merge-transcripts --log=%(outfile)s.log 
+    | python %(scriptsdir)s/gtf2gtf.py --method=merge-transcripts --log=%(outfile)s.log 
     | gzip 
     > %(outfile)s
     '''
@@ -293,7 +293,7 @@ def mapReadsWithBFAST(infiles, outfile):
                -n %(bfast_threads)i
                -i %(outfile)s.baf 
     2> %(outfile)s.post.log 
-    | python %(scriptsdir)s/bam2bam.py --sam --unset-unmapped-mapq --set-nh --log=%(outfile)s.log
+    | python %(scriptsdir)s/bam2bam.py --sam-file --method=unset-unmapped-mapq --method=set-nh --log=%(outfile)s.log
     | gzip > %(outfile)s
     '''
     P.run()
@@ -316,7 +316,7 @@ def mapReadsWithShrimp(infiles, outfile):
     job_threads = PARAMS["shrimp_threads"]
 
     statement = '''
-    gmapper-cs --full-threshold 80%% --threads %(shrimp_threads)i --fastq --report 5 --sam
+    gmapper-cs --full-threshold 80%% --threads %(shrimp_threads)i --fastq --report 5 --sam-file
               --sam-unaligned
               %(shrimp_options)s
               %(infile)s 
@@ -384,7 +384,7 @@ def mapReadsWithBWA(infiles, outfile):
 
     statement = '''
     bwa samse %(bwa_samse_options)s %(bwa_genome_dir)s/%(genome)s_cs %(outfile)s.sai %(infile)s 
-    | python %(scriptsdir)s/bam2bam.py --sam --set-nh --unset-unmapped-mapq --log=%(outfile)s.log
+    | python %(scriptsdir)s/bam2bam.py --sam-file --method=set-nh --method=unset-unmapped-mapq --log=%(outfile)s.log
     | gzip 
     > %(outfile)s
     '''
@@ -473,13 +473,13 @@ def mapReadsWithBowtie(infiles, outfile):
     gunzip < %(infile)s > %(tmpfile)s;
     checkpoint;
     bowtie -q
-           --sam 
+           --sam-file 
            -C
            --threads %(bowtie_threads)s
            %(bowtie_options)s
            %(bowtie_genome_dir)s/%(genome)s_cs
            %(tmpfile)s
-    | python %(scriptsdir)s/bam2bam.py --sam --set-nh --log=%(outfile)s.log
+    | python %(scriptsdir)s/bam2bam.py --sam-file --method=set-nh --log=%(outfile)s.log
     | gzip
     > %(outfile)s;
     checkpoint;
@@ -632,7 +632,7 @@ def mapReadsWithBowtieAgainstTranscriptome(infiles, outfile):
     gunzip < %(infile)s > %(tmpfile)s;
     checkpoint;
     bowtie -q
-           --sam 
+           --sam-file 
            -C
            --un /dev/null
            --threads %(bowtie_threads)s
@@ -640,7 +640,7 @@ def mapReadsWithBowtieAgainstTranscriptome(infiles, outfile):
            --best --strata -a
            %(prefix)s_cs
            %(tmpfile)s
-    | python %(scriptsdir)s/bam2bam.py --sam --set-nh --log=%(outfile)s.log
+    | python %(scriptsdir)s/bam2bam.py --sam-file --method=set-nh --log=%(outfile)s.log
     | perl -p -e "if (/^\\@HD/) { s/\\bSO:\S+/\\bSO:coordinate/}"  
     | samtools import %(contigs)s - -
     | samtools sort - %(track)s;
@@ -700,8 +700,8 @@ def checkMappedReadsAgainstTranscriptome(infiles, outfile):
 
     statement = '''
     python %(scriptsdir)s/bams2bam.py 
-       --force
-       --filename-gtf=%(reffile)s
+       --force-output
+       --gtf-file=%(reffile)s
        --filename-mismapped=%(outfile_mismapped)s
        --ignore-mismatches
        %(options)s
@@ -876,7 +876,7 @@ def mapReadsWithBowtieAgainstJunctions(infiles, outfile):
     gunzip < %(infile)s > %(tmpfile)s;
     checkpoint;
     bowtie -q
-           --sam 
+           --sam-file 
            -C
            --un /dev/null
            --threads %(bowtie_threads)s
@@ -884,8 +884,8 @@ def mapReadsWithBowtieAgainstJunctions(infiles, outfile):
            --best --strata -a
            %(prefix)s_cs
            %(tmpfile)s
-    | python %(scriptsdir)s/bam2bam.py --set-nh --log=%(outfile)s.log
-    | python %(scriptsdir)s/rnaseq_junction_bam2bam.py --contig-sizes=%(contigs)s --log=%(outfile)s.log
+    | python %(scriptsdir)s/bam2bam.py --method=set-nh --log=%(outfile)s.log
+    | python %(scriptsdir)s/rnaseq_junction_bam2bam.py --contigs-tsv-file=%(contigs)s --log=%(outfile)s.log
     | samtools sort - %(track)s;
     checkpoint;
     samtools index %(outfile)s
@@ -1048,7 +1048,7 @@ def buildBAMStats(infiles, outfile):
 
     statement = '''python
     %(scriptsdir)s/bam2stats.py
-         --force
+         --force-output
          --force-output
          --output-filename-pattern=%(outfile)s.%%s
          --input=%(nreads)i
@@ -1080,7 +1080,7 @@ def loadBAMStats(infiles, outfile):
                 | perl -p -e "s/unique/unique_alignments/"
                 | python %(scriptsdir)s/table2table.py --transpose
                 | python %(scriptsdir)s/csv2db.py
-                      --index=track
+                      --add-index=track
                       --table=%(tablename)s 
                 > %(outfile)s
             """
@@ -1122,8 +1122,8 @@ def buildExonValidation(infiles, outfile):
     infile, exons = infiles
     statement = '''cat %(infile)s
     | python %(scriptsdir)s/bam_vs_gtf.py
-         --filename-exons=%(exons)s
-         --force
+         --exons-file=%(exons)s
+         --force-output
          --log=%(outfile)s.log
          --output-filename-pattern="%(outfile)s.%%s.gz"
     | gzip
@@ -1237,7 +1237,7 @@ def mergeAndLoad(infiles, outfile, suffix):
                 | perl -p -e "s/bin/track/" 
                 | python %(scriptsdir)s/table2table.py --transpose
                 | python %(scriptsdir)s/csv2db.py
-                      --index=track
+                      --add-index=track
                       --table=%(tablename)s 
                 > %(outfile)s
             """
@@ -1321,7 +1321,7 @@ def buildRegionCoverage(infiles, outfile):
             buildRegionCoverage),
            suffix(".coverage.tsv.gz"), "_coverage.load")
 def loadCoverage(infile, outfile):
-    P.load(infile, outfile, options="--index=gene_id")
+    P.load(infile, outfile, options="--add-index=gene_id")
 
 ############################################################
 ############################################################
@@ -1387,7 +1387,7 @@ def loadAlignmentStats(infiles, outfile):
 
     statement = '''cat %(tmpfilename)s
                 | python %(scriptsdir)s/csv2db.py
-                      --index=track
+                      --add-index=track
                       --table=%(tablename)s 
                 > %(outfile)s
                '''
@@ -1410,7 +1410,7 @@ def loadAlignmentStats(infiles, outfile):
                 | python %(scriptsdir)s/csv2db.py
                       --header=%(column)s,%(header)s
                       --replace-header
-                      --index=track
+                      --add-index=track
                       --table=%(tname)s 
                 >> %(outfile)s
                 """

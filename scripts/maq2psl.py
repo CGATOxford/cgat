@@ -156,7 +156,7 @@ def main(argv=None):
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genome.")
 
-    parser.add_option("-c", "--filename-coordinates", dest="filename_coordinates", type="string",
+    parser.add_option("-c", "--coordinates-tsv-file", dest="filename_coordinates", type="string",
                       help="filename with coordinates.")
 
     parser.add_option("-p", "--output-filename-pattern", dest="output_filename_pattern", type="string",

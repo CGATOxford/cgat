@@ -130,7 +130,7 @@ def main(argv=None):
                             usage=globals()["__doc__"])
 
     parser.add_option(
-        "-w", "--filename-weights", dest="filename_weights",
+        "-w", "--weights-tsv-file", dest="filename_weights",
         type="string",
         help="filename with codon frequencies. Multiple filenames "
         "can be separated by comma.")

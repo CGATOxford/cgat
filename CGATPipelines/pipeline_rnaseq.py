@@ -545,7 +545,7 @@ def writePrunedGTF(infile, outfile):
     if "geneset_remove_repetetive_rna" in PARAMS:
 
         cmds.append('''python %s/gtf2gtf.py
-        --remove-overlapping=%s
+        --method=remove-overlapping --gff-file=%s
         --log=%s.log''' % (PARAMS["scriptsdir"],
                            rna_file, outfile))
 
@@ -569,7 +569,7 @@ def writePrunedGTF(infile, outfile):
     # remove \0 bytes within gtf file
     statement = '''%(uncompress)s %(infile)s 
     | %(cmds)s 
-    | python %(scriptsdir)s/gtf2gtf.py --sort=contig+gene --log=%(outfile)s.log
+    | python %(scriptsdir)s/gtf2gtf.py --method=sort --sort-order=contig+gene --log=%(outfile)s.log
     | %(compress)s > %(outfile)s'''
 
     P.run()
@@ -987,9 +987,9 @@ def buildIntronGeneModels(infile, outfile):
     statement = '''gunzip
     < %(infile)s 
     | awk '$2 == "protein_coding"'
-    | python %(scriptsdir)s/gtf2gtf.py --sort=gene 
+    | python %(scriptsdir)s/gtf2gtf.py --method=sort --sort-order=gene 
     | python %(scriptsdir)s/gtf2gtf.py 
-    --exons2introns 
+    --method=exons2introns 
     --intron-min-length=100 
     --intron-border=10 
     --log=%(outfile)s.log
@@ -997,7 +997,7 @@ def buildIntronGeneModels(infile, outfile):
     --crop=%(filename_exons)s
     --log=%(outfile)s.log
     | python %(scriptsdir)s/gtf2gtf.py 
-    --set-transcript-to-gene 
+    --method=set-transcript-to-gene 
     --log=%(outfile)s.log 
     | perl -p -e 's/intron/exon/'
     | gzip
@@ -1396,7 +1396,7 @@ def buildBAMs(infiles, outfile):
                            PARAMS_ANNOTATIONS["interface_genomic_context_bed"])))
 
     if "tophat_remove_mismapped" in PARAMS and PARAMS["tophat_remove_mismapped"]:
-        options.append("--filename-transcriptome=%(transcriptome)s" % locals())
+        options.append("--transcripts-gtf-file=%(transcriptome)s" % locals())
 
     if "tophat_add_separate_junctions" in PARAMS and PARAMS["tophat_add_separate_junctions"]:
         options.append("--filename-junctions=%(junctions)s" % locals())
@@ -1415,12 +1415,12 @@ def buildBAMs(infiles, outfile):
 
     statement = ''' 
       python %(scriptsdir)s/bams2bam.py 
-       --force
-       --filename-gtf=%(reffile)s
+       --force-output
+       --gtf-file=%(reffile)s
        --filename-mismapped=%(outfile_mismapped)s
        --log=%(outfile)s.log
        --filename-stats=%(outfile)s.tsv
-       --filename-map=%(map_file_statement)s
+       --map-tsv-file=%(map_file_statement)s
        %(options)s
        %(genome)s
     | samtools sort - %(prefix)s 2>&1 >> %(outfile)s.log;
@@ -1643,7 +1643,7 @@ def loadMappingStats(infiles, outfile):
                 | perl -p -e "s/unique/unique_alignments/"
                 | python %(scriptsdir)s/table2table.py --transpose
                 | python %(scriptsdir)s/csv2db.py
-                      --index=track
+                      --add-index=track
                       --table=%(tablename)s 
                 > %(outfile)s
             """
@@ -1668,8 +1668,8 @@ def buildBAMStats(infile, outfile):
 
     statement = '''python
     %(scriptsdir)s/bam2stats.py
-         --force
-         --filename-rna=%(rna_file)s
+         --force-output
+         --mask-bed-file=%(rna_file)s
          --remove-rna
          --output-filename-pattern=%(outfile)s.%%s
     < %(infile)s
@@ -1694,7 +1694,7 @@ def buildTranscriptBAMStats(infile, outfile):
 
     statement = '''python
     %(scriptsdir)s/bam2stats.py
-         --force
+         --force-output
          --output-filename-pattern=%(outfile)s.%%s
     < %(infile)s
     > %(outfile)s
@@ -1726,7 +1726,7 @@ def loadBAMStats(infiles, outfile):
                 | perl -p -e "s/unique/unique_alignments/"
                 | python %(scriptsdir)s/table2table.py --transpose
                 | python %(scriptsdir)s/csv2db.py
-                      --index=track
+                      --add-index=track
                       --table=%(tablename)s 
                 > %(outfile)s
             """
@@ -1745,7 +1745,7 @@ def loadBAMStats(infiles, outfile):
                    %(filenames)s
                 | perl -p -e "s/bin/%(suffix)s/"
                 | python %(scriptsdir)s/csv2db.py
-                      --allow-empty
+                      --allow-empty-file
                       --table=%(tname)s 
                 >> %(outfile)s
                 """
@@ -1809,7 +1809,7 @@ def loadContextStats(infiles, outfile):
                 | perl -p -e "s/bin/track/; s/\?/Q/g"
                 | python %(scriptsdir)s/table2table.py --transpose
                 | python %(scriptsdir)s/csv2db.py
-                      --index=track
+                      --add-index=track
                       --table=%(tablename)s 
                 > %(outfile)s
                 """
@@ -1914,7 +1914,7 @@ def oldClassifyTranscripts(infiles, outfile):
 
     statement = '''gunzip 
     < %(infile)s 
-    | python %(scriptsdir)s/gtf2gtf.py --sort=transcript
+    | python %(scriptsdir)s/gtf2gtf.py --method=sort --sort-order=transcript
     | %(cmd-farm)s --split-at-column=1 --output-header --log=%(outfile)s.log --max-files=60 
     "python %(scriptsdir)s/gtf2table.py 
     --counter=position 
@@ -1925,7 +1925,7 @@ def oldClassifyTranscripts(infiles, outfile):
     --counter=splice-comparison 
     --log=%(outfile)s.log 
     --filename-format=gff
-    --filename-gff=%(annotation)s 
+    --gff-file=%(annotation)s 
     --genome-file=%(genome_dir)s/%(genome)s"
     | gzip
     > %(outfile)s
@@ -1993,7 +1993,7 @@ def loadExpressionLevels(infile, outfile):
     track = P.snip(outfile, "_gene_expression.load")
     P.load(infile + ".genes.expr",
            outfile=track + "_gene_expression.load",
-           options="--index=gene_id")
+           options="--add-index=gene_id")
 
     tablename = track + "_transcript_expression"
     infile2 = infile + ".transcripts.expr"
@@ -2001,7 +2001,7 @@ def loadExpressionLevels(infile, outfile):
     statement = '''cat %(infile2)s
     | perl -p -e "s/trans_id/transcript_id/"
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
-              --index=transcript_id 
+              --add-index=transcript_id 
               --table=%(tablename)s 
     > %(outfile)s
     '''
@@ -2130,8 +2130,8 @@ def loadTranscriptComparison(infile, outfile):
 
     statement = '''cat %(tmpfile)s
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --allow-empty
-              --index=track
+              --allow-empty-file
+              --add-index=track
               --table=%(tablename)s 
     > %(outfile)s
     '''
@@ -2159,9 +2159,9 @@ def loadTranscriptComparison(infile, outfile):
 
     statement = '''cat %(tmpfile)s
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --allow-empty
-              --index=track
-              --index=contig
+              --allow-empty-file
+              --add-index=track
+              --add-index=contig
               --table=%(tablename)s 
     > %(outfile)s
     '''
@@ -2232,10 +2232,10 @@ def loadTranscriptComparison(infile, outfile):
     tablename = P.toTable(outfile) + "_tracking"
     statement = '''cat %(tmpfile)s
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --allow-empty
-              --index=locus_id
-              --index=transfrag_id
-              --index=code
+              --allow-empty-file
+              --add-index=locus_id
+              --add-index=transfrag_id
+              --add-index=code
               --table=%(tablename)s 
     >> %(outfile)s
     '''
@@ -2246,13 +2246,13 @@ def loadTranscriptComparison(infile, outfile):
     tablename = P.toTable(outfile) + "_transcripts"
     statement = '''cat %(tmpfile2)s
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --allow-empty
-              --index=transfrag_id
-              --index=ref_gene_id
-              --index=ref_transcript_id
-              --index=transcript_id
-              --index=gene_id
-              --index=track
+              --allow-empty-file
+              --add-index=transfrag_id
+              --add-index=ref_gene_id
+              --add-index=ref_transcript_id
+              --add-index=transcript_id
+              --add-index=gene_id
+              --add-index=track
               --table=%(tablename)s 
     >> %(outfile)s
     '''
@@ -2263,8 +2263,8 @@ def loadTranscriptComparison(infile, outfile):
     tablename = P.toTable(outfile) + "_fpkm"
     statement = '''cat %(tmpfile3)s
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --allow-empty
-              --index=transfrag_id
+              --allow-empty-file
+              --add-index=transfrag_id
               --table=%(tablename)s 
     >> %(outfile)s
     '''
@@ -2299,7 +2299,7 @@ def loadTranscriptComparison(infile, outfile):
 
     statement = '''cat %(tmpfile)s
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --index=locus_id
+              --add-index=locus_id
               --table=%(tablename)s 
     >> %(outfile)s
     '''
@@ -2569,7 +2569,7 @@ def buildLincRNAGeneSet(infiles, outfile):
     mv %(outfile)s %(outfile)s.tmp;
     checkpoint;
     zcat %(outfile)s.tmp
-    | python %(scriptsdir)s/gtf2gtf.py --sort=contig+gene --log=%(outfile)s.log
+    | python %(scriptsdir)s/gtf2gtf.py --method=sort --sort-order=contig+gene --log=%(outfile)s.log
     | gzip > %(outfile)s;
     checkpoint;
     rm -f %(outfile)s.tmp
@@ -2604,7 +2604,7 @@ def annotateLincRNA(infiles, outfile):
               --is-gtf 
               --genome=%(genome_dir)s/%(genome)s 
               --log=%(outfile)s.log
-    | %(cmd-farm)s --split-at-regex=\"^>(\S+)\" --chunksize=400 --log=%(outfile)s.log
+    | %(cmd-farm)s --split-at-regex=\"^>(\S+)\" --chunk-size=400 --log=%(outfile)s.log
     "exonerate --target %%STDIN%%
               --query %(reference_fasta)s
               --model affine:local
@@ -2660,7 +2660,7 @@ def classifyTranscripts(infiles, outfile):
     | python %(scriptsdir)s/gtf2table.py
            --counter=%(classifier)s 
            --reporter=transcripts
-           --filename-gff=%(reference)s
+           --gff-file=%(reference)s
            --log=%(outfile)s.log
     | gzip
     > %(outfile)s
@@ -2686,7 +2686,7 @@ def classifyTranscriptsCuffcompare(infiles, outfile):
     | python %(scriptsdir)s/gtf2table.py
            --counter=%(classifier)s 
            --reporter=transcripts
-           --filename-gff=%(reference)s
+           --gff-file=%(reference)s
            --log=%(outfile)s.log
     | gzip
     > %(outfile)s
@@ -2701,7 +2701,7 @@ def classifyTranscriptsCuffcompare(infiles, outfile):
 @transform((classifyTranscripts, classifyTranscriptsCuffcompare), suffix(".tsv.gz"), ".load")
 def loadClassification(infile, outfile):
     P.load(infile, outfile,
-           options="--index=transcript_id --index=match_gene_id --index=match_transcript_id --index=source")
+           options="--add-index=transcript_id --add-index=match_gene_id --add-index=match_transcript_id --add-index=source")
 
 #########################################################################
 #########################################################################
@@ -2804,7 +2804,7 @@ def loadTranscriptsMappability(infile, outfile):
         P.touch(outfile)
         return
 
-    P.load(infile, outfile, "--index=transcript_id --allow-empty")
+    P.load(infile, outfile, "--add-index=transcript_id --allow-empty-file")
 
 #########################################################################
 #########################################################################
@@ -2830,7 +2830,7 @@ def annotateTranscripts(infile, outfile):
     --section=exons
     --counter=length
     --log=%(outfile)s.log
-    --filename-gff=%(annotation_file)s
+    --gff-file=%(annotation_file)s
     --genome-file=%(genome_dir)s/%(genome)s
     | gzip
     > %(outfile)s"""
@@ -2844,7 +2844,7 @@ def annotateTranscripts(infile, outfile):
 def loadAnnotations(infile, outfile):
     '''load interval annotations: genome architecture
     '''
-    P.load(infile, outfile, "--index=gene_id")
+    P.load(infile, outfile, "--add-index=gene_id")
 
 #########################################################################
 #########################################################################
@@ -3121,7 +3121,7 @@ def runCuffdiff(infiles, outfile):
              --library-type %(tophat_library_type)s
              --verbose
              --num-threads %(cuffdiff_threads)i
-             --labels %(labels)s
+             --plot-labels %(labels)s
              --FDR %(cuffdiff_fdr)f
              %(options)s
              <(gunzip < %(infile)s )
@@ -3442,7 +3442,7 @@ def buildCodingExons(infile, outfile):
     zcat %(infile)s 
     | awk '$2 == "protein_coding" && $3 == "CDS"'
     | perl -p -e "s/CDS/exon/" 
-    | python %(scriptsdir)s/gtf2gtf.py --merge-exons --log=%(outfile)s.log 
+    | python %(scriptsdir)s/gtf2gtf.py --method=merge-exons --log=%(outfile)s.log 
     | gzip 
     > %(outfile)s
     '''
@@ -3465,8 +3465,8 @@ def buildExonValidation(infiles, outfile):
     infile, exons = infiles
     statement = '''cat %(infile)s
     | python %(scriptsdir)s/bam_vs_gtf.py
-         --filename-exons=%(exons)s
-         --force
+         --exons-file=%(exons)s
+         --force-output
          --log=%(outfile)s.log
          --output-filename-pattern="%(outfile)s.%%s.gz"
     | gzip
@@ -3511,7 +3511,7 @@ def buildUnionIntersectionExons(infile, outfile):
     to_cluster = USECLUSTER
     statement = '''
     gunzip < %(infile)s
-    | python %(scriptsdir)s/gtf2gtf.py --intersect-transcripts --with-utr --log=%(outfile)s.log
+    | python %(scriptsdir)s/gtf2gtf.py --method=intersect-transcripts --with-utr --log=%(outfile)s.log
     | python %(scriptsdir)s/gff2gff.py --is-gtf --crop-unique  --log=%(outfile)s.log
     | python %(scriptsdir)s/gff2bed.py --is-gtf --log=%(outfile)s.log
     | sort -k1,1 -k2,2n
@@ -3546,7 +3546,7 @@ def buildUnionExons(infile, outfile):
     to_cluster = USECLUSTER
     statement = '''
     gunzip < %(infile)s
-    | python %(scriptsdir)s/gtf2gtf.py --merge-exons --log=%(outfile)s.log
+    | python %(scriptsdir)s/gtf2gtf.py --method=merge-exons --log=%(outfile)s.log
     | python %(scriptsdir)s/gff2gff.py --is-gtf --crop-unique  --log=%(outfile)s.log
     | python %(scriptsdir)s/gff2bed.py --is-gtf --log=%(outfile)s.log
     | sort -k1,1 -k2,2n
@@ -3754,7 +3754,7 @@ def buildAggregateGeneLevelReadCounts(infiles, outfile):
            suffix(".tsv.gz"),
            ".load")
 def loadGeneLevelReadCounts(infile, outfile):
-    P.load(infile, outfile, options="--index=gene_id")
+    P.load(infile, outfile, options="--add-index=gene_id")
 
 #########################################################################
 #########################################################################
@@ -3800,7 +3800,7 @@ def buildIntronLevelReadCounts(infiles, outfile):
            suffix(".tsv.gz"),
            ".load")
 def loadIntronLevelReadCounts(infile, outfile):
-    P.load(infile, outfile, options="--index=gene_id")
+    P.load(infile, outfile, options="--add-index=gene_id")
 
 #########################################################################
 #########################################################################
@@ -3843,8 +3843,8 @@ def buildGeneLevelReadExtension(infile, outfile):
           --counter=position
           --counter=read-extension
           --output-filename-pattern=%(outfile)s.%%s.tsv.gz
-          --filename-gff=%(territories)s
-          --filename-gff=%(utrs)s
+          --gff-file=%(territories)s
+          --gff-file=%(utrs)s
     | gzip
     > %(outfile)s
     '''
@@ -3886,7 +3886,7 @@ def buildUTRExtension(infile, outfile):
            suffix(".utr.gz"),
            "_utr.load")
 def loadUTRExtension(infile, outfile):
-    P.load(infile, outfile, "--index=gene_id")
+    P.load(infile, outfile, "--add-index=gene_id")
 
 #########################################################################
 #########################################################################
@@ -4034,7 +4034,7 @@ def buildAggregateTranscriptLevelReadCounts(infiles, outfile):
            suffix(".tsv.gz"),
            ".load")
 def loadTranscriptLevelReadCounts(infile, outfile):
-    P.load(infile, outfile, options="--index=transcript_id")
+    P.load(infile, outfile, options="--add-index=transcript_id")
 
 #########################################################################
 #########################################################################
@@ -4102,7 +4102,7 @@ def aggregateExonLevelReadCounts(infiles, outfile):
            suffix(".tsv.gz"),
            ".load")
 def loadAggregateExonLevelReadCounts(infile, outfile):
-    P.load(infile, outfile, options="--index=gene_id")
+    P.load(infile, outfile, options="--add-index=gene_id")
 
 #########################################################################
 #########################################################################
@@ -4245,10 +4245,10 @@ def loadDESeq(infile, outfile):
     tablename = P.snip(outfile, ".load") + "_gene_diff"
     statement = '''cat %(infile)s
             | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --allow-empty
-              --index=treatment_name
-              --index=control_name
-              --index=test_id
+              --allow-empty-file
+              --add-index=treatment_name
+              --add-index=control_name
+              --add-index=test_id
               --table=%(tablename)s 
             > %(outfile)s
     '''

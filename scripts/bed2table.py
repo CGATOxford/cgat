@@ -492,10 +492,10 @@ def main(argv=None):
     parser.add_option("-a", "--all-fields", dest="all_fields", action="store_true",
                       help="output all fields in original bed file, by default only the first 4 are output [default=%default].")
 
-    parser.add_option("--bed-headers", dest="bed_headers", type="string",
+    parser.add_option("--output-bed-headers", dest="bed_headers", type="string",
                       help="supply ',' separated list of headers for bed component [default=%default].")
 
-    parser.add_option("-f", "--filename-gff", dest="filename_gff", type="string", action="append", metavar='bed',
+    parser.add_option("-f", "--gff-file", dest="filename_gff", type="string", action="append", metavar='bed',
                       help="filename with extra gff files. The order is important [default=%default].")
 
     parser.add_option("--has-header", dest="has_header", action="store_true",

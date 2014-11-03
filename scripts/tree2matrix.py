@@ -106,7 +106,7 @@ def main(argv=None):
                       help="convert tree(s) to table.")
     parser.add_option("-t", "--translate", dest="do_translate", action="store_true",
                       help="translate internal nodes to clades.")
-    parser.add_option("--output-pattern", dest="output_filename_pattern", type="string",
+    parser.add_option("--output-filename-pattern", dest="output_filename_pattern", type="string",
                       help="pattern for output file if there are multiple trees in the file.""")
     parser.add_option("--pairs", dest="pairs", type="choice",
                       choices=(

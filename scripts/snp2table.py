@@ -27,8 +27,8 @@ Example::
    gunzip < snps.pileup.gz 
    | python snp2table.py  
         --genome-file=genome 
-        --filename-exons=exons
-        --filename-annotations=bases
+        --exons-file=exons
+        --annotations-tsv-file=bases
         --filename-junctions=junctions
         --log=log 
    > result.out
@@ -775,13 +775,13 @@ def main(argv=None):
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genome [default=%default].")
-    parser.add_option("-a", "--filename-annotations", dest="filename_annotations", type="string",
+    parser.add_option("-a", "--annotations-tsv-file", dest="filename_annotations", type="string",
                       help="filename with base annotations (output from gtf2fasta.py) [default=%default].")
-    parser.add_option("-f", "--filename-exons", dest="filename_exons", type="string",
+    parser.add_option("-f", "--exons-file", dest="filename_exons", type="string",
                       help="filename with exon information (gff formatted file)  [default=%default].")
     parser.add_option("-j", "--filename-junctions", dest="filename_junctions", type="string",
                       help="filename with junction information (filename with exon junctions)  [default=%default].")
-    parser.add_option("-c", "--filename-vcf", dest="filename_vcf", type="string",
+    parser.add_option("-c", "--vcf-file", dest="filename_vcf", type="string",
                       help="vcf file to parse [default=%default].")
     parser.add_option("-i", "--input-format", dest="input_format", type="choice",
                       choices=("pileup", "vcf"),

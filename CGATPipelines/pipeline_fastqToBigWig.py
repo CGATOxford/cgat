@@ -254,7 +254,7 @@ def loadPicardAlignStats(infiles, outfile):
     tablename = P.toTable(outfile)
     statement = '''cat %(tmpfilename)s
                 | python %(scriptsdir)s/csv2db.py
-                      --index=track
+                      --add-index=track
                       --table=%(tablename)s 
                 > %(outfile)s'''
     P.run()
@@ -303,7 +303,7 @@ def loadPicardDuplicateStats(infiles, outfile):
     tablename = P.toTable(outfile)
     statement = '''cat %(tmpfilename)s
                 | python %(scriptsdir)s/csv2db.py
-                      --index=track
+                      --add-index=track
                       --table=%(tablename)s 
                 > %(outfile)s '''
     P.run()
@@ -351,7 +351,7 @@ def summarizeMACSsolo(infiles, outfile):
 @transform(summarizeMACSsolo, suffix(".summary"), "_summary.load")
 def loadMACSsoloSummary(infile, outfile):
     '''load macs summary.'''
-    P.load(infile, outfile, "--index=track")
+    P.load(infile, outfile, "--add-index=track")
 
 ############################################################
 

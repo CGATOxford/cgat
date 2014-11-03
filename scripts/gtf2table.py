@@ -153,7 +153,7 @@ territories
 coverage
 
    compute the coverage - per nucleotide - of the gene/transcript
-   models with intervals given in ``--filename-gff``.  Coverage values
+   models with intervals given in ``--gff-file``.  Coverage values
    are output in 5' to 3' together with summary statistics (bases
    covered, minimum, maximum coverage, etc.). By using the options
    ``--gff-feature`` or ``--gff-source`` the counting can be
@@ -292,7 +292,7 @@ Classifiers
 
 Classifiers not only annotate the transcripts or gene model, but also
 aim to provide some classification based on these annotations. They
-require a secondary file (see option ``--filename-gff``) for the
+require a secondary file (see option ``--gff-file``) for the
 classification.
 
 classifier
@@ -3882,7 +3882,7 @@ def main(argv=None):
                       help="filename with bigwig information "
                       "[default=%default].")
 
-    parser.add_option("-f", "--filename-gff", dest="filename_gff",
+    parser.add_option("-f", "--gff-file", dest="filename_gff",
                       type="string", action="append", metavar='bed',
                       help="filename with extra gff files. The order "
                       "is important [default=%default].")
@@ -3963,7 +3963,7 @@ def main(argv=None):
                       help="distance to be considered proximal to "
                       "an interval [default=%default].")
 
-    parser.add_option("--multi-mapping",
+    parser.add_option("--multi-mapping-method",
                       dest="multi_mapping",
                       type="choice",
                       choices=('all', 'ignore', 'weight'),

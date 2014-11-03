@@ -190,11 +190,11 @@ def main(argv=None):
     parser.add_option("--is-frequencies", dest="is_frequencies", action="store_true",
                       help="data is frequencies (default: weights).")
 
-    parser.add_option("-s", "--sort", dest="sort", type="choice",
+    parser.add_option("-s", "--method=sort --sort-order", dest="sort", type="choice",
                       choices=("percent-difference", "aa"),
                       help="sort order of output table.")
 
-    parser.add_option("-g", "--global-sort", dest="global_sort", action="store_true",
+    parser.add_option("-g", "--sort-global", dest="global_sort", action="store_true",
                       help="globally sort results (otherwise: by species pair).")
 
     parser.set_defaults(

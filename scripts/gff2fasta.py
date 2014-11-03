@@ -71,7 +71,7 @@ Options
   Merge features in :term:`gtf`/:term:`gff` file that are adjacent and share
   attributes
 
-``--filter``
+``--method=filter --filter-method``
   Filter on a :term:`gff` feature such as ``exon`` or ``CDS``
 
 ``--filename-masks``

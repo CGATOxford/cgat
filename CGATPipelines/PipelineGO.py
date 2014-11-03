@@ -310,21 +310,21 @@ def runGOFromFiles(outfile,
         options.append("--filename-ontology=%(ontology_file)s" % locals())
 
     if bg_file is not None:
-        options.append("--background=%(bg_file)s" % locals())
+        options.append("--background-tsv-file=%(bg_file)s" % locals())
 
     if samples is not None:
         options.append("--fdr")
         options.append("--sample=%(samples)i" % locals())
-        options.append("--qvalue-method=empirical")
+        options.append("--fdr-method=empirical")
     else:
         options.append("--fdr")
-        options.append("--qvalue-method=BH")
+        options.append("--fdr-method=BH")
 
     if pairs:
         options.append("--pairwise")
 
     if gene2name:
-        options.append("--filename-gene2name=%s" % gene2name)
+        options.append("--gene2name-map-tsv-file=%s" % gene2name)
 
     options = " ".join(options)
     statement = '''
@@ -332,7 +332,7 @@ def runGOFromFiles(outfile,
     --filename-input=%(go_file)s
     --genes=%(fg_file)s
     --output-filename-pattern='%(outdir)s/%%(set)s.%%(go)s.%%(section)s'
-    --minimum-counts=%(minimum_counts)i
+    --min-counts=%(minimum_counts)i
     --log=%(outfile)s.log
     %(options)s
     > %(outfile)s'''
@@ -394,9 +394,9 @@ def loadGO(infile, outfile, tablename):
     statement = '''
     python %(toolsdir)s/cat_tables.py %(indir)s/*.overall |\
     python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
-              --allow-empty \
-              --index=category \
-              --index=goid \
+              --allow-empty-file \
+              --add-index=category \
+              --add-index=goid \
               --table=%(tablename)s \
     > %(outfile)s
     '''
@@ -466,12 +466,12 @@ def loadGOs(infiles, outfile, tablename):
 
     statement = '''
    python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
-              --allow-empty 
-              --index=category 
-              --index=track,geneset,annotationset
-              --index=geneset
-              --index=annotationset
-              --index=goid 
+              --allow-empty-file 
+              --add-index=category 
+              --add-index=track,geneset,annotationset
+              --add-index=geneset
+              --add-index=annotationset
+              --add-index=goid 
               --table=%(tablename)s 
     < %(tempfilename)s
     > %(outfile)s

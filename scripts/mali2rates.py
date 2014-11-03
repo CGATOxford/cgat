@@ -548,7 +548,7 @@ def main(argv=None):
                       help="format [default=%default].",
                       metavar="format")
 
-    parser.add_option("-d", "--distance", dest="distance", type="choice",
+    parser.add_option("-d", "--distance-method", dest="distance", type="choice",
                       choices=("PID", "T92", "JC69", "POVL", "F84", "LogDet",
                                "K80", "F81", "HKY85", "TN93", "REV", "UNREST", "REVU",
                                "UNRESTU",
@@ -570,7 +570,7 @@ def main(argv=None):
                       choices=("aa", "na", "auto"),
                       help="alphabet to use.", )
 
-    parser.add_option("-t", "--filename-tree", dest="filename_tree", type="string",
+    parser.add_option("-t", "--tree-nh-file", dest="filename_tree", type="string",
                       help="filename with tree information.")
 
     parser.add_option("--set-alpha", dest="alpha", type="float",
@@ -605,7 +605,7 @@ def main(argv=None):
                       choices=("input", "trained", "all"),
                       help="output sections to write for xrate.")
 
-    parser.add_option("--output-pattern", dest="output_pattern", type="string",
+    parser.add_option("--output-filename-pattern", dest="output_pattern", type="string",
                       help="output pattern for output files.")
 
     parser.add_option("--xrate-min-increment", dest="xrate_min_increment", type=float,

@@ -47,10 +47,10 @@ Version = $Id: mali_evaluate.py 2782 2009-09-10 11:40:29Z andreas $
 Options:
 -h, --help                      print this message.
 -v, --verbose=                  loglevel.
--o, --output-pattern            pattern for output multiple alignments
+-o, --output-filename-pattern            pattern for output multiple alignments
 -p, --master-pattern=           pattern identifying sequences of the query species from identifier
 -s, --species-pattern=          pattern identifying species from identifier
--e, --exons=                    exon information for evaluation
+-e, --exons-file=                    exon information for evaluation
 -c, --cluster                   cluster by overlap
 -f, --remove-fragments          remove fragments
 -p, --prefix=                   prefix for cluster identifier
@@ -1088,7 +1088,7 @@ def main(argv=None):
             param_master_pattern = a
         elif o in ("-s", "--species-pattern"):
             param_species_pattern = a
-        elif o in ("-e", "--exons"):
+        elif o in ("-e", "--exons-file"):
             param_filename_exons = a
         elif o in ("-c", "--cluster"):
             param_do_cluster = True

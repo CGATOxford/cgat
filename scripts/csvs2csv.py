@@ -76,7 +76,7 @@ def main(argv=None):
     parser.add_option("-g", "--glob", dest="glob", type="string",
                       help="wildcard expression for table names.")
 
-    parser.add_option("-s", "--sort", dest="sort", type="string",
+    parser.add_option("-s", "--method=sort --sort-order", dest="sort", type="string",
                       help="sort by column titles alphabetical|numeric|list of columns.")
 
     parser.add_option("-e", "--merge", dest="merge", action="store_true",

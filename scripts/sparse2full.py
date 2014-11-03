@@ -319,10 +319,10 @@ def main(argv=None):
                           "row-col-weight", "row-col-weight-replicates", "row-col-weight-weight"),
                       help="input format.")
 
-    parser.add_option("-a", "--asymmetric", dest="asymmetric", action="store_true",
+    parser.add_option("-a", "--is-asymmetric", dest="asymmetric", action="store_true",
                       help="matrix is asymmetric.")
 
-    parser.add_option("-d", "--default", dest="default", type="string",
+    parser.add_option("-d", "--default-value", dest="default", type="string",
                       help="default value for missing values.")
 
     parser.add_option("-D", "--default-diagonal", dest="default_diagonal", type="string",
@@ -355,7 +355,7 @@ def main(argv=None):
     parser.add_option("--filter-numrows", dest="filter_numrows", type="int",
                       help="only output matrices with # rows.")
 
-    parser.add_option("--filename-map", dest="filename_map", type="string",
+    parser.add_option("--map-tsv-file", dest="filename_map", type="string",
                       help="filename with mapping between input and output chunks.")
 
     parser.set_defaults(

@@ -332,7 +332,7 @@ prf to minimize sum of both errors - derived from minSUM.prf
 def loadTATABox(infile, outfile):
     '''load TATA box information.'''
 
-    P.load(infile + ".table.gz", outfile, "--index=transcript_id")
+    P.load(infile + ".table.gz", outfile, "--add-index=transcript_id")
 
 ###################################################################
 ###################################################################
@@ -451,7 +451,7 @@ def annotateCpGIslands(infiles, outfile):
 def loadCpGIslands(infile, outfile):
     '''load CpG Islands information.'''
 
-    P.load(infile, outfile, "--index=transcript_id")
+    P.load(infile, outfile, "--add-index=transcript_id")
 
 
 @merge((loadTATABox, loadCpGIslands), "promotorinfo_transcripts.load")

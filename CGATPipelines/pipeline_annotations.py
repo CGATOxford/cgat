@@ -833,7 +833,7 @@ def buildGeneSet(infile, outfile):
     statement = ['''zcat %(infile)s
     | grep 'transcript_id'
     | python %(scriptsdir)s/gff2gff.py
-    --sanitize=genome
+    --method=sanitize=genome
     --skip-missing
     --genome-file=%(genome_dir)s/%(genome)s
     --log=%(outfile)s.log ''']
@@ -1181,7 +1181,7 @@ def buildTranscriptRegions(infile, outfile):
     '''Bed file of regions spanning a whole transcript.'''
     statement = """
     gunzip < %(infile)s
-    | python %(scriptsdir)s/gtf2gtf.py --join-exons --log=%(outfile)s.log
+    | python %(scriptsdir)s/gtf2gtf.py --method=join-exons --log=%(outfile)s.log
     | python %(scriptsdir)s/gff2bed.py --is-gtf --name=transcript_id
     --log=%(outfile)s.log
     | gzip
@@ -1198,7 +1198,7 @@ def buildGeneRegions(infile, outfile):
     '''Bed file of regions spanning whole genes.'''
     statement = """
     gunzip < %(infile)s
-    | python %(scriptsdir)s/gtf2gtf.py --merge-transcripts --with-utr
+    | python %(scriptsdir)s/gtf2gtf.py --method=merge-transcripts --with-utr
     --log=%(outfile)s.log
     | python %(scriptsdir)s/gff2bed.py --is-gtf --name=gene_id
     --log=%(outfile)s.log
@@ -1218,7 +1218,7 @@ def buildTranscriptTSS(infile, outfile):
     Similar to promotors, except that the witdth is set to 1. '''
     statement = """
     gunzip < %(infile)s
-    | python %(scriptsdir)s/gtf2gtf.py --join-exons
+    | python %(scriptsdir)s/gtf2gtf.py --method=join-exons
     --log=%(outfile)s.log
     | python %(scriptsdir)s/gtf2gff.py --method=promotors
     --promotor=1
@@ -1241,7 +1241,7 @@ def buildTranscriptTTS(infile, outfile):
     Similar to promotors, except that the witdth is set to 1. '''
     statement = """
     gunzip < %(infile)s
-    | python %(scriptsdir)s/gtf2gtf.py --join-exons
+    | python %(scriptsdir)s/gtf2gtf.py --method=join-exons
     --log=%(outfile)s.log
     | python %(scriptsdir)s/gtf2gff.py --method=tts
     --promotor=1
@@ -1261,7 +1261,7 @@ def buildTranscriptTTS(infile, outfile):
 def buildGeneTSS(infile, outfile):
     '''annotate transcription termination sites from reference gene set. '''
     statement = """gunzip < %(infile)s
-    | python %(scriptsdir)s/gtf2gtf.py --merge-transcripts --with-utr
+    | python %(scriptsdir)s/gtf2gtf.py --method=merge-transcripts --with-utr
     --log=%(outfile)s.log
     | python %(scriptsdir)s/gtf2gff.py --method=promotors --promotor=1
     --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log
@@ -1280,7 +1280,7 @@ def buildGeneTSS(infile, outfile):
 def buildGeneTTS(infile, outfile):
     '''annotate transcription termination sites from reference gene set. '''
     statement = """gunzip < %(infile)s
-    | python %(scriptsdir)s/gtf2gtf.py --merge-transcripts --with-utr
+    | python %(scriptsdir)s/gtf2gtf.py --method=merge-transcripts --with-utr
     --log=%(outfile)s.log
     | python %(scriptsdir)s/gtf2gff.py --method=tts --promotor=1
     --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log
@@ -1302,12 +1302,12 @@ def buildGeneTSSInterval(infile, outfile):
     '''
     statement = """
     gunzip < %(infile)s
-    | python %(scriptsdir)s/gtf2gtf.py --join-exons --log=%(outfile)s.log
+    | python %(scriptsdir)s/gtf2gtf.py --method=join-exons --log=%(outfile)s.log
     | python %(scriptsdir)s/gtf2gff.py --method=promotors --promotor=1
     --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log
     | sed s/transcript/exon/g
     | sed s/exon_id/transcript_id/g
-    | python %(scriptsdir)s/gtf2gtf.py --merge-transcripts
+    | python %(scriptsdir)s/gtf2gtf.py --method=merge-transcripts
     --log=%(outfile)s.log
     | python %(scriptsdir)s/gff2bed.py --is-gtf --name=transcript_id
     --log=%(outfile)s.log
@@ -1388,7 +1388,7 @@ def loadRepeats(infile, outfile):
     --retry
     --table=repeats
     --header=%(headers)s
-    --index=class
+    --add-index=class
     > %(outfile)s; """
     P.run()
 
@@ -1739,8 +1739,8 @@ def loadGOAssignments(infile, outfile):
     zcat < %(infile)s
     |python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --table=%(table)s
-              --index=gene_id
-              --index=go_id
+              --add-index=gene_id
+              --add-index=go_id
     > %(outfile)s
     '''
     P.run()
@@ -1805,7 +1805,7 @@ def importKEGGAssignments(infile, outfile):
 @transform(importKEGGAssignments, suffix(".tsv.gz"), "_assignments.load")
 def loadKEGGAssignments(infile, outfile):
 
-    P.load(infile, outfile, options="-i gene_id -i kegg_id --allow-empty")
+    P.load(infile, outfile, options="-i gene_id -i kegg_id --allow-empty-file")
 
 
 # ---------------------------------------------------------------
@@ -1858,18 +1858,18 @@ def buildGeneTerritories(infile, outfile):
     gunzip < %(infile)s
     | awk '$2 == "protein_coding"'
     | python %(scriptsdir)s/gtf2gtf.py
-    --sort=gene
+    --method=sort --sort-order=gene
     | python %(scriptsdir)s/gtf2gtf.py
-    --merge-transcripts --with-utr
+    --method=merge-transcripts --with-utr
     | python %(scriptsdir)s/gtf2gtf.py
-    --sort=position
+    --method=sort --sort-order=position
     | python %(scriptsdir)s/gtf2gff.py
           --genome-file=%(genome_dir)s/%(genome)s
           --log=%(outfile)s.log
           --radius=%(enrichment_territories_radius)s
           --method=territories
     | python %(scriptsdir)s/gtf2gtf.py
-    --filter=longest-gene --log=%(outfile)s.log
+    --method=filter --filter-method=longest-gene --log=%(outfile)s.log
     | gzip
     > %(outfile)s '''
 
@@ -1885,17 +1885,17 @@ def buildTSSTerritories(infile, outfile):
     gunzip < %(infile)s
     | awk '$2 == "protein_coding"'
     | python %(scriptsdir)s/gtf2gtf.py
-    --filter=representative-transcript --log=%(outfile)s.log
-    | python %(scriptsdir)s/gtf2gtf.py --sort=position
+    --method=filter --filter-method=representative-transcript --log=%(outfile)s.log
+    | python %(scriptsdir)s/gtf2gtf.py --method=sort --sort-order=position
     | python %(scriptsdir)s/gtf2gff.py
           --genome-file=%(genome_dir)s/%(genome)s
           --log=%(outfile)s.log
           --radius=%(enrichment_territories_radius)s
           --method=tss-territories
     | python %(scriptsdir)s/gtf2gtf.py
-    --sort=gene+transcript --log=%(outfile)s.log
+    --method=sort --sort-order=gene+transcript --log=%(outfile)s.log
     | python %(scriptsdir)s/gtf2gtf.py
-    --filter=longest-gene --log=%(outfile)s.log
+    --method=filter --filter-method=longest-gene --log=%(outfile)s.log
     | gzip
     > %(outfile)s '''
 
@@ -1911,7 +1911,7 @@ def buildGREATRegulatoryDomains(infile, outfile):
     gunzip < %(infile)s
     | awk '$2 == "protein_coding"'
     | python %(scriptsdir)s/gtf2gtf.py
-    --filter=representative-transcript
+    --method=filter --filter-method=representative-transcript
     --log=%(outfile)s.log
     | python %(scriptsdir)s/gtf2gff.py
     --genome-file=%(genome_dir)s/%(genome)s
@@ -2278,7 +2278,7 @@ def loadGFFStats(infiles, outfile):
            suffix(".tsv.gz"),
            ".load")
 def loadIntervalSummary(infile, outfile):
-    P.load(infile, outfile, options='--allow-empty')
+    P.load(infile, outfile, options='--allow-empty-file')
 
 
 ##################################################################

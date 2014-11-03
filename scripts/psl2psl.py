@@ -960,11 +960,11 @@ def main(argv=None):
                       choices=("gff", "gtf"),
                       help="format of intervals [default=%default].")
 
-    parser.add_option("--filename-queries", dest="filename_queries",
+    parser.add_option("--queries-tsv-file", dest="filename_queries",
                       type="string",
                       help="fasta filename with queries.")
 
-    parser.add_option("--filename-target", dest="filename_sbjcts",
+    parser.add_option("--target-psl-file", dest="filename_sbjcts",
                       type="string",
                       help="fasta filename with sbjct [default=%default].")
 

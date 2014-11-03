@@ -667,7 +667,7 @@ def buildBAMStats(infile, outfile):
     '''
     statement = '''python
     %(scriptsdir)s/bam2stats.py
-         --force
+         --force-output
          --output-filename-pattern=%(outfile)s.%%s
     < %(infile)s
     > %(outfile)s
@@ -993,7 +993,7 @@ def summarizeMACSFDR(infiles, outfile):
            "_summary.load")
 def loadMACSSummary(infile, outfile):
     '''load macs summary.'''
-    P.load(infile, outfile, "--index=track")
+    P.load(infile, outfile, "--add-index=track")
 
 ############################################################
 
@@ -1003,7 +1003,7 @@ def loadMACSSummary(infile, outfile):
            "_fdr.load")
 def loadMACSSummaryFDR(infile, outfile):
     '''load macs summary.'''
-    P.load(infile, outfile, "--index=track", transpose="fdr")
+    P.load(infile, outfile, "--add-index=track", transpose="fdr")
 
 
 ######################################################################
@@ -1068,7 +1068,7 @@ def summarizeMACS2FDR(infiles, outfile):
            "_summary.load")
 def loadMACS2Summary(infile, outfile):
     '''load macs2 summary.'''
-    P.load(infile, outfile, "--index=track")
+    P.load(infile, outfile, "--add-index=track")
 
 ############################################################
 
@@ -1078,7 +1078,7 @@ def loadMACS2Summary(infile, outfile):
            "_fdr.load")
 def loadMACS2SummaryFDR(infile, outfile):
     '''load macs2 summary.'''
-    P.load(infile, outfile, "--index=track", transpose="fdr")
+    P.load(infile, outfile, "--add-index=track", transpose="fdr")
 
 ######################################################################
 ######################################################################
@@ -1220,7 +1220,7 @@ def summarizeSICER(infiles, outfile):
            r"\1_\2_summary.load")
 def loadSICERSummary(infile, outfile):
     '''load sicer summary.'''
-    P.load(infile, outfile, "--index=track")
+    P.load(infile, outfile, "--add-index=track")
 
 ######################################################################
 ######################################################################
@@ -1268,7 +1268,7 @@ def summarizePeakRanger(infiles, outfiles):
 @transform(summarizePeakRanger, suffix(".summary"), "_summary.load")
 def loadPeakRangerSummary(infile, outfile):
     '''load Peakranger summarys.'''
-    P.load(infile, outfile, "--index=track")
+    P.load(infile, outfile, "--add-index=track")
 
 ######################################################################
 ######################################################################
@@ -1315,7 +1315,7 @@ def summarizePeakRangerCCAT(infiles, outfiles):
 @transform(summarizePeakRanger, suffix(".summary"), "_summary.load")
 def loadPeakRangerSummaryCCAT(infile, outfile):
     '''load Peakranger summarys.'''
-    P.load(infile, outfile, "--index=track")
+    P.load(infile, outfile, "--add-index=track")
 
 ######################################################################
 ######################################################################
@@ -1452,7 +1452,7 @@ def summarizeSPP(infiles, outfile):
 @transform(summarizeSPP, suffix(".summary"), "_summary.load")
 def loadSPPSummary(infile, outfile):
     '''load sicer summary.'''
-    P.load(infile, outfile, "--index=track")
+    P.load(infile, outfile, "--add-index=track")
 
 ############################################################
 ############################################################
@@ -1833,17 +1833,17 @@ def buildPeakShapeTable(infile, outfile):
 
     options = []
     if controlfile:
-        options.append("--control-file=%s" % controlfile)
+        options.append("--control-bam-file=%s" % controlfile)
     options = " ".join(options)
 
     statement = '''python %(scriptsdir)s/bam2peakshape.py
                       --window-size=%(peakshape_window_size)i
                       --bin-size=%(peakshape_bin_size)i
                       --output-filename-pattern="%(outfile)s.%%s"
-                      --force
-                      --shift=%(shift)i
-                      --sort=peak-height
-                      --sort=peak-width
+                      --force-output
+                      --shift-size=%(shift)i
+                      --method=sort --sort-order=peak-height
+                      --method=sort --sort-order=peak-width
                       %(options)s
                       --log=%(outfile)s.log
                       %(bamfile)s %(infile)s
@@ -1861,7 +1861,7 @@ def loadPeakShapeTable(infile, outfile):
     P.load(
         infile,
         outfile,
-        "--ignore-column=bins --ignore-column=counts --allow-empty")
+        "--ignore-column=bins --ignore-column=counts --allow-empty-file")
 
 ############################################################
 ############################################################
@@ -1938,7 +1938,7 @@ def makeReproducibilityOfReplicates(infiles, outfile):
 def loadReproducibility(infile, outfile):
     '''load Reproducibility results
     '''
-    P.load(infile, outfile, options="--allow-empty")
+    P.load(infile, outfile, options="--allow-empty-file")
 
 
 @follows(loadReproducibility)

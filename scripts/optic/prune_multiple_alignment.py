@@ -544,7 +544,7 @@ def main(argv=None):
     parser.add_option("-t", "--translate", dest="filename_translation", type="string",
                       help="filename on where to store translated sequences.")
 
-    parser.add_option("-e", "--exons", dest="filename_exons", type="string",
+    parser.add_option("-e", "--exons-file", dest="filename_exons", type="string",
                       help="filename on where to exon information.")
 
     parser.add_option("-c", "--mark-codons", dest="mark_codons", action="store_true",

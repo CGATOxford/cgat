@@ -15,7 +15,7 @@ collection of unions or intersections.
 Options
 -------
 Files are collected by a regular expression pattern given to the option
-``--pattern-id``.
+``--pattern-identifier``.
 
 The script behaviour is determined by the ``--method`` option with either of
 the following choices::
@@ -198,7 +198,7 @@ def main(argv=None):
                       " other sets"
                       " [default=%default].")
 
-    parser.add_option("-p", "--pattern-id", dest="pattern_id", type="string",
+    parser.add_option("-p", "--pattern-identifier", dest="pattern_id", type="string",
                       help="pattern to convert a filename "
                       "to an id [default=%default].")
 

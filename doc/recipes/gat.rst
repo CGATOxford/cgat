@@ -29,11 +29,11 @@ from ENSEMBL_ and pushing it through a sequence of commands::
    wget -qO- ftp://ftp.ensembl.org/pub/release-72/gtf/homo_sapiens/Homo_sapiens.GRCh37.72.gtf.gz
    | gunzip
    | awk '$2 == "protein_coding"' 
-   | cgat gff2gff --genome-file=hg19 --sanitize=genome --skip-missing
-   | cgat gtf2gtf --sort=gene
-   | cgat gtf2gtf --merge-exons --with-utr
-   | cgat gtf2gtf --filter=longest-gene
-   | cgat gtf2gtf --sort=position
+   | cgat gff2gff --genome-file=hg19 --method=sanitize=genome --skip-missing
+   | cgat gtf2gtf --method=sort --sort-order=gene
+   | cgat gtf2gtf --method=merge-exons --with-utr
+   | cgat gtf2gtf --method=filter --filter-method=longest-gene
+   | cgat gtf2gtf --method=sort --sort-order=position
    | cgat gtf2gff --genome-file=hg19 --flank=5000 --method=genome
    | gzip
    > annotations.hg19.gff.gz
@@ -43,26 +43,26 @@ The commands do the following.
 1. Reconcile the chromosome names in the gene set (ENSEMBL: 1,2,3)
    with the UCSC convention (chr1,chr2,chr3)::
 
-      | cgat gff2ff --genome-file=hg19 --sanitize=genome --skip-missing
+      | cgat gff2ff --genome-file=hg19 --method=sanitize=genome --skip-missing
 
 2. Sort the gene set by gene making sure that all exons within a gene
    appear in a block::
 
-      | cgat gtf2gtf --merge-exons --with-utr
+      | cgat gtf2gtf --method=merge-exons --with-utr
 
 3. Merge overlapping exons from alternative transcripts of the same gene::
 
-      | cgat gtf2gtf --merge-exons --with-utr
+      | cgat gtf2gtf --method=merge-exons --with-utr
 
 4. Resolve nested genes. In nested genes a genomic region might be
    both defined intronic and intergenic. Here, we select the longer
    one::
 
-      | cgat gtf2gtf --filter=longest-gene
+      | cgat gtf2gtf --method=filter --filter-method=longest-gene
 
 5. Sort by genomic position::
 
-      | cgat gtf2gtf --sort=position
+      | cgat gtf2gtf --method=sort --sort-order=position
 
 6. Define intronic, intergenic and other gene set based annotations::
 
@@ -74,7 +74,7 @@ We can now use the file :file:`annotations.hg19.gff.gz` to classify
 individual peaks with the :doc:`../../scripts/bed2table` tool::
 
    zcat srf.hg19.bed.gz
-   | cgat bed2table --genome-file=hg19 --counter=classify-chipseq --filename-gff=annotations.hg19.gff.gz
+   | cgat bed2table --genome-file=hg19 --counter=classify-chipseq --gff-file=annotations.hg19.gff.gz
    | gzip 
    > srf.hg19.tsv.gz
 
@@ -119,7 +119,7 @@ We are now ready to run gat::
       --ignore-segment-tracks 
       --segments=srf.hg19.bed.gz
       --annotations=annotations.hg19.bed.gz 
-      --workspace=ungapped.hg19.bed.gz
+      --workspace-bed-file=ungapped.hg19.bed.gz
       --num-samples=1000 
       --log=gat.log 
    | gzip

@@ -73,7 +73,7 @@ Options:
 -h, --help                      print this message.
 -v, --verbose                   loglevel.
 -g, --genome-file=           pattern for filenames with the genomic DNA (FASTA).
--c, --cds=                      filename with coding sequences
+-c, --cds-gtf-file=                      filename with coding sequences
 -f, --format=                   output format, valid options are:
                                 paired_fasta: concatenated pairwise alignments in FASTA format
                                 
@@ -133,7 +133,7 @@ def main(argv=None):
             sys.exit(0)
         elif o in ("-g", "--genome-file"):
             param_genome_file = a
-        elif o in ("-c", "--cds"):
+        elif o in ("-c", "--cds-gtf-file"):
             param_filename_cds = a
 
     if len(args) > 0:

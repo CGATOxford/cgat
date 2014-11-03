@@ -66,7 +66,7 @@ Example::
 
    python fastqs2fastqs.py \
             --method=reconcile \
-            --output-pattern=myReads_reconciled.%s.fastq \
+            --output-filename-pattern=myReads_reconciled.%s.fastq \
             myReads.1.fastq.gz myReads.2.fastq.gz
 
 In this example we take a pair of fastq files, reconcile by read
@@ -138,7 +138,7 @@ def main(argv=None):
                       help="As above but for read 2",
                       default=None)
 
-    parser.add_option("-o", "--output-pattern",
+    parser.add_option("-o", "--output-filename-pattern",
                       dest="output_pattern", type="string",
                       help="pattern for output files [default=%default].")
 

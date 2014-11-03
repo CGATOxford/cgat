@@ -42,7 +42,7 @@ Example::
     TTATATTTTTTAGAATAGTTGATACGTTTACCATAGACTGG
 
    zcat in.fasta.gz | python fasta2kmercontent.py
-                      --kmer 4
+                      --kmer-size 4
                       > tetranucleotide_counts.tsv
 
    head tetranucleotide_counts.tsv::
@@ -61,7 +61,7 @@ nucleotide combination is counted.
 Alternative example::
 
    zcat in.fasta.gz | python fasta2kmercontent.py
-                      --kmer 4
+                      --kmer-size 4
                       --proportion
                       > tetranucleotide_proportions.tsv
 
@@ -71,10 +71,10 @@ each four base combination out of the total tetranucleotide occurences.
 
 Options
 -------
-Two options control the behaviour of fasta2kmercontent.py; ``--kmer`` and
+Two options control the behaviour of fasta2kmercontent.py; ``--kmer-size`` and
 ``--proportion``.
 
-``--kmer``::
+``--kmer-size``::
   The kmer length to count over in the input fasta file
 
 ``--proportion``::
@@ -116,7 +116,7 @@ def main(argv=None):
     parser = E.OptionParser(version="%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $",
                             usage=globals()["__doc__"])
 
-    parser.add_option("-k", "--kmer", dest="kmer", type="int",
+    parser.add_option("-k", "--kmer-size", dest="kmer", type="int",
                       help="supply kmer length")
 
     parser.add_option("-p", "--proportion", dest="proportion", action="store_true",

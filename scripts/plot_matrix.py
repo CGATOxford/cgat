@@ -145,7 +145,7 @@ def main(argv=None):
     parser.add_option("-o", "--colours", dest="colours", type="int",
                       help="column with colour information.")
 
-    parser.add_option("-l", "--labels", dest="labels", type="string",
+    parser.add_option("-l", "--plot-labels", dest="labels", type="string",
                       help="column labels for x and y in matched plots.")
 
     parser.add_option("-e", "--headers", dest="headers", action="store_true",

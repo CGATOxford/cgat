@@ -17,7 +17,7 @@ OPTIONS:
 -h, --headers=          set header to #, "auto" = filenames
 -f, --format=           format to use when combining histograms
 --format-value=         format for numbers
---format-bin=           format for bin values
+--bin-format=           format for bin values
 
 -> relative frequencies
 -> cumulative counts and frequencies in both directions
@@ -109,9 +109,9 @@ def main(argv=None):
             param_format = a
         elif o == "--format-value":
             param_format_value = a
-        elif o == "--format-bin":
+        elif o == "--bin-format":
             param_format_bin = a
-        elif o in ("-s", "--sort"):
+        elif o in ("-s", "--method=sort --sort-order"):
             if a in ("numerical", "alphabetic"):
                 param_sort = a
             else:

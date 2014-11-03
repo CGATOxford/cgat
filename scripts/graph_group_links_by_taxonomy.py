@@ -131,7 +131,7 @@ def main(argv=None):
                       choices=("count", "sum", "min", "max"),
                       help="choice of aggregate function.")
 
-    parser.add_option("-i", "--write-id", dest="write_id", action="store_true",
+    parser.add_option("-i", "--output-id", dest="write_id", action="store_true",
                       help="report id and value.")
 
     parser.set_defaults(
@@ -145,7 +145,7 @@ def main(argv=None):
 
     if options.write_id:
         if options.function not in ("min", "max"):
-            raise "only min and max allowed with --write-id option"
+            raise "only min and max allowed with --output-id option"
         f = None
     else:
         if options.function == "count":

@@ -556,7 +556,7 @@ def buildWindows(infiles, outfile):
         statement = '''python %(scriptsdir)s/genome_bed.py
                       -g %(genome_dir)s/%(genome)s
                       --window=%(tiling_window_size)i
-                      --shift=%(tiling_window_size)i
+                      --shift-size=%(tiling_window_size)i
                       --log=%(outfile)s.log'''
 
     elif tiling_method == "fixwidth_overlap":
@@ -567,7 +567,7 @@ def buildWindows(infiles, outfile):
         statement = '''python %(scriptsdir)s/genome_bed.py
                       -g %(genome_dir)s/%(genome)s
                       --window=%(tiling_window_size)i
-                      --shift=%(shift)i
+                      --shift-size=%(shift)i
                       --log=%(outfile)s.log'''
 
     elif tiling_method == "cpg":
@@ -611,7 +611,7 @@ def buildWindowStats(infile, outfile):
     statement = '''
     zcat %(infile)s
     | python %(scriptsdir)s/gff2histogram.py
-                   --force
+                   --force-output
                    --format=bed
                    --data=size
                    --method=hist
@@ -919,7 +919,7 @@ def summarizeAllWindowsReadCounts(infile, outfile):
     job_options = "-l mem_free=32G"
     statement = '''python %(scriptsdir)s/runExpression.py
               --method=summary
-              --filename-tags=%(infile)s
+              --tags-tsv-file=%(infile)s
               --output-filename-pattern=%(prefix)s_
               --log=%(outfile)s.log
               > %(outfile)s'''
@@ -942,8 +942,8 @@ def summarizeWindowsReadCounts(infiles, outfile):
     prefix = P.snip(outfile, ".tsv")
     statement = '''python %(scriptsdir)s/runExpression.py
               --method=summary
-              --filename-design=%(design_file)s
-              --filename-tags=%(counts_file)s
+              --design-tsv-file=%(design_file)s
+              --tags-tsv-file=%(counts_file)s
               --output-filename-pattern=%(prefix)s_
               --log=%(outfile)s.log
               > %(outfile)s'''
@@ -969,8 +969,8 @@ def dumpWindowsReadCounts(infiles, outfile):
 
     statement = '''python %(scriptsdir)s/runExpression.py
               --method=dump
-              --filename-design=%(design_file)s
-              --filename-tags=%(counts_file)s
+              --design-tsv-file=%(design_file)s
+              --tags-tsv-file=%(counts_file)s
               --log=%(outfile)s.log
               > %(outfile)s'''
 
@@ -1222,8 +1222,8 @@ def buildSpikeIns(infiles, outfile):
     zcat %(counts_file)s
     | python %(scriptsdir)s/runExpression.py
             --log=%(outfile)s.log
-            --filename-design=%(design_file)s
-            --filename-tags=-
+            --design-tsv-file=%(design_file)s
+            --tags-tsv-file=-
             --method=spike
             --output-filename-pattern=%(outfile)s_
     | gzip
@@ -1533,7 +1533,7 @@ def buildSpikeResults(infile, outfile):
     statement = '''cat %(tmpfile_name)s
     | python %(scriptsdir)s/csv2db.py
            --table=%(tablename)s
-           --index=fdr
+           --add-index=fdr
     > %(outfile)s.log'''
 
     P.run()
@@ -1547,7 +1547,7 @@ def loadSpikeResults(infile, outfile):
     tablename = P.toTable(outfile)
     tablename = '_'.join((tablename, method))
 
-    P.load(infile, outfile, options='--index=fdr,power --allow-empty',
+    P.load(infile, outfile, options='--add-index=fdr,power --allow-empty-file',
            tablename=tablename)
 
 #########################################################################
@@ -1641,7 +1641,7 @@ def buildDMRWindowStats(infile, outfile):
     zcat %(infile)s
     | grep -v 'contig'
     | python %(scriptsdir)s/gff2histogram.py
-                   --force
+                   --force-output
                    --format=bed
                    --data=size
                    --method=hist
@@ -1685,16 +1685,16 @@ def buildIntervalProfileOfTranscripts(infiles, outfile):
     # "%s more than input: %s" % (track, input_files)
 
     # if len(input_files) == 1:
-    #     options = '--controlfile=%s' % \
+    #     options = '--control-bam-file=%s' % \
     #         (os.path.join( os.path.dirname( bedfile ),
     #                        input_files[0] + '.bed.gz') )
     statement = '''zcat %(gtffile)s
                    | python %(scriptsdir)s/gtf2gtf.py
-                     --filter=representative-transcript
+                     --method=filter --filter-method=representative-transcript
                      --log=%(outfile)s.log
                    | python %(scriptsdir)s/bam2geneprofile.py
                       --output-filename-pattern="%(outfile)s.%%s"
-                      --force
+                      --force-output
                       --reporter=transcript
                       --method=separateexonprofilewithintrons
                       --method=tssprofile
@@ -1735,7 +1735,7 @@ def buildIntervalProfileOfTranscripts(infiles, outfile):
 # note: need to quote track names
 #     statement = '''
 #         python %(scriptsdir)s/diff_bed.py
-#               --pattern-id=".*/(.*).dmr.bed.gz"
+#               --pattern-identifier=".*/(.*).dmr.bed.gz"
 #               --log=%(outfile)s.log
 #               %(options)s %(infiles)s
 # | awk -v OFS="\\t" '!/^#/ { gsub( /-/,"_", $1); gsub(/-/,"_",$2); } {print}'

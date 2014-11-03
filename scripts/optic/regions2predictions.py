@@ -72,7 +72,7 @@ Resolve conflicts of overlapping exonerate segments.
 Options:
 -h, --help                      print this message.
 -v, --verbose=                  loglevel.
--p, --peptides=                 file with peptide sequences (FASTA).
+-p, --peptides-fasta-file=                 file with peptide sequences (FASTA).
 -b, --benchmark=                benchmarking output. File in #
 -y, --benchmark-synonyms=       list of synonymous benchmarking ids.
 -o, --max-percent-overlap=      maximal percentage overlap for conflict resolution.
@@ -793,7 +793,7 @@ def main(argv=None):
             param_filename_benchmark = a
         elif o in ("-y", "--benchmark-synonyms"):
             param_filename_benchmark_synonyms = a
-        elif o in ("-p", "--peptides"):
+        elif o in ("-p", "--peptides-fasta-file"):
             param_filename_peptides = a
         elif o in ("-c", "--min-coverage-query"):
             param_min_coverage_query = float(a)

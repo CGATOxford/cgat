@@ -116,7 +116,7 @@ def main(argv=None):
     parser = E.OptionParser(
         version="%prog version: $Id: gpipe/setup.py 2781 2009-09-10 11:33:14Z andreas $")
 
-    parser.add_option("-f", "--force", dest="force", action="store_true",
+    parser.add_option("-f", "--force-output", dest="force", action="store_true",
                       help="force overwrite of existing Makefile.")
     parser.add_option("-d", "--dest", dest="destination", type="string",
                       help="destination directory.")

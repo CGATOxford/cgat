@@ -75,6 +75,19 @@ def checkUnique(l):
         E.info("option list is unique")
 
 
+def checkOverlap(a, b):
+    '''check if a and b not overlap.'''
+    aa = set(list(a))
+    bb = set(list(b))
+
+    if len(aa.intersection(bb)) != 0:
+        raise ValueError(
+            "option lists are not separate: shared=%s" %
+            ",".join(aa.intersection(bb)))
+    else:
+        E.info("no overlap between option lists")
+
+
 def updateFiles(dirs, map_old2new, counter,
                 suffixes,
                 regex_restrict=None,
@@ -251,6 +264,8 @@ def main(argv=None):
 
         # check if all are unique
         checkUnique(selected["option"])
+        
+        checkOverlap(selected["option"], selected["alternative"])
 
         # build map adding "--" prefix
         map_old2new = dict(zip(

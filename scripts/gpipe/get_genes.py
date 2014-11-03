@@ -80,11 +80,11 @@ Options:
 -R, --table-reference=          table name with reference predictions
 -G, --table-genes=              table name with genes
 -Q, --table-quality=            table name with quality information
--p, --peptides=                 file with input peptide sequences.
+-p, --peptides-fasta-file=                 file with input peptide sequences.
 -g, --genome-file=           pattern for filenames with the genomic DNA (FASTA).
 -f, --format=                   output format [gff,ucsc,gff-seq]
 -l, --from-file                 take set of ids from file
--i, --filter=                   filter to apply
+-i, --method=filter --filter-method=                   filter to apply
 --filter-region=                filter by region (chr1,1234000,1235000[,offset])
 --filter-gene=                  filter by gene
 --filter-prediction=            filter by prediction
@@ -535,11 +535,11 @@ def main(argv=None):
             param_guess_names = 1
         elif o in ("-g", "--genome-file"):
             param_genome_file = a
-        elif o in ("-p", "--peptides"):
+        elif o in ("-p", "--peptides-fasta-file"):
             param_filename_peptides = a
         elif o in ("-l", "--from-file"):
             param_from_file = 1
-        elif o in ("-i", "--filter"):
+        elif o in ("-i", "--method=filter --filter-method"):
             param_filter = a
         elif o == "--filter-region":
             param_filter_region = a

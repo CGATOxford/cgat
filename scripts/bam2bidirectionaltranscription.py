@@ -110,7 +110,7 @@ def main(argv=None):
                       help="input bam file")
     parser.add_option("-a", "--annotation", dest="annotation", type="string",
                       help="input annotation gtf file")
-    parser.add_option("-m", "--merge-transcripts", dest="merge_transcripts",
+    parser.add_option("-m", "--method=merge-transcripts", dest="merge_transcripts",
                       action="store_true", help="merge transcripts with the same gene id")
     parser.add_option("-u", "--unique", dest="unique",
                       action="store_true", help="only use unique alignments")
@@ -122,7 +122,7 @@ def main(argv=None):
                       type="choice", choices=("ratio", "profile", "shape"))
     parser.add_option(
         "-o", "--outbase", dest="outbase", type="string", help="basename for outfiles")
-    parser.add_option("-s", "--bin-number", dest="bin_number", type="int",
+    parser.add_option("-s", "--num-bins", dest="bin_number", type="int",
                       help="number of bins to use - only active with --profile")
 
     parser.set_defaults(unique=True, merge_transcripts=True, tag_count=10, length=200,

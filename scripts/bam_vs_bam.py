@@ -68,7 +68,7 @@ def main(argv=None):
     parser = E.OptionParser(
         version="%prog version: $Id: bam_vs_bam.py 2861 2010-02-23 17:36:32Z andreas $", usage=globals()["__doc__"])
 
-    parser.add_option("-i", "--intervals", dest="filename_intervals", type="string",
+    parser.add_option("-i", "--intervals-bed-file", dest="filename_intervals", type="string",
                       help="filename with intervals to use [default=%default].")
 
     parser.add_option("-e", "--regex-identifier", dest="regex_identifier", type="string",

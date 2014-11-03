@@ -20,7 +20,7 @@ The output can be modified by the following command line options:
 --genome-file
     restrict output to gff/gtf entries with contigs in fasta file
 
---input-filename-queries
+--queries-tsv-file
     restrict output to queries in fasta file
 
 Usage
@@ -79,7 +79,7 @@ def main(argv=None):
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genome.")
 
-    parser.add_option("--input-filename-queries", dest="input_filename_queries", type="string",
+    parser.add_option("--queries-tsv-file", dest="input_filename_queries", type="string",
                       help="fasta filename with queries [default=%default].")
 
     parser.add_option("--allow-duplicates", dest="allow_duplicates", action="store_true",

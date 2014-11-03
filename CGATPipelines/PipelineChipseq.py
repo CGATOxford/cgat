@@ -1064,9 +1064,9 @@ def loadMACS(infile, outfile, bamfile, tablename=None):
     if tablename is None:
         tablename = "%s_macs_intervals" % track
     statement = '''python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
-                       --allow-empty
-                       --index=interval_id 
-                       --index=contig,start
+                       --allow-empty-file
+                       --add-index=interval_id 
+                       --add-index=contig,start
                        --table=%(tablename)s 
                    < %(tmpfilename)s > %(outfile)s '''
     P.run()
@@ -1264,8 +1264,8 @@ def runZinba(infile, outfile, controlfile, action="full"):
            --fragment-size=%(zinba_fragment_size)s
            --threads=%(zinba_threads)i
            --bit-file=%(bit_file)s
-           --mappability-dir=%(mappability_dir)s
-           --improvement=%(zinba_improvement)f
+           --zinba-mappability-dir=%(mappability_dir)s
+           --zinba-improvement=%(zinba_improvement)f
            --action=%(action)s
            %(zinba_options)s
            %(options)s
@@ -1420,9 +1420,9 @@ def loadZinba(infile, outfile, bamfile,
 
     statement = '''
     python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
-              --allow-empty
-              --index=interval_id 
-              --index=contig,start
+              --allow-empty-file
+              --add-index=interval_id 
+              --add-index=contig,start
               --table=%(tablename)s 
     < %(tmpfilename)s 
     > %(outfile)s
@@ -1636,8 +1636,8 @@ def loadIntervalsFromBed(bedfile, track, outfile,
 
     statement = '''
     python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --allow-empty
-              --index=interval_id 
+              --allow-empty-file
+              --add-index=interval_id 
               --table=%(tablename)s
     < %(tmpfilename)s 
     > %(outfile)s

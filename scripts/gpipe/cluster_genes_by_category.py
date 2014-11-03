@@ -73,7 +73,7 @@ Options:
 -h, --help                      print this message.
 -v, --verbose=                  loglevel.
 -g, --go=                       filename with go categories for genes
--d, --distance=                 distance for clustering
+-d, --distance-method=                 distance for clustering
 -r, --regions=                  filename with regions for genes
 """ % sys.argv[0]
 
@@ -123,7 +123,7 @@ def main(argv=None):
             sys.exit(0)
         elif o in ("-g", "--go"):
             param_filename_go = a
-        elif o in ("-d", "--distance"):
+        elif o in ("-d", "--distance-method"):
             param_distance = int(a)
         elif o in ("-r", "--regions"):
             param_filename_regions = a

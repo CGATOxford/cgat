@@ -58,7 +58,7 @@ def main(argv=None):
     parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
-    parser.add_option("-f", "--filter", dest="filter", default=False,
+    parser.add_option("-f", "--method=filter --filter-method", dest="filter", default=False,
                       help="ID prefix to filter on, eg. V for vertebrates")
 
     parser.add_option("-p", "--pattern", dest="pattern", default=False,

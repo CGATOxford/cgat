@@ -174,7 +174,7 @@ def main(argv=None):
     parser.add_option("-r", "--species-regex", dest="species_regex", type="string",
                       help="regular expression to extractspecies from identifier.")
 
-    parser.add_option("--filename-map", dest="filename_map_id2cluster", type="string",
+    parser.add_option("--map-tsv-file", dest="filename_map_id2cluster", type="string",
                       help="filename with mapping information from id to cluster.")
 
     parser.add_option("--filename-interpro", dest="filename_interpro", type="string",

@@ -64,7 +64,7 @@ Options
     Read in previous results from FILENAME and only output comparisons that
     are missing.
 
--p, --pattern-id=PATTERN
+-p, --pattern-identifier=PATTERN
     Provide a regular expression pattern for converting a filename into a
     set name for the output. The regular expression should capture at least
     one group. That group will be used to identify that file in the output
@@ -86,10 +86,10 @@ For example if we have two gtf_files that look like::
 
 Then the command::
 
-   python diff_gtf.py *.gtf --pattern-id='(.+)_of_genes.gtf' > out.tsv
+   python diff_gtf.py *.gtf --pattern-identifier='(.+)_of_genes.gtf' > out.tsv
 
 would produce an output file that has a single row with set1 being "second_set"
-and set2 being "first_set" (these are extracted using that --pattern-id
+and set2 being "first_set" (these are extracted using that --pattern-identifier
 option). It will report that set1 contains 2 genes and set2 1 gene. That for
 each set one of these genes overlaps with the other set. For set1 it will
 report that 1 gene is unique and that no genes are unique for set2 and so on
@@ -348,7 +348,7 @@ def main(argv=None):
                            "from there and only changed sets will be computed "
                            "[default=%default].")
 
-    parser.add_option("-p", "--pattern-id", dest="pattern_id", type="string",
+    parser.add_option("-p", "--pattern-identifier", dest="pattern_id", type="string",
                       help="pattern to convert a filename to an id"
                            "[default=%default].")
 

@@ -129,7 +129,7 @@ Options that can be used to filter :term:`gtf` files. For further
 detail see command line options.
 
 Input gtfs need to be sorted so that features for a gene or transcript
- appear consecutively within the file. This can be achevied using ``--sort``.
+ appear consecutively within the file. This can be achevied using ``--method=sort --sort-order``.
 
 ``filter``
     When filtering on the basis of 'gene-id' or 'transcript-id' a
@@ -138,7 +138,7 @@ Input gtfs need to be sorted so that features for a gene or transcript
     genes/transcripts may be retained using
     ``--sam-fileple-size``. Use ``--min-exons-length`` in conjunction
     with ``--sam-fileple-size`` to specify a minimum length for
-    genes/transcripts to be retained. Use ``--reset-strand`` to set
+    genes/transcripts to be retained. Use ``--ignore-strand`` to set
     strand to '.' in output.
 
     Other filter options include longest-gene, longest-transcript,
@@ -315,7 +315,7 @@ def main(argv=None):
         "The input needs to be sorted by gene. "
         "[default=%default].")
 
-    parser.add_option("-r", "--rename",
+    parser.add_option("-r", "--method=rename-genes",
                       dest="rename",
                       type="choice",
                       choices=("gene", "transcript"),
@@ -344,7 +344,7 @@ def main(argv=None):
 
     parser.add_option("--sample-size", dest="sample_size", type="int",
                       help="extract a random sample of size # if the option "
-                      "'--filter' is set[default=%default].")
+                      "'--method=filter --filter-method' is set[default=%default].")
 
     parser.add_option(
         "--intron-min-length",

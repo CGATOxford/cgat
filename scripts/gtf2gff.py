@@ -1108,12 +1108,17 @@ def main(argv=None):
     parser.add_option("--merge-promotors", dest="merge_promotors", action="store_true",
                       help="merge promotors [default=%default].")
 
-    parser.add_option("--min-intron-length", dest="min_intron_length", type="int",
-                      help="minimum intron length. If the distance between two consecutive exons is smaller, the region will be marked 'unknown' [default=%default].")
+    parser.add_option(
+        "--min-intron-length", dest="min_intron_length",
+        type="int",
+        help="minimum intron length. If the distance between two "
+        "consecutive exons is smaller, the region will be marked "
+        "'unknown' [default=%default].")
 
-    parser.add_option("-o", "--sort", dest="sort", action="store_true",
-                      help="sort input before processing. Otherwise, the input is assumed "
-                      "to be sorted [default=%default].")
+    parser.add_option(
+        "--is-unsorted", dest="is_sorted", action="store_false",
+        help="sort input before processing. Otherwise, the input is assumed "
+        "to be sorted [default=%default].")
 
     parser.set_defaults(
         genome_file=None,
@@ -1130,7 +1135,7 @@ def main(argv=None):
         upstream=5000,
         downstream=5000,
         detail="exons",
-        sort=False,
+        is_sorted=True,
     )
 
     (options, args) = E.Start(parser)
@@ -1152,7 +1157,7 @@ def main(argv=None):
     # else:
     #     iterator = GTF.iterator(options.stdin)
 
-    if options.sort:
+    if not options.is_sorted:
         iterator = GTF.iterator_sorted(iterator, sort_order="position")
 
     if options.method == "full" or options.method == "genome":

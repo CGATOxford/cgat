@@ -136,7 +136,7 @@ def main(argv=None):
     parser.add_option("-m", "--mapping", dest="database", type="string",
                       help="bioconductor mapping to use [default=%default].")
 
-    parser.add_option("-g", "--filename-gtf", dest="filename_gtf", type="string",
+    parser.add_option("-g", "--gtf-file", dest="filename_gtf", type="string",
                       help="filename with the gene set in gtf format [default=%default].")
 
     parser.set_defaults(

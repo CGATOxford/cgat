@@ -60,9 +60,9 @@ def main(argv=None):
     parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
                             usage=globals()["__doc__"])
 
-    parser.add_option("-a", "--gtf-a", dest="gtf_a", type="string",
+    parser.add_option("-a", "--first-gtf-file", dest="gtf_a", type="string",
                       help="supply a gtf file - will compress uncompressed files")
-    parser.add_option("-b", "--gtf-b", dest="gtf_b", type="string",
+    parser.add_option("-b", "--second-gtf-file", dest="gtf_b", type="string",
                       help="supply a second gtf file - will compress uncompressed files")
     parser.add_option("-s", "--scripts-dir", dest="scripts_dir", type="string",
                       help="supply a location for accessory scripts")
@@ -82,14 +82,14 @@ def main(argv=None):
             outfile = P.snip(gtf, ".gtf.gz") + ".merged.gtf.gz"
             prefices.append(P.snip(gtf, ".gtf.gz"))
             merged_files.append(outfile)
-            statement = '''zcat %s | python %s/gtf2gtf.py --merge-transcripts --log=%s.log | gzip > %s''' % (
+            statement = '''zcat %s | python %s/gtf2gtf.py --method=merge-transcripts --log=%s.log | gzip > %s''' % (
                 gtf, options.scripts_dir, outfile, outfile)
             P.run()
         elif gtf.endswith(".gtf"):
             outfile = P.snip(gtf, ".gtf") + ".merged.gtf.gz"
             prefices.append(P.snip(gtf, ".gtf"))
             merged_files.append(outfile)
-            statement = '''cat %s | python %s/gtf2gtf.py --merge-transcripts --log=%s.log | gzip  > %s''' % (
+            statement = '''cat %s | python %s/gtf2gtf.py --method=merge-transcripts --log=%s.log | gzip  > %s''' % (
                 gtf, options.scripts_dir, outfile, outfile)
             P.run()
         else:
@@ -111,7 +111,7 @@ def main(argv=None):
     intersection_out = "_vs_".join(
         [prefix_a, prefix_b]) + ".intersection.gtf.gz"
     statement = '''intersectBed -a %(gtf_a)s -b %(gtf_b)s -s -wa
-                 | python %(scriptsdir)s/gtf2gtf.py --merge-transcripts --log=log | gzip > %(intersection_out)s'''
+                 | python %(scriptsdir)s/gtf2gtf.py --method=merge-transcripts --log=log | gzip > %(intersection_out)s'''
     P.run()
 
     if not options.no_venn:

@@ -554,7 +554,7 @@ def main(argv=None):
     parser.add_option("--filename-taboo-regions", dest="filename_taboo_regions", type="string",
                       help="filename with information about taboo regions.")
 
-    parser.add_option("--forward-coordinates", dest="forward_coordinates", action="store_true",
+    parser.add_option("--is-forward-coordinates", dest="forward_coordinates", action="store_true",
                       help="output coordinates are forward coordinates.")
 
     parser.add_option("--join-regions", dest="join_regions", action="store_true",

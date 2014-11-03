@@ -2605,7 +2605,7 @@ def main(argv=None):
     parser.add_option("--print-species-svg", dest="print_species_svg", action="store_true",
                       help="output species svg files.")
 
-    parser.add_option("--output-pattern", dest="output_pattern", type="string",
+    parser.add_option("--output-filename-pattern", dest="output_pattern", type="string",
                       help="""output pattern for separate output of sections [default: %default].
                        Set to None, if output to stdout. Can contain one %s to be substituted with section."""  )
 

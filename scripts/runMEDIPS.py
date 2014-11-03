@@ -114,7 +114,7 @@ def main(argv=None):
                       help="extend tags by this number of bases "
                       "[default=%default].")
 
-    parser.add_option("-s", "--shift", dest="shift", type="int",
+    parser.add_option("-s", "--shift-size", dest="shift", type="int",
                       help="shift tags by this number of bases "
                       "[default=%default].")
 
@@ -136,7 +136,7 @@ def main(argv=None):
                                "dmr", "rms", "rpm", "all"),
                       help = "actions to perform [default=%default].")
 
-    parser.add_option("-w", "--bigwig", dest="bigwig", action="store_true",
+    parser.add_option("-w", "--bigwig-file", dest="bigwig", action="store_true",
                       help="store wig files as bigwig files - requires a "
                       "genome file [default=%default]")
 

@@ -78,9 +78,9 @@ def main(argv=None):
                       help="truncate at range.")
     parser.add_option("", "--no-out-of-range", dest="cumulate_out_of_range", action="store_false",
                       help="add up bins out of range.")
-    parser.add_option("--format-bin", dest="format_bin", type="string",
+    parser.add_option("--bin-format", dest="format_bin", type="string",
                       help="format for bins.")
-    parser.add_option("--format-val", dest="format_val", type="string",
+    parser.add_option("--value-format", dest="format_val", type="string",
                       help="format for vals.")
 
     parser.set_defaults(

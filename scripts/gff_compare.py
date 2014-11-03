@@ -280,13 +280,13 @@ def main(argv=None):
     parser = E.OptionParser(
         version="%prog version: $Id: gff_compare.py 2781 2009-09-10 11:33:14Z andreas $", usage=globals()["__doc__"])
 
-    parser.add_option("-f", "--write-full", dest="write_full",
+    parser.add_option("-f", "--output-full", dest="write_full",
                       help="write full gff entries.", action="store_true")
-    parser.add_option("-e", "--write-matched-exons", dest="write_matched_exons",
+    parser.add_option("-e", "--output-matched-exons", dest="write_matched_exons",
                       help="write matched exons.", action="store_true")
-    parser.add_option("-o", "--write-missed-exons", dest="write_missed_exons", action="store_true",
+    parser.add_option("-o", "--output-missed-exons", dest="write_missed_exons", action="store_true",
                       help="write missed exons.")
-    parser.add_option("-g", "--write-missed-genes", dest="write_missed_genes", action="store_true",
+    parser.add_option("-g", "--output-missed-genes", dest="write_missed_genes", action="store_true",
                       help="write missed genes.")
     parser.add_option("-r", "--regex-reference", dest="regex_reference", type="string",
                       help="regular expression mapping exon to transcript in reference.")
@@ -298,7 +298,7 @@ def main(argv=None):
                       help="skip exon benchmark.")
     parser.add_option("--no-genes", dest="do_genes", action="store_false",
                       help="skip gene benchmark.")
-    parser.add_option("--out-filename-pattern", dest="outfile_pattern", type="string",
+    parser.add_option("--output-filename-pattern", dest="outfile_pattern", type="string",
                       help="output filename pattern for extra info (%s will be substituted with reference,target).")
 
     parser.set_defaults(

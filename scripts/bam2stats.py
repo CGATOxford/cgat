@@ -64,7 +64,7 @@ iterating over the file. The metrics output are:
 |                        |locations                                 |
 +------------------------+------------------------------------------+
 |reads_total             |number of reads in file. Either given via |
-|                        |--input-reads or deduc ed as the sum of   |
+|                        |--num-reads or deduc ed as the sum of   |
 |                        |mappend and unmapped reads                |
 +------------------------+------------------------------------------+
 |reads_mapped            |number of reads mapping in file. Derived  |
@@ -102,7 +102,7 @@ scores.
 Supplying a fastq file
 ++++++++++++++++++++++
 
-If a fastq file is supplied (``--filename-fastq``), the script will
+If a fastq file is supplied (``--fastq-file``), the script will
 compute some additional summary statistics. However, as it builds a dictionary
 of all sequences, it will also require a good  amount of memory. The additional
 metrics output are:
@@ -265,7 +265,7 @@ def main(argv=None):
                             usage=globals()["__doc__"])
 
     parser.add_option(
-        "-r", "--filename-rna", dest="filename_rna", type="string",
+        "-r", "--mask-bed-file", dest="filename_rna", type="string",
         metavar='GFF',
         help="gff formatted file with rna locations. Note that the "
         "computation "
@@ -280,7 +280,7 @@ def main(argv=None):
         "other counts [%default]")
 
     parser.add_option(
-        "-i", "--input-reads", dest="input_reads", type="int",
+        "-i", "--num-reads", dest="input_reads", type="int",
         help="the number of reads - if given, used to provide percentages "
         "[%default]")
 
@@ -289,7 +289,7 @@ def main(argv=None):
         help="output per-read details [%default]")
 
     parser.add_option(
-        "-q", "--filename-fastq", dest="filename_fastq",
+        "-q", "--fastq-file", dest="filename_fastq",
         help="filename with sequences and quality scores. This file is only "
         "used to collect sequence identifiers. Thus, for paired end data a "
         "single file is sufficient [%default]")

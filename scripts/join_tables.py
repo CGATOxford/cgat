@@ -53,7 +53,7 @@ OPTIONS:
 -t, --titles=           column titles
 -m, --missing=          missing value
 -h, --headers=          add headers for files
--s, --sort=             sort by column titles (given by sort order)
+-s, --method=sort --sort-order=             sort by column titles (given by sort order)
 '#' at start of line is a comment
 """ % sys.argv[0]
 

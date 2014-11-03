@@ -133,7 +133,7 @@ def main(argv=sys.argv):
                       type="string", metavar="bigwig",
                       help="filename with bigwig information [default=%default].")
 
-    parser.add_option("-b", "--bigwig", dest="bigwig", action="store_true",
+    parser.add_option("-b", "--bigwig-file", dest="bigwig", action="store_true",
                       help="input is bigwig [default=%default].")
 
     parser.set_defaults(methods=[],

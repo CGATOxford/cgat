@@ -9,4 +9,4 @@ pair:
     stdin: null
     outputs: [stdout, "srf.hg19:hg19.promotors"]
     references: [pair.tsv, "srf.hg19:hg19.promotors"]
-    options: --pattern-id=".*/([^/]+).bed.gz" <DIR>/srf.hg19.bed.gz <DIR>/hg19.promotors.bed.gz 
+    options: --pattern-identifier=".*/([^/]+).bed.gz" <DIR>/srf.hg19.bed.gz <DIR>/hg19.promotors.bed.gz 

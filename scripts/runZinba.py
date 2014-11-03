@@ -118,11 +118,11 @@ def main(argv=None):
                       help="fragment size, used for the extension parameter "
                       "in Zinba [default=%default].")
 
-    parser.add_option("-m", "--mappability-dir", dest="mappability_dir",
+    parser.add_option("-m", "--zinba-mappability-dir", dest="mappability_dir",
                       type="string",
                       help="mappability_dir [default=%default].")
 
-    parser.add_option("-b", "--bit-filename", dest="bit_filename",
+    parser.add_option("-b", "--bit-file", dest="bit_filename",
                       type="string",
                       help="2bit genome filename [default=%default].")
 
@@ -131,7 +131,7 @@ def main(argv=None):
                       help="filename of input/control data in bed format "
                       "[default=%default].")
 
-    parser.add_option("-i", "--index-dir", dest="index_dir", type="string",
+    parser.add_option("-i", "--zinba-index-dir", dest="index_dir", type="string",
                       help="index directory [default=%default].")
 
     parser.add_option("-t", "--threads", dest="threads", type="int",
@@ -141,7 +141,7 @@ def main(argv=None):
                       type="float",
                       help="fdr threshold [default=%default].")
 
-    parser.add_option("-a", "--alignability-threshold",
+    parser.add_option("-a", "--zinba-alignability-threshold",
                       dest="alignability_threshold", type="int",
                       help="alignability threshold [default=%default].")
 
@@ -160,7 +160,7 @@ def main(argv=None):
                       choices=("full", "count", "predict", "model"),
                       help="action to perform [default=%default]")
 
-    parser.add_option("--improvement", dest="improvement", type="float",
+    parser.add_option("--zinba-improvement", dest="improvement", type="float",
                       help="relative improvement of likelihood until "
                       "convergence [default=%default]")
 

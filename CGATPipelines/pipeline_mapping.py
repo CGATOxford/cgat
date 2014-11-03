@@ -389,9 +389,9 @@ def buildIntronGeneModels(infile, outfile):
     statement = '''gunzip
         < %(infile)s
         | awk '$2 == "protein_coding"'
-        | python %(scriptsdir)s/gtf2gtf.py --sort=gene
+        | python %(scriptsdir)s/gtf2gtf.py --method=sort --sort-order=gene
         | python %(scriptsdir)s/gtf2gtf.py
-               --exons2introns
+               --method=exons2introns
                --intron-min-length=100
                --intron-border=10
                --log=%(outfile)s.log
@@ -399,7 +399,7 @@ def buildIntronGeneModels(infile, outfile):
                --crop=%(filename_exons)s
                --log=%(outfile)s.log
         | python %(scriptsdir)s/gtf2gtf.py
-              --set-transcript-to-gene
+              --method=set-transcript-to-gene
               --log=%(outfile)s.log
         | perl -p -e 's/intron/exon/'
         | gzip
@@ -439,7 +439,7 @@ def buildCodingExons(infile, outfile):
     zcat %(infile)s
     | awk '$2 == "protein_coding" && $3 == "CDS"'
     | perl -p -e "s/CDS/exon/"
-    | python %(scriptsdir)s/gtf2gtf.py --merge-exons --log=%(outfile)s.log
+    | python %(scriptsdir)s/gtf2gtf.py --method=merge-exons --log=%(outfile)s.log
     | gzip
     > %(outfile)s
     '''
@@ -1209,7 +1209,7 @@ def loadPicardDuplicationStats(infiles, outfiles):
 #                 | perl -p -e "s/unique/unique_alignments/"
 #                 | python %(scriptsdir)s/table2table.py --transpose
 #                 | python %(scriptsdir)s/csv2db.py
-#                       --index=track
+#                       --add-index=track
 #                       --table=%(tablename)s
 #                 > %(outfile)s
 #             """
@@ -1248,17 +1248,17 @@ def buildBAMStats(infiles, outfile):
         fastqfile = None
 
     if fastqfile is not None:
-        fastq_option = "--filename-fastq=%s" % fastqfile
+        fastq_option = "--fastq-file=%s" % fastqfile
     else:
         fastq_option = ""
 
     statement = '''python
     %(scriptsdir)s/bam2stats.py
          %(fastq_option)s
-         --force
-         --filename-rna=%(rna_file)s
+         --force-output
+         --mask-bed-file=%(rna_file)s
          --remove-rna
-         --input-reads=%(nreads)i
+         --num-reads=%(nreads)i
          --output-filename-pattern=%(outfile)s.%%s
     < %(bamfile)s
     > %(outfile)s
@@ -1338,7 +1338,7 @@ def loadContextStats(infiles, outfile):
                 | perl -p -e "s/(bin|category)/track/; s/\?/Q/g"
                 | python %(scriptsdir)s/table2table.py --transpose
                 | python %(scriptsdir)s/csv2db.py
-                      --index=track
+                      --add-index=track
                       --table=%(tablename)s
                 > %(outfile)s
                 """
@@ -1376,8 +1376,8 @@ def buildExonValidation(infiles, outfile):
     infile, exons = infiles
     statement = '''cat %(infile)s
     | python %(scriptsdir)s/bam_vs_gtf.py
-         --filename-exons=%(exons)s
-         --force
+         --exons-file=%(exons)s
+         --force-output
          --log=%(outfile)s.log
          --output-filename-pattern="%(outfile)s.%%s.gz"
     | gzip
@@ -1480,7 +1480,7 @@ def collateTranscriptCounts(infiles, outfile):
            suffix(".tsv.gz"),
            ".load")
 def loadTranscriptLevelReadCounts(infile, outfile):
-    P.load(infile, outfile, options="--index=transcript_id --allow-empty")
+    P.load(infile, outfile, options="--add-index=transcript_id --allow-empty-file")
 
 
 @active_if(SPLICED_MAPPING)
@@ -1522,7 +1522,7 @@ def buildIntronLevelReadCounts(infiles, outfile):
            suffix(".tsv.gz"),
            ".load")
 def loadIntronLevelReadCounts(infile, outfile):
-    P.load(infile, outfile, options="--index=gene_id --allow-empty")
+    P.load(infile, outfile, options="--add-index=gene_id --allow-empty-file")
 
 
 @merge((countReads, mergeReadCounts), "reads_summary.load")
@@ -1555,9 +1555,9 @@ def buildTranscriptProfiles(infiles, outfile):
 
     statement = '''python %(scriptsdir)s/bam2geneprofile.py
     --output-filename-pattern="%(outfile)s.%%s"
-    --force
+    --force-output
     --reporter=transcript
-    --base-accuracy
+    --use-base-accuracy
     --method=geneprofileabsolutedistancefromthreeprimeend
     --normalize-profile=all
     %(bamfile)s %(gtffile)s
@@ -1635,7 +1635,7 @@ def loadBigWigStats(infiles, outfile):
     | perl -p -e "s/bin/track/"
     | python %(scriptsdir)s/table2table.py --transpose
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-    --index=track
+    --add-index=track
     --table=%(tablename)s
     > %(outfile)s
     '''

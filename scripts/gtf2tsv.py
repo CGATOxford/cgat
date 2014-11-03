@@ -106,7 +106,7 @@ def main(argv=None):
         version="%prog version: $Id$",
         usage=globals()["__doc__"])
 
-    parser.add_option("-o", "--only-attributes", dest="only_attributes",
+    parser.add_option("-o", "--output-only-attributes", dest="only_attributes",
                       action="store_true",
                       help="output attributes as separate columns "
                       "[default=%default].")

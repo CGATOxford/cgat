@@ -370,8 +370,8 @@ def outputRegionsOfInterest(infiles, outfile,
                             (%(upper_levelB)s and %(sum_levelB)s)"
     | python %(scriptsdir)s/runExpression.py
             --log=%(outfile)s.log
-            --filename-design=%(design_file)s
-            --filename-tags=-
+            --design-tsv-file=%(design_file)s
+            --tags-tsv-file=-
             --method=mock
             --filter-min-counts-per-sample=0
     | gzip
@@ -428,12 +428,12 @@ def runDE(infiles, outfile, outdir,
                   --split-at-lines=200000
                   --cluster-options="-l mem_free=8G"
                   --log=%(outfile)s.log
-                  --output-pattern=%(outdir)s/%%s
+                  --output-filename-pattern=%(outdir)s/%%s
                   --subdirs
               "python %(scriptsdir)s/runExpression.py
               --method=%(method)s
-              --filename-tags=-
-              --filename-design=%(design_file)s
+              --tags-tsv-file=-
+              --design-tsv-file=%(design_file)s
               --output-filename-pattern=%%DIR%%/%(prefix)s_
               --deseq-fit-type=%(deseq_fit_type)s
               --deseq-dispersion-method=%(deseq_dispersion_method)s

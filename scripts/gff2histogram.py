@@ -88,7 +88,7 @@ def main(argv=None):
                       help="ignore values that are out of range (as opposed to truncating them to range border.")
     parser.add_option("--missing", dest="missing_value", type="string",
                       help="entry for missing values [%default].")
-    parser.add_option("--dynamic-bins", dest="dynamic_bins", action="store_true",
+    parser.add_option("--use-dynamic-bins", dest="dynamic_bins", action="store_true",
                       help="each value constitutes its own bin.")
     parser.add_option("--format", dest="format", type="choice",
                       choices=("gff", "gtf", "bed"),

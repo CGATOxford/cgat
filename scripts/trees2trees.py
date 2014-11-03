@@ -73,7 +73,7 @@ def main(argv=None):
                       choices=("filter", "split"),
                       help="method to use: filter removed trees, while split writes them to individual files. DEFAULT=%default")
 
-    parser.add_option("-d", "--output-pattern", dest="output_pattern", type="string",
+    parser.add_option("-d", "--output-filename-pattern", dest="output_pattern", type="string",
                       help="filename pattern for output multiple alignment files.")
 
     parser.add_option("--filter-terminal-max-length", dest="filter_max_length", type="float",
@@ -103,7 +103,7 @@ def main(argv=None):
     parser.add_option("--filter-simple-orthologs", dest="filter_simple_orthologs", action="store_true",
                       help="filter for trees for simple orhtologs. This works by counting the number of taxa.")
 
-    parser.add_option("--filter", dest="filter", type="choice",
+    parser.add_option("--method=filter --filter-method", dest="filter", type="choice",
                       choices=("taxa", "trees"),
                       help="filter removes taxa or whole trees.")
 

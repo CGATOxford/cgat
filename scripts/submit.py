@@ -84,7 +84,7 @@ def main(argv=None):
     parser.add_option("-i", "--input-pattern", dest="input_pattern", type="string",
                       help="regular expression to extract job id from filename [%default].")
 
-    parser.add_option("-o", "--output-pattern", dest="output_pattern", type="string",
+    parser.add_option("-o", "--output-filename-pattern", dest="output_pattern", type="string",
                       help="string to convert a job id to a filename [%default].")
 
     parser.set_defaults(glob_pattern="job*.qsub",

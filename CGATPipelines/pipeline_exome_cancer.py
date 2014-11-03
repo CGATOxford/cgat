@@ -364,7 +364,7 @@ def loadCoverageStats(infiles, outfile):
     tmpfilename = outf.name
     statement = '''cat %(tmpfilename)s
                    | python %(scriptsdir)s/csv2db.py
-                      --index=track
+                      --add-index=track
                       --table=%(tablename)s
                       --ignore-empty
                       --retry
@@ -556,7 +556,7 @@ def runPicardOnRealigned(infile, outfile):
 
     statement = '''
     cat %(infile)s
-    | python %%(scriptsdir)s/bam2bam.py -v 0 --set-sequence --bam
+    | python %%(scriptsdir)s/bam2bam.py -v 0 --method=set-sequence --bam
     | CollectMultipleMetrics
     INPUT=/dev/stdin
     REFERENCE_SEQUENCE=%%(bwa_index_dir)s/%%(genome)s.fa
@@ -565,7 +565,7 @@ def runPicardOnRealigned(infile, outfile):
     VALIDATION_STRINGENCY=SILENT
     >& %(outfile)s;
     cat %(infile_tumor)s
-    | python %%(scriptsdir)s/bam2bam.py -v 0 --set-sequence --sam
+    | python %%(scriptsdir)s/bam2bam.py -v 0 --method=set-sequence --sam-file
     | CollectMultipleMetrics
     INPUT=/dev/stdin
     REFERENCE_SEQUENCE=%%(bwa_index_dir)s/%%(genome)s.fa
@@ -1195,7 +1195,7 @@ def loadVCFstats(infiles, outfile):
                    %(filenames)s >> %(outfile)s; ''' % locals()
     statement += '''cat vcfstats.txt |
                     python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-                    --allow-empty --index=track --table=vcf_stats
+                    --allow-empty-file --add-index=track --table=vcf_stats
                     >> %(outfile)s; ''' % locals()
     P.run()
 

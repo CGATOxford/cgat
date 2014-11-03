@@ -12,11 +12,11 @@ genelists_BH:
     options: >
             --filename-input=%DIR%/go.tsv.gz 
             --genes=%DIR%/genelists.tsv.gz 
-            --minimum-counts=10 -
+            --min-counts=10 -
             --filename-ontology=%DIR%/ontology.obo 
             --fdr
-            --qvalue-method=BH 
-            --filename-gene2name=%DIR%/gene2name.tsv 
+            --fdr-method=BH 
+            --gene2name-map-tsv-file=%DIR%/gene2name.tsv 
 
 genelists_empirical:
     stdin: null
@@ -25,11 +25,11 @@ genelists_empirical:
     options: >
             --filename-input=%DIR%/go.tsv.gz 
             --genes=%DIR%/genelists.tsv.gz 
-            --minimum-counts=10 -
+            --min-counts=10 -
             --filename-ontology=%DIR%/ontology.obo 
             --fdr
             --sample=10
-            --qvalue-method=empirical
-            --filename-gene2name=%DIR%/gene2name.tsv 
+            --fdr-method=empirical
+            --gene2name-map-tsv-file=%DIR%/gene2name.tsv 
             --random-seed=1
 

@@ -88,16 +88,16 @@ Additional options available are:
 ``--identity``
     Will report summary statistics (mean, median, max, min) for 
     the percent identity between gapped regions. Requires ``--dbpath``,
-    ``--targetgenome``, and ``--querygenome`` to be set.
+    ``--target-genome``, and ``--query-genome`` to be set.
 
 ``--dbpath``
     Directory containing indexed fasta files for target and query 
     genome.
 
-``--targetgenome``
+``--target-genome``
     Filename prefix for target genome fasta file.
 
-``--querygenome``
+``--query-genome``
     Filename prefix for query genome fasta file.
 
 ``--report``
@@ -106,8 +106,8 @@ Additional options available are:
 
 ``--errors``
     Report inconsitencies between chain contig sizes and contig sizes in
-    the supplied fasta files. Requires ``--dbpath``, ``--targetgenome``,
-    and ``--querygenome`` to be set.
+    the supplied fasta files. Requires ``--dbpath``, ``--target-genome``,
+    and ``--query-genome`` to be set.
 
 
 Command line options
@@ -577,7 +577,7 @@ def main(argv=None):
     parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
                             usage=globals()["__doc__"])
 
-    parser.add_option("-c", "--chainfile", dest="chainfile", type="string",
+    parser.add_option("-c", "--chain-file", dest="chainfile", type="string",
                       help="the chain file to analyse", metavar="FILE")
     parser.add_option("-p", "--perchrom", dest="perchrom", action="store_true",
                       help="Set to 1 or \"True\" to perform per chromosome pair analysis", default=False)
@@ -587,9 +587,9 @@ def main(argv=None):
                       help="Generate stats on the sequence identity of the gapped chains. Requires FastIndex.py", default=False)
     parser.add_option("-d", "--dbpath", dest="dbpath", type="string",
                       help="The path to the indexed fasta files", default="/ifs/mirror/genomes/plain/")
-    parser.add_option("-t", "--targetgenome", dest="targetgenome", type="string",
+    parser.add_option("-t", "--target-genome", dest="targetgenome", type="string",
                       help="The target genome, eg. Mm19", default=False)
-    parser.add_option("-q", "--querygenome", dest="querygenome", type="string",
+    parser.add_option("-q", "--query-genome", dest="querygenome", type="string",
                       help="The query genome eg. Hg17", default=False)
     parser.add_option("-e", "--errors", dest="errors", action="store_true",
                       help="Check chains for erroneous contig sizes using the given db", default=False)

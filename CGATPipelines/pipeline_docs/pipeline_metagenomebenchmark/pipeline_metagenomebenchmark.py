@@ -162,7 +162,7 @@ def loadTaxonomyNames(infile, outfile):
     '''
     load taxonomic names
     '''
-    P.load(infile, outfile, "--index=taxid")
+    P.load(infile, outfile, "--add-index=taxid")
 
 ######################################################
 ######################################################
@@ -192,7 +192,7 @@ def loadCategoriesFile(infile, outfile):
     '''
     load the taxonomic categories file
     '''
-    P.load(infile, outfile, "--index=taxid")
+    P.load(infile, outfile, "--add-index=taxid")
 
 ###################################################
 ###################################################
@@ -205,7 +205,7 @@ def loadGi2Taxid(infile, outfile):
     '''
     load gi to taxid mapping
     '''
-    P.load(infile, outfile, "--header=gi,taxid --index=taxid")
+    P.load(infile, outfile, "--header=gi,taxid --add-index=taxid")
 
 ###################################################
 ###################################################

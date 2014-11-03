@@ -731,7 +731,7 @@ def concatenateAndLoad(infiles,
                      %(options)s
                    %(infiles)s
                    | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-                      --index=track
+                      --add-index=track
                       --table=%(tablename)s
                       %(load_options)s
                    > %(outfile)s'''
@@ -819,7 +819,7 @@ def mergeAndLoad(infiles,
                    %(filenames)s
                 %(transform)s
                 | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-                      --index=track
+                      --add-index=track
                       --table=%(tablename)s
                       %(options)s
                 > %(outfile)s
@@ -1873,7 +1873,7 @@ def main(args=sys.argv):
                       help="perform a dry run (do not execute any shell "
                       "commands) [default=%default].")
 
-    parser.add_option("-f", "--force", dest="force",
+    parser.add_option("-f", "--force-output", dest="force",
                       action="store_true",
                       help="force running the pipeline even if there "
                       "are uncommited changes "
@@ -1963,7 +1963,7 @@ def main(args=sys.argv):
                 raise ValueError(
                     ("uncommitted change in code "
                      "repository at '%s'. Either commit or "
-                     "use --force") % PARAMS["scriptsdir"])
+                     "use --force-output") % PARAMS["scriptsdir"])
             else:
                 E.warn("uncommitted changes in code repository - ignored ")
         version = version[:-1]

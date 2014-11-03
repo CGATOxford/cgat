@@ -207,7 +207,7 @@ def main(argv=None):
                       choices=("list", "matrix"),
                       help="filename format [default=%default].")
 
-    parser.add_option("-b", "--background", dest="filename_background",
+    parser.add_option("-b", "--background-tsv-file", dest="filename_background",
                       type="string",
                       help="filename with background genes to analyse "
                       "[default=%default].")
@@ -239,7 +239,7 @@ def main(argv=None):
         help="filename with ontology in OBO format [default=%default].")
 
     parser.add_option(
-        "--filename-assignments", dest="filename_assignments", type="string",
+        "--assignments-tsv-file", dest="filename_assignments", type="string",
         help="read ontology assignments from a flatfile [default=%default].")
 
     parser.add_option(
@@ -278,11 +278,11 @@ def main(argv=None):
                       help="require all genes in foreground to be part of background. "
                       "If not set, genes in foreground will be added to the background [default=%default].")
 
-    parser.add_option("-q", "--qvalue-method", dest="qvalue_method", type="choice",
+    parser.add_option("-q", "--fdr-method", dest="qvalue_method", type="choice",
                       choices=("empirical", "storey"),
                       help="method to perform multiple testing correction by controlling the fdr [default=%default].")
 
-    parser.add_option("--qvalue-lambda", dest="qvalue_lambda", type="float",
+    parser.add_option("--fdr-lambda", dest="qvalue_lambda", type="float",
                       help="fdr computation: set lambda to fixed value [default=%default].")
 
     # parser.add_option( "--qvalue-pi0-method", dest="qvalue_pi0_method", type="choice",

@@ -1367,8 +1367,8 @@ def runZinba(infile,
            --fragment-size=%(fragment_size)i
            --threads=%(zinba_threads)i
            --bit-file=%(bit_file)s
-           --mappability-dir=%(mappability_dir)s
-           --improvement=%(zinba_improvement)f
+           --zinba-mappability-dir=%(mappability_dir)s
+           --zinba-improvement=%(zinba_improvement)f
            --action=%(action)s
            --min-insert-size=%(calling_min_insert_size)i
            --max-insert-size=%(calling_max_insert_size)i
@@ -1512,10 +1512,10 @@ def loadMACS(infile, outfile, bamfile, controlfile=None):
                            --log=%(outfile)s
                 < %(tmpfilename)s
                 | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
-                       --index=contig,start
-                       --index=interval_id
+                       --add-index=contig,start
+                       --add-index=interval_id
                        --table=%(tablename)s
-                       --allow-empty 
+                       --allow-empty-file 
                 > %(outfile)s'''
 
     P.run()
@@ -1546,10 +1546,10 @@ def loadMACS(infile, outfile, bamfile, controlfile=None):
                                --bed-header=%(headers)s
                                --log=%(outfile)s
                     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
-                           --index=contig,start
-                           --index=interval_id
+                           --add-index=contig,start
+                           --add-index=interval_id
                            --table=%(tablename)s
-                           --allow-empty 
+                           --allow-empty-file 
                     > %(outfile)s'''
 
         P.run()
@@ -1704,10 +1704,10 @@ def loadMACS2(infile, outfile, bamfile, controlfile=None):
                            --log=%(outfile)s
                 < %(tmpfilename)s
                 | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-                       --index=contig,start
-                       --index=interval_id
+                       --add-index=contig,start
+                       --add-index=interval_id
                        --table=%(tablename)s
-                       --allow-empty
+                       --allow-empty-file
                 > %(outfile)s'''
 
     P.run()
@@ -1738,10 +1738,10 @@ def loadMACS2(infile, outfile, bamfile, controlfile=None):
                                --bed-header=%(headers)s
                                --log=%(outfile)s
                     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
-                           --index=contig,start
-                           --index=interval_id
+                           --add-index=contig,start
+                           --add-index=interval_id
                            --table=%(tablename)s
-                           --allow-empty 
+                           --allow-empty-file 
                     > %(outfile)s'''
 
         P.run()
@@ -1769,10 +1769,10 @@ def loadMACS2(infile, outfile, bamfile, controlfile=None):
                                --bed-header=%(headers)s
                                --log=%(outfile)s
                     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
-                           --index=contig,start
-                           --index=interval_id
+                           --add-index=contig,start
+                           --add-index=interval_id
                            --table=%(tablename)s
-                           --allow-empty 
+                           --allow-empty-file 
                     > %(outfile)s'''
 
         P.run()
@@ -1851,10 +1851,10 @@ def loadZinba(infile, outfile, bamfile,
                                --bed-header=%(headers)s
                                --log=%(outfile)s
                     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
-                           --index=contig,start
-                           --index=interval_id
+                           --add-index=contig,start
+                           --add-index=interval_id
                            --table=%(tablename)s
-                           --allow-empty 
+                           --allow-empty-file 
                     > %(outfile)s'''
 
         P.run()
@@ -1875,10 +1875,10 @@ def loadZinba(infile, outfile, bamfile,
                                --bed-header=%(headers)s
                                --log=%(outfile)s
                     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
-                           --index=contig,start
-                           --index=interval_id
+                           --add-index=contig,start
+                           --add-index=interval_id
                            --table=%(tablename)s
-                           --allow-empty 
+                           --allow-empty-file 
                     > %(outfile)s'''
 
         P.run()
@@ -2003,10 +2003,10 @@ def loadSICER(infile, outfile, bamfile, controlfile=None, mode="narrow"):
                            --bed-header=%(headers)s
                            --log=%(outfile)s
                 | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-                       --index=contig,start
-                       --index=interval_id
+                       --add-index=contig,start
+                       --add-index=interval_id
                        --table=%(tablename)s
-                       --allow-empty
+                       --allow-empty-file
                 > %(outfile)s'''
 
     P.run()
@@ -2108,8 +2108,8 @@ def runPeakRanger(infile, outfile, controlfile):
     assert controlfile is not None, "peakranger requires a control"
 
     statement = '''peakranger ranger
-              --data <( python %(scriptsdir)s/bam2bam.py -v 0 --set-sequence < %(infile)s)
-              --control <( python %(scriptsdir)s/bam2bam.py -v 0 --set-sequence < %(controlfile)s)
+              --data <( python %(scriptsdir)s/bam2bam.py -v 0 --method=set-sequence < %(infile)s)
+              --control <( python %(scriptsdir)s/bam2bam.py -v 0 --method=set-sequence < %(controlfile)s)
               --output %(outfile)s
               --format bam
               --pval %(peakranger_pvalue_threshold)f
@@ -2161,10 +2161,10 @@ def loadPeakRanger(infile, outfile, bamfile, controlfile=None, table_suffix="pea
                            --log=%(outfile)s
                 < <( grep -v "fdrFailed" %(bedfile)s )
                 | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-                       --index=contig,start
-                       --index=interval_id
+                       --add-index=contig,start
+                       --add-index=interval_id
                        --table=%(tablename)s
-                       --allow-empty
+                       --allow-empty-file
                 > %(outfile)s'''
     P.run()
 
@@ -2181,10 +2181,10 @@ def loadPeakRanger(infile, outfile, bamfile, controlfile=None, table_suffix="pea
                            --log=%(outfile)s
                 < <( grep -v "fdrFailed" %(bedfile)s )
                 | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-                       --index=contig,start
-                       --index=interval_id
+                       --add-index=contig,start
+                       --add-index=interval_id
                        --table=%(tablename)s
-                       --allow-empty
+                       --allow-empty-file
                 > %(outfile)s'''
 
     P.run()
@@ -2313,10 +2313,10 @@ def runSPP(infile, outfile, controlfile):
            --control-filename=%(controlfile)s
            --fdr-threshold=%(spp_fdr_threshold)f
            --threads=%(spp_threads)i
-           --srange-min=%(spp_srange_min)i
-           --srange-max=%(spp_srange_max)i
+           --spp-srange-min=%(spp_srange_min)i
+           --spp-srange-max=%(spp_srange_max)i
            --bin=%(spp_bin)i
-           --z-threshold=%(spp_z_threshold)f
+           --spp-z-threshold=%(spp_z_threshold)f
            --window-size=%(spp_window_size)s
            %(spp_options)s
     %(infile)s %(outfile)s
@@ -2359,10 +2359,10 @@ def loadSPP(infile, outfile, bamfile, controlfile=None):
     #                       --bed-header=%(headers)s
     #                       --log=%(outfile)s
     #            | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-    #                   --index=contig,start
-    #                   --index=interval_id
+    #                   --add-index=contig,start
+    #                   --add-index=interval_id
     #                   --table=%(tablename)s
-    #                   --allow-empty
+    #                   --allow-empty-file
     #            > %(outfile)s'''
     #
     # P.run()
@@ -2381,10 +2381,10 @@ def loadSPP(infile, outfile, bamfile, controlfile=None):
                            --bed-header=%(headers)s
                            --log=%(outfile)s
                 | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
-                       --index=contig,start
-                       --index=interval_id
+                       --add-index=contig,start
+                       --add-index=interval_id
                        --table=%(tablename)s
-                       --allow-empty 
+                       --allow-empty-file 
                 > %(outfile)s'''
 
     #
@@ -2404,10 +2404,10 @@ def loadSPP(infile, outfile, bamfile, controlfile=None):
     #                       --bed-header=%(headers)s
     #                       --log=%(outfile)s
     #            | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-    #                   --index=contig,start
-    #                   --index=interval_id
+    #                   --add-index=contig,start
+    #                   --add-index=interval_id
     #                   --table=%(tablename)s
-    #                   --allow-empty
+    #                   --allow-empty-file
     #            > %(outfile)s'''
 
     P.run()
@@ -2937,8 +2937,8 @@ def loadIntervalsFromBed(bedfile, track, outfile,
 
     statement = '''
     python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --allow-empty
-              --index=interval_id 
+              --allow-empty-file
+              --add-index=interval_id 
               --table=%(tablename)s
     < %(tmpfilename)s 
     > %(outfile)s
@@ -2970,7 +2970,7 @@ def makeReproducibility(infiles, outfile):
 
     # note: need to quote track names
     statement = '''
-        python %(scriptsdir)s/diff_bed.py --pattern-id='([^/]+).bed.gz' %(options)s %(infiles)s 
+        python %(scriptsdir)s/diff_bed.py --pattern-identifier='([^/]+).bed.gz' %(options)s %(infiles)s 
         | awk -v OFS="\\t" '!/^#/ { gsub( /-/,"_", $1); gsub(/-/,"_",$2); } {print}'
         > %(outfile)s
         '''
@@ -3052,10 +3052,10 @@ def loadScripture(infile, outfile, bamfile, controlfile=None):
                            --bed-header=%(headers)s
                            --log=%(outfile)s
                 | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
-                       --index=contig,start
-                       --index=interval_id
+                       --add-index=contig,start
+                       --add-index=interval_id
                        --table=%(tablename)s
-                       --allow-empty 
+                       --allow-empty-file 
                 > %(outfile)s'''
 
     P.run()

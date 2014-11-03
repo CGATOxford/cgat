@@ -61,7 +61,7 @@ centring-method	ok			scripts/bam2peakshape.py
 cexa	bad	more explicit		scripts/barplotGo.py
 cexn	bad	more explicit		scripts/barplotGo.py
 chainfile	rename		chain-file	scripts/chain2stats.py
-change-format	bad	should be -method		scripts/fastq2fastq.py,scripts/fastq2solid.py,scripts/fastq2summary.py,scripts/fastq2table.py
+change-format	rename		method=change-format --target-format	scripts/fastq2fastq.py,scripts/fastq2solid.py,scripts/fastq2summary.py,scripts/fastq2table.py
 chop	bad	should be -method		scripts/fastqs2fastqs.py
 chromosome	ok			scripts/liftover.py
 chunk-size	ok			scripts/gff2view.py,scripts/mask_fasta.py,scripts/split_genome.py,scripts/split_genomic_fasta_file.py
@@ -97,7 +97,7 @@ connection	bad	more explicit		scripts/analyze_codonbias_orthology.py,scripts/che
 contig-sizes	rename		contigs-tsv-file	scripts/rnaseq_junction_bam2bam.py
 contigs	rename		contigs-tsv-file	scripts/gff2gff.py
 control-bam-file	ok			scripts/bed2table.py
-control-factor	?			scripts/bam2geneprofile.py
+control-factor	ok			scripts/bam2geneprofile.py
 control-file	rename		control-bam-file	scripts/bam2peakshape.py
 control-filename	bad	?		scripts/runSPP.py,scripts/runZinba.py
 control-offset	bad			scripts/bed2table.py
@@ -493,7 +493,7 @@ no-title	?			scripts/data2stats.py,scripts/set_diff.py
 no-titles	?			scripts/combine_tables.py,scripts/csvs2csv.py,scripts/filter_tokens.py
 no-venn	ok			scripts/gtf2overlap.py
 norm-test	?			scripts/r_compare_distributions.py
-normalization	split	more explicit	normalize-..	scripts/bam2geneprofile.py,scripts/bam2peakshape.py
+normalization	rename	WARNING-ambiguous, can also be normalize-matrix	normalize-transcript	scripts/bam2geneprofile.py,scripts/bam2peakshape.py
 normalize	ok			scripts/plot_matrix.py
 normalize-profile	ok			scripts/bam2geneprofile.py
 nperchrom	bad			scripts/chain2stats.py
@@ -632,7 +632,7 @@ rename-duplicates	rename		method=rename-duplicates	scripts/gtf2gtf.py
 renumber	bad	should be -method		scripts/farm.py,scripts/nofarm.py
 renumber-column	bad	should be -method		scripts/farm.py,scripts/nofarm.py
 renumber-genes	rename		method=renumber-genes --pattern	scripts/gtf2gtf.py
-renumber-ids	bad	should be -method		scripts/fastq2fastq.py
+renumber-ids	rename		method=renumber-reads --pattern	scripts/fastq2fastq.py
 renumber-transcripts	rename	 	method=renumber-transcripts --pattern	scripts/gtf2gtf.py
 reorder	bad	should be -method		scripts/vcf2vcf.py
 replace	bad	should be -method		scripts/modify_table.py
@@ -660,7 +660,7 @@ reverse-set	ok			scripts/codonbias_acai2tsv.py
 row-names	ok			scripts/sparse2full.py
 rows	?			scripts/data2stats.py
 sam	rename		sam-file	scripts/bam2bam.py,scripts/bams2bam.py
-sample	ok			scripts/fastq2fastq.py,scripts/genelist_analysis.py,scripts/malis2mali.py,scripts/malis2malis.py
+sample	rename		method=sample --sample-size	scripts/fastq2fastq.py,scripts/genelist_analysis.py,scripts/malis2mali.py,scripts/malis2malis.py
 sample-method	ok			scripts/malis2mali.py,scripts/malis2malis.py
 sample-proportion	ok			scripts/fasta2fasta.py
 sample-size	ok			scripts/gtf2gtf.py,scripts/gtf2reads.py,scripts/runGO.py
@@ -715,7 +715,7 @@ skip-titles	ok			scripts/combine_tables.py,scripts/csvs2csv.py
 skip-trees	ok			scripts/tree2taxa.py
 slims	bad			scripts/genelist_analysis.py,scripts/runGO.py
 snapshot-dir	ok			scripts/bed2plot.py
-sort	rename	WARNING-complex	method=sort --sort-order	scripts/bam2peakshape.py,scripts/codonbias_weights2tsv.py,scripts/combine_tables.py,scripts/csvs2csv.py,scripts/fastq2fastq.py,scripts/gtf2gff.py,scripts/gtf2gtf.py
+sort	rename	WARNING-complex, can also be --is-unsorted	method=sort --sort-order	scripts/bam2peakshape.py,scripts/codonbias_weights2tsv.py,scripts/combine_tables.py,scripts/csvs2csv.py,scripts/fastq2fastq.py,scripts/gtf2gff.py,scripts/gtf2gtf.py
 sort-by-rows	ok			scripts/table2table.py
 sort-keys	ok			scripts/combine_tables.py,scripts/csvs2csv.py
 sort-order	ok			scripts/genelist_analysis.py,scripts/runGO.py
@@ -797,7 +797,7 @@ translator	ok			scripts/index_fasta.py
 transpose	bad	should be -method		scripts/table2table.py
 transpose-format	ok			scripts/table2table.py
 tree	split			scripts/gi2parents.py,scripts/mali2kaks.py
-trim3		should be -method		scripts/fastq2fastq.py
+trim3	rename		method=trim3 --num-bases	scripts/fastq2fastq.py
 truncate	split	should be -method		scripts/annotator_distance.py,scripts/histogram2histogram.py
 type	bad			scripts/fasta2fasta.py,scripts/fasta2table.py,scripts/metaphlan2table.py,scripts/radar.py
 ucsc-assembly	ok			scripts/gff2view.py

@@ -177,7 +177,7 @@ def loadReadCounts(infile, outfile):
     statement = """cat %(infile)s | python %(scriptsdir)s/csv2db.py 
                          --database=%(database)s
                          --table=raw_read_counts
-                         --index=track
+                         --add-index=track
                  > %(outfile)s; """
     P.run()
 
@@ -214,7 +214,7 @@ def runBlast(infile, outfile):
 @transform(runBlast, regex(r"(\S+).blast"), r"\1.blast.load")
 def loadBlast(infile, outfile):
     '''load blast results into database'''
-    P.load(infile, outfile, "--index=query_nid --index=pid --index=query_ali")
+    P.load(infile, outfile, "--add-index=query_nid --add-index=pid --add-index=query_ali")
 
 
 ###################################################################
@@ -281,7 +281,7 @@ def filterReadsByPrimerMatch(infile, outfiles):
     fastq_out.close()
 
     # reconcile read pairs
-    statement = '''python %(scriptsdir)s/fastqs2fastq.py --method=reconcile %(tempfile)s %(infile2)s --output-pattern=filtered/%(track)s.reconciled.fastq.%%i.gz'''
+    statement = '''python %(scriptsdir)s/fastqs2fastq.py --method=reconcile %(tempfile)s %(infile2)s --output-filename-pattern=filtered/%(track)s.reconciled.fastq.%%i.gz'''
     P.run()
 
 ###################################################################
@@ -351,7 +351,7 @@ def reconcileReadPairs(infiles, outfiles):
     out1, out2 = outfiles
     track = P.snip(os.path.basename(read1), ".cutadapt.read1.fastq.gz")
     # reconcile read pairs
-    statement = '''python %(scriptsdir)s/fastqs2fastq.py --method=reconcile %(read1)s %(read2)s --output-pattern=filtered/%(track)s.cutadapt.reconciled.read%%i.fastq.gz'''
+    statement = '''python %(scriptsdir)s/fastqs2fastq.py --method=reconcile %(read1)s %(read2)s --output-filename-pattern=filtered/%(track)s.cutadapt.reconciled.read%%i.fastq.gz'''
     P.run()
 
 ###################################################################
@@ -393,7 +393,7 @@ def loadTaggedReadCounts(infile, outfile):
     statement = """cat %(infile)s | python %(scriptsdir)s/csv2db.py 
                          --database=%(database)s
                          --table=tagged_read_counts
-                         --index=track
+                         --add-index=track
                  > %(outfile)s; """
     P.run()
 
@@ -464,7 +464,7 @@ def loadPicardAlignStats(infiles, outfile):
     tablename = P.toTable(outfile)
     statement = '''cat %(tmpfilename)s
                 | python %(scriptsdir)s/csv2db.py
-                      --index=track
+                      --add-index=track
                       --table=%(tablename)s 
                 > %(outfile)s'''
     P.run()
@@ -506,7 +506,7 @@ def loadPicardDuplicateStats(infiles, outfile):
     tablename = P.toTable(outfile)
     statement = '''cat %(tmpfilename)s
                     | python %(scriptsdir)s/csv2db.py
-                          --index=track
+                          --add-index=track
                           --table=%(tablename)s 
                     > %(outfile)s '''
     P.run()

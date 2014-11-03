@@ -1789,7 +1789,7 @@ predictor for each.
     parser.add_option("--dry-run", dest="dry_run", action="store_true",
                       help="prepare files, but do not execute prediction program.")
 
-    parser.add_option("--forward-coordinates", dest="forward_coordinates", action="store_true",
+    parser.add_option("--is-forward-coordinates", dest="forward_coordinates", action="store_true",
                       help="return result in forward coordinates.")
 
     parser.add_option("--both-strands", dest="both_strands", action="store_true",
