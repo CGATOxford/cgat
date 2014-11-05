@@ -6,8 +6,8 @@ version:
     options: --version
 
 default_test:
-    stdin: null
-    outputs: [example.1.fastq.gz,example.2.fastq.gz]
+    stdin: example.bam
+    outputs: [1.fastq.gz,2.fastq.gz]
     references: [example.1.fastq.gz,example.2.fastq.gz]
-    options: <DIR>/example.bam example.1.fastq.gz example.2.fastq.gz
+    options: 1.fastq.gz 2.fastq.gz
 

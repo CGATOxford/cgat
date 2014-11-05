@@ -74,7 +74,7 @@ def main(argv=None):
 
     # do sth
     if len(args) == 2:
-        fastqfile1, fastqfile2 = args[1], args[2]
+        fastqfile1, fastqfile2 = args
     else:
         fastqfile1 = options.output_filename_pattern % "1"
         fastqfile2 = options.output_filename_pattern % "2"

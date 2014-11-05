@@ -1,5 +1,4 @@
-'''
-split_gff - split a gff file into chunks
+'''split_gff - split a gff file into chunks
 =============================================
 
 :Author: Andreas Heger
@@ -10,28 +9,12 @@ split_gff - split a gff file into chunks
 Purpose
 -------
 
-Split gff file into chunks. Overlapping entries will 
-always be output in the same chunk. Input is read from
-stdin unless otherwise specified. The input needs to
-be contig/start position sorted.
+Split gff file into chunks. Overlapping entries will always be output
+in the same chunk. Input is read from stdin unless otherwise
+specified. The input needs to be contig/start position sorted.
 
 Options
 -------
-
--p --output-filename-pattern
-
-    Specifies how to name the output files. The placeholder
-    should be included and will specify where the chunk
-    number will go. 
-
-    E.g. -p output_chunk_%i.gff 
-
-    will produce output files:
-    output_chunck_1.gff
-    output_chunck_2.gff
-    output_chunck_3.gff
-    ...
-
 
 -i --min-chunk-size
 
@@ -46,12 +29,6 @@ Options
     This options tells the script not to actaully write
     any files, but it will output a list of the files
     that would be output.
-
--I, -L 
-
-    Use these options to redirect the stdin, stdout and
-    stderror to files. Gziped files will be handled
-    transparently
 
 Example
 -------
@@ -78,13 +55,11 @@ Usage
 
    cgat splitgff [OPTIONS]
 
-Will read a gff file from stdin and split into multiple
-gff files. 
+Will read a gff file from stdin and split into multiple gff files.
 
    cgat split_gff -I GFF [OPTIONS]
 
-Will read the gff file GFF and split into multiple gff
-files. 
+Will read the gff file GFF and split into multiple gff files.
 
 Command line options
 --------------------
@@ -101,18 +76,19 @@ import CGAT.Experiment as E
 
 class OutputChunk:
 
-    def __init__(self, options):
+    def __init__(self, output_filename_pattern, dry_run=False):
         self.nchunk = 0
-        self.options = options
+        self.output_filename_pattern = output_filename_pattern
+        self.dry_run = dry_run
 
     def createOpen(self, mode="w", header=None):
         """open file. Check first, if directory exists.
         """
 
         self.nchunk += 1
-        filename = self.options.output_pattern % self.nchunk
+        filename = self.output_filename_pattern % self.nchunk
 
-        if self.options.dry_run:
+        if self.dry_run:
             E.info("opening file %s" % filename)
             return open("/dev/null", mode)
 
@@ -152,31 +128,32 @@ def main(argv=None):
         argv = sys.argv
 
     parser = E.OptionParser(
-        version="%prog version: $Id: gff2chunks.py 2781 2009-09-10 11:33:14Z andreas $", usage=globals()["__doc__"])
+        version="%prog version: $Id$",
+        usage=globals()["__doc__"])
 
-    parser.add_option("-p", "--output-filename-pattern", dest="output_pattern", type="string",
-                      help="output pattern for filenames. Should contain a '%i' [default=%default].")
+    parser.add_option(
+        "-i", "--min-chunk-size", dest="min_chunk_size", type="int",
+        help="minimum chunk size [default=%default].")
 
-    parser.add_option("-i", "--min-chunk-size", dest="min_chunk_size", type="int",
-                      help="minimum chunk size [default=%default].")
-
-    parser.add_option("-n", "--dry-run", dest="dry_run", action="store_true",
-                      help="do not create any files [default=%default].")
+    parser.add_option(
+        "-n", "--dry-run", dest="dry_run", action="store_true",
+        help="do not create any files [default=%default].")
 
     parser.set_defaults(
         method="overlap",
         dry_run=False,
-        output_pattern="%06i.chunk",
         min_chunk_size=2,
+        output_filename_pattern="%06i.chunk",
     )
 
-    (options, args) = E.Start(parser)
+    (options, args) = E.Start(parser, add_output_options=True)
 
     gffs = GTF.iterator(options.stdin)
 
     ninput, noutput, nchunks = 0, 0, 0
 
-    outputChunk = OutputChunk(options)
+    outputChunk = OutputChunk(options.output_filename_pattern,
+                              dry_run=options.dry_run)
 
     if options.method == "overlap":
 
