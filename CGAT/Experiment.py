@@ -180,6 +180,7 @@ import sys
 import time
 import inspect
 import getopt
+import copy
 import os
 import logging
 import collections
@@ -622,6 +623,9 @@ def Start(parser=None,
 
     global global_options, global_args, global_starting_time
 
+    # save default values given by user
+    user_defaults = copy.copy(parser.defaults)
+
     global_starting_time = time.time()
 
     group = OptionGroup(parser, "Script timing options")
@@ -777,6 +781,9 @@ def Start(parser=None,
                             password="",
                             database="")
         parser.add_option_group(group)
+
+    # restore user defaults
+    parser.defaults.update(user_defaults)
 
     if return_parser:
         return parser
