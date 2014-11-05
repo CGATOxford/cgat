@@ -817,7 +817,7 @@ def main(argv=None):
             param_reactivate_missed = 0
         elif o == "--conserve-memory":
             param_conserve_memory = 1
-        elif o == "--min-length":
+        elif o == "--min-interval-length":
             param_min_length = int(a)
         elif o == "--test":
             param_test = int(a)

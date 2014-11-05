@@ -217,7 +217,7 @@ def main(argv=None):
                       choices=("all", "consistent", "emes"),
                       help="how to select positive sites.")
 
-    parser.add_option("--prefix", dest="prefix", type="string",
+    parser.add_option("--column-prefix", dest="prefix", type="string",
                       help="prefix for rows.")
 
     parser.add_option("--input-pattern", dest="pattern_input_filenames", type="string",

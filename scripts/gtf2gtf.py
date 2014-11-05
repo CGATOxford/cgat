@@ -183,14 +183,14 @@ Options for altering fields within :term:`gtf`.
     not appearing in the tsv file is discarded.
 
 ``renumber-genes``
-    Renumber genes from 1 using the pattern provided in ``--pattern``.
+    Renumber genes from 1 using the pattern provided in ``--pattern-identifier``.
 
 ``renumber-transcripts``
     Renumber transcripts from 1 using the pattern provided in
-    ``--pattern``.
+    ``--pattern-identifier``.
 
 ``unset-genes``
-    Renumber genes from 1 using the pattern provided in ``--pattern``.
+    Renumber genes from 1 using the pattern provided in ``--pattern-identifier``.
     Transcripts with the same gene-id in the input :term:`gtf` file will
     have different gene-ids in the output :term:`gtf` file.
 
@@ -232,7 +232,7 @@ Finally, the resultant transcripts are renamed with the pattern
                --with-utr
     | cgat gtf2gtf
                --method=renumber-transcripts
-               --pattern=MERGED_%i
+               --pattern-identifier=MERGED_%i
 
 Type::
 
@@ -275,10 +275,10 @@ def main(argv=None):
                       help="distance in nucleotides between "
                       "exons to be merged [default=%default].")
 
-    parser.add_option("--pattern", dest="pattern", type="string",
+    parser.add_option("--pattern-identifier", dest="pattern", type="string",
                       help="pattern to use for renaming genes/transcripts. "
                       "The pattern should contain a %i, for example "
-                      "--pattern=ENSG%010i [default=%default].")
+                      "--pattern-identifier=ENSG%010i [default=%default].")
 
     parser.add_option("--sort-order",
                       dest="sort_order",

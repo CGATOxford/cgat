@@ -319,7 +319,7 @@ def buildAnnotatorAnnotations(tmpdir, outfile,
         cat %(bedfiles)s 
         | python %(scriptsdir)s/bed2annotator2tsv.py 
         --max-length=0 
-        --merge 
+        --merge-overlapping 
         --section=annotations 
         --log=%(outfile)s.log 
         > %(tmpannotations)s

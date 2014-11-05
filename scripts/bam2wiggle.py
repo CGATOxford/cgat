@@ -35,7 +35,9 @@ Usage
 
 Type::
 
-   python bam2wiggle.py --output-format=bigwig --output-filename=out.bigwig in.bam
+   cgat bam2wiggle \
+          --output-format=bigwig \
+          --output-filename-pattern=out.bigwig in.bam
 
 to convert the :term:`bam` file file:`in.bam` to :term:`bigwig` format
 and save the result in :file:`out.bigwig`.
@@ -171,10 +173,6 @@ def main(argv=None):
                           "bigwig", "bed"),
                       help="output format [default=%default]")
 
-    parser.add_option("-b", "--output-filename",
-                      dest="output_filename", type="string",
-                      help="filename for output [default=%default]")
-
     parser.add_option("-s", "--shift-size", dest="shift", type="int",
                       help="shift reads by a certain amount (ChIP-Seq) "
                       "[%default]")
@@ -207,7 +205,6 @@ def main(argv=None):
     parser.set_defaults(
         samfile=None,
         output_format="wiggle",
-        output_filename=None,
         shift=0,
         extend=0,
         span=1,
@@ -217,11 +214,12 @@ def main(argv=None):
     )
 
     # add common options (-h/--help, ...) and parse command line
-    (options, args) = E.Start(parser, argv=argv)
+    (options, args) = E.Start(parser, argv=argv, add_output_options=True)
+
     if len(args) >= 1:
         options.samfile = args[0]
     if len(args) == 2:
-        options.output_filename = args[1]
+        options.output_filename_pattern = args[1]
     if not options.samfile:
         raise ValueError("please provide a bam file")
 
@@ -250,7 +248,7 @@ def main(argv=None):
 
     # Output filename required for bigwig / bigbed computation
     if options.output_format == "bigwig":
-        if not options.output_filename:
+        if not options.output_filename_pattern:
             raise ValueError(
                 "please specify an output file for bigwig computation.")
 
@@ -293,9 +291,9 @@ def main(argv=None):
     ninput, nskipped, ncontigs = 0, 0, 0
 
     # set output file name
-    output_filename = options.output_filename
-    if output_filename:
-        output_filename = os.path.abspath(output_filename)
+    output_filename_pattern = options.output_filename_pattern
+    if output_filename_pattern:
+        output_filename = os.path.abspath(output_filename_pattern)
 
     # shift and extend or merge pairs. Output temp bed file
     if options.shift > 0 or options.extend > 0 or options.merge_pairs:
@@ -350,7 +348,7 @@ def main(argv=None):
         tmpfile_sorted = os.path.join(tmpdir, "sorted")
         statement = ("sort -k 1,1 -k2,2n %(tmpfile_bed)s > %(tmpfile_sorted)s;"
                      "bedGraphToBigWig %(tmpfile_sorted)s %(tmpfile_sizes)s "
-                     "%(output_filename)s" % locals())
+                     "%(output_filename_pattern)s" % locals())
         E.run(statement)
 
     else:
@@ -416,17 +414,18 @@ def main(argv=None):
 
             E.info("starting %s conversion" % executable)
             try:
-                retcode = subprocess.call(" ".join((executable,
-                                                    tmpfile_wig,
-                                                    tmpfile_sizes,
-                                                    output_filename)),
-                                          shell=True)
+                retcode = subprocess.call(
+                    " ".join((executable,
+                              tmpfile_wig,
+                              tmpfile_sizes,
+                              output_filename_pattern)),
+                    shell=True)
                 if retcode != 0:
                     E.warn("%s terminated with signal: %i" %
                            (executable, -retcode))
                     return -retcode
             except OSError, msg:
-                E.warn("Error while executing bigwig: %s" % e)
+                E.warn("Error while executing bigwig: %s" % msg)
                 return 1
             E.info("finished bigwig conversion")
 

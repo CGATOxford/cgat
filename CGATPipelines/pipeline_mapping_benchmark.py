@@ -246,8 +246,8 @@ def loadBAMStats(infiles, outfile):
     tablename = P.toTable(outfile)
     E.info("loading bam stats - summary")
     statement = """python %(scriptsdir)s/combine_tables.py
-                      --headers=%(header)s
-                      --missing=0
+                      --header-names=%(header)s
+                      --missing-value=0
                       --ignore-empty
                    %(filenames)s
                 | perl -p -e "s/bin/track/"
@@ -266,9 +266,9 @@ def loadBAMStats(infiles, outfile):
         tname = "%s_%s" % (tablename, suffix)
 
         statement = """python %(scriptsdir)s/combine_tables.py
-                      --header=%(header)s
+                      --header-names=%(header)s
                       --skip-titles
-                      --missing=0
+                      --missing-value=0
                       --ignore-empty
                    %(filenames)s
                 | perl -p -e "s/bin/%(suffix)s/"

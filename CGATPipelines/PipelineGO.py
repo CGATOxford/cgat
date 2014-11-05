@@ -314,7 +314,7 @@ def runGOFromFiles(outfile,
 
     if samples is not None:
         options.append("--fdr")
-        options.append("--sample=%(samples)i" % locals())
+        options.append("--method=sample --sample-size=%(samples)i" % locals())
         options.append("--fdr-method=empirical")
     else:
         options.append("--fdr")
@@ -330,7 +330,7 @@ def runGOFromFiles(outfile,
     statement = '''
     python %(scriptsdir)s/runGO.py 
     --filename-input=%(go_file)s
-    --genes=%(fg_file)s
+    --genes-tsv-file=%(fg_file)s
     --output-filename-pattern='%(outdir)s/%%(set)s.%%(go)s.%%(section)s'
     --min-counts=%(minimum_counts)i
     --log=%(outfile)s.log

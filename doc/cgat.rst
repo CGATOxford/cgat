@@ -68,7 +68,7 @@ through various GAT tools::
    | cgat gtf2gtf --method=merge-exons --with-utr
    | cgat gtf2gtf --method=filter --filter-method=longest-gene
    | cgat gtf2gtf --method=sort --sort-order=position
-   | cgat gtf2gff --genome-file=hg19 --flank=5000 --method=genome
+   | cgat gtf2gff --genome-file=hg19 --flank-size=5000 --method=genome
    | gzip
    > annotations.gff.gz
 

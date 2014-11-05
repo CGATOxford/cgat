@@ -21,4 +21,4 @@ rna:
         stdin: paired.bam
         outputs: [stdout]
         references: [rna.tsv, rna.mapq, rna.nm]
-        options: --fastq-file=<DIR>/paired.fastq.1.gz --force-output --mask-bed-file=<DIR>/hg19_rna.gff.gz --remove-rna --output-filename-pattern=rna.%s
+        options: --fastq-file=<DIR>/paired.fastq.1.gz --force-output --mask-bed-file=<DIR>/hg19_rna.gff.gz --ignore-masked-reads --output-filename-pattern=rna.%s

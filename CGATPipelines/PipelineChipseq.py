@@ -1108,7 +1108,7 @@ def runMACS(infile, outfile, controlfile=None):
     -t %(infile)s 
     %(control)s 
     --diag 
-    --name=%(outfile)s 
+    --set-name=%(outfile)s 
     --format=BAM
     %(macs_options)s 
     >& %(outfile)s

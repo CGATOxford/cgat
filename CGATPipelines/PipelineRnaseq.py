@@ -616,7 +616,7 @@ def filterAndMergeGTF(infile, outfile, remove_genes, merge=False):
         statement = '''
         %(scriptsdir)s/gff_sort pos < %(tmpfilename)s
         | python %(scriptsdir)s/gtf2gtf.py
-            --method=unset-genes --pattern="NONC%%06i"
+            --method=unset-genes --pattern-identifier="NONC%%06i"
             --log=%(outfile)s.log
         | python %(scriptsdir)s/gtf2gtf.py
             --method=merge-genes
@@ -626,10 +626,10 @@ def filterAndMergeGTF(infile, outfile, remove_genes, merge=False):
             --merge-exons-distance=5
             --log=%(outfile)s.log
         | python %(scriptsdir)s/gtf2gtf.py
-            --method=renumber-genes --pattern="NONC%%06i"
+            --method=renumber-genes --pattern-identifier="NONC%%06i"
             --log=%(outfile)s.log
         | python %(scriptsdir)s/gtf2gtf.py
-            --method=renumber-transcripts --pattern="NONC%%06i"
+            --method=renumber-transcripts --pattern-identifier="NONC%%06i"
             --log=%(outfile)s.log
         | %(scriptsdir)s/gff_sort genepos 
         | gzip > %(outfile)s
@@ -741,7 +741,7 @@ def mergeCufflinksFPKM(infiles, outfile,
         --log=%(outfile)s.log
         --columns=1
         --skip-titles
-        --headers=%(headers)s
+        --header-names=%(headers)s
         --take=FPKM fpkm.dir/%(prefix)s_*.%(tracking)s.gz
     | perl -p -e "s/tracking_id/%(identifier)s/"
     | %(scriptsdir)s/hsort 1

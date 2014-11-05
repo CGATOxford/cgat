@@ -156,8 +156,8 @@ coverage
    models with intervals given in ``--gff-file``.  Coverage values
    are output in 5' to 3' together with summary statistics (bases
    covered, minimum, maximum coverage, etc.). By using the options
-   ``--gff-feature`` or ``--gff-source`` the counting can be
-   rescricted to particular features in the :term:`gff` file.
+   ``--restrict-feature`` or ``--restrict-source`` the counting can be
+   rescricted to particular features or sources in the :term:`gff` file.
 
 distance
 
@@ -3892,12 +3892,12 @@ def main(argv=None):
                       choices=("bed", "gff", "gtf"),
                       help="format of secondary stream [default=%default].")
 
-    parser.add_option("--gff-source", dest="gff_sources", type="string",
+    parser.add_option("--restrict-source", dest="gff_sources", type="string",
                       action="append",
                       help="restrict input to this 'source' in extra "
                       "gff file (for counter: overlap) [default=%default].")
 
-    parser.add_option("--gff-feature", dest="gff_features", type="string",
+    parser.add_option("--restrict-feature", dest="gff_features", type="string",
                       action="append",
                       help="restrict input to this 'feature' in extra gff "
                       "file (for counter: overlap) [default=%default].")
@@ -3983,7 +3983,7 @@ def main(argv=None):
                       "When true, unique counts are returned. "
                       "Currently only compatible with count-reads")
 
-    parser.add_option("--prefix", dest="prefixes",
+    parser.add_option("--column-prefix", dest="prefixes",
                       type="string",
                       action="append",
                       help="add prefix to column headers - prefixes "

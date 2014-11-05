@@ -316,7 +316,7 @@ def mapReadsWithShrimp(infiles, outfile):
     job_threads = PARAMS["shrimp_threads"]
 
     statement = '''
-    gmapper-cs --full-threshold 80%% --threads %(shrimp_threads)i --fastq --report 5 --sam-file
+    gmapper-cs --full-threshold 80%% --threads %(shrimp_threads)i --fastq --output-report 5 --sam-file
               --sam-unaligned
               %(shrimp_options)s
               %(infile)s 
@@ -424,8 +424,8 @@ def mapReadsWithTophat(infiles, outfile):
     statement = '''
     zcat %(infile)s 
     | python %(scriptsdir)s/fastq2solid.py 
-           --change-format=integer
-           --pattern="%(tmpfile)s.%%s" >& %(outfile)s.log;
+           --method=change-format --target-format=integer
+           --pattern-identifier="%(tmpfile)s.%%s" >& %(outfile)s.log;
     checkpoint;
     tophat --output-dir %(outfile)s.dir                    
            --num-threads %(tophat_threads)s  
@@ -731,7 +731,7 @@ def loadTranscriptomeValidation(infiles, outfile):
 
     statement = '''
     python %(scriptsdir)s/combine_tables.py 
-         --headers=%(headers)s
+         --header-names=%(headers)s
          %(infiles)s
     | python %(scriptsdir)s/table2table.py --transpose
     | perl -p -e "s/bin/track/"
@@ -1072,8 +1072,8 @@ def loadBAMStats(infiles, outfile):
     tablename = P.toTable(outfile)
     E.info("loading bam stats - summary")
     statement = """python %(scriptsdir)s/combine_tables.py
-                      --headers=%(header)s
-                      --missing=0
+                      --header-names=%(header)s
+                      --missing-value=0
                       --ignore-empty
                    %(filenames)s
                 | perl -p -e "s/bin/track/"
@@ -1092,9 +1092,9 @@ def loadBAMStats(infiles, outfile):
         tname = "%s_%s" % (tablename, suffix)
 
         statement = """python %(scriptsdir)s/combine_tables.py
-                      --header=%(header)s
+                      --header-names=%(header)s
                       --skip-titles
-                      --missing=0
+                      --missing-value=0
                       --ignore-empty
                    %(filenames)s
                 | perl -p -e "s/bin/%(suffix)s/"
@@ -1174,7 +1174,7 @@ def buildReadCorrespondence(infiles, outfile):
 
     statement = '''
     python %(scriptsdir)s/diff_bam.py
-         --headers=%(headers)s
+         --header-names=%(headers)s
          --log=%(outfile)s.log
        %(sorters)s
     | gzip
@@ -1230,8 +1230,8 @@ def mergeAndLoad(infiles, outfile, suffix):
     tablename = P.toTable(outfile)
 
     statement = """python %(scriptsdir)s/combine_tables.py
-                      --headers=%(header)s
-                      --missing=0
+                      --header-names=%(header)s
+                      --missing-value=0
                       --ignore-empty
                    %(filenames)s
                 | perl -p -e "s/bin/track/" 
@@ -1405,10 +1405,10 @@ def loadAlignmentStats(infiles, outfile):
         tname = "%s_%s" % (tablename, suffix)
 
         statement = """python %(scriptsdir)s/combine_tables.py
-                      --missing=0
+                      --missing-value=0
                    %(filenames)s
                 | python %(scriptsdir)s/csv2db.py
-                      --header=%(column)s,%(header)s
+                      --header-names=%(column)s,%(header)s
                       --replace-header
                       --add-index=track
                       --table=%(tname)s 

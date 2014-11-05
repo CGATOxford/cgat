@@ -205,7 +205,7 @@ def loadGi2Taxid(infile, outfile):
     '''
     load gi to taxid mapping
     '''
-    P.load(infile, outfile, "--header=gi,taxid --add-index=taxid")
+    P.load(infile, outfile, "--header-names=gi,taxid --add-index=taxid")
 
 ###################################################
 ###################################################

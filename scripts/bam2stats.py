@@ -54,7 +54,7 @@ iterating over the file. The metrics output are:
 |                        |a .gff file                               |
 +------------------------+------------------------------------------+
 |alignments_no_rna       |alignments not mapping to regions in a    |
-|                        |.gff file (if --remove-rna has been set,  |
+|                        |.gff file (if --ignore-masked-reads has been set,  |
 |                        |otherwise equal to mapped)                |
 +------------------------+------------------------------------------+
 |alignments_duplicates   |number of alignments mapping to the same  |
@@ -267,17 +267,17 @@ def main(argv=None):
     parser.add_option(
         "-r", "--mask-bed-file", dest="filename_rna", type="string",
         metavar='GFF',
-        help="gff formatted file with rna locations. Note that the "
-        "computation "
-        "currently "
-        "does not take into account indels, so it is an approximate count "
-        "only "
+        help="gff formatted file with masking locations. The number of "
+        "reads overlapping the intervals in the given file will be "
+        "computed. Note that the computation currently does not take "
+        "into account indels, so it is an approximate count only. "
         "[%default]")
 
     parser.add_option(
-        "-f", "--remove-rna", dest="remove_rna", action="store_true",
-        help="as well as counting, also remove rna reads for duplicate and "
-        "other counts [%default]")
+        "-f", "--ignore-masked-reads", dest="remove_rna", action="store_true",
+        help="as well as counting reads in the file given by --mask-bed-file, "
+        "also remove these reads for duplicate and match statistics. "
+        "[%default]")
 
     parser.add_option(
         "-i", "--num-reads", dest="input_reads", type="int",

@@ -16,7 +16,7 @@ or sample a subset of reads.
 
 The script predominantly is used for manipulation of single fastq
 files. However, for some of its functionality it will take paired data
-using the ``--pair`` and ``--outfile-pair`` options. This applies to the
+using the ``--pair-fastq-file`` and ``--output-filename-pattern`` options. This applies to the
 ``sample`` and ``sort`` methods.
 
 Usage
@@ -55,8 +55,8 @@ Example::
    command-line::
      cat in.fastq.1 | python fastq2fastq.py
                       --method=sample --sample-size 0.5
-                      --pair in.fastq.2
-                      --outfile-pair out.fastq.2
+                      --pair-fastq-file in.fastq.2
+                      --output-filename-pattern out.fastq.2
                       > out.fastq.1
 
    head out.fastq.1
@@ -109,8 +109,8 @@ The following methods are implemented (``--method``).
 
 ``renumber-reads``
 
-    Rename the reads based on pattern given in ``--pattern``
-    e.g. ``--pattern="read_%010i"``
+    Rename the reads based on pattern given in ``--pattern-identifier``
+    e.g. ``--pattern-identifier="read_%010i"``
 
 Type::
 
@@ -176,13 +176,8 @@ def main(argv=None):
         "0.5 for 50%, etc [default=%default].")
 
     parser.add_option(
-        "--pair", dest="pair", type="string",
+        "--pair-fastq-file", dest="pair", type="string",
         help="if data is paired, filename with second pair. "
-        "Implemented for sampling [default=%default].")
-
-    parser.add_option(
-        "--outfile-pair", dest="outfile_pair", type="string",
-        help="if data is paired, filename for second pair. "
         "Implemented for sampling [default=%default].")
 
     parser.add_option(
@@ -199,7 +194,7 @@ def main(argv=None):
         help="seed for random number generator [default=%default].")
 
     parser.add_option(
-        "--pattern", dest="renumber_pattern", type="string",
+        "--pattern-identifier", dest="renumber_pattern", type="string",
         help="rename reads in file by pattern [default=%default]")
 
     parser.set_defaults(
@@ -210,12 +205,11 @@ def main(argv=None):
         nbases=0,
         pair=None,
         apply=None,
-        outfile_pair=None,
         seed=None,
         renumber_pattern="read_%010i")
 
     # add common options (-h/--help, ...) and parse command line
-    (options, args) = E.Start(parser, argv=argv)
+    (options, args) = E.Start(parser, argv=argv, add_output_options=True)
 
     c = E.Counter()
 
@@ -233,13 +227,13 @@ def main(argv=None):
         random.seed(options.seed)
 
         if options.pair:
-            if not options.outfile_pair:
+            if not options.output_filename_pattern:
                 raise ValueError(
-                    "please specify output filename for "
-                    "second pair (--outfile-pair)")
+                    "please specify output filename pattern for "
+                    "second pair (--output-filename-pattern)")
 
             outfile1 = options.stdout
-            outfile2 = IOTools.openFile(options.outfile_pair, "w")
+            outfile2 = IOTools.openFile(options.outfile_filename_pattern, "w")
 
             for record1, record2 in itertools.izip(
                     Fastq.iterate(options.stdin),
@@ -291,10 +285,10 @@ def main(argv=None):
             statement = "paste - - - - | sort -k1,1 -t ' ' | tr '\t' '\n'"
             os.system(statement)
         else:
-            if not options.outfile_pair:
+            if not options.output_filename_pattern:
                 raise ValueError(
                     "please specify output filename for second pair "
-                    "(--outfile-pair)")
+                    "(--output-filename-pattern)")
             E.warn(
                 "consider sorting individual fastq files - "
                 "this is memory intensive")
@@ -310,7 +304,7 @@ def main(argv=None):
                     record2.identifier[:-2]] = (record2.seq, record2.quals)
 
             outfile1 = options.stdout
-            outfile2 = IOTools.openFile(options.outfile_pair, "w")
+            outfile2 = IOTools.openFile(options.output_filename_pattern, "w")
             assert len(set(entries1.keys()).intersection(
                 set(entries2.keys()))) == len(entries1),\
                 "paired files do not contain the same reads "\

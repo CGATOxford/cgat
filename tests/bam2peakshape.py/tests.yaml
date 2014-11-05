@@ -8,55 +8,55 @@ version:
 
 BamOnlyInterval:
     stdin: null 
-    options: --force-output --only-interval <DIR>/small.bam <DIR>/onepeak.bed
+    options: --force-output --use-interval <DIR>/small.bam <DIR>/onepeak.bed
     outputs: [stdout, matrix_unsorted.gz ]
     references: [bamOnlyInterval.tsv, bam_matrix_unsorted.gz]
 
 
 BamOnlyIntervalWithControlLibrary:
     stdin: null 
-    options: --force-output --only-interval <DIR>/small.bam <DIR>/onepeak.bed --control-bam-file=<DIR>/small.bam
+    options: --force-output --use-interval <DIR>/small.bam <DIR>/onepeak.bed --control-bam-file=<DIR>/small.bam
     outputs: [stdout, matrix_unsorted.gz, control_unsorted.gz]
     references: [bamOnlyIntervalWithControl.tsv, bam_matrix_unsorted.gz, bam_control_unsorted.gz]
 
 WigOnlyInterval:
     stdin: null
-    options: --format=bigwig --force-output --only-interval <DIR>/small.bw <DIR>/onepeak.bed
+    options: --format=bigwig --force-output --use-interval <DIR>/small.bw <DIR>/onepeak.bed
     outputs: [stdout, matrix_unsorted.gz ]
     references: [wigOnlyInterval.tsv, wig_matrix_unsorted.gz]
 
 
 WigOnlyIntervalWithControlLibrary:
     stdin: null
-    options: --format=bigwig --force-output --only-interval <DIR>/small.bw <DIR>/onepeak.bed --control-bam-file=<DIR>/small.bw
+    options: --format=bigwig --force-output --use-interval <DIR>/small.bw <DIR>/onepeak.bed --control-bam-file=<DIR>/small.bw
     outputs: [stdout, matrix_unsorted.gz, control_unsorted.gz]
     references: [wigOnlyIntervalWithControl.tsv, wig_matrix_unsorted.gz, wig_control_unsorted.gz]
 
 
 BamOnlyIntervalShift:
     stdin: null
-    options: --force-output --only-interval --shift-size=100 <DIR>/small.bam <DIR>/onepeak.bed --control-bam-file=<DIR>/small.bam
+    options: --force-output --use-interval --shift-size=100 <DIR>/small.bam <DIR>/onepeak.bed --control-bam-file=<DIR>/small.bam
     outputs: [stdout, matrix_unsorted.gz, control_unsorted.gz]
     references: [BamOnlyIntervalShift.tsv, BamOnlyIntervalShift_matrix_unsorted.gz, BamOnlyIntervalShift_control_unsorted.gz]
 
 
 BamOnlyIntervalNormalization:
     stdin: null
-    options: --force-output --only-interval --normalize-matrix=sum <DIR>/small.bam <DIR>/onepeak.bed --control-bam-file=<DIR>/small.bam
+    options: --force-output --use-interval --normalize-matrix=sum <DIR>/small.bam <DIR>/onepeak.bed --control-bam-file=<DIR>/small.bam
     outputs: [stdout, matrix_unsorted.gz, control_unsorted.gz]
     references: [BamOnlyIntervalNormalization.tsv, BamOnlyIntervalNormalization_matrix_unsorted.gz, BamOnlyIntervalNormalization_control_unsorted.gz]
 
 
 BamOnlyIntervalCentringMethodReads:
     stdin: null
-    options: --force-output --only-interval --centring-method=reads <DIR>/small.bam <DIR>/onepeak.bed --control-bam-file=<DIR>/small.bam
+    options: --force-output --use-interval --centring-method=reads <DIR>/small.bam <DIR>/onepeak.bed --control-bam-file=<DIR>/small.bam
     outputs: [stdout, matrix_unsorted.gz, control_unsorted.gz]
     references: [BamOnlyIntervalCentringMethodReads.tsv, BamOnlyIntervalCentringMethodReads_matrix_unsorted.gz, BamOnlyIntervalCentringMethodReads_control_unsorted.gz]
 
 
 BamOnlyIntervalUseStrand:
     stdin: null
-    options: --force-output --only-interval --use-strand <DIR>/small.bam <DIR>/onepeak.bed --control-bam-file=<DIR>/small.bam
+    options: --force-output --use-interval --use-strand <DIR>/small.bam <DIR>/onepeak.bed --control-bam-file=<DIR>/small.bam
     outputs: [stdout, matrix_unsorted.gz, control_unsorted.gz]
     references: [BamOnlyIntervalUseStrand.tsv, BamOnlyIntervalUseStrand_matrix_unsorted.gz, BamOnlyIntervalUseStrand_control_unsorted.gz]
 

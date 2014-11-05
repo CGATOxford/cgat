@@ -280,7 +280,7 @@ if __name__ == "__main__":
     parser = E.OptionParser(
         version="%prog version: $Id: ProfileLibraryCompass.py 2781 2009-09-10 11:33:14Z andreas $", usage=globals()["__doc__"])
 
-    parser.add_option("-p", "--prefix", dest="prefix", type="string",
+    parser.add_option("-p", "--column-prefix", dest="prefix", type="string",
                       help="prefix to use for the profile library.")
 
     parser.add_option("-a", "--action", dest="action", type="choice",

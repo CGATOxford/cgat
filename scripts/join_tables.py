@@ -51,8 +51,8 @@ USAGE = """python %s < stdin > stdout
 OPTIONS:
 
 -t, --titles=           column titles
--m, --missing=          missing value
--h, --headers=          add headers for files
+-m, --missing-value=          missing value
+-h, --header-names=          add headers for files
 -s, --method=sort --sort-order=             sort by column titles (given by sort order)
 '#' at start of line is a comment
 """ % sys.argv[0]
@@ -85,7 +85,7 @@ def main(argv=None):
 
     parser.add_option("-c", "--columns", dest="columns", type="string",
                       help="columns to do join on. Files have to sorted alphabeticlly and incrementally on these columns.")
-    parser.add_option("-m", "--missing", dest="missing_value", type="string",
+    parser.add_option("-m", "--missing-value", dest="missing_value", type="string",
                       help="value for missing entries.")
 
     parser.set_defaults(

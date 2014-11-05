@@ -32,7 +32,7 @@ Options
    regular expression pattern to extract identifier from in
    sequence 2
 
-Depending on the option ``--output`` the following are output:
+Depending on the option ``--output-section`` the following are output:
 
   diff
      identifiers of sequences that are different
@@ -59,12 +59,12 @@ Example::
    >ENSACAP00000005213
    EEEEDESNNSYLYQPLNQDPDQGPAAVEETAPSTEPALDINERLQA ...
    >ENSACAP00000018122
-   LIRSSSMFHIMKHGHYISRFGSKPGLKCIGMHENGIIFNNNPALWK ... 
-   
-   python diff_fasta.py --output=missed --output=seqdiff a.fasta b.fasta 
+   LIRSSSMFHIMKHGHYISRFGSKPGLKCIGMHENGIIFNNNPALWK ...
+
+   python diff_fasta.py --output-section=missed --output-section=seqdiff a.fasta b.fasta
 
    cat diff.out
-   
+
    # Legend:
    # seqs1:          number of sequences in set 1
    # seqs2:          number of sequences in set 2
@@ -92,13 +92,8 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
-import string
 import re
-import getopt
-import optparse
-
 import CGAT.Genomics as Genomics
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
@@ -113,7 +108,8 @@ def MapIdentifiers(seqs, pattern):
             nk = rx.search(k).groups()[0]
         except AttributeError:
             raise ValueError(
-                "identifier can not be parsed from '%s' pattern='%s'" % (k, pattern))
+                "identifier can not be parsed from '%s' "
+                "pattern='%s'" % (k, pattern))
 
         del seqs[k]
         seqs[nk] = s
@@ -124,22 +120,29 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv
 
-    parser = E.OptionParser(version="%prog version: $Id: diff_fasta.py 2781 2009-09-10 11:33:14Z andreas $",
+    parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
-    parser.add_option("-s", "--correct-gap-shift", dest="correct_shift", action="store_true",
-                      help="correct gap length shifts in alignments. Requires alignlib_lite.py_ "
-                      "[%default]")
-    parser.add_option("-1", "--pattern1", dest="pattern1", type="string",
-                      help="pattern to extract identifier from in identifiers1. "
-                      "[%default]")
-    parser.add_option("-2", "--pattern2", dest="pattern2", type="string",
-                      help="pattern to extract identifier from in identifiers2. "
-                      "[%default]")
+    parser.add_option(
+        "-s", "--correct-gap-shift", dest="correct_shift",
+        action="store_true",
+        help="correct gap length shifts in alignments. "
+        "Requires alignlib_lite.py [%default]")
 
-    parser.add_option("-o", "--output", dest="output", type="choice", action="append",
-                      choices=("diff", "missed", "seqdiff"),
-                      help="what to output [%default]")
+    parser.add_option(
+        "-1", "--pattern1", dest="pattern1", type="string",
+        help="pattern to extract identifier from in identifiers1. "
+        "[%default]")
+
+    parser.add_option(
+        "-2", "--pattern2", dest="pattern2", type="string",
+        help="pattern to extract identifier from in identifiers2. "
+        "[%default]")
+
+    parser.add_option(
+        "-o", "--output-section", dest="output", type="choice", action="append",
+        choices=("diff", "missed", "seqdiff"),
+        help="what to output [%default]")
 
     parser.set_defaults(correct_shift=False,
                         pattern1="(\S+)",
@@ -217,9 +220,9 @@ def main(argv=None):
                 status = "last"
             else:
                 if len(s1) == len(s2):
-                    # get all differences:
-                    # the first and last residues can be different for peptide sequences when comparing
-                    # my translations with ensembl peptides.
+                    # get all differences: the first and last residues
+                    # can be different for peptide sequences when
+                    # comparing my translations with ensembl peptides.
                     differences = []
                     for x in range(1, len(s1) - 1):
                         if s1[x] != s2[x]:
@@ -227,12 +230,14 @@ def main(argv=None):
 
                     l = len(differences)
                     # check for Selenocysteins
-                    if len(filter(lambda x: x[0] == "U" or x[1] == "U", differences)) == l:
+                    if len(filter(lambda x: x[0] == "U" or x[1] == "U",
+                                  differences)) == l:
                         ndiff_selenocysteine += 1
                         status = "selenocysteine"
 
                     # check for masked residues
-                    elif len(filter(lambda x: x[0] in "NX" or x[1] in "NX", differences)) == l:
+                    elif len(filter(lambda x: x[0] in "NX" or x[1] in "NX",
+                                    differences)) == l:
                         ndiff_masked += 1
                         status = "masked"
 
@@ -284,7 +289,7 @@ def main(argv=None):
             if write_missed2:
                 options.stdout.write("---- %s ---- %s\n" % (k, "missed2"))
 
-    options.stdlog.write( """# Legend:
+    options.stdlog.write("""# Legend:
 # seqs1:          number of sequences in set 1
 # seqs2:          number of sequences in set 2
 # same:           number of identical sequences
@@ -303,9 +308,13 @@ def main(argv=None):
 
     E.info("seqs1=%i, seqs2=%i, same=%i, ndiff=%i, nmissed1=%i, nmissed2=%i" %
            (len(seqs1), len(seqs2), nsame, ndiff, nmissed1, nmissed2))
-    E.info("ndiff=%i: first=%i, last=%i, prefix=%i, selenocysteine=%i, masked=%i, fixed=%i, other=%i" %
-           (ndiff, ndiff_first, ndiff_last, ndiff_prefix, ndiff_selenocysteine, ndiff_masked, nfixed,
-            ndiff - ndiff_first - ndiff_last - ndiff_prefix - ndiff_selenocysteine - ndiff_masked - nfixed))
+
+    E.info(
+        "ndiff=%i: first=%i, last=%i, prefix=%i, selenocysteine=%i, masked=%i, fixed=%i, other=%i" %
+        (ndiff, ndiff_first, ndiff_last, ndiff_prefix,
+         ndiff_selenocysteine, ndiff_masked, nfixed,
+         ndiff - ndiff_first - ndiff_last - ndiff_prefix -
+         ndiff_selenocysteine - ndiff_masked - nfixed))
 
     E.Stop()
 

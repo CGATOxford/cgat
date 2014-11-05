@@ -660,7 +660,7 @@ def main(argv=None):
     parser.add_option("--join-regions-max-coverage", dest="join_regions_max_coverage", type="float",
                       help="")
 
-    parser.add_option("--min-length", dest="min_length", type="int",
+    parser.add_option("--min-interval-length", dest="min_length", type="int",
                       help="")
 
     parser.add_option("--test", dest="test", type="int",

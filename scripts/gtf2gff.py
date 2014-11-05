@@ -40,17 +40,17 @@ great-domains
 promotors
    declare promoter regions. These segments might be overlapping. A promotor
    is the region x kb upstream of a transcription start site. The option
-   ``--promotor`` sets the region width.
+   ``--promotor-size`` sets the region width.
 
 regulons
    declare regulatory regions. Regulatory regions contain the region x
    kb of upstream and downstream of a transciption start site. The
-   options ``--upstream`` and ``-downstream`` set the region width.
+   options ``--upstream-extension`` and ``-downstream`` set the region width.
 
 tts-regulons
    declare tts regulatory regions. tts-regulatory regions contain the
    region x kb of upstream and downstream of a transciption
-   termination site. The options ``--upstream`` and ``-downstream``
+   termination site. The options ``--upstream-extension`` and ``-downstream``
    set the region width.
 
 territories
@@ -133,7 +133,7 @@ intronic
 
 upstream, downstream
    upstream/downstream regions in 5 intervals of a total of 1kb (see
-   option --flank to increase the total size).
+   option --flank-size to increase the total size).
 
 .. _territories:
 
@@ -145,7 +145,7 @@ territories.  Territories are segments around genes and are
 non-overlapping. Exons in a gene are merged and the resulting the
 region is enlarged by --radius. Overlapping territories are divided at
 the midpoint between the two genes. The maximum extent of a territory
-is limited by the option ``--radius``
+is limited by the option ``--territory-extension``
 
 .. note::
    The gtf file has to be sorted first by contig and then by position.
@@ -162,7 +162,7 @@ territories.  Instead of the full gene length as in
 territory. Territories are segments around genes and are
 non-overlapping.  Overlapping territories are divided at the midpoint
 between the two genes. The maximum extent of a territory is limited by
-the option ``--radius``.
+the option ``--territory-extension``.
 
 .. note::
    The gtf file has to be sorted first by contig and then by position.
@@ -185,7 +185,7 @@ This is the "basal plus extension" rule in GERAT. Commonly used are
 5+1 with 1 Mb extension.  To achieve this, set (needs genome-file to
 run).
 
-``--method=great-domains --upstream=5000 --downstream=1000 --radius=1000000``
+``--method=great-domains --upstream-extension=5000 --downstream-extension=1000 --territory-extension=1000000``
 
 If there are a multiple TSS in a transcript, the basal region extends from the
 first to the last TSS plus the upstream/downstream flank.
@@ -238,7 +238,7 @@ output. The default is to output all entries but the user can choose
 from protein_coding, pseudogene or lncRNA.
 
 The size of the promotor region can be specified by the command line
-argument ``--promotor``.
+argument ``--promotor-size``.
 
 Regulons
 +++++++++
@@ -252,7 +252,7 @@ output. The default is to output all entries but the user can choose
 from protein_coding, pseudogene or lncRNA.
 
 The size of the promotor region can be specified by the command line
-argument ``--upstream`` and ``--downstream``
+argument ``--upstream-extension`` and ``--downstream-extension``
 
 If ``--method=tts-regulons``, regulons will be defined around the
 transcription termination site.
@@ -1083,30 +1083,41 @@ def main(argv=None):
                                ),
                       help="method for defining segments [default=%default].")
 
-    parser.add_option("-r", "--radius", dest="radius", type="int",
-                      help="radius of a territory [default=%default].")
+    parser.add_option(
+        "-r", "--territory-extension", dest="radius", type="int",
+        help="radius of a territory [default=%default].")
 
-    parser.add_option("-f", "--flank", dest="flank", type="int",
-                      help="size of the flanking region next to a gene [default=%default].")
+    parser.add_option(
+        "-f", "--flank-size", dest="flank", type="int",
+        help="size of the flanking region next to a gene [default=%default].")
 
-    parser.add_option("--increment", dest="increment", type="int",
-                      help="size of increment in flank in genestructure annotation [default=%default].")
+    parser.add_option(
+        "--flank-increment-size", dest="increment", type="int",
+        help="size of increment in flank in genestructure annotation "
+        "[default=%default].")
 
-    parser.add_option("-p", "--promotor", dest="promotor", type="int",
-                      help="size of a promotor region [default=%default].")
+    parser.add_option(
+        "-p", "--promotor-size", dest="promotor", type="int",
+        help="size of a promotor region [default=%default].")
 
-    parser.add_option("-u", "--upstream", dest="upstream", type="int",
-                      help="size of region upstream of tss [default=%default].")
+    parser.add_option(
+        "-u", "--upstream-extension", dest="upstream", type="int",
+        help="size of region upstream of tss [default=%default].")
 
-    parser.add_option("-d", "--downstream", dest="downstream", type="int",
-                      help="size of region downstream of tss [default=%default].")
+    parser.add_option(
+        "-d", "--downstream-extension", dest="downstream", type="int",
+        help="size of region downstream of tss [default=%default].")
 
-    parser.add_option("--detail", dest="detail", type="choice",
-                      choices=("introns+exons", "exons", "introns"),
-                      help="level of detail for gene structure annotation [default=%default].")
+    parser.add_option(
+        "--gene-detail", dest="detail", type="choice",
+        choices=("introns+exons", "exons", "introns"),
+        help="level of detail for gene structure annotation "
+        "[default=%default].")
 
-    parser.add_option("--merge-promotors", dest="merge_promotors", action="store_true",
-                      help="merge promotors [default=%default].")
+    parser.add_option(
+        "--merge-overlapping-promotors", dest="merge_promotors",
+        action="store_true",
+        help="merge overlapping promotors [default=%default].")
 
     parser.add_option(
         "--min-intron-length", dest="min_intron_length",

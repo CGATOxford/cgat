@@ -25,7 +25,7 @@ Options
 |-m, --masker      |Masks out a collection of sequences, for      |
 |                  |example repeat sequences                      |
 +------------------+----------------------------------------------+
-|--min-length      |Set a minimum sequence length                 |
+|--min-interval-length      |Set a minimum sequence length                 |
 +------------------+----------------------------------------------+
 |--max-length      |Set a maximum sequence length                 |
 +------------------+----------------------------------------------+
@@ -76,11 +76,7 @@ Command line options
 
 '''
 import sys
-import string
-import re
-import optparse
 import CGAT.Experiment as E
-import CGAT.IOTools as IOTools
 import CGAT.Bed as Bed
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Masker as Masker
@@ -96,7 +92,8 @@ def main(argv=None):
         argv = sys.argv
 
     parser = E.OptionParser(
-        version="%prog version: $Id: gff2fasta.py 2861 2010-02-23 17:36:32Z andreas $")
+        version="%prog version: $Id$",
+        usage=globals()["__doc__"])
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genome.")
@@ -105,30 +102,36 @@ def main(argv=None):
                       choices=("dust", "dustmasker", "softmask", "none"),
                       help="apply masker [%default].")
 
-    parser.add_option("-o", "--mode", dest="mode", type="choice",
+    parser.add_option("--output-mode", dest="output_mode", type="choice",
                       choices=("intervals", "leftright"),
                       help="what to output [%default]")
 
-    parser.add_option("--min-length", dest="min_length", type="int",
+    parser.add_option("--min-sequence-length", dest="min_length", type="int",
                       help="require a minimum sequence length [%default]")
 
-    parser.add_option("--max-length", dest="max_length", type="int",
+    parser.add_option("--max-sequence-length", dest="max_length", type="int",
                       help="require a maximum sequence length [%default]")
 
-    parser.add_option("--extend-at", dest="extend_at", type="choice",
-                      choices=("none", "3", "5", "both", "3only", "5only"),
-                      help="extend at no, 3', 5' or both ends. If 3only or 5only are set, only the added sequence is returned [default=%default]")
+    parser.add_option(
+        "--extend-at", dest="extend_at", type="choice",
+        choices=("none", "3", "5", "both", "3only", "5only"),
+        help="extend at no, 3', 5' or both ends. If 3only or 5only "
+        "are set, only the added sequence is returned [default=%default]")
 
-    parser.add_option("--extend-by", dest="extend_by", type="int",
-                      help="extend by # bases [default=%default]")
+    parser.add_option(
+        "--extend-by", dest="extend_by", type="int",
+        help="extend by # bases [default=%default]")
 
-    parser.add_option("--use-strand", dest="ignore_strand", action="store_false",
-                      help="use strand information and return reverse complement [default=%default]")
+    parser.add_option(
+        "--use-strand", dest="ignore_strand",
+        action="store_false",
+        help="use strand information and return reverse complement "
+        "[default=%default]")
 
     parser.set_defaults(
         genome_file=None,
         masker=None,
-        mode="intervals",
+        output_mode="intervals",
         min_length=0,
         max_length=0,
         extend_at=None,
@@ -157,13 +160,13 @@ def main(argv=None):
         else:
             strand = bed.strand
 
-        if options.mode == "intervals":
+        if options.output_mode == "intervals":
             ids.append("%s %s:%i..%i (%s)" %
                        (bed.name, bed.contig, bed.start, bed.end, strand))
             seqs.append(
                 fasta.getSequence(bed.contig, strand, bed.start, bed.end))
 
-        elif options.mode == "leftright":
+        elif options.output_mode == "leftright":
             l = bed.end - bed.start
 
             start, end = max(0, bed.start - l), bed.end - l

@@ -1399,7 +1399,7 @@ def buildBAMs(infiles, outfile):
         options.append("--transcripts-gtf-file=%(transcriptome)s" % locals())
 
     if "tophat_add_separate_junctions" in PARAMS and PARAMS["tophat_add_separate_junctions"]:
-        options.append("--filename-junctions=%(junctions)s" % locals())
+        options.append("--junctions-bed-file=%(junctions)s" % locals())
 
     options = " ".join(options)
 
@@ -1635,8 +1635,8 @@ def loadMappingStats(infiles, outfile):
     tablename = P.toTable(outfile)
 
     statement = """python %(scriptsdir)s/combine_tables.py
-                      --headers=%(header)s
-                      --missing=0
+                      --header-names=%(header)s
+                      --missing-value=0
                       --ignore-empty
                    %(filenames)s
                 | perl -p -e "s/bin/track/"
@@ -1670,7 +1670,7 @@ def buildBAMStats(infile, outfile):
     %(scriptsdir)s/bam2stats.py
          --force-output
          --mask-bed-file=%(rna_file)s
-         --remove-rna
+         --ignore-masked-reads
          --output-filename-pattern=%(outfile)s.%%s
     < %(infile)s
     > %(outfile)s
@@ -1717,8 +1717,8 @@ def loadBAMStats(infiles, outfile):
     tablename = P.toTable(outfile)
     E.info("loading bam stats - summary")
     statement = """python %(scriptsdir)s/combine_tables.py
-                      --headers=%(header)s
-                      --missing=0
+                      --header-names=%(header)s
+                      --missing-value=0
                       --ignore-empty
                       --take=2
                    %(filenames)s
@@ -1738,9 +1738,9 @@ def loadBAMStats(infiles, outfile):
         tname = "%s_%s" % (tablename, suffix)
 
         statement = """python %(scriptsdir)s/combine_tables.py
-                      --header=%(header)s
+                      --header-names=%(header)s
                       --skip-titles
-                      --missing=0
+                      --missing-value=0
                       --ignore-empty
                    %(filenames)s
                 | perl -p -e "s/bin/%(suffix)s/"
@@ -1802,8 +1802,8 @@ def loadContextStats(infiles, outfile):
     tablename = P.toTable(outfile)
 
     statement = """python %(scriptsdir)s/combine_tables.py
-                      --headers=%(header)s
-                      --missing=0
+                      --header-names=%(header)s
+                      --missing-value=0
                       --skip-titles
                    %(filenames)s
                 | perl -p -e "s/bin/track/; s/\?/Q/g"
@@ -3688,11 +3688,11 @@ def buildGeneLevelReadCounts(infiles, outfile):
           --reporter=genes
           --bam-file=%(infile)s 
           --counter=length
-          --prefix="exons_"
+          --column-prefix="exons_"
           --counter=read-counts 
-          --prefix=""
+          --column-prefix=""
           --counter=read-coverage
-          --prefix=coverage_
+          --column-prefix=coverage_
     | gzip
     > %(outfile)s
     '''
@@ -3733,11 +3733,11 @@ def buildAggregateGeneLevelReadCounts(infiles, outfile):
           --reporter=genes
           --bam-file=%(bamfiles)s 
           --counter=length
-          --prefix="exons_"
+          --column-prefix="exons_"
           --counter=read-counts 
-          --prefix=""
+          --column-prefix=""
           --counter=read-coverage
-          --prefix=coverage_
+          --column-prefix=coverage_
     | gzip
     > %(outfile)s
     '''
@@ -3780,11 +3780,11 @@ def buildIntronLevelReadCounts(infiles, outfile):
           --reporter=genes
           --bam-file=%(infile)s 
           --counter=length
-          --prefix="introns_"
+          --column-prefix="introns_"
           --counter=read-counts 
-          --prefix=""
+          --column-prefix=""
           --counter=read-coverage
-          --prefix=coverage_
+          --column-prefix=coverage_
     | gzip
     > %(outfile)s
     '''
@@ -3964,11 +3964,11 @@ def buildTranscriptLevelReadCounts(infiles, outfile):
           --reporter=transcripts
           --bam-file=%(infile)s 
           --counter=length
-          --prefix="exons_"
+          --column-prefix="exons_"
           --counter=read-counts 
-          --prefix=""
+          --column-prefix=""
           --counter=read-coverage
-          --prefix=coverage_
+          --column-prefix=coverage_
     | gzip
     > %(outfile)s
     '''
@@ -4013,11 +4013,11 @@ def buildAggregateTranscriptLevelReadCounts(infiles, outfile):
           --reporter=transcripts
           --bam-file=%(bamfiles)s 
           --counter=length
-          --prefix="exons_"
+          --column-prefix="exons_"
           --counter=read-counts 
-          --prefix=""
+          --column-prefix=""
           --counter=read-coverage
-          --prefix=coverage_
+          --column-prefix=coverage_
     | gzip
     > %(outfile)s
     '''

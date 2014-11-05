@@ -218,7 +218,7 @@ def loadROI(infile, outfile):
             | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --ignore-empty
               --retry
-              --header=%(header)s
+              --header-names=%(header)s
               --table=%(tablename)s
             > %(outfile)s  '''
     P.run()

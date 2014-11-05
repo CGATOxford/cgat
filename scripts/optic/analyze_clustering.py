@@ -113,7 +113,7 @@ def main(argv=None):
                       help="regular expression to extract species [default='%default%'].")
     parser.add_option("-c", "--columns", dest="columns", type="string",
                       help="columns to take for the analysis.")
-    parser.add_option("-p", "--pattern", dest="pattern", type="string",
+    parser.add_option("-p", "--pattern-identifier", dest="pattern", type="string",
                       help="output pattern. Should contain two %s wildcards, one for the secion, the second for the method [default='%default'].")
     parser.add_option("-b", "--best-per-component", dest="best_per_component", action="store_true",
                       help="only take smallest value for each species pair in a component.")

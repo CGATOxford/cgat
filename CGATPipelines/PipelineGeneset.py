@@ -221,7 +221,7 @@ def annotateGenome(infile, outfile,
     | python %(scriptsdir)s/gtf2gtf.py --method=sort --sort-order=position
     | python %(scriptsdir)s/gtf2gff.py --genome-file=%(genome_dir)s/%(genome)s
     --log=%(outfile)s.log
-    --flank=%(enrichment_genes_flank)s
+    --flank-size=%(enrichment_genes_flank)s
     --method=%(method)s
     | gzip
     > %(outfile)s
@@ -270,10 +270,10 @@ def annotateGeneStructure(infile, outfile,
     | python %(scriptsdir)s/gtf2gtf.py --method=sort --sort-order=position
     | python %(scriptsdir)s/gtf2gff.py --genome-file=%(genome_dir)s/%(genome)s
     --log=%(outfile)s.log
-    --flank=%(enrichment_genestructures_flank)i
-    --increment=%(enrichment_genestructures_increment)i
+    --flank-size=%(enrichment_genestructures_flank)i
+    --flank-increment-size=%(enrichment_genestructures_increment)i
     --method=%(method)s
-    --detail=exons
+    --gene-detail=exons
     | gzip
     > %(outfile)s
     """
@@ -380,7 +380,7 @@ def loadGeneInformation(infile, outfile, only_proteincoding=False):
     | %(filter_cmd)s
     | grep "transcript_id"
     | python %(scriptsdir)s/gtf2gtf.py --method=sort --sort-order=gene+transcript
-    | python %(scriptsdir)s/gtf2tsv.py --full --output-only-attributes -v 0
+    | python %(scriptsdir)s/gtf2tsv.py --attributes-as-columns --output-only-attributes -v 0
     | python %(toolsdir)s/csv_cut.py
     --remove exon_id transcript_id transcript_name protein_id exon_number
     | %(scriptsdir)s/hsort 1 | uniq
@@ -414,7 +414,7 @@ def loadTranscriptInformation(infile, outfile,
     | awk '$3 == "CDS"'
     | grep "transcript_id"
     | python %(scriptsdir)s/gtf2gtf.py --method=sort --sort-order=gene+transcript
-    | python %(scriptsdir)s/gtf2tsv.py --full --output-only-attributes -v 0
+    | python %(scriptsdir)s/gtf2tsv.py --attributes-as-columns --output-only-attributes -v 0
     | python %(toolsdir)s/csv_cut.py --remove exon_id exon_number
     | %(scriptsdir)s/hsort 1 | uniq
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
@@ -744,7 +744,7 @@ def loadProteinStats(infile, outfile):
     gunzip < %(infile)s
     | python %(scriptsdir)s/fasta2table.py
           --log=%(outfile)s
-          --type=aa
+          --sequence-type=aa
           --section=length
           --section=hid
           --section=aa
@@ -774,7 +774,7 @@ def buildPromotorRegions(infile, outfile):
     --skip-missing --genome-file=%(genome_dir)s/%(genome)s
     --log=%(outfile)s.log
     | python %(scriptsdir)s/gtf2gff.py --method=promotors
-    --promotor=%(promotor_size)s \
+    --promotor-size=%(promotor_size)s \
     --genome-file=%(genome_dir)s/%(genome)s
     --log=%(outfile)s.log
     | gzip
@@ -801,7 +801,7 @@ def buildTSSRegions(infile, outfile):
     --skip-missing
     --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log
     | python %(scriptsdir)s/gtf2gff.py --method=promotors
-    --promotor=1 --genome-file=%(genome_dir)s/%(genome)s
+    --promotor-size=1 --genome-file=%(genome_dir)s/%(genome)s
     --log=%(outfile)s.log > %(outfile)s
     """
     P.run()
@@ -822,7 +822,7 @@ def buildOverlapWithEnsembl(infile, outfile, filename_bed):
         | python %(scriptsdir)s/gtf2gtf.py --method=merge-transcripts
         | python %(scriptsdir)s/gff2bed.py --is-gtf
         | python %(scriptsdir)s/bed2graph.py
-            --output=name
+            --output-section=name
             --log=%(outfile)s.log
             - %(filename_bed)s
         > %(outfile)s
@@ -1178,7 +1178,7 @@ def buildGenomicContext(infiles, outfile):
     zcat %(annotations_gtf)s
     | python %(scriptsdir)s/gtf2gtf.py --method=sort --sort-order=gene
     | python %(scriptsdir)s/gtf2gtf.py --method=merge-exons --log=%(outfile)s.log
-    | python %(scriptsdir)s/gff2bed.py --name=source --is-gtf
+    | python %(scriptsdir)s/gff2bed.py --set-name=source --is-gtf
     --log=%(outfile)s.log
     | sort -k 1,1 -k2,2n
     | python %(scriptsdir)s/bed2bed.py --method=merge --merge-by-name
@@ -1190,7 +1190,7 @@ def buildGenomicContext(infiles, outfile):
     # rna
     statement = '''
     zcat %(repeats_gff)s %(rna_gff)s
-    | python %(scriptsdir)s/gff2bed.py --name=family --is-gtf -v 0
+    | python %(scriptsdir)s/gff2bed.py --set-name=family --is-gtf -v 0
     | sort -k1,1 -k2,2n
     | python %(scriptsdir)s/bed2bed.py --method=merge --merge-by-name
     --merge-distance=%(distance)i --log=%(outfile)s.log
@@ -1200,7 +1200,7 @@ def buildGenomicContext(infiles, outfile):
     # add aggregate intervals for repeats
     statement = '''
     zcat %(repeats_gff)s
-    | python %(scriptsdir)s/gff2bed.py --name=family --is-gtf -v 0
+    | python %(scriptsdir)s/gff2bed.py --set-name=family --is-gtf -v 0
     | awk -v OFS="\\t" '{$4 = "repeats"; print}'
     | sort -k1,1 -k2,2n
     | python %(scriptsdir)s/bed2bed.py --method=merge --merge-by-name
@@ -1211,7 +1211,7 @@ def buildGenomicContext(infiles, outfile):
     # add aggregate intervals for rna
     statement = '''
     zcat %(rna_gff)s
-    | python %(scriptsdir)s/gff2bed.py --name=family --is-gtf -v 0
+    | python %(scriptsdir)s/gff2bed.py --set-name=family --is-gtf -v 0
     | awk -v OFS="\\t" '{$4 = "repetetive_rna"; print}'
     | sort -k1,1 -k2,2n
     | python %(scriptsdir)s/bed2bed.py --method=merge --merge-by-name
@@ -1254,7 +1254,7 @@ def buildGenomicContext(infiles, outfile):
     # different number of field
     files = " ".join(tmpfiles)
     statement = '''
-    sort --merge -k1,1 -k2,2n %(files)s
+    sort --merge-overlapping -k1,1 -k2,2n %(files)s
     | cut -f 1-4
     | gzip
     > %(outfile)s

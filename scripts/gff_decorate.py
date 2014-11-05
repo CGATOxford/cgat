@@ -359,7 +359,7 @@ def main(argv=None):
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genome (indexed).")
 
-    parser.add_option("-w", "--filename-windows", dest="filename_windows", type="string",
+    parser.add_option("-w", "--windows-bed-file", dest="filename_windows", type="string",
                       help="gff file with windows to use.")
 
     parser.add_option("-d", "--filename-data=", dest="filename_data", type="string",

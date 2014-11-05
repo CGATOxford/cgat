@@ -707,7 +707,7 @@ def combineIDROnIndividualReplicates(infiles, outfile):
     statement = ("python %(scriptsdir)s/combine_tables.py"
                  " --columns=1"
                  " --skip-titles"
-                 " --headers=%(headers)s"
+                 " --header-names=%(headers)s"
                  " --log=%(outfile)s.log"
                  " --stdout=%(outfile)s"
                  " %(tables)s")
@@ -734,7 +734,7 @@ def combineIDROnPseudoreplicates(infiles, outfile):
     statement = ("python %(scriptsdir)s/combine_tables.py"
                  " --columns=1"
                  " --skip-titles"
-                 " --headers=%(headers)s"
+                 " --header-names=%(headers)s"
                  " --log=%(outfile)s.log"
                  " --stdout=%(outfile)s"
                  " %(tables)s")
@@ -761,7 +761,7 @@ def combineIDROnPooledPseudoreplicates(infiles, outfile):
     statement = ("python %(scriptsdir)s/combine_tables.py"
                  " --columns=1"
                  " --skip-titles"
-                 " --headers=%(headers)s"
+                 " --header-names=%(headers)s"
                  " --log=%(outfile)s.log"
                  " --stdout=%(outfile)s"
                  " %(tables)s")

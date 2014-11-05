@@ -178,7 +178,7 @@ if __name__ == "__main__":
     parser.add_option("-P", "--range-peptide", dest="range_peptide", type="string",
                       help="range on peptide sequence.")
 
-    parser.add_option("-d", "--output", dest="output_options", action="append",
+    parser.add_option("-d", "--output-section", dest="output_options", action="append",
                       help="output options [gff|alignment]")
 
     parser.add_option("-o", "--options", dest="options", type="string",

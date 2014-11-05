@@ -244,7 +244,7 @@ def main(argv=None):
     parser.add_option("-o", "--outfile",  dest="filename_outfile", type="string",
                       help="filename to save links [Default=%default]")
 
-    parser.add_option("--min-length",  dest="min_length", type="int",
+    parser.add_option("--min-interval-length",  dest="min_length", type="int",
                       help="minimum length of alignment [Default=%default]")
 
     parser.add_option("--method=filter --filter-method",  dest="filename_filter", type="string",

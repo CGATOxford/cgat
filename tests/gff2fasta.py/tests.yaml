@@ -21,7 +21,7 @@ small_gff_merge:
     stdin: hg19.small.gtf.gz
     outputs: [stdout]
     references: [test.small.gff.merge.gz]
-    options: --genome-file=<DIR>/hg19.chr19 --merge
+    options: --genome-file=<DIR>/hg19.chr19 --merge-adjacent
 
 small_max:
     stdin: hg19.small.gtf.gz
@@ -33,7 +33,7 @@ small_min:
     stdin: hg19.small.gtf.gz
     outputs: [stdout]
     references: [test.small.min.gz]
-    options: --genome-file=<DIR>/hg19.chr19 --min-length=100
+    options: --genome-file=<DIR>/hg19.chr19 --min-interval-length=100
 
 feature_exon:
     stdin: hg19.small.gtf.gz
@@ -51,17 +51,17 @@ masker_dust:
     stdin: hg19.small.gtf.gz
     outputs: [stdout]
     references: [test.dust.gz]
-    options: --genome-file=<DIR>/hg19.chr19 --masker=dust --filename-masks=<DIR>/hg19.small.gtf.gz --remove-masked-regions
+    options: --genome-file=<DIR>/hg19.chr19 --masker=dust --maskregions-bed-file=<DIR>/hg19.small.gtf.gz --remove-masked-regions
 
 masker_dustmasker:
     stdin: hg19.small.gtf.gz
     outputs: [stdout]
     references: [test.dustmasker.gz]
-    options: --genome-file=<DIR>/hg19.chr19 --masker=dustmasker --filename-masks=<DIR>/hg19.small.gtf.gz --remove-masked-regions
+    options: --genome-file=<DIR>/hg19.chr19 --masker=dustmasker --maskregions-bed-file=<DIR>/hg19.small.gtf.gz --remove-masked-regions
 
 masker_softmask:
     stdin: hg19.small.gtf.gz
     outputs: [stdout]
     references: [test.softmask.gz]
-    options: --genome-file=<DIR>/hg19.chr19 --masker=softmask --filename-masks=<DIR>/hg19.small.gtf.gz --remove-masked-regions
+    options: --genome-file=<DIR>/hg19.chr19 --masker=softmask --maskregions-bed-file=<DIR>/hg19.small.gtf.gz --remove-masked-regions
 

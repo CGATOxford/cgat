@@ -102,7 +102,7 @@ def main(argv=None):
                       help="""maximum_value for plot.""")
     parser.add_option("--skip-plot", dest="plot", action="store_false",
                       help="""skipping plotting.""")
-    parser.add_option("--header", dest="header", type="string",
+    parser.add_option("--header-names", dest="header", type="string",
                       help="""header of value column [default=%default].""")
     parser.add_option("--title", dest="title", type="string",
                       help="""plot title [default=%default].""")

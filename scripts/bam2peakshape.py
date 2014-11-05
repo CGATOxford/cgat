@@ -49,14 +49,14 @@ regions defined in :file:`onepeak.bed`, using the reads stored in
 control library.  The control library in this example is re-using the
 same reads file :file:`small.bam`, however, in your actual experiment,
 it should be a different library (the input library for this ChIP-Seq
-experiment).  ::
+experiment).::
 
     python ./scripts/bam2peakshape.py \
         ./tests/bam2peakshape.py/small.bam \
         ./tests/bam2peakshape.py/onepeak.bed \
         --control-bam-file=./tests/bam2peakshape.py/small.bam \
-        --only-interval \
-        --normalization
+        --use-interval \
+        --normalize-transcript
 
 
 Output files
@@ -64,31 +64,31 @@ Output files
 
 Among the features output are:
 
-+---------------------+---------------------------------------------------------+
-|*Column*             |*Content*                                                |
-+---------------------+---------------------------------------------------------+
-|peak_height          |number of reads at peak                                  |
-+---------------------+---------------------------------------------------------+
-|peak_median          |median coverage compared to peak height                  | 
-+---------------------+---------------------------------------------------------+
-|interval_width       |width of interval                                        |
-+---------------------+---------------------------------------------------------+
-|peak_width           |width of peak                                            |
-+---------------------+---------------------------------------------------------+
-|bins                 |bins for a histogram of densities within the interval.   |
-+---------------------+---------------------------------------------------------+
-|npeaks               |number of density peaks in interval.                     |
-+---------------------+---------------------------------------------------------+
-|peak_center          |point of highest density in interval                     |
-+---------------------+---------------------------------------------------------+
-|peak_relative_pos    |point of highest density in interval coordinates         |
-+---------------------+---------------------------------------------------------+
-|counts               |counts for a histogram of densities within the interval  |   
-+---------------------+---------------------------------------------------------+
-|furthest_half_height |Distance of peak center to furthest half-height position |
-+---------------------+---------------------------------------------------------+
-|closest_half_height  |Distance of peak center to closest half-height position  |
-+---------------------+---------------------------------------------------------+
++-------------------+---------------------------------------------------------+
+|*Column*           |*Content*                                                |
++-------------------+---------------------------------------------------------+
+|peak_height        |number of reads at peak                                  |
++-------------------+---------------------------------------------------------+
+|peak_median        |median coverage compared to peak height                  |
++-------------------+---------------------------------------------------------+
+|interval_width     |width of interval                                        |
++-------------------+---------------------------------------------------------+
+|peak_width         |width of peak                                            |
++-------------------+---------------------------------------------------------+
+|bins               |bins for a histogram of densities within the interval.   |
++-------------------+---------------------------------------------------------+
+|npeaks             |number of density peaks in interval.                     |
++-------------------+---------------------------------------------------------+
+|peak_center        |point of highest density in interval                     |
++-------------------+---------------------------------------------------------+
+|peak_relative_pos  |point of highest density in interval coordinates         |
++-------------------+---------------------------------------------------------+
+|counts             |counts for a histogram of densities within the interval  |
++-------------------+---------------------------------------------------------+
+|furthest_half_heigh|Distance of peak center to furthest half-height position |
++-------------------+---------------------------------------------------------+
+|closest_half_height|Distance of peak center to closest half-height position  |
++-------------------+---------------------------------------------------------+
 
 
 Additionally, the script outputs a set of matrixes with densities over
@@ -189,13 +189,15 @@ def buildOptionParser(argv):
                       "[%default]")
 
     parser.add_option(
-        "-o", "--only-interval", dest="only_interval", action="store_true",
-        help="only count tags strictly in interval. Otherwise, use window "
-        "around peak center [%default]")
+        "-o", "--use-interval", dest="use_interval", action="store_true",
+        help="only count tags that are in interval given "
+        "in bed file. Otherwise, use a fixed width window (see --window-size) "
+        "around peak [%default]")
 
-    parser.add_option("-w", "--window-size", dest="window_size", type="int",
-                      help="window size to use"
-                      "[%default]")
+    parser.add_option(
+        "-w", "--window-size", dest="window_size", type="int",
+        help="window size around peak in interval to use"
+        "[%default]")
 
     parser.add_option("-b", "--bin-size", dest="bin_size", type="int",
                       help="bin-size for histogram of read depth. "
@@ -412,7 +414,7 @@ def buildResults(bedfile, fg_file, control_file, counter, options):
             bed.contig, bed.start, bed.end,
             window_size=options.window_size,
             bins=bins,
-            only_interval=options.only_interval,
+            use_interval=options.use_interval,
             centring_method=options.centring_method)
 
         if features is None:

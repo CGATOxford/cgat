@@ -199,7 +199,7 @@ def main(argv=None):
                       help="filename with GO SLIM categories "
                       "[default=%default].")
 
-    parser.add_option("-g", "--genes", dest="filename_genes", type="string",
+    parser.add_option("-g", "--genes-tsv-file", dest="filename_genes", type="string",
                       help="filename with genes to analyse "
                       "[default=%default].")
 
@@ -243,7 +243,7 @@ def main(argv=None):
         help="read ontology assignments from a flatfile [default=%default].")
 
     parser.add_option(
-        "--sample", dest="sample", type="int",
+        "--method=sample --sample-size", dest="sample", type="int",
         help="do sampling (with # samples) [default=%default].")
 
     parser.add_option(

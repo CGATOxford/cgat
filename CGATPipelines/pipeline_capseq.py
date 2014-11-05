@@ -375,8 +375,8 @@ def loadBAMStats(infiles, outfile):
     tablename = P.toTable(outfile)
     E.info("loading bam stats - summary")
     statement = """python %(scriptsdir)s/combine_tables.py
-                      --headers=%(header)s
-                      --missing=0
+                      --header-names=%(header)s
+                      --missing-value=0
                       --ignore-empty
                    %(filenames)s
                 | perl -p -e "s/bin/track/"
@@ -395,9 +395,9 @@ def loadBAMStats(infiles, outfile):
         tname = "%s_%s" % (tablename, suffix)
 
         statement = """python %(scriptsdir)s/combine_tables.py
-                      --header=%(header)s
+                      --header-names=%(header)s
                       --skip-titles
-                      --missing=0
+                      --missing-value=0
                       --ignore-empty
                    %(filenames)s
                 | perl -p -e "s/bin/%(suffix)s/"
@@ -576,7 +576,7 @@ def runMacsMerged(infile, outfile):
     track = P.snip(os.path.basename(infile), ".merge.bam")
     statement = '''cd macs/merged/; 
                    macs14 -t ../../%(infile)s 
-                          --name=%(track)s.merged
+                          --set-name=%(track)s.merged
                           --format=BAM
                           --wig -S
                           %(macs_options)s 
@@ -641,7 +641,7 @@ def runMACS(infiles, outfile):
     statement = '''cd macs/with_input; 
                    macs14 -t ../../%(infile)s 
                           -c ../../%(controlfile)s
-                          --name=%(track)s
+                          --set-name=%(track)s
                           --format=BAM
                           --diag
                           --wig -S
@@ -712,7 +712,7 @@ def runMACSsolo(infile, outfile):
     track = P.snip(os.path.basename(infile), ".norm.bam")
     statement = '''cd macs/no_input/; 
                    macs14 -t ../../%(infile)s 
-                          --name=%(track)s.solo
+                          --set-name=%(track)s.solo
                           --format=BAM
                           --diag
                           --wig -S
@@ -898,7 +898,7 @@ def loadBackground(infile, outfile):
     header = "out_peaks,in_peaks"
     statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
                         --table=%(track)s_background
-                        --header=%(header)s
+                        --header-names=%(header)s
                    > %(outfile)s '''
     P.run()
 
@@ -958,7 +958,7 @@ def loadFoldChangeThreshold(infile, outfile):
     header = "threshold,intervals"
     statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
                       --table=%(track)s_foldchange
-                      --header=%(header)s
+                      --header-names=%(header)s
                    > %(outfile)s '''
     P.run()
 
@@ -1016,7 +1016,7 @@ def loadSharedIntervalsFoldChangeThreshold(infile, outfile):
     header = "track,threshold,intervals"
     statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
                       --table=%(track)s_foldchange_shared
-                      --header=%(header)s
+                      --header-names=%(header)s
                    > %(outfile)s '''
     P.run()
 
@@ -1247,7 +1247,7 @@ def loadUniqueIntervals(infile, outfile):
     header = "contig,start,stop,interval_id,fold"
     statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
                       --table=%(track)s_unique_intervals
-                      --header=%(header)s
+                      --header-names=%(header)s
                       --add-index=contig,start
                       --add-index=interval_id
                    > %(outfile)s '''
@@ -1281,7 +1281,7 @@ def loadSharedIntervals(infile, outfile):
     header = "contig,start,stop,interval_id,fold"
     statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
                       --table=%(track)s_shared_intervals
-                      --header=%(header)s
+                      --header-names=%(header)s
                       --add-index=contig,start
                       --add-index=interval_id
                    > %(outfile)s '''
@@ -1315,7 +1315,7 @@ def loadUniqueReplicatedIntervals(infile, outfile):
     header = "contig,start,stop,interval_id,fold"
     statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
                       --table=%(track)s_unique_intervals
-                      --header=%(header)s
+                      --header-names=%(header)s
                       --add-index=contig,start
                       --add-index=interval_id
                    > %(outfile)s '''
@@ -1350,7 +1350,7 @@ def loadSharedReplicatedIntervals(infile, outfile):
     header = "contig,start,stop,interval_id"
     statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
                       --table=%(track)s_shared_intervals
-                      --header=%(header)s
+                      --header-names=%(header)s
                       --add-index=contig,start
                       --add-index=interval_id
                    > %(outfile)s '''

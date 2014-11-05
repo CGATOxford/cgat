@@ -832,7 +832,7 @@ def main(argv=None):
     parser.add_option("-m", "--module", dest="modules", type="choice", action="append",
                       choices=("gene-counts", "transcript-effects"),
                       help="modules to apply [default=%default].")
-    parser.add_option("-o", "--output", dest="output", type="choice", action="append",
+    parser.add_option("-o", "--output-section", dest="output", type="choice", action="append",
                       choices=("all", "peptide", "cds", "table", "gtf", "map"),
                       help="sections to output [default=%default].")
     parser.add_option("-k", "--with-knockouts", dest="with_knockouts", action="store_true",

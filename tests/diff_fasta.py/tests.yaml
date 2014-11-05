@@ -10,4 +10,4 @@ diff:
     stdin: null
     outputs: [stdout]
     references: [diff.out]
-    options: --output=missed --output=seqdiff <DIR>/a.fasta.gz <DIR>/b.fasta.gz
+    options: --output-section=missed --output-section=seqdiff <DIR>/a.fasta.gz <DIR>/b.fasta.gz

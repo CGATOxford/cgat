@@ -500,7 +500,7 @@ class Mapper(object):
                 if 'sanger' not in format and self.convert:
                     statement.append("""gunzip < %(infile)s
                     | python %%(scriptsdir)s/fastq2fastq.py
-                    --change-format=sanger
+                    --method=change-format --target-format=sanger
                     --guess-format=phred64
                     --log=%(outfile)s.log
                     %(compress_cmd)s
@@ -589,14 +589,14 @@ class Mapper(object):
                 if 'sanger' not in format:
                     statement.append("""gunzip < %(infile)s
                     | python %%(scriptsdir)s/fastq2fastq.py
-                    --change-format=sanger
+                    --method=change-format --target-format=sanger
                     --guess-format=phred64
                     --log=%(outfile)s.log
                     %(compress_cmd)s
                     > %(tmpdir_fastq)s/%(track)s.1.fastq%(extension)s;
                     gunzip < %(infile2)s
                     | python %%(scriptsdir)s/fastq2fastq.py
-                    --change-format=sanger
+                    --method=change-format --target-format=sanger
                     --guess-format=phred64
                     --log=%(outfile)s.log
                     %(compress_cmd)s

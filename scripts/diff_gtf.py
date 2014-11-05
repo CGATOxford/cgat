@@ -337,31 +337,35 @@ def main(argv=None):
         argv = sys.argv
 
     parser = E.OptionParser(
-        version="%prog version: $Id: diff_gtfs.py 2781 2009-09-10 11:33:14Z andreas $", usage=globals()["__doc__"])
+        version="%prog version: $Id$",
+        usage=globals()["__doc__"])
 
     parser.add_option("-s", "--ignore-strand", dest="ignore_strand",
                       action="store_true",
                       help="ignore strand information [default=%default].")
 
-    parser.add_option("-u", "--update", dest="filename_update", type="string",
-                      help="if filename is given, previous results will be read"
-                           "from there and only changed sets will be computed "
-                           "[default=%default].")
+    parser.add_option(
+        "-u", "--update", dest="filename_update", type="string",
+        help="if filename is given, previous results will be read"
+        "from there and only changed sets will be computed "
+        "[default=%default].")
 
-    parser.add_option("-p", "--pattern-identifier", dest="pattern_id", type="string",
-                      help="pattern to convert a filename to an id"
-                           "[default=%default].")
+    parser.add_option(
+        "-p", "--pattern-identifier", dest="pattern_id", type="string",
+        help="pattern to convert a filename to an id"
+        "[default=%default].")
 
-    parser.add_option("-g", "--only-genes", dest="only_genes",
-                      action="store_true",
-                      help="only output gene stats (includes gene lists)"
-                           " [default=%default].")
+    parser.add_option(
+        "-g", "--output_only-genes", dest="output_only_genes",
+        action="store_true",
+        help="only output gene stats (includes gene lists)"
+        " [default=%default].")
 
     parser.set_defaults(
         ignore_strand=False,
         filename_update=None,
         pattern_id="(.*).gtf",
-        only_genes=False,
+        output_only_genes=False,
     )
 
     (options, args) = E.Start(parser)
@@ -392,7 +396,7 @@ def main(argv=None):
     else:
         previous_results = {}
 
-    if options.only_genes:
+    if options.output_only_genes:
         counter = CounterGenes()
     else:
         counter = Counter()

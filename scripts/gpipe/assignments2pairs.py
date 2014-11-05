@@ -85,7 +85,7 @@ Options:
 -g, --genome-file=              pattern for filenames with the genomic DNA (FASTA).
 -p, --peptides-fasta-file=                 file with protein sequences (FASTA).
 -s, --suffix=                   suffix for output filenames
--p, --prefix=                   prefix for output filenames
+-p, --column-prefix=                   prefix for output filenames
 -i, --input-format=             input format, valid options are:
                                 predictions [default]
                                 minimal (query, sbjct_token/strand, range)
@@ -238,7 +238,7 @@ def main(argv=None):
     parser.add_option("-s", "--suffix", dest="suffix", type="string",
                       help="")
 
-    parser.add_option("-p", "--prefix", dest="prefix", type="string",
+    parser.add_option("-p", "--column-prefix", dest="prefix", type="string",
                       help="")
 
     parser.add_option("-a", "--output-filename-pattern", dest="filename_output_pattern", type="string",

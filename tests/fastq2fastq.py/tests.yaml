@@ -9,7 +9,7 @@ paired_sort_test:
     stdin: WTCHG_45714_249_1_sequence.short.fastq.gz
     outputs: [stdout, out_pair_2.sort.tsv.gz]
     references: [test_out_pair_1.sort.tsv.gz, test_out_pair_2.sort.tsv.gz]
-    options: --method=sort --pair <DIR>/WTCHG_45714_249_2_sequence.short.fastq.gz --outfile-pair out_pair_2.sort.tsv.gz
+    options: --method=sort --pair-fastq-file <DIR>/WTCHG_45714_249_2_sequence.short.fastq.gz --output-filename-pattern out_pair_2.sort.tsv.gz
     description: sort pair of fastq files by read identifier
 
 single_sort_test:
@@ -44,7 +44,7 @@ renumber_ids:
    stdin: THP1-stimulated-R1.short.fastq.gz
    outputs: [stdout]
    references: [test_renumber_ids.fastq.gz]
-   options: --method=renumber-reads --pattern=MISEQ%s --log=test_renumber_ids.log
+   options: --method=renumber-reads --pattern-identifier=MISEQ%s --log=test_renumber_ids.log
    description: renumber ids according to pattern
        
 change_format:

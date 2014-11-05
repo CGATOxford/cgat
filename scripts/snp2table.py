@@ -29,7 +29,7 @@ Example::
         --genome-file=genome 
         --exons-file=exons
         --annotations-tsv-file=bases
-        --filename-junctions=junctions
+        --junctions-bed-file=junctions
         --log=log 
    > result.out
 
@@ -779,7 +779,7 @@ def main(argv=None):
                       help="filename with base annotations (output from gtf2fasta.py) [default=%default].")
     parser.add_option("-f", "--exons-file", dest="filename_exons", type="string",
                       help="filename with exon information (gff formatted file)  [default=%default].")
-    parser.add_option("-j", "--filename-junctions", dest="filename_junctions", type="string",
+    parser.add_option("-j", "--junctions-bed-file", dest="filename_junctions", type="string",
                       help="filename with junction information (filename with exon junctions)  [default=%default].")
     parser.add_option("-c", "--vcf-file", dest="filename_vcf", type="string",
                       help="vcf file to parse [default=%default].")

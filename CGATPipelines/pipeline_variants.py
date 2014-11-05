@@ -1587,10 +1587,10 @@ def buildMultipleAlignments(infile, outfile):
 		--force-map \
 		--verbose=2 \
 		--output-filename-pattern=%(track)s_%%s.fasta \
-		--output=final_aa \
-		--output=final_na \
-		--output=aligned_aa \
-		--output=aligned_na \
+		--output-section=final_aa \
+		--output-section=final_na \
+		--output-section=aligned_aa \
+		--output-section=aligned_na \
 		--output-format="plain-fasta" \
 	< %(filename_pep)s > %(outfile)s
       '''
@@ -1615,10 +1615,10 @@ def buildMultipleAlignmentVariantColumns(infile, outfile):
 		--force-map \
 		--verbose=2 \
 		--output-filename-pattern=%(track)s_%%s.fasta \
-		--output=final_aa \
-		--output=final_na \
-		--output=aligned_aa \
-		--output=aligned_na \
+		--output-section=final_aa \
+		--output-section=final_na \
+		--output-section=aligned_aa \
+		--output-section=aligned_na \
 		--output-format="plain-fasta" \
 	< %(filename_pep)s > %(outfile)s
       '''
@@ -1697,7 +1697,7 @@ def buildMAF(infiles, outfile):
           %(tracks)s 
           --reference=mm9 
           --is-gtf 
-          --pattern='\(\\\\\\S+\)_pileup'
+          --pattern-identifier='\(\\\\\\S+\)_pileup'
           --log=%(outfile)s.log" | gzip
     > %(outfile)s
     '''

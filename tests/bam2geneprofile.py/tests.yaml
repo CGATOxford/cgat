@@ -49,7 +49,7 @@ shiftreads:
 
 normalizeprofileoption_normalizewithbackground:
     stdin: null
-    options: --force-output --reporter=transcript --method=geneprofile --normalize-profile=background --background-region=1000 --bam-file=<DIR>/multipleReadsSplicedOutAllIntronsAndSecondExon.bam --gtf-file=<DIR>/twogenes.gtf.gz
+    options: --force-output --reporter=transcript --method=geneprofile --normalize-profile=background --background-region-bins=10 --bam-file=<DIR>/multipleReadsSplicedOutAllIntronsAndSecondExon.bam --gtf-file=<DIR>/twogenes.gtf.gz
     outputs: [geneprofile.lengths.tsv.gz, geneprofile.matrix.tsv.gz]
     references: [test8.geneprofile.lengths.tsv.gz, test8.geneprofile.matrix.tsv.gz]
 

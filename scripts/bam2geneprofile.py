@@ -537,12 +537,13 @@ def main(argv=None):
                       "from previously computed counts "
                       "[%default]")
 
-    parser.add_option("--background-region", dest="background-region",
-                      type="int",
-                      help="number of bins on either side of the profile "
-                      "to be considered "
-                      "for background meta-gene normalizatian "
-                      "[%default]")
+    parser.add_option(
+        "--background-region-bins",
+        dest="background_region_bins",
+        type="int",
+        help="number of bins on either end of the profile "
+        "to be considered for background meta-gene normalization "
+        "[%default]")
 
     parser.set_defaults(
         remove_rna=False,
@@ -591,7 +592,7 @@ def main(argv=None):
         matrix_format="single",
         control_factor=None,
         output_all_profiles=False,
-        background_region=10,
+        background_region_bins=10,
         input_filename_counts=None,
     )
 
@@ -843,7 +844,7 @@ def main(argv=None):
             # build matrix, apply normalization
             profile = counter.getProfile(
                 normalize=norm,
-                background_region=options.background_region)
+                background_region_bins=options.background_region_bins)
             profiles.append(profile)
 
         for x in range(1, len(profiles)):

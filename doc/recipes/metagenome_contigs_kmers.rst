@@ -17,9 +17,9 @@ Our input is a :term:`fasta` formatted file representing a set of contigs derive
 metgenome assembly - metagenome_contigs.fasta. A simple command line statement will compute
 the tetranucleotide frequency for the set of contigs::
 
-    cat metagenome_contigs.fa | fasta2kmercontent --kmer-size 4 --proportion > metagenome_tetranucleotide_freq.tsv
+    cat metagenome_contigs.fa | fasta2kmercontent --kmer-size 4 --output-proportion > metagenome_tetranucleotide_freq.tsv
 
-Notice that we specify the ``--proportion`` option in this example. This is because contigs
+Notice that we specify the ``--output-proportion`` option in this example. This is because contigs
 will be of different length and thus incomparable without this option.
 
 The output will be a tab-delimited text file with contigs as columns and tetramers as rows.

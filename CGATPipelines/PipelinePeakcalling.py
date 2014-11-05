@@ -1055,7 +1055,7 @@ def runMACS(infile, outfile,
     -t %(infile)s
     --diag
     --verbose=10
-    --name=%(outfile)s
+    --set-name=%(outfile)s
     --format=BAM
     %(options)s
     %(macs_options)s
@@ -1250,7 +1250,7 @@ def runMACS2(infile, outfile,
 
     # example statement: macs2 callpeak -t R1-paupar-R1.call.bam -c
     # R1-lacZ-R1.call.bam -f BAMPE -g 2.39e9 --verbose 5 --bw 150 -q
-    # 0.01 -m 10 100000 --name test
+    # 0.01 -m 10 100000 --set-name test
 
     # used to set the option --format=bampe
     # removed to let macs2 detect the format.
@@ -1269,7 +1269,7 @@ def runMACS2(infile, outfile,
     %(format_options)s
     --treatment %(infile)s
     --verbose=10
-    --name=%(outfile)s
+    --set-name=%(outfile)s
     --qvalue=%(macs2_max_qvalue)s
     --bdg
     --SPMR
@@ -1507,7 +1507,7 @@ def loadMACS(infile, outfile, bamfile, controlfile=None):
                            --bam-file=%(bamfile)s
                            --offset=%(shift)i
                            %(control)s
-                           --all-fields 
+                           --output-all-fields 
                            --bed-header=%(headers)s
                            --log=%(outfile)s
                 < %(tmpfilename)s
@@ -1542,7 +1542,7 @@ def loadMACS(infile, outfile, bamfile, controlfile=None):
                                --bam-file=%(bamfile)s
                                --offset=%(shift)i
                                %(control)s
-                               --all-fields 
+                               --output-all-fields 
                                --bed-header=%(headers)s
                                --log=%(outfile)s
                     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
@@ -1699,7 +1699,7 @@ def loadMACS2(infile, outfile, bamfile, controlfile=None):
                            --bam-file=%(bamfile)s
                            --offset=%(shift)i
                            %(control)s
-                           --all-fields
+                           --output-all-fields
                            --bed-header=%(headers)s
                            --log=%(outfile)s
                 < %(tmpfilename)s
@@ -1734,7 +1734,7 @@ def loadMACS2(infile, outfile, bamfile, controlfile=None):
                                --bam-file=%(bamfile)s
                                --offset=%(shift)i
                                %(control)s
-                               --all-fields 
+                               --output-all-fields 
                                --bed-header=%(headers)s
                                --log=%(outfile)s
                     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
@@ -1765,7 +1765,7 @@ def loadMACS2(infile, outfile, bamfile, controlfile=None):
                                --bam-file=%(bamfile)s
                                --offset=%(shift)i
                                %(control)s
-                               --all-fields 
+                               --output-all-fields 
                                --bed-header=%(headers)s
                                --log=%(outfile)s
                     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
@@ -1847,7 +1847,7 @@ def loadZinba(infile, outfile, bamfile,
                                --bam-file=%(bamfile)s
                                --offset=%(offset)i
                                %(control)s
-                               --all-fields 
+                               --output-all-fields 
                                --bed-header=%(headers)s
                                --log=%(outfile)s
                     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
@@ -1871,7 +1871,7 @@ def loadZinba(infile, outfile, bamfile,
                                --bam-file=%(bamfile)s
                                --offset=%(offset)i
                                %(control)s
-                               --all-fields 
+                               --output-all-fields 
                                --bed-header=%(headers)s
                                --log=%(outfile)s
                     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
@@ -1999,7 +1999,7 @@ def loadSICER(infile, outfile, bamfile, controlfile=None, mode="narrow"):
                            --bam-file=%(bamfile)s
                            --offset=%(offset)i
                            %(control)s
-                           --all-fields
+                           --output-all-fields
                            --bed-header=%(headers)s
                            --log=%(outfile)s
                 | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
@@ -2108,9 +2108,9 @@ def runPeakRanger(infile, outfile, controlfile):
     assert controlfile is not None, "peakranger requires a control"
 
     statement = '''peakranger ranger
-              --data <( python %(scriptsdir)s/bam2bam.py -v 0 --method=set-sequence < %(infile)s)
+              --output-section <( python %(scriptsdir)s/bam2bam.py -v 0 --method=set-sequence < %(infile)s)
               --control <( python %(scriptsdir)s/bam2bam.py -v 0 --method=set-sequence < %(controlfile)s)
-              --output %(outfile)s
+              --output-section %(outfile)s
               --format bam
               --pval %(peakranger_pvalue_threshold)f
               --FDR %(peakranger_fdr_threshold)f
@@ -2156,7 +2156,7 @@ def loadPeakRanger(infile, outfile, bamfile, controlfile=None, table_suffix="pea
                            --bam-file=%(bamfile)s
                            --offset=%(offset)i
                            %(control)s
-                           --all-fields
+                           --output-all-fields
                            --bed-header=%(headers)s
                            --log=%(outfile)s
                 < <( grep -v "fdrFailed" %(bedfile)s )
@@ -2176,7 +2176,7 @@ def loadPeakRanger(infile, outfile, bamfile, controlfile=None, table_suffix="pea
                            --bam-file=%(bamfile)s
                            --offset=%(offset)i
                            %(control)s
-                           --all-fields
+                           --output-all-fields
                            --bed-header=%(headers)s
                            --log=%(outfile)s
                 < <( grep -v "fdrFailed" %(bedfile)s )
@@ -2276,9 +2276,9 @@ def runPeakRangerCCAT(infile, outfile, controlfile):
     assert controlfile is not None, "peakranger requires a control"
 
     statement = '''peakranger ccat
-              --data %(infile)s
+              --output-section %(infile)s
               --control %(controlfile)s
-              --output %(outfile)s
+              --output-section %(outfile)s
               --format bam
               --FDR %(peakranger_fdr_threshold)f
               --ext_length %(peakranger_extension_length)i
@@ -2355,7 +2355,7 @@ def loadSPP(infile, outfile, bamfile, controlfile=None):
     #                       --bam-file=%(bamfile)s
     #                       --offset=%(offset)i
     #                       %(control)s
-    #                       --all-fields
+    #                       --output-all-fields
     #                       --bed-header=%(headers)s
     #                       --log=%(outfile)s
     #            | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
@@ -2377,7 +2377,7 @@ def loadSPP(infile, outfile, bamfile, controlfile=None):
                            --bam-file=%(bamfile)s
                            --offset=%(offset)i
                            %(control)s
-                           --all-fields 
+                           --output-all-fields 
                            --bed-header=%(headers)s
                            --log=%(outfile)s
                 | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
@@ -2400,7 +2400,7 @@ def loadSPP(infile, outfile, bamfile, controlfile=None):
     #                       --bam-file=%(bamfile)s
     #                       --offset=%(offset)i
     #                       %(control)s
-    #                       --all-fields
+    #                       --output-all-fields
     #                       --bed-header=%(headers)s
     #                       --log=%(outfile)s
     #            | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
@@ -3048,7 +3048,7 @@ def loadScripture(infile, outfile, bamfile, controlfile=None):
                            --bam-file=%(bamfile)s
                            --offset=%(offset)i
                            %(control)s
-                           --all-fields 
+                           --output-all-fields 
                            --bed-header=%(headers)s
                            --log=%(outfile)s
                 | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 

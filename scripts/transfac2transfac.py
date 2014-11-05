@@ -61,7 +61,7 @@ def main(argv=None):
     parser.add_option("-f", "--method=filter --filter-method", dest="filter", default=False,
                       help="ID prefix to filter on, eg. V for vertebrates")
 
-    parser.add_option("-p", "--pattern", dest="pattern", default=False,
+    parser.add_option("-p", "--pattern-identifier", dest="pattern", default=False,
                       help="ID pattern to filter (filter is case insensitive) eg. pax6. Multiple patterns should be specified as a comma separated list")
 
     (options, args) = E.Start(parser)

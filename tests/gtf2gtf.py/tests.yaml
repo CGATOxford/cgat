@@ -184,19 +184,19 @@ renumber_genes:
     stdin: hg19.small.sort_gene.gtf.gz
     outputs: [stdout]
     references: [hg19.small.sort_gene_renumber_genes.gtf.gz]
-    options: --method=renumber-genes --pattern=GENE%s
+    options: --method=renumber-genes --pattern-identifier=GENE%s
 
 renumber_transcripts:
     stdin: hg19.small.sort_gene.gtf.gz
     outputs: [stdout]
     references: [hg19.small.sort_gene_renumber_transcripts.gtf.gz]
-    options: --method=renumber-transcripts --pattern=TRAN%s
+    options: --method=renumber-transcripts --pattern-identifier=TRAN%s
 
 unset_genes:
     stdin: hg19.small.sort_gene.gtf.gz
     outputs: [stdout]
     references: [hg19.small.sort_gene_unset_genes.gtf.gz]
-    options: --method=unset-genes --pattern=UNSET%s
+    options: --method=unset-genes --pattern-identifier=UNSET%s
 
 set_transcript_to_gene:
     stdin: hg19.small.sort_gene.gtf.gz

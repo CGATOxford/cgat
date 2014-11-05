@@ -44,7 +44,7 @@ Options::
   -e, --exons-file=                    exon information for evaluation
   -c, --cluster                   cluster by overlap
   -f, --remove-fragments          remove fragments
-  -p, --prefix=                   prefix for cluster identifier
+  -p, --column-prefix=                   prefix for cluster identifier
   --min-overlap-percent           minimum percent overlap between sequence paris
   --min-overlap-residues          minimum overlap in residues between sequence pairs
   --min-coverage-percent          minimum percent coverage between sequence paris
@@ -1039,7 +1039,7 @@ def main(argv=None):
             param_do_cluster = True
         elif o in ("-f", "--remove-fragments"):
             param_remove_fragments = True
-        elif o in ("-p", "--prefix"):
+        elif o in ("-p", "--column-prefix"):
             param_prefix = a
         elif o == "--components":
             param_filename_components = a

@@ -39,7 +39,7 @@ Note that coordinates are converted to 0-based open/closed notation (all on
 the forward strand).
 
 By default, the gene_id and transcript_id are extracted from the attributes
-field into separated columns.  If ``-f/--full`` is set, all fields in the
+field into separated columns.  If ``-f/--attributes-as-columns`` is set, all fields in the
 attributes will be split into separate columns.
 
 The script also implements the reverse operation, converting a tab-separated
@@ -67,7 +67,7 @@ Example::
 
 To build a map between gene and transcrip identiers, type::
 
-   cgat bam2tsv --map=transcript2gene < in.gtf
+   cgat bam2tsv --output-map=transcript2gene < in.gtf
 
 +---------------+---------------+
 |transcript_id  |gene_id        |
@@ -106,17 +106,21 @@ def main(argv=None):
         version="%prog version: $Id$",
         usage=globals()["__doc__"])
 
-    parser.add_option("-o", "--output-only-attributes", dest="only_attributes",
-                      action="store_true",
+    parser.add_option(
+        "-o", "--output-only-attributes", dest="only_attributes",
+        action="store_true",
+        help="output only attributes as separate columns "
+        "[default=%default].")
+
+    parser.add_option("-f", "--attributes-as-columns", dest="output_full", action="store_true",
                       help="output attributes as separate columns "
                       "[default=%default].")
-    parser.add_option("-f", "--full", dest="full", action="store_true",
-                      help="output attributes as separate columns "
-                      "[default=%default].")
+
     parser.add_option("-i", "--invert", dest="invert", action="store_true",
                       help="convert tab-separated table back to gtf "
                       "[default=%default].")
-    parser.add_option("-m", "--map", dest="map", type="choice",
+
+    parser.add_option("-m", "--output-map", dest="output_map", type="choice",
                       choices=(
                           "transcript2gene",
                           "peptide2gene",
@@ -126,14 +130,14 @@ def main(argv=None):
 
     parser.set_defaults(
         only_attributes=False,
-        full=False,
+        output_full=False,
         invert=False,
-        map=None,
+        output_map=None,
     )
 
     (options, args) = E.Start(parser, argv=argv)
 
-    if options.full:
+    if options.output_full:
 
         # output full table with column for each attribute
         attributes = set()
@@ -227,17 +231,17 @@ def main(argv=None):
             # output gtf entry in gtf format
             options.stdout.write("%s\n" % str(gtf))
 
-    elif options.map:
+    elif options.output_map:
 
-        if options.map == "transcript2gene":
+        if options.output_map == "transcript2gene":
             fr = lambda x: x.transcript_id
             to = lambda x: x.gene_id
             options.stdout.write("transcript_id\tgene_id\n")
-        elif options.map == "peptide2gene":
+        elif options.output_map == "peptide2gene":
             fr = lambda x: x.protein_id
             to = lambda x: x.gene_id
             options.stdout.write("peptide_id\tgene_id\n")
-        elif options.map == "peptide2transcript":
+        elif options.output_map == "peptide2transcript":
             fr = lambda x: x.protein_id
             to = lambda x: x.transcript_id
             options.stdout.write("peptide_id\ttranscript_id\n")

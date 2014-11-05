@@ -34,7 +34,7 @@ from ENSEMBL_ and pushing it through a sequence of commands::
    | cgat gtf2gtf --method=merge-exons --with-utr
    | cgat gtf2gtf --method=filter --filter-method=longest-gene
    | cgat gtf2gtf --method=sort --sort-order=position
-   | cgat gtf2gff --genome-file=hg19 --flank=5000 --method=genome
+   | cgat gtf2gff --genome-file=hg19 --flank-size=5000 --method=genome
    | gzip
    > annotations.hg19.gff.gz
 
@@ -66,7 +66,7 @@ The commands do the following.
 
 6. Define intronic, intergenic and other gene set based annotations::
 
-      | cgat gtf2gff --genome-file=hg19 --flank=5000 --method=genome
+      | cgat gtf2gff --genome-file=hg19 --flank-size=5000 --method=genome
 
 The tool gff2stats
 

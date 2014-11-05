@@ -264,8 +264,8 @@ def main(argv=None):
 
         # check if all are unique
         checkUnique(selected["option"])
-        
-        checkOverlap(selected["option"], selected["alternative"])
+        checkOverlap(selected["option"],
+                     selected["alternative"])
 
         # build map adding "--" prefix
         map_old2new = dict(zip(

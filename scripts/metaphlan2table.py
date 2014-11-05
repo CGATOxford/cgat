@@ -77,7 +77,7 @@ def main(argv=None):
     parser = optparse.OptionParser(version="%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $",
                                    usage=globals()["__doc__"])
 
-    parser.add_option("-t", "--type", dest="type", type="choice",
+    parser.add_option("-t", "--sequence-type", dest="type", type="choice",
                       choices=("read_map", "rel_ab"), help="type of file to be parsed to a table")
 
     # add common options (-h/--help, ...) and parse command line

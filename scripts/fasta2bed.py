@@ -55,11 +55,9 @@ Command line options
 import os
 import sys
 import re
-import optparse
 import tempfile
 import subprocess
 import glob
-import shutil
 import collections
 import pybedtools
 
@@ -377,7 +375,7 @@ def main(argv=None):
         help="minimum number of CpG for windows-cpg [default=%default]")
 
     parser.add_option(
-        "--min-length", dest="min_length", type="int",
+        "--min-interval-length", dest="min_length", type="int",
         help="minimum length for ungapped regions [default=%default]")
 
     parser.set_defaults(

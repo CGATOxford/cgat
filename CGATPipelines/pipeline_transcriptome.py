@@ -904,8 +904,8 @@ def buildRepeatMaskedSequences(infile, outfile):
     --is-gtf 
     --genome-file=%(genome_dir)s/%(genome)s
     --remove-masked-regions 
-    --filename-masks=<(gunzip < %(repeats)s )
-    --min-length=%(codingpotential_min_length)i 
+    --maskregions-bed-file=<(gunzip < %(repeats)s )
+    --min-interval-length=%(codingpotential_min_length)i 
     --max-length=%(codingpotential_max_length)i 
     --log=%(outfile)s.log 
     > %(outfile)s

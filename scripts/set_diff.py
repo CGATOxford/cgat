@@ -71,7 +71,7 @@ def main(argv=None):
     parser.add_option("-p", "--add-percent", dest="add_percent", action="store_true",
                       help="add percentage information to each line.")
 
-    parser.add_option("-t", "--headers", dest="headers", type="string",
+    parser.add_option("-t", "--header-names", dest="headers", type="string",
                       help="comma separated list of headers. If empty or set to '-', filenames are used.")
 
     parser.add_option("--skip-header", dest="add_header", action="store_false",

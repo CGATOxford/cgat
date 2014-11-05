@@ -2013,11 +2013,11 @@ def buildTranscriptLevelReadCounts(infiles, outfile):
           --reporter=transcripts
           --bam-file=%(infile)s 
           --counter=length
-          --prefix="exons_"
+          --column-prefix="exons_"
           --counter=read-counts 
-          --prefix=""
+          --column-prefix=""
           --counter=read-coverage
-          --prefix=coverage_
+          --column-prefix=coverage_
     | gzip
     > %(outfile)s
     '''

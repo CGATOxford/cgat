@@ -436,9 +436,9 @@ def renameTranscriptsInPreviousSets(infile, outfile):
             gene_pattern = "GEN" + P.snip(outfile, ".gtf.gz")
             transcript_pattern = gene_pattern.replace("GEN", "TRAN")
             statement = '''zcat %(infile)s | python %(scriptsdir)s/gtf2gtf.py 
-                           --method=renumber-genes --pattern=%(gene_pattern)s%%i 
+                           --method=renumber-genes --pattern-identifier=%(gene_pattern)s%%i 
                            | python %(scriptsdir)s/gtf2gtf.py
-                           --method=renumber-transcripts --pattern=%(transcript_pattern)s%%i 
+                           --method=renumber-transcripts --pattern-identifier=%(transcript_pattern)s%%i 
                            | python %(scriptsdir)s/gtf2gtf.py
                            --method=sort --sort-order=gene 
                            --log=%(outfile)s.log
@@ -588,7 +588,7 @@ def loadCPCResults(infile, outfile):
     statement = ("python %(scriptsdir)s/csv2db.py"
                  "  -t %(tablename)s"
                  "  --log=%(outfile)s.log"
-                 "  --header=transcript_id,feature,C_NC,CP_score"
+                 "  --header-names=transcript_id,feature,C_NC,CP_score"
                  "  --add-index=transcript_id"
                  " < %(infile)s > %(outfile)s")
     P.run()
@@ -795,7 +795,7 @@ def loadLncRNAClass(infile, outfile):
     statement = ("python %(scriptsdir)s/csv2db.py"
                  "  -t %(tablename)s"
                  "  --log=%(outfile)s.log"
-                 "  --header=transcript_id,gene_id,class"
+                 "  --header-names=transcript_id,gene_id,class"
                  " < %(inf_1)s > %(outfile)s")
     P.run()
 
@@ -982,7 +982,7 @@ def mergeLncRNAPhyloCSF(infiles, outfile):
                 python %(scriptsdir)s/combine_tables.py
                  --no-titles
                  --cat=CAT
-                 --missing=0
+                 --missing-value=0
                  --log=%(outfile)s.log
                  %(file_name)s
                 > %(outfile)s
@@ -1123,7 +1123,7 @@ def mergeControlLncRNAPhyloCSF(infiles, outfile):
                 python %(scriptsdir)s/combine_tables.py
                  --no-titles
                  --cat=CAT
-                 --missing=0
+                 --missing-value=0
                  --log=%(outfile)s.log
                  %(file_names)s
                 > %(outfile)s
@@ -1192,7 +1192,7 @@ def loadControlCPCResults(infile, outfile):
                  " python %(scriptsdir)s/csv2db.py"
                  "  -t %(tablename)s"
                  "  --log=%(outfile)s.log"
-                 "  --header=transcript_id,feature,C_NC,CP_score"
+                 "  --header-names=transcript_id,feature,C_NC,CP_score"
                  "  --add-index=transcript_id"
                  " > %(outfile)s")
     P.run()

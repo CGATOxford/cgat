@@ -96,7 +96,7 @@ def main(argv=None):
     parser.add_option("-m", "--filename-mismapped", dest="filename_mismapped", type="string",
                       help="output bam file for mismapped reads [%default]")
 
-    parser.add_option("-j", "--filename-junctions", dest="filename_junctions", type="string",
+    parser.add_option("-j", "--junctions-bed-file", dest="filename_junctions", type="string",
                       help="bam file with reads mapped across junctions [%default]")
 
     parser.add_option("-r", "--filename-regions", dest="filename_regions", type="string",

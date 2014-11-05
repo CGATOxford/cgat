@@ -320,7 +320,7 @@ def runMACSsolo(infile, outfile):
     to_cluster = USECLUSTER
     track = P.snip(os.path.basename(infile), ".dedup.bam")
     statement = '''macs14 -t%(infile)s 
-                          --name=%(track)s
+                          --set-name=%(track)s
                           --format=BAM
                           --wig -S
                           %(macs_options)s 

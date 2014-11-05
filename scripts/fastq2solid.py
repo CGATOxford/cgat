@@ -56,7 +56,7 @@ def main(argv=None):
     parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
                             usage=globals()["__doc__"])
 
-    parser.add_option("-f", "--change-format", dest="change_format", type="choice",
+    parser.add_option("-f", "--method=change-format --target-format", dest="change_format", type="choice",
                       choices=('sanger', 'solexa', 'phred64', 'integer'),
                       help="guess quality score format and set quality scores to format [default=%default].")
 
@@ -64,7 +64,7 @@ def main(argv=None):
                       choices=('sanger', 'solexa', 'phred64', 'integer'),
                       help="quality score format to assume if ambiguous [default=%default].")
 
-    parser.add_option("--pattern", dest="pattern", type="string",
+    parser.add_option("--pattern-identifier", dest="pattern", type="string",
                       help="filename prefix [default=%default].")
 
     parser.set_defaults(

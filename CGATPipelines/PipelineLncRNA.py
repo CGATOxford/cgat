@@ -439,7 +439,7 @@ def buildFinalLncRNAGeneSet(filteredLncRNAGeneSet,
                      "  --method=sort --sort-order=gene"
                      "  --log=%(outfile)s.log |"
                      " python %(scriptsdir)s/gtf2gtf.py"
-                     "  --method=renumber-genes --pattern=NONCO%%i"
+                     "  --method=renumber-genes --pattern-identifier=NONCO%%i"
                      "  --log=%(outfile)s.log |"
                      " python %(scriptsdir)s/gtf2gtf.py"
                      "  --method=sort --sort-order=gene"

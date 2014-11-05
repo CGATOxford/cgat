@@ -1201,8 +1201,8 @@ def loadPicardDuplicationStats(infiles, outfiles):
 #     tablename = P.toTable( outfile )
 
 #     statement = """python %(scriptsdir)s/combine_tables.py
-#                       --headers=%(header)s
-#                       --missing=0
+#                       --header-names=%(header)s
+#                       --missing-value=0
 #                       --ignore-empty
 #                    %(filenames)s
 #                 | perl -p -e "s/bin/track/"
@@ -1257,7 +1257,7 @@ def buildBAMStats(infiles, outfile):
          %(fastq_option)s
          --force-output
          --mask-bed-file=%(rna_file)s
-         --remove-rna
+         --ignore-masked-reads
          --num-reads=%(nreads)i
          --output-filename-pattern=%(outfile)s.%%s
     < %(bamfile)s
@@ -1331,8 +1331,8 @@ def loadContextStats(infiles, outfile):
     tablename = P.toTable(outfile)
 
     statement = """python %(scriptsdir)s/combine_tables.py
-                      --headers=%(header)s
-                      --missing=0
+                      --header-names=%(header)s
+                      --missing-value=0
                       --skip-titles
                    %(filenames)s
                 | perl -p -e "s/(bin|category)/track/; s/\?/Q/g"
@@ -1442,11 +1442,11 @@ def buildTranscriptLevelReadCounts(infiles, outfile):
                --reporter=transcripts
                --bam-file=%(infile)s
                --counter=length
-               --prefix="exons_"
+               --column-prefix="exons_"
                --counter=read-counts
-               --prefix=""
+               --column-prefix=""
                --counter=read-coverage
-               --prefix=coverage_
+               --column-prefix=coverage_
                -v 0
             | gzip
           > %(outfile)s
@@ -1504,11 +1504,11 @@ def buildIntronLevelReadCounts(infiles, outfile):
           --reporter=genes
           --bam-file=%(infile)s
           --counter=length
-          --prefix="introns_"
+          --column-prefix="introns_"
           --counter=read-counts
-          --prefix=""
+          --column-prefix=""
           --counter=read-coverage
-          --prefix=coverage_
+          --column-prefix=coverage_
     | gzip
     > %(outfile)s
     '''
@@ -1627,9 +1627,9 @@ def loadBigWigStats(infiles, outfile):
     tablename = P.toTable(outfile)
 
     statement = '''python %(scriptsdir)s/combine_tables.py
-    --header=%(headers)s
+    --header-names=%(headers)s
     --skip-titles
-    --missing=0
+    --missing-value=0
     --ignore-empty
     %(data)s
     | perl -p -e "s/bin/track/"

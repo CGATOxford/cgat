@@ -143,7 +143,7 @@ def main(argv=None):
                       help="pathname with binaries.",
                       action="append")
 
-    parser.add_option("-c", "--include", dest="includes", type="string",
+    parser.add_option("-c", "--include-pattern", dest="includes", type="string",
                       help="pathnames of Makefile to be included BEFORE the parameter section of the Makefile.",
                       action="append")
 

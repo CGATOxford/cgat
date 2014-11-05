@@ -539,7 +539,7 @@ def main(argv=None):
     parser = E.OptionParser(
         version="%prog version: $Id: align_transcripts.py 2781 2009-09-10 11:33:14Z andreas $", usage=globals()["__doc__"])
 
-    parser.add_option("-m", "--master", dest="master", type="string",
+    parser.add_option("-m", "--master-identifier", dest="master", type="string",
                       help="master sequence.")
 
     parser.add_option("-p", "--master-pattern", dest="master_pattern", type="string",
@@ -590,7 +590,7 @@ def main(argv=None):
                       help="""filename with cds - useful if you expect pseudogenes in your set. The peptide
 sequences will be aligned to the cds sequences. This produces better coordinates."""  )
 
-    parser.add_option("--output", dest="output", type="choice", action="append",
+    parser.add_option("--output-section", dest="output", type="choice", action="append",
                       choices=("final_aa", "final_na", "aligned_aa", "aligned_na",
                                "all", "unaligned_aa", "unaligned_na", "coords"),
                       help="which alignment to output: aligned=aligned sequences, but before untangling exons; "
@@ -599,7 +599,7 @@ sequences will be aligned to the cds sequences. This produces better coordinates
 
     parser.add_option("--output-filename-pattern", dest="output_filename_pattern", type="string",
                       help="filename pattern for multiple alignment output files. "
-                           " If no --output option is given, stdout is used.")
+                           " If no --output-section option is given, stdout is used.")
 
     parser.add_option("--output-filename-coords", dest="output_filename_coords", type="string",
                       help="filename to output coordinates to.")

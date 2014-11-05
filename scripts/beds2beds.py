@@ -28,7 +28,7 @@ the following choices::
     for each :term:`bed` file, report intervals that overlap with intervals
     in every other :term:`bed` file.
 
-If the ``--exclusive`` option is set, report exclusive overlap. Only intervals
+If the ``--exclusive-overlap`` option is set, report exclusive overlap. Only intervals
 will be reported that overlap in a pairwise comparison but do not overlap with
 intervals in any of the other sets.
 
@@ -69,7 +69,7 @@ The four files contain intervals, that
 3. have tf1 and tf2 present, or
 4. have PolII and tf1 and tf2 present.
 
-If the --exclusive option is set, three sets will be output with intervals that
+If the --exclusive-overlap option is set, three sets will be output with intervals that
 
 1. have PolII and tf1 present but no tf2,
 2. have PolII and tf2 present but no tf1,
@@ -190,17 +190,17 @@ def main(argv=None):
         version="%prog version: $Id$",
         usage=globals()["__doc__"])
 
-    parser.add_option("-e", "--exclusive", dest="exclusive",
-                      action="store_true",
-                      help="Intervals reported will be merged across the "
-                      "positive set"
-                      " and do not overlap any interval in any of the "
-                      " other sets"
-                      " [default=%default].")
+    parser.add_option(
+        "-e", "--exclusive-overlap", dest="exclusive",
+        action="store_true",
+        help="Intervals reported will be merged across the "
+        "positive set and do not overlap any interval in any of the "
+        "other sets [default=%default].")
 
-    parser.add_option("-p", "--pattern-identifier", dest="pattern_id", type="string",
-                      help="pattern to convert a filename "
-                      "to an id [default=%default].")
+    parser.add_option(
+        "-p", "--pattern-identifier", dest="pattern_id", type="string",
+        help="pattern to convert a filename "
+        "to an id [default=%default].")
 
     parser.add_option("-m", "--method", dest="method", type="choice",
                       choices=("merged-combinations",

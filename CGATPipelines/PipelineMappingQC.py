@@ -299,11 +299,11 @@ def loadPicardHistogram(infiles, outfile, suffix, column,
     # only take the first ignoring the rest
     statement = """python %(scriptsdir)s/combine_tables.py
                       --regex-start="## HISTOGRAM"
-                      --missing=0
+                      --missing-value=0
                       --take=2
                    %(filenames)s
                 | python %(scriptsdir)s/csv2db.py
-                      --header=%(column)s,%(header)s
+                      --header-names=%(column)s,%(header)s
                       --replace-header
                       --add-index=track
                       --table=%(tablename)s
@@ -399,8 +399,8 @@ def loadBAMStats(infiles, outfile):
     tablename = P.toTable(outfile)
     E.info("loading bam stats - summary")
     statement = """python %(scriptsdir)s/combine_tables.py
-                      --headers=%(header)s
-                      --missing=0
+                      --header-names=%(header)s
+                      --missing-value=0
                       --ignore-empty
                    %(filenames)s
                 | perl -p -e "s/bin/track/"
@@ -418,9 +418,9 @@ def loadBAMStats(infiles, outfile):
         tname = "%s_%s" % (tablename, suffix)
 
         statement = """python %(scriptsdir)s/combine_tables.py
-                      --header=%(header)s
+                      --header-names=%(header)s
                       --skip-titles
-                      --missing=0
+                      --missing-value=0
                       --ignore-empty
                    %(filenames)s
                 | perl -p -e "s/bin/%(suffix)s/"
@@ -439,9 +439,9 @@ def loadBAMStats(infiles, outfile):
         tname = "%s_%s" % (tablename, suffix)
 
         statement = """python %(scriptsdir)s/combine_tables.py
-                      --header=%(header)s
+                      --header-names=%(header)s
                       --skip-titles
-                      --missing=0
+                      --missing-value=0
                       --ignore-empty
                       --take=3
                    %(filenames)s

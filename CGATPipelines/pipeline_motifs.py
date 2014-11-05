@@ -321,7 +321,7 @@ def loadIntervals(infile, outfile):
                            --offset=%(offset)i
                            --bed-header=contig,start,end,interval_id
                            %(control)s
-                           --all-fields 
+                           --output-all-fields 
                            --log=%(outfile)s
                 | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
                        --add-index=contig,start

@@ -37,7 +37,7 @@ def addOptions(parser):
                           "fasta", "codeml", "phylip", "profile", "stockholm"),
                       help="output format of multiple alignment")
 
-    parser.add_option("--filename-mask-regions", dest="filename_mask_regions", type="string",
+    parser.add_option("--maskregions-bed-file", dest="filename_mask_regions", type="string",
                       help="""mask regions given file. Input format is component_id\tstart\tend with coordinates in
 the multiple alignment.""" )
 
@@ -70,7 +70,7 @@ the multiple alignment. The label should be a single letter. If the file is empt
     parser.add_option("--remove-any-gaps", dest="remove_any_gaps", type=int,
                       help="remove positions in a multiple alignment containing at least one gap. The integer parameter supplies the frame. Use 3 for codon alignments.")
 
-    parser.add_option("--sample", dest="sample", type="int",
+    parser.add_option("--method=sample --sample-size", dest="sample", type="int",
                       help="sample # components.")
 
     parser.add_option("--sample-method", dest="sample_method", type="choice",

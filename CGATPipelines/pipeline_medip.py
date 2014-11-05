@@ -509,7 +509,7 @@ def loadMEDIPS(infile, outfile):
            %(csv2db_options)s
            --table=%(table)s
            --replace-header
-           --header=coverage,ncovered,pcovered
+           --header-names=coverage,ncovered,pcovered
     >> %(outfile)s
     """
 
@@ -691,7 +691,7 @@ def buildTileStats(infile, outfile):
     | python %(scriptsdir)s/gff2histogram.py 
                    --force-output
                    --format=bed 
-                   --data=size
+                   --output-section=size
                    --method=hist
                    --method=stats
                    --output-filename-pattern=%(outfile)s.%%s.tsv
@@ -1059,7 +1059,7 @@ def buildDMRWindowStats(infile, outfile):
     | python %(scriptsdir)s/gff2histogram.py 
                    --force-output
                    --format=bed 
-                   --data=size
+                   --output-section=size
                    --method=hist
                    --method=stats
                    --output-filename-pattern=%(outfile)s.%%s.tsv

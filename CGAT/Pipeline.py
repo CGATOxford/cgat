@@ -712,7 +712,7 @@ def concatenateAndLoad(infiles,
         options.append("--regex-filename='%s'" % regex_filename)
 
     if header:
-        load_options.append("--header=%s" % header)
+        load_options.append("--header-names=%s" % header)
 
     if not cat:
         cat = "track"
@@ -784,7 +784,7 @@ def mergeAndLoad(infiles,
     else:
         header = ",".join([os.path.basename(x) for x in infiles])
 
-    header_stmt = "--header=%s" % header
+    header_stmt = "--header-names=%s" % header
 
     if columns:
         column_filter = "| cut -f %s" % ",".join(map(str,
@@ -814,7 +814,7 @@ def mergeAndLoad(infiles,
     statement = """python %(scriptsdir)s/combine_tables.py
                       %(header_stmt)s
                       --skip-titles
-                      --missing=0
+                      --missing-value=0
                       --ignore-empty
                    %(filenames)s
                 %(transform)s
@@ -1486,9 +1486,9 @@ def submit(module, function, params=None,
         infiles = "--input=%s" % infiles
 
     if type(outfiles) in (list, tuple):
-        outfiles = " ".join(["--output=%s" % x for x in outfiles])
+        outfiles = " ".join(["--output-section=%s" % x for x in outfiles])
     else:
-        outfiles = "--output=%s" % outfiles
+        outfiles = "--output-section=%s" % outfiles
 
     if logfile:
         logfile = "--log=%s" % logfile

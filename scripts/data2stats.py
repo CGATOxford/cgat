@@ -140,7 +140,7 @@ def main(argv=None):
                       help="use column to aggregate.")
     parser.add_option("-i", "--no-title", dest="titles", action="store_false",
                       help="do not use supplied column titles.")
-    parser.add_option("-e", "--headers", dest="headers", type="string",
+    parser.add_option("-e", "--header-names", dest="headers", type="string",
                       help="headers.")
     parser.add_option("-r", "--rows", dest="rows", action="store_true",
                       help="data is in rows.")

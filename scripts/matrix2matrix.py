@@ -113,7 +113,7 @@ def main(argv=None):
     parser.add_option("-p", "--parameters", dest="parameters", type="string",
                       help="Parameters for various functions.")
 
-    parser.add_option("-t", "--headers", dest="headers", action="store_true",
+    parser.add_option("-t", "--header-names", dest="headers", action="store_true",
                       help="matrix has row/column headers.")
 
     parser.add_option("--no-headers", dest="headers", action="store_false",
@@ -130,7 +130,7 @@ def main(argv=None):
                       choices=("full", "sparse", "phylip"),
                       help="""output format for matrix."""  )
 
-    parser.add_option("--missing", dest="missing", type="float",
+    parser.add_option("--missing-value", dest="missing", type="float",
                       help="value to use for missing values. If not set, missing values will cause the script to fail [default=%default].")
 
     parser.set_defaults(

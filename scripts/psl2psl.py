@@ -952,7 +952,7 @@ def main(argv=None):
                                "most-nmismatches", "least-nmismatches"),
                       help="entry to select [default=%default].")
 
-    parser.add_option("--header", dest="header", type="choice",
+    parser.add_option("--header-names", dest="header", type="choice",
                       choices=("none", "table", "full"),
                       help="output psl header [default=%default].")
 

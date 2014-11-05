@@ -67,7 +67,7 @@ def loadMappableBases(infile, outfile):
     header = "total_mappable_bases"
     statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
                       --table=total_mappable_bases
-                      --header=%(header)s
+                      --header-names=%(header)s
                    > %(outfile)s '''
     P.run()
 
@@ -108,7 +108,7 @@ def loadMappableBasesPerContig(infile, outfile):
     header = "contig,mappable_bases"
     statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
                       --table=mappable_bases_per_contig
-                      --header=%(header)s
+                      --header-names=%(header)s
                    > %(outfile)s '''
     P.run()
 

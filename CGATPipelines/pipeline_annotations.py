@@ -1182,7 +1182,7 @@ def buildTranscriptRegions(infile, outfile):
     statement = """
     gunzip < %(infile)s
     | python %(scriptsdir)s/gtf2gtf.py --method=join-exons --log=%(outfile)s.log
-    | python %(scriptsdir)s/gff2bed.py --is-gtf --name=transcript_id
+    | python %(scriptsdir)s/gff2bed.py --is-gtf --set-name=transcript_id
     --log=%(outfile)s.log
     | gzip
     > %(outfile)s """
@@ -1200,7 +1200,7 @@ def buildGeneRegions(infile, outfile):
     gunzip < %(infile)s
     | python %(scriptsdir)s/gtf2gtf.py --method=merge-transcripts --with-utr
     --log=%(outfile)s.log
-    | python %(scriptsdir)s/gff2bed.py --is-gtf --name=gene_id
+    | python %(scriptsdir)s/gff2bed.py --is-gtf --set-name=gene_id
     --log=%(outfile)s.log
     | gzip
     > %(outfile)s """
@@ -1221,9 +1221,9 @@ def buildTranscriptTSS(infile, outfile):
     | python %(scriptsdir)s/gtf2gtf.py --method=join-exons
     --log=%(outfile)s.log
     | python %(scriptsdir)s/gtf2gff.py --method=promotors
-    --promotor=1
+    --promotor-size=1
     --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log
-    | python %(scriptsdir)s/gff2bed.py --is-gtf --name=transcript_id
+    | python %(scriptsdir)s/gff2bed.py --is-gtf --set-name=transcript_id
     --log=%(outfile)s.log
     | gzip
     > %(outfile)s """
@@ -1244,9 +1244,9 @@ def buildTranscriptTTS(infile, outfile):
     | python %(scriptsdir)s/gtf2gtf.py --method=join-exons
     --log=%(outfile)s.log
     | python %(scriptsdir)s/gtf2gff.py --method=tts
-    --promotor=1
+    --promotor-size=1
     --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log
-    | python %(scriptsdir)s/gff2bed.py --is-gtf --name=transcript_id
+    | python %(scriptsdir)s/gff2bed.py --is-gtf --set-name=transcript_id
     --log=%(outfile)s.log
     | gzip
     > %(outfile)s """
@@ -1263,9 +1263,9 @@ def buildGeneTSS(infile, outfile):
     statement = """gunzip < %(infile)s
     | python %(scriptsdir)s/gtf2gtf.py --method=merge-transcripts --with-utr
     --log=%(outfile)s.log
-    | python %(scriptsdir)s/gtf2gff.py --method=promotors --promotor=1
+    | python %(scriptsdir)s/gtf2gff.py --method=promotors --promotor-size=1
     --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log
-    | python %(scriptsdir)s/gff2bed.py --is-gtf --name=gene_id
+    | python %(scriptsdir)s/gff2bed.py --is-gtf --set-name=gene_id
     --log=%(outfile)s.log
     | gzip
     > %(outfile)s"""
@@ -1282,9 +1282,9 @@ def buildGeneTTS(infile, outfile):
     statement = """gunzip < %(infile)s
     | python %(scriptsdir)s/gtf2gtf.py --method=merge-transcripts --with-utr
     --log=%(outfile)s.log
-    | python %(scriptsdir)s/gtf2gff.py --method=tts --promotor=1
+    | python %(scriptsdir)s/gtf2gff.py --method=tts --promotor-size=1
     --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log
-    | python %(scriptsdir)s/gff2bed.py --is-gtf --name=gene_id
+    | python %(scriptsdir)s/gff2bed.py --is-gtf --set-name=gene_id
     --log=%(outfile)s.log
     | gzip
     > %(outfile)s"""
@@ -1303,13 +1303,13 @@ def buildGeneTSSInterval(infile, outfile):
     statement = """
     gunzip < %(infile)s
     | python %(scriptsdir)s/gtf2gtf.py --method=join-exons --log=%(outfile)s.log
-    | python %(scriptsdir)s/gtf2gff.py --method=promotors --promotor=1
+    | python %(scriptsdir)s/gtf2gff.py --method=promotors --promotor-size=1
     --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log
     | sed s/transcript/exon/g
     | sed s/exon_id/transcript_id/g
     | python %(scriptsdir)s/gtf2gtf.py --method=merge-transcripts
     --log=%(outfile)s.log
-    | python %(scriptsdir)s/gff2bed.py --is-gtf --name=transcript_id
+    | python %(scriptsdir)s/gff2bed.py --is-gtf --set-name=transcript_id
     --log=%(outfile)s.log
     | gzip
     > %(outfile)s """
@@ -1382,12 +1382,12 @@ def loadRepeats(infile, outfile):
 
     headers = "contig,start,stop,class"
     statement = """zcat %(infile)s
-    | python %(scriptsdir)s/gff2bed.py --name=class | grep -v "#"
+    | python %(scriptsdir)s/gff2bed.py --set-name=class | grep -v "#"
     | cut -f1,2,3,4
     | python %(scriptsdir)s/csv2db.py
     --retry
     --table=repeats
-    --header=%(headers)s
+    --header-names=%(headers)s
     --add-index=class
     > %(outfile)s; """
     P.run()
@@ -1866,7 +1866,7 @@ def buildGeneTerritories(infile, outfile):
     | python %(scriptsdir)s/gtf2gff.py
           --genome-file=%(genome_dir)s/%(genome)s
           --log=%(outfile)s.log
-          --radius=%(enrichment_territories_radius)s
+          --territory-extension=%(enrichment_territories_radius)s
           --method=territories
     | python %(scriptsdir)s/gtf2gtf.py
     --method=filter --filter-method=longest-gene --log=%(outfile)s.log
@@ -1890,7 +1890,7 @@ def buildTSSTerritories(infile, outfile):
     | python %(scriptsdir)s/gtf2gff.py
           --genome-file=%(genome_dir)s/%(genome)s
           --log=%(outfile)s.log
-          --radius=%(enrichment_territories_radius)s
+          --territory-extension=%(enrichment_territories_radius)s
           --method=tss-territories
     | python %(scriptsdir)s/gtf2gtf.py
     --method=sort --sort-order=gene+transcript --log=%(outfile)s.log
@@ -1917,9 +1917,9 @@ def buildGREATRegulatoryDomains(infile, outfile):
     --genome-file=%(genome_dir)s/%(genome)s
     --log=%(outfile)s.log
     --method=great-domains
-    --radius=%(enrichment_great_radius)s
-    --upstream=%(enrichment_great_upstream)i
-    --downstream=%(enrichment_great_downstream)i
+    --territory-extension=%(enrichment_great_radius)s
+    --upstream-extension=%(enrichment_great_upstream)i
+    --downstream-extension=%(enrichment_great_downstream)i
     | gzip
     > %(outfile)s '''
 
@@ -2133,7 +2133,7 @@ if 0:
 #     header = "total_mappable_bases"
 #     statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
 #                       --table=total_mappable_bases
-#                       --header=%(header)s
+#                       --header-names=%(header)s
 #                    > %(outfile)s '''
 #     P.run()
 
@@ -2176,7 +2176,7 @@ if 0:
 #     statement = '''cat %(infile)s
 #     | python %(scriptsdir)s/csv2db.py
 #     --table=mappable_bases_per_contig
-#     --header=%(header)s
+#     --header-names=%(header)s
 #     > %(outfile)s '''
 #     P.run()
 
@@ -2200,7 +2200,7 @@ def buildBedSummary(infile, outfile):
     '''summarize genomic coverage of bed file.'''
     statement = '''zcat %(infile)s
     | python %(scriptsdir)s/bed2stats.py
-    --per-contig
+    --aggregate-by=contig
     --genome-file=%(genome_dir)s/%(genome)s
     | gzip > %(outfile)s
     '''
@@ -2214,7 +2214,7 @@ def buildBedNameSummary(infile, outfile):
     '''summarize genomic coverage of bed file.'''
     statement = '''zcat %(infile)s
     | python %(scriptsdir)s/bed2stats.py
-    --per-name
+    --aggregate-by=name
     --genome-file=%(genome_dir)s/%(genome)s
     | gzip > %(outfile)s
     '''

@@ -687,8 +687,8 @@ def loadBAMStats(infiles, outfile):
     tablename = P.toTable(outfile)
     E.info("loading bam stats - summary")
     statement = """python %(scriptsdir)s/combine_tables.py
-                      --headers=%(header)s
-                      --missing=0
+                      --header-names=%(header)s
+                      --missing-value=0
                       --ignore-empty
                    %(filenames)s
                 | perl -p -e "s/bin/track/"
@@ -707,9 +707,9 @@ def loadBAMStats(infiles, outfile):
         tname = "%s_%s" % (tablename, suffix)
 
         statement = """python %(scriptsdir)s/combine_tables.py
-                      --header=%(header)s
+                      --header-names=%(header)s
                       --skip-titles
-                      --missing=0
+                      --missing-value=0
                       --ignore-empty
                    %(filenames)s
                 | perl -p -e "s/bin/%(suffix)s/"
@@ -1130,7 +1130,7 @@ def buildReadProfileOfTranscripts(infiles, outfile):
                       --reporter=transcript
                       --method=geneprofile 
                       --method=tssprofile 
-                      --normalization=total-sum
+                      --normalize-transcript=total-sum
                       %(bamfile)s %(gtffile)s
                    > %(outfile)s
                 '''
@@ -1308,7 +1308,7 @@ def exportBigwig(infile, outfile):
 
     statement = '''python %(scriptsdir)s/bam2wiggle.py 
                       --output-format=bigwig 
-                      --output-filename=%(outfile)s 
+                      --output-filename-pattern=%(outfile)s 
                       --shift-size=%(shift)i
                       --extend=%(extend)i
                       --log=%(outfile)s.log
@@ -1334,7 +1334,7 @@ def buildBigwigInfo(infiles, outfile):
                        for x in infiles])
 
     statement = '''python %(scriptsdir)s/combine_tables.py
-                   --headers=%(headers)s
+                   --header-names=%(headers)s
                          %(p)s
                 > %(outfile)s
                 '''

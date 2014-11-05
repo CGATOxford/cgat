@@ -64,10 +64,10 @@ def main(argv=None):
     parser.add_option("-i", "--skip-titles", dest="skip_titles", action="store_true",
                       help="skip output of titles.")
 
-    parser.add_option("-m", "--missing", dest="missing_value", type="string",
+    parser.add_option("-m", "--missing-value", dest="missing_value", type="string",
                       help="entry to use for missing values.")
 
-    parser.add_option("--headers", dest="headers", type="string",
+    parser.add_option("--header-names", dest="headers", type="string",
                       help="add headers for files.")
 
     parser.add_option("-c", "--columns", dest="columns", type="string",
@@ -79,7 +79,7 @@ def main(argv=None):
     parser.add_option("-s", "--method=sort --sort-order", dest="sort", type="string",
                       help="sort by column titles alphabetical|numeric|list of columns.")
 
-    parser.add_option("-e", "--merge", dest="merge", action="store_true",
+    parser.add_option("-e", "--merge-overlapping", dest="merge", action="store_true",
                       help="simply merge tables without matching up rows. [default=%default].")
 
     parser.add_option("--sort-keys", dest="sort_keys", type="choice",

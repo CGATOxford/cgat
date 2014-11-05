@@ -143,7 +143,7 @@ def main(argv=None):
         help="which sections to output [%default]")
 
     parser.add_option(
-        "-t", "--type", dest="seqtype", type="choice",
+        "-t", "--sequence-type", dest="seqtype", type="choice",
         choices=("na", "aa"),
         help="type of sequence: na=nucleotides, aa=amino acids [%default].")
 

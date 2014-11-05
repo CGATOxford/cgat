@@ -590,8 +590,8 @@ def loadContextStats(infiles, outfile):
     tablename = P.toTable(outfile)
 
     statement = """python %(scriptsdir)s/combine_tables.py
-                      --headers=%(header)s
-                      --missing=0
+                      --header-names=%(header)s
+                      --missing-value=0
                       --skip-titles
                    %(filenames)s
                 | perl -p -e "s/bin/track/; s/\?/Q/g"

@@ -613,7 +613,7 @@ def buildWindowStats(infile, outfile):
     | python %(scriptsdir)s/gff2histogram.py
                    --force-output
                    --format=bed
-                   --data=size
+                   --output-section=size
                    --method=hist
                    --method=stats
                    --output-filename-pattern=%(outfile)s.%%s.tsv
@@ -1643,7 +1643,7 @@ def buildDMRWindowStats(infile, outfile):
     | python %(scriptsdir)s/gff2histogram.py
                    --force-output
                    --format=bed
-                   --data=size
+                   --output-section=size
                    --method=hist
                    --method=stats
                    --output-filename-pattern=%(outfile)s.%%s.tsv

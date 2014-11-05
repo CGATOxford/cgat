@@ -114,7 +114,7 @@ def main(argv=None):
                       help="if set, the gene_id will be added to the alignment header [default=%default].")
     parser.add_option("-z", "--compress", dest="compress", action="store_true",
                       help="compress output with gzip [default=%default].")
-    parser.add_option("-p", "--pattern", dest="pattern_track", type="string",
+    parser.add_option("-p", "--pattern-identifier", dest="pattern_track", type="string",
                       help="regular expression pattern for track [default=%default].")
 
     parser.set_defaults(
