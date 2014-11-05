@@ -157,7 +157,12 @@ ensure consistency between scripts. To run this test, type::
 This test is based on a list of acceptable/unacceptable options in
 :file:`tests/option_list.tsv` that is within the repository. The list
 has been created by the script :file:`cgat_get_option_list.py` and
-been manually annotated.
+been manually annotated. Errors are flagged if a deprecated option
+is used in a script or an unregistered option is encountered. To
+update option list, type::
+
+   python scripts/cgat_get_option_list.py --in-place --options-tsv-file=tests/option_list.tsv 
+
 
 Testing for import
 ==================

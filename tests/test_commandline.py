@@ -28,7 +28,6 @@ This script is best run within nosetests::
 '''
 import glob
 import os
-import shutil
 import importlib
 import yaml
 import re

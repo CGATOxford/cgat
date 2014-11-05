@@ -243,7 +243,7 @@ def main(argv=None):
         help="read ontology assignments from a flatfile [default=%default].")
 
     parser.add_option(
-        "--method=sample --sample-size", dest="sample", type="int",
+        "--sample-size", dest="sample", type="int",
         help="do sampling (with # samples) [default=%default].")
 
     parser.add_option(

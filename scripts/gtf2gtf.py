@@ -315,15 +315,6 @@ def main(argv=None):
         "The input needs to be sorted by gene. "
         "[default=%default].")
 
-    parser.add_option("-r", "--method=rename-genes",
-                      dest="rename",
-                      type="choice",
-                      choices=("gene", "transcript"),
-                      help="rename genes or transcripts with a map "
-                      "given by the option `--map-tsv-file`. "
-                      "Those that can not be renamed are removed "
-                      "[default=%default].")
-
     parser.add_option("-a", "--map-tsv-file", dest="filename_filter",
                       type="string",
                       metavar="tsv",

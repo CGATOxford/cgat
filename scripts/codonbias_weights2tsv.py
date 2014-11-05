@@ -11,7 +11,7 @@ Purpose
 -------
 
 .. todo::
-   
+
    describe purpose of the script.
 
 Usage
@@ -32,9 +32,6 @@ Command line options
 
 '''
 import sys
-import string
-import os
-import optparse
 
 import CGAT.Experiment as E
 import CGAT.CSV as CSV
@@ -93,11 +90,14 @@ def WriteChanges(genome1, genome2, changed, options):
         code = "*" * (int(percent_difference) / 10)
 
         if options.sort == "percent-difference":
-            output.append((-percent_difference, (genome1, genome2, aa,
-                                                 codon1, pref2, codon2, pref1, percent_difference, code)))
+            output.append(
+                (-percent_difference,
+                 (genome1, genome2, aa,
+                  codon1, pref2, codon2, pref1, percent_difference, code)))
         elif options.sort == "aa":
             output.append(
-                (aa, (genome1, genome2, aa, codon1, pref2, codon2, pref1, percent_difference, code)))
+                (aa, (genome1, genome2, aa, codon1, pref2, codon2, pref1,
+                      percent_difference, code)))
 
         output.sort()
 
@@ -127,7 +127,7 @@ def WriteOverviewWeights(fields, table, options):
                     else:
                         changed[aa].append((t1, w1, codon))
 
-            output += WriteChanged(fields[x], fields[y], changes, options)
+            output += WriteChanges(fields[x], fields[y], changed, options)
 
     WriteOutput(output, options)
 
@@ -182,20 +182,25 @@ def main(argv=None):
         argv = sys.argv
 
     parser = E.OptionParser(
-        version="%prog version: $Id: codonbias_weights2tsv.py 2781 2009-09-10 11:33:14Z andreas $")
+        version="%prog version: $Id$",
+        usage=globals()["__doc__"])
 
-    parser.add_option("--methods", dest="methods", type="string",
-                      help="methods to apply.")
+    parser.add_option(
+        "--methods", dest="methods", type="string",
+        help="methods to apply.")
 
-    parser.add_option("--is-frequencies", dest="is_frequencies", action="store_true",
-                      help="data is frequencies (default: weights).")
+    parser.add_option(
+        "--is-frequencies", dest="is_frequencies", action="store_true",
+        help="data is frequencies (default: weights).")
 
-    parser.add_option("-s", "--method=sort --sort-order", dest="sort", type="choice",
-                      choices=("percent-difference", "aa"),
-                      help="sort order of output table.")
+    parser.add_option(
+        "-s", "--sort-order", dest="sort", type="choice",
+        choices=("percent-difference", "aa"),
+        help="sort order of output table.")
 
-    parser.add_option("-g", "--sort-global", dest="global_sort", action="store_true",
-                      help="globally sort results (otherwise: by species pair).")
+    parser.add_option(
+        "-g", "--sort-global", dest="global_sort", action="store_true",
+        help="globally sort results (otherwise: by species pair).")
 
     parser.set_defaults(
         methods="",

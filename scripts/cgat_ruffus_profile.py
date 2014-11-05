@@ -25,15 +25,8 @@ summary information.
 
 import sys
 import os
-import imp
-import cStringIO
 import re
-import types
-import glob
-import optparse
-import shutil
 import datetime
-import logging
 import collections
 
 import CGAT.Experiment as E
@@ -107,12 +100,14 @@ def main(argv=sys.argv):
                       choices=("seconds", "milliseconds"),
                       help="time to show [default=%default]")
 
-    parser.add_option("-f", "--method=filter --filter-method", dest="filter", type="choice",
-                      choices=("unfinished", "running", "completed", "all"),
-                      help="apply filter to output [default=%default]")
+    parser.add_option(
+        "-f", "--filter-method", dest="filter", type="choice",
+        choices=("unfinished", "running", "completed", "all"),
+        help="apply filter to output [default=%default]")
 
-    parser.add_option("-i", "--ignore-errors", dest="ignore_errors", action="store_true",
-                      help="ignore errors [default=%default]")
+    parser.add_option(
+        "-i", "--ignore-errors", dest="ignore_errors", action="store_true",
+        help="ignore errors [default=%default]")
 
     parser.set_defaults(sections=[],
                         logfile="pipeline.log",

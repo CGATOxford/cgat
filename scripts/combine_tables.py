@@ -506,13 +506,15 @@ def main(argv=sys.argv):
     parser.add_option("-g", "--glob", dest="glob", type="string",
                       help="wildcard expression for table names.")
 
-    parser.add_option("-s", "--method=sort --sort-order", dest="sort", type="string",
-                      help="sort by column titles "
-                      "alphabetical|numeric|list of columns.")
+    parser.add_option(
+        "-s", "--sort-order", dest="sort", type="string",
+        help="sort by column titles in particular given order: "
+        "alphabetical|numeric|list of columns.")
 
-    parser.add_option("-e", "--merge-overlapping", dest="merge", action="store_true",
-                      help="simply merge tables without matching up "
-                      "rows. [default=%default].")
+    parser.add_option(
+        "-e", "--merge-overlapping", dest="merge", action="store_true",
+        help="simply merge tables without matching up "
+        "rows. [default=%default].")
 
     parser.add_option("-a", "--cat", dest="cat", type="string",
                       help="simply concatenate tables. Adds an "

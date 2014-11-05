@@ -51,13 +51,7 @@ Command line options
 '''
 
 import sys
-import re
 import string
-import optparse
-import time
-import os
-import tempfile
-import shutil
 import collections
 import math
 
@@ -65,9 +59,7 @@ import scipy
 import scipy.stats
 import numpy
 
-import CGAT.Intervals as Intervals
 import CGAT.Experiment as E
-import CGAT.Histogram as Histogram
 import CGAT.Blat as Blat
 import CGAT.IndexedFasta as IndexedFasta
 import alignlib_lite
@@ -1692,55 +1684,79 @@ def main(argv=None):
         argv = sys.argv
 
     parser = E.OptionParser(
-        version="%prog version: $Id: psl2assembly.py 2781 2009-09-10 11:33:14Z andreas $", usage=globals()["__doc__"])
+        version="%prog version: $Id$",
+        usage=globals()["__doc__"])
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genome [default=%default].")
 
-    parser.add_option("--queries-tsv-file", dest="input_filename_queries", type="string",
-                      help="fasta filename with queries [default=%default].")
+    parser.add_option(
+        "--queries-tsv-file", dest="input_filename_queries", type="string",
+        help="fasta filename with queries [default=%default].")
 
-    parser.add_option("--coverage-tsv-file", dest="input_filename_coverage", type="string",
-                      help="tabular table with coverage information [default=%default].")
+    parser.add_option(
+        "--coverage-tsv-file", dest="input_filename_coverage", type="string",
+        help="tabular table with coverage information [default=%default].")
 
-    parser.add_option("-p", "--output-filename-pattern", dest="output_filename_pattern", type="string",
-                      help="OUTPUT filename with histogram information on aggregate coverages [%default].")
+    parser.add_option(
+        "-p", "--output-filename-pattern", dest="output_filename_pattern",
+        type="string",
+        help="OUTPUT filename with histogram information on aggregate "
+        "coverages [%default].")
 
-    parser.add_option("--mali-output-format", dest="mali_output_format", type="choice",
-                      choices=("fasta", ),
-                      help="output format to choose [default=%default].")
+    parser.add_option(
+        "--mali-output-format", dest="mali_output_format", type="choice",
+        choices=("fasta", ),
+        help="output format to choose [default=%default].")
 
-    parser.add_option("--method", dest="methods", type="choice", action="append",
-                      choices=("region", "consensus", "pileup", "transcript",
-                               "coverage", "sbjct_coverage", "indels", "polyA", "locus"),
-                      help="methods to apply [%default].")
+    parser.add_option(
+        "--method", dest="methods", type="choice", action="append",
+        choices=("region", "consensus", "pileup", "transcript",
+                 "coverage", "sbjct_coverage", "indels", "polyA", "locus"),
+        help="methods to apply [%default].")
 
-    parser.add_option("-z", "--from-zipped", dest="from_zipped", action="store_true",
-                      help="input is zipped.")
+    parser.add_option(
+        "-z", "--from-zipped", dest="from_zipped", action="store_true",
+        help="input is zipped.")
 
-    parser.add_option("--output-pileup", dest="output_pileup", action="store_true",
-                      help="in the transcript modules, output the pileup alignment with the predicted transcript [default=%default].")
+    parser.add_option(
+        "--output-pileup", dest="output_pileup", action="store_true",
+        help="in the transcript modules, output the pileup alignment with "
+        "the predicted transcript [default=%default].")
 
-    parser.add_option("--test", dest="test", type="int",
-                      help="test - stop after # rows of parsing[%default].")
+    parser.add_option(
+        "--test", dest="test", type="int",
+        help="test - stop after # rows of parsing[%default].")
 
-    parser.add_option("--staggered", dest="staggered_alignments", type="choice",
-                      choices=("all", "none", "merge"),
-                      help="how to deal with staggered alignments[%default].")
+    parser.add_option(
+        "--staggered", dest="staggered_alignments", type="choice",
+        choices=("all", "none", "merge"),
+        help="how to deal with staggered alignments[%default].")
 
-    parser.add_option("--force-merge", dest="force_merge", type="int",
-                      help="in case of staggered alignments, force merge if there are # alignments. This avoids costly computation of components in large sets. If 0, do not apply the threshold [%default].")
+    parser.add_option(
+        "--force-merge", dest="force_merge", type="int",
+        help="in case of staggered alignments, force merge if there "
+        "are # alignments. This avoids costly computation of components "
+        "in large sets. If 0, do not apply the threshold [%default].")
 
-    parser.add_option("--method=filter --filter-method", dest="filters", type="choice", action="append",
-                      choices=(
-                          "duplicates", "imperfect", "exon-extenders", "transcript-mergers"),
-                      help="filters to apply [%default].")
+    parser.add_option(
+        "--filter-method", dest="filters", type="choice",
+        action="append",
+        choices=(
+            "duplicates", "imperfect", "exon-extenders", "transcript-mergers"),
+        help="filters to apply [%default].")
 
-    parser.add_option("--threshold-merge-distance", dest="threshold_merge_distance", type="int",
-                      help="distance in nucleotides at which two adjacent reads shall be merged even if they are not overlapping [%default].")
+    parser.add_option(
+        "--threshold-merge-distance", dest="threshold_merge_distance",
+        type="int",
+        help="distance in nucleotides at which two adjacent reads shall be "
+        "merged even if they are not overlapping [%default].")
 
-    parser.add_option("--threshold-merge-overlap", dest="threshold_merge_overlap", type="int",
-                      help="require reads to be overlapping by this amount to be joined into the same transcript [default=%default].")
+    parser.add_option(
+        "--threshold-merge-overlap", dest="threshold_merge_overlap",
+        type="int",
+        help="require reads to be overlapping by this amount to be joined "
+        "into the same transcript [default=%default].")
 
     parser.add_option("--start-at", dest="start_at", type="int",
                       help="start numbering ids at number [default=%default].")
@@ -2044,8 +2060,9 @@ def main(argv=None):
             matches = []
 
             if last_sbjct_id != match.mSbjctId and match.mSbjctId in processed_contigs:
-                raise ValueError("input not sorted correctly (contig,start): already encountered %s\n%s" % (
-                    match.mSbjctId, str(match)))
+                raise ValueError(
+                    "input not sorted correctly (contig,start): already encountered %s\n%s" %
+                    (match.mSbjctId, str(match)))
             last_sbjct_id = match.mSbjctId
             processed_contigs.add(last_sbjct_id)
 
@@ -2053,8 +2070,9 @@ def main(argv=None):
             sbjct_end = match.mSbjctTo
 
         if match.mSbjctFrom < sbjct_start:
-            raise ValueError("input not sorted correctly (contig,start): %i < %i\n%s" % (
-                match.mSbjctFrom, sbjct_start, str(match)))
+            raise ValueError(
+                "input not sorted correctly (contig,start): %i < %i\n%s" %
+                (match.mSbjctFrom, sbjct_start, str(match)))
         sbjct_end = max(match.mSbjctTo, sbjct_end)
         matches.append(match)
 
@@ -2063,12 +2081,11 @@ def main(argv=None):
     for p in methods:
         p.finish()
 
-    if options.loglevel >= 1:
-        options.stdlog.write("# clusters: ninput=%i, noutput=%i, ninput_lines=%i, ncomponents=%i\n" %
-                             (ninput, noutput, ninput_lines, ncomponents))
-        options.stdlog.write("# skipped: queries=%i, components=%i, pre_reads=%i, post_reads=%i\n" %
-                             (nskipped, nskipped_components,
-                              n_pre_filtered_reads, n_post_filtered_reads))
+    E.info("clusters: ninput=%i, noutput=%i, ninput_lines=%i, ncomponents=%i" %
+           (ninput, noutput, ninput_lines, ncomponents))
+    E.info("skipped: queries=%i, components=%i, pre_reads=%i, post_reads=%i" %
+           (nskipped, nskipped_components,
+            n_pre_filtered_reads, n_post_filtered_reads))
 
     E.Stop()
 

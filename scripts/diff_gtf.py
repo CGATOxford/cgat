@@ -1,5 +1,4 @@
-'''
-diff_gtf.py - compute overlap between multiple gtf files
+'''diff_gtf.py - compute overlap between multiple gtf files
 =========================================================
 
 :Author: Andreas Heger
@@ -95,15 +94,18 @@ each set one of these genes overlaps with the other set. For set1 it will
 report that 1 gene is unique and that no genes are unique for set2 and so on
 for exons and bases.
 
-If we want to add a third file to the comparison, "third_set_of_genes.gtf", we
-don't need to redo the comparison between first_set_of_genes.gtf and
-second_set_of_genes.gtf::
+If we want to add a third file to the comparison,
+"third_set_of_genes.gtf", we don't need to redo the comparison between
+first_set_of_genes.gtf and second_set_of_genes.gtf::
 
    python diff_gtf.py --update=out.tsv *.gtf.gz > new.tsv
 
-This will output a table with a row for third_set vs second_set and third_set
-vs second_set, along with the comparison of first_set and second_set that will
-simply be copied from the previous results.
+This will output a table with a row for third_set vs second_set and
+third_set vs second_set, along with the comparison of first_set and
+second_set that will simply be copied from the previous results. It is
+important to include all files on the command line that are to be
+output. Any comparisons in ``out.tsv`` that correspond to files that
+are not given on the command line will not be output.
 
 Usage::
 -----
@@ -356,7 +358,7 @@ def main(argv=None):
         "[default=%default].")
 
     parser.add_option(
-        "-g", "--output_only-genes", dest="output_only_genes",
+        "-g", "--output-only-genes", dest="output_only_genes",
         action="store_true",
         help="only output gene stats (includes gene lists)"
         " [default=%default].")

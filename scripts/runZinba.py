@@ -145,7 +145,7 @@ def main(argv=None):
                       dest="alignability_threshold", type="int",
                       help="alignability threshold [default=%default].")
 
-    parser.add_option("-p", "--aggregate-by=contig", dest="per_contig",
+    parser.add_option("-p", "--aggregate-by-contig", dest="per_contig",
                       action="store_true",
                       help="run analysis per chromosome [default=%default]")
 

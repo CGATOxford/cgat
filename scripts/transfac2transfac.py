@@ -58,16 +58,19 @@ def main(argv=None):
     parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
-    parser.add_option("-f", "--method=filter --filter-method", dest="filter", default=False,
-                      help="ID prefix to filter on, eg. V for vertebrates")
+    parser.add_option(
+        "-f", "--filter-prefix", dest="filter_prefix", default=None,
+        help="ID prefix to filter on, eg. V for vertebrates")
 
-    parser.add_option("-p", "--pattern-identifier", dest="pattern", default=False,
-                      help="ID pattern to filter (filter is case insensitive) eg. pax6. Multiple patterns should be specified as a comma separated list")
+    parser.add_option(
+        "-p", "--pattern-identifier", dest="filter_pattern", default=None,
+        help="ID pattern to filter (filter is case insensitive) eg. pax6. "
+        "Multiple patterns should be specified as a comma separated list")
 
     (options, args) = E.Start(parser)
 
-    if options.pattern is not False:
-        patterns = [x.strip() for x in options.pattern.split(",")]
+    if options.filter_pattern:
+        patterns = [x.strip() for x in options.filter_pattern.split(",")]
         E.info("Supplied patterns %s" % ", ".join(patterns))
     else:
         patterns = False
@@ -98,8 +101,8 @@ def main(argv=None):
             if tid is False:
                 raise ValueError("matrix ID not determined")
 
-            if options.filter is not False:
-                if tid.startswith(options.filter):
+            if options.filter_prefix:
+                if tid.startswith(options.filter_prefix):
                     filter_emit = True
             else:
                 filter_emit = True

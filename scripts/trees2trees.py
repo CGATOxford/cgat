@@ -35,17 +35,7 @@ Command line options
 
 import os
 import sys
-import string
 import re
-import optparse
-import math
-import time
-import random
-
-USAGE = """python %s [OPTIONS]
-
-
-""" % sys.argv[0]
 
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
@@ -64,46 +54,69 @@ def main(argv=None):
         argv = sys.argv
 
     parser = E.OptionParser(
-        version="%prog version: $Id: trees2trees.py 2782 2009-09-10 11:40:29Z andreas $", usage=globals()["__doc__"])
+        version="%prog version: $Id$",
+        usage=globals()["__doc__"])
 
-    parser.add_option("-c", "--output-filename-map", dest="output_filename_map", type="string",
-                      help="filename of map to output.")
+    parser.add_option(
+        "-c", "--output-filename-map", dest="output_filename_map",
+        type="string",
+        help="filename of map to output.")
 
-    parser.add_option("-m", "--method", dest="method", type="choice",
-                      choices=("filter", "split"),
-                      help="method to use: filter removed trees, while split writes them to individual files. DEFAULT=%default")
+    parser.add_option(
+        "-m", "--method", dest="method", type="choice",
+        choices=("filter", "split"),
+        help="method to use: filter removed trees, while split writes them "
+        "to individual files. [%default]")
 
-    parser.add_option("-d", "--output-filename-pattern", dest="output_pattern", type="string",
-                      help="filename pattern for output multiple alignment files.")
+    parser.add_option(
+        "-d", "--output-filename-pattern", dest="output_pattern",
+        type="string",
+        help="filename pattern for output multiple alignment files.")
 
-    parser.add_option("--filter-terminal-max-length", dest="filter_max_length", type="float",
-                      help="remove terminal branches with a branch length larger than this.")
+    parser.add_option(
+        "--filter-terminal-max-length", dest="filter_max_length", type="float",
+        help="remove terminal branches with a branch length larger than this.")
 
-    parser.add_option("--filter-terminal-min-length", dest="filter_min_length", type="float",
-                      help="remove any branches with a branch length smaller than this.")
+    parser.add_option(
+        "--filter-terminal-min-length", dest="filter_min_length", type="float",
+        help="remove any branches with a branch length smaller than this.")
 
-    parser.add_option("--filter-min-length", dest="filter_min_length", type="float",
-                      help="remove terminal branches with a branch length smaller than this.")
+    parser.add_option(
+        "--filter-min-length", dest="filter_min_length", type="float",
+        help="remove terminal branches with a branch length smaller than this.")
 
-    parser.add_option("--filter-max-length", dest="filter_min_length", type="float",
-                      help="remove any branches with a branch length smaller than this.")
+    parser.add_option(
+        "--filter-max-length", dest="filter_min_length", type="float",
+        help="remove any branches with a branch length smaller than this.")
 
-    parser.add_option("--filter-by-trees", dest="filter_by_trees", type="string", action="append",
-                      help="mask branches according to trees. Give filenames with mask trees. These trees need to have the same names and structure as the input trees, but can be in any order.")
+    parser.add_option(
+        "--filter-by-trees", dest="filter_by_trees", type="string",
+        action="append",
+        help="mask branches according to trees. Give filenames with mask "
+        "trees. These trees need to have the same names and structure as "
+        "the input trees, but can be in any order.")
 
-    parser.add_option("--filter-by-monophyly", dest="filter_by_monophyly", type="string",
-                      help="only retain trees where the given taxa are monphyletic. Supply taxa as a comma-separated list.")
+    parser.add_option(
+        "--filter-by-monophyly", dest="filter_by_monophyly", type="string",
+        help="only retain trees where the given taxa are monphyletic. Supply "
+        "taxa as a comma-separated list.")
 
-    parser.add_option("--min-support", dest="min_support", type="float",
-                      help="for monophyly filtering, only accept trees with minimum support.")
+    parser.add_option(
+        "--min-support", dest="min_support", type="float",
+        help="for monophyly filtering, only accept trees with minimum "
+        "support.")
 
-    parser.add_option("--filter-ntaxa", dest="filter_ntaxa", type="int",
-                      help="filter by number of taxa.")
+    parser.add_option(
+        "--filter-ntaxa", dest="filter_ntaxa", type="int",
+        help="filter by number of taxa.")
 
-    parser.add_option("--filter-simple-orthologs", dest="filter_simple_orthologs", action="store_true",
-                      help="filter for trees for simple orhtologs. This works by counting the number of taxa.")
+    parser.add_option(
+        "--filter-simple-orthologs", dest="filter_simple_orthologs",
+        action="store_true",
+        help="filter for trees for simple orhtologs. This works by counting "
+        "the number of taxa.")
 
-    parser.add_option("--method=filter --filter-method", dest="filter", type="choice",
+    parser.add_option("--filter-category", dest="filter", type="choice",
                       choices=("taxa", "trees"),
                       help="filter removes taxa or whole trees.")
 
