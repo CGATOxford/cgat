@@ -59,6 +59,33 @@ territories
 tss-territories
    build gene territories around transcription start sites.
 
+In a simple setting, assume we have the two genes below, the first
+with a single transcript on the positive strand, the second on the
+negative strand::
+
+          Gene A                    Gene B
+           |---|                 |---|  |---|
+        >>>>   >>>>           <<<<   <<<<   <<<<
+
+   Genome (simplified result without UTRs and flanks)
+
+          exon   exon         exon   exon   exon
+   ..---><--><-><--><---------<--><-><--><-><--><-----...
+   intergenic intron  intergenic  intron intron intergenic
+
+   Territories
+
+        Gene A                    Gene B
+   <---------------------><------------------------------>
+
+   TSS-Territories
+
+        Gene A                    Gene B
+   <-------->            <----------->
+
+   Promotors
+
+   <---->              <---->
 
 Genome
 ++++++
@@ -182,10 +209,15 @@ of overlapping genes, the extension is towards the next
 non-overlapping gene.
 
 This is the "basal plus extension" rule in GERAT. Commonly used are
-5+1 with 1 Mb extension.  To achieve this, set (needs genome-file to
-run).
+5+1 with 1 Mb extension.  To achieve this, use for example::
 
-``--method=great-domains --upstream-extension=5000 --downstream-extension=1000 --territory-extension=1000000``
+   cgat gtf2gff \
+   --genome-file=hg19 \
+   --method=great-domains \
+   --upstream-extension=5000 \
+   --downstream-extension=1000 \
+   --territory-extension=1000000 \
+   < in.gtf > out.gff
 
 If there are a multiple TSS in a transcript, the basal region extends from the
 first to the last TSS plus the upstream/downstream flank.
@@ -261,11 +293,12 @@ Usage
 -----
 
 Type::
-    python gtf2gff.py --method=genome --genome-file=hg19 < geneset.gtf > annotations.gff
+
+    cgat gtf2gff --method=genome --genome-file=hg19 < geneset.gtf > annotations.gff
 
 For command line help::
 
-    python gtf2gff.py --help
+    cgat gtf2gff --help
 
 Command line options
 ---------------------
