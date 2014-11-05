@@ -84,26 +84,18 @@ Options
     * Reads where the the insert size is not between the max and
       min (see below)
 
-.. note:: This option is not compatible with --region.
-
 .. warning::
 
     Merged fragements are always returned on the +ve strand.
     Fragement end point is estimated as the alignment start position
     of the second-in-pair read + the length of the first-in-pair
-    read. This may lead to inaccuracy.
+    read. This may lead to inaccuracy if you have an intron-aware
+    aligner.
 
 --max-insert-size, --min-insert-size
     The maximum and minimum size of the insert that is allowed when
     using the --merge-pairs option. Read pairs closer to gether or futher
     apart than the min and max repsectively are skipped.
-
-
--r, --region
-    Only output bed records for alignments in the specified region. The
-    region is specified in the samtools format. I.e. contig:start-finish.
-    This only works on an indexed file and therefore does work if the
-    input is stdin. Not compatible with --merge-pairs
 
 -b, --bed-format
     What format to output the results in. The first n columns of the bed
@@ -147,12 +139,6 @@ def main(argv=None):
     # setup command line parser
     parser = E.OptionParser(
         version="%prog version: $Id$", usage=globals()["__doc__"])
-
-    parser.add_option("-r", "--region", dest="region", type="string",
-                      help="output read intervals that overlap samtools "
-                      "region string. This option works not from stdin."
-                      "This option is deprecated, use samtools instead. "
-                      "[default=%default]. ")
 
     parser.add_option("-m", "--merge-pairs", dest="merge_pairs",
                       action="store_true",
@@ -202,13 +188,8 @@ def main(argv=None):
         E.info("category\tcounts\n%s\n" % counter.asTable())
 
     else:
-        if options.region is not None:
-            if args[0] == "-":
-                raise ValueError("can't use region with a file from stdin")
-            it = samfile.fetch(region=options.region)
-        else:
-            # use until_eof. Files from stdin have no index
-            it = samfile.fetch(until_eof=True)
+        # use until_eof. Files from stdin have no index
+        it = samfile.fetch(until_eof=True)
 
         # more comfortable cigar parsing will
         # come with the next pysam release
