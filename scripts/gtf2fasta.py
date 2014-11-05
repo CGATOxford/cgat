@@ -7,21 +7,31 @@ gtf2fasta.py - annotate genomic bases from a gene set
 :Date: |today|
 :Tags: Genomics Genesets Sequences GTF FASTA Transformation
 
+
 Purpose
 -------
+This script can be used for a quick-and-dirty annotation of variants
+in a genome. It is most appropriately used in exploratory analyses
+of the effect of variants/alleles.
 
-This script takes a :term:`gtf` formatted file from ENSEMBL and annotates each base 
-in the genome according to its *function*. The script multiplexes both strands with lower-
-case characters referring to the forward strand and upper-case characters
-referring to the reverse strand.
+For a better prediction of variant effects in coding sequences,
+see :doc:`snp2counts` and :doc:`gtf2alleles`.
+
+If you wish to convert gtf intervals into fasta sequences, use gff2fasta.py.
+
+This script takes a :term:`gtf` formatted file from ENSEMBL and
+annotates each base in the genome according to its *function*. The
+script multiplexes both strands with lower- case characters referring
+to the forward strand and upper-case characters referring to the
+reverse strand.
 
 The codes and their meaning are:
 
-+-----+----------------------------------------------------------------------+                                                                                                                                                                   
++-----+----------------------------------------------------------------------+
 |code | description                                                          |
-+-----+----------------------------------------------------------------------+                                                                                                                                                                   
-|a    | first codon position within a complete codon                         |                                                                                                                                                                   
-+-----+----------------------------------------------------------------------+                                                                                                                                                                   
++-----+----------------------------------------------------------------------+
+|a    | first codon position within a complete codon                         |
++-----+----------------------------------------------------------------------+
 |b    | second codon position within a complete codon                        |
 +-----+----------------------------------------------------------------------+
 |c    | third codon position within a complete codon                         |
@@ -63,8 +73,7 @@ The codes and their meaning are:
 |y    | unknown base                                                         |
 +-----+----------------------------------------------------------------------+
 
-This script can be used for a quick-and-dirty annotation of variants in a genome.
-For a better prediction of variant effects in coding sequences, see :doc:`gtf2alleles`.
+
 
 Output files
 ++++++++++++
@@ -110,7 +119,7 @@ Usage
 
 For example::
 
-   zcat hg19.gtf.gz | python gtf2fasta.py --genome-file=hg19
+   zcat hg19.gtf.gz | python gtf2fasta.py --genome-file=hg19 > hg19.annotated
 
 Type::
 
@@ -120,6 +129,16 @@ for command line help.
 
 Command line options
 --------------------
+
+``--genome-file``
+    required option. filename for genome fasta file
+
+``--ignore-missing``
+    transcripts on contigs not in the genome file will be ignored
+
+``--min-intron-length``
+    intronic bases in introns less than specified length
+    will be marked "unknown"
 
 """
 

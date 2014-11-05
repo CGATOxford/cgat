@@ -15,35 +15,6 @@ Purpose
 This script outputs nucleotide sequences for intervals within
 a :term:`bed` formatted file using a corresponding genome file.
 
-Options
--------
-
-+------------------+----------------------------------------------+
-|-g, --genome-file |The genome file from which to retrieve fasta  |
-|                  |sequences                                     |
-+------------------+----------------------------------------------+
-|-m, --masker      |Masks out a collection of sequences, for      |
-|                  |example repeat sequences                      |
-+------------------+----------------------------------------------+
-|--min-interval-length      |Set a minimum sequence length                 |
-+------------------+----------------------------------------------+
-|--max-length      |Set a maximum sequence length                 |
-+------------------+----------------------------------------------+
-|--use-strand      |Return reverse complement sequence            |
-+------------------+----------------------------------------------+
-|-o, --mode        |Choose output format. "intervals" generates a |
-|                  |single sequence for each bed interval.        |
-|                  |"leftright" generates two sequences, one in   |
-|                  |each direction, for each bed interval         |
-+------------------+----------------------------------------------+
-|--extend-at       |Extend the returned fasta sequence at choosen |
-|                  |end. Choices are "3", "5", "both", "3only",   |
-|                  |"5only" If 3only or 5only are set,            |
-|                  |only the added sequence is returned           |
-+------------------+----------------------------------------------+
-|--extend-by       |Extend by # bases                             |
-+------------------+----------------------------------------------+
-
 Usage
 -----
 
@@ -96,15 +67,21 @@ def main(argv=None):
         usage=globals()["__doc__"])
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
-                      help="filename with genome.")
+                      help="filename with genomic sequence to retrieve "
+                      "sequences from.")
 
     parser.add_option("-m", "--masker", dest="masker", type="choice",
                       choices=("dust", "dustmasker", "softmask", "none"),
-                      help="apply masker [%default].")
+                      help="apply masker to mask output sequences "
+                      "[%default].")
 
     parser.add_option("--output-mode", dest="output_mode", type="choice",
                       choices=("intervals", "leftright"),
-                      help="what to output [%default]")
+                      help="what to output. "
+                      "'intervals' generates a single sequence for "
+                      "each bed interval. 'leftright' generates two "
+                      "sequences, one in each direction, for each bed "
+                      "interval. [%default]")
 
     parser.add_option("--min-sequence-length", dest="min_length", type="int",
                       help="require a minimum sequence length [%default]")
@@ -115,7 +92,7 @@ def main(argv=None):
     parser.add_option(
         "--extend-at", dest="extend_at", type="choice",
         choices=("none", "3", "5", "both", "3only", "5only"),
-        help="extend at no, 3', 5' or both ends. If 3only or 5only "
+        help="extend at 3', 5' or both or no ends. If 3only or 5only "
         "are set, only the added sequence is returned [default=%default]")
 
     parser.add_option(
@@ -126,6 +103,7 @@ def main(argv=None):
         "--use-strand", dest="ignore_strand",
         action="store_false",
         help="use strand information and return reverse complement "
+        "on intervals located on the negative strand. "
         "[default=%default]")
 
     parser.set_defaults(
