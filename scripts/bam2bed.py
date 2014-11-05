@@ -37,7 +37,7 @@ Usage
 ----
 ::
 
-   cgat bam2bed BAMFILE [--merge-pairs|--region] [options]
+   cgat bam2bed BAMFILE [--merge-pairs] [options]
    
 operates on the file BAMFILE::
 
@@ -56,12 +56,7 @@ mapped base to rightmost mapped base::
    1       13119   13282   READ2     0       +
    1       13039   13258   READ1     7       +
 
-To output read intervals that overlap chromosome 1, coordinates 13000-13100::
-
-   cgat bam2bed example.bam --region=1:13000-13100
-
-The region and merge-pair options are not compatible. To use merge pairs on
-only a region of the genome use samtools view::
+To use merge pairs on only a region of the genome use samtools view::
 
    samtools view -ub example.bam 1:13000:13100 | cgat bam2bed --merge-pairs
 

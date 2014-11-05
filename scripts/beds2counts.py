@@ -18,11 +18,11 @@ of samples that a particular interval was found in.
 Example
 -------
 
-For example if the command:
+For example if the command::
 
     cgat bed2counts a.bed b.bed c.bed > output.tsv
 
-Is run, where a.bed-c.bed look like:
+is run, where a.bed-c.bed look like::
 
                      1         2         3         4
            012345678901234567890123456789012345678901234
@@ -32,7 +32,7 @@ Is run, where a.bed-c.bed look like:
 
     Union: ----------       -----               -------
 
-Then output.tsv will look like:
+Then output.tsv will look like::
 
     contig	start	end	count
     chr1	0	7	3

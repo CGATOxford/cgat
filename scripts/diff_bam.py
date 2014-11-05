@@ -27,18 +27,18 @@ Usage
 If you have two sorted :term:`sam` or :term:`bam` formatted
 files, type::
 
-   python diff_bam.py a.bam b.bam > out
+   cgat diff_bam a.bam b.bam > out
 
 If they are not sorted, you can use samtools sort to do an
 inplace sort::
 
-   python diff_bam.py <(samtools view -h a.bam | hsort 0 -k1,1)
+   cgat diff_bam <(samtools view -h a.bam | hsort 0 -k1,1)
                   <(samtools view -h b.bam | hsort 0 -k1,1)
 
-The ``-h`` option outputs the header, and the hsort command sorts
-without disturbing the header.
+The samtools ``-h`` option outputs the header, and the hsort command
+sorts without disturbing the header.
 
-An example output looks like this::
+An example output looks like this:
 
 +------------------------------------+----------+--------+--------+--------+---------+---------+
 |read                                |nlocations|nmatched|file1_nh|file2_nh|file1_loc|file2_loc|

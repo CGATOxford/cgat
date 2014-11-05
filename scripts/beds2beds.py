@@ -14,23 +14,24 @@ collection of unions or intersections.
 
 Options
 -------
+
 Files are collected by a regular expression pattern given to the option
 ``--pattern-identifier``.
 
 The script behaviour is determined by the ``--method`` option with either of
-the following choices::
+the following choices:
 
-  ``merged-combinations``
+``merged-combinations``
     merge intervals across :term:`bed` files and only report those
     that appear in every file.
 
-  ``unmerged-combinations``
+``unmerged-combinations``
     for each :term:`bed` file, report intervals that overlap with intervals
     in every other :term:`bed` file.
 
-If the ``--exclusive-overlap`` option is set, report exclusive overlap. Only intervals
-will be reported that overlap in a pairwise comparison but do not overlap with
-intervals in any of the other sets.
+If the ``--exclusive-overlap`` option is set, report exclusive
+overlap. Only intervals will be reported that overlap in a pairwise
+comparison but do not overlap with intervals in any of the other sets.
 
 This script requires bed files indexed by tabix_.
 
