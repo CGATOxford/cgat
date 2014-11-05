@@ -9,9 +9,9 @@ from collections import OrderedDict as odict
 from exomeReport import *
 
 
-class snp(ExomeTracker):
+class Snp(ExomeTracker):
 
-    pattern = "^\S{5,6}_mutect_snp_annotated_tsv$"
+    pattern = "(_?\S{5,6})_mutect_snp_annotated_tsv$"
 
     def __call__(self, track, slice=None):
 
@@ -23,7 +23,7 @@ class snp(ExomeTracker):
         A.SNPEFF_IMPACT AS Impact, A.SNPEFF_GENE_BIOTYPE AS Biotype,
         SNPEFF_AMINO_ACID_CHANGE AS AA_change,
         SNPEFF_CODON_CHANGE AS Codon_change,
-        C.function, C.type as NCG, C.cancer_type,
+        C.type as NCG, C.cancer_type,
         B.n_ref_count AS Normal_Ref, B.n_alt_count AS Normal_Alt,
         B.t_ref_count AS Tumor_Ref, B.t_alt_count AS Tumor_Alt
         FROM %(track)s_mutect_snp_annotated_tsv AS A
@@ -31,15 +31,18 @@ class snp(ExomeTracker):
         ON A.CHROM = B.contig AND A.POS = B.position
         LEFT OUTER JOIN cancergenes as C
         ON A.SNPEFF_GENE_NAME = C.symbol
-        WHERE A.FILTER!="REJECT" AND B.t_alt_count > 4;
+        WHERE A.FILTER!='REJECT'
+        AND B.t_alt_count > 3
+        AND (1.0*B.n_alt_count)/(B.n_ref_count + B.n_alt_count) < 0.03
+        AND (1.0*B.t_alt_count)/(B.t_ref_count + B.t_alt_count) > 0.06
+        AND (B.n_ref_count + B.n_alt_count) > 19;
         ''' % locals()
-
         return self.getAll(statement)
 
 
-class indel(ExomeTracker):
+class Indel(ExomeTracker):
 
-    pattern = "^\S{5,6}_indels_annotated_tsv$"
+    pattern = "(_?\S{5,6})_indels_annotated_tsv$"
 
     def __call__(self, track, slice=None):
 
@@ -51,7 +54,7 @@ class indel(ExomeTracker):
         A.SNPEFF_IMPACT AS Impact, A.SNPEFF_GENE_BIOTYPE AS Biotype,
         A.SNPEFF_AMINO_ACID_CHANGE AS AA_change,
         A.SNPEFF_CODON_CHANGE AS Codon_change,
-        B.function, B.type as NCG, B.cancer_type,
+        B.type as NCG, B.cancer_type,
         A.NORMAL_DP AS Normal_depth,
         A.TUMOR_DP AS Tumor_depth,
         A.NORMAL_TAR as Normal_Ref, A.NORMAL_TIR as Normal_Alt,
@@ -66,9 +69,9 @@ class indel(ExomeTracker):
         return self.getAll(statement)
 
 
-class filterSummary(ExomeTracker):
+class FilterSummary(ExomeTracker):
 
-    pattern = "^\S{5,6}_mutect_filtering_summary$"
+    pattern = "(_?\S{5,6})_mutect_filtering_summary$"
 
     def __call__(self, track, slice=None):
 

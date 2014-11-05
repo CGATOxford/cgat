@@ -12,10 +12,10 @@ S/N Ratio based on median
 The following plots take a subset of genomic windows for estimating
 the signal/noise ratio.
 
-To create the plots, the read count in each window is divided by the median read
-count across all windows. The idea is to observe a subset of windows
-that have read-counts that are much higher than the median. It is
-helpful to compare these data with input tracks.
+To create the plots, the read count in each window is divided by the
+median read count across all windows. The idea is to observe a subset
+of windows that have read-counts that are much higher than the
+median. It is helpful to compare these data with input tracks.
 
 The assumption in these plots is that less than half the windows are
 enriched for signal and thus the median reflects the number of reads

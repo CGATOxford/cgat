@@ -804,7 +804,8 @@ def mergeAndLoad(infiles,
     tablename = toTable(outfile)
 
     if row_wise:
-        transform = """| perl -p -e "s/bin/track/" | python %(scriptsdir)s/table2table.py --transpose""" % PARAMS
+        transform = """| perl -p -e "s/bin/track/"
+        | python %(scriptsdir)s/table2table.py --transpose""" % PARAMS
     else:
         transform = ""
 
@@ -1756,6 +1757,10 @@ def run_report(clean=True):
         erase_return = "|| true"
     else:
         erase_return = ""
+
+    # in the latest, xvfb always returns with an error, thus
+    # ignore these.
+    erase_return == "|| true"
 
     if clean:
         clean = """rm -rf report _cache _static;"""

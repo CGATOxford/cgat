@@ -78,9 +78,6 @@ for a definition of the field contents.
 Duplicate metrics
 =================
 
-The current section is currently not completed. No data will be shown below.
-
-
 The following table presents an overview of the duplicate metrics
 for each :term:`track`.  See the 
 `Picard metrics <http://picard.sourceforge.net/picard-metric-definitions.shtml#DuplicationMetrics>`_

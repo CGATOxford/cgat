@@ -1,4 +1,4 @@
-.. _deseqspikein:
+.. _edgerspikein:
 
 =========
 Spike-Ins
@@ -27,7 +27,7 @@ Power analysis
 The following plots show the proportion of windows in the observed
 data that fall within a certain range of FDR and power.
 
-.. report:: DifferentialMethylation.TrackerDESeqPower
+.. report:: DifferentialMethylation.TrackerEdgeRPower
    :render: matrix-plot
    :groupby: track
    :palette: Blues
@@ -46,9 +46,9 @@ Number of data points that have been spiked in for each data set. The
 actual number is twice the one shown as data points are added in a
 symmetrized fashion.
 
-.. report:: DifferentialMethylation.TrackerDESeqSpikeIn
+.. report:: DifferentialMethylation.TrackerEdgeRSpikeIn
    :render: matrixNP-plot
-   :glob: deseq.dir/*.tsv.spiked.gz
+   :glob: edger.dir/*.tsv.spiked.gz
    :palette: Blues
    :xtitle: l2fold
    :ytitle: l10counts
@@ -60,11 +60,11 @@ symmetrized fashion.
 Spike results
 =============
 
-The following plots show the percentage of spiked-in data points that
-have been detected at various levels of fold-change and read count
-level. The plots shown here are for an FDR level of 10%.
+The following plots show the percentage of spike-ins that have been
+detected at various levels of fold-change and read count level. The
+plots shown here are for an FDR level of 10%.
 
-.. report:: DifferentialMethylation.TrackerDESeqSpikeInPercent
+.. report:: DifferentialMethylation.TrackerEdgeRSpikeInPercent
    :render: matrix-plot
    :groupby: track
    :palette: BrBG
@@ -83,9 +83,9 @@ The plots below show the number of windows that fall into the same
 categories as the spike-ins in terms of fold-change and read-count
 level.
 
-.. report:: DifferentialMethylation.TrackerDESeqSpikeIn
+.. report:: DifferentialMethylation.TrackerEdgeRSpikeIn
    :render: matrixNP-plot
-   :glob: deseq.dir/*.tsv.unspiked.gz
+   :glob: edger.dir/*.tsv.unspiked.gz
    :palette: Blues
    :xtitle: l2fold
    :ytitle: l10counts
@@ -94,4 +94,3 @@ level.
    :logscale: z
 
    Number of data points that have been spiked in.
-

@@ -1,6 +1,6 @@
-==============
+==============================
 Exome Cancer Variants pipeline
-==============
+==============================
 
 Contents:
 
@@ -10,6 +10,7 @@ Contents:
    pipeline/Mapping.rst
    pipeline/Coverage.rst
    pipeline/Filtered.rst
-
-.. errorlist::   
+   pipeline/Signature.rst
    
+.. errorlist::
+

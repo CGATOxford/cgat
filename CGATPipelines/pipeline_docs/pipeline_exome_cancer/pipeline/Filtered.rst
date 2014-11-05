@@ -10,7 +10,7 @@ Candidate Somatic SNP variants
 
 The following tables present candidate somatic SNP variants.
 
-.. report:: Filtered.snp
+.. report:: Filtered.Snp
    :render: table
    :large: xls
    :groupby: track
@@ -23,7 +23,7 @@ Candidate Somatic INDEL variants
 
 The following tables present candidate somatic INDEL variants.
 
-.. report:: Filtered.indel
+.. report:: Filtered.Indel
    :render: table
    :large: xls
    :groupby: track
@@ -49,7 +49,7 @@ SNP Filtering Summary
 
 The following tables present the filtering summaries for SNP filtering
 
-.. report:: Filtered.filterSummary
+.. report:: Filtered.FilterSummary
    :render: table
    :large: xls
    :groupby: track
@@ -62,19 +62,19 @@ Tables for download
 
 All candidate Somatic SNP variants
 =======================================
-.. report:: Filtered.snp
+.. report:: Filtered.Snp
    :render: xls-table
    :force:
 
 All candidate Somatic INDEL variants
 =======================================
-.. report:: Filtered.indel
+.. report:: Filtered.Indel
    :render: xls-table
    :force:
 
 Candidate Somatic SNP variants by patient ID
 =======================================
-.. report:: Filtered.snp
+.. report:: Filtered.Snp
    :render: xls-table
    :groupby: track
    :force:
@@ -82,14 +82,14 @@ Candidate Somatic SNP variants by patient ID
 
 Candidate Somatic INDEL variants by patient ID
 =======================================
-.. report:: Filtered.indel
+.. report:: Filtered.Indel
    :render: xls-table
    :groupby: track
    :force:
 
 SNP Filtering Summary
 =======================================
-.. report:: Filtered.filterSummary
+.. report:: Filtered.FilterSummary
    :render: xls-table
    :force:
 

@@ -2,7 +2,7 @@
 Coverage
 ========
 
-Mapping summary
+Coverage summary
 ==========================
 The following table and plots present coverage metrics for the
 samples.
@@ -102,19 +102,3 @@ The following plot shows the fold enrichment of target regions over background
 	       legend.text=element_text(size=20))
 
 
-# The following plot shows the percentage of taget bases covered at a
-# range of coverage thresholds for each sample.
-#
-# reportMapping.PicardCoverageStats
-# 
-###########################
-#  work out column names for melted table and change renderer to r-ggplot   
-#  statement   aes(x=Data,y=value,group=sample) +
-# 	       geom_line(aes(colour=sample)) +
-# 	       xlab('') +
-# 	       ylab('Target bases at coverage threshold (%)') +
-#	       theme(
-#	       axis.text.x=element_text(size=15,angle=90),
-#	       axis.text.y=element_text(size=15),
-#	       axis.title.y=element_text(size=15)
-############################

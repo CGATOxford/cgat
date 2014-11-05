@@ -34,8 +34,13 @@ Purpose
 
 Runs MEDIPS from the commandline.
 
-Usage
------
+Note that the appropriate UCSC genome file has to have been downloaded
+previously in Bioconductor::
+
+   source("http://bioconductor.org/biocLite.R")
+   biocLite("BSgenome.Hsapiens.UCSC.hg19")
+   biocLite("BSgenome.Rnorvegicus.UCSC.rn5")
+   ...
 
 Documentation
 -------------
@@ -51,6 +56,7 @@ import tempfile
 
 # for zinba
 from rpy2.robjects import r as R
+import rpy2.rinterface
 
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
@@ -162,6 +168,22 @@ def main(argv=None):
                       "density normalized rms data is computed"
                       "[default=%default].")
 
+    parser.add_option("--output-rdata", dest="output_rdata",
+                      action="store_true",
+                      help="in dmr analysis, write R session to file. "
+                      "The file name "
+                      "is given by --ouptut-filename-pattern [%default].")
+
+    parser.add_option("--rdata-file", dest="input_rdata",
+                      type="string",
+                      help="in dmr analysis, read saved R session from "
+                      "file. This can be used to apply different "
+                      "filters [%default]")
+
+    parser.add_option("--fdr-threshold", dest="fdr_threshold", type="float",
+                      help="FDR threshold to apply for selecting DMR "
+                      "[default=%default].")
+
     parser.set_defaults(
         input_format="bam",
         ucsc_genome="Hsapiens.UCSC.hg19",
@@ -177,7 +199,10 @@ def main(argv=None):
         treatment_files=[],
         control_files=[],
         input_files=[],
+        output_rdata=False,
+        input_rdata=None,
         is_medip=True,
+        fdr_threshold=0.1,
     )
 
     # add common options (-h/--help, ...) and parse command line
@@ -230,7 +255,8 @@ def main(argv=None):
             R('''write.table(sr$estimation, file ='%s', sep='\t')''' %
               E.getOutputFile("%s_saturation_estimation.tsv" % fn))
 
-            outfile = IOTools.openFile("%s_saturation.tsv" % fn, "w")
+            outfile = IOTools.openFile(
+                E.getOutputFile("%s_saturation.tsv" % fn, "w"))
             outfile.write("category\tvalues\n")
             outfile.write(
                 "estimated_correlation\t%s\n" %
@@ -303,103 +329,143 @@ def main(argv=None):
             outfile.write("\n")
         outfile.close()
 
-    if "dmr" in options.toolset or "correlation" in options.toolset \
-       or do_all:
-        # build four sets
-        for x, fn in enumerate(options.treatment_files):
-            R('''treatment_R%(x)i = MEDIPS.createSet(
-            file='%(fn)s',
-            BSgenome='%(genome_file)s',
-            shift=%(shift)i,
-            extend=%(extend)i,
-            window_size=%(window_size)i,
-            uniq=%(uniq)s)''' % locals())
-        R('''treatment_set = c(%s)''' %
-          ",".join(["treatment_R%i" % x
-                    for x in range(len(options.treatment_files))]))
+    if options.input_rdata:
+        E.info("reading R session info from '%s'" % options.input_rdata)
+        R('''load('%s')''' % options.input_rdata)
 
-        if options.control_files:
-            for x, fn in enumerate(options.control_files):
-                R('''control_R%(x)i = MEDIPS.createSet(
+    else:
+        if "dmr" in options.toolset or "correlation" in options.toolset \
+           or do_all:
+            # build four sets
+            for x, fn in enumerate(options.treatment_files):
+                E.info("loading '%s'" % fn)
+                R('''treatment_R%(x)i = MEDIPS.createSet(
                 file='%(fn)s',
                 BSgenome='%(genome_file)s',
                 shift=%(shift)i,
                 extend=%(extend)i,
                 window_size=%(window_size)i,
                 uniq=%(uniq)s)''' % locals())
-            R('''control_set = c(%s)''' %
-              ",".join(["control_R%i" % x
-                        for x in range(len(options.control_files))]))
+            R('''treatment_set = c(%s)''' %
+              ",".join(["treatment_R%i" % x
+                        for x in range(len(options.treatment_files))]))
 
-        # build coupling vector
-        R('''CS = MEDIPS.couplingVector(pattern="CG",
-        refObj = treatment_set[[1]])''')
+            if options.control_files:
+                for x, fn in enumerate(options.control_files):
+                    E.info("loading '%s'" % fn)
+                    R('''control_R%(x)i = MEDIPS.createSet(
+                    file='%(fn)s',
+                    BSgenome='%(genome_file)s',
+                    shift=%(shift)i,
+                    extend=%(extend)i,
+                    window_size=%(window_size)i,
+                    uniq=%(uniq)s)''' % locals())
+                R('''control_set = c(%s)''' %
+                  ",".join(["control_R%i" % x
+                            for x in range(len(options.control_files))]))
 
-        if "correlation" in options.toolset or do_all:
-            R('''cor.matrix = MEDIPS.correlation(
-            c(treatment_set, control_set))''')
+            # build coupling vector
+            R('''CS = MEDIPS.couplingVector(pattern="CG",
+            refObj = treatment_set[[1]])''')
 
-            R('''write.table(cor.matrix,
-            file='%s',
-            sep="\t")''' % E.getOutputFile("correlation"))
+            if "correlation" in options.toolset or do_all:
+                R('''cor.matrix = MEDIPS.correlation(
+                c(treatment_set, control_set))''')
 
-        if "dmr" in options.toolset or do_all:
-            # Data that does not fit the model causes
-            # "Error in 1:max_signal_index : argument of length 0"
-            # The advice is to set MeDIP=FALSE
-            # See: http://comments.gmane.org/gmane.science.biology.informatics.conductor/52319
+                R('''write.table(cor.matrix,
+                file='%s',
+                sep="\t")''' % E.getOutputFile("correlation"))
 
-            if options.is_medip:
-                medip = "TRUE"
-            else:
-                medip = "FALSE"
+            if "dmr" in options.toolset or do_all:
+                # Data that does not fit the model causes
+                # "Error in 1:max_signal_index : argument of length 0"
+                # The advice is to set MeDIP=FALSE
+                # See: http://comments.gmane.org/gmane.science.biology.informatics.conductor/52319
 
-            R('''meth = MEDIPS.meth(
-            MSet1 = treatment_set,
-            MSet2 = control_set,
-            CSet = CS,
-            ISet1 = NULL,
-            ISet2 = NULL,
-            p.adj = "bonferroni",
-            diff.method = "edgeR",
-            prob.method = "poisson",
-            MeDIP = %(medip)s,
-            CNV = F,
-            type = "rpkm",
-            minRowSum = 1)''' % locals())
+                if options.is_medip:
+                    medip = "TRUE"
+                else:
+                    medip = "FALSE"
 
-            # test windows for differential methylation
-            R('''tested = MEDIPS.selectSig(meth,
-            adj=T,
-            ratio=NULL,
-            p.value=0.1,
-            bg.counts=NULL,
-            CNV=F)''')
+                E.info("applying test for differential methylation")
+                R('''meth = MEDIPS.meth(
+                MSet1 = treatment_set,
+                MSet2 = control_set,
+                CSet = CS,
+                ISet1 = NULL,
+                ISet2 = NULL,
+                p.adj = "bonferroni",
+                diff.method = "edgeR",
+                prob.method = "poisson",
+                MeDIP = %(medip)s,
+                CNV = F,
+                type = "rpkm",
+                minRowSum = 1)''' % locals())
 
-            R('''write.table(tested,
-            file=gzfile('%s', 'w'),
-            sep="\t",
-            quote=F)''' % E.getOutputFile("windows.gz"))
+                # Disabled for now - several Gb in size
+                # Output full methylation data table
+                # R('''write.table(meth,
+                # file=gzfile('%s', 'w'),
+                # sep="\t",
+                # quote=F)''' % E.getOutputFile("data.tsv.gz"))
 
-            # select gain and merge adjacent windows
+                # save R session
+                if options.output_rdata:
+                    R('''save.image(file='%s', safe=FALSE)''' %
+                      E.getOutputFile("session.RData"))
+
+    # DMR analysis - test for windows and output
+    if "dmr" in options.toolset:
+
+        E.info("selecting differentially methylated windows")
+
+        # test windows for differential methylation
+        fdr_threshold = options.fdr_threshold
+        R('''tested = MEDIPS.selectSig(meth,
+        adj=T,
+        ratio=NULL,
+        p.value=%(fdr_threshold)f,
+        bg.counts=NULL,
+        CNV=F)''' % locals())
+
+        R('''write.table(tested,
+        file=gzfile('%s', 'w'),
+        sep="\t",
+        quote=F)''' % E.getOutputFile("significant_windows.gz"))
+
+        # select gain and merge adjacent windows
+        try:
             R('''gain = tested[which(tested[, grep("logFC", colnames(tested))] > 0),];
-                 gain_merged = MEDIPS.mergeFrames(frames=gain, distance=1)''')
-
-            R('''write.table(gain_merged,
-            file=gzfile('%s', 'w'),
+            gain_merged = MEDIPS.mergeFrames(frames=gain, distance=1)''')
+            E.info('gain output: %s, merged: %s' %
+                   (str(R('''dim(gain)''')),
+                    str(R('''dim(gain_merged)'''))))
+            R('''of=gzfile('%s', 'w');
+            write.table(gain_merged,
+            file=of,
             sep="\t",
+            quote=F,
             row.names=FALSE,
-            col.names=FALSE)''' % E.getOutputFile("gain.bed.gz"))
-
-            # select loss and merge adjacent windows
+            col.names=FALSE); close(of)''' % E.getOutputFile("gain.bed.gz"))
+        except rpy2.rinterface.RRuntimeError, msg:
+            E.warn("could not compute gain windows: msg=%s" % msg)
+        # select loss and merge adjacent windows
+        try:
             R('''loss = tested[which(tested[, grep("logFC", colnames(tested))] < 0),];
-                 loss_merged = MEDIPS.mergeFrames(frames=gain, distance=1)''')
+            loss_merged = MEDIPS.mergeFrames(frames=loss, distance=1)''')
+            E.info('loss output: %s, merged: %s' %
+                   (str(R('''dim(loss)''')),
+                    str(R('''dim(loss_merged)'''))))
 
-            R('''write.table(loss_merged,
-            file=gzfile('%s', 'w'),
+            R('''of=gzfile('%s', 'w');
+            write.table(loss_merged,
+            file=of,
             sep="\t",
-            row.names=FALSE,
-            col.names=FALSE)''' % E.getOutputFile("loss.bed.gz"))
+            quote=F,
+            row.names=F,
+            col.names=F); close(of)''' % E.getOutputFile("loss.bed.gz"))
+        except rpy2.rinterface.RRuntimeError, msg:
+            E.warn("could not compute loss windows: msg=%s" % msg)
 
     # if "rpm" in options.toolset or do_all:
     #     outputfile = E.getOutputFile("rpm.wig")

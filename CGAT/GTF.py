@@ -66,11 +66,12 @@ def quote(v):
 class Entry:
 
     """read/write gtf formatted entry.
-
-    The coordinates are kept internally in python coordinates (0-based, open-closed),
-    but are output as inclusive 1-based coordinates according to
+    The coordinates are kept internally in python coordinates
+    (0-based, open-closed), but are output as inclusive 1-based
+    coordinates according to
 
     http://www.sanger.ac.uk/Software/formats/GFF/
+
     """
 
     def __init__(self):
@@ -89,7 +90,8 @@ class Entry:
     def read(self, line):
         """read gff entry from line.
 
-        <seqname> <source> <feature> <start> <end> <score> <strand> <frame> [attributes] [comments]
+        <seqname> <source> <feature> <start> <end> <score> \
+              <strand> <frame> [attributes] [comments]
         """
 
         data = line[:-1].split("\t")
@@ -282,8 +284,10 @@ class Entry:
     def hasOverlap(self, other, min_overlap=0):
         """returns true, if overlap with other entry.
         """
-        return (self.contig == other.contig and self.strand == other.strand and
-                min(self.end, other.end) - max(self.start, other.start) > min_overlap)
+        return (self.contig == other.contig and
+                self.strand == other.strand and
+                min(self.end, other.end) -
+                max(self.start, other.start) > min_overlap)
 
     def isIdentical(self, other, max_slippage=0):
         """returns true, if self and other overlap completely.
@@ -306,8 +310,10 @@ def Overlap(entry1, entry2, min_overlap=0):
     """returns true, if entry1 and entry2 overlap.
     """
 
-    return (entry1.contig == entry2.contig and entry1.strand == entry2.strand and
-            min(entry1.end, entry2.end) - max(entry1.start, entry2.start) > min_overlap)
+    return (entry1.contig == entry2.contig and
+            entry1.strand == entry2.strand and
+            min(entry1.end, entry2.end) -
+            max(entry1.start, entry2.start) > min_overlap)
 
 
 def Identity(entry1, entry2, max_slippage=0):
@@ -491,7 +497,8 @@ def transcript_iterator(gff_iterator, strict=True):
             if last:
                 yield matches
             matches = []
-            assert not strict or this not in found, "duplicate entry: %s" % this
+            assert not strict or this not in found, \
+                "duplicate entry: %s" % this
             found.add(this)
             last = this
         matches.append(gff)
@@ -555,7 +562,8 @@ def gene_iterator(gff_iterator, strict=True):
                 yield matches
             matches = []
             last = gffs[0]
-            assert not strict or last.gene_id not in found, "duplicate entry %s" % last
+            assert not strict or last.gene_id not in found, \
+                "duplicate entry %s" % last
             found.add(last.gene_id)
 
         matches.append(gffs)
@@ -588,7 +596,8 @@ def flat_gene_iterator(gff_iterator, strict=True):
             matches = []
             last = gff
             if strict:
-                assert last.gene_id not in found, "duplicate entry %s" % last.gene_id
+                assert last.gene_id not in found, \
+                    "duplicate entry %s" % last.gene_id
                 found.add(last.gene_id)
         matches.append(gff)
 
@@ -724,12 +733,14 @@ def toIntronIntervals(chunk):
     '''
     if len(chunk) == 0:
         return []
-    contig, strand, transcript_id = chunk[
-        0].contig, chunk[0].strand, chunk[0].transcript_id
+    contig, strand, transcript_id = (chunk[0].contig,
+                                     chunk[0].strand,
+                                     chunk[0].transcript_id)
     for gff in chunk:
         assert gff.strand == strand, "features on different strands."
         assert gff.contig == contig, "features on different contigs."
-        assert gff.transcript_id == transcript_id, "more than one transcript submitted"
+        assert gff.transcript_id == transcript_id, \
+            "more than one transcript submitted"
 
     intervals = Intervals.combine([(x.start, x.end)
                                    for x in chunk if x.feature == "exon"])
@@ -912,8 +923,9 @@ def iterator_overlaps(gff_iterator, min_overlap=0):
             last = this
             continue
 
-        assert last.start <= this.start, "input file needs to be sorted by contig, start:\n%s\n%s\n" % (
-            str(last), str(this))
+        assert last.start <= this.start, \
+            "input file needs to be sorted by contig, start:\n%s\n%s\n" % \
+            (str(last), str(this))
         matches.append(this)
         last = this
         end = max(end, this.end)

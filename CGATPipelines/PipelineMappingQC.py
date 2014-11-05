@@ -242,7 +242,7 @@ def loadPicardMetrics(infiles, outfile, suffix,
                 break
 
         if len(lines) == 0:
-            E.warn("no lines in %s: %s" % (track, f))
+            E.warn("no lines in %s: %s" % (track, filename))
             continue
         if first:
             outf.write("%s\t%s" % ("track", lines[0]))
