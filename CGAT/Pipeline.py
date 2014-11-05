@@ -69,10 +69,7 @@ import hgapi
 from Local import *
 from ruffus import *
 
-# use threading instead of multiprocessing
 from multiprocessing.pool import ThreadPool
-# note that threading can cause problems with rpy.
-task.Pool = ThreadPool
 
 import logging as L
 from CGAT import Experiment as E
@@ -1914,7 +1911,6 @@ def main(args=sys.argv):
         multiprocess=2,
         logfile="pipeline.log",
         dry_run=False,
-        without_cluster=False,
         force=False,
         log_exceptions=False,
         exceptions_terminate_immediately=False,
@@ -2006,6 +2002,14 @@ def main(args=sys.argv):
             if options.pipeline_action == "make":
 
                 if not options.without_cluster:
+                    global task
+                    # use threading instead of multiprocessing in order to
+                    # limit the number of concurrent jobs by using the
+                    # GIL
+                    #
+                    # Note that threading might cause problems with rpy.
+                    task.Pool = ThreadPool
+
                     # create the session proxy
                     GLOBAL_SESSION = drmaa.Session()
                     GLOBAL_SESSION.initialize()
