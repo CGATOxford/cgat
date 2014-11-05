@@ -32,9 +32,10 @@ rrbs pipeline
 
 
 ######## UPDATE THIS SECTION ############
-(See the readqc pipeline for details of the readqc functions (target ``readqc``).)
+(See the readqc pipeline for details of the readqc functions
+(target ``readqc``).)
 
-The purpose of this pipeline is to pre-process reads (target ``full``). 
+The purpose of this pipeline is to pre-process reads (target ``full``).
 
 Implemented tasks are:
 
@@ -48,7 +49,8 @@ Individual tasks are enabled in the configuration file.
 Usage
 =====
 
-See :ref:`PipelineSettingUp` and :ref:`PipelineRunning` on general information how to use CGAT pipelines.
+See :ref:`PipelineSettingUp` and :ref:`PipelineRunning`
+on general information how to use CGAT pipelines.
 
 Configuration
 -------------
@@ -89,36 +91,30 @@ The default file format assumes the following convention:
 :term:`experiment`. The ``suffix`` determines the file type.  The
 following suffixes/file types are possible:
 
-sra
-   Short-Read Archive format. Reads will be extracted using the :file:`fastq-dump` tool.
 
 fastq.gz
    Single-end reads in fastq format.
 
 fastq.1.gz, fastq2.2.gz
-   Paired-end reads in fastq format. The two fastq files must be sorted by read-pair.
-
-.. note::
-
-   Quality scores need to be of the same scale for all input files. Thus it might be
-   difficult to mix different formats.
+   Paired-end reads in fastq format.
+   The two fastq files must be sorted by read-pair.
 
 Requirements
 ------------
 
-On top of the default CGAT setup, the pipeline requires the following software to be in the 
-path:
+On top of the default CGAT setup, the pipeline requires the following
+software to be in the path:
 
-+--------------------+-------------------+------------------------------------------------+
-|*Program*           |*Version*          |*Purpose*                                       |
-+--------------------+-------------------+------------------------------------------------+
-|fastqc              |>=0.9.0            |read quality control                            |
-+--------------------+-------------------+------------------------------------------------+
-|sra-tools           |                   |extracting reads from .sra files                |
-+--------------------+-------------------+------------------------------------------------+
-|picard              |>=1.38             |bam/sam files. The .jar files need to be in your|
-|                    |                   | CLASSPATH environment variable.                |
-+--------------------+-------------------+------------------------------------------------+
++---------------+----------+------------------------------------------------+
+|*Program*      |*Version* |*Purpose*                                       |
++---------------+----------+------------------------------------------------+
+|fastqc         |>=0.9.0   |read quality control                            |
++---------------+----------+------------------------------------------------+
+|sra-tools      |          |extracting reads from .sra files                |
++---------------+----------+------------------------------------------------+
+|picard         |>=1.38    |bam/sam files. The .jar files need to be in your|
+|               |          | CLASSPATH environment variable.                |
++---------------+----------+------------------------------------------------+
 
 Pipeline output
 ===============
@@ -129,21 +125,12 @@ quality of the sequence archive
 Example
 =======
 
-Example data is available at
-http://www.cgat.org/~andreas/sample_data/pipeline_readqc.tgz.  To run
-the example, simply unpack and untar::
-
-   wget http://www.cgat.org/~andreas/sample_data/pipeline_readqc.tgz
-   tar -xvzf pipeline_readqc.tgz
-   cd pipeline_readqc
-   python <srcdir>/pipeline_readqc.py make full
-
+Example data is available at ?
+To run the example, simply unpack and untar::
 
 TODO
 ====
 
-Code needs to be modularised, adapter sequences need to be moved to
-/ifs/annotation.
 
 Code
 ====
@@ -254,7 +241,7 @@ SEQUENCEFILES = tuple([os.path.join(DATADIR, suffix_name)
                       for suffix_name in SEQUENCESUFFIXES])
 
 SEQUENCEFILES_REGEX = regex(
-    r".*/(\S+).(?P<suffix>fastq.1.gz|fastq.gz|fa.gz|sra|csfasta.gz|csfasta.F3.gz|export.txt.gz)")
+    r".*/(\S+).(?P<suffix>fastq.1.gz|fastq.gz)")
 
 #########################################################################
 # summarise read 3'
@@ -332,11 +319,9 @@ def mapReadsWithBismark(infile, outfile):
     print "job options: " + job_options
     outdir = "bismark.dir"
     bismark_options = PARAMS["bismark_options"]
-    
     to_cluster = True
     m = PipelineMapping.Bismark()
     statement = m.build((infile,), outfile)
-    
     P.run()
 
 #########################################################################
@@ -344,15 +329,6 @@ def mapReadsWithBismark(infile, outfile):
 #########################################################################
 
 
-# removed subdivide as it was causing issues downstream when I want to
-# merge the .cov files with an input file (e.g mergeCoverage)
-# should be able to remove CG,CHH & CHG files as only .cov file used downstream
-'''@subdivide(mapReadsWithBismark,
-           regex("bismark.dir/(\S+).bam"),
-           [r"methylation.dir/CpG_context_\1.txt.gz",
-            r"methylation.dir/CHG_context_\1.txt.gz",
-            r"methylation.dir/CHH_context_\1.txt.gz",
-            r"methylation.dir/\1.bismark.cov"])'''
 @follows(mkdir("methylation.dir"))
 @transform(mapReadsWithBismark,
            regex("bismark.dir/(\S+).bam"),
@@ -446,20 +422,20 @@ def makeCpgIslandsBed(outfile):
     out.close()
 
 
-#@follows(makeCpgIslandsBed)
-#@transform(sortFilterAndIndexBams,
-#           regex("bismark.dir/(\S+).sorted.bam"),
-#           add_inputs(makeCpgIslandsBed),
-#           r"coverage.dir/\1.cpg.coverage")
-#def overlapCpgIslands(infiles, outfile):
-#    infile, bed = infiles
+# @follows(makeCpgIslandsBed)
+# @transform(sortFilterAndIndexBams,
+#            regex("bismark.dir/(\S+).sorted.bam"),
+#            add_inputs(makeCpgIslandsBed),
+#            r"coverage.dir/\1.cpg.coverage")
+# def overlapCpgIslands(infiles, outfile):
+#     infile, bed = infiles
 #
-#    job_options = "-l mem_free=1G"
-#    statement = '''samtools view -b %(infile)s|
-#                   coverageBed -hist -d -abam stdin -b %(bed)s
-#                   > %(outfile)s''' % locals()
-#    print statement
-#    P.run()
+#     job_options = "-l mem_free=1G"
+#     statement = '''samtools view -b %(infile)s|
+#                    coverageBed -hist -d -abam stdin -b %(bed)s
+#                    > %(outfile)s''' % locals()
+#     print statement
+#     P.run()
 
 ########################################################################
 # RRBS alternative CpGI coverage summary
@@ -499,6 +475,7 @@ def make1basedCpgIslands(infile, outfiles):
 @transform(make1basedCpgIslands,
            regex("coverage.dir/(\S+).load"),
            r"coverage.dir/cpg_table.load")
+# not currently implemented
 def joinAllCpGsAndCpGIslands(infile, outfile):
 
     tablename = P.toTable(outfile)
@@ -507,16 +484,15 @@ def joinAllCpGsAndCpGIslands(infile, outfile):
                    SELECT *"'''
 
 
-
-
 #########################################################################
 # load bismark coverage and join tables in sql
 #########################################################################
 
-# this is just for testing BiSeq etc, delete in future
+
 @transform(callMethylationStatus,
            suffix(".bismark.cov"),
            r".bismark.subset100.cov")
+# this is just for testing BiSeq etc, delete in future
 def subsetCoverage(infile, outfile):
     statement = '''awk '($5+$6)>100' %(infile)s > %(outfile)s''' % locals()
     print statement
@@ -533,29 +509,6 @@ def findCpGs(outfile):
 
     RRBS.fasta2CpG(genome_infile, outfile, submit=True, jobOptions=job_options)
 
-
-# re-coded mergeAndDrop to deal with input without header
-# so that makeCoverageHeader and addHeaderToCoverage can be removed
-
-#@follows(callMethylationStatus)
-#@originate("methylation.dir/coverage_header.tsv")
-#def makeCoverageHeader(outfile):
-#    f = open(outfile, "w")
-#    f.write("%s\t%s\t%s\t%s\t%s\t%s\n" % ("contig", "start", "stop",
-#                                          "meth_perc", "count_meth",
-#                                          "count_unmeth"))
-#    f.close()
-#
-#
-#@follows(makeCoverageHeader)
-#@transform(callMethylationStatus,
-#           regex("methylation.dir/(\S+).fastq(\S+)bismark.cov"),
-#           add_inputs(makeCoverageHeader),
-#           r"methylation.dir/\1.cov")
-#def addHeaderToCoverage(infiles, outfile):
-#    infile, header = infiles
-#    statement = '''cat %(header)s %(infile)s > %(outfile)s''' % locals()
-#    P.run()
 
 @follows(findCpGs)
 @merge([callMethylationStatus,
@@ -585,6 +538,7 @@ def addCpGIs(infiles, outfile):
                      right=['contig', 'position'],
                      submit=True, jobOptions=job_options)
 
+
 @transform(addCpGIs,
            suffix(".tsv"),
            ".load")
@@ -605,16 +559,16 @@ def loadMergeCoverage(infile, outfile):
 #########################################################################
 #########################################################################
 #########################################################################
-# this is an entirely different approach to generating the coverage table by  
+# this is an entirely different approach to generating the coverage table
 # using sqlite3. Currently not correctly implemented (requires multiple
 # inner joins and union in sqlite3 command)
-#@jobs_limit(1)
-#@follows(makeCoverageHeader)
-#@transform(callMethylationStatus,
+# @jobs_limit(1)
+# @follows(makeCoverageHeader)
+# @transform(callMethylationStatus,
 #           suffix(".cov"),
 #           add_inputs(makeCoverageHeader),
 #           ".cov.load")
-#def loadAndIndexBismarkCoverage(infiles, outfile):
+# def loadAndIndexBismarkCoverage(infiles, outfile):
 #    infile, header = infiles
 #    dbh = connect()
 #    tablename = P.toTable(outfile)
@@ -622,7 +576,7 @@ def loadMergeCoverage(infile, outfile):
 #    index = "idx" + re.sub('_fastq_.+', "", tablename)
 #
 #
-#    statement = '''cat %(header)s %(infile)s | 
+#    statement = '''cat %(header)s %(infile)s |
 #                python %(scriptsdir)s/csv2db.py
 #                --table %(tablename)s --retry --ignore-empty
 #                 > %(outfile)s;
@@ -631,9 +585,9 @@ def loadMergeCoverage(infile, outfile):
 #    P.run()
 #
 #
-#@merge(loadAndIndexBismarkCoverage,
+# @merge(loadAndIndexBismarkCoverage,
 #       "methylation.dir/csvdb_join_bismark_coverage.sentinel")
-#def joinBismarkCoverage(infiles, outfile):
+# def joinBismarkCoverage(infiles, outfile):
 #    print infiles
 #    print outfile
 #
@@ -650,7 +604,8 @@ def loadMergeCoverage(infile, outfile):
 #        new_columns.append(letter +
 #                           ".count_meth AS %(column_track)s_meth" % locals())
 #        new_columns.append(letter +
-#                           ".count_unmeth AS %(column_track)s_unmeth" % locals())
+#                           ".count_unmeth AS %(column_track)s_unmeth" %
+#                           locals())
 #        if n == 0:
 #            tables.append("%(table_track)s AS %(letter)s" % locals())
 #        else:
@@ -663,7 +618,7 @@ def loadMergeCoverage(infile, outfile):
 #    new_columns = ", ".join(new_columns)
 #    tables = " ".join(tables)
 #
-#    statement = '''sqlite3 csvdb "CREATE TABLE merged_bismark_cov AS SELECT '''
+#    statement = '''sqlite3 csvdb "CREATE TABLE merged_bismark_cov AS SELECT'''
 #    statement += new_columns
 #    statement += tables
 #    statement += ''' " '''
@@ -676,7 +631,7 @@ def loadMergeCoverage(infile, outfile):
 
 
 #########################################################################
-# Summarise methylation 
+# Summarise methylation
 #########################################################################
 
 # all these functions should be rewitten to take the output
@@ -697,6 +652,7 @@ def summariseCoverage(infile, outfile):
                    > %(outfile)s''' % locals()
     print statement
     P.run()
+
 
 @follows(summariseCoverage)
 @merge(summariseCoverage,
@@ -743,7 +699,7 @@ def summariseCpGOverlap(infiles, outfile):
             infile_list.append(x)
     print(len(infile_list))
     infile_list = " ".join(infile_list)
-    coverage_range = [1,2,5,10,20,30]
+    coverage_range = [1, 2, 5, 10, 20, 30]
     coverage_range = " ".join(map(str, coverage_range))
 
     statement = '''echo -e "CpGs\\toverlaps\\tthreshold" > %(outfile)s;
@@ -824,12 +780,12 @@ def loadRemainingReads(infile, outfile):
     P.run()
 
 
-
 ########################################################################
 # RRBS Gene meta-profile
 ########################################################################
 # this section makes plots of coverage across TSS
 # should other meta-profiles be included?
+
 
 @follows(makeCpgIslandsBed)
 @transform(sortAndIndexBams,
@@ -843,7 +799,7 @@ def makeGeneProfiles(infiles, outfile):
     # ensures only large RAM nodes used
     job_options = "-l mem_free=24G"
 
-    statement = '''python /ifs/devel/toms/cgat/scripts/bam2geneprofile.py
+    statement = '''python %(scriptsdir)s/bam2geneprofile.py
                   --bamfile=%(infile)s --gtffile=%(genes_gtf)s
                   --method=tssprofile --reporter=gene
                   -P %(outname)s
@@ -859,6 +815,7 @@ def makeGeneProfiles(infiles, outfile):
 ########################################################################
 ########################################################################
 # Produce summary plots of methylation between samples, CpGI vs. non-CpGI etc
+
 
 @transform(addCpGIs,
            regex("methylation.dir/(\S+)_meth_cpgi.tsv"),
@@ -904,10 +861,8 @@ def makeSummaryPlots(infile, outfile):
        "clusters.tsv")
 def runBiSeq(infiles, outfile):
     # use this when following callMethylationStatus(i.e full run)
-    #cov_infiles = filter(lambda x: 'Liver' in x, infiles)
+    # cov_infiles = filter(lambda x: 'Liver' in x, infiles)
     cov_infiles = infiles
-
-
     # implement properly
     if len(cov_infiles) >= 4:
         pass
@@ -917,7 +872,8 @@ def runBiSeq(infiles, outfile):
         out.write("You don't have replicates! This wont work")
         out.close()
         return 0
-    print "how did I get here given that I only have %s samples" % len(cov_infiles)
+    print ("how did I get here given that I only have %s samples"
+           % len(cov_infiles))
 
     basenames = [os.path.basename(x) for x in cov_infiles]
     samples = [re.sub(r".fastq\S+", "", x) for x in basenames]
@@ -925,14 +881,16 @@ def runBiSeq(infiles, outfile):
     c = '","'.join(cov_infiles)
     s = '","'.join(samples)
     g = '","'.join(groups)
-    print "basenames: %(basenames)s\ngroups: %(groups)s\nsamples: %(samples)s " % locals()
+    print ("basenames: %(basenames)s\ngroups: %(groups)s\nsamples: %(samples)s"
+           % locals())
     print "c: %(c)s\ns: %(s)s\ng: %(g)s " % locals()
     # load BiSeq package
     r.library("BiSeq")
     r.library("ggplot2")
     grdevices = importr('grDevices')
 
-    rcode = ('raw = readBismark(files = c("%(c)s"),DataFrame(group = c("%(g)s"), row.names = c("%(s)s")))' % locals())
+    rcode = ('raw = readBismark(files = c("%(c)s"),DataFrame(group = c("%(g)s"),\
+    row.names = c("%(s)s")))' % locals())
 
     r(rcode)
 
@@ -946,15 +904,19 @@ def runBiSeq(infiles, outfile):
     r('print(colData(raw))')
     r('print(colData(raw)$group)')
 
-    r('rrbs.clust.unlim <- BiSeq::clusterSites(object = raw,groups = colData(raw)$group,perc.samples = 1,min.sites = 5,max.dist = 50,mc.cores=4)')
+    r('rrbs.clust.unlim <- BiSeq::clusterSites(\
+    object = raw,groups = colData(raw)$group,perc.samples = 1,\
+    min.sites = 5,max.dist = 50,mc.cores=4)')
     print "made it here"
     r('ind.cov <- totalReads(rrbs.clust.unlim) > 0')
     r('quant <- quantile(totalReads(rrbs.clust.unlim)[ind.cov], 0.9)')
     r('rrbs.clust.lim <- limitCov(rrbs.clust.unlim, maxCov = quant)')
     # emperically derive value for h (this is the bandwidth)
     r('predictedMeth <- predictMeth(object = rrbs.clust.lim,h=25,mc.cores=4)')
-    r('temp_df=data.frame(y=methLevel(predictedMeth)[order(rowData(predictedMeth)),1])')
-    r('temp_df["x"]=(methReads(rrbs.clust.lim)/totalReads(rrbs.clust.lim))[,1]')
+    r('temp_df=data.frame(y=methLevel(predictedMeth)\
+    [order(rowData(predictedMeth)),1])')
+    r('temp_df["x"]=\
+    (methReads(rrbs.clust.lim)/totalReads(rrbs.clust.lim))[,1]')
     r('temp_df["cov"] = totalReads(rrbs.clust.lim)[,1]')
     r('p=ggplot(temp_df,aes(x, y, size=cov))+geom_point(aes(colour=cov))')
 
@@ -962,20 +924,24 @@ def runBiSeq(infiles, outfile):
     r('print(p)')
     grdevices.dev_off()
 
-    r('betaResults <- betaRegression(formula = ~group, link = "probit",object = predictedMeth, type = "BR",mc.cores=8)')
+    r('betaResults <- betaRegression(formula = ~group, link = "probit",\
+    object = predictedMeth, type = "BR",mc.cores=8)')
     r('print(head(betaResults))')
     r('predictedMethNull <- predictedMeth')
     r('print((predictedMethNull))')
     r('print(head(methLevel(predictedMethNull)))')
     r('colData(predictedMethNull)$group.null <- rep(c(1,2), 3)')
     r('print((predictedMethNull))')
-    r('betaResultsNull <- betaRegression(formula = ~group.null, link = "probit",object = predictedMethNull, type = "BR",mc.cores=4)')
+    r('betaResultsNull <- betaRegression(formula = ~group.null,\
+    link = "probit",object = predictedMethNull, type = "BR",mc.cores=4)')
     r('vario <- makeVariogram(betaResultsNull)')
     r('length_vario = length(vario$variogram[[1]][,2])')
-    r('estimated_sill = median(vario$variogram[[1]][-(1:(length_vario-50)),2])')
+    r('estimated_sill =\
+    median(vario$variogram[[1]][-(1:(length_vario-50)),2])')
     r('vario.sm <- smoothVariogram(vario, sill = estimated_sill)')
 
-    grdevices.png(file="/ifs/projects/proj034/mapping_bismark_0.12.5/test_vario.png")    
+    grdevices.png(
+        file="/ifs/projects/proj034/mapping_bismark_0.12.5/test_vario.png")
     r('plot(vario$variogram[[1]],ylim=c(0,5))')
     r('lines(vario.sm$variogram[,c("h", "v.sm")],col = "red", lwd = 1.5)')
     grdevices.dev_off()
@@ -991,15 +957,18 @@ def runBiSeq(infiles, outfile):
     r('print(clusters.rej$clusters.reject)')
     r('clusters.trimmed <- trimClusters(clusters.rej,FDR.loc = 0.5)')
     r('print(clusters.trimmed)')
-    r('DMRs <- findDMRs(clusters.trimmed,max.dist = 100,diff.dir = TRUE)') 
+    r('DMRs <- findDMRs(clusters.trimmed,max.dist = 100,diff.dir = TRUE)')
     r('print(DMRs)')
     # concatenate pvalue lists into one table to write out
     r('concat_vario = do.call(rbind, vario.sm$pValsList)')
     r('row_p = rowData(predictedMeth)')
-    r('df_ranges<- data.frame(seqnames=seqnames(row_p), starts=start(row_p), ends=end(row_p))')
+    r('df_ranges<- data.frame(seqnames=seqnames(row_p), starts=start(row_p),\
+    ends=end(row_p))')
     r('ranges_pred_meth_df=cbind(df_ranges,methLevel(predictedMeth))')
-    r('write.table(concat_vario, "clusters_vario_table_test.tsv", sep="\t",quote = F,row.names = F)')
-    r('write.table(ranges_pred_meth_df, "clusters.tsv", sep="\t",quote = F,row.names = F)')
+    r('write.table(concat_vario, "clusters_vario_table_test.tsv",\
+    sep="\t",quote = F,row.names = F)')
+    r('write.table(ranges_pred_meth_df, "clusters.tsv", sep="\t",\
+    quote = F,row.names = F)')
 
 ########################################################################
 #########################################################################
