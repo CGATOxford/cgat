@@ -1,5 +1,4 @@
-'''
-fastq2summary.py - compute summary stats for a fastq file
+'''fastq2summary.py - compute summary stats for a fastq file
 ======================================================
 
 :Author: Tom Smith
@@ -43,10 +42,11 @@ Example::
 
    python fastq2summary.py --guess-format=sanger < in.fastq > out.tsv
 
-In this example we know that our data have quality scores formatted as sanger. Given that
-illumina-1.8 quality scores are highly overlapping with sanger, this option defaults to
-sanger qualities. In default mode the script may not be able to distinguish
-highly overlapping sets of quality scores.
+In this example we know that our data have quality scores formatted as
+sanger. Given that illumina-1.8 quality scores are highly overlapping
+with sanger, this option defaults to sanger qualities. In default mode
+the script may not be able to distinguish highly overlapping sets of
+quality scores.
 
 Type::
 
@@ -75,24 +75,26 @@ def main(argv=None):
         argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+    parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
-    parser.add_option("--guess-format", dest="guess_format", type="choice",
-                      choices=('sanger', 'solexa', 'phred64',
-                               'illumina-1.8', 'integer'),
-                      help="The default behaviour of the script is to guess \
-                      the quality format of the input fastq file. The user \
-                      can specify the quality format of the input file using \
-                      the --format option. The script will use this format if \
-                      sequences qualities are ambiguous.[default=%default].")
+    parser.add_option(
+        "--guess-format", dest="guess_format", type="choice",
+        choices=('sanger', 'solexa', 'phred64',
+                 'illumina-1.8', 'integer'),
+        help="The default behaviour of the script is to guess \
+        the quality format of the input fastq file. The user \
+        can specify the quality format of the input file using \
+        the --format option. The script will use this format if \
+        sequences qualities are ambiguous.[default=%default].")
 
-    parser.add_option("-f", "--change-format", dest="change_format",
-                      type="choice", choices=('sanger', 'solexa', 'phred64',
-                                              'illumina-1.8', 'integer'),
-                      help="The script guesses the quality format of the input \
-                      file and converts quality scores to the destination \
-                      format unless --format is specified [default=%default].")
+    parser.add_option(
+        "-f", "--target-format", dest="change_format",
+        type="choice", choices=('sanger', 'solexa', 'phred64',
+                                'illumina-1.8', 'integer'),
+        help="The script guesses the quality format of the input \
+        file and converts quality scores to the destination \
+        format unless --format is specified [default=%default].")
 
     parser.set_defaults(
         change_format=None,

@@ -54,10 +54,10 @@ def main(argv=None):
     parser = E.OptionParser(
         version="%prog version: $Id$")
 
-    parser.add_option("-p", "--peptides", dest="filename_peptides", type="string",
+    parser.add_option("-p", "--peptides-fasta-file", dest="filename_peptides", type="string",
                       help="filename with peptide sequences [%default].")
 
-    parser.add_option("-c", "--cds", "--cdnas", dest="filename_cdna", type="string",
+    parser.add_option("-c", "--cds-gtf-file", "--cdnas", dest="filename_cdna", type="string",
                       help="filename with cdna sequences [%default].")
 
     parser.add_option("-m", "--map", dest="filename_map", type="string",

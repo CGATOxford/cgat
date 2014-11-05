@@ -75,7 +75,7 @@ Options:
 -h, --help                      print this message.
 -v, --verbose=                  loglevel.
 -C, --connection=               postgres connection string
--r, --report=                   type of report to create
+-r, --output-report=                   type of report to create
 -f, --fields=                   fields to include in report
 -a, --associated-schemas        fields will be grouped by schema
 -s, --separator=                separator to use [default=tab]
@@ -146,7 +146,7 @@ def main(argv=None):
             sys.exit(0)
         elif o in ("-C", "--connection"):
             param_connection = a
-        elif o in ("-r", "--report"):
+        elif o in ("-r", "--output-report"):
             param_report = a
         elif o in ("-f", "--fields"):
             param_fields = string.split(a, ",")

@@ -15,7 +15,7 @@ Usage
 
 Example::
 
-   python pipeline_quickstart.py --name=chipseq
+   python pipeline_quickstart.py --set-name=chipseq
 
 Type::
 
@@ -45,10 +45,10 @@ def main(argv=sys.argv):
     parser.add_option("-d", "--dest", dest="destination", type="string",
                       help="destination directory.")
 
-    parser.add_option("-n", "--name", dest="name", type="string",
+    parser.add_option("-n", "--set-name", dest="name", type="string",
                       help="name of this pipeline. 'pipeline_' will be prefixed.")
 
-    parser.add_option("-f", "--force", dest="force", action="store_true",
+    parser.add_option("-f", "--force-output", dest="force", action="store_true",
                       help="overwrite existing files.")
 
     parser.set_defaults(

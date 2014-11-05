@@ -138,7 +138,7 @@ def main(argv=None):
                       help="new sequences.")
     parser.add_option("--old-query-sequences", dest="filename_old_query_sequences", type="string",
                       help="old sequences.")
-    parser.add_option("-o", "--output-pattern", dest="filename_pattern", type="string",
+    parser.add_option("-o", "--output-filename-pattern", dest="filename_pattern", type="string",
                       help="pattern for output files.")
     parser.add_option("-f", "--write-fasta", dest="write_fasta", action="store_true",
                       help="write fasta files for runs.")

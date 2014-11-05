@@ -66,10 +66,10 @@ write-ks-tree: write out ks tree(s).
 write-ka-tree: write out ka tree(s).
                       """  )
 
-    parser.add_option("--prefix", dest="prefix", type="string",
+    parser.add_option("--column-prefix", dest="prefix", type="string",
                       help="prefix for rows.")
 
-    parser.add_option("--pattern-input-filenames", dest="pattern_input_filenames", type="string",
+    parser.add_option("--input-pattern", dest="pattern_input_filenames", type="string",
                       help="input pattern.")
 
     parser.add_option("--filter-probability", dest="filter_probability", type="float",

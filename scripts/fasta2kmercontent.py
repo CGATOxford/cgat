@@ -42,7 +42,7 @@ Example::
     TTATATTTTTTAGAATAGTTGATACGTTTACCATAGACTGG
 
    zcat in.fasta.gz | python fasta2kmercontent.py
-                      --kmer 4
+                      --kmer-size 4
                       > tetranucleotide_counts.tsv
 
    head tetranucleotide_counts.tsv::
@@ -61,23 +61,23 @@ nucleotide combination is counted.
 Alternative example::
 
    zcat in.fasta.gz | python fasta2kmercontent.py
-                      --kmer 4
-                      --proportion
+                      --kmer-size 4
+                      --output-proportion
                       > tetranucleotide_proportions.tsv
 
 In this example, for each contig in in.fasta.gz we return the proportion of
 each four base combination out of the total tetranucleotide occurences.
-``--proportion`` overides the count output.
+``--output-proportion`` overides the count output.
 
 Options
 -------
-Two options control the behaviour of fasta2kmercontent.py; ``--kmer`` and
-``--proportion``.
+Two options control the behaviour of fasta2kmercontent.py; ``--kmer-size`` and
+``--output-proportion``.
 
-``--kmer``::
+``--kmer-size``::
   The kmer length to count over in the input fasta file
 
-``--proportion``::
+``--output-proportion``::
   The output values are proportions rather than absolute counts
 
 
@@ -113,14 +113,15 @@ def main(argv=None):
         argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser(version="%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+    parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
-    parser.add_option("-k", "--kmer", dest="kmer", type="int",
+    parser.add_option("-k", "--kmer-size", dest="kmer", type="int",
                       help="supply kmer length")
 
-    parser.add_option("-p", "--proportion", dest="proportion", action="store_true",
-                      help="output proportions - overides the default output")
+    parser.add_option(
+        "-p", "--output-proportion", dest="proportion", action="store_true",
+        help="output proportions - overides the default output")
 
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv)

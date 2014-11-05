@@ -84,10 +84,10 @@ def main(argv=None):
                                "select-largest"),
                       help="aggregation function.")
 
-    parser.add_option("-r", "--regex-id", dest="regex_id", type="string",
+    parser.add_option("-r", "--regex-identifier", dest="regex_id", type="string",
                       help="regex pattern to extract identifier from tree name for the selection functions.")
 
-    parser.add_option("-w", "--write-values", dest="write_values", type="string",
+    parser.add_option("-w", "--output-with-values", dest="write_values", type="string",
                       help="if processing multiple trees, write values to file.")
 
     parser.add_option("-e", "--error-branchlength", dest="error_branchlength", type="float",

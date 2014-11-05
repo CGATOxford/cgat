@@ -298,7 +298,7 @@ def loadPicardAlignStats(infiles, outfile):
     tablename = P.toTable(outfile)
     statement = '''cat %(tmpfilename)s
                 | python %(scriptsdir)s/csv2db.py
-                      --index=track
+                      --add-index=track
                       --table=%(tablename)s 
                 > %(outfile)s'''
     P.run()
@@ -343,7 +343,7 @@ def loadPicardGCStats(infiles, outfile):
     tablename = P.toTable(outfile)
     statement = '''cat %(tmpfilename)s
                    | python %(scriptsdir)s/csv2db.py
-                      --index=track
+                      --add-index=track
                       --table=%(tablename)s 
                    > %(outfile)s '''
     P.run()
@@ -357,7 +357,7 @@ def buildBAMStats(infile, outfile):
     '''Count number of reads mapped, duplicates, etc. using bam2stats.py'''
     to_cluster = USECLUSTER
     scriptsdir = PARAMS["general_scriptsdir"]
-    statement = '''python %(scriptsdir)s/bam2stats.py --force 
+    statement = '''python %(scriptsdir)s/bam2stats.py --force-output 
                    --output-filename-pattern=%(outfile)s.%%s < %(infile)s > %(outfile)s'''
     P.run()
 
@@ -375,16 +375,16 @@ def loadBAMStats(infiles, outfile):
     tablename = P.toTable(outfile)
     E.info("loading bam stats - summary")
     statement = """python %(scriptsdir)s/combine_tables.py
-                      --headers=%(header)s
-                      --missing=0
+                      --header-names=%(header)s
+                      --missing-value=0
                       --ignore-empty
                    %(filenames)s
                 | perl -p -e "s/bin/track/"
                 | perl -p -e "s/unique/unique_alignments/"
                 | python %(scriptsdir)s/table2table.py --transpose
                 | python %(scriptsdir)s/csv2db.py
-                      --allow-empty
-                      --index=track
+                      --allow-empty-file
+                      --add-index=track
                       --table=%(tablename)s 
                 > %(outfile)s"""
     P.run()
@@ -395,15 +395,15 @@ def loadBAMStats(infiles, outfile):
         tname = "%s_%s" % (tablename, suffix)
 
         statement = """python %(scriptsdir)s/combine_tables.py
-                      --header=%(header)s
+                      --header-names=%(header)s
                       --skip-titles
-                      --missing=0
+                      --missing-value=0
                       --ignore-empty
                    %(filenames)s
                 | perl -p -e "s/bin/%(suffix)s/"
                 | python %(scriptsdir)s/csv2db.py
                       --table=%(tname)s 
-                      --allow-empty
+                      --allow-empty-file
                 >> %(outfile)s """
         P.run()
 
@@ -453,7 +453,7 @@ def loadPicardDuplicateStats(infiles, outfile):
     tablename = P.toTable(outfile)
     statement = '''cat %(tmpfilename)s
                 | python %(scriptsdir)s/csv2db.py
-                      --index=track
+                      --add-index=track
                       --table=%(tablename)s 
                 > %(outfile)s '''
     P.run()
@@ -548,7 +548,7 @@ def getMergedBigWig(infile, outfile):
 def getMergedBigWigPeakShift(infiles, outfile):
     '''Merge multiple BAM files per replicate to produce a single peak-shifted bigwig file'''
     expt = P.snip(os.path.basename(outfile), ".merge.bw").replace("-agg", "")
-    in_list = " --bamfile=".join(infiles)
+    in_list = " --bam-file=".join(infiles)
 
     offsets = []
     for t in infiles:
@@ -557,7 +557,7 @@ def getMergedBigWigPeakShift(infiles, outfile):
         if os.path.exists(fn):
             offsets.append(str(PIntervals.getPeakShiftFromMacs(fn)))
 
-    shifts = " --shift=".join(offsets)
+    shifts = " --shift-size=".join(offsets)
     statement = '''python %(scriptsdir)s/bam2wiggle.py 
                       --output-format=bigwig
                       %(in_list)s
@@ -576,7 +576,7 @@ def runMacsMerged(infile, outfile):
     track = P.snip(os.path.basename(infile), ".merge.bam")
     statement = '''cd macs/merged/; 
                    macs14 -t ../../%(infile)s 
-                          --name=%(track)s.merged
+                          --set-name=%(track)s.merged
                           --format=BAM
                           --wig -S
                           %(macs_options)s 
@@ -641,7 +641,7 @@ def runMACS(infiles, outfile):
     statement = '''cd macs/with_input; 
                    macs14 -t ../../%(infile)s 
                           -c ../../%(controlfile)s
-                          --name=%(track)s
+                          --set-name=%(track)s
                           --format=BAM
                           --diag
                           --wig -S
@@ -675,7 +675,7 @@ def summarizeMACS(infiles, outfile):
 @transform(summarizeMACS, suffix(".summary"), "_summary.load")
 def loadMACSSummary(infile, outfile):
     '''load macs summary into database'''
-    P.load(infile, outfile, "--index=track")
+    P.load(infile, outfile, "--add-index=track")
 
 ############################################################
 
@@ -712,7 +712,7 @@ def runMACSsolo(infile, outfile):
     track = P.snip(os.path.basename(infile), ".norm.bam")
     statement = '''cd macs/no_input/; 
                    macs14 -t ../../%(infile)s 
-                          --name=%(track)s.solo
+                          --set-name=%(track)s.solo
                           --format=BAM
                           --diag
                           --wig -S
@@ -745,7 +745,7 @@ def summarizeMACSsolo(infiles, outfile):
 @transform(summarizeMACSsolo, suffix(".summary"), "_summary.load")
 def loadMACSsoloSummary(infile, outfile):
     '''load macs summary.'''
-    P.load(infile, outfile, "--index=track")
+    P.load(infile, outfile, "--add-index=track")
 
 ############################################################
 
@@ -861,8 +861,8 @@ def loadMergedIntervals(infile, outfile):
     tablename = "%s_macs_merged_intervals" % track
 
     statement = '''python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-                       --index=interval_id
-                       --index=contig,start 
+                       --add-index=interval_id
+                       --add-index=contig,start 
                        --table=%(tablename)s
                    < %(tmpfilename)s > %(outfile)s '''
     P.run()
@@ -898,7 +898,7 @@ def loadBackground(infile, outfile):
     header = "out_peaks,in_peaks"
     statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
                         --table=%(track)s_background
-                        --header=%(header)s
+                        --header-names=%(header)s
                    > %(outfile)s '''
     P.run()
 
@@ -958,7 +958,7 @@ def loadFoldChangeThreshold(infile, outfile):
     header = "threshold,intervals"
     statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
                       --table=%(track)s_foldchange
-                      --header=%(header)s
+                      --header-names=%(header)s
                    > %(outfile)s '''
     P.run()
 
@@ -1016,7 +1016,7 @@ def loadSharedIntervalsFoldChangeThreshold(infile, outfile):
     header = "track,threshold,intervals"
     statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
                       --table=%(track)s_foldchange_shared
-                      --header=%(header)s
+                      --header-names=%(header)s
                    > %(outfile)s '''
     P.run()
 
@@ -1115,8 +1115,8 @@ def loadReplicatedIntervals(infile, outfile):
     # Load into database
     tablename = "%s_replicated_intervals" % track
     statement = '''python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-                       --index=interval_id
-                       --index=contig,start 
+                       --add-index=interval_id
+                       --add-index=contig,start 
                        --table=%(tablename)s
                    < %(tmpfilename)s > %(outfile)s '''
     P.run()
@@ -1247,9 +1247,9 @@ def loadUniqueIntervals(infile, outfile):
     header = "contig,start,stop,interval_id,fold"
     statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
                       --table=%(track)s_unique_intervals
-                      --header=%(header)s
-                      --index=contig,start
-                      --index=interval_id
+                      --header-names=%(header)s
+                      --add-index=contig,start
+                      --add-index=interval_id
                    > %(outfile)s '''
     P.run()
 
@@ -1281,9 +1281,9 @@ def loadSharedIntervals(infile, outfile):
     header = "contig,start,stop,interval_id,fold"
     statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
                       --table=%(track)s_shared_intervals
-                      --header=%(header)s
-                      --index=contig,start
-                      --index=interval_id
+                      --header-names=%(header)s
+                      --add-index=contig,start
+                      --add-index=interval_id
                    > %(outfile)s '''
     P.run()
 
@@ -1315,9 +1315,9 @@ def loadUniqueReplicatedIntervals(infile, outfile):
     header = "contig,start,stop,interval_id,fold"
     statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
                       --table=%(track)s_unique_intervals
-                      --header=%(header)s
-                      --index=contig,start
-                      --index=interval_id
+                      --header-names=%(header)s
+                      --add-index=contig,start
+                      --add-index=interval_id
                    > %(outfile)s '''
     P.run()
 
@@ -1350,9 +1350,9 @@ def loadSharedReplicatedIntervals(infile, outfile):
     header = "contig,start,stop,interval_id"
     statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
                       --table=%(track)s_shared_intervals
-                      --header=%(header)s
-                      --index=contig,start
-                      --index=interval_id
+                      --header-names=%(header)s
+                      --add-index=contig,start
+                      --add-index=interval_id
                    > %(outfile)s '''
     P.run()
 

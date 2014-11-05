@@ -10,7 +10,12 @@ diff_chains.py - compare to chain formatted files
 Purpose
 -------
 
-compare two `chain <http://www.breyer.com/ucsc/htdocs/goldenPath/help/chain.html>`_ 
+Compare two genomic alignment files and calculate statistics from the comparison.
+
+Documentation
+--------------
+
+Operates on two `chain <https://genome.ucsc.edu/goldenPath/help/chain.html>`_ 
 formatted files.
 
 Outputs a table with the following columns:
@@ -46,9 +51,9 @@ Similar columns exist for data set 2
 Usage
 -----
 
-Type::
+Example::
 
-   python diff_chains.py hg19ToMm10v1.chain.over.gz hg19ToMm10v2.chain.over.gz
+   cgat diff_chains.py hg19ToMm10v1.chain.over.gz hg19ToMm10v2.chain.over.gz
 
 This will compare the locations that regions within the genome hg19 map to between
 two different mappings to the genome mm10.

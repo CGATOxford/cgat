@@ -500,7 +500,7 @@ def main(argv=None):
                       help="dpi for hardcopy output.")
     parser.add_option("--window-size", dest="window_size", type="int",
                       help="window-size.")
-    parser.add_option("--output-pattern", dest="output_pattern_image", type="string",
+    parser.add_option("--output-filename-pattern", dest="output_pattern_image", type="string",
                       help="output pattern for images. Should contain a '%(contig)s' pattern .")
     parser.add_option("--global-colours", dest="global_colours", action="store_true",
                       help="cycle through colours for all tracks.")

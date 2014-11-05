@@ -42,7 +42,7 @@ Then output.tsv will look like:
 Options
 -------
 
-The only option other than the standard cgat options is -i, --infiles this
+The only option other than the standard cgat options is -i, --bed-file this
 allows the input files to be provided as a comma seperated list to the option
 rather than a space delimited set of positional arguements. It is present
 purely for galaxy compatibility.
@@ -85,11 +85,14 @@ def main(argv=None):
     parser = E.OptionParser(version="%prog version: $Id",
                             usage=globals()["__doc__"])
 
-    parser.add_option("-i", "--infiles", dest="infiles", type="string",
-                      metavar="bed",
-                      action="append", help="supply list of bed files")
+    parser.add_option(
+        "--bed-file", dest="infiles", type="string",
+        metavar="bed",
+        help="supply list of bed files",
+        action="append")
 
     parser.set_defaults(infiles=[])
+
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv)
 

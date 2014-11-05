@@ -526,13 +526,16 @@ def run(infile, options):
 def buildParser():
 
     parser = E.OptionParser(
-        version="%prog version: $Id: csv2db.py 2782 2009-09-10 11:40:29Z andreas $", usage=globals()["__doc__"])
+        version="%prog version: $Id$",
+        usage=globals()["__doc__"])
 
-    parser.add_option("--dialect", dest="dialect", type="string",
+    parser.add_option("--csv-dialect", dest="dialect", type="string",
                       help="csv dialect to use [default=%default].")
 
-    parser.add_option("-m", "--map", dest="map", type="string", action="append",
-                      help="explicit mapping function for columns The format is column:type (e.g.: length:int) [default=%default].")
+    parser.add_option(
+        "-m", "--map", dest="map", type="string", action="append",
+        help="explicit mapping function for columns The format is "
+        "column:type (e.g.: length:int) [default=%default].")
 
     parser.add_option("-t", "--table", dest="tablename", type="string",
                       help="table name for all backends [default=%default].")
@@ -540,15 +543,17 @@ def buildParser():
     parser.add_option("-d", "--database", dest="database", type="string",
                       help="database name for sqlite3 [default=%default].")
 
-    parser.add_option("-H", "--header", dest="header", type="string",
-                      help="',' separated list of header for files without header [default=%default].")
+    parser.add_option(
+        "-H", "--header-names", dest="header", type="string",
+        help="',' separated list of column headers for files without "
+        "column header [default=%default].")
 
     parser.add_option("--replace-header", dest="replace_header",
                       action="store_true",
-                      help="replace header with --header instead of "
+                      help="replace header with --header-names instead of "
                       "adding it [default=%default].")
 
-    parser.add_option("-l", "--lowercase", dest="lowercase",
+    parser.add_option("-l", "--lowercase-fields", dest="lowercase",
                       action="store_true",
                       help="force lower case column names "
                       "[default=%default].")
@@ -590,12 +595,12 @@ def buildParser():
                       choices=("pg", "sqlite"),
                       help="database backend to choose [default=%default].")
 
-    parser.add_option("-i", "--index", dest="indices", type="string",
+    parser.add_option("-i", "--add-index", dest="indices", type="string",
                       action="append",
                       help="create an index for the named column "
                       "[default=%default].")
 
-    parser.add_option("-a", "--allow-empty", dest="allow_empty",
+    parser.add_option("-a", "--allow-empty-file", dest="allow_empty",
                       action="store_true",
                       help="allow empty table [default=%default].")
 
@@ -603,11 +608,14 @@ def buildParser():
                       help="retry if an SQL statement fails - warning: "
                       "THIS MIGHT CAUSE DEADLOCKS [default=%default].")
 
-    parser.add_option("-z", "--from-zipped", dest="from_zipped", action="store_true",
+    parser.add_option("-z", "--from-zipped", dest="from_zipped",
+                      action="store_true",
                       help="input is zipped.")
 
-    parser.add_option("--utf8", dest="utf", action="store_true",
-                      help="standard in is encoded as UTF8 rather than local default, WARNING: does not strip comment lines yet [default=%default]")
+    parser.add_option(
+        "--utf8", dest="utf", action="store_true",
+        help="standard in is encoded as UTF8 rather than local default"
+        ", WARNING: does not strip comment lines yet [default=%default]")
 
     parser.set_defaults(
         map=[],

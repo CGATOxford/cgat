@@ -258,7 +258,7 @@ def main(argv=None):
     parser.add_option("-u", "--update", dest="filename_update", type="string",
                       help="if filename is given, previous results will be read from there and only changed sets will be computed [default=%default].")
 
-    parser.add_option("-p", "--pattern-id", dest="pattern_id", type="string",
+    parser.add_option("-p", "--pattern-identifier", dest="pattern_id", type="string",
                       help="pattern to convert a filename to an id [default=%default].")
 
     parser.add_option("-t", "--tracks", dest="tracks", action="store_true",

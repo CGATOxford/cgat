@@ -238,16 +238,16 @@ def main(argv=None):
     parser.add_option("-g", "--no-gaps",  dest="no_gaps", action="store_true",
                       help="remove all gaps from aligned sequences [Default=%default]")
 
-    parser.add_option("-x", "--exons",  dest="filename_exons", type="string",
+    parser.add_option("-x", "--exons-file",  dest="filename_exons", type="string",
                       help="filename with exon boundaries [Default=%default]")
 
     parser.add_option("-o", "--outfile",  dest="filename_outfile", type="string",
                       help="filename to save links [Default=%default]")
 
-    parser.add_option("--min-length",  dest="min_length", type="int",
+    parser.add_option("--min-interval-length",  dest="min_length", type="int",
                       help="minimum length of alignment [Default=%default]")
 
-    parser.add_option("--filter",  dest="filename_filter", type="string",
+    parser.add_option("--method=filter --filter-method",  dest="filename_filter", type="string",
                       help="given a set of previous alignments, only write new pairs [Default=%default].")
 
     parser.set_defaults(

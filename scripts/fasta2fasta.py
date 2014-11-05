@@ -1,5 +1,4 @@
-'''
-fasta2fasta.py - operate on sequences
+'''fasta2fasta.py - operate on sequences
 =====================================
 
 :Author: Andreas Heger
@@ -64,14 +63,14 @@ mask-bias
 mask-codons
    mask codon sequence given a masked amino acid sequence.
    Requires parameter with masked amino acids in fasta format.
-                        
+
 mask-incomplete-codons
    mask codons that are partially masked or gapped
 
 mask-soft
-   combine hard-masked (NNN) sequences with unmasked sequences to generate 
+   combine hard-masked (NNN) sequences with unmasked sequences to generate
    soft masked sequence (masked regions in lower case)
- 
+
 remove-stops
    remove stop codons
 
@@ -90,8 +89,8 @@ shuffle
 sample
    select a certain proportion of sequences
 
-Parameters are given to the option parameters in a comma-separated list in the order
-that the edit operations are called upon.
+Parameters are given to the option ``parameters`` in a comma-separated
+list in the order that the edit operations are called upon.
 
 Exclusion/inclusion is tested before applying any id mapping.
 
@@ -188,27 +187,40 @@ def main(argv=None):
                                "shuffle"),
                       help="method to apply to sequences.")
 
-    parser.add_option("-p", "--parameters", dest="parameters", type="string",
-                      help="parameter stack for methods that require one [default = %default].")
+    parser.add_option(
+        "-p", "--parameters", dest="parameters", type="string",
+        help="parameter stack for methods that require one "
+        "[default=%default].")
 
-    parser.add_option("-x", "--ignore-errors", dest="ignore_errors", action="store_true",
-                      help="ignore errors [default = %default].")
+    parser.add_option(
+        "-x", "--ignore-errors", dest="ignore_errors", action="store_true",
+        help="ignore errors [default = %default].")
 
-    parser.add_option("-e", "--exclude", dest="exclude", type="string",
-                      help="exclude sequences with ids matching pattern [default = %default].")
+    parser.add_option(
+        "-e", "--exclude-pattern", dest="exclude_pattern", type="string",
+        help="exclude sequences with ids matching pattern [default = %default].")
 
-    parser.add_option("--sample-proportion", dest="sample_proportion", type="float",
+    parser.add_option("--sample-proportion", dest="sample_proportion",
+                      type="float",
                       help="sample proportion [default = %default].")
 
-    parser.add_option("-n", "--include", dest="include", type="string",
-                      help="include sequences with ids matching pattern [default = %default].")
+    parser.add_option(
+        "-n", "--include-pattern", dest="include_pattern", type="string",
+        help="include sequences with ids matching pattern "
+        "[default = %default].")
 
-    parser.add_option("-t", "--type", dest="type", type="choice",
-                      choices=("aa", "na"),
-                      help="sequence type (aa or na) [%default]. This option determines which characters to use for masking [default = %default].")
+    parser.add_option(
+        "-t", "--sequence-type", dest="type", type="choice",
+        choices=("aa", "na"),
+        help="sequence type (aa or na) [%default]. This option determines "
+        "which characters to use for masking [default = %default].")
 
-    parser.add_option("-l", "--template-identifier", dest="template_identifier", type="string",
-                      help="""template for numerical identifier [default = %default] for the operation --build-map. A %i is replaced by the position of the sequence in the file."""  )
+    parser.add_option(
+        "-l", "--template-identifier", dest="template_identifier",
+        type="string",
+        help="template for numerical identifier [default = %default] "
+        "for the operation --build-map. A %i is replaced by the position "
+        "of the sequence in the file.")
 
     parser.set_defaults(
         methods=[],
@@ -222,8 +234,8 @@ def main(argv=None):
         gap_char="-",
         template_identifier="ID%06i",
         ignore_errors=False,
-        exclude=None,
-        include=None,
+        exclude_pattern=None,
+        include_pattern=None,
         sample_proportion=None,
     )
 
@@ -231,10 +243,10 @@ def main(argv=None):
     options.parameters = options.parameters.split(",")
 
     rx_include, rx_exclude = None, None
-    if options.include:
-        rx_include = re.compile(options.include)
-    if options.exclude:
-        rx_exclude = re.compile(options.exclude)
+    if options.include_pattern:
+        rx_include = re.compile(options.include_pattern)
+    if options.exclude_pattern:
+        rx_exclude = re.compile(options.exclude_pattern)
 
     iterator = FastaIterator.FastaIterator(options.stdin)
 

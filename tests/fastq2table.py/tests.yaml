@@ -14,5 +14,5 @@ test_changing_format:
     stdin: small.fastq.gz
     outputs: [stdout]
     references: [change_format.tsv]
-    options: --guess-format sanger --change-format illumina-1.8
+    options: --guess-format=sanger --target-format=illumina-1.8
     description: build summary when format of quality scores is changed from a known format

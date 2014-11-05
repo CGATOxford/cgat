@@ -42,15 +42,11 @@ Command line options
 
 '''
 
-import os
 import sys
-import re
 import CGAT.Experiment as E
 import CGAT.CSV2DB as CSV2DB
-import CGAT.CSV as CSV
 
 import csv
-import sqlite3
 
 csv.field_size_limit(sys.maxint)
 

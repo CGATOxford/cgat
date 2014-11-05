@@ -92,24 +92,28 @@ def main(argv=None):
         argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+    parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
-    parser.add_option("--guess-format", dest="guess_format", type="choice",
-                      choices=(
-                          'sanger', 'solexa', 'phred64', 'illumina-1.8', 'integer'),
-                      help="The default behaviour of the script is to guess the quality format of the input fastq file. The user can specify \
-                            the quality format of the input file using the --format option. The script will use this format if the \
-                            sequence qualities are ambiguous.[default=%default].")
+    parser.add_option(
+        "--guess-format", dest="guess_format", type="choice",
+        choices=(
+            'sanger', 'solexa', 'phred64', 'illumina-1.8', 'integer'),
+        help="The default behaviour of the script is to guess the quality "
+        "format of the input fastq file. The user can specify the "
+        "quality format of the input file using the --guess-format option. "
+        "The script will use this format if the "
+        "sequence qualities are ambiguous.[default=%default].")
 
-    parser.add_option("-f", "--change-format", dest="change_format", type="choice",
-                      choices=(
-                          'sanger', 'solexa', 'phred64', 'illumina-1.8', 'integer'),
-                      help="The script will guess the quality format of the input file and convert \
-                            quality scores to the destination format unless --format is specified [default=%default].")
+    parser.add_option(
+        "--target-format", dest="target_format", type="choice",
+        choices=(
+            'sanger', 'solexa', 'phred64', 'illumina-1.8', 'integer'),
+        help="The script will convert quality scores to the destination "
+        "format unless [default=%default].")
 
     parser.set_defaults(
-        change_format=None,
+        target_format=None,
         guess_format=None,
         min_quality=10,
     )
@@ -119,9 +123,9 @@ def main(argv=None):
 
     c = E.Counter()
 
-    if options.change_format:
+    if options.target_format:
         iterator = Fastq.iterate_convert(options.stdin,
-                                         format=options.change_format,
+                                         format=options.target_format,
                                          guess=options.guess_format)
     else:
         iterator = Fastq.iterate_guess(options.stdin,

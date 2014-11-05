@@ -96,7 +96,7 @@ def main(argv=None):
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genomic data (indexed).")
 
-    parser.add_option("-c", "--cds", dest="filename_cds", type="string",
+    parser.add_option("-c", "--cds-gtf-file", dest="filename_cds", type="string",
                       help="filename with cds seguences.")
 
     parser.add_option("-f", "--format", dest="format", type="choice",

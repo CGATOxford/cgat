@@ -100,7 +100,7 @@ def main(argv=None):
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genome.")
 
-    parser.add_option("-o", "--forward-coordinates", dest="forward_coordinates", action="store_true",
+    parser.add_option("-o", "--is-forward-coordinates", dest="forward_coordinates", action="store_true",
                       help="input uses forward coordinates.")
 
     parser.add_option("-f", "--format", dest="format", type="choice",

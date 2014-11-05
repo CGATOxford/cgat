@@ -153,7 +153,7 @@ def main(argv=None):
     parser.add_option("-i", "--input-pattern", dest="input_pattern", type="string",
                       help="input pattern. Parses description line in order to extract id.")
 
-    parser.add_option("-o", "--output-pattern", dest="output_pattern", type="string",
+    parser.add_option("-o", "--output-filename-pattern", dest="output_pattern", type="string",
                       help="output pattern. Gives filename for a given sequence.")
 
     parser.add_option("-n", "--num-sequences", dest="num_sequences", type="int",

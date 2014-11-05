@@ -11,7 +11,7 @@ Purpose
 -------
 
 -p, --pattern-species=          regex pattern to extract species from identifier
--g, --genes=                    filename with list of genes per species
+-g, --genes-tsv-file=                    filename with list of genes per species
 
 Usage
 -----
@@ -86,7 +86,7 @@ def main(argv=None):
             sys.exit(0)
         elif o in ("-p", "--pattern-species"):
             param_pattern_species = a
-        elif o in ("-g", "--genes"):
+        elif o in ("-g", "--genes-tsv-file"):
             param_filename_genes = a
 
     if not param_filename_genes:

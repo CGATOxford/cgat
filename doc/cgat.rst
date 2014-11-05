@@ -63,12 +63,12 @@ through various GAT tools::
    wget -qO- ftp://ftp.ensembl.org/pub/release-72/gtf/homo_sapiens/Homo_sapiens.GRCh37.72.gtf.gz
    | gunzip
    | awk '$2 == "protein_coding"' 
-   | cgat gff2ff --genome-file=hg19 --sanitize=ucsc --skip-missing
-   | cgat gtf2gtf --sort=gene
-   | cgat gtf2gtf --merge-exons --with-utr
-   | cgat gtf2gtf --filter=longest-gene
-   | cgat gtf2gtf --sort=position
-   | cgat gtf2gff --genome-file=hg19 --flank=5000 --method=genome
+   | cgat gff2ff --genome-file=hg19 --method=sanitize=ucsc --skip-missing
+   | cgat gtf2gtf --method=sort --sort-order=gene
+   | cgat gtf2gtf --method=merge-exons --with-utr
+   | cgat gtf2gtf --method=filter --filter-method=longest-gene
+   | cgat gtf2gtf --method=sort --sort-order=position
+   | cgat gtf2gff --genome-file=hg19 --flank-size=5000 --method=genome
    | gzip
    > annotations.gff.gz
 
@@ -95,7 +95,7 @@ analysis.
 Choosing different options can provide different sets of
 answers. Instead of merging all exons per gene, the longest transcript
 might be selected by replacing (2) with ``gtf2gtf
---filter=longest-transcript``. 
+--method=filter --filter-method=longest-transcript``. 
 Or, instead of genomic annotations, regulatory domains such as defined by GREAT might be obtained by
 removing (3) and replacing (4) with ``gtf2gff --method=great-domains``.
 
@@ -106,7 +106,7 @@ other interval intersections. Here, we will use another CGAT tool,
 
    zcat /ifs/devel/gat/tutorial/data/srf.hg19.bed 
    | cgat bed2gff --as-gtf 
-   | cgat gtf2table --counter=classifier-chipseq --filename-gff=annotations.gff.gz
+   | cgat gtf2table --counter=classifier-chipseq --gff-file=annotations.gff.gz
 
 The scripts follow a consistent naming scheme centered around common
 genomic formats. Because of the common genomic formats, the tools can

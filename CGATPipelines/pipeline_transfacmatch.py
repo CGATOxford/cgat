@@ -375,7 +375,7 @@ def loadGCContent(infile, outfile):
     tablename = filenameToTablename(P.snip(os.path.basename(infile), ".tsv"))
     statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s
                    --log=%(outfile)s.log
-                   --index=id
+                   --add-index=id
                    %(csv2db_options)s
                    < %(infile)s > %(outfile)s'''
     P.run()
@@ -522,7 +522,7 @@ def loadMatchResults(infile, outfile):
     statement = ("python %(scriptsdir)s/csv2db.py"
                  "  -t %(tablename)s"
                  "  --log=%(outfile)s.log"
-                 "  --index=seq_id"
+                 "  --add-index=seq_id"
                  "  %(csv2db_options)s"
                  " < %(inf)s > %(outfile)s")
     P.run()
@@ -566,7 +566,7 @@ def loadMatchMetrics(infile, outfile):
 
     statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s
                    --log=%(outfile)s.log
-                   --index=seq_id
+                   --add-index=seq_id
                    %(csv2db_options)s
                    < %(infile)s > %(outfile)s'''
     P.run()
@@ -745,7 +745,7 @@ def loadEnrichmentOfTFBS(infile, outfile):
     tablename = filenameToTablename(os.path.basename(infile))
     statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s
                   --log=%(outfile)s.log
-                  --index=matrix_id
+                  --add-index=matrix_id
                   %(csv2db_options)s
                   < %(infile)s > %(outfile)s'''
     P.run()
@@ -813,7 +813,7 @@ def loadCollatedEnrichmentOfTFBS(infile, outfile):
     statement = ("python %(scriptsdir)s/csv2db.py"
                  "  -t %(tablename)s"
                  "  --log=%(outfile)s.log"
-                 "  --index=matrix_id"
+                 "  --add-index=matrix_id"
                  "  %(csv2db_options)s"
                  " < %(infile)s > %(outfile)s")
     P.run()

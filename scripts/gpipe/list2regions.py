@@ -36,7 +36,7 @@ Options::
 
     -h, --help                      print this message.
     -v, --verbose=                  loglevel.
-    -p, --peptides=                 file with peptide sequences (FASTA).
+    -p, --peptides-fasta-file=                 file with peptide sequences (FASTA).
     -g, --genome-file=              pattern for filenames with the genomic DNA (FASTA).
     -m, --map=                      map of peptide identifiers
     --disable-conflict              turn of resolution of conflicts
@@ -118,7 +118,7 @@ def main(argv=None):
         elif o in ("-h", "--help"):
             print globals()["__doc__"]
             sys.exit(0)
-        elif o in ("-p", "--peptides"):
+        elif o in ("-p", "--peptides-fasta-file"):
             param_filename_peptides = a
         elif o in ("-m", "--map"):
             param_filename_map = a

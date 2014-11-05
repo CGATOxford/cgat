@@ -429,18 +429,18 @@ def renameTranscriptsInPreviousSets(infile, outfile):
         if gtf.gene_id.find("ENSG") != -1:
             statement = '''zcat %(infile)s | grep -v "#"
                         | python %(scriptsdir)s/gtf2gtf.py 
-                        --sort=gene
+                        --method=sort --sort-order=gene
                         --log=%(outfile)s.log
                         | gzip > %(outfile)s'''
         else:
             gene_pattern = "GEN" + P.snip(outfile, ".gtf.gz")
             transcript_pattern = gene_pattern.replace("GEN", "TRAN")
             statement = '''zcat %(infile)s | python %(scriptsdir)s/gtf2gtf.py 
-                           --renumber-genes=%(gene_pattern)s%%i 
+                           --method=renumber-genes --pattern-identifier=%(gene_pattern)s%%i 
                            | python %(scriptsdir)s/gtf2gtf.py
-                           --renumber-transcripts=%(transcript_pattern)s%%i 
+                           --method=renumber-transcripts --pattern-identifier=%(transcript_pattern)s%%i 
                            | python %(scriptsdir)s/gtf2gtf.py
-                           --sort=gene 
+                           --method=sort --sort-order=gene 
                            --log=%(outfile)s.log
                           | gzip > %(outfile)s'''
 
@@ -588,8 +588,8 @@ def loadCPCResults(infile, outfile):
     statement = ("python %(scriptsdir)s/csv2db.py"
                  "  -t %(tablename)s"
                  "  --log=%(outfile)s.log"
-                 "  --header=transcript_id,feature,C_NC,CP_score"
-                 "  --index=transcript_id"
+                 "  --header-names=transcript_id,feature,C_NC,CP_score"
+                 "  --add-index=transcript_id"
                  " < %(infile)s > %(outfile)s")
     P.run()
 
@@ -795,7 +795,7 @@ def loadLncRNAClass(infile, outfile):
     statement = ("python %(scriptsdir)s/csv2db.py"
                  "  -t %(tablename)s"
                  "  --log=%(outfile)s.log"
-                 "  --header=transcript_id,gene_id,class"
+                 "  --header-names=transcript_id,gene_id,class"
                  " < %(inf_1)s > %(outfile)s")
     P.run()
 
@@ -817,7 +817,7 @@ def buildFullGeneSet(infiles, outfile):
     statement = ("zcat %(infs)s |"
                  " sed 's/Cufflinks/protein_coding/g' |"
                  " python %(scriptsdir)s/gtf2gtf.py"
-                 "  --sort=gene"
+                 "  --method=sort --sort-order=gene"
                  "  --log=%(outfile)s.log |"
                  " gzip  > %(outfile)s")
     P.run()
@@ -982,7 +982,7 @@ def mergeLncRNAPhyloCSF(infiles, outfile):
                 python %(scriptsdir)s/combine_tables.py
                  --no-titles
                  --cat=CAT
-                 --missing=0
+                 --missing-value=0
                  --log=%(outfile)s.log
                  %(file_name)s
                 > %(outfile)s
@@ -994,7 +994,7 @@ def mergeLncRNAPhyloCSF(infiles, outfile):
 def loadLncRNAPhyloCSF(infile, outfile):
     tmpf = P.getTempFilename("/ifs/scratch")
     PipelineLncRNA.parsePhyloCSF(infile, tmpf)
-    P.load(tmpf, outfile, options="--index=gene_id")
+    P.load(tmpf, outfile, options="--add-index=gene_id")
 
 
 ##########################################################################
@@ -1020,7 +1020,7 @@ def extractEnsemblLincRNA(infile, outfile):
 
     statement = ("cat %(tmpf)s |"
                  " python %(scriptsdir)s/gtf2gtf.py"
-                 "  --sort=gene"
+                 "  --method=sort --sort-order=gene"
                  "  --log=%(outfile)s.log |"
                  " gzip > %(outfile)s")
     P.run()
@@ -1123,7 +1123,7 @@ def mergeControlLncRNAPhyloCSF(infiles, outfile):
                 python %(scriptsdir)s/combine_tables.py
                  --no-titles
                  --cat=CAT
-                 --missing=0
+                 --missing-value=0
                  --log=%(outfile)s.log
                  %(file_names)s
                 > %(outfile)s
@@ -1135,7 +1135,7 @@ def mergeControlLncRNAPhyloCSF(infiles, outfile):
 def loadControlLncRNAPhyloCSF(infile, outfile):
     tmpf = P.getTempFilename("/ifs/scratch")
     PipelineLncRNA.parsePhyloCSF(infile, tmpf)
-    P.load(tmpf, outfile, options="--index=gene_id")
+    P.load(tmpf, outfile, options="--add-index=gene_id")
 
 
 ##########################################################################
@@ -1192,8 +1192,8 @@ def loadControlCPCResults(infile, outfile):
                  " python %(scriptsdir)s/csv2db.py"
                  "  -t %(tablename)s"
                  "  --log=%(outfile)s.log"
-                 "  --header=transcript_id,feature,C_NC,CP_score"
-                 "  --index=transcript_id"
+                 "  --header-names=transcript_id,feature,C_NC,CP_score"
+                 "  --add-index=transcript_id"
                  " > %(outfile)s")
     P.run()
 

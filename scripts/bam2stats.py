@@ -54,7 +54,7 @@ iterating over the file. The metrics output are:
 |                        |a .gff file                               |
 +------------------------+------------------------------------------+
 |alignments_no_rna       |alignments not mapping to regions in a    |
-|                        |.gff file (if --remove-rna has been set,  |
+|                        |.gff file (if --ignore-masked-reads has been set,  |
 |                        |otherwise equal to mapped)                |
 +------------------------+------------------------------------------+
 |alignments_duplicates   |number of alignments mapping to the same  |
@@ -64,7 +64,7 @@ iterating over the file. The metrics output are:
 |                        |locations                                 |
 +------------------------+------------------------------------------+
 |reads_total             |number of reads in file. Either given via |
-|                        |--input-reads or deduc ed as the sum of   |
+|                        |--num-reads or deduc ed as the sum of   |
 |                        |mappend and unmapped reads                |
 +------------------------+------------------------------------------+
 |reads_mapped            |number of reads mapping in file. Derived  |
@@ -102,7 +102,7 @@ scores.
 Supplying a fastq file
 ++++++++++++++++++++++
 
-If a fastq file is supplied (``--filename-fastq``), the script will
+If a fastq file is supplied (``--fastq-file``), the script will
 compute some additional summary statistics. However, as it builds a dictionary
 of all sequences, it will also require a good  amount of memory. The additional
 metrics output are:
@@ -265,22 +265,22 @@ def main(argv=None):
                             usage=globals()["__doc__"])
 
     parser.add_option(
-        "-r", "--filename-rna", dest="filename_rna", type="string",
+        "-r", "--mask-bed-file", dest="filename_rna", type="string",
         metavar='GFF',
-        help="gff formatted file with rna locations. Note that the "
-        "computation "
-        "currently "
-        "does not take into account indels, so it is an approximate count "
-        "only "
+        help="gff formatted file with masking locations. The number of "
+        "reads overlapping the intervals in the given file will be "
+        "computed. Note that the computation currently does not take "
+        "into account indels, so it is an approximate count only. "
         "[%default]")
 
     parser.add_option(
-        "-f", "--remove-rna", dest="remove_rna", action="store_true",
-        help="as well as counting, also remove rna reads for duplicate and "
-        "other counts [%default]")
+        "-f", "--ignore-masked-reads", dest="remove_rna", action="store_true",
+        help="as well as counting reads in the file given by --mask-bed-file, "
+        "also remove these reads for duplicate and match statistics. "
+        "[%default]")
 
     parser.add_option(
-        "-i", "--input-reads", dest="input_reads", type="int",
+        "-i", "--num-reads", dest="input_reads", type="int",
         help="the number of reads - if given, used to provide percentages "
         "[%default]")
 
@@ -289,7 +289,7 @@ def main(argv=None):
         help="output per-read details [%default]")
 
     parser.add_option(
-        "-q", "--filename-fastq", dest="filename_fastq",
+        "-q", "--fastq-file", dest="filename_fastq",
         help="filename with sequences and quality scores. This file is only "
         "used to collect sequence identifiers. Thus, for paired end data a "
         "single file is sufficient [%default]")

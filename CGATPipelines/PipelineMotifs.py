@@ -507,9 +507,9 @@ def loadGLAM2SCAN(infile, outfile):
     statement = '''
    python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
               -b sqlite \
-              --index=id \
-              --index=motif \
-              --index=id,motif \
+              --add-index=id \
+              --add-index=motif \
+              --add-index=id,motif \
               --table=%(tablename)s \
               --map=base_qualities:text \
     < %(tmpfilename)s > %(outfile)s
@@ -637,11 +637,11 @@ def loadMAST(infile, outfile):
     statement = '''
     python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
               -b sqlite 
-              --index=id 
-              --index=motif 
-              --index=id,motif 
+              --add-index=id 
+              --add-index=motif 
+              --add-index=id,motif 
               --table=%(tablename)s 
-              --allow-empty
+              --allow-empty-file
               --map=base_qualities:text 
     < %(tmpfilename)s > %(outfile)s
     '''
@@ -747,11 +747,11 @@ def loadBioProspector(infile, outfile):
 
     statement = '''
    python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
-    --allow-empty \
+    --allow-empty-file \
     -b sqlite \
-    --index=id \
-    --index=motif \
-    --index=id,motif \
+    --add-index=id \
+    --add-index=motif \
+    --add-index=id,motif \
     --table=%(tablename)s \
     < %(tmpfilename)s > %(outfile)s
     '''

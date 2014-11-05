@@ -55,7 +55,7 @@ Options:
 --k=                            K for bitscore calculation
 --expected=                     expected score in matrix
 
--d, --distance=                 convert to distance (# = maximum distance)
+-d, --distance-method=                 convert to distance (# = maximum distance)
 
 new scores are saved in third column (overwriting the E-Value)
 
@@ -135,7 +135,7 @@ def main(argv=None):
             param_K = float(a)
         elif o == "--expected":
             param_expected = float(a)
-        elif o in ("-d", "--distance"):
+        elif o in ("-d", "--distance-method"):
             param_max_distance = float(a)
 
     print E.GetHeader()

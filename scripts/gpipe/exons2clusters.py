@@ -72,11 +72,11 @@ Cluster exons into genes. Identical overlap is required.
 Options:
 -h, --help                      print this message.
 -v, --verbose=                  loglevel.
--p, --peptides=                 file with protein sequences (FASTA).
+-p, --peptides-fasta-file=                 file with protein sequences (FASTA).
 -o, --overlap=                  use overlap of # to collect clusters
 -a, --alignment=                check alignment with minimum alignment score of #
 -r, --regex-preferred=          regular expression for preferred gene identifiers.
--c, --contigs=                  filename with contig sizes
+-c, --contigs-tsv-file=                  filename with contig sizes
 -g, --use-genome-length         use genome length for deciding which rep to use.
 """ % sys.argv[0]
 
@@ -408,7 +408,7 @@ def main(argv=None):
         elif o in ("-h", "--help"):
             print USAGE
             sys.exit(0)
-        elif o in ("-p", "--peptides"):
+        elif o in ("-p", "--peptides-fasta-file"):
             param_filename_peptides = a
         elif o in ("-o", "--overlap"):
             param_min_overlap = int(a)
@@ -416,7 +416,7 @@ def main(argv=None):
             param_min_alignment_score = float(a)
         elif o in ("-r", "--regex-preferred"):
             param_regex_preferred = a
-        elif o in ("-c", "--contigs"):
+        elif o in ("-c", "--contigs-tsv-file"):
             param_filename_contigs = a
         elif o in ("-g", "--use-genome-length"):
             param_use_genome_length = True

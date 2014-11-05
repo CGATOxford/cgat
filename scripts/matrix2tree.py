@@ -71,7 +71,7 @@ def main(argv=None):
                       choices=("phylip", "full"),
                       help="""input format.""")
 
-    parser.add_option("-t", "--filename-tree", dest="filename_tree", type="string",
+    parser.add_option("-t", "--tree-nh-file", dest="filename_tree", type="string",
                       help="""filename with tree to fit.""")
 
     parser.add_option("-m", "--method", dest="method", type="choice",

@@ -146,23 +146,23 @@ def main(argv=None):
     parser = E.OptionParser(
         version="%prog version: $Id: codonbias_acai2tsv.py 865 2007-01-15 13:44:43Z andreas $")
 
-    parser.add_option("-o", "--input-file-trace", dest="input_filename_trace", type="string",
+    parser.add_option("-o", "--trace-tsv-file", dest="input_filename_trace", type="string",
                       help="input filename for cai.",
                       metavar="FILE")
 
-    parser.add_option("-e", "--input-file-genes", dest="input_filename_genes", type="string",
+    parser.add_option("-e", "--genes-tsv-file", dest="input_filename_genes", type="string",
                       help="input filename for genes information from cai.",
                       metavar="FILE")
 
-    parser.add_option("-c", "--input-file-codons", dest="input_filename_codons", type="string",
+    parser.add_option("-c", "--codons-tsv-file", dest="input_filename_codons", type="string",
                       help="input filename for codon usage information.",
                       metavar="FILE")
 
-    parser.add_option("--input-file-sequences", dest="input_filename_sequences", type="string",
+    parser.add_option("--fasta-file", dest="input_filename_sequences", type="string",
                       help="input filename with sequences.",
                       metavar="FILE")
 
-    parser.add_option("-t", "--input-file-subset", dest="input_filename_subset", type="string",
+    parser.add_option("-t", "--subset-tsv-file", dest="input_filename_subset", type="string",
                       help="input filename with subset.",
                       metavar="FILE")
 
@@ -197,7 +197,7 @@ def main(argv=None):
     parser.add_option("-u", "--codon-usage", dest="codon_usage", type="string",
                       help="print codon usage for the full/biased set of genes [full|biased].")
 
-    parser.add_option("-w", "--weights", dest="weights", type="string",
+    parser.add_option("-w", "--weights-tsv-file", dest="weights", type="string",
                       help="print weights [final-list|final-matrix|random|compute|weights|frequencies|absolute-frequencies].")
 
     parser.add_option("--weights-matrix2table", dest="weights_matrix2table", action="store_true",

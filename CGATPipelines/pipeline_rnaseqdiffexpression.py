@@ -447,7 +447,7 @@ def loadCufflinksFPKM(infile, outfile):
     '''load fkpm data into table.'''
 
     P.load(infile, outfile,
-           "--index=gene_id --index=transcript_id")
+           "--add-index=gene_id --add-index=transcript_id")
 
 
 #########################################################################
@@ -776,7 +776,7 @@ def buildCodingExons(infile, outfile):
     zcat %(infile)s
     | awk '$2 == "protein_coding" && $3 == "CDS"'
     | perl -p -e "s/CDS/exon/"
-    | python %(scriptsdir)s/gtf2gtf.py --merge-exons --log=%(outfile)s.log
+    | python %(scriptsdir)s/gtf2gtf.py --method=merge-exons --log=%(outfile)s.log
     | gzip
     > %(outfile)s
     '''
@@ -799,7 +799,7 @@ def buildUnionIntersectionExons(infile, outfile):
 
     statement = '''
     gunzip < %(infile)s
-    | python %(scriptsdir)s/gtf2gtf.py --intersect-transcripts
+    | python %(scriptsdir)s/gtf2gtf.py --method=intersect-transcripts
     --with-utr --log=%(outfile)s.log
     | python %(scriptsdir)s/gff2gff.py --is-gtf
     --crop-unique  --log=%(outfile)s.log
@@ -831,7 +831,7 @@ def buildUnionExons(infile, outfile):
     statement = '''
     gunzip < %(infile)s
     | python %(scriptsdir)s/gtf2gtf.py
-         --merge-exons --log=%(outfile)s.log
+         --method=merge-exons --log=%(outfile)s.log
     | python %(scriptsdir)s/gff2gff.py
          --is-gtf --crop-unique  --log=%(outfile)s.log
     | python %(scriptsdir)s/gff2bed.py
@@ -870,13 +870,13 @@ def buildGeneLevelReadCounts(infiles, outfile):
           --reporter=genes
           --bam-file=%(bamfile)s
           --counter=length
-          --prefix="exons_"
+          --column-prefix="exons_"
           --counter=%(counter)s
-          --prefix=""
+          --column-prefix=""
           --counter=read-coverage
-          --prefix=coverage_
+          --column-prefix=coverage_
           --min-mapping-quality=%(counting_min_mapping_quality)i
-          --multi-mapping=ignore
+          --multi-mapping-method=ignore
           --log=%(outfile)s.log
     | gzip
     > %(outfile)s
@@ -889,7 +889,7 @@ def buildGeneLevelReadCounts(infiles, outfile):
            suffix(".tsv.gz"),
            "_gene_counts.load")
 def loadGeneLevelReadCounts(infile, outfile):
-    P.load(infile, outfile, options="--index=gene_id")
+    P.load(infile, outfile, options="--add-index=gene_id")
 
 #########################################################################
 #########################################################################
@@ -951,8 +951,8 @@ def buildGeneLevelReadExtension(infile, outfile):
           --counter=read-extension
           --min-mapping-quality=%(counting_min_mapping_quality)i
           --output-filename-pattern=%(outfile)s.%%s.tsv.gz
-          --filename-gff=%(territories)s
-          --filename-gff=%(utrs)s
+          --gff-file=%(territories)s
+          --gff-file=%(utrs)s
           --log=%(outfile)s.log
     | gzip
     > %(outfile)s
@@ -991,13 +991,13 @@ def buildTranscriptLevelReadCounts(infiles, outfile):
           --reporter=transcripts
           --bam-file=%(bamfile)s
           --counter=length
-          --prefix="exons_"
+          --column-prefix="exons_"
           --counter=%(counter)s
-          --prefix=""
+          --column-prefix=""
           --counter=read-coverage
-          --prefix=coverage_
+          --column-prefix=coverage_
           --min-mapping-quality=%(counting_min_mapping_quality)i
-          --multi-mapping=ignore
+          --multi-mapping-method=ignore
           --log=%(outfile)s.log
     | gzip
     > %(outfile)s
@@ -1014,7 +1014,7 @@ def buildTranscriptLevelReadCounts(infiles, outfile):
            suffix(".tsv.gz"),
            ".load")
 def loadTranscriptLevelReadCounts(infile, outfile):
-    P.load(infile, outfile, options="--index=transcript_id")
+    P.load(infile, outfile, options="--add-index=transcript_id")
 
 
 #########################################################################
@@ -1077,7 +1077,7 @@ def aggregateFeatureCounts(infiles, outfile):
            ".load")
 def loadFeatureCounts(infile, outfile):
     '''load individual feature counts into database'''
-    P.load(infile, outfile, "--index=gene_id")
+    P.load(infile, outfile, "--add-index=gene_id")
 
 
 @merge(buildFeatureCounts,
@@ -1085,7 +1085,7 @@ def loadFeatureCounts(infile, outfile):
 def loadFeatureCountsSummary(infiles, outfile):
     '''load feature counts summary data into table.'''
     infiles = [P.snip(x, ".gz") + ".summary" for x in infiles]
-    P.mergeAndLoad(infiles, outfile, options="--index=track")
+    P.mergeAndLoad(infiles, outfile, options="--add-index=track")
 
 
 @transform((aggregateGeneLevelReadCounts,
@@ -1099,7 +1099,7 @@ def summarizeCounts(infile, outfile):
     job_options = "-l mem_free=32G"
     statement = '''python %(scriptsdir)s/runExpression.py
               --method=summary
-              --filename-tags=%(infile)s
+              --tags-tsv-file=%(infile)s
               --output-filename-pattern=%(prefix)s_
               --log=%(outfile)s.log
               > %(outfile)s'''
@@ -1121,8 +1121,8 @@ def summarizeCountsPerDesign(infiles, outfile):
     prefix = P.snip(outfile, ".tsv")
     statement = '''python %(scriptsdir)s/runExpression.py
               --method=summary
-              --filename-design=%(design_file)s
-              --filename-tags=%(counts_file)s
+              --design-tsv-file=%(design_file)s
+              --tags-tsv-file=%(counts_file)s
               --output-filename-pattern=%(prefix)s_
               --log=%(outfile)s.log
               > %(outfile)s'''
@@ -1168,8 +1168,8 @@ def runDESeq(infiles, outfile):
 
     statement = '''python %(scriptsdir)s/runExpression.py
     --method=deseq
-    --filename-tags=%(count_file)s
-    --filename-design=%(design_file)s
+    --tags-tsv-file=%(count_file)s
+    --design-tsv-file=%(design_file)s
     --output-filename-pattern=%(track)s_
     --outfile=%(outfile)s
     --fdr=%(deseq_fdr)f
@@ -1192,8 +1192,8 @@ def loadDESeq(infile, outfile):
     tablename = P.toTable(outfile) + "_gene_diff"
     statement = '''zcat %(infile)s
             | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --allow-empty
-              --index=test_id
+              --allow-empty-file
+              --add-index=test_id
               --table=%(tablename)s
             > %(outfile)s
     '''
@@ -1242,8 +1242,8 @@ def runEdgeR(infiles, outfile):
 
     statement = '''python %(scriptsdir)s/runExpression.py
     --method=edger
-    --filename-tags=%(count_file)s
-    --filename-design=%(design_file)s
+    --tags-tsv-file=%(count_file)s
+    --design-tsv-file=%(design_file)s
     --output-filename-pattern=%(track)s_
     --outfile=%(outfile)s
     --fdr=%(edger_fdr)f
@@ -1267,8 +1267,8 @@ def loadEdgeR(infile, outfile):
     tablename = P.toTable(outfile) + "_gene_diff"
     statement = '''zcat %(infile)s
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-    --allow-empty
-    --index=test_id
+    --allow-empty-file
+    --add-index=test_id
     --table=%(tablename)s
     > %(outfile)s
     '''
@@ -1332,8 +1332,8 @@ def plotTagStats(infiles, outfile):
 
     statement = '''
     python %(scriptsdir)s/runExpression.py
-    --filename-tags=%(counts_file)s
-    --filename-design=%(design_file)s
+    --tags-tsv-file=%(counts_file)s
+    --design-tsv-file=%(design_file)s
     --method=plottagstats
     --output-filename-pattern=%(outfile)s
     > %(outfile)s

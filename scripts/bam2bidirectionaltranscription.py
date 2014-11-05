@@ -1,5 +1,4 @@
-'''
-bam2bidirectionaltranscription.py
+'''bam2bidirectionaltranscription.py
 =============================================
 
 :Author: Nick Ilott
@@ -12,13 +11,15 @@ Purpose
 
 The purpose of this script is two-fold.
 
-1. Stranded RNA-seq libraries are becoming more and more commonplace. As such, a prudent 
-   quality control step after alignment to assess the observed strandedness across a set of transcripts of
-   interest (GTF file as input).
+Stranded RNA-seq libraries are becoming more and more
+commonplace. As such, a prudent quality control step after
+alignment to assess the observed strandedness across a set of
+transcripts of interest (GTF file as input).
 
-2. Bidirectional transcription at intergenic loci is an area of interest across biological science.
-   This script allows the user to assess the level of bidirectional transcription across a set
-   of intervals of interest (GTF file as input).
+Bidirectional transcription at intergenic loci is an area of interest
+across biological science.  This script allows the user to assess
+the level of bidirectional transcription across a set of intervals
+of interest (GTF file as input).
 
 
 Usage
@@ -42,24 +43,19 @@ This is specific to the aligner used. TopHat will add an XS and NH
 flag for example.
 
 Doesn't use paired information.
- 
 
 Command line options
 --------------------
 
 '''
 
-import os
 import sys
-import re
 import optparse
 import pysam
 import CGAT.GTF as GTF
 import CGAT.IOTools as IOTools
 import CGAT.Experiment as E
-import CGAT.IndexedGenome as IndexedGenome
 import numpy as np
-import collections
 
 
 def filterGtf(gtf_iterable, bamfile, tag_count=10, length=200, unique=True):
@@ -104,14 +100,18 @@ def main(argv=None):
         argv = sys.argv
 
     # setup command line parser
-    parser = optparse.OptionParser(version="%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+    parser = optparse.OptionParser(version="%prog version: $Id$",
                                    usage=globals()["__doc__"])
+
     parser.add_option("-b", "--bam", dest="bam", type="string",
                       help="input bam file")
     parser.add_option("-a", "--annotation", dest="annotation", type="string",
                       help="input annotation gtf file")
-    parser.add_option("-m", "--merge-transcripts", dest="merge_transcripts",
-                      action="store_true", help="merge transcripts with the same gene id")
+    parser.add_option(
+        "-m", "--merge-same-identifier", dest="merge_transcripts",
+        action="store_true",
+        help="merge transcripts with the same gene id")
+
     parser.add_option("-u", "--unique", dest="unique",
                       action="store_true", help="only use unique alignments")
     parser.add_option("-t", "--tag-count", dest="tag_count", type="int",
@@ -121,12 +121,21 @@ def main(argv=None):
     parser.add_option("-n", "--analysis-type", dest="analysis_type",
                       type="choice", choices=("ratio", "profile", "shape"))
     parser.add_option(
-        "-o", "--outbase", dest="outbase", type="string", help="basename for outfiles")
-    parser.add_option("-s", "--bin-number", dest="bin_number", type="int",
-                      help="number of bins to use - only active with --profile")
+        "-o", "--outbase", dest="outbase", type="string",
+        help="basename for outfiles")
 
-    parser.set_defaults(unique=True, merge_transcripts=True, tag_count=10, length=200,
-                        analysis_type="ratio", bin_number=100, outbase="bidirection", output_gtf=False)
+    parser.add_option(
+        "-s", "--num-bins", dest="bin_number", type="int",
+        help="number of bins to use - only active with --profile")
+
+    parser.set_defaults(unique=True,
+                        merge_transcripts=True,
+                        tag_count=10,
+                        length=200,
+                        analysis_type="ratio",
+                        bin_number=100,
+                        outbase="bidirection",
+                        output_gtf=False)
 
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv)

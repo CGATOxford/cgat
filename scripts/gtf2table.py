@@ -57,19 +57,17 @@ To add also information about cpg-composition, add another counter::
 
     zcat in.gtf.gz | cgat gtf2table -v 0 --genome=hg19 --reporter=transcripts --counter=length --counter=composition-cpg
 
-+---------------+----+---+---+--------+------+--------+----+---+---+---+---+---+---+--+----+---+---+----+--------+--------+--------+--------+--------+--------+--------+--------+--------+----------+
-|transcript_id  |nval|min|max|mean    |median|stddev  |sum |q1 |q3 |nC |nG |nA |nT |nN|nUnk|nGC|nAT|nCpG|pC      |pG      |pA      |pT      |pN      |pUnk    |pGC     |pAT     |pCpG    |CpG_ObsExp|
-+---------------+----+---+---+--------+------+--------+----+---+---+---+---+---+---+--+----+---+---+----+--------+--------+--------+--------+--------+--------+--------+--------+--------+----------+
-|ENST00000592209|3   |58 |227|149.6667|164.0 |69.7344 |449 |58 |227|137|94 |96 |122|0 |0   |231|218|4   |0.305122|0.209354|0.213808|0.271715|0.000000|0.000000|0.514477|0.485523|0.017817|0.139463  |
-+---------------+----+---+---+--------+------+--------+----+---+---+---+---+---+---+--+----+---+---+----+--------+--------+--------+--------+--------+--------+--------+--------+--------+----------+
-|ENST00000589741|2   |71 |312|191.5000|191.5 |120.5000|383 |71 |312|110|102|76 |95 |0 |0   |212|171|5   |0.287206|0.266319|0.198433|0.248042|0.000000|0.000000|0.553525|0.446475|0.026110|0.170677  |
-+---------------+----+---+---+--------+------+--------+----+---+---+---+---+---+---+--+----+---+---+----+--------+--------+--------+--------+--------+--------+--------+--------+--------+----------+
-|ENST00000391654|2   |39 |583|311.0000|311.0 |272.0000|622 |39 |583|180|147|131|164|0 |0   |327|295|4   |0.289389|0.236334|0.210611|0.263666|0.000000|0.000000|0.525723|0.474277|0.012862|0.094029  |
-+---------------+----+---+---+--------+------+--------+----+---+---+---+---+---+---+--+----+---+---+----+--------+--------+--------+--------+--------+--------+--------+--------+--------+----------+
-|ENST00000587045|1   |173|173|173.0000|173.0 |0.0000  |173 |173|173|46 |33 |36 |58 |0 |0   |79 |94 |1   |0.265896|0.190751|0.208092|0.335260|0.000000|0.000000|0.456647|0.543353|0.011561|0.113966  |
-+---------------+----+---+---+--------+------+--------+----+---+---+---+---+---+---+--+----+---+---+----+--------+--------+--------+--------+--------+--------+--------+--------+--------+----------+
-|ENST00000589495|1   |744|744|744.0000|744.0 |0.0000  |744 |744|744|141|187|239|177|0 |0   |328|416|16  |0.189516|0.251344|0.321237|0.237903|0.000000|0.000000|0.440860|0.559140|0.043011|0.451473  |
-+---------------+----+---+---+--------+------+--------+----+---+---+---+---+---+---+--+----+---+---+----+--------+--------+--------+--------+--------+--------+--------+--------+--------+----------+
++---------------+----+---+---+--------+------+--------+----+---+---+----------+------------+-----------+
+|transcript_id  |nval|min|max|mean    |median|stddev  |sum |q1 |q3 |CpG_count |CpG_density |CpG_ObsExp |
++---------------+----+---+---+--------+------+--------+----+---+---+----------+------------+-----------+
+|ENST00000592209|3   |58 |227|149.6667|164.0 |69.7344 |449 |58 |227|4         |0.01781     |0.13946    |
++---------------+----+---+---+--------+------+--------+----+---+---+----------+------------+-----------+
+|ENST00000589741|2   |71 |312|191.5000|191.5 |120.5000|383 |71 |312|5         |0.02610     |0.17067    |
++---------------+----+---+---+--------+------+--------+----+---+---+----------+------------+-----------+
+|ENST00000391654|2   |39 |583|311.0000|311.0 |272.0000|622 |39 |583|4         |0.01286     |0.09402    |
++---------------+----+---+---+--------+------+--------+----+---+---+----------+------------+-----------+
+|ENST00000587045|1   |173|173|173.0000|173.0 |0.0000  |173 |173|173|1         |0.01156     |0.11396    |
++---------------+----+---+---+--------+------+--------+----+---+---+----------+------------+-----------+
 
 Note that we had to use the ``--genome-file`` option to supply the
 genomic sequence.
@@ -115,7 +113,8 @@ composition-na
    output nucleotide composition of transcript/gene
 
 composition-cgp
-   output cpg composition of transcript/gene
+   output CpG count, CpG density and CpG observed / expected for 
+   each transcript/gene.
 
 splice
    output splicing summary of transcript/gene. Outputs the number of
@@ -154,11 +153,11 @@ territories
 coverage
 
    compute the coverage - per nucleotide - of the gene/transcript
-   models with intervals given in ``--filename-gff``.  Coverage values
+   models with intervals given in ``--gff-file``.  Coverage values
    are output in 5' to 3' together with summary statistics (bases
    covered, minimum, maximum coverage, etc.). By using the options
-   ``--gff-feature`` or ``--gff-source`` the counting can be
-   rescricted to particular features in the :term:`gff` file.
+   ``--restrict-feature`` or ``--restrict-source`` the counting can be
+   rescricted to particular features or sources in the :term:`gff` file.
 
 distance
 
@@ -293,7 +292,7 @@ Classifiers
 
 Classifiers not only annotate the transcripts or gene model, but also
 aim to provide some classification based on these annotations. They
-require a secondary file (see option ``--filename-gff``) for the
+require a secondary file (see option ``--gff-file``) for the
 classification.
 
 classifier
@@ -450,10 +449,6 @@ in the sense direction.
 
 Usage
 -----
-
-Example::
-
-   python gtf2table.py --counter=length < geneset.gtf > geneset.tsv
 
 Type::
 
@@ -3887,7 +3882,7 @@ def main(argv=None):
                       help="filename with bigwig information "
                       "[default=%default].")
 
-    parser.add_option("-f", "--filename-gff", dest="filename_gff",
+    parser.add_option("-f", "--gff-file", dest="filename_gff",
                       type="string", action="append", metavar='bed',
                       help="filename with extra gff files. The order "
                       "is important [default=%default].")
@@ -3897,12 +3892,12 @@ def main(argv=None):
                       choices=("bed", "gff", "gtf"),
                       help="format of secondary stream [default=%default].")
 
-    parser.add_option("--gff-source", dest="gff_sources", type="string",
+    parser.add_option("--restrict-source", dest="gff_sources", type="string",
                       action="append",
                       help="restrict input to this 'source' in extra "
                       "gff file (for counter: overlap) [default=%default].")
 
-    parser.add_option("--gff-feature", dest="gff_features", type="string",
+    parser.add_option("--restrict-feature", dest="gff_features", type="string",
                       action="append",
                       help="restrict input to this 'feature' in extra gff "
                       "file (for counter: overlap) [default=%default].")
@@ -3968,7 +3963,7 @@ def main(argv=None):
                       help="distance to be considered proximal to "
                       "an interval [default=%default].")
 
-    parser.add_option("--multi-mapping",
+    parser.add_option("--multi-mapping-method",
                       dest="multi_mapping",
                       type="choice",
                       choices=('all', 'ignore', 'weight'),
@@ -3988,7 +3983,7 @@ def main(argv=None):
                       "When true, unique counts are returned. "
                       "Currently only compatible with count-reads")
 
-    parser.add_option("--prefix", dest="prefixes",
+    parser.add_option("--column-prefix", dest="prefixes",
                       type="string",
                       action="append",
                       help="add prefix to column headers - prefixes "

@@ -281,7 +281,7 @@ def main(argv=None):
                       help="page title.")
     parser.add_option("-f", "--footer", dest="footer", type="string",
                       help="page footer.")
-    parser.add_option("-s", "--filename-tree", dest="filename_tree", type="string",
+    parser.add_option("-s", "--tree-nh-file", dest="filename_tree", type="string",
                       help="filename with tree.")
     parser.add_option("-t", "--tree", dest="tree", type="string",
                       help="tree.")
@@ -317,7 +317,7 @@ def main(argv=None):
     parser.add_option("--font-style-tips", dest="font_style_tips", type="choice",
                       choices=("normal", "italic",),
                       help="set font style for tips.")
-    parser.add_option("--filename-map", dest="filename_map", type="string",
+    parser.add_option("--map-tsv-file", dest="filename_map", type="string",
                       help="filename with a name translation table.")
     parser.add_option("--filename-map-species2colour", dest="filename_colour_map", type="string",
                       help="filename with a map of species to colour.")

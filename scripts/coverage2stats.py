@@ -64,7 +64,7 @@ def main(argv=None):
 
     parser.add_option("--bin", dest="bin", action="store_true",
                       help="output average in bins across the interval")
-    parser.add_option("-n", "--bin-number", dest="bin_number", type=int,
+    parser.add_option("-n", "--num-bins", dest="bin_number", type=int,
                       help="number of bins for coverage profile")
     parser.add_option("-o", "--output-filename-prefix",
                       dest="output_filename_prefix",

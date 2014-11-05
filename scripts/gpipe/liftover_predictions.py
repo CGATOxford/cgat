@@ -228,7 +228,7 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv
 
-    parser.add_option("-m", "--filename-map", dest="filename_map", type="string",
+    parser.add_option("-m", "--map-tsv-file", dest="filename_map", type="string",
                       help="filename with mapping information.")
     parser.add_option("-o", "--pattern-old", dest="pattern_old", type="string",
                       help="pattern for mapping new to old identifiers: extract string from old.")
@@ -236,13 +236,13 @@ def main(argv=None):
                       help="pattern for mapping new to old identifiers: put string into new.")
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="genome_file.")
-    parser.add_option("-p", "--peptides", dest="filename_peptides", type="string",
+    parser.add_option("-p", "--peptides-fasta-file", dest="filename_peptides", type="string",
                       help="filename with peptide sequences.")
     parser.add_option("-f", "--input-format", dest="input_format", type="choice",
                       help="format of mapping file", choices=("alignment", "offsets"))
     parser.add_option("-i", "--write-missed", dest="write_missed", type="string",
                       help="write missed identifiers to separate file.")
-    parser.add_option("-a", "--filename-genes", dest="filename_genes", type="string",
+    parser.add_option("-a", "--genes-tsv-file", dest="filename_genes", type="string",
                       help="filename with gene information.")
     parser.add_option("--filename-old-peptides", dest="filename_old_peptides", type="string",
                       help="filename with old peptide information.")

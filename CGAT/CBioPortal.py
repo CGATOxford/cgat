@@ -891,7 +891,7 @@ def main(argv=None):
                           help="[Required for some] comma seperated list of one or more protein array IDs")
     squeryopts.add_option("--array_info", dest="protein_array_info", type="int",  default=0,
                           help="[Optional] If 1, antibody infomation will also be exported in a getProteinArrayData query [default=%default]")
-    squeryopts.add_option("--report", dest="report", type="string", default="full",
+    squeryopts.add_option("--output-report", dest="report", type="string", default="full",
                           help="[Optional] Report type to display for getLink. Either full or oncoprint_html [default=%default] ")
     squeryopts.add_option("--threshold", dest="threshold", type="int", default=2,
                           help="[Optional] Threshold for deciding if an alteration is significant for continuous metrics [default=%default]")

@@ -39,7 +39,7 @@ def importFromIterator(
     tmpfile.close()
 
     if indices:
-        indices = " ".join("--index=%s" % x for x in indices)
+        indices = " ".join("--add-index=%s" % x for x in indices)
     else:
         indices = ""
 

@@ -9,7 +9,7 @@ missing:
     stdin: data.tsv
     outputs: [stdout]
     references: [missing.tsv]
-    options: --missing=0
+    options: --missing-value=0
 
 min_value:
     stdin: data.tsv

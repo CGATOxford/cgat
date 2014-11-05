@@ -69,10 +69,10 @@ def addOptions(parser):
     parser.add_option("--numeric", dest="numeric", action="store_true",
                       help="row and column titles are numeric.")
 
-    parser.add_option("--asymmetric", dest="asymmetric", action="store_true",
+    parser.add_option("--is-asymmetric", dest="asymmetric", action="store_true",
                       help="matrix is asymmetric.")
 
-    parser.add_option("--default", dest="default", type="string",
+    parser.add_option("--default-value", dest="default", type="string",
                       help="default value for missing values.")
 
     parser.add_option("--default-diagonal", dest="default_diagonal", type="string",

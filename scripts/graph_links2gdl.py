@@ -41,7 +41,7 @@ python links2gdl.py [OPTIONS] < in_edges > out_graph.gdl
 --subset=               file of tokens that graph is restricted to
 --bipartite             consider file to be a bipartite graph (left| right) are different sets of vertices
 --no_titles             input graph has no column headers. Default is to ignore the first line.
---weights               add weights to graph
+--weights-tsv-file               add weights to graph
 --default-edge-colour   default edge colour
 """
 
@@ -141,7 +141,7 @@ def main(argv=None):
     parser = E.OptionParser(
         version="%prog version: $Id: graph_links2gdl.py 2782 2009-09-10 11:40:29Z andreas $", usage=globals()["__doc__"])
 
-    parser.add_option("-c", "--filename-components", dest="filename_components", type="string",
+    parser.add_option("-c", "--components-tsv-file", dest="filename_components", type="string",
                       help="filename with component information.")
     parser.add_option("-o", "--component", dest="component", type="string",
                       help="restrict output to component.")
@@ -149,7 +149,7 @@ def main(argv=None):
                       help="filename with node colours.")
     parser.add_option("-l", "--filename-node-labels", dest="filename_node_labels", type="string",
                       help="filename with node labels.")
-    parser.add_option("-w", "--weights", dest="weights", action="store_true",
+    parser.add_option("-w", "--weights-tsv-file", dest="weights", action="store_true",
                       help="use weights.")
     parser.add_option("--edge-colour", dest="edge_colour", type="choice",
                       choices=("heat", "jet", ),

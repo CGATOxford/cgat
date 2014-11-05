@@ -57,7 +57,7 @@ compute an approximate sequence length::
 
 The following command will split a fasta file at every 10 sequences::
 
-   cat genome.fasta | farm.py --split-at-regex="^>(\S+)" --chunksize=10 "wc -c"
+   cat genome.fasta | farm.py --split-at-regex="^>(\S+)" --chunk-size=10 "wc -c"
 
 .. todo::
 
@@ -767,7 +767,7 @@ def getOptionParser():
     parser.add_option("--split-at-tag", dest="split_at_tag", type="int",
                       help="split a file at a tag [default=%default].")
 
-    parser.add_option("--chunksize", dest="chunksize", type="int",
+    parser.add_option("--chunk-size", dest="chunksize", type="int",
                       help="when splitting at regex or tag, aggregate x entries [default=%default].")
 
     parser.add_option("--debug", dest="debug", action="store_true",
@@ -791,7 +791,7 @@ def getOptionParser():
     parser.add_option("--subdirs", dest="subdirs", action="store_true",
                       help="Run within separate subdirs for jobs. This permits multiple output streams. Use a placeholder %DIR% if you supply the ouput pattern as a command line option [default=%default].")
 
-    parser.add_option("-T", "--tmpdir", dest="tmpdir", type="string",
+    parser.add_option("-T", "--temp-dir", dest="tmpdir", type="string",
                       help="Temporary directory to be used. Default is the current directory [default=%default].")
 
     parser.add_option("--max-files", dest="max_files", type="int",
@@ -819,7 +819,7 @@ def getOptionParser():
     parser.add_option("--collect", dest="collect", type="string",
                       help="collect files in dir and process as normally [%default]")
 
-    parser.add_option("--binary", dest="binary", action="store_true",
+    parser.add_option("--is-binary", dest="binary", action="store_true",
                       help="the output is binary - files are concatenated without parsing [%default]")
 
     parser.add_option("--resubmit", dest="resubmit", type="int",
@@ -838,7 +838,7 @@ def getOptionParser():
     parser.add_option("-e", "--env", dest="environment", type="string", action="append",
                       help="environment variables to be passed to the jobs [%default]")
 
-    parser.add_option("--output-pattern", dest="output_pattern", type="string",
+    parser.add_option("--output-filename-pattern", dest="output_pattern", type="string",
                       help="Pattern for secondary output filenames. Should contain a '%s' "
                       "[default=%default].")
     parser.set_defaults(

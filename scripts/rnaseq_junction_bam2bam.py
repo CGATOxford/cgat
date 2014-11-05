@@ -76,10 +76,10 @@ def main(argv=None):
     parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
                             usage=globals()["__doc__"])
 
-    parser.add_option("-t", "--template-bam", dest="filename_genome_bam", type="string",
+    parser.add_option("-t", "--template-bam-file", dest="filename_genome_bam", type="string",
                       help="input bam file for header information [%default]")
 
-    parser.add_option("-s", "--contig-sizes", dest="filename_contigs", type="string",
+    parser.add_option("-s", "--contigs-tsv-file", dest="filename_contigs", type="string",
                       help="filename with contig sizes [%default]")
 
     parser.add_option("-o", "--colour", dest="colour_mismatches", action="store_true",
@@ -91,7 +91,7 @@ def main(argv=None):
     parser.add_option("-c", "--remove-contigs", dest="remove_contigs", type="string",
                       help="','-separated list of contigs to remove [%default]")
 
-    parser.add_option("-f", "--force", dest="force", action="store_true",
+    parser.add_option("-f", "--force-output", dest="force", action="store_true",
                       help="force overwriting of existing files [%default]")
 
     parser.add_option("-u", "--unique", dest="unique", action="store_true",
@@ -121,7 +121,7 @@ def main(argv=None):
         referencenames, referencelengths = data[0], map(int, data[1])
     else:
         raise ValueError(
-            "please provide either --template-bam or --contig-sizes")
+            "please provide either --template-bam-file or --contigs-tsv-file")
 
     infile = pysam.Samfile("-", "rb")
     outfile = pysam.Samfile("-", "wb", template=genomefile,

@@ -62,7 +62,7 @@ def main(argv=None):
                       help="input filename with vector of values.")
     parser.add_option("-2", "--infile2", dest="filename_input2", type="string",
                       help="input filename with vector of values.")
-    parser.add_option("--header", dest="header", type="string",
+    parser.add_option("--header-names", dest="header", type="string",
                       help="""header of value column [default=%default].""")
 
     parser.set_defaults(

@@ -212,7 +212,7 @@ def loadPicardDuplicateStats(infiles, outfile):
 
     statement = '''cat %(tmpfilename)s
                 | python %(scriptsdir)s/csv2db.py
-                      --index=track
+                      --add-index=track
                       --table=%(tablename)s 
                 > %(outfile)s
                '''
@@ -228,7 +228,7 @@ def buildBAMStats(infile, outfile):
     '''Count number of reads mapped, duplicates, etc. '''
     to_cluster = USECLUSTER
     scriptsdir = PARAMS["general_scriptsdir"]
-    statement = '''python %(scriptsdir)s/bam2stats.py --force 
+    statement = '''python %(scriptsdir)s/bam2stats.py --force-output 
                    --output-filename-pattern=%(outfile)s.%%s < %(infile)s > %(outfile)s'''
     P.run()
 
@@ -246,16 +246,16 @@ def loadBAMStats(infiles, outfile):
     tablename = P.toTable(outfile)
     E.info("loading bam stats - summary")
     statement = """python %(scriptsdir)s/combine_tables.py
-                      --headers=%(header)s
-                      --missing=0
+                      --header-names=%(header)s
+                      --missing-value=0
                       --ignore-empty
                    %(filenames)s
                 | perl -p -e "s/bin/track/"
                 | perl -p -e "s/unique/unique_alignments/"
                 | python %(scriptsdir)s/table2table.py --transpose
                 | python %(scriptsdir)s/csv2db.py
-                      --allow-empty
-                      --index=track
+                      --allow-empty-file
+                      --add-index=track
                       --table=%(tablename)s 
                 > %(outfile)s"""
     P.run()
@@ -266,15 +266,15 @@ def loadBAMStats(infiles, outfile):
         tname = "%s_%s" % (tablename, suffix)
 
         statement = """python %(scriptsdir)s/combine_tables.py
-                      --header=%(header)s
+                      --header-names=%(header)s
                       --skip-titles
-                      --missing=0
+                      --missing-value=0
                       --ignore-empty
                    %(filenames)s
                 | perl -p -e "s/bin/%(suffix)s/"
                 | python %(scriptsdir)s/csv2db.py
                       --table=%(tname)s 
-                      --allow-empty
+                      --allow-empty-file
                 >> %(outfile)s """
         P.run()
 
@@ -321,7 +321,7 @@ def loadPicardAlignStats(infiles, outfile):
 
     statement = '''cat %(tmpfilename)s
                 | python %(scriptsdir)s/csv2db.py
-                      --index=track
+                      --add-index=track
                       --table=%(tablename)s 
                 > %(outfile)s
                '''

@@ -1,5 +1,4 @@
-'''
-bam2bam.py - modify bam files
+'''bam2bam.py - modify bam files
 =============================
 
 :Author: Andreas Heger
@@ -10,8 +9,8 @@ bam2bam.py - modify bam files
 Purpose
 -------
 
-This script reads a :term:`bam` formatted file from stdin, performs 
-an action (see methods below) then outputs a modified :term:`bam` 
+This script reads a :term:`bam` formatted file from stdin, performs an
+action (see methods below) then outputs a modified :term:`bam`
 formatted file on stdout.
 
 .. note::
@@ -24,54 +23,77 @@ Documentation
 The script implements the following methods:
 
 ``set-nh``
+
    set the NH flag. Some tools (bowtie, bwa) do not set the NH flag.
    If set, this option will set the NH flag (for mapped reads).
    This option requires the bam/sam file to be sorted by read name.
 
 ``unset-unmapped_mapq``
+
    some tools set the mapping quality of unmapped reads. This
    causes a violation in the Picard tools.
 
 ``filter``
-   remove alignments based on a variety of flags.  These may
-   be ``unique``, ``non-unique``, ``mapped``, ``NM`` or ``CM``. 
-   If ``unique`` is set, only uniquely mapping reads will be
-   output. If ``non-unique`` is set then only multi-mapping reads 
-   will be output. This method first checks for the NH flag - 
-   if set, a unique match should have at most NH=1 hits. 
-   If not set, the method checks for BWA flags. Currently it checks
-   if X0 is set (X0=Number of best hits found by BWA).    
-   If ``mapped`` is given, unmapped reads will be 
-   removed. If ``NM`` or ``CM`` is set, the alignment of reads in 
-   two sam files (input and reference) is compared and only reads 
-   with a lower number of mismatches in the input compared to the 
-   reference sam file will be kept. If ``CM`` is set, the 
-   colourspace mismatch tag (for ABI Solid reads) will be used to 
-   count differences to the reference sam file. By default, the 
-   ``NM`` (number of mismatches) tag is used. The tag that is used 
-   needs to present in both input sam file and the reference sam 
-   file. If ``unique`` is given this wil NOT remove any
-   unmapped reads.  This can be achieved by providing the
-   ``filter`` option twice, once each with ``mapped`` and
-   ``unique``. 
 
-``strip``
-   remove the sequence and/or quality scores from all reads in
-   a bam-file. If ``match``, sequence and quality are stripped
-   for alignments without mismatches. The latter requires the
-   ``NM`` tag. If not present, nothing will be stripped. Note
-   that stripping is not reversible if the read names are not
-   unique.
+   remove alignments based on a variety of flags. The filtering method
+   is determined by the ``--filter-method`` option. These may be
+   ``unique``, ``non-unique``, ``mapped``, ``NM`` or ``CM``.  If
+   ``unique`` is set, only uniquely mapping reads will be output. If
+   ``non-unique`` is set then only multi-mapping reads will be
+   output. This method first checks for the NH flag - if set, a unique
+   match should have at most NH=1 hits.  If not set, the method checks
+   for BWA flags. Currently it checks if X0 is set (X0=Number of best
+   hits found by BWA).  If ``mapped`` is given, unmapped reads will be
+   removed. If ``NM`` or ``CM`` is set, the alignment of reads in two
+   sam files (input and reference) is compared and only reads with a
+   lower number of mismatches in the input compared to the reference
+   sam file will be kept. If ``CM`` is set, the colourspace mismatch
+   tag (for ABI Solid reads) will be used to count differences to the
+   reference sam file. By default, the ``NM`` (number of mismatches)
+   tag is used. The tag that is used needs to present in both input
+   sam file and the reference sam file. If ``unique`` is given this
+   wil NOT remove any unmapped reads.  This can be achieved by
+   providing the ``filter`` option twice, once each with ``mapped``
+   and ``unique``.
+
+   .. note::
+
+      The filter methods can't currently combined with any of
+      the other methods - this is work in progress.
+
+``strip-sequence``
+
+   remove the sequence from all reads in a bam-file. Note that
+   stripping the sequence will also remove the quality scores.
+   Stripping is not reversible if the read names are not unique.
+
+``strip-quality``
+
+   remove the quality scores from all reads in a bam-file.
+   Stripping is not reversible if the read names are not unique.
 
 ``set-sequence``
-   set the sequence and quality scores in the bam file to some
-   dummy sequence. Necessary for some tools that can not work
+
+   set the sequence and quality scores in the bam file to some dummy
+   values ('A' for sequence, 'F' for quality which is a valid score in
+   most fastq encodings. Necessary for some tools that can not work
    with bam-files without sequence.
 
 ``unstrip``
-   add sequence and quality scores back to a bam file. The
-   argument to this option is a :term:`fastq` formatted file
-   with the sequences and quality scores to insert.
+
+   add sequence and quality scores back to a bam file. Requires a
+   :term:`fastq` formatted file with the sequences and quality scores
+   to insert.
+
+``unset-unmapped-mapq``
+
+   sets the mapping quality of unmapped reads to 0.
+
+``keep-first-base``
+
+   keep only the first base of reads so that read counting tools will
+   only consider the first base in the counts
+
 
 By default, the script works from stdin and outputs to stdout.
 If the ``--inplace option`` is given, the script will modify
@@ -85,13 +107,13 @@ Usage
 
 For example::
 
-   cgat bam2bam.py --filter=mapped < in.bam > out.bam
+   cgat bam2bam.py --method=filter --filter-method=mapped < in.bam > out.bam
 
-will remove all unmapped reads from the bam-file. 
+will remove all unmapped reads from the bam-file.
 
 To remove unmapped reads from multiple bam-files, try::
 
-   cgat bam2bam.py --inplace --filter=mapped *.bam
+   cgat bam2bam.py --inplace --method=filter --filter-method=mapped *.bam
 
 Type::
 
@@ -106,7 +128,6 @@ Command line options
 
 import os
 import sys
-import itertools
 import tempfile
 import shutil
 import pysam
@@ -135,48 +156,42 @@ def main(argv=None):
     parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
-    parser.add_option("--set-nh", dest="set_nh", action="store_true",
-                      help="sets the NH (number of alignments) flag. "
-                      "The file needs to be sorted by readname [%default]")
+    parser.add_option("-m", "--methods", dest="methods", type="choice",
+                      action="append",
+                      choices=("filter",
+                               "keep-first-base",
+                               "set-nh",
+                               "set-sequence",
+                               "strip-sequence",
+                               "strip-quality",
+                               "unstrip",
+                               "unset-unmapped-mapq"),
+                      help="methods to apply [%default]")
 
-    parser.add_option("--unset-unmapped-mapq", dest="unset_unmapped_mapq",
-                      action="store_true",
-                      help="sets the mapping quality of unmapped "
-                      "reads to 0 [%default]")
-
-    parser.add_option("--set-sequence", dest="set_sequence",
-                      action="store_true",
-                      help="sets the sequence to 'A's (a valid base) and "
-                      "the quality to 'F's "
-                      ",which is defined in all fastq scoring schemes "
+    parser.add_option("--strip-method", dest="strip_method", type="choice",
+                      choices=("all", "match"),
+                      help = "define which sequences/qualities to strip. "
+                      "match means that stripping only applies to entries "
+                      "without mismatches (requires NM tag to be present). "
                       "[%default]")
 
-    parser.add_option("--strip", dest="strip", type="choice",
-                      choices=("sequence", "quality", "match"),
-                      help = "remove parts of the bam-file. Note that "
-                      "stripping the sequence will "
-                      "also strip the quality values [%default]")
-
-    parser.add_option("--unstrip", dest="unstrip", action="store_true",
-                      help="add sequence and quality into bam file. "
-                      "Requires reference fastq file(s) [%default]")
-
-    parser.add_option("--filter", dest="filter",
+    parser.add_option("--filter-method", dest="filter_methods",
                       action="append", type="choice",
                       choices=('NM', 'CM', 'mapped', 'unique', "non-unique"),
-                      help = "filter to apply to remove alignments "
-                      "from a bam file [%default]")
+                      help = "filter method to apply to remove alignments "
+                      "from a bam file. Multiple methods can be supplied "
+                      "[%default]")
 
-    parser.add_option("--reference-bam", dest="reference_bam", type="string",
+    parser.add_option("--reference-bam-file", dest="reference_bam", type="string",
                       help="bam-file to filter with [%default]")
 
-    parser.add_option("--force", dest="force", action="store_true",
+    parser.add_option("--force-output", dest="force", action="store_true",
                       help="force processing. Some methods such "
                       "as strip/unstrip will stop processing if "
                       "they think it not necessary "
                       "[%default]")
 
-    parser.add_option("--sam", dest="output_sam", action="store_true",
+    parser.add_option("--sam-file", dest="output_sam", action="store_true",
                       help="output in sam format [%default]")
 
     parser.add_option("--inplace", dest="inplace", action="store_true",
@@ -185,36 +200,26 @@ def main(argv=None):
                       "as arguments. Temporary bam files are written "
                       "to /tmp [%default]")
 
-    parser.add_option("--fastq1", "-1", dest="fastq_pair1", type="string",
+    parser.add_option("--first-fastq-file", "-1", dest="fastq_pair1", type="string",
                       help="fastq file with read information for first "
                       "in pair or unpaired. Used for unstripping sequence "
                       "and quality scores [%default]")
 
-    parser.add_option("--fastq2", "-2", dest="fastq_pair2", type="string",
+    parser.add_option("--second-fastq-file", "-2", dest="fastq_pair2", type="string",
                       help="fastq file with read information for second "
                       "in pair. Used for unstripping sequence "
                       "and quality scores  [%default]")
 
-    parser.add_option("--keep-first-base", dest="keep_first_base",
-                      action="store_true",
-                      help="keep only the first base of reads so that "
-                      "read counting tools will only consider the "
-                      "first base in the counts.")
-
     parser.set_defaults(
-        filter=[],
-        set_nh=False,
-        unset_unmapped_mapq=False,
+        methods=[],
         output_sam=False,
         reference_bam=None,
-        strip=None,
-        unstrip=None,
+        filter_methods=[],
+        strip_method="all",
         force=False,
-        set_sequence=False,
         inplace=False,
         fastq_pair1=None,
         fastq_pair2=None,
-        keep_first_base=False
     )
 
     # add common options (-h/--help, ...) and parse command line
@@ -268,14 +273,14 @@ def main(argv=None):
             E.debug("writing temporary bam-file to %s" % tmpfile.name)
             pysam_out = pysam.Samfile(tmpfile.name, "wb", template=pysam_in)
 
-        if options.filter:
+        if "filter" in options.methods:
 
             remove_mismatches, colour_mismatches = False, False
 
-            if "NM" in options.filter:
+            if "NM" in options.filter_methods:
                 remove_mismatches = True
 
-            elif "CM" in options.filter:
+            elif "CM" in options.filter_methods:
                 remove_mismatches = True
                 colour_mismatches = True
 
@@ -292,10 +297,10 @@ def main(argv=None):
             # filter and flags are the opposite way around
             c = _bam2bam.filter_bam(
                 pysam_in, pysam_out, pysam_ref,
-                remove_nonunique="unique" in options.filter,
-                remove_unique="non-unique" in options.filter,
+                remove_nonunique="unique" in options.filter_methods,
+                remove_unique="non-unique" in options.filter_methods,
                 remove_contigs=None,
-                remove_unmapped="mapped" in options.filter,
+                remove_unmapped="mapped" in options.filter_methods,
                 remove_mismatches=remove_mismatches,
                 colour_mismatches=colour_mismatches)
 
@@ -308,7 +313,7 @@ def main(argv=None):
             # function to check if processing should start
             pre_check_f = lambda x: None
 
-            if options.unset_unmapped_mapq:
+            if "unset-unmapped-mapq" in options.methods:
                 def unset_unmapped_mapq(i):
                     for read in i:
                         if read.is_unmapped:
@@ -316,21 +321,7 @@ def main(argv=None):
                         yield read
                 it = unset_unmapped_mapq(it)
 
-            if options.set_nh and False:
-                def set_nh(i):
-
-                    for key, reads in itertools.groupby(i, lambda x: x.qname):
-                        l = list(reads)
-                        nh = len(l)
-                        for read in l:
-                            if not read.is_unmapped:
-                                t = dict(read.tags)
-                                t['NH'] = nh
-                                read.tags = list(t.iteritems())
-                            yield read
-                it = set_nh(it)
-
-            if options.set_sequence:
+            if "set-sequence" in options.methods:
                 def set_sequence(i):
                     for read in i:
                         # can't get at length of unmapped reads
@@ -344,7 +335,8 @@ def main(argv=None):
                         yield read
                 it = set_sequence(it)
 
-            if options.strip is not None:
+            if "strip-sequence" in options.methods or "strip-quality" in \
+               options.methods:
                 def strip_sequence(i):
                     for read in i:
                         read.seq = None
@@ -375,16 +367,17 @@ def main(argv=None):
                             read.seq = None
                         yield read
 
-                if options.strip == "sequence":
-                    it = strip_sequence(it)
-                    pre_check_f = check_sequence
-                elif options.strip == "quality":
-                    it = strip_quality(it)
-                    pre_check_f = check_quality
-                elif options.strip == "match":
+                if options.strip_method == "all":
+                    if "strip-sequence" in options.methods:
+                        it = strip_sequence(it)
+                        pre_check_f = check_sequence
+                    elif "strip-quality" in options.methods:
+                        it = strip_quality(it)
+                        pre_check_f = check_quality
+                elif options.strip_method == "match":
                     it = strip_match(it)
 
-            if options.unstrip:
+            if "unstrip" in options.methods:
                 def buildReadDictionary(filename):
                     if not os.path.exists(filename):
                         raise OSError("file not found: %s" % filename)
@@ -423,13 +416,15 @@ def main(argv=None):
                 else:
                     it = unstrip_unpaired(it)
 
-            if options.set_nh:
+            if "set-nh" in options.methods:
                 it = _bam2bam.SetNH(it)
 
             # keep first base of reads by changing the cigarstring to
             # '1M' and, in reads mapping to the reverse strand,
             # changes the pos to aend - 1
-            if options.keep_first_base:
+            # Needs to be refactored to make it more general
+            # (last base, midpoint, ..)
+            if "keep_first_base" in options.methods:
                 def keep_first_base(i):
                     for read in i:
                         if read.is_reverse:
@@ -442,6 +437,8 @@ def main(argv=None):
 
             # read first read and check if processing should continue
             # only possible when not working from stdin
+            # Refactoring: use cache to also do a pre-check for
+            # stdin input.
             if bamfile != "-":
                 # get first read for checking pre-conditions
                 first_reads = list(pysam_in.head(1))

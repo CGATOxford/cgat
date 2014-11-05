@@ -84,7 +84,7 @@ def main(argv=None):
                       help="symmetrize graph.")
     parser.add_option("-c", "--columns", dest="columns", type="string",
                       help="columns to take for calculating histograms.")
-    parser.add_option("-p", "--output-pattern", dest="output_pattern", type="string",
+    parser.add_option("-p", "--output-filename-pattern", dest="output_pattern", type="string",
                       help="pattern for output files.")
     parser.add_option("-m", "--method", dest="method", type="string",
                       help="method.")

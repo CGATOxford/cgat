@@ -300,13 +300,13 @@ def main(argv=None):
                       help="genomes to analyse.")
     parser.add_option("-i", "--priority", dest="priority", type="string",
                       help="quality priority.")
-    parser.add_option("-s", "--sort", dest="sort", type="string",
+    parser.add_option("-s", "--method=sort --sort-order", dest="sort", type="string",
                       help="sort order.")
-    parser.add_option("-p", "--peptides", dest="filename_peptides", type="string",
+    parser.add_option("-p", "--peptides-fasta-file", dest="filename_peptides", type="string",
                       help="filename with template peptide sequences.")
     parser.add_option("-m", "--methods", dest="methods", type="string",
                       help="methods to apply [missed].")
-    parser.add_option("-f", "--filter", dest="filename_filter", type="string",
+    parser.add_option("-f", "--method=filter --filter-method", dest="filename_filter", type="string",
                       help="filename with schema|prediction_id|gene to use as filter. The prediction_ids are used for filtering.")
     parser.add_option("-q", "--filter-quality", dest="filter_quality", type="string",
                       help="only consider predictions of given qualities.")

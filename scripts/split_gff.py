@@ -18,7 +18,7 @@ be contig/start position sorted.
 Options
 -------
 
--p --output-pattern
+-p --output-filename-pattern
 
     Specifies how to name the output files. The placeholder
     should be included and will specify where the chunk
@@ -154,7 +154,7 @@ def main(argv=None):
     parser = E.OptionParser(
         version="%prog version: $Id: gff2chunks.py 2781 2009-09-10 11:33:14Z andreas $", usage=globals()["__doc__"])
 
-    parser.add_option("-p", "--output-pattern", dest="output_pattern", type="string",
+    parser.add_option("-p", "--output-filename-pattern", dest="output_pattern", type="string",
                       help="output pattern for filenames. Should contain a '%i' [default=%default].")
 
     parser.add_option("-i", "--min-chunk-size", dest="min_chunk_size", type="int",

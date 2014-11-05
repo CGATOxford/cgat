@@ -69,11 +69,17 @@ cdef class Counter:
                          bins,
                          int window_size = 0,
                          float peak_ratio = 0.90,
-                         only_interval = False,
+                         use_interval = False,
                          centring_method = "reads" ):
         '''count density in window and compute peak-shape 
         summary parameters inside window.
 
+        If *use_interval* is True, only counts within the
+        actual interval as defined by *start* and *end* are
+        returned. Otherwise, if set to *True*, the peak location
+        will be located first and a window centered on the
+        peak of size *window_size* will be used.
+        
         return a result object.
         '''
 
@@ -86,7 +92,7 @@ cdef class Counter:
         assert start >= 0, "start < 0"
 
         # maximum extend of window = interval +- window_size
-        cdef int maxwindow_start = max(0, start - window_size )
+        cdef int maxwindow_start = max(0, start - window_size)
         cdef int maxwindow_end = end + window_size
 
         # bases added at right/left of interval
@@ -96,10 +102,10 @@ cdef class Counter:
         cdef int interval_width = end - start
 
         # get counts in window
-        nreads, counts_in_window = self.coverageInInterval( infile, 
-                                                            contig, 
-                                                            maxwindow_start, 
-                                                            maxwindow_end )
+        nreads, counts_in_window = self.coverageInInterval(infile, 
+                                                           contig, 
+                                                           maxwindow_start, 
+                                                           maxwindow_end)
 
         # counts only in interval - used to define peak center
         counts_in_interval = counts_in_window[offset_left:-offset_right]
@@ -168,16 +174,18 @@ cdef class Counter:
                 right_last = i
                 break
 
-        cdef int furthest_dist = max( peak_center - left_first, right_last - peak_center )
-        cdef int closest_dist = min( peak_center - left_last, right_first - peak_center )
+        cdef int furthest_dist = max(peak_center - left_first,
+                                     right_last - peak_center)
+        cdef int closest_dist = min(peak_center - left_last,
+                                    right_first - peak_center)
 
         #################################################
         # compute histogram
         nbins = len(bins) - 1
-        hist = numpy.zeros( nbins, dtype = numpy.int )
+        hist = numpy.zeros(nbins, dtype = numpy.int)
 
         # decide in which region to count - interval or window
-        if only_interval:
+        if use_interval:
             counts = counts_in_interval
             # offset = peak
             offset = peak_center
@@ -194,7 +202,7 @@ cdef class Counter:
             xend = offset + bins[i+1]
             # only take complete bins
             if xstart >= 0 and xend < lcounts:
-                hist[i] = sum( counts[xstart:xend] ) 
+                hist[i] = sum(counts[xstart:xend]) 
             xstart = xend
 
         # debugging
@@ -203,15 +211,15 @@ cdef class Counter:
         # for x,v in enumerate( counts ):
         #     print x, "*" * v
 
-        result = PeakShapeResult._make( (interval_width, npeaks,
-                                         start + peak_center, 
-                                         peak_width, peak_nreads, 
-                                         abs((interval_width // 2) - peak_center), 
-                                         nreads,
+        result = PeakShapeResult._make((interval_width, npeaks,
+                                        start + peak_center, 
+                                        peak_width, peak_nreads, 
+                                        abs((interval_width // 2) - peak_center), 
+                                        nreads,
                                          numpy.median(counts),
-                                         closest_dist, furthest_dist,
-                                         bins,
-                                         hist ) )
+                                        closest_dist, furthest_dist,
+                                        bins,
+                                        hist))
 
 
         return result

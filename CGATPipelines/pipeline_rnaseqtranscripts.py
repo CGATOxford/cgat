@@ -358,7 +358,7 @@ def writePrunedGTF(infile, outfile):
     if "geneset_remove_repetetive_rna" in PARAMS:
 
         cmds.append('''python %s/gtf2gtf.py
-        --remove-overlapping=%s
+        --method=remove-overlapping --gff-file=%s
         --log=%s.log''' % (PARAMS["scriptsdir"],
                            rna_file, outfile))
 
@@ -382,7 +382,7 @@ def writePrunedGTF(infile, outfile):
     # remove \0 bytes within gtf file
     statement = '''%(uncompress)s %(infile)s 
     | %(cmds)s 
-    | python %(scriptsdir)s/gtf2gtf.py --sort=contig+gene --log=%(outfile)s.log
+    | python %(scriptsdir)s/gtf2gtf.py --method=sort --sort-order=contig+gene --log=%(outfile)s.log
     | %(compress)s > %(outfile)s'''
 
     P.run()
@@ -1035,8 +1035,8 @@ def loadTranscriptComparison(infile, outfile):
 
         statement = '''cat %(tmpfile)s
         | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --allow-empty
-              --index=track
+              --allow-empty-file
+              --add-index=track
               --table=%(tablename)s 
         > %(outfile)s
         '''
@@ -1065,9 +1065,9 @@ def loadTranscriptComparison(infile, outfile):
 
         statement = '''cat %(tmpfile)s
             | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --allow-empty
-              --index=track
-              --index=contig
+              --allow-empty-file
+              --add-index=track
+              --add-index=contig
               --table=%(tablename)s 
             >  %(outfile)s
         '''
@@ -1093,8 +1093,8 @@ def loadTranscriptComparison(infile, outfile):
 
         statement = '''cat %(tmpfile)s
         | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --allow-empty
-              --index=track
+              --allow-empty-file
+              --add-index=track
               --table=%(tablename)s 
         > %(outfile)s
         '''
@@ -1167,10 +1167,10 @@ def loadTranscriptComparison(infile, outfile):
     tablename = P.toTable(outfile) + "_tracking"
     statement = '''cat %(tmpfile)s
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --allow-empty
-              --index=locus_id
-              --index=transfrag_id
-              --index=code
+              --allow-empty-file
+              --add-index=locus_id
+              --add-index=transfrag_id
+              --add-index=code
               --table=%(tablename)s 
     >> %(outfile)s
     '''
@@ -1181,13 +1181,13 @@ def loadTranscriptComparison(infile, outfile):
     tablename = P.toTable(outfile) + "_transcripts"
     statement = '''cat %(tmpfile2)s
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --allow-empty
-              --index=transfrag_id
-              --index=ref_gene_id
-              --index=ref_transcript_id
-              --index=transcript_id
-              --index=gene_id
-              --index=track
+              --allow-empty-file
+              --add-index=transfrag_id
+              --add-index=ref_gene_id
+              --add-index=ref_transcript_id
+              --add-index=transcript_id
+              --add-index=gene_id
+              --add-index=track
               --table=%(tablename)s 
     >> %(outfile)s
     '''
@@ -1198,8 +1198,8 @@ def loadTranscriptComparison(infile, outfile):
     tablename = P.toTable(outfile) + "_fpkm"
     statement = '''cat %(tmpfile3)s
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --allow-empty
-              --index=transfrag_id
+              --allow-empty-file
+              --add-index=transfrag_id
               --table=%(tablename)s 
     >> %(outfile)s
     '''
@@ -1234,7 +1234,7 @@ def loadTranscriptComparison(infile, outfile):
 
     statement = '''cat %(tmpfile)s
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --index=locus_id
+              --add-index=locus_id
               --table=%(tablename)s 
     >> %(outfile)s
     '''
@@ -1301,8 +1301,8 @@ def buildAndLoadFullGeneSetTracking(infiles, outfile):
 
     statement = '''cat %(tmpfile)s
         | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --allow-empty
-              --index=track
+              --allow-empty-file
+              --add-index=track
               --table=%(tablename)s 
         > %(outfile)s
         '''
@@ -1373,10 +1373,10 @@ def buildAndLoadFullGeneSetTracking(infiles, outfile):
     tablename = P.toTable(outfile) + "_tracking"
     statement = '''cat %(tmpfile)s
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --allow-empty
-              --index=locus_id
-              --index=transfrag_id
-              --index=code
+              --allow-empty-file
+              --add-index=locus_id
+              --add-index=transfrag_id
+              --add-index=code
               --table=%(tablename)s 
     >> %(outfile)s
     '''
@@ -1387,13 +1387,13 @@ def buildAndLoadFullGeneSetTracking(infiles, outfile):
     tablename = P.toTable(outfile) + "_transcripts"
     statement = '''cat %(tmpfile2)s
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --allow-empty
-              --index=transfrag_id
-              --index=ref_gene_id
-              --index=ref_transcript_id
-              --index=transcript_id
-              --index=gene_id
-              --index=track
+              --allow-empty-file
+              --add-index=transfrag_id
+              --add-index=ref_gene_id
+              --add-index=ref_transcript_id
+              --add-index=transcript_id
+              --add-index=gene_id
+              --add-index=track
               --table=%(tablename)s 
     >> %(outfile)s
     '''
@@ -1404,8 +1404,8 @@ def buildAndLoadFullGeneSetTracking(infiles, outfile):
     tablename = P.toTable(outfile) + "_fpkm"
     statement = '''cat %(tmpfile3)s
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --allow-empty
-              --index=transfrag_id
+              --allow-empty-file
+              --add-index=transfrag_id
               --table=%(tablename)s 
     >> %(outfile)s
     '''
@@ -1441,7 +1441,7 @@ def buildAndLoadFullGeneSetTracking(infiles, outfile):
 
     statement = '''cat %(tmpfile)s
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --index=locus_id
+              --add-index=locus_id
               --table=%(tablename)s 
     >> %(outfile)s
     '''
@@ -1691,7 +1691,7 @@ def buildLincRNAGeneSet(infiles, outfile):
     mv %(outfile)s %(outfile)s.tmp;
     checkpoint;
     zcat %(outfile)s.tmp
-    | python %(scriptsdir)s/gtf2gtf.py --sort=contig+gene --log=%(outfile)s.log
+    | python %(scriptsdir)s/gtf2gtf.py --method=sort --sort-order=contig+gene --log=%(outfile)s.log
     | gzip > %(outfile)s;
     checkpoint;
     rm -f %(outfile)s.tmp
@@ -1937,7 +1937,7 @@ def classifyTranscripts(infiles, outfile):
     | python %(scriptsdir)s/gtf2table.py
            --counter=%(counter)s  
            --reporter=transcripts
-           --filename-gff=%(reference)s
+           --gff-file=%(reference)s
            --log=%(outfile)s.log
     | gzip
     > %(outfile)s
@@ -1964,7 +1964,7 @@ def classifyTranscriptsCuffcompare(infiles, outfile):
     | python %(scriptsdir)s/gtf2table.py
            --counter=%(gtf2table_classifier)s 
            --reporter=transcripts
-           --filename-gff=%(reference)s
+           --gff-file=%(reference)s
            --log=%(outfile)s.log
     | gzip
     > %(outfile)s
@@ -1981,7 +1981,7 @@ def classifyTranscriptsCuffcompare(infiles, outfile):
            ".load")
 def loadClassification(infile, outfile):
     P.load(infile, outfile,
-           options="--index=transcript_id --index=match_gene_id --index=match_transcript_id --index=source")
+           options="--add-index=transcript_id --add-index=match_gene_id --add-index=match_transcript_id --add-index=source")
 
 #########################################################################
 #########################################################################
@@ -2013,11 +2013,11 @@ def buildTranscriptLevelReadCounts(infiles, outfile):
           --reporter=transcripts
           --bam-file=%(infile)s 
           --counter=length
-          --prefix="exons_"
+          --column-prefix="exons_"
           --counter=read-counts 
-          --prefix=""
+          --column-prefix=""
           --counter=read-coverage
-          --prefix=coverage_
+          --column-prefix=coverage_
     | gzip
     > %(outfile)s
     '''
@@ -2033,7 +2033,7 @@ def buildTranscriptLevelReadCounts(infiles, outfile):
            suffix(".tsv.gz"),
            ".load")
 def loadTranscriptLevelReadCounts(infile, outfile):
-    P.load(infile, outfile, options="--index=transcript_id")
+    P.load(infile, outfile, options="--add-index=transcript_id")
 
 #########################################################################
 #########################################################################
@@ -2172,7 +2172,7 @@ def loadReproducibility(infile, outfile):
     # IMS: toTable needs .load so changed P.toTable(infile) to
     # P.toTable(outfile)
     tablename = P.toTable(outfile)
-    statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s --log=%(outfile)s.log --allow-empty=True < %(infile)s'''
+    statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s --log=%(outfile)s.log --allow-empty-file=True < %(infile)s'''
 
 #########################################################################
 #########################################################################

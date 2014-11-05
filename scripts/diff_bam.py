@@ -1,5 +1,4 @@
-'''
-diff_bam.py - compare multiple bam files against each other
+'''diff_bam.py - compare multiple bam files against each other
 ===========================================================
 
 :Author: Andreas Heger
@@ -13,11 +12,11 @@ Purpose
 Compare RNASeq reads in multiple BAM files against each other.
 
 .. note::
-    BAM files need to be sorted by read name. samtools sort
-    does NOT work as it uses a custom comparison function
-    (strnum_cmp) that is incompatible with the standard 
-    lexicographical order in python. See the example below
-    on how to get sorted files.
+
+    BAM files need to be sorted by read name. samtools sort does NOT
+    work as it uses a custom comparison function (strnum_cmp) that is
+    incompatible with the standard lexicographical order in
+    python. See the example below on how to get sorted files.
 
 This script is for validation purposes. It might take a while
 for large BAM files.
@@ -33,11 +32,11 @@ files, type::
 If they are not sorted, you can use samtools sort to do an
 inplace sort::
 
-   python diff_bam.py <( samtools view -h a.bam | hsort 0 -k1,1) 
-                  <( samtools view -h b.bam | hsort 0 -k1,1) 
+   python diff_bam.py <(samtools view -h a.bam | hsort 0 -k1,1)
+                  <(samtools view -h b.bam | hsort 0 -k1,1)
 
-The ``-h`` option outputs the header, and the hsort command sorts without 
-disturbing the header. 
+The ``-h`` option outputs the header, and the hsort command sorts
+without disturbing the header.
 
 Type::
 
@@ -55,16 +54,10 @@ Command line options
 
 '''
 
-import os
 import sys
-import re
-import optparse
-import collections
 import itertools
-import CGAT.Experiment as E
-import CGAT.IOTools as IOTools
 import pysam
-import CGAT.GTF as GTF
+import CGAT.Experiment as E
 
 
 class multiway_groupby(object):
@@ -135,12 +128,13 @@ def main(argv=None):
         argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+    parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
-    parser.add_option("-e", "--headers", dest="headers", type="string",
-                      help="',' separated list of labels used as headers. "
-                      " Should correspond in order to command line arguments [%default]")
+    parser.add_option(
+        "--header-names", dest="headers", type="string",
+        help="',' separated list of labels used as headers. "
+        " Should correspond in order to command line arguments [%default]")
 
     parser.set_defaults(
         headers=None,

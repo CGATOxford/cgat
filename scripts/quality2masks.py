@@ -67,7 +67,7 @@ def main(argv=None):
     parser.add_option("--random", dest="random", action="store_true",
                       help="shuffle quality scores before masking [default=%default]")
 
-    parser.add_option("--filename-map", dest="filename_map", type="string",
+    parser.add_option("--map-tsv-file", dest="filename_map", type="string",
                       help="filename in psl format mapping entries in multiple alignment to the genome [default=%default]")
 
     parser.add_option("-q", "--quality-file", dest="quality_file", type="string",

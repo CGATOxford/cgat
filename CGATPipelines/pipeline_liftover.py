@@ -154,7 +154,7 @@ def convertGtf2Psl(infile, outfile):
     < %(infile)s 
     | awk '$3 == "exon"' 
     | python %(scriptsdir)s/gff2gff.py 
-           --sanitize=genome 
+           --method=sanitize=genome 
            --skip-missing
            --genome=%(genomefile)s
            --log=%(outfile)s.log

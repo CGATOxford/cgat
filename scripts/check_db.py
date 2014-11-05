@@ -31,15 +31,8 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
-import string
 import re
-import time
-import optparse
-import tempfile
-import subprocess
-import types
 import numpy
 import CGAT.Experiment as E
 
@@ -65,8 +58,9 @@ def output(counts, row_names, col_names, options):
         outfile = open(filename, "w")
         outfile.write("head\t%s\n" % "\t".join(col_names))
         for x, head in enumerate(row_names):
-            outfile.write("%s\t%s\n" %
-                          (head, "\t".join([pattern % i for i in matrix[x, ]])))
+            outfile.write(
+                "%s\t%s\n" %
+                (head, "\t".join([pattern % i for i in matrix[x, ]])))
         outfile.close()
 
     __output(options.output_filename_pattern % "counts", counts, "%i")
@@ -162,7 +156,9 @@ def doColumnsInTable(dbhandle, error, options):
         for table in tables:
             cc = dbhandle.cursor()
             columns.update(
-                set([str(x[1]) for x in cc.execute("PRAGMA table_info( %s )" % table).fetchall()]))
+                set([str(x[1]) for x in
+                     cc.execute("PRAGMA table_info( %s )" %
+                                table).fetchall()]))
             cc.close()
 
     tables, columns = list(tables), list(columns)
@@ -186,7 +182,7 @@ def doColumnsInTable(dbhandle, error, options):
                 cc.execute(statement % (column, table, column))
                 count = cc.fetchone()[0]
                 cc.close()
-            except error, msg:
+            except error:
                 continue
             counts[x, y] = count
 
@@ -206,7 +202,8 @@ def doColumnsInTable(dbhandle, error, options):
 def main(argv=None):
 
     parser = E.OptionParser(
-        version="%prog version: $Id: check_db.py 2782 2009-09-10 11:40:29Z andreas $", usage=globals()["__doc__"])
+        version="%prog version: $Id$",
+        usage=globals()["__doc__"])
 
     parser.add_option("-d", "--database", dest="database", type="string",
                       help="database name [default=%default].")
@@ -217,26 +214,36 @@ def main(argv=None):
     parser.add_option("-c", "--column", dest="column", type="string",
                       help="column name [default=%default].")
 
-    parser.add_option("--regex-head", dest="regex_head", type="string",
-                      help="regular expression to extract the head of a table, which will be the rows [default=%default].")
+    parser.add_option(
+        "--regex-head", dest="regex_head", type="string",
+        help="regular expression to extract the head of a table, "
+        "which will be the rows [default=%default].")
 
-    parser.add_option("--regex-tail", dest="regex_tail", type="string",
-                      help="regular expression to extract the tail of a table, which be the columns [default=%default].")
+    parser.add_option(
+        "--regex-tail", dest="regex_tail", type="string",
+        help="regular expression to extract the tail of a table, "
+        "which be the columns [default=%default].")
 
-    parser.add_option("-b", "--backend", dest="backend", type="choice",
-                      choices=("pg", "sqlite"),
-                      help="database backend to choose [default=%default].")
+    parser.add_option(
+        "-b", "--backend", dest="backend", type="choice",
+        choices=("pg", "sqlite"),
+        help="database backend to choose [default=%default].")
 
-    parser.add_option("-p", "--output-filename-pattern", dest="output_filename_pattern", type="string",
-                      help="pattern for output filenames [%default].")
+    parser.add_option(
+        "-p", "--output-filename-pattern",
+        dest="output_filename_pattern", type="string",
+        help="pattern for output filenames [%default].")
 
-    parser.add_option("-e", "--exclude", dest="exclude_pattern", type="string",
-                      help="pattern to exclude tables from the analysis [%default].")
+    parser.add_option(
+        "-e", "--exclude-pattern",
+        dest="exclude_pattern", type="string",
+        help="pattern to exclude tables from the analysis [%default].")
 
-    parser.add_option("-m", "--method", dest="method", type="choice",
-                      choices=(
-                          "column-in-tables", "columns-in-table", "tables-on-column"),
-                      help="analysis to perform [default=%default].")
+    parser.add_option(
+        "-m", "--method", dest="method", type="choice",
+        choices=(
+            "column-in-tables", "columns-in-table", "tables-on-column"),
+        help="analysis to perform [default=%default].")
 
     parser.set_defaults(
         database="csvdb",

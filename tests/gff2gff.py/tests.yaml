@@ -6,7 +6,38 @@ version:
     options: --version
 
 complement_groups:
+    stdin: hg19.small.gz
+    outputs: [stdout]
+    references: [complement.gtf]
+    options: --method=complement-groups
+
+add_flank:
     stdin: hg19.chr19.gtf.gz
     outputs: [stdout]
-    references: [complement.gtf.gz]
-    options: --is-gtf --complement-groups
+    references: [add_flank.gtf]
+    options: --method=add-flank --genome=%DIR%/hg19.chr19 --extension-upstream=1000 --extension-downstream=100
+
+add_flank_extend:
+    stdin: hg19.chr19.gtf.gz
+    outputs: [stdout]
+    references: [add_flank_extend.gtf]
+    options: --method=add-flank --genome=%DIR%/hg19.chr19 --flank-method=extend --extension-upstream=1000 --extension-downstream=100
+
+sanitize_ucsc:
+    stdin: hg19.chr19.gtf.gz
+    outputs: [stdout]
+    references: [sanitize_ucsc.gtf]
+    options: --method=sanitize --sanitize-method=ucsc
+
+sanitize_ucsc_remove:
+    stdin: hg19.chr19.gtf.gz
+    outputs: [stdout]
+    references: [sanitize_ucsc.gtf]
+    options: --method=sanitize --sanitize-method=ucsc --contig-pattern=chr19
+
+sanitize_ensembl:
+    stdin: hg19.chr19.gtf.gz
+    outputs: [stdout]
+    references: [sanitize_ensembl.gtf]
+    options: --method=sanitize --sanitize-method=ensembl
+

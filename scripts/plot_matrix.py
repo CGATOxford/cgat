@@ -145,10 +145,10 @@ def main(argv=None):
     parser.add_option("-o", "--colours", dest="colours", type="int",
                       help="column with colour information.")
 
-    parser.add_option("-l", "--labels", dest="labels", type="string",
+    parser.add_option("-l", "--plot-labels", dest="labels", type="string",
                       help="column labels for x and y in matched plots.")
 
-    parser.add_option("-e", "--headers", dest="headers", action="store_true",
+    parser.add_option("-e", "--header-names", dest="headers", action="store_true",
                       help="headers are supplied in matrix.")
 
     parser.add_option("--no-headers", dest="headers", action="store_false",
@@ -188,7 +188,7 @@ def main(argv=None):
     parser.add_option("--title", dest="title", type="string",
                       help="title to use.")
 
-    parser.add_option("--missing", dest="missing", type="float",
+    parser.add_option("--missing-value", dest="missing", type="float",
                       help="value to use for missing data.")
 
     parser.add_option("--subplots", dest="subplots", type="string",
