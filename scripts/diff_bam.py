@@ -9,7 +9,7 @@
 Purpose
 -------
 
-Compare RNASeq reads in multiple BAM files against each other.
+Compare reads in multiple BAM files against each other.
 
 .. note::
 
@@ -37,6 +37,28 @@ inplace sort::
 
 The ``-h`` option outputs the header, and the hsort command sorts
 without disturbing the header.
+
+An example output looks like this::
+
++------------------------------------+----------+--------+--------+--------+---------+---------+
+|read                                |nlocations|nmatched|file1_nh|file2_nh|file1_loc|file2_loc|
++------------------------------------+----------+--------+--------+--------+---------+---------+
+|42YKVAAXX_HWI-EAS229_1:1:11:1659:174|1         |2       |2       |2       |0,0      |0,0      |
++------------------------------------+----------+--------+--------+--------+---------+---------+
+|42YKVAAXX_HWI-EAS229_1:1:11:166:1768|1         |2       |1       |1       |0        |0        |
++------------------------------------+----------+--------+--------+--------+---------+---------+
+|612UOAAXX_HWI-EAS229_1:1:97:147:1248|2         |2       |2       |2       |0,1      |0,1      |
++------------------------------------+----------+--------+--------+--------+---------+---------+
+
+This reports for each read the number of locations that the read maps to
+in all files, the number of files that have matches found for the read.
+Then, for each file, it reports the number of matches and the locations
+it maps to (coded as integers, 0 the first location, 1 the second, ...).
+
+In the example above, the first read maps twice to 1 location in both
+files.  This is a read occuring twice in the input file. The second
+read maps to the same one location in both files, while the third read
+maps to the two same locations in both input files.
 
 Type::
 
@@ -204,12 +226,13 @@ def main(argv=None):
                 nmatches += 1
 
         noutput += 1
-        options.stdout.write("%s\t%i\t%i\t%s\t%s\n" % (readname,
-                                                       nlocations,
-                                                       nmatches,
-                                                       "\t".join(
-                                                           ["%i" % x for x in nh]),
-                                                       "\t".join(codes)))
+        options.stdout.write("%s\t%i\t%i\t%s\t%s\n" % (
+            readname,
+            nlocations,
+            nmatches,
+            "\t".join(
+                ["%i" % x for x in nh]),
+            "\t".join(codes)))
 
     E.info("ninput=%i, noutput=%i" % (ninput, noutput))
 

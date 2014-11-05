@@ -19,13 +19,57 @@ followed by read2 in the resultant file.
 Usage
 -----
 
-Example::
+For example::
 
-   python fastqs2fasta.py --first-fastq-file in.fastq.1.gz --second-fastq-file in.fastq.2.gz > out.fasta
+   cgat fastqs2fasta \
+         --first-fastq-file=in.fastq.1.gz \
+         --second-fastq-file=in.fastq.2.gz > out.fasta
+
+If :file:`in.fastq.1.gz` looks like this::
+
+    @r1_from_gi|387760314|ref|NC_017594.1|_Streptococcus_saliva_#0/1
+    TTCTTGTTGAATCATTTCAATTGTCTCCTTTTAGTTTTATTAGATAATAACAGCTTCTTCCACAACTTCT
+    +
+    ??A???ABBDDBDDEDGGFGAFHHCHHIIIDIHGIFIH=HFICIHDHIHIFIFIIIIIIHFHIFHIHHHH
+    @r3_from_gi|315441696|ref|NC_014814.1|_Mycobacterium_gilvum_#0/1
+    ATGAACGCGGCCGAGCAACACCGCCACCACGTGAATCGGTGGTTCTACGACTGCCCGTCGGCCTTCCACC
+    +
+
+and :file:`in.fastq.2.gz` looks like this::
+
+    A??A?B??BDBDDDBDGGFA>CFCFIIIIIIF;HFIGHCIGHIHHEHHHIIHHFDHH-HD-IDHHHGIHG
+    @r1_from_gi|387760314|ref|NC_017594.1|_Streptococcus_saliva_#0/2
+    ACCTTCGTTTCCAAGGTGCAGCAGGTCAACTTGATCAAACTGCCCCTTTGAACGAAGTGAAAAAACAAAT
+    +
+    A????@BBDBDDADABGFGFFEHHHIEHHII@IIHIHHIDHCCIHIIIHHIEI5HIHFHIEHIH=CHHC)
+    @r3_from_gi|315441696|ref|NC_014814.1|_Mycobacterium_gilvum_#0/2
+    GGGAGCCTGCAGCGCCGCCGCGACTGCATCGCCGCGGCCGGCATCGTGGGATGGACGGTGCGTCAGACGC
+    +
+    ???A?9BBDDD5@DDDGFFGFFHIIIHHIHBFHIIHIIHHH>HEIHHFI>FFHGIIHHHDHCCFIHFIHD
+
+then the output will be::
+
+  >r1_from_gi|387760314|ref|NC_017594.1|_Streptococcus_saliva_#0/1
+  TTCTTGTTGAATCATTTCAATTGTCTCCTTTTAGTTTTATTAGATAATAACAGCTTCTTCCACAACTTCTACAAGACGGA
+  >r1_from_gi|387760314|ref|NC_017594.1|_Streptococcus_saliva_#0/2
+  ACCTTCGTTTCCAAGGTGCAGCAGGTCAACTTGATCAAACTGCCCCTTTGAACGAAGTGAAAAAACAAATTGCACGTGTT
+  >r3_from_gi|315441696|ref|NC_014814.1|_Mycobacterium_gilvum_#0/1
+  ATGAACGCGGCCGAGCAACACCGCCACCACGTGAATCGGTGGTTCTACGACTGCCCGTCGGCCTTCCACCGCACGCTGGG
+  >r3_from_gi|315441696|ref|NC_014814.1|_Mycobacterium_gilvum_#0/2
+  GGGAGCCTGCAGCGCCGCCGCGACTGCATCGCCGCGGCCGGCATCGTGGGATGGACGGTGCGTCAGACGCTGTTTCATCG
+  >r4_from_gi|53711291|ref|NC_006347.1|_Bacteroides_fragilis_#0/1
+  GAGGGATCAGCCTGTTATCCCCGGAGTACCTTTTATCCTTTGAGCGATGTCCCTTCCATACGGAAACACCGGATCACTAT
+  >r4_from_gi|53711291|ref|NC_006347.1|_Bacteroides_fragilis_#0/2
+  CAACCGTGAGCTCAGTGAAATTGTAGTATCGGTGAAGATGCCGATTACCCGCGATGGGACGAAAAGACCCCGTGAACCTT
+  >r5_from_gi|325297172|ref|NC_015164.1|_Bacteroides_salanitr_#0/1
+  TGCGGCGAAATACCAGCCCATGCCCCGTCCCCAGAATTCCTTGGAGCAGCCTTTGTGAGGTTCGGCTTTGTTTGCCCAGA
+  >r5_from_gi|325297172|ref|NC_015164.1|_Bacteroides_salanitr_#0/2
+  AACGGCACGCACAATGCCGACCGCTACAAAAAGGCTGCCGACTGGCTCCGCAATTACCTGGTGAACGACTATTCGCGTAT
+
 
 Type::
 
-   python fastqs2fasta.py --help
+   cgat fastqs2fasta --help
 
 for command line help.
 
@@ -35,10 +79,7 @@ Command line options
 
 '''
 
-import os
 import sys
-import re
-import optparse
 import itertools
 import CGAT.IOTools as IOTools
 import CGAT.Fastq as Fastq
@@ -65,34 +106,44 @@ def main(argv=None):
         argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser(version="%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $",
-                            usage=globals()["__doc__"])
+    parser = E.OptionParser(
+        version="%prog version: $Id$",
+        usage=globals()["__doc__"])
 
-    parser.add_option("-a", "--first-fastq-file", dest="fastq1", type="string",
-                      help="supply read1 fastq file")
-    parser.add_option("-b", "--second-fastq-file", dest="fastq2", type="string",
-                      help="supply read2 fastq file")
+    parser.add_option(
+        "-a", "--first-fastq-file", dest="fastq1", type="string",
+        help="supply read1 fastq file")
+    parser.add_option(
+        "-b", "--second-fastq-file", dest="fastq2", type="string",
+        help="supply read2 fastq file")
 
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv)
+
+    if args and len(args) == 2:
+        options.fastq1, options.fastq2 = args
 
     fastq1 = IOTools.openFile(options.fastq1)
     fastq2 = IOTools.openFile(options.fastq2)
 
     E.info("iterating over fastq files")
     f1_count = 0
-    for f1, f2 in itertools.izip_longest(Fastq.iterate(fastq1), Fastq.iterate(fastq2)):
+    for f1, f2 in itertools.izip_longest(Fastq.iterate(fastq1),
+                                         Fastq.iterate(fastq2)):
         if not (f1 and f2) or (not f2 and f1):
             try:
                 raise PairedReadError(
-                    "unpaired reads detected. Are files sorted? are files of equal length?")
+                    "unpaired reads detected. Are files sorted? are "
+                    "files of equal length?")
             except PairedReadError, e:
                 raise PairedReadError(e), None, sys.exc_info()[2]
         else:
-            assert f1.identifier.endswith(
-                "/1") and f2.identifier.endswith("/2"), "Reads in file 1 must end with /1 and reads in file 2 with /2"
-            options.stdout.write(">%s\n%s\n>%s\n%s\n" %
-                                 (f1.identifier, f1.seq, f2.identifier, f2.seq))
+            assert f1.identifier.endswith("/1") and \
+                f2.identifier.endswith("/2"), \
+                "Reads in file 1 must end with /1 and reads in file 2 with /2"
+            options.stdout.write(
+                ">%s\n%s\n>%s\n%s\n" %
+                (f1.identifier, f1.seq, f2.identifier, f2.seq))
             f1_count += 1
 
     E.info("output: %i pairs" % f1_count)

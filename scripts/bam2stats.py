@@ -54,8 +54,8 @@ iterating over the file. The metrics output are:
 |                        |a .gff file                               |
 +------------------------+------------------------------------------+
 |alignments_no_rna       |alignments not mapping to regions in a    |
-|                        |.gff file (if --ignore-masked-reads has been set,  |
-|                        |otherwise equal to mapped)                |
+|                        |.gff file (if --ignore-masked-reads has   |
+|                        |been set, otherwise equal to mapped)      |
 +------------------------+------------------------------------------+
 |alignments_duplicates   |number of alignments mapping to the same  |
 |                        |location                                  |
@@ -146,11 +146,108 @@ Example::
 
 This command will generate various statistics based on the supplied
 BAM file, such as percentage reads mapped and percentage reads mapped
-in pairs.
+in pairs. The output looks like this::
+
++-------------------------+------+-------+-----------------+
+|category                 |counts|percent|of               |
++-------------------------+------+-------+-----------------+
+|alignments_total         |32018 |100.00 |alignments_total |
++-------------------------+------+-------+-----------------+
+|alignments_mapped        |32018 |100.00 |alignments_total |
++-------------------------+------+-------+-----------------+
+|alignments_unmapped      |0     | 0.00  |alignments_total |
++-------------------------+------+-------+-----------------+
+|alignments_qc_fail       |0     | 0.00  |alignments_mapped|
++-------------------------+------+-------+-----------------+
+|alignments_mate_unmapped |241   | 0.75  |alignments_mapped|
++-------------------------+------+-------+-----------------+
+|alignments_reverse       |16016 |50.02  |alignments_mapped|
++-------------------------+------+-------+-----------------+
+|alignments_mate_reverse  |15893 |49.64  |alignments_mapped|
++-------------------------+------+-------+-----------------+
+|alignments_proper_pair   |30865 |96.40  |alignments_mapped|
++-------------------------+------+-------+-----------------+
+|alignments_read1         |16057 |50.15  |alignments_mapped|
++-------------------------+------+-------+-----------------+
+|alignments_paired        |32018 |100.00 |alignments_mapped|
++-------------------------+------+-------+-----------------+
+|alignments_duplicate     |0     | 0.00  |alignments_mapped|
++-------------------------+------+-------+-----------------+
+|alignments_read2         |15961 |49.85  |alignments_mapped|
++-------------------------+------+-------+-----------------+
+|alignments_secondary     |0     | 0.00  |alignments_mapped|
++-------------------------+------+-------+-----------------+
+|alignments_rna           |68    | 0.21  |alignments_mapped|
++-------------------------+------+-------+-----------------+
+|alignments_no_rna        |31950 |99.79  |alignments_mapped|
++-------------------------+------+-------+-----------------+
+|alignments_filtered      |31950 |99.79  |alignments_mapped|
++-------------------------+------+-------+-----------------+
+|reads_total              |34250 |100.00 |reads_total      |
++-------------------------+------+-------+-----------------+
+|reads_unmapped           |0     | 0.00  |reads_total      |
++-------------------------+------+-------+-----------------+
+|reads_mapped             |32018 |93.48  |reads_total      |
++-------------------------+------+-------+-----------------+
+|reads_missing            |2232  | 6.52  |reads_total      |
++-------------------------+------+-------+-----------------+
+|reads_mapped_unique      |32018 |100.00 |reads_mapped     |
++-------------------------+------+-------+-----------------+
+|reads_multimapping       |0     | 0.00  |reads_mapped     |
++-------------------------+------+-------+-----------------+
+|pairs_total              |17125 |100.00 |pairs_total      |
++-------------------------+------+-------+-----------------+
+|pairs_mapped             |17125 |100.00 |pairs_total      |
++-------------------------+------+-------+-----------------+
+|pairs_unmapped           |0     | 0.00  |pairs_total      |
++-------------------------+------+-------+-----------------+
+|pairs_proper_unique      |14880 |86.89  |pairs_total      |
++-------------------------+------+-------+-----------------+
+|pairs_incomplete         |2232  |13.03  |pairs_total      |
++-------------------------+------+-------+-----------------+
+|pairs_proper_duplicate   |0     | 0.00  |pairs_total      |
++-------------------------+------+-------+-----------------+
+|pairs_proper_multimapping|0     | 0.00  |pairs_total      |
++-------------------------+------+-------+-----------------+
+|pairs_not_proper_unique  |13    | 0.08  |pairs_total      |
++-------------------------+------+-------+-----------------+
+|pairs_other              |0     | 0.00  |pairs_total      |
++-------------------------+------+-------+-----------------+
+|read1_total              |17125 |100.00 |read1_total      |
++-------------------------+------+-------+-----------------+
+|read1_unmapped           |0     | 0.00  |read1_total      |
++-------------------------+------+-------+-----------------+
+|read1_mapped             |16057 |93.76  |read1_total      |
++-------------------------+------+-------+-----------------+
+|read1_mapped_unique      |16057 |100.00 |read1_mapped     |
++-------------------------+------+-------+-----------------+
+|reads_multimapping       |0     | 0.00  |read1_mapped     |
++-------------------------+------+-------+-----------------+
+|read1_missing            |1068  | 6.65  |read1_total      |
++-------------------------+------+-------+-----------------+
+|read2_total              |17125 |100.00 |read2_total      |
++-------------------------+------+-------+-----------------+
+|read2_unmapped           |0     | 0.00  |read2_total      |
++-------------------------+------+-------+-----------------+
+|read2_mapped             |15961 |93.20  |read2_total      |
++-------------------------+------+-------+-----------------+
+|read2_mapped_unique      |15961 |100.00 |read2_mapped     |
++-------------------------+------+-------+-----------------+
+|reads_multimapping       |0     | 0.00  |read2_mapped     |
++-------------------------+------+-------+-----------------+
+|read2_missing            |1164  | 7.29  |read2_total      |
++-------------------------+------+-------+-----------------+
+
+The first column contains the caterogy, the second the number of
+counts and the third a percentage. The fourth column denotes the
+denomiminator that was used to compute the percentage. In the table
+above, wee see that 16,057 first reads in a pair map and 15,961
+second reads in pair map, resulting in 14,880 proper uniquely mapped
+pairs.
 
 Type::
 
-   python cgat_script_template.py --help
+   cgat bam2stats --help
 
 for command line help.
 

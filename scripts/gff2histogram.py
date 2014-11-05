@@ -35,9 +35,63 @@ all
 Usage
 -----
 
-Example::
+For example, a small gff file such as this (note that intervals need
+to be sorted by position)::
 
-   python gff2histogram.py < in.gff
+    chr19   processed_transcript    exon    60105   60162   .       -       .
+    chr19   processed_transcript    exon    60521   60747   .       -       .
+    chr19   processed_transcript    exon    65822   66133   .       -       .
+    chr19   processed_transcript    exon    66346   66416   .       -       .
+    chr19   processed_transcript    exon    66346   66509   .       -       .
+
+will give when called as::
+
+   cgat gff2histogram < in.gff
+
+the following output files:
+
+hist
+    Histogram of feature sizes and distances between adjacent features
+
+    +--------+----+--------+
+    |residues|size|distance|
+    +--------+----+--------+
+    |58.0    |1   |na      |
+    +--------+----+--------+
+    |71.0    |1   |na      |
+    +--------+----+--------+
+    |164.0   |1   |na      |
+    +--------+----+--------+
+    |212.0   |na  |1       |
+    +--------+----+--------+
+    |227.0   |1   |na      |
+    +--------+----+--------+
+    |312.0   |1   |na      |
+    +--------+----+--------+
+    |358.0   |na  |1       |
+    +--------+----+--------+
+    |5074.0  |na  |1       |
+    +--------+----+--------+
+
+stats
+
+  Summary statistics of the distribution of feature size and distance between
+  adjacent features.
+
+  +--------+----+--------+---------+---------+--------+---------+---------+--------+---------+
+  |data    |nval|min     |max      |mean     |median  |stddev   |sum      |q1      |q3       |
+  +--------+----+--------+---------+---------+--------+---------+---------+--------+---------+
+  |size    |5   |58.0000 |312.0000 |166.4000 |164.0000|95.6339  |832.0000 |71.0000 |227.0000 |
+  +--------+----+--------+---------+---------+--------+---------+---------+--------+---------+
+  |distance|3   |212.0000|5074.0000|1881.3333|358.0000|2258.3430|5644.0000|212.0000|5074.0000|
+  +--------+----+--------+---------+---------+--------+---------+---------+--------+---------+
+
+overlaps
+
+   A file with features that overlap other features, here::
+
+      chr19   processed_transcript    exon    66346   66416   .       -       .       chr19   processed_transcript    exon    66346   66509   .       -       .
+
 
 Type::
 

@@ -13,6 +13,7 @@ This script takes a bed-formatted file as input and annotates each interval.
 Possible annotators are (see option '--counter'):
 
 overlap
+
     compute overlap with intervals in other bed file. If the other bed
     file contains tracks, the overlap is computed per track.
 
@@ -23,25 +24,62 @@ peaks
     bam-files (--control-bam-file) and add this to the output.
 
 composition-na
+
     compute nucleotide frequencies in intervals.
 
 composition-cpg
+
     compute CpG densities and CpG observed / expected in intervals.
 
 classifier-chipseq
+
    classify chipseq intervals. Requires a :term:`gff`
    file with genomic annotations (see :doc:`gtf2gff`.)
 
 Usage
 -----
 
-Example::
+For example, the following command will compute the CpG composition
+in the intervals supplied::
 
-   python bed2table.py --counter=overlap < in.bed > out.tsv
+   cgat bed2table --counter=composition-cpg < in.bed > out.tsv
+
+If the input is this :term:`bed` formatted file::
+
+  chr19   60118   60120   1       100.0000
+  chr19   60171   60173   2       100.0000
+  chr19   60182   60184   3       100.0000
+  chr19   60339   60341   4       100.0000
+  chr19   60375   60377   5       100.0000
+  chr19   60110   60118   noCpG   100.0000
+  chr19   60118   60119   Conly   100.0000
+  chr19   60119   60120   Gonly   100.0000
+
+then the output is the following table:
+
++------+-----+-----+-----+--------+---------+-----------+----------+
+|contig|start|end  |name |score   |CpG_count|CpG_density|CpG_ObsExp|
++------+-----+-----+-----+--------+---------+-----------+----------+
+|chr19 |60118|60120|1    |100.0000|1        |1.0        |2.0       |
++------+-----+-----+-----+--------+---------+-----------+----------+
+|chr19 |60171|60173|2    |100.0000|1        |1.0        |2.0       |
++------+-----+-----+-----+--------+---------+-----------+----------+
+|chr19 |60182|60184|3    |100.0000|1        |1.0        |2.0       |
++------+-----+-----+-----+--------+---------+-----------+----------+
+|chr19 |60339|60341|4    |100.0000|1        |1.0        |2.0       |
++------+-----+-----+-----+--------+---------+-----------+----------+
+|chr19 |60375|60377|5    |100.0000|1        |1.0        |2.0       |
++------+-----+-----+-----+--------+---------+-----------+----------+
+|chr19 |60110|60118|noCpG|100.0000|0        |0.0        |0.0       |
++------+-----+-----+-----+--------+---------+-----------+----------+
+|chr19 |60118|60119|Conly|100.0000|0        |0.0        |0.0       |
++------+-----+-----+-----+--------+---------+-----------+----------+
+|chr19 |60119|60120|Gonly|100.0000|0        |0.0        |0.0       |
++------+-----+-----+-----+--------+---------+-----------+----------+
 
 Type::
 
-   python bed2table.py --help
+   cgat bed2table.py --help
 
 for command line help.
 

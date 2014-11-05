@@ -1,5 +1,4 @@
-'''
-fastq2table.py - compute stats on reads in fastq files
+'''fastq2table.py - compute stats on reads in fastq files
 ======================================================
 
 :Author: Andreas Heger
@@ -52,16 +51,39 @@ Usage
 
 Example::
 
-   python fastq2table.py --guess-format=sanger < in.fastq > out.tsv
+   cgat fastq2table --guess-format=sanger < in.fastq > out.tsv
 
-In this example we know that our data have quality scores formatted as sanger. Given that
-illumina-1.8 quality scores are highly overlapping with sanger, this option defaults to
-sanger qualities. In default mode the script may not be able to distinguish
-highly overlapping sets of quality scores.
+In this example we know that our data have quality scores formatted as
+sanger. Given that illumina-1.8 quality scores are highly overlapping
+with sanger, this option defaults to sanger qualities. In default mode
+the script may not be able to distinguish highly overlapping sets of
+quality scores.
+
+If we provide two reads to the script::
+
+   @DHKW5DQ1:308:D28FGACXX:5:2211:8051:4398
+   ACAATGTCCTGATGTGAATGCCCCTACTATTCAGATCGCTTAGGGCATGC
+   +
+   B1=?DFDDHHFFHIJJIJGGIJGFIEE9CHIIFEGGIIJGIGIGIIDGHI
+   @DHKW5DQ1:308:D28FGACXX:5:1315:15039:83265
+   GAATGCCCCTACTATTCAGATCGCTTAGGGCATGCGTCGCATGTGAGTAA
+   +
+   @@@FDFFFHGHHHJIIIJIGHIJJIGHGHC9FBFBGHIIEGHIGC>F@FA
+
+we get the following table as output:
+
++-----------------------------------------+-------+--+----+-------+-------+-------+-------+------+---------+-------+-------+
+|read                                     |nfailed|nN|nval|min    |max    |mean   |median |stddev|sum      |q1     |q3     |
++-----------------------------------------+-------+--+----+-------+-------+-------+-------+------+---------+-------+-------+
+|DHKW5DQ1:308:D28FGACXX:5:2211:8051:4398  |0      |0 |50  |16.0000|41.0000|37.2000|38.0000|4.4900|1860.0000|36.0000|40.0000|
++-----------------------------------------+-------+--+----+-------+-------+-------+-------+------+---------+-------+-------+
+|DHKW5DQ1:308:D28FGACXX:5:1315:15039:83265|0      |0 |50  |24.0000|41.0000|37.0200|38.0000|3.5916|1851.0000|36.0000|40.0000|
++-----------------------------------------+-------+--+----+-------+-------+-------+-------+------+---------+-------+-------+
+
 
 Type::
 
-   python fastq2table.py --help
+   cgat fastq2table --help
 
 for command line help.
 
@@ -70,12 +92,7 @@ Command line options
 
 '''
 
-import os
 import sys
-import re
-import optparse
-import math
-import random
 
 import CGAT.Experiment as E
 import CGAT.Stats as Stats
