@@ -158,6 +158,11 @@ def main(argv=None):
         help="split fasta description line (starting >) and use "
         "only text before first space")
 
+    parser.add_option(
+        "--add-total", dest="add_total", action="store_true",
+        help="add a row with column totals at the end of the table"
+        "[%default]")
+
     parser.set_defaults(
         filename_weights=None,
         pseudocounts=1,
@@ -165,7 +170,8 @@ def main(argv=None):
         regex_identifier="(.+)",
         seqtype="na",
         gap_chars='xXnN',
-        split_id=False
+        split_id=False,
+        add_total=False,
     )
 
     (options, args) = E.Start(parser, argv=argv)
@@ -292,10 +298,11 @@ def main(argv=None):
 
         options.stdout.write("\n")
 
-    options.stdout.write("total")
-    for section in options.sections:
-        options.stdout.write("\t" + "\t".join(totals[section].getFields()))
-    options.stdout.write("\n")
+    if options.add_total:
+        options.stdout.write("total")
+        for section in options.sections:
+            options.stdout.write("\t" + "\t".join(totals[section].getFields()))
+        options.stdout.write("\n")
 
     E.Stop()
 
