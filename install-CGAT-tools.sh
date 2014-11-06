@@ -412,6 +412,8 @@ if [ "$OS" == "travis" ] ; then
       nosetests -v tests/test_import.py ;
    elif [ "$TEST_STYLE" == "1" ] ; then
       nosetests -v tests/test_style.py ;
+   elif [ "$TEST_CMDLINE" == "1" ] ; then
+      nosetests -v tests/test_commandline.py ;
    else
       nosetests -v tests/test_scripts.py ;
    fi
