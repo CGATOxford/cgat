@@ -50,8 +50,8 @@ these rules recursively in a collection of files. For example, to update
 all options in CGAT code collection, type::
 
    python refactor/cgat_refactor.py --options=tests/option_list.tsv \
-            --suffix=.py --suffix=.rst --suffix=.yaml \
-            --directories=CGAT,CGATPipelines,scripts,makefiles,doc,tests
+            --suffix=.py --suffix=.rst --suffix=.yaml --suffix=.ipynb \
+            --directories=CGAT,CGATPipelines,scripts,makefiles,doc,tests,recipes
 
 This statement will update all files ending in ``.py``, ``.rst`` or ``.yaml``
 in the listed directories.

@@ -1028,7 +1028,7 @@ write	?			scripts/mali2kaks.py,scripts/mali2rates.py
 write-equivalent	rename		output-equivalent	--
 write-full	rename		output-full	--
 write-header	rename		output-with-header	--
-write-id	rename		output-id	--
+write-id	rename		output-identifier	--
 write-matched-exons	rename		output-matched-exons	--
 write-missed-exons	rename		output-missed-exons	--
 write-missed-genes	rename		output-missed-genes	--
