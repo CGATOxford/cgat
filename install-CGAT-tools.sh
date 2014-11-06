@@ -68,7 +68,7 @@ if [ "$OS" == "ubuntu" -o "$OS" == "travis" ] ; then
    echo " Installing packages for Ubuntu "
    echo
 
-   sudo apt-get install -y gcc g++ zlib1g-dev libssl-dev libssl1.0.0 libbz2-dev libfreetype6-dev libpng12-dev libblas-dev libatlas-dev liblapack-dev gfortran libpq-dev r-base-dev libreadline-dev libmysqlclient-dev libboost-dev libsqlite3-dev mercurial;
+   sudo apt-get --quiet install -y gcc g++ zlib1g-dev libssl-dev libssl1.0.0 libbz2-dev libfreetype6-dev libpng12-dev libblas-dev libatlas-dev liblapack-dev gfortran libpq-dev r-base-dev libreadline-dev libmysqlclient-dev libboost-dev libsqlite3-dev mercurial;
 
 elif [ "$OS" == "sl" -o "$OS" == "centos" ] ; then
 
@@ -413,6 +413,8 @@ if [ "$OS" == "travis" ] ; then
    elif [ "$TEST_STYLE" == "1" ] ; then
       nosetests -v tests/test_style.py ;
    elif [ "$TEST_CMDLINE" == "1" ] ; then
+      # restrict tests to manifest
+      echo -e "restrict:\n    manifest:\n" > tests/_test_commandline.yaml
       nosetests -v tests/test_commandline.py ;
    else
       nosetests -v tests/test_scripts.py ;
