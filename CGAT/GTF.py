@@ -245,8 +245,16 @@ class Entry:
         self.score = other.score
         self.strand = other.strand
         self.frame = other.frame
-        self.gene_id = other.gene_id
-        self.transcript_id = other.transcript_id
+        # gene_id and transcript_id can be optional
+        try:
+            self.gene_id = other.gene_id
+        except AttributeError:
+            pass
+        try:
+            self.transcript_id = other.transcript_id
+        except AttributeError:
+            pass
+
         self.attributes = copy.copy(other.asDict())
         # from gff - remove gene_id and transcript_id from attributes
         try:
@@ -484,15 +492,24 @@ def transcript_iterator(gff_iterator, strict=True):
 
     return a list of entries with the same transcript id.
 
-    Note: the entries for the same transcript have to be consecutive
-    in the file.
+    Any features without a transcript_id will be ignored.
+
+    The entries for the same transcript have to be consecutive
+    in the file. If *strict* is set an AssertionError will be
+    raised if that is not true.
     """
     last = None
     matches = []
     found = set()
 
     for gff in gff_iterator:
-        this = gff.transcript_id + gff.gene_id
+
+        # ignore entries without transcript or gene id
+        try:
+            this = gff.transcript_id + gff.gene_id
+        except AttributeError:
+            continue
+
         if last != this:
             if last:
                 yield matches
