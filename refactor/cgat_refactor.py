@@ -20,24 +20,51 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##########################################################################
-'''
-cgat_refactor.py - refactor CGAT Code
+'''cgat_refactor.py - refactor CGAT Code
 =====================================
 
-:Author: 
+:Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
 :Tags: Python
 
-Purpose
--------
+Overview
+--------
+
+This script automates some of the refactoring tasks within the CGAT
+code base. It currently has two capabilities - renaming scripts and
+changing command line options.
+
+Renaming scripts
+++++++++++++++++
+
+Renaming command line options
++++++++++++++++++++++++++++++
+
+All command line options in the CGAT code collection are listed in
+the file :file:`tests/option_list.tsv`. This list is basically a
+white-list of permitted options and a black-list of invalid options.
+The black-list contains instructions for changing an invalid option
+into a valid option. The script :file:`cgat_refactor.py` can apply
+these rules recursively in a collection of files. For example, to update
+all options in CGAT code collection, type::
+
+   python refactor/cgat_refactor.py --options=tests/option_list.tsv \
+            --suffix=.py --suffix=.rst --suffix=.yaml \
+            --directories=CGAT,CGATPipelines,scripts,makefiles,doc,tests
+
+This statement will update all files ending in ``.py``, ``.rst`` or ``.yaml``
+in the listed directories.
+
+Note that the script only changes long options and implements a simple
+pattern match where the option must be preceded by two hyphens and
+constitutes a full word. It might get confused by non-standard option
+usage.
 
 Usage
 -----
 
-Example::
-
-   python cgat_refactor.py --rename=rename.txt
+The script expects to be executed in the root of the CGAT code repository.
 
 Type::
 
