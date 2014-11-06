@@ -1691,8 +1691,8 @@ class TSSCounter( IntervalsCounter ):
 
         return 1
 
-def countFromGTF( counters,
-                  gtf_iterator):
+def countFromGTF(counters,
+                 gtf_iterator):
     '''compute counts using counters for
     transcripts in gtf_iterator.
     '''
