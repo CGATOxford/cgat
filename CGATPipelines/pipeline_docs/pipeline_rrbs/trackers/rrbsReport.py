@@ -47,7 +47,7 @@ def linkToUCSC(contig, start, end):
 ###########################################################################
 
 
-class ExomeTracker(TrackerSQL):
+class RrbsTracker(TrackerSQL):
 
     '''Define convenience tracks for plots'''
 
