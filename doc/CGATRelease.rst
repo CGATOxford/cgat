@@ -7,6 +7,24 @@ latest code can always be found in the code repository.
 Nevertheless, we occasionally prepare releases. Notes on
 each release are below.
 
+Release 0.2.2
+=============
+
+We have reviewed the command line options in all of the CGAT
+scripts and have changed them to make them more consistent
+between tools and more informative on the command line. This
+means that existing scripts that call CGAT tools need to be
+updated. A table with all options used in scripts and how
+they have or have not changed 
+`here <https://github.com/CGATOxford/cgat/blob/master/tests/option_list.tsv>`_.
+
+There is a script called `cgat_refactor.py
+<https://github.com/CGATOxford/cgat/blob/master/refactor/cgat_refactor.py>`_
+to facilicate refactoring the repository. Instructions on how to use
+the script are given at the command line help.
+
+There are also several bugfixes and new features.
+
 Release 0.2.1
 =============
 
