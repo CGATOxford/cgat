@@ -39,6 +39,7 @@ import os
 import sys
 import re
 import subprocess
+import collections
 import optparse
 import stat
 import tempfile
@@ -169,7 +170,8 @@ def configToDictionary(config):
 def getParameters(filenames=["pipeline.ini", ],
                   defaults=None,
                   user_ini=True,
-                  default_ini=True):
+                  default_ini=True,
+                  only_import=False):
     '''read a config file and return as a dictionary.
 
     Sections and keys are combined with an underscore. If a key
@@ -205,6 +207,13 @@ def getParameters(filenames=["pipeline.ini", ],
     If the same configuration value appears in multiple
     files, later configuration files will overwrite the
     settings form earlier files.
+
+    If *only_import* is set, the parameter dictionary will
+    be a defaultcollection. This is useful for pipelines
+    that are imported (for example for documentation generation)
+    but not executed and there might not be appropriate .ini
+    files available.
+
     '''
 
     global CONFIG
@@ -212,6 +221,11 @@ def getParameters(filenames=["pipeline.ini", ],
 
     # important: only update the PARAMS variable as
     # it is referenced in other modules.
+
+    if only_import:
+        d = collections.defaultdict(str)
+        d.update(PARAMS)
+        PARAMS = d
 
     CONFIG = ConfigParser.ConfigParser()
 
@@ -1760,7 +1774,7 @@ def run_report(clean=True):
 
     # in the latest, xvfb always returns with an error, thus
     # ignore these.
-    erase_return == "|| true"
+    erase_return = "|| true"
 
     if clean:
         clean = """rm -rf report _cache _static;"""
