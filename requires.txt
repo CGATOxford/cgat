@@ -1,6 +1,6 @@
 # latest setutools required for automatic cythonization
 setuptools>=1.1
-pyparsing==1.5.7
+pyparsing>=1.5.7
 cython>=0.19
 numpy>=1.7
 MySQL-python>1.2.3

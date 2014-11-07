@@ -2176,7 +2176,12 @@ def cluster_runnable(func):
     and *toCluster* true. This will submit the function as an external
     job, but run it on the local machine.
 
+    Note: all arguments in decorated function must be passed as
+    key-word arguments.
     '''
+
+    # MM: when decorating functions with cluster_runnable, provide
+    # them as kwargs, else will throw attribute error
 
     function_name = func.__name__
 
