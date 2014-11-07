@@ -415,7 +415,9 @@ if [ "$OS" == "travis" ] ; then
    elif [ "$TEST_CMDLINE" == "1" ] ; then
       # restrict tests to manifest
       echo -e "restrict:\n    manifest:\n" > tests/_test_commandline.yaml
-      nosetests -v tests/test_commandline.py ;
+      # do not use -v as it creates too much output, logfiles
+      # truncate at 4 Mb.
+      nosetests tests/test_commandline.py ;
    else
       nosetests -v tests/test_scripts.py ;
    fi
