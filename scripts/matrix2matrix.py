@@ -17,19 +17,19 @@ Purpose
 Methods:
 
 sort-rows
-   sort rows by order in --filename-rows
+   sort rows by order in --rows-tsv-file
 
 sort-columns
-   sort columns by order in --filename-columns
+   sort columns by order in --columns-tsv-file
 
 mask-rows
-   set rows matching ids in --filename-rows to --value
+   set rows matching ids in --rows-tsv-file to --value
 
 mask-columns
-   set columns matching ids in --filename-columns to --value
+   set columns matching ids in --columns-tsv-file to --value
 
 mask-rows-and-columns
-   set rows and columns matching ids in --filename-columns to --value (and)
+   set rows and columns matching ids in --columns-tsv-file to --value (and)
 
 Usage
 -----
@@ -104,16 +104,16 @@ def main(argv=None):
     parser.add_option("-f", "--format", dest="format", type="string",
                       help="output number format [default=%default].")
 
-    parser.add_option("--filename-rows", dest="filename_rows", type="string",
+    parser.add_option("--rows-tsv-file", dest="filename_rows", type="string",
                       help="filename with rows to mask [default=%default].")
 
-    parser.add_option("--filename-columns", dest="filename_columns", type="string",
+    parser.add_option("--columns-tsv-file", dest="filename_columns", type="string",
                       help="filename with columns to mask [default=%default].")
 
     parser.add_option("-p", "--parameters", dest="parameters", type="string",
                       help="Parameters for various functions.")
 
-    parser.add_option("-t", "--headers", dest="headers", action="store_true",
+    parser.add_option("-t", "--header-names", dest="headers", action="store_true",
                       help="matrix has row/column headers.")
 
     parser.add_option("--no-headers", dest="headers", action="store_false",
@@ -130,7 +130,7 @@ def main(argv=None):
                       choices=("full", "sparse", "phylip"),
                       help="""output format for matrix."""  )
 
-    parser.add_option("--missing", dest="missing", type="float",
+    parser.add_option("--missing-value", dest="missing", type="float",
                       help="value to use for missing values. If not set, missing values will cause the script to fail [default=%default].")
 
     parser.set_defaults(

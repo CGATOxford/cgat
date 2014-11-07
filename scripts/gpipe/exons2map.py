@@ -73,7 +73,7 @@ Version: $Id: gpipe/exons2map.py 1799 2008-03-28 11:44:19Z andreas $
 Options:
 -h, --help                      print this message.
 -v, --verbose=                  loglevel.
--c, --contigs=                  filename with contig lengths
+-c, --contigs-tsv-file=                  filename with contig lengths
 """ % sys.argv[0]
 
 
@@ -115,7 +115,7 @@ def main(argv=None):
         elif o in ("-h", "--help"):
             print USAGE
             sys.exit(0)
-        elif o in ("-c", "--contigs"):
+        elif o in ("-c", "--contigs-tsv-file"):
             param_filename_contigs = a
 
     print E.GetHeader()

@@ -80,7 +80,7 @@ def main(argv=None):
     parser.add_option("-o", "--outfile", dest="outfile", type="string",
                       help="supply output file name")
 
-    parser.add_option("-G", "--reference-GTF", dest="reference_gtf", type="string",
+    parser.add_option("-G", "--reference-gtf-file", dest="reference_gtf", type="string",
                       help="supply reference gtf for context of reads not contributing to transcripts")
 
     # add common options (-h/--help, ...) and parse command line

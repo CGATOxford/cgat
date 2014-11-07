@@ -438,7 +438,7 @@ def main(argv=None):
     parser.add_option("-p", "--parameters", dest="parameters", type="string",
                       help="Parameters for various functions.")
 
-    parser.add_option("-t", "--headers", dest="has_headers", action="store_true",
+    parser.add_option("-t", "--header-names", dest="has_headers", action="store_true",
                       help="matrix has row/column headers.")
 
     parser.add_option("--transpose", dest="transpose", action="store_true",

@@ -58,7 +58,7 @@ def main(argv=None):
     parser = E.OptionParser(
         version="%prog version: $Id$", usage=globals()["__doc__"])
 
-    parser.add_option("-e", "--headers", dest="headers", type="string",
+    parser.add_option("-e", "--header-names", dest="headers", type="string",
                       help="',' separated list of node headers [default=%default].")
 
     parser.set_defaults(

@@ -806,7 +806,7 @@ def main(argv=None):
                       help="filename to filter tokens.")
     parser.add_option("-i", "--exon-identity", dest="exon_identity", action="store_true",
                       help="exon identity.")
-    parser.add_option("--exons", dest="filename_exons", type="string",
+    parser.add_option("--exons-file", dest="filename_exons", type="string",
                       help="filename with exon information.")
     parser.add_option("-m", "--output-members", dest="filename_members", type="string",
                       help="output filename with members.")
@@ -822,7 +822,7 @@ def main(argv=None):
                       help="remove gene spanners.")
     parser.add_option("--remove-suboptimal", dest="remove_suboptimal", action="store_true",
                       help="remove suboptimal predictions.")
-    parser.add_option("-p", "--peptides", dest="filename_peptides", type="string",
+    parser.add_option("-p", "--peptides-fasta-file", dest="filename_peptides", type="string",
                       help="filename with peptide information.")
     parser.add_option("--extended-peptides", dest="filename_extended_peptides", type="string",
                       help="filename with peptide information - after extension.")

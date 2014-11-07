@@ -129,7 +129,7 @@ def importFromSeries(infiles, outfile):
     header = map_header["ID_REF"]
     statement = '''
    python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
-              --index=%(header)s \
+              --add-index=%(header)s \
               --table=%(tablename)s \
     < %(tmpname)s > %(outfile)s
     '''
@@ -262,7 +262,7 @@ def importExpressionLevels(infiles, outfile):
 
     statement = '''
    python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
-              --index=probeset \
+              --add-index=probeset \
               --table=%(tablename)s \
     < %(infile_table)s > %(outfile)s
     '''
@@ -330,7 +330,7 @@ def importPresence(infile, outfile):
 
     statement = '''
    python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
-              --index=probeset \
+              --add-index=probeset \
               --table=%(tablename)s \
     < %(infile)s > %(outfile)s
     '''

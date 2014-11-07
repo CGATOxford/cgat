@@ -603,7 +603,7 @@ if __name__ == "__main__":
     parser = E.OptionParser(
         version="%prog version: $Id: WrapperSlr.py 2781 2009-09-10 11:33:14Z andreas $")
 
-    parser.add_option("-t", "--filename-tree", dest="filename_tree", type="string",
+    parser.add_option("-t", "--tree-nh-file", dest="filename_tree", type="string",
                       help="filename with tree information.")
     parser.add_option("-i", "--filename-sequences", dest="filename_sequences", type="string",
                       help="filename with sequences.")

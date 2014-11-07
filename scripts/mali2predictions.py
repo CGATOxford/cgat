@@ -151,10 +151,10 @@ def main(argv=None):
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genome.")
 
-    parser.add_option("-l", "--filename-locations", dest="filename_locations", type="string",
+    parser.add_option("-l", "--locations-tsv-file", dest="filename_locations", type="string",
                       help="filename with locations")
 
-    parser.add_option("-m", "--master", dest="master", type="string",
+    parser.add_option("-m", "--master-identifier", dest="master", type="string",
                       help="the master determines the frame.")
 
     parser.set_defaults(

@@ -85,12 +85,12 @@ Options:
 -f, --refinement                do refinement of final prediction
 -o, --probe                     do probing for gene region
 --probe-options                 set probing options (for the expert)
--x, --exons                     filename with exon boundaries of queries.
+-x, --exons-file                     filename with exon boundaries of queries.
 -a, --mask-probe=               mask in probing step. Possible maskers are [seg,bias]
 -f, --format                    input format
 --keep-temp                     do not delete temporary files (for debugging purposes).
 --graph-cutoff=                 in graph format, stop processing after this.
---peptides=                     filename with peptide sequences
+--peptides-fasta-file=                     filename with peptide sequences
 """ % sys.argv[0]
 
 HEADER = """# QUERY:        1  query id
@@ -1242,12 +1242,12 @@ def main(argv=None):
     parser.add_option("--incremental", dest="incremental", action="store_true")
     parser.add_option(
         "--border-refinement", dest="border_refinement", type="int")
-    parser.add_option("-x", "--exons", dest="filename_exons", type="string")
+    parser.add_option("-x", "--exons-file", dest="filename_exons", type="string")
     parser.add_option("-a", "--mask-probe", dest="mask_probe", type="string")
     parser.add_option("-f", "--format", dest="input_format", type="string")
     parser.add_option("--probe-options", dest="probe_options", type="string")
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string")
-    parser.add_option("--peptides", dest="filename_peptides", type="string")
+    parser.add_option("--peptides-fasta-file", dest="filename_peptides", type="string")
     parser.add_option("--keep-temp", dest="keep_temp", action="store_true")
 
     parser.set_defaults(

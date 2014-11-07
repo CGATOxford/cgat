@@ -44,14 +44,7 @@ Command line options
 
 '''
 import sys
-import string
 import re
-import optparse
-import time
-import os
-import shutil
-import tempfile
-import math
 
 import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
@@ -353,37 +346,46 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv
 
-    parser = E.OptionParser(version="%prog version: $Id: gff2table.py 2861 2010-02-23 17:36:32Z andreas $",
+    parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
-    parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
-                      help="filename with genome (indexed).")
+    parser.add_option(
+        "-g", "--genome-file", dest="genome_file", type="string",
+        help="filename with genome (indexed).")
 
-    parser.add_option("-w", "--filename-windows", dest="filename_windows", type="string",
-                      help="gff file with windows to use.")
+    parser.add_option(
+        "-w", "--windows-bed-file", dest="filename_windows", type="string",
+        help="gff file with windows to use.")
 
-    parser.add_option("-d", "--filename-data=", dest="filename_data", type="string",
-                      help="gff file with data to use.")
+    parser.add_option(
+        "-d", "--filename-data", dest="filename_data", type="string",
+        help="gff file with data to use.")
 
     parser.add_option("--is-gtf", dest="is_gtf", action="store_true",
                       help="filename-data is gtf file [default=%default.")
 
-    parser.add_option("-f", "--features=", dest="features", type="choice", action="append",
-                      choices=("GC", ),
-                      help="features to compute.")
+    parser.add_option(
+        "-f", "--features", dest="features", type="choice", action="append",
+        choices=("GC", ),
+        help="features to compute.")
 
-    parser.add_option("-c", "--decorator=", dest="decorator", type="choice",
-                      choices=("counts", "gc", "gc3", "mean-length", "median-length", "percent-coverage",
-                               "median-score", "mean-score", "stddev-score", "min-score", "max-score"),
-                      help="decorators to use.")
+    parser.add_option(
+        "-c", "--decorator", dest="decorator", type="choice",
+        choices=("counts", "gc", "gc3", "mean-length", "median-length",
+                 "percent-coverage",
+                 "median-score", "mean-score", "stddev-score", "min-score",
+                 "max-score"),
+        help="decorators to use.")
 
-    parser.add_option("-e", "--skip-empty", dest="skip_empty", action="store_true",
-                      help="skip empty windows.")
+    parser.add_option(
+        "-e", "--skip-empty", dest="skip_empty", action="store_true",
+        help="skip empty windows.")
 
-    parser.add_option("-t", "--transform=", dest="transform", type="choice",
-                      choices=(
-                          "none", "overlap", "complement", "third_codon"),
-                      help="transform to use when mapping overlapping regions onto window.")
+    parser.add_option(
+        "-t", "--transform=", dest="transform", type="choice",
+        choices=(
+            "none", "overlap", "complement", "third_codon"),
+        help="transform to use when mapping overlapping regions onto window.")
 
     parser.set_defaults(
         genome_file=None,

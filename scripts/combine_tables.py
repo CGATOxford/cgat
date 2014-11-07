@@ -20,7 +20,7 @@ single one.
 Usage
 -----
 
-The option ``--headers`` sets the column titles explicitely. Add
+The option ``--header-names`` sets the column titles explicitely. Add
 ``--skip-titles`` if you want to avoid echoing the original title in
 the input files.
 
@@ -481,12 +481,12 @@ def main(argv=sys.argv):
                       action="store_true",
                       help="skip output of titles.")
 
-    parser.add_option("-m", "--missing", "--missing-value",
+    parser.add_option("-m", "--missing-value",
                       dest="missing_value",
                       type="string",
                       help="entry to use for missing values.")
 
-    parser.add_option("--headers", dest="headers", type="string",
+    parser.add_option("--header-names", dest="headers", type="string",
                       help="add headers for files as a ,-separated "
                       "list [%default].")
 
@@ -506,13 +506,15 @@ def main(argv=sys.argv):
     parser.add_option("-g", "--glob", dest="glob", type="string",
                       help="wildcard expression for table names.")
 
-    parser.add_option("-s", "--sort", dest="sort", type="string",
-                      help="sort by column titles "
-                      "alphabetical|numeric|list of columns.")
+    parser.add_option(
+        "-s", "--sort-order", dest="sort", type="string",
+        help="sort by column titles in particular given order: "
+        "alphabetical|numeric|list of columns.")
 
-    parser.add_option("-e", "--merge", dest="merge", action="store_true",
-                      help="simply merge tables without matching up "
-                      "rows. [default=%default].")
+    parser.add_option(
+        "-e", "--merge-overlapping", dest="merge", action="store_true",
+        help="simply merge tables without matching up "
+        "rows. [default=%default].")
 
     parser.add_option("-a", "--cat", dest="cat", type="string",
                       help="simply concatenate tables. Adds an "

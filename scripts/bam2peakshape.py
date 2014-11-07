@@ -31,21 +31,11 @@ additional genomic annotations (e.g. ENSEMBL, refseq), we can
 visualise the binding profiles of transcriptionfactors ChIP-Seq data
 relative to the center of each peak regions.
 
-Alternatively, you may consider using :doc:`bam2geneprofile`, which is
-designed with a slight emphasis on analysing RNA-Seq
-datasets. Because: (1) it takes care of spliced reads by using the
-CIGAR string in the BAM file to accurately count the covered bases
-(when the --base-accurate is specified); (2) it takes in gene model
-annotations; (3) it provides different methods of using gene
-models. (4) It provides many advanced normalization schemes. etc.
-
 The script outputs a tab-separated table on stdout containing features
 for each interval. A peak is defined as the location of the highest
 density in an interval. The width of the peak (peak_width) is defined
 as the region around the peak in which the density does not drop below
 a threshold of peak_heigt * 90%.
-
-
 
 Usage
 -----
@@ -59,14 +49,14 @@ regions defined in :file:`onepeak.bed`, using the reads stored in
 control library.  The control library in this example is re-using the
 same reads file :file:`small.bam`, however, in your actual experiment,
 it should be a different library (the input library for this ChIP-Seq
-experiment).  ::
+experiment).::
 
     python ./scripts/bam2peakshape.py \
         ./tests/bam2peakshape.py/small.bam \
         ./tests/bam2peakshape.py/onepeak.bed \
-        --control-file=./tests/bam2peakshape.py/small.bam \
-        --only-interval \
-        --normalization
+        --control-bam-file=./tests/bam2peakshape.py/small.bam \
+        --use-interval \
+        --normalize-transcript
 
 
 Output files
@@ -74,37 +64,37 @@ Output files
 
 Among the features output are:
 
-+---------------------+---------------------------------------------------------+
-|*Column*             |*Content*                                                |
-+---------------------+---------------------------------------------------------+
-|peak_height          |number of reads at peak                                  |
-+---------------------+---------------------------------------------------------+
-|peak_median          |median coverage compared to peak height                  | 
-+---------------------+---------------------------------------------------------+
-|interval_width       |width of interval                                        |
-+---------------------+---------------------------------------------------------+
-|peak_width           |width of peak                                            |
-+---------------------+---------------------------------------------------------+
-|bins                 |bins for a histogram of densities within the interval.   |
-+---------------------+---------------------------------------------------------+
-|npeaks               |number of density peaks in interval.                     |
-+---------------------+---------------------------------------------------------+
-|peak_center          |point of highest density in interval                     |
-+---------------------+---------------------------------------------------------+
-|peak_relative_pos    |point of highest density in interval coordinates         |
-+---------------------+---------------------------------------------------------+
-|counts               |counts for a histogram of densities within the interval  |   
-+---------------------+---------------------------------------------------------+
-|furthest_half_height |Distance of peak center to furthest half-height position |
-+---------------------+---------------------------------------------------------+
-|closest_half_height  |Distance of peak center to closest half-height position  |
-+---------------------+---------------------------------------------------------+
++-------------------+---------------------------------------------------------+
+|*Column*           |*Content*                                                |
++-------------------+---------------------------------------------------------+
+|peak_height        |number of reads at peak                                  |
++-------------------+---------------------------------------------------------+
+|peak_median        |median coverage compared to peak height                  |
++-------------------+---------------------------------------------------------+
+|interval_width     |width of interval                                        |
++-------------------+---------------------------------------------------------+
+|peak_width         |width of peak                                            |
++-------------------+---------------------------------------------------------+
+|bins               |bins for a histogram of densities within the interval.   |
++-------------------+---------------------------------------------------------+
+|npeaks             |number of density peaks in interval.                     |
++-------------------+---------------------------------------------------------+
+|peak_center        |point of highest density in interval                     |
++-------------------+---------------------------------------------------------+
+|peak_relative_pos  |point of highest density in interval coordinates         |
++-------------------+---------------------------------------------------------+
+|counts             |counts for a histogram of densities within the interval  |
++-------------------+---------------------------------------------------------+
+|furthest_half_heigh|Distance of peak center to furthest half-height position |
++-------------------+---------------------------------------------------------+
+|closest_half_height|Distance of peak center to closest half-height position  |
++-------------------+---------------------------------------------------------+
 
 
-Additionally, the script outputs a set of matrixes with densities over 
-intervals that can be used for plotting. The default filenames are 
-``(matrix|control)_<sortorder>.tsv.gz``, The names can be controlled with 
-the ``--output-filename-pattern`` option.
+Additionally, the script outputs a set of matrixes with densities over
+intervals that can be used for plotting. The default filenames are
+``(matrix|control)_<sortorder>.tsv.gz``, The names can be controlled
+with the ``--output-filename-pattern`` option.
 
 
 Type::
@@ -126,7 +116,7 @@ the actual binding site is usually L/2 distance away from the read,
 where L is the length of sonicated fragment (determined either
 experimentally or computationally).
 
-This option is used only if the input reads are in :term:`bed` formatted file.
+This option is used only if the input reads are in :term:`bam` formatted file.
 If input reads are :term:`bigwig` formatted file, this option is ignored.
 
 Option: Random shift
@@ -149,7 +139,7 @@ Option: Only interval
 
 Only count reads that are in the interval as defined by the input bed file.
 
-Option: Normalization=sum
+Option: normalization=sum
 +++++++++++++++++++++++++
 
 normalize counts such that the sum of all counts in all features are
@@ -167,11 +157,8 @@ Command line options
 
 '''
 
-import os
 import sys
 import re
-import optparse
-import collections
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import pysam
@@ -193,7 +180,7 @@ def buildOptionParser(argv):
         argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+    parser = E.OptionParser(version="%prog version: $Id",
                             usage=globals()["__doc__"])
 
     parser.add_option("-f", "--format", dest="format", type="choice",
@@ -201,64 +188,75 @@ def buildOptionParser(argv):
                       help = "format of genomic input files for densities "
                       "[%default]")
 
-    parser.add_option("-o", "--only-interval", dest="only_interval", action="store_true",
-                      help="only count tags strictly in interval. Otherwise, use window around peak center "
-                      " [%default]")
+    parser.add_option(
+        "-o", "--use-interval", dest="use_interval", action="store_true",
+        help="only count tags that are in interval given "
+        "in bed file. Otherwise, use a fixed width window (see --window-size) "
+        "around peak [%default]")
 
-    parser.add_option("-w", "--window-size", dest="window_size", type="int",
-                      help="window size to use"
-                      "[%default]")
+    parser.add_option(
+        "-w", "--window-size", dest="window_size", type="int",
+        help="window size around peak in interval to use"
+        "[%default]")
 
     parser.add_option("-b", "--bin-size", dest="bin_size", type="int",
                       help="bin-size for histogram of read depth. "
                       "[%default]")
 
-    parser.add_option("-s", "--sort", dest="sort", type="choice", action="append",
+    parser.add_option("-s", "--sort-order", dest="sort_orders",
+                      type="choice",
+                      action="append",
                       choices=("peak-height", "peak-width", "unsorted",
                                "interval-width", "interval-score"),
                       help = "output sort order for matrices. "
                       "[%default]")
 
-    parser.add_option("-c", "--control-file", dest="control_file", type="string",
-                      help="control file. If given, two peakshapes are computed, "
-                      "one for the primary data and one for the control data. "
-                      "The control file is centered around the same "
-                      "base as the primary file and output in the same "
-                      "sort order as the primary profile to all side-by-side. "
-                      "comparisons. "
-                      "[%default]")
+    parser.add_option(
+        "-c", "--control-bam-file", dest="control_file", type="string",
+        help="control file. If given, two peakshapes are computed, "
+        "one for the primary data and one for the control data. "
+        "The control file is centered around the same "
+        "base as the primary file and output in the same "
+        "sort order as the primary profile to all side-by-side. "
+        "comparisons. "
+        "[%default]")
 
-    parser.add_option("-r", "--random-shift", dest="random_shift", action="store_true",
-                      help="shift intervals in random direction up/downstream of interval "
-                      "[%default]")
+    parser.add_option(
+        "-r", "--random-shift", dest="random_shift", action="store_true",
+        help="shift intervals in random direction up/downstream of interval "
+        "[%default]")
 
-    parser.add_option("-e", "--centring-method", dest="centring_method", type="choice",
-                      choices=("reads", "middle"),
-                      help = "centring method. Available are: "
-                      "reads=use density to determine peak, "
-                      "middle=use middle of interval "
-                      "[%default]")
+    parser.add_option(
+        "-e", "--centring-method", dest="centring_method", type="choice",
+        choices=("reads", "middle"),
+        help = "centring method. Available are: "
+        "reads=use density to determine peak, "
+        "middle=use middle of interval "
+        "[%default]")
 
-    parser.add_option("-n", "--normalization", dest="normalization", type="choice",
-                      choices=("none", "sum"),
-                      help = "normalisation to perform. "
-                      "[%default]")
+    parser.add_option(
+        "-n", "--normalize-matrix", dest="normalization", type="choice",
+        choices=("none", "sum"),
+        help = "matrix normalisation to perform. "
+        "[%default]")
 
-    parser.add_option("--use-strand", dest="strand_specific", action="store_true",
-                      help="use strand information in intervals. Intervals on the "
-                      "negative strand are flipped "
-                      "[%default]")
+    parser.add_option(
+        "--use-strand", dest="strand_specific", action="store_true",
+        help="use strand information in intervals. Intervals on the "
+        "negative strand are flipped "
+        "[%default]")
 
-    parser.add_option("-i", "--shift", dest="shift", type="int",
-                      help="shift for reads. When processing bam files, "
-                      "reads will be shifted upstream/downstream by this amount. "
-                      "[%default]")
+    parser.add_option(
+        "-i", "--shift-size", dest="shift", type="int",
+        help="shift for reads. When processing bam files, "
+        "reads will be shifted upstream/downstream by this amount. "
+        "[%default]")
 
     parser.set_defaults(
         bin_size=10,
         shift=0,
         window_size=1000,
-        sort=[],
+        sort_orders=[],
         centring_method="reads",
         control_file=None,
         random_shift=False,
@@ -351,10 +349,10 @@ def outputResults(result, bins, options):
         norm_result = result
 
     # output sorted matrices
-    if not options.sort:
+    if not options.sort_orders:
         writeMatrix(norm_result, "unsorted")
 
-    for sort in options.sort:
+    for sort in options.sort_orders:
 
         if sort == "peak-height":
             norm_result.sort(key=lambda x: x[0].peak_height)
@@ -416,7 +414,7 @@ def buildResults(bedfile, fg_file, control_file, counter, options):
             bed.contig, bed.start, bed.end,
             window_size=options.window_size,
             bins=bins,
-            only_interval=options.only_interval,
+            use_interval=options.use_interval,
             centring_method=options.centring_method)
 
         if features is None:

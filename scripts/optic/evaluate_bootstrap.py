@@ -51,7 +51,7 @@ Options::
     -c, --file-clusters=            filename with clusters
     -i, --file-inconsistencies=     filename with inconsistencies
     -s, --file-subtrees=            filename with subtrees
-    -x, --prefix                    cluster prefix to use
+    -x, --column-prefix                    cluster prefix to use
 
 Usage
 -----
@@ -893,7 +893,7 @@ def main(argv=None):
             param_filename_inconsistencies = a
         elif o in ("-s", "--file-subtrees"):
             param_filename_subtrees = a
-        elif o in ("-x", "--prefix"):
+        elif o in ("-x", "--column-prefix"):
             param_prefix_cluster = a
 
     print E.GetHeader()

@@ -19,35 +19,49 @@ import CGAT.Mali as Mali
 def addOptions(parser):
     """add options to parser concerning components and masks."""
 
-    parser.add_option("-b", "--pattern-component", dest="pattern_component", type="string",
-                      help="how to extract identifier of mali from component name.")
+    parser.add_option(
+        "-b", "--pattern-component", dest="pattern_component", type="string",
+        help="how to extract identifier of mali from component name.")
 
-    parser.add_option("-c", "--filename-components", dest="filename_components", type="string",
-                      help="filename of components to choose for each multiple alignment.")
+    parser.add_option(
+        "-c", "--components-tsv-file", dest="filename_components", type="string",
+        help="filename of components to choose for each multiple alignment.")
 
-    parser.add_option("-e", "--pattern-filter", dest="pattern_filter", type="string",
-                      help="pattern of how to extract filter from identifier.")
+    parser.add_option(
+        "-e", "--pattern-filter", dest="pattern_filter", type="string",
+        help="pattern of how to extract filter from identifier.")
 
-    parser.add_option("-i", "--input-format", dest="input_format", type="choice",
-                      choices=("plain", "fasta", "clustal", "phylip"),
-                      help="input format of multiple alignment")
+    parser.add_option(
+        "-i", "--input-format", dest="input_format", type="choice",
+        choices=("plain", "fasta", "clustal", "phylip"),
+        help="input format of multiple alignment")
 
-    parser.add_option("-o", "--output-format", dest="output_format", type="choice",
-                      choices=(
-                          "fasta", "codeml", "phylip", "profile", "stockholm"),
-                      help="output format of multiple alignment")
+    parser.add_option(
+        "-o", "--output-format", dest="output_format", type="choice",
+        choices=(
+            "fasta", "codeml", "phylip", "profile", "stockholm"),
+        help="output format of multiple alignment")
 
-    parser.add_option("--filename-mask-regions", dest="filename_mask_regions", type="string",
-                      help="""mask regions given file. Input format is component_id\tstart\tend with coordinates in
-the multiple alignment.""" )
+    parser.add_option(
+        "--maskregions-bed-file", dest="filename_mask_regions", type="string",
+        help="""mask regions given file. Input format is "
+        "component_id\tstart\tend with coordinates in the multiple alignment.""")
 
-    parser.add_option("--filename-extract-regions", dest="filename_extract_regions", type="string",
-                      help="""extract regions given file. Input format is component_id\tstart\tend with coordinates in
-the multiple alignment. The alignment is restricted to the given coordinates by masking everything else.""" )
+    parser.add_option(
+        "--filename-extract-regions", dest="filename_extract_regions",
+        type="string",
+        help="""extract regions given file. Input format is "
+        "component_id\tstart\tend with coordinates in "
+        "the multiple alignment. The alignment is restricted to the "
+        "given coordinates by masking everything else.""")
 
-    parser.add_option("--filename-annotate-regions", dest="filename_annotate_regions", type="string",
-                      help="""annotate regions given file. Input format is component_id\tstart\tend\tlabel with coordinates in
-the multiple alignment. The label should be a single letter. If the file is empty, the full alignment is output with label N.""")
+    parser.add_option(
+        "--filename-annotate-regions", dest="filename_annotate_regions",
+        type="string",
+        help="""annotate regions given file. Input format is "
+        "component_id\tstart\tend\tlabel with coordinates in "
+        "the multiple alignment. The label should be a single letter. "
+        "If the file is empty, the full alignment is output with label N.""")
 
     parser.add_option("--use-input-id", dest="use_input_id", action="store_true",
                       help="""use input-id instead of component_id in --filename-X-regions""" )
@@ -55,34 +69,51 @@ the multiple alignment. The label should be a single letter. If the file is empt
     parser.add_option("-a", "--pattern-mali", dest="pattern_mali", type="string",
                       help="filename pattern for input multiple alignment files.")
 
-    parser.add_option("--test", dest="test", type="int",
-                      help="test output with first # components.")
+    parser.add_option(
+        "--test", dest="test", type="int",
+        help="test output with first # components.")
 
-    parser.add_option("--skip-doubles", dest="skip_doubles", action="store_true",
-                      help="skip doubles, takes first entry encountered.")
+    parser.add_option(
+        "--skip-doubles", dest="skip_doubles", action="store_true",
+        help="skip doubles, takes first entry encountered.")
 
-    parser.add_option("--ignore-missing", dest="ignore_missing", action="store_true",
-                      help="ignore missing alignments [%default].")
+    parser.add_option(
+        "--ignore-missing", dest="ignore_missing", action="store_true",
+        help="ignore missing alignments [%default].")
 
-    parser.add_option("--remove-all-gaps", dest="remove_all_gaps", type=int,
-                      help="remove fully masked or gapped positions in a multiple alignment. The integer parameter supplies the frame. Use 3 for codon alignments.")
+    parser.add_option(
+        "--remove-all-gaps", dest="remove_all_gaps", type=int,
+        help="remove fully masked or gapped positions in a multiple "
+        "alignment. The integer parameter supplies the frame. Use 3 "
+        "for codon alignments.")
 
-    parser.add_option("--remove-any-gaps", dest="remove_any_gaps", type=int,
-                      help="remove positions in a multiple alignment containing at least one gap. The integer parameter supplies the frame. Use 3 for codon alignments.")
+    parser.add_option(
+        "--remove-any-gaps", dest="remove_any_gaps", type=int,
+        help="remove positions in a multiple alignment containing "
+        "at least one gap. The integer parameter supplies the frame. "
+        "Use 3 for codon alignments.")
 
-    parser.add_option("--sample", dest="sample", type="int",
-                      help="sample # components.")
+    parser.add_option(
+        "--sample-size", dest="sample", type="int",
+        help="sample # components.")
 
-    parser.add_option("--sample-method", dest="sample_method", type="choice",
-                      choices=(
-                          "simple-without-replacement", "length-without-replacement", ),
-                      help="sampling method: without-replacement=sample without replacement. length-sample: sample components of same length (without replacement).")
+    parser.add_option(
+        "--sample-method", dest="sample_method", type="choice",
+        choices=(
+            "simple-without-replacement", "length-without-replacement",),
+        help="sampling method: without-replacement=sample without "
+        "replacement. length-sample: sample components of same length "
+        "(without replacement).")
 
-    parser.add_option("--filename-sample-reference", dest="filename_sample_reference", type="string",
-                      help="filename to with reference components. The components should be part of the file supplied by --filename-components.")
+    parser.add_option(
+        "--filename-sample-reference", dest="filename_sample_reference",
+        type="string",
+        help="filename to with reference components. The components should be "
+        "part of the file supplied by --filename-components.")
 
-    parser.add_option("--minimum-mali-length", dest="minimum_mali_length", type="int",
-                      help="minimum multiple alignment length.")
+    parser.add_option(
+        "--min-mali-length", dest="minimum_mali_length", type="int",
+        help="minimum multiple alignment length.")
 
     parser.set_defaults(
         pattern_mali=None,

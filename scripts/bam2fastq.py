@@ -1,5 +1,4 @@
-'''
-bam2fastq.py - output fastq files from a bam-file
+'''bam2fastq.py - output fastq files from a bam-file
 =================================================
 
 :Author: Andreas Heger
@@ -11,9 +10,8 @@ Purpose
 -------
 
 This script takes a :term:`bam` formatted file and converts it to two
-:term:`fastq` formatted files, one containing the forward reads and one
-containing the reverse reads.
-
+:term:`fastq` formatted files, one containing the first read of a read
+pair and one containing the second read of read pair.
 
 Options
 -------
@@ -23,16 +21,17 @@ This script has no options beyond the standard.
 Example
 -------
 
-::
-   cgat bam2fastq in.bam out.1.fastq out.2.fastq
+For example::
 
-This command converts the :term:`bam` formatted file in.bam into :term:`fastq`
-files containing forward reads (out.1.fastq) and reverse reads (out.2.fastq).
+   cat in.bam cgat bam2fastq out.1.fastq.gz out.2.fastq.gz
 
-Usage
------
+This command converts the :term:`bam` formatted file in.bam into
+:term:`fastq` files containing forward reads (out.1.fastq.gz) and
+reverse reads (out.2.fastq.gz).  The output files can alternatively
+supplied via the option ``--output-pattern-filename``. The statement
+below will create the same two output files::
 
-   cgat bam2fastq BAM FASTQ1 FASTQ2 [OPTIONS]
+   cat in.bam cgat bam2fastq --output-filename-pattern=out.%s.fastq.gz
 
 Type::
 
@@ -42,7 +41,6 @@ for command line help.
 
 Command line options
 --------------------
-
 
 '''
 
@@ -72,12 +70,14 @@ def main(argv=None):
     )
 
     # add common options (-h/--help, ...) and parse command line
-    (options, args) = E.Start(parser, argv=argv)
+    (options, args) = E.Start(parser, argv=argv, add_output_options=True)
 
     # do sth
-    assert len(args) == 3, "expected three command line arguments"
-
-    fastqfile1, fastqfile2 = args[1], args[2]
+    if len(args) == 2:
+        fastqfile1, fastqfile2 = args
+    else:
+        fastqfile1 = options.output_filename_pattern % "1"
+        fastqfile2 = options.output_filename_pattern % "2"
 
     # only output compressed data
     if not fastqfile1.endswith(".gz"):
@@ -85,7 +85,7 @@ def main(argv=None):
     if not fastqfile2.endswith(".gz"):
         fastqfile2 += ".gz"
 
-    samfile = pysam.Samfile(args[0], "rb")
+    samfile = pysam.Samfile("-", "rb")
 
     tmpdir = tempfile.mkdtemp()
 
@@ -101,7 +101,7 @@ def main(argv=None):
     read1_qlen, read2_qlen = 0, 0
 
     c = E.Counter()
-    for read in samfile.fetch():
+    for read in samfile.fetch(until_eof=True):
         c.input += 1
         if read.is_read1:
             if read.qname not in found1:

@@ -64,7 +64,7 @@ def main(argv=None):
     parser.add_option("-p", "--pattern-sub", dest="pattern_sub", type="string",
                       help="pattern for substitution [%default] ")
 
-    parser.add_option("-a", "--apply", dest="apply", type="string",
+    parser.add_option("-a", "--map-tsv-file", dest="apply", type="string",
                       help="apply substitution list [%default] ")
 
     parser.add_option("-x", "--extended", dest="extended", action="store_true",
@@ -82,7 +82,7 @@ def main(argv=None):
     parser.add_option("-k", "--keep", dest="keep", action="store_true",
                       help="keep column that is substituted [%default] ")
 
-    parser.add_option("-f", "--filter", dest="filter", action="store_true",
+    parser.add_option("-f", "--method=filter --filter-method", dest="filter", action="store_true",
                       help="remove lines not matching [%default] ")
 
     parser.add_option("-y", "--reverse-filter", dest="reverse_filter", action="store_true",

@@ -130,7 +130,7 @@ def main(argv=None):
                             usage=globals()["__doc__"])
 
     parser.add_option(
-        "-w", "--filename-weights", dest="filename_weights",
+        "-w", "--weights-tsv-file", dest="filename_weights",
         type="string",
         help="filename with codon frequencies. Multiple filenames "
         "can be separated by comma.")
@@ -143,7 +143,7 @@ def main(argv=None):
         help="which sections to output [%default]")
 
     parser.add_option(
-        "-t", "--type", dest="seqtype", type="choice",
+        "-t", "--sequence-type", dest="seqtype", type="choice",
         choices=("na", "aa"),
         help="type of sequence: na=nucleotides, aa=amino acids [%default].")
 
@@ -158,6 +158,11 @@ def main(argv=None):
         help="split fasta description line (starting >) and use "
         "only text before first space")
 
+    parser.add_option(
+        "--add-total", dest="add_total", action="store_true",
+        help="add a row with column totals at the end of the table"
+        "[%default]")
+
     parser.set_defaults(
         filename_weights=None,
         pseudocounts=1,
@@ -165,7 +170,8 @@ def main(argv=None):
         regex_identifier="(.+)",
         seqtype="na",
         gap_chars='xXnN',
-        split_id=False
+        split_id=False,
+        add_total=False,
     )
 
     (options, args) = E.Start(parser, argv=argv)
@@ -292,10 +298,11 @@ def main(argv=None):
 
         options.stdout.write("\n")
 
-    options.stdout.write("total")
-    for section in options.sections:
-        options.stdout.write("\t" + "\t".join(totals[section].getFields()))
-    options.stdout.write("\n")
+    if options.add_total:
+        options.stdout.write("total")
+        for section in options.sections:
+            options.stdout.write("\t" + "\t".join(totals[section].getFields()))
+        options.stdout.write("\n")
 
     E.Stop()
 

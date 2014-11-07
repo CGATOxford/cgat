@@ -11,7 +11,7 @@ Purpose
 -------
 
 .. todo::
-   
+
    describe purpose of the script.
 
 Usage
@@ -31,15 +31,8 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
-import string
 import re
-import optparse
-import math
-import time
-import tempfile
-import subprocess
 
 USAGE = """python %s [OPTIONS] < mali > mali
 
@@ -91,7 +84,7 @@ def main(argv=None):
     parser.add_option("-p", "--parameters", dest="parameters", type="string",
                       help="parameter stack for methods that require one.")
 
-    parser.add_option("-t", "--type", dest="type", type="choice",
+    parser.add_option("-t", "--sequence-type", dest="type", type="choice",
                       choices=("aa", "na"),
                       help="sequence type (aa or na).")
 

@@ -226,7 +226,7 @@ def loadROI(infile, outfile):
             | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --ignore-empty
               --retry
-              --header=%(header)s
+              --header-names=%(header)s
               --table=%(tablename)s
             > %(outfile)s  '''
     P.run()
@@ -360,7 +360,7 @@ def loadCoverageStats(infiles, outfile):
     tmpfilename = outf.name
     statement = '''cat %(tmpfilename)s
                    | python %(scriptsdir)s/csv2db.py
-                      --index=track
+                      --add-index=track
                       --table=%(tablename)s
                       --ignore-empty
                       --retry
@@ -692,7 +692,7 @@ def loadDeNovos(infile, outfile):
     '''Load de novos into database'''
     scriptsdir = PARAMS["general_scriptsdir"]
     tablename = P.toTable(outfile)
-    statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py --table %(tablename)s --retry --ignore-empty --allow-empty > %(outfile)s''' % locals()
+    statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py --table %(tablename)s --retry --ignore-empty --allow-empty-file > %(outfile)s''' % locals()
     P.run()
 
 #########################################################################
@@ -735,7 +735,7 @@ def loadLowerStringencyDeNovos(infile, outfile):
     '''Load lower stringency de novos into database'''
     scriptsdir = PARAMS["general_scriptsdir"]
     tablename = P.toTable(outfile)
-    statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py --table %(tablename)s --retry --ignore-empty --allow-empty > %(outfile)s''' % locals()
+    statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py --table %(tablename)s --retry --ignore-empty --allow-empty-file > %(outfile)s''' % locals()
     P.run()
 
 #########################################################################
@@ -791,7 +791,7 @@ def loadDoms(infile, outfile):
     '''Load dominant disease candidates into database'''
     scriptsdir = PARAMS["general_scriptsdir"]
     tablename = P.toTable(outfile)
-    statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py --table %(tablename)s --retry --ignore-empty --allow-empty > %(outfile)s''' % locals()
+    statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py --table %(tablename)s --retry --ignore-empty --allow-empty-file > %(outfile)s''' % locals()
     P.run()
 
 #########################################################################
@@ -849,7 +849,7 @@ def loadRecs(infile, outfile):
     '''Load homozygous recessive disease candidates into database'''
     scriptsdir = PARAMS["general_scriptsdir"]
     tablename = P.toTable(outfile)
-    statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py --table %(tablename)s --retry --ignore-empty --allow-empty > %(outfile)s''' % locals()
+    statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py --table %(tablename)s --retry --ignore-empty --allow-empty-file > %(outfile)s''' % locals()
     P.run()
 
 #########################################################################
@@ -866,7 +866,7 @@ def compoundHets(infiles, outfile):
     statement += '''GenomeAnalysisTK -T ReadBackedPhasing -R %%(bwa_index_dir)s/%%(genome)s.fa -I %(bamlist)s -V %(infile)s.phased.vcf -o %(infile)s.phased_rbp.vcf --respectPhaseInInput ;''' % locals(
     )
     statement += '''gemini load -v %(infile)s.phased_rbp.vcf -p %(pedfile)s -t snpEff %(infile)s.db ;'''
-    statement += '''gemini comp_hets --only-affected --filter "(impact_severity = 'HIGH' OR impact_severity = 'MED') AND (in_esp = 0 OR aaf_esp_all < 0.01) AND (in_1kg = 0 OR aaf_1kg_all < 0.01)" %(infile)s.db > %(outfile)s'''
+    statement += '''gemini comp_hets --only-affected --method=filter --filter-method "(impact_severity = 'HIGH' OR impact_severity = 'MED') AND (in_esp = 0 OR aaf_esp_all < 0.01) AND (in_1kg = 0 OR aaf_1kg_all < 0.01)" %(infile)s.db > %(outfile)s'''
     P.run()
 
 #########################################################################
@@ -877,7 +877,7 @@ def loadCompoundHets(infile, outfile):
     '''Load compound heterozygous variants into database'''
     scriptsdir = PARAMS["general_scriptsdir"]
     tablename = P.toTable(outfile)
-    statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py --table %(tablename)s --retry --ignore-empty --allow-empty > %(outfile)s''' % locals()
+    statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py --table %(tablename)s --retry --ignore-empty --allow-empty-file > %(outfile)s''' % locals()
     P.run()
 
 #########################################################################
@@ -904,10 +904,10 @@ def loadVCFstats(infiles, outfile):
     tablename = P.toTable(outfile)
     E.info("Loading vcf stats...")
     statement = '''python %(scriptsdir)s/vcfstats2db.py %(filenames)s >> %(outfile)s; '''
-    statement += '''cat vcfstats.txt | python %(scriptsdir)s/csv2db.py %(csv2db_options)s --allow-empty --index=track --table=vcf_stats >> %(outfile)s; '''
-    statement += '''cat sharedstats.txt | python %(scriptsdir)s/csv2db.py %(csv2db_options)s --allow-empty --index=track --table=vcf_shared_stats >> %(outfile)s; '''
-    statement += '''cat indelstats.txt | python %(scriptsdir)s/csv2db.py %(csv2db_options)s --allow-empty --index=track --table=indel_stats >> %(outfile)s; '''
-    statement += '''cat snpstats.txt | python %(scriptsdir)s/csv2db.py %(csv2db_options)s --allow-empty --index=track --table=snp_stats >> %(outfile)s; '''
+    statement += '''cat vcfstats.txt | python %(scriptsdir)s/csv2db.py %(csv2db_options)s --allow-empty-file --add-index=track --table=vcf_stats >> %(outfile)s; '''
+    statement += '''cat sharedstats.txt | python %(scriptsdir)s/csv2db.py %(csv2db_options)s --allow-empty-file --add-index=track --table=vcf_shared_stats >> %(outfile)s; '''
+    statement += '''cat indelstats.txt | python %(scriptsdir)s/csv2db.py %(csv2db_options)s --allow-empty-file --add-index=track --table=indel_stats >> %(outfile)s; '''
+    statement += '''cat snpstats.txt | python %(scriptsdir)s/csv2db.py %(csv2db_options)s --allow-empty-file --add-index=track --table=snp_stats >> %(outfile)s; '''
     P.run()
 
 #########################################################################

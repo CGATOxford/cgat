@@ -12,7 +12,7 @@ Purpose
 
 This script reads sequences from two or more :term:`fasta` formatted
 files and outputs a new file with the sequences concatenated per
-entry. 
+entry.
 
 All files must have the same number of sequences and the id of
 the first file is output.
@@ -24,6 +24,28 @@ Example::
 
    python fastas2fasta.py a.fasta b.fasta > c.fasta
 
+If a.fasta is::
+
+  >1
+  AAACC
+  >2
+  CCCAA
+
+and b.fasta is::
+
+  >a
+  GGGGTTT
+  >b
+  TTTTGGG
+
+then the output will be::
+
+  >1
+  AAACCGGGGTTT
+  >2
+  CCCAATTTTGGG
+
+
 Type::
 
    python fastas2fasta.py --help
@@ -34,7 +56,6 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
 import re
 

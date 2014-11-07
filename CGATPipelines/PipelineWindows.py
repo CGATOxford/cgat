@@ -4,6 +4,7 @@ import collections
 import pandas
 from math import log
 import numpy as np
+import random
 import numpy.ma as ma
 import itertools
 
@@ -401,8 +402,8 @@ def outputRegionsOfInterest(infiles, outfile,
                             (%(upper_levelB)s and %(sum_levelB)s)"
     | python %(scriptsdir)s/runExpression.py
             --log=%(outfile)s.log
-            --filename-design=%(design_file)s
-            --filename-tags=-
+            --design-tsv-file=%(design_file)s
+            --tags-tsv-file=-
             --method=mock
             --filter-min-counts-per-sample=0
     | gzip
@@ -458,13 +459,13 @@ def runDE(infiles, outfile, outdir,
                   --output-header
                   --split-at-lines=200000
                   --cluster-options="-l mem_free=8G"
-                  --log=%(outfile)s.log2
-                  --output-pattern=%(outdir)s/%%s
+                  --log=%(outfile)s.log
+                  --output-filename-pattern=%(outdir)s/%%s
                   --subdirs
               "python %(scriptsdir)s/runExpression.py
               --method=%(method)s
-              --filename-tags=-
-              --filename-design=%(design_file)s
+              --tags-tsv-file=-
+              --design-tsv-file=%(design_file)s
               --output-filename-pattern=%%DIR%%/%(prefix)s_
               --deseq-fit-type=%(deseq_fit_type)s
               --deseq-dispersion-method=%(deseq_dispersion_method)s
@@ -503,9 +504,10 @@ def normalizeBed(infile, outfile):
                                   index_col=0)
 
     # normalize count column by total library size
-    # explicitly define numpy array data type
-    # otherwise np.log will fail if it hits a python
-    # long
+    # have to explicitly convert data_frame to numpy
+    # array with int64/float64 data type.  Otherwise
+    # numpy.log will through an Attribute error (wrong
+    # error to report) as it cannot handle python longs
     bed_frame = bed_frame.fillna(0.0)
     val_array = np.array(bed_frame.values, dtype=np.int64)
     geom_mean = geoMean(val_array)
@@ -514,7 +516,9 @@ def normalizeBed(infile, outfile):
     size_factors = ratio_frame.apply(np.median,
                                      axis=0)
     normalize_frame = bed_frame/size_factors
-
+    # replace infs and -infs with Nas, then 0s
+    normalize_frame.replace([np.inf, -np.inf], np.nan, inplace=True)
+    normalize_frame = normalize_frame.fillna(0.0)
     normalize_frame.to_csv(outfile, sep="\t", index_label="interval")
 
 

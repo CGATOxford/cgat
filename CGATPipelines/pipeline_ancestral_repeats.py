@@ -219,8 +219,8 @@ elif "maf_dir" in PARAMS:
              | python %(scriptsdir)s/psl2psl.py 
                   --method=filter-fasta 
                   --method=sanitize
-                  --filename-queries=%(genome_query)s
-                  --filename-target=%(genome_target)s
+                  --queries-tsv-file=%(genome_query)s
+                  --target-psl-file=%(genome_target)s
                   --log=%(outfile)s.log 
              | gzip 
              >> %(outfile)s
@@ -279,8 +279,8 @@ elif "maf_dir" in PARAMS:
                   %(query)s.sizes 
                   /dev/stdout 
              | python %(scriptsdir)s/psl2psl.py 
-                  --filename-queries=%(genome_query)s
-                  --filename-target=%(genome_target)s
+                  --queries-tsv-file=%(genome_query)s
+                  --target-psl-file=%(genome_target)s
                   --method=sanitize
              | gzip 
              >> %(outfile)s
@@ -341,7 +341,7 @@ def importRepeatsFromUCSC(infile, outfile, ucsc_database, repeattypes, genome):
     statement = '''cat %(tmpfilename)s
     | %(scriptsdir)s/gff_sort pos
     | python %(scriptsdir)s/gff2gff.py
-    --sanitize=genome
+    --method=sanitize=genome
     --skip-missing
     --genome-file=%(genome)s
     --log=%(outfile)s.log
@@ -371,7 +371,7 @@ def importRepeatsFromEnsembl(infile, outfile,
     --repeattypes %(repeattypes)s
     | %(scriptsdir)s/gff_sort pos
     | python %(scriptsdir)s/gff2gff.py
-    --sanitize=genome
+    --method=sanitize=genome
     --skip-missing
     --genome-file=%(genome)s
     --log=%(outfile)s.log
@@ -435,7 +435,7 @@ def buildAlignedRepeats(infiles, outfile):
     # to_cluster = False
     # statement = r'''
     #     gunzip < %(interface_alignment_psl)s
-    #     | %(cmd-farm)s --split-at-lines=%(granularity)i --log=%(outfile)s.log --binary
+    #     | %(cmd-farm)s --split-at-lines=%(granularity)i --log=%(outfile)s.log --is-binary
     #          "python %(scriptsdir)s/psl2psl.py
     #             --method=test
     #     	--log=%(outfile)s.log
@@ -479,8 +479,8 @@ def buildRepeatsRates(infile, outfile):
     "python %(scriptsdir)s/psl2psl.py
     --log=%(outfile)s.log
     --method=add-sequence
-    --filename-queries=%(genome_query)s
-    --filename-target=%(genome_target)s
+    --queries-tsv-file=%(genome_query)s
+    --target-psl-file=%(genome_target)s
     | python %(scriptsdir)s/psl2table.py
     --method=query-counts
     --method=baseml

@@ -123,7 +123,7 @@ def main(argv=None):
                       choices=(
                           "rest_genes1", "rest_genes2", "intersection", "union"),
                       help="dump sets of transcripts/genes")
-    parser.add_option("-o", "--output-pattern", dest="output_pattern", type="string",
+    parser.add_option("-o", "--output-filename-pattern", dest="output_pattern", type="string",
                       help="output pattern to use for dumped sets. Should contain one %s.")
 
     parser.set_defaults(

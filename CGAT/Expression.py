@@ -1668,10 +1668,10 @@ def loadCuffdiff(infile, outfile):
 
         statement = '''cat %(tmpname)s
         | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --allow-empty
-              --index=treatment_name
-              --index=control_name
-              --index=test_id
+              --allow-empty-file
+              --add-index=treatment_name
+              --add-index=control_name
+              --add-index=test_id
               --table=%(tablename)s
          >> %(outfile)s.log
          '''
@@ -1687,8 +1687,8 @@ def loadCuffdiff(infile, outfile):
 
         statement = '''zcat %(indir)s/%(fn)s
         | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --allow-empty
-              --index=tracking_id
+              --allow-empty-file
+              --add-index=tracking_id
               --table=%(tablename)s
          >> %(outfile)s.log
          '''
@@ -1788,8 +1788,8 @@ def loadCuffdiff(infile, outfile):
         statement = ("cat %(tmpf)s |"
                      " python %(scriptsdir)s/csv2db.py "
                      "  %(csv2db_options)s"
-                     "  --allow-empty"
-                     "  --index=gene_id"
+                     "  --allow-empty-file"
+                     "  --add-index=gene_id"
                      "  --table=%(tablename)s"
                      " >> %(outfile)s.log")
         P.run()
@@ -1881,7 +1881,7 @@ def runCuffdiff(bamfiles,
     cuffdiff --output-dir %(outdir)s
              --verbose
              --num-threads %(threads)i
-             --labels %(labels)s
+             --plot-labels %(labels)s
              --FDR %(fdr)f
              %(extra_options)s
              %(cuffdiff_options)s

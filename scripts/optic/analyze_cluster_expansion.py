@@ -91,7 +91,7 @@ def main(argv=None):
                       help="methods to apply to dataset.")
     parser.add_option("-s", "--pattern-species", dest="species_pattern", type="string",
                       help="regular expression to extract species.")
-    parser.add_option("-p", "--pattern", dest="pattern", type="string",
+    parser.add_option("-p", "--pattern-identifier", dest="pattern", type="string",
                       help="output pattern. Should contain two %s wildcards, one for the secion, the second for the method.")
 
     parser.set_defaults(

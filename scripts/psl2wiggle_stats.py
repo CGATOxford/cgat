@@ -63,10 +63,10 @@ def main(argv=None):
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genome.")
 
-    parser.add_option("--wiggle-files", dest="wiggle_files", type="string",
+    parser.add_option("--wiggle-file", dest="wiggle_files", type="string",
                       help="glob expression for wiggle files [%default].")
 
-    parser.add_option("--prefix", dest="prefix", type="string",
+    parser.add_option("--column-prefix", dest="prefix", type="string",
                       help="prefix to add to contig names before lookup [%default].")
 
     parser.add_option("-z", "--from-zipped", dest="from_zipped", action="store_true",

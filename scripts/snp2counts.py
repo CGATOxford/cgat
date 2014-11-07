@@ -2161,11 +2161,11 @@ def main(argv=None):
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genome [default=%default].")
-    parser.add_option("-f", "--filename-exons", dest="filename_exons", type="string",
+    parser.add_option("-f", "--exons-file", dest="filename_exons", type="string",
                       help="filename with exon information (gtf formatted file)  [default=%default].")
-    parser.add_option("-s", "--filename-seleno", dest="filename_seleno", type="string",
+    parser.add_option("-s", "--seleno-tsv-file", dest="filename_seleno", type="string",
                       help="filename of a list of transcript ids that are selenoproteins [default=%default].")
-    parser.add_option("-c", "--filename-vcf", dest="filename_vcf", type="string",
+    parser.add_option("-c", "--vcf-file", dest="filename_vcf", type="string",
                       help="vcf file to parse [default=%default].")
     parser.add_option("-m", "--module", dest="modules", type="choice", action="append",
                       choices=(

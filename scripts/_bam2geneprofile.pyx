@@ -588,7 +588,7 @@ class IntervalsCounter:
 
     def getProfile(self,
                    normalize=None,
-                   background_region=10):
+                   background_region_bins=10):
         '''return meta gene profile.
 
         apply various normalization methods.
@@ -619,8 +619,8 @@ class IntervalsCounter:
             elif normalize == "background":
                 # take counts at either end of profile
                 background_counts = numpy.concatenate( 
-                    [profile[:background_region],
-                     profile[-background_region:]])
+                    [profile[:background_region_bins],
+                     profile[-background_region_bins:]])
                 # compute mean()
                 background = numpy.mean(background_counts)
 
@@ -1691,8 +1691,8 @@ class TSSCounter( IntervalsCounter ):
 
         return 1
 
-def countFromGTF( counters,
-                  gtf_iterator):
+def countFromGTF(counters,
+                 gtf_iterator):
     '''compute counts using counters for
     transcripts in gtf_iterator.
     '''

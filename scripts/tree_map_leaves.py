@@ -53,7 +53,7 @@ collapse leafs with the same species.
 Options:
 -h, --help                      print this message.
 -v, --verbose=                  loglevel.
--a, --apply=                    apply mapping in file
+-a, --map-tsv-file=                    apply mapping in file
 -c, --create=                   create mapping in file
 -i, --invert=                   invert map
 -b, --strip-branches            remove branch lengths
@@ -101,7 +101,7 @@ def main(argv=None):
         elif o in ("-h", "--help"):
             print USAGE
             sys.exit(0)
-        elif o in ("-a", "--apply"):
+        elif o in ("-a", "--map-tsv-file"):
             param_apply = a
         elif o in ("-c", "--create"):
             param_create = a

@@ -60,20 +60,25 @@ def main(argv=None):
         argv = sys.argv
 
     parser = E.OptionParser(
-        version="%prog version: $Id: cgat_logfiles2tsv.py 2781 2009-09-10 11:33:14Z andreas $")
+        version="%prog version: $Id$",
+        usage=globals()["__doc__"])
 
-    parser.add_option("-g", "--glob", dest="glob_pattern", type="string",
-                      help="glob pattern to use for collecting files [%default].")
+    parser.add_option(
+        "-g", "--glob", dest="glob_pattern", type="string",
+        help="glob pattern to use for collecting files [%default].")
 
-    parser.add_option("-f", "--file-pattern", dest="file_pattern", type="string",
-                      help="only check files matching this pattern [%default].")
+    parser.add_option(
+        "-f", "--file-pattern", dest="file_pattern", type="string",
+        help="only check files matching this pattern [%default].")
 
     parser.add_option("-m", "--mode", dest="mode", type="choice",
                       choices=("file", "node"),
                       help="analysis mode [%default].")
 
-    parser.add_option("-r", "--recursive", action="store_true",
-                      help="recursively look for logfiles from current directory [%default].")
+    parser.add_option(
+        "-r", "--recursive", action="store_true",
+        help="recursively look for logfiles from current directory "
+        "[%default].")
 
     parser.set_defaults(
         truncate_sites_list=0,

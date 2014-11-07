@@ -10,17 +10,17 @@ Purpose
 -------
 
 This script takes a :term:`bed`-formatted file as input and outputs the number
-of intervals and bases in the bed file. Counts can be subdivided by
-command line options:
+of intervals and bases in the bed file. Counts can be subdivided by setting
+the ``--aggregate-by`` command line option:
 
---per-contig
+``contig``
    output counts per contig (column 1)
 
---per-name
+``name``
    output counts grouped by the name field in the :term:`bed` formatted
    file (column 4)
 
---per-track
+``track``
    output counts per track in the :term:`bed` formatted file.
 
 Note that a count of bases usually makes only sense if the intervals
@@ -45,7 +45,7 @@ To count the number of intervals, type::
 
 To count per contig::
 
-   cgat bed2table --per-contig < in.bed
+   cgat bed2table --aggregate=contig < in.bed
 
 +-----+--------+----------+------+
 |track|ncontigs|nintervals|nbases|
@@ -124,17 +124,9 @@ def main(argv=None):
         help="filename with genome [default=%default].")
 
     parser.add_option(
-        "-n", "--per-name", dest="per_name", action="store_true",
-        help="compute counts per name [default=%default].")
-
-    parser.add_option(
-        "-c", "--per-contig", dest="per_contig",
-        action="store_true",
-        help="compute counts per contig [default=%default].")
-
-    parser.add_option(
-        "-t", "--per-track", dest="per_track", action="store_true",
-        help="compute counts per track [default=%default].")
+        "-a", "--aggregate-by", dest="aggregate", type="choice",
+        choices=("name", "contig", "track", "none"),
+        help="aggregate counts by feature [default=%default].")
 
     parser.add_option(
         "-p", "--add-percent", dest="add_percent", action="store_true",
@@ -142,8 +134,7 @@ def main(argv=None):
 
     parser.set_defaults(
         genome_file=None,
-        per_name=False,
-        per_track=False,
+        aggregate="none",
         add_percent=False,
     )
 
@@ -157,18 +148,19 @@ def main(argv=None):
             raise ValueError("--add-percent option requires --genome-file")
         fasta = None
 
-    if options.add_percent and not options.per_contig:
-        raise NotImplementedError("--add-percent option requires --per-contig")
+    if options.add_percent and not options.aggregate == "contig":
+        raise NotImplementedError(
+            "--add-percent option requires --aggregate=contig")
 
     counts = collections.defaultdict(Counter)
     total = Counter()
     output_totals = True
 
-    if options.per_track:
+    if options.aggregate == "track":
         keyf = lambda x: x.track
-    elif options.per_name:
+    elif options.aggregate == "name":
         keyf = lambda x: x.name
-    elif options.per_contig:
+    elif options.aggregate == "contig":
         keyf = lambda x: x.contig
     else:
         keyf = lambda x: "all"

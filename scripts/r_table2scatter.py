@@ -212,13 +212,13 @@ def main(argv=None):
     parser.add_option("-o", "--colours", dest="colours", type="int",
                       help="column with colour information [default=%default].")
 
-    parser.add_option("-l", "--labels", dest="labels", type="string",
+    parser.add_option("-l", "--plot-labels", dest="labels", type="string",
                       help="column labels for x and y in matched plots [default=%default].")
 
     parser.add_option("-d", "--add-diagonal", dest="add_diagonal", action="store_true",
                       help="add diagonal to plot [default=%default].")
 
-    parser.add_option("-e", "--legend", dest="legend", type="int",
+    parser.add_option("-e", "--plot-legend", dest="legend", type="int",
                       help="column with legend [default=%default].")
 
     parser.add_option("-r", "--options", dest="r_options", type="string",
@@ -237,7 +237,7 @@ def main(argv=None):
     parser.add_option("", "--yrange", dest="yrange", type="string",
                       help="y viewing range of plot[default=%default].")
 
-    parser.add_option("--allow-empty", dest="fail_on_empty", action="store_false",
+    parser.add_option("--allow-empty-file", dest="fail_on_empty", action="store_false",
                       help="do not fail on empty input [default=%default].")
 
     parser.add_option("--fail-on-empty", dest="fail_on_empty", action="store_true",

@@ -1,5 +1,4 @@
-'''
-gff2gff.py - manipulate gff files
+'''gff2gff.py - manipulate gff files
 =================================
 
 :Author: Andreas Heger
@@ -7,57 +6,105 @@ gff2gff.py - manipulate gff files
 :Date: |today|
 :Tags: Genomics Intervals GFF Manipulation
 
+
 Purpose
 -------
 
-This scripts reads a :term:`gff` formatted file, operates
-on it and outputs the new intervals in :term:`gff` format.
+This scripts reads a :term:`gff` formatted file, applies a
+transformation and outputs the new intervals in :term:`gff` format.
+The type of transformation chosen is given through the `--method``
+option. Below is a list of available transformations:
 
-Extension options:
+``complement-groups``
 
-``--extend``
-   extend existing features
+    output the complenent intervals for the features in the file, for
+    example to output introns from exons. The option ``--group-field``
+    sets field/attribute to group by, e.g gene_id, transcript_id, feature,
+    source.
 
-``--add-up-flank/--add-down-flank``
-   add an upstream/downstearm flanking segment to first/last exon of a group.
+``combine-groups``
 
-Segment transformations:
+    combine all features in a group into a single interval.  The
+    option ``--group-field`` sets field/attribute to group by, see
+    alse ``complement-groups``.
 
-``--crop``
+``to-forward-coordinates``
+
+    translate all features forward coordinates.
+
+``to-forward-strand``
+
+    convert to forward strand
+
+``add-upstream-flank/add-downstream-flank/add-flank``
+
+   add an upstream/downstream flanking segment to first/last exon of a group.
+   The amount added is given through the options ``--extension-upstream`` and
+   ``--extension-downstream``. If ``--flank-method`` is ``extend``, the
+   first/last exon will be extended, otherwise a new feature will be added.
+
+``crop``
+
    crop features according to features in a separate gff file.
+   If a feature falls in the middle of another, two entries will be
+   output.""" )
 
-``--crop-unique``
+``crop-unique``
+
    remove non-unique features from gff file.
 
-``--merge-features``
+``merge-features``
+
    merge consecutive features.
 
-``--join-features``
-   group consecutive features
+``join-features``
 
-Filtering options:
+   group consecutive features.
 
-``--filter-range``
-   extract features overlapping a chromosomal range.
+``filter-range``
+   extract features overlapping a chromosomal range. The range can be
+   set by the ``--filter-range`` option.
 
-``--sanitize``
+``sanitize``
    reconcile chromosome names between ENSEMBL/UCSC or with an indexed
    genomic fasta file (see :doc:`index_fasta`). Raises an exception if
-   an unknown contig is found (unless ``--skip-missing`` is set).
+   an unknown contig is found (unless ``--skip-missing`` is set). The
+   method to sanitize is specified by ``--sanitize-method``.
+   A pattern of contigs to remove can be given in the option
+   ``--contig-pattern``.
 
-``--remove-contigs``
-   remove contig matching to a series of regular expressions.
+``skip-missing``
+
+   skip entries on missing contigs. This prevents exception from being raised
+
+
+
+``filename-agp``
+    agp file to map coordinates from contigs to scaffolds
+
+
+Contigs can either be provided in an indexed fasta genome file
+``--genome-file`` or a file containing contig sizes ``--contigs-tsv-file``
 
 
 
 Usage
 -----
 
-Make sure that a :term:`gff` formatted file contains only features on placed chromosomes::
+Make sure that a :term:`gff` formatted file contains only
+features on placed chromosomes::
 
-   cat in.gff 
-   | gff2gff.py --sanitize=genome --genome-file=hg19 --skip-missing 
+As an example, to sanatise hg19 chromosome names and remove
+chromosome matching the regular expression patterns
+"ChrUn" or "_random", use the following:
+
+   cat in.gff
+   | gff2gff.py --method=sanitize=genome --genome-file=hg19 --skip-missing
    | gff2gff.py --remove-contigs="chrUn,_random" > gff.out
+
+The "--skip-missing" option prevents an exception being
+raised if entries are found on missing chromosomes
+
 
 Type::
 
@@ -71,11 +118,7 @@ Command line options
 '''
 
 import sys
-import string
 import re
-import optparse
-
-
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import CGAT.GTF as GTF
@@ -89,20 +132,20 @@ import bx.intervals.io
 import bx.intervals.intersection
 
 
-def combineGFF(gffs, options, merge=True):
+def combineGFF(gffs,
+               min_distance,
+               max_distance,
+               min_features,
+               max_features,
+               merge=True,
+               output_format="%06i"):
     """join intervals in gff file.
 
     Note: strandedness is ignored
     """
 
-    if merge:
-        min_distance, max_distance, min_features, max_features = map(
-            int, options.merge_features.split(","))
-    else:
-        min_distance, max_distance, min_features, max_features = map(
-            int, options.join_features.split(","))
-
-    E.info("joining features: min distance=%i, max_distance=%i, at least %i and at most %i features." %
+    E.info("joining features: min distance=%i, max_distance=%i, "
+           "at least %i and at most %i features." %
            (min_distance, max_distance, min_features, max_features))
 
     def iterate_chunks(gffs):
@@ -140,12 +183,12 @@ def combineGFF(gffs, options, merge=True):
 
             ninput += 1
             y = GTF.Entry()
-            t = options.output_format % id
+            t = output_format % id
             y.fromGTF(to_join[0], t, t)
             y.start = to_join[0].start
             y.end = to_join[-1].end
 
-            options.stdout.write("%s\n" % str(y))
+            yield(y)
             nfeatures += 1
 
             noutput += 1
@@ -157,25 +200,24 @@ def combineGFF(gffs, options, merge=True):
             ninput += 1
             for x in to_join:
                 y = GTF.Entry()
-                t = options.output_format % id
+                t = output_format % id
                 y.fromGTF(x, t, t)
-                options.stdout.write("%s\n" % str(y))
+                yield(y)
                 nfeatures += 1
 
             noutput += 1
             id += 1
 
-    if options.loglevel >= 1:
-        options.stdlog.write(
-            "# ninput=%i, noutput=%i, nfeatures=%i\n" % (ninput, noutput, nfeatures))
+    E.info("ninput=%i, noutput=%i, nfeatures=%i" %
+           (ninput, noutput, nfeatures))
 
 
-def cropGFFUnique(gffs, options):
+def cropGFFUnique(gffs, ignore_strand=True):
     """crop intervals in gff file.
 
     only unique regions are kept. This method ignores the feature field.
 
-    If options.ignore_strand is set, strand information for cropping
+    If ignore_strand is set, strand information for cropping
     is ignored.
     """
 
@@ -185,15 +227,13 @@ def cropGFFUnique(gffs, options):
     if len(gffs) == 0:
         return
 
-    outf = options.stdout
-
     def _cmp_without_strand(this, last):
         return this.contig != last.contig
 
     def _cmp_with_strand(this, last):
         return this.contig != last.contig or this.strand != last.strand
 
-    if options.ignore_strand:
+    if ignore_strand:
         gffs.sort(key=lambda x: (x.contig, x.start))
         comp = _cmp_without_strand
     else:
@@ -210,7 +250,7 @@ def cropGFFUnique(gffs, options):
             # no overlap
             if last.start < last.end:
                 c.output += 1
-                outf.write("%s\n" % str(last))
+                yield(last)
             last = this
 
         elif this.end <= last.start:
@@ -229,7 +269,7 @@ def cropGFFUnique(gffs, options):
                 E.info(str(last))
                 c.overlaps += 1
                 c.output += 1
-                outf.write("%s\n" % str(last))
+                yield(last)
             last = this
 
         elif last.end > this.end:
@@ -239,24 +279,24 @@ def cropGFFUnique(gffs, options):
             if last.start < last.end:
                 c.output += 1
                 c.splits += 1
-                outf.write("%s\n" % str(last))
+                yield(last)
             last.start = this.end
             last.end = l
 
     if last.start < last.end:
         c.output += 1
-        outf.write("%s\n" % str(last))
+        yield(last)
 
     E.info("cropping finished: %s" % str(c))
 
 
-def cropGFF(gffs, options):
+def cropGFF(gffs, filename_gff):
     """crop intervals in gff file."""
 
     # read regions to crop with and convert intervals to intersectors
     E.info("reading gff for cropping: started.")
 
-    other_gffs = GTF.iterator(IOTools.openFile(options.crop, "r"))
+    other_gffs = GTF.iterator(IOTools.openFile(filename_gff, "r"))
     cropper = GTF.readAsIntervals(other_gffs)
     ntotal = 0
     for contig in cropper.keys():
@@ -299,18 +339,15 @@ def cropGFF(gffs, options):
                 for s, e in segments:
                     gff.start, gff.end = s + start, e + start
                     noutput += 1
-                    options.stdout.write("%s\n" % gff)
+                    yield(gff)
 
                 continue
 
         noutput += 1
-        options.stdout.write("%s\n" % gff)
+        yield(gff)
 
-    if options.loglevel >= 1:
-        options.stdlog.write("# ninput=%i, noutput=%i, ncropped=%i, ndeleted=%i\n" % (
-            ninput, noutput, ncropped, ndeleted))
-
-# ------------------------------------------------------------------------
+    E.info("ninput=%i, noutput=%i, ncropped=%i, ndeleted=%i" %
+           (ninput, noutput, ncropped, ndeleted))
 
 
 def main(argv=None):
@@ -318,107 +355,139 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv
 
-    parser = E.OptionParser(
-        version="%prog version: $Id: gff2gff.py 2868 2010-03-03 10:19:52Z andreas $")
+    parser = E.OptionParser(version="%prog version: $Id: gff2gff.py$",
+                            usage=globals()["__doc__"])
 
-    parser.add_option("-f", "--forward-coordinates", dest="forward_coordinates",
-                      help="translate to forward coordinates.", action="store_true")
+    parser.add_option("-m", "--method", dest="method", type="choice",
+                      choices=(
+                          "add-flank",
+                          "add-upstream-flank",
+                          "add-downstream-flank",
+                          "crop",
+                          "crop-unique",
+                          "complement-groups",
+                          "combine-groups",
+                          "filter-range",
+                          "join-features",
+                          "merge-features",
+                          "sanitize",
+                          "to-forward-coordinates",
+                          "to-forward-strand"),
+                      help="method to apply [%default]")
 
-    parser.add_option("--forward-strand", dest="forward_strand",
-                      help="convert to forward strand.", action="store_true")
-
-    parser.add_option("--ignore-strand", dest="ignore_strand",
-                      help="ignore strand information.", action="store_true")
+    parser.add_option(
+        "--ignore-strand", dest="ignore_strand",
+        help="ignore strand information.", action="store_true")
 
     parser.add_option("--is-gtf", dest="is_gtf", action="store_true",
                       help="input will be treated as gtf [default=%default].")
 
-    parser.add_option("--add-up-flank", dest="add_up_flank", type="int",
-                      help="add an upstream flanking segment to first exon of a group.")
+    parser.add_option(
+        "-c", "--contigs-tsv-file", dest="input_filename_contigs",
+        type="string",
+        help="filename with contig lengths.")
 
-    parser.add_option("--add-down-flank", dest="add_down_flank", type="int",
-                      help="add a downstream flanking segment to last segment of a group.")
+    parser.add_option(
+        "--agp-file", dest="input_filename_agp", type="string",
+        help="agp file to map coordinates from contigs to scaffolds.")
 
-    parser.add_option("--extend", dest="extend",
-                      help="extend the existing features.", action="store_true")
+    parser.add_option(
+        "-g", "--genome-file", dest="genome_file", type="string",
+        help="filename with genome.")
 
-    parser.add_option("-c", "--contigs", dest="input_filename_contigs", type="string",
-                      help="filename with contig lenghts.")
+    parser.add_option(
+        "--crop-gff-file", dest="filename_crop_gff", type="string",
+        help="GFF/GTF file to crop against.")
 
-    parser.add_option("--filename-agp", dest="input_filename_agp", type="string",
-                      help="agp file to map coordinates from contigs to scaffolds.")
+    parser.add_option(
+        "--group-field", dest="group_field", type="string",
+        help="""gff field/attribute to group by such as gene_id, "
+        "transcript_id, ... [%default].""")
 
-    parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
-                      help="filename with genome.")
+    parser.add_option(
+        "--filter-range", dest="filter_range", type="string",
+        help="extract all elements overlapping a range. A range is "
+        "specified by eithor 'contig:from..to', 'contig:+:from..to', "
+        "or 'from,to' .")
 
-    parser.add_option("--complement-groups", dest="complement_groups", action="store_true",
-                      help="""complement groups. Will write introns from exons [%default].""" )
+    parser.add_option(
+        "--sanitize-method", dest="sanitize_method", type="choice",
+        choices=("ucsc", "ensembl", "genome"),
+        help="method to use for sanitizing chromosome names. "
+        "[%default].")
 
-    parser.add_option("--group-field", dest="group_field", type="string",
-                      help="""gff field/attribute to group by such as gene_id, transrcipt_id, ... [%default].""" )
+    parser.add_option(
+        "--flank-method", dest="flank_method", type="choice",
+        choices=("add", "extend"),
+        help="method to use for adding flanks. ``extend`` will "
+        "extend existing features, while ``add`` will add new features. "
+        "[%default].")
 
-    parser.add_option("--combine-groups", dest="combine_groups", action="store_true",
-                      help="""combine groups.""" )
+    parser.add_option(
+        "--skip-missing", dest="skip_missing", action="store_true",
+        help="skip entries on missing contigs. Otherwise an "
+        "exception is raised [%default].")
 
-    parser.add_option("--filter-range", dest="filter_range", type="string",
-                      help="""extract all elements overlapping a range. A range is specified by eithor 'contig:from..to', 'contig:+:from..to', or 'from,to' .""" )
+    parser.add_option(
+        "--contig-pattern", dest="contig_pattern", type="string",
+        help="a comma separated list of regular expressions specifying "
+        "contigs to be removed when running method sanitize [%default].")
 
-    parser.add_option("--join-features", dest="join_features", type="string",
-                      help="join features into a single transcript. Consecutive features are grouped "
-                      " into the same transcript/gene. This metdo expects a string of for numbers ``a,b,c,d`` "
-                      " as input with:"
-                      " a,b=minimum/maximum distance between features, "
-                      " c,d=minimum,maximum number of features.""" )
+    parser.add_option(
+        "--extension-upstream", dest="extension_upstream", type="float",
+        help="extension for upstream end [%default].")
 
-    parser.add_option("--merge-features", dest="merge_features", type="string",
-                      help="merge features. Consecutive features are merged into a single feature. "
-                      "This method expects a string of four numbers ``a,b,c,d`` as input; "
-                      "a,b=minimum/maximum distance between features, "
-                      "c,d=minimum,maximum number of features.")
+    parser.add_option(
+        "--extension-downstream", dest="extension_downstream", type="float",
+        help="extension for downstream end [%default].")
 
-    parser.add_option("--crop-unique", dest="crop_unique", action="store_true",
-                      help="crop overlapping intervals, keeping only intervals that are unique [default=%default]")
+    parser.add_option(
+        "--min-distance", dest="min_distance", type="int",
+        help="minimum distance of features to merge/join [%default].")
 
-    parser.add_option("--crop", dest="crop", type="string",
-                      help="""crop features in gff file with features in another file. If a feature falls in the middle of another, two entries will be output.""" )
+    parser.add_option(
+        "--max-distance", dest="max_distance", type="int",
+        help="maximum distance of features to merge/join [%default].")
 
-    parser.add_option("--sanitize", dest="sanitize", type="choice",
-                      choices=("ucsc", "ensembl", "genome"),
-                      help="sanitize chr names for ucsc or ensembl or use the genome translator [%default].")
+    parser.add_option(
+        "--min-features", dest="min_features", type="int",
+        help="minimum number of features to merge/join [%default].")
 
-    parser.add_option("--skip-missing", dest="skip_missing", action="store_true",
-                      help="skip entries on missing contigs. Otherwise an exception is raised [%default].")
-
-    parser.add_option("--remove-contigs", dest="remove_contigs", type="string", action="store",
-                      help="a comma separated list of regular expressions specifying contigs to be removed when runnnig sanitize [%default].")
+    parser.add_option(
+        "--max-features", dest="max_features", type="int",
+        help="maximum number of features to merge/join [%default].")
 
     parser.set_defaults(
-        forward_coordinates=False,
-        forward_strand=False,
         input_filename_contigs=False,
+        filename_crop_gff=None,
         input_filename_agp=False,
         genome_file=None,
-        sanitize=None,
         add_up_flank=None,
         add_down_flank=None,
-        extend=False,
         complement_groups=False,
-        combine_groups=False,
         crop=None,
         crop_unique=False,
         ignore_strand=False,
         filter_range=None,
-        join_features=None,
-        merge_features=None,
+        min_distance=0,
+        max_distance=0,
+        min_features=1,
+        max_features=0,
+        extension_upstream=1000,
+        extension_downstream=1000,
+        sanitize_method="ucsc",
+        flank_method="add",
         output_format="%06i",
         skip_missing=False,
-        remove_contigs=None,
         is_gtf=False,
         group_field=None,
+        contig_pattern=None,
     )
 
     (options, args) = E.Start(parser, argv=argv)
 
+    contigs = None
+    genome_fasta = None
     if options.input_filename_contigs:
         contigs = Genomics.ReadContigSizes(
             IOTools.openFile(options.input_filename_contigs, "r"))
@@ -426,10 +495,11 @@ def main(argv=None):
     if options.genome_file:
         genome_fasta = IndexedFasta.IndexedFasta(options.genome_file)
         contigs = genome_fasta.getContigSizes()
-    else:
-        genome_fasta = None
 
-    if (options.forward_coordinates or options.forward_strand) and not contigs:
+    if options.method in ("forward_coordinates", "forward_strand",
+                          "add-flank", "add-upstream-flank",
+                          "add-downstream-flank") \
+       and not contigs:
         raise ValueError("inverting coordinates requires genome file")
 
     if options.input_filename_agp:
@@ -440,7 +510,18 @@ def main(argv=None):
 
     gffs = GTF.iterator(options.stdin)
 
-    if options.add_up_flank or options.add_down_flank:
+    if options.method in ("add-upstream-flank",
+                          "add-downstream-flank",
+                          "add-flank"):
+
+        add_upstream_flank = "add-upstream-flank" == options.method
+        add_downstream_flank = "add-downstream-flank" == options.method
+        if options.method == "add-flank":
+            add_upstream_flank = add_downstream_flank = True
+
+        upstream_flank = int(options.extension_upstream)
+        downstream_flank = int(options.extension_downstream)
+        extend_flank = options.flank_method == "extend"
 
         if options.is_gtf:
             iterator = GTF.flat_gene_iterator(gffs)
@@ -452,47 +533,48 @@ def main(argv=None):
             chunk.sort(lambda x, y: cmp(x.start, y.start))
             lcontig = contigs[chunk[0].contig]
 
-            if options.extend:
-                if options.add_up_flank:
+            if extend_flank:
+                if add_upstream_flank:
                     if is_positive:
                         chunk[0].start = max(
-                            0, chunk[0].start - options.add_up_flank)
+                            0, chunk[0].start - upstream_flank)
                     else:
-                        chunk[-1].end = min(lcontig,
-                                            chunk[-1].end + options.add_up_flank)
-                if options.add_down_flank:
+                        chunk[-1].end = min(
+                            lcontig,
+                            chunk[-1].end + upstream_flank)
+                if add_downstream_flank:
                     if is_positive:
                         chunk[-1].end = min(lcontig,
-                                            chunk[-1].end + options.add_down_flank)
+                                            chunk[-1].end + downstream_flank)
                     else:
                         chunk[0].start = max(
-                            0, chunk[0].start - options.add_down_flank)
+                            0, chunk[0].start - downstream_flank)
             else:
-                if options.add_up_flank:
+                if add_upstream_flank:
                     gff = GTF.Entry()
                     if is_positive:
                         gff.copy(chunk[0])
                         gff.end = gff.start
-                        gff.start = max(0, gff.start - options.add_up_flank)
+                        gff.start = max(0, gff.start - upstream_flank)
                         chunk.insert(0, gff)
                     else:
                         gff.copy(chunk[-1])
                         gff.start = gff.end
-                        gff.end = min(lcontig, gff.end + options.add_up_flank)
+                        gff.end = min(lcontig, gff.end + upstream_flank)
                         chunk.append(gff)
                     gff.feature = "5-Flank"
                     gff.mMethod = "gff2gff"
-                if options.add_down_flank:
+                if add_downstream_flank:
                     gff = GTF.Entry()
                     if is_positive:
                         gff.copy(chunk[-1])
                         gff.start = gff.end
-                        gff.end = min(lcontig, gff.end + options.add_up_flank)
+                        gff.end = min(lcontig, gff.end + downstream_flank)
                         chunk.append(gff)
                     else:
                         gff.copy(chunk[0])
                         gff.end = gff.start
-                        gff.start = max(0, gff.start - options.add_up_flank)
+                        gff.start = max(0, gff.start - downstream_flank)
                         chunk.insert(0, gff)
                     gff.feature = "3-Flank"
                     gff.mMethod = "gff2gff"
@@ -503,9 +585,10 @@ def main(argv=None):
             for gff in chunk:
                 options.stdout.write(str(gff) + "\n")
 
-    elif options.complement_groups:
+    elif options.method == "complement-groups":
 
-        iterator = GTF.joined_iterator(gffs, group_field=options.group_field)
+        iterator = GTF.joined_iterator(gffs,
+                                       group_field=options.group_field)
 
         for chunk in iterator:
             if options.is_gtf:
@@ -522,9 +605,10 @@ def main(argv=None):
                 options.stdout.write(str(x) + "\n")
                 x.start = c.end
 
-    elif options.combine_groups:
+    elif options.method == "combine-groups":
 
-        iterator = GTF.joined_iterator(gffs)
+        iterator = GTF.joined_iterator(gffs,
+                                       group_field=options.group_field)
 
         for chunk in iterator:
             chunk.sort()
@@ -534,28 +618,41 @@ def main(argv=None):
             x.feature = "segment"
             options.stdout.write(str(x) + "\n")
 
-    elif options.join_features:
+    elif options.method == "join-features":
+        for gff in combineGFF(gffs,
+                              min_distance=options.min_distance,
+                              max_distance=options.max_distance,
+                              min_features=options.min_features,
+                              max_features=options.max_features,
+                              merge=False,
+                              output_format=options.output_format):
+            options.stdout.write(str(gff) + "\n")
 
-        combineGFF(gffs, options, merge=False)
+    elif options.method == "merge-features":
+        for gff in combineGFF(gffs,
+                              min_distance=options.min_distance,
+                              max_distance=options.max_distance,
+                              min_features=options.min_features,
+                              max_features=options.max_features,
+                              merge=True,
+                              output_format=options.output_format):
+            options.stdout.write(str(gff) + "\n")
 
-    elif options.merge_features:
+    elif options.method == "crop":
+        for gff in cropGFF(gffs, options.filename_crop_gff):
+            options.stdout.write(str(gff) + "\n")
 
-        combineGFF(gffs, options, merge=True)
+    elif options.method == "crop-unique":
+        for gff in cropGFFUnique(gffs):
+            options.stdout.write(str(gff) + "\n")
 
-    elif options.crop:
-
-        cropGFF(gffs, options)
-
-    elif options.crop_unique:
-
-        cropGFFUnique(gffs, options)
-
-    elif options.filter_range:
+    elif options.method == "filter-range":
 
         contig, strand, interval = None, None, None
         try:
             contig, strand, start, sep, end = re.match(
-                "(\S+):(\S+):(\d+)(\.\.|-)(\d+)", options.filter_range).groups()
+                "(\S+):(\S+):(\d+)(\.\.|-)(\d+)",
+                options.filter_range).groups()
         except AttributeError:
             pass
 
@@ -581,15 +678,15 @@ def main(argv=None):
         else:
             interval = None
 
-        if options.loglevel >= 2:
-            options.stdlog.write("# filter: contig=%s, strand=%s, interval=%s\n" % (
-                str(contig), str(strand), str(interval)))
-            options.stdlog.flush()
+        E.debug("filter: contig=%s, strand=%s, interval=%s" %
+                (str(contig), str(strand), str(interval)))
 
-        for gff in GTF.iterator_filtered(gffs, contig=contig, strand=strand, interval=interval):
+        for gff in GTF.iterator_filtered(gffs, contig=contig,
+                                         strand=strand,
+                                         interval=interval):
             options.stdout.write(str(gff) + "\n")
 
-    elif options.sanitize:
+    elif options.method == "sanitize":
 
         def toUCSC(id):
             if not id.startswith("contig") and not id.startswith("chr"):
@@ -603,14 +700,15 @@ def main(argv=None):
                 return id[len("chr"):]
             return id
 
-        if options.sanitize == "genome":
+        if options.sanitize_method == "genome":
             if genome_fasta is None:
                 raise ValueError(
-                    "please specify --genome-file= when using --sanitize=genome")
+                    "please specify --genome-file= when using "
+                    "--sanitize-method=genome")
             f = genome_fasta.getToken
-        elif options.sanitize == "ucsc":
+        elif options.sanitize_method == "ucsc":
             f = toUCSC
-        elif options.sanitize == "ensembl":
+        elif options.sanitize_method == "ensembl":
             f = toEnsembl
 
         skipped_contigs = collections.defaultdict(int)
@@ -620,7 +718,7 @@ def main(argv=None):
         for gff in gffs:
             try:
                 gff.contig = f(gff.contig)
-            except KeyError, msg:
+            except KeyError:
                 if options.skip_missing:
                     skipped_contigs[gff.contig] += 1
                     continue
@@ -633,9 +731,9 @@ def main(argv=None):
                     outofrange_contigs[gff.contig] += 1
                     continue
 
-            if options.remove_contigs:
+            if options.contig_pattern:
                 to_remove = [re.compile(x)
-                             for x in options.remove_contigs.split(",")]
+                             for x in options.contig_pattern.split(",")]
                 if any([x.match(gff.contig) for x in to_remove]):
                     filtered_contigs[gff.contig] += 1
                     continue
@@ -643,10 +741,12 @@ def main(argv=None):
             options.stdout.write(str(gff) + "\n")
 
         if skipped_contigs:
-            E.info("skipped %i entries on %i contigs: %s" % (sum(skipped_contigs.values()),
-                                                             len(skipped_contigs.keys(
-                                                             )),
-                                                             str(skipped_contigs)))
+            E.info("skipped %i entries on %i contigs: %s" %
+                   (sum(skipped_contigs.values()),
+                    len(skipped_contigs.keys(
+                    )),
+                    str(skipped_contigs)))
+
         if outofrange_contigs:
             E.warn("skipped %i entries on %i contigs because they are out of range: %s" %
                    (sum(outofrange_contigs.values()),
@@ -663,10 +763,10 @@ def main(argv=None):
 
         for gff in gffs:
 
-            if options.forward_coordinates:
+            if options.method == "forward_coordinates":
                 gff.invert(contigs[gff.contig])
 
-            if options.forward_strand:
+            if options.method == "forward_strand":
                 gff.invert(contigs[gff.contig])
                 gff.strand = "+"
 

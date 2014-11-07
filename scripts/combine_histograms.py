@@ -12,12 +12,12 @@ Purpose
 
 OPTIONS:
 -n, --normalize         normalize each histogram
--m, --missing=          set missing values to #
+-m, --missing-value=          set missing values to #
 -t, --titles            use supplied titles
--h, --headers=          set header to #, "auto" = filenames
+-h, --header-names=          set header to #, "auto" = filenames
 -f, --format=           format to use when combining histograms
 --format-value=         format for numbers
---format-bin=           format for bin values
+--bin-format=           format for bin values
 
 -> relative frequencies
 -> cumulative counts and frequencies in both directions
@@ -95,11 +95,11 @@ def main(argv=None):
         elif o in ("--version", ):
             print "version="
             sys.exit(0)
-        elif o in ("-h", "--headers"):
+        elif o in ("-h", "--header-names"):
             param_headers = string.split(a, ",")
         elif o in ("-n", "--normalize"):
             param_normalize = 1
-        elif o in ("-m", "--missing"):
+        elif o in ("-m", "--missing-value"):
             param_missing_value = a
         elif o == "--no-titles":
             param_titles = False
@@ -109,9 +109,9 @@ def main(argv=None):
             param_format = a
         elif o == "--format-value":
             param_format_value = a
-        elif o == "--format-bin":
+        elif o == "--bin-format":
             param_format_bin = a
-        elif o in ("-s", "--sort"):
+        elif o in ("-s", "--method=sort --sort-order"):
             if a in ("numerical", "alphabetic"):
                 param_sort = a
             else:

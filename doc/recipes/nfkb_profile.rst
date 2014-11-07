@@ -43,8 +43,8 @@ We can then take all protein coding genes from this geneset with an awk statemen
 
 Using the CGAT tool bam2geneprofile we can then assess the binding profile of NFKB across gene models::
 
-    cgat bam2geneprofile --bamfile=wgEncodeSydhTfbsGm10847NfkbTnfaIggrabAlnRep1.bam
-                         --gtffile=coding_geneset.gtf.gz 
+    cgat bam2geneprofile --bam-file=wgEncodeSydhTfbsGm10847NfkbTnfaIggrabAlnRep1.bam
+                         --gtf-file=coding_geneset.gtf.gz 
                          --method=geneprofile 
                          --profile_normalization=counts
                          --output-filename-pattern=nfkb_profile_%s
@@ -157,7 +157,7 @@ The following command line statement
     cgat bam2peakshape   H3K4me3.bam
                          NFKB.bed
                          --control=H3K4me1.bam
-                         --sort=peak-height
+                         --method=sort --sort-order=peak-height
                          --output-filename-pattern=peakshape.%s
                          > peakshape.table
 

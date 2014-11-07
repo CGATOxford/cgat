@@ -75,7 +75,7 @@ Options:
 -h, --help                      print this message.
 -v, --verbose=                  loglevel.
 -g, --genome=                   file with the genomic DNA (FASTA).
--p, --peptides=                 file with peptide sequences (FASTA).
+-p, --peptides-fasta-file=                 file with peptide sequences (FASTA).
 -i, --max-intron=               maximum intron size
 -o, --max-percent-overlap=      maximal percentage overlap for conflict resolution.
 -c, --min-coverage-query=       minimum coverage of query
@@ -310,7 +310,7 @@ def main(argv=None):
             sys.exit(0)
         elif o in ("-g", "--genome"):
             param_filename_genome = a
-        elif o in ("-p", "--peptides"):
+        elif o in ("-p", "--peptides-fasta-file"):
             param_filename_peptides = a
         elif o in ("-e", "--extend"):
             param_extend = int(a)

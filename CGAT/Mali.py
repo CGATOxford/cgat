@@ -36,7 +36,6 @@ Code
 
 import re
 import string
-import time
 import math
 import copy
 import random

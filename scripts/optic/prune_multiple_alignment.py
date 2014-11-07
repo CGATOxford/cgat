@@ -532,7 +532,7 @@ def main(argv=None):
     parser = E.OptionParser(
         version="%prog version: $Id: optic/prune_multiple_alignment.py 2654 2009-05-06 13:51:22Z andreas $", usage=globals()["__doc__"])
 
-    parser.add_option("-m", "--master", dest="master", type="string",
+    parser.add_option("-m", "--master-identifier", dest="master", type="string",
                       help="master sequence.")
 
     parser.add_option("-p", "--master-pattern", dest="master_pattern", type="string",
@@ -544,7 +544,7 @@ def main(argv=None):
     parser.add_option("-t", "--translate", dest="filename_translation", type="string",
                       help="filename on where to store translated sequences.")
 
-    parser.add_option("-e", "--exons", dest="filename_exons", type="string",
+    parser.add_option("-e", "--exons-file", dest="filename_exons", type="string",
                       help="filename on where to exon information.")
 
     parser.add_option("-c", "--mark-codons", dest="mark_codons", action="store_true",

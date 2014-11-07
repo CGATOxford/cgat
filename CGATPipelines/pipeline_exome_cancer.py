@@ -189,11 +189,12 @@ def getPicardOptions():
 
 
 def getGATKOptions():
-    return "-pe dedicated 6 -R y -l mem_free=4G -l picard=1"
+    # removed picard=1, surely not neccessary?
+    return "-pe dedicated 6 -R y -l mem_free=4G"
 
 
 def getMuTectOptions():
-    return "-pe dedicated 1 -R y -l mem_free=4G -l picard=1"
+    return "-pe dedicated 2 -R y -l mem_free=6G"
 
 
 #########################################################################
@@ -214,7 +215,7 @@ def loadROI(infile, outfile):
             | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --ignore-empty
               --retry
-              --header=%(header)s
+              --header-names=%(header)s
               --table=%(tablename)s
             > %(outfile)s  '''
     P.run()
@@ -358,7 +359,7 @@ def loadCoverageStats(infiles, outfile):
     tmpfilename = outf.name
     statement = '''cat %(tmpfilename)s
                    | python %(scriptsdir)s/csv2db.py
-                      --index=track
+                      --add-index=track
                       --table=%(tablename)s
                       --ignore-empty
                       --retry
@@ -552,7 +553,7 @@ def runPicardOnRealigned(infile, outfile):
 
     statement = '''
     cat %(infile)s
-    | python %%(scriptsdir)s/bam2bam.py -v 0 --set-sequence --bam
+    | python %%(scriptsdir)s/bam2bam.py -v 0 --method=set-sequence --bam
     | CollectMultipleMetrics
     INPUT=/dev/stdin
     REFERENCE_SEQUENCE=%%(bwa_index_dir)s/%%(genome)s.fa
@@ -561,7 +562,7 @@ def runPicardOnRealigned(infile, outfile):
     VALIDATION_STRINGENCY=SILENT
     >& %(outfile)s;
     cat %(infile_tumor)s
-    | python %%(scriptsdir)s/bam2bam.py -v 0 --set-sequence --sam
+    | python %%(scriptsdir)s/bam2bam.py -v 0 --method=set-sequence --sam-file
     | CollectMultipleMetrics
     INPUT=/dev/stdin
     REFERENCE_SEQUENCE=%%(bwa_index_dir)s/%%(genome)s.fa
@@ -798,8 +799,10 @@ def runMutectReverse(infiles, outfile):
 # 3. run mutect calling function with subset against unsubsetted tumour
 # 4. summary table
 
+adeno_bam = "bam/NU16C-Control-1.realigned.bqsr.bam"
 
-@subdivide("downsample_coverage/NU16C-Control-1.realigned.bqsr.bam",
+
+@subdivide(adeno_bam,
            regex("(\S+).bqsr.bam"),
            [r"\1.0.1.bqsr.bam",
             r"\1.0.2.bqsr.bam",
@@ -814,16 +817,12 @@ def runMutectReverse(infiles, outfile):
 def subsetControlBam(infile, outfiles):
     statements = []
     n = 0
-    for fraction in numpy.arange(0.1, 0.9, 0.1):
+    for fraction in numpy.arange(0.1, 1.1, 0.1):
         outfile = outfiles[n]
         n += 1
         statement = ('''samtools view -s %(fraction)s -b %(infile)s
                      > %(outfile)s''' % locals())
         P.run()
-
-    outfile = outfiles[n]
-    statement = '''ln -s %(infile)s %(outfile)s''' % locals()
-    P.run()
 
 
 @transform(subsetControlBam,
@@ -836,13 +835,13 @@ def indexSubsets(infile, outfile):
 
 @follows(indexSubsets)
 @transform(subsetControlBam,
-           regex(r"(\S+)-Control-1.realigned.(\S+).bqsr.bam"),
+           regex(r"bam/(\S+)-Control-1.realigned.(\S+).bqsr.bam"),
            add_inputs(mergeControlVariants),
-           r"\1-downsampled-\2.mutect.snp.vcf")
+           r"variants/\1-downsampled-\2.mutect.snp.vcf")
 def runMutectOnDownsampled(infiles, outfile):
     '''calls somatic SNPs using MuTect'''
     infile, normal_panel = infiles
-    infile_tumour = "downsample_coverage/NU16C-Adeno-1.realigned.bqsr.bam"
+    infile_tumour = adeno_bam
     # mutect repeatedly hangs-up with multithreading
     # furthermore, multithreading doesn't speed up even nearly linearly
     # threads = PARAMS["gatk_threads"]
@@ -876,6 +875,9 @@ def runMutectOnDownsampled(infiles, outfile):
     --coverage_file %(coverage_wig_out)s
     --vcf %(outfile)s
     --min_qscore 20
+    --max_alt_alleles_in_normal_qscore_sum 100
+    --max_alt_alleles_in_normal_count 6
+    --max_alt_allele_in_normal_fraction 0.05
     --gap_events_threshold 2
     --tumor_lod %(tumor_LOD)s
     --enable_extended_output
@@ -1139,6 +1141,8 @@ def loadVariantAnnotation(infile, outfile):
 def loadMutectExtendedOutput(infile, outfile):
     '''Load mutect extended output into database'''
 
+    index = "CHROM, POS"
+
     dbh = connect()
     scriptsdir = PARAMS["general_scriptsdir"]
     tablename = P.toTable(outfile)
@@ -1202,7 +1206,7 @@ def loadVCFstats(infiles, outfile):
                    %(filenames)s >> %(outfile)s; ''' % locals()
     statement += '''cat vcfstats.txt |
                     python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-                    --allow-empty --index=track --table=vcf_stats
+                    --allow-empty-file --add-index=track --table=vcf_stats
                     >> %(outfile)s; ''' % locals()
     P.run()
 
@@ -1309,6 +1313,7 @@ def loadNCG(outfile):
 
     # infile = PARAMS["cancergenes_table"]
     infile = "../backup/NCG/cancergenes.tsv"
+    index = "symbol"
     dbh = connect()
     scriptsdir = PARAMS["general_scriptsdir"]
     tablename = P.toTable(outfile)

@@ -173,7 +173,7 @@ def main(argv=None):
                       "identifier from fasta description line "
                       "[default=%default].")
 
-    parser.add_option("--force", dest="force", action="store_true",
+    parser.add_option("--force-output", dest="force", action="store_true",
                       help="force overwriting of existing files "
                       "[default=%default].")
 

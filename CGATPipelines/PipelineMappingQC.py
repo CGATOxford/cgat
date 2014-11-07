@@ -111,7 +111,7 @@ def buildPicardAlignmentStats(infile, outfile, genome_file):
     # or there is no sequence/quality information within the bam file.
     # Thus, add it explicitely.
     statement = '''cat %(infile)s
-    | python %(scriptsdir)s/bam2bam.py -v 0 --set-sequence --sam
+    | python %(scriptsdir)s/bam2bam.py -v 0 --method=set-sequence --sam-file
     | CollectMultipleMetrics
     INPUT=/dev/stdin
     REFERENCE_SEQUENCE=%(genome_file)s
@@ -265,9 +265,9 @@ def loadPicardMetrics(infiles, outfile, suffix,
     to_cluster = False
     statement = '''cat %(tmpfilename)s
                 | python %(scriptsdir)s/csv2db.py
-                      --index=track
+                      --add-index=track
                       --table=%(tablename)s 
-                      --allow-empty
+                      --allow-empty-file
                 > %(outfile)s
                '''
     P.run()
@@ -299,13 +299,13 @@ def loadPicardHistogram(infiles, outfile, suffix, column,
     # only take the first ignoring the rest
     statement = """python %(scriptsdir)s/combine_tables.py
                       --regex-start="## HISTOGRAM"
-                      --missing=0
+                      --missing-value=0
                       --take=2
                    %(filenames)s
                 | python %(scriptsdir)s/csv2db.py
-                      --header=%(column)s,%(header)s
+                      --header-names=%(column)s,%(header)s
                       --replace-header
-                      --index=track
+                      --add-index=track
                       --table=%(tablename)s
                 >> %(outfile)s
                 """
@@ -379,7 +379,7 @@ def buildBAMStats(infile, outfile):
     to_cluster = True
 
     statement = '''python %(scriptsdir)s/bam2stats.py 
-                          --force 
+                          --force-output 
                           --output-filename-pattern=%(outfile)s.%%s 
                           < %(infile)s 
                           > %(outfile)s'''
@@ -399,15 +399,15 @@ def loadBAMStats(infiles, outfile):
     tablename = P.toTable(outfile)
     E.info("loading bam stats - summary")
     statement = """python %(scriptsdir)s/combine_tables.py
-                      --headers=%(header)s
-                      --missing=0
+                      --header-names=%(header)s
+                      --missing-value=0
                       --ignore-empty
                    %(filenames)s
                 | perl -p -e "s/bin/track/"
                 | python %(scriptsdir)s/table2table.py --transpose
                 | python %(scriptsdir)s/csv2db.py
-                      --allow-empty
-                      --index=track
+                      --allow-empty-file
+                      --add-index=track
                       --table=%(tablename)s 
                 > %(outfile)s"""
     P.run()
@@ -418,15 +418,15 @@ def loadBAMStats(infiles, outfile):
         tname = "%s_%s" % (tablename, suffix)
 
         statement = """python %(scriptsdir)s/combine_tables.py
-                      --header=%(header)s
+                      --header-names=%(header)s
                       --skip-titles
-                      --missing=0
+                      --missing-value=0
                       --ignore-empty
                    %(filenames)s
                 | perl -p -e "s/bin/%(suffix)s/"
                 | python %(scriptsdir)s/csv2db.py
                       --table=%(tname)s 
-                      --allow-empty
+                      --allow-empty-file
                 >> %(outfile)s """
         P.run()
 
@@ -439,15 +439,15 @@ def loadBAMStats(infiles, outfile):
         tname = "%s_%s" % (tablename, suffix)
 
         statement = """python %(scriptsdir)s/combine_tables.py
-                      --header=%(header)s
+                      --header-names=%(header)s
                       --skip-titles
-                      --missing=0
+                      --missing-value=0
                       --ignore-empty
                       --take=3
                    %(filenames)s
                 | perl -p -e "s/bin/%(suffix)s/"
                 | python %(scriptsdir)s/csv2db.py
                       --table=%(tname)s 
-                      --allow-empty
+                      --allow-empty-file
                 >> %(outfile)s """
         P.run()

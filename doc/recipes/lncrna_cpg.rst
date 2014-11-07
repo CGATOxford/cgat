@@ -33,9 +33,9 @@ We can then use this indexed genome as additional input when required. The code 
 composition looks like::
 
     zcat lncRNA.gtf.gz 
-    | gtf2gtf.py --sort=gene
-    | gtf2gtf.py --merge-transcripts 
-    | gtf2gff.py --genome-file=hg19 --method=promotors -p 1500 --sort
+    | gtf2gtf.py --method=sort --sort-order=gene
+    | gtf2gtf.py --method=merge-transcripts 
+    | gtf2gff.py --genome-file=hg19 --method=promotors -p 1500 --method=sort --sort-order
     | gff2bed.py
     | bed2fasta.py --genome-file=hg19
     | fasta2table.py --section=cpg 

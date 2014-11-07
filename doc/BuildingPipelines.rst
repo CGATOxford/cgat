@@ -6,7 +6,7 @@ The best way to build a pipeline is to start from an example. There are several
 pipelines available, see :ref:`cgatpipelines`. To start a new project, use 
 :file:`pipeline_quickstart.py`::
 
-   python <srcdir>pipeline_quickstart.py --name=test
+   python <srcdir>pipeline_quickstart.py --set-name=test
 
 This will create a new directory called ``test`` in the current directory.
 
@@ -237,7 +237,7 @@ can be given via the optional *options* argument::
 
    @transform( 'data_*.tsv.gz', suffix('.tsv.gz'), '.load' )
    def loadTables( infile, outfile ):
-      P.load( infile, outfile, "--index=gene_id" )
+      P.load( infile, outfile, "--add-index=gene_id" )
 
 Connecting to a database
 ------------------------

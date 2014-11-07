@@ -1253,7 +1253,7 @@ def main(argv=None):
 
     parser.add_option("-b", "--filename-batch", dest="filename_batch", type="string",
                       help="filename with batch information.")
-    parser.add_option("--filename-filter", dest="filename_filter", type="string",
+    parser.add_option("--filter-tsv-file", dest="filename_filter", type="string",
                       help="filename with predictions/genes to export.")
     parser.add_option("-o", "--filename-pattern-output", dest="filename_pattern_output", type="string",
                       help="filename with one %s for batch output.")

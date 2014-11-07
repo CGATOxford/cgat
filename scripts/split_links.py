@@ -82,7 +82,7 @@ def main(argv=None):
     parser.add_option("-r", "--regex", dest="regex", type="string",
                       help="regex to find prefix.")
 
-    parser.add_option("-o", "--output", dest="output", type="string",
+    parser.add_option("-o", "--output-section", dest="output", type="string",
                       help="output filename.")
 
     parser.add_option("-t", "--targets", dest="targets", type="string",

@@ -682,7 +682,7 @@ def main(argv=None):
     parser.add_option("-f", "--filename-ids", dest="filename_ids", type="string",
                       help="filename with prediction ids.")
 
-    parser.add_option("-t", "--type", dest="type", type="choice",
+    parser.add_option("-t", "--sequence-type", dest="type", type="choice",
                       choices=("genes", "mrnas", "introns", "intronic",
                                "exons", "exonic", "intergenic", "exons-third-codons"),
                       help="type to output.")
@@ -693,7 +693,7 @@ def main(argv=None):
     parser.add_option("-r", "--shorten-region", dest="shorten_region", type="int",
                       help="regions are shortened by this margin at either end.")
 
-    parser.add_option("-m", "--min-length", dest="min_length", type="int",
+    parser.add_option("-m", "--min-interval-length", dest="min_length", type="int",
                       help="minimum length of segment.")
 
     parser.add_option("-s", "--schema", dest="schema", type="string",

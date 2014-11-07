@@ -39,7 +39,7 @@ Options:
 -c, --components=               input: components
 -q, --queries=                  output: map_cluster2queries
 -t, --transcripts=              output: map_transcripts2cluster
--f, --filter=                   only write transcripts in filter
+-f, --method=filter --filter-method=                   only write transcripts in filter
 
 Usage
 -----
@@ -121,7 +121,7 @@ def main(argv=None):
             param_filename_map_cluster2queries = a
         elif o in ("-t", "--transcripts"):
             param_filename_map_transcript2cluster = a
-        elif o in ("-f", "--filter"):
+        elif o in ("-f", "--method=filter --filter-method"):
             param_filename_filter = a
 
     filter_transcripts = {}

@@ -69,14 +69,14 @@ substitute tokens
 
 OPTIONS:
 -c, --create            create substitution list
--a, --apply=            apply substitution list given by file.
+-a, --map-tsv-file=            apply substitution list given by file.
 -i, --invert            pairs of substitution patterns is to,from
 -r, --regex-token       regular expression for tokens (has to create one pair of brackets)
 -p, --pattern-sub       pattern for substitution
 -m, --multiple          do multiple substitutions per row
 -o, --columns-token     substitute tokens in columns
 -e, --echo              echo susbstituted column
--f, --filter            remove lines not matching anything
+-f, --method=filter --filter-method            remove lines not matching anything
 -n, --inplace           do inplace subsitutions of all files on command line
 -b, --backup            keep backup (with ending .bak)
 -s, --skip              skip on error
@@ -137,7 +137,7 @@ def main(argv=None):
             param_regex_token = re.compile(a)
         elif o in ("-p", "--pattern-sub"):
             param_pattern_sub = a
-        elif o in ("-a", "--apply"):
+        elif o in ("-a", "--map-tsv-file"):
             param_apply = a
         elif o in ("-i", "--invert"):
             param_invert = 1
@@ -148,7 +148,7 @@ def main(argv=None):
                 lambda x: int(x) - 1, string.split(a, ","))
         elif o in ("-e", "--echo"):
             param_echo = True
-        elif o in ("-f", "--filter"):
+        elif o in ("-f", "--method=filter --filter-method"):
             param_filter = True
         elif o in ("-n", "--inplace"):
             param_inplace = True

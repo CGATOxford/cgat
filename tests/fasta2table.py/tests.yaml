@@ -86,13 +86,13 @@ aminoacid_test:
     stdin: aa_test.fasta
     outputs: [stdout]
     references: [amino-acid.tsv]
-    options: --section=aa --type=aa
+    options: --section=aa --sequence-type=aa
     
 aa_len_hid_seq_test:
     stdin: aa_test.fasta
     outputs: [stdout]
     references: [aa_len_hid_seq.tsv]
-    options: --section=length,hid,sequence --type=aa
+    options: --section=length,hid,sequence --sequence-type=aa
     
 
 

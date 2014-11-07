@@ -1,5 +1,4 @@
-'''
-chain2stats.py
+'''chain2stats.py
 ==============
 
 :Author: Stephen Sansom
@@ -13,13 +12,14 @@ Purpose
 This script takes a UCSC :term: `chain` file and computes coverage across the
 target and query genomes.
 
-As different regions of a genome vary in the extent to which they are conserved
-between species, genomic local alignments will inevitably result in discrete 
-regions of successfully aligned sequence separated by regions of the genome 
-where alignment is not possible. Chains consist of gapless blocks of 
-successfully aligned regions, separated by regions where alignment is not 
-possible. This script is returns summary statistics that relate the proportion
-of the query and target genomes that are covered by chains in a chain file.
+As different regions of a genome vary in the extent to which they are
+conserved between species, genomic local alignments will inevitably
+result in discrete regions of successfully aligned sequence separated
+by regions of the genome where alignment is not possible. Chains
+consist of gapless blocks of successfully aligned regions, separated
+by regions where alignment is not possible. This script is returns
+summary statistics that relate the proportion of the query and target
+genomes that are covered by chains in a chain file.
 
 
 Usage
@@ -82,53 +82,51 @@ genomes that are covered by gapped and ungapped chains as well as summary
 statistics (mean, median, max, min) for gapped and ungapped chain lengths.
 Additional options available are:
 
-``--perchrom`` 
-    Will cause coverage to be calculated on a per chromosome basis
+``--aggregate-by``
+    Will cause coverage to be calculated on a per chromosome basis if
+    set to ``chromosome``
 
-``--identity``
-    Will report summary statistics (mean, median, max, min) for 
-    the percent identity between gapped regions. Requires ``--dbpath``,
-    ``--targetgenome``, and ``--querygenome`` to be set.
+``--output-identity``
+
+    Will report summary statistics (mean, median, max, min) for the
+    percent identity between gapped regions. Requires ``--dbpath``,
+    ``--target-genome``, and ``--query-genome`` to be set.
 
 ``--dbpath``
-    Directory containing indexed fasta files for target and query 
+
+    Directory containing indexed fasta files for target and query
     genome.
 
-``--targetgenome``
+``--target-genome``
     Filename prefix for target genome fasta file.
 
-``--querygenome``
+``--query-genome``
     Filename prefix for query genome fasta file.
 
-``--report``
+``--output-report``
     Write summary statistics for target and query genomes to separate
     tab-delimited outfiles.
 
 ``--errors``
     Report inconsitencies between chain contig sizes and contig sizes in
-    the supplied fasta files. Requires ``--dbpath``, ``--targetgenome``,
-    and ``--querygenome`` to be set.
+    the supplied fasta files. Requires ``--dbpath``, ``--target-genome``,
+    and ``--query-genome`` to be set.
 
 
 Command line options
 ---------------------
+
 '''
 
-#import modules
 import os
 import sys
-from operator import add
-from numpy import *
-from operator import itemgetter, attrgetter
 import bx.bitset
 import bx.bitset_builders
 import collections
+import numpy
 
 import CGAT.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
-import CGAT.IOTools as IOTools
-
-############################ Functions/Generators ############################
 
 
 def chain_iterator(infile):
@@ -145,18 +143,10 @@ def chain_iterator(infile):
         lines.append(line)
     yield lines
 
-######################### Functions/Generators end ############################
-
-
-###############################################################################
-################################ Classes ######################################
-###############################################################################
-
-# -----------------------------------------------------------------------------
 
 class Chain:
-
-    "class with methods for getting gapped and ungapped regions represented by a chain"
+    "class with methods for getting gapped and ungapped regions represented "
+    "by a chain"
 
     def __init__(self, data):
         self.lines = data
@@ -242,48 +232,49 @@ class Bitsets_Container:
         c = b.count_range(0, l)
         return (c, l)
 
-# **---------------------------------------------------------------------------
-
 
 class ChainCounter():
 
-    '''
-    Top, defining class for a chain counter.
+    '''Top, defining class for a chain counter.
 
     Counters must have:
     (1) an add method to add a new chain
     (2) a write_report method
 
-    Counters will generally initialise a container and add metrics to it when passed a chain
+    Counters will generally initialise a container and add metrics to
+    it when passed a chain
+
     '''
 
-#---------- abstract methods------------
-
     def add(self, c):
-        raise NotImplementError("abstract method - implement in subclass")
+        raise NotImplementedError("abstract method - implement in subclass")
 
     def _get_stats(self, options):
-        '''Calculates and stores the stats if necessary - called by all report methods'''
-        raise NotImplementError("abstract method - implement in subclass")
+        '''Calculates and stores the stats if necessary - called by all report
+        methods
+        '''
+        raise NotImplementedError("abstract method - implement in subclass")
 
     def report(self, options):
         '''should call the "write_report" method to do the writing'''
-        raise NotImplementError("abstract method - implement in subclass")
+        raise NotImplementedError("abstract method - implement in subclass")
 
     def tabbed_report(self, options):
         '''should call the "write_tabbed" method to do the writing'''
         raise NotImplementError("abstract method - implement in subclass")
 
-#----------- methods --------------------
     def _get_basic_stats(self, numlist, string="{:.2f}"):
-        s = [string.format(mean(numlist)), string.format(
-            median(numlist)), string.format(max(numlist)), string.format(min(numlist))]
+        s = [string.format(numpy.mean(numlist)),
+             string.format(
+                 numpy.median(numlist)), string.format(max(numlist)),
+             string.format(min(numlist))]
         return(s)
 
     def _wrap_basic_stats(self, s, tabbed=False):
         if tabbed is False:
             r = ''.join(
-                ["Mean:", s[0], ", median:", s[1], ", max:", s[2], ", min:", s[3], "\n"])
+                ["Mean:", s[0], ", median:", s[1], ", max:", s[2],
+                 ", min:", s[3], "\n"])
         else:
             r = '\t'.join(s)
         return(r)
@@ -303,8 +294,6 @@ class ChainCounter():
             text = self.header
         underline = ''.join(["-" for i in text])
         return([text, underline])
-
-# ----------------------------------------------------------------------------
 
 
 class CounterPerChromosome(ChainCounter):
@@ -359,8 +348,6 @@ class CounterPerChromosome(ChainCounter):
         lines.append(
             '{:.2f}\t{:.2f}'.format(self.cov["target"], self.cov["query"]))
         self._write_tabbed(''.join(["genome_coverage_", self.name]), lines, E)
-
-# -----------------------------------------------------------------------------
 
 
 class CounterPerChromosomePair(CounterPerChromosome):
@@ -492,7 +479,7 @@ class CounterPercentIdentify(ChainCounter):
 
     def _get_pid(self, x, y):
         z = zip(x, y)
-        pid = (float(len([x for x, y in z if x == y])) / float(len(z)) * 100)
+        pid = (float(len([a for a, b in z if a == b])) / float(len(z)) * 100)
         return(pid)
 
     def add(self, c):
@@ -520,8 +507,6 @@ class CounterPercentIdentify(ChainCounter):
         lines = ["mean\tmedian\tmax\tmin"]
         lines.append(self._wrap_basic_stats(self.stats, tabbed=True))
         self._write_tabbed("pids", lines, E)
-
-# -----------------------------------------------------------------------------
 
 
 class CounterOfErrors(ChainCounter):
@@ -562,39 +547,56 @@ class CounterOfErrors(ChainCounter):
             lines = ["#no bad chains found"]
         self._write_tabbed("bad_contig_sizes", lines, E)
 
-# -----------------------------------------------------------------------------
-
-###############################################################################
-############################# Classes end #####################################
-###############################################################################
-
 
 def main(argv=None):
+
     if not argv:
         argv = sys.argv
 
     # get the options
-    parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+    parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
-    parser.add_option("-c", "--chainfile", dest="chainfile", type="string",
+    parser.add_option("-c", "--chain-file", dest="chainfile", type="string",
                       help="the chain file to analyse", metavar="FILE")
-    parser.add_option("-p", "--perchrom", dest="perchrom", action="store_true",
-                      help="Set to 1 or \"True\" to perform per chromosome pair analysis", default=False)
-    parser.add_option("-n", "--nperchrom", dest="nperchrom", type="int",
-                      help="Number of aligments to report on per chromosome pair", default=2)
-    parser.add_option("-i", "--identity", dest="identity", action="store_true",
-                      help="Generate stats on the sequence identity of the gapped chains. Requires FastIndex.py", default=False)
-    parser.add_option("-d", "--dbpath", dest="dbpath", type="string",
-                      help="The path to the indexed fasta files", default="/ifs/mirror/genomes/plain/")
-    parser.add_option("-t", "--targetgenome", dest="targetgenome", type="string",
-                      help="The target genome, eg. Mm19", default=False)
-    parser.add_option("-q", "--querygenome", dest="querygenome", type="string",
-                      help="The query genome eg. Hg17", default=False)
-    parser.add_option("-e", "--errors", dest="errors", action="store_true",
-                      help="Check chains for erroneous contig sizes using the given db", default=False)
-    parser.add_option("-r", "--report", dest="report", action="store_true",
-                      help="Write out tab-delimited reports for each analysis", default=False)
+
+    parser.add_option(
+        "--alignments-per-contig", dest="nperchrom", type="int",
+        help="Number of aligments to report on per chromosome pair", default=2)
+
+    parser.add_option(
+        "--aggregate-by", dest="aggregate", type="choice",
+        choices=("contig", "none"),
+        help="Set to `contig` to perform per chromosome pair analysis",
+        default=2)
+
+    parser.add_option(
+        "-i", "--output-identity", dest="output_identity", action="store_true",
+        help="Generate stats on the sequence identity of the gapped "
+        "chains. Requires FastaIndex.py", default=False)
+
+    parser.add_option(
+        "-d", "--dbpath", dest="dbpath", type="string",
+        help="The path to the indexed fasta files",
+        default=".")
+
+    parser.add_option(
+        "-t", "--target-genome", dest="targetgenome", type="string",
+        help="The target genome, eg. Mm19", default=False)
+
+    parser.add_option(
+        "-q", "--query-genome", dest="querygenome", type="string",
+        help="The query genome eg. Hg17", default=False)
+
+    parser.add_option(
+        "-e", "--errors", dest="errors", action="store_true",
+        help="Check chains for erroneous contig sizes using the given db",
+        default=False)
+
+    parser.add_option(
+        "-r", "--output-report", dest="output_report", action="store_true",
+        help="Write out tab-delimited reports for each analysis",
+        default=False)
 
     (options, args) = E.Start(parser, argv=argv, add_output_options=True)
 
@@ -604,14 +606,14 @@ def main(argv=None):
     counters.append(CounterPerChromosome(gapped=True))
     counters.append(CounterPerChromosome(gapped=False))
 
-    if options.perchrom:
+    if options.aggregate == "contig":
         counters.append(CounterPerChromosomePair(gapped=True))
         counters.append(CounterPerChromosomePair(gapped=False))
 
     counters.append(CounterOfGappedChainLengths(gapped=True))
     counters.append(CounterOfGappedChainLengths(gapped=False))
 
-    if options.identity is True:
+    if options.output_identity is True:
         if options.targetgenome == 0 or options.querygenome == 0:
             raise Exception(
                 "Target and query database must be specified with the \"-e\" flag")
@@ -637,7 +639,7 @@ def main(argv=None):
 
     for counter in counters:
         counter.report(options)
-        if options.report is True:
+        if options.output_report is True:
             counter.tabbed_report(options, E)
 
     options.stdout.write("\n********** chain2stats report ends **********\n\n")

@@ -42,6 +42,7 @@ import os
 import glob
 import imp
 import collections
+import pandas
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 
@@ -91,7 +92,7 @@ def collectOptionsFromScript(script_name):
     # check if script contains getopt
     with IOTools.openFile(script_name) as inf:
         if "getopt" in inf.read():
-            E.warn("script uses getopt directly")
+            E.warn("script %s uses getopt directly" % script_name)
             return []
 
     try:
@@ -139,16 +140,41 @@ def main(argv=None):
     parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
-    parser.add_option("-t", "--test", dest="test", type="string",
-                      help="supply help")
+    parser.add_option(
+        "--inplace", dest="inplace", action="store_true",
+        help="update option list in place. New options will"
+        "be added to the list given by --options-tsv-file. "
+        "Options will only be added, not removed [%default]")
+
+    parser.add_option(
+        "--options-tsv-file", dest="tsv_file", type="string",
+        help="existing table with options. Will be updated if "
+        "--in-place is set [default]")
+
+    parser.set_defaults(
+        inplace=False,
+        tsv_file=None)
 
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv)
 
-    all_options = collections.defaultdict(list)
+    old_options = None
+    if options.tsv_file:
+        if not os.path.exists(options.tsv_file):
+            raise OSError(
+                "filename %s not found, see --options-tsv-file" %
+                options.tsv_file)
+        old_options = pandas.read_csv(
+            IOTools.openFile(options.tsv_file),
+            sep="\t",
+            index_col=0,
+        )
+        old_options = old_options.fillna("")
 
     global ORIGINAL_START
     ORIGINAL_START = E.Start
+
+    all_options = collections.defaultdict(list)
 
     for label, expression in EXPRESSIONS:
 
@@ -166,10 +192,35 @@ def main(argv=None):
             for o in collected_options:
                 all_options[o].append(f)
 
-    outfile = options.stdout
-    outfile.write("option\tfiles\n")
+    # add old options
+    for x in old_options.index:
+        if x not in all_options:
+            all_options[x].append("--")
+
+    if options.inplace:
+        outfile = IOTools.openFile(options.tsv_file, "w")
+        E.info("updating file '%s'" % options.tsv_file)
+    else:
+        outfile = options.stdout
+
+    outfile.write("option\taction\tcomment\talternative\tfiles\n")
     for o, v in sorted(all_options.items()):
-        outfile.write("%s\t%s\n" % (o, ",".join(v)))
+        try:
+            action, comment, alternative, ff = old_options.xs(o)
+
+        except KeyError:
+            action, comment, alternative, ff = "", "", "", ""
+
+        if comment == "nan":
+            comment = ""
+        if alternative == "nan":
+            alternative = ""
+
+        outfile.write("\t".join((map(
+            str, (o, action, comment, alternative, ",".join(v))))) + "\n")
+
+    if outfile != options.stdout:
+        outfile.close()
 
     # write footer and output benchmark information.
     E.Stop()

@@ -74,7 +74,7 @@ Options:
 -h, --help                      print this message.
 -v, --verbose=                  loglevel.
 -m, --map=                      map alignments between peptides to nucleotides
--c, --cds=                      files with coding sequences (exon boundaries)
+-c, --cds-gtf-file=                      files with coding sequences (exon boundaries)
 -e, --expand                    write in nucleic acid coordinates (default: peptide coordinates)
 """ % sys.argv[0]
 
@@ -141,7 +141,7 @@ def main(argv=None):
         elif o in ("--version", ):
             print "version="
             sys.exit(0)
-        elif o == "--cds":
+        elif o == "--cds-gtf-file":
             param_filename_cds = a
         elif o in ("-e", "--expand"):
             param_expand = True

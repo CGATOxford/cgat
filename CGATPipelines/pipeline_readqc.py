@@ -342,7 +342,7 @@ def buildFastQCSummaryBasicStatistics(infiles, outfile):
 @transform((buildFastQCSummaryStatus, buildFastQCSummaryBasicStatistics),
            suffix(".tsv.gz"), ".load")
 def loadFastqcSummary(infile, outfile):
-    P.load(infile, outfile, options="--index=track")
+    P.load(infile, outfile, options="--add-index=track")
 
 ####################################################
 # bias analysis

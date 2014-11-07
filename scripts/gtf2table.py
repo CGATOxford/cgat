@@ -153,11 +153,11 @@ territories
 coverage
 
    compute the coverage - per nucleotide - of the gene/transcript
-   models with intervals given in ``--filename-gff``.  Coverage values
+   models with intervals given in ``--gff-file``.  Coverage values
    are output in 5' to 3' together with summary statistics (bases
    covered, minimum, maximum coverage, etc.). By using the options
-   ``--gff-feature`` or ``--gff-source`` the counting can be
-   rescricted to particular features in the :term:`gff` file.
+   ``--restrict-feature`` or ``--restrict-source`` the counting can be
+   rescricted to particular features or sources in the :term:`gff` file.
 
 distance
 
@@ -292,7 +292,7 @@ Classifiers
 
 Classifiers not only annotate the transcripts or gene model, but also
 aim to provide some classification based on these annotations. They
-require a secondary file (see option ``--filename-gff``) for the
+require a secondary file (see option ``--gff-file``) for the
 classification.
 
 classifier
@@ -3882,7 +3882,7 @@ def main(argv=None):
                       help="filename with bigwig information "
                       "[default=%default].")
 
-    parser.add_option("-f", "--filename-gff", dest="filename_gff",
+    parser.add_option("-f", "--gff-file", dest="filename_gff",
                       type="string", action="append", metavar='bed',
                       help="filename with extra gff files. The order "
                       "is important [default=%default].")
@@ -3892,12 +3892,12 @@ def main(argv=None):
                       choices=("bed", "gff", "gtf"),
                       help="format of secondary stream [default=%default].")
 
-    parser.add_option("--gff-source", dest="gff_sources", type="string",
+    parser.add_option("--restrict-source", dest="gff_sources", type="string",
                       action="append",
                       help="restrict input to this 'source' in extra "
                       "gff file (for counter: overlap) [default=%default].")
 
-    parser.add_option("--gff-feature", dest="gff_features", type="string",
+    parser.add_option("--restrict-feature", dest="gff_features", type="string",
                       action="append",
                       help="restrict input to this 'feature' in extra gff "
                       "file (for counter: overlap) [default=%default].")
@@ -3963,7 +3963,7 @@ def main(argv=None):
                       help="distance to be considered proximal to "
                       "an interval [default=%default].")
 
-    parser.add_option("--multi-mapping",
+    parser.add_option("--multi-mapping-method",
                       dest="multi_mapping",
                       type="choice",
                       choices=('all', 'ignore', 'weight'),
@@ -3983,7 +3983,7 @@ def main(argv=None):
                       "When true, unique counts are returned. "
                       "Currently only compatible with count-reads")
 
-    parser.add_option("--prefix", dest="prefixes",
+    parser.add_option("--column-prefix", dest="prefixes",
                       type="string",
                       action="append",
                       help="add prefix to column headers - prefixes "

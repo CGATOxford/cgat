@@ -23,7 +23,7 @@ This scripts requires bedtools to be installed.
 Options
 -------
 
--a, --filename-bam / -b, --filename-bed
+-a, --bam-file / -b, --bed-file
     These are the input files. They can also be provided as provided as
     positional arguements, with the bam file being first and the (gziped
     or uncompressed) bed file coming second
@@ -50,7 +50,7 @@ Usage
 Type::
 
    cgat bam_vs_bed BAM BED [OPTIONS] 
-   cgat bam_vs_bed --filename-bam=BAM --filename-bed=BED [OPTIONS]
+   cgat bam_vs_bed --bam-file=BAM --bed-file=BED [OPTIONS]
 
 where BAM is either a bam or bed file and BED is a bed file.
 
@@ -98,11 +98,11 @@ def main(argv=None):
                       action="store_true",
                       help="do not delete temporary files [%default]")
 
-    parser.add_option("-a", "--filename-bam", dest="filename_bam",
+    parser.add_option("-a", "--bam-file", dest="filename_bam",
                       metavar="bam", type="string",
                       help="bam-file to use (required) [%default]")
 
-    parser.add_option("-b", "--filename-bed", dest="filename_bed",
+    parser.add_option("-b", "--bed-file", dest="filename_bed",
                       metavar="bed", type="string",
                       help="bed-file to use (required) [%default]")
 
