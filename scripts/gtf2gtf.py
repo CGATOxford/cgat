@@ -431,7 +431,7 @@ def main(argv=None):
     if options.method is None:
         raise ValueError("please specify a --method")
 
-    if "set_transcript2gene" == options.method:
+    if options.method == "set-transcript2gene":
 
         for gff in GTF.iterator(options.stdin):
 
@@ -443,7 +443,7 @@ def main(argv=None):
             noutput += 1
             nfeatures += 1
 
-    elif "remove_duplicates" == options.method:
+    elif options.method == "remove-duplicates":
 
         counts = collections.defaultdict(int)
 
@@ -602,7 +602,7 @@ def main(argv=None):
             y.gene_id = geneid
             options.stdout.write("%s\n" % str(y))
 
-    elif "merge_genes" == options.method:
+    elif "merge-genes" == options.method:
         # merges overlapping genes
         #
         gffs = GTF.iterator_sorted_chunks(
@@ -1044,7 +1044,7 @@ def main(argv=None):
 
             noutput += 1
 
-    elif "rename_duplicates" == options.method:
+    elif "rename-duplicates" == options.method:
 
         gene_ids = list()
         transcript_ids = list()

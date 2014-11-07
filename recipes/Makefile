@@ -24,7 +24,7 @@ export: $(NOTEBOOKS:%=%.export)
 %.build: %
 	cd $*; \
 	ln -s /ifs/public/cgat/recipes/* .; \
-	runipy --template=full --html ../../doc/recipes/$*.html *.ipynb >& $@
+	runipy --template=full --html ../../doc/recipes/$*.html *.ipynb >& ../$@
 
 # export all ipython notebooks without recomputing
 %.export: %

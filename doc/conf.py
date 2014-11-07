@@ -66,7 +66,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'CGAT'
-copyright = u'2011, Andreas Heger'
+copyright = u'2011, 2012, 2013, 2014 Andreas Heger'
 
 
 # Included at the end of each rst file
@@ -106,7 +106,7 @@ import version
 # built documents.
 #
 # The short X.Y version.
-version = version
+version = version.__version__
 # The full version, including alpha/beta/rc tags.
 release = version
 

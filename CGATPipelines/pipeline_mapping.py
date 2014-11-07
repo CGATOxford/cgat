@@ -210,7 +210,8 @@ P.getParameters(
      "../pipeline.ini",
      "pipeline.ini"],
     defaults={
-        'paired_end': False})
+        'paired_end': False},
+    only_import=__name__ != "__main__")
 
 PARAMS = P.PARAMS
 

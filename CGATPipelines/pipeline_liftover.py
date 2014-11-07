@@ -151,17 +151,18 @@ def convertGtf2Psl(infile, outfile):
         raise IOError("genome %s does not exist" % genomefile)
 
     statement = """gunzip 
-    < %(infile)s 
-    | awk '$3 == "exon"' 
-    | python %(scriptsdir)s/gff2gff.py 
-           --method=sanitize=genome 
-           --skip-missing
-           --genome=%(genomefile)s
-           --log=%(outfile)s.log
-    | python %(scriptsdir)s/gff2psl.py 
-           --allow-duplicates
-           --is-gtf 
-           --log=%(outfile)s.log 
+    < %(infile)s
+    | awk '$3 == "exon"'
+    | python %(scriptsdir)s/gff2gff.py
+    --method=sanitize
+    --sanitize-method=genome
+    --skip-missing
+    --genome=%(genomefile)s
+    --log=%(outfile)s.log
+    | python %(scriptsdir)s/gff2psl.py
+    --allow-duplicates
+    --is-gtf
+    --log=%(outfile)s.log
     | gzip > %(outfile)s
     """
     P.run()

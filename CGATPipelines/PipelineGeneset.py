@@ -340,7 +340,8 @@ def buildProteinCodingGenes(infile, outfile):
     | python %(scriptsdir)s/gtf2gtf.py
     --method=sort --sort-order=contig+gene
     | python %(scriptsdir)s/gff2gff.py
-    --method=sanitize=genome
+    --method=sanitize
+    --sanitize-method=genome
     --skip-missing
     --genome-file=%(genome_dir)s/%(genome)s
     | python %(scriptsdir)s/gtf2gtf.py
@@ -770,7 +771,8 @@ def buildPromotorRegions(infile, outfile):
     '''annotate promotor regions from reference gene set.'''
     statement = """
     gunzip < %(infile)s |\
-    python %(scriptsdir)s/gff2gff.py --method=sanitize=genome
+    python %(scriptsdir)s/gff2gff.py --method=sanitize
+    --sanitize-method=genome
     --skip-missing --genome-file=%(genome_dir)s/%(genome)s
     --log=%(outfile)s.log
     | python %(scriptsdir)s/gtf2gff.py --method=promotors
@@ -797,7 +799,8 @@ def buildTSSRegions(infile, outfile):
     '''
     statement = """
     gunzip < %(infile)s
-    | python %(scriptsdir)s/gff2gff.py --method=sanitize=genome
+    | python %(scriptsdir)s/gff2gff.py --method=sanitize
+    --sanitize-method=genome
     --skip-missing
     --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log
     | python %(scriptsdir)s/gtf2gff.py --method=promotors

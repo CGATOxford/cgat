@@ -806,7 +806,7 @@ sample-proportion	ok			scripts/fasta2fasta.py
 sample-size	ok			scripts/fastq2fastq.py,scripts/genelist_analysis.py,scripts/gtf2gtf.py,scripts/gtf2reads.py,scripts/mali2bootstrap.py,scripts/malis2mali.py,scripts/malis2malis.py,scripts/runGO.py
 sampler	ok			scripts/annotator_distance.py
 samples	rename		sample-size	--
-sanitize	rename		method=sanitize	--
+sanitize	rename		method=sanitize --sanitize-method	--
 sanitize-method	ok			scripts/gff2gff.py
 saturation-iterations	ok			scripts/runMEDIPS.py
 save-R	rename		output-R-code	--

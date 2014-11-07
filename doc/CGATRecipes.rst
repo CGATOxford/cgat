@@ -2,16 +2,21 @@
 Using CGAT tools - Recipes
 ===========================
 
-In this section you will find representative examples for using tools developed in 
-CGAT. The recipes presented aim to provide intuitive real-life examples of CGAT script use for
-the analysis of genomic datasets. If there is a tool in the CGAT collection for which you
-would like a use case then please post a request on the `CGAT users group`_ website. 
+In this section you will find representative examples for using tools
+developed in CGAT. The recipes presented aim to provide intuitive
+real-life examples of CGAT script use for the analysis of genomic
+datasets. If there is a tool in the CGAT collection for which you
+would like a use case then please post a request on the `CGAT users
+group`_ website.
 
-.. toctree::
-   :maxdepth: 2
+The recipes are implemented as ipython_ notebooks.
 
-   recipes/gat
-   recipes/metagenome_contigs_kmers
+..
+   .. toctree::
+      :maxdepth: 2
+
+      recipes/gat
+      recipes/metagenome_contigs_kmers
 
 :download:`Recipe02 Plotting read-density in Intervals <recipes/Recipe02-BAMCoverageHistograms.html>`
 	  Illustrate how to plot read density in a large number of

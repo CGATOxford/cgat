@@ -833,7 +833,8 @@ def buildGeneSet(infile, outfile):
     statement = ['''zcat %(infile)s
     | grep 'transcript_id'
     | python %(scriptsdir)s/gff2gff.py
-    --method=sanitize=genome
+    --method=sanitize
+    --sanitize-method=genome
     --skip-missing
     --genome-file=%(genome_dir)s/%(genome)s
     --log=%(outfile)s.log ''']
@@ -971,8 +972,7 @@ def downloadTranscriptInformation(infile, outfile):
         "source": "source",
         "status": "gene_status",
         "transcript_status": "transcript_status",
-        "external_gene_id": "gene_name",
-        "external_transcript_id": "transcript_name",
+        "external_gene_name": "gene_name",
         "uniprot_sptrembl": "uniprot_id",
         "uniprot_genename": "uniprot_name",
     }
@@ -1084,7 +1084,7 @@ def downloadTranscriptSynonyms(infile, outfile):
 
     columns = {
         "ensembl_transcript_id": "transcript_id",
-        "external_transcript_id": "transcript_name",
+        "external_transcript_name": "transcript_name",
         "refseq_mrna": "refseq_id",
     }
 

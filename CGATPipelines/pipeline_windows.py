@@ -879,10 +879,6 @@ def summarizeWindowsReadCounts(infiles, outfile):
               > %(outfile)s'''
     P.run()
 
-#########################################################################
-#########################################################################
-#########################################################################
-
 
 @follows(mkdir("dump.dir"))
 @transform("design*.tsv",
@@ -1804,7 +1800,8 @@ def buildTranscriptProfiles(infiles, outfile):
     #                        input_files[0] + '.bed.gz') )
     statement = '''zcat %(gtffile)s
                    | python %(scriptsdir)s/gtf2gtf.py
-                     --filter=representative-transcript
+                     --method=filter
+                     --filter-method=representative-transcript
                      --log=%(outfile)s.log
                    | python %(scriptsdir)s/bam2geneprofile.py
                       --output-filename-pattern="%(outfile)s.%%s"

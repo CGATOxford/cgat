@@ -853,18 +853,19 @@ def buildBaseAnnotations(infile, outfile):
 def buildExonAnnotations(infile, outfile):
     """build exon annotations"""
 
-    to_cluster = True
-
     statement = """
-        gunzip < %(infile)s 
-        | awk '$3 == "CDS"' 
-        | python %(scriptsdir)s/gff2gff.py --method=sanitize=genome --skip-missing 
-               --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
-        | python %(scriptsdir)s/gtf2gff.py 
-                --method=exons 
-                --restrict-source=protein_coding 
-                --log=%(outfile)s.log 
-        > %(outfile)s
+    gunzip < %(infile)s
+    | awk '$3 == "CDS"'
+    | python %(scriptsdir)s/gff2gff.py
+    --method=sanitize
+    --sanitize-method=genome
+    --skip-missing
+    --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log
+    | python %(scriptsdir)s/gtf2gff.py
+    --method=exons
+    --restrict-source=protein_coding
+    --log=%(outfile)s.log
+    > %(outfile)s
     """
 
     P.run()
@@ -884,14 +885,18 @@ def buildGeneAnnotations(infile, outfile):
     output includes the UTR and non-coding genes.
     """
     statement = """
-        gunzip < %(infile)s |\
-        python %(scriptsdir)s/gtf2gtf.py --method=merge-exons --with-utr --log=%(outfile)s.log |\
-        python %(scriptsdir)s/gtf2gtf.py --method=set-transcript-to-gene --log=%(outfile)s.log |\
-        python %(scriptsdir)s/gff2gff.py --skip-missing --method=sanitize=genome --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log |\
-        %(scriptsdir)s/gff_sort gene-pos \
-        > %(outfile)s
+    gunzip < %(infile)s
+    | python %(scriptsdir)s/gtf2gtf.py --method=merge-exons
+    --with-utr --log=%(outfile)s.log
+    | python %(scriptsdir)s/gtf2gtf.py --method=set-transcript-to-gene
+    --log=%(outfile)s.log
+    | python %(scriptsdir)s/gff2gff.py --skip-missing --method=sanitize
+    --sanitize-method=genome
+    --genome-file=%(genome_dir)s/%(genome)s
+    --log=%(outfile)s.log
+    | %(scriptsdir)s/gff_sort gene-pos
+    > %(outfile)s
     """
-    queue = "server"
     P.run()
 
 ###################################################################

@@ -341,7 +341,8 @@ def importRepeatsFromUCSC(infile, outfile, ucsc_database, repeattypes, genome):
     statement = '''cat %(tmpfilename)s
     | %(scriptsdir)s/gff_sort pos
     | python %(scriptsdir)s/gff2gff.py
-    --method=sanitize=genome
+    --method=sanitize
+    --sanitize-method=genome
     --skip-missing
     --genome-file=%(genome)s
     --log=%(outfile)s.log
@@ -371,7 +372,8 @@ def importRepeatsFromEnsembl(infile, outfile,
     --repeattypes %(repeattypes)s
     | %(scriptsdir)s/gff_sort pos
     | python %(scriptsdir)s/gff2gff.py
-    --method=sanitize=genome
+    --method=sanitize
+    --sanitize-method=genome
     --skip-missing
     --genome-file=%(genome)s
     --log=%(outfile)s.log
