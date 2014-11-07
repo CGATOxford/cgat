@@ -7,4 +7,5 @@ using the Medips R package.
 
 .. toctree::
 
+   MedipsResults.rst
    MedipsQCPlots.rst

@@ -796,8 +796,6 @@ def annotateTSSPeaks(infile, outfile):
 def annotateRepeats(infile, outfile):
     '''count the overlap between intervals and repeats.'''
 
-    to_cluster = True
-
     annotation_file = os.path.join(PARAMS["annotations_dir"],
                                    PARAMS_ANNOTATIONS["interface_repeats_gff"])
 
@@ -1121,17 +1119,8 @@ def buildPeakShapeTable(infile, outfile):
 def loadPeakShapeTable(infile, outfile):
     '''load peak shape information.'''
     P.load(
-        infile, outfile, "--ignore-column=bins --ignore-column=counts --allow-empty")
-
-###################################################################
-###################################################################
-###################################################################
-# general import
-###################################################################
-
-############################################################
-############################################################
-############################################################
+        infile, outfile,
+        "--ignore-column=bins --ignore-column=counts --allow-empty")
 
 
 @merge(BEDFILES,
@@ -1151,16 +1140,12 @@ def buildOverlap(infiles, outfile):
 
     # note: need to quote track names
     statement = '''
-        python %(scriptsdir)s/diff_bed.py %(options)s %(infiles)s 
-        | awk -v OFS="\\t" '!/^#/ { gsub( /-/,"_", $1); gsub(/-/,"_",$2); } {print}'
-        > %(outfile)s
-        '''
+    python %(scriptsdir)s/diff_bed.py %(options)s %(infiles)s
+    | awk -v OFS="\\t" '!/^#/ { gsub( /-/,"_", $1); gsub(/-/,"_",$2); } {print}'
+    > %(outfile)s
+    '''
 
     P.run()
-
-############################################################
-############################################################
-############################################################
 
 
 @transform(buildOverlap, suffix(".overlap"), "_overlap.load")
@@ -1171,18 +1156,14 @@ def loadOverlap(infile, outfile):
     tablename = "overlap"
 
     statement = '''
-   python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
-              --index=set1 
-              --index=set2 
-              --table=%(tablename)s 
+    python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+    --index=set1
+    --index=set2
+    --table=%(tablename)s
     < %(infile)s > %(outfile)s
     '''
 
     P.run()
-
-############################################################
-############################################################
-############################################################
 
 
 @transform(loadIntervals,

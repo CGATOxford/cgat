@@ -1091,10 +1091,6 @@ def runDESeq(infiles, outfile):
                           "deseq.dir",
                           method="deseq")
 
-#########################################################################
-#########################################################################
-#########################################################################
-
 
 @transform(runDESeq, suffix(".tsv.gz"), ".load")
 def loadDESeq(infile, outfile):
@@ -1183,7 +1179,7 @@ def loadEdgeR(infile, outfile):
         prefix = P.snip(fn[len(infile) + 1:], "_summary.tsv")
 
         P.load(fn,
-               prefix + ".deseq_summary.load",
+               prefix + ".edger_summary.load",
                collapse=0,
                transpose="sample")
 
@@ -1202,10 +1198,22 @@ def runFilterAnalysis(infiles, outfile):
     '''
     PipelineWindows.outputRegionsOfInterest(infiles, outfile)
 
+
+@follows(mkdir("medips.dir"))
+@transform("design*.tsv",
+           regex("(.*).tsv"),
+           r"medips.dir/\1.tsv.gz")
+def runMedipsDMR(infile, outfile):
+    '''run MEDIPS single file analysis
+    '''
+    PipelineWindows.runMEDIPSDMR(infile, outfile)
+
+
 DIFFTARGETS = []
 mapToTargets = {'deseq': (loadDESeq, runDESeq,),
                 'edger': (runEdgeR,),
-                'filter': (runFilterAnalysis,)
+                'filter': (runFilterAnalysis,),
+                'medips': (runMedipsDMR,),
                 }
 for x in METHODS:
     DIFFTARGETS.extend(mapToTargets[x])
@@ -1225,8 +1233,6 @@ def computeWindowComposition(infile, outfile):
     '''for the windows returned from differential analysis, compute CpG content
     for QC purposes.
     '''
-
-    to_cluster = True
 
     statement = '''
     zcat %(infile)s
@@ -1488,7 +1494,7 @@ def buildDMRStats(infile, outfile):
     '''compute differential methylation stats.'''
     method = os.path.dirname(infile)
     method = P.snip(method, ".dir")
-    PipelineWindows.buildDMRStats(infile, outfile, method=method)
+    PipelineWindows.buildDMRStats([infile], outfile, method=method)
 
 
 @transform(mergeDMRWindows, suffix(".merged.gz"), ".fdr")
@@ -1539,21 +1545,11 @@ def outputTopWindows(infile, outfiles):
     P.run()
 
 
-@merge(buildDMRStats, "dmr_stats.load")
-def loadDMRStats(infiles, outfile):
-    '''load DMR stats into table.'''
-    P.concatenateAndLoad(infiles, outfile,
-                         missing_value=0,
-                         regex_filename=".*\/(.*).tsv.stats")
-
-
 @transform(mergeDMRWindows,
            suffix(".merged.gz"),
            ".stats")
 def buildDMRWindowStats(infile, outfile):
     '''compute window size statistics of DMR from bed file.'''
-
-    to_cluster = True
 
     statement = '''
     zcat %(infile)s
@@ -1570,71 +1566,25 @@ def buildDMRWindowStats(infile, outfile):
     P.run()
 
 
-###################################################################
-###################################################################
-###################################################################
-@follows(mkdir("transcriptprofiles.dir"))
-@transform(prepareTags,
-           regex(r".*/([^/].*)\.bed.gz"),
-           add_inputs(os.path.join(
-               PARAMS["annotations_dir"],
-               PARAMS_ANNOTATIONS["interface_geneset_coding_exons_gtf"])),
-           r"transcriptprofiles.dir/\1.transcriptprofile.tsv.gz")
-def buildIntervalProfileOfTranscripts(infiles, outfile):
-    '''build a table with the overlap profile
-    with protein coding exons.
-    '''
+@transform(runMedipsDMR, suffix(".tsv.gz"), ".stats")
+def buildMedipsStats(infile, outfile):
+    '''compute differential methylation stats.'''
+    method = os.path.dirname(infile)
+    method = P.snip(method, ".dir")
+    infiles = glob.glob(infile + "*_data.tsv.gz")
+    PipelineWindows.buildDMRStats(infiles, outfile,
+                                  method=method,
+                                  fdr_threshold=PARAMS["medips_fdr"])
 
-    bedfile, gtffile = infiles
 
-    track = P.snip(os.path.basename(outfile), '.transcriptprofile.tsv.gz')
-    try:
-        t = Sample(filename=track)
-    except ValueError, msg:
-        print msg
-        return
+@merge(buildDMRStats, "dmr_stats.load")
+def loadDMRStats(infiles, outfile):
+    '''load DMR stats into table.'''
+    P.concatenateAndLoad(infiles, outfile,
+                         missing_value=0,
+                         regex_filename=".*\/(.*).tsv.stats")
 
-    # no input normalization, this is done later.
-    options = ''
-    # input_files = getInput( t )
 
-    # currently only implement one input file per track
-    # assert len(input_files) <= 1,\
-    # "%s more than input: %s" % (track, input_files)
-
-    # if len(input_files) == 1:
-    #     options = '--controlfile=%s' % \
-    #         (os.path.join( os.path.dirname( bedfile ),
-    #                        input_files[0] + '.bed.gz') )
-    statement = '''zcat %(gtffile)s
-                   | python %(scriptsdir)s/gtf2gtf.py
-                     --filter=representative-transcript
-                     --log=%(outfile)s.log
-                   | python %(scriptsdir)s/bam2geneprofile.py
-                      --output-filename-pattern="%(outfile)s.%%s"
-                      --force
-                      --reporter=transcript
-                      --method=separateexonprofilewithintrons
-                      --method=tssprofile
-                      --normalize-profile=all
-                      --output-all-profiles
-                      --resolution-upstream=1000
-                      --resolution-downstream=1000
-                      --resolution-cds=1000
-                      --resolution-first-exon=1000
-                      --resolution-last-exon=1000
-                      --resolution-introns=1000
-                      --extension-upstream=5000
-                      --extension-downstream=5000
-                      %(options)s
-                      %(bedfile)s -
-                   > %(outfile)s
-                '''
-    P.run()
-
-#########################################################################
-#########################################################################
-#########################################################################
 # @merge( buildDMRBed, "dmr_overlap.tsv.gz" )
 # def computeDMROverlap( infiles, outfile ):
 #     '''compute overlap between bed sets.'''
@@ -1690,6 +1640,86 @@ def buildMRBed(infile, outfile):
     E.info("%s" % str(c))
 
 
+@follows(mkdir("overlaps.dir"))
+@collate(("edger.dir/*merged*.bed.gz",
+          "deseq.dir/*merged*.bed.gz",
+          "medips.dir/*merged*.bed.gz"),
+         regex("(.*).dir/(.*).tsv.merged.gz.(.*)(?<!all).bed.gz"),
+         r"overlaps.dir/method_\2_\3.overlap")
+def buildOverlapByMethod(infiles, outfile):
+    '''compute overlap between intervals.
+    '''
+
+    if os.path.exists(outfile):
+        # note: update does not work due to quoting
+        os.rename(outfile, outfile + ".orig")
+        options = "--update=%s.orig" % outfile
+    else:
+        options = ""
+
+    infiles = " ".join(infiles)
+
+    # note: need to quote track names
+    statement = '''
+    python %(scriptsdir)s/diff_bed.py %(options)s %(infiles)s
+    | awk -v OFS="\\t"
+    '!/^#/ { gsub( /-/,"_", $1); gsub(/-/,"_",$2); } {print}'
+    > %(outfile)s
+    '''
+
+    P.run()
+
+
+@follows(mkdir("overlaps.dir"))
+@collate(("edger.dir/*merged*.bed.gz",
+          "deseq.dir/*merged*.bed.gz",
+          "medips.dir/*merged*.bed.gz"),
+         regex("(.*).dir/(.*).tsv.merged.gz.(.*).bed.gz"),
+         r"overlaps.dir/\1_\3.overlap")
+def buildOverlapWithinMethod(infiles, outfile):
+    '''compute overlap between intervals.
+    '''
+
+    if os.path.exists(outfile):
+        # note: update does not work due to quoting
+        os.rename(outfile, outfile + ".orig")
+        options = "--update=%s.orig" % outfile
+    else:
+        options = ""
+
+    infiles = " ".join(infiles)
+
+    # note: need to quote track names
+    statement = '''
+    python %(scriptsdir)s/diff_bed.py %(options)s %(infiles)s
+    | awk -v OFS="\\t"
+    '!/^#/ { gsub( /-/,"_", $1); gsub(/-/,"_",$2); } {print}'
+    > %(outfile)s
+    '''
+
+    P.run()
+
+
+@transform((buildOverlapByMethod,
+            buildOverlapWithinMethod),
+           suffix(".overlap"), "_overlap.load")
+def loadOverlap(infile, outfile):
+    '''load overlap results.
+    '''
+
+    tablename = "overlap"
+
+    statement = '''
+    python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+    --index=set1
+    --index=set2
+    --table=%(tablename)s
+    < %(infile)s > %(outfile)s
+    '''
+
+    P.run()
+
+
 @follows(loadDMRStats, loadSpikeResults,
          outputAllWindows, outputTopWindows)
 def dmr():
@@ -1734,22 +1764,71 @@ def buildContextStats(infiles, outfile):
 @transform("*.bam",
            regex("(.*).bam"),
            r"medips.dir/\1.tsv.gz")
-def runMEDIPSQC(infile, outfile):
+def runMedipsQC(infile, outfile):
     '''run MEDIPS single file analysis
     '''
-
     PipelineWindows.runMEDIPSQC(infile, outfile)
 
 
-@follows(mkdir("medips.dir"))
-@transform("design*.tsv",
-           regex("(.*).tsv"),
-           r"medips.dir/\1.tsv.gz")
-def runMEDIPSDMR(infile, outfile):
-    '''run MEDIPS single file analysis
+@follows(mkdir("transcriptprofiles.dir"))
+@transform(prepareTags,
+           regex(r".*/([^/].*)\.bed.gz"),
+           add_inputs(os.path.join(
+               PARAMS["annotations_dir"],
+               PARAMS_ANNOTATIONS["interface_geneset_coding_exons_gtf"])),
+           r"transcriptprofiles.dir/\1.transcriptprofile.tsv.gz")
+def buildTranscriptProfiles(infiles, outfile):
+    '''build a table with the overlap profile
+    with protein coding exons.
     '''
 
-    PipelineWindows.runMEDIPSDMR(infile, outfile)
+    bedfile, gtffile = infiles
+
+    track = P.snip(os.path.basename(outfile), '.transcriptprofile.tsv.gz')
+    try:
+        t = Sample(filename=track)
+    except ValueError, msg:
+        print msg
+        return
+
+    # no input normalization, this is done later.
+    options = ''
+    # input_files = getInput( t )
+
+    # currently only implement one input file per track
+    # assert len(input_files) <= 1,\
+    # "%s more than input: %s" % (track, input_files)
+
+    # if len(input_files) == 1:
+    #     options = '--controlfile=%s' % \
+    #         (os.path.join( os.path.dirname( bedfile ),
+    #                        input_files[0] + '.bed.gz') )
+    statement = '''zcat %(gtffile)s
+                   | python %(scriptsdir)s/gtf2gtf.py
+                     --filter=representative-transcript
+                     --log=%(outfile)s.log
+                   | python %(scriptsdir)s/bam2geneprofile.py
+                      --output-filename-pattern="%(outfile)s.%%s"
+                      --force
+                      --reporter=transcript
+                      --method=geneprofile
+                      --method=tssprofile
+                      --method=separateexonprofilewithintrons
+                      --normalize-profile=all
+                      --output-all-profiles
+                      --resolution-upstream=1000
+                      --resolution-downstream=1000
+                      --resolution-cds=1000
+                      --resolution-first-exon=1000
+                      --resolution-last-exon=1000
+                      --resolution-introns=1000
+                      --extension-upstream=5000
+                      --extension-downstream=5000
+                      %(options)s
+                      %(bedfile)s -
+                   > %(outfile)s
+                '''
+    P.run()
 
 
 @follows(gc, loadPicardDuplicateStats, diff_windows, dmr)
@@ -1764,10 +1843,6 @@ def build_report():
     E.info("starting documentation build process from scratch")
     P.run_report(clean=True)
 
-###################################################################
-###################################################################
-###################################################################
-
 
 @follows(mkdir("report"))
 def update_report():
@@ -1775,10 +1850,6 @@ def update_report():
 
     E.info("updating documentation")
     P.run_report(clean=False)
-
-###################################################################
-###################################################################
-###################################################################
 
 
 @follows(mkdir("%s/bamfiles" % PARAMS["web_dir"]),
