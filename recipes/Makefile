@@ -1,8 +1,16 @@
 ## Note that this solution requires runipy to be installed
 ## see: http://stackoverflow.com/questions/17905350/running-an-ipython-notebook-non-interactively
 
-## primary targets:
+## In order to build the recipes, make sure that the CGAT 
+## code collection has been installed as the recipes use
+## the cgat frontend. Building the recipes in a development
+## environment is possible, but there are ugly warnings
+## in the notebooks about modules being loaded multiple
+## times.
 
+
+## primary targets:
+##
 ## 
 ## make build
 ##    rebuilds all notebooks and convrets them to html. 
