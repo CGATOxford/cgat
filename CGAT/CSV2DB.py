@@ -327,7 +327,10 @@ def run(infile, options):
                                 fieldnames=options.header)
 
     if options.replace_header:
-        reader.next()
+        try:
+            reader.next()
+        except StopIteration:
+            pass
 
     E.info("reading %i columns to guess column types" % options.guess_size)
 
