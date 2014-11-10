@@ -1881,7 +1881,7 @@ def runCuffdiff(bamfiles,
     cuffdiff --output-dir %(outdir)s
              --verbose
              --num-threads %(threads)i
-             --plot-labels %(labels)s
+             --labels %(labels)s
              --FDR %(fdr)f
              %(extra_options)s
              %(cuffdiff_options)s
