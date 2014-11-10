@@ -43,6 +43,8 @@ import imp
 
 import CGAT.Experiment as E
 
+BASE_URL = "https://www.cgat.org/downloads/public/cgat/documentation/"
+
 # handle to original E.Start function
 ORIGINAL_START = None
 
@@ -208,8 +210,7 @@ def processScript(script_name, outfile, options):
         BREAK_FORMATS[output_format] += 1
         output_format = nodename
 
-    url = "http://www.cgat.org/~andreas/documentation/cgat/" \
-          "scripts/%s.html" % basename
+    url = BASE_URL + "scripts/%s.html" % basename
 
     # Note that URL needs to be uppercase!
     if input_format in PRINCIPAL_FORMATS and \
