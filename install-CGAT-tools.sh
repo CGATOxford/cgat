@@ -144,7 +144,7 @@ if [ "$OS" == "ubuntu" -o "$OS" == "sl" -o "$OS" == "centos" ] ; then
 
    # substitute requires.txt on travis installation --start
    #pip install -r https://raw.github.com/CGATOxford/cgat/master/requires.txt
-   pip install pyparsing==1.5.7
+   pip install pyparsing>=1.5.7
    pip install MySQL-python
    pip install PyGreSQL
    pip install PyYAML
@@ -154,7 +154,7 @@ if [ "$OS" == "ubuntu" -o "$OS" == "sl" -o "$OS" == "centos" ] ; then
    pip install hgapi
    pip install matplotlib-venn
    pip install networkx
-   pip install openpyxl==1.8.5
+   pip install openpyxl>=1.8.5
    pip install jdcal
    pip install pandas
    pip install rdflib
@@ -208,7 +208,7 @@ elif [ "$OS" == "travis" ] ; then
    # Install latest versions of packages
    # substitute requires.txt on travis installation --start
    # pip install -r https://raw.github.com/CGATOxford/cgat/master/requires.txt
-   pip install pyparsing==1.5.7
+   pip install pyparsing>=1.5.7
    pip install MySQL-python
    pip install PyGreSQL
    pip install PyYAML
@@ -218,7 +218,7 @@ elif [ "$OS" == "travis" ] ; then
    pip install hgapi
    pip install matplotlib-venn
    pip install networkx
-   pip install openpyxl==1.8.5
+   pip install openpyxl>=1.8.5
    pip install jdcal
    pip install pandas
    pip install rdflib
