@@ -431,7 +431,7 @@ def main(argv=None):
     if options.method is None:
         raise ValueError("please specify a --method")
 
-    if options.method == "set-transcript2gene":
+    if options.method == "set-transcript-to-gene":
 
         for gff in GTF.iterator(options.stdin):
 
@@ -1199,6 +1199,8 @@ def main(argv=None):
                 options.stdout.write("%s\n" % str(x))
                 nfeatures += 1
             noutput += 1
+    else:
+        raise ValueError("unknown method '%s'" % options.method)
 
     E.info("ninput=%i, noutput=%i, nfeatures=%i, ndiscarded=%i" %
            (ninput, noutput, nfeatures, ndiscarded))
