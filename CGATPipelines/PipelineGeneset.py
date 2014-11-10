@@ -213,13 +213,17 @@ def annotateGenome(infile, outfile,
     < %(infile)s
     | %(filter_cmd)s
     | grep "transcript_id"
-    | python %(scriptsdir)s/gtf2gtf.py --method=sort --sort-order=gene+transcript
+    | python %(scriptsdir)s/gtf2gtf.py
+    --method=sort --sort-order=gene+transcript
     | python %(scriptsdir)s/gtf2gtf.py --method=merge-exons
         --with-utr --log=%(outfile)s.log
-    | python %(scriptsdir)s/gtf2gtf.py --method=filter --filter-method=longest-gene
+    | python %(scriptsdir)s/gtf2gtf.py
+    --method=filter --filter-method=longest-gene
         --log=%(outfile)s.log
-    | python %(scriptsdir)s/gtf2gtf.py --method=sort --sort-order=position
-    | python %(scriptsdir)s/gtf2gff.py --genome-file=%(genome_dir)s/%(genome)s
+    | python %(scriptsdir)s/gtf2gtf.py
+    --method=sort --sort-order=position
+    | python %(scriptsdir)s/gtf2gff.py
+    --genome-file=%(genome_dir)s/%(genome)s
     --log=%(outfile)s.log
     --flank-size=%(enrichment_genes_flank)s
     --method=%(method)s
@@ -263,12 +267,17 @@ def annotateGeneStructure(infile, outfile,
     < %(infile)s
     | %(filter_cmd)s
     | grep "transcript_id"
-    | python %(scriptsdir)s/gtf2gtf.py --method=sort --sort-order=gene+transcript
-    | python %(scriptsdir)s/gtf2gtf.py --method=filter --filter-method=representative-transcript
-    | python %(scriptsdir)s/gtf2gtf.py --method=filter --filter-method=longest-gene
-        --log=%(outfile)s.log
-    | python %(scriptsdir)s/gtf2gtf.py --method=sort --sort-order=position
-    | python %(scriptsdir)s/gtf2gff.py --genome-file=%(genome_dir)s/%(genome)s
+    | python %(scriptsdir)s/gtf2gtf.py
+    --method=sort --sort-order=gene+transcript
+    | python %(scriptsdir)s/gtf2gtf.py
+    --method=filter --filter-method=representative-transcript
+    | python %(scriptsdir)s/gtf2gtf.py
+    --method=filter --filter-method=longest-gene
+    --log=%(outfile)s.log
+    | python %(scriptsdir)s/gtf2gtf.py
+    --method=sort --sort-order=position
+    | python %(scriptsdir)s/gtf2gff.py
+    --genome-file=%(genome_dir)s/%(genome)s
     --log=%(outfile)s.log
     --flank-size=%(enrichment_genestructures_flank)i
     --flank-increment-size=%(enrichment_genestructures_increment)i
@@ -297,12 +306,16 @@ def buildFlatGeneSet(infile, outfile):
     < %(infile)s
     | awk '$3 == "exon"'
     | grep "transcript_id"
-    | python %(scriptsdir)s/gtf2gtf.py --method=sort --sort-order=contig+gene
-    | python %(scriptsdir)s/gtf2gtf.py --method=merge-exons
-        --permit-duplicates --log=%(outfile)s.log
-    | python %(scriptsdir)s/gtf2gtf.py --method=set-transcript-to-gene
-        --log=%(outfile)s.log
-    | python %(scriptsdir)s/gtf2gtf.py --method=sort --sort-order=position+gene
+    | python %(scriptsdir)s/gtf2gtf.py
+    --method=sort --sort-order=contig+gene
+    | python %(scriptsdir)s/gtf2gtf.py
+    --method=merge-exons
+    --permit-duplicates --log=%(outfile)s.log
+    | python %(scriptsdir)s/gtf2gtf.py
+    --method=set-transcript-to-gene
+    --log=%(outfile)s.log
+    | python %(scriptsdir)s/gtf2gtf.py
+    --method=sort --sort-order=position+gene
     | gzip
     > %(outfile)s
         """
@@ -355,7 +368,8 @@ def buildProteinCodingGenes(infile, outfile):
     | python %(scriptsdir)s/gtf2gtf.py
     --method=set-transcript-to-gene
     --log=%(outfile)s.log
-    | python %(scriptsdir)s/gtf2gtf.py --method=sort --sort-order=gene+transcript
+    | python %(scriptsdir)s/gtf2gtf.py
+    --method=sort --sort-order=gene+transcript
     | gzip
     > %(outfile)s
     """
@@ -380,8 +394,10 @@ def loadGeneInformation(infile, outfile, only_proteincoding=False):
     gunzip < %(infile)s
     | %(filter_cmd)s
     | grep "transcript_id"
-    | python %(scriptsdir)s/gtf2gtf.py --method=sort --sort-order=gene+transcript
-    | python %(scriptsdir)s/gtf2tsv.py --attributes-as-columns --output-only-attributes -v 0
+    | python %(scriptsdir)s/gtf2gtf.py
+    --method=sort --sort-order=gene+transcript
+    | python %(scriptsdir)s/gtf2tsv.py
+    --attributes-as-columns --output-only-attributes -v 0
     | python %(toolsdir)s/csv_cut.py
     --remove exon_id transcript_id transcript_name protein_id exon_number
     | %(scriptsdir)s/hsort 1 | uniq
@@ -414,8 +430,10 @@ def loadTranscriptInformation(infile, outfile,
     | %(filter_cmd)s
     | awk '$3 == "CDS"'
     | grep "transcript_id"
-    | python %(scriptsdir)s/gtf2gtf.py --method=sort --sort-order=gene+transcript
-    | python %(scriptsdir)s/gtf2tsv.py --attributes-as-columns --output-only-attributes -v 0
+    | python %(scriptsdir)s/gtf2gtf.py
+    --method=sort --sort-order=gene+transcript
+    | python %(scriptsdir)s/gtf2tsv.py
+    --attributes-as-columns --output-only-attributes -v 0
     | python %(toolsdir)s/csv_cut.py --remove exon_id exon_number
     | %(scriptsdir)s/hsort 1 | uniq
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
@@ -1091,7 +1109,8 @@ def sortGTF(infile, outfile, order="contig+gene"):
         compress = "cat"
 
     statement = '''%(uncompress)s %(infile)s
-    | python %(scriptsdir)s/gtf2gtf.py --method=sort --sort-order=%(order)s --log=%(outfile)s.log
+    | python %(scriptsdir)s/gtf2gtf.py
+    --method=sort --sort-order=%(order)s --log=%(outfile)s.log
     | %(compress)s > %(outfile)s'''
 
     P.run()
@@ -1179,9 +1198,12 @@ def buildGenomicContext(infiles, outfile):
     # add ENSEMBL annotations
     statement = """
     zcat %(annotations_gtf)s
-    | python %(scriptsdir)s/gtf2gtf.py --method=sort --sort-order=gene
-    | python %(scriptsdir)s/gtf2gtf.py --method=merge-exons --log=%(outfile)s.log
-    | python %(scriptsdir)s/gff2bed.py --set-name=source --is-gtf
+    | python %(scriptsdir)s/gtf2gtf.py
+    --method=sort --sort-order=gene
+    | python %(scriptsdir)s/gtf2gtf.py
+    --method=merge-exons --log=%(outfile)s.log
+    | python %(scriptsdir)s/gff2bed.py
+    --set-name=source --is-gtf
     --log=%(outfile)s.log
     | sort -k 1,1 -k2,2n
     | python %(scriptsdir)s/bed2bed.py --method=merge --merge-by-name
@@ -1257,7 +1279,7 @@ def buildGenomicContext(infiles, outfile):
     # different number of field
     files = " ".join(tmpfiles)
     statement = '''
-    sort --merge-overlapping -k1,1 -k2,2n %(files)s
+    sort --merge -k1,1 -k2,2n %(files)s
     | cut -f 1-4
     | gzip
     > %(outfile)s

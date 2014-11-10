@@ -412,8 +412,12 @@ def mergeRepeats(infile, outfile):
     statement = '''gunzip
     < %(infile)s
     | python %(scriptsdir)s/gff2gff.py
-            --merge-features=0,10,0,0
-            --log=%(outfile)s.log
+    --merge-features
+    --min-distance=0
+    --max-distance=10
+    --min-features=0
+    --max-features=0
+    --log=%(outfile)s.log
     | gzip
     > %(outfile)s
     '''

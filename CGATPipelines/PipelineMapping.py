@@ -899,11 +899,15 @@ class BWA(Mapper):
 
         if self.remove_unique:
             unique_cmd = '''| python %%(scriptsdir)s/bam2bam.py
-            --method=filter --filter-method=unique --log=%(outfile)s.log''' % locals()
+            --method=filter
+            --filter-method=unique
+            --log=%(outfile)s.log''' % locals()
 
         if self.strip_sequence:
             strip_cmd = '''| python %%(scriptsdir)s/bam2bam.py
-            --strip-method=all --method=strip-=sequence --log=%(outfile)s.log''' % locals()
+            --strip-method=all
+            --method=strip-sequence
+            --log=%(outfile)s.log''' % locals()
 
         statement = '''
                 samtools view -uS %(tmpdir)s/%(track)s.sam
@@ -914,7 +918,8 @@ class BWA(Mapper):
 
         if self.align_stats:
             statement += '''cat %(outfile)s
-            | python %%(scriptsdir)s/bam2bam.py -v 0 --method=set-sequence --sam-file
+            | python %%(scriptsdir)s/bam2bam.py -v 0
+            --method=set-sequence --sam-file
             | CollectMultipleMetrics
             INPUT=/dev/stdin
             REFERENCE_SEQUENCE=%%(bwa_index_dir)s/%%(genome)s.fa
@@ -1497,11 +1502,13 @@ class GSNAP(Mapper):
 
         if self.remove_non_unique:
             unique_cmd = '''| python %%(scriptsdir)s/bam2bam.py
-            --method=filter --filter-method=unique --log=%(outfile)s.log''' % locals()
+            --method=filter
+            --filter-method=unique --log=%(outfile)s.log''' % locals()
 
         if self.strip_sequence:
             strip_cmd = '''| python %%(scriptsdir)s/bam2bam.py
-            --strip-method=all --method=strip-=sequence --log=%(outfile)s.log''' % locals()
+            --strip-method=all
+            --method=strip-sequence --log=%(outfile)s.log''' % locals()
 
         statement = '''
                 samtools view -uS %(tmpdir)s/%(track)s.sam
@@ -1609,11 +1616,13 @@ class STAR(Mapper):
 
         if self.remove_non_unique:
             unique_cmd = '''| python %%(scriptsdir)s/bam2bam.py
-            --method=filter --filter-method=unique --log=%(outfile)s.log''' % locals()
+            --method=filter
+            --filter-method=unique --log=%(outfile)s.log''' % locals()
 
         if self.strip_sequence:
             strip_cmd = '''| python %%(scriptsdir)s/bam2bam.py
-            --strip-method=all --method=strip-=sequence --log=%(outfile)s.log''' % locals()
+            --strip-method=all
+            --method=strip-sequence --log=%(outfile)s.log''' % locals()
 
         statement = '''
                 cp %(tmpdir)s/Log.std.out %(outfile)s.std.log;
@@ -1743,11 +1752,13 @@ class Bowtie(Mapper):
 
         if self.remove_non_unique:
             unique_cmd = '''| python %%(scriptsdir)s/bam2bam.py
-            --method=filter --filter-method=unique --log=%(outfile)s.log''' % locals()
+            --method=filter
+            --filter-method=unique --log=%(outfile)s.log''' % locals()
 
         if self.strip_sequence:
             strip_cmd = '''| python %%(scriptsdir)s/bam2bam.py
-            --strip-method=all --method=strip-=sequence --log=%(outfile)s.log''' % locals()
+            --strip-method=all
+            --method=strip-sequence --log=%(outfile)s.log''' % locals()
 
         statement = '''cat %(tmpdir_fastq)s/out.bam
         | python %%(scriptsdir)s/bam2bam.py
@@ -1866,11 +1877,13 @@ class BowtieTranscripts(Mapper):
 
         if self.remove_non_unique:
             unique_cmd = '''| python %%(scriptsdir)s/bam2bam.py
-            --method=filter --filter-method=unique --log=%(outfile)s.log''' % locals()
+            --method=filter
+            --filter-method=unique --log=%(outfile)s.log''' % locals()
 
         if self.strip_sequence:
             strip_cmd = '''| python %%(scriptsdir)s/bam2bam.py
-            --strip-method=all --method=strip-=sequence --log=%(outfile)s.log''' % locals()
+            --strip-method=all
+            --method=strip-sequence --log=%(outfile)s.log''' % locals()
 
         statement = '''cat %(tmpdir_fastq)s/out.bam
              %(unique_cmd)s
@@ -1900,11 +1913,15 @@ class BowtieJunctions(BowtieTranscripts):
 
         if self.remove_non_unique:
             unique_cmd = '''| python %%(scriptsdir)s/bam2bam.py
-            --method=filter --filter-method=unique --log=%(outfile)s.log''' % locals()
+            --method=filter
+            --filter-method=unique
+            --log=%(outfile)s.log''' % locals()
 
         if self.strip_sequence:
             strip_cmd = '''| python %%(scriptsdir)s/bam2bam.py
-            --strip-method=all --method=strip-=sequence --log=%(outfile)s.log''' % locals()
+            --strip-method=all
+            --method=strip-sequence
+            --log=%(outfile)s.log''' % locals()
 
         statement = '''
         cat %(tmpdir_fastq)s/out.bam
