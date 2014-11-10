@@ -148,7 +148,8 @@ if [ "$OS" == "ubuntu" -o "$OS" == "sl" -o "$OS" == "centos" ] ; then
    pip install MySQL-python
    pip install PyGreSQL
    pip install PyYAML
-   pip install SphinxReport==2.0
+#   pip install SphinxReport==2.0
+   pip install SphinxReport
    pip install alignlib-lite
    pip install drmaa
    pip install hgapi
@@ -204,7 +205,6 @@ elif [ "$OS" == "travis" ] ; then
    pip install matplotlib
    pip install scipy
 
-   
    # Install latest versions of packages
    # substitute requires.txt on travis installation --start
    # pip install -r https://raw.github.com/CGATOxford/cgat/master/requires.txt
