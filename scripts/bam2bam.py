@@ -182,7 +182,8 @@ def main(argv=None):
                       "from a bam file. Multiple methods can be supplied "
                       "[%default]")
 
-    parser.add_option("--reference-bam-file", dest="reference_bam", type="string",
+    parser.add_option("--reference-bam-file", dest="reference_bam",
+                      type="string",
                       help="bam-file to filter with [%default]")
 
     parser.add_option("--force-output", dest="force", action="store_true",
@@ -191,7 +192,7 @@ def main(argv=None):
                       "they think it not necessary "
                       "[%default]")
 
-    parser.add_option("--sam-file", dest="output_sam", action="store_true",
+    parser.add_option("--output-sam", dest="output_sam", action="store_true",
                       help="output in sam format [%default]")
 
     parser.add_option("--inplace", dest="inplace", action="store_true",
@@ -200,15 +201,17 @@ def main(argv=None):
                       "as arguments. Temporary bam files are written "
                       "to /tmp [%default]")
 
-    parser.add_option("--first-fastq-file", "-1", dest="fastq_pair1", type="string",
-                      help="fastq file with read information for first "
-                      "in pair or unpaired. Used for unstripping sequence "
-                      "and quality scores [%default]")
+    parser.add_option(
+        "--first-fastq-file", "-1", dest="fastq_pair1", type="string",
+        help="fastq file with read information for first "
+        "in pair or unpaired. Used for unstripping sequence "
+        "and quality scores [%default]")
 
-    parser.add_option("--second-fastq-file", "-2", dest="fastq_pair2", type="string",
-                      help="fastq file with read information for second "
-                      "in pair. Used for unstripping sequence "
-                      "and quality scores  [%default]")
+    parser.add_option(
+        "--second-fastq-file", "-2", dest="fastq_pair2", type="string",
+        help="fastq file with read information for second "
+        "in pair. Used for unstripping sequence "
+        "and quality scores  [%default]")
 
     parser.set_defaults(
         methods=[],

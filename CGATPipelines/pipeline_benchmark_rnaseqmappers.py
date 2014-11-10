@@ -293,7 +293,8 @@ def mapReadsWithBFAST(infiles, outfile):
                -n %(bfast_threads)i
                -i %(outfile)s.baf 
     2> %(outfile)s.post.log 
-    | python %(scriptsdir)s/bam2bam.py --sam-file --method=unset-unmapped-mapq --method=set-nh --log=%(outfile)s.log
+    | python %(scriptsdir)s/bam2bam.py --output-sam
+    --method=unset-unmapped-mapq --method=set-nh --log=%(outfile)s.log
     | gzip > %(outfile)s
     '''
     P.run()
@@ -316,7 +317,7 @@ def mapReadsWithShrimp(infiles, outfile):
     job_threads = PARAMS["shrimp_threads"]
 
     statement = '''
-    gmapper-cs --full-threshold 80%% --threads %(shrimp_threads)i --fastq --output-report 5 --sam-file
+    gmapper-cs --full-threshold 80%% --threads %(shrimp_threads)i --fastq --output-report
               --sam-unaligned
               %(shrimp_options)s
               %(infile)s 
@@ -384,7 +385,8 @@ def mapReadsWithBWA(infiles, outfile):
 
     statement = '''
     bwa samse %(bwa_samse_options)s %(bwa_genome_dir)s/%(genome)s_cs %(outfile)s.sai %(infile)s 
-    | python %(scriptsdir)s/bam2bam.py --sam-file --method=set-nh --method=unset-unmapped-mapq --log=%(outfile)s.log
+    | python %(scriptsdir)s/bam2bam.py --output-sam
+    --method=set-nh --method=unset-unmapped-mapq --log=%(outfile)s.log
     | gzip 
     > %(outfile)s
     '''
@@ -473,13 +475,13 @@ def mapReadsWithBowtie(infiles, outfile):
     gunzip < %(infile)s > %(tmpfile)s;
     checkpoint;
     bowtie -q
-           --sam-file 
+           --sam
            -C
            --threads %(bowtie_threads)s
            %(bowtie_options)s
            %(bowtie_genome_dir)s/%(genome)s_cs
            %(tmpfile)s
-    | python %(scriptsdir)s/bam2bam.py --sam-file --method=set-nh --log=%(outfile)s.log
+    | python %(scriptsdir)s/bam2bam.py --output-sam --method=set-nh --log=%(outfile)s.log
     | gzip
     > %(outfile)s;
     checkpoint;
@@ -632,7 +634,7 @@ def mapReadsWithBowtieAgainstTranscriptome(infiles, outfile):
     gunzip < %(infile)s > %(tmpfile)s;
     checkpoint;
     bowtie -q
-           --sam-file 
+           --sam
            -C
            --un /dev/null
            --threads %(bowtie_threads)s
@@ -640,8 +642,8 @@ def mapReadsWithBowtieAgainstTranscriptome(infiles, outfile):
            --best --strata -a
            %(prefix)s_cs
            %(tmpfile)s
-    | python %(scriptsdir)s/bam2bam.py --sam-file --method=set-nh --log=%(outfile)s.log
-    | perl -p -e "if (/^\\@HD/) { s/\\bSO:\S+/\\bSO:coordinate/}"  
+    | python %(scriptsdir)s/bam2bam.py --output-sam --method=set-nh --log=%(outfile)s.log
+    | perl -p -e "if (/^\\@HD/) { s/\\bSO:\S+/\\bSO:coordinate/}"
     | samtools import %(contigs)s - -
     | samtools sort - %(track)s;
     checkpoint;
@@ -876,16 +878,18 @@ def mapReadsWithBowtieAgainstJunctions(infiles, outfile):
     gunzip < %(infile)s > %(tmpfile)s;
     checkpoint;
     bowtie -q
-           --sam-file 
+           --sam
            -C
            --un /dev/null
            --threads %(bowtie_threads)s
-           %(transcriptome_options)s 
+           %(transcriptome_options)s
            --best --strata -a
            %(prefix)s_cs
            %(tmpfile)s
-    | python %(scriptsdir)s/bam2bam.py --method=set-nh --log=%(outfile)s.log
-    | python %(scriptsdir)s/rnaseq_junction_bam2bam.py --contigs-tsv-file=%(contigs)s --log=%(outfile)s.log
+    | python %(scriptsdir)s/bam2bam.py
+    --method=set-nh --log=%(outfile)s.log
+    | python %(scriptsdir)s/rnaseq_junction_bam2bam.py
+    --contigs-tsv-file=%(contigs)s --log=%(outfile)s.log
     | samtools sort - %(track)s;
     checkpoint;
     samtools index %(outfile)s

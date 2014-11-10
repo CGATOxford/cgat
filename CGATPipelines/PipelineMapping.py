@@ -919,7 +919,7 @@ class BWA(Mapper):
         if self.align_stats:
             statement += '''cat %(outfile)s
             | python %%(scriptsdir)s/bam2bam.py -v 0
-            --method=set-sequence --sam-file
+            --method=set-sequence --output-sam
             | CollectMultipleMetrics
             INPUT=/dev/stdin
             REFERENCE_SEQUENCE=%%(bwa_index_dir)s/%%(genome)s.fa
@@ -1701,7 +1701,7 @@ class Bowtie(Mapper):
 
         # bowtie outputs sam per default
         if executable == 'bowtie':
-            data_options.append('--sam-file')
+            data_options.append('--sam')
 
         data_options = " ".join(data_options)
 
@@ -1835,7 +1835,7 @@ class BowtieTranscripts(Mapper):
         if nfiles == 1:
             infiles = ",".join(["<(zcat %s)" % x for x in infiles[0]])
             statement = '''
-            %(executable)s --quiet --sam-file
+            %(executable)s --quiet --sam
             --threads %%(bowtie_threads)i
             %(data_options)s
             %%(bowtie_options)s
@@ -1852,7 +1852,7 @@ class BowtieTranscripts(Mapper):
             infiles2 = ",".join(["<(zcat %s)" % x for x in infiles[1]])
 
             statement = '''
-            %(executable)s --quiet --sam-file
+            %(executable)s --quiet --sam
             --threads %%(bowtie_threads)i
             %(data_options)s
             %%(bowtie_options)s

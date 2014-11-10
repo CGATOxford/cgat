@@ -111,7 +111,8 @@ def buildPicardAlignmentStats(infile, outfile, genome_file):
     # or there is no sequence/quality information within the bam file.
     # Thus, add it explicitely.
     statement = '''cat %(infile)s
-    | python %(scriptsdir)s/bam2bam.py -v 0 --method=set-sequence --sam-file
+    | python %(scriptsdir)s/bam2bam.py -v 0
+    --method=set-sequence --output-sam
     | CollectMultipleMetrics
     INPUT=/dev/stdin
     REFERENCE_SEQUENCE=%(genome_file)s
@@ -303,6 +304,7 @@ def loadPicardHistogram(infiles, outfile, suffix, column,
                       --take=2
                    %(filenames)s
                 | python %(scriptsdir)s/csv2db.py
+                      --allow-empty-file
                       --header-names=%(column)s,%(header)s
                       --replace-header
                       --add-index=track

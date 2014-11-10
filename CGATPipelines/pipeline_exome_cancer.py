@@ -553,7 +553,7 @@ def runPicardOnRealigned(infile, outfile):
 
     statement = '''
     cat %(infile)s
-    | python %%(scriptsdir)s/bam2bam.py -v 0 --method=set-sequence --bam
+    | python %%(scriptsdir)s/bam2bam.py -v 0 --method=set-sequence
     | CollectMultipleMetrics
     INPUT=/dev/stdin
     REFERENCE_SEQUENCE=%%(bwa_index_dir)s/%%(genome)s.fa
@@ -562,7 +562,8 @@ def runPicardOnRealigned(infile, outfile):
     VALIDATION_STRINGENCY=SILENT
     >& %(outfile)s;
     cat %(infile_tumor)s
-    | python %%(scriptsdir)s/bam2bam.py -v 0 --method=set-sequence --sam-file
+    | python %%(scriptsdir)s/bam2bam.py -v 0
+    --method=set-sequence --output-sam
     | CollectMultipleMetrics
     INPUT=/dev/stdin
     REFERENCE_SEQUENCE=%%(bwa_index_dir)s/%%(genome)s.fa
