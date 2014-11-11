@@ -39,7 +39,7 @@ filter_unique_mapped_sam:
     stdin: nh_flag.bam
     outputs: [stdout]
     references: [filtered.sam]
-    options: -v 0 --method=filter --filter-method=unique --method=filter --filter-method=mapped --sam-file
+    options: -v 0 --method=filter --filter-method=unique --method=filter --filter-method=mapped --output-sam
 
 set_sequence:
     stdin: strip_sequence.bam

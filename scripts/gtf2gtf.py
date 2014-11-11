@@ -533,7 +533,7 @@ def main(argv=None):
             noutput += 1
             nfeatures += 1
 
-    elif "set-gene2transcript" == options.method:
+    elif "set-gene-to-transcript" == options.method:
 
         for gff in GTF.iterator(options.stdin):
 
@@ -545,7 +545,7 @@ def main(argv=None):
             noutput += 1
             nfeatures += 1
 
-    elif "set-protein2transcript" == options.method:
+    elif "set-protein-to-transcript" == options.method:
 
         for gff in GTF.iterator(options.stdin):
             ninput += 1
