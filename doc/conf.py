@@ -70,10 +70,11 @@ copyright = u'2011, 2012, 2013, 2014 Andreas Heger'
 
 
 # Included at the end of each rst file
-rst_epilog='''
+rst_epilog = '''
 .. _CGAT Training Programme: http://www.cgat.org
-.. _pysam: http://code.google.com/p/pysam/
+.. _pysam: https://github.com/pysam-developers/pysam
 .. _samtools: http://samtools.sourceforge.net/
+.. _htslib: http://www.htslib.org/
 .. _tabix: http://samtools.sourceforge.net/tabix.shtml/
 .. _Galaxy: https://main.g2.bx.psu.edu/
 .. _cython: http://cython.org/
