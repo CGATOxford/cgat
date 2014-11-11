@@ -135,7 +135,7 @@ coverage-mean	?	what does it do?		scripts/gtf2reads.py
 coverage-std	?	what does it do?		scripts/gtf2reads.py
 coverage-tsv-file	ok			scripts/psl2assembly.py
 create	bad	should be -method		scripts/mysql_clone_database.py
-crop	replace		method=crop	--
+crop	replace		method=crop --crop-gff-file	--
 crop-gff-file	ok			scripts/gff2gff.py
 crop-unique	replace	 	method=crop-unique	--
 csv-dialect	ok			scripts/csv2db.py
