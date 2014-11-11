@@ -215,7 +215,7 @@ def combineGFF(gffs,
 def cropGFFUnique(gffs, ignore_strand=True):
     """crop intervals in gff file.
 
-    only unique regions are kept. This method ignores the feature field.
+    Only unique regions are kept. This method ignores the feature field.
 
     If ignore_strand is set, strand information for cropping
     is ignored.

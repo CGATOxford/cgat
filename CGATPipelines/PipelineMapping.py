@@ -276,6 +276,7 @@ def resetGTFAttributes(infile, genome, gene_ids, outfile):
     # I was not able to resolve this, it was a complex
     # bug dependent on both the read libraries and the input reference gtf
     # files
+    job_options = "-l mem_free=2G"
 
     statement = '''
     cuffcompare -r <( gunzip < %(infile)s )

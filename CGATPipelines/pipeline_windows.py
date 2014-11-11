@@ -738,7 +738,8 @@ def mapTrack2Input(tracks):
 #########################################################################
 
 
-@transform(loadWindowsReadCounts, suffix(".load"), "_l2foldchange_input.tsv")
+@transform(loadWindowsReadCounts, suffix(".load"),
+           "_l2foldchange_input.tsv.gz")
 def buildWindowsFoldChangesPerInput(infile, outfile):
     '''Compute fold changes for each sample compared to appropriate input.
 
@@ -797,10 +798,12 @@ def buildWindowsFoldChangesPerInput(infile, outfile):
 
     dataframe = numpy.log2(dataframe)
 
-    dataframe.to_csv(outfile, sep="\t", index=False)
+    dataframe.to_csv(IOTools.openFile(outfile, "w"),
+                     sep="\t", index=False)
 
 
-@transform(loadWindowsReadCounts, suffix(".load"), "_l2foldchange_median.tsv")
+@transform(loadWindowsReadCounts, suffix(".load"),
+           "_l2foldchange_median.tsv.gz")
 def buildWindowsFoldChangesPerMedian(infile, outfile):
     '''Compute l2fold changes for each sample compared to the median count
     in sample.
@@ -833,11 +836,12 @@ def buildWindowsFoldChangesPerMedian(infile, outfile):
 
     dataframe = numpy.log2(dataframe)
 
-    dataframe.to_csv(outfile, sep="\t", index=False)
+    dataframe.to_csv(IOTools.openFile(outfile, "w"),
+                     sep="\t", index=False)
 
 
 @transform((buildWindowsFoldChangesPerMedian, buildWindowsFoldChangesPerInput),
-           suffix(".tsv"), ".load")
+           suffix(".tsv.gz"), ".load")
 def loadWindowsFoldChanges(infile, outfile):
     '''load fold change stats'''
     P.load(infile, outfile)

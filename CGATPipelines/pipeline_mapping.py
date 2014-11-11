@@ -390,14 +390,17 @@ def buildIntronGeneModels(infile, outfile):
     statement = '''gunzip
         < %(infile)s
         | awk '$2 == "protein_coding"'
-        | python %(scriptsdir)s/gtf2gtf.py --method=sort --sort-order=gene
+        | python %(scriptsdir)s/gtf2gtf.py
+               --method=sort
+               --sort-order=gene
         | python %(scriptsdir)s/gtf2gtf.py
                --method=exons2introns
                --intron-min-length=100
                --intron-border=10
                --log=%(outfile)s.log
         | python %(scriptsdir)s/gff2gff.py
-               --crop=%(filename_exons)s
+               --method=crop
+               --crop-gff-file=%(filename_exons)s
                --log=%(outfile)s.log
         | python %(scriptsdir)s/gtf2gtf.py
               --method=set-transcript-to-gene
