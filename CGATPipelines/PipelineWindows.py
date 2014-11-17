@@ -1,14 +1,23 @@
+'''
+
+Requirements:
+
+* bedtools >= 2.21.0
+* picardtools >= 1.106
+* samtools >= 1.1
+* MEDIPS >= 1.15.0
+
+'''
+
 import os
 import re
 import collections
 import pandas
 from math import log
 import numpy as np
-import random
 import numpy.ma as ma
 import itertools
 
-import CGAT.Experiment as E
 import CGAT.Pipeline as P
 import CGAT.BamTools as BamTools
 import CGAT.IOTools as IOTools
@@ -428,8 +437,6 @@ def runDE(infiles, outfile, outdir,
 
     At the end, a new q-value is computed from all results.
     '''
-
-    to_cluster = True
 
     design_file, counts_file = infiles
 

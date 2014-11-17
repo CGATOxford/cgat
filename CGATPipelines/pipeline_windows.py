@@ -103,34 +103,13 @@ fastq.1.gz, fastq2.2.gz
    Quality scores need to be of the same scale for all input
    files. Thus it might be difficult to mix different formats.
 
-Requirements
-------------
-
-On top of the default CGAT setup, the pipeline requires the following
-software to be in the path:
-
-+----------------+---------------+--------------------------------------------+
-|*Program*       |*Version*      |*Purpose*                                   |
-+----------------+---------------+--------------------------------------------+
-|Stampy          |>=0.9.0        |read mapping                                |
-+----------------+---------------+--------------------------------------------+
-|BWA             |               |read mapping                                |
-+----------------+---------------+--------------------------------------------+
-|SAMtools        |               |filtering, SNV / indel calling              |
-+----------------+---------------+--------------------------------------------+
-|BEDTools        |               |filtering, SNV / indel calling              |
-+----------------+---------------+--------------------------------------------+
-|sra-tools       |               |extracting reads from .sra files            |
-+----------------+---------------+--------------------------------------------+
-|picard          |>=1.38         |bam/sam files. The .jar files need to be in |
-|                |               | your  CLASSPATH environment variable.      |
-+----------------+---------------+--------------------------------------------+
-
 Pipeline output
 ===============
 
-?
+Requirements:
 
+* bedtools >= 2.21.0
+* ucsctools
 
 Code
 ====
@@ -606,9 +585,6 @@ def buildBigBed(infile, outfile):
     '''bed file with intervals that are covered by reads in any of the experiments.
     '''
 
-    to_cluster = True
-    to_cluster = False
-
     tmpfile = P.getTempFilename()
 
     contig_sizes = os.path.join(
@@ -739,7 +715,7 @@ def mapTrack2Input(tracks):
 
 
 @transform(loadWindowsReadCounts, suffix(".load"),
-           "_l2foldchange_input.tsv.gz")
+           "_l2foldchange_input.tsv")
 def buildWindowsFoldChangesPerInput(infile, outfile):
     '''Compute fold changes for each sample compared to appropriate input.
 
@@ -1335,12 +1311,12 @@ def buildSpikeResults(infile, outfile):
 
     The method will output several files:
 
-    .spiked.gz: Number of intervals that have been spiked-in 
+    .spiked.gz: Number of intervals that have been spiked-in
                for each bin of expression and fold-change
 
     .power.gz: Global power analysis - aggregates over all
         ranges of fold-change and expression and outputs the
-        power, the proportion of intervals overall that 
+        power, the proportion of intervals overall that
         could be detected as differentially methylated.
 
         This is a table with the following columns:
@@ -1349,7 +1325,7 @@ def buildSpikeResults(infile, outfile):
         power - power level, number of intervals detectable
         intervals - number of intervals in observed data at given
                     level of fdr and power.
-        intervals_percent - percentage of intervals in observed data 
+        intervals_percent - percentage of intervals in observed data
               at given level of fdr and power
 
     '''

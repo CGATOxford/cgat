@@ -1,0 +1,123 @@
+## External tools
+
+tophat:
+    executable: tophat
+    version: --version
+    regex: '^TopHat v(\S+)'
+
+bowtie:
+    executable: bowtie
+    version: --version
+    regex: '^bowtie version (\S+)'
+
+bowtie2:
+    executable: bowtie2
+    version: --version
+    regex: 'version (\S+)'
+
+bwa:
+    executable: bwa
+    regex: 'Version: (\S*)'
+
+gsnap:
+    executable: gsnap
+    version: --version
+    regex: 'GSNAP version (\S+) called'
+
+star:
+    executable: star
+
+cufflinks:
+    executable: cufflinks
+    regex: 'cufflinks v(\S+)'
+
+# part of sra-tools
+fastq-dump:
+    executable: fastq-dump
+    version: --version
+    regex: 'fastq-dump : (\S+)'
+
+fastqc:
+    executable: fastqc
+    version: --version
+    regex: 'FastQC v(\S+)'
+
+sailfish:
+    executable: sailfish
+    version: --version
+    regex: 'version : (\S+)'
+
+samtools:
+    executable: samtools
+    regex: 'Version: (\S+)'
+
+bedtools:
+    executable: bedtools
+    version: --version
+    regex: 'bedtools\s+v(\S+)'
+
+ucsctools:
+    executable: bedToBigBed
+
+picardtools:
+    executable: CollectMultipleMetrics
+    version: --version
+    regex: '^(\S+)\('
+
+featurecounts:
+    executable: featureCounts
+    version: --version
+    regex: 'featureCounts v(\S+)'
+
+bismark:
+    executable: bismark
+    version: --version
+    regex: 'Bismark Version: v(\S+)'
+
+stampy:
+    executable: stampy.py
+    regex: 'stampy v(\S+)'
+
+## R Packages
+
+deseq:
+    rpackage: DESeq
+
+deseq2:
+    rpackage: DESeq2
+
+edger:
+    rpackage: edgeR
+    
+rcolorbrewer:
+    rpackage: RColorBrewer
+
+gplots:
+    rpackage: gplots
+
+mass:
+    rpackage: MASS
+
+siggenes:
+    rpackage: siggenes
+
+ggplot2:
+    rpackage: ggplot2
+
+reshape:
+    rpackage: reshape
+
+grid:
+    rpackage: grid
+
+limma:
+    rpackage: limma
+
+samr:
+    rpackage: samr
+
+hiddenmarkov:
+    rpackage: HiddenMarkov
+
+medips:
+    rpackage: MEDIPS

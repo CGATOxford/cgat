@@ -24,6 +24,16 @@ Type::
 
 for command line help.
 
+
+Requirements:
+
+* HiddenMarkov >= 1.8.0
+* cufflinks >= 2.2.1
+* MASS >= 7.3.34
+* RColorBrewer >= 1.0.5
+* featureCounts >= 1.4.3
+* samtools >= 1.1
+
 """
 
 import CGAT.Experiment as E
@@ -564,10 +574,12 @@ def filterAndMergeGTF(infile, outfile, remove_genes, merge=False):
 
     If *merge* is set, the resultant transcript models are merged by overlap.
 
-    A summary file "<outfile>.summary" contains the number of transcripts that failed 
-    various filters.
+    A summary file "<outfile>.summary" contains the number of
+    transcripts that failed various filters.
 
-    A file "<outfile>.removed.tsv.gz" contains the filters that a transcript failed.
+    A file "<outfile>.removed.tsv.gz" contains the filters that a
+    transcript failed.
+
     '''
 
     counter = E.Counter()
@@ -631,7 +643,7 @@ def filterAndMergeGTF(infile, outfile, remove_genes, merge=False):
         | python %(scriptsdir)s/gtf2gtf.py
             --method=renumber-transcripts --pattern-identifier="NONC%%06i"
             --log=%(outfile)s.log
-        | %(scriptsdir)s/gff_sort genepos 
+        | %(scriptsdir)s/gff_sort genepos
         | gzip > %(outfile)s
         '''
     else:
@@ -782,10 +794,10 @@ def runFeatureCounts(annotations_file,
         bam_prefix = P.snip(bam_tmp, ".bam")
         # sort by read name
         paired_processing = \
-            """samtools 
-                sort -@ %(nthreads)i -n %(bamfile)s %(bam_prefix)s; 
+            """samtools
+            sort -@ %(nthreads)i -n %(bamfile)s %(bam_prefix)s;
             checkpoint; """ % locals()
-        bamfile = bam_tmp 
+        bamfile = bam_tmp
     else:
         paired_options = ""
         paired_processing = ""

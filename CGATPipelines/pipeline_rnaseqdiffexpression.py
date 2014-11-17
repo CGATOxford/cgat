@@ -1,3 +1,4 @@
+
 """========================================
 RNA-Seq Differential expression pipeline
 ========================================
@@ -266,6 +267,8 @@ ChangeLog
 11.4.2014   Andreas Heger
             changed workflow. Multiple counters are applied and
             differential expression is computed on all.
+
+Requirements:
 
 
 Code

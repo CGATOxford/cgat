@@ -94,24 +94,6 @@ fastq.1.gz, fastq2.2.gz
    Quality scores need to be of the same scale for all input files.
    Thus it might be difficult to mix different formats.
 
-Requirements
-------------
-
-On top of the default CGAT setup, the pipeline requires the following software
-to be in the path:
-
-+--------------------+-------------------+----------------------------------+
-|*Program*           |*Version*          |*Purpose*                         |
-+--------------------+-------------------+----------------------------------+
-|fastqc              |>=0.9.0            |read quality control              |
-+--------------------+-------------------+----------------------------------+
-|sra-tools           |                   |extracting reads from .sra files  |
-+--------------------+-------------------+----------------------------------+
-|picard              |>=1.38             |bam/sam files. The .jar files need|
-|                    |                   |to be in your                     |
-|                    |                   | CLASSPATH environment variable.  |
-+--------------------+-------------------+----------------------------------+
-
 Pipeline output
 ===============
 
@@ -129,6 +111,10 @@ To run the example, simply unpack and untar::
    tar -xvzf pipeline_readqc.tgz
    cd pipeline_readqc
    python <srcdir>/pipeline_readqc.py make full
+
+Requirements:
+
+
 
 
 Code
@@ -197,7 +183,6 @@ REGEX_FORMATS = regex(r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz)")
 def runFastqc(infiles, outfile):
     '''convert sra files to fastq and check mapping qualities are in solexa format.
     Perform quality control checks on reads from .fastq files.'''
-    to_cluster = True
     m = PipelineMapping.FastQc(nogroup=PARAMS["readqc_no_group"],
                                outdir=PARAMS["exportdir"]+"/fastqc")
     statement = m.build((infiles,), outfile)

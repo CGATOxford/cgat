@@ -51,6 +51,21 @@ Usage
 Documentation
 -------------
 
+Requirements:
+
+* DESeq >= 1.17
+* DESeq2 >= 1.5.62
+* edgeR >= 3.7.16
+* gplots >= 2.14.2
+* samr >= 2.0
+* siggenes >= 1.39.0
+* ggplot2 >= 1.0.0
+* reshape >= 0.8.5
+* RColorBrewer >= 1.0.5
+* grid >= 3.1.1
+* limma >= 3.21.18
+
+
 Code
 ----
 
@@ -66,7 +81,6 @@ import re
 import pandas
 
 from rpy2.robjects import r as R
-import rpy2.rinterface as rinterface
 import rpy2.robjects as ro
 import rpy2.robjects.numpy2ri
 
