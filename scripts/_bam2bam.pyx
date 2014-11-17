@@ -10,7 +10,7 @@ cdef class SetNH:
     cdef stack
 
     def __cinit__(self, iter ):
-        self.iter = itertools.groupby( iter, lambda x: x.qname )
+        self.iter = itertools.groupby(iter, lambda x: x.qname)
         self.stack = []
 
     def __iter__(self):
@@ -29,7 +29,7 @@ cdef class SetNH:
                 nh = len(self.stack)
                 for read in self.stack:
                     if not read.is_unmapped:
-                        t = dict( read.tags )
+                        t = dict(read.tags)
                         t['NH'] = nh
                         read.tags = list(t.iteritems())
 
@@ -94,15 +94,15 @@ def filter_bam(Samfile input_samfile,
 
     cdef int * remove_contig_tids 
     cdef int nremove_contig_tids = 0
-    cdef AlignedRead read
-    cdef AlignedRead match
+    cdef AlignedSegment read
+    cdef AlignedSegment match
 
     # build index
     # this method will start indexing from the current file position
     # if you decide
     cdef int ret = 1
     cdef int x
-    cdef bam1_t * b = <bam1_t*>calloc(1, sizeof( bam1_t) )
+    cdef bam1_t * b = <bam1_t*>calloc(1, sizeof( bam1_t))
     cdef uint64_t pos
     cdef uint8_t * v
     cdef int32_t nm
@@ -149,14 +149,14 @@ def filter_bam(Samfile input_samfile,
                 index[qname].append(nm)
 
         E.info( "built index for %i reads" % len(index))
-        bam_destroy1( b )
+        bam_destroy1(b)
 
     # setup list of contigs to remove:
     if remove_contigs:
         nremove_contig_tids = len(remove_contigs)
-        remove_contig_tids = <int*>malloc( sizeof(int) * nremove_contig_tids )
-        for x, rname in enumerate( remove_contigs):
-            remove_contig_tids[x] = input_samfile.gettid( rname )
+        remove_contig_tids = <int*>malloc(sizeof(int) * nremove_contig_tids)
+        for x, rname in enumerate(remove_contigs):
+            remove_contig_tids[x] = input_samfile.gettid(rname)
                 
     E.info( "starting filtering" )
 

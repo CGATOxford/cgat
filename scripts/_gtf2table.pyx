@@ -234,7 +234,7 @@ class CounterReadCoverage(Counter):
         
         segments = self.getSegments()
 
-        cdef AlignedRead read
+        cdef AlignedSegment read
 
         # remove segments with excessive length
         segments = [ x for x in segments if (x[1] - x[0]) < self.max_length ]
@@ -735,7 +735,7 @@ class CounterReadCountsFull(CounterBAM):
             exon_starts[ix] = exons[ix][0]
             exon_ends[ix] = exons[ix][1]
             
-        cdef AlignedRead read
+        cdef AlignedSegment read
 
         # define counters, add 1 for quality filtered reads
 
@@ -1235,7 +1235,7 @@ class CounterReadPairCountsFull(CounterBAM):
             exon_starts[ix] = exons[ix][0]
             exon_ends[ix] = exons[ix][1]
             
-        cdef AlignedRead read1
+        cdef AlignedSegment read1
 
         # define counters, add 1 for quality filtered reads
         counters = numpy.zeros(ncounters, dtype=numpy.float)

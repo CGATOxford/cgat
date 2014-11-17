@@ -45,7 +45,7 @@ def count( Samfile samfile,
     '''
     cdef bint _remove_rna = remove_rna
 
-    cdef AlignedRead read
+    cdef AlignedSegment read
 
     # counters
     cdef int ninput = 0

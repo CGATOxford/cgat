@@ -116,7 +116,7 @@ class RangeCounterBAM(RangeCounter):
         cdef int xstart, xend, rstart, rend, start, end
         cdef int interval_width
         cdef int current_offset
-        cdef AlignedRead read
+        cdef AlignedSegment read
         cdef int shift_extend
         cdef int work_offset
         cdef int pos
@@ -186,7 +186,7 @@ class RangeCounterBAMShift(RangeCounterBAM):
         cdef int xstart, xend, rstart, rend, start, end
         cdef int interval_width
         cdef int current_offset
-        cdef AlignedRead read
+        cdef AlignedSegment read
         cdef int shift_extend
         cdef int work_offset
         cdef int pos
@@ -269,7 +269,7 @@ class RangeCounterBAMMerge(RangeCounterBAM):
         cdef int xstart, xend, rstart, rend, start, end
         cdef int interval_width
         cdef int current_offset
-        cdef AlignedRead read
+        cdef AlignedSegment read
         cdef int work_offset
         cdef int pos
         cdef int length
@@ -338,7 +338,7 @@ class RangeCounterBAMBaseAccuracy(RangeCounterBAM):
         cdef int xstart, xend, rstart, rend, start, end
         cdef int interval_width
         cdef int current_offset
-        cdef AlignedRead read
+        cdef AlignedSegment read
         cdef int work_offset
         cdef int pos
         cdef int length

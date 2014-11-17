@@ -30,7 +30,7 @@ def merge_pairs( Samfile input_samfile,
     cdef int noutput = 0
     cdef int flag
 
-    cdef AlignedRead read
+    cdef AlignedSegment read
     cdef int c_max_insert_size = max_insert_size
     cdef int c_min_insert_size = min_insert_size
     cdef int start, end

@@ -138,19 +138,6 @@ def CompareSets(set1, set2):
     return unique1, unique2, common
 
 
-def MakeNonRedundant(set):
-
-    set.sort()
-
-    last = -1
-    result = []
-    for x in set:
-        if x != last:
-            result.append(x)
-        last = x
-
-    return result
-
 # The following is derived from the python recipe http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/410685
 # by Zoran Isailovski
 
