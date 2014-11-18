@@ -146,10 +146,6 @@ R commands to create the plot within the notebook.
 Writing pipelines
 =================
 
-=========================
-CGAT Pipelines
-=========================
-
 Best practice for CGAT pipelines:
 
 1. All non-trivial code should be extracted to modules or scripts.
@@ -175,14 +171,18 @@ Best practice for CGAT pipelines:
    major changes to production pipelines and associated modules – to
    be arranged as required.
 
-7.  The best way to manage pipeline improvements is by individuals
-   using pipelines talking responsibility for incremental
+7. The best way to manage pipeline improvements is by individuals
+   using pipelines taking responsibility for incremental
    improvement. As best practice fellows should announce plans to
    modify particular pipelines and modules on the CGAT members list to
    avoid duplication of effort. Fellows should log the changes that
    they make in a change log and document both modules and pipelines
    in detail.
 
+8. Add a section with Requirements to all pipeline scripts and tools.
+   Only add them in files where the actual dependency arises, see
+   :doc:`modules/Requirements`.
+   
 
 
 

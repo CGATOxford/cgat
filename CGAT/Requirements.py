@@ -17,15 +17,18 @@ ends at the first blank line::
     * bowtie2 >= 2.2.3
     * bwa >= 0.7.8
     * gsnap >= 2014-01-21
-    * star >= 2.3.0e
+    * star >= 2.3.0e (optional)
 
 If a version is ommitted, the module will only check if a tool or package
-is installed, but not its version.
+is installed, but not its version. If the requirement is followed by the tag
+``(optional)``, then a missing dependency will not be flagged as an error.
 
-The following still needs to be implemented:
+Dependencies are resolved by a :term:`yaml` formatted input file
+containing tool definitions. See :file:`external_dependencies.txt` in
+the repository for an example.
 
-   * Indicate optional tools. If an optional tools is missing, the
-     pipeline will run, but only with limited functionality.
+Code
+----
 
 """
 
@@ -44,14 +47,14 @@ DEFINITIONS_FILE = "external_dependencies.txt"
 
 DATATYPE = collections.namedtuple(
     "DATATYPE",
-    "tool installed_version operation required_version status")
+    "tool installed_version operation required_version optional status")
 
 REGEX_REQUIREMENTS = re.compile("Requirements:\n+(([*]\s[^\n]*\n)*)\n",
                                 re.M)
 
 
 def readDefinitions(filename):
-    '''read definitions from a yaml file.'''
+    '''read definitions from a :term:`yaml` file.'''
     with IOTools.openFile(filename) as f:
         config = yaml.load(f)
         if config is None:
@@ -178,12 +181,15 @@ class RPackageChecker(RequirementChecker):
 
 
 class RPackageQuickChecker(RequirementChecker):
-    '''
-    A quicker check for an R package is by simply
-    testing the list of installed packages::
+    '''check for an R package by simply testing the list of
+    installed packages using the following R snippet::
 
        packinfo <- installed.packages (fields = c ("Package", "Version"))
        packinfo["graphics",c("Package", "Version")]
+
+    This checker will not check if a package can be loaded
+    successfully.
+
     '''
 
     def __init__(self, tool_definition):
@@ -200,7 +206,7 @@ class RPackageQuickChecker(RequirementChecker):
 
 def checkRequirementsFromBlock(requirements, counter=None, location=""):
     """check if requirements for a script are satisfied
-    
+
     This method expects a block with the requirements
     definitions.
     """
@@ -216,6 +222,10 @@ def checkRequirementsFromBlock(requirements, counter=None, location=""):
         # skip last empty line
         if not line:
             continue
+
+        is_optional = "(optional)" in line
+        if is_optional:
+            line = re.sub("\(optional\)", "", line)
 
         if re.search("[=><]", line):
             tool, required = re.search("[*]\s*(\S*)\s(.*)", line).groups()
@@ -242,8 +252,14 @@ def checkRequirementsFromBlock(requirements, counter=None, location=""):
             continue
 
         if not checker.isInstalled():
-            E.warn("%s: tools %s: not installed" % (location, tool))
-            counter.not_ininstalled += 1
+            E.warn("%s: tool %s: not installed" % (location, tool))
+            counter.not_installed += 1
+            results.append(DATATYPE._make((tool,
+                                           "-",
+                                           required_op,
+                                           required_version,
+                                           is_optional,
+                                           False)))
             continue
 
         if required_version != "?":
@@ -257,13 +273,13 @@ def checkRequirementsFromBlock(requirements, counter=None, location=""):
 
             if installed_version == "?":
                 E.warn("%s: tool %s: installed but can not determine version" %
-                       (tool,
-                        location))
+                       (location, tool))
                 counter.unknown_version += 1
                 results.append(DATATYPE._make((tool,
                                                installed_version,
                                                required_op,
                                                required_version,
+                                               is_optional,
                                                True)))
                 continue
 
@@ -295,6 +311,7 @@ def checkRequirementsFromBlock(requirements, counter=None, location=""):
                                        installed_version,
                                        required_op,
                                        required_version,
+                                       is_optional,
                                        ok)))
     return results
 

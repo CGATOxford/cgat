@@ -64,7 +64,7 @@ iterating over the file. The metrics output are:
 |                        |locations                                 |
 +------------------------+------------------------------------------+
 |reads_total             |number of reads in file. Either given via |
-|                        |--num-reads or deduc ed as the sum of   |
+|                        |--num-reads or deduc ed as the sum of     |
 |                        |mappend and unmapped reads                |
 +------------------------+------------------------------------------+
 |reads_mapped            |number of reads mapping in file. Derived  |

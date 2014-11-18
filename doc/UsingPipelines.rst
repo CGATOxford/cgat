@@ -7,11 +7,11 @@ This section provides a tutorial-like introduction to CGAT pipelines.
 Introduction
 =============
 
-A pipeline takes input data and performs a series of automated steps (:term:`task`) on it to 
-produce some output data. 
+A pipeline takes input data and performs a series of automated steps
+(:term:`task`) on it to produce some output data.
 
-Each pipeline is usually coupled with a :term:`SphinxReport` document to summarize and 
-visualize the results.
+Each pipeline is usually coupled with a :term:`CGATReport` document
+to summarize and visualize the results.
 
 It really helps if you are familiar with following:
 
@@ -26,18 +26,14 @@ It really helps if you are familiar with following:
 Setting up a pipeline
 ======================
 
-Before starting, check that your computing environment is appropriate
-(see :ref:`CGATSetup`). Once all components are in place, setting up a 
-pipeline involves the following steps:
-
-*Step 1*: Get the latest clone of the cgat script repository::
-
-   git clone https://github.com/CGATOxford/cgat.git
-
-The directory :file:`cgat` is the :term:`source directory`. It will be abbreviated
-``<cgat>`` in the following commands. This directory will contain the pipeline
-master script named :file:`pipeline_<name>.py`, the default configuration files
-and all the helper scripts and libraries to run the pipeline.
+*Step 1*: Get the latest clone of the cgat script repository.  Check
+that your computing environment is appropriate (see :ref:`CGATSetup`).
+The directory in which the CGAT code repository is located is the
+:term:`source directory`. It will be abbreviated ``<cgat>`` in the
+following commands. The source directory will contain the pipeline
+master script named :file:`pipeline_<name>.py`, the default
+configuration files and all the helper scripts and libraries to run
+the pipeline.
 
 *Step 2*: Create a :term:`working directory` and enter it. For example::
 
@@ -51,7 +47,7 @@ from within this directory.
 by a configuration file. A configuration file with all the default values can be 
 obtained by running::
 
-      python <cgat>/pipeline_<name>.py config
+      python <cgat>/CGATPipelines/pipeline_<name>.py config
 
 This will create a new :file:`pipeline.ini` file. **YOU MUST EDIT THIS FILE**.
 The default values are likely to use the wrong genome or point to non-existing
@@ -65,6 +61,13 @@ the pipeline documentation to find out exactly which files are needed
 and where they should be put. Commonly, a pipeline
 works from input files linked into the :term:`working directory` and named
 following pipeline specific conventions.
+
+*Step 5*: You can check if all the external dependencies to tools and
+R packages are satisfied by running::
+
+      python <cgat>/CGATPipelines/pipeline_<name>.py check
+
+See :ref:`ExternalDependencies` for more information.
 
 .. _PipelineRunning:
 

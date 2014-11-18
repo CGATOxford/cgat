@@ -31,23 +31,22 @@ It implements:
    * .fastq: paired-end and single-end
    * .csfasta: colour-space, single-end
 
-
 Requirements:
 
-* tophat >= 2.0.13
-* bowtie >= 1.0.0
-* bowtie2 >= 2.2.3
-* bwa >= 0.7.8
-* gsnap >= 2014-01-21
-* star >= 2.3.0e
 * cufflinks >= 2.2.1
 * fastq-dump >= 2.1.7
 * fastqc >= 0.9.2
 * sailfish >= 0.6.3
-* samtools >= 1.1
 * picardtools >= 1.106
-* bismark >= 0.12.5
-* stampy >= 1.0.23
+* samtools >= 1.1
+* tophat >= 2.0.13 (optional)
+* bowtie >= 1.0.0 (optional)
+* bowtie2 >= 2.2.3 (optional)
+* bwa >= 0.7.8
+* gsnap >= 2014-01-21 (optional)
+* star >= 2.3.0e (optional)
+* bismark >= 0.12.5 (optional)
+* stampy >= 1.0.23 (optional)
 
 Code
 ----

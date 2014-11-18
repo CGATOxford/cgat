@@ -97,13 +97,26 @@ Gpipe and OPTIC
    modules/Predictor.rst
    modules/BlastAlignments.rst 
 
-Tools
------
+CGAT infrastructure
+-------------------
+
+Below is a list of modules that are involved in maintainig the
+CGAT infrastructure such as logging, dependency tracking, etc.
 
 .. toctree::
    :maxdepth: 1
 
    modules/Experiment.rst
+   modules/Requirements.rst
+
+Toolboxes
+----------
+
+Toolboxes for generic problems.
+
+.. toctree::
+   :maxdepth: 1
+
    modules/CSV.rst
    modules/IOTools.rst
    modules/Iterators.rst

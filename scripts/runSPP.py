@@ -44,6 +44,12 @@ Usage
 Documentation
 -------------
 
+Requirements:
+
+* spp >= ?
+* snow >= 0.3.13
+* bedtools >= 2.21.0
+
 Code
 ----
 

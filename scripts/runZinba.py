@@ -45,6 +45,10 @@ Usage
 Documentation
 -------------
 
+Requirements:
+
+* zinba >= 2.01
+
 Code
 ----
 

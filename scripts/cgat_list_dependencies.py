@@ -78,14 +78,16 @@ def main(argv=None):
         for r in deps:
             tools[r.tool].append((r, key))
 
-    options.stdout.write("toool\trequired\tinstalled\tlocations\n")
-    for tool, deps in tools.items():
+    options.stdout.write(
+        "tool\trequired\tinstalled\tis_required\tlocations\n")
+    for tool, deps in sorted(tools.items()):
         options.stdout.write("\t".join((
             tool,
             ",".join(numpy.unique(
                 [x[0].operation + x[0].required_version for x in deps])),
             ",".join(numpy.unique(
                 [x[0].installed_version for x in deps])),
+            str(not numpy.all([x[0].optional for x in deps])),
             ",".join(numpy.unique(
                 [x[1] for x in deps])))) + "\n")
 
