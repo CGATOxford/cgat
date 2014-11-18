@@ -9,10 +9,9 @@ Contents:
 
    pipeline/QC.rst
    pipeline/Coverage.rst
-   pipeline/summaryPlots.rst
-   pipeline/summaryPlots/ReadPositionsMethylationBias.rst
-   pipeline/summaryPlots/MethylationBySample.rst
-   pipeline/summaryPlots/Heatmaps.rst
+   pipeline/ReadPositionsMethylationBias.rst
+   pipeline/MethylationBySample.rst
+   pipeline/Heatmaps.rst
 
 .. errorlist::
 

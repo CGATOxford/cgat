@@ -9,15 +9,25 @@ from collections import OrderedDict as odict
 from rrbsReport import *
 
 
-class seqStart(RrbsTracker, SingleTableTrackerRows):
-    table = "read_start_summary"
+class seqStart(RrbsTracker):
+    def __call__(self, track, slice=None):
+        statement = '''SELECT * FROM read_start_summary'''
+        return self.getAll(statement)
 
-class coverage(RrbsTracker, SingleTableTrackerRows):
-    table = "coverage"
 
-class readsRemaining(RrbsTracker, SingleTableTrackerRows):
-    table = "reads_remaining_by_threshold"
+class coverage(RrbsTracker):
+    def __call__(self, track, slice=None):
+        statement = '''SELECT * FROM coverage'''
+        return self.getAll(statement)
 
-class readsRemaining(RrbsTracker, SingleTableTrackerRows):
-    table = "coverage_overlap"
 
+class readsRemaining(RrbsTracker):
+    def __call__(self, track, slice=None):
+        statement = '''SELECT * FROM reads_remaining_by_threshold'''
+        return self.getAll(statement)
+
+
+class CpGOverlap(RrbsTracker):
+    def __call__(self, track, slice=None):
+        statement = '''SELECT * FROM coverage_overlap'''
+        return self.getAll(statement)

@@ -10,7 +10,6 @@ Note: For paired end samples, only the first read pair is shown
 
 .. report:: Coverage.seqStart
    :render: r-ggplot
-   :transform: toframe
    :statement: aes(x=file,fill=sequence,group=1) +
 	       geom_bar(position="fill",stat="identity",
 	       colour="white",aes(y=reads))+

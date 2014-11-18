@@ -10,7 +10,6 @@ between 1-100.
 
 .. report:: Coverage.coverage
    :render: r-ggplot
-   :transform: toframe
    :statement: aes(x=cov,y=freq) +
 	       geom_line(size=1,aes(linetype=as.factor(rep), 
 	       colour=paste0(sample,'-',condition))) +
@@ -42,7 +41,6 @@ remain across a range of coverage thresholds
 
 .. report:: Coverage.readsRemaining
    :render: r-ggplot
-   :transform: toframe
    :statement: aes(x=threshold,y=percentage,group=file) +
 	       geom_line(size=1,aes(linetype=as.factor(rep), 
 	       colour=paste0(sample,'-',condition))) + 
@@ -73,7 +71,6 @@ The following plot shows the number of CpGs which overlap at 10X coverage
 
 .. report:: Coverage.CpGOverlap
    :render: r-ggplot
-   :transform: toframe
    :statement: aes(x=overlaps,y=CpGs) +
 	       geom_bar(stat="identity")+ 
 	       ylab('Number of CpGs') +
