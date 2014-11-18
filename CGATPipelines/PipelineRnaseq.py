@@ -24,6 +24,16 @@ Type::
 
 for command line help.
 
+
+Requirements:
+
+* HiddenMarkov >= 1.8.0
+* cufflinks >= 2.2.1
+* MASS >= 7.3.34
+* RColorBrewer >= 1.0.5
+* featureCounts >= 1.4.3
+* samtools >= 1.1
+
 """
 
 import CGAT.Experiment as E
@@ -564,10 +574,12 @@ def filterAndMergeGTF(infile, outfile, remove_genes, merge=False):
 
     If *merge* is set, the resultant transcript models are merged by overlap.
 
-    A summary file "<outfile>.summary" contains the number of transcripts that failed 
-    various filters.
+    A summary file "<outfile>.summary" contains the number of
+    transcripts that failed various filters.
 
-    A file "<outfile>.removed.tsv.gz" contains the filters that a transcript failed.
+    A file "<outfile>.removed.tsv.gz" contains the filters that a
+    transcript failed.
+
     '''
 
     counter = E.Counter()
@@ -616,22 +628,22 @@ def filterAndMergeGTF(infile, outfile, remove_genes, merge=False):
         statement = '''
         %(scriptsdir)s/gff_sort pos < %(tmpfilename)s
         | python %(scriptsdir)s/gtf2gtf.py
-            --unset-genes="NONC%%06i"
+            --method=unset-genes --pattern-identifier="NONC%%06i"
             --log=%(outfile)s.log
         | python %(scriptsdir)s/gtf2gtf.py
-            --merge-genes
+            --method=merge-genes
             --log=%(outfile)s.log
         | python %(scriptsdir)s/gtf2gtf.py
-            --merge-exons
+            --method=merge-exons
             --merge-exons-distance=5
             --log=%(outfile)s.log
         | python %(scriptsdir)s/gtf2gtf.py
-            --renumber-genes="NONC%%06i"
+            --method=renumber-genes --pattern-identifier="NONC%%06i"
             --log=%(outfile)s.log
         | python %(scriptsdir)s/gtf2gtf.py
-            --renumber-transcripts="NONC%%06i"
+            --method=renumber-transcripts --pattern-identifier="NONC%%06i"
             --log=%(outfile)s.log
-        | %(scriptsdir)s/gff_sort genepos 
+        | %(scriptsdir)s/gff_sort genepos
         | gzip > %(outfile)s
         '''
     else:
@@ -704,7 +716,7 @@ def loadCufflinks(infile, outfile):
     track = P.snip(outfile, ".load")
     P.load(infile + ".genes_tracking.gz",
            outfile=track + "_genefpkm.load",
-           options="--index=gene_id "
+           options="--add-index=gene_id "
            "--ignore-column=tracking_id "
            "--ignore-column=class_code "
            "--ignore-column=nearest_ref_id")
@@ -712,7 +724,7 @@ def loadCufflinks(infile, outfile):
     track = P.snip(outfile, ".load")
     P.load(infile + ".fpkm_tracking.gz",
            outfile=track + "_fpkm.load",
-           options="--index=tracking_id "
+           options="--add-index=tracking_id "
            "--ignore-column=nearest_ref_id "
            "--rename-column=tracking_id:transcript_id")
 
@@ -741,7 +753,7 @@ def mergeCufflinksFPKM(infiles, outfile,
         --log=%(outfile)s.log
         --columns=1
         --skip-titles
-        --headers=%(headers)s
+        --header-names=%(headers)s
         --take=FPKM fpkm.dir/%(prefix)s_*.%(tracking)s.gz
     | perl -p -e "s/tracking_id/%(identifier)s/"
     | %(scriptsdir)s/hsort 1
@@ -782,10 +794,10 @@ def runFeatureCounts(annotations_file,
         bam_prefix = P.snip(bam_tmp, ".bam")
         # sort by read name
         paired_processing = \
-            """samtools 
-                sort -@ %(nthreads)i -n %(bamfile)s %(bam_prefix)s; 
+            """samtools
+            sort -@ %(nthreads)i -n %(bamfile)s %(bam_prefix)s;
             checkpoint; """ % locals()
-        bamfile = bam_tmp 
+        bamfile = bam_tmp
     else:
         paired_options = ""
         paired_processing = ""

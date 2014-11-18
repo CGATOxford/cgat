@@ -245,8 +245,16 @@ class Entry:
         self.score = other.score
         self.strand = other.strand
         self.frame = other.frame
-        self.gene_id = other.gene_id
-        self.transcript_id = other.transcript_id
+        # gene_id and transcript_id can be optional
+        try:
+            self.gene_id = other.gene_id
+        except AttributeError:
+            pass
+        try:
+            self.transcript_id = other.transcript_id
+        except AttributeError:
+            pass
+
         self.attributes = copy.copy(other.asDict())
         # from gff - remove gene_id and transcript_id from attributes
         try:
@@ -484,15 +492,24 @@ def transcript_iterator(gff_iterator, strict=True):
 
     return a list of entries with the same transcript id.
 
-    Note: the entries for the same transcript have to be consecutive
-    in the file.
+    Any features without a transcript_id will be ignored.
+
+    The entries for the same transcript have to be consecutive
+    in the file. If *strict* is set an AssertionError will be
+    raised if that is not true.
     """
     last = None
     matches = []
     found = set()
 
     for gff in gff_iterator:
-        this = gff.transcript_id + gff.gene_id
+
+        # ignore entries without transcript or gene id
+        try:
+            this = gff.transcript_id + gff.gene_id
+        except AttributeError:
+            continue
+
         if last != this:
             if last:
                 yield matches
@@ -506,7 +523,7 @@ def transcript_iterator(gff_iterator, strict=True):
         yield matches
 
 
-def joined_iterator(gffs, group_field=None):
+def joined_iterator(gff_iterator, group_field=None):
     """iterate over the contents of a gff file.
 
     return a list of entries with the same group id.
@@ -525,7 +542,7 @@ def joined_iterator(gffs, group_field=None):
     else:
         group_function = lambda x: x[group_field]
 
-    for gff in gffs:
+    for gff in gff_iterator:
 
         group_id = group_function(gff)
 
@@ -657,6 +674,8 @@ def iterator_sorted_chunks(gff_iterator, sort_by="contig-start"):
        sort by position ignoring the strand
     contig-strand-start
        sort by position taking the strand into account
+    contig-strand-start-end
+       intervals with the same start position will be sorted by end position
 
     returns the chunks.
     """
@@ -677,7 +696,6 @@ def iterator_sorted_chunks(gff_iterator, sort_by="contig-start"):
             chunk.sort(key=lambda x: (x.contig, x.strand, x.start))
             yield chunk
     elif sort_by == "contig-strand-start-end":
-        # intervals with the same start position will be sorted by end position
         chunks = ([(x[0].contig, x[0].strand, min([y.start for y in x]), x)
                   for x in gff_iterator])
         chunks.sort()

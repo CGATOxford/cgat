@@ -62,8 +62,8 @@ def filter( Samfile genome_samfile,
     cdef bint c_test_regions = regions
     cdef int * remove_contig_tids 
     cdef int nremove_contig_tids = 0
-    cdef AlignedRead read
-    cdef AlignedRead match
+    cdef AlignedSegment read
+    cdef AlignedSegment match
     
     # build index
     # this method will start indexing from the current file position

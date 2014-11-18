@@ -13,6 +13,7 @@ This script takes a bed-formatted file as input and annotates each interval.
 Possible annotators are (see option '--counter'):
 
 overlap
+
     compute overlap with intervals in other bed file. If the other bed
     file contains tracks, the overlap is computed per track.
 
@@ -23,25 +24,62 @@ peaks
     bam-files (--control-bam-file) and add this to the output.
 
 composition-na
+
     compute nucleotide frequencies in intervals.
 
 composition-cpg
+
     compute CpG densities and CpG observed / expected in intervals.
 
 classifier-chipseq
+
    classify chipseq intervals. Requires a :term:`gff`
    file with genomic annotations (see :doc:`gtf2gff`.)
 
 Usage
 -----
 
-Example::
+For example, the following command will compute the CpG composition
+in the intervals supplied::
 
-   python bed2table.py --counter=overlap < in.bed > out.tsv
+   cgat bed2table --counter=composition-cpg < in.bed > out.tsv
+
+If the input is this :term:`bed` formatted file::
+
+  chr19   60118   60120   1       100.0000
+  chr19   60171   60173   2       100.0000
+  chr19   60182   60184   3       100.0000
+  chr19   60339   60341   4       100.0000
+  chr19   60375   60377   5       100.0000
+  chr19   60110   60118   noCpG   100.0000
+  chr19   60118   60119   Conly   100.0000
+  chr19   60119   60120   Gonly   100.0000
+
+then the output is the following table:
+
++------+-----+-----+-----+--------+---------+-----------+----------+
+|contig|start|end  |name |score   |CpG_count|CpG_density|CpG_ObsExp|
++------+-----+-----+-----+--------+---------+-----------+----------+
+|chr19 |60118|60120|1    |100.0000|1        |1.0        |2.0       |
++------+-----+-----+-----+--------+---------+-----------+----------+
+|chr19 |60171|60173|2    |100.0000|1        |1.0        |2.0       |
++------+-----+-----+-----+--------+---------+-----------+----------+
+|chr19 |60182|60184|3    |100.0000|1        |1.0        |2.0       |
++------+-----+-----+-----+--------+---------+-----------+----------+
+|chr19 |60339|60341|4    |100.0000|1        |1.0        |2.0       |
++------+-----+-----+-----+--------+---------+-----------+----------+
+|chr19 |60375|60377|5    |100.0000|1        |1.0        |2.0       |
++------+-----+-----+-----+--------+---------+-----------+----------+
+|chr19 |60110|60118|noCpG|100.0000|0        |0.0        |0.0       |
++------+-----+-----+-----+--------+---------+-----------+----------+
+|chr19 |60118|60119|Conly|100.0000|0        |0.0        |0.0       |
++------+-----+-----+-----+--------+---------+-----------+----------+
+|chr19 |60119|60120|Gonly|100.0000|0        |0.0        |0.0       |
++------+-----+-----+-----+--------+---------+-----------+----------+
 
 Type::
 
-   python bed2table.py --help
+   cgat bed2table.py --help
 
 for command line help.
 
@@ -459,47 +497,69 @@ def main(argv=None):
         argv = sys.argv
 
     parser = E.OptionParser(
-        version="%prog version: $Id: gtf2table.py 2888 2010-04-07 08:48:36Z andreas $", usage=globals()["__doc__"])
+        version="%prog version: $Id$",
+        usage=globals()["__doc__"])
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genome [default=%default].")
 
-    parser.add_option("-b", "--bam-file", dest="bam_files", type="string",
-                      help="filename with read mapping information. Multiple files can be submitted in a comma-separated list [default=%default].")
+    parser.add_option(
+        "-b", "--bam-file", dest="bam_files", type="string",
+        help="filename with read mapping information. Multiple files can be "
+        "submitted in a comma-separated list [default=%default].")
 
-    parser.add_option("--control-bam-file", dest="control_bam_files", type="string",
-                      help="filename with read mapping information for input/control. Multiple files can be submitted in a comma-separated list [default=%default].")
+    parser.add_option(
+        "--control-bam-file", dest="control_bam_files", type="string",
+        help="filename with read mapping information for input/control. "
+        "Multiple files can be submitted in a comma-separated list "
+        "[default=%default].")
 
-    parser.add_option("--filename-format", dest="filename_format", type="choice",
-                      choices=("bed", "gff", "gtf"),
-                      help="format of secondary stream [default=%default].")
+    parser.add_option(
+        "--filename-format", dest="filename_format", type="choice",
+        choices=("bed", "gff", "gtf"),
+        help="format of secondary stream [default=%default].")
 
-    parser.add_option("-c", "--counter", dest="counters", type="choice", action="append",
-                      choices=("length",
-                               "overlap",
-                               "peaks",
-                               "composition-na",
-                               "composition-cpg",
-                               "classifier-chipseq"),
-                      help="select counters to apply [default=%default].")
+    parser.add_option(
+        "-c", "--counter", dest="counters", type="choice", action="append",
+        choices=("length",
+                 "overlap",
+                 "peaks",
+                 "composition-na",
+                 "composition-cpg",
+                 "classifier-chipseq"),
+        help="select counters to apply [default=%default].")
 
-    parser.add_option("-o", "--offset", dest="offsets", type="int", action="append",
-                      help="tag offsets for tag counting - supply as many as there are bam-files [default=%default].")
+    parser.add_option(
+        "-o", "--offset", dest="offsets", type="int", action="append",
+        help="tag offsets for tag counting - supply as many as there "
+        "are bam-files [default=%default].")
 
-    parser.add_option("--control-offset", dest="control_offsets", type="int", action="append",
-                      help="control tag offsets for tag counting - supply as many as there are bam-files [default=%default].")
+    parser.add_option(
+        "--control-offset", dest="control_offsets", type="int",
+        action="append",
+        help="control tag offsets for tag counting - supply as many as "
+        "there are bam-files [default=%default].")
 
-    parser.add_option("-a", "--all-fields", dest="all_fields", action="store_true",
-                      help="output all fields in original bed file, by default only the first 4 are output [default=%default].")
+    parser.add_option(
+        "-a", "--output-all-fields", dest="all_fields", action="store_true",
+        help="output all fields in original bed file, by default only "
+        "the first 4 are output [default=%default].")
 
-    parser.add_option("--bed-headers", dest="bed_headers", type="string",
-                      help="supply ',' separated list of headers for bed component [default=%default].")
+    parser.add_option(
+        "--output-bed-headers", dest="bed_headers", type="string",
+        help="supply ',' separated list of headers for bed component "
+        "[default=%default].")
 
-    parser.add_option("-f", "--filename-gff", dest="filename_gff", type="string", action="append", metavar='bed',
-                      help="filename with extra gff files. The order is important [default=%default].")
+    parser.add_option(
+        "-f", "--gff-file", dest="filename_gff", type="string",
+        action="append", metavar='bed',
+        help="filename with extra gff files. The order is important "
+        "[default=%default].")
 
-    parser.add_option("--has-header", dest="has_header", action="store_true",
-                      help="bed file with headers. Headers and first columns are preserved [default=%default]")
+    parser.add_option(
+        "--has-header", dest="has_header", action="store_true",
+        help="bed file with headers. Headers and first columns are "
+        "preserved [default=%default]")
 
     parser.set_defaults(
         genome_file=None,
@@ -580,10 +640,11 @@ def main(argv=None):
             counters.append(CounterCompositionCpG(fasta=fasta,
                                                   options=options))
         elif c == "classifier-chipseq":
-            counters.append(ClassifierChIPSeq(filename_gff=options.filename_gff,
-                                              fasta=fasta,
-                                              options=options,
-                                              prefix=None))
+            counters.append(ClassifierChIPSeq(
+                filename_gff=options.filename_gff,
+                fasta=fasta,
+                options=options,
+                prefix=None))
             del options.filename_gff[0]
 
     extra_fields = None
@@ -595,8 +656,9 @@ def main(argv=None):
             # output explicitely given headers
             if bed_headers:
                 if len(bed_headers) > bed.columns:
-                    raise ValueError("insufficient columns (%i, expected %i) in %s" %
-                                     (bed.columns, len(bed_headers), str(bed)))
+                    raise ValueError(
+                        "insufficient columns (%i, expected %i) in %s" %
+                        (bed.columns, len(bed_headers), str(bed)))
 
             else:
                 bed_headers = Bed.Headers[:bed.columns]
@@ -613,10 +675,11 @@ def main(argv=None):
         if options.all_fields:
             options.stdout.write(str(bed))
         else:
-            options.stdout.write("\t".join([bed.contig,
-                                            str(bed.start),
-                                            str(bed.end)]
-                                           + [bed.fields[x] for x in extra_fields]))
+            options.stdout.write(
+                "\t".join([bed.contig,
+                           str(bed.start),
+                           str(bed.end)]
+                          + [bed.fields[x] for x in extra_fields]))
         for counter in counters:
             options.stdout.write("\t%s" % str(counter))
 

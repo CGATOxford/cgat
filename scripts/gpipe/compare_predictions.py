@@ -75,8 +75,8 @@ Options:
 -h, --help                      print this message.
 -v, --verbose=                  loglevel.
 -b, --boundaries=               file with exon boundaries
--e, --exons=                    file with exons (output)
--p, --peptides=                 file with input peptide sequences.
+-e, --exons-file=                    file with exons (output)
+-p, --peptides-fasta-file=                 file with input peptide sequences.
 -g, --genome-file=           pattern for filenames with the genomic DNA (FASTA).
 -w, --write-notfound           print exons for predictions not found in reference.
 -q, --quality-pide=             quality threshold (pide) for exons.

@@ -61,7 +61,7 @@ def main(argv=sys.argv):
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genome [default=%default].")
 
-    parser.add_option("-b", "--output-filename", dest="output_filename", type="string",
+    parser.add_option("-b", "--output-filename-pattern", dest="output_filename", type="string",
                       help="filename for output [default=%default]")
 
     parser.add_option("-o", "--output-format", dest="output_format", type="choice",

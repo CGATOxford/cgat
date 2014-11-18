@@ -252,7 +252,7 @@ def buildBenchmarkInput(infile, outfile):
     < cds.fasta 
     python %(scripstdir)s/fasta2variants.py --is-cds  
     | python %(scriptsdir)s/substitute_tokens.py 
-             --apply=%(tmpfilename)s
+             --map-tsv-file=%(tmpfilename)s
     > %(outfile)s
     '''
     P.run()
@@ -362,7 +362,7 @@ def loadPolyphenWeights(infile, outfile):
     cat < %(infile)s 
     | python %(scriptsdir)s/csv_cut.py snpid counts weight 
     |python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --index=snp_id 
+              --add-index=snp_id 
               --table=%(table)s 
     > %(outfile)s
     '''
@@ -387,8 +387,8 @@ def loadPolyphen(infile, outfile):
     | perl -p -e "s/o_acc/protein_id/; s/ +//g"
     | cut -f 1-55
     |python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --index=snp_id 
-              --index=protein_id
+              --add-index=snp_id 
+              --add-index=protein_id
               --table=%(table)s 
               --map=effect:str
     > %(outfile)s

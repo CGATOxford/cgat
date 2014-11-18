@@ -1,0 +1,190 @@
+## Tool definitions
+## ================
+##
+## This file contains tool definitions for external tools.
+##
+## The record name is given by the tool. The following fields
+## are available:
+##
+## executable: executable to test if the tool is available. Available
+##             tools are in the path.
+## 
+## version:    options to extract the version string. If missing it is
+##             assumed that a version string is displayed when the tool
+##             is called without arguments
+#
+## regex:      regular expression to extract a version string
+##
+## rpackage:   the tool is an R package. The value indicates the name
+##             (case-sensitive) of the R package
+##           
+## External tools
+## ---------------
+tophat:
+    executable: tophat
+    version: --version
+    regex: '^TopHat v(\S+)'
+
+bowtie:
+    executable: bowtie
+    version: --version
+    regex: '^bowtie version (\S+)'
+
+bowtie2:
+    executable: bowtie2
+    version: --version
+    regex: 'version (\S+)'
+
+bwa:
+    executable: bwa
+    regex: 'Version: (\S*)'
+
+gsnap:
+    executable: gsnap
+    version: --version
+    regex: 'GSNAP version (\S+) called'
+
+star:
+    executable: star
+
+cufflinks:
+    executable: cufflinks
+    regex: 'cufflinks v(\S+)'
+
+# part of sra-tools
+fastq-dump:
+    executable: fastq-dump
+    version: --version
+    regex: 'fastq-dump : (\S+)'
+
+fastqc:
+    executable: fastqc
+    version: --version
+    regex: 'FastQC v(\S+)'
+
+sailfish:
+    executable: sailfish
+    version: --version
+    regex: 'version : (\S+)'
+
+samtools:
+    executable: samtools
+    regex: 'Version: (\S+)'
+
+bedtools:
+    executable: bedtools
+    version: --version
+    regex: 'bedtools\s+v(\S+)'
+
+ucsctools:
+    executable: bedToBigBed
+
+picardtools:
+    executable: CollectMultipleMetrics
+    version: --version
+    regex: '^(\S+)\('
+
+featurecounts:
+    executable: featureCounts
+    version: -v
+    regex: 'featureCounts v(\S+)'
+
+bismark:
+    executable: bismark
+    version: --version
+    regex: 'Bismark Version: v(\S+)'
+
+stampy:
+    executable: stampy.py
+    regex: 'stampy v(\S+)'
+
+macs1:
+    executable: macs14
+    version: --version
+    regex: 'macs\S+\s+(\S+)'
+
+macs2:
+    executable: macs2
+    version: --version
+    regex: 'macs2\s+(\S+)'
+
+sicer:
+    executable: SICER.sh
+
+peakranger:
+    executable: peakranger
+    regex: 'Version: (\S+)'
+
+# non-standard versioning (VPaperR3), so no
+# version test
+scripture:
+    executable: scripture
+
+broadpeak:
+    executable: BroadPeak
+
+gatk:
+    executable: GenomeAnalysisTK
+    version: --version
+    regex: '^(\S+)-'
+
+snpeff:
+    executable: snpEff.sh
+    regex: 'snpEff version SnpEff (\S+)'
+
+gemini:
+    executable: gemini
+
+## R Packages
+
+deseq:
+    rpackage: DESeq
+
+deseq2:
+    rpackage: DESeq2
+
+edger:
+    rpackage: edgeR
+    
+rcolorbrewer:
+    rpackage: RColorBrewer
+
+gplots:
+    rpackage: gplots
+
+mass:
+    rpackage: MASS
+
+siggenes:
+    rpackage: siggenes
+
+ggplot2:
+    rpackage: ggplot2
+
+reshape:
+    rpackage: reshape
+
+grid:
+    rpackage: grid
+
+limma:
+    rpackage: limma
+
+samr:
+    rpackage: samr
+
+hiddenmarkov:
+    rpackage: HiddenMarkov
+
+medips:
+    rpackage: MEDIPS
+
+zinba:
+    rpackage: zinba
+
+# 11/2014: SPP seems to be not available any more
+spp:
+    rpackage: spp
+
+snow:
+    rpackage: snow

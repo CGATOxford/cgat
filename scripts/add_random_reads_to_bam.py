@@ -57,19 +57,19 @@ def main(argv=None):
         "-b", "--bam-file", dest="bam_file", type="string",
         help="filename of bam to add reads to [default=%default].")
     parser.add_option(
-        "-i", "--insert-size", dest="isize", type="string",
+        "-i", "--insertsize-mean", dest="isize", type="string",
         help="Insert size [default=%default].")
     parser.add_option(
-        "-s", "--insert-sd", dest="isd", type="string",
+        "-s", "--insertsize-std", dest="isd", type="string",
         help="Insert size standard deviation [default=%default].")
     parser.add_option(
-        "-r", "--nreads", dest="nreads", type="string",
+        "-r", "--num-reads", dest="nreads", type="string",
         help="Number of random reads to add [default=%default].")
     parser.add_option(
-        "-l", "--readlength", dest="readlength", type="string",
+        "-l", "--read-length", dest="readlength", type="string",
         help="length of reads to generate [default=%default].")
     parser.add_option(
-        "-o", "--output", dest="output_file", type="string",
+        "-o", "--output-section", dest="output_file", type="string",
         help="output filename  [default=%default].")
 
     parser.set_defaults(

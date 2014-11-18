@@ -359,7 +359,7 @@ def main(argv=None):
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genome (indexed).")
 
-    parser.add_option("-w", "--filename-windows", dest="filename_windows", type="string",
+    parser.add_option("-w", "--windows-bed-file", dest="filename_windows", type="string",
                       help="gff file with windows to use.")
 
     parser.add_option("-d", "--filename-data=", dest="filename_data", type="string",
@@ -372,10 +372,11 @@ def main(argv=None):
                       choices=("GC", ),
                       help="features to compute.")
 
-    parser.add_option("-c", "--decorator=", dest="decorator", type="choice",
-                      choices=("counts", "gc", "gc3", "mean-length", "median-length", "percent-coverage",
-                               "median-score", "mean-score", "stddev-score", "min-score", "max-score"),
-                      help="decorators to use.")
+    parser.add_option(
+        "-c", "--decorator", dest="decorator", type="choice",
+        choices=("counts", "gc", "gc3", "mean-length", "median-length", "percent-coverage",
+                 "median-score", "mean-score", "stddev-score", "min-score", "max-score"),
+        help="decorators to use.")
 
     parser.add_option("-e", "--skip-empty", dest="skip_empty", action="store_true",
                       help="skip empty windows.")

@@ -15,7 +15,7 @@ maps a list of residues in a master sequence based on an explicit
 
 Options::
 
-    -m, --master    number of sequence to use as master (default is first row)
+    -m, --master-identifier    number of sequence to use as master (default is first row)
     -f, --format    alignment format (plain is the default and so far the only
                     supported option)       
 
@@ -79,7 +79,7 @@ def main(argv=None):
             sys.exit(0)
         elif o in ("-f", "--format"):
             param_format = a
-        elif o in ("-m", "--master"):
+        elif o in ("-m", "--master-identifier"):
             param_master = string.atoi(a)
 
     if len(args) != 1:

@@ -75,7 +75,7 @@ Options:
 -p, --filter-predictions        filter by prediction_id
 -P, --table-predictions         table with predictions
 -Q, --table-quality             table with quality information
--G, --genes                     table with genic regions to be skipped
+-G, --genes-tsv-file                     table with genic regions to be skipped
 """ % sys.argv[0]
 
 import CGAT.Experiment as E

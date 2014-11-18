@@ -66,12 +66,13 @@ Example::
 
    python fastqs2fastqs.py \
             --method=reconcile \
-            --output-pattern=myReads_reconciled.%s.fastq \
+            --output-filename-pattern=myReads_reconciled.%s.fastq \
             myReads.1.fastq.gz myReads.2.fastq.gz
 
 In this example we take a pair of fastq files, reconcile by read
 identifier and output 2 new fastq files named
-``myReads_reconciled.1.fastq.gz`` and ``myReads_reconciled.2.fastq.gz``.
+``myReads_reconciled.1.fastq.gz`` and
+``myReads_reconciled.2.fastq.gz``.
 
 Type::
 
@@ -120,12 +121,14 @@ def main(argv=None):
                       choices=('reconcile',),
                       help="method to apply [default=%default].")
 
-    parser.add_option("-c", "--chop", dest="chop", action="store_true",
-                      help="whether or not to trim last character of the  "
-                      "sequence name. For example sometimes ids in the first "
-                      "file in the pair will end with \1 and the second "
-                      "with \2. If --chop is not specified "
-                      "then the results will be wrong [default=%default].")
+    parser.add_option(
+        "-c", "--chop-identifier", dest="chop", action="store_true",
+        help="whether or not to trim last character of the  "
+        "sequence name. For example sometimes ids in the first "
+        "file in the pair will end with \1 and the second "
+        "with \2. If --chop-identifier is not specified "
+        "then the results will be wrong [default=%default].")
+
     parser.add_option("-u", "--unpaired", dest="unpaired", action="store_true",
                       help="whether or not to write out unpaired reads "
                       "to a seperate file")
@@ -134,11 +137,12 @@ def main(argv=None):
                       help="If specified will use the first group from the"
                            "pattern to determine the ID for the first read",
                       default=None)
+
     parser.add_option("--id-pattern-2", dest="id_pattern_2",
                       help="As above but for read 2",
                       default=None)
 
-    parser.add_option("-o", "--output-pattern",
+    parser.add_option("-o", "--output-filename-pattern",
                       dest="output_pattern", type="string",
                       help="pattern for output files [default=%default].")
 

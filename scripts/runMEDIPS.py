@@ -53,13 +53,16 @@ Command line options
 import os
 import sys
 import tempfile
+import pandas
+import math
 
-# for zinba
 from rpy2.robjects import r as R
 import rpy2.rinterface
 
 import CGAT.Experiment as E
+import CGAT.Expression as Expression
 import CGAT.IOTools as IOTools
+import CGAT.CSV as CSV
 
 
 def compress(infile):
@@ -120,7 +123,7 @@ def main(argv=None):
                       help="extend tags by this number of bases "
                       "[default=%default].")
 
-    parser.add_option("-s", "--shift", dest="shift", type="int",
+    parser.add_option("-s", "--shift-size", dest="shift", type="int",
                       help="shift tags by this number of bases "
                       "[default=%default].")
 
@@ -139,10 +142,10 @@ def main(argv=None):
     parser.add_option("-t", "--toolset", dest="toolset", type="choice",
                       action="append",
                       choices=("saturation", "coverage", "enrichment",
-                               "dmr", "rms", "rpm", "all"),
+                               "dmr", "rms", "rpm", "all", "convert"),
                       help = "actions to perform [default=%default].")
 
-    parser.add_option("-w", "--bigwig", dest="bigwig", action="store_true",
+    parser.add_option("-w", "--bigwig-file", dest="bigwig", action="store_true",
                       help="store wig files as bigwig files - requires a "
                       "genome file [default=%default]")
 
@@ -184,6 +187,12 @@ def main(argv=None):
                       help="FDR threshold to apply for selecting DMR "
                       "[default=%default].")
 
+    parser.add_option("--fdr-method", dest="fdr_method", type="choice",
+                      choices=("bonferroni", "BH", "holm", "hochberg",
+                               "hommel", "BY", "fdr", "none"),
+                      help="FDR method to apply for selecting DMR "
+                      "[default=%default].")
+
     parser.set_defaults(
         input_format="bam",
         ucsc_genome="Hsapiens.UCSC.hg19",
@@ -203,10 +212,48 @@ def main(argv=None):
         input_rdata=None,
         is_medip=True,
         fdr_threshold=0.1,
+        fdr_method="BH",
     )
 
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv, add_output_options=True)
+
+    if "convert" in options.toolset:
+
+        results = []
+        for line in CSV.DictReader(options.stdin,
+                                   dialect="excel-tab"):
+            if line['edgeR.p.value'] == "NA":
+                continue
+
+            # assumes only a single treatment/control
+            treatment_name = options.treatment_files[0]
+            control_name = options.control_files[0]
+            status = "OK"
+            try:
+                results.append(
+                    Expression.GeneExpressionResult._make((
+                        "%s:%i-%i" % (line['chr'],
+                                      int(line['start']),
+                                      int(line['stop'])),
+                        treatment_name,
+                        float(line['MSets1.rpkm.mean']),
+                        0,
+                        control_name,
+                        float(line['MSets2.rpkm.mean']),
+                        0,
+                        float(line['edgeR.p.value']),
+                        float(line['edgeR.adj.p.value']),
+                        float(line['edgeR.logFC']),
+                        math.pow(2.0, float(line['edgeR.logFC'])),
+                        float(line['edgeR.logFC']),  # no transform
+                        ["0", "1"][float(line['edgeR.adj.p.value']) < options.fdr_threshold],
+                        status)))
+            except ValueError, msg:
+                raise ValueError("parsing error %s in line: %s" % (msg, line))
+
+        Expression.writeExpressionResults(options.stdout, results)
+        return
 
     if len(options.treatment_files) < 1:
         raise ValueError("please specify a filename with sample data")
@@ -386,6 +433,7 @@ def main(argv=None):
                     medip = "TRUE"
                 else:
                     medip = "FALSE"
+                fdr_method = options.fdr_method
 
                 E.info("applying test for differential methylation")
                 R('''meth = MEDIPS.meth(
@@ -394,7 +442,7 @@ def main(argv=None):
                 CSet = CS,
                 ISet1 = NULL,
                 ISet2 = NULL,
-                p.adj = "bonferroni",
+                p.adj = "%(fdr_method)s",
                 diff.method = "edgeR",
                 prob.method = "poisson",
                 MeDIP = %(medip)s,
@@ -402,12 +450,13 @@ def main(argv=None):
                 type = "rpkm",
                 minRowSum = 1)''' % locals())
 
-                # Disabled for now - several Gb in size
+                # Note: several Gb in size
                 # Output full methylation data table
-                # R('''write.table(meth,
-                # file=gzfile('%s', 'w'),
-                # sep="\t",
-                # quote=F)''' % E.getOutputFile("data.tsv.gz"))
+                R('''write.table(meth,
+                file=gzfile('%s', 'w'),
+                sep="\t",
+                row.names=F,
+                quote=F)''' % E.getOutputFile("data.tsv.gz"))
 
                 # save R session
                 if options.output_rdata:

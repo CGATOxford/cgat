@@ -52,7 +52,7 @@ OPTIONS:
 -m, --map=                      split according to map
 -d, --dry-run                   echo files that would be created,
                                 but do not create any.
--e, --header                    add header to each file
+-e, --header-names                    add header to each file
 -r, --remove-key                remove key column
 -append                         append data to existing files.
 --pattern-identifier            if given, use this pattern to extract
@@ -150,7 +150,7 @@ def main(argv=None):
             param_filename_map = a
         elif o in ("-d", "--dry-run"):
             param_dry_run = True
-        elif o in ("-e", "--header"):
+        elif o in ("-e", "--header-names"):
             param_header = True
         elif o in ("-r", "--remove-key"):
             param_remove_key = True

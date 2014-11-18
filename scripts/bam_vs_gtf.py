@@ -34,7 +34,7 @@ Example::
    # Preview the BAM file using Samtools view
    samtools view tests/bam_vs_gtf.py/small.bam | head
    # Pipe input bam to script and specify gtf file as argument
-   cat tests/bam_vs_gtf.py/small.bam | cgat bam_vs_gtf.py --filename-gtf=tests/bam_vs_gtf.py/hg19.chr19.gtf.gz
+   cat tests/bam_vs_gtf.py/small.bam | cgat bam_vs_gtf.py --gtf-file=tests/bam_vs_gtf.py/hg19.chr19.gtf.gz
 
 +--------------------+---------+   
 |category            |counts   |
@@ -112,7 +112,7 @@ def main(argv=None):
     parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
                             usage=globals()["__doc__"])
 
-    parser.add_option("-e", "--filename-exons", "--filename-gtf", dest="filename_exons", type="string", metavar="gtf",
+    parser.add_option("-e", "--exons-file", "--gtf-file", dest="filename_exons", type="string", metavar="gtf",
                       help="gtf formatted file with non-overlapping exon locations (required). [%default]")
 
     parser.set_defaults(

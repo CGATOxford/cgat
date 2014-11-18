@@ -307,7 +307,7 @@ def buildAnnotatorAnnotations(tmpdir, outfile,
         statement = '''
         python %(scriptsdir)s/gff2annotator2tsv.py 
         --section=annotations-go 
-        --input-filename-map=<(cut -f 2,4 < %(gofile)s) 
+        --map-tsv-file=<(cut -f 2,4 < %(gofile)s) 
         --log=%(outfile)s.log
         --remove-regex='%(annotator_remove_pattern)s'
         < %(annotator_geneterritories)s  
@@ -319,7 +319,7 @@ def buildAnnotatorAnnotations(tmpdir, outfile,
         cat %(bedfiles)s 
         | python %(scriptsdir)s/bed2annotator2tsv.py 
         --max-length=0 
-        --merge 
+        --merge-overlapping 
         --section=annotations 
         --log=%(outfile)s.log 
         > %(tmpannotations)s
@@ -515,7 +515,7 @@ def genericImportAnnotator(infiles, outfile, table, workspace, slice, subset, fd
 		--method=fdr-table \
 		--fdr-method=%(fdr_method)s \
 		--log=%(outfile)s.log \
-                --regex-id="(.*)%(suffix)s" \
+                --regex-identifier="(.*)%(suffix)s" \
                 %(infile)s > %(tmpfilename)s
         '''
     P.run(**dict(locals().items() + PARAMS.items()))
@@ -568,7 +568,7 @@ def importAnnotator(infiles, outfile, regex_id, table,
 		--method=fdr-table 
 		--fdr-method=%(fdr_method)s 
 		--log=%(outfile)s.log 
-                --regex-id="%(regex_id)s" 
+                --regex-identifier="%(regex_id)s" 
                 %(infile)s 
         | %(transform)s
         |python %(scriptsdir)s/csv2db.py %(csv2db_options)s 

@@ -885,7 +885,8 @@ def iterate(infile):
             continue
         n += 1
         if n == 1:
-            header = line[:-1].split()
+            # replace non-alphanumeric characters with _
+            header = re.sub("[^a-zA-Z0-9_\s]", "_", line[:-1]).split()
             DATA = collections.namedtuple("DATA", header)
             continue
 

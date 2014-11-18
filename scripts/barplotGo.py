@@ -67,7 +67,7 @@ def main(argv=None):
                                                                                "purple", "blue", "grey", "black", "pink", "green"), help="colour choices")
     parser.add_option(
         "--side", dest="side", action="store_true", help="set to draw sideways barplot")
-    parser.add_option("-m", "--marigins", dest="margins",
+    parser.add_option("-m", "--plot-margins", dest="margins",
                       type="string", help="set margins - follows R convention for mai")
     parser.add_option("--cexn", dest="cex_names", type="float",
                       help="set the size of the names on the barplot")

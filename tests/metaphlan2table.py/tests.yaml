@@ -8,14 +8,14 @@ version:
 rel_ab:
     stdin: relab.metaphlan
     outputs: [stdout]
-    options: --type=rel_ab --log=relab.log
+    options: --sequence-type=rel_ab --log=relab.log
     references: [relab.metaphlan.tsv]
     description: output tab format for relative abundance estimations
 
 readmap:
     stdin: _readmap.metaphlan
     outputs: [stdout]
-    options: --type=read_map --log=relab.log
+    options: --sequence-type=read_map --log=relab.log
     references: [readmap.metaphlan.tsv]
     description: output tab format for metaphlan read map file
 

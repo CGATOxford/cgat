@@ -9,4 +9,4 @@ diff:
     stdin: null
     outputs: [stdout]
     references: [diff.tsv]
-    options: --pattern-id=".*/(.*).bed.gz" <DIR>/srf.hg19.bed.gz <DIR>/srf.hg19.bed.gz
+    options: --pattern-identifier=".*/(.*).bed.gz" <DIR>/srf.hg19.bed.gz <DIR>/srf.hg19.bed.gz

@@ -167,7 +167,7 @@ CGAT repository and can be used to create all wrappers in one go::
    cat galaxy.list
    | cgat2rdf.py
         --source-dir=<cgat-scripts>  --input-regex="(.*).py"
-	--output-pattern=<galaxy-xml>/%s.xml --format=galaxy
+	--output-filename-pattern=<galaxy-xml>/%s.xml --format=galaxy
 
 Within galaxy_, CGAT scripts will use samtools_ formatted genomic
 sequences, which are located in the ``sam_fa_indexes`` galaxy_ resource.

@@ -504,8 +504,8 @@ def loadIntervals(infile, outfile):
 
     statement = '''
     python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --allow-empty
-              --index=interval_id
+              --allow-empty-file
+              --add-index=interval_id
               --table=%(tablename)s
     < %(tmpfilename)s
     > %(outfile)s
@@ -590,14 +590,14 @@ def loadContextStats(infiles, outfile):
     tablename = P.toTable(outfile)
 
     statement = """python %(scriptsdir)s/combine_tables.py
-                      --headers=%(header)s
-                      --missing=0
+                      --header-names=%(header)s
+                      --missing-value=0
                       --skip-titles
                    %(filenames)s
                 | perl -p -e "s/bin/track/; s/\?/Q/g"
                 | python %(scriptsdir)s/table2table.py --transpose
                 | python %(scriptsdir)s/csv2db.py
-                      --index=track
+                      --add-index=track
                       --table=%(tablename)s
                 > %(outfile)s
                 """
@@ -623,11 +623,11 @@ def annotateIntervalsFull(infile, outfile):
     statement = """
     zcat < %(infile)s
     | python %(scriptsdir)s/bed2table.py
-    --bed-headers=contig,start,end
+    --output-bed-headers=contig,start,end
     --counter=classifier-chipseq
     --counter=length
     --log=%(outfile)s.log
-    --filename-gff=%(annotation_file)s
+    --gff-file=%(annotation_file)s
     --genome-file=%(genome_dir)s/%(genome)s
     > %(outfile)s"""
 
@@ -652,11 +652,11 @@ def annotateIntervalsPeak(infile, outfile):
     statement = """
     zcat < %(infile)s
     | python %(scriptsdir)s/bed2table.py
-       --bed-headers=contig,start,end
+       --output-bed-headers=contig,start,end
        --counter=classifier-chipseq
        --counter=length
        --log=%(outfile)s.log
-       --filename-gff=%(annotation_file)s
+       --gff-file=%(annotation_file)s
        --genome-file=%(genome_dir)s/%(genome)s
     > %(outfile)s"""
 
@@ -687,7 +687,7 @@ def annotateBindingFull(infile, outfile):
        --counter=position
        --counter=binding-pattern
        --log=%(outfile)s.log
-       --filename-gff=%(infile)s
+       --gff-file=%(infile)s
        --genome-file=%(genome_dir)s/%(genome)s
     | gzip
     > %(outfile)s"""
@@ -720,7 +720,7 @@ def annotateBindingPeak(infile, outfile):
 		--counter=position 
 		--counter=binding-pattern
 		--log=%(outfile)s.log 
-		--filename-gff=%(infile)s
+		--gff-file=%(infile)s
 		--genome-file=%(genome_dir)s/%(genome)s
     | gzip
     > %(outfile)s"""
@@ -749,7 +749,7 @@ def annotateTSS(infile, outfile):
 	| python %(scriptsdir)s/gtf2table.py 
 		--counter=distance-tss 
 		--log=%(outfile)s.log 
-		--filename-gff=%(annotation_file)s 
+		--gff-file=%(annotation_file)s 
                 --filename-format="bed" 
 		--genome-file=%(genome_dir)s/%(genome)s
 	> %(outfile)s"""
@@ -778,7 +778,7 @@ def annotateTSSPeaks(infile, outfile):
 	| python %(scriptsdir)s/gtf2table.py 
 		--counter=distance-tss 
 		--log=%(outfile)s.log 
-		--filename-gff=%(annotation_file)s 
+		--gff-file=%(annotation_file)s 
                 --filename-format="bed" 
 		--genome-file=%(genome_dir)s/%(genome)s
 	> %(outfile)s"""
@@ -796,8 +796,6 @@ def annotateTSSPeaks(infile, outfile):
 def annotateRepeats(infile, outfile):
     '''count the overlap between intervals and repeats.'''
 
-    to_cluster = True
-
     annotation_file = os.path.join(PARAMS["annotations_dir"],
                                    PARAMS_ANNOTATIONS["interface_repeats_gff"])
 
@@ -807,7 +805,7 @@ def annotateRepeats(infile, outfile):
 	python %(scriptsdir)s/gtf2table.py \
 		--counter=overlap \
 		--log=%(outfile)s.log \
-		--filename-gff=%(annotation_file)s \
+		--gff-file=%(annotation_file)s \
 		--genome-file=%(genome_dir)s/%(genome)s
 	> %(outfile)s"""
 
@@ -846,7 +844,7 @@ def annotateNucleotides(infile, outfile):
 def loadAnnotations(infile, outfile):
     '''load interval annotations: genome architecture
     '''
-    P.load(infile, outfile, "--index=gene_id --allow-empty")
+    P.load(infile, outfile, "--add-index=gene_id --allow-empty-file")
 
 ############################################################
 
@@ -857,7 +855,7 @@ def loadAnnotations(infile, outfile):
 def loadBinding(infile, outfile):
     '''load interval binding: genome architecture
     '''
-    P.load(infile, outfile, "--index=gene_id --allow-empty --map=pattern:str")
+    P.load(infile, outfile, "--add-index=gene_id --allow-empty-file --map=pattern:str")
 
 ############################################################
 
@@ -867,9 +865,9 @@ def loadTSS(infile, outfile):
     '''load interval annotations: distance to transcription start sites
     '''
     P.load(infile, outfile,
-           "--index=gene_id --index=closest_id "
-           "--index=upstream_id --index=downstream_id "
-           "--allow-empty")
+           "--add-index=gene_id --add-index=closest_id "
+           "--add-index=upstream_id --add-index=downstream_id "
+           "--allow-empty-file")
 
 ############################################################
 
@@ -878,7 +876,7 @@ def loadTSS(infile, outfile):
 def loadRepeats(infile, outfile):
     '''load interval annotations: repeats
     '''
-    P.load(infile, outfile, "--index=gene_id --allow-empty")
+    P.load(infile, outfile, "--add-index=gene_id --allow-empty-file")
 
 ############################################################
 
@@ -888,7 +886,7 @@ def loadNucleotides(infile, outfile):
     '''load interval annotations: nucleotide composition
     '''
 
-    P.load(infile, outfile, "--index=gene_id --allow-empty")
+    P.load(infile, outfile, "--add-index=gene_id --allow-empty-file")
 
 
 ###################################################################
@@ -908,7 +906,7 @@ def buildIntervalProfileOfTranscripts(infiles, outfile):
 
     statement = '''python %(scriptsdir)s/bam2geneprofile.py
                       --output-filename-pattern="%(outfile)s.%%s"
-                      --force
+                      --force-output
                       --reporter=transcript
                       --method=geneprofile
                       --method=tssprofile
@@ -989,7 +987,7 @@ def annotateTSSNucleotides(infile, outfile):
 def loadTSSNucleotides(infile, outfile):
     '''load interval annotations: nucleotide composition
     '''
-    P.load(infile, outfile, "--index=gene_id --allow-empty")
+    P.load(infile, outfile, "--add-index=gene_id --allow-empty-file")
 
 ###################################################################
 ###################################################################
@@ -1026,7 +1024,7 @@ def buildGenesByIntervalsProfiles(infile, outfile):
     statement = '''
     python %(scriptsdir)s/bam2geneprofile.py
                       --output-filename-pattern="%(outpat)s.%%s"
-                      --force
+                      --force-output
                       --reporter=transcript
                       --method=geneprofile
                       --method=tssprofile
@@ -1049,7 +1047,7 @@ def loadByIntervalProfiles(infile, outfile):
     '''
     countsfile = P.snip(infile, ".tsv.gz") + ".geneprofile.matrix.tsv.gz"
     if os.path.exists(countsfile):
-        P.load(countsfile, outfile, "--index=gene_id --allow-empty")
+        P.load(countsfile, outfile, "--add-index=gene_id --allow-empty-file")
     else:
         P.touch(outfile)
 
@@ -1105,10 +1103,10 @@ def buildPeakShapeTable(infile, outfile):
                       --window-size=%(peakshape_window_size)i
                       --bin-size=%(peakshape_bin_size)i
                       --output-filename-pattern="%(outfile)s.%%s"
-                      --force
-                      --shift=%(shift)i
-                      --sort=peak-height
-                      --sort=peak-width
+                      --force-output
+                      --shift-size=%(shift)i
+                      --method=sort --sort-order=peak-height
+                      --method=sort --sort-order=peak-width
                       --log=%(outfile)s.log
                       %(bamfile)s %(infile)s
                    | gzip
@@ -1121,17 +1119,8 @@ def buildPeakShapeTable(infile, outfile):
 def loadPeakShapeTable(infile, outfile):
     '''load peak shape information.'''
     P.load(
-        infile, outfile, "--ignore-column=bins --ignore-column=counts --allow-empty")
-
-###################################################################
-###################################################################
-###################################################################
-# general import
-###################################################################
-
-############################################################
-############################################################
-############################################################
+        infile, outfile,
+        "--ignore-column=bins --ignore-column=counts --allow-empty-file")
 
 
 @merge(BEDFILES,
@@ -1151,16 +1140,12 @@ def buildOverlap(infiles, outfile):
 
     # note: need to quote track names
     statement = '''
-        python %(scriptsdir)s/diff_bed.py %(options)s %(infiles)s 
-        | awk -v OFS="\\t" '!/^#/ { gsub( /-/,"_", $1); gsub(/-/,"_",$2); } {print}'
-        > %(outfile)s
-        '''
+    python %(scriptsdir)s/diff_bed.py %(options)s %(infiles)s
+    | awk -v OFS="\\t" '!/^#/ { gsub( /-/,"_", $1); gsub(/-/,"_",$2); } {print}'
+    > %(outfile)s
+    '''
 
     P.run()
-
-############################################################
-############################################################
-############################################################
 
 
 @transform(buildOverlap, suffix(".overlap"), "_overlap.load")
@@ -1171,18 +1156,14 @@ def loadOverlap(infile, outfile):
     tablename = "overlap"
 
     statement = '''
-   python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
-              --index=set1 
-              --index=set2 
-              --table=%(tablename)s 
+    python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+              --add-index=set1
+              --add-index=set2
+              --table=%(tablename)s
     < %(infile)s > %(outfile)s
     '''
 
     P.run()
-
-############################################################
-############################################################
-############################################################
 
 
 @transform(loadIntervals,
@@ -1346,7 +1327,7 @@ def loadMotifInformation(infiles, outfile):
 
     outf.close()
 
-    P.load(outf.name, outfile, "--allow-empty")
+    P.load(outf.name, outfile, "--allow-empty-file")
 
     os.unlink(outf.name)
 
@@ -1533,10 +1514,10 @@ def runGATOnGenomicContext(infiles, outfile):
     statement = '''gat-run.py
          --segments=%(bedfile)s
          --annotations=%(annofile)s
-         --workspace=%(workspacefile)s
+         --workspace-bed-file=%(workspacefile)s
          --num-samples=%(gat_num_samples)i
          --isochores=%(isochorefile)s
-         --force
+         --force-output
          --ignore-segment-tracks
          --output-filename-pattern=%(outfile)s.%%s
          --output-counts-pattern=%(outfile)s.%%s.counts.gz
@@ -1588,10 +1569,10 @@ def runGATOnGenomicAnnotations(infiles, outfile):
     statement = '''gat-run.py
          --segments=%(bedfile)s
          --annotations=<(zcat %(annofile)s | awk '{printf("%%s\\t%%i\\t%%i\\t%%s\\n",$1,$4,$5,$3);}')
-         --workspace=%(workspacefile)s
+         --workspace-bed-file=%(workspacefile)s
          --isochores=%(isochorefile)s
          --num-samples=%(gat_num_samples)i
-         --force
+         --force-output
          --ignore-segment-tracks
          --output-filename-pattern=%(outfile)s.%%s
          --output-counts-pattern=%(outfile)s.%%s.counts.gz
@@ -1653,13 +1634,13 @@ def runGATOnGeneStructure(infiles, outfile):
     statement = '''gat-run.py
          --segments=%(bedfile)s
          --annotations=<(zcat %(annofile)s | awk '{printf("%%s\\t%%i\\t%%i\\t%%s\\n",$1,$4,$5,$3);}')
-         --workspace=%(workspacefile)s
+         --workspace-bed-file=%(workspacefile)s
          --isochores=%(isochorefile)s
          --num-samples=%(gat_num_samples)i
          --counter=segment-midoverlap
          --truncate-workspace-to-annotations
          --restrict-workspace
-         --force
+         --force-output
          --ignore-segment-tracks
          --output-filename-pattern=%(outfile)s.%%s
          --output-counts-pattern=%(outfile)s.%%s.counts.gz
@@ -1718,12 +1699,12 @@ def runGATOnGeneAnnotations(infiles, outfile):
     statement = '''gat-run.py
          --segments=%(bedfile)s
          --annotations=%(annofile)s
-         --workspace=<(zcat %(workspacefile)s | awk '{printf("%%s\\t%%i\\t%%i\\n",$1,$4,$5);}')
-         --workspace=%(mapabilityfile)s
+         --workspace-bed-file=<(zcat %(workspacefile)s | awk '{printf("%%s\\t%%i\\t%%i\\n",$1,$4,$5);}')
+         --workspace-bed-file=%(mapabilityfile)s
          --isochores=%(isochorefile)s
          --num-samples=%(gat_num_samples)i
          --descriptions=%(descriptionfile)s
-         --force
+         --force-output
          --ignore-segment-tracks
          --output-filename-pattern=%(outfile)s.%%s
          --output-counts-pattern=%(outfile)s.%%s.counts.gz
@@ -1771,9 +1752,9 @@ def runGATOnSets(infiles, outfile, workspacefile, isochorefile):
          --num-threads=4
          --segments=%(segments)s
          --annotations=%(annotations)s
-         --workspace=%(workspacefile)s
+         --workspace-bed-file=%(workspacefile)s
          --num-samples=%(gat_num_samples)i
-         --force
+         --force-output
          --output-filename-pattern=%(outfile)s.%%s
          -v 5
          --log=%(outfile)s.log
@@ -1956,7 +1937,7 @@ def summarizeReadCounts(infile, outfile):
     job_options = "-l mem_free=32G"
     statement = '''python %(scriptsdir)s/runExpression.py
               --method=summary
-              --filename-tags=%(infile)s
+              --tags-tsv-file=%(infile)s
               --output-filename-pattern=%(prefix)s_
               --log=%(outfile)s.log
               > %(outfile)s'''

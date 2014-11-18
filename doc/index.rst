@@ -5,12 +5,12 @@ Welcome to the CGAT code collection
 =====================================
 
 This document brings together the various pipelines and scripts
-written before and during CGAT.
-
-.. note::
-   The documentation is under construction.
-
-The CGAT Code collection is documented :ref:`here <cgat>`.
+written before and during CGAT. This documentation has two
+parts. Below is the general documentation covering the complete
+code collection. A different view on the code collection centering
+on the scripts published in 
+`Bioinformatics <http://www.ncbi.nlm.nih.gov/pubmed/24395753>`_ is
+:ref:`here <cgat>`.
 
 Overview
 ========
@@ -22,13 +22,13 @@ functionality to do next-generation sequencing analysis.
 The collection has three major components, these are directories in 
 the package.
 
-* :ref:`Scripts`
+* :ref:`scripts`
   A collection of useful scripts for genomics and NGS analysis
 
-* :ref:`Modules`
+* :ref:`modules`
   A collection of modules with utility functions for genomics and NGS analysis.
   
-* :ref:`Pipelines`
+* :ref:`pipelines`
   A collection of pipelines for common workflows in genomics and NGS analysis.
 
 Scripts and modules

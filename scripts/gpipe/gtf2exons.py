@@ -86,7 +86,7 @@ def main(argv=None):
     parser.add_option("--coordinate-format", dest="coordinate_format", type="string",
                       help="input type of coordinates.")
 
-    parser.add_option("--forward-coordinates", dest="forward_coordinates", action="store_true",
+    parser.add_option("--is-forward-coordinates", dest="forward_coordinates", action="store_true",
                       help="output forward coordinates.")
 
     parser.add_option("-e", "--extract-id", dest="extract_id", type="string",

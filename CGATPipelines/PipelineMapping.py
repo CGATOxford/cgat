@@ -31,6 +31,23 @@ It implements:
    * .fastq: paired-end and single-end
    * .csfasta: colour-space, single-end
 
+Requirements:
+
+* cufflinks >= 2.2.1
+* fastq-dump >= 2.1.7
+* fastqc >= 0.9.2
+* sailfish >= 0.6.3
+* picardtools >= 1.106
+* samtools >= 1.1
+* tophat >= 2.0.13 (optional)
+* bowtie >= 1.0.0 (optional)
+* bowtie2 >= 2.2.3 (optional)
+* bwa >= 0.7.8
+* gsnap >= 2014-01-21 (optional)
+* star >= 2.3.0e (optional)
+* bismark >= 0.12.5 (optional)
+* stampy >= 1.0.23 (optional)
+
 Code
 ----
 
@@ -276,6 +293,7 @@ def resetGTFAttributes(infile, genome, gene_ids, outfile):
     # I was not able to resolve this, it was a complex
     # bug dependent on both the read libraries and the input reference gtf
     # files
+    job_options = "-l mem_free=2G"
 
     statement = '''
     cuffcompare -r <( gunzip < %(infile)s )
@@ -500,7 +518,7 @@ class Mapper(object):
                 if 'sanger' not in format and self.convert:
                     statement.append("""gunzip < %(infile)s
                     | python %%(scriptsdir)s/fastq2fastq.py
-                    --change-format=sanger
+                    --method=change-format --target-format=sanger
                     --guess-format=phred64
                     --log=%(outfile)s.log
                     %(compress_cmd)s
@@ -589,14 +607,14 @@ class Mapper(object):
                 if 'sanger' not in format:
                     statement.append("""gunzip < %(infile)s
                     | python %%(scriptsdir)s/fastq2fastq.py
-                    --change-format=sanger
+                    --method=change-format --target-format=sanger
                     --guess-format=phred64
                     --log=%(outfile)s.log
                     %(compress_cmd)s
                     > %(tmpdir_fastq)s/%(track)s.1.fastq%(extension)s;
                     gunzip < %(infile2)s
                     | python %%(scriptsdir)s/fastq2fastq.py
-                    --change-format=sanger
+                    --method=change-format --target-format=sanger
                     --guess-format=phred64
                     --log=%(outfile)s.log
                     %(compress_cmd)s
@@ -707,8 +725,7 @@ class Sailfish(Mapper):
 
         threads = self.threads
 
-        statement = ['''module load bio/sailfish;
-                        sailfish quant -i %%(index)s''' % locals()]
+        statement = ['''sailfish quant -i %%(index)s''' % locals()]
 
         num_files = [len(x) for x in infiles]
 
@@ -754,7 +771,7 @@ class Sailfish(Mapper):
             library.append(strandedness)
         else:
             # is this the correct error type?
-            raise ValueError("Incorrect number of input files")
+            raise ValueError("incorrect number of input files")
 
         library = "".join(library)
 
@@ -899,11 +916,15 @@ class BWA(Mapper):
 
         if self.remove_unique:
             unique_cmd = '''| python %%(scriptsdir)s/bam2bam.py
-            --filter=unique --log=%(outfile)s.log''' % locals()
+            --method=filter
+            --filter-method=unique
+            --log=%(outfile)s.log''' % locals()
 
         if self.strip_sequence:
             strip_cmd = '''| python %%(scriptsdir)s/bam2bam.py
-            --strip=sequence --log=%(outfile)s.log''' % locals()
+            --strip-method=all
+            --method=strip-sequence
+            --log=%(outfile)s.log''' % locals()
 
         statement = '''
                 samtools view -uS %(tmpdir)s/%(track)s.sam
@@ -914,7 +935,8 @@ class BWA(Mapper):
 
         if self.align_stats:
             statement += '''cat %(outfile)s
-            | python %%(scriptsdir)s/bam2bam.py -v 0 --set-sequence --sam
+            | python %%(scriptsdir)s/bam2bam.py -v 0
+            --method=set-sequence --output-sam
             | CollectMultipleMetrics
             INPUT=/dev/stdin
             REFERENCE_SEQUENCE=%%(bwa_index_dir)s/%%(genome)s.fa
@@ -1497,11 +1519,13 @@ class GSNAP(Mapper):
 
         if self.remove_non_unique:
             unique_cmd = '''| python %%(scriptsdir)s/bam2bam.py
-            --filter=unique --log=%(outfile)s.log''' % locals()
+            --method=filter
+            --filter-method=unique --log=%(outfile)s.log''' % locals()
 
         if self.strip_sequence:
             strip_cmd = '''| python %%(scriptsdir)s/bam2bam.py
-            --strip=sequence --log=%(outfile)s.log''' % locals()
+            --strip-method=all
+            --method=strip-sequence --log=%(outfile)s.log''' % locals()
 
         statement = '''
                 samtools view -uS %(tmpdir)s/%(track)s.sam
@@ -1609,11 +1633,13 @@ class STAR(Mapper):
 
         if self.remove_non_unique:
             unique_cmd = '''| python %%(scriptsdir)s/bam2bam.py
-            --filter=unique --log=%(outfile)s.log''' % locals()
+            --method=filter
+            --filter-method=unique --log=%(outfile)s.log''' % locals()
 
         if self.strip_sequence:
             strip_cmd = '''| python %%(scriptsdir)s/bam2bam.py
-            --strip=sequence --log=%(outfile)s.log''' % locals()
+            --strip-method=all
+            --method=strip-sequence --log=%(outfile)s.log''' % locals()
 
         statement = '''
                 cp %(tmpdir)s/Log.std.out %(outfile)s.std.log;
@@ -1743,15 +1769,17 @@ class Bowtie(Mapper):
 
         if self.remove_non_unique:
             unique_cmd = '''| python %%(scriptsdir)s/bam2bam.py
-            --filter=unique --log=%(outfile)s.log''' % locals()
+            --method=filter
+            --filter-method=unique --log=%(outfile)s.log''' % locals()
 
         if self.strip_sequence:
             strip_cmd = '''| python %%(scriptsdir)s/bam2bam.py
-            --strip=sequence --log=%(outfile)s.log''' % locals()
+            --strip-method=all
+            --method=strip-sequence --log=%(outfile)s.log''' % locals()
 
         statement = '''cat %(tmpdir_fastq)s/out.bam
         | python %%(scriptsdir)s/bam2bam.py
-        --set-nh
+        --method=set-nh
         --log=%(outfile)s.log
         %(unique_cmd)s
         %(strip_cmd)s
@@ -1866,11 +1894,13 @@ class BowtieTranscripts(Mapper):
 
         if self.remove_non_unique:
             unique_cmd = '''| python %%(scriptsdir)s/bam2bam.py
-            --filter=unique --log=%(outfile)s.log''' % locals()
+            --method=filter
+            --filter-method=unique --log=%(outfile)s.log''' % locals()
 
         if self.strip_sequence:
             strip_cmd = '''| python %%(scriptsdir)s/bam2bam.py
-            --strip=sequence --log=%(outfile)s.log''' % locals()
+            --strip-method=all
+            --method=strip-sequence --log=%(outfile)s.log''' % locals()
 
         statement = '''cat %(tmpdir_fastq)s/out.bam
              %(unique_cmd)s
@@ -1900,21 +1930,25 @@ class BowtieJunctions(BowtieTranscripts):
 
         if self.remove_non_unique:
             unique_cmd = '''| python %%(scriptsdir)s/bam2bam.py
-            --filter=unique --log=%(outfile)s.log''' % locals()
+            --method=filter
+            --filter-method=unique
+            --log=%(outfile)s.log''' % locals()
 
         if self.strip_sequence:
             strip_cmd = '''| python %%(scriptsdir)s/bam2bam.py
-            --strip=sequence --log=%(outfile)s.log''' % locals()
+            --strip-method=all
+            --method=strip-sequence
+            --log=%(outfile)s.log''' % locals()
 
         statement = '''
         cat %(tmpdir_fastq)s/out.bam
         %(unique_cmd)s
         %(strip_cmd)s
         | python %%(scriptsdir)s/bam2bam.py
-        --set-nh
+        --method=set-nh
         --log=%(outfile)s.log
         | python %%(scriptsdir)s/rnaseq_junction_bam2bam.py
-        --contig-sizes=%%(contigsfile)s
+        --contigs-tsv-file=%%(contigsfile)s
         --log=%(outfile)s.log
         | samtools sort - %(track)s;
         checkpoint;

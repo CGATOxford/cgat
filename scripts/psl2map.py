@@ -289,7 +289,7 @@ def main(argv=None):
     parser = E.OptionParser(
         version="%prog version: $Id: psl2map.py 2781 2009-09-10 11:33:14Z andreas $", usage=globals()["__doc__"])
 
-    parser.add_option("--input-filename-queries", dest="input_filename_queries", type="string",
+    parser.add_option("--queries-tsv-file", dest="input_filename_queries", type="string",
                       help="fasta filename with queries - required for polyA analysis [%default].")
 
     parser.add_option("--polyA", dest="polyA", action="store_true",
@@ -338,7 +338,7 @@ def main(argv=None):
     parser.add_option("--keep-all-best", dest="keep_all_best", action="store_true",
                       help="when sorting matches, keep all matches within the collection threshold [%default].")
 
-    parser.add_option("--best-per-sbjct", dest="best_per_sbjct", action="store_true",
+    parser.add_option("--output-best-per-subject", dest="best_per_sbjct", action="store_true",
                       help="keep only the best entry per sbjct (for transcript mapping) [%default].")
 
     parser.add_option("--threshold-max-sbjct-gaps", dest="threshold_max_sbjct_gaps", type="int",
@@ -354,11 +354,11 @@ def main(argv=None):
                                "unique", "all"),
                       help="determines how to selecte the best match [%default].")
 
-    parser.add_option("--filename-filter-sbjct", dest="filename_filter_sbjct", type="string",
+    parser.add_option("--subjctfilter-tsv-file", dest="filename_filter_sbjct", type="string",
                       help="gff file for filtering sbjct matches. Matches overlapping these regions are discarded, but see --keep-forbidden [%default].")
 
     parser.add_option("--keep-forbidden", dest="keep_forbidden", action="store_true",
-                      help="if set, keep only matches that overlap the regions supplied with --filename-filter-sbjct [%default].")
+                      help="if set, keep only matches that overlap the regions supplied with --subjctfilter-tsv-file [%default].")
 
     parser.add_option("--query-forward-coordinates", dest="query_forward_coordinates", action="store_true",
                       help="use forward coordinates for query, strand will refer to sbjct [%default].")

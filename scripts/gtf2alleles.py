@@ -816,23 +816,23 @@ def main(argv=None):
                       help="tablename to get variants from (in samtools pileup format) [default=%default].")
     parser.add_option("-d", "--database", dest="database", type="string",
                       help="sqlite3 database [default=%default].")
-    parser.add_option("-f", "--filename-exons", dest="filename_exons", type="string",
+    parser.add_option("-f", "--exons-file", dest="filename_exons", type="string",
                       help="filename with transcript model information (gtf formatted file)  [default=%default].")
     parser.add_option("-r", "--filename-reference", dest="filename_reference", type="string",
                       help="filename with transcript models of a reference gene set. Stop codons that do not"
                       " overlap any of the exons in this file are ignore (gtf-formatted file)  [default=%default].")
-    parser.add_option("--filename-vcf", dest="filename_vcf", type="string",
+    parser.add_option("--vcf-file", dest="filename_vcf", type="string",
                       help="filename with variants in VCF format. Should be indexed by tabix  [default=%default].")
-    parser.add_option("--filename-pileup", dest="filename_pileup", type="string",
+    parser.add_option("--pileup-file", dest="filename_pileup", type="string",
                       help="filename with variants in samtools pileup format. Should be indexed by tabix  [default=%default].")
     parser.add_option("--vcf-sample", dest="vcf_sample", type="string",
                       help="sample id for species of interest in vcf formatted file [default=%default].")
-    parser.add_option("-s", "--filename-seleno", dest="filename_seleno", type="string",
+    parser.add_option("-s", "--seleno-tsv-file", dest="filename_seleno", type="string",
                       help="filename of a list of transcript ids that are selenoproteins [default=%default].")
     parser.add_option("-m", "--module", dest="modules", type="choice", action="append",
                       choices=("gene-counts", "transcript-effects"),
                       help="modules to apply [default=%default].")
-    parser.add_option("-o", "--output", dest="output", type="choice", action="append",
+    parser.add_option("-o", "--output-section", dest="output", type="choice", action="append",
                       choices=("all", "peptide", "cds", "table", "gtf", "map"),
                       help="sections to output [default=%default].")
     parser.add_option("-k", "--with-knockouts", dest="with_knockouts", action="store_true",

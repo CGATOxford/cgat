@@ -9,4 +9,4 @@ same:
     stdin: null
     outputs: [stdout]
     references: [same.tsv]
-    options:  --pattern-id=".*/(.*).gtf.gz" <DIR>/hg19.small.gtf.gz <DIR>/hg19.small.gtf.gz 
+    options:  --pattern-identifier=".*/(.*).gtf.gz" <DIR>/hg19.small.gtf.gz <DIR>/hg19.small.gtf.gz 

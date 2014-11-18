@@ -1,5 +1,4 @@
-"""
-diff_chains.py - compare to chain formatted files
+"""diff_chains.py - compare to chain formatted files
 =================================================
 
 :Author: Andreas Heger
@@ -10,13 +9,15 @@ diff_chains.py - compare to chain formatted files
 Purpose
 -------
 
-Compare two genomic alignment files and calculate statistics from the comparison.
+Compare two genomic alignment files and calculate statistics from the
+comparison.
 
 Documentation
 --------------
 
-Operates on two `chain <https://genome.ucsc.edu/goldenPath/help/chain.html>`_ 
-formatted files.
+Operates on two `chain
+<https://genome.ucsc.edu/goldenPath/help/chain.html>`_ formatted
+files.
 
 Outputs a table with the following columns:
 
@@ -55,8 +56,8 @@ Example::
 
    cgat diff_chains.py hg19ToMm10v1.chain.over.gz hg19ToMm10v2.chain.over.gz
 
-This will compare the locations that regions within the genome hg19 map to between
-two different mappings to the genome mm10.
+This will compare the locations that regions within the genome hg19
+map to between two different mappings to the genome mm10.
 
 Type::
 

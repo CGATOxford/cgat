@@ -51,6 +51,21 @@ Usage
 Documentation
 -------------
 
+Requirements:
+
+* DESeq >= 1.17
+* DESeq2 >= 1.5.62
+* edgeR >= 3.7.16
+* gplots >= 2.14.2
+* ggplot2 >= 1.0.0
+* reshape >= 0.8.5
+* RColorBrewer >= 1.0.5
+* grid >= 3.1.1
+* limma >= 3.21.18
+* samr >= 2.0 (optional)
+* siggenes >= 1.39.0 (optional)
+
+
 Code
 ----
 
@@ -66,7 +81,6 @@ import re
 import pandas
 
 from rpy2.robjects import r as R
-import rpy2.rinterface as rinterface
 import rpy2.robjects as ro
 import rpy2.robjects.numpy2ri
 
@@ -1668,10 +1682,10 @@ def loadCuffdiff(infile, outfile):
 
         statement = '''cat %(tmpname)s
         | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --allow-empty
-              --index=treatment_name
-              --index=control_name
-              --index=test_id
+              --allow-empty-file
+              --add-index=treatment_name
+              --add-index=control_name
+              --add-index=test_id
               --table=%(tablename)s
          >> %(outfile)s.log
          '''
@@ -1687,8 +1701,8 @@ def loadCuffdiff(infile, outfile):
 
         statement = '''zcat %(indir)s/%(fn)s
         | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --allow-empty
-              --index=tracking_id
+              --allow-empty-file
+              --add-index=tracking_id
               --table=%(tablename)s
          >> %(outfile)s.log
          '''
@@ -1788,8 +1802,8 @@ def loadCuffdiff(infile, outfile):
         statement = ("cat %(tmpf)s |"
                      " python %(scriptsdir)s/csv2db.py "
                      "  %(csv2db_options)s"
-                     "  --allow-empty"
-                     "  --index=gene_id"
+                     "  --allow-empty-file"
+                     "  --add-index=gene_id"
                      "  --table=%(tablename)s"
                      " >> %(outfile)s.log")
         P.run()

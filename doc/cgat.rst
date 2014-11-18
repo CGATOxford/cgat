@@ -1,21 +1,21 @@
 .. _cgat:
 
-============================================
-CGAT - Computational Genomics Analysis Tools
-============================================
+======================================================
+CGAT |version| - Computational Genomics Analysis Tools 
+======================================================
 
 CGAT is a collection of tools for the computational genomicist written
-in the python language. The tools have been developed and accumulated in various
-genome projects (`Heger & Ponting, 2007`_, `Warren et al., 2008`_) and NGS projects
-(`Ramagopalan et al., 2010`_). The tools are continuously being developed
-as part of the `CGAT Training programme`_.
+in the python language. The tools have been developed and accumulated
+in various genome projects (`Heger & Ponting, 2007`_, `Warren et al.,
+2008`_) and NGS projects (`Ramagopalan et al., 2010`_). The tools are
+continuously being developed as part of the `CGAT Training
+programme`_. The tools work from the command line, but can readily be
+installed within frameworks such as `Galaxy`_.
 
-The tools work from the command line, but can readily be installed
-within frameworks such as `Galaxy`_.
-
-Please note that the tools are part of a larger code base also
-including genomics and NGS pipelines. More information about those
-is :ref:`here <contents>`.
+The documentation below covers the script published in
+`Bioinformatics <http://www.ncbi.nlm.nih.gov/pubmed/24395753>`_.
+For the complete documentation that also includes the NGS pipelines
+please go to :ref:`contents`.
 
 Detailed instructions on installation, on usage and a tool reference
 are below, followed by a :ref:`quickstart` guide.
@@ -47,37 +47,38 @@ dependencies and troubleshooting.
 
 CGAT tools are run from the unix command line. Lets assume we have
 the results of the binding locations of a ChIP-Seq experiment
-(chipseq.hg19.bed) in bed format and we want to know, how many
+(:file:`chipseq.hg19.bed`) in bed format and we want to know, how many
 binding locations are intronic, intergenic and within exons.
 
 Thus, we need to create a set of genomic annotations denoting
-intronic, intergenic regions, etc. with respect to a reference gene set.
-Here, we download the GENCODE geneset (Harrow et al., 2012) in GTF
-format from ENSEMBL (Flicek et al., 2013). 
+intronic, intergenic regions, etc. with respect to a reference gene
+set.  Here, we download the GENCODE geneset (Harrow et al., 2012) in
+GTF format from ENSEMBL (Flicek et al., 2013).
 
 The following unix statement downloads the ENSEMBL gene set containing
 over-lapping transcripts, and outputs a set of non-overlapping genomic
 annotations in gff format (:file:`annotations.gff`) by piping the data
-through various GAT tools::
+through various CGAT tools::
  
    wget -qO- ftp://ftp.ensembl.org/pub/release-72/gtf/homo_sapiens/Homo_sapiens.GRCh37.72.gtf.gz
    | gunzip
    | awk '$2 == "protein_coding"' 
-   | cgat gff2ff --genome-file=hg19 --sanitize=ucsc --skip-missing
-   | cgat gtf2gtf --sort=gene
-   | cgat gtf2gtf --merge-exons --with-utr
-   | cgat gtf2gtf --filter=longest-gene
-   | cgat gtf2gtf --sort=position
-   | cgat gtf2gff --genome-file=hg19 --flank=5000 --method=genome
+   | cgat gff2ff --genome-file=hg19 --method=sanitize --skip-missing
+   | cgat gtf2gtf --method=sort --sort-order=gene
+   | cgat gtf2gtf --method=merge-exons --with-utr
+   | cgat gtf2gtf --method=filter --filter-method=longest-gene
+   | cgat gtf2gtf --method=sort --sort-order=position
+   | cgat gtf2gff --genome-file=hg19 --flank-size=5000 --method=genome
    | gzip
    > annotations.gff.gz
 
 .. note::
+
    The statements above need an indexed genome. To create such an
-   indexed genome for hg19, type the following:
+   indexed genome for hg19, type the following::
   
-   wget http://hgdownload.cse.ucsc.edu/goldenPath/hg19/bigZips/chromFa.tar.gz
-   | index_fasta.py hg19 - > hg19.log
+      wget http://hgdownload.cse.ucsc.edu/goldenPath/hg19/bigZips/chromFa.tar.gz
+      | index_fasta.py hg19 - > hg19.log
    
 CGAT tools can be chained into a single work flow using unix
 pipes. The above sequence of commands in turn (1) reconciles UCSC and
@@ -95,7 +96,7 @@ analysis.
 Choosing different options can provide different sets of
 answers. Instead of merging all exons per gene, the longest transcript
 might be selected by replacing (2) with ``gtf2gtf
---filter=longest-transcript``. 
+--method=filter --filter-method=longest-transcript``. 
 Or, instead of genomic annotations, regulatory domains such as defined by GREAT might be obtained by
 removing (3) and replacing (4) with ``gtf2gff --method=great-domains``.
 
@@ -106,7 +107,7 @@ other interval intersections. Here, we will use another CGAT tool,
 
    zcat /ifs/devel/gat/tutorial/data/srf.hg19.bed 
    | cgat bed2gff --as-gtf 
-   | cgat gtf2table --counter=classifier-chipseq --filename-gff=annotations.gff.gz
+   | cgat gtf2table --counter=classifier-chipseq --gff-file=annotations.gff.gz
 
 The scripts follow a consistent naming scheme centered around common
 genomic formats. Because of the common genomic formats, the tools can

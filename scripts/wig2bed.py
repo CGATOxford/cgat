@@ -129,17 +129,14 @@ def main(argv=sys.argv):
     parser.add_option("-t", "--threshold", dest="threshold", type="float",
                       help="threshold to apply [default=%default]")
 
-    parser.add_option("-i", "--bigwig-file", dest="bigwig_file",
-                      type="string", metavar="bigwig",
-                      help="filename with bigwig information [default=%default].")
-
-    parser.add_option("-b", "--bigwig", dest="bigwig", action="store_true",
-                      help="input is bigwig [default=%default].")
+    parser.add_option(
+        "-i", "--bigwig-file", dest="bigwig_file",
+        type="string", metavar="bigwig",
+        help="filename with bigwig information [default=%default].")
 
     parser.set_defaults(methods=[],
                         genome_file=None,
                         threshold=10,
-                        bigwig=False,
                         max_distance=0)
 
     (options, args) = E.Start(parser, add_pipe_options=True)

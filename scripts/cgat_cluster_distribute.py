@@ -76,7 +76,7 @@ def main(argv=None):
     parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
                             usage=globals()["__doc__"])
 
-    parser.add_option("-s", "--scratchdir", dest="scratchdir", type="string",
+    parser.add_option("-s", "--scratch-dir", dest="scratchdir", type="string",
                       help="the scratch directory on the nodes [default=%default].")
 
     parser.add_option("-c", "--collection", dest="collection", type="string",

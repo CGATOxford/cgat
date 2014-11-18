@@ -26,7 +26,7 @@ functionality is similar to bedtools merge, but with some additions:
   the 4th column of the bed will be merged
 
 * Removing overlapping intervals with inconsistent names: set the
-   ``--remove-inconsistent`` option.
+   ``--remove-inconsistent-names`` option.
 
 .. caution::
    Intervals of the same name will only be merged if they
@@ -379,37 +379,50 @@ def main(argv=sys.argv):
                             usage=globals()["__doc__"])
 
     # IMS: new method: extend intervals by set amount
-    parser.add_option("-m", "--method", dest="methods", type="choice", action="append",
+    parser.add_option("-m", "--method", dest="methods", type="choice",
+                      action="append",
                       choices=("merge", "filter-genome", "bins",
                                "block", "sanitize-genome", "shift", "extend"),
                       help="method to apply [default=%default]")
 
     parser.add_option("--num-bins", dest="num_bins", type="int",
-                      help="number of bins into which to merge (used for method `bins) [default=%default]")
+                      help="number of bins into which to merge (used for "
+                      "method `bins) [default=%default]")
 
     parser.add_option("--bin-edges", dest="bin_edges", type="string",
                       help="bin_edges for binning method [default=%default]")
 
-    parser.add_option("--binning-method", dest="binning_method", type="choice",
-                      choices=(
-                          "equal-bases", "equal-intervals", "equal-range"),
-                      help="method used for binning (used for method `bins` if no bin_edges is given) [default=%default]")
+    parser.add_option(
+        "--binning-method", dest="binning_method", type="choice",
+        choices=(
+            "equal-bases", "equal-intervals", "equal-range"),
+        help="method used for binning (used for method `bins` if no "
+        "bin_edges is given) [default=%default]")
 
-    parser.add_option("--merge-distance", dest="merge_distance", type="int",
-                      help="distance in bases over which to merge that are not directly adjacent [default=%default]")
+    parser.add_option(
+        "--merge-distance", dest="merge_distance", type="int",
+        help="distance in bases over which to merge that are not "
+        "directly adjacent [default=%default]")
 
-    parser.add_option("--merge-min-intervals", dest="merge_min_intervals", type="int",
-                      help="only output merged intervals that are build from at least x intervals [default=%default]")
+    parser.add_option(
+        "--merge-min-intervals", dest="merge_min_intervals", type="int",
+        help="only output merged intervals that are build from at least "
+        "x intervals [default=%default]")
 
-    parser.add_option("--merge-by-name", dest="merge_by_name", action="store_true",
-                      help="only merge intervals with the same name [default=%default]")
+    parser.add_option(
+        "--merge-by-name", dest="merge_by_name",
+        action="store_true",
+        help="only merge intervals with the same name [default=%default]")
 
-    parser.add_option("--remove-inconsistent", dest="remove_inconsistent", action="store_true",
-                      help="when merging, do not output intervals where the names of overlapping intervals "
-                      "do not match [default=%default]")
+    parser.add_option(
+        "--remove-inconsistent-names", dest="remove_inconsistent_names",
+        action="store_true",
+        help="when merging, do not output intervals where the names of "
+        "overlapping intervals do not match [default=%default]")
 
-    parser.add_option("--offset", dest="offset",  type="int",
-                      help="offset for shifting intervals [default=%default]")
+    parser.add_option(
+        "--offset", dest="offset",  type="int",
+        help="offset for shifting intervals [default=%default]")
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genome.")
@@ -429,7 +442,7 @@ def main(argv=sys.argv):
                         offset=10000,
                         test=None,
                         extend_distance=1000,
-                        remove_inconsistent=False)
+                        remove_inconsistent_names=False)
 
     (options, args) = E.Start(parser, add_pipe_options=True)
 
@@ -456,24 +469,27 @@ def main(argv=sys.argv):
                 raise ValueError("please supply contig sizes")
             processor = sanitizeGenome(processor, contigs)
         elif method == "merge":
-            processor = merge(processor,
-                              options.merge_distance,
-                              by_name=options.merge_by_name,
-                              min_intervals=options.merge_min_intervals,
-                              remove_inconsistent=options.remove_inconsistent)
+            processor = merge(
+                processor,
+                options.merge_distance,
+                by_name=options.merge_by_name,
+                min_intervals=options.merge_min_intervals,
+                remove_inconsistent=options.remove_inconsistent_names)
         elif method == "bins":
             if options.bin_edges:
                 bin_edges = map(float, options.bin_edges.split(","))
                 # IMS: check bin edges are valid
                 if not(len(bin_edges) == options.num_bins + 1):
                     raise ValueError(
-                        "Number of bin edge must be one more than number of bins")
+                        "Number of bin edge must be one more than "
+                        "number of bins")
             else:
                 bin_edges = None
-            processor, bin_edges = Bed.binIntervals(processor,
-                                                    num_bins=options.num_bins,
-                                                    method=options.binning_method,
-                                                    bin_edges=bin_edges)
+            processor, bin_edges = Bed.binIntervals(
+                processor,
+                num_bins=options.num_bins,
+                method=options.binning_method,
+                bin_edges=bin_edges)
             E.info("# split bed: bin_edges=%s" % (str(bin_edges)))
 
         elif method == "block":

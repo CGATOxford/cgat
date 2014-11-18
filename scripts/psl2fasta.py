@@ -73,10 +73,10 @@ def main(argv=None):
     parser = E.OptionParser(version="%prog version: $Id: psl2fasta.py 2781 2009-09-10 11:33:14Z andreas $",
                             usage=globals()["__doc__"])
 
-    parser.add_option("--filename-query", dest="filename_query", type="string",
+    parser.add_option("--query-psl-file", dest="filename_query", type="string",
                       help="fasta filename with queries.")
 
-    parser.add_option("--filename-target", dest="filename_target", type="string",
+    parser.add_option("--target-psl-file", dest="filename_target", type="string",
                       help="fasta filename with target.")
 
     parser.add_option("-m", "--method", dest="method", type="choice",

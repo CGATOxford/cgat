@@ -66,14 +66,15 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'CGAT'
-copyright = u'2011, Andreas Heger'
+copyright = u'2011, 2012, 2013, 2014 Andreas Heger'
 
 
 # Included at the end of each rst file
-rst_epilog='''
+rst_epilog = '''
 .. _CGAT Training Programme: http://www.cgat.org
-.. _pysam: http://code.google.com/p/pysam/
+.. _pysam: https://github.com/pysam-developers/pysam
 .. _samtools: http://samtools.sourceforge.net/
+.. _htslib: http://www.htslib.org/
 .. _tabix: http://samtools.sourceforge.net/tabix.shtml/
 .. _Galaxy: https://main.g2.bx.psu.edu/
 .. _cython: http://cython.org/
@@ -106,7 +107,7 @@ import version
 # built documents.
 #
 # The short X.Y version.
-version = version
+version = version.__version__
 # The full version, including alpha/beta/rc tags.
 release = version
 

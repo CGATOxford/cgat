@@ -82,13 +82,13 @@ def main(argv=None):
                       help="calculate cumulative histogram.")
     parser.add_option("--reverse-cumulative", dest="reverse_cumulative", action="store_true",
                       help="calculate reverse cumulative histogram.")
-    parser.add_option("--headers", dest="headers", type="string",
+    parser.add_option("--header-names", dest="headers", type="string",
                       help="use the following headers.")
     parser.add_option("--ignore-out-of-range", dest="ignore_out_of_range", action="store_true",
                       help="ignore values that are out of range (as opposed to truncating them to range border.")
-    parser.add_option("--missing", dest="missing_value", type="string",
+    parser.add_option("--missing-value", dest="missing_value", type="string",
                       help="entry for missing values [%default].")
-    parser.add_option("--dynamic-bins", dest="dynamic_bins", action="store_true",
+    parser.add_option("--use-dynamic-bins", dest="dynamic_bins", action="store_true",
                       help="each value constitutes its own bin.")
     parser.add_option("--on-the-fly", dest="on_the_fly", action="store_true",
                       help="on the fly computation of histograms. Requires setting of min-value, max-value and bin_size.")

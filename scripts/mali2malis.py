@@ -62,7 +62,7 @@ def main(argv=None):
     parser.add_option("-a", "--pattern-mali", dest="pattern_mali", type="string",
                       help="filename pattern for multiple alignment files.")
 
-    parser.add_option("--filename-coordinates", dest="filename_coordinates", type="string",
+    parser.add_option("--coordinates-tsv-file", dest="filename_coordinates", type="string",
                       help="filename of coordinates that constitute the multiple alignment.")
 
     parser.add_option("-i", "--input-format", dest="input_format", type="choice",

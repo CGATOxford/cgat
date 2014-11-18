@@ -14,6 +14,7 @@ env:
     - CGAT_TASK_ID=270
     - CGAT_TASK_ID=315
     - TEST_STYLE=1
+    - TEST_CMDLINE=1
     #- TEST_IMPORT=1
 
 python:
@@ -36,3 +37,5 @@ notifications:
     - michael.morgan@dpag.ox.ac.uk
     - xiaoming.hu@dpag.ox.ac.uk
     - nicholas.ilott@NDM.OX.AC.UK
+    - katherine.brown@dpag.ox.ac.uk
+    - charlotte.george@dpag.ox.ac.uk

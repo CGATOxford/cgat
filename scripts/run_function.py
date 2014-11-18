@@ -57,7 +57,7 @@ def main(argv=None):
     parser.add_option("-i", "--input", dest="input_filenames", type="string", action="append",
                       help="input filename")
 
-    parser.add_option("-o", "--output", dest="output_filenames", type="string", action="append",
+    parser.add_option("-o", "--output-section", dest="output_filenames", type="string", action="append",
                       help="output filename")
 
     parser.add_option("-f", "--function", dest="function", type="string",

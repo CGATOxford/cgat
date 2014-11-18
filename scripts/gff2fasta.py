@@ -31,14 +31,14 @@ The input can also be a :term:`gtf` formatted file. In that case, use the
  features.fasta
 
 If you want to merge the sequence of similar features together, please use
-``--merge``::
+``--merge-overlapping``::
 
-   python gff2fasta.py --genome-file=hg19 --merge < features.gff >\
+   python gff2fasta.py --genome-file=hg19 --merge-overlapping < features.gff >\
  features.fasta
 
 It is possible to filter the output by selecting a minimum or maximum number
 of nucleotides in the resultant fasta sequence with ``--max-length`` or
-``--min-length`` respectively::
+``--min-interval-length`` respectively::
 
    python gff2fasta.py --genome-file=hg19 --max-length=100\
  < features.gff > features.fasta
@@ -53,7 +53,7 @@ On the other hand, low-complexity regions can be masked with the ``--masker``
 option and a given :term:`gff` formatted file::
 
    python gff2fasta.py --genome-file=hg19 --masker=dust\
- --filename-masks=intervals.gff < features.gff > features.fasta
+ --maskregions-bed-file=intervals.gff < features.gff > features.fasta
 
 where ``--masker`` can take the following values: ``dust``, ``dustmasker``,
 and ``softmask``.
@@ -61,6 +61,41 @@ and ``softmask``.
 Options
 -------
 
+``--is-gtf``
+  Tells the script to expect a :term:`gtf` format file
+
+``--genome-file``
+  PATH to Fasta file of genome build to use
+
+``--merge-overlapping``
+  Merge features in :term:`gtf`/:term:`gff` file that are adjacent and share
+  attributes
+
+``--method=filter --filter-method``
+  Filter on a :term:`gff` feature such as ``exon`` or ``CDS``
+
+``--maskregions-bed-file``
+  Mask sequences in intervals in :term:`gff` file
+
+``--remove-masked-regions``
+  Remove sequences in intervals in :term:`gff` file rather than masking them
+
+``--min-interval-length``
+  Minimum output sequence length
+
+``--max-length``
+  Maximum output sequence length
+
+``--extend-at``
+  Extend sequence at 3', 5' or both end.  Optionally '3only' or '5only' will
+  return only the 3' or 5' extended sequence
+
+``--extend-by``
+  Used in conjunction with ``--extend-at``, the number of nucleotides to extend
+  by
+
+``--masker``
+  Masker type to use: dust, dustmasker, soft or none
 
 Command line options
 --------------------
@@ -86,10 +121,9 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv
 
-    parser = E.OptionParser(version="%prog version: "
-                            "$Id: gff2fasta.py 2861 2010-02-23 17:36:32Z "
-                            "andreas $",
-                            usage=globals()["__doc__"])
+    parser = E.OptionParser(
+        version="%prog version: $Id$",
+        usage=globals()["__doc__"])
 
     parser.add_option("--is-gtf", dest="is_gtf", action="store_true",
                       help="input is gtf instead of gff.")
@@ -97,44 +131,53 @@ def main(argv=None):
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genome [default=%default].")
 
-    parser.add_option("-m", "--merge", dest="merge", action="store_true",
-                      help="merge adjacent intervals with the same attributes."
-                      " [default=%default]")
+    parser.add_option(
+        "-m", "--merge-adjacent", dest="merge", action="store_true",
+        help="merge adjacent intervals with the same attributes."
+        " [default=%default]")
 
-    parser.add_option("-e", "--feature", dest="feature", type="string",
-                      help="filter by a feature, for example 'exon', 'CDS'."
-                      " If set to the empty string, all entries are output "
-                      "[%default].")
+    parser.add_option(
+        "-e", "--feature", dest="feature", type="string",
+        help="filter by a feature, for example 'exon', 'CDS'."
+        " If set to the empty string, all entries are output "
+        "[%default].")
 
-    parser.add_option("-f", "--filename-masks", dest="filename_masks",
-                      type="string", metavar="gff",
-                      help="mask sequences with regions given in gff file "
-                      "[%default].")
+    parser.add_option(
+        "-f", "--maskregions-bed-file", dest="filename_masks",
+        type="string", metavar="gff",
+        help="mask sequences with regions given in gff file "
+        "[%default].")
 
-    parser.add_option("--remove-masked-regions", dest="remove_masked_regions",
-                      action="store_true",
-                      help="remove regions instead of masking [%default].")
+    parser.add_option(
+        "--remove-masked-regions", dest="remove_masked_regions",
+        action="store_true",
+        help="remove regions instead of masking [%default].")
 
-    parser.add_option("--min-length", dest="min_length", type="int",
-                      help="set minimum length for sequences output "
-                      "[%default]")
+    parser.add_option(
+        "--min-interval-length", dest="min_length", type="int",
+        help="set minimum length for sequences output "
+        "[%default]")
 
-    parser.add_option("--max-length", dest="max_length", type="int",
-                      help="set maximum length for sequences output "
-                      "[%default]")
+    parser.add_option(
+        "--max-length", dest="max_length", type="int",
+        help="set maximum length for sequences output "
+        "[%default]")
 
-    parser.add_option("--extend-at", dest="extend_at", type="choice",
-                      choices=("none", "3", "5", "both", "3only", "5only"),
-                      help="extend at no end, 3', 5' or both ends. If "
-                      "3only or 5only are set, only the added sequence "
-                      "is returned [default=%default]")
+    parser.add_option(
+        "--extend-at", dest="extend_at", type="choice",
+        choices=("none", "3", "5", "both", "3only", "5only"),
+        help="extend at no end, 3', 5' or both ends. If "
+        "3only or 5only are set, only the added sequence "
+        "is returned [default=%default]")
 
-    parser.add_option("--extend-by", dest="extend_by", type="int",
-                      help="extend by # bases [default=%default]")
+    parser.add_option(
+        "--extend-by", dest="extend_by", type="int",
+        help="extend by # bases [default=%default]")
 
-    parser.add_option("--masker", dest="masker", type="choice",
-                      choices=("dust", "dustmasker", "softmask", "none"),
-                      help="apply masker [%default].")
+    parser.add_option(
+        "--masker", dest="masker", type="choice",
+        choices=("dust", "dustmasker", "softmask", "none"),
+        help="apply masker [%default].")
 
     parser.set_defaults(
         is_gtf=False,

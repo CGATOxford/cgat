@@ -91,7 +91,7 @@ def main(argv=None):
     parser.add_option("-f", "--format=", dest="format", type="string",
                       help="input format [exons|gff|table]")
 
-    parser.add_option("-e", "--exons=", dest="tablename_exons", type="string",
+    parser.add_option("-e", "--exons-file=", dest="tablename_exons", type="string",
                       help="table name with exons.")
     parser.add_option("-p", "--predictions=", dest="tablename_predictions", type="string",
                       help="table name with predictions.")

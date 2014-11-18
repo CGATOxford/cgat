@@ -101,7 +101,7 @@ def main(argv=None):
     parser.add_option("-c", "--field-compare", dest="field_compare", type="string",
                       help="pattern for the field to compare.")
 
-    parser.add_option("-i", "--filename-identifiers", dest="filename_identifiers", type="string",
+    parser.add_option("-i", "--identifiers-tsv-file", dest="filename_identifiers", type="string",
                       help="identifiers in the positive set.")
 
     parser.add_option("-u", "--filename-subset", dest="filename_subset", type="string",
@@ -116,7 +116,7 @@ def main(argv=None):
     parser.add_option("-o", "--output-fields", dest="output_fields", type="string",
                       help="output fields, choices are: zscore, val, nvals, sum, min, max, stddev, mean, median.")
 
-    parser.add_option("--output-pattern", dest="output_pattern", type="string",
+    parser.add_option("--output-filename-pattern", dest="output_pattern", type="string",
                       help="pattern for table headers, should contain %s for schema and %s for field anme.")
 
     parser.add_option("-f", "--output-format", dest="output_format", type="choice",

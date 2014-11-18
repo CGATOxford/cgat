@@ -70,7 +70,7 @@ def main(argv=None):
     parser = E.OptionParser(
         version="%prog version: $Id: csv2csv.py 2782 2009-09-10 11:40:29Z andreas $")
 
-    parser.add_option("-s", "--sort", dest="sort", type="string",
+    parser.add_option("-s", "--method=sort --sort-order", dest="sort", type="string",
                       help="fields to take (in sorted order).")
 
     (options, args) = E.Start(parser, add_csv_options=True)

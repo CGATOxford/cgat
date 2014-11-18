@@ -179,7 +179,7 @@ def main(argv=None):
     parser.add_option("-s", "--species", dest="species", type="string",
                       help="species to use.")
 
-    parser.add_option("-p", "--prefix", dest="prefix", type="string",
+    parser.add_option("-p", "--column-prefix", dest="prefix", type="string",
                       help="prefix to use for temporary files.")
 
     parser.set_defaults(

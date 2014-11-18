@@ -140,7 +140,7 @@ def main(argv=None):
                       help="use column to aggregate.")
     parser.add_option("-i", "--no-title", dest="titles", action="store_false",
                       help="do not use supplied column titles.")
-    parser.add_option("-e", "--headers", dest="headers", type="string",
+    parser.add_option("-e", "--header-names", dest="headers", type="string",
                       help="headers.")
     parser.add_option("-r", "--rows", dest="rows", action="store_true",
                       help="data is in rows.")
@@ -148,11 +148,11 @@ def main(argv=None):
                       help="ignore zero values.")
     parser.add_option("-f", "--format", dest="value_format", type="string",
                       help="number format.")
-    parser.add_option("-x", "--flat", dest="flat", action="store_true",
+    parser.add_option("-x", "--flat-output", dest="flat", action="store_true",
                       help="flat format.")
     parser.add_option("--skip-header", dest="add_header", action="store_false",
                       help="do not add header to flat format.")
-    parser.add_option("--write-header", dest="write_header", action="store_true",
+    parser.add_option("--output-with-header", dest="write_header", action="store_true",
                       help="write header and exit.")
     parser.add_option("--skip-empty", dest="output_empty", action="store_false",
                       help="do not output empty columns.")

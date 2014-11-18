@@ -703,7 +703,7 @@ def main(argv=None):
                       help="regular expression to extract script name "
                       "[%default]. ")
 
-    parser.add_option("-p", "--output-pattern", dest="output_pattern",
+    parser.add_option("-p", "--output-filename-pattern", dest="output_pattern",
                       type="string",
                       help="pattern to build output filename. Should contain "
                       "an '%s' [%default]. ")
@@ -730,7 +730,7 @@ def main(argv=None):
 
     if options.output_pattern and not options.input_regex:
         raise ValueError(
-            "please specify --input-regex when using --output-pattern")
+            "please specify --input-regex when using --output-filename-pattern")
 
     if options.output_format == "galaxy":
         options.stdout.write(

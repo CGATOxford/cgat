@@ -79,7 +79,7 @@ Options:
 -h, --help                      print this message.
 -v, --verbose=                  loglevel.
 -p, --pattern-species=          regex pattern to extract species from identifier
--g, --genes=                    filename with list of genes per species
+-g, --genes-tsv-file=                    filename with list of genes per species
 """ % sys.argv[0]
 
 import CGAT.Experiment as E

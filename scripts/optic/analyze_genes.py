@@ -126,13 +126,13 @@ def main(argv=None):
                       help="genomes to analyse.")
     parser.add_option("-i", "--priority", dest="priority", type="string",
                       help="quality priority.")
-    parser.add_option("-s", "--sort", dest="sort", type="string",
+    parser.add_option("-s", "--method=sort --sort-order", dest="sort", type="string",
                       help="sort order.")
     parser.add_option("-t", "--table-orthology", dest="table_orthology", type="string",
                       help="tablename with orthology relationships.")
     parser.add_option("-e", "--schema", dest="orthology_reference_schema", type="string",
                       help="schema name of reference.")
-    parser.add_option("-f", "--filter", dest="filename_filter", type="string",
+    parser.add_option("-f", "--method=filter --filter-method", dest="filename_filter", type="string",
                       help="filename with schema|prediction_id|gene to use as filter. The prediction_ids are used for filtering.")
 
     parser.set_defaults(

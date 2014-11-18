@@ -521,7 +521,7 @@ def main(argv=None):
     parser = E.OptionParser(
         version="%prog version: $Id: optic/plot_synteny.py 2781 2009-09-10 11:33:14Z andreas $")
 
-    parser.add_option("-e", "--headers", dest="headers", action="store_true",
+    parser.add_option("-e", "--header-names", dest="headers", action="store_true",
                       help="first row is a header [ignored].")
     parser.add_option("-t", "--title", dest="title", type="string",
                       help="page title.")

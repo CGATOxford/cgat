@@ -2382,7 +2382,7 @@ if __name__ == "__main__":
 
     parser.add_option("--multiple-genes", dest="multiple_genes", action="store_true",
                       help="analyse multiple genes.")
-    parser.add_option("-t", "--filename-tree", dest="filename_tree", type="string",
+    parser.add_option("-t", "--tree-nh-file", dest="filename_tree", type="string",
                       help="filename with tree information. Evolver: tree and number of sequences.")
     parser.add_option("-i", "--filename-sequences", dest="filename_sequences", type="string",
                       help="filename with sequences. Evolver: determines codon frequencies.")
@@ -2462,7 +2462,7 @@ if __name__ == "__main__":
     parser.add_option("--filename-mali", dest="filename_mali", type="string",
                       help="Filename with mali in fasta format. Used for special purpose: map species names back to genes for 1:1 ortholog cluster.")
 
-    parser.add_option("--filename-map", dest="filename_map_old2new", type="string",
+    parser.add_option("--map-tsv-file", dest="filename_map_old2new", type="string",
                       help="Filename with map of identifiers mapping from old to new identifiers.")
 
     parser.add_option("--invert-map", dest="invert_map", action="store_true",

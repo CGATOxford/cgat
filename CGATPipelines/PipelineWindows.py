@@ -1,3 +1,14 @@
+'''
+
+Requirements:
+
+* bedtools >= 2.21.0
+* picardtools >= 1.106
+* samtools >= 1.1
+* MEDIPS >= 1.15.0
+
+'''
+
 import os
 import re
 import collections
@@ -7,7 +18,6 @@ import numpy as np
 import numpy.ma as ma
 import itertools
 
-import CGAT.Experiment as E
 import CGAT.Pipeline as P
 import CGAT.BamTools as BamTools
 import CGAT.IOTools as IOTools
@@ -222,75 +232,94 @@ def aggregateWindowsReadCounts(infiles,
     os.unlink(tmpfile)
 
 
-#########################################################################
-#########################################################################
-#########################################################################
-def buildDMRStats(infile, outfile, method):
+def buildDMRStats(infiles, outfile, method, fdr_threshold=None):
     '''build dmr summary statistics.
+
+    This method works from output files created by Expression.py
+    (method="deseq" or method="edger") or runMEDIPS (method="medips")
     '''
     results = collections.defaultdict(lambda: collections.defaultdict(int))
-
     status = collections.defaultdict(lambda: collections.defaultdict(int))
-    x = 0
-    for line in IOTools.iterate(IOTools.openFile(infile)):
-        key = (line.treatment_name, line.control_name)
-        r, s = results[key], status[key]
-        r["tested"] += 1
-        s[line.status] += 1
 
-        is_significant = line.significant == "1"
-        up = float(line.l2fold) > 0
-        down = float(line.l2fold) < 0
-        fold2up = float(line.l2fold) > 1
-        fold2down = float(line.l2fold) < -1
-        fold2 = fold2up or fold2down
-
-        if up:
-            r["up"] += 1
-        if down:
-            r["down"] += 1
-        if fold2up:
-            r["l2fold_up"] += 1
-        if fold2down:
-            r["l2fold_down"] += 1
-
-        if is_significant:
-            r["significant"] += 1
-            if up:
-                r["significant_up"] += 1
-            if down:
-                r["significant_down"] += 1
-            if fold2:
-                r["fold2"] += 1
-            if fold2up:
-                r["significant_l2fold_up"] += 1
-            if fold2down:
-                r["significant_l2fold_down"] += 1
-
-    header1, header2 = set(), set()
-    for r in results.values():
-        header1.update(r.keys())
-    for s in status.values():
-        header2.update(s.keys())
-
-    header = ["method", "treatment", "control"]
-    header1 = list(sorted(header1))
-    header2 = list(sorted(header2))
+    # deseq/edger
+    f_significant = lambda x: x.significant == "1"
+    f_up = lambda x: float(x.l2fold) > 0
+    f_down = lambda x: float(x.l2fold) < 0
+    f_fold2up = lambda x: float(x.l2fold) > 1
+    f_fold2down = lambda x: float(x.l2fold) < -1
+    f_key = lambda x: (x.treatment_name, x.control_name)
+    f_status = lambda x: x.status
 
     outf = IOTools.openFile(outfile, "w")
-    outf.write("\t".join(header + header1 + header2) + "\n")
 
-    for treatment, control in results.keys():
-        key = (treatment, control)
-        r = results[key]
-        s = status[key]
-        outf.write("%s\t%s\t%s\t" % (method, treatment, control))
-        outf.write("\t".join([str(r[x]) for x in header1]) + "\t")
-        outf.write("\t".join([str(s[x]) for x in header2]) + "\n")
+    is_first = True
+    for infile in infiles:
 
-#########################################################################
-#########################################################################
-#########################################################################
+        xx = 0
+        for line in IOTools.iterate(IOTools.openFile(infile)):
+            key = f_key(line)
+
+            r, s = results[key], status[key]
+            r["tested"] += 1
+            ss = f_status(line)
+            s[ss] += 1
+
+            if ss != "OK":
+                continue
+
+            is_significant = f_significant(line)
+            up = f_up(line)
+            down = f_down(line)
+            fold2up = f_fold2up(line)
+            fold2down = f_fold2down(line)
+            fold2 = fold2up or fold2down
+
+            if up:
+                r["up"] += 1
+            if down:
+                r["down"] += 1
+            if fold2up:
+                r["l2fold_up"] += 1
+            if fold2down:
+                r["l2fold_down"] += 1
+
+            if is_significant:
+                r["significant"] += 1
+                if up:
+                    r["significant_up"] += 1
+                if down:
+                    r["significant_down"] += 1
+                if fold2:
+                    r["fold2"] += 1
+                if fold2up:
+                    r["significant_l2fold_up"] += 1
+                if fold2down:
+                    r["significant_l2fold_down"] += 1
+
+            if xx > 10000:
+                break
+
+        if is_first:
+            is_first = False
+            header1, header2 = set(), set()
+            for r in results.values():
+                header1.update(r.keys())
+            for s in status.values():
+                header2.update(s.keys())
+
+            header = ["method", "treatment", "control"]
+            header1 = list(sorted(header1))
+            header2 = list(sorted(header2))
+
+            outf.write("\t".join(header + header1 + header2) + "\n")
+
+        for treatment, control in results.keys():
+            key = (treatment, control)
+            r = results[key]
+            s = status[key]
+            outf.write("%s\t%s\t%s\t" % (method, treatment, control))
+            outf.write("\t".join([str(r[x]) for x in header1]) + "\t")
+            outf.write("\t".join([str(s[x]) for x in header2]) + "\n")
 
 
 def buildFDRStats(infile, outfile, method):
@@ -382,8 +411,8 @@ def outputRegionsOfInterest(infiles, outfile,
                             (%(upper_levelB)s and %(sum_levelB)s)"
     | python %(scriptsdir)s/runExpression.py
             --log=%(outfile)s.log
-            --filename-design=%(design_file)s
-            --filename-tags=-
+            --design-tsv-file=%(design_file)s
+            --tags-tsv-file=-
             --method=mock
             --filter-min-counts-per-sample=0
     | gzip
@@ -408,8 +437,6 @@ def runDE(infiles, outfile, outdir,
 
     At the end, a new q-value is computed from all results.
     '''
-
-    to_cluster = True
 
     design_file, counts_file = infiles
 
@@ -439,13 +466,13 @@ def runDE(infiles, outfile, outdir,
                   --output-header
                   --split-at-lines=200000
                   --cluster-options="-l mem_free=8G"
-                  --log=%(outfile)s.log2
-                  --output-pattern=%(outdir)s/%%s
+                  --log=%(outfile)s.log
+                  --output-filename-pattern=%(outdir)s/%%s
                   --subdirs
               "python %(scriptsdir)s/runExpression.py
               --method=%(method)s
-              --filename-tags=-
-              --filename-design=%(design_file)s
+              --tags-tsv-file=-
+              --design-tsv-file=%(design_file)s
               --output-filename-pattern=%%DIR%%/%(prefix)s_
               --deseq-fit-type=%(deseq_fit_type)s
               --deseq-dispersion-method=%(deseq_dispersion_method)s
@@ -484,9 +511,10 @@ def normalizeBed(infile, outfile):
                                   index_col=0)
 
     # normalize count column by total library size
-    # explicitly define numpy array data type
-    # otherwise np.log will fail if it hits a python
-    # long
+    # have to explicitly convert data_frame to numpy
+    # array with int64/float64 data type.  Otherwise
+    # numpy.log will through an Attribute error (wrong
+    # error to report) as it cannot handle python longs
     bed_frame = bed_frame.fillna(0.0)
     val_array = np.array(bed_frame.values, dtype=np.int64)
     geom_mean = geoMean(val_array)
@@ -495,7 +523,9 @@ def normalizeBed(infile, outfile):
     size_factors = ratio_frame.apply(np.median,
                                      axis=0)
     normalize_frame = bed_frame/size_factors
-
+    # replace infs and -infs with Nas, then 0s
+    normalize_frame.replace([np.inf, -np.inf], np.nan, inplace=True)
+    normalize_frame = normalize_frame.fillna(0.0)
     normalize_frame.to_csv(outfile, sep="\t", index_label="interval")
 
 
@@ -604,6 +634,15 @@ def runMEDIPSDMR(design_file, outfile):
             --shift=%(medips_shift)s
             --extend=%(medips_extension)s
             --output-filename-pattern="%(outfile)s_%(pair1)s_vs_%(pair2)s_%%s"
+            --fdr-threshold=%(medips_fdr)f
+            --log=%(outfile)s.log
+            > %(outfile)s.log2;
+            checkpoint;
+            zcat %(outfile)s_%(pair1)s_vs_%(pair2)s_data.tsv.gz
+            | python %(scriptsdir)s/runMEDIPS.py
+            --treatment=%(pair1)s
+            --control=%(pair2)s
+            --toolset=convert
             --fdr-threshold=%(medips_fdr)f
             --log=%(outfile)s.log
             | gzip

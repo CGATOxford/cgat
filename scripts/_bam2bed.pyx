@@ -1,14 +1,16 @@
 from pysam.chtslib cimport *
 from pysam.csamfile cimport *
 
+from libc.stdlib cimport abs
+
 import collections, array, struct, itertools
 import CGAT.Experiment as E
 
-def merge_pairs( Samfile input_samfile,
-                 outfile,
-                 min_insert_size = 0,
-                 max_insert_size = 400,
-                 bed_format = None ):
+def merge_pairs(Samfile input_samfile,
+                outfile,
+                min_insert_size = 0,
+                max_insert_size = 400,
+                bed_format = None ):
     '''merge paired ended data.
 
     For speed reasons, the aligned region is only approximated using
@@ -29,8 +31,9 @@ def merge_pairs( Samfile input_samfile,
     cdef int nremoved_unpaired = 0
     cdef int noutput = 0
     cdef int flag
+    cdef int isize
 
-    cdef AlignedRead read
+    cdef AlignedSegment read
     cdef int c_max_insert_size = max_insert_size
     cdef int c_min_insert_size = min_insert_size
     cdef int start, end
@@ -67,16 +70,19 @@ def merge_pairs( Samfile input_samfile,
             nremoved_contig += 1
             continue
 
-        if (c_max_insert_size and read.isize > c_max_insert_size) or (c_min_insert_size and read.isize < c_min_insert_size) :
+        # isize can be negative - depending on the pair orientation
+        isize = abs(read.isize)
+        if (c_max_insert_size and isize > c_max_insert_size) or \
+           (c_min_insert_size and isize < c_min_insert_size):
             nremoved_insert += 1
             continue
 
         if read.pos < read.mpos:
             start = read.pos
-            end = read.mpos + read.rlen
+            end = read.mpos + read.infer_query_length(always=False)
         else:
             start = read.mpos
-            end = read.pos + read.rlen
+            end = read.pos + read.infer_query_length(always=False)
 
         # truncate at contig end - overhanging reads might cause problems with chrM
         if end > contig_sizes[read.mrnm]:
@@ -86,33 +92,33 @@ def merge_pairs( Samfile input_samfile,
         noutput += 2
 
         if take_columns == 3:
-            outfile.write( "%s\t%i\t%i\n" %
-                           (input_samfile.getrname( read.tid ),
-                            start, end))
+            outfile.write("%s\t%i\t%i\n" %
+                          (input_samfile.getrname(read.tid),
+                           start, end))
         elif take_columns == 4:
-            outfile.write( "%s\t%i\t%i\t%s\n" % 
-                           (input_samfile.getrname( read.tid ),
-                            start, end,
-                            read.qname))
+            outfile.write("%s\t%i\t%i\t%s\n" % 
+                          (input_samfile.getrname(read.tid),
+                           start, end,
+                           read.qname))
         elif take_columns == 5:
-            outfile.write( "%s\t%i\t%i\t%s\t%i\n" % 
-                           (input_samfile.getrname( read.tid ),
-                            start, end,
-                            read.qname,
-                            read.mapq,
-                            ) )
+            outfile.write("%s\t%i\t%i\t%s\t%i\n" % 
+                          (input_samfile.getrname(read.tid),
+                           start, end,
+                           read.qname,
+                           read.mapq,
+                       ))
         else:
             if read.is_reverse:
                 strand = '-'
             else:
                 strand = '+'
-            outfile.write( "%s\t%i\t%i\t%s\t%i\t%s\n" % 
-                           (input_samfile.getrname( read.tid ),
-                            start, end,
-                            read.qname,
-                            read.mapq,
-                            strand
-                            ) )
+            outfile.write("%s\t%i\t%i\t%s\t%i\t%s\n" % 
+                          (input_samfile.getrname(read.tid),
+                           start, end,
+                           read.qname,
+                           read.mapq,
+                           strand
+                          ))
 
     c = E.Counter()
     c.input = ninput

@@ -321,7 +321,7 @@ def main(argv=None):
                                "positive-site-list", "negative-site-list", "neutral-site-list"),
                       help="method to apply.")
 
-    parser.add_option("--prefix", dest="prefix", type="string",
+    parser.add_option("--column-prefix", dest="prefix", type="string",
                       help="prefix for rows.")
 
     parser.add_option("-s", "--filename-sites", dest="filename_sites", type="string",

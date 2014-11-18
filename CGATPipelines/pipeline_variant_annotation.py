@@ -222,10 +222,10 @@ def buildAnnotations(infile, outfile, sample):
 
     statement = """python %(scriptsdir)s/snp2table.py 
                        --input-format=vcf
-                       --filename-vcf=%(infile)s
+                       --vcf-file=%(infile)s
                        --vcf-sample=%(sample)s
                        --genome-file=%(genome_dir)s/%(genome)s 
-                       --filename-annotations=%(bases)s 
+                       --annotations-tsv-file=%(bases)s 
                        --log=%(outfile)s.log 
                    | gzip > %(outfile)s """
     P.run()
@@ -247,7 +247,7 @@ def loadAnnotations(infile, outfile):
     |python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
               --quick
               --map=gene_id:str 
-              --index=gene_id 
+              --add-index=gene_id 
               --table=%(tablename)s
               --map=base_qualities:text 
     > %(outfile)s
@@ -329,7 +329,7 @@ def loadAnnotationsSummary(infile, outfile):
     statement = '''cat
     < %(infile)s
     |python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
-              --index=code
+              --add-index=code
               --table=%(tablename)s
     > %(outfile)s
     '''
@@ -353,12 +353,12 @@ def buildEffects(infile, outfile, sample):
 
     statement = """python %(scriptsdir)s/snp2counts.py 
                        --genome-file=%(genome_dir)s/%(genome)s
-                       --filename-vcf=%(infile)s
+                       --vcf-file=%(infile)s
                        --input-format=vcf
                        --vcf-sample=%(sample)s
                        --module=transcript-effects 
-                       --filename-seleno=%(seleno)s 
-                       --filename-exons=%(transcripts)s 
+                       --seleno-tsv-file=%(seleno)s 
+                       --exons-file=%(transcripts)s 
                        --output-filename-pattern=%(outfile)s.%%s.gz
                        --log=%(outfile)s.log 
                    | gzip > %(outfile)s """
@@ -378,7 +378,7 @@ def loadEffects(infile, outfile):
     statement = '''
    python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
               --from-zipped \
-              --index=transcript_id \
+              --add-index=transcript_id \
               --table=%(root)s_effects \
     < %(infile)s > %(outfile)s
     '''
@@ -389,8 +389,8 @@ def loadEffects(infile, outfile):
         statement = '''
         gunzip < %(infile)s.%(suffix)s.gz
         | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
-        --allow-empty
-        --index=transcript_id 
+        --allow-empty-file
+        --add-index=transcript_id 
         --table=%(root)s_effects_%(suffix)s 
         --ignore-column=seq_na
         --ignore-column=seq_aa
@@ -425,7 +425,7 @@ def mergeEffects(infiles, outfile):
 
     statement = '''cat effect.txt |
                    python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
-                       --index=transcript_id \
+                       --add-index=transcript_id \
                        --table=%(tablename)s \
                    > %(outfile)s'''
     P.run()
@@ -452,8 +452,8 @@ def mergeEffects(infiles, outfile):
 
         statement = '''cat %(tmpfilename)s |
                        python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
-                           --allow-empty
-                           --index=transcript_id 
+                           --allow-empty-file
+                           --add-index=transcript_id 
                            --table=%(tablename)s_%(suffix)s 
                            --ignore-column=seq_na
                            --ignore-column=seq_aa
@@ -800,11 +800,11 @@ def loadPolyphenMap(infile, outfile):
     table = P.toTable(outfile)
     statement = '''
    python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --index=snp_id 
-              --index=track,transcript_id
-              --index=contig,pos
-              --index=protein_id
-              --index=transcript_id
+              --add-index=snp_id 
+              --add-index=track,transcript_id
+              --add-index=contig,pos
+              --add-index=protein_id
+              --add-index=transcript_id
               --table=%(table)s 
     < %(infile)s.map
     > %(outfile)s
@@ -827,8 +827,8 @@ def loadPolyphen(infile, outfile):
     < %(infile)s
     | perl -p -e "s/o_acc/protein_id/; s/ +//g; s/^#//;"
     |python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --index=snp_id 
-              --index=protein_id
+              --add-index=snp_id 
+              --add-index=protein_id
               --table=%(table)s 
               --map=effect:str
     > %(outfile)s
@@ -1002,7 +1002,7 @@ def loadPolyphenAnalysis(infile, outfile):
     statement = '''
     cat < %(infile)s
     |python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --index=gene_id 
+              --add-index=gene_id 
               --map=code:str
               --table=%(table)s 
     > %(outfile)s

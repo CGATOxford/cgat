@@ -39,6 +39,7 @@ import os
 import sys
 import re
 import subprocess
+import collections
 import optparse
 import stat
 import tempfile
@@ -69,14 +70,12 @@ import hgapi
 from Local import *
 from ruffus import *
 
-# use threading instead of multiprocessing
 from multiprocessing.pool import ThreadPool
-# note that threading can cause problems with rpy.
-task.Pool = ThreadPool
 
 import logging as L
 from CGAT import Experiment as E
 from CGAT import IOTools as IOTools
+from CGAT import Requirements as Requirements
 
 # global options and arguments - set but currently not
 # used as relevant sections are entered into the PARAMS
@@ -172,7 +171,8 @@ def configToDictionary(config):
 def getParameters(filenames=["pipeline.ini", ],
                   defaults=None,
                   user_ini=True,
-                  default_ini=True):
+                  default_ini=True,
+                  only_import=False):
     '''read a config file and return as a dictionary.
 
     Sections and keys are combined with an underscore. If a key
@@ -208,6 +208,13 @@ def getParameters(filenames=["pipeline.ini", ],
     If the same configuration value appears in multiple
     files, later configuration files will overwrite the
     settings form earlier files.
+
+    If *only_import* is set, the parameter dictionary will
+    be a defaultcollection. This is useful for pipelines
+    that are imported (for example for documentation generation)
+    but not executed and there might not be appropriate .ini
+    files available.
+
     '''
 
     global CONFIG
@@ -215,6 +222,11 @@ def getParameters(filenames=["pipeline.ini", ],
 
     # important: only update the PARAMS variable as
     # it is referenced in other modules.
+
+    if only_import:
+        d = collections.defaultdict(str)
+        d.update(PARAMS)
+        PARAMS = d
 
     CONFIG = ConfigParser.ConfigParser()
 
@@ -542,9 +554,6 @@ def checkParameter(key):
     if key not in PARAMS:
         raise ValueError("need `%s` to be set" % key)
 
-########################################
-########################################
-
 
 def log(loglevel, message):
     """log message at loglevel."""
@@ -712,7 +721,7 @@ def concatenateAndLoad(infiles,
         options.append("--regex-filename='%s'" % regex_filename)
 
     if header:
-        load_options.append("--header=%s" % header)
+        load_options.append("--header-names=%s" % header)
 
     if not cat:
         cat = "track"
@@ -731,7 +740,7 @@ def concatenateAndLoad(infiles,
                      %(options)s
                    %(infiles)s
                    | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-                      --index=track
+                      --add-index=track
                       --table=%(tablename)s
                       %(load_options)s
                    > %(outfile)s'''
@@ -784,7 +793,7 @@ def mergeAndLoad(infiles,
     else:
         header = ",".join([os.path.basename(x) for x in infiles])
 
-    header_stmt = "--header=%s" % header
+    header_stmt = "--header-names=%s" % header
 
     if columns:
         column_filter = "| cut -f %s" % ",".join(map(str,
@@ -815,12 +824,12 @@ def mergeAndLoad(infiles,
     statement = """python %(scriptsdir)s/combine_tables.py
                       %(header_stmt)s
                       --skip-titles
-                      --missing=0
+                      --missing-value=0
                       --ignore-empty
                    %(filenames)s
                 %(transform)s
                 | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-                      --index=track
+                      --add-index=track
                       --table=%(tablename)s
                       %(options)s
                 > %(outfile)s
@@ -1487,9 +1496,9 @@ def submit(module, function, params=None,
         infiles = "--input=%s" % infiles
 
     if type(outfiles) in (list, tuple):
-        outfiles = " ".join(["--output=%s" % x for x in outfiles])
+        outfiles = " ".join(["--output-section=%s" % x for x in outfiles])
     else:
-        outfiles = "--output=%s" % outfiles
+        outfiles = "--output-section=%s" % outfiles
 
     if logfile:
         logfile = "--log=%s" % logfile
@@ -1678,7 +1687,7 @@ def peekParameters(workingdir,
     # patch for the "config" target - use default
     # pipeline directory if directory is not specified
     # working dir is set to "?!"
-    if "config" in sys.argv and workingdir == "?!":
+    if "config" in sys.argv or "check" in sys.argv and workingdir == "?!":
         workingdir = os.path.join(PIPELINE_DIR,
                                   snip(pipeline, ".py"))
 
@@ -1723,6 +1732,74 @@ def peekParameters(workingdir,
     return dump
 
 
+def cluster_runnable(func):
+    '''A dectorator that allows a function to be run on the cluster.
+    The decorated function now takes extra arguments. The most important
+    is *submit*, but if true will submit the function to the cluster
+    via the Pipeline.submit framework. Arguments to the function are
+    pickled, so this will only work if arguments are picklable. Other
+    arguements to submit are also accepted.
+
+    Note that this allows the unusal combination of *submit* false,
+    and *toCluster* true. This will submit the function as an external
+    job, but run it on the local machine.
+
+    Note: all arguments in decorated function must be passed as
+    key-word arguments.
+    '''
+
+    # MM: when decorating functions with cluster_runnable, provide
+    # them as kwargs, else will throw attribute error
+
+    function_name = func.__name__
+
+    def submit_function(*args, **kwargs):
+        
+        if "submit" in kwargs and kwargs["submit"]:
+            del kwargs["submit"]
+            submit_args, args_file = _pickle_args(args, kwargs)
+            module_file = os.path.abspath(
+                sys.modules[func.__module__].__file__)
+            submit(snip(__file__), "run_pickled",
+                   params=[snip(module_file), function_name, args_file],
+                   **submit_args)
+        else:
+            return func(*args, **kwargs)
+
+    return submit_function
+
+
+def run_pickled(params):
+    ''' run function who arguments have been pickled.
+    expects that params is [module_name, function_name, arguements_file] '''
+
+    module_name, func_name, args_file = params
+    location = os.path.dirname(module_name)
+    if location != "":
+        sys.path.append(location)
+
+    module_base_name = os.path.basename(module_name)
+    E.info("importing module '%s' " % module_base_name)
+    E.debug("sys.path is: %s" % sys.path)
+
+    module = importlib.import_module(module_base_name)
+    try:
+        function = getattr(module, func_name)
+    except AttributeError as msg:
+        raise AttributeError(msg.message +
+                             "unknown function, available functions are: %s" %
+                             ",".join([x for x in dir(module)
+                                       if not x.startswith("_")]))
+
+    args, kwargs = pickle.load(open(args_file, "rb"))
+    E.info("Arguments = %s" % str(args))
+    E.info("Keyword Arguements = %s" % str(kwargs))
+
+    function(*args, **kwargs)
+
+    os.unlink(args_file)
+
+
 def run_report(clean=True):
     '''run CGATreport.'''
 
@@ -1763,7 +1840,7 @@ def run_report(clean=True):
 
     # in the latest, xvfb always returns with an error, thus
     # ignore these.
-    erase_return == "|| true"
+    erase_return = "|| true"
 
     if clean:
         clean = """rm -rf report _cache _static;"""
@@ -1843,6 +1920,9 @@ dump
 touch
    touch files only, do not run
 
+check
+   check if requirements (external tool dependencies) are satisfied.
+
 clone <source>
    create a clone of a pipeline in <source> in the current
    directory. The cloning process aims to use soft linking to files
@@ -1865,7 +1945,8 @@ def main(args=sys.argv):
     parser.add_option("--pipeline-action", dest="pipeline_action",
                       type="choice",
                       choices=(
-                          "make", "show", "plot", "dump", "config", "clone"),
+                          "make", "show", "plot", "dump", "config", "clone",
+                          "check"),
                       help="action to take [default=%default].")
 
     parser.add_option("--pipeline-format", dest="pipeline_format",
@@ -1878,7 +1959,7 @@ def main(args=sys.argv):
                       help="perform a dry run (do not execute any shell "
                       "commands) [default=%default].")
 
-    parser.add_option("-f", "--force", dest="force",
+    parser.add_option("-f", "--force-output", dest="force",
                       action="store_true",
                       help="force running the pipeline even if there "
                       "are uncommited changes "
@@ -1919,7 +2000,6 @@ def main(args=sys.argv):
         multiprocess=2,
         logfile="pipeline.log",
         dry_run=False,
-        without_cluster=False,
         force=False,
         log_exceptions=False,
         exceptions_terminate_immediately=False,
@@ -1968,7 +2048,7 @@ def main(args=sys.argv):
                 raise ValueError(
                     ("uncommitted change in code "
                      "repository at '%s'. Either commit or "
-                     "use --force") % PARAMS["scriptsdir"])
+                     "use --force-output") % PARAMS["scriptsdir"])
             else:
                 E.warn("uncommitted changes in code repository - ignored ")
         version = version[:-1]
@@ -1986,7 +2066,15 @@ def main(args=sys.argv):
         if len(args) > 1:
             options.pipeline_targets.extend(args[1:])
 
-    if options.pipeline_action == "debug":
+    if options.pipeline_action == "check":
+        counter, requirements = Requirements.checkRequirementsFromAllModules()
+        for requirement in requirements:
+            E.info("\t".join(map(str, requirement)))
+        E.info("version check summary: %s" % str(counter))
+        E.Stop()
+        return
+
+    elif options.pipeline_action == "debug":
         # create the session proxy
         GLOBAL_SESSION = drmaa.Session()
         GLOBAL_SESSION.initialize()
@@ -2011,6 +2099,14 @@ def main(args=sys.argv):
             if options.pipeline_action == "make":
 
                 if not options.without_cluster:
+                    global task
+                    # use threading instead of multiprocessing in order to
+                    # limit the number of concurrent jobs by using the
+                    # GIL
+                    #
+                    # Note that threading might cause problems with rpy.
+                    task.Pool = ThreadPool
+
                     # create the session proxy
                     GLOBAL_SESSION = drmaa.Session()
                     GLOBAL_SESSION.initialize()
@@ -2145,68 +2241,6 @@ def _pickle_args(args, kwargs):
 
         return (submit_args, args_file)
 
-
-def cluster_runnable(func):
-    '''A dectorator that allows a function to be run on the cluster.
-    The decorated function now takes extra arguements. The most important
-    is *submit*, but if true will submit the function to the cluster
-    via the Pipeline.submit framework. Arguments to the function are
-    pickled, so this will only work if arguments are picklable. Other
-    arguements to submit are also accepted.
-
-    Note that this allows the unusal combination of *submit* false,
-    and *toCluster* true. This will submit the function as an external
-    job, but run it on the local machine.
-
-    '''
-
-    function_name = func.__name__
-
-    def submit_function(*args, **kwargs):
-        
-        if "submit" in kwargs and kwargs["submit"]:
-            del kwargs["submit"]
-            submit_args, args_file = _pickle_args(args, kwargs)
-            module_file = os.path.abspath(
-                sys.modules[func.__module__].__file__)
-            submit(snip(__file__), "run_pickled",
-                   params=[snip(module_file), function_name, args_file],
-                   **submit_args)
-        else:
-            return func(*args, **kwargs)
-
-    return submit_function
-
-
-def run_pickled(params):
-    ''' run function who arguements have been pickled.
-    expects that params is [module_name, function_name, arguements_file] '''
-
-    module_name, func_name, args_file = params
-    location = os.path.dirname(module_name)
-    if location != "":
-        sys.path.append(location)
-
-    module_base_name = os.path.basename(module_name)
-    E.info("importing module '%s' " % module_base_name)
-    E.debug("sys.path is: %s" % sys.path)
-
-    module = importlib.import_module(module_base_name)
-    try:
-        function = getattr(module, func_name)
-    except AttributeError as msg:
-        raise AttributeError(msg.message +
-                             "unknown function, available functions are: %s" %
-                             ",".join([x for x in dir(module)
-                                       if not x.startswith("_")]))
-
-    args, kwargs = pickle.load(open(args_file, "rb"))
-    E.info("Arguments = %s" % str(args))
-    E.info("Keyword Arguements = %s" % str(kwargs))
-
-    function(*args, **kwargs)
-
-    os.unlink(args_file)
 
 if __name__ == "__main__":
     main()

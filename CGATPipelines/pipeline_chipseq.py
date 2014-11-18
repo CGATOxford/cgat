@@ -665,7 +665,7 @@ def buildBAMStats(infile, outfile):
 
     statement = '''python
     %(scriptsdir)s/bam2stats.py
-         --force
+         --force-output
          --output-filename-pattern=%(outfile)s.%%s
     < %(infile)s
     > %(outfile)s
@@ -687,15 +687,15 @@ def loadBAMStats(infiles, outfile):
     tablename = P.toTable(outfile)
     E.info("loading bam stats - summary")
     statement = """python %(scriptsdir)s/combine_tables.py
-                      --headers=%(header)s
-                      --missing=0
+                      --header-names=%(header)s
+                      --missing-value=0
                       --ignore-empty
                    %(filenames)s
                 | perl -p -e "s/bin/track/"
                 | perl -p -e "s/unique/unique_alignments/"
                 | python %(scriptsdir)s/table2table.py --transpose
                 | python %(scriptsdir)s/csv2db.py
-                      --index=track
+                      --add-index=track
                       --table=%(tablename)s 
                 > %(outfile)s
             """
@@ -707,14 +707,14 @@ def loadBAMStats(infiles, outfile):
         tname = "%s_%s" % (tablename, suffix)
 
         statement = """python %(scriptsdir)s/combine_tables.py
-                      --header=%(header)s
+                      --header-names=%(header)s
                       --skip-titles
-                      --missing=0
+                      --missing-value=0
                       --ignore-empty
                    %(filenames)s
                 | perl -p -e "s/bin/%(suffix)s/"
                 | python %(scriptsdir)s/csv2db.py
-                      --allow-empty
+                      --allow-empty-file
                       --table=%(tname)s 
                 >> %(outfile)s
                 """
@@ -777,7 +777,7 @@ if PARAMS["calling_caller"] == "macs":
                "_summary.load")
     def loadMACSSummary(infile, outfile):
         '''load macs summary.'''
-        P.load(infile, outfile, "--index=track")
+        P.load(infile, outfile, "--add-index=track")
 
     ############################################################
     ############################################################
@@ -787,7 +787,7 @@ if PARAMS["calling_caller"] == "macs":
                "_fdr.load")
     def loadMACSSummaryFDR(infile, outfile):
         '''load macs summary.'''
-        P.load(infile, outfile, "--index=track", transpose="fdr")
+        P.load(infile, outfile, "--add-index=track", transpose="fdr")
 
     ############################################################
     ############################################################
@@ -1058,8 +1058,8 @@ def loadIntervalsFromBed(infile, outfile):
 
     statement = '''
     python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --allow-empty
-              --index=interval_id 
+              --allow-empty-file
+              --add-index=interval_id 
               --table=%(tablename)s
     < %(tmpfilename)s 
     > %(outfile)s
@@ -1130,7 +1130,7 @@ def buildReadProfileOfTranscripts(infiles, outfile):
                       --reporter=transcript
                       --method=geneprofile 
                       --method=tssprofile 
-                      --normalization=total-sum
+                      --normalize-transcript=total-sum
                       %(bamfile)s %(gtffile)s
                    > %(outfile)s
                 '''
@@ -1155,7 +1155,7 @@ def buildIntervalProfileOfTranscripts(infiles, outfile):
 
     statement = '''python %(scriptsdir)s/bam2geneprofile.py
                       --output-filename-pattern="%(outfile)s.%%s"
-                      --force
+                      --force-output
                       --reporter=transcript
                       --method=geneprofile 
                       --method=tssprofile 
@@ -1197,10 +1197,10 @@ def buildPeakShapeTable(infile, outfile):
                       --window-size=%(calling_peakshape_window_size)i
                       --bin-size=%(calling_peakshape_bin_size)i
                       --output-filename-pattern="%(outfile)s.%%s"
-                      --force
-                      --shift=%(shift)i
-                      --sort=peak-height
-                      --sort=peak-width
+                      --force-output
+                      --shift-size=%(shift)i
+                      --method=sort --sort-order=peak-height
+                      --method=sort --sort-order=peak-width
                       %(bamfile)s %(infile)s
                    > %(outfile)s
                 '''
@@ -1308,8 +1308,8 @@ def exportBigwig(infile, outfile):
 
     statement = '''python %(scriptsdir)s/bam2wiggle.py 
                       --output-format=bigwig 
-                      --output-filename=%(outfile)s 
-                      --shift=%(shift)i
+                      --output-filename-pattern=%(outfile)s 
+                      --shift-size=%(shift)i
                       --extend=%(extend)i
                       --log=%(outfile)s.log
                 %(infile)s '''
@@ -1334,7 +1334,7 @@ def buildBigwigInfo(infiles, outfile):
                        for x in infiles])
 
     statement = '''python %(scriptsdir)s/combine_tables.py
-                   --headers=%(headers)s
+                   --header-names=%(headers)s
                          %(p)s
                 > %(outfile)s
                 '''
@@ -1440,8 +1440,8 @@ def loadOverlap(infile, outfile):
 
     statement = '''
    python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
-              --index=set1 
-              --index=set2 
+              --add-index=set1 
+              --add-index=set2 
               --table=%(tablename)s 
     < %(infile)s > %(outfile)s
     '''
@@ -1488,8 +1488,8 @@ if 0:
 
         statement = '''
        python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
-                  --index=set1 \
-                  --index=set2 \
+                  --add-index=set1 \
+                  --add-index=set2 \
                   --table=%(tablename)s \
         < %(infile)s > %(outfile)s
         '''
@@ -1602,7 +1602,7 @@ def makeReproducibility(infiles, outfile):
 def loadReproducibility(infile, outfile):
     '''load Reproducibility results
     '''
-    P.load(infile, outfile, options="--allow-empty")
+    P.load(infile, outfile, options="--allow-empty-file")
 
 
 @follows(loadReproducibility)
@@ -1654,7 +1654,7 @@ def makeLengthCorrelation(infiles, outfile):
            "_correlation.load")
 def loadCorrelation(infile, outfile):
     '''load correlation data.'''
-    P.load(infile, outfile, "--index=id --map=default:float --map=id:int")
+    P.load(infile, outfile, "--add-index=id --map=default:float --map=id:int")
 
 ############################################################
 ############################################################
@@ -1792,7 +1792,7 @@ if PARAMS["tomtom_master_motif"] != "":
 
         statement = '''
         python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
-                  --allow-empty 
+                  --allow-empty-file 
                   --table=%(tablename)s 
         < %(tmpname)s 
         > %(outfile)s
@@ -2030,7 +2030,7 @@ def annotateIntervals(infile, outfile):
     --counter=classifier-chipseq
     --counter=length
     --log=%(outfile)s.log
-    --filename-gff=%(annotation_file)s
+    --gff-file=%(annotation_file)s
     --genome-file=%(genome_dir)s/%(genome)s
     > %(outfile)s"""
 
@@ -2056,7 +2056,7 @@ def annotateTSS(infile, outfile):
     | python %(scriptsdir)s/gtf2table.py
     --counter=distance-tss
     --log=%(outfile)s.log
-    --filename-gff=%(annotation_file)s
+    --gff-file=%(annotation_file)s
     --filename-format="bed"
     --genome-file=%(genome_dir)s/%(genome)s
     > %(outfile)s"""
@@ -2083,7 +2083,7 @@ def annotateRepeats(infile, outfile):
     python %(scriptsdir)s/gtf2table.py \
     --counter=overlap \
     --log=%(outfile)s.log \
-    --filename-gff=%(annotation_file)s \
+    --gff-file=%(annotation_file)s \
     --genome-file=%(genome_dir)s/%(genome)s
     > %(outfile)s"""
 
@@ -2096,7 +2096,7 @@ def annotateRepeats(infile, outfile):
 def loadAnnotations(infile, outfile):
     '''load interval annotations: genome architecture
     '''
-    P.load(infile, outfile, "--index=gene_id --allow-empty")
+    P.load(infile, outfile, "--add-index=gene_id --allow-empty-file")
 
 ############################################################
 
@@ -2106,7 +2106,7 @@ def loadTSS(infile, outfile):
     '''load interval annotations: distance to transcription start sites
     '''
     P.load(infile, outfile,
-           "--index=gene_id --index=closest_id --index=id5 --index=id3 --allow-empty")
+           "--add-index=gene_id --add-index=closest_id --add-index=id5 --add-index=id3 --allow-empty-file")
 
 ############################################################
 
@@ -2115,7 +2115,7 @@ def loadTSS(infile, outfile):
 def loadRepeats(infile, outfile):
     '''load interval annotations: repeats
     '''
-    P.load(infile, outfile, "--index=gene_id --allow-empty")
+    P.load(infile, outfile, "--add-index=gene_id --allow-empty-file")
 
 ############################################################
 ############################################################
@@ -2151,7 +2151,7 @@ def buildIntervalCounts(infile, outfile):
            "_readcounts.load")
 def loadIntervalCounts(infile, outfile):
     '''load interval counts.'''
-    P.load(infile, outfile, "--index=gene_id --allow-empty")
+    P.load(infile, outfile, "--add-index=gene_id --allow-empty-file")
 
 ############################################################
 ############################################################

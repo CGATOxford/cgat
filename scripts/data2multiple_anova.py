@@ -60,11 +60,11 @@ def main(argv=None):
 
     parser.add_option("-c", "--columns", dest="columns", type="string",
                       help="columns to take for calculating histograms.")
-    parser.add_option("-t", "--filename-tree", dest="filename_tree", type="string",
+    parser.add_option("-t", "--tree-nh-file", dest="filename_tree", type="string",
                       help="filename with tree(s).")
     parser.add_option("--skip-header", dest="add_header", action="store_false",
                       help="do not add header to flat format.")
-    parser.add_option("--write-header", dest="write_header", action="store_true",
+    parser.add_option("--output-with-header", dest="write_header", action="store_true",
                       help="write header and exit.")
     parser.add_option("--debug", dest="debug", action="store_true",
                       help="debug mode")

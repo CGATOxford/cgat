@@ -169,7 +169,7 @@ def main(argv=None):
     parser.add_option("--library-selection", dest="library_selection", type="string",
                       help="supply help")
 
-    parser.add_option("--tax-id", dest="tax_id", type="int",
+    parser.add_option("--tax-identifier", dest="tax_id", type="int",
                       help="supply help")
 
     parser.set_defaults(library_source=None,

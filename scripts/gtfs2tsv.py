@@ -41,7 +41,7 @@ Usage
 -----
 
 Example::
-  
+
    head a.gtf::
 
      19 processed_transcript exon 66346 66509 . - . gene_id "ENSG00000225373";
@@ -205,27 +205,30 @@ def main(argv=None):
         argv = sys.argv
 
     parser = E.OptionParser(
-        version="%prog version: $Id: diff_gtf.py 2781 2009-09-10 11:33:14Z andreas $", usage=globals()["__doc__"])
+        version="%prog version: $Id$",
+        usage=globals()["__doc__"])
 
-    parser.add_option("-e", "--write-equivalent", dest="write_equivalent",
-                      help="write equivalent entries [default=%default].", action="store_true")
+    parser.add_option(
+        "-e", "--output-equivalent", dest="write_equivalent",
+        action="store_true",
+        help="write equivalent entries [default=%default].")
 
-    parser.add_option("-f", "--write-full", dest="write_full",
-                      help="write full gff entries [default=%default].", action="store_true")
+    parser.add_option(
+        "-f", "--output-full", dest="write_full",
+        action="store_true",
+        help="write full gff entries [default=%default].")
 
-    parser.add_option("-o", "--format=", dest="format",
-                      help="output format [flat|multi-line] [default=%default]")
-
-    parser.add_option("-p", "--add-percent", dest="add_percent", action="store_true",
+    parser.add_option("-p", "--add-percent", dest="add_percent",
+                      action="store_true",
                       help="add percentage columns [default=%default].")
 
-    parser.add_option("-s", "--ignore-strand", dest="ignore_strand", action="store_true",
+    parser.add_option("-s", "--ignore-strand", dest="ignore_strand",
+                      action="store_true",
                       help="ignore strand information [default=%default].")
 
     parser.set_defaults(
         write_equivalent=False,
         write_full=False,
-        format="flat",
         add_percent=False,
         ignore_strand=False,
         as_gtf=False,

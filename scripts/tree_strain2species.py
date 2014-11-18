@@ -457,10 +457,10 @@ def main(argv=None):
     parser = E.OptionParser(version="%prog version: $Id: tree_strain2species.py 2782 2009-09-10 11:40:29Z andreas $",
                             usage=globals()["__doc__"])
 
-    parser.add_option("--filename-synonyms", dest="filename_synonyms", type="string",
+    parser.add_option("--synonyms-tsv-file", dest="filename_synonyms", type="string",
                       help="filename with synonyms. Use this to aggregate several strains for a species.")
 
-    parser.add_option("--filename-genes", dest="output_filename_genes", type="string",
+    parser.add_option("--genes-tsv-file", dest="output_filename_genes", type="string",
                       help="output filename with new gene names.")
 
     parser.add_option("--species-tree", dest="species_tree", action="store_true",

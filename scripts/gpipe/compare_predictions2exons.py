@@ -100,10 +100,10 @@ def main(argv=None):
     parser.add_option("-b", "--boundaries", dest="filename_boundaries", type="string",
                       help="filename with exon boundaries.")
 
-    parser.add_option("-e", "--exons", dest="filename_exons", type="string",
+    parser.add_option("-e", "--exons-file", dest="filename_exons", type="string",
                       help="filename with exons (output).")
 
-    parser.add_option("-p", "--peptides", dest="filename_peptides", type="string",
+    parser.add_option("-p", "--peptides-fasta-file", dest="filename_peptides", type="string",
                       help="filename with peptide sequences.")
 
     parser.add_option("-w", "--write-notfound", dest="write_notfound", action="store_true",

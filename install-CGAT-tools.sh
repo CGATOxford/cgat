@@ -68,7 +68,7 @@ if [ "$OS" == "ubuntu" -o "$OS" == "travis" ] ; then
    echo " Installing packages for Ubuntu "
    echo
 
-   sudo apt-get install -y gcc g++ zlib1g-dev libssl-dev libssl1.0.0 libbz2-dev libfreetype6-dev libpng12-dev libblas-dev libatlas-dev liblapack-dev gfortran libpq-dev r-base-dev libreadline-dev libmysqlclient-dev libboost-dev libsqlite3-dev mercurial;
+   sudo apt-get --quiet install -y gcc g++ zlib1g-dev libssl-dev libssl1.0.0 libbz2-dev libfreetype6-dev libpng12-dev libblas-dev libatlas-dev liblapack-dev gfortran libpq-dev r-base-dev libreadline-dev libmysqlclient-dev libboost-dev libsqlite3-dev mercurial;
 
 elif [ "$OS" == "sl" -o "$OS" == "centos" ] ; then
 
@@ -144,17 +144,18 @@ if [ "$OS" == "ubuntu" -o "$OS" == "sl" -o "$OS" == "centos" ] ; then
 
    # substitute requires.txt on travis installation --start
    #pip install -r https://raw.github.com/CGATOxford/cgat/master/requires.txt
-   pip install pyparsing==1.5.7
+   pip install pyparsing>=1.5.7
    pip install MySQL-python
    pip install PyGreSQL
    pip install PyYAML
-   pip install SphinxReport==2.0
+#   pip install SphinxReport==2.0
+   pip install SphinxReport
    pip install alignlib-lite
    pip install drmaa
    pip install hgapi
    pip install matplotlib-venn
    pip install networkx
-   pip install openpyxl==1.8.5
+   pip install openpyxl>=1.8.5
    pip install jdcal
    pip install pandas
    pip install rdflib
@@ -204,11 +205,10 @@ elif [ "$OS" == "travis" ] ; then
    pip install matplotlib
    pip install scipy
 
-   
    # Install latest versions of packages
    # substitute requires.txt on travis installation --start
    # pip install -r https://raw.github.com/CGATOxford/cgat/master/requires.txt
-   pip install pyparsing==1.5.7
+   pip install pyparsing>=1.5.7
    pip install MySQL-python
    pip install PyGreSQL
    pip install PyYAML
@@ -218,7 +218,7 @@ elif [ "$OS" == "travis" ] ; then
    pip install hgapi
    pip install matplotlib-venn
    pip install networkx
-   pip install openpyxl==1.8.5
+   pip install openpyxl>=1.8.5
    pip install jdcal
    pip install pandas
    pip install rdflib
@@ -411,7 +411,15 @@ if [ "$OS" == "travis" ] ; then
    if [ "$TEST_IMPORT" == "1" ] ; then
       nosetests -v tests/test_import.py ;
    elif [ "$TEST_STYLE" == "1" ] ; then
-      nosetests -v tests/test_style.py ;
+      # do not use -v as it creates too much output, logfiles
+      # truncate at 4 Mb.
+      nosetests tests/test_style.py ;
+   elif [ "$TEST_CMDLINE" == "1" ] ; then
+      # restrict tests to manifest
+      echo -e "restrict:\n    manifest:\n" > tests/_test_commandline.yaml
+      # do not use -v as it creates too much output, logfiles
+      # truncate at 4 Mb.
+      nosetests tests/test_commandline.py ;
    else
       nosetests -v tests/test_scripts.py ;
    fi

@@ -28,7 +28,6 @@ This script is best run within nosetests::
 '''
 import glob
 import os
-import shutil
 import importlib
 import yaml
 import re
@@ -53,6 +52,7 @@ EXPRESSIONS = (
 EXCLUDE = ("__init__.py",
            "version.py",
            "cgat.py",
+           "fasta2bed.py",   # fails because of pybedtools rebuild
            )
 
 # Filename with the black/white list of options.

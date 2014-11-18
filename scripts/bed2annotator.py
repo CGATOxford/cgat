@@ -82,13 +82,13 @@ def main(argv=None):
     parser.add_option("-a", "--annotations", dest="annotations", type="string",
                       help="aggregate name for annotations if only single file is provided from STDIN [default=None].")
 
-    parser.add_option("--input-filename-map", dest="input_filename_map", type="string",
+    parser.add_option("--map-tsv-file", dest="input_filename_map", type="string",
                       help="filename with a map of gene_ids to categories [default=None].")
 
     parser.add_option("-l", "--max-length", dest="max_length", type="string",
                       help="maximum segment length [default=None].")
 
-    parser.add_option("-m", "--merge", dest="merge", action="store_true",
+    parser.add_option("-m", "--merge-overlapping", dest="merge", action="store_true",
                       help="merge overlapping bed segments [default=%default].")
 
     parser.add_option("-s", "--section", dest="section", type="choice",

@@ -1,4 +1,3 @@
-
 """====================
 Exome pipeline
 ====================
@@ -7,6 +6,14 @@ Exome pipeline
 :Release: $Id$
 :Date: |today|
 :Tags: Python
+
+.. note::
+
+   This pipeline needs refactoring:
+
+   1. It is very repetetive, such as all the tabulateXYZ functions
+   2. Use P.load() for loading data
+   3. annotateVariantsSNPsift contains a hardcoded data path
 
 The exome pipeline imports unmapped reads from one or more fastq or
 sra files and aligns them to the genome using BWA.  Post alignment
@@ -127,35 +134,6 @@ If you would like the genes of interest to be flagged in your vcf,
 make add_genes_of_interest=1 (default=0) and provide a list of comma
 separated genes (without spaces) in the ini file.
 
-Requirements
-------------
-
-On top of the default CGAT setup, the pipeline requires the following
-software to be in the path:
-
-+--------------------+-------------------+------------------------------------------------+
-|*Program*           |*Version*          |*Purpose*                                       |
-+--------------------+-------------------+------------------------------------------------+
-|Stampy              |>=0.9.0            |read mapping                                    |
-+--------------------+-------------------+------------------------------------------------+
-|BWA                 |                   |read mapping                                    |
-+--------------------+-------------------+------------------------------------------------+
-|SAMtools            |                   |filtering, SNV / indel calling                  |
-+--------------------+-------------------+------------------------------------------------+
-|BEDTools            |                   |filtering                                       |
-+--------------------+-------------------+------------------------------------------------+
-|sra-tools           |                   |extracting reads from .sra files                |
-+--------------------+-------------------+------------------------------------------------+
-|picard              |>=1.38             |bam/sam files. The .jar files need to be in your|
-|                    |                   | CLASSPATH environment variable.                |
-+--------------------+-------------------+------------------------------------------------+
-|vcf-tools           |                   | VCF filtering                                  |
-+--------------------+-------------------+------------------------------------------------+
-|GATK                | 2.5-2             | local realignment, BQSR, variant calling       |
-+--------------------+-------------------+------------------------------------------------+
-|SNPeff              | 3.3               |                                                |
-+--------------------+-------------------+------------------------------------------------+
-
 Pipeline output
 ===============
 
@@ -168,6 +146,19 @@ Example
 
 ToDo: make exome sequencing example
 
+Requirements:
+
+* picardtools >= 1.106
+* samtools >= 1.1
+* GATK >= 2.7
+* snpEff >= 4.0
+* Gemini >= ?
+
+Requirements
+------------
+
+On top of the default CGAT setup, the pipeline requires the following
+software to be in the path:
 
 Code
 ====
@@ -187,8 +178,6 @@ import CGAT.IOTools as IOTools
 import CGATPipelines.PipelineMapping as PipelineMapping
 import CGATPipelines.PipelineMappingQC as PipelineMappingQC
 import CGAT.Pipeline as P
-
-USECLUSTER = True
 
 #########################################################################
 #########################################################################
@@ -226,7 +215,7 @@ def loadROI(infile, outfile):
             | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --ignore-empty
               --retry
-              --header=%(header)s
+              --header-names=%(header)s
               --table=%(tablename)s
             > %(outfile)s  '''
     P.run()
@@ -274,7 +263,6 @@ def loadSamples(infile, outfile):
          r"\1.\4")
 def mergeFastqs(infiles, outfile):
     '''merge fastqs by library and read pair prior to mapping'''
-    to_cluster = USECLUSTER
     inputfiles = " ".join(infiles)
     statement = '''zcat %(inputfiles)s | gzip > %(outfile)s '''
     P.run()
@@ -330,12 +318,15 @@ def loadPicardAlignStats(infiles, outfile):
 
 @transform(mapReads, regex(r"bam/(\S+).bam"), r"bam/\1.cov")
 def buildCoverageStats(infile, outfile):
-    '''Generate coverage statistics for regions of interest from a bed file using Picard'''
-    to_cluster = USECLUSTER
+    '''Generate coverage statistics for regions of interest from a bed
+    file using Picard'''
     baits = PARAMS["roi_baits"]
     regions = PARAMS["roi_regions"]
-    statement = '''CalculateHsMetrics BAIT_INTERVALS=%(baits)s TARGET_INTERVALS=%(regions)s INPUT=%(infile)s OUTPUT=%(outfile)s VALIDATION_STRINGENCY=LENIENT''' % locals(
-    )
+    statement = '''CalculateHsMetrics BAIT_INTERVALS=%(baits)s
+    TARGET_INTERVALS=%(regions)s
+    INPUT=%(infile)s
+    OUTPUT=%(outfile)s
+    VALIDATION_STRINGENCY=LENIENT''' % locals()
     P.run()
 
 #########################################################################
@@ -350,8 +341,8 @@ def loadCoverageStats(infiles, outfile):
     first = True
     for f in infiles:
         track = P.snip(os.path.basename(f), ".cov")
-        lines = [
-            x for x in open(f, "r").readlines() if not x.startswith("#") and x.strip()]
+        lines = [x for x in open(f, "r").readlines()
+                 if not x.startswith("#") and x.strip()]
         if first:
             outf.write("%s\t%s" % ("track", lines[0]))
         first = False
@@ -360,7 +351,7 @@ def loadCoverageStats(infiles, outfile):
     tmpfilename = outf.name
     statement = '''cat %(tmpfilename)s
                    | python %(scriptsdir)s/csv2db.py
-                      --index=track
+                      --add-index=track
                       --table=%(tablename)s
                       --ignore-empty
                       --retry
@@ -375,9 +366,12 @@ def loadCoverageStats(infiles, outfile):
 
 @transform(mapReads, regex(r"bam/(\S+).bam"), r"bam/\1.bqsr.bam")
 def GATKpreprocessing(infile, outfile):
-    '''Reorders BAM according to reference fasta and add read groups using SAMtools, realigns around indels and
-    recalibrates base quality scores using GATK'''
-    to_cluster = USECLUSTER
+    '''Reorders BAM according to reference fasta and add read groups using
+    SAMtools, realigns around indels and recalibrates base quality
+    scores using GATK
+
+    '''
+
     track = P.snip(os.path.basename(infile), ".bam")
     tmpdir_gatk = P.getTempDir('.')
     job_options = getGATKOptions()
@@ -387,28 +381,70 @@ def GATKpreprocessing(infile, outfile):
     threads = PARAMS["gatk_threads"]
     dbsnp = PARAMS["gatk_dbsnp"]
     solid_options = PARAMS["gatk_solid_options"]
-    statement = '''ReorderSam INPUT=%(infile)s OUTPUT=%(tmpdir_gatk)s/%(track)s.reordered.bam REFERENCE=%%(bwa_index_dir)s/%%(genome)s.fa ALLOW_INCOMPLETE_DICT_CONCORDANCE=true VALIDATION_STRINGENCY=SILENT ; checkpoint ;''' % locals()
-    statement += '''samtools index %(tmpdir_gatk)s/%(track)s.reordered.bam ; checkpoint ;''' % locals()
-    statement += '''AddOrReplaceReadGroups INPUT=%(tmpdir_gatk)s/%(track)s.reordered.bam OUTPUT=%(tmpdir_gatk)s/%(track)s.readgroups.bam RGLB=%(library)s RGPL=%(platform)s RGPU=%(platform_unit)s RGSM=%(track)s VALIDATION_STRINGENCY=SILENT ; checkpoint ;''' % locals(
-    )
-    statement += '''samtools index %(tmpdir_gatk)s/%(track)s.readgroups.bam ; checkpoint ;''' % locals()
-    statement += '''GenomeAnalysisTK -T RealignerTargetCreator -o %(tmpdir_gatk)s/%(track)s.indelrealignment.intervals --num_threads %(threads)s -R %%(bwa_index_dir)s/%%(genome)s.fa -I %(tmpdir_gatk)s/%(track)s.readgroups.bam ; checkpoint ;''' % locals(
-    )
-    statement += '''GenomeAnalysisTK -T IndelRealigner -o %(tmpdir_gatk)s/%(track)s.indelrealigned.bam -R %%(bwa_index_dir)s/%%(genome)s.fa -I %(tmpdir_gatk)s/%(track)s.readgroups.bam -targetIntervals %(tmpdir_gatk)s/%(track)s.indelrealignment.intervals ; checkpoint ;''' % locals(
-    )
-    statement += '''GenomeAnalysisTK -T BaseRecalibrator --out %(tmpdir_gatk)s/%(track)s.recal.grp -R %%(bwa_index_dir)s/%%(genome)s.fa -I %(tmpdir_gatk)s/%(track)s.indelrealigned.bam --knownSites %(dbsnp)s %(solid_options)s ; checkpoint ;''' % locals(
-    )
-    statement += '''GenomeAnalysisTK -T PrintReads -o %(outfile)s -BQSR %(tmpdir_gatk)s/%(track)s.recal.grp -R %%(bwa_index_dir)s/%%(genome)s.fa -I %(tmpdir_gatk)s/%(track)s.indelrealigned.bam ; checkpoint ;''' % locals(
-    )
+
+    statement = '''ReorderSam
+    INPUT=%(infile)s
+    OUTPUT=%(tmpdir_gatk)s/%(track)s.reordered.bam
+    REFERENCE=%%(bwa_index_dir)s/%%(genome)s.fa
+    ALLOW_INCOMPLETE_DICT_CONCORDANCE=true
+    VALIDATION_STRINGENCY=SILENT ; checkpoint ;''' % locals()
+
+    statement += '''samtools index %(tmpdir_gatk)s/%(track)s.reordered.bam ;
+    checkpoint ;''' % locals()
+
+    statement += '''AddOrReplaceReadGroups
+    INPUT=%(tmpdir_gatk)s/%(track)s.reordered.bam
+    OUTPUT=%(tmpdir_gatk)s/%(track)s.readgroups.bam
+    RGLB=%(library)s
+    RGPL=%(platform)s
+    RGPU=%(platform_unit)s
+    RGSM=%(track)s
+    VALIDATION_STRINGENCY=SILENT ; checkpoint ;''' % locals()
+
+    statement += '''samtools index %(tmpdir_gatk)s/%(track)s.readgroups.bam ;
+    checkpoint ;''' % locals()
+
+    statement += '''GenomeAnalysisTK
+    -T RealignerTargetCreator
+    -o %(tmpdir_gatk)s/%(track)s.indelrealignment.intervals
+    --num_threads %(threads)s
+    -R %%(bwa_index_dir)s/%%(genome)s.fa
+    -I %(tmpdir_gatk)s/%(track)s.readgroups.bam ; checkpoint ;''' % locals()
+
+    statement += '''GenomeAnalysisTK
+    -T IndelRealigner
+    -o %(tmpdir_gatk)s/%(track)s.indelrealigned.bam
+    -R %%(bwa_index_dir)s/%%(genome)s.fa
+    -I %(tmpdir_gatk)s/%(track)s.readgroups.bam
+    -targetIntervals %(tmpdir_gatk)s/%(track)s.indelrealignment.intervals ;
+    checkpoint ;''' % locals()
+
+    statement += '''GenomeAnalysisTK
+    -T BaseRecalibrator
+    --out %(tmpdir_gatk)s/%(track)s.recal.grp
+    -R %%(bwa_index_dir)s/%%(genome)s.fa
+    -I %(tmpdir_gatk)s/%(track)s.indelrealigned.bam
+    --knownSites %(dbsnp)s %(solid_options)s ;
+    checkpoint ;''' % locals()
+
+    statement += '''GenomeAnalysisTK
+    -T PrintReads -o %(outfile)s
+    -BQSR %(tmpdir_gatk)s/%(track)s.recal.grp
+    -R %%(bwa_index_dir)s/%%(genome)s.fa
+    -I %(tmpdir_gatk)s/%(track)s.indelrealigned.bam ;
+    checkpoint ;''' % locals()
+
     statement += '''rm -rf %(tmpdir_gatk)s ;'''
     P.run()
 
-#########################################################################
 
-
-@collate(GATKpreprocessing, regex(r"bam/(\S+?)-(\S+).bqsr.bam"), r"bam/\1.list")
+@collate(GATKpreprocessing, regex(r"bam/(\S+?)-(\S+).bqsr.bam"),
+         r"bam/\1.list")
 def listOfBAMs(infiles, outfile):
-    '''generates a file containing a list of BAMs for each family, for use in variant calling'''
+    '''generates a file containing a list of BAMs for each family, for use
+    in variant calling
+
+    '''
     with IOTools.openFile(outfile, "w") as outf:
         for infile in infiles:
             outf.write(infile + '\n')
@@ -422,17 +458,24 @@ def listOfBAMs(infiles, outfile):
 
 
 @follows(mkdir("variants"))
-@transform(listOfBAMs, regex(r"bam/(\S+).list"), r"variants/\1.haplotypeCaller.vcf")
+@transform(listOfBAMs, regex(r"bam/(\S+).list"),
+           r"variants/\1.haplotypeCaller.vcf")
 def haplotypeCaller(infile, outfile):
-    '''Call SNVs and indels using GATK HaplotypeCaller in all members of a family together'''
-    to_cluster = USECLUSTER
+    '''Call SNVs and indels using GATK HaplotypeCaller in all members of a
+    family together'''
     job_options = getGATKOptions()
     dbsnp = PARAMS["gatk_dbsnp"]
     intervals = PARAMS["roi_intervals"]
     padding = PARAMS["roi_padding"]
     hc_options = PARAMS["gatk_hc_options"]
-    statement = '''GenomeAnalysisTK -T HaplotypeCaller -o %(outfile)s -R %%(bwa_index_dir)s/%%(genome)s.fa -I %(infile)s --dbsnp %(dbsnp)s -L %(intervals)s -ip %(padding)s''' % locals(
-    )
+    statement = '''GenomeAnalysisTK
+    -T HaplotypeCaller
+    -o %(outfile)s
+    -R %%(bwa_index_dir)s/%%(genome)s.fa
+    -I %(infile)s
+    --dbsnp %(dbsnp)s
+    -L %(intervals)s
+    -ip %(padding)s''' % locals()
     P.run()
 
 ##########################################################################
@@ -441,43 +484,60 @@ def haplotypeCaller(infile, outfile):
 # Variant Annotation and Recalibration
 
 
-@transform(haplotypeCaller, regex(r"variants/(\S+).haplotypeCaller.vcf"), r"variants/\1.haplotypeCaller.snpeff.vcf")
+@transform(haplotypeCaller,
+           regex(r"variants/(\S+).haplotypeCaller.vcf"),
+           r"variants/\1.haplotypeCaller.snpeff.vcf")
 def annotateVariantsSNPeff(infile, outfile):
     '''Annotate variants using SNPeff'''
-    to_cluster = USECLUSTER
     job_options = "-pe dedicated 4 -R y -l mem_free=6G"
     snpeff_genome = PARAMS["annotation_snpeff_genome"]
     config = PARAMS["annotation_snpeff_config"]
-    statement = '''snpEff.sh eff -c %(config)s -v %(snpeff_genome)s -o gatk %(infile)s > %(outfile)s''' % locals()
+    statement = '''snpEff.sh eff
+    -c %(config)s
+    -v %(snpeff_genome)s
+    -o gatk %(infile)s > %(outfile)s''' % locals()
     P.run()
-
-#########################################################################
 
 
 @follows(annotateVariantsSNPeff)
-@transform(haplotypeCaller, regex(r"variants/(\S+).haplotypeCaller.vcf"), add_inputs(r"bam/\1.list", r"variants/\1.haplotypeCaller.snpeff.vcf"), r"variants/\1.haplotypeCaller.annotated.vcf")
+@transform(haplotypeCaller,
+           regex(r"variants/(\S+).haplotypeCaller.vcf"),
+           add_inputs(r"bam/\1.list",
+                      r"variants/\1.haplotypeCaller.snpeff.vcf"),
+           r"variants/\1.haplotypeCaller.annotated.vcf")
 def variantAnnotator(infiles, outfile):
     '''Annotate variant file using GATK VariantAnnotator'''
-    to_cluster = USECLUSTER
     infile, bamlist, effFile = infiles
     dbsnp = PARAMS["gatk_dbsnp"]
-    statement = '''GenomeAnalysisTK -T VariantAnnotator -R %%(bwa_index_dir)s/%%(genome)s.fa -I %(bamlist)s -A SnpEff --snpEffFile %(effFile)s -o %(outfile)s
-                       --variant %(infile)s -L %(infile)s --dbsnp %(dbsnp)s -A HaplotypeScore -A MappingQualityRankSumTest -A ReadPosRankSumTest -A AlleleBalanceBySample''' % locals()
+    statement = '''GenomeAnalysisTK
+    -T VariantAnnotator
+    -R %%(bwa_index_dir)s/%%(genome)s.fa
+    -I %(bamlist)s
+    -A SnpEff
+    --snpEffFile %(effFile)s
+    -o %(outfile)s
+    --variant %(infile)s
+    -L %(infile)s
+    --dbsnp %(dbsnp)s
+    -A HaplotypeScore
+    -A MappingQualityRankSumTest
+    -A ReadPosRankSumTest
+    -A AlleleBalanceBySample''' % locals()
     P.run()
 
-#########################################################################
 
-
-@transform(variantAnnotator, regex(r"variants/(\S+).haplotypeCaller.annotated.vcf"), r"variants/\1.haplotypeCaller.vqsr.recal")
+@transform(variantAnnotator,
+           regex(r"variants/(\S+).haplotypeCaller.annotated.vcf"),
+           r"variants/\1.haplotypeCaller.vqsr.recal")
 def variantRecalibrator(infile, outfile):
     '''Create variant recalibration file'''
-    to_cluster = USECLUSTER
     job_options = getGATKOptions()
     track = P.snip(os.path.basename(outfile), ".recal")
     hapmap = PARAMS["gatk_hapmap"]
     omni = PARAMS["gatk_omni"]
     dbsnp = PARAMS["gatk_dbsnp"]
-    statement = '''GenomeAnalysisTK -T VariantRecalibrator
+    statement = '''GenomeAnalysisTK
+    -T VariantRecalibrator
     -R %%(bwa_index_dir)s/%%(genome)s.fa -input %(infile)s
     -resource:hapmap,known=false,training=true,truth=true,prior=15.0 %(hapmap)s
     -resource:omni,known=false,training=true,truth=false,prior=12.0 %(omni)s
@@ -501,7 +561,6 @@ def variantRecalibrator(infile, outfile):
            r"variants/\1.haplotypeCaller.vqsr.vcf")
 def applyVariantRecalibration(infiles, outfile):
     '''Perform variant quality score recalibration using GATK '''
-    to_cluster = USECLUSTER
     job_options = getGATKOptions()
     infile, recal, tranches = infiles
     statement = '''GenomeAnalysisTK -T ApplyRecalibration
@@ -521,7 +580,6 @@ def applyVariantRecalibration(infiles, outfile):
            r"variants/\1.haplotypeCaller.snpsift.vcf")
 def annotateVariantsSNPsift(infile, outfile):
     '''Add annotations using SNPsift'''
-    to_cluster = USECLUSTER
     job_options = "-pe dedicated 4 -R y -l mem_free=6G"
     track = P.snip(os.path.basename(infile), ".vqsr.vcf")
     dbNSFP = PARAMS["annotation_snpsift_dbnsfp"]
@@ -531,7 +589,10 @@ def annotateVariantsSNPsift(infile, outfile):
     statement = '''SnpSift.sh dbnsfp -v %(dbNSFP)s %(infile)s
     > variants/%(track)s_temp1.vcf; checkpoint;''' % locals()
 
-    statement += '''SnpSift.sh annotate /ifs/projects/proj016/data/1000Genomes/00-All.vcf
+    raise NotImplementedError(
+        "this method contains hardcoded path to data!")
+    statement += '''SnpSift.sh annotate
+    /ifs/projects/proj016/data/1000Genomes/00-All.vcf
     variants/%(track)s_temp1.vcf > %(outfile)s ;''' % locals()
 #    statement += '''rm -f variants/*temp*vcf;'''
 
@@ -570,27 +631,42 @@ CALIBRATION = {0: annotateVariantsSNPsift,
                1: findGenes}
 
 
-@transform(CALIBRATION[PARAMS["annotation_add_genes_of_interest"]], regex(r"variants/((\S+).haplotypeCaller.snpsift|(\S+).genes).vcf"), r"variants/\1.table")
+@transform(CALIBRATION[PARAMS["annotation_add_genes_of_interest"]],
+           regex(r"variants/((\S+).haplotypeCaller.snpsift|(\S+).genes).vcf"),
+           r"variants/\1.table")
 def vcfToTable(infile, outfile):
     '''Converts vcf to tab-delimited file'''
-    to_cluster = USECLUSTER
     # add AB and DP annotations to table
-    statement = '''GenomeAnalysisTK -T VariantsToTable -R %%(bwa_index_dir)s/%%(genome)s.fa -V %(infile)s --showFiltered --allowMissingData -F CHROM -F POS -F ID -F REF -F ALT -F QUAL -F FILTER -F AC -F AF -F AN -F BaseQRankSum -F DB -F DP -F Dels -F FS -F HaplotypeScore -F MLEAC -F MLEAF -F MQ -F MQ0 -F MQRankSum -F QD -F ReadPosRankSum -F SB -F SNPEFF_EFFECT -F SNPEFF_IMPACT -F SNPEFF_FUNCTIONAL_CLASS -F SNPEFF_CODON_CHANGE -F SNPEFF_AMINO_ACID_CHANGE -F SNPEFF_GENE_NAME -F SNPEFF_GENE_BIOTYPE -F SNPEFF_TRANSCRIPT_ID -F SNPEFF_EXON_ID -F dbNSFP_GERP++_RS -F dbNSFP_GERP++_NR -F dbNSFP_Ensembl_transcriptid -F dbNSFP_Uniprot_acc -F dbNSFP_Interpro_domain -F dbNSFP_SIFT_score -F dbNSFP_Polyphen2_HVAR_pred -F dbNSFP_29way_logOdds -F dbNSFP_1000Gp1_AF -F dbNSFP_1000Gp1_AFR_AF -F dbNSFP_1000Gp1_EUR_AF -F dbNSFP_1000Gp1_AMR_AF -F dbNSFP_1000Gp1_ASN_AF -F dbNSFP_ESP6500_AA_AF -F dbNSFP_ESP6500_EA_AF -F RSPOS -F SSR -F SAO -F VP -F VC -F PM -F TPA -F PMC -F MUT -F VLD -F OTHERKG -F PH3 -F CDA -F MTP -F OM -F CAF -F COMMON -GF GT -GF AD -GF GQ -GF PL -GF PQ -GF TP -GF AB -GF DP -o %(outfile)s''' % locals(
-    )
+    statement = '''GenomeAnalysisTK
+    -T VariantsToTable -R %%(bwa_index_dir)s/%%(genome)s.fa
+    -V %(infile)s --showFiltered --allowMissingData
+    -F CHROM -F POS -F ID -F REF -F ALT -F QUAL -F FILTER -F AC -F AF -F AN
+    -F BaseQRankSum -F DB -F DP -F Dels -F FS -F HaplotypeScore -F MLEAC
+    -F MLEAF -F MQ -F MQ0 -F MQRankSum -F QD -F ReadPosRankSum -F SB
+    -F SNPEFF_EFFECT -F SNPEFF_IMPACT -F SNPEFF_FUNCTIONAL_CLASS
+    -F SNPEFF_CODON_CHANGE -F SNPEFF_AMINO_ACID_CHANGE -F SNPEFF_GENE_NAME
+    -F SNPEFF_GENE_BIOTYPE -F SNPEFF_TRANSCRIPT_ID -F SNPEFF_EXON_ID
+    -F dbNSFP_GERP++_RS -F dbNSFP_GERP++_NR -F dbNSFP_Ensembl_transcriptid
+    -F dbNSFP_Uniprot_acc -F dbNSFP_Interpro_domain -F dbNSFP_SIFT_score
+    -F dbNSFP_Polyphen2_HVAR_pred -F dbNSFP_29way_logOdds -F dbNSFP_1000Gp1_AF
+    -F dbNSFP_1000Gp1_AFR_AF -F dbNSFP_1000Gp1_EUR_AF -F dbNSFP_1000Gp1_AMR_AF
+    -F dbNSFP_1000Gp1_ASN_AF -F dbNSFP_ESP6500_AA_AF -F dbNSFP_ESP6500_EA_AF
+    -F RSPOS -F SSR -F SAO -F VP -F VC -F PM -F TPA -F PMC -F MUT -F VLD
+    -F OTHERKG -F PH3 -F CDA -F MTP -F OM -F CAF -F COMMON -GF GT -GF AD
+    -GF GQ -GF PL -GF PQ -GF TP -GF AB -GF DP -o %(outfile)s''' % locals()
     P.run()
 
-#########################################################################
 
-
-@transform(vcfToTable, regex(r"variants/(\S+).table"), r"variants/\1.table.load")
+@transform(vcfToTable, regex(r"variants/(\S+).table"),
+           r"variants/\1.table.load")
 def loadVariantAnnotation(infile, outfile):
     '''Load VCF annotations into database'''
+    # AH: why not use P.load()
     scriptsdir = PARAMS["general_scriptsdir"]
     tablename = P.toTable(outfile)
-    statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py --table %(tablename)s --retry --ignore-empty > %(outfile)s''' % locals()
+    statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
+    --table %(tablename)s --retry --ignore-empty > %(outfile)s''' % locals()
     P.run()
-
-#########################################################################
 
 
 @transform(annotateVariantsSNPeff,
@@ -599,7 +675,6 @@ def loadVariantAnnotation(infile, outfile):
 def snpeffToTable(infile, outfile):
     '''Converts snpeff file to table as this supplies all the annotations
     for a given variant - used for reports'''
-    to_cluster = USECLUSTER
     statement = '''GenomeAnalysisTK -T VariantsToTable
     -R %%(bwa_index_dir)s/%%(genome)s.fa -V %(infile)s
     --showFiltered --allowMissingData
@@ -612,6 +687,7 @@ def snpeffToTable(infile, outfile):
            r"variants/\1.table.load")
 def loadSnpeffAnnotation(infile, outfile):
     '''Load snpeff annotations into database'''
+    # AH: why not P.load()
     scriptsdir = PARAMS["general_scriptsdir"]
     tablename = P.toTable(outfile)
     statement = '''cat %(infile)s
@@ -655,87 +731,141 @@ def createAnnotationsTable(infile, outfile):
 # De novos
 
 
-@transform(annotateVariantsSNPsift, regex(r"variants/(\S*Trio\S+).haplotypeCaller.snpsift.vcf"), add_inputs(r"\1.ped"), r"variants/\1.filtered.vcf")
+@transform(annotateVariantsSNPsift,
+           regex(r"variants/(\S*Trio\S+).haplotypeCaller.snpsift.vcf"),
+           add_inputs(r"\1.ped"), r"variants/\1.filtered.vcf")
 def deNovoVariants(infiles, outfile):
     '''Filter de novo variants based on provided jexl expression'''
-    to_cluster = USECLUSTER
     infile, pedfile = infiles
-    pedigree = csv.DictReader(open(pedfile), delimiter='\t', fieldnames=[
-                              'family', 'sample', 'father', 'mother', 'sex', 'status'])
+    pedigree = csv.DictReader(
+        IOTools.openFile(pedfile), delimiter='\t', fieldnames=[
+            'family', 'sample', 'father', 'mother', 'sex', 'status'])
     for row in pedigree:
         if row['status'] == '2':
             father = row['father']
             mother = row['mother']
             child = row['sample']
-    statement = '''GenomeAnalysisTK -T SelectVariants -R %%(bwa_index_dir)s/%%(genome)s.fa --variant %(infile)s -select 'vc.getGenotype("%(father)s").getDP()>=10&&vc.getGenotype("%(mother)s").getDP()>=10&&vc.getGenotype("%(child)s").getPL().0>20&&vc.getGenotype("%(child)s").getPL().1==0&&vc.getGenotype("%(child)s").getPL().2>0&&vc.getGenotype("%(father)s").getPL().0==0&&vc.getGenotype("%(father)s").getPL().1>20&&vc.getGenotype("%(father)s").getPL().2>20&&vc.getGenotype("%(mother)s").getPL().0==0&&vc.getGenotype("%(mother)s").getPL().1>20&&vc.getGenotype("%(mother)s").getPL().2>20&&vc.getGenotype("%(child)s").getAD().1>=3&&((vc.getGenotype("%(child)s").getAD().1)/(vc.getGenotype("%(child)s").getDP().floatValue()))>=0.25&&(vc.getGenotype("%(father)s").getAD().1==0||(vc.getGenotype("%(father)s").getAD().1>0&&((vc.getGenotype("%(father)s").getAD().1)/(vc.getGenotype("%(father)s").getDP().floatValue()))<0.05))&&(vc.getGenotype("%(mother)s").getAD().1==0||(vc.getGenotype("%(mother)s").getAD().1>0&&((vc.getGenotype("%(mother)s").getAD().1)/(vc.getGenotype("%(mother)s").getDP().floatValue()))<0.05))&&(SNPEFF_IMPACT=="HIGH"||SNPEFF_IMPACT=="MODERATE")' > %(outfile)s''' % locals(
-    )
+    statement = '''GenomeAnalysisTK
+    -T SelectVariants
+    -R %%(bwa_index_dir)s/%%(genome)s.fa
+    --variant %(infile)s
+    -select 'vc.getGenotype("%(father)s").getDP()>=10&&vc.getGenotype("%(mother)s").getDP()>=10&&vc.getGenotype("%(child)s").getPL().0>20&&vc.getGenotype("%(child)s").getPL().1==0&&vc.getGenotype("%(child)s").getPL().2>0&&vc.getGenotype("%(father)s").getPL().0==0&&vc.getGenotype("%(father)s").getPL().1>20&&vc.getGenotype("%(father)s").getPL().2>20&&vc.getGenotype("%(mother)s").getPL().0==0&&vc.getGenotype("%(mother)s").getPL().1>20&&vc.getGenotype("%(mother)s").getPL().2>20&&vc.getGenotype("%(child)s").getAD().1>=3&&((vc.getGenotype("%(child)s").getAD().1)/(vc.getGenotype("%(child)s").getDP().floatValue()))>=0.25&&(vc.getGenotype("%(father)s").getAD().1==0||(vc.getGenotype("%(father)s").getAD().1>0&&((vc.getGenotype("%(father)s").getAD().1)/(vc.getGenotype("%(father)s").getDP().floatValue()))<0.05))&&(vc.getGenotype("%(mother)s").getAD().1==0||(vc.getGenotype("%(mother)s").getAD().1>0&&((vc.getGenotype("%(mother)s").getAD().1)/(vc.getGenotype("%(mother)s").getDP().floatValue()))<0.05))&&(SNPEFF_IMPACT=="HIGH"||SNPEFF_IMPACT=="MODERATE")'
+    > %(outfile)s''' % locals()
+
     P.run()
 
 #########################################################################
 
 
-@transform(deNovoVariants, regex(r"variants/(\S+).filtered.vcf"), r"variants/\1.filtered.table")
+@transform(deNovoVariants,
+           regex(r"variants/(\S+).filtered.vcf"),
+           r"variants/\1.filtered.table")
 def tabulateDeNovos(infile, outfile):
     '''Tabulate de novo variants'''
-    to_cluster = USECLUSTER
     statement = '''awk 'NR > 16' %(infile)s | sed '/^INFO/d' > %(infile)s.tmp ;'''
-    statement += '''GenomeAnalysisTK -T VariantsToTable -R %%(bwa_index_dir)s/%%(genome)s.fa --variant %(infile)s.tmp --showFiltered --allowMissingData -F CHROM -F POS -F ID -F REF -F ALT -F QUAL -F FILTER -F AC -F AF -F AN -F BaseQRankSum -F DB -F DP -F Dels -F FS -F HaplotypeScore -F MLEAC -F MLEAF -F MQ -F MQ0 -F MQRankSum -F QD -F ReadPosRankSum -F SB -F SNPEFF_EFFECT -F SNPEFF_IMPACT -F SNPEFF_FUNCTIONAL_CLASS -F SNPEFF_CODON_CHANGE -F SNPEFF_AMINO_ACID_CHANGE -F SNPEFF_GENE_NAME -F SNPEFF_GENE_BIOTYPE -F SNPEFF_TRANSCRIPT_ID -F SNPEFF_EXON_ID -F dbNSFP_GERP++_RS -F dbNSFP_GERP++_NR -F dbNSFP_Ensembl_transcriptid -F dbNSFP_Uniprot_acc -F dbNSFP_Interpro_domain -F dbNSFP_SIFT_score -F dbNSFP_Polyphen2_HVAR_pred -F dbNSFP_29way_logOdds -F dbNSFP_1000Gp1_AF -F dbNSFP_1000Gp1_AFR_AF -F dbNSFP_1000Gp1_EUR_AF -F dbNSFP_1000Gp1_AMR_AF -F dbNSFP_1000Gp1_ASN_AF -F dbNSFP_ESP6500_AA_AF -F dbNSFP_ESP6500_EA_AF -F RSPOS -F SSR -F SAO -F VP -F VC -F PM -F TPA -F PMC -F MUT -F VLD -F OTHERKG -F PH3 -F CDA -F MTP -F OM -F CAF -F COMMON -GF GT -GF AD -GF GQ -GF PL -GF PQ -GF TP -GF AB -GF DP -o %(outfile)s ;''' % locals(
-    )
+    statement += '''GenomeAnalysisTK
+    -T VariantsToTable
+    -R %%(bwa_index_dir)s/%%(genome)s.fa
+    --variant %(infile)s.tmp
+    --showFiltered
+    --allowMissingData
+    -F CHROM -F POS -F ID -F REF -F ALT -F QUAL -F FILTER -F AC -F AF -F AN
+    -F BaseQRankSum -F DB -F DP -F Dels -F FS -F HaplotypeScore -F MLEAC
+    -F MLEAF -F MQ -F MQ0 -F MQRankSum -F QD -F ReadPosRankSum -F SB
+    -F SNPEFF_EFFECT -F SNPEFF_IMPACT -F SNPEFF_FUNCTIONAL_CLASS
+    -F SNPEFF_CODON_CHANGE -F SNPEFF_AMINO_ACID_CHANGE -F SNPEFF_GENE_NAME
+    -F SNPEFF_GENE_BIOTYPE -F SNPEFF_TRANSCRIPT_ID -F SNPEFF_EXON_ID
+    -F dbNSFP_GERP++_RS -F dbNSFP_GERP++_NR -F dbNSFP_Ensembl_transcriptid
+    -F dbNSFP_Uniprot_acc -F dbNSFP_Interpro_domain -F dbNSFP_SIFT_score
+    -F dbNSFP_Polyphen2_HVAR_pred -F dbNSFP_29way_logOdds -F dbNSFP_1000Gp1_AF
+    -F dbNSFP_1000Gp1_AFR_AF -F dbNSFP_1000Gp1_EUR_AF -F dbNSFP_1000Gp1_AMR_AF
+    -F dbNSFP_1000Gp1_ASN_AF -F dbNSFP_ESP6500_AA_AF -F dbNSFP_ESP6500_EA_AF
+    -F RSPOS -F SSR -F SAO -F VP -F VC -F PM -F TPA -F PMC -F MUT -F VLD
+    -F OTHERKG -F PH3 -F CDA -F MTP -F OM -F CAF -F COMMON -GF GT -GF AD
+    -GF GQ -GF PL -GF PQ -GF TP -GF AB -GF DP -o %(outfile)s ;''' % locals()
     statement += '''rm -f %(infile)s.tmp*'''
     P.run()
 
-#########################################################################
 
-
-@transform(tabulateDeNovos, regex(r"variants/(\S+).filtered.table"), r"variants/\1.filtered.table.load")
+@transform(tabulateDeNovos,
+           regex(r"variants/(\S+).filtered.table"),
+           r"variants/\1.filtered.table.load")
 def loadDeNovos(infile, outfile):
     '''Load de novos into database'''
+    # AH: why not P.load()
     scriptsdir = PARAMS["general_scriptsdir"]
     tablename = P.toTable(outfile)
-    statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py --table %(tablename)s --retry --ignore-empty --allow-empty > %(outfile)s''' % locals()
+    statement = '''cat %(infile)s
+    | python %(scriptsdir)s/csv2db.py --table %(tablename)s
+    --retry --ignore-empty --allow-empty-file > %(outfile)s''' % locals()
     P.run()
 
-#########################################################################
 
-
-@transform(annotateVariantsSNPsift, regex(r"variants/(\S*Trio\S+).haplotypeCaller.snpsift.vcf"), add_inputs(r"\1.ped"), r"variants/\1.denovos.vcf")
+@transform(annotateVariantsSNPsift,
+           regex(r"variants/(\S*Trio\S+).haplotypeCaller.snpsift.vcf"),
+           add_inputs(r"\1.ped"), r"variants/\1.denovos.vcf")
 def lowerStringencyDeNovos(infiles, outfile):
-    '''Filter lower stringency de novo variants based on provided jexl expression'''
-    to_cluster = USECLUSTER
+    '''Filter lower stringency de novo variants based on provided jexl
+    expression'''
     infile, pedfile = infiles
-    pedigree = csv.DictReader(open(pedfile), delimiter='\t', fieldnames=[
-                              'family', 'sample', 'father', 'mother', 'sex', 'status'])
+    pedigree = csv.DictReader(
+        IOTools.openFile(pedfile), delimiter='\t', fieldnames=[
+            'family', 'sample', 'father', 'mother', 'sex', 'status'])
     for row in pedigree:
         if row['status'] == '2':
             father = row['father']
             mother = row['mother']
             child = row['sample']
-    statement = '''GenomeAnalysisTK -T SelectVariants -R %%(bwa_index_dir)s/%%(genome)s.fa --variant %(infile)s -select 'vc.getGenotype("%(child)s").getPL().1==0&&vc.getGenotype("%(father)s").getPL().0==0&&vc.getGenotype("%(mother)s").getPL().0==0&&(SNPEFF_IMPACT=="HIGH"||SNPEFF_IMPACT=="MODERATE")' > %(outfile)s''' % locals(
-    )
+    statement = '''GenomeAnalysisTK
+    -T SelectVariants
+    -R %%(bwa_index_dir)s/%%(genome)s.fa
+    --variant %(infile)s
+    -select 'vc.getGenotype("%(child)s").getPL().1==0&&vc.getGenotype("%(father)s").getPL().0==0&&vc.getGenotype("%(mother)s").getPL().0==0&&(SNPEFF_IMPACT=="HIGH"||SNPEFF_IMPACT=="MODERATE")' > %(outfile)s''' % locals()
     P.run()
 
 #########################################################################
 
 
-@transform(lowerStringencyDeNovos, regex(r"variants/(\S+).denovos.vcf"), r"variants/\1.denovos.table")
+@transform(lowerStringencyDeNovos,
+           regex(r"variants/(\S+).denovos.vcf"),
+           r"variants/\1.denovos.table")
 def tabulateLowerStringencyDeNovos(infile, outfile):
     '''Tabulate lower stringency de novo variants'''
-    to_cluster = USECLUSTER
     statement = '''awk 'NR > 16' %(infile)s | sed '/^INFO/d' > %(infile)s.tmp ;'''
-    statement += '''GenomeAnalysisTK -T VariantsToTable -R %%(bwa_index_dir)s/%%(genome)s.fa --variant %(infile)s.tmp --showFiltered --allowMissingData -F CHROM -F POS -F ID -F REF -F ALT -F QUAL -F FILTER -F AC -F AF -F AN -F BaseQRankSum -F DB -F DP -F Dels -F FS -F HaplotypeScore -F MLEAC -F MLEAF -F MQ -F MQ0 -F MQRankSum -F QD -F ReadPosRankSum -F SB -F SNPEFF_EFFECT -F SNPEFF_IMPACT -F SNPEFF_FUNCTIONAL_CLASS -F SNPEFF_CODON_CHANGE -F SNPEFF_AMINO_ACID_CHANGE -F SNPEFF_GENE_NAME -F SNPEFF_GENE_BIOTYPE -F SNPEFF_TRANSCRIPT_ID -F SNPEFF_EXON_ID -F dbNSFP_GERP++_RS -F dbNSFP_GERP++_NR -F dbNSFP_Ensembl_transcriptid -F dbNSFP_Uniprot_acc -F dbNSFP_Interpro_domain -F dbNSFP_SIFT_score -F dbNSFP_Polyphen2_HVAR_pred -F dbNSFP_29way_logOdds -F dbNSFP_1000Gp1_AF -F dbNSFP_1000Gp1_AFR_AF -F dbNSFP_1000Gp1_EUR_AF -F dbNSFP_1000Gp1_AMR_AF -F dbNSFP_1000Gp1_ASN_AF -F dbNSFP_ESP6500_AA_AF -F dbNSFP_ESP6500_EA_AF -F RSPOS -F SSR -F SAO -F VP -F VC -F PM -F TPA -F PMC -F MUT -F VLD -F OTHERKG -F PH3 -F CDA -F MTP -F OM -F CAF -F COMMON -GF GT -GF AD -GF GQ -GF PL -GF PQ -GF TP -GF AB -GF DP -o %(outfile)s ;''' % locals(
-    )
+    statement += '''GenomeAnalysisTK
+    -T VariantsToTable
+    -R %%(bwa_index_dir)s/%%(genome)s.fa
+    --variant %(infile)s.tmp
+    --showFiltered
+    --allowMissingData
+    -F CHROM -F POS -F ID -F REF -F ALT -F QUAL -F FILTER -F AC -F AF -F AN
+    -F BaseQRankSum -F DB -F DP -F Dels -F FS -F HaplotypeScore -F MLEAC
+    -F MLEAF -F MQ -F MQ0 -F MQRankSum -F QD -F ReadPosRankSum -F SB
+    -F SNPEFF_EFFECT -F SNPEFF_IMPACT -F SNPEFF_FUNCTIONAL_CLASS
+    -F SNPEFF_CODON_CHANGE -F SNPEFF_AMINO_ACID_CHANGE -F SNPEFF_GENE_NAME
+    -F SNPEFF_GENE_BIOTYPE -F SNPEFF_TRANSCRIPT_ID -F SNPEFF_EXON_ID
+    -F dbNSFP_GERP++_RS -F dbNSFP_GERP++_NR -F dbNSFP_Ensembl_transcriptid
+    -F dbNSFP_Uniprot_acc -F dbNSFP_Interpro_domain -F dbNSFP_SIFT_score
+    -F dbNSFP_Polyphen2_HVAR_pred -F dbNSFP_29way_logOdds -F dbNSFP_1000Gp1_AF
+    -F dbNSFP_1000Gp1_AFR_AF -F dbNSFP_1000Gp1_EUR_AF -F dbNSFP_1000Gp1_AMR_AF
+    -F dbNSFP_1000Gp1_ASN_AF -F dbNSFP_ESP6500_AA_AF -F dbNSFP_ESP6500_EA_AF
+    -F RSPOS -F SSR -F SAO -F VP -F VC -F PM -F TPA -F PMC -F MUT -F VLD
+    -F OTHERKG -F PH3 -F CDA -F MTP -F OM -F CAF -F COMMON -GF GT -GF AD
+    -GF GQ -GF PL -GF PQ -GF TP -GF AB -GF DP -o %(outfile)s ;''' % locals()
     statement += '''rm -f %(infile)s.tmp*'''
     P.run()
 
-#########################################################################
 
-
-@transform(tabulateLowerStringencyDeNovos, regex(r"variants/(\S+).denovos.table"), r"variants/\1.denovos.table.load")
+@transform(tabulateLowerStringencyDeNovos,
+           regex(r"variants/(\S+).denovos.table"),
+           r"variants/\1.denovos.table.load")
 def loadLowerStringencyDeNovos(infile, outfile):
     '''Load lower stringency de novos into database'''
     scriptsdir = PARAMS["general_scriptsdir"]
     tablename = P.toTable(outfile)
-    statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py --table %(tablename)s --retry --ignore-empty --allow-empty > %(outfile)s''' % locals()
+    statement = '''cat %(infile)s
+    | python %(scriptsdir)s/csv2db.py --table %(tablename)s --retry
+    --ignore-empty --allow-empty-file > %(outfile)s''' % locals()
     P.run()
 
 #########################################################################
@@ -747,7 +877,6 @@ def loadLowerStringencyDeNovos(infile, outfile):
 @transform(annotateVariantsSNPsift, regex(r"variants/(\S*Multiplex\S+).haplotypeCaller.snpsift.vcf"), add_inputs(r"\1.ped"), r"variants/\1.dominant.vcf")
 def dominantVariants(infiles, outfile):
     '''Filter variants according to autosomal dominant disease model'''
-    to_cluster = USECLUSTER
     infile, pedfile = infiles
     pedigree = csv.DictReader(open(pedfile), delimiter='\t', fieldnames=[
                               'family', 'sample', 'father', 'mother', 'sex', 'status'])
@@ -778,7 +907,6 @@ def dominantVariants(infiles, outfile):
 @transform(dominantVariants, regex(r"variants/(\S+).dominant.vcf"), r"variants/\1.dominant.table")
 def tabulateDoms(infile, outfile):
     '''Tabulate dominant disease candidate variants'''
-    to_cluster = USECLUSTER
     statement = '''GenomeAnalysisTK -T VariantsToTable -R %%(bwa_index_dir)s/%%(genome)s.fa --variant:VCF %(infile)s --showFiltered --allowMissingData -F CHROM -F POS -F ID -F REF -F ALT -F QUAL -F FILTER -F AC -F AF -F AN -F BaseQRankSum -F DB -F DP -F Dels -F FS -F HaplotypeScore -F MLEAC -F MLEAF -F MQ -F MQ0 -F MQRankSum -F QD -F ReadPosRankSum -F SB -F SNPEFF_EFFECT -F SNPEFF_IMPACT -F SNPEFF_FUNCTIONAL_CLASS -F SNPEFF_CODON_CHANGE -F SNPEFF_AMINO_ACID_CHANGE -F SNPEFF_GENE_NAME -F SNPEFF_GENE_BIOTYPE -F SNPEFF_TRANSCRIPT_ID -F SNPEFF_EXON_ID -F dbNSFP_GERP++_RS -F dbNSFP_GERP++_NR -F dbNSFP_Ensembl_transcriptid -F dbNSFP_Uniprot_acc -F dbNSFP_Interpro_domain -F dbNSFP_SIFT_score -F dbNSFP_Polyphen2_HVAR_pred -F dbNSFP_29way_logOdds -F dbNSFP_1000Gp1_AF -F dbNSFP_1000Gp1_AFR_AF -F dbNSFP_1000Gp1_EUR_AF -F dbNSFP_1000Gp1_AMR_AF -F dbNSFP_1000Gp1_ASN_AF -F dbNSFP_ESP6500_AA_AF -F dbNSFP_ESP6500_EA_AF -F RSPOS -F SSR -F SAO -F VP -F VC -F PM -F TPA -F PMC -F MUT -F VLD -F OTHERKG -F PH3 -F CDA -F MTP -F OM -F CAF -F COMMON -GF GT -GF AD -GF GQ -GF PL -GF PQ -GF TP -GF AB -GF DP -o %(outfile)s''' % locals(
     )
     P.run()
@@ -789,9 +917,10 @@ def tabulateDoms(infile, outfile):
 @transform(tabulateDoms, regex(r"variants/(\S+).dominant.table"), r"variants/\1.dominant.table.load")
 def loadDoms(infile, outfile):
     '''Load dominant disease candidates into database'''
+    # AH: Why not P.load()
     scriptsdir = PARAMS["general_scriptsdir"]
     tablename = P.toTable(outfile)
-    statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py --table %(tablename)s --retry --ignore-empty --allow-empty > %(outfile)s''' % locals()
+    statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py --table %(tablename)s --retry --ignore-empty --allow-empty-file > %(outfile)s''' % locals()
     P.run()
 
 #########################################################################
@@ -800,10 +929,12 @@ def loadDoms(infile, outfile):
 # Recessive
 
 
-@transform(annotateVariantsSNPsift, regex(r"variants/(\S*Trio\S+|\S*Multiplex\S+).haplotypeCaller.snpsift.vcf"), add_inputs(r"\1.ped"), r"variants/\1.recessive.vcf")
+@transform(
+    annotateVariantsSNPsift,
+    regex(r"variants/(\S*Trio\S+|\S*Multiplex\S+).haplotypeCaller.snpsift.vcf"),
+    add_inputs(r"\1.ped"), r"variants/\1.recessive.vcf")
 def recessiveVariants(infiles, outfile):
     '''Filter variants according to autosomal recessive disease model'''
-    to_cluster = USECLUSTER
     infile, pedfile = infiles
     pedigree = csv.DictReader(open(pedfile), delimiter='\t', fieldnames=[
                               'family', 'sample', 'father', 'mother', 'sex', 'status'])
@@ -836,7 +967,6 @@ def recessiveVariants(infiles, outfile):
 @transform(recessiveVariants, regex(r"variants/(\S+).recessive.vcf"), r"variants/\1.recessive.table")
 def tabulateRecs(infile, outfile):
     '''Tabulate potential homozygous recessive disease variants'''
-    to_cluster = USECLUSTER
     statement = '''GenomeAnalysisTK -T VariantsToTable -R %%(bwa_index_dir)s/%%(genome)s.fa --variant:VCF %(infile)s --showFiltered --allowMissingData -F CHROM -F POS -F ID -F REF -F ALT -F QUAL -F FILTER -F AC -F AF -F AN -F BaseQRankSum -F DB -F DP -F Dels -F FS -F HaplotypeScore -F MLEAC -F MLEAF -F MQ -F MQ0 -F MQRankSum -F QD -F ReadPosRankSum -F SB -F SNPEFF_EFFECT -F SNPEFF_IMPACT -F SNPEFF_FUNCTIONAL_CLASS -F SNPEFF_CODON_CHANGE -F SNPEFF_AMINO_ACID_CHANGE -F SNPEFF_GENE_NAME -F SNPEFF_GENE_BIOTYPE -F SNPEFF_TRANSCRIPT_ID -F SNPEFF_EXON_ID -F dbNSFP_GERP++_RS -F dbNSFP_GERP++_NR -F dbNSFP_Ensembl_transcriptid -F dbNSFP_Uniprot_acc -F dbNSFP_Interpro_domain -F dbNSFP_SIFT_score -F dbNSFP_Polyphen2_HVAR_pred -F dbNSFP_29way_logOdds -F dbNSFP_1000Gp1_AF -F dbNSFP_1000Gp1_AFR_AF -F dbNSFP_1000Gp1_EUR_AF -F dbNSFP_1000Gp1_AMR_AF -F dbNSFP_1000Gp1_ASN_AF -F dbNSFP_ESP6500_AA_AF -F dbNSFP_ESP6500_EA_AF -F RSPOS -F SSR -F SAO -F VP -F VC -F PM -F TPA -F PMC -F MUT -F VLD -F OTHERKG -F PH3 -F CDA -F MTP -F OM -F CAF -F COMMON -GF GT -GF AD -GF GQ -GF PL -GF PQ -GF TP -GF AB -GF DP -o %(outfile)s''' % locals(
     )
     P.run()
@@ -849,7 +979,7 @@ def loadRecs(infile, outfile):
     '''Load homozygous recessive disease candidates into database'''
     scriptsdir = PARAMS["general_scriptsdir"]
     tablename = P.toTable(outfile)
-    statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py --table %(tablename)s --retry --ignore-empty --allow-empty > %(outfile)s''' % locals()
+    statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py --table %(tablename)s --retry --ignore-empty --allow-empty-file > %(outfile)s''' % locals()
     P.run()
 
 #########################################################################
@@ -859,14 +989,13 @@ def loadRecs(infile, outfile):
 def compoundHets(infiles, outfile):
     '''Identify potentially pathogenic compound heterozygous variants (phasing with GATK followed by compound het
     calling using Gemini'''
-    to_cluster = USECLUSTER
     infile, pedfile, bamlist = infiles
     statement = '''GenomeAnalysisTK -T PhaseByTransmission -R %%(bwa_index_dir)s/%%(genome)s.fa -V %(infile)s -ped %(pedfile)s -mvf %(infile)s.mvf -o %(infile)s.phased.vcf ;''' % locals(
     )
     statement += '''GenomeAnalysisTK -T ReadBackedPhasing -R %%(bwa_index_dir)s/%%(genome)s.fa -I %(bamlist)s -V %(infile)s.phased.vcf -o %(infile)s.phased_rbp.vcf --respectPhaseInInput ;''' % locals(
     )
     statement += '''gemini load -v %(infile)s.phased_rbp.vcf -p %(pedfile)s -t snpEff %(infile)s.db ;'''
-    statement += '''gemini comp_hets --only-affected --filter "(impact_severity = 'HIGH' OR impact_severity = 'MED') AND (in_esp = 0 OR aaf_esp_all < 0.01) AND (in_1kg = 0 OR aaf_1kg_all < 0.01)" %(infile)s.db > %(outfile)s'''
+    statement += '''gemini comp_hets --only-affected --method=filter --filter-method "(impact_severity = 'HIGH' OR impact_severity = 'MED') AND (in_esp = 0 OR aaf_esp_all < 0.01) AND (in_1kg = 0 OR aaf_1kg_all < 0.01)" %(infile)s.db > %(outfile)s'''
     P.run()
 
 #########################################################################
@@ -877,7 +1006,7 @@ def loadCompoundHets(infile, outfile):
     '''Load compound heterozygous variants into database'''
     scriptsdir = PARAMS["general_scriptsdir"]
     tablename = P.toTable(outfile)
-    statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py --table %(tablename)s --retry --ignore-empty --allow-empty > %(outfile)s''' % locals()
+    statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py --table %(tablename)s --retry --ignore-empty --allow-empty-file > %(outfile)s''' % locals()
     P.run()
 
 #########################################################################
@@ -889,7 +1018,6 @@ def loadCompoundHets(infile, outfile):
 @transform((annotateVariantsSNPsift), regex(r"variants/(\S+).vcf"), r"variants/\1.vcfstats")
 def buildVCFstats(infile, outfile):
     '''Calculate statistics on VCF file'''
-    to_cluster = USECLUSTER
     statement = '''vcf-stats %(infile)s > %(outfile)s 2>>%(outfile)s.log;''' % locals()
     P.run()
 
@@ -904,10 +1032,10 @@ def loadVCFstats(infiles, outfile):
     tablename = P.toTable(outfile)
     E.info("Loading vcf stats...")
     statement = '''python %(scriptsdir)s/vcfstats2db.py %(filenames)s >> %(outfile)s; '''
-    statement += '''cat vcfstats.txt | python %(scriptsdir)s/csv2db.py %(csv2db_options)s --allow-empty --index=track --table=vcf_stats >> %(outfile)s; '''
-    statement += '''cat sharedstats.txt | python %(scriptsdir)s/csv2db.py %(csv2db_options)s --allow-empty --index=track --table=vcf_shared_stats >> %(outfile)s; '''
-    statement += '''cat indelstats.txt | python %(scriptsdir)s/csv2db.py %(csv2db_options)s --allow-empty --index=track --table=indel_stats >> %(outfile)s; '''
-    statement += '''cat snpstats.txt | python %(scriptsdir)s/csv2db.py %(csv2db_options)s --allow-empty --index=track --table=snp_stats >> %(outfile)s; '''
+    statement += '''cat vcfstats.txt | python %(scriptsdir)s/csv2db.py %(csv2db_options)s --allow-empty-file --add-index=track --table=vcf_stats >> %(outfile)s; '''
+    statement += '''cat sharedstats.txt | python %(scriptsdir)s/csv2db.py %(csv2db_options)s --allow-empty-file --add-index=track --table=vcf_shared_stats >> %(outfile)s; '''
+    statement += '''cat indelstats.txt | python %(scriptsdir)s/csv2db.py %(csv2db_options)s --allow-empty-file --add-index=track --table=indel_stats >> %(outfile)s; '''
+    statement += '''cat snpstats.txt | python %(scriptsdir)s/csv2db.py %(csv2db_options)s --allow-empty-file --add-index=track --table=snp_stats >> %(outfile)s; '''
     P.run()
 
 #########################################################################

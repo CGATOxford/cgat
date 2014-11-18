@@ -51,7 +51,7 @@ def main(argv=None):
         version="%prog version: $Id$",
         usage=globals()["__doc__"])
 
-    parser.add_option("-p", "--pattern", dest="pattern", type="string",
+    parser.add_option("-p", "--pattern-identifier", dest="pattern", type="string",
                       help="jobs matching `pattern` in their job "
                       "description will be killed [default=%default].")
 
