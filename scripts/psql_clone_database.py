@@ -33,16 +33,9 @@ Command line options
 '''
 import os
 import sys
-import string
-import re
-import time
-import optparse
-import math
-import tempfile
-import copy
 import subprocess
 
-import pgdb
+import psycopg2
 
 import CGAT.Experiment as E
 
@@ -80,7 +73,8 @@ def main(argv=None):
         argv = sys.argv
 
     parser = E.OptionParser(
-        version="%prog version: $Id: psql_clone_database.py 2781 2009-09-10 11:33:14Z andreas $", usage=globals()["__doc__"])
+        version="%prog version: $Id",
+        usage=globals()["__doc__"])
 
     parser.set_defaults(
         start=None,
@@ -88,7 +82,7 @@ def main(argv=None):
 
     (options, args) = E.Start(parser, add_psql_options=True)
 
-    dbhandle = pgdb.connect(options.psql_connection)
+    dbhandle = psycopg2.connect(options.psql_connection)
 
     if len(args) != 2:
         raise ValueError("please supply src and dest.")
@@ -112,8 +106,7 @@ def main(argv=None):
 
     host, database = options.psql_connection.split(":")
 
-    cmd = 'pg_dump --ignore-version --schema-only --host=%(host)s --schema=%(src)s | sed "s/%(src)s/%(dest)s/g" | psql --host=%(host)s %(database)s' % (
-        locals())
+    cmd = 'pg_dump --ignore-version --schema-only --host=%(host)s --schema=%(src)s | sed "s/%(src)s/%(dest)s/g" | psql --host=%(host)s %(database)s' % (locals())
     p = subprocess.Popen(cmd,
                          shell=True)
     sts = os.waitpid(p.pid, 0)

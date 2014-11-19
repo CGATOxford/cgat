@@ -32,18 +32,10 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
-import string
-import re
-import optparse
-import time
-import random
-
 import math
 import numpy
 import CGAT.Experiment as E
-import pgdb
 import CGAT.IOTools as IOTools
 
 
@@ -57,16 +49,20 @@ def main(argv=None):
         argv = sys.argv
 
     parser = E.OptionParser(
-        version="%prog version: $Id: compare_histograms.py 2782 2009-09-10 11:40:29Z andreas $")
+        version="%prog version: $Id$",
+        usage=globals()["__doc__"])
 
     parser.add_option("-m", "--method", dest="method", type="choice",
                       help="method to use [kl=kullback-leibler]",
                       choices=("kl",))
-    parser.add_option("-n", "--no-normalize", dest="normalize", action="store_false",
+    parser.add_option("-n", "--no-normalize", dest="normalize",
+                      action="store_false",
                       help="do not normalize data")
-    parser.add_option("-p", "--pseudocounts", dest="pseudocounts", type="int",
+    parser.add_option("-p", "--pseudocounts", dest="pseudocounts",
+                      type="int",
                       help="pseudocounts to add.")
-    parser.add_option("-f", "--number-format", dest="number_format", type="string",
+    parser.add_option("-f", "--number-format", dest="number_format",
+                      type="string",
                       help="number format.")
 
     parser.set_defaults(

@@ -260,9 +260,10 @@ def main(argv=None):
     (options, args) = E.Start(parser, add_psql_options=True)
 
     if options.backend == "pg":
-        import pgdb
-        dbhandle = pgdb.connect(options.psql_connection)
-        error = pgdb.DatabaseError
+        import psycopg2
+        dbhandle = psycopg2.connect(options.psql_connection)
+        # AH: might be a different error
+        error = psycopg2.Error
         options.null = "NULL"
         options.string_value = "'%s'"
         if options.insert_quick:
