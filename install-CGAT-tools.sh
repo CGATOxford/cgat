@@ -503,6 +503,130 @@ python scripts/cgat_rebuild_extensions.py
 } # rerun_nosetests
 
 
+# proceed with conda installation
+conda_install() {
+
+if [ "$OS" == "travis" ] ; then
+
+   export CONDA_INSTALL_DIR=$TRAVIS_BUILD_DIR/conda-install
+   cd $TRAVIS_BUILD_DIR
+
+elif [ "$OS" == "sl" -o "$OS" == "centos" -o "$OS" == "ubuntu" ] ; then
+
+   # Go to CGAT_HOME to continue with installation
+   if [ -z "$CGAT_HOME" ] ; then
+      # install in default location
+      export CGAT_HOME=$HOME/CGAT-DEPS
+      mkdir -p $CGAT_HOME
+   fi
+
+   export CONDA_INSTALL_DIR=$CGAT_HOME/conda-install
+   cd $CGAT_HOME
+
+else
+
+   sanity_check_os
+
+fi # if-OS
+
+wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh
+bash Miniconda-latest-Linux-x86_64.sh -b -p conda-install
+
+# Add cgat channel
+$CONDA_INSTALL_DIR/bin/conda config --add channels cgat
+
+# install cgat environment
+$CONDA_INSTALL_DIR/bin/conda create -n cgat-travis cgat-travis --yes
+
+} # conda install
+
+
+# test code with conda install
+conda_test() {
+
+# check whether conda has been installed first
+if [ -z "$CONDA_INSTALL_DIR" ] ; then
+   conda_install
+fi
+
+# setup environment and run tests
+if [ "$OS" == "travis" ] ; then
+   # activate cgat environment
+   source $CONDA_INSTALL_DIR/bin/activate cgat-travis
+
+   # clone GitHub repo and "install" CGAT
+   export PYTHONPATH=$PYTHONPATH:$TRAVIS_BUILD_DIR
+   export CFLAGS="-I/usr/include/x86_64-linux-gnu -L/usr/lib/x86_64-linux-gnu"
+   export C_INCLUDE_PATH="/usr/include/x86_64-linux-gnu"
+   export LIBRARY_PATH="/usr/lib/x86_64-linux-gnu"
+   export LD_LIBRARY_PATH=$CONDA_INSTALL_DIR/envs/cgat-travis/lib64/R/lib
+
+   cd $TRAVIS_BUILD_DIR
+   python setup.py develop
+
+   # run nosetests
+   if [ "$TEST_IMPORT" == "1" ] ; then
+      nosetests -v tests/test_import.py ;
+   elif [ "$TEST_STYLE" == "1" ] ; then
+      nosetests -v tests/test_style.py ;
+   elif [ "$TEST_CMDLINE" == "1" ] ; then
+      echo -e "restrict:\n    manifest:\n" > tests/_test_commandline.yaml
+      nosetests -v tests/test_commandline.py ;
+   else
+      nosetests -v tests/test_scripts.py ;
+   fi
+
+elif [ "$OS" == "sl" -o "$OS" == "centos" -o "$OS" == "ubuntu" ] ; then
+
+   # Go to CGAT_GITHUB to continue with installation
+   if [ -z "$CGAT_GITHUB" ] ; then
+      # install in default location
+      export CGAT_GITHUB=$HOME/CGAT-GITHUB
+   fi
+
+   if [ -z "$CGAT_HOME" ] ; then
+      # default location for cgat installation
+      export CGAT_HOME=$HOME/CGAT-DEPS
+   fi
+
+   # clone CGAT repository to run nosetests
+   #git clone https://github.com/CGATOxford/cgat.git $CGAT_GITHUB
+   #cd $CGAT_GITHUB
+   wget https://github.com/CGATOxford/cgat/archive/v0.2.2.tar.gz
+   tar xzf v0.2.2.tar.gz
+   cd cgat-0.2.2
+
+   # activate cgat environment
+   source $CONDA_INSTALL_DIR/bin/activate cgat-travis
+
+   # Set up other environment variables
+   #export PYTHONPATH=$CGAT_GITHUB
+   export PYTHONPATH=$HOME/cgat-0.2.2
+   export CFLAGS="-I/usr/include/x86_64-linux-gnu -L/usr/lib/x86_64-linux-gnu"
+   export C_INCLUDE_PATH="/usr/include/x86_64-linux-gnu"
+   export LIBRARY_PATH="/usr/lib/x86_64-linux-gnu"
+   export LD_LIBRARY_PATH=$CONDA_INSTALL_DIR/envs/cgat-travis/lib64/R/lib
+
+   # Python preparation
+   python setup.py develop
+   #python scripts/cgat_rebuild_extensions.py
+
+   # run tests
+   echo -e "restrict:\n    manifest:\n" > tests/_test_commandline.yaml
+   /usr/bin/time -o test_cli.time -v nosetests -v tests/test_commandline.py >& test_cli.out
+   /usr/bin/time -o test_import.time -v nosetests -v tests/test_import.py >& test_import.out
+   /usr/bin/time -o test_style.time -v nosetests -v tests/test_style.py >& test_style.out
+   /usr/bin/time -o test_scripts.time -v nosetests -v tests/test_scripts.py >& test_scripts.out ;
+
+else
+
+   sanity_check_os
+
+fi # if-OS
+
+
+}
+
 # function to display help message
 help_message() {
 echo
@@ -560,6 +684,10 @@ fi
 # these variables will store the information about input parameters
 # travis execution
 TRAVIS_INSTALL=
+# conda installation
+CONDA_INSTALL=
+# test conda installation
+CONDA_TEST=
 # install operating system's dependencies
 OS_PKGS=
 # install Python dependencies
@@ -570,14 +698,16 @@ NT_PKGS=
 NT_RUN=
 # rerun nosetests
 NT_RERUN=
-# variable to actually store the input parameters
-INPUT_ARGS=$(getopt -n "$0" -o ht12345g:c: --long "help,
+# variable to store input parameters
+INPUT_ARGS=$(getopt -n "$0" -o ht1234567g:c: --long "help,
                                                   travis,
                                                   install-os-packages,
                                                   install-python-deps,
                                                   install-nosetests-deps,
                                                   run-nosetests,
                                                   rerun-nosetests,
+                                                  conda-install,
+                                                  conda-test,
                                                   git-hub-dir:,
                                                   cgat-deps-dir:"  -- "$@")
 eval set -- "$INPUT_ARGS"
@@ -620,6 +750,16 @@ do
       NT_RERUN=1
       shift ;
 
+  elif [ "$1" == "-6" -o "$1" == "--conda-install" ] ; then
+
+      CONDA_INSTALL=1
+      shift ;
+
+  elif [ "$1" == "-7" -o "$1" == "--conda-test" ] ; then
+
+      CONDA_TEST=1
+      shift ;
+
   elif [ "$1" == "-g" -o "$1" == "--git-hub-dir" ] ; then
 
       CGAT_GITHUB="$2"
@@ -643,10 +783,11 @@ done # while-loop
 if [ "$TRAVIS_INSTALL" == "1" ] ; then
 
   OS="travis"
-  install_os_packages
-  install_python_deps
-  install_nosetests_deps
-  run_nosetests
+  conda_test
+  #install_os_packages
+  #install_python_deps
+  #install_nosetests_deps
+  #run_nosetests
 
 else 
 
@@ -670,6 +811,14 @@ else
 
   if [ "$NT_RERUN" == "1" ] ; then
     rerun_nosetests
+  fi
+
+  if [ "$CONDA_INSTALL" == "1" ] ; then
+    conda_install
+  fi
+
+  if [ "$CONDA_TEST" == "1" ] ; then
+    conda_test
   fi
 
 fi # if-variables

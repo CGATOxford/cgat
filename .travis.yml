@@ -15,20 +15,20 @@ env:
     - CGAT_TASK_ID=315
     - TEST_STYLE=1
     - TEST_CMDLINE=1
-    #- TEST_IMPORT=1
+    - TEST_IMPORT=1
 
 python:
   - "2.7"
 
 script: 
-  - ./install-CGAT-tools.sh --travis
+  - ./install-CGAT-tools.sh --conda-test
 
 notifications:
   email:
     - sebastian.luna.valero@gmail.com
     - andreas.heger@gmail.com
     - david.sims@dpag.ox.ac.uk
-    - stephen.sansom@dpag.ox.ac.uk
+    - stephen.sansom@kennedy.ox.ac.uk
     - ian.sudbery@dpag.ox.ac.uk
     - jethro.johnson@dpag.ox.ac.uk
     - antonio.berlanga@dpag.ox.ac.uk
