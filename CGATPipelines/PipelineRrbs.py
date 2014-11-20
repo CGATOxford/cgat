@@ -631,6 +631,11 @@ def summaryPlots(infile, outfile):
 @cluster_runnable
 def spikeInClusters(infiles, outfile):
     '''explain purpose'''
+
+    outfile2 = open(outfile+".log", "w")
+    outfile = open(outfile, "w")
+    outfile2.write("reached checkpoint 0\n")
+    
     class CpG():
         def __init__(self):
             self.contig = ""
@@ -682,14 +687,13 @@ def spikeInClusters(infiles, outfile):
         def __str__(self):
             return "\t".join(map(str, [self.change, self.size]))
 
-    outfile = open(outfile, "w")
-    outfile.write("reached checkpoint 1\n")
-
+    outfile2.write("reached checkpoint 1\n")
+    
     samples = []
     CpGs = {}
     for infile in infiles:
         sample = re.sub(".fastq.gz_bismark.*", "", os.path.basename(infile))
-        outfile.write(sample)
+        outfile2.write("%s\n" % sample)
         sample_values = sample.split("-")
         sample_values[0] = sample_values[0][0]
         sample_values[1] = sample_values[1][0]
@@ -697,6 +701,7 @@ def spikeInClusters(infiles, outfile):
         with open(infile, 'r') as f:
             for line in f.readlines():
                 contig, start, end, perc, meth, unmeth = line.strip().split()
+                meth, unmeth = map(int, [meth, unmeth])
                 if meth + unmeth >= 10:
                     start = str(start)
                     if start not in CpGs:
@@ -704,13 +709,12 @@ def spikeInClusters(infiles, outfile):
                         CpGs[start].contig = contig
                         CpGs[start].pos = start
                     CpGs[start].perc.append(float(perc))
-                    CpGs[start].meth.append(int(meth))
-                    CpGs[start].unmeth.append(int(unmeth))
-    # header = ["position", "unmeth", "meth"]
+                    CpGs[start].meth.append(meth)
+                    CpGs[start].unmeth.append(unmeth)
     meth_header = []
     meth_header.extend(samples)
-
-    outfile.write("reached checkpoint 2\n")
+    outfile2.write("len meth header: %i\n" % len(meth_header))
+    outfile2.write("reached checkpoint 2\n")
 
     rows = {}
     thres = len(meth_header)
@@ -729,7 +733,7 @@ def spikeInClusters(infiles, outfile):
     df_sort = df_con.sort(columns=["contig", "position"])
 
     d = 100  # max distance
-    n = 10  # min number of CpGs
+    n = 15  # min number of CpGs
 
     positions = df_sort['position']
     contigs = df_sort['contig']
@@ -741,8 +745,8 @@ def spikeInClusters(infiles, outfile):
     for cpg in range(1, len(df_sort.index)):
         next_cpg = positions[cpg]
         next_contig = contigs[cpg]
-        if ((next_cpg < c_current + d) &
-            (next_contig == current_contig)):  # catch change of contig
+        if ((next_cpg < c_current + d) & (next_contig ==
+                                          current_contig)):
             current_cpgs.append(next_cpg)
         else:
             if len(current_cpgs) >= n:
@@ -754,7 +758,7 @@ def spikeInClusters(infiles, outfile):
         c_current = next_cpg
         current_contig = next_contig
 
-    outfile.write("reached checkpoint 3\n")
+    outfile2.write("reached checkpoint 3\n")
 
     colnames = df_sort.columns.values
     swap_regex = "\SD\d+.*"
@@ -766,10 +770,10 @@ def spikeInClusters(infiles, outfile):
                       re.search(keep_perc_regex, col)]
     swap_perc_cols = [col for col in colnames if
                       re.search(swap_perc_regex, col)]
-    outfile.write("swap_cols:%s\n" % ",".join(swap_cols))
-    outfile.write("keep_cols:%s\n" % ",".join(keep_cols))
-    outfile.write("swap_perc_cols:%s\n" % ",".join(swap_perc_cols))
-    outfile.write("keep_perc_cols:%s\n" % ",".join(keep_perc_cols))
+    outfile2.write("swap_cols:%s\n" % ",".join(swap_cols))
+    outfile2.write("keep_cols:%s\n" % ",".join(keep_cols))
+    outfile2.write("swap_perc_cols:%s\n" % ",".join(swap_perc_cols))
+    outfile2.write("keep_perc_cols:%s\n" % ",".join(keep_perc_cols))
     # need to bin clusters by average methylation so that a
     # range of intitial methylation levels can be sampled
     initial_cluster_regions = {}
@@ -785,18 +789,18 @@ def spikeInClusters(infiles, outfile):
         bin_m = ((np.digitize([avr_perc], initial_meth_bins))[0]*initial_step)
         initial_cluster_regions[bin_m].append(x)
     for x in initial_meth_bins:
-        outfile.write("for bin %s, there are %s regions" %
-               (x, len(initial_cluster_regions[x])))
+        outfile2.write("for bin %s, there are %s regions" %
+                       (x, len(initial_cluster_regions[x])))
     initial_meth_bins_covered = [x for x in initial_meth_bins if
                                  len(initial_cluster_regions[x]) > min_in_bin]
 
-    outfile.write("reached checkpoint 4\n")
+    outfile2.write("reached checkpoint 4\n")
 
     min_bin = 10  # minimum mean methylation in region to be shuffled
     max_bin = 120  # maximum mean methylation in region to be shuffled
     step = 10
     cluster_regions_dict = {}
-    for size in range(1, 11, 2):  # number of cpgs in region for shuffling
+    for size in range(1, 13, 2):  # number of cpgs in region for shuffling
         cluster_regions = {}
         meth_bins = range(min_bin, max_bin, step)
         for meth_perc in meth_bins:
@@ -809,10 +813,10 @@ def spikeInClusters(infiles, outfile):
             if np.mean(np.mean(old_cluster.ix[:, keep_perc_cols])) > 10:
                 cluster_size = len(old_cluster.index)
                 success = 0
-                for y in range(0, 200):
-                    # try 200 times to find 20 regions with at least 10%
+                for y in range(0, 50):
+                    # try 50 times to find 5 regions with at least 10%
                     # methylation, then give up and move onto the next cluster
-                    if success < 20:
+                    if success < 5:
                         s = random.randint(0, cluster_size-size)
                         e = s + size
                         avr_perc = np.mean(np.mean(
@@ -824,13 +828,12 @@ def spikeInClusters(infiles, outfile):
                             cluster_regions[bin_m].append(temp_region)
                             success += 1
         cluster_regions_dict[size] = cluster_regions
-    outfile.write("reached checkpoint 5\n")
 
-    outfile.write("size = %s\n" % size)
+    outfile2.write("reached checkpoint 5\n")
+    outfile2.write("size = %s\n" % size)
     for x in meth_bins:
-        outfile.write("for bin %s, there are %s regions\n" %
-               (x, len(cluster_regions_dict[size][x])))
-
+        outfile2.write("for bin %s, there are %s regions\n" %
+                       (x, len(cluster_regions_dict[size][x])))
 
     sample_col_dict = {}
     sample_dataframe_dict = {}
@@ -842,10 +845,10 @@ def spikeInClusters(infiles, outfile):
         sample_col_dict[x] = sample_columns
         sample_dataframe_dict[x] = pd.DataFrame(columns=sample_columns)
 
-    for size in range(1, 10, 2):
+    for size in range(1, 12, 2):
         meth_bins_covered = [x for x in meth_bins if
                              len(cluster_regions_dict[size][x]) > 49]
-        for repeat in range(0, 11):
+        for repeat in range(0, 5001):
             rand_initial_bin = random.randint(0, len(
                 initial_meth_bins_covered)-1)
             initial_meth_bin = initial_meth_bins_covered[rand_initial_bin]
@@ -890,51 +893,51 @@ def spikeInClusters(infiles, outfile):
                 sample_temp_df = temp_df.ix[:, sample_col_dict[x]]
                 sample_dataframe_dict[x] = sample_dataframe_dict[x].append(
                     sample_temp_df)
-    outfile.write("reached checkpoint 6")
+    outfile2.write("reached checkpoint 6")
 
     # generate null clusters
-    perc_regex = "\S\S\d+_perc"
-    perc_cols = [x for x in range(0, len(columns))
-                 if re.search(perc_regex, columns[x])]
-    unmeth_regex = "\S\S\d+_unmeth"
-    unmeth_cols = [x for x in range(0, len(columns))
-                   if re.search(unmeth_regex, columns[x])]
-    meth_regex = "\S\S\d+_meth"
-    meth_cols = [x for x in range(0, len(columns))
-                 if re.search(meth_regex, columns[x])]
+    # perc_regex = "\S\S\d+_perc"
+    # perc_cols = [x for x in range(0, len(columns))
+    #             if re.search(perc_regex, columns[x])]
+    # unmeth_regex = "\S\S\d+_unmeth"
+    # unmeth_cols = [x for x in range(0, len(columns))
+    #               if re.search(unmeth_regex, columns[x])]
+    # meth_regex = "\S\S\d+_meth"
+    # meth_cols = [x for x in range(0, len(columns))
+    #             if re.search(meth_regex, columns[x])]
 
-    for repeat in range(0, 11):  # number of null clusters
-        rand_initial_bin = random.randint(0, len(initial_meth_bins_covered)-1)
-        initial_meth_bin = initial_meth_bins_covered[rand_initial_bin]
-        rand_x = random.randint(0, len(initial_cluster_regions[
-            initial_meth_bin])-1)
-        temp_df = clusters[initial_cluster_regions[initial_meth_bin]
-                           [rand_x]].df.copy()
-        initial_meth = np.mean(np.mean(temp_df.ix[:, keep_perc_cols]))
-        initial = str((np.digitize([initial_meth], change_bins)
-                       [0]*change_step)+change_min_bin)
+    # for repeat in range(0, 5001):  # number of null clusters
+    #    rand_initial_bin = random.randint(0, len(initial_meth_bins_covered)-1)
+    #    initial_meth_bin = initial_meth_bins_covered[rand_initial_bin]
+    #    rand_x = random.randint(0, len(initial_cluster_regions[
+    #        initial_meth_bin])-1)
+    #    temp_df = clusters[initial_cluster_regions[initial_meth_bin]
+    #                       [rand_x]].df.copy()
+    #    initial_meth = np.mean(np.mean(temp_df.ix[:, keep_perc_cols]))
+    #    initial = str((np.digitize([initial_meth], change_bins)
+    #                   [0]*change_step)+change_min_bin)
 
-        randomise_samples = range(0, len(samples))
-        random.shuffle(randomise_samples)
+    #    randomise_samples = range(0, len(samples))
+    #    random.shuffle(randomise_samples)
 
-        columns_randomised = ["contig", "position"]
-        columns_randomised.extend([columns[perc_cols[y]]
-                                   for y in randomise_samples])
-        columns_randomised.extend([columns[meth_cols[y]]
-                                   for y in randomise_samples])
-        columns_randomised.extend([columns[unmeth_cols[y]]
-                                   for y in randomise_samples])
-        temp_df.columns = columns_randomised
-        temp_df['contig'] = ["_".join([x, "Null", "NA", "NA", initial, "NA"])
-                             for x in temp_df['contig']]
-        for x in samples:
-            temp_df['position'] = temp_df['position'].astype(int)
-            sample_temp_df = temp_df.ix[:, sample_col_dict[x]]
-            sample_dataframe_dict[x] = sample_dataframe_dict[x].append(
-                sample_temp_df)
-    outfile.write("reached checkpoint 7\n")
+    #    columns_randomised = ["contig", "position"]
+    #    columns_randomised.extend([columns[perc_cols[y]]
+    #                               for y in randomise_samples])
+    #    columns_randomised.extend([columns[meth_cols[y]]
+    #                               for y in randomise_samples])
+    #    columns_randomised.extend([columns[unmeth_cols[y]]
+    #                               for y in randomise_samples])
+    #    temp_df.columns = columns_randomised
+    #    temp_df['contig'] = ["_".join([x, "Null", "NA", "NA", initial, "NA"])
+    #                         for x in temp_df['contig']]
+    #    for x in samples:
+    #        temp_df['position'] = temp_df['position'].astype(int)
+    #        sample_temp_df = temp_df.ix[:, sample_col_dict[x]]
+    #        sample_dataframe_dict[x] = sample_dataframe_dict[x].append(
+    #            sample_temp_df)
+    # outfile2.write("reached checkpoint 7\n")
 
-    out_prefix = "/ifs/projects/proj034/spike_in/"
+    out_prefix = "power.dir/"
     for x in sample_dataframe_dict:
         outfile_cov = str(out_prefix + x + "_10_pipeline_spike_in.cov")
         temp_df = sample_dataframe_dict[x].copy()
@@ -943,47 +946,46 @@ def spikeInClusters(infiles, outfile):
         temp_df['%s_unmeth' % x] = temp_df['%s_unmeth' % x].astype(int)
         temp_df.to_csv(outfile_cov, index=False, header=False, sep="\t",
                        dtype={'position': int})
-        outfile.write(outfile_cov)
-    outfile.write("reached checkpoint 8\n")
+        outfile.write("%s\n" % outfile_cov)
+    outfile2.write("reached checkpoint 8\n")
     outfile.close()
+    outfile2.close()
+
 
 @cluster_runnable
 def spikeInClustersAnalysis(infile, outfile):
-
     infiles = open(infile, "r").readlines()
-    samples = [re.sub(".fastq.gz_bismark*", "", os.path.basename(x))
+    samples = [re.sub("_10_pipeline.*", "", os.path.basename(x).strip())
                for x in infiles]
-
-    samples_abv = [re.sub("-", "", x) for x in samples]
-    samples_abv = '","'.join(samples_abv)
-
-    samples_treatment = [x.split("-")[1] for x in samples]
+    samples_str = '","'.join(samples)
+    print "samples: %s\n" % samples
+    samples_treatment = [x[1] for x in samples]
     samples_treatment = '","'.join(samples_treatment)
+    print "sample treatments: %s\n" % samples_treatment
 
-    infiles = '","'.join(infiles)
-
+    infiles = '","'.join([x.strip() for x in infiles])
+    print infiles
     M3D = r('''library(BiSeq)
             library(M3D)
             files <- c("%(infiles)s")
-            samples <- data.frame(row.names=c("%(samples_abv)s"),
+            samples <- data.frame(row.names=c("%(samples_str)s"),
                        group=c("%(samples_treatment)s"))
             rawData <-readBismark(files,samples)
             clust.unlim <- clusterSites(object = rawData, perc.samples = 6/6,
-                           min.sites = 10, max.dist = 100)
+                                        min.sites = 10, max.dist = 100)
             clust.unlim=clusterSitesToGR(clust.unlim)
             overlaps<-findOverlaps(clust.unlim,rowData(rawData))
             MMDlist<-M3D_Wrapper(rawData, overlaps)
             M3Dstat<-MMDlist$Full-MMDlist$Coverage
-
             ranges_df <- data.frame(seqnames=seqnames(clust.unlim),
                          start=start(clust.unlim)-1, end=end(clust.unlim))
             M3Dstat_df <- as.data.frame(M3Dstat)
             adjusted_colnames = gsub("  ", "_", colnames(M3Dstat_df))
             colnames(M3Dstat_df) = adjusted_colnames
             complete_df = cbind(ranges_df, M3Dstat_df)
-            write.table(complete_df,file="%(outfile)s",sep="\t")'''
+            write.table(complete_df,file="%(outfile)s",sep="\t",quote=F)'''
             % locals())
-    M3D()
+    M3D  # run r code
 
 
 @cluster_runnable
@@ -1023,36 +1025,35 @@ def spikeInClustersPlot(infile, outfile, groups):
     r_df_within = com.convert_to_r_dataframe(within_df)
     base = P.snip(infile, ".out")
     PowerPlot = r('''library(ggplot2)
+                  library(reshape)
                   function(df_between, df_within){
-                  m_between_df=melt(between_df,id.var=cluster_characteristics)
+                  cluster_characteristics = c("contig" ,"size", "s", "e",
+                  "initial", "change")
+                  m_between_df=melt(df_between,id.var=cluster_characteristics)
                   m_between_df['between'] = 1
                   m_between_df$change = gsub("m", "-", m_between_df$change)
-                  m_within_df=melt(within_df,id.var=cluster_characteristics)
+                  m_within_df=melt(df_within,id.var=cluster_characteristics)
                   m_within_df['between'] = 0
                   m_cat_df = rbind(m_between_df,m_within_df)
-                  null_df = m_within_df[m_within_df$size=="Null",]
-                  non_null_within_df = m_within_df[m_within_df$size!="Null",]
-                  print(head(null_df))
-                  quant = (quantile(non_null_within_df$value,probs=0.95))
-                  limited = non_null_within_df[non_null_within_df$value>quant,]
+                  quant = (quantile(m_within_df$value,probs=0.95))
+                  limited = m_within_df[m_within_df$value>quant,]
 
                   permute_func = function(x, len_x, vector, n){
                   rand = sample(vector, n, replace=TRUE)
                   return(length(rand[rand>x])/n)}
 
-                  non_null_within_df$p_value = sapply(non_null_within_df$value,
-                  function(x) permute_func(x, length(non_null_within_df$value),
-                  non_null_within_df$value, 10000))
+                  m_within_df$p_value = sapply(m_within_df$value,
+                  function(x) permute_func(x, length(m_within_df$value),
+                  m_within_df$value, 10000))
 
-                  non_null_between_df= m_between_df[m_between_df$size!="Null",]
-                  non_null_between_df$p_value=sapply(non_null_between_df$value,
-                  function(x) permute_func(x, length(non_null_within_df$value),
-                  non_null_within_df$value, 10000))
-                  non_null_between_df$p_value_adj =p.adjust(
-                  non_null_between_df$p_value , method ="BH")
+                  m_between_df$p_value=sapply(m_between_df$value,
+                  function(x) permute_func(x, length(m_within_df$value),
+                  m_within_df$value, 10000))
+                  m_between_df$p_value_adj = p.adjust(
+                  m_between_df$p_value , method ="BH")
 
-                  agg_between = aggregate(non_null_between_df$p_value_adj,
-                  by=list(non_null_between_df$size,between_non_null_df$change),
+                  agg_between = aggregate(m_between_df$p_value_adj,
+                  by=list(m_between_df$size, m_between_df$change),
                   FUN=function(x) length(x[x<0.05])/length(x))
                   colnames(agg_between) = c("size","change","power")
 
@@ -1060,25 +1061,41 @@ def spikeInClustersPlot(infile, outfile, groups):
                   plot_theme = theme(axis.title.x = text_theme,
                   axis.title.y = text_theme, axis.text.x = text_theme,
                   axis.text.y = text_theme, legend.text = text_theme)
-
+                  
                   p = ggplot(agg_between,aes(x=as.numeric(change),
-                  y=size,fill=power))+geom_tile()+xlim(-10,45)+ plot_theme
-                  scale_fill_continuous(limits=c(0,1))
+                  y=as.numeric(size),fill=as.numeric(power))) +
+                  geom_tile() + xlim(-10,45) +
+                  scale_fill_continuous(limits=c(0,1)) + plot_theme
                   ggsave(paste0('%(base)s',"_change_vs_size_power_heatmap.png"),
                   plot = p, width = 5, height = 5)
 
-                  p = ggplot(agg_between,aes(x=as.numeric(change),y=power,
-                  col=size)) + geom_line() + xlim(-10,40) + plot_theme
+                  p = ggplot(agg_between,aes(x=as.numeric(change),
+                  y=as.numeric(power),col=factor(size))) +
+                  geom_line(size=2) + xlim(-10,40) + plot_theme
                   ggsave(paste0('%(base)s',"_change_vs_size_power_lineplot.png"),
-                  plot = p, width = 5, height = 5
+                  plot = p, width = 5, height = 5)
 
-                  agg_between_count= aggregate(between_non_null_df$p_value_adj,
-                  by=list(between_non_null_df$size,between_non_null_df$change),length)
+                  agg_between_count= aggregate(m_between_df$p_value_adj,
+                  by=list(m_between_df$size, m_between_df$change),
+                  FUN=function(x) length(x[x<0.05])/length(x))
+                  colnames(agg_between) = c("size","change","power")
+
+                  agg_between_count= aggregate(m_between_df$p_value_adj,
+                  by=list(m_between_df$size,m_between_df$change),length)
                   colnames(agg_between_count) = c("size","change","count")
-
-                  p = ggplot(agg_between,aes(y=as.numeric(change),x=size,
-                  col=count)) + geom_line() + ylim(-10,40) + plot_theme
+                  
+                  p = ggplot(agg_between_count,aes(y=as.numeric(change),
+                  x=as.numeric(size), fill=as.numeric(count))) +
+                  geom_tile() + ylim(-10,40) + plot_theme
                   ggsave(paste0('%(base)s',"_change_vs_size_count.png"),
-                  plot = p, width = 5, height = 5))''' % locals())
+                  plot = p, width = 5, height = 5)}''' % locals())
 
     PowerPlot(r_df_between, r_df_within)
+    out = open(outfile, "w")
+    out.write("plotted heatmaps at: %(base)s_change_vs_size_power_heatmap.png"
+              % locals())
+    out.write("plotted heatmaps at: %(base)s_change_vs_size_power_lineplot.png"
+              % locals())
+    out.write("plotted heatmaps at: %(base)s_change_vs_size_count.png"
+              % locals())
+    out.close()
