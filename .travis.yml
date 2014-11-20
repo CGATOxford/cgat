@@ -21,7 +21,7 @@ python:
   - "2.7"
 
 script: 
-  - ./install-CGAT-tools.sh --conda-test
+  - ./install-CGAT-tools.sh --travis
 
 notifications:
   email:
