@@ -191,7 +191,7 @@ import re
 import glob
 import sqlite3
 import collections
-# load options from the config file
+
 import CGAT.Experiment as E
 import CGAT.Pipeline as P
 import CGAT.GTF as GTF

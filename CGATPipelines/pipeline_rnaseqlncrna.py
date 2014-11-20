@@ -1,5 +1,4 @@
-'''
-==============================
+'''==============================
 Long non-coding RNA pipeline
 ==============================
 
@@ -10,30 +9,34 @@ Overview
 The pipeline_rnaseqLncRNA.py pipeline aims to predict lncRNAs from an ab initio
 assembly of transcripts.
 
-It requires that raw reads have been mapped to a reference transcriptome 
-and assembled into transcript models using cufflinks and therefore makes the 
-assumption that the transcript building has gone to plan.
+It requires that raw reads have been mapped to a reference
+transcriptome and assembled into transcript models using cufflinks and
+therefore makes the assumption that the transcript building has gone
+to plan.
 
 
 Details
 ========
 
-Prediction of LncRNA are not based on a reference annotation to begin with,
-although downstream comparisons are made to a reference non-coding gene set. 
-The main features of the pipeline are as follows:
+Prediction of LncRNA are not based on a reference annotation to begin
+with, although downstream comparisons are made to a reference
+non-coding gene set.  The main features of the pipeline are as
+follows:
 
 * Build a coding gene set based on an ab initio assembly.
-   The ab initio assembly is filtered for protein coding genes. 
-   In this step only genes that are compatible with an annotated protein 
-   coding transcript are kept - this will reduce noise that is associated 
-   with a large number of incomplete transfrags. The filtering is based on 
-   output from cuffcompare (class code "=").
+
+   The ab initio assembly is filtered for protein coding genes.  In
+   this step only genes that are compatible with an annotated protein
+   coding transcript are kept - this will reduce noise that is
+   associated with a large number of incomplete transfrags. The
+   filtering is based on output from cuffcompare (class code "=").
 
 * build a non-coding gene set.
-   A reference non-coding set of transcripts is built by filtering a 
-   provided ensembl reference set (usually a set that is built from the 
-   transcript building pipeline) for transcripts that do not belong to one of 
-   the following biotypes
+
+   A reference non-coding set of transcripts is built by filtering a
+   provided ensembl reference set (usually a set that is built from
+   the transcript building pipeline) for transcripts that do not
+   belong to one of the following biotypes
 
    protein_coding\n
    ambiguous_orf\n
@@ -96,9 +99,9 @@ how to use CGAT pipelines.
 Configuration
 -------------
 
-The pipeline requires a configured :file:`pipeline.ini` file. 
+The pipeline requires a configured :file:`pipeline.ini` file.
 
-The sphinxreport report requires a :file:`conf.py` and 
+The sphinxreport report requires a :file:`conf.py` and
 :file:`sphinxreport.ini` file (see :ref:`PipelineReporting`)
 
 
@@ -172,59 +175,43 @@ code
 # load modules
 from ruffus import *
 
-import logging as L
-import numpy as np
 import sqlite3
-import gzip
 import sys
 import os
 import re
-import shutil
-import itertools
-import math
-import glob
-import time
-import gzip
-import collections
-import random
-import subprocess
 from rpy2.robjects import r as R
 
 import CGAT.Experiment as E
 import CGAT.Pipeline as P
-
-import CGAT.Database as Database
-import CGAT.CSV as CSV
-import CGATPipelines.PipelineMappingQC as PipelineMappingQC
 import CGAT.GTF as GTF
 import CGAT.IOTools as IOTools
-import CGATPipelines.PipelineRnaseq as PipelineRnaseq
-import CGAT.Expression as Expression
-import CGAT.IndexedGenome as IndexedGenome
 import CGATPipelines.PipelineLncRNA as PipelineLncRNA
 
-# get parameters
-#    ["%s.ini" % __file__[:-len(".py")], "pipeline.ini"],
+###################################################
+# Pipeline configuration
+###################################################
 P.getParameters(
     ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
+     "../pipeline.ini",
      "pipeline.ini"],
     defaults={"annotations_annotations_dir": "",
               "genesets_abinitio_coding": "pruned.gtf.gz",
               "genesets_abinitio_lncrna": "pruned.gtf.gz",
               "genesets_reference": "reference.gtf.gz",
               "genesets_refcoding": "refcoding.gtf.gz",
-              "genesets_previous": ""})
+              "genesets_previous": ""},
+    only_import=__name__ != "__main__")
 
 PARAMS = P.PARAMS
-PARAMS_ANNOTATIONS = P.peekParameters(
-    PARAMS["annotations_annotations_dir"],
-    "pipeline_annotations.py",
-    on_error_raise=__name__ == "__main__")
-PREVIOUS = P.asList(PARAMS["genesets_previous"])
 
-#########################################################################
-#########################################################################
-#########################################################################
+PARAMS.update(P.peekParameters(
+    PARAMS["annotations_dir"],
+    "pipeline_annotations.py",
+    on_error_raise=__name__ == "__main__",
+    prefix="annotations_",
+    update_interface=True))
+
+PREVIOUS = P.asList(PARAMS["genesets_previous"])
 
 
 def connect():
@@ -371,9 +358,9 @@ def buildRefnoncodingGeneSet(infile, outfile):
         PARAMS["genesets_reference"], 
         buildRefnoncodingGeneSet,
         os.path.join(PARAMS["annotations_annotations_dir"],
-                     PARAMS_ANNOTATIONS["interface_pseudogenes_gtf"]),
+                     PARAMS["annotations_interface_pseudogenes_gtf"]),
         os.path.join(PARAMS["annotations_annotations_dir"],
-                     PARAMS_ANNOTATIONS["interface_numts_gtf"]),
+                     PARAMS["annotations_interface_numts_gtf"]),
         ), "gtfs/lncrna.gtf.gz")
 def buildLncRNAGeneSet(infiles, outfile):
     '''
@@ -864,10 +851,10 @@ def createMAFAlignment(infiles, outfile):
 
     target_genome = PARAMS["phyloCSF_target_genome"]
     target_contigs = os.path.join(PARAMS["annotations_annotations_dir"],
-                                  PARAMS_ANNOTATIONS["interface_contigs"])
+                                  PARAMS["annotations_interface_contigs"])
     query_genome = PARAMS["phyloCSF_query_genome"]
     query_contigs = os.path.join(PARAMS["phyloCSF_query_assembly"],
-                                 PARAMS_ANNOTATIONS["interface_contigs"])
+                                 PARAMS["annotations_interface_contigs"])
 
     tmpf1 = P.getTempFilename("./phyloCSF")
     tmpf2 = P.getTempFilename("./phyloCSF")

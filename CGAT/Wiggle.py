@@ -14,9 +14,7 @@ Wiggle.py - Support for the `wiggle`_ format used by `ucsc`_.
 # I had to re-implement the reader, so that random access would work.
 
 
-import psyco_full
 import numpy
-from bx.misc.seekbzip2 import SeekableBzip2File
 from bx import interval_index_file
 import bx.wiggle
 

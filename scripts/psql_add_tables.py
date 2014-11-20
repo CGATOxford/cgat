@@ -37,19 +37,8 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
-import string
-import re
-import getopt
-import time
-import sets
-import optparse
-import math
-import tempfile
-import copy
-
-import pgdb
+import psycopg2
 
 import CGAT.Experiment as E
 
@@ -103,7 +92,7 @@ def main(argv=None):
 
     (options, args) = E.Start(parser, add_psql_options=True)
 
-    dbhandle = pgdb.connect(options.psql_connection)
+    dbhandle = psycopg2.connect(options.psql_connection)
 
     if len(args) != 2:
         raise "please supply src and dest."
