@@ -590,18 +590,18 @@ elif [ "$OS" == "sl" -o "$OS" == "centos" -o "$OS" == "ubuntu" ] ; then
    fi
 
    # clone CGAT repository to run nosetests
-   #git clone https://github.com/CGATOxford/cgat.git $CGAT_GITHUB
-   #cd $CGAT_GITHUB
-   wget https://github.com/CGATOxford/cgat/archive/v0.2.2.tar.gz
-   tar xzf v0.2.2.tar.gz
-   cd cgat-0.2.2
+   git clone https://github.com/CGATOxford/cgat.git $CGAT_GITHUB
+   cd $CGAT_GITHUB
+   #wget https://github.com/CGATOxford/cgat/archive/v0.2.2.tar.gz
+   #tar xzf v0.2.2.tar.gz
+   #cd cgat-0.2.2
 
    # activate cgat environment
    source $CONDA_INSTALL_DIR/bin/activate cgat-travis
 
    # Set up other environment variables
-   #export PYTHONPATH=$CGAT_GITHUB
-   export PYTHONPATH=$HOME/cgat-0.2.2
+   export PYTHONPATH=$CGAT_GITHUB
+   #export PYTHONPATH=$HOME/cgat-0.2.2
    export CFLAGS="-I/usr/include/x86_64-linux-gnu -L/usr/lib/x86_64-linux-gnu"
    export C_INCLUDE_PATH="/usr/include/x86_64-linux-gnu"
    export LIBRARY_PATH="/usr/lib/x86_64-linux-gnu"
