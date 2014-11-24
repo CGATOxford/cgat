@@ -4,7 +4,8 @@ import re
 import types
 import itertools
 import glob
-
+import pandas as pd
+import numpy as np
 from CGATReport.Tracker import *
 from CGATReport.Utils import PARAMS as P
 from collections import OrderedDict as odict
@@ -165,101 +166,135 @@ class ProcessingSummary(ReadqcTracker, SingleTableTrackerRows):
     table = "processing_summary"
 
 
-class CorrelationSummary(ReadqcTracker, SingleTableTrackerRows):
+class CorrelationSummary(ReadqcTracker):
     table = "binned_means_correlation"
-    fields = ("sample",)
+
+    def getTracks(self, subset=None):
+        return ("all")
+
+    def __call__(self, track, slice=None):
+        statement = ("SELECT * FROM %(table)s")
+        # fetch data
+        df = pd.DataFrame.from_dict(self.getAll(statement))
+        df['sample'] = map(lambda x: re.sub("_quant.sf", "", x), df['sample'])
+        df = pd.melt(df, id_vars="sample")
+        df2 = pd.DataFrame(map(lambda x: x.split("-"), df['sample']))
+        df2.columns = ["id_"+str(x) for x in range(1, len(df2.columns)+1)]
+        merged = pd.concat([df, df2], axis=1)
+        return merged
 
 
-class GradientSummary(ReadqcTracker, SingleTableTrackerRows):
+class GradientSummary(CorrelationSummary):
     table = "binned_means_gradients"
-    fields = ("sample",)
 
 
-class GCContentSummary(ReadqcTracker, SingleTableTrackerRows):
+class BiasFactorPlot(ReadqcTracker):
+    table = ""
+    factor = ""
+
+    def getTracks(self, subset=None):
+        return ("all")
+
+    def __call__(self, track, slice=None):
+        statement = ("SELECT * FROM %(table)s")
+        # fetch data
+        df = pd.DataFrame.from_dict(self.getAll(statement))
+        df = pd.melt(df, id_vars=self.factor)
+        df['variable'] = map(lambda x: re.sub("_quant.sf", "", x),
+                             df['variable'])
+        df['value'] = ((df['value'] - min(df['value'])) /
+                       (max(df['value'])-min(df['value'])))
+        df2 = pd.DataFrame(map(lambda x: x.split("_"), df['variable']))
+        df2.columns = ["id_"+str(x) for x in range(1, len(df2.columns)+1)]
+        merged = pd.concat([df, df2], axis=1)
+        return merged
+
+
+class GCContentSummary(BiasFactorPlot):
     table = "means_binned_GC_Content"
-    fields = ("GC_Content",)
+    factor = "GC_Content"
 
 
-class LengthSummary(ReadqcTracker, SingleTableTrackerRows):
+class LengthSummary(BiasFactorPlot):
     table = "means_binned_length"
-    fields = ("length",)
+    factor = "length"
 
 
-class AASummary(ReadqcTracker, SingleTableTrackerRows):
+class AASummary(BiasFactorPlot):
     table = "means_binned_AA"
-    fields = ("AA",)
+    factor = "AA"
 
 
-class ATSummary(ReadqcTracker, SingleTableTrackerRows):
+class ATSummary(BiasFactorPlot):
     table = "means_binned_AT"
-    fields = ("AT",)
+    factor = "AT"
 
 
-class ACSummary(ReadqcTracker, SingleTableTrackerRows):
+class ACSummary(BiasFactorPlot):
     table = "means_binned_AC"
-    fields = ("AC",)
+    factor = "AC"
 
 
-class AGSummary(ReadqcTracker, SingleTableTrackerRows):
+class AGSummary(BiasFactorPlot):
     table = "means_binned_AG"
-    fields = ("AG",)
+    factor = "AG"
 
 
-class TASummary(ReadqcTracker, SingleTableTrackerRows):
+class TASummary(BiasFactorPlot):
     table = "means_binned_TA"
-    fields = ("TA",)
+    factor = "TA"
 
 
-class TTSummary(ReadqcTracker, SingleTableTrackerRows):
+class TTSummary(BiasFactorPlot):
     table = "means_binned_TT"
-    fields = ("TT",)
+    factor = "TT"
 
 
-class TCSummary(ReadqcTracker, SingleTableTrackerRows):
+class TCSummary(BiasFactorPlot):
     table = "means_binned_TC"
-    fields = ("TC",)
+    factor = "TC"
 
 
-class TGSummary(ReadqcTracker, SingleTableTrackerRows):
+class TGSummary(BiasFactorPlot):
     table = "means_binned_TG"
-    fields = ("TG",)
+    factor = "TG"
 
 
-class CASummary(ReadqcTracker, SingleTableTrackerRows):
+class CASummary(BiasFactorPlot):
     table = "means_binned_CA"
-    fields = ("CA",)
+    factor = "CA"
 
 
-class CTSummary(ReadqcTracker, SingleTableTrackerRows):
+class CTSummary(BiasFactorPlot):
     table = "means_binned_CT"
-    fields = ("CT",)
+    factor = "CT"
 
 
-class CCSummary(ReadqcTracker, SingleTableTrackerRows):
+class CCSummary(BiasFactorPlot):
     table = "means_binned_CC"
-    fields = ("CC",)
+    factor = "CC"
 
 
-class CGSummary(ReadqcTracker, SingleTableTrackerRows):
+class CGSummary(BiasFactorPlot):
     table = "means_binned_CG"
-    fields = ("CG",)
+    factor = "CG"
 
 
-class GASummary(ReadqcTracker, SingleTableTrackerRows):
+class GASummary(BiasFactorPlot):
     table = "means_binned_GA"
-    fields = ("GA",)
+    factor = "GA"
 
 
-class GTSummary(ReadqcTracker, SingleTableTrackerRows):
+class GTSummary(BiasFactorPlot):
     table = "means_binned_GT"
-    fields = ("GT",)
+    factor = "GT"
 
 
-class GCSummary(ReadqcTracker, SingleTableTrackerRows):
+class GCSummary(BiasFactorPlot):
     table = "means_binned_GC"
-    fields = ("GC",)
+    factor = "GC"
 
 
-class GGSummary(ReadqcTracker, SingleTableTrackerRows):
+class GGSummary(BiasFactorPlot):
     table = "means_binned_GG"
-    fields = ("GG",)
+    factor = "GG"
