@@ -1,7 +1,6 @@
-.. Test documentation master file, created by
-   sphinx-quickstart on Mon Mar 23 15:27:57 2009.
+.. Test documentation master file, copied from readqc docs.
 
-.. _readqcpipeline:
+.. _rnaseqqcpipeline:
 
 ========
 Contents
@@ -14,16 +13,13 @@ for the ReadQC Pipeline is below:
 .. toctree::
    :maxdepth: 2
 
-   pipeline/Summary.rst
-   pipeline/FastQC.rst
-   pipeline/BaseQuality.rst
-   pipeline/PerBaseNContent.rst
-   pipeline/SequenceDuplicationLevels.rst
-   pipeline/Filtering.rst
-   pipeline/SequenceLength.rst
+   pipeline/BiasAnalysisFirst.rst
+   pipeline/BiasAnalysisSecond.rst
+   pipeline/BiasAnalysisThird.rst
+   pipeline/BiasAnalysisLinear.rst
    python/Trackers.rst
 
-.. automodule:: pipeline_readqc
+.. automodule:: pipeline_rnaseqqc
    :members:
    :inherited-members:
    :show-inheritance:
