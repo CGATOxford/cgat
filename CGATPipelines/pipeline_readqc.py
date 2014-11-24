@@ -141,6 +141,7 @@ import numpy
 import pandas
 from pandas import DataFrame
 from scipy.stats import linregress
+import itertools as iter
 
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
@@ -405,7 +406,7 @@ if BIAS_ANALYSIS:
             statement = '''cat %(infile)s'''
         statement += '''
         | python %(scriptsdir)s/fasta2table.py
-        --split-fasta-identifier --section=dn -v 0
+        --split-fasta-identifier --section=na,dn,length -v 0
         | gzip > %(outfile)s'''
 
         P.run()
@@ -422,15 +423,32 @@ if BIAS_ANALYSIS:
         transcripts, expression = infiles
         out_correlation, out_gradient = outfiles
 
-        atr = pandas.read_csv(transcripts, sep='\t', compression="gzip")
+        atr = pandas.read_csv(transcripts, sep='\t',
+                              compression="gzip", index_col="id")
         exp = pandas.read_csv(expression, sep='\t', compression="gzip")
+        atr = atr.rename(columns={'pGC': 'GC_Content'})
+
+        def percentage(x):
+            return float(x[0])/float(x[1])
+
+        for di in iter.product("ATCG", repeat=2):
+            di = di[0]+di[1]
+            temp_df = atr.loc[:, [di, "length"]]
+            atr[di] = temp_df.apply(percentage, axis=1)
+
+        drop_cols = (["nAT", "nGC", "pAT", "pA", "pG", "pC", "pT", "nA",
+                      "nG", "nC", "nT", "ncodons",
+                      "mCountsOthers", "nUnk", "nN", "pN"])
+        atr = atr.drop(drop_cols, axis=1)
         atr["length"] = numpy.log2(atr["length"])
 
         log_exp = numpy.log2(exp.ix[:, 1:]+0.1)
         log_exp["id"] = exp[["Transcript"]]
+        log_exp = log_exp.set_index("id")
 
-        bias_factors = list(atr.columns[1:])
-        samples = list(exp.columns[1:])
+        bias_factors = list(atr.columns)
+        samples = list(exp.columns)
+        samples.remove("Transcript")
 
         merged = atr.merge(log_exp, left_index="id", right_index="id")
 
@@ -442,23 +460,18 @@ if BIAS_ANALYSIS:
 
             temp_dict = dict.fromkeys(sample_names, function)
             temp_dict[attribute] = function
-
             means_df = merged.groupby(pandas.qcut(df.ix[:, attribute], bins))
             means_df = means_df.agg(temp_dict).sort(axis=1)
-
-            corr_matrix = means_df.corr(method='pearson')
+            corr_matrix = means_df.corr(method='spearman')
             corr_matrix = corr_matrix[corr_matrix.index != attribute]
-
             factor_gradients = []
             for sample in samples:
                 factor_gradients.append(lin_reg_grad(y=means_df[sample],
                                                      x=means_df[factor]))
-
             return means_df, corr_matrix, factor_gradients
 
         corr_matrices = {}
         gradient_lists = {}
-
         for factor in bias_factors:
             means_binned, corr_matrix, gradients = aggregate_by_factor(
                 merged, factor, samples, PARAMS["bias_bin"], numpy.mean)
@@ -466,7 +479,6 @@ if BIAS_ANALYSIS:
                                         factor, ".tsv")
             means_binned.to_csv(outfile_means, sep="\t",
                                 index=False, float_format='%.4f')
-
             corr_matrices[factor] = list(corr_matrix[factor])
             gradient_lists[factor] = gradients
 
