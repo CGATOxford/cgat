@@ -112,9 +112,9 @@ def getSequencingInformation(track):
                                       colour))
 
 
-class Preprocessor(object):
+class MasterProcessor(object):
 
-    '''preprocess reads.
+    '''Processes reads with tools specified.
 
     converts the input data, calls processing tools
 

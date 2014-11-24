@@ -220,6 +220,115 @@ else:
         DATADIR = PARAMS["input"]  # not recommended practise
 
 
+
+#########################################################################
+#########################################################################
+# Read processing
+#########################################################################
+
+SEQUENCESUFFIXES = ("*.fastq.1.gz",
+                    "*.fastq.gz",
+                    "*.fa.gz",
+                    "*.sra",
+                    "*.export.txt.gz",
+                    "*.csfasta.gz",
+                    "*.csfasta.F3.gz",
+                    )
+
+SEQUENCEFILES = tuple([os.path.join(DATADIR, suffix_name)
+                      for suffix_name in SEQUENCESUFFIXES])
+
+SEQUENCEFILES_REGEX = regex(
+    r".*/(\S+).(?P<suffix>fastq.1.gz|fastq.gz|fa.gz|sra|csfasta.gz|csfasta.F3.gz|export.txt.gz)")
+
+###################################################################
+###################################################################
+###################################################################
+# load number of reads
+###################################################################
+
+
+@follows(mkdir("nreads.dir"))
+@transform(SEQUENCEFILES,
+           SEQUENCEFILES_REGEX,
+           r"nreads.dir/\1.nreads")
+def countReads(infile, outfile):
+    '''count number of reads in input files.'''
+    m = PipelineMapping.Counter()
+    statement = m.build((infile,), outfile)
+    P.run()
+
+####################################################################
+
+PREPROCESSTOOLS = []
+
+for tool in P.asList(PARAMS["process_preprocessors"]):
+    PREPROCESSTOOLS.append(tool)
+
+print "The preprocess tools used in this run are %s" % PREPROCESSTOOLS
+preprocess_prefix = "-".join(PREPROCESSTOOLS)
+
+
+# update outfile regex to incorporate suffix of infile
+@follows(mkdir("processed.dir"))
+@transform(SEQUENCEFILES,
+           SEQUENCEFILES_REGEX,
+           r"processed.dir/%s-\1.\g<suffix>" % preprocess_prefix)
+def processReads(infile, outfile):
+    '''process reads from .fastq or .sra files.
+
+    Tasks specified in PREPROCESSTOOLS are run in order
+
+    '''
+
+    job_threads = PARAMS["general_threads"]
+    job_options = "-l mem_free=%s" % PARAMS["general_memory"]
+
+    m = PipelinePreprocess.MasterProcessor()
+    statement = m.build((infile,), outfile, PREPROCESSTOOLS)
+    print statement
+    P.run()
+
+
+@follows(processReads)
+@transform(SEQUENCEFILES,
+           SEQUENCEFILES_REGEX,
+           r"processed.dir/\1.\g<suffix>.processing.summary")
+def summarise(infile, outfile):
+    '''summarise fastq statistics from '''
+    track = os.path.basename(infile)
+    initial_file = "processed.dir/%s.summary" % track
+    summary_files = [initial_file]
+    print "summary files:",
+    print summary_files
+    for tool in PREPROCESSTOOLS:
+        summary_files.append("processed.dir/%s-%s.summary" % (tool, track))
+        print "summary files:",
+        print summary_files
+
+    print "outfile" + outfile
+
+    statement = '''echo -en 'sample\\t' > %(outfile)s;
+                grep 'reads' %(initial_file)s >> %(outfile)s;''' % locals()
+
+    summary_files = " ".join(summary_files)
+
+    statement += '''files=(%(summary_files)s);
+                 for file in ${files[@]};
+                 do base=$(echo $file | cut -d "/" -f 2);
+                 echo -en $base'\\t' >> %(outfile)s;
+                 grep -v -e '#' -e 'reads' $file >> %(outfile)s; done
+                 ''' % locals()
+    P.run()
+
+
+
+########################################################################
+# all functions from here need to be removed
+# code is being kept temporarily whilst the pipeline is being refactored
+########################################################################
+
+
 #########################################################################
 #########################################################################
 #########################################################################
@@ -337,106 +446,6 @@ def listAdaptors(infile):
     adaptors = " ".join(adaptors)
 
     return adaptors
-
-#########################################################################
-#########################################################################
-# Read processing
-#########################################################################
-
-SEQUENCESUFFIXES = ("*.fastq.1.gz",
-                    "*.fastq.gz",
-                    "*.fa.gz",
-                    "*.sra",
-                    "*.export.txt.gz",
-                    "*.csfasta.gz",
-                    "*.csfasta.F3.gz",
-                    )
-
-SEQUENCEFILES = tuple([os.path.join(DATADIR, suffix_name)
-                      for suffix_name in SEQUENCESUFFIXES])
-
-SEQUENCEFILES_REGEX = regex(
-    r".*/(\S+).(?P<suffix>fastq.1.gz|fastq.gz|fa.gz|sra|csfasta.gz|csfasta.F3.gz|export.txt.gz)")
-
-###################################################################
-###################################################################
-###################################################################
-# load number of reads
-###################################################################
-
-
-@follows(mkdir("nreads.dir"))
-@transform(SEQUENCEFILES,
-           SEQUENCEFILES_REGEX,
-           r"nreads.dir/\1.nreads")
-def countReads(infile, outfile):
-    '''count number of reads in input files.'''
-    m = PipelineMapping.Counter()
-    statement = m.build((infile,), outfile)
-    P.run()
-
-####################################################################
-
-PREPROCESSTOOLS = []
-
-for tool in P.asList(PARAMS["process_preprocessors"]):
-    PREPROCESSTOOLS.append(tool)
-
-print "The preprocess tools used in this run are %s" % PREPROCESSTOOLS
-preprocess_prefix = "-".join(PREPROCESSTOOLS)
-
-
-# update outfile regex to incorporate suffix of infile
-@follows(mkdir("processed.dir"))
-@transform(SEQUENCEFILES,
-           SEQUENCEFILES_REGEX,
-           r"processed.dir/%s-\1.\g<suffix>" % preprocess_prefix)
-def processReads(infile, outfile):
-    '''process reads from .fastq or .sra files.
-
-    Tasks specified in PREPROCESSTOOLS are run in order
-
-    '''
-
-    job_threads = PARAMS["general_threads"]
-    job_options = "-l mem_free=%s" % PARAMS["general_memory"]
-
-    m = PipelinePreprocess.Preprocessor()
-    statement = m.build((infile,), outfile, PREPROCESSTOOLS)
-    print statement
-    P.run()
-
-
-@follows(processReads)
-@transform(SEQUENCEFILES,
-           SEQUENCEFILES_REGEX,
-           r"processed.dir/\1.\g<suffix>.processing.summary")
-def summarise(infile, outfile):
-    '''summarise fastq statistics from '''
-    track = os.path.basename(infile)
-    initial_file = "processed.dir/%s.summary" % track
-    summary_files = [initial_file]
-    print "summary files:",
-    print summary_files
-    for tool in PREPROCESSTOOLS:
-        summary_files.append("processed.dir/%s-%s.summary" % (tool, track))
-        print "summary files:",
-        print summary_files
-
-    print "outfile" + outfile
-
-    statement = '''echo -en 'sample\\t' > %(outfile)s;
-                grep 'reads' %(initial_file)s >> %(outfile)s;''' % locals()
-
-    summary_files = " ".join(summary_files)
-
-    statement += '''files=(%(summary_files)s);
-                 for file in ${files[@]};
-                 do base=$(echo $file | cut -d "/" -f 2);
-                 echo -en $base'\\t' >> %(outfile)s;
-                 grep -v -e '#' -e 'reads' $file >> %(outfile)s; done
-                 ''' % locals()
-    P.run()
 
 
 @transform([x for x in
