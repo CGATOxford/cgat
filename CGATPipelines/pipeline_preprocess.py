@@ -30,8 +30,7 @@ Pre-process pipeline
 :Date: |today|
 :Tags: Python
 
-(See the readqc pipeline for details of the readqc functions (target
-``readqc``).)
+See the readqc pipeline for details of the readqc functions
 
 The purpose of this pipeline is to pre-process reads (target
 ``full``).
@@ -170,7 +169,7 @@ import itertools
 import glob
 import cStringIO
 import string
-
+import pandas as pd
 import CGAT.IOTools as IOTools
 import CGAT.FastaIterator as FastaIterator
 import CGATPipelines.PipelineMapping as PipelineMapping
@@ -265,7 +264,7 @@ for tool in P.asList(PARAMS["process_preprocessors"]):
     PREPROCESSTOOLS.append(tool)
 
 print "The preprocess tools used in this run are %s" % PREPROCESSTOOLS
-preprocess_prefix = "-".join(PREPROCESSTOOLS)
+preprocess_prefix = "-".join(PREPROCESSTOOLS[::-1])
 
 
 # update outfile regex to incorporate suffix of infile
@@ -289,36 +288,53 @@ def processReads(infile, outfile):
     P.run()
 
 
-@follows(processReads)
+@follows(mkdir("summary.dir"),
+         processReads)
 @transform(SEQUENCEFILES,
            SEQUENCEFILES_REGEX,
-           r"processed.dir/\1.\g<suffix>.processing.summary")
+           r"summary.dir/\1.\g<suffix>.processing.summary")
 def summarise(infile, outfile):
     '''summarise fastq statistics from '''
     track = os.path.basename(infile)
     initial_file = "processed.dir/%s.summary" % track
-    summary_files = [initial_file]
-    print "summary files:",
-    print summary_files
+    files = [initial_file]
+    stage = ["preprocessing"]
+    tool_list = []
+    df = pd.read_csv(initial_file, sep="\t", )
     for tool in PREPROCESSTOOLS:
-        summary_files.append("processed.dir/%s-%s.summary" % (tool, track))
-        print "summary files:",
-        print summary_files
+        tool_list.append(tool)
+        intermediate_file = "processed.dir/%s-%s.summary" % (
+            "-".join(tool_list[::-1]), track)
+        files.append(intermediate_file)
+        temp_df = pd.read_csv(intermediate_file, sep="\t")
+        df = pd.concat([df, temp_df], axis=0)
+    stage.extend(tool_list)
+    df["stage"] = stage
+    df["files"] = files
+    df.to_csv(outfile, sep="\t", index=False)
 
-    print "outfile" + outfile
+    if infile.endswith("fastq.1.gz"):
 
-    statement = '''echo -en 'sample\\t' > %(outfile)s;
-                grep 'reads' %(initial_file)s >> %(outfile)s;''' % locals()
+        def makeSecond(file1):
+            return(re.sub(".fastq.1.gz", ".fastq.2.gz", file1))
 
-    summary_files = " ".join(summary_files)
+        outfile2 = makeSecond(outfile)
+        track2 = makeSecond(track)
+        initial_file2 = makeSecond(initial_file)
+        files = [initial_file2]
+        tool_list = []
+        df = pd.read_csv(initial_file2, sep="\t", )
+        for tool in PREPROCESSTOOLS:
+            tool_list.append(tool)
+            intermediate_file = "processed.dir/%s-%s.summary" % (
+                "-".join(tool_list[::-1]), track2)
+            files.append(intermediate_file)
+            temp_df = pd.read_csv(intermediate_file, sep="\t")
+            df = pd.concat([df, temp_df], axis=0)
+        df["stage"] = stage
+        df["files"] = files
+        df.to_csv(outfile2, sep="\t", index=False)
 
-    statement += '''files=(%(summary_files)s);
-                 for file in ${files[@]};
-                 do base=$(echo $file | cut -d "/" -f 2);
-                 echo -en $base'\\t' >> %(outfile)s;
-                 grep -v -e '#' -e 'reads' $file >> %(outfile)s; done
-                 ''' % locals()
-    P.run()
 
 ########################################################################
 # all functions from here need to be removed
@@ -766,13 +782,7 @@ def replaceBaseWithN(infile, outfile):
 
 
 @follows(summarise)
-def test():
-    pass
-
-
-@follows(loadProcessingSummary, loadAllProcessingSummary)
 def full():
-    '''process (filter,trim) reads.'''
     pass
 
 
