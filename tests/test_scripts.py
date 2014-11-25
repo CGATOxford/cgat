@@ -28,6 +28,8 @@ import glob
 import gzip
 import yaml
 import time
+import hashlib
+
 from nose.tools import ok_
 
 SUBDIRS = ("gpipe", "optic")
@@ -61,6 +63,11 @@ def check_main(script):
     # check for text match
     ok_([x for x in open(script) if x.startswith("def main(")],
         "no main function")
+
+
+def compute_checksum(filename):
+    '''return md5 checksum of file.'''
+    return hashlib.md5(open(filename, 'rb').read()).hexdigest()
 
 #########################################
 # List of tests to perform.
@@ -154,8 +161,10 @@ def check_script(test_name, script, stdin,
                 for a, b in zip(_read(output), _read(reference)):
                     if a != b:
                         fail = True
-                        msg = "files %s and %s are not the same: %s" %\
-                              (output, reference, statement)
+                        msg = "files %s and %s are not the same: %s\nchecksums= %s %s" %\
+                              (output, reference, statement,
+                               compute_checksum(output),
+                               compute_checksum(reference))
                         break
 
     t2 = time.time()
