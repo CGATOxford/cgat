@@ -219,8 +219,6 @@ else:
     else:
         DATADIR = PARAMS["input"]  # not recommended practise
 
-
-
 #########################################################################
 #########################################################################
 # Read processing
@@ -239,7 +237,8 @@ SEQUENCEFILES = tuple([os.path.join(DATADIR, suffix_name)
                       for suffix_name in SEQUENCESUFFIXES])
 
 SEQUENCEFILES_REGEX = regex(
-    r".*/(\S+).(?P<suffix>fastq.1.gz|fastq.gz|fa.gz|sra|csfasta.gz|csfasta.F3.gz|export.txt.gz)")
+    r".*/(\S+).(?P<suffix>fastq.1.gz|fastq.gz|fa.gz|\
+sra|csfasta.gz|csfasta.F3.gz|export.txt.gz)")
 
 ###################################################################
 ###################################################################
@@ -321,16 +320,10 @@ def summarise(infile, outfile):
                  ''' % locals()
     P.run()
 
-
-
 ########################################################################
 # all functions from here need to be removed
 # code is being kept temporarily whilst the pipeline is being refactored
 ########################################################################
-
-
-#########################################################################
-#########################################################################
 #########################################################################
 # adaptor trimming
 #########################################################################
@@ -413,7 +406,8 @@ ILLUMINA_ADAPTORS = {
     "NETseq-RT-primer_5prime": "ATCTCGTATGCCGTCTTCTGCTTG",
     "NETseq-RT-primer_3prime": "TCCGACGATCATTGATGGTGCCTACAG",
     "NETseq-PCR-primer-oLSC008-bc1":
-    "AATGATACGGCGACCACCGAGATCTACACGATCGGAAGAGCACACGTCTGAACTCCAGTCACATGCCATCCGACGATCATTGATGG"
+    "AATGATACGGCGACCACCGAGATCTACACGATCGGAAGAGCA\
+CACGTCTGAACTCCAGTCACATGCCATCCGACGATCATTGATGG"
 }
 
 
@@ -567,7 +561,8 @@ def summarizeProcessing(infile, outfile):
         if step == "reconcile":
             for line in inf:
                 x = re.search(
-                    "first pair: (\d+) reads, second pair: (\d+) reads, shared: (\d+) reads", line)
+                    "first pair: (\d+) reads, second pair: (\d+) \
+reads,shared: (\d+) reads", line)
                 if x:
                     i1, i2, o = map(int, x.groups())
                     inputs = [i1, i2]
@@ -589,7 +584,8 @@ def summarizeProcessing(infile, outfile):
                         int(re.match("Input: (\d+) reads.", line).groups()[0]))
                 elif line.startswith("Output:"):
                     outputs.append(
-                        int(re.match("Output: (\d+) reads.", line).groups()[0]))
+                        int(re.match("Output: (\d+) reads.",
+                                     line).groups()[0]))
 
         return zip(inputs, outputs)
 
@@ -652,19 +648,24 @@ def summarizeAllProcessing(infiles, outfile):
         ninput = int(vals[0][3])
         outputs = [int(x[4]) for x in vals]
         if first:
-            outf.write("track\tpair\tninput\t%s\t%s\t%s\t%s\n" % ("\t".join([x[1] for x in vals]),
-                                                                  "noutput",
-                                                                  "\t".join(
-                                                                      ["percent_%s" % x[1] for x in vals]),
-                                                                  "percent_output"))
+            outf.write("track\tpair\tninput\t%s\t%s\t%s\t%s\n" % (
+                "\t".join([x[1] for x in vals]),
+                "noutput",
+                "\t".join(
+                    ["percent_%s" % x[1] for x in vals]),
+                "percent_output"))
             first = False
         outf.write("%s\t%s\t%i\t%s\t%i\t%s\t%s\n" % (track, pair, ninput,
                                                      "\t".join(
                                                          map(str, outputs)),
                                                      outputs[-1],
                                                      "\t".join(
-                                                         ["%5.2f" % (100.0 * x / ninput) for x in outputs]),
-                                                     "%5.2f" % (100.0 * outputs[-1] / ninput)))
+                                                         ["%5.2f" % (100.0 * x
+                                                                     / ninput)
+                                                          for x in outputs]),
+                                                     "%5.2f" % (100.0 *
+                                                                outputs[-1] /
+                                                                ninput)))
     outf.close()
 
 #########################################################################
@@ -723,7 +724,11 @@ def loadFilteringSummary(infile, outfile):
 #########################################################################
 
 
-@transform([x for x in glob.glob("*.fastq.gz") + glob.glob("*.fastq.1.gz") + glob.glob("*.fastq.2.gz")], regex(r"(\S+).(fastq.1.gz|fastq.gz|fastq.2.gz|csfasta.gz)"), r"trim.\1.\2")
+@transform([x for x in glob.glob("*.fastq.gz") +
+            glob.glob("*.fastq.1.gz") +
+            glob.glob("*.fastq.2.gz")],
+           regex(r"(\S+).(fastq.1.gz|fastq.gz|fastq.2.gz|csfasta.gz)"),
+           r"trim.\1.\2")
 def trimReads(infile, outfile):
     '''trim reads to desired length using fastx
 
@@ -732,7 +737,8 @@ def trimReads(infile, outfile):
     E.warn("deprecated - use processReads instead")
 
     to_cluster = True
-    statement = '''zcat %(infile)s | fastx_trimmer %(trim_options)s 2> %(outfile)s.log | gzip > %(outfile)s'''
+    statement = '''zcat %(infile)s | fastx_trimmer %(trim_options)s 2>
+    %(outfile)s.log | gzip > %(outfile)s'''
     P.run()
 
 #########################################################################
@@ -740,12 +746,17 @@ def trimReads(infile, outfile):
 #########################################################################
 
 
-@transform([x for x in glob.glob("*.fastq.gz") + glob.glob("*.fastq.1.gz") + glob.glob("*.fastq.2.gz")], regex(r"(\S+).(fastq.1.gz|fastq.gz|fastq.2.gz|csfasta.gz)"), r"replaced.\1.\2")
+@transform([x for x in glob.glob("*.fastq.gz") +
+            glob.glob("*.fastq.1.gz") +
+            glob.glob("*.fastq.2.gz")],
+           regex(r"(\S+).(fastq.1.gz|fastq.gz|fastq.2.gz|csfasta.gz)"),
+           r"replaced.\1.\2")
 def replaceBaseWithN(infile, outfile):
     '''replaces the specified base with N'''
 
     to_cluster = True
-    statement = '''python %(scriptsdir)s/fastq2N.py -i %(infile)s %(replace_options)s'''
+    statement = '''python %(scriptsdir)s/fastq2N.py
+    -i %(infile)s %(replace_options)s'''
     P.run()
 
 #########################################################################
