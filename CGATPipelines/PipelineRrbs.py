@@ -35,7 +35,7 @@ Code
 ----
 
 '''
-
+import random
 import os
 import shutil
 import glob
@@ -43,6 +43,7 @@ import collections
 import re
 import gzip
 import itertools
+import copy
 import CGAT.Pipeline as P
 import logging as L
 import CGAT.Experiment as E
@@ -110,6 +111,7 @@ def plotReadBias(infile, outfile):
                  "_read_position_methylation_bias.png")
     plot2_out = re.sub("_methylation_bias", "_count", plot1_out)
 
+    title = re.sub(".fastq.*", "", os.path.basename(infile))
     plotMbiasReadPositionSummary = r("""
     library(ggplot2)
     library(reshape)
@@ -121,6 +123,7 @@ def plotReadBias(infile, outfile):
     facet_grid(context ~ ., scales="free") +
     scale_x_continuous(minor_breaks=seq(0,read_length),
     breaks=seq(0,read_length,5)) +
+    ggtitle("%(title)s") +
     scale_colour_discrete(guide = FALSE) +
     xlab("Read position") + ylab("Methylation (percentage)")
     ggsave('%(plot1_out)s', plot = p, width = 5, height = 5)
@@ -131,6 +134,7 @@ def plotReadBias(infile, outfile):
     facet_grid(context ~ ., scales="free") +
     scale_x_continuous(minor_breaks=seq(0,read_length),
     breaks=seq(0,read_length,5)) +
+    ggtitle("%(title)s") +
     scale_colour_discrete(guide = FALSE) +
     scale_y_continuous(labels = comma) +
     xlab("Read position") + ylab("Number of cytosines")
@@ -621,4 +625,477 @@ def summaryPlots(infile, outfile):
             out.write("plot saved at: \
             %(base)s-read_position_meth_diff_%(label_base)s.png\n" % locals())
 
+    out.close()
+
+
+@cluster_runnable
+def spikeInClusters(infiles, outfile):
+    '''explain purpose'''
+
+    outfile2 = open(outfile+".log", "w")
+    outfile = open(outfile, "w")
+    outfile2.write("reached checkpoint 0\n")
+    
+    class CpG():
+        def __init__(self):
+            self.contig = ""
+            self.pos = ""
+            self.meth = []
+            self.unmeth = []
+            self.perc = []
+
+        def __str__(self):
+            return "\t".join(map(str, [self.contig, self.pos,
+                                       self.meth, self.unmeth]))
+
+        def row_values(self):
+            row = [self.contig]
+            row.append(self.pos)
+            row.extend([x for x in self.perc])
+            row.extend([x for x in self.meth])
+            row.extend([x for x in self.unmeth])
+            return row
+
+    class cluster():
+        def __init__(self, cpgs, contig):
+            self.cpgs = cpgs
+            self.contig = contig
+            self.df = ""
+
+        def __str__(self):
+            return "\t".join(map(str, self.cpgs))
+
+    class cluster_region():
+        ''' class function to hold information on randomly selected
+        regions from clusters prior to region swapp'''
+        def __init__(self, cluster, avr_perc, s, e):
+            self.cluster = cluster
+            self.avr_perc = avr_perc
+            self.s, self.e = (s, e)
+
+        def __str__(self):
+            return "\t".join(map(str, (self.cluster, self.avr_perc,
+                                       self.s, self.e)))
+
+    class spike_in_cluster():
+        def __init__(self, region_initial, region_change, region_size, df):
+            self.intial = region_initial
+            self.change = region_change
+            self.size = region_size
+            self.df = df
+
+        def __str__(self):
+            return "\t".join(map(str, [self.change, self.size]))
+
+    outfile2.write("reached checkpoint 1\n")
+    
+    samples = []
+    CpGs = {}
+    for infile in infiles:
+        sample = re.sub(".fastq.gz_bismark.*", "", os.path.basename(infile))
+        outfile2.write("%s\n" % sample)
+        sample_values = sample.split("-")
+        sample_values[0] = sample_values[0][0]
+        sample_values[1] = sample_values[1][0]
+        samples.append("".join(sample_values))
+        with open(infile, 'r') as f:
+            for line in f.readlines():
+                contig, start, end, perc, meth, unmeth = line.strip().split()
+                meth, unmeth = map(int, [meth, unmeth])
+                if meth + unmeth >= 10:
+                    start = str(start)
+                    if start not in CpGs:
+                        CpGs[start] = CpG()
+                        CpGs[start].contig = contig
+                        CpGs[start].pos = start
+                    CpGs[start].perc.append(float(perc))
+                    CpGs[start].meth.append(meth)
+                    CpGs[start].unmeth.append(unmeth)
+    meth_header = []
+    meth_header.extend(samples)
+    outfile2.write("len meth header: %i\n" % len(meth_header))
+    outfile2.write("reached checkpoint 2\n")
+
+    rows = {}
+    thres = len(meth_header)
+    for x in CpGs:
+        if len(CpGs[x].meth) == thres:
+            rows[x] = CpGs[x].row_values()
+
+    df = pd.DataFrame(data=rows)
+    df = df.transpose()
+    columns = ["contig", "position"]
+    columns.extend([x+"_perc" for x in meth_header])
+    columns.extend([x+"_meth" for x in meth_header])
+    columns.extend([x+"_unmeth" for x in meth_header])
+    df.columns = columns
+    df_con = df.convert_objects(convert_numeric=True)
+    df_sort = df_con.sort(columns=["contig", "position"])
+
+    d = 100  # max distance
+    n = 15  # min number of CpGs
+
+    positions = df_sort['position']
+    contigs = df_sort['contig']
+
+    clusters = {}
+    c_current = positions[0]
+    current_cpgs = []
+    current_contig = contigs[0]
+    for cpg in range(1, len(df_sort.index)):
+        next_cpg = positions[cpg]
+        next_contig = contigs[cpg]
+        if ((next_cpg < c_current + d) & (next_contig ==
+                                          current_contig)):
+            current_cpgs.append(next_cpg)
+        else:
+            if len(current_cpgs) >= n:
+                start, end = map(str, [current_cpgs[0], current_cpgs[-1]])
+                label = start + ":" + end
+                clusters[label] = cluster(current_cpgs, current_contig)
+                clusters[label].df = df_sort.loc[start:end]
+            current_cpgs = []
+        c_current = next_cpg
+        current_contig = next_contig
+
+    outfile2.write("reached checkpoint 3\n")
+
+    colnames = df_sort.columns.values
+    swap_regex = "\SD\d+.*"
+    keep_perc_regex = "\SS\d+_perc"
+    swap_perc_regex = "\SD\d+_perc"
+    swap_cols = [col for col in colnames if re.search(swap_regex, col)]
+    keep_cols = [col for col in colnames if not re.search(swap_regex, col)]
+    keep_perc_cols = [col for col in colnames if
+                      re.search(keep_perc_regex, col)]
+    swap_perc_cols = [col for col in colnames if
+                      re.search(swap_perc_regex, col)]
+    outfile2.write("swap_cols:%s\n" % ",".join(swap_cols))
+    outfile2.write("keep_cols:%s\n" % ",".join(keep_cols))
+    outfile2.write("swap_perc_cols:%s\n" % ",".join(swap_perc_cols))
+    outfile2.write("keep_perc_cols:%s\n" % ",".join(keep_perc_cols))
+    # need to bin clusters by average methylation so that a
+    # range of intitial methylation levels can be sampled
+    initial_cluster_regions = {}
+    initial_step = 10  # bin size for initial methylation levels
+    max_bin = 100
+    min_in_bin = 100  # minimal number of clusters for bin to be included
+    initial_meth_bins = range(0, max_bin+initial_step, initial_step)
+    for meth_perc in initial_meth_bins:
+        initial_cluster_regions[meth_perc] = []
+    for x in clusters:
+        old_cluster = clusters[x].df.copy()
+        avr_perc = np.mean(np.mean(old_cluster.ix[:, keep_perc_cols]))
+        bin_m = ((np.digitize([avr_perc], initial_meth_bins))[0]*initial_step)
+        initial_cluster_regions[bin_m].append(x)
+    for x in initial_meth_bins:
+        outfile2.write("for bin %s, there are %s regions" %
+                       (x, len(initial_cluster_regions[x])))
+    initial_meth_bins_covered = [x for x in initial_meth_bins if
+                                 len(initial_cluster_regions[x]) > min_in_bin]
+
+    outfile2.write("reached checkpoint 4\n")
+
+    min_bin = 10  # minimum mean methylation in region to be shuffled
+    max_bin = 120  # maximum mean methylation in region to be shuffled
+    step = 10
+    cluster_regions_dict = {}
+    for size in range(1, 13, 2):  # number of cpgs in region for shuffling
+        cluster_regions = {}
+        meth_bins = range(min_bin, max_bin, step)
+        for meth_perc in meth_bins:
+            cluster_regions[meth_perc] = []
+        for x in clusters:
+            old_cluster = clusters[x].df.copy()
+            '''only use clusters with average methylation of at least 10%
+            otherwise most of the compute is wasted looking for regions of
+            >10% methylation in clusters with very little methylation!'''
+            if np.mean(np.mean(old_cluster.ix[:, keep_perc_cols])) > 10:
+                cluster_size = len(old_cluster.index)
+                success = 0
+                for y in range(0, 50):
+                    # try 50 times to find 5 regions with at least 10%
+                    # methylation, then give up and move onto the next cluster
+                    if success < 5:
+                        s = random.randint(0, cluster_size-size)
+                        e = s + size
+                        avr_perc = np.mean(np.mean(
+                            old_cluster.ix[s:e, keep_perc_cols]))
+                        if avr_perc > min_bin:
+                            temp_region = cluster_region(x, avr_perc, s, e)
+                            bin_m = ((np.digitize([avr_perc], meth_bins))[0] *
+                                     step)+min_bin
+                            cluster_regions[bin_m].append(temp_region)
+                            success += 1
+        cluster_regions_dict[size] = cluster_regions
+
+    outfile2.write("reached checkpoint 5\n")
+    outfile2.write("size = %s\n" % size)
+    for x in meth_bins:
+        outfile2.write("for bin %s, there are %s regions\n" %
+                       (x, len(cluster_regions_dict[size][x])))
+
+    sample_col_dict = {}
+    sample_dataframe_dict = {}
+    for x in samples:
+        sample_columns = ["contig", "position", "position"]
+        regex = x
+        sample_columns.extend([col for col in columns if
+                               re.search(regex, col)])
+        sample_col_dict[x] = sample_columns
+        sample_dataframe_dict[x] = pd.DataFrame(columns=sample_columns)
+
+    for size in range(1, 12, 2):
+        meth_bins_covered = [x for x in meth_bins if
+                             len(cluster_regions_dict[size][x]) > 49]
+        for repeat in range(0, 5001):
+            rand_initial_bin = random.randint(0, len(
+                initial_meth_bins_covered)-1)
+            initial_meth_bin = initial_meth_bins_covered[rand_initial_bin]
+            rand_x = random.randint(0, len(initial_cluster_regions
+                                           [initial_meth_bin])-1)
+            temp_df = clusters[initial_cluster_regions[initial_meth_bin]
+                               [rand_x]].df.copy()
+            rand_bin = random.randint(0, len(meth_bins_covered)-1)
+            meth_bin = meth_bins_covered[rand_bin]
+            rand_y = random.randint(0, len(cluster_regions_dict
+                                           [size][meth_bin])-1)
+            y = cluster_regions_dict[size][meth_bin][rand_y]
+            temp_y, start, end = clusters[y.cluster], y.s, y.e
+            temp_df_swap = temp_y.df.ix[start:end, swap_cols]
+
+            rand_s = random.randint(0, len(temp_df.index)-size)
+            rand_e = rand_s + size
+            temp_df_swap.set_index(temp_df[rand_s:rand_e].index,
+                                   drop=True,  inplace=True)
+            initial_meth = np.mean(np.mean(temp_df.ix[rand_s:rand_e,
+                                                      keep_perc_cols]))
+            change_meth = np.mean(np.mean(temp_df_swap.ix
+                                          [:, swap_perc_cols])) - initial_meth
+            temp_df.ix[rand_s:rand_e, swap_cols] = temp_df_swap
+
+            change_step = 5
+            change_min_bin = -100
+            change_max_bin = 100
+            change_bins = range(change_min_bin, change_max_bin, change_step)
+
+            bins = [(x*change_step) + change_min_bin for x in
+                    np.digitize([initial_meth, change_meth], change_bins)]
+            initial, change = map(str, bins)
+
+            temp_df['contig'] = ["_".join([x, str(size), str(rand_s),
+                                           str(rand_e), initial,
+                                           re.sub("-", "m", change)])
+                                 for x in temp_df['contig']]
+
+            for x in samples:
+                temp_df['position'] = temp_df['position'].astype(int)
+                sample_temp_df = temp_df.ix[:, sample_col_dict[x]]
+                sample_dataframe_dict[x] = sample_dataframe_dict[x].append(
+                    sample_temp_df)
+    outfile2.write("reached checkpoint 6")
+
+    # generate null clusters
+    # perc_regex = "\S\S\d+_perc"
+    # perc_cols = [x for x in range(0, len(columns))
+    #             if re.search(perc_regex, columns[x])]
+    # unmeth_regex = "\S\S\d+_unmeth"
+    # unmeth_cols = [x for x in range(0, len(columns))
+    #               if re.search(unmeth_regex, columns[x])]
+    # meth_regex = "\S\S\d+_meth"
+    # meth_cols = [x for x in range(0, len(columns))
+    #             if re.search(meth_regex, columns[x])]
+
+    # for repeat in range(0, 5001):  # number of null clusters
+    #    rand_initial_bin = random.randint(0, len(initial_meth_bins_covered)-1)
+    #    initial_meth_bin = initial_meth_bins_covered[rand_initial_bin]
+    #    rand_x = random.randint(0, len(initial_cluster_regions[
+    #        initial_meth_bin])-1)
+    #    temp_df = clusters[initial_cluster_regions[initial_meth_bin]
+    #                       [rand_x]].df.copy()
+    #    initial_meth = np.mean(np.mean(temp_df.ix[:, keep_perc_cols]))
+    #    initial = str((np.digitize([initial_meth], change_bins)
+    #                   [0]*change_step)+change_min_bin)
+
+    #    randomise_samples = range(0, len(samples))
+    #    random.shuffle(randomise_samples)
+
+    #    columns_randomised = ["contig", "position"]
+    #    columns_randomised.extend([columns[perc_cols[y]]
+    #                               for y in randomise_samples])
+    #    columns_randomised.extend([columns[meth_cols[y]]
+    #                               for y in randomise_samples])
+    #    columns_randomised.extend([columns[unmeth_cols[y]]
+    #                               for y in randomise_samples])
+    #    temp_df.columns = columns_randomised
+    #    temp_df['contig'] = ["_".join([x, "Null", "NA", "NA", initial, "NA"])
+    #                         for x in temp_df['contig']]
+    #    for x in samples:
+    #        temp_df['position'] = temp_df['position'].astype(int)
+    #        sample_temp_df = temp_df.ix[:, sample_col_dict[x]]
+    #        sample_dataframe_dict[x] = sample_dataframe_dict[x].append(
+    #            sample_temp_df)
+    # outfile2.write("reached checkpoint 7\n")
+
+    out_prefix = "power.dir/"
+    for x in sample_dataframe_dict:
+        outfile_cov = str(out_prefix + x + "_10_pipeline_spike_in.cov")
+        temp_df = sample_dataframe_dict[x].copy()
+        temp_df['position'] = temp_df['position'].astype(int)
+        temp_df['%s_meth' % x] = temp_df['%s_meth' % x].astype(int)
+        temp_df['%s_unmeth' % x] = temp_df['%s_unmeth' % x].astype(int)
+        temp_df.to_csv(outfile_cov, index=False, header=False, sep="\t",
+                       dtype={'position': int})
+        outfile.write("%s\n" % outfile_cov)
+    outfile2.write("reached checkpoint 8\n")
+    outfile.close()
+    outfile2.close()
+
+
+@cluster_runnable
+def spikeInClustersAnalysis(infile, outfile):
+    infiles = open(infile, "r").readlines()
+    samples = [re.sub("_10_pipeline.*", "", os.path.basename(x).strip())
+               for x in infiles]
+    samples_str = '","'.join(samples)
+    print "samples: %s\n" % samples
+    samples_treatment = [x[1] for x in samples]
+    samples_treatment = '","'.join(samples_treatment)
+    print "sample treatments: %s\n" % samples_treatment
+
+    infiles = '","'.join([x.strip() for x in infiles])
+    print infiles
+    M3D = r('''library(BiSeq)
+            library(M3D)
+            files <- c("%(infiles)s")
+            samples <- data.frame(row.names=c("%(samples_str)s"),
+                       group=c("%(samples_treatment)s"))
+            rawData <-readBismark(files,samples)
+            clust.unlim <- clusterSites(object = rawData, perc.samples = 6/6,
+                                        min.sites = 10, max.dist = 100)
+            clust.unlim=clusterSitesToGR(clust.unlim)
+            overlaps<-findOverlaps(clust.unlim,rowData(rawData))
+            MMDlist<-M3D_Wrapper(rawData, overlaps)
+            M3Dstat<-MMDlist$Full-MMDlist$Coverage
+            ranges_df <- data.frame(seqnames=seqnames(clust.unlim),
+                         start=start(clust.unlim)-1, end=end(clust.unlim))
+            M3Dstat_df <- as.data.frame(M3Dstat)
+            adjusted_colnames = gsub("  ", "_", colnames(M3Dstat_df))
+            colnames(M3Dstat_df) = adjusted_colnames
+            complete_df = cbind(ranges_df, M3Dstat_df)
+            write.table(complete_df,file="%(outfile)s",sep="\t",quote=F)'''
+            % locals())
+    M3D  # run r code
+
+
+@cluster_runnable
+def spikeInClustersPlot(infile, outfile, groups):
+
+    analysis_df = pd.read_csv(infile, sep="\t")
+    cluster_characteristics = ["contig", "size", "s", "e", "initial", "change"]
+    seqnames_split = analysis_df['seqnames'].apply(lambda x: x.split("_"))
+    cluster_values = pd.DataFrame(data=seqnames_split.to_dict())
+    cluster_values_df = cluster_values.transpose()
+    cluster_values_df.columns = cluster_characteristics
+    concat_df = pd.concat([analysis_df, cluster_values_df], axis=1)
+
+    groups = [x[0] for x in groups]
+
+    within = copy.copy(cluster_characteristics)
+    M3D_within_col = []
+    for x in groups:
+        regex = "\S%s\d_vs_\S%s\d" % (x, x)
+        M3D_within_col.extend([col for col in concat_df.columns
+                               if re.search(regex, col)])
+    within.extend(M3D_within_col)
+
+    between = copy.copy(cluster_characteristics)
+    pairs = [x for x in itertools.combinations(groups, 2)]
+    M3D_between_col = []
+    for x in pairs:
+        regex = "\S%s\d_vs_\S%s\d" % (x[0], x[1])
+        M3D_between_col.extend([col for col in concat_df.columns
+                                if re.search(regex, col)])
+    between.extend(M3D_between_col)
+
+    between_df = concat_df.ix[:, between]
+    within_df = concat_df.ix[:, within]
+
+    r_df_between = com.convert_to_r_dataframe(between_df)
+    r_df_within = com.convert_to_r_dataframe(within_df)
+    base = P.snip(infile, ".out")
+    PowerPlot = r('''library(ggplot2)
+                  library(reshape)
+                  function(df_between, df_within){
+                  cluster_characteristics = c("contig" ,"size", "s", "e",
+                  "initial", "change")
+                  m_between_df=melt(df_between,id.var=cluster_characteristics)
+                  m_between_df['between'] = 1
+                  m_between_df$change = gsub("m", "-", m_between_df$change)
+                  m_within_df=melt(df_within,id.var=cluster_characteristics)
+                  m_within_df['between'] = 0
+                  m_cat_df = rbind(m_between_df,m_within_df)
+                  quant = (quantile(m_within_df$value,probs=0.95))
+                  limited = m_within_df[m_within_df$value>quant,]
+
+                  permute_func = function(x, len_x, vector, n){
+                  rand = sample(vector, n, replace=TRUE)
+                  return(length(rand[rand>x])/n)}
+
+                  m_within_df$p_value = sapply(m_within_df$value,
+                  function(x) permute_func(x, length(m_within_df$value),
+                  m_within_df$value, 10000))
+
+                  m_between_df$p_value=sapply(m_between_df$value,
+                  function(x) permute_func(x, length(m_within_df$value),
+                  m_within_df$value, 10000))
+                  m_between_df$p_value_adj = p.adjust(
+                  m_between_df$p_value , method ="BH")
+
+                  agg_between = aggregate(m_between_df$p_value_adj,
+                  by=list(m_between_df$size, m_between_df$change),
+                  FUN=function(x) length(x[x<0.05])/length(x))
+                  colnames(agg_between) = c("size","change","power")
+
+                  text_theme = element_text(size=20)
+                  plot_theme = theme(axis.title.x = text_theme,
+                  axis.title.y = text_theme, axis.text.x = text_theme,
+                  axis.text.y = text_theme, legend.text = text_theme)
+                  
+                  p = ggplot(agg_between,aes(x=as.numeric(change),
+                  y=as.numeric(size),fill=as.numeric(power))) +
+                  geom_tile() + xlim(-10,45) +
+                  scale_fill_continuous(limits=c(0,1)) + plot_theme
+                  ggsave(paste0('%(base)s',"_change_vs_size_power_heatmap.png"),
+                  plot = p, width = 5, height = 5)
+
+                  p = ggplot(agg_between,aes(x=as.numeric(change),
+                  y=as.numeric(power),col=factor(size))) +
+                  geom_line(size=2) + xlim(-10,40) + plot_theme
+                  ggsave(paste0('%(base)s',"_change_vs_size_power_lineplot.png"),
+                  plot = p, width = 5, height = 5)
+
+                  agg_between_count= aggregate(m_between_df$p_value_adj,
+                  by=list(m_between_df$size, m_between_df$change),
+                  FUN=function(x) length(x[x<0.05])/length(x))
+                  colnames(agg_between) = c("size","change","power")
+
+                  agg_between_count= aggregate(m_between_df$p_value_adj,
+                  by=list(m_between_df$size,m_between_df$change),length)
+                  colnames(agg_between_count) = c("size","change","count")
+                  
+                  p = ggplot(agg_between_count,aes(y=as.numeric(change),
+                  x=as.numeric(size), fill=as.numeric(count))) +
+                  geom_tile() + ylim(-10,40) + plot_theme
+                  ggsave(paste0('%(base)s',"_change_vs_size_count.png"),
+                  plot = p, width = 5, height = 5)}''' % locals())
+
+    PowerPlot(r_df_between, r_df_within)
+    out = open(outfile, "w")
+    out.write("plotted heatmaps at: %(base)s_change_vs_size_power_heatmap.png"
+              % locals())
+    out.write("plotted heatmaps at: %(base)s_change_vs_size_power_lineplot.png"
+              % locals())
+    out.write("plotted heatmaps at: %(base)s_change_vs_size_count.png"
+              % locals())
     out.close()

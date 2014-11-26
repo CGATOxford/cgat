@@ -21,7 +21,6 @@ for the ReadQC Pipeline is below:
    pipeline/SequenceDuplicationLevels.rst
    pipeline/Filtering.rst
    pipeline/SequenceLength.rst
-   pipeline/BiasAnalysis.rst
    python/Trackers.rst
 
 .. automodule:: pipeline_readqc

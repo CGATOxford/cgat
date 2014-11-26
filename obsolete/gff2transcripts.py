@@ -87,7 +87,7 @@ param_filename_map = None
 
 param_connection = "db:andreas"
 
-import pgdb
+import psycopg2
 
 import CGAT.Experiment as E
 import CGAT.PredictionParser as PredictionParser
@@ -126,7 +126,7 @@ def GetMapTranscript2Prediction( dbhandle, tablename_predictions ):
     try:
         cc.execute(statement)
         result = cc.fetchall()
-    except pgdb.DatabaseError, msg:
+    except psycopg2.Error, msg:
         print "# query failed with message", msg
         return map_transcript2prediction
     cc.close()
@@ -145,7 +145,7 @@ def GetGenomeLengths( dbhandle, tablename_contigs ):
     try:
         cc.execute(statement)
         result = cc.fetchall()
-    except pgdb.DatabaseError, msg:
+    except psycopg2.DatabaseError, msg:
         print "# query failed with message", msg
         return genome_lengths
 
@@ -182,7 +182,7 @@ if __name__ == "__main__":
     print E.GetHeader()
     print E.GetParams()
 
-    dbhandle = pgdb.connect( param_connection )
+    dbhandle = psycopg2.connect(param_connection)
 
     contig_sizes = GetGenomeLengths( dbhandle, param_tablename_contigs )
 

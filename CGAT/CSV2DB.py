@@ -275,9 +275,9 @@ def run(infile, options):
     existing_tables = None
 
     if options.backend == "pg":
-        import pgdb
-        dbhandle = pgdb.connect(options.psql_connection)
-        error = pgdb.DatabaseError
+        import psycopg2
+        dbhandle = psycopg2.connect(options.psql_connection)
+        error = psycopg2.Error
         options.null = "NULL"
         options.string_value = "'%s'"
         if options.insert_quick:

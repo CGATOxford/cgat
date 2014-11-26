@@ -4,7 +4,8 @@ import re
 import types
 import itertools
 import glob
-
+import pandas as pd
+import numpy as np
 from CGATReport.Tracker import *
 from CGATReport.Utils import PARAMS as P
 from collections import OrderedDict as odict
@@ -157,109 +158,9 @@ class ProcessingDetails(ReadqcTracker):
     def __call__(self, track):
         return self.getAll(
             """SELECT pair,input,output,pair,
-            100.0 * output / input as percent 
+            100.0 * output / input as percent
             FROM %(track)s_processed""")
 
 
 class ProcessingSummary(ReadqcTracker, SingleTableTrackerRows):
     table = "processing_summary"
-
-
-class CorrelationSummary(ReadqcTracker, SingleTableTrackerRows):
-    table = "binned_means_correlation"
-    fields = ("sample",)
-
-
-class GradientSummary(ReadqcTracker, SingleTableTrackerRows):
-    table = "binned_means_gradients"
-    fields = ("sample",)
-
-
-class GCContentSummary(ReadqcTracker, SingleTableTrackerRows):
-    table = "means_binned_GC_Content"
-    fields = ("GC_Content",)
-
-
-class LengthSummary(ReadqcTracker, SingleTableTrackerRows):
-    table = "means_binned_length"
-    fields = ("length",)
-
-
-class AASummary(ReadqcTracker, SingleTableTrackerRows):
-    table = "means_binned_AA"
-    fields = ("AA",)
-
-
-class ATSummary(ReadqcTracker, SingleTableTrackerRows):
-    table = "means_binned_AT"
-    fields = ("AT",)
-
-
-class ACSummary(ReadqcTracker, SingleTableTrackerRows):
-    table = "means_binned_AC"
-    fields = ("AC",)
-
-
-class AGSummary(ReadqcTracker, SingleTableTrackerRows):
-    table = "means_binned_AG"
-    fields = ("AG",)
-
-
-class TASummary(ReadqcTracker, SingleTableTrackerRows):
-    table = "means_binned_TA"
-    fields = ("TA",)
-
-
-class TTSummary(ReadqcTracker, SingleTableTrackerRows):
-    table = "means_binned_TT"
-    fields = ("TT",)
-
-
-class TCSummary(ReadqcTracker, SingleTableTrackerRows):
-    table = "means_binned_TC"
-    fields = ("TC",)
-
-
-class TGSummary(ReadqcTracker, SingleTableTrackerRows):
-    table = "means_binned_TG"
-    fields = ("TG",)
-
-
-class CASummary(ReadqcTracker, SingleTableTrackerRows):
-    table = "means_binned_CA"
-    fields = ("CA",)
-
-
-class CTSummary(ReadqcTracker, SingleTableTrackerRows):
-    table = "means_binned_CT"
-    fields = ("CT",)
-
-
-class CCSummary(ReadqcTracker, SingleTableTrackerRows):
-    table = "means_binned_CC"
-    fields = ("CC",)
-
-
-class CGSummary(ReadqcTracker, SingleTableTrackerRows):
-    table = "means_binned_CG"
-    fields = ("CG",)
-
-
-class GASummary(ReadqcTracker, SingleTableTrackerRows):
-    table = "means_binned_GA"
-    fields = ("GA",)
-
-
-class GTSummary(ReadqcTracker, SingleTableTrackerRows):
-    table = "means_binned_GT"
-    fields = ("GT",)
-
-
-class GCSummary(ReadqcTracker, SingleTableTrackerRows):
-    table = "means_binned_GC"
-    fields = ("GC",)
-
-
-class GGSummary(ReadqcTracker, SingleTableTrackerRows):
-    table = "means_binned_GG"
-    fields = ("GG",)

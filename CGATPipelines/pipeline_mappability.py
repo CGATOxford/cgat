@@ -7,35 +7,36 @@ Pipeline to count mappable bases in a given genome
 
 """
 import sys
-import tempfile
-import optparse
-import shutil
-import itertools
-import csv
-import math
-import random
-import re
-import glob
 import os
-import shutil
-import collections
-import gzip
-import sqlite3
-import CGAT.Experiment as E
-import logging as L
+
 from ruffus import *
+import CGAT.Experiment as E
 import CGAT.Pipeline as P
 
-P.getParameters(["%s.ini" % os.path.splitext(__file__)[0],  "pipeline.ini"])
+
+###################################################
+# Pipeline configuration
+###################################################
+P.getParameters(
+    ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
+     "../pipeline.ini",
+     "pipeline.ini"],
+    defaults={
+        'paired_end': False},
+    only_import=__name__ != "__main__")
+
 PARAMS = P.PARAMS
-USECLUSTER = True
 
-###################################################################
-###################################################################
-###################################################################
+PARAMS.update(P.peekParameters(
+    PARAMS["annotations_dir"],
+    "pipeline_annotations.py",
+    on_error_raise=__name__ == "__main__",
+    prefix="annotations_",
+    update_interface=True))
 
 
-@files(os.path.join(PARAMS["gem_dir"], PARAMS["genome"] + ".gem"),  PARAMS["genome"] + ".mappability")
+@files(os.path.join(PARAMS["gem_dir"], PARAMS["genome"] + ".gem"),
+       PARAMS["genome"] + ".mappability")
 def calculateMappability(infile, outfile):
     '''Calculate mappability using GEM '''
     index = P.snip(infile, ".gem")
@@ -44,7 +45,10 @@ def calculateMappability(infile, outfile):
     threads = PARAMS("gem_threads")
     mismatches = PARAMS("gem_mismatches")
     max_indel_length = PARAMS("gem_max_indel_length")
-    statement = '''gem-mappability -t %(threads)s -m %(mismatches)s --max-indel-length %(max_indel_length)s -l %(window_size)s -I %(index)s -o %(outfile)s ''' % locals()
+    statement = '''gem-mappability
+    -t %(threads)s -m %(mismatches)s
+    --max-indel-length %(max_indel_length)s
+    -l %(window_size)s -I %(index)s -o %(outfile)s ''' % locals()
     P.run()
 
 ###################################################################
@@ -53,7 +57,6 @@ def calculateMappability(infile, outfile):
 @transform(calculateMappability, suffix(".mappability"), ".mappability.count")
 def countMappableBases(infile, outfile):
     '''Count mappable bases in genome'''
-    to_cluster = True
     statement = '''cat %(infile)s | tr -cd ! | wc -c > %(outfile)s''' % locals()
     P.run()
 
@@ -63,7 +66,6 @@ def countMappableBases(infile, outfile):
 @transform(countMappableBases, suffix(".count"), ".count.load")
 def loadMappableBases(infile, outfile):
     '''load count of mappable bases in genome'''
-    to_cluster = True
     header = "total_mappable_bases"
     statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
                       --table=total_mappable_bases
@@ -77,7 +79,6 @@ def loadMappableBases(infile, outfile):
 @transform(calculateMappability, suffix(".mappability"), ".split.log")
 def splitMappabiliyFileByContig(infile, outfile):
     '''Count mappable bases in genome'''
-    to_cluster = True
     track = P.snip(os.path.basename(infile), ".mappability")
     statement = '''mkdir contigs; 
                    csplit -k -f contigs/contig %(infile)s '/^~[a-zA-Z]/' {100000} > %(outfile)s;
@@ -104,7 +105,6 @@ def countMappableBasesPerContig(infiles, outfile):
 @transform(countMappableBasesPerContig, suffix(".tsv"), ".tsv.load")
 def loadMappableBasesPerContig(infile, outfile):
     '''load count of mappable bases per contig '''
-    to_cluster = True
     header = "contig,mappable_bases"
     statement = '''cat %(infile)s | python %(scriptsdir)s/csv2db.py
                       --table=mappable_bases_per_contig
