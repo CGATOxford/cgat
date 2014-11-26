@@ -720,12 +720,32 @@ elif PARAMS['sig_testing_method'] == "permutation":
         fore_gc.index = fg_gene_id
 
         # run permutation significance testing
+        # check if there are sufficient genes in the background
+        # to do a permutation test.  If not, do Fishers' exact.
+        # if yes, but less than specific number of permutations,
+        # limit to this number.
 
         perms = int(PARAMS['sig_testing_nperms'])
-        out_dict = PipelineTFM.permuteTFBSEnrich(tfbs_table=tfbs_table,
-                                                 fg_gc=fore_gc,
-                                                 bg_gc=back_gc,
-                                                 nPerms=perms)
+        poss_perms = PiplineTFM.nCr(n=len(bg_gc.index),
+                                    r=len(fore_gc.index))
+        if poss_perms < 1000:
+            E.warn("Insufficient background genes to perform"
+                   "permutations.  Please use Fisher's Exact test")
+            raise ValueError("Insufficient background size. "
+                             "Cannot use permutation test")
+        elif poss_perms > 1000 and poss_perms < perms:
+            E.info("Maximum possible permutations with this background"
+                   " set is %i.  Running %i permutations only" % (poss_perms,
+                                                                  poss_perms))
+            out_dict = PipelineTFM.permuteTFBSEnrich(tfbs_table=tfbs_table,
+                                                     fg_gc=fore_gc,
+                                                     bg_gc=back_gc,
+                                                     nPerms=poss_perms)
+        else:
+            out_dict = PipelineTFM.permuteTFBSEnrich(tfbs_table=tfbs_table,
+                                                     fg_gc=fore_gc,
+                                                     bg_gc=back_gc,
+                                                     nPerms=perms)
 
         out_frame = pandas.DataFrame(out_dict).T
 
