@@ -52,23 +52,6 @@ import CGAT.BamTools as BamTools
 import CGAT.Bed as Bed
 import CGAT.WrapperMACS as WrapperMACS
 
-###################################################
-###################################################
-###################################################
-# Pipeline configuration
-###################################################
-P.getParameters(
-    ["%s.ini" % __file__[:-len(".py")],
-     "../pipeline.ini",
-     "pipeline.ini"])
-
-PARAMS = P.PARAMS
-
-############################################################
-############################################################
-############################################################
-##
-############################################################
 
 
 def getPeakShiftFromMacs(infile):
@@ -298,9 +281,82 @@ def buildQuicksectMask(bed_file):
 
     return(mask)
 
-############################################################
-############################################################
-############################################################
+
+def getCounts(contig, start, end, samfiles, offsets=[]):
+    '''count reads per position.
+
+    If offsets are given, shift tags by offset / 2 and extend
+    by offset / 2.
+    '''
+    assert len(offsets) == 0 or len(samfiles) == len(offsets)
+
+    length = end - start
+    counts = numpy.zeros(length)
+
+    nreads = 0
+
+    if offsets:
+        # if offsets are given, shift tags.
+        for samfile, offset in zip(samfiles, offsets):
+
+            shift = offset / 2
+            # for peak counting I follow the MACS protocoll,
+            # see the function def __tags_call_peak in PeakDetect.py
+            # In words
+            # Only take the start of reads (taking into account the strand)
+            # add d/2=offset to each side of peak and start accumulate counts.
+            # for counting, extend reads by offset
+            # on + strand shift tags upstream
+            # i.e. look at the downstream window
+            xstart, xend = max(0, start - shift), max(0, end + shift)
+
+            for read in samfile.fetch(contig, xstart, xend):
+                # some unmapped reads might have a position
+                if read.is_unmapped:
+                    continue
+                if read.is_reverse:
+                    # offset = 2 * shift
+                    rstart = read.pos + read.alen - offset
+                else:
+                    rstart = read.pos + shift
+
+                rend = rstart + shift
+                rstart = max(0, rstart - start)
+                rend = min(length, rend - start)
+                counts[rstart:rend] += 1
+
+    else:
+        for samfile in samfiles:
+            for read in samfile.fetch(contig, start, end):
+                nreads += 1
+                rstart = max(0, read.pos - start)
+                rend = min(length, read.pos - start + read.rlen)
+                counts[rstart:rend] += 1
+    return nreads, counts
+
+
+def countPeaks(contig, start, end, samfiles, offsets=None):
+    '''update peak values within interval contig:start-end.
+
+    If offsets is given, tags are moved by the offset
+    before summarizing.
+    '''
+
+    nreads, counts = getCounts(contig, start, end, samfiles, offsets)
+
+    length = end - start
+    nprobes = nreads
+    avgval = numpy.mean(counts)
+    peakval = max(counts)
+
+    # set other peak parameters
+    peaks = numpy.array(range(0, length))[counts >= peakval]
+    npeaks = len(peaks)
+    # peakcenter is median coordinate between peaks
+    # such that it is a valid peak in the middle
+    peakcenter = start + peaks[npeaks // 2]
+
+    return npeaks, peakcenter, length, avgval, peakval, nreads
 
 
 def buildBAMforPeakCalling(infiles, outfile, dedup, mask):
@@ -2875,8 +2931,7 @@ def loadIntervalsFromBed(bedfile, track, outfile,
 
         if replicates:
             npeaks, peakcenter, length, avgval, peakval, nprobes = \
-                PipelineChipseq.countPeaks(
-                    bed.contig, bed.start, bed.end, samfiles, offsets)
+                countPeaks(bed.contig, bed.start, bed.end, samfiles, offsets)
 
             # nreads can be 0 if the intervals overlap only slightly
             # and due to the binning, no reads are actually in the
