@@ -1994,6 +1994,11 @@ def main(args=sys.argv):
                       help="explicitely set paramater values "
                       "[default=%default].")
 
+    parser.add_option("-c", "--checksums", dest="checksums",
+                      type="int",
+                      help="set the level of ruffus checksums"
+                      "[default=%default].")
+
     parser.set_defaults(
         pipeline_action=None,
         pipeline_format="svg",
@@ -2005,7 +2010,8 @@ def main(args=sys.argv):
         log_exceptions=False,
         exceptions_terminate_immediately=False,
         debug=False,
-        variables_to_set=[]
+        variables_to_set=[],
+        checksums=0
     )
 
     (options, args) = E.Start(parser,
@@ -2128,7 +2134,7 @@ def main(args=sys.argv):
                     verbose=options.loglevel,
                     log_exceptions=options.log_exceptions,
                     exceptions_terminate_immediately=options.exceptions_terminate_immediately,
-                    checksum_level=0,
+                    checksum_level=options.checksums,
                 )
 
                 L.info(E.GetFooter())
@@ -2141,21 +2147,21 @@ def main(args=sys.argv):
                     options.stdout,
                     options.pipeline_targets,
                     verbose=options.loglevel,
-                    checksum_level=0,)
+                    checksum_level=options.checksums,)
 
             elif options.pipeline_action == "touch":
                 pipeline_run(
                     options.pipeline_targets,
                     touch_files_only=True,
                     verbose=options.loglevel,
-                    checksum_level=0)
+                    checksum_level=options.checksums)
 
             elif options.pipeline_action == "svg":
                 pipeline_printout_graph(
                     options.stdout,
                     options.pipeline_format,
                     options.pipeline_targets,
-                    checksum_level=0)
+                    checksum_level=options.checksums)
 
             elif options.pipeline_action == "plot":
                 outf, filename = tempfile.mkstemp()
@@ -2163,7 +2169,7 @@ def main(args=sys.argv):
                     os.fdopen(outf, "w"),
                     options.pipeline_format,
                     options.pipeline_targets,
-                    checksum_level=0)
+                    checksum_level=options.checksums)
                 execute("inkscape %s" % filename)
                 os.unlink(filename)
 

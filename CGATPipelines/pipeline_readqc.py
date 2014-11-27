@@ -334,7 +334,7 @@ def loadFastqcSummary(infile, outfile):
 #########################################################################
 
 
-@follows(loadFastqc, loadFastqcSummary, loadBiasSummary)
+@follows(loadFastqc, loadFastqcSummary)
 def full():
     pass
 

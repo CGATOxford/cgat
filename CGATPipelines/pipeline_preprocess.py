@@ -30,8 +30,7 @@ Pre-process pipeline
 :Date: |today|
 :Tags: Python
 
-(See the readqc pipeline for details of the readqc functions (target
-``readqc``).)
+See the readqc pipeline for details of the readqc functions
 
 The purpose of this pipeline is to pre-process reads (target
 ``full``).
@@ -170,7 +169,7 @@ import itertools
 import glob
 import cStringIO
 import string
-
+import pandas as pd
 import CGAT.IOTools as IOTools
 import CGAT.FastaIterator as FastaIterator
 import CGATPipelines.PipelineMapping as PipelineMapping
@@ -219,8 +218,6 @@ else:
     else:
         DATADIR = PARAMS["input"]  # not recommended practise
 
-
-
 #########################################################################
 #########################################################################
 # Read processing
@@ -239,7 +236,8 @@ SEQUENCEFILES = tuple([os.path.join(DATADIR, suffix_name)
                       for suffix_name in SEQUENCESUFFIXES])
 
 SEQUENCEFILES_REGEX = regex(
-    r".*/(\S+).(?P<suffix>fastq.1.gz|fastq.gz|fa.gz|sra|csfasta.gz|csfasta.F3.gz|export.txt.gz)")
+    r".*/(\S+).(?P<suffix>fastq.1.gz|fastq.gz|fa.gz|\
+sra|csfasta.gz|csfasta.F3.gz|export.txt.gz)")
 
 ###################################################################
 ###################################################################
@@ -266,7 +264,7 @@ for tool in P.asList(PARAMS["process_preprocessors"]):
     PREPROCESSTOOLS.append(tool)
 
 print "The preprocess tools used in this run are %s" % PREPROCESSTOOLS
-preprocess_prefix = "-".join(PREPROCESSTOOLS)
+preprocess_prefix = "-".join(PREPROCESSTOOLS[::-1])
 
 
 # update outfile regex to incorporate suffix of infile
@@ -290,47 +288,58 @@ def processReads(infile, outfile):
     P.run()
 
 
-@follows(processReads)
+@follows(mkdir("summary.dir"),
+         processReads)
 @transform(SEQUENCEFILES,
            SEQUENCEFILES_REGEX,
-           r"processed.dir/\1.\g<suffix>.processing.summary")
+           r"summary.dir/\1.\g<suffix>.processing.summary")
 def summarise(infile, outfile):
     '''summarise fastq statistics from '''
     track = os.path.basename(infile)
     initial_file = "processed.dir/%s.summary" % track
-    summary_files = [initial_file]
-    print "summary files:",
-    print summary_files
+    files = [initial_file]
+    stage = ["preprocessing"]
+    tool_list = []
+    df = pd.read_csv(initial_file, sep="\t", )
     for tool in PREPROCESSTOOLS:
-        summary_files.append("processed.dir/%s-%s.summary" % (tool, track))
-        print "summary files:",
-        print summary_files
+        tool_list.append(tool)
+        intermediate_file = "processed.dir/%s-%s.summary" % (
+            "-".join(tool_list[::-1]), track)
+        files.append(intermediate_file)
+        temp_df = pd.read_csv(intermediate_file, sep="\t")
+        df = pd.concat([df, temp_df], axis=0)
+    stage.extend(tool_list)
+    df["stage"] = stage
+    df["files"] = files
+    df.to_csv(outfile, sep="\t", index=False)
 
-    print "outfile" + outfile
+    if infile.endswith("fastq.1.gz"):
 
-    statement = '''echo -en 'sample\\t' > %(outfile)s;
-                grep 'reads' %(initial_file)s >> %(outfile)s;''' % locals()
+        def makeSecond(file1):
+            return(re.sub(".fastq.1.gz", ".fastq.2.gz", file1))
 
-    summary_files = " ".join(summary_files)
-
-    statement += '''files=(%(summary_files)s);
-                 for file in ${files[@]};
-                 do base=$(echo $file | cut -d "/" -f 2);
-                 echo -en $base'\\t' >> %(outfile)s;
-                 grep -v -e '#' -e 'reads' $file >> %(outfile)s; done
-                 ''' % locals()
-    P.run()
-
+        outfile2 = makeSecond(outfile)
+        track2 = makeSecond(track)
+        initial_file2 = makeSecond(initial_file)
+        files = [initial_file2]
+        tool_list = []
+        df = pd.read_csv(initial_file2, sep="\t", )
+        for tool in PREPROCESSTOOLS:
+            tool_list.append(tool)
+            intermediate_file = "processed.dir/%s-%s.summary" % (
+                "-".join(tool_list[::-1]), track2)
+            files.append(intermediate_file)
+            temp_df = pd.read_csv(intermediate_file, sep="\t")
+            df = pd.concat([df, temp_df], axis=0)
+        df["stage"] = stage
+        df["files"] = files
+        df.to_csv(outfile2, sep="\t", index=False)
 
 
 ########################################################################
 # all functions from here need to be removed
 # code is being kept temporarily whilst the pipeline is being refactored
 ########################################################################
-
-
-#########################################################################
-#########################################################################
 #########################################################################
 # adaptor trimming
 #########################################################################
@@ -413,7 +422,8 @@ ILLUMINA_ADAPTORS = {
     "NETseq-RT-primer_5prime": "ATCTCGTATGCCGTCTTCTGCTTG",
     "NETseq-RT-primer_3prime": "TCCGACGATCATTGATGGTGCCTACAG",
     "NETseq-PCR-primer-oLSC008-bc1":
-    "AATGATACGGCGACCACCGAGATCTACACGATCGGAAGAGCACACGTCTGAACTCCAGTCACATGCCATCCGACGATCATTGATGG"
+    "AATGATACGGCGACCACCGAGATCTACACGATCGGAAGAGCA\
+CACGTCTGAACTCCAGTCACATGCCATCCGACGATCATTGATGG"
 }
 
 
@@ -567,7 +577,8 @@ def summarizeProcessing(infile, outfile):
         if step == "reconcile":
             for line in inf:
                 x = re.search(
-                    "first pair: (\d+) reads, second pair: (\d+) reads, shared: (\d+) reads", line)
+                    "first pair: (\d+) reads, second pair: (\d+) \
+reads,shared: (\d+) reads", line)
                 if x:
                     i1, i2, o = map(int, x.groups())
                     inputs = [i1, i2]
@@ -589,7 +600,8 @@ def summarizeProcessing(infile, outfile):
                         int(re.match("Input: (\d+) reads.", line).groups()[0]))
                 elif line.startswith("Output:"):
                     outputs.append(
-                        int(re.match("Output: (\d+) reads.", line).groups()[0]))
+                        int(re.match("Output: (\d+) reads.",
+                                     line).groups()[0]))
 
         return zip(inputs, outputs)
 
@@ -652,19 +664,24 @@ def summarizeAllProcessing(infiles, outfile):
         ninput = int(vals[0][3])
         outputs = [int(x[4]) for x in vals]
         if first:
-            outf.write("track\tpair\tninput\t%s\t%s\t%s\t%s\n" % ("\t".join([x[1] for x in vals]),
-                                                                  "noutput",
-                                                                  "\t".join(
-                                                                      ["percent_%s" % x[1] for x in vals]),
-                                                                  "percent_output"))
+            outf.write("track\tpair\tninput\t%s\t%s\t%s\t%s\n" % (
+                "\t".join([x[1] for x in vals]),
+                "noutput",
+                "\t".join(
+                    ["percent_%s" % x[1] for x in vals]),
+                "percent_output"))
             first = False
         outf.write("%s\t%s\t%i\t%s\t%i\t%s\t%s\n" % (track, pair, ninput,
                                                      "\t".join(
                                                          map(str, outputs)),
                                                      outputs[-1],
                                                      "\t".join(
-                                                         ["%5.2f" % (100.0 * x / ninput) for x in outputs]),
-                                                     "%5.2f" % (100.0 * outputs[-1] / ninput)))
+                                                         ["%5.2f" % (100.0 * x
+                                                                     / ninput)
+                                                          for x in outputs]),
+                                                     "%5.2f" % (100.0 *
+                                                                outputs[-1] /
+                                                                ninput)))
     outf.close()
 
 #########################################################################
@@ -723,7 +740,11 @@ def loadFilteringSummary(infile, outfile):
 #########################################################################
 
 
-@transform([x for x in glob.glob("*.fastq.gz") + glob.glob("*.fastq.1.gz") + glob.glob("*.fastq.2.gz")], regex(r"(\S+).(fastq.1.gz|fastq.gz|fastq.2.gz|csfasta.gz)"), r"trim.\1.\2")
+@transform([x for x in glob.glob("*.fastq.gz") +
+            glob.glob("*.fastq.1.gz") +
+            glob.glob("*.fastq.2.gz")],
+           regex(r"(\S+).(fastq.1.gz|fastq.gz|fastq.2.gz|csfasta.gz)"),
+           r"trim.\1.\2")
 def trimReads(infile, outfile):
     '''trim reads to desired length using fastx
 
@@ -732,7 +753,8 @@ def trimReads(infile, outfile):
     E.warn("deprecated - use processReads instead")
 
     to_cluster = True
-    statement = '''zcat %(infile)s | fastx_trimmer %(trim_options)s 2> %(outfile)s.log | gzip > %(outfile)s'''
+    statement = '''zcat %(infile)s | fastx_trimmer %(trim_options)s 2>
+    %(outfile)s.log | gzip > %(outfile)s'''
     P.run()
 
 #########################################################################
@@ -740,12 +762,17 @@ def trimReads(infile, outfile):
 #########################################################################
 
 
-@transform([x for x in glob.glob("*.fastq.gz") + glob.glob("*.fastq.1.gz") + glob.glob("*.fastq.2.gz")], regex(r"(\S+).(fastq.1.gz|fastq.gz|fastq.2.gz|csfasta.gz)"), r"replaced.\1.\2")
+@transform([x for x in glob.glob("*.fastq.gz") +
+            glob.glob("*.fastq.1.gz") +
+            glob.glob("*.fastq.2.gz")],
+           regex(r"(\S+).(fastq.1.gz|fastq.gz|fastq.2.gz|csfasta.gz)"),
+           r"replaced.\1.\2")
 def replaceBaseWithN(infile, outfile):
     '''replaces the specified base with N'''
 
     to_cluster = True
-    statement = '''python %(scriptsdir)s/fastq2N.py -i %(infile)s %(replace_options)s'''
+    statement = '''python %(scriptsdir)s/fastq2N.py
+    -i %(infile)s %(replace_options)s'''
     P.run()
 
 #########################################################################
@@ -755,13 +782,7 @@ def replaceBaseWithN(infile, outfile):
 
 
 @follows(summarise)
-def test():
-    pass
-
-
-@follows(loadProcessingSummary, loadAllProcessingSummary)
 def full():
-    '''process (filter,trim) reads.'''
     pass
 
 
