@@ -1252,58 +1252,6 @@ def mergeDMRWindows(infile, outfile):
     P.run()
 
 
-def outputSpikeCounts(outfile, infile_name,
-                      expression_nbins=None,
-                      fold_nbins=None,
-                      expression_bins=None,
-                      fold_bins=None):
-    
-    df = pandas.read_csv(infile_name,
-                         sep="\t",
-                         index_col=0)
-
-    E.debug("read %i rows and %i columns of data" % df.shape)
-
-    if "edger" in outfile.lower():
-        # edger: treatment_mean and control_mean do not exist
-        # use supplied values directly.
-        l10average = numpy.log(df['treatment_mean'])
-        l2fold = numpy.log2(df['fold'])
-    else:
-        # use pseudocounts to compute fold changes
-        treatment_mean = df['treatment_mean'] + 1
-        control_mean = df['control_mean'] + 1
-        # build log2 average values
-        l10average = numpy.log((treatment_mean + control_mean) / 2)
-        l2fold = numpy.log2(treatment_mean / control_mean)
-
-    if expression_nbins is not None:
-        mm = math.ceil(max(l10average))
-        expression_bins = numpy.arange(0, mm, mm / expression_nbins)
-
-    if fold_nbins is not None:
-        mm = math.ceil(max(abs(min(l2fold)), abs(max(l2fold))))
-        # ensure that range is centered on exact 0
-        n = math.ceil(fold_nbins / 2.0)
-        fold_bins = numpy.concatenate(
-            (-numpy.arange(0, mm, mm / n)[:0:-1],
-             numpy.arange(0, mm, mm / n)))
-
-    # compute expression bins
-    d2hist_counts, xedges, yedges = numpy.histogram2d(
-        l10average, l2fold,
-        bins=(expression_bins,
-              fold_bins))
-
-    dd = pandas.DataFrame(d2hist_counts)
-    dd.index = list(xedges[:-1])
-    dd.columns = list(yedges[:-1])
-    dd.to_csv(IOTools.openFile(outfile, "w"),
-              sep="\t")
-
-    return df, d2hist_counts, xedges, yedges, l10average, l2fold
-
-
 @transform(DIFFTARGETS, suffix(".gz"), ".power.gz")
 def buildSpikeResults(infile, outfile):
     '''build matrices with results from spike-in and upload
@@ -1330,8 +1278,8 @@ def buildSpikeResults(infile, outfile):
 
     '''
 
-    expression_bins = 10
-    fold_bins = 10
+    expression_nbins = 10
+    fold_nbins = 10
 
     spikefile = P.snip(infile, '.tsv.gz') + '.spike.gz'
 
@@ -1353,10 +1301,11 @@ def buildSpikeResults(infile, outfile):
     E.debug("outputting spiked counts")
     (spiked, spiked_d2hist_counts, xedges, yedges,
      spiked_l10average, spiked_l2fold) = \
-        outputSpikeCounts(P.snip(outfile, ".power.gz") + ".spiked.gz",
-                          tmpfile_name,
-                          expression_bins,
-                          fold_bins)
+        PipelineWindows.outputSpikeCounts(
+            outfile=P.snip(outfile, ".power.gz") + ".spiked.gz",
+            infile_name=tmpfile_name,
+            expression_nbins=expression_nbins,
+            fold_nbins=fold_nbins)
 
     ########################################
     # output and load unspiked results
@@ -1369,10 +1318,11 @@ def buildSpikeResults(infile, outfile):
 
     (unspiked, unspiked_d2hist_counts, unspiked_xedges,
      unspiked_yedges, unspiked_l10average, unspiked_l2fold) = \
-        outputSpikeCounts(P.snip(outfile, ".power.gz") + ".unspiked.gz",
-                          tmpfile_name,
-                          expression_bins=xedges,
-                          fold_bins=yedges)
+        PipelineWindows.outputSpikeCounts(
+            outfile=P.snip(outfile, ".power.gz") + ".unspiked.gz",
+            infile_name=tmpfile_name,
+            expression_bins=xedges,
+            fold_bins=yedges)
 
     E.debug("computing power")
 

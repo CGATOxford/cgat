@@ -307,6 +307,7 @@ import glob
 import sqlite3
 
 import CGAT.Experiment as E
+import CGAT.Pipeline as P
 import CGAT.Bed as Bed
 import CGAT.IOTools as IOTools
 import CGAT.Database as Database
@@ -321,9 +322,8 @@ import CGATPipelines.PipelineMappingQC as PipelineMappingQC
 ###################################################
 # Pipeline configuration
 ###################################################
-
 # load options from the config file
-import CGAT.Pipeline as P
+
 P.getParameters(
     ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
      "../pipeline.ini",
@@ -334,8 +334,11 @@ P.getParameters(
 
 PARAMS = P.PARAMS
 
-PARAMS_ANNOTATIONS = P.peekParameters(PARAMS["annotations_dir"],
-                                      "pipeline_annotations.py", on_error_raise=__name__ == "__main__")
+PARAMS_ANNOTATIONS = P.peekParameters(
+    PARAMS["annotations_dir"],
+    "pipeline_annotations.py", on_error_raise=__name__ == "__main__")
+
+PipelinePeakcalling.PARAMS = PARAMS
 
 ###################################################################
 ###################################################################

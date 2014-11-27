@@ -33,9 +33,6 @@ import re
 import CGAT.IOTools as IOTools
 import CGAT.Pipeline as P
 
-# Set PARAMS in calling module
-PARAMS = {}
-
 
 def getPicardOptions():
     return "-pe dedicated 3 -R y -l mem_free=1.4G -l picard=1"
@@ -394,7 +391,6 @@ def buildBAMStats(infile, outfile):
 def loadBAMStats(infiles, outfile):
     '''load bam2stats.py output into sqlite database.'''
 
-    # scriptsdir = PARAMS["general_scriptsdir"]
     header = ",".join([P.snip(os.path.basename(x), ".readstats")
                       for x in infiles])
     filenames = " ".join(["<( cut -f 1,2 < %s)" % x for x in infiles])
