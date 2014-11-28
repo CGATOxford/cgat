@@ -28,12 +28,12 @@ def FastqcSectionIterator(infile):
                 "\t".join([x for x in line[:-1].split("\t") if x != ""]))
 
 
-def collectFastQCSections(infiles, section):
+def collectFastQCSections(infiles, section, datadir):
     '''iterate over all fastqc files and extract a particular section.'''
     results = []
     for infile in infiles:
         track = P.snip(infile, ".fastqc")
-        filename = os.path.join(track + "*_fastqc","fastqc_data.txt")
+        filename = os.path.join(datadir, track + "*_fastqc","fastqc_data.txt")
         for fn in glob.glob(filename):
             for name, status, header, data in FastqcSectionIterator(
                     IOTools.openFile(fn)):
@@ -76,16 +76,16 @@ def loadFastqc(filename):
         CSV2DB.run(inf, options)
 
 
-def buildFastQCSummaryStatus(infiles, outfile):
+def buildFastQCSummaryStatus(infiles, outfile, datadir):
     '''load fastqc status summaries into a single table.'''
 
     outf = IOTools.openFile(outfile, "w")
     first = True
     for infile in infiles:
         track = P.snip(infile, ".fastqc")
-        filename = os.path.join(
-            track + "*_fastqc",
-            "fastqc_data.txt")
+        filename = os.path.join(datadir, 
+                                track + "*_fastqc",
+                                "fastqc_data.txt")
 
         for fn in glob.glob(filename):
             prefix = os.path.basename(os.path.dirname(fn))
@@ -106,10 +106,10 @@ def buildFastQCSummaryStatus(infiles, outfile):
     outf.close()
 
 
-def buildFastQCSummaryBasicStatistics(infiles, outfile):
+def buildFastQCSummaryBasicStatistics(infiles, outfile, datadir):
     '''load fastqc summaries into a single table.'''
 
-    data = collectFastQCSections(infiles, "Basic Statistics")
+    data = collectFastQCSections(infiles, "Basic Statistics", datadir)
 
     outf = IOTools.openFile(outfile, "w")
     first = True
