@@ -7,44 +7,44 @@ PipelinePreprocess.py - Utility functions for processing short reads
 :Date: |today|
 :Tags: Python
 
-UPDATE: Mapping reads is a common task in pipelines. Different pipelines
-combine different sources of input (:term:`fastq` files, :term:`sra` files)
-of different data (single end, paired end) with different mapping
-algorithms (bowtie, tophat, stampy). This module provides utility
-functions to abstract some of these variations.
+UPDATE: Processing reads is a common task before mapping. Different sequencing
+technologies and applications require different read processing.
+This module provides utility functions to abstract some of these variations
 
-The pipeline does not know what kind of data it gets (a :term:`sra` archive
+The pipeline does not know what kind of data it gets (a directory
 might contain single end or paired end data or both).
 
-A pipeline might get several input data (:term:`fastq` and :term:`sra`
-formatted files at the same time).
+The module currently provides modules to perform:
+    * hard-trimming (fastx_trimmer, trimmomatic)
+    * adapter trimming (trimgalore, trimmomatic)
+    * read end quality trimming (trimgalore, trimmomatic)
+    * sliding window quality trimming (sickle, trimmomatic)
+    * RRBS-specific trimming (trimgalore)
 
-The module currently is able to deal with:
-
-   * tophat mapping against genome
-   * bowtie mapping against transcriptome, genome and junctions
-   * bwa against genome
-   * stampy against genome
-
-It implements:
-   * .sra: paired-end and single-end
+It has been tested with:
    * .fastq: paired-end and single-end
-   * .csfasta: colour-space, single-end
+
+
+To do
+=====
+Check this will work with .sra files
+How to deal with flash?
+e.g this is the only tool that doesn't do one-to-one processing
+
 
 Code
 ----
 
 '''
 
+import re
 import os
-import shutil
-import glob
 import collections
 import CGAT.Pipeline as P
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import CGAT.Fastq as Fastq
-import pysam
+import CGATPipelines.PipelineMapping as Mapping
 
 SequenceInformation = collections.namedtuple("SequenceInformation",
                                              """paired_end
@@ -53,6 +53,10 @@ SequenceInformation = collections.namedtuple("SequenceInformation",
                                                  readlength_first
                                                  readlength_second
                                                  is_colour""")
+
+
+def makeSecond(file1):
+    return(re.sub(".fastq.1.gz", ".fastq.2.gz", file1))
 
 
 def getReadLengthFromFastq(filename):
@@ -67,20 +71,6 @@ def getReadLengthFromFastq(filename):
         record = iterate(infile).next()
         readlength = len(record.seq)
         return readlength
-
-
-def getReadLengthFromBamfile(filename):
-    '''return readlength from a bam file.
-
-    Only the first read is inspected. If there are
-    different read lengths in the file, though luck.
-    '''
-
-    samfile = pysam.Samfile(filename, "rb")
-    record = samfile.fetch().next()
-    readlength = record.rlen
-    samfile.close()
-    return readlength
 
 
 def getSequencingInformation(track):
@@ -112,10 +102,10 @@ def getSequencingInformation(track):
                                       colour))
 
 
-class Preprocessor(object):
+class MasterProcessor(Mapping.Mapper):
 
-    '''preprocess reads.
-
+    '''Processes reads with tools specified.
+    inherits from PipelineMapping Mapper class as
     converts the input data, calls processing tools
 
     All in a single statement to be send to the cluster.
@@ -129,390 +119,15 @@ class Preprocessor(object):
     # convert to sanger quality scores
     convert = False
 
-    def __init__(self, executable=None,
+    def __init__(self, save=True, executable=None,
                  *args, **kwargs):
         if executable:
             self.executable = executable
-
-    def quoteFile(self, filename):
-        '''add uncompression for compressed files.
-        and programs that expect uncompressed files.
-
-        .. note::
-            This will only work if the downstream programs read the
-            file only once.
-        '''
-        if filename.endswith(".gz") and not self.compress:
-            return "<( gunzip < %s )" % filename
+        self.save = save
+        if self.save:
+            self.outdir = "processed.dir"
         else:
-            return filename
-
-    def convert(self, infiles, outfile):
-        '''build conversion statement
-
-        Build a command line statement that extracts/converts
-        various input formats to fastq formatted files.
-
-        returns the statement and the fastq files.
-        '''
-
-        assert len(infiles) > 0, "no input files for preprocessing"
-
-        tmpdir_fastq = P.getTempDir()
-
-        # create temporary directory again for nodes
-        statement = ["mkdir -p %s" % tmpdir_fastq]
-        fastqfiles = []
-
-        # get track by extension of outfile
-        track = os.path.splitext(os.path.basename(outfile))[0]
-
-        if self.compress:
-            compress_cmd = "| gzip"
-            extension = ".gz"
-        else:
-            compress_cmd = ""
-            extension = ""
-
-        for infile in infiles:
-
-            if infile.endswith(".export.txt.gz"):
-                # single end illumina export
-                statement.append("""gunzip < %(infile)s
-                | awk '$11 != "QC" || $10 ~ /(\d+):(\d+):(\d+)/ \
-                {if ($1 != "")
-                {readname=sprintf("%%%%s_%%%%s:%%%%s:%%%%s:%%%%s:%%%%s",
-                $1, $2, $3, $4, $5, $6);}
-                else {readname=sprintf("%%%%s:%%%%s:%%%%s:%%%%s:%%%%s",
-                $1, $3, $4, $5, $6);}
-                printf("@%%%%s\\n%%%%s\\n+\\n%%%%s\\n",readname,$9,$10);}'
-                %(compress_cmd)s
-                > %(tmpdir_fastq)s/%(track)s.fastq%(extension)s""" % locals())
-                fastqfiles.append(
-                    ("%s/%s.fastq%s" % (tmpdir_fastq, track, extension),))
-            elif infile.endswith(".fa.gz"):
-                statement.append(
-                    '''gunzip < %(infile)s %(compress_cmd)s
-                    > %(tmpdir_fastq)s/%(track)s.fa''' % locals())
-                fastqfiles.append(("%s/%s.fa" % (tmpdir_fastq, track),))
-                self.datatype = "fasta"
-
-            elif infile.endswith(".sra"):
-                # sneak preview to determine if paired end or single end
-                outdir = P.getTempDir()
-                # --split-files is present in fastq-dump 2.1.7
-                P.execute(
-                    """fastq-dump --split-files --gzip -X 1000
-                    --outdir %(outdir)s %(infile)s""" % locals())
-                # --split-files will create files called prefix_#.fastq.gz
-                # where # is the read number.
-                # The following cases are:
-
-                # * file cotains paired end data:
-                #      output = prefix_1.fastq.gz, prefix_2.fastq.gz
-                #
-                #    * special case: unpaired reads in a paired end
-                #                    run end up in prefix.fastq.gz
-                #    * special case: if paired reads are stored in
-                #                    a single read, fastq-dump will split.
-                #       There might be a joining sequence. The output
-                #                 would thus be:
-                #       prefix_1.fastq.gz, prefix_2.fastq.gz, prefix_3.fastq.gz
-                #
-                #      You want files 1 and 3.
-                f = sorted(glob.glob(os.path.join(outdir, "*.fastq.gz")))
-                ff = [os.path.basename(x) for x in f]
-                if len(f) == 1:
-                    # sra file contains one read: output = prefix.fastq.gz
-                    pass
-                elif len(f) == 2:
-                    # sra file contains read pairs: output = prefix_1.fastq.gz,
-                    # prefix_2.fastq.gz
-                    assert ff[0].endswith(
-                        "_1.fastq.gz") and ff[1].endswith("_2.fastq.gz")
-                elif len(f) == 3:
-                    if ff[2].endswith("_3.fastq.gz"):
-                        f = glob.glob(os.path.join(outdir, "*_[13].fastq.gz"))
-                    else:
-                        f = glob.glob(os.path.join(outdir, "*_[13].fastq.gz"))
-                E.info("sra file contains the following files: %s" % f)
-                shutil.rmtree(outdir)
-                fastqfiles.append(
-                    ["%s/%s" % (tmpdir_fastq, os.path.basename(x))
-                     for x in sorted(f)])
-                statement.append(
-                    """fastq-dump --split-files --gzip --outdir
-                    %(tmpdir_fastq)s %(infile)s""" % locals())
-
-            elif infile.endswith(".fastq.gz"):
-                format = Fastq.guessFormat(
-                    IOTools.openFile(infile, "r"), raises=False)
-                if 'sanger' not in format and self.convert:
-                    statement.append("""gunzip < %(infile)s
-                    | python %%(scriptsdir)s/fastq2fastq.py
-                    --change-format=sanger
-                    --guess-format=phred64
-                    --log=%(outfile)s.log
-                    %(compress_cmd)s
-                    > %(tmpdir_fastq)s/%(track)s.fastq%(extension)s""" %
-                                     locals())
-                    fastqfiles.append(
-                        "%s/%s.fastq%s" % (tmpdir_fastq, track, extension))
-                else:
-                    E.debug("%s: assuming quality score format %s" %
-                            (infile, format))
-                    fastqfiles.append(infile)
-
-            elif infile.endswith(".csfasta.gz"):
-                # single end SOLiD data
-                if self.preserve_colourspace:
-                    quality = P.snip(infile, ".csfasta.gz") + ".qual.gz"
-                    if not os.path.exists(quality):
-                        raise ValueError("no quality file for %s" % infile)
-                    statement.append("""gunzip < %(infile)s
-                    > %(tmpdir_fastq)s/%(track)s.csfasta%(extension)s""" %
-                                     locals())
-                    statement.append("""gunzip < %(quality)s
-                    > %(tmpdir_fastq)s/%(track)s.qual%(extension)s""" %
-                                     locals())
-                    fastqfiles.append("%s/%s.csfasta%s" %
-                                      (tmpdir_fastq, track, extension),
-                                      "%s/%s.qual%s" %
-                                      (tmpdir_fastq, track, extension))
-                    self.datatype = "solid"
-                else:
-                    quality = P.snip(infile, ".csfasta.gz") + ".qual.gz"
-
-                    statement.append("""solid2fastq
-                    <(gunzip < %(infile)s) <(gunzip < %(quality)s)
-                    %(compress_cmd)s
-                    > %(tmpdir_fastq)s/%(track)s.fastq%(extension)""" %
-                                     locals())
-                    fastqfiles.append(
-                        "%s/%s.fastq%s" % (tmpdir_fastq, track, extension))
-
-            elif infile.endswith(".csfasta.F3.gz"):
-                # paired end SOLiD data
-                if self.preserve_colourspace:
-                    bn = P.snip(infile, ".csfasta.F3.gz")
-                    # order is important - mirrors tophat reads followed by
-                    # quals
-                    f = []
-                    for suffix in ("csfasta.F3", "csfasta.F5",
-                                   "qual.F3", "qual.F5"):
-                        fn = "%(bn)s.%(suffix)s" % locals()
-                        if not os.path.exists(fn + ".gz"):
-                            raise ValueError(
-                                "expected file %s.gz missing" % fn)
-                        statement.append("""gunzip < %(fn)s.gz
-                        %(compress_cmd)s
-                        > %(tmpdir_fastq)s/%(track)s.%(suffix)s%(extension)s
-                        """ %
-                                         locals())
-                        f.append(
-                            "%(tmpdir_fastq)s/%(track)s.%(suffix)s%(extension)s" %
-                            locals())
-                    fastqfiles.append(f)
-                    self.datatype = "solid"
-                else:
-                    quality = P.snip(infile, ".csfasta.gz") + ".qual.gz"
-
-                    statement.append("""solid2fastq
-                    <(gunzip < %(infile)s) <(gunzip < %(quality)s)
-                    %(compress_cmd)s
-                    > %(tmpdir_fastq)s/%(track)s.fastq%(extension)s""" %
-                                     locals())
-                    fastqfiles.append(
-                        "%s/%s.fastq%s" % (tmpdir_fastq, track, extension))
-
-            elif infile.endswith(".fastq.1.gz"):
-
-                bn = P.snip(infile, ".fastq.1.gz")
-                infile2 = "%s.fastq.2.gz" % bn
-                if not os.path.exists(infile2):
-                    raise ValueError(
-                        "can not find paired ended file "
-                        "'%s' for '%s'" % (infile2, infile))
-
-                format = Fastq.guessFormat(
-                    IOTools.openFile(infile), raises=False)
-                if 'sanger' not in format:
-                    statement.append("""gunzip < %(infile)s
-                    | python %%(scriptsdir)s/fastq2fastq.py
-                    --change-format=sanger
-                    --guess-format=phred64
-                    --log=%(outfile)s.log
-                    %(compress_cmd)s
-                    > %(tmpdir_fastq)s/%(track)s.1.fastq%(extension)s;
-                    gunzip < %(infile2)s
-                    | python %%(scriptsdir)s/fastq2fastq.py
-                    --change-format=sanger
-                    --guess-format=phred64
-                    --log=%(outfile)s.log
-                    %(compress_cmd)s
-                    > %(tmpdir_fastq)s/%(track)s.2.fastq%(extension)s
-                    """ % locals())
-                    fastqfiles.extend(
-                        "%s/%s.1.fastq%s" % (tmpdir_fastq, track, extension),
-                        "%s/%s.2.fastq%s" % (tmpdir_fastq, track, extension))
-
-                else:
-                    E.debug("%s: assuming quality score format %s" %
-                            (infile, format))
-                    fastqfiles.extend((infile,
-                                       infile2))
-
-            else:
-                raise NotImplementedError("unknown file format %s" % infile)
-
-        self.tmpdir_fastq = tmpdir_fastq
-
-        assert len(fastqfiles) > 0, "no fastq files for preprocessing"
-
-        return "; ".join(statement) + ";", fastqfiles
-
-    def process(self, infile, list_of_preprocessers, outfile,
-                compress=False, save=True):
-        '''build prcessing statement on infiles.
-        list of processing tools is used to build a command line statement
-        in list order
-        '''
-        total_cmd = ""
-        processed_files = []
-        print list_of_preprocessers
-        file_compress = compress
-        save_intermediates = save
-        for idx, tool in enumerate(list_of_preprocessers):
-            print tool
-            print idx
-            if idx == len(list_of_preprocessers)-1:
-                end = True
-            else:
-                end = False
-
-            if tool == "cutadapt":
-                tool_cmd = ""
-            elif tool == "trimmomatic":
-                tool_cmd = ""
-            elif tool == "trimgalore":
-                processer_object = trimgalore(
-                    compress=file_compress,
-                    save=save_intermediates,
-                    final=end)
-                tool_cmd, infile = processer_object.build(infile)
-            else:
-                tool_cmd = "testing_testing"
-                # insert error statement here.
-                pass
-
-            total_cmd += tool_cmd
-            processed_files.append(infile,)
-        return total_cmd, processed_files
-
-    def postprocess(self, initial_file, preprocesser_list):
-        '''collect final output data and postprocess.
-        summarise initial fastq and then all processed fastqs'''
-
-        if len(initial_file) == 1:
-            num_files = 1
-            initial_file = os.path.basename(initial_file[0])
-        elif len(initial_file) == 2:
-            num_files = 2
-            initial_file1, initial_file2 = initial_file
-
-        if num_files == 1:
-            postprocess_cmd = '''zcat %(initial_file)s |
-                          python %%(scriptsdir)s/fastq2summary.py
-                          --guess-format=illumina-1.8
-                          > processed.dir/%(initial_file)s.summary;
-                          ''' % locals()
-
-            processed_file = initial_file
-            for tool in preprocesser_list:
-                processed_file = tool + "-" + processed_file
-                postprocess_cmd += '''zcat processed.dir/%(processed_file)s |
-                              python %%(scriptsdir)s/fastq2summary.py
-                              --guess-format=illumina-1.8
-                              > processed.dir/%(processed_file)s.summary;
-                              ''' % locals()
-
-        # edit from here to allow processing of paired end sequences
-
-        elif num_files == 2:
-            print "HAVE THEY SPLIT?............."
-            print initial_file
-            print initial_file1
-            print initial_file2
-            initial_file1, initial_file2 = initial_file
-            postprocess_cmd = '''zcat %(initial_file1)s |
-                          python %%(scriptsdir)s/fastq2summary.py
-                          --guess-format=illumina-1.8
-                          > processed.dir/%(initial_file1)s.summary;
-                          zcat %(initial_file2)s |
-                          python %%(scriptsdir)s/fastq2summary.py
-                          --guess-format=illumina-1.8
-                          > processed.dir/%(initial_file2)s.summary;
-                          ''' % locals()
-
-            processed_file1 = initial_file1
-            processed_file2 = initial_file2
-            for tool in preprocesser_list:
-                print "THIS IS THE PROBLEM..................."
-                print tool
-                print processed_file1
-                processed_file1 = tool + "-" + processed_file1
-                processed_file2 = tool + "-" + processed_file2
-                postprocess_cmd += '''zcat processed.dir/%(processed_file1)s |
-                              python %%(scriptsdir)s/fastq2summary.py
-                              --guess-format=illumina-1.8
-                              > processed.dir/%(processed_file1)s.summary;
-                              zcat processed.dir/%(processed_file2)s |
-                              python %%(scriptsdir)s/fastq2summary.py
-                              --guess-format=illumina-1.8
-                              > processed.dir/%(processed_file2)s.summary;
-                              ''' % locals()
-
-        return postprocess_cmd
-
-    def cleanup(self, outfile):
-        '''clean up.'''
-        statement = '''rm -rf %s;''' % (self.tmpdir_fastq)
-        return statement
-
-    def build(self, infile, outfile, preprocesser_list):
-        '''run mapper.'''
-        # how best to pass on parameters?
-        cmd_preprocess, raw_file = self.convert(infile, outfile)
-        cmd_process, processed_files = self.process(raw_file,
-                                                    preprocesser_list, outfile)
-        cmd_postprocess = self.postprocess(raw_file, preprocesser_list)
-        cmd_clean = self.cleanup(outfile)
-
-        assert cmd_preprocess.strip().endswith(";")
-        assert cmd_process.strip().endswith(";")
-        if cmd_postprocess:
-            assert cmd_postprocess.strip().endswith(";")
-        if cmd_clean:
-            assert cmd_clean.strip().endswith(";")
-
-        statement = " checkpoint; ".join((cmd_preprocess,
-                                          cmd_process,
-                                          cmd_postprocess,
-                                          cmd_clean))
-
-        return statement
-
-
-class processer(object):
-    '''define class attributes for processers'''
-    def __init__(self, final=True, compress=False,
-                 save=True, *args, **kwargs):
-        self.final = final
-        self.compress = compress
-        if self.final:
-            self.save = True
-        else:
-            self.save = save
+            self.outdir = P.getTempDir("/ifs/scratch")
 
     def getfastqAttr(self, infiles):
         num_files = len(infiles)
@@ -528,26 +143,222 @@ class processer(object):
 
         return num_files, offset
 
-    def build(self):
-        pass
+    def quoteFile(self, filename):
+        '''add uncompression for compressed files.
+        and programs that expect uncompressed files.
+
+        .. note::
+            This will only work if the downstream programs read the
+            file only once.
+        '''
+        if filename.endswith(".gz") and not self.compress:
+            return "<( gunzip < %s )" % filename
+        else:
+            return filename
+
+    def process(self, infile, list_of_preprocessers, outfile,
+                compress=False, save=True):
+        '''build processing statement on infiles.  list of processing
+        tools is used to build a command line statement in list order'''
+
+        total_tool_cmd = ""
+        total_post_cmd = ""
+        processed_files = []
+        file_compress = compress
+        save_intermediates = save
+        first = 1
+        f_format = ""
+        num_files = ""
+        # initiate a dummy processer object with no prefix to summarise
+        # the initial input files
+        initial_processer_object = process_tool(
+            compress=file_compress, save=save_intermediates,
+            final=0, f_format=f_format, num_files=num_files,
+            first=first, outdir=self.outdir, infiles=infile,
+            prefix="")
+        tool_cmd, post_cmd, null_infile, null_f_format, null_num_files = (
+            initial_processer_object.build(infile))
+        total_post_cmd += post_cmd
+
+        for idx, tool in enumerate(list_of_preprocessers):
+            if idx == len(list_of_preprocessers)-1:
+                end = True
+                save_intermediates = True  # if final file must save!
+            else:
+                end = False
+            if idx > 0:
+                first = 0
+            print "save_intermediates; %s" % save_intermediates
+            print "tool: %s" % tool
+            if tool == "fastx_trimmer":
+                fastx_trimmer_object = fastx_trimmer(
+                    compress=file_compress, save=save_intermediates,
+                    final=end, f_format=f_format, num_files=num_files,
+                    first=first, outdir=self.outdir, infiles=infile,
+                    prefix="fastx_trimmer-")
+                tool_cmd, post_cmd, infile, f_format, num_files = (
+                    fastx_trimmer_object.build(infile))
+            elif tool == "trimmomatic":
+                trimmomatic_object = trimmomatic(
+                    compress=file_compress, save=save_intermediates,
+                    final=end, f_format=f_format, num_files=num_files,
+                    first=first, outdir=self.outdir, infiles=infile,
+                    prefix="trimmomatic-")
+                tool_cmd, post_cmd, infile, f_format, num_files = (
+                    trimmomatic_object.build(infile))
+            elif tool == "sickle":
+                sickle_object = sickle(
+                    compress=file_compress, save=save_intermediates,
+                    final=end, f_format=f_format, num_files=num_files,
+                    first=first, outdir=self.outdir, infiles=infile,
+                    prefix="sickle-")
+                tool_cmd, post_cmd, infile,  f_format, num_files = (
+                    sickle_object.build(infile))
+            elif tool == "trimgalore":
+                trimgalore_object = trimgalore(
+                    compress=file_compress, save=save_intermediates,
+                    final=end, f_format=f_format, num_files=num_files,
+                    first=first, outdir=self.outdir, infiles=infile,
+                    prefix="trimgalore-")
+                tool_cmd, post_cmd, infile, f_format, num_files = (
+                    trimgalore_object.build(infile))
+            elif tool == "flash":
+                flash_object = flash(
+                    compress=file_compress, save=save_intermediates,
+                    final=end, f_format=f_format, num_files=num_files,
+                    first=first, outdir=self.outdir, infiles=infile,
+                    prefix="flash-")
+                tool_cmd, post_cmd, infile, f_format, num_files = (
+                    flash_object.build(infile))
+            else:
+                E.info("%s is not a supported tool" % tool)
+
+            total_tool_cmd += tool_cmd
+            total_post_cmd += post_cmd
+            processed_files.append(infile,)
+        return total_tool_cmd, total_post_cmd, processed_files
+
+    def cleanup(self, outfile):
+        '''clean up.'''
+        if self.save:
+            statement = 'checkpoint;'
+        else:
+            statement = 'rm -rf %s;' % self.outdir
+        return statement
+
+    def build(self, infile, outfile, processer_list):
+        '''run mapper.'''
+        cmd_preprocess, raw_file = self.preprocess(infile, outfile)
+        raw_file = raw_file[0]
+        cmd_process, cmd_post, processed_files = self.process(
+            raw_file, processer_list, outfile, save=self.save)
+        cmd_clean = self.cleanup(outfile)
+
+        assert cmd_preprocess.strip().endswith(";")
+        assert cmd_process.strip().endswith(";")
+        assert cmd_post.strip().endswith(";")
+        assert cmd_clean.strip().endswith(";")
+
+        statement = " checkpoint; ".join((cmd_preprocess,
+                                          cmd_process,
+                                          cmd_post,
+                                          cmd_clean))
+        return statement
 
 
-class trimgalore(processer):
+class process_tool(object):
+    '''defines class attributes for a sequennce utility tool'''
+
+    def __init__(self, first=True, final=True, compress=False,
+                 save=True, f_format="", num_files="", prefix="",
+                 outdir="", infiles=(),
+                 *args, **kwargs):
+        self.final = final
+        self.compress = compress
+        self.first = first
+        self.f_format = f_format
+        self.num_files = num_files
+        self.prefix = prefix
+        if self.final:
+            self.save = True
+            self.outdir = "processed.dir"
+        else:
+            self.save = save
+            self.outdir = outdir
+
+    def setfastqAttr(self, infiles):
+
+        if self.first:
+            self.num_files = len(infiles)
+
+        if self.num_files == 1:
+            infile1 = infiles[0]
+        elif self.num_files == 2:
+            infile1, infile2 = infiles
+
+        if self.first:
+            self.f_format = Fastq.guessFormat(IOTools.openFile(infile1),
+                                              raises=False)
+            E.info("%s: format guess: %s" % (infile1, self.f_format))
+        else:
+            E.info("%s: format set as previous: %s" % (
+                infile1, self.f_format))
+        self.offset = Fastq.getOffset(self.f_format, raises=False)
 
     def process(self, infiles):
+        return ("", infiles)
 
-        num_files, offset = self.getfastqAttr(infiles)
+    def postprocess(self, infiles):
 
-        if self.save:
-            outdir = "processed.dir"
-        else:
-            outdir = P.getTempDir("/ifs/scratch")
+        outdir = self.outdir
+        prefix = self.prefix
 
-        if num_files == 1:
+        if self.num_files == 1:
+            infile = infiles[0]
+            infile_base = os.path.basename(infile)
+            postprocess_cmd = '''zcat %(infile)s |
+            python %%(scriptsdir)s/fastq2summary.py
+            --guess-format=illumina-1.8 -v0
+            > summary.dir/%(infile_base)s.summary;
+            ''' % locals()
+
+        elif self.num_files == 2:
+            infile1, infile2 = infiles
+            infile_base1, infile_base2, = [
+                os.path.basename(x) for x in infiles]
+            postprocess_cmd = '''zcat %(infile1)s |
+            python %%(scriptsdir)s/fastq2summary.py
+            --guess-format=illumina-1.8 -v0
+            > summary.dir/%(infile_base1)s.summary;
+            zcat %(infile2)s |
+            python %%(scriptsdir)s/fastq2summary.py
+            --guess-format=illumina-1.8 -v0
+            > summary.dir/%(infile_base2)s.summary
+            ;''' % locals()
+
+        return postprocess_cmd
+
+    def build(self, infiles):
+        self.setfastqAttr(infiles)
+
+        process_cmd, fastq_outfiles = self.process(infiles)
+        post_cmd = self.postprocess(fastq_outfiles)
+
+        return (process_cmd, post_cmd, fastq_outfiles,
+                self.f_format, self.num_files)
+
+
+class trimgalore(process_tool):
+
+    def process(self, infiles):
+        prefix = self.prefix
+        offset = self.offset
+        outdir = self.outdir
+        if self.num_files == 1:
             infile = infiles[0]
             track = os.path.basename(infile)
-            outfile = "%(outdir)s/trimgalore-%(track)s" % locals()
-            logfile = outdir + "/" + track + ".trim_galore.log"
+            outfile = "%(outdir)s/%(prefix)s%(track)s" % locals()
+            logfile = "log.dir/" + track + ".trim_galore.log"
             trim_out = "%s/%s_trimmed.fq.gz" % (outdir,
                                                 P.snip(track, ".fastq.gz"))
             cmd = '''trim_galore %%(trimgalore_options)s
@@ -558,17 +369,15 @@ class trimgalore(processer):
                      2>>%(logfile)s;
                      mv %(trim_out)s %(outfile)s;
                      ''' % locals()
-            outfiles = outfile
-            logfile = "%(track)s_trimming_report.txt"
+            outfiles = (outfile,)
 
-        elif num_files == 2:
+        elif self.num_files == 2:
             infile1, infile2 = infiles
             track1 = os.path.basename(infile1)
             track2 = P.snip(track1, ".fastq.1.gz") + ".fastq.2.gz"
-            outfile1 = "%(outdir)s/trimgalore-%(track1)s" % locals()
-            outfile2 = "%(outdir)s/trimgalore-%(track2)s" % locals()
-
-            logfile = outdir + "/" + track1 + ".trim_galore.log"
+            outfile1 = "%(outdir)s/%(prefix)s%(track1)s" % locals()
+            outfile2 = "%(outdir)s/%(prefix)s%(track2)s" % locals()
+            logfile = "log.dir/" + track1 + ".trim_galore.log"
 
             cmd = '''trim_galore %%(trimgalore_options)s
                      --paired -a %%(trimgalore_adapter)s
@@ -580,18 +389,186 @@ class trimgalore(processer):
                      ''' % locals()
             outfiles = (outfile1, outfile2)
 
-        else:
-            cmd = "this shouldn't happen! - throw an error!"
+        return cmd, outfiles
+
+
+class sickle(process_tool):
+
+    def process(self, infiles):
+        prefix = self.prefix
+        offset = self.offset
+        outdir = self.outdir
+        rRANGES = {33: 'sanger', 64: 'illumina-1.8', 59: 'solexa'}
+        quality = rRANGES[offset]
+
+        if self.num_files == 1:
+            infile = infiles[0]
+            track = os.path.basename(infile)
+            outfile = "%(outdir)s/%(prefix)s%(track)s" % locals()
+            logfile = "log.dir/" + track + ".sickle.log"
+
+            cmd = '''sickle se -g %%(sickle_options)s
+                     --qual-type %(quality)s
+                     --output-file %(outfile)s
+                     --fastq-file %(infile)s
+                     2>>%(logfile)s
+                     ;''' % locals()
+            outfiles = (outfile,)
+
+        elif self.num_files == 2:
+            infile1, infile2 = infiles
+            track1 = os.path.basename(infile1)
+            track2 = P.snip(track1, ".fastq.1.gz") + ".fastq.2.gz"
+            outfile1 = "%(outdir)s/%(prefix)s%(track1)s" % locals()
+            outfile2 = "%(outdir)s/%(prefix)s%(track2)s" % locals()
+            logfile = "log.dir/" + track1 + ".sickle.log"
+
+            cmd = '''sickle pe -g -s %%(sickle_options)s
+                     --qual-type %(quality)s
+                     -f %(infile1)s -r %(infile2)s
+                     -o %(outfile1)s -p %(outfile2)s
+                     2>>%(logfile)s
+                     ;''' % locals()
+            outfiles = (outfile1, outfile2)
 
         return cmd, outfiles
 
-    def postprocess(self, logfile):
-        return ""
 
-    def build(self, infile):
-        process_cmd, fastq_outfiles = self.process(infile)
-        post_cmd = self.postprocess(fastq_outfiles)
-        statement = " checkpoint; ".join([process_cmd,
-                                          post_cmd])
+class trimmomatic(process_tool):
 
-        return statement, fastq_outfiles
+    def process(self, infiles):
+        prefix = self.prefix
+        offset = self.offset
+        outdir = self.outdir
+
+        if self.num_files == 1:
+            if self.first:
+                infile = infiles[0]
+
+            track = os.path.basename(infile)
+            logfile = "log.dir/" + track + ".trimmomatic.log"
+            outfile = "%(outdir)s/%(prefix)s%(track)s" % locals()
+            trim_out = "%s/%s_trimmed.fq.gz" % (
+                outdir, P.snip(track, ".fastq.gz"))
+            cmd = '''trimmomatic SE -threads %%(threads)s -phred%(offset)s
+                     %(infile)s %(outfile)s
+                     %%(trimmomatic_options)s 2>> %(logfile)s
+                     ;''' % locals()
+            outfiles = (outfile,)
+
+        elif self.num_files == 2:
+            infile1, infile2 = infiles
+            track1 = os.path.basename(infile1)
+            track2 = re.sub(".fastq.1.gz", ".fastq.2.gz", track1)
+            logfile = "log.dir/" + track1 + ".trimmomatic.log"
+            outfile1 = "%(outdir)s/%(prefix)s%(track1)s" % locals()
+            outfile2 = "%(outdir)s/%(prefix)s%(track2)s" % locals()
+
+            cmd = '''trimmomatic PE -threads %%(threads)s -phred%(offset)s
+                     %(infile1)s %(infile2)s
+                     %(outfile1)s %(outfile1)s.unpaired
+                     %(outfile2)s %(outfile2)s.unpaired
+                     %%(trimmomatic_options)s 2>> %(logfile)s
+                     ;''' % locals()
+            outfiles = (outfile1, outfile2)
+
+        return cmd, outfiles
+
+
+class fastx_trimmer(process_tool):
+
+    def process(self, infiles):
+        prefix = self.prefix
+        offset = self.offset
+        outdir = self.outdir
+
+        if self.num_files == 1:
+            infile = infiles[0]
+            track = os.path.basename(infile)
+            logfile = "log.dir/" + track + ".trimmomatic.log"
+            outfile = "%(outdir)s/%(prefix)s%(track)s" % locals()
+            trim_out = "%s/%s_trimmed.fq.gz" % (outdir,
+                                                P.snip(track, ".fastq.gz"))
+            cmd = '''zcat %(infile)s | fastx_trimmer -Q%(offset)s
+            %%(fastx_trimmer_options)s 2> %(logfile)s | gzip > %(outfile)s
+            ;''' % locals()
+
+            outfiles = (outfile,)
+
+        else:
+            E.info("fastx_trimmer does not support paired end reads")
+
+        return cmd, outfiles
+
+
+class flash(process_tool):
+
+    def process(self, infiles):
+        prefix = self.prefix
+        offset = self.offset
+        outdir = self.outdir
+
+        if self.num_files == 2:
+            infile1, infile2 = infiles
+            track1 = os.path.basename(infile1)
+            track2 = makeSecond(track1)
+            base_track = P.snip(track1, ".fastq.1.gz")
+            track1_single = re.sub(".fastq.1.gz", ".fastq.gz", track1)
+            outfile_single = ("%(outdir)s/%(prefix)s%(track1_single)s"
+                              % locals())
+            outfile1 = "%(outdir)s/%(prefix)s%(track1)s" % locals()
+            outfile2 = "%(outdir)s/%(prefix)s%(track2)s" % locals()
+
+            logfile = "log.dir/" + track1 + ".sickle.log"
+
+            cmd = '''flash %(infile1)s %(infile2)s
+            -p%(offset)s %%(flash_options)s
+            -o %(base_track)s -d %(outdir)s
+            2>>%(logfile)s; checkpoint;
+            cat %(outdir)s/%(base_track)s.extendedFrags.fastq | gzip >
+            %(outfile_single)s;
+            cat %(outdir)s/%(base_track)s.notCombined_1.fastq | gzip >
+            %(outfile1)s;
+            cat %(outdir)s/%(base_track)s.notCombined_1.fastq | gzip >
+            %(outfile2)s;
+            rm -rf %(outdir)s/%(base_track)s.extendedFrags.fastq
+            %(outdir)s/%(base_track)s.hist
+            %(outdir)s/%(base_track)s.histogram
+            %(outdir)s/%(base_track)s.notCombined_1.fastq
+            %(outdir)s/%(base_track)s.notCombined_2.fastq
+            ;''' % locals()
+
+            outfiles = (outfile_single,)
+
+        else:
+            E.info("flash requires paired end reads")
+
+        self.num_files = 1
+        # need to set num_file to 1 as only one outfile produced
+
+        return cmd, outfiles
+
+    def postprocess(self, infiles):
+        # postprocess used to summarise single end fastq twice so that
+        # it gets concatenated at the end of the summary tables for
+        # both initial paired end files. if a further single end step
+        # is included after flash, currently, it will break at the
+        # summarise function in pipeline_preprocess
+
+        outdir = self.outdir
+        prefix = self.prefix
+        infile1 = infiles[0]
+        infile_base1 = os.path.basename(infile1)
+        infile_base2 = re.sub(".1.fastq.gz", ".2.fastq.gz", infile_base1)
+        infile = re.sub(".fastq.1.gz", ".fastq.gz", infile1)
+        postprocess_cmd = '''zcat %(infile)s |
+        python %%(scriptsdir)s/fastq2summary.py
+        --guess-format=illumina-1.8 -v0
+        > summary.dir/%(infile_base1)s.summary;
+        zcat %(infile)s |
+        python %%(scriptsdir)s/fastq2summary.py
+        --guess-format=illumina-1.8 -v0
+        > summary.dir/%(infile_base2)s.summary
+        ;''' % locals()
+
+        return postprocess_cmd

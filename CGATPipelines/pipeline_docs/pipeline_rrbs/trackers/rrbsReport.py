@@ -66,3 +66,13 @@ class SingleTableHistogram(TrackerSQL):
     def __call__(self, track, slice=None):
         data = self.getAll("SELECT %(group_by)s, %(columns)s FROM %(table)s")
         return data
+
+
+class imagesTracker(TrackerImages):
+
+    '''Convience Tracker for globbing images for gallery plot'''
+    def __init__(self, *args, **kwargs):
+        Tracker.__init__(self, *args, **kwargs)
+        if "glob" not in kwargs:
+            raise ValueError("TrackerImages requires a:glob: parameter")
+        self.glob = kwargs["glob"]

@@ -31,14 +31,8 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
-import string
-import re
-import tempfile
-import subprocess
-import optparse
-import math
+import psycopg2
 
 """analyze codonbias of orthologs.
 
@@ -97,10 +91,10 @@ def main(argv=None):
     schema1 = data[0][0]
     schema2 = data[0][3]
 
-    dbhandle = pgdb.connect(options.psql_connection)
+    dbhandle = psycopg2.connect(options.psql_connection)
 
-    threshold1 = GetThreshold(dhhandle, schema1)
-    threshold1 = GetThreshold(dhhandle, schema2)
+    threshold1 = GetThreshold(dbhandle, schema1)
+    threshold2 = GetThreshold(dbhandle, schema2)
 
     E.Stop()
 

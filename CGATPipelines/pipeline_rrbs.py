@@ -45,7 +45,6 @@ Implemented tasks are:
    * :meth:`sample` - sample a certain proportion of reads
 
 Individual tasks are enabled in the configuration file.
-
 Usage
 =====
 
@@ -491,11 +490,10 @@ def joinAllCpGsAndCpGIslands(infile, outfile):
 
 @transform(callMethylationStatus,
            suffix(".bismark.cov"),
-           r".bismark.subset100.cov")
+           r".bismark.subset10.cov")
 # this is just for testing BiSeq etc, delete in future
 def subsetCoverage(infile, outfile):
-    statement = '''awk '($5+$6)>100' %(infile)s > %(outfile)s''' % locals()
-    print statement
+    statement = '''awk '($5+$6)>=10' %(infile)s > %(outfile)s''' % locals()
     P.run()
 ##########################################################################
 
@@ -795,6 +793,7 @@ def loadRemainingReads(infile, outfile):
 def makeGeneProfiles(infiles, outfile):
     outname = P.snip(os.path.basename(outfile), ".png")
     infile, genes_gtf = infiles
+    scriptsdir = PARAMS["general_scriptsdir"]
 
     # ensures only large RAM nodes used
     job_options = "-l mem_free=24G"
@@ -807,7 +806,7 @@ def makeGeneProfiles(infiles, outfile):
                   --normalize-profile=area;
                   checkpoint;
                   for file in %(outname)s*;
-                  do mv $file coverage.dir/.; done''' % locals()
+                  do mv $file coverage.dir/.; done'''
     print statement
     P.run()
 
@@ -972,10 +971,49 @@ def runBiSeq(infiles, outfile):
 
 ########################################################################
 #########################################################################
+# spike-in analysis
+########################################################################
 
 
-@follows(loadCoverage,
-         loadCpGOverlap)
+@follows(mkdir("power.dir"))
+@merge(callMethylationStatus,
+       "power.dir/power.out")
+def generateClusterSpikeIns(infiles, outfile):
+
+    # include some way of restricting power analysis to subset of samples
+    job_options = "-l mem_free=23G -pe dedicated 1"
+
+    RRBS.spikeInClusters(infiles, outfile,
+                         submit=True, jobOptions=job_options)
+
+
+@follows(generateClusterSpikeIns)
+@transform(generateClusterSpikeIns,
+           suffix(".out"),
+           ".analysis.out")
+def clusterSpikeInsPowerAnalysis(infiles, outfile):
+
+    job_options = "-l mem_free=23G -pe dedicated 1"
+
+    RRBS.spikeInClustersAnalysis(infiles, outfile,
+                                 submit=True, jobOptions=job_options)
+
+
+@transform(clusterSpikeInsPowerAnalysis,
+           suffix(".analysis.out"),
+           ".plot.out")
+def clusterSpikeInsPowerPlot(infiles, outfile):
+
+    job_options = "-l mem_free=23G -pe dedicated 1"
+
+    RRBS.spikeInClustersPlot(infiles, outfile, groups=["Saline", "Dex"],
+                             submit=True, jobOptions=job_options)
+
+########################################################################
+#########################################################################
+
+
+@follows(generateClusterSpikeIns)
 def test():
     pass
 
