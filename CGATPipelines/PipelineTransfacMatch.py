@@ -27,6 +27,7 @@ import random
 import pickle
 import CGAT.FastaIterator as FastaIterator
 import CGAT.Experiment as E
+from math import factorial
 
 ########################################
 # helper function
@@ -489,6 +490,7 @@ def genNullGeneSet(match_background):
         if len(matches) > 1:
             rand = random.randint(0, len(matches)-1)
             null_list.append(matches[rand])
+            matches.remove(matches[rand])
         elif len(matches) == 0:
             pass
         else:
@@ -570,3 +572,17 @@ def permuteTFBSEnrich(tfbs_table,
         results_dict[tfbs] = tfbs_res
 
     return results_dict
+
+
+def nCr(n, r):
+    '''
+    n choose r
+    '''
+
+    n_fac = factorial(n)
+    r_fac = factorial(r)
+    n_r_fac = factorial(n-r)
+
+    ncr = n_fac/float(r_fac)/float(n_r_fac)
+
+    return ncr
