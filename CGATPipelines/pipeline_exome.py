@@ -1,4 +1,5 @@
-"""====================
+"""
+====================
 Exome pipeline
 ====================
 
@@ -74,7 +75,7 @@ Reads are imported by placing files or linking to files in the
 
 The default file format assumes the following convention:
 
-   <family>-<sample>-<condition>-<replicate>.<suffix>
+   <family>_<sample>-<condition>-<replicate>.<suffix>
 
 ``family`` = "Single", "Trio", or "Multiplex" followed by numerical
 identifier.  ``sample`` and ``condition`` make up an
@@ -168,16 +169,16 @@ Code
 # load modules
 from ruffus import *
 from rpy2.robjects import r as R
-
-import CGAT.Experiment as E
 import sys
 import os
 import csv
 import sqlite3
+import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
+import CGAT.Pipeline as P
 import CGATPipelines.PipelineMapping as PipelineMapping
 import CGATPipelines.PipelineMappingQC as PipelineMappingQC
-import CGAT.Pipeline as P
+
 
 #########################################################################
 #########################################################################
@@ -188,7 +189,9 @@ P.getParameters(
      "../exome.ini", "exome.ini"])
 
 PARAMS = P.PARAMS
-
+INPUT_FORMATS = ("*.fastq.1.gz", "*.fastq.gz", "*.sra", "*.csfasta.gz")
+REGEX_FORMATS = regex(r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz)")
+USECLUSTER = True
 
 def getPicardOptions():
     return "-pe dedicated 3 -R y -l mem_free=1.4G -l picard=1"
@@ -258,28 +261,13 @@ def loadSamples(infile, outfile):
 # Alignment to a reference genome
 
 
-@collate(("*.fastq.1.gz", "*.fastq.2.gz", "*.fastq.gz", "*.sra"),
-         regex(r"(\S+-\S+)-(\S+)-(\S+).(fastq.1.gz|fastq.2.gz|fastq.gz|sra)"),
-         r"\1.\4")
-def mergeFastqs(infiles, outfile):
-    '''merge fastqs by library and read pair prior to mapping'''
-    inputfiles = " ".join(infiles)
-    statement = '''zcat %(inputfiles)s | gzip > %(outfile)s '''
-    P.run()
-
-#########################################################################
-
-
 @follows(mkdir("bam"))
-@transform(mergeFastqs,
-           regex(r"(\S+).(fastq.1.gz|fastq.gz|sra)"),
-           r"bam/\1.bam")
+@transform(INPUT_FORMATS, REGEX_FORMATS,r"bam/\1.bam")
 def mapReads(infiles, outfile):
     '''Map reads to the genome using BWA (output=SAM), convert to BAM,
     sort and index BAM file, generate alignment statistics and
     deduplicate using Picard
     '''
-
     job_options = "-pe dedicated 2 -l mem_free=8G"
     track = P.snip(os.path.basename(outfile), ".bam")
     m = PipelineMapping.BWA(
@@ -291,7 +279,7 @@ def mapReads(infiles, outfile):
 #########################################################################
 #########################################################################
 #########################################################################
-# BAM file processing
+# Post-alignment QC
 #########################################################################
 
 
@@ -299,13 +287,6 @@ def mapReads(infiles, outfile):
 def loadPicardDuplicateStats(infiles, outfile):
     '''Merge Picard duplicate stats into single table and load into SQLite.'''
     PipelineMappingQC.loadPicardDuplicateStats(infiles, outfile)
-
-#########################################################################
-#########################################################################
-#########################################################################
-# Post-alignment QC
-#########################################################################
-
 
 @follows(mapReads)
 @merge("bam/*.picard_stats", "picard_stats.load")
@@ -363,8 +344,8 @@ def loadCoverageStats(infiles, outfile):
 #########################################################################
 # GATK
 
-
-@transform(mapReads, regex(r"bam/(\S+).bam"), r"bam/\1.bqsr.bam")
+@follows(mkdir("gatk"))
+@transform(mapReads, regex(r"bam/(\S+).bam"), r"gatk/\1.bqsr.bam")
 def GATKpreprocessing(infile, outfile):
     '''Reorders BAM according to reference fasta and add read groups using
     SAMtools, realigns around indels and recalibrates base quality
@@ -438,8 +419,8 @@ def GATKpreprocessing(infile, outfile):
     P.run()
 
 
-@collate(GATKpreprocessing, regex(r"bam/(\S+?)-(\S+).bqsr.bam"),
-         r"bam/\1.list")
+@collate(GATKpreprocessing, regex(r"gatk/(\S+?)-(\S+).bqsr.bam"),
+         r"gatk/\1.list")
 def listOfBAMs(infiles, outfile):
     '''generates a file containing a list of BAMs for each family, for use
     in variant calling
@@ -458,7 +439,7 @@ def listOfBAMs(infiles, outfile):
 
 
 @follows(mkdir("variants"))
-@transform(listOfBAMs, regex(r"bam/(\S+).list"),
+@transform(listOfBAMs, regex(r"gatk/(\S+).list"),
            r"variants/\1.haplotypeCaller.vcf")
 def haplotypeCaller(infile, outfile):
     '''Call SNVs and indels using GATK HaplotypeCaller in all members of a
@@ -1050,17 +1031,16 @@ def loadMetadata():
     pass
 
 
-@follows(mergeFastqs,
-         mapReads)
-def mapping():
-    pass
-
-
-@follows(loadPicardDuplicateStats,
+@follows(mapReads,
+         loadPicardDuplicateStats,
          loadPicardAlignStats,
          buildCoverageStats,
          loadCoverageStats)
-def postMappingQC():
+def mapping():
+    pass
+    
+
+def postMappingQC(mapping):
     pass
 
 
