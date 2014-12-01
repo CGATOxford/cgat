@@ -536,7 +536,7 @@ bash Miniconda-latest-Linux-x86_64.sh -b -p conda-install
 $CONDA_INSTALL_DIR/bin/conda config --add channels cgat
 
 # install cgat environment
-$CONDA_INSTALL_DIR/bin/conda create -n cgat-travis cgat-travis --yes
+$CONDA_INSTALL_DIR/bin/conda create --quite --yes -n cgat-travis cgat-travis
 
 } # conda install
 
