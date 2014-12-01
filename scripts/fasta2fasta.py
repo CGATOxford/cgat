@@ -30,15 +30,16 @@ mark-codons
    adds a space after each codon
 
 apply-map
-   rename sequence identifiers from a given map
-   Requires parameter with filename of a map. The map is a 
-   tab-separated file mapping old to new names.
+   rename sequence identifiers from a given map Requires parameter
+   with filename of a map. The map is a tab-separated file mapping old
+   to new names.
 
 build-map
-   rename sequence identifiers numerically and save output in a tab-separated file. 
-   Requires parameter with filename of a map. The map is a tab-separated file
-   mapping new to old names and will be newly created. Any exiting file of the 
-   same name will be overwritten.
+   rename sequence identifiers numerically and save output in a
+   tab-separated file.  Requires parameter with filename of a map. The
+   map is a tab-separated file mapping new to old names and will be
+   newly created. Any exiting file of the same name will be
+   overwritten.
 
 pseudo-codons
    translate, but keep register with codons
@@ -158,7 +159,7 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv
 
-    parser = E.OptionParser(version="%prog version: $Id: fasta2fasta.py 2782 2009-09-10 11:40:29Z andreas $",
+    parser = E.OptionParser(version="%prog version",
                             usage=globals()["__doc__"])
 
     parser.add_option("-m", "--method", dest="methods", type="choice", action="append",
