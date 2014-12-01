@@ -53,7 +53,6 @@ import CGAT.Bed as Bed
 import CGAT.WrapperMACS as WrapperMACS
 
 
-
 def getPeakShiftFromMacs(infile):
     '''get peak shift for filename infile (.macs output file).
 
@@ -88,12 +87,6 @@ def getPeakShiftFromMacs(infile):
 
     return shift
 
-############################################################
-############################################################
-############################################################
-##
-############################################################
-
 
 def getPeakShiftFromZinba(infile):
     '''get peak shift for filename infile (.zinba output file).
@@ -116,12 +109,6 @@ def getPeakShiftFromZinba(infile):
 
     return shift
 
-############################################################
-############################################################
-############################################################
-##
-############################################################
-
 
 def getPeakShiftFromSPP(infile):
     '''get peak shift for filename infile (.spp output file).
@@ -141,10 +128,6 @@ def getPeakShiftFromSPP(infile):
                 break
 
     return shift
-
-############################################################
-############################################################
-############################################################
 
 
 def getPeakShift(track):
@@ -175,10 +158,6 @@ def getMappedReads(infile):
             return int(data[0])
     return
 
-############################################################
-############################################################
-############################################################
-
 
 def getMinimumMappedReads(infiles):
     '''find the minimum number of mapped reads in infiles.'''
@@ -191,10 +170,6 @@ def getMinimumMappedReads(infiles):
         raise P.PipelineError(
             "could not find mapped reads in files %s" % (str(infiles)))
     return min(v)
-
-############################################################
-############################################################
-############################################################
 
 
 def getExonLocations(filename):
@@ -236,10 +211,6 @@ def getExonLocations(filename):
 
     return(region_list)
 
-############################################################
-############################################################
-############################################################
-
 
 def getBedLocations(filename):
     '''return a list of regions as (contig,start,end) tuples
@@ -257,12 +228,8 @@ def getBedLocations(filename):
 
     fh.close()
 
-    #E.info("Read in %i regions from %s" % ( n_regions, filename) )
+    # E.info("Read in %i regions from %s" % ( n_regions, filename) )
     return (region_list)
-
-############################################################
-############################################################
-############################################################
 
 
 def buildQuicksectMask(bed_file):
