@@ -104,13 +104,13 @@ To run the example, simply unpack and untar::
 
 Requirements
 ==============
-+--------------------+-------------------+------------------------------------------------+
-|*Program*           |*Version*          |*Purpose*                                       |
-+--------------------+-------------------+------------------------------------------------+
-|fastqc              |?                  |read qc                                         |
-+--------------------+-------------------+------------------------------------------------+
-|sickle              |1.33               |Read trimming by quality score                  |
-+--------------------+-------------------+------------------------------------------------+
++--------------------+---------------+---------------------------------+
+|*Program*           |*Version*      |*Purpose*                        |
++--------------------+---------------+---------------------------------+
+|fastqc              |?              |read qc                          |
++--------------------+---------------+---------------------------------+
+|sickle              |1.33           |Read trimming by quality score   |
++--------------------+---------------+---------------------------------+
 
 Code
 ====
@@ -182,7 +182,7 @@ def runFastqc(infiles, outfile):
     '''convert sra files to fastq and check mapping qualities are in solexa format.
     Perform quality control checks on reads from .fastq files.'''
     m = PipelineMapping.FastQc(nogroup=PARAMS["readqc_no_group"],
-                               outdir=PARAMS["exportdir"]+"/fastqc")
+                               outdir=PARAMS["exportdir"] + "/fastqc")
     statement = m.build((infiles,), outfile)
     P.run()
 
@@ -206,8 +206,8 @@ def loadFastqc(infile, outfile):
 @merge(runFastqc, "status_summary.tsv.gz")
 def buildFastQCSummaryStatus(infiles, outfile):
     '''load fastqc status summaries into a single table.'''
-    exportdir = os.path.join(PARAMS["exportdir"],"fastqc")
-    rqc.buildFastQCSummaryStatus(infiles, outfile, exportdir) 
+    exportdir = os.path.join(PARAMS["exportdir"], "fastqc")
+    rqc.buildFastQCSummaryStatus(infiles, outfile, exportdir)
 
 #########################################################################
 
@@ -215,7 +215,7 @@ def buildFastQCSummaryStatus(infiles, outfile):
 @merge(runFastqc, "basic_statistics_summary.tsv.gz")
 def buildFastQCSummaryBasicStatistics(infiles, outfile):
     '''load fastqc summaries into a single table.'''
-    exportdir = os.path.join(PARAMS["exportdir"],"fastqc")
+    exportdir = os.path.join(PARAMS["exportdir"], "fastqc")
     rqc.buildFastQCSummaryBasicStatistics(infiles, outfile, exportdir)
 
 #########################################################################

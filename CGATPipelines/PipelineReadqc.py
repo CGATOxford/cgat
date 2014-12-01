@@ -33,15 +33,15 @@ def collectFastQCSections(infiles, section, datadir):
     results = []
     for infile in infiles:
         track = P.snip(infile, ".fastqc")
-        filename = os.path.join(datadir, track + "*_fastqc","fastqc_data.txt")
+        filename = os.path.join(datadir, track + "*_fastqc", "fastqc_data.txt")
         for fn in glob.glob(filename):
             for name, status, header, data in FastqcSectionIterator(
                     IOTools.openFile(fn)):
                 if name == section:
                     results.append((track, status, header, data))
     return results
-    
-    
+
+
 def loadFastqc(filename):
     '''load FASTQC stats.'''
 
@@ -83,7 +83,7 @@ def buildFastQCSummaryStatus(infiles, outfile, datadir):
     first = True
     for infile in infiles:
         track = P.snip(infile, ".fastqc")
-        filename = os.path.join(datadir, 
+        filename = os.path.join(datadir,
                                 track + "*_fastqc",
                                 "fastqc_data.txt")
 
@@ -121,4 +121,3 @@ def buildFastQCSummaryBasicStatistics(infiles, outfile, datadir):
             first = False
         outf.write("%s\t%s\n" % (track, "\t".join([row[1] for row in rows])))
     outf.close()
-
