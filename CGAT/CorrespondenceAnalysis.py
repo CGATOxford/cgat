@@ -37,25 +37,34 @@ import numpy
 import numpy.linalg
 import numpy.linalg.linalg
 
-# ---------------------------------------------------------------------
-
 
 def GetIndices(matrix):
     """return order (1st eigenvector) of row and column indicies.
 
-    This procedure fails if there are row or columns with a sum of 0.
     """
 
-    nrows, ncols = matrix.shape
-
+    original_nrows, original_ncols = matrix.shape
     # calculate row and column sums
-    row_sums = numpy.sum(matrix, 1)
-    col_sums = numpy.sum(matrix, 0)
+    row_sums = numpy.array(numpy.sum(matrix, 1)).flatten()
+    col_sums = numpy.array(numpy.sum(matrix, 0)).flatten()
 
     # check for empty rows/columns
-    # return the original permutation
+    # remove rows/columns that are empty
     if 0 in row_sums or 0 in col_sums:
-        return range(nrows), range(ncols)
+        # map rows with data to original rows
+        row_map_nonempty = numpy.arange(original_nrows)[row_sums != 0]
+        row_map_nonempty = dict(enumerate(row_map_nonempty))
+        col_map_nonempty = numpy.arange(original_ncols)[col_sums != 0]
+        col_map_nonempty = dict(enumerate(col_map_nonempty))
+
+        # truncate matrix
+        matrix = matrix[row_sums != 0, :][:, col_sums != 0]
+
+        # filter row and column sums
+        row_sums = row_sums[row_sums != 0]
+        col_sums = col_sums[col_sums != 0]
+
+    nrows, ncols = matrix.shape
 
     a = numpy.zeros((nrows, nrows), numpy.float)
     for x in range(0, nrows):
@@ -72,7 +81,7 @@ def GetIndices(matrix):
 
     try:
         row_eigenvector = numpy.linalg.eig(M)[1][:, 1]
-    except numpy.linalg.linalg.LinAlgError, msg:
+    except numpy.linalg.linalg.LinAlgError as msg:
         raise ValueError(msg)
 
     M = numpy.dot(
@@ -82,17 +91,22 @@ def GetIndices(matrix):
 
     try:
         col_eigenvector = numpy.linalg.eig(M)[1][:, 1]
-    except numpy.linalg.linalg.LinAlgError, msg:
+    except numpy.linalg.linalg.LinAlgError as msg:
         raise ValueError(msg)
 
-    # insert columns ignored at the computation and give them the lowest
-    # eigenvalue
     row_eigenvector = row_eigenvector.astype(numpy.float)
     col_eigenvector = col_eigenvector.astype(numpy.float)
 
-    return row_eigenvector, col_eigenvector
+    # insert columns ignored at the computation and give them the lowest
+    # eigenvalue
+    row_values = [row_eigenvector.min() - 1.0] * original_nrows
+    for x, y in enumerate(row_eigenvector):
+        row_values[row_map_nonempty[x]] = y
+    col_values = [col_eigenvector.min() - 1.0] * original_ncols
+    for x, y in enumerate(col_eigenvector):
+        col_values[col_map_nonempty[x]] = y
 
-# ---------------------------------------------------------------------
+    return row_values, col_values
 
 
 def GetPermutatedMatrix(matrix,
