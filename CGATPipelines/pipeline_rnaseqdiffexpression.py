@@ -326,11 +326,8 @@ PARAMS.update(P.peekParameters(
     update_interface=True))
 
 PipelineGeneset.PARAMS = PARAMS
+PipelineRnaseq.PARAMS = PARAMS
 
-###################################################################
-###################################################################
-# Helper functions mapping tracks to conditions, etc
-###################################################################
 import CGATPipelines.PipelineTracks as PipelineTracks
 
 Sample = PipelineTracks.AutoSample
@@ -344,10 +341,6 @@ EXPERIMENTS = PipelineTracks.Aggregate(TRACKS, labels=("condition", "tissue"))
 
 GENESETS = PipelineTracks.Tracks(Sample).loadFromDirectory(
     glob.glob("*.gtf.gz"), "(\S+).gtf.gz")
-
-###################################################################
-###################################################################
-###################################################################
 
 
 def connect():
@@ -517,149 +510,6 @@ def loadCuffdiff(infile, outfile):
 
     Expression.loadCuffdiff(infile, outfile)
 
-#########################################################################
-#########################################################################
-#########################################################################
-
-
-def buildExpressionStats(tables, method, outfile, outdir):
-    '''build expression summary statistics.
-
-    Creates also diagnostic plots in
-
-    <exportdir>/<method> directory.
-    '''
-    dbhandle = sqlite3.connect(PARAMS["database"])
-
-    def _split(tablename):
-        # this would be much easier, if feature_counts/gene_counts/etc.
-        # would not contain an underscore.
-        try:
-            design, geneset, counting_method = re.match(
-                "([^_]+)_vs_([^_]+)_(.*)_%s" % method,
-                tablename).groups()
-        except AttributeError:
-            try:
-                design, geneset = re.match(
-                    "([^_]+)_([^_]+)_%s" % method,
-                    tablename).groups()
-                counting_method = "na"
-            except AttributeError:
-                raise ValueError("can't parse tablename %s" % tablename)
-
-        return design, geneset, counting_method
-
-        # return re.match("([^_]+)_", tablename ).groups()[0]
-
-    keys_status = "OK", "NOTEST", "FAIL", "NOCALL"
-
-    outf = IOTools.openFile(outfile, "w")
-    outf.write("\t".join(
-        ("design",
-         "geneset",
-         "level",
-         "treatment_name",
-         "counting_method",
-         "control_name",
-         "tested",
-         "\t".join(["status_%s" % x for x in keys_status]),
-         "significant",
-         "twofold")) + "\n")
-
-    all_tables = set(Database.getTables(dbhandle))
-
-    for level in CUFFDIFF_LEVELS:
-
-        for tablename in tables:
-
-            tablename_diff = "%s_%s_diff" % (tablename, level)
-            tablename_levels = "%s_%s_diff" % (tablename, level)
-            design, geneset, counting_method = _split(tablename_diff)
-            if tablename_diff not in all_tables:
-                continue
-
-            def toDict(vals, l=2):
-                return collections.defaultdict(
-                    int,
-                    [(tuple(x[:l]), x[l]) for x in vals])
-
-            tested = toDict(
-                Database.executewait(
-                    dbhandle,
-                    "SELECT treatment_name, control_name, "
-                    "COUNT(*) FROM %(tablename_diff)s "
-                    "GROUP BY treatment_name,control_name" % locals()
-                    ).fetchall())
-            status = toDict(Database.executewait(
-                dbhandle,
-                "SELECT treatment_name, control_name, status, "
-                "COUNT(*) FROM %(tablename_diff)s "
-                "GROUP BY treatment_name,control_name,status"
-                % locals()).fetchall(), 3)
-            signif = toDict(Database.executewait(
-                dbhandle,
-                "SELECT treatment_name, control_name, "
-                "COUNT(*) FROM %(tablename_diff)s "
-                "WHERE significant "
-                "GROUP BY treatment_name,control_name" % locals()
-                ).fetchall())
-
-            fold2 = toDict(Database.executewait(
-                dbhandle,
-                "SELECT treatment_name, control_name, "
-                "COUNT(*) FROM %(tablename_diff)s "
-                "WHERE (l2fold >= 1 or l2fold <= -1) AND significant "
-                "GROUP BY treatment_name,control_name,significant"
-                % locals()).fetchall())
-
-            for treatment_name, control_name in tested.keys():
-                outf.write("\t".join(map(str, (
-                    design,
-                    geneset,
-                    level,
-                    counting_method,
-                    treatment_name,
-                    control_name,
-                    tested[(treatment_name, control_name)],
-                    "\t".join(
-                        [str(status[(treatment_name, control_name, x)])
-                         for x in keys_status]),
-                    signif[(treatment_name, control_name)],
-                    fold2[(treatment_name, control_name)]))) + "\n")
-
-            ###########################################
-            ###########################################
-            ###########################################
-            # plot length versus P-Value
-            data = Database.executewait(
-                dbhandle,
-                "SELECT i.sum, pvalue "
-                "FROM %(tablename_diff)s, "
-                "%(geneset)s_geneinfo as i "
-                "WHERE i.gene_id = test_id AND "
-                "significant" % locals()).fetchall()
-
-            # require at least 10 datapoints - otherwise smooth scatter fails
-            if len(data) > 10:
-                data = zip(*data)
-
-                pngfile = ("%(outdir)s/%(design)s_%(geneset)s_%(level)s"
-                           "_pvalue_vs_length.png") % locals()
-                R.png(pngfile)
-                R.smoothScatter(R.log10(ro.FloatVector(data[0])),
-                                R.log10(ro.FloatVector(data[1])),
-                                xlab='log10( length )',
-                                ylab='log10( pvalue )',
-                                log="x", pch=20, cex=.1)
-
-                R['dev.off']()
-
-    outf.close()
-
-#########################################################################
-#########################################################################
-#########################################################################
-
 
 @follows(mkdir(os.path.join(PARAMS["exportdir"], "cuffdiff")))
 @transform(loadCuffdiff,
@@ -748,7 +598,9 @@ def buildCuffdiffPlots(infile, outfile):
 def buildCuffdiffStats(infiles, outfile):
     tablenames = [P.toTable(x) for x in infiles]
     outdir = os.path.dirname(infiles[0])
-    buildExpressionStats(tablenames, "cuffdiff", outfile, outdir)
+    PipelineRnaseq.buildExpressionStats(
+        connect(),
+        tablenames, "cuffdiff", outfile, outdir)
 
 #########################################################################
 #########################################################################
@@ -1212,7 +1064,9 @@ def loadDESeq(infile, outfile):
 def buildDESeqStats(infiles, outfile):
     tablenames = [P.toTable(x) for x in infiles]
     outdir = os.path.dirname(infiles[0])
-    buildExpressionStats(tablenames, "deseq", outfile, outdir)
+    PipelineRnaseq.buildExpressionStats(
+        connect(),
+        tablenames, "deseq", outfile, outdir)
 
 #########################################################################
 #########################################################################
@@ -1283,7 +1137,9 @@ def loadEdgeR(infile, outfile):
 def buildEdgeRStats(infiles, outfile):
     tablenames = [P.toTable(x) for x in infiles]
     outdir = os.path.dirname(infiles[0])
-    buildExpressionStats(tablenames, "edger", outfile, outdir)
+    PipelineRnaseq.buildExpressionStats(
+        connect(),
+        tablenames, "edger", outfile, outdir)
 
 
 @transform(buildEdgeRStats,
@@ -1301,8 +1157,8 @@ def expression():
 
 mapToTargets = {'cuffdiff': loadCuffdiffStats,
                 'deseq': loadDESeqStats,
-                'edger': loadEdgeRStats,
-                }
+                'edger': loadEdgeRStats}
+
 TARGETS_DIFFEXPRESSION = [mapToTargets[x] for x in
                           P.asList(PARAMS["methods"])]
 
