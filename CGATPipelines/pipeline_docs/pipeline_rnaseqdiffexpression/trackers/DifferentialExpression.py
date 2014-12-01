@@ -10,7 +10,7 @@ class DESummary(ProjectTracker, SingleTableTrackerRows):
     table = "de_stats"
     fields = ("track", "design",
               "treatment_name", "control_name",
-              "geneset", "level")
+              "geneset", "level", "counting_method")
 
 
 class TrackerDESeqSizeFactors(ProjectTracker):
@@ -209,6 +209,21 @@ class DifferentialExpressionOverlap(DifferentialExpressionComparison):
         return odict((('left', len(a)),
                       ('right', len(b)),
                       ("shared", len(a.intersection(b)))))
+
+
+class DifferentialExpressionOverlapBetweenMethods(
+        DifferentialExpressionOverlap):
+
+    def getTracks(self):
+        # get tables sorted by design
+        tables = sorted(self.getTables(pattern="(.*_gene_diff$)"))
+        # group by design
+        result = []
+        for key, group in itertools.groupby(tables,
+                                            lambda x: x.split("_")[0]):
+            result.extend(["%s:%s" % (x, y)
+                           for x, y in itertools.combinations(group, 2)])
+        return result
 
 
 class DifferentialExpressionCorrelationPValueCuffdiffDeseq(
