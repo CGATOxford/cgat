@@ -21,18 +21,19 @@ Input is data like this::
    chr1 15000 16000        CD14    9.04603350905   0       CD4     9.01484414416   0       1.0     1.0     -0.00498279072069       0.996552150193  0       OK                                                                                   
    chr1 16000 17000        CD14    0.457565479197  0       CD4     0.14910378845   0       0.677265200643  1.0     -1.61766129852  0.325863281276  0       OK                                                                                   
 
-The second and third window would be merged, as 
-   1. Their methylation levels are within 10% of each other.
-   2. They are both not differentially methylated.
+The second and third window would be merged, as
+
+1. Their methylation levels are within 10% of each other.
+2. They are both not differentially methylated.
 
 It aggregates the following:
 
-   * mean values: average
-   * std values: max
-   * pvalue: max
-   * qvalue: max
-   * fold: min/max (depending on enrichment/depletion)
-   * l2fold: min/max (depending on enrichment/depletion)
+* mean values: average
+* std values: max
+* pvalue: max
+* qvalue: max
+* fold: min/max (depending on enrichment/depletion)
+* l2fold: min/max (depending on enrichment/depletion)
 
 The analysis outputs bed files with intervals that are
 potentially activated in one of the conditions. Windows
@@ -68,17 +69,18 @@ Command line options
 
 '''
 
-import os
 import sys
 import re
-import optparse
 import collections
 
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 
 DATA = collections.namedtuple(
-    "DATA", "contig start end treatment_name  treatment_mean  treatment_std   control_name    control_mean    control_std     pvalue  qvalue  l2fold  fold    significant     status nintervals")
+    "DATA",
+    "test_id contig start end treatment_name  treatment_mean  treatment_std "
+    "control_name    control_mean    control_std     pvalue  qvalue  "
+    "l2fold  fold    significant     status nintervals")
 
 
 def main(argv=None):
@@ -91,17 +93,21 @@ def main(argv=None):
         argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+    parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
     parser.add_option("-o", "--min-overlap", dest="min_overlap", type="int",
                       help="minimum overlap")
 
-    parser.add_option("-w", "--pattern-window", dest="pattern_window", type="string",
-                      help="regular expression to extract window coordinates from test id [%default]")
+    parser.add_option(
+        "-w", "--pattern-window",
+        dest="pattern_window", type="string",
+        help="regular expression to extract window coordinates from "
+        "test id [%default]")
 
-    parser.add_option("-i", "--invert", dest="invert", action="store_true",
-                      help="invert direction of fold change [%default]")
+    parser.add_option(
+        "-i", "--invert", dest="invert", action="store_true",
+        help="invert direction of fold change [%default]")
 
     parser.set_defaults(min_overlap=10,
                         invert=False,
@@ -128,7 +134,8 @@ def main(argv=None):
             contig, start, end = rx_window.match(data.test_id).groups()
             start, end = map(int, (start, end))
 
-            yield DATA._make((contig, start, end,
+            yield DATA._make((data.test_id,
+                              contig, start, end,
                               data.treatment_name,
                               float(data.treatment_mean),
                               float(data.treatment_std),
@@ -179,7 +186,10 @@ def main(argv=None):
     all_data = list(read())
     all_data.sort(key=lambda x: (x.contig, x.start))
 
+    group_id = 0
+
     for group in grouper(iter(all_data), distance=options.min_overlap):
+        group_id += 1
 
         start, end = group[0].start, group[-1].end
         assert start < end, 'start > end: %s' % str(group)
@@ -195,34 +205,40 @@ def main(argv=None):
             l2fold = min([x.l2fold for x in group])
             fold = min([x.fold for x in group])
 
-        outdata = DATA._make((g.contig, start, end,
-                              g.treatment_name,
-                              sum([x.treatment_mean for x in group]) / n,
-                              max([x.treatment_std for x in group]),
-                              g.control_name,
-                              sum([x.control_mean for x in group]) / n,
-                              max([x.control_std for x in group]),
-                              max([x.pvalue for x in group]),
-                              max([x.qvalue for x in group]),
-                              l2fold,
-                              fold,
-                              g.significant,
-                              g.status,
-                              int(n)))
+        outdata = DATA._make((
+            str(group_id),
+            g.contig, start, end,
+            g.treatment_name,
+            sum([x.treatment_mean for x in group]) / n,
+            max([x.treatment_std for x in group]),
+            g.control_name,
+            sum([x.control_mean for x in group]) / n,
+            max([x.control_std for x in group]),
+            max([x.pvalue for x in group]),
+            max([x.qvalue for x in group]),
+            l2fold,
+            fold,
+            g.significant,
+            g.status,
+            int(n)))
 
         samples.add(g.treatment_name)
         samples.add(g.control_name)
         if g.significant:
             if test_f(g.l2fold):
                 # treatment lower methylation than control
-                outfiles.write(g.treatment_name, "%s\t%i\t%i\t%s\t%f\n" % (g.contig, g.start, g.end,
-                                                                           g.treatment_name,
-                                                                           sum([x.treatment_mean for x in group]) / n))
+                outfiles.write(
+                    g.treatment_name, "%s\t%i\t%i\t%i\t%f\n" % (
+                        g.contig, g.start, g.end,
+                        group_id,
+                        sum([x.treatment_mean for x in group]) / n))
 
             else:
-                outfiles.write(g.control_name, "%s\t%i\t%i\t%s\t%f\n" % (g.contig, g.start, g.end,
-                                                                         g.control_name,
-                                                                         sum([x.control_mean for x in group]) / n))
+                outfiles.write(
+                    g.control_name, "%s\t%i\t%i\t%i\t%f\n" % (
+                        g.contig, g.start, g.end,
+                        group_id,
+                        sum([x.control_mean for x in group]) / n))
 
         options.stdout.write("\t".join(map(str, outdata)) + "\n")
 

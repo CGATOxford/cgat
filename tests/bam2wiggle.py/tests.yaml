@@ -13,13 +13,13 @@ bigwig:
 
 bigwig_shiftextend:
         stdin: null
-        outputs: [ paired_shiftextend.bw ]
+        outputs: [paired_shiftextend.bw]
         references: [paired_shiftextend.bw]
         options: --output-format=bigwig --wiggle-span=10 --shift-size=50 --extend=150 --output-filename-pattern=paired_shiftextend.bw <DIR>/paired.bam
         
 bigwig_mergepairs:
         stdin: null
-        outputs: [ paired_mergepairs.bw ]
+        outputs: [paired_mergepairs.bw]
         references: [paired_mergepairs.bw]
         options: --output-format=bigwig --merge-pairs --max-insert-size=500 --min-insert-size=1 --output-filename-pattern=paired_mergepairs.bw <DIR>/paired.bam
         

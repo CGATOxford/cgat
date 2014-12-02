@@ -44,6 +44,11 @@ from CGAT import Experiment as E
 
 PROJECT_ROOT = '/ifs/projects'
 
+# Variables PARAMS and CONFIG will be set by Pipeline.py
+# on import.
+PARAMS = None
+CONFIG = None
+
 
 def getProjectDirectories():
     '''return a dict directories relevant to this project.'''
@@ -340,6 +345,21 @@ def publish_report(prefix="",
          "%(base_url)s/%(dest_report)s/_static" % locals())]
 
     _patterns.extend(patterns)
+
+    # add intersphinx mapping - this requires that the name
+    # for the interpshinx redirection (key) corresponds to the
+    # export location with an appended "_report".
+    if CONFIG.has_section("intersphinx"):
+        for key, value in CONFIG.items("intersphinx"):
+            _patterns.append((
+                re.compile(os.path.abspath(value)),
+                "%(base_url)s/%(key)s_report" % locals()))
+            # check if the target exists in download location
+            intersphinx_target = os.path.join(
+                web_dir, key + "_report", "objects.inv")
+            if not os.path.exists(intersphinx_target):
+                E.warn("intersphinx mapping for '%s' does not exist at %s" %
+                       (key, intersphinx_target))
 
     def _link(src, dest):
         '''create links.

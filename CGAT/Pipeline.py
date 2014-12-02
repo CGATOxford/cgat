@@ -98,7 +98,7 @@ if not os.path.exists(SCRIPTS_DIR):
 
 
 # Global variable for configuration file data
-CONFIG = {}
+CONFIG = ConfigParser.ConfigParser()
 # Global variable for parameter interpolation in
 # commands
 PARAMS = {}
@@ -146,6 +146,7 @@ INTERPOLATE_PARAMS = ('cmd-farm', 'cmd-run')
 # and the Pipeline module.
 from CGAT import Local as Local
 Local.PARAMS = PARAMS
+Local.CONFIG = CONFIG
 
 
 class PipelineError(Exception):
@@ -227,8 +228,6 @@ def getParameters(filenames=["pipeline.ini", ],
         d = collections.defaultdict(str)
         d.update(PARAMS)
         PARAMS = d
-
-    CONFIG = ConfigParser.ConfigParser()
 
     if user_ini:
         # read configuration from a users home directory
@@ -1480,7 +1479,7 @@ def submit(module, function, params=None,
            toCluster=True,
            logfile=None,
            jobOptions=""):
-    '''Submit a python *function* as a job to the cluster.
+    '''submit a python *function* as a job to the cluster.
 
     The function should reside in *module*. If *module* is
     not part of the PYTHONPATH, an absolute path can be given.
@@ -1738,13 +1737,13 @@ def cluster_runnable(func):
     is *submit*, but if true will submit the function to the cluster
     via the Pipeline.submit framework. Arguments to the function are
     pickled, so this will only work if arguments are picklable. Other
-    arguements to submit are also accepted.
+    arguments to submit are also accepted.
 
     Note that this allows the unusal combination of *submit* false,
     and *toCluster* true. This will submit the function as an external
     job, but run it on the local machine.
 
-    Note: all arguments in decorated function must be passed as
+    Note: all arguments in the decorated function must be passed as
     key-word arguments.
     '''
 
@@ -1760,7 +1759,8 @@ def cluster_runnable(func):
             submit_args, args_file = _pickle_args(args, kwargs)
             module_file = os.path.abspath(
                 sys.modules[func.__module__].__file__)
-            submit(snip(__file__), "run_pickled",
+            submit(snip(__file__),
+                   "run_pickled",
                    params=[snip(module_file), function_name, args_file],
                    **submit_args)
         else:
@@ -1770,8 +1770,9 @@ def cluster_runnable(func):
 
 
 def run_pickled(params):
-    ''' run function who arguments have been pickled.
-    expects that params is [module_name, function_name, arguements_file] '''
+    ''' run a function whose arguments have been pickled.
+
+    expects that params is [module_name, function_name, arguments_file] '''
 
     module_name, func_name, args_file = params
     location = os.path.dirname(module_name)
@@ -1792,8 +1793,8 @@ def run_pickled(params):
                                        if not x.startswith("_")]))
 
     args, kwargs = pickle.load(open(args_file, "rb"))
-    E.info("Arguments = %s" % str(args))
-    E.info("Keyword Arguements = %s" % str(kwargs))
+    E.info("arguments = %s" % str(args))
+    E.info("keyword arguments = %s" % str(kwargs))
 
     function(*args, **kwargs)
 
@@ -2179,8 +2180,16 @@ def main(args=sys.argv):
                         len(value.args))
                 for idx, e in enumerate(value.args):
                     task, job, error, msg, traceback = e
-                    task = re.sub("__main__.", "", task)
-                    job = re.sub("\s", "", job)
+                    if task is None:
+                        # this seems to be errors originating within ruffus
+                        # such as a missing dependency
+                        # msg then contains a RethrownJobJerror
+                        msg = str(msg)
+                        pass
+                    else:
+                        task = re.sub("__main__.", "", task)
+                        job = re.sub("\s", "", job)
+
                     # display only single line messages
                     if len([x for x in msg.split("\n") if x != ""]) > 1:
                         msg = ""

@@ -6,6 +6,11 @@ sanity_check_os() {
    echo " Unsupported operating system "
    echo " " $OS
    echo " Installation aborted "
+   echo 
+   echo " Supported operating systems are: "
+   echo " Ubuntu 12.x"
+   echo " CentOS 6.x"
+   echo " Scientific Linux 6.x"
    echo
    exit 1;
 } # sanity_check_os
@@ -536,7 +541,7 @@ bash Miniconda-latest-Linux-x86_64.sh -b -p conda-install
 $CONDA_INSTALL_DIR/bin/conda config --add channels cgat
 
 # install cgat environment
-$CONDA_INSTALL_DIR/bin/conda create -n cgat-travis cgat-travis --yes
+$CONDA_INSTALL_DIR/bin/conda create -q -n cgat-travis cgat-travis --yes
 
 } # conda install
 

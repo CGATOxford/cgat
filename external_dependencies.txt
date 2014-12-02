@@ -115,6 +115,11 @@ peakranger:
     executable: peakranger
     regex: 'Version: (\S+)'
 
+meme:
+    executable: meme
+    version: -version
+    regex: (\S+)
+
 # non-standard versioning (VPaperR3), so no
 # version test
 scripture:

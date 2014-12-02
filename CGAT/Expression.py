@@ -695,24 +695,48 @@ def plotPairs():
                log="xy")''')
 
 
-def plotPCA():
-    '''plot a PCA plot from countsTable.'''
+def plotPCA(groups=True):
+    '''plot a PCA plot from countsTable using ggplot.
 
+    If groups is *True*, the variable ``groups`` is
+    used for colouring. If *False*, the groups are 
+    determined by sample labels.
+    '''
     R('''suppressMessages(library(ggplot2))''')
     R('''pca = prcomp(t(countsTable))''')
+    # Build factor groups by splitting labels at "."
+    R('''colour=groups''')
+    R('''shape=0''')
+    R('''size=1''')
+    if groups is False:
+        R('''mm = matrix(
+        unlist(sapply(colnames(countsTable),strsplit,'[.]')),
+        nrow=length(colnames(countsTable)),
+        byrow=T)''')
+        nrows, nlevels = R('''dim(mm)''')
+        if nlevels > 1:
+            R('''colour=mm[,1]''')
+        if nlevels > 2:
+            R('''shape=mm[,2]''')
+
     R('''p1 = ggplot(
     as.data.frame(pca$x),
-    aes(x=PC1, y=PC2, colour=groups, label=rownames(pca$x))) \
+    aes(x=PC1, y=PC2,
+    colour=colour,
+    shape=shape,
+    label=rownames(pca$x))) \
     + geom_text(size=4, vjust=1) \
     + geom_point()''')
     R('''p2 = qplot(x=PC1, y=PC3,
     data = as.data.frame(pca$x),
     label=rownames(pca$x),
-    colour=groups)''')
+    shape=shape,
+    colour=colour)''')
     R('''p3 = qplot(x=PC2, y=PC3,
     data = as.data.frame(pca$x),
     label=rownames(pca$x),
-    colour=groups)''')
+    shape=shape,
+    colour=colour)''')
     # TODO: plot all in a multi-plot with proper scale
     # the following squishes the plots
     # R('''source('%s')''' %
@@ -2087,7 +2111,7 @@ def outputTagSummary(filename_tags,
     outfilename = output_filename_pattern + "pca.svg"
     E.info("outputting PCA plot to %s" % outfilename)
     R.svg(outfilename)
-    plotPCA()
+    plotPCA(groups=False)
     R['dev.off']()
 
     # output an MDS plot

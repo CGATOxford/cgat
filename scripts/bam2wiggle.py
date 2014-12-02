@@ -235,7 +235,7 @@ def main(argv=None):
     # Create dictionary of contig sizes
     contig_sizes = dict(zip(samfile.references, samfile.lengths))
     # write contig sizes
-    outfile_size = open(tmpfile_sizes, "w")
+    outfile_size = IOTools.openFile(tmpfile_sizes, "w")
     for contig, size in contig_sizes.items():
         outfile_size.write("%s\t%s\n" % (contig, size))
     outfile_size.close()

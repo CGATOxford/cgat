@@ -14,9 +14,6 @@ Purpose
 This script examines the ruffus logfile and collates
 summary information.
 
-**-t/--time** choice
-   Report times either as ``milliseconds`` or ``seconds``.
-
 .. note::
 
    All times are wall clock times.
@@ -153,7 +150,8 @@ def main(argv=sys.argv):
 
         msg = "".join(data[4:])
 
-        started_task, completed_task, started_job, completed_job = None, None, None, None
+        started_task, completed_task, started_job, completed_job = \
+            (None, None, None, None)
 
         if re.search("task.log_at_level.\d+Task=(\S+)", msg):
             checked_task = re.search(
@@ -193,7 +191,8 @@ def main(argv=sys.argv):
 
     for section in profile_sections:
         options.stdout.write("\t".join(
-            ("section", "object", "ncalls", "duration", "percall", "running")) + "\n")
+            ("section", "object", "ncalls",
+             "duration", "percall", "running")) + "\n")
 
         running = []
         for objct, c in counts[section].iteritems():
