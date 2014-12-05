@@ -218,8 +218,8 @@ def merge(iterator,
             
             # keep track of number of intervals in each entry
             for bed in to_join:
-                bed.score = 1
-
+                bed["score"] = 1
+            print "\n".join(map(str,to_join))
             merged = True
             while merged:
                 
@@ -236,7 +236,7 @@ def merge(iterator,
                             intervals = Intervals.combine(intervals1 +
                                                           intervals2)
                             bed1.fromIntervals(intervals)
-                            bed1.score += bed2.score
+                            bed1["score"] += bed2.score
                             merged = True
                         else:
                             not_joined.append(bed2)
