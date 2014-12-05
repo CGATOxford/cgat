@@ -145,7 +145,8 @@ def main(argv=None):
                                "dmr", "rms", "rpm", "all", "convert"),
                       help = "actions to perform [default=%default].")
 
-    parser.add_option("-w", "--bigwig-file", dest="bigwig", action="store_true",
+    parser.add_option("-w", "--bigwig-file", dest="bigwig",
+                      action="store_true",
                       help="store wig files as bigwig files - requires a "
                       "genome file [default=%default]")
 
