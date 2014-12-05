@@ -123,8 +123,8 @@ class Bed(object):
 
             blockCount = len(intervals)
 
-            self.blockStarts = ",".join(map(str,blockStarts))
-            self.blockSizes = ",".join(map(str,blockSizes))
+            self["blockStarts"] = ",".join(map(str,blockStarts))
+            self["blockSizes"] = ",".join(map(str,blockSizes))
             self.blockCount = str(blockCount)
 
         else:
