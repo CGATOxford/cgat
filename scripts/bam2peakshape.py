@@ -339,7 +339,6 @@ def writeMatricesForSortOrder(features_per_interval,
     matrix_<track>_<sortorder>
 
     '''
-
     if "name" in features_per_interval[0].interval:
         names = [x.interval.name for x in features_per_interval]
     else:
@@ -610,26 +609,39 @@ def main(argv=None):
 
     # apply normalization
     # Note: does not normalize control?
+    # Needs reworking, currently it does not normalize across
+    # all samples nor does the work "sum" reflect the per million
+    # normalization.
     if options.normalization == "sum":
-        norm_result = []
         E.info("starting sum normalization")
         # get total counts across all intervals
         norm = 0.0
         for foreground, bed, controls, shifted in features_per_interval:
-            counts = foreground[-1]
-            norm += sum(counts)
-        norm /= 1000000
-        E.info("sum normalization with %i" % norm)
+            norm += sum(foreground.counts)
+        # per million
+        norm /= float(1000000)
+        E.info("sum/million normalization with %f" % norm)
 
         # normalise
+        new_data = []
         for foreground, bed, controls, shifted in features_per_interval:
-            counts = foreground[-1]
-            norm_counts = []
-            for c in counts:
-                norm_counts.append(c / (norm))
-            new_foreground = foreground._replace(counts=norm_counts)
-            norm_result.append((new_foreground, bed, controls, shifted))
-        features_per_interval = norm_result
+
+            foreground = foreground._replace(
+                counts=numpy.array(foreground.counts,
+                                   dtype=numpy.float) / norm)
+            new_controls = []
+            for control in controls:
+                new_controls.append(
+                    control._replace(
+                        counts=numpy.array(control.counts,
+                                           dtype=numpy.float) / norm))
+            if shifted:
+                shifted = shifted._replace(
+                    counts=numpy.array(shifted.counts,
+                                       dtype=numpy.float) / norm)
+            new_data.append(IntervalData._make((
+                foreground, bed, new_controls, shifted)))
+        features_per_interval = new_data
     else:
         E.info("no normalization performed")
 
