@@ -4,7 +4,7 @@ Signal/Noise ratio
 
 This section examines the signal/noise ratio in the data set.
 
-.. _SNRatioMedian:
+.. _snratiomedian:
 
 S/N Ratio based on median
 =========================
@@ -48,7 +48,7 @@ The same as violin plots:
    Violin-plot of read counts in windows
    normalized by median read count within a sample
 
-.. _SNRatioInput:
+.. _snratioinput:
 
 S/N Ratio based on input
 =========================
