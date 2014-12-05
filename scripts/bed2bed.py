@@ -147,6 +147,8 @@ import sys
 import CGAT.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Bed as Bed
+import CGAT.Intervals as Intervals
+
 import pysam
 
 
@@ -154,7 +156,8 @@ def merge(iterator,
           max_distance=0,
           by_name=False,
           min_intervals=1,
-          remove_inconsistent=False):
+          remove_inconsistent=False,
+          resolve_blocks=False):
     """iterator for merging adjacent bed entries.
 
     *max_distance* > 0 permits merging of intervals that are
@@ -204,9 +207,6 @@ def merge(iterator,
     for to_join in iterate_chunks(iterator):
 
         c.input += 1
-        if len(to_join) < min_intervals:
-            c.skipped_min_intervals += 1
-            continue
 
         if remove_inconsistent:
             names = set([x.name for x in to_join])
@@ -214,11 +214,64 @@ def merge(iterator,
                 c.skipped_inconcistent_intervals += 1
                 continue
 
-        a = to_join[0]
-        a.end = max([entry.end for entry in to_join])
-        a.score = len(to_join)
-        yield a
-        c.output += 1
+        if resolve_blocks:
+            
+            # keep track of number of intervals in each entry
+            for bed in to_join:
+                bed.score = 1
+
+            merged = True
+            while merged:
+                
+                joined = []
+                not_joined = []
+                merged = False
+                
+                while len(to_join) > 0:
+                    bed1, to_join = to_join[0], to_join[1:]
+                    intervals1 = bed1.toIntervals()
+                    for bed2 in to_join:
+                        intervals2 = bed2.toIntervals()
+                        if Intervals.calculateOverlap(intervals1, intervals2) > 0:
+                            intervals = Intervals.combine(intervals1 +
+                                                          intervals2)
+                            bed1.fromIntervals(intervals)
+                            bed1.score += bed2.score
+                            merged = True
+                        else:
+                            not_joined.append(bed2)
+
+                    joined.append(bed1)
+                    to_join = not_joined
+                    not_joined = []
+
+                to_join = joined
+                joined = []
+                
+            to_join = sorted(to_join, key=lambda x: x.start)
+            
+            # keep only those with the created from the merge of the minimum
+            # number of intervals
+            
+            for bed in to_join:
+
+                if bed.score < min_intervals:
+                    c.skipped_min_intervals += 1
+                    continue
+
+                yield bed
+                c.output += 1
+        else:
+                        
+            if len(to_join) < min_intervals:
+                c.skipped_min_intervals += 1
+                continue
+
+            a = to_join[0]
+            a.end = max([entry.end for entry in to_join])
+            a.score = len(to_join)
+            yield a
+            c.output += 1
 
     E.info(str(c))
 
@@ -415,6 +468,11 @@ def main(argv=sys.argv):
         help="only merge intervals with the same name [default=%default]")
 
     parser.add_option(
+        "--merge-and-resolve-blocks", dest="resolve_blocks",
+        action="store_true",
+        help="When merging bed12 entrys, should blocks be resolved?")
+
+    parser.add_option(
         "--remove-inconsistent-names", dest="remove_inconsistent_names",
         action="store_true",
         help="when merging, do not output intervals where the names of "
@@ -442,7 +500,8 @@ def main(argv=sys.argv):
                         offset=10000,
                         test=None,
                         extend_distance=1000,
-                        remove_inconsistent_names=False)
+                        remove_inconsistent_names=False,
+                        resolve_blocks=False)
 
     (options, args) = E.Start(parser, add_pipe_options=True)
 
@@ -474,7 +533,8 @@ def main(argv=sys.argv):
                 options.merge_distance,
                 by_name=options.merge_by_name,
                 min_intervals=options.merge_min_intervals,
-                remove_inconsistent=options.remove_inconsistent_names)
+                remove_inconsistent=options.remove_inconsistent_names,
+                resolve_blocks=options.resolve_blocks)
         elif method == "bins":
             if options.bin_edges:
                 bin_edges = map(float, options.bin_edges.split(","))

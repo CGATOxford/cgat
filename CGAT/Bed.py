@@ -86,6 +86,52 @@ class Bed(object):
                            [gff.score, 0][gff.score is None],
                            gff.strand]
 
+    def toIntervals(self):
+        '''convert bed entry to a list of interval tuples. Useful for bed12
+        entries'''
+
+        if self.columns >= 12:
+            blockStarts = map(int, self.blockStarts.split(","))
+            starts = [self.start + blockStart for blockStart in blockStarts]
+            blockLengths = map(int, self.blockSizes.split(","))
+
+            assert (len(blockStarts), len(blockLengths)) == (int(self.blockCount), int(self.blockCount)), \
+                "Malformed Bed12 entry:\n%s"
+
+            ends = [start + length for start, length
+                    in zip(starts, blockLengths)]
+
+            assert ends[-1] == self.end, \
+                "Malformed Bed12 entry:\n%s" % str(self)
+
+            return zip(starts, ends)
+        else:
+            return [(self.start, self.end)]
+
+    def fromIntervals(self, intervals):
+        '''Fill co-ordinates from list of intervals. If multiple intervals are provided
+        and entry is bed12 then blocks are automatically computed '''
+
+        intervals = sorted(intervals)
+        self.start = intervals[0][0]
+        self.end = intervals[-1][1]
+        
+        if self.columns >= 12:
+            
+            blockStarts = [interval[0] - self.start for interval in intervals]
+            blockSizes = [end-start for start, end in intervals]
+
+            blockCount = len(intervals)
+
+            self.blockStarts = ",".join(map(str,blockStarts))
+            self.blockSizes = ",".join(map(str,blockSizes))
+            self.blockCount = str(blockCount)
+
+        else:
+            if len(intervals) > 1:
+                raise ValueError(
+                    "Multiple intervals provided to non-bed12 entry")
+            
     def __contains__(self, key):
         return self.map_key2field[key] < len(self.fields)
 
