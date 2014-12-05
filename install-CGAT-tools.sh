@@ -629,8 +629,8 @@ else
 
 fi # if-OS
 
+} # conda_test
 
-}
 
 # function to display help message
 help_message() {
@@ -693,6 +693,8 @@ TRAVIS_INSTALL=
 CONDA_INSTALL=
 # test conda installation
 CONDA_TEST=
+# install minimal version of CGAT Code Collection
+CONDA_LITE=
 # install operating system's dependencies
 OS_PKGS=
 # install Python dependencies
@@ -704,7 +706,7 @@ NT_RUN=
 # rerun nosetests
 NT_RERUN=
 # variable to store input parameters
-INPUT_ARGS=$(getopt -n "$0" -o ht1234567g:c: --long "help,
+INPUT_ARGS=$(getopt -n "$0" -o ht12345678g:c: --long "help,
                                                   travis,
                                                   install-os-packages,
                                                   install-python-deps,
@@ -713,6 +715,7 @@ INPUT_ARGS=$(getopt -n "$0" -o ht1234567g:c: --long "help,
                                                   rerun-nosetests,
                                                   conda-install,
                                                   conda-test,
+						  conda-lite,
                                                   git-hub-dir:,
                                                   cgat-deps-dir:"  -- "$@")
 eval set -- "$INPUT_ARGS"
@@ -764,6 +767,11 @@ do
 
       CONDA_TEST=1
       shift ;
+
+  elif [ "$1" == "-8" -o "$1" == "--conda-lite" ] ; then
+
+      CONDA_LITE=1
+      shift ; 
 
   elif [ "$1" == "-g" -o "$1" == "--git-hub-dir" ] ; then
 
@@ -823,6 +831,11 @@ else
   fi
 
   if [ "$CONDA_TEST" == "1" ] ; then
+    conda_test
+  fi
+
+  if [ "$CONDA_LITE" == "1" ] ; then
+    install_os_packages
     conda_test
   fi
 
