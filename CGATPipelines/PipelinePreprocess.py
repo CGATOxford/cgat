@@ -354,6 +354,8 @@ class trimgalore(process_tool):
         prefix = self.prefix
         offset = self.offset
         outdir = self.outdir
+        # the assigment of infiles is repeated in each process_tool
+        # refactor!
         if self.num_files == 1:
             infile = infiles[0]
             track = os.path.basename(infile)
@@ -442,9 +444,7 @@ class trimmomatic(process_tool):
         outdir = self.outdir
 
         if self.num_files == 1:
-            if self.first:
-                infile = infiles[0]
-
+            infile = infiles[0]
             track = os.path.basename(infile)
             logfile = "log.dir/" + track + ".trimmomatic.log"
             outfile = "%(outdir)s/%(prefix)s%(track)s" % locals()
