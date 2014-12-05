@@ -771,6 +771,7 @@ def annotateTSSComposition(infile, outfile):
 
     statement = '''zcat %(infile)s
     | slopBed -b 50 -g %(annotations_interface_contigs_tsv)s
+    | python %(scriptsdir)s/bed2gff.py --as-gtf
     | python %(scriptsdir)s/gtf2table.py
     --counter=position
     --counter=composition-cpg
@@ -797,13 +798,13 @@ def loadAnnotations(infile, outfile):
         "--allow-empty-file --map=pattern:str")
 
 
-@follows(mkdir("transcriptprofiles"))
+@follows(mkdir("transcriptprofiles.dir"))
 @transform(indexIntervals,
            regex(r".*/([^/].*)\.bed.gz"),
            add_inputs(os.path.join(
                PARAMS["annotations_dir"],
                PARAMS["annotations_interface_geneset_all_gtf"])),
-           r"transcriptprofiles/\1.transcriptprofile.tsv.gz")
+           r"transcriptprofiles.dir/\1.transcriptprofile.tsv.gz")
 def buildIntervalProfileOfTranscripts(infiles, outfile):
     '''build a table with the overlap profile of transcripts.'''
 
@@ -1953,11 +1954,11 @@ def reset(infile, outfile):
     pipeline!!!
     '''
     statement = '''
-    rm -rf export motifs peakshapes transcriptprofiles report;
+    rm -rf export motifs report;
     rm -rf _cache _static _templates;
-    rm -f csvdb *.tss* *.meme* *.repeats* *.nuc* *.load;
-    rm -f *.annotations* *.contextstats* .motifs.fasta *overlapping_genes;
-    rm -f *.tsv.gz
+    rm -f csvdb *.load;
+    rm -f *.meme* *.tomtom* *.fasta*;
+    rm -rf *.dir;
     '''
     P.run()
 
