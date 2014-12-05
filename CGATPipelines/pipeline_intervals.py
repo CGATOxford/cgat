@@ -1293,6 +1293,15 @@ def exportMotifLocations(infiles, outfile):
         os.unlink(tmpf.name)
 
 
+def getGATWorkspace():
+    workspace = PARAMS.get(
+        "gat_workspace",
+        os.path.join(
+            PARAMS["annotations_dir"],
+            PARAMS["annotations_interface_contigs_ungapped_bed"]))
+    return workspace
+
+
 @follows(mkdir("gat_context.dir"))
 @transform(BEDFILES,
            regex(".*/(.*).bed.gz"),
@@ -1300,9 +1309,6 @@ def exportMotifLocations(infiles, outfile):
                os.path.join(
                    PARAMS["annotations_dir"],
                    PARAMS["annotations_interface_genomic_context_bed"]),
-               os.path.join(
-                   PARAMS["annotations_dir"],
-                   PARAMS["annotations_interface_contigs_ungapped_bed"]),
                os.path.join(
                    PARAMS["annotations_dir"],
                    PARAMS["annotations_interface_gc_profile_bed"]),
@@ -1318,9 +1324,10 @@ def runGATOnGenomicContext(infiles, outfile):
     analyses.
     '''
 
-    bedfile, annofile, workspacefile, isochorefile = infiles
+    workspacefile = getGATWorkspace()
+    job_options = "-l mem_free=4G"
 
-    outdir = "context_gat.dir"
+    bedfile, annofile, isochorefile = infiles
 
     statement = '''gat-run.py
          --segments=%(bedfile)s
@@ -1349,9 +1356,6 @@ def runGATOnGenomicContext(infiles, outfile):
                    PARAMS["annotations_interface_annotation_gff"]),
                os.path.join(
                    PARAMS["annotations_dir"],
-                   PARAMS["annotations_interface_contigs_ungapped_bed"]),
-               os.path.join(
-                   PARAMS["annotations_dir"],
                    PARAMS["annotations_interface_gc_profile_bed"]),
            ),
            r"gat_annotations.dir/\1.gat.tsv.gz")
@@ -1365,9 +1369,10 @@ def runGATOnGenomicAnnotations(infiles, outfile):
     analyses.
     '''
 
-    bedfile, annofile, workspacefile, isochorefile = infiles
+    bedfile, annofile, isochorefile = infiles
 
-    outdir = "annotations_gat.dir"
+    workspacefile = getGATWorkspace()
+    job_options = "-l mem_free=4G"
 
     statement = '''gat-run.py
     --segments=%(bedfile)s
@@ -1396,9 +1401,6 @@ def runGATOnGenomicAnnotations(infiles, outfile):
                    PARAMS["annotations_interface_genestructure_gff"]),
                os.path.join(
                    PARAMS["annotations_dir"],
-                   PARAMS["annotations_interface_contigs_ungapped_bed"]),
-               os.path.join(
-                   PARAMS["annotations_dir"],
                    PARAMS["annotations_interface_gc_profile_bed"]),
            ),
            r"gat_genestructure.dir/\1.gat.tsv.gz")
@@ -1422,9 +1424,10 @@ def runGATOnGeneStructure(infiles, outfile):
 
     '''
 
-    bedfile, annofile, workspacefile, isochorefile = infiles
+    bedfile, annofile, isochorefile = infiles
 
-    outdir = "gat_genestructure.dir"
+    workspacefile = getGATWorkspace()
+    job_options = "-l mem_free=4G"
 
     statement = '''gat-run.py
     --segments=%(bedfile)s
@@ -1443,14 +1446,7 @@ def runGATOnGeneStructure(infiles, outfile):
     --log=%(outfile)s.log
     | gzip
     > %(outfile)s'''
-    
     P.run()
-
-############################################################
-############################################################
-############################################################
-# compute overlap with gene annotations
-############################################################
 
 
 @follows(mkdir("gat_functions.dir"))
@@ -1462,13 +1458,7 @@ def runGATOnGeneStructure(infiles, outfile):
                    PARAMS["annotations_interface_genomic_function_bed"]),
                os.path.join(
                    PARAMS["annotations_dir"],
-                   PARAMS["annotations_interface_genomic_function_tsv"]),
-               os.path.join(
-                   PARAMS["annotations_dir"],
                    PARAMS["annotations_interface_territories_gff"]),
-               os.path.join(
-                   PARAMS["annotations_dir"],
-                   PARAMS["annotations_interface_contigs_ungapped_bed"]),
                os.path.join(
                    PARAMS["annotations_dir"],
                    PARAMS["annotations_interface_gc_profile_bed"]),
@@ -1488,14 +1478,14 @@ def runGATOnGeneAnnotations(infiles, outfile):
     # requires a large amount of memory
     job_options = "-l mem_free=20G"
 
-    (bedfile, annofile, descriptionfile,
-     workspacefile, mapabilityfile, isochorefile) = infiles
+    (bedfile, annofile, descriptionfile, territoriesfile, isochorefile) = infiles
 
+    workspacefile = getGATWorkspace()
     statement = '''gat-run.py
          --segments=%(bedfile)s
          --annotations=%(annofile)s
-         --workspace-bed-file=<(zcat %(workspacefile)s | awk '{printf("%%s\\t%%i\\t%%i\\n",$1,$4,$5);}')
-         --workspace-bed-file=%(mapabilityfile)s
+         --workspace-bed-file=<(zcat %(territoriesfile)s | awk '{printf("%%s\\t%%i\\t%%i\\n",$1,$4,$5);}')
+         --workspace-bed-file=%(workspacefile)s
          --isochores=%(isochorefile)s
          --num-samples=%(gat_num_samples)i
          --descriptions=%(descriptionfile)s
@@ -1514,12 +1504,9 @@ def runGATOnGeneAnnotations(infiles, outfile):
 @follows(mkdir("gat_sets.dir"))
 @merge(BEDFILES,
        "gat_sets.dir/gat_sets.tsv.gz",
-       os.path.join(
-           PARAMS["annotations_dir"],
-           PARAMS["annotations_interface_contigs_ungapped_bed"]),
        os.path.join(PARAMS["annotations_dir"],
                     PARAMS["annotations_interface_gc_profile_bed"]))
-def runGATOnSets(infiles, outfile, workspacefile, isochorefile):
+def runGATOnSets(infiles, outfile, isochorefile):
     '''run gat on intervals against each other.'''
 
     job_threads = 4
@@ -1527,6 +1514,7 @@ def runGATOnSets(infiles, outfile, workspacefile, isochorefile):
 
     segments = os.path.join("gat_sets.dir", "segments.bed")
     annotations = os.path.join("gat_sets.dir", "annotations.bed")
+    workspacefile = getGATWorkspace()
 
     infiles = " ".join(infiles)
     statement = '''
