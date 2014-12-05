@@ -511,6 +511,13 @@ python scripts/cgat_rebuild_extensions.py
 # proceed with conda installation
 conda_install() {
 
+# check installation type
+if [ -z "$1" ] ; then
+   CONDA_INSTALL_TYPE="cgat-travis"
+else
+   CONDA_INSTALL_TYPE=$1
+fi
+
 if [ "$OS" == "travis" ] ; then
 
    export CONDA_INSTALL_DIR=$TRAVIS_BUILD_DIR/conda-install
@@ -541,7 +548,7 @@ bash Miniconda-latest-Linux-x86_64.sh -b -p conda-install
 $CONDA_INSTALL_DIR/bin/conda config --add channels cgat
 
 # install cgat environment
-$CONDA_INSTALL_DIR/bin/conda create -q -n cgat-travis cgat-travis --yes
+$CONDA_INSTALL_DIR/bin/conda create -q -n $CONDA_INSTALL_TYPE $CONDA_INSTALL_TYPE --yes
 
 } # conda install
 
@@ -551,7 +558,12 @@ conda_test() {
 
 # check whether conda has been installed first
 if [ -z "$CONDA_INSTALL_DIR" ] ; then
-   conda_install
+   conda_install $1
+fi
+
+# check installation type
+if [ "$1" == "cgat-lite" ] ; then
+   exit
 fi
 
 # setup environment and run tests
@@ -835,8 +847,7 @@ else
   fi
 
   if [ "$CONDA_LITE" == "1" ] ; then
-    install_os_packages
-    conda_test
+    conda_test "cgat-lite"
   fi
 
 fi # if-variables
