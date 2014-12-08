@@ -1,5 +1,4 @@
-'''
-gff2table.py - compute features for intersection of two gff files
+'''gff2table.py - compute features for intersection of two gff files
 =================================================================
 
 :Author: Andreas Heger
@@ -10,9 +9,9 @@ gff2table.py - compute features for intersection of two gff files
 Purpose
 -------
 
-collect intervals from two gff files and compute features based 
-on their intersection. The script is intended to compute properties
-for a set of non-overlapping windows.
+collect intervals from two gff files and compute features based on
+their intersection. The script is intended to compute properties for a
+set of non-overlapping windows.
 
 Transforms:
    * none:        no transform

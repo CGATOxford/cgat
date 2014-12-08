@@ -215,7 +215,7 @@ def merge(iterator,
                 continue
 
         a = to_join[0]
-        a.end = to_join[-1].end
+        a.end = max([entry.end for entry in to_join])
         a.score = len(to_join)
         yield a
         c.output += 1
