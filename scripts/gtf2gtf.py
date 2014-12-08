@@ -129,7 +129,8 @@ Options that can be used to filter :term:`gtf` files. For further
 detail see command line options.
 
 Input gtfs need to be sorted so that features for a gene or transcript
- appear consecutively within the file. This can be achevied using ``--method=sort --sort-order``.
+appear consecutively within the file. This can be achevied using
+``--method=sort --sort-order``.
 
 ``filter``
     When filtering on the basis of 'gene-id' or 'transcript-id' a
@@ -273,12 +274,12 @@ def main(argv=None):
                       dest="merge_exons_distance",
                       type="int",
                       help="distance in nucleotides between "
-                      "exons to be merged [default=%default].")
+                      "exons to be merged [%default].")
 
     parser.add_option("--pattern-identifier", dest="pattern", type="string",
                       help="pattern to use for renaming genes/transcripts. "
                       "The pattern should contain a %i, for example "
-                      "--pattern-identifier=ENSG%010i [default=%default].")
+                      "--pattern-identifier=ENSG%010i [%default].")
 
     parser.add_option("--sort-order",
                       dest="sort_order",
@@ -290,20 +291,24 @@ def main(argv=None):
                                "contig+gene",
                                "position+gene",
                                "gene+position"),
-                      help="sort input data [default=%default].")
+                      help="sort input data [%default].")
 
     parser.add_option("-u", "--with-utr",
                       dest="with_utr",
                       action="store_true",
                       help="include utr in merged transcripts "
-                      "[default=%default].")
+                      "[%default].")
 
     parser.add_option(
         "--filter-method", dest="filter_method",
         type="choice",
-        choices=("gene", "transcript", "longest-gene",
+        choices=("gene",
+                 "transcript",
+                 "longest-gene",
                  "longest-transcript",
-                 "representative-transcript"),
+                 "representative-transcript",
+                 "proteincoding",
+                 "lincrna"),
         help="Filter method to apply. Available filters are: "
         "'gene': filter by gene_id given in ``--map-tsv-file``, "
         "'transcript': filter by transcript_id given in ``--map-tsv-file``, "
@@ -313,60 +318,63 @@ def main(argv=None):
         "per gene. The representative transcript is the transcript "
         "that shares most exons with other transcripts in a gene. "
         "The input needs to be sorted by gene. "
-        "[default=%default].")
+        "'proteincoding': only output protein coding features. "
+        "'lincrna': only output lincRNA features. "
+        "[%default].")
 
     parser.add_option("-a", "--map-tsv-file", dest="filename_filter",
                       type="string",
                       metavar="tsv",
-                      help="filename of ids to map/filter [default=%default].")
+                      help="filename of ids to map/filter [%default].")
 
     parser.add_option(
         "--gff-file", dest="filename_gff", type="string",
         metavar="GFF",
         help="second filename of features (see --remove-overlapping) "
-        "[default=%default]")
+        "[%default]")
 
     parser.add_option("--invert-filter",
                       dest="invert_filter",
                       action="store_true",
                       help="when using --filter, invert selection "
                       "(like grep -v). "
-                      "[default=%default].")
+                      "[%default].")
 
     parser.add_option("--sample-size", dest="sample_size", type="int",
                       help="extract a random sample of size # if the option "
-                      "'--method=filter --filter-method' is set[default=%default].")
+                      "'--method=filter --filter-method' is set "
+                      "[%default].")
 
     parser.add_option(
         "--intron-min-length",
         dest="intron_min_length", type="int",
         help="minimum length for introns (for --exons-file2introns) "
-        "[default=%default].")
+        "[%default].")
 
     parser.add_option("--min-exons-length",
                       dest="min_exons_length",
                       type="int",
                       help="minimum length for gene (sum of exons) "
-                      "(--sam-fileple-size) [default=%default].")
+                      "(--sam-fileple-size) [%default].")
 
     parser.add_option(
         "--intron-border",
         dest="intron_border",
         type="int",
         help="number of residues to exclude at intron at either end "
-        "(--exons-file2introns) [default=%default].")
+        "(--exons-file2introns) [%default].")
 
     parser.add_option("--ignore-strand",
                       dest="ignore_strand",
                       action="store_true",
                       help="remove strandedness of features (set to '.') when "
                       "using ``transcripts2genes`` or ``filter``"
-                      "[default=%default].")
+                      "[%default].")
 
     parser.add_option("--permit-duplicates", dest="strict",
                       action="store_false",
                       help="permit duplicate genes. "
-                      "[default=%default]")
+                      "[%default]")
 
     parser.add_option(
         "--duplicate-feature",
@@ -404,7 +412,7 @@ def main(argv=None):
                           "sort",
                           "transcript2genes",
                           "unset-genes"),
-                      help="Method to apply [default=%default].")
+                      help="Method to apply [%default].")
 
     parser.set_defaults(
         sort_order="gene",
@@ -926,6 +934,27 @@ def main(argv=None):
             else:
                 assert False, "please supply either a filename "
                 "with ids to filter with (--map-tsv-file) or a sample-size."
+
+        elif options.filter_method in ("proteincoding", "lincrna"):
+            # extract features by transcript/gene biotype.
+            # This filter uses a test on the feature field (ENSEMBL pre v78)
+            # a regular expression on the attributes (ENSEMBL >= v78).
+            tag = {"proteincoding": "protein_coding",
+                   "processed-pseudogene": "processed_pseudogene",
+                   "lincrna": "lincRNA"}[options.filter_method]
+            rx = re.compile('"%s"' % tag)
+            if not options.invert_filter:
+                f = lambda x: x.feature == tag or rx.search(x.attributes)
+            else:
+                f = lambda x: x.feature != tag and not rx.search(x.attributes)
+
+            for gff in GTF.iterator(options.stdin):
+                ninput += 1
+                if f(gff):
+                    options.stdout.write(str(gff) + "\n")
+                    noutput += 1
+                else:
+                    ndiscarded += 1
 
     elif options.method == "exons2introns":
 

@@ -700,8 +700,7 @@ def buildReferenceGeneSetWithCDS(infile, outfile):
            suffix("reference.gtf.gz"),
            "refcoding.gtf.gz")
 def buildCodingGeneSet(infile, outfile):
-    '''build a gene set with only protein coding 
-    transcripts.
+    '''build a gene set with only protein coding transcripts.
 
     Genes are selected via their gene biotype in the GTF file.
     Note that this set will contain all transcripts of protein
@@ -710,9 +709,13 @@ def buildCodingGeneSet(infile, outfile):
     This set includes UTR and CDS.
     '''
 
-    to_cluster = True
     statement = '''
-    zcat %(infile)s | awk '$2 == "protein_coding"' | gzip > %(outfile)s
+    zcat %(infile)s
+    | python %(scriptsdir)s/gtf2gtf.py
+    --method=filter
+    --filter-method=proteincoding
+    --log=%(outfile)s.log
+    | gzip > %(outfile)s
     '''
     P.run()
 
