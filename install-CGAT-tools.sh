@@ -6,6 +6,11 @@ sanity_check_os() {
    echo " Unsupported operating system "
    echo " " $OS
    echo " Installation aborted "
+   echo 
+   echo " Supported operating systems are: "
+   echo " Ubuntu 12.x"
+   echo " CentOS 6.x"
+   echo " Scientific Linux 6.x"
    echo
    exit 1;
 } # sanity_check_os
@@ -506,6 +511,13 @@ python scripts/cgat_rebuild_extensions.py
 # proceed with conda installation
 conda_install() {
 
+# check installation type
+if [ -z "$1" ] ; then
+   CONDA_INSTALL_TYPE="cgat-travis"
+else
+   CONDA_INSTALL_TYPE=$1
+fi
+
 if [ "$OS" == "travis" ] ; then
 
    export CONDA_INSTALL_DIR=$TRAVIS_BUILD_DIR/conda-install
@@ -536,7 +548,7 @@ bash Miniconda-latest-Linux-x86_64.sh -b -p conda-install
 $CONDA_INSTALL_DIR/bin/conda config --add channels cgat
 
 # install cgat environment
-$CONDA_INSTALL_DIR/bin/conda create -n cgat-travis cgat-travis --yes
+$CONDA_INSTALL_DIR/bin/conda create -q -n $CONDA_INSTALL_TYPE $CONDA_INSTALL_TYPE --yes
 
 } # conda install
 
@@ -546,7 +558,12 @@ conda_test() {
 
 # check whether conda has been installed first
 if [ -z "$CONDA_INSTALL_DIR" ] ; then
-   conda_install
+   conda_install $1
+fi
+
+# check installation type
+if [ "$1" == "cgat-lite" ] ; then
+   exit
 fi
 
 # setup environment and run tests
@@ -624,8 +641,8 @@ else
 
 fi # if-OS
 
+} # conda_test
 
-}
 
 # function to display help message
 help_message() {
@@ -688,6 +705,8 @@ TRAVIS_INSTALL=
 CONDA_INSTALL=
 # test conda installation
 CONDA_TEST=
+# install minimal version of CGAT Code Collection
+CONDA_LITE=
 # install operating system's dependencies
 OS_PKGS=
 # install Python dependencies
@@ -699,7 +718,7 @@ NT_RUN=
 # rerun nosetests
 NT_RERUN=
 # variable to store input parameters
-INPUT_ARGS=$(getopt -n "$0" -o ht1234567g:c: --long "help,
+INPUT_ARGS=$(getopt -n "$0" -o ht12345678g:c: --long "help,
                                                   travis,
                                                   install-os-packages,
                                                   install-python-deps,
@@ -708,6 +727,7 @@ INPUT_ARGS=$(getopt -n "$0" -o ht1234567g:c: --long "help,
                                                   rerun-nosetests,
                                                   conda-install,
                                                   conda-test,
+						  conda-lite,
                                                   git-hub-dir:,
                                                   cgat-deps-dir:"  -- "$@")
 eval set -- "$INPUT_ARGS"
@@ -759,6 +779,11 @@ do
 
       CONDA_TEST=1
       shift ;
+
+  elif [ "$1" == "-8" -o "$1" == "--conda-lite" ] ; then
+
+      CONDA_LITE=1
+      shift ; 
 
   elif [ "$1" == "-g" -o "$1" == "--git-hub-dir" ] ; then
 
@@ -819,6 +844,10 @@ else
 
   if [ "$CONDA_TEST" == "1" ] ; then
     conda_test
+  fi
+
+  if [ "$CONDA_LITE" == "1" ] ; then
+    conda_test "cgat-lite"
   fi
 
 fi # if-variables

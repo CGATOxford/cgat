@@ -1,9 +1,6 @@
 from IntervalReport import *
 
 
-class GatTracker(IntervalTracker):
-    pass
-
 # class GatGenomicContextTable( GatTracker ):
 #     pattern = "gat_context_(.*)$"
 
@@ -40,20 +37,28 @@ class GatFold(IntervalTracker, SingleTableTrackerEdgeList):
 class GatLogFold(IntervalTracker):
 
     '''logfold - colour is signficance'''
-    fdr = 2.0
+    fdr = 0.05
     as_tables = True
 
     def __call__(self, track):
-        return self.getDict("""SELECT annotation, fold,
-        CASE WHEN qvalue < %(fdr)f THEN 'red' ELSE 'blue' END AS colour
+        return self.getDict("""SELECT annotation, l2fold,
+        CASE WHEN qvalue < %(fdr)f THEN 'red' ELSE 'gray' END AS colour
         FROM %(track)s ORDER BY fold""")
 
 
-class GatResults(GatTracker):
+class GatResults(IntervalTracker):
     as_tables = True
 
     def __call__(self, track):
         return self.getAll("SELECT * FROM %(track)s")
+
+
+class GatSignificantResults(IntervalTracker):
+    as_tables = True
+    fdr = 0.05
+
+    def __call__(self, track):
+        return self.getAll("SELECT * FROM %(track)s WHERE qvalue < %(fdr)f")
 
 
 class GatTableAnnotations:
@@ -68,6 +73,7 @@ class GatTableFunctions:
     pattern = "gat_functions_(.*)"
 
 _gat_analysis = {"Results": GatResults,
+                 "SignificantResults": GatSignificantResults,
                  "Fold": GatLogFold,
                  "LogFold": GatLogFold}
 

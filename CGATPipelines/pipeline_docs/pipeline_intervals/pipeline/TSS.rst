@@ -36,6 +36,7 @@ as having a distance of 0.
    :tf-aggregate: normalized-total,cumulative
    :logscale: x
    :as-lines:
+   :groupby: all
 
    Histogram of distances of intervals to closest :term:`tss`.
 
@@ -48,6 +49,7 @@ as having a distance of 0.
    :tf-aggregate: normalized-total,cumulative
    :logscale: x
    :as-lines:
+   :groupby: all
 
    Histogram of distances of intervals to closest :term:`tss`.
 
@@ -65,6 +67,7 @@ looking from the :term:`tss`.
    :tf-aggregate: normalized-total,cumulative
    :yrange: 0,1
    :as-lines:
+   :groupby: all
 
    Histogram of distances to closest upstream :term:`tss`.
 
@@ -76,6 +79,7 @@ looking from the :term:`tss`.
    :tf-aggregate: normalized-total,cumulative
    :yrange: 0,1
    :as-lines:
+   :groupby: all
 
    Histogram of distances to closest upstream :term:`tss`.
 
@@ -93,6 +97,7 @@ of the intervals.
    :tf-aggregate: normalized-total,cumulative
    :yrange: 0,1
    :as-lines:
+   :groupby: all
 
    Histogram of distances to closest downstream TSS
 
@@ -104,6 +109,7 @@ of the intervals.
    :tf-aggregate: normalized-total,cumulative
    :yrange: 0,1
    :as-lines:
+   :groupby: all
 
    Histogram of distances to closest downstream TSS
 

@@ -50,6 +50,7 @@ import numpy
 import CGAT.GTF as GTF
 import CGAT.BamTools as BamTools
 import CGAT.IOTools as IOTools
+import CGAT.Database as Database
 from rpy2.robjects import r as R
 import rpy2.robjects as ro
 import rpy2.rinterface as ri
@@ -58,21 +59,12 @@ rpy2.robjects.numpy2ri.activate()
 
 import CGAT.Pipeline as P
 
-###################################################
-###################################################
-###################################################
-# Pipeline configuration
-###################################################
-P.getParameters(
-    ["%s.ini" % __file__[:-len(".py")],
-     "../pipeline.ini",
-     "pipeline.ini"])
+# levels of cuffdiff analysis
+# (no promotor and splice -> no lfold column)
+CUFFDIFF_LEVELS = ("gene", "cds", "isoform", "tss")
 
-PARAMS = P.PARAMS
-
-if os.path.exists("pipeline_conf.py"):
-    E.info("reading additional configuration from pipeline_conf.py")
-    execfile("pipeline_conf.py")
+# should be set in calling module
+PARAMS = {}
 
 #############################################################
 #############################################################
@@ -767,7 +759,7 @@ def runFeatureCounts(annotations_file,
                      bamfile,
                      outfile,
                      nthreads=4,
-                     strand=2,
+                     strand=0,
                      options=""):
     '''run feature counts on *annotations_file* with
     *bam_file*.
@@ -812,7 +804,6 @@ def runFeatureCounts(annotations_file,
                    featureCounts %(options)s
                                  -T %(nthreads)i
                                  -s %(strand)s
-                                 -b
                                  -a %(annotations_tmp)s
                                  %(paired_options)s
                                  -o %(outfile)s
@@ -825,3 +816,137 @@ def runFeatureCounts(annotations_file,
     '''
 
     P.run()
+
+
+def buildExpressionStats(dbhandle, tables, method, outfile, outdir):
+    '''build expression summary statistics.
+
+    Creates also diagnostic plots in
+
+    <exportdir>/<method> directory.
+    '''
+    def _split(tablename):
+        # this would be much easier, if feature_counts/gene_counts/etc.
+        # would not contain an underscore.
+        try:
+            design, geneset, counting_method = re.match(
+                "([^_]+)_vs_([^_]+)_(.*)_%s" % method,
+                tablename).groups()
+        except AttributeError:
+            try:
+                design, geneset = re.match(
+                    "([^_]+)_([^_]+)_%s" % method,
+                    tablename).groups()
+                counting_method = "na"
+            except AttributeError:
+                raise ValueError("can't parse tablename %s" % tablename)
+
+        return design, geneset, counting_method
+
+        # return re.match("([^_]+)_", tablename ).groups()[0]
+
+    keys_status = "OK", "NOTEST", "FAIL", "NOCALL"
+
+    outf = IOTools.openFile(outfile, "w")
+    outf.write("\t".join(
+        ("design",
+         "geneset",
+         "level",
+         "counting_method",
+         "treatment_name",
+         "control_name",
+         "tested",
+         "\t".join(["status_%s" % x for x in keys_status]),
+         "significant",
+         "twofold")) + "\n")
+
+    all_tables = set(Database.getTables(dbhandle))
+
+    for level in CUFFDIFF_LEVELS:
+
+        for tablename in tables:
+
+            tablename_diff = "%s_%s_diff" % (tablename, level)
+            tablename_levels = "%s_%s_diff" % (tablename, level)
+            design, geneset, counting_method = _split(tablename_diff)
+            if tablename_diff not in all_tables:
+                continue
+
+            def toDict(vals, l=2):
+                return collections.defaultdict(
+                    int,
+                    [(tuple(x[:l]), x[l]) for x in vals])
+
+            tested = toDict(
+                Database.executewait(
+                    dbhandle,
+                    "SELECT treatment_name, control_name, "
+                    "COUNT(*) FROM %(tablename_diff)s "
+                    "GROUP BY treatment_name,control_name" % locals()
+                    ).fetchall())
+            status = toDict(Database.executewait(
+                dbhandle,
+                "SELECT treatment_name, control_name, status, "
+                "COUNT(*) FROM %(tablename_diff)s "
+                "GROUP BY treatment_name,control_name,status"
+                % locals()).fetchall(), 3)
+            signif = toDict(Database.executewait(
+                dbhandle,
+                "SELECT treatment_name, control_name, "
+                "COUNT(*) FROM %(tablename_diff)s "
+                "WHERE significant "
+                "GROUP BY treatment_name,control_name" % locals()
+                ).fetchall())
+
+            fold2 = toDict(Database.executewait(
+                dbhandle,
+                "SELECT treatment_name, control_name, "
+                "COUNT(*) FROM %(tablename_diff)s "
+                "WHERE (l2fold >= 1 or l2fold <= -1) AND significant "
+                "GROUP BY treatment_name,control_name,significant"
+                % locals()).fetchall())
+
+            for treatment_name, control_name in tested.keys():
+                outf.write("\t".join(map(str, (
+                    design,
+                    geneset,
+                    level,
+                    counting_method,
+                    treatment_name,
+                    control_name,
+                    tested[(treatment_name, control_name)],
+                    "\t".join(
+                        [str(status[(treatment_name, control_name, x)])
+                         for x in keys_status]),
+                    signif[(treatment_name, control_name)],
+                    fold2[(treatment_name, control_name)]))) + "\n")
+
+            ###########################################
+            ###########################################
+            ###########################################
+            # plot length versus P-Value
+            data = Database.executewait(
+                dbhandle,
+                "SELECT i.sum, pvalue "
+                "FROM %(tablename_diff)s, "
+                "%(geneset)s_geneinfo as i "
+                "WHERE i.gene_id = test_id AND "
+                "significant" % locals()).fetchall()
+
+            # require at least 10 datapoints - otherwise smooth scatter fails
+            if len(data) > 10:
+                data = zip(*data)
+
+                pngfile = ("%(outdir)s/%(design)s_%(geneset)s_%(level)s"
+                           "_pvalue_vs_length.png") % locals()
+                R.png(pngfile)
+                R.smoothScatter(R.log10(ro.FloatVector(data[0])),
+                                R.log10(ro.FloatVector(data[1])),
+                                xlab='log10( length )',
+                                ylab='log10( pvalue )',
+                                log="x", pch=20, cex=.1)
+
+                R['dev.off']()
+
+    outf.close()
+

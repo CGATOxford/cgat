@@ -13,20 +13,16 @@ import os
 import re
 import collections
 import pandas
-from math import log
-import numpy as np
+import math
+import numpy
 import numpy.ma as ma
 import itertools
-
+import CGAT.Experiment as E
 import CGAT.Pipeline as P
 import CGAT.BamTools as BamTools
 import CGAT.IOTools as IOTools
 import CGAT.Expression as Expression
 import CGAT.Bed as Bed
-
-#########################################################################
-#########################################################################
-#########################################################################
 
 
 def convertReadsToIntervals(bamfile,
@@ -421,10 +417,6 @@ def outputRegionsOfInterest(infiles, outfile,
 
     P.run()
 
-#########################################################################
-#########################################################################
-#########################################################################
-
 
 def runDE(infiles, outfile, outdir,
           method="deseq",
@@ -516,15 +508,15 @@ def normalizeBed(infile, outfile):
     # numpy.log will through an Attribute error (wrong
     # error to report) as it cannot handle python longs
     bed_frame = bed_frame.fillna(0.0)
-    val_array = np.array(bed_frame.values, dtype=np.int64)
+    val_array = numpy.array(bed_frame.values, dtype=numpy.int64)
     geom_mean = geoMean(val_array)
     ratio_frame = bed_frame.apply(lambda x: x/geom_mean,
                                   axis=0)
-    size_factors = ratio_frame.apply(np.median,
+    size_factors = ratio_frame.apply(numpy.median,
                                      axis=0)
     normalize_frame = bed_frame/size_factors
     # replace infs and -infs with Nas, then 0s
-    normalize_frame.replace([np.inf, -np.inf], np.nan, inplace=True)
+    normalize_frame.replace([numpy.inf, -numpy.inf], numpy.nan, inplace=True)
     normalize_frame = normalize_frame.fillna(0.0)
     normalize_frame.to_csv(outfile, sep="\t", index_label="interval")
 
@@ -570,7 +562,7 @@ def enrichmentVsInput(infile, outfile):
                                left_on=[0, 1, 2],
                                right_on=[0, 1, 2])
 
-    foldchange = lambda x: log((x['3_y'] + 1.0)/(x['3_x'] + 1.0), 2)
+    foldchange = lambda x: math.log((x['3_y'] + 1.0)/(x['3_x'] + 1.0), 2)
     merge_frame[4] = merge_frame.apply(foldchange, axis=1)
 
     out_frame = merge_frame[[0, 1, 2, 4]]
@@ -651,3 +643,74 @@ def runMEDIPSDMR(design_file, outfile):
 
     P.run()
 
+
+@P.cluster_runnable
+def outputSpikeCounts(outfile, infile_name,
+                      expression_nbins=None,
+                      fold_nbins=None,
+                      expression_bins=None,
+                      fold_bins=None):
+
+    df = pandas.read_csv(infile_name,
+                         sep="\t",
+                         index_col=0)
+
+    E.debug("read %i rows and %i columns of data" % df.shape)
+
+    if "edger" in outfile.lower():
+        # edger: treatment_mean and control_mean do not exist
+        # use supplied values directly.
+        l10average = numpy.log(df['treatment_mean'])
+        l2fold = numpy.log2(df['fold'])
+    else:
+        # use pseudocounts to compute fold changes
+        treatment_mean = df['treatment_mean'] + 1
+        control_mean = df['control_mean'] + 1
+        # build log2 average values
+        l10average = numpy.log((treatment_mean + control_mean) / 2)
+        l2fold = numpy.log2(treatment_mean / control_mean)
+
+    if expression_nbins is not None:
+        mm = math.ceil(max(l10average))
+        expression_bins = numpy.arange(0, mm, mm / expression_nbins)
+
+    if fold_nbins is not None:
+        mm = math.ceil(max(abs(min(l2fold)), abs(max(l2fold))))
+        # ensure that range is centered on exact 0
+        n = math.ceil(fold_nbins / 2.0)
+        fold_bins = numpy.concatenate(
+            (-numpy.arange(0, mm, mm / n)[:0:-1],
+             numpy.arange(0, mm, mm / n)))
+
+    # compute expression bins
+    d2hist_counts, xedges, yedges = numpy.histogram2d(
+        l10average, l2fold,
+        bins=(expression_bins,
+              fold_bins))
+
+    dd = pandas.DataFrame(d2hist_counts)
+    dd.index = list(xedges[:-1])
+    dd.columns = list(yedges[:-1])
+    dd.to_csv(IOTools.openFile(outfile, "w"),
+              sep="\t")
+
+    return df, d2hist_counts, xedges, yedges, l10average, l2fold
+
+
+@P.cluster_runnable
+def plotDETagStats(infiles, outfile):
+    '''plot differential expression stats'''
+
+    # with IOTools.openFile(outfile) as outf:
+    #     outf.write(",".join(infiles, outfile))
+    # return
+
+    infile, composition_file = infiles
+    Expression.plotDETagStats(
+        infile, outfile,
+        additional_file=composition_file,
+        join_columns=("contig", "start", "end"),
+        additional_columns=("CpG_density",
+                            "length"))
+
+    P.touch(outfile)

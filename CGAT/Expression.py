@@ -65,7 +65,6 @@ Requirements:
 * samr >= 2.0 (optional)
 * siggenes >= 1.39.0 (optional)
 
-
 Code
 ----
 
@@ -79,6 +78,7 @@ import collections
 import itertools
 import re
 import pandas
+import ggplot
 
 from rpy2.robjects import r as R
 import rpy2.robjects as ro
@@ -695,24 +695,48 @@ def plotPairs():
                log="xy")''')
 
 
-def plotPCA():
-    '''plot a PCA plot from countsTable.'''
+def plotPCA(groups=True):
+    '''plot a PCA plot from countsTable using ggplot.
 
+    If groups is *True*, the variable ``groups`` is
+    used for colouring. If *False*, the groups are 
+    determined by sample labels.
+    '''
     R('''suppressMessages(library(ggplot2))''')
     R('''pca = prcomp(t(countsTable))''')
+    # Build factor groups by splitting labels at "."
+    R('''colour=groups''')
+    R('''shape=0''')
+    R('''size=1''')
+    if groups is False:
+        R('''mm = matrix(
+        unlist(sapply(colnames(countsTable),strsplit,'[.]')),
+        nrow=length(colnames(countsTable)),
+        byrow=T)''')
+        nrows, nlevels = R('''dim(mm)''')
+        if nlevels > 1:
+            R('''colour=mm[,1]''')
+        if nlevels > 2:
+            R('''shape=mm[,2]''')
+
     R('''p1 = ggplot(
     as.data.frame(pca$x),
-    aes(x=PC1, y=PC2, colour=groups, label=rownames(pca$x))) \
+    aes(x=PC1, y=PC2,
+    colour=colour,
+    shape=shape,
+    label=rownames(pca$x))) \
     + geom_text(size=4, vjust=1) \
     + geom_point()''')
     R('''p2 = qplot(x=PC1, y=PC3,
     data = as.data.frame(pca$x),
     label=rownames(pca$x),
-    colour=groups)''')
+    shape=shape,
+    colour=colour)''')
     R('''p3 = qplot(x=PC2, y=PC3,
     data = as.data.frame(pca$x),
     label=rownames(pca$x),
-    colour=groups)''')
+    shape=shape,
+    colour=colour)''')
     # TODO: plot all in a multi-plot with proper scale
     # the following squishes the plots
     # R('''source('%s')''' %
@@ -1512,15 +1536,21 @@ def plotTagStats(infile, design_file, outfile_prefix):
     R('''plot(pp)''')
     R['dev.off']()
 
-#########################################################################
-#########################################################################
-#########################################################################
 
-
-def plotDETagStats(infile, outfile_prefix):
+def plotDETagStats(infile, outfile_prefix,
+                   additional_file=None,
+                   join_columns=None,
+                   additional_columns=None):
     '''provide summary plots for tag data.
 
-    Stratify boxplots and densities according to differential expression calls.
+    Stratify boxplots and densities according to differential
+    expression calls.
+
+    The input file is the output of any of the DE
+    tools, see GeneExpressionResults for column names.
+
+    Additional file will be joined with infile and any additional
+    columns will be output as well.
     '''
 
     # import rpy2.robjects.lib.ggplot2 as ggplot2
@@ -1528,58 +1558,69 @@ def plotDETagStats(infile, outfile_prefix):
     R('''suppressMessages(library('ggplot2'))''')
     R('''suppressMessages(library('grid'))''')
 
-    # can't have rownames because if multi comparisons then will have
-    # replicated row names
-    R('''data = read.table( '%s', header = TRUE )''' % infile)
+    table = pandas.read_csv(IOTools.openFile(infile),
+                            sep="\t")
 
-    R(''' gp = ggplot(data)''')
-    R('''a = gp + \
-    geom_density(aes(x=log10(treatment_mean+1),group=factor(significant),
-    color='factor(significant)',fill='factor(significant)'),alpha=I(1/3))''')
+    if additional_file is not None:
+        additional_table = pandas.read_csv(
+            IOTools.openFile(additional_file),
+            sep="\t")
+        table = pandas.merge(table,
+                             additional_table,
+                             on=join_columns,
+                             how="left",
+                             sort=False)
 
-    R('''b = gp + \
-    geom_density(aes(x=log10(control_mean+1),group=factor(significant),
-    color=factor(significant),fill=factor(significant)),alpha=I(1/3))''')
+    # remove index. If it is numbered starting from 1, there is a bug
+    # in ggplot, see https://github.com/yhat/ggplot/pull/384
+    table.reset_index(inplace=True)
+    table = table.head(10000)
 
-    fn = outfile_prefix + ".densities.png"
-    R.png(fn)
-    try:
-        R('''grid.newpage()''')
-        R.pushViewport(R.viewport(layout=R('''grid.layout''')(2, 1)))
-        R('''print( a, vp = viewport( layout.pos.row = 1, layout.pos.col = 1 ) )''')
-        R('''print( b, vp = viewport( layout.pos.row = 2, layout.pos.col = 1 ) )''')
-    except rpy2.rinterface.RRuntimeError:
-        E.warn("could not create %s" % fn)
-    R['dev.off']()
+    # add log-transformed count data
+    table['log10_treatment_mean'] = numpy.log10(table['treatment_mean'] + 1)
+    table['log10_control_mean'] = numpy.log10(table['control_mean'] + 1)
 
-    R('''grid.newpage()''')
-    R.pushViewport(R.viewport(layout=R('''grid.layout''')(2, 1)))
+    def _dplot(table, outfile, column):
 
-    R('''gp = ggplot(data)''')
-    R('''a = gp + \
-    geom_boxplot(aes(x=factor(significant),
-    y=log10(treatment_mean+1),
-    color=factor(significant),fill=factor(significant)),
-    size=0.3,
-    alpha=I(1/3))''')
+        plot = ggplot.ggplot(
+            ggplot.aes(column,
+                       colour='significant',
+                       fill='significant'),
+            data=table) + \
+            ggplot.geom_density(alpha=0.5)
 
-    R('''b = gp + \
-      geom_boxplot(aes(x=factor(significant),
-    y=log10(control_mean+1),
-    color=factor(significant),
-    fill=factor(significant)),
-    size=0.3,
-    alpha=I(1/3)) +\
-    theme(axis.text.x=element_text(angle=90, hjust=1, size=8))''')
+        ggplot.ggsave(filename=outfile, plot=plot)
 
-    fn = outfile_prefix + ".boxplots.png"
-    R.png(fn)
-    try:
-        R('''print(a, vp=viewport(layout.pos.row=1, layout.pos.col=1))''')
-        R('''print(b, vp=viewport(layout.pos.row=2, layout.pos.col=1))''')
-    except rpy2.rinterface.RRuntimeError:
-        E.warn("could not create %s" % fn)
-    R['dev.off']()
+    def _bplot(table, outfile, column):
+
+        plot = ggplot.ggplot(
+            ggplot.aes(x=column, y='significant'),
+            data=table) + \
+            ggplot.geom_boxplot()
+
+        ggplot.ggsave(filename=outfile, plot=plot)
+
+    _dplot(table,
+           outfile_prefix + ".densities_tags_control.png",
+           "log10_control_mean")
+    _dplot(table,
+           outfile_prefix + ".densities_tags_treatment.png",
+           "log10_treatment_mean")
+    _bplot(table,
+           outfile_prefix + ".boxplot_tags_control.png",
+           "log10_control_mean")
+    _bplot(table,
+           outfile_prefix + ".boxplot_tags_treatment.png",
+           "log10_treatment_mean")
+
+    for column in additional_columns:
+        _dplot(table,
+               outfile_prefix + ".densities_%s.png" % column,
+               column)
+        _bplot(table,
+               outfile_prefix + ".boxplot_%s.png" % column,
+               column)
+    return
 
 
 def parseCuffdiff(infile):
@@ -2087,7 +2128,7 @@ def outputTagSummary(filename_tags,
     outfilename = output_filename_pattern + "pca.svg"
     E.info("outputting PCA plot to %s" % outfilename)
     R.svg(outfilename)
-    plotPCA()
+    plotPCA(groups=False)
     R['dev.off']()
 
     # output an MDS plot

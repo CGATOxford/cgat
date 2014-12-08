@@ -35,12 +35,6 @@ Code
 '''
 import os
 import sys
-import string
-import re
-import tempfile
-import subprocess
-import optparse
-import shutil
 
 from types import *
 
@@ -50,8 +44,6 @@ from types import *
 # raise NotImplementedError("incomplete")
 
 from CGAT import Experiment as Experiment
-from CGAT import TreeTools as TreeTools
-from CGAT import MatrixTools as MatrixTools
 
 
 class Error(Exception):
