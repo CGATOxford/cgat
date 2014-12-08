@@ -133,7 +133,7 @@ def variantAnnotator(vcffile, bamlist, outfile, genome,
     '''Annotate variant file using GATK VariantAnnotator'''
     job_options = getGATKOptions()
     anno = annotations.split(",")
-    anno = " -A ".join(anno)
+    anno = " -A " + " -A ".join(anno)
     statement = '''GenomeAnalysisTK -T VariantAnnotator
                     -R %(genome)s
                     -I %(bamlist)s
@@ -141,7 +141,7 @@ def variantAnnotator(vcffile, bamlist, outfile, genome,
                     --snpEffFile %(snpeff_file)s
                     -o %(outfile)s
                     --variant %(vcffile)s
-                    -L %(infile)s
+                    -L %(vcffile)s
                     --dbsnp %(dbsnp)s
                     %(anno)s''' % locals()
     P.run()
@@ -153,16 +153,13 @@ def variantRecalibrator(infile, outfile, genome,
                         dbsnp, hapmap, omni):
     '''Create variant recalibration file'''
     job_options = getGATKOptions()
-    track = P.snip(os.path.basename(outfile), ".recal")
+    track = P.snip(outfile, ".recal")
     statement = '''GenomeAnalysisTK -T VariantRecalibrator
                     -R %(genome)s
                     -input %(infile)s
-                    -resource:hapmap,known=false,training=true,
-                        truth=true,prior=15.0 %(hapmap)s
-                    -resource:omni,known=false,training=true,
-                        truth=false,prior=12.0 %(omni)s
-                    -resource:dbsnp,known=true,training=false,
-                        truth=false,prior=6.0 %(dbsnp)s
+                    -resource:hapmap,known=false,training=true,truth=true,prior=15.0 %(hapmap)s
+                    -resource:omni,known=false,training=true,truth=false,prior=12.0 %(omni)s
+                    -resource:dbsnp,known=true,training=false,truth=false,prior=6.0 %(dbsnp)s
                     -an QD -an HaplotypeScore -an MQRankSum 
                     -an ReadPosRankSum -an FS -an MQ
                     --maxGaussians 4 
@@ -213,8 +210,9 @@ def selectVariants(infile, outfile, genome, select):
     statement = '''GenomeAnalysisTK -T SelectVariants
                     -R %(genome)s
                     --variant %(infile)s
-                    -select %(select)s
-                    > %(outfile)s''' % locals()
+                    -select '%(select)s'
+                    -log %(outfile)s.log
+                    -o %(outfile)s''' % locals()
     P.run()
 
 #########################################################################
@@ -248,9 +246,9 @@ def buildSelectStatementfromPed(filter_type, pedfile, template):
     
     # Build select statement from template
     if filter_type == "denovo":
-        select = template.replaceAll("father", father)
-        select = select.replaceAll("mother",mother)
-        select = select.replaceAll("proband",proband)
+        select = template.replace("father", father)
+        select = select.replace("mother",mother)
+        select = select.replace("proband",proband)
     elif filter_type == "dominant":
         affecteds_exp = '").getPL().1==0&&vc.getGenotype("'.join(affecteds)
         if len(unaffecteds) == 0:
@@ -259,8 +257,8 @@ def buildSelectStatementfromPed(filter_type, pedfile, template):
             unaffecteds_exp = '&&vc.getGenotype("' + \
                 ('").isHomRef()&&vc.getGenotype("'.join(unaffecteds)) + \
                 '").isHomRef()'
-        select = template.replaceAll("affecteds_exp", affecteds_exp)
-        select = select.replaceAll("unaffecteds_exp",unaffecteds_exp)
+        select = template.replace("affecteds_exp", affecteds_exp)
+        select = select.replace("unaffecteds_exp",unaffecteds_exp)
     elif filter_type == "recessive":
         affecteds_exp = '").getPL().2==0&&vc.getGenotype("'.join(affecteds)
         unaffecteds_exp = '").getPL().2!=0&&vc.getGenotype("'.join(unaffecteds)
@@ -270,10 +268,22 @@ def buildSelectStatementfromPed(filter_type, pedfile, template):
             parents_exp = '&&vc.getGenotype("' + \
                 ('").getPL().1==0&&vc.getGenotype("'.join(parents)) + \
                 '").getPL().1==0'
-        select = template.replaceAll("affecteds_exp", affecteds_exp)
-        select = select.replaceAll("unaffecteds_exp",unaffecteds_exp)
-        select = select.replaceAll("parents_exp",parents_exp)
+        select = template.replace("affecteds_exp", affecteds_exp)
+        select = select.replace("unaffecteds_exp",unaffecteds_exp)
+        select = select.replace("parents_exp",parents_exp)
     
     return select
 
+#########################################################################
 
+
+def guessSex(infile, outfile):
+    '''Guess the sex of a sample based on ratio of reads 
+    per megabase of sequence on X and Y'''
+    statement = '''calc `samtools idxstats %(infile)s | grep 'X' 
+                    | awk '{print $3/($2/1000000)}'`
+                    /`samtools idxstats %(infile)s | grep 'Y' 
+                    | awk '{print $3/($2/1000000)}'` 
+                    | tr -d " " | tr "=" "\\t" | tr "/" "\\t"
+                    > %(outfile)s'''
+    P.run()

@@ -516,7 +516,7 @@ def variantAnnotator(infiles, outfile):
 def variantRecalibrator(infile, outfile):
     '''Create variant recalibration file'''
     job_options = getGATKOptions()
-    track = P.snip(os.path.basename(outfile), ".recal")
+    track = P.snip(outfile, ".recal")
     hapmap = PARAMS["gatk_hapmap"]
     omni = PARAMS["gatk_omni"]
     dbsnp = PARAMS["gatk_dbsnp"]
@@ -541,7 +541,7 @@ def variantRecalibrator(infile, outfile):
 @transform(variantAnnotator,
            regex(r"variants/(\S+).haplotypeCaller.annotated.vcf"),
            add_inputs(r"variants/\1.haplotypeCaller.vqsr.recal",
-                      r"\1.haplotypeCaller.vqsr.tranches"),
+                      r"variants/\1.haplotypeCaller.vqsr.tranches"),
            r"variants/\1.haplotypeCaller.vqsr.vcf")
 def applyVariantRecalibration(infiles, outfile):
     '''Perform variant quality score recalibration using GATK '''
@@ -637,6 +637,7 @@ def vcfToTable(infile, outfile):
     P.run()
 
 
+@jobs_limit(1, "db")
 @transform(vcfToTable, regex(r"variants/(\S+).table"),
            r"variants/\1.table.load")
 def loadVariantAnnotation(infile, outfile):
@@ -662,7 +663,7 @@ def snpeffToTable(infile, outfile):
     -o %(outfile)s''' % locals()
     P.run()
 
-
+@jobs_limit(1, "db")
 @transform(snpeffToTable, regex(r"variants/(\S+).table"),
            r"variants/\1.table.load")
 def loadSnpeffAnnotation(infile, outfile):
@@ -676,6 +677,7 @@ def loadSnpeffAnnotation(infile, outfile):
     P.run()
 
 
+@jobs_limit(1, "db")
 # the following function is not working - not sure why yet
 @follows(loadVariantAnnotation, loadSnpeffAnnotation)
 @transform(loadSnpeffAnnotation,
@@ -692,18 +694,25 @@ def createAnnotationsTable(infile, outfile):
     else:
         sstrack = setrack + 'haplotypeCaller_snpsift'
     cc = dbh.cursor()
-    cc.execute("""DROP TABLE IF EXISTS %(table)s """ % locals())
-    cc.execute("""CREATE TABLE %(table)s AS SELECT *
-    FROM %(sstrack)s_table
-    INNER JOIN %(setrack)s_haplotypeCaller_snpeff_table
-    ON %(sstrack)s_table.CHROM = %(setrack)s_haplotypeCaller_snpeff_table.CHROM
-    AND %(sstrack)s_table.POS = %(setrack)s_haplotypeCaller_snpeff_table.POS
-    AND %(sstrack)s_table.REF = %(setrack)s_haplotypeCaller_snpeff_table.REF
-    AND %(sstrack)s_table.ALT = %(setrack)s_haplotypeCaller_snpeff_table.ALT
-    """ % locals())
+    drop_table = """DROP TABLE IF EXISTS %(table)s """ % locals()
+    cc.execute(drop_table)
+    create_table = """CREATE TABLE %(table)s AS SELECT *
+                        FROM %(sstrack)s_table
+                        INNER JOIN %(setrack)s_haplotypeCaller_snpeff_table
+                        ON %(sstrack)s_table.CHROM = %(setrack)s_haplotypeCaller_snpeff_table.CHROM
+                        AND %(sstrack)s_table.POS = %(setrack)s_haplotypeCaller_snpeff_table.POS
+                        AND %(sstrack)s_table.REF = %(setrack)s_haplotypeCaller_snpeff_table.REF
+                        AND %(sstrack)s_table.ALT = %(setrack)s_haplotypeCaller_snpeff_table.ALT
+                        """ % locals()
+    cc.execute(create_table)
+    dbh.commit()
     cc.close()
-    P.touch(outfile)
-
+    
+    # write SQL statements to log file 
+    outf = IOTools.openFile(outfile, "w")
+    outf.writeln(drop_table)
+    outf.writeln(create_table)
+    outf.close()
 
 #########################################################################
 #########################################################################
@@ -766,7 +775,7 @@ def tabulateDeNovos(infile, outfile):
     statement += '''rm -f %(infile)s.tmp*'''
     P.run()
 
-
+@jobs_limit(1, "db")
 @transform(tabulateDeNovos,
            regex(r"variants/(\S+).filtered.table"),
            r"variants/\1.filtered.table.load")
@@ -835,7 +844,7 @@ def tabulateLowerStringencyDeNovos(infile, outfile):
     statement += '''rm -f %(infile)s.tmp*'''
     P.run()
 
-
+@jobs_limit(1, "db")
 @transform(tabulateLowerStringencyDeNovos,
            regex(r"variants/(\S+).denovos.table"),
            r"variants/\1.denovos.table.load")
@@ -895,7 +904,7 @@ def tabulateDoms(infile, outfile):
 
 #########################################################################
 
-
+@jobs_limit(1, "db")
 @transform(tabulateDoms, regex(r"variants/(\S+).dominant.table"),
            r"variants/\1.dominant.table.load")
 def loadDoms(infile, outfile):
@@ -958,7 +967,7 @@ def tabulateRecs(infile, outfile):
 
 #########################################################################
 
-
+@jobs_limit(1, "db")
 @transform(tabulateRecs, regex(r"variants/(\S+).recessive.table"),
            r"variants/\1.recessive.table.load")
 def loadRecs(infile, outfile):
@@ -972,7 +981,7 @@ def loadRecs(infile, outfile):
 
 
 @transform(annotateVariantsSNPeff, regex(r"variants/(\S*Multiplex\S+|\S*Trio\S+).haplotypeCaller.snpeff.vcf"),
-           add_inputs(r"\1.ped", r"bam/\1.list"), r"variants/\1.compound_hets.table")
+           add_inputs(r"\1.ped", r"gatk/\1.list"), r"variants/\1.compound_hets.table")
 def compoundHets(infiles, outfile):
     '''Identify potentially pathogenic compound heterozygous variants (phasing with GATK followed by compound het
     calling using Gemini'''
@@ -987,7 +996,7 @@ def compoundHets(infiles, outfile):
 
 #########################################################################
 
-
+@jobs_limit(1, "db")
 @transform(compoundHets, regex(r"variants/(\S+).compound_hets.table"),
            r"variants/\1.compound_hets.table.load")
 def loadCompoundHets(infile, outfile):
@@ -1081,8 +1090,7 @@ def genesOfInterest():
 @follows(vcfToTable,
          loadVariantAnnotation,
          snpeffToTable,
-         loadSnpeffAnnotation,
-         createAnnotationsTable)
+         loadSnpeffAnnotation)
 def tabulation():
     pass
 
