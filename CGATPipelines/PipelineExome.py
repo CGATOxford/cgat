@@ -41,18 +41,18 @@ def getGATKOptions():
     return "-pe dedicated 3 -R y -l mem_free=1.4G -l picard=1"
 
 #########################################################################
-def GATKpreprocessing(infile, outfile, genome, dbsnp,   
-                      library="unknown", platform="Illumina", 
-                      platform_unit="1", threads=4, solid_options=""):
-    '''Reorders BAM according to reference fasta and add read groups using
-    SAMtools, realigns around indels and recalibrates base quality
-    scores using GATK'''
+
+
+def GATKreadGroups(infile, outfile, genome,
+                   library="unknown", platform="Illumina",
+                   platform_unit="1", threads=4):
+    '''Reorders BAM according to reference fasta and adds read groups'''
 
     track = P.snip(os.path.basename(infile), ".bam")
     tmpdir_gatk = P.getTempDir('.')
     job_options = getGATKOptions()
 
-    statement =  '''ReorderSam
+    statement = '''ReorderSam
                     INPUT=%(infile)s
                     OUTPUT=%(tmpdir_gatk)s/%(track)s.reordered.bam
                     REFERENCE=%(genome)s
@@ -64,36 +64,59 @@ def GATKpreprocessing(infile, outfile, genome, dbsnp,
 
     statement += '''AddOrReplaceReadGroups
                     INPUT=%(tmpdir_gatk)s/%(track)s.reordered.bam
-                    OUTPUT=%(tmpdir_gatk)s/%(track)s.readgroups.bam
+                    OUTPUT=%(outfile)s
                     RGLB=%(library)s
                     RGPL=%(platform)s
                     RGPU=%(platform_unit)s
                     RGSM=%(track)s
                     VALIDATION_STRINGENCY=SILENT ; checkpoint ;''' % locals()
 
-    statement += '''samtools index %(tmpdir_gatk)s/%(track)s.readgroups.bam ;
+    statement += '''samtools index %(outfile)s ;
                     checkpoint ;''' % locals()
+    statement += '''rm -rf %(tmpdir_gatk)s ;''' % locals()
 
-    statement += '''GenomeAnalysisTK
+    P.run()
+
+
+def GATKrealign(infile, outfile, genome):
+    '''Realigns BAMs around indels using GATK'''
+
+    track = P.snip(os.path.basename(infile), ".bam")
+    tmpdir_gatk = P.getTempDir('.')
+    job_options = getGATKOptions()
+
+    statement = '''GenomeAnalysisTK
                     -T RealignerTargetCreator
                     -o %(tmpdir_gatk)s/%(track)s.indelrealignment.intervals
                     --num_threads %(threads)s
                     -R %(genome)s
-                    -I %(tmpdir_gatk)s/%(track)s.readgroups.bam ; checkpoint ;''' % locals()
-
-    statement += '''GenomeAnalysisTK
-                    -T IndelRealigner
-                    -o %(tmpdir_gatk)s/%(track)s.indelrealigned.bam
-                    -R %(genome)s
-                    -I %(tmpdir_gatk)s/%(track)s.readgroups.bam
-                    -targetIntervals %(tmpdir_gatk)s/%(track)s.indelrealignment.intervals ;
+                    -I %(infile)s ;
                     checkpoint ;''' % locals()
 
     statement += '''GenomeAnalysisTK
+                    -T IndelRealigner
+                    -o %(outfile)s
+                    -R %(genome)s
+                    -I %(tmpdir_gatk)s/%(track)s.readgroups.bam
+                    -targetIntervals
+                    %(tmpdir_gatk)s/%(track)s.indelrealignment.intervals ;
+                    checkpoint ;''' % locals()
+    statement += '''rm -rf %(tmpdir_gatk)s ;''' % locals()
+    P.run()
+
+
+def GATKrescore(infile, outfile, genome, dbsnp, solid_options=""):
+    '''Recalibrates base quality scores using GATK'''
+
+    track = P.snip(os.path.basename(infile), ".bam")
+    tmpdir_gatk = P.getTempDir('.')
+    job_options = getGATKOptions()
+
+    statement = '''GenomeAnalysisTK
                     -T BaseRecalibrator
                     --out %(tmpdir_gatk)s/%(track)s.recal.grp
                     -R %(genome)s
-                    -I %(tmpdir_gatk)s/%(track)s.indelrealigned.bam
+                    -I %(infile)s
                     --knownSites %(dbsnp)s %(solid_options)s ;
                     checkpoint ;''' % locals()
 
@@ -104,14 +127,14 @@ def GATKpreprocessing(infile, outfile, genome, dbsnp,
                     -I %(tmpdir_gatk)s/%(track)s.indelrealigned.bam ;
                     checkpoint ;''' % locals()
 
-    statement += '''rm -rf %(tmpdir_gatk)s ;'''
+    statement += '''rm -rf %(tmpdir_gatk)s ;''' % locals()
     P.run()
 
 #########################################################################
 
 
-def haplotypeCaller(infile, outfile, genome,  
-                    dbsnp,intervals, padding, options):
+def haplotypeCaller(infile, outfile, genome,
+                    dbsnp, intervals, padding, options):
     '''Call SNVs and indels using GATK HaplotypeCaller in all members of a
     family together'''
     job_options = getGATKOptions()
@@ -124,6 +147,49 @@ def haplotypeCaller(infile, outfile, genome,
                     -L %(intervals)s
                     -ip %(padding)s''' % locals()
     P.run()
+
+#########################################################################
+
+
+def mutectSNPCaller(infile, outfile, mutect_log, genome, cosmic,
+                    dbsnp, call_stats_out, cluster_options,
+                    quality=20, max_alt_qual=150, max_alt=5,
+                    max_fraction=0.05, tumor_LOD=6.3,
+                    normal_panel=None, gatk_key=None,
+                    infile_matched=None):
+    '''Call SNVs using Broad's muTect'''
+    # get mutect to work from module file without full path.
+
+    job_options = cluster_options
+    statement = '''java -Xmx4g -jar
+                   /ifs/apps/bio/muTect-1.1.4/muTect-1.1.4.jar
+                   --analysis_type MuTect
+                   --reference_sequence %(genome)s
+                   --cosmic %(cosmic)s
+                   --dbsnp %(dbsnp)s
+                   --input_file:tumor %(infile)s
+                   --out %(call_stats_out)s
+                   --enable_extended_output
+                   --vcf %(outfile)s --artifact_detection_mode
+                ''' % locals()
+    if infile_matched:
+        statement += '''--min_qscore %(quality)s
+                        --gap_events_threshold 2
+                        --max_alt_alleles_in_normal_qscore_sum %(max_alt_qual)s
+                        --max_alt_alleles_in_normal_count %(max_alt)s
+                        --max_alt_allele_in_normal_fraction %(max_fraction)s
+                        --tumor_lod %(tumor_LOD)s
+                        --input_file:normal %(infile_matched)s ''' % locals()
+    if normal_panel:
+        statement += ''' --normal_panel %(normal_panel)s ''' % locals()
+
+    if gatk_key:
+        statement += " -et NO_ET -K %(gatk_key)s " % locals()
+
+    statement += " > %(mutect_log)s " % locals()
+
+    P.run()
+
 
 #########################################################################
 
