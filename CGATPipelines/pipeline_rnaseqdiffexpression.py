@@ -1215,10 +1215,6 @@ def plotDETagStats(infile, outfile):
     Expression.plotDETagStats(infile, outfile)
     P.touch(outfile)
 
-###################################################################
-###################################################################
-###################################################################
-
 
 @follows(plotTagStats,
          plotDETagStats,

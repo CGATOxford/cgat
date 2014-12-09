@@ -4,6 +4,7 @@ from pysam.csamfile cimport *
 import collections
 import CGAT.Experiment as E
 import numpy
+import CGAT.Stats as Stats
 
 PeakShapeResult = collections.namedtuple(
     "PeakShapeResult",
@@ -20,31 +21,41 @@ PeakShapeCounts = collections.namedtuple(
 cdef class Counter:
     '''base class for counters computing densities 
     from genomic data.
-    '''
-    def __init__(self):
-        pass
 
-    def countAroundPos( self, 
-                        infile,
-                        contig, 
-                        int pos,
-                        bins,
-                        **kwargs ):
+    *smooth_method* is a function that will be applied
+    before sampling the bins.
+    '''
+    cdef smooth_method
+    
+    def __init__(self, smooth_method=None):
+        self.smooth_method = smooth_method
+
+    def countAroundPos(self, 
+                       infile,
+                       contig, 
+                       int pos,
+                       bins,
+                       **kwargs):
         '''count and bin in bins.
 
-        return a result object.
+        Smoothes by summing counts in bins.
+
+        return a PeakShapeCounts tuple.
         '''
         cdef int xstart, xend, rstart, rend, i, offset
 
-        nreads, counts = self.coverageInInterval( infile, 
-                                                  contig, 
-                                                  max( 0, pos + bins[0]),
-                                                  pos + bins[-1],
-                                                  **kwargs )
+        nreads, counts = self.coverageInInterval(infile, 
+                                                 contig, 
+                                                 max(0, pos + bins[0]),
+                                                 pos + bins[-1],
+                                                 **kwargs )
 
         nbins = len(bins) - 1
-        hist = numpy.zeros( nbins, dtype = numpy.int )
+        hist = numpy.zeros(nbins, dtype=numpy.int)
         cdef int lcounts = len(counts)
+
+        if self.smooth_method is not None:
+            smoothed_counts = self.smooth_method(counts)
 
         offset = -bins[0]
         xstart = offset + bins[0] 
@@ -52,25 +63,26 @@ cdef class Counter:
             xend = offset + bins[i+1]
             # only take complete bins
             if xstart >= 0 and xend < lcounts:
-                hist[i] = sum( counts[xstart:xend] ) 
+                hist[i] = sum(counts[xstart:xend]) 
             xstart = xend
 
-        result = PeakShapeCounts._make( (nreads, 
-                                         numpy.median(counts),
-                                         hist ) )
+        result = PeakShapeCounts._make((nreads, 
+                                        numpy.median(counts),
+                                        hist))
 
         return result
 
-    def countInInterval( self,
-                         infile,
-                         contig, 
-                         int start, 
-                         int end,
-                         bins,
-                         int window_size = 0,
-                         float peak_ratio = 0.90,
-                         use_interval = False,
-                         centring_method = "reads" ):
+    def countInInterval(self,
+                        infile,
+                        contig, 
+                        int start, 
+                        int end,
+                        bins,
+                        int window_size = 0,
+                        float peak_ratio = 0.90,
+                        use_interval=False,
+                        smooth_method=None,
+                        centring_method = "reads" ):
         '''count density in window and compute peak-shape 
         summary parameters inside window.
 
@@ -79,7 +91,9 @@ cdef class Counter:
         returned. Otherwise, if set to *True*, the peak location
         will be located first and a window centered on the
         peak of size *window_size* will be used.
-        
+
+        Smoothes by summing counts in bins.        
+
         return a result object.
         '''
 
@@ -118,18 +132,18 @@ cdef class Counter:
         #################################################
         # compute peak shape parameters
         peak_nreads = max(counts_in_interval)
-        peaks = numpy.array( range(0,interval_width) )[ counts_in_interval >= peak_nreads ]
+        peaks = numpy.array(range(0,interval_width) )[counts_in_interval >= peak_nreads]
         if centring_method == "reads":
             peak_center = peaks[len(peaks) // 2] 
         elif centring_method == "middle":
             peak_center = interval_width // 2
         else:
-            raise ValueError( "unknown centring method '%s'" % centring_method)
+            raise ValueError("unknown centring method '%s'" % centring_method)
 
         # define peak height
-        cdef int peak_height = numpy.ceil( peak_ratio * peak_nreads )
+        cdef int peak_height = numpy.ceil(peak_ratio * peak_nreads)
 
-        peaks = numpy.array( range(0,interval_width) )[ counts_in_interval >= peak_height ]
+        peaks = numpy.array(range(0,interval_width))[counts_in_interval >= peak_height]
         npeaks = len(peaks)
         peak_start = peaks[0]
         peak_end = peaks[-1]
@@ -197,6 +211,7 @@ cdef class Counter:
 
         cdef int lcounts = len(counts)
 
+        # count averages
         xstart = offset + bins[0] 
         for i from 0 <= i < nbins:
             xend = offset + bins[i+1]
@@ -205,18 +220,12 @@ cdef class Counter:
                 hist[i] = sum(counts[xstart:xend]) 
             xstart = xend
 
-        # debugging
-        #for x,v in enumerate( hist ):
-            # print x, "*" * v
-        # for x,v in enumerate( counts ):
-        #     print x, "*" * v
-
         result = PeakShapeResult._make((interval_width, npeaks,
                                         start + peak_center, 
                                         peak_width, peak_nreads, 
                                         abs((interval_width // 2) - peak_center), 
                                         nreads,
-                                         numpy.median(counts),
+                                        numpy.median(counts),
                                         closest_dist, furthest_dist,
                                         bins,
                                         hist))
@@ -230,9 +239,9 @@ cdef class CounterBam(Counter):
 
     cdef int shift
 
-    def __init__(self, shift = 0):
+    def __init__(self, shift = 0, *args, **kwargs):
 
-        Counter.__init__(self)
+        Counter.__init__(self, *args, **kwargs)
 
         self.shift = shift
 
@@ -338,8 +347,8 @@ cdef class CounterBam(Counter):
 cdef class CounterBigwig(Counter):
     '''compute densities in intervals from bigwig files.'''
 
-    def __cinit__(self, shift = 0):
-        Counter.__init__(self)
+    def __cinit__(self, shift = 0, *args, **kwargs):
+        Counter.__init__(self, *args, **kwargs)
 
     def coverageInInterval( self,
                              wigfile,

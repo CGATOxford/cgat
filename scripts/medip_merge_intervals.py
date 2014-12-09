@@ -244,6 +244,7 @@ def main(argv=None):
 
         counter.output += 1
 
+    # create empty files
     for sample in samples:
         outfiles.write(sample, "")
 

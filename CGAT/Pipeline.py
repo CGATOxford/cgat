@@ -1734,7 +1734,7 @@ def peekParameters(workingdir,
 def cluster_runnable(func):
     '''A dectorator that allows a function to be run on the cluster.
     The decorated function now takes extra arguments. The most important
-    is *submit*, but if true will submit the function to the cluster
+    is *submit*. If set to true, it will submit the function to the cluster
     via the Pipeline.submit framework. Arguments to the function are
     pickled, so this will only work if arguments are picklable. Other
     arguments to submit are also accepted.

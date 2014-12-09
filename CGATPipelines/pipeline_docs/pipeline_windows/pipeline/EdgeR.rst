@@ -21,3 +21,4 @@ The following sections list the QC data for the individual chunks.
    EdgerHeatmaps.rst
    EdgerMAPlots.rst
    EdgeRSpike.rst
+   EdgeRDMR.rst

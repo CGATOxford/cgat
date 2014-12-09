@@ -417,10 +417,6 @@ def outputRegionsOfInterest(infiles, outfile,
 
     P.run()
 
-#########################################################################
-#########################################################################
-#########################################################################
-
 
 def runDE(infiles, outfile, outdir,
           method="deseq",
@@ -701,3 +697,20 @@ def outputSpikeCounts(outfile, infile_name,
     return df, d2hist_counts, xedges, yedges, l10average, l2fold
 
 
+@P.cluster_runnable
+def plotDETagStats(infiles, outfile):
+    '''plot differential expression stats'''
+
+    # with IOTools.openFile(outfile) as outf:
+    #     outf.write(",".join(infiles, outfile))
+    # return
+
+    infile, composition_file = infiles
+    Expression.plotDETagStats(
+        infile, outfile,
+        additional_file=composition_file,
+        join_columns=("contig", "start", "end"),
+        additional_columns=("CpG_density",
+                            "length"))
+
+    P.touch(outfile)

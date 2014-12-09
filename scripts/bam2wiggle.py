@@ -188,7 +188,21 @@ def main(argv=None):
     parser.add_option("-m", "--merge-pairs", dest="merge_pairs",
                       action="store_true",
                       help="merge paired-ended reads into a single "
-                      "bed interval [default=%default]. ")
+                      "bed interval [default=%default].")
+
+    parser.add_option("--scale-base", dest="scale_base", type="float",
+                      help="number of reads/pairs to scale bigwig file to. "
+                      "The default is to scale to 1M reads "
+                      "[default=%default]")
+
+    parser.add_option("--scale-method", dest="scale_method", type="choice",
+                      choices=("none", "reads",),
+                      help="scale bigwig output. 'reads' will normalize by "
+                      "the total number reads in the bam file that are used "
+                      "to construct the bigwig file. If --merge-pairs is used "
+                      "the number of pairs output will be used for "
+                      "normalization. 'none' will not scale the bigwig file"
+                      "[default=%default]")
 
     parser.add_option("--max-insert-size", dest="max_insert_size",
                       type="int",
@@ -211,6 +225,8 @@ def main(argv=None):
         merge_pairs=None,
         min_insert_size=0,
         max_insert_size=0,
+        scale_method='none',
+        scale_base=1000000,
     )
 
     # add common options (-h/--help, ...) and parse command line
@@ -295,7 +311,7 @@ def main(argv=None):
     if output_filename_pattern:
         output_filename = os.path.abspath(output_filename_pattern)
 
-    # shift and extend or merge pairs. Output temp bed file
+    # shift and extend or merge pairs. Output temporay bed file
     if options.shift > 0 or options.extend > 0 or options.merge_pairs:
         # Workflow 1: convert to bed intervals and use bedtools
         # genomecov to build a coverage file.
@@ -314,6 +330,7 @@ def main(argv=None):
             # create bed file with shifted/extended tags
             shift, extend = options.shift, options.extend
             shift_extend = shift + extend
+            counter = E.Counter()
 
             for contig in samfile.references:
                 E.debug("output for %s" % contig)
@@ -332,14 +349,26 @@ def main(argv=None):
 
                     end = min(lcontig, start + extend)
                     outfile.write("%s\t%i\t%i\n" % (contig, start, end))
+                    counter.output += 1
 
         outfile.close()
+
+        if options.scale_method == "reads":
+            scale_factor = float(options.scale_base) / counter.output
+
+            E.info("scaling: method=%s scale_quantity=%i scale_factor=%f" %
+                   (options.scale_method,
+                    counter.output,
+                    scale_factor))
+            scale = "-scale %f" % scale_factor
+        else:
+            scale = ""
 
         # Convert bed file to coverage file (bedgraph)
         tmpfile_bed = os.path.join(tmpdir, "bed")
         E.info("computing coverage")
         # calculate coverage - format is bedgraph
-        statement = """bedtools genomecov -bg -i %(tmpfile_wig)s
+        statement = """bedtools genomecov -bg -i %(tmpfile_wig)s %(scale)s
         -g %(tmpfile_sizes)s > %(tmpfile_bed)s""" % locals()
         E.run(statement)
 
@@ -352,6 +381,7 @@ def main(argv=None):
         E.run(statement)
 
     else:
+
         # Workflow 2: use pysam column iterator to build a
         # wig file. Then convert to bigwig of bedgraph file
         # with UCSC tools.
@@ -368,6 +398,10 @@ def main(argv=None):
                     n = t.n
                 end = t.pos
             yield start, end, n
+
+        if options.scale_method != "none":
+            raise NotImplementedError(
+                "scaling not implemented for pileup method")
 
         # Bedgraph track definition
         if options.output_format == "bedgraph":
