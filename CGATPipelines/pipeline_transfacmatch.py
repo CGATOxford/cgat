@@ -283,43 +283,34 @@ def buildIntervalsFasta(infile, outfile):
                                   "If no extension is to be used specify 0" %
                                   type(downstream))
 
-    # if input is gtf then convert to bed
-    # with intervals defined by .ini file
-    temp = P.getTempFile("/ifs/scratch")
+
     if infile.endswith(".gtf.gz"):
-        # the resulting temporary file will not be zipped
-        concatenate = "cat"
-        for gene in GTF.merged_gene_iterator(
-                GTF.iterator(IOTools.openFile(infile))):
-            if gene.strand == "+":
-                temp.write("%s\t%s\t%s\t%s\t%s\t%s\n" %
-                           (gene.contig,
-                            str(gene.start - upstream),
-                            str(gene.start + downstream),
-                            gene.gene_id,
-                            ".",
-                            gene.strand))
-            elif gene.strand == "-":
-                temp.write("%s\t%s\t%s\t%s\t%s\t%s\n" %
-                           (gene.contig,
-                            str(gene.end - downstream),
-                            str(gene.end + upstream),
-                            gene.gene_id,
-                            ".",
-                            gene.strand))
-        temp.close()
-        inf = temp.name
+        statement = ("zcat %(infile)s |"
+                     " python %(scriptsdir)s/gtf2gtf.py"
+                     "  --method=sort"
+                     "  --sort-order=gene+transcript"
+                     "  --log=%(outfile)s.log |"
+                     " python %(scriptsdir)s/gtf2gtf.py"
+                     "  --method=merge-transcripts" # doesn't explicitly account for UTR
+                     "  --log=%(outfile)s.log |"
+                     " python %(scriptsdir)s/gtf2gff.py"
+                     "  --method=regulons"
+                     "  --genome-file=%(genome_dir)s/%(genome)s"
+                     "  --upstream-extension=%(upstream)s"
+                     "  --downstream-extension=%(downstream)s"
+                     "  --log=%(outfile)s.log |"
+                     " python %(scriptsdir)s/gff2bed.py"
+                     "  --is-gtf"
+                     "  --set-name=gene_id"
+                     "  --log=%(outfile)s.log |"
+                     " python %(scriptsdir)s/bed2fasta.py"
+                     "  --genome=%(genomedir)s/%(genome)s")
+    elif infile.endswith(".bed.gz"):
+        statement = ("zcat %(infile)s |"
+                     " python %(scriptsdir)s/bed2fasta.py"
+                     "  --genome=%(genomedir)s/%(genome)s")
     else:
-        inf = infile
-        concatenate = "zcat"
-
-    to_cluster = True
-
-    # define statement
-    # option to specify strand in config file.
-    statement = ("%(concatenate)s %(inf)s |"
-                 " python %(scriptsdir)s/bed2fasta.py"
-                 "  --genome=%(genomedir)s/%(genome)s")
+        raise Exception("Interval file must either be *.bed.gz or *.gtf.gz")
 
     if PARAMS["intervals_stranded"]:
         statement += ("  --use-strand --log=%(outfile)s.log > %(outfile)s")
@@ -328,8 +319,6 @@ def buildIntervalsFasta(infile, outfile):
 
     P.run()
 
-    if infile.endswith(".gtf.gz"):
-        os.remove(inf)
 
 ###########
 # target
@@ -485,7 +474,9 @@ def runMatch(infiles, outfile):
     seq = infiles[0]
     mxlib = PARAMS["transfac_matrix"]
     mxprf = PARAMS["transfac_profile"]
-    match_executable = "/ifs/data/biobase/transfac/match/bin/match_linux64"
+    # JJ this really needs to be removed to pipeline.ini as it varies between
+    # releases
+    match_executable = "/ifs/data/biobase/transfac/2013_3/match/bin/match"
     out = outfile
 
     statement = '''%(match_executable)s %(mxlib)s %(seq)s %(out)s %(mxprf)s'''
@@ -624,7 +615,7 @@ if PARAMS['sig_testing_method'] == "fisher":
             # enrichment OR depletion so don't want to hammer those p-value
             # too hard
 
-            pval_direct = PARAMS['fisher_direction']
+            pval_direct = PARAMS['sig_testing_direction']
 
             PipelineTFM.testSignificanceOfMatrices(background,
                                                    foreground,
