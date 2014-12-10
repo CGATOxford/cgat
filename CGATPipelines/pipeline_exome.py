@@ -569,7 +569,7 @@ def annotateVariantsSNPsift(infile, outfile):
     dbNSFP = PARAMS["annotation_snpsift_dbnsfp"]
     thousand_genomes = PARAMS["annotation_thousand_genomes"]
     # The following statement is not fully implemented yet
-    #statement = '''SnpSift.sh geneSets -v /ifs/projects/proj016/data/1000Genomes/msigdb.v4.0.symbols.gmt %(infile)s > variants/%(track)s_temp1.vcf; checkpoint;''' % locals()
+    # statement = '''SnpSift.sh geneSets -v /ifs/projects/proj016/data/1000Genomes/msigdb.v4.0.symbols.gmt %(infile)s > variants/%(track)s_temp1.vcf; checkpoint;''' % locals()
 
     statement = '''SnpSift.sh dbnsfp -v %(dbNSFP)s %(infile)s
                     > variants/%(track)s_temp1.vcf; checkpoint;
@@ -662,6 +662,7 @@ def snpeffToTable(infile, outfile):
     -F CHROM -F POS -F ID -F REF -F ALT -F EFF
     -o %(outfile)s''' % locals()
     P.run()
+
 
 @jobs_limit(1, "db")
 @transform(snpeffToTable, regex(r"variants/(\S+).table"),
@@ -775,6 +776,7 @@ def tabulateDeNovos(infile, outfile):
     statement += '''rm -f %(infile)s.tmp*'''
     P.run()
 
+
 @jobs_limit(1, "db")
 @transform(tabulateDeNovos,
            regex(r"variants/(\S+).filtered.table"),
@@ -844,6 +846,7 @@ def tabulateLowerStringencyDeNovos(infile, outfile):
     statement += '''rm -f %(infile)s.tmp*'''
     P.run()
 
+
 @jobs_limit(1, "db")
 @transform(tabulateLowerStringencyDeNovos,
            regex(r"variants/(\S+).denovos.table"),
@@ -902,7 +905,6 @@ def tabulateDoms(infile, outfile):
     )
     P.run()
 
-#########################################################################
 
 @jobs_limit(1, "db")
 @transform(tabulateDoms, regex(r"variants/(\S+).dominant.table"),
@@ -965,7 +967,6 @@ def tabulateRecs(infile, outfile):
     )
     P.run()
 
-#########################################################################
 
 @jobs_limit(1, "db")
 @transform(tabulateRecs, regex(r"variants/(\S+).recessive.table"),
@@ -994,7 +995,6 @@ def compoundHets(infiles, outfile):
     statement += '''gemini comp_hets --only-affected --method=filter --filter-method "(impact_severity = 'HIGH' OR impact_severity = 'MED') AND (in_esp = 0 OR aaf_esp_all < 0.01) AND (in_1kg = 0 OR aaf_1kg_all < 0.01)" %(infile)s.db > %(outfile)s'''
     P.run()
 
-#########################################################################
 
 @jobs_limit(1, "db")
 @transform(compoundHets, regex(r"variants/(\S+).compound_hets.table"),
