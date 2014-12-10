@@ -180,6 +180,22 @@ def buildPicardDuplicateStats(infile, outfile):
     '''
     P.run()
 
+def buildPicardCoverageStats(infile, outfile, baits, regions):
+    '''Generate coverage statistics for regions of interest from a bed
+    file using Picard'''
+    job_options = getPicardOptions()
+    
+    if getNumReadsFromBAMFile(infile) == 0:
+        E.warn("no reads in %s - no metrics" % infile)
+        P.touch(outfile)
+        return
+        
+    statement = '''CalculateHsMetrics BAIT_INTERVALS=%(baits)s
+    TARGET_INTERVALS=%(regions)s
+    INPUT=%(infile)s
+    OUTPUT=%(outfile)s
+    VALIDATION_STRINGENCY=LENIENT''' % locals()
+    P.run()
 
 def buildPicardGCStats(infile, outfile, genome_file):
     '''Gather BAM file GC bias stats using Picard '''
@@ -372,6 +388,30 @@ def loadPicardDuplicateStats(infiles, outfile, pipeline_suffix=".bam"):
     loadPicardHistogram(infiles, outfile, "duplicate_metrics",
                         "duplicates", pipeline_suffix=pipeline_suffix)
 
+def loadPicardCoverageStats(infiles, outfile):
+    '''Import coverage statistics into SQLite'''
+
+    tablename = P.toTable(outfile)
+    outf = open('coverage.txt', 'w')
+    first = True
+    for f in infiles:
+        track = P.snip(os.path.basename(f), ".cov")
+        lines = [x for x in open(f, "r").readlines()
+                 if not x.startswith("#") and x.strip()]
+        if first:
+            outf.write("%s\t%s" % ("track", lines[0]))
+        first = False
+        outf.write("%s\t%s" % (track, lines[1]))
+    outf.close()
+    tmpfilename = outf.name
+    statement = '''cat %(tmpfilename)s
+                   | python %(scriptsdir)s/csv2db.py
+                      --add-index=track
+                      --table=%(tablename)s
+                      --ignore-empty
+                      --retry
+                   > %(outfile)s '''
+    P.run()
 
 def buildBAMStats(infile, outfile):
     '''Count number of reads mapped, duplicates, etc. '''
