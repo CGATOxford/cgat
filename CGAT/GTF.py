@@ -115,7 +115,13 @@ class Entry:
         # remove comments
         attributes = attributes.split("#")[0]
         # separate into fields
-        fields = map(lambda x: x.strip(), attributes.split(";")[:-1])
+        # Fields might contain a ";", for example in ENSEMBL GTF file
+        # for mouse, v78:
+        # ...; transcript_name "TXNRD2;-001"; ....
+        # The current heuristic is to split on a semicolon followed by a
+        # space, which seems to be part of the specification, see
+        # http://mblab.wustl.edu/GTF22.html
+        fields = map(lambda x: x.strip(), attributes.split("; ")[:-1])
         self.attributes = {}
 
         for f in fields:
