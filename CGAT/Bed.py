@@ -118,6 +118,9 @@ class Bed(object):
         
         if self.columns >= 12:
             
+            self["thickStart"] = self.start
+            self["thickEnd"] = self.end
+
             blockStarts = [interval[0] - self.start for interval in intervals]
             blockSizes = [end-start for start, end in intervals]
 
@@ -125,7 +128,7 @@ class Bed(object):
 
             self["blockStarts"] = ",".join(map(str,blockStarts))
             self["blockSizes"] = ",".join(map(str,blockSizes))
-            self.blockCount = str(blockCount)
+            self["blockCount"] = str(blockCount)
 
         else:
             if len(intervals) > 1:
