@@ -640,7 +640,7 @@ class CBioPortal():
             else:
                 genetic_profile_id = [x['genetic_profile_id']
                                       for x in self.getGeneticProfiles(study_id)
-                                      if c['show_profile_in_analysis_tab'] == "true"]
+                                      if x['show_profile_in_analysis_tab'] == "true"]
 
             return genetic_profile_id
 
@@ -723,8 +723,8 @@ class CBioPortal():
 
             geneProfile = [x[gene] for x in data]
 
-            for case in case_list:
-
+            for case in (set(geneProfile[0]) - set(["gene_id","common"])):
+                
                 if len([geneProfile[x][case] for x in range(len(geneProfile))
                         if self._guessAlteration(geneProfile[x][case], genetic_profile_id[x], profiles)]) > 0:
 
@@ -769,7 +769,7 @@ class CBioPortal():
             if len(genetic_profile_id) == 1 and len(data[0]) == 1:
                 data[0][0]['GENETIC_PROFILE_ID'] = genetic_profile_id[0]
 
-        for case_id in case_list:
+        for case_id in set(data[0][0]) - set(["GENETIC_PROFILE_ID","ALTERATION_TYPE","GENE_ID","COMMON"]):
 
             case_altered = False
             for gene in data:
