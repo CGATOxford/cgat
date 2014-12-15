@@ -283,28 +283,28 @@ def buildIntervalsFasta(infile, outfile):
                                   "If no extension is to be used specify 0" %
                                   type(downstream))
 
-
     if infile.endswith(".gtf.gz"):
-        statement = ("zcat %(infile)s |"
-                     " python %(scriptsdir)s/gtf2gtf.py"
-                     "  --method=sort"
-                     "  --sort-order=gene+transcript"
-                     "  --log=%(outfile)s.log |"
-                     " python %(scriptsdir)s/gtf2gtf.py"
-                     "  --method=merge-transcripts" # doesn't explicitly account for UTR
-                     "  --log=%(outfile)s.log |"
-                     " python %(scriptsdir)s/gtf2gff.py"
-                     "  --method=regulons"
-                     "  --genome-file=%(genome_dir)s/%(genome)s"
-                     "  --upstream-extension=%(upstream)s"
-                     "  --downstream-extension=%(downstream)s"
-                     "  --log=%(outfile)s.log |"
-                     " python %(scriptsdir)s/gff2bed.py"
-                     "  --is-gtf"
-                     "  --set-name=gene_id"
-                     "  --log=%(outfile)s.log |"
-                     " python %(scriptsdir)s/bed2fasta.py"
-                     "  --genome=%(genomedir)s/%(genome)s")
+        statement = (
+            "zcat %(infile)s |"
+            " python %(scriptsdir)s/gtf2gtf.py"
+            "  --method=sort"
+            "  --sort-order=gene+transcript"
+            "  --log=%(outfile)s.log |"
+            " python %(scriptsdir)s/gtf2gtf.py"
+            "  --method=merge-transcripts"  # doesn't explicitly account for UTR
+            "  --log=%(outfile)s.log |"
+            " python %(scriptsdir)s/gtf2gff.py"
+            "  --method=regulons"
+            "  --genome-file=%(genome_dir)s/%(genome)s"
+            "  --upstream-extension=%(upstream)s"
+            "  --downstream-extension=%(downstream)s"
+            "  --log=%(outfile)s.log |"
+            " python %(scriptsdir)s/gff2bed.py"
+            "  --is-gtf"
+            "  --set-name=gene_id"
+            "  --log=%(outfile)s.log |"
+            " python %(scriptsdir)s/bed2fasta.py"
+            "  --genome=%(genomedir)s/%(genome)s")
     elif infile.endswith(".bed.gz"):
         statement = ("zcat %(infile)s |"
                      " python %(scriptsdir)s/bed2fasta.py"

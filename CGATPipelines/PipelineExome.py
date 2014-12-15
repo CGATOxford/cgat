@@ -28,7 +28,6 @@ Code
 """
 # Import modules
 import os
-import re
 import CGAT.IOTools as IOTools
 import CGAT.Pipeline as P
 import CGAT.Experiment as E
@@ -131,25 +130,21 @@ def GATKrescore(infile, outfile, genome, dbsnp, solid_options=""):
     statement += '''rm -rf %(tmpdir_gatk)s ;''' % locals()
     P.run()
 
-#########################################################################
-
 
 def haplotypeCaller(infile, outfile, genome,
                     dbsnp, intervals, padding, options):
     '''Call SNVs and indels using GATK HaplotypeCaller in all members of a
     family together'''
     job_options = getGATKOptions()
-    statement =  '''GenomeAnalysisTK
-                    -T HaplotypeCaller
-                    -o %(outfile)s
-                    -R %(genome)s
-                    -I %(infile)s
-                    --dbsnp %(dbsnp)s
-                    -L %(intervals)s
-                    -ip %(padding)s''' % locals()
+    statement = '''GenomeAnalysisTK
+    -T HaplotypeCaller
+    -o %(outfile)s
+    -R %(genome)s
+    -I %(infile)s
+    --dbsnp %(dbsnp)s
+    -L %(intervals)s
+    -ip %(padding)s''' % locals()
     P.run()
-
-#########################################################################
 
 
 def mutectSNPCaller(infile, outfile, mutect_log, genome, cosmic,
@@ -229,8 +224,6 @@ def variantAnnotator(vcffile, bamlist, outfile, genome,
                     %(anno)s''' % locals()
     P.run()
 
-#########################################################################
-
 
 def variantRecalibrator(infile, outfile, genome,
                         dbsnp, hapmap, omni):
@@ -238,19 +231,19 @@ def variantRecalibrator(infile, outfile, genome,
     job_options = getGATKOptions()
     track = P.snip(outfile, ".recal")
     statement = '''GenomeAnalysisTK -T VariantRecalibrator
-                    -R %(genome)s
-                    -input %(infile)s
-                    -resource:hapmap,known=false,training=true,truth=true,prior=15.0 %(hapmap)s
-                    -resource:omni,known=false,training=true,truth=false,prior=12.0 %(omni)s
-                    -resource:dbsnp,known=true,training=false,truth=false,prior=6.0 %(dbsnp)s
-                    -an QD -an HaplotypeScore -an MQRankSum 
-                    -an ReadPosRankSum -an FS -an MQ
-                    --maxGaussians 4 
-                    --numBadVariants 3000
-                    -mode SNP
-                    -recalFile %(outfile)s
-                    -tranchesFile %(track)s.tranches
-                    -rscriptFile %(track)s.plots.R ''' % locals()
+    -R %(genome)s
+    -input %(infile)s
+    -resource:hapmap,known=false,training=true,truth=true,prior=15.0 %(hapmap)s
+    -resource:omni,known=false,training=true,truth=false,prior=12.0 %(omni)s
+    -resource:dbsnp,known=true,training=false,truth=false,prior=6.0 %(dbsnp)s
+    -an QD -an HaplotypeScore -an MQRankSum 
+    -an ReadPosRankSum -an FS -an MQ
+    --maxGaussians 4 
+    --numBadVariants 3000
+    -mode SNP
+    -recalFile %(outfile)s
+    -tranchesFile %(track)s.tranches
+    -rscriptFile %(track)s.plots.R ''' % locals()
     P.run()
 
 #########################################################################
@@ -260,13 +253,13 @@ def applyVariantRecalibration(vcf, recal, tranches, outfile, genome):
     '''Perform variant quality score recalibration using GATK '''
     job_options = getGATKOptions()
     statement = '''GenomeAnalysisTK -T ApplyRecalibration
-                    -R %(genome)s 
-                    -input %(vcf)s
-                    -recalFile %(recal)s
-                    -tranchesFile %(tranches)s
-                    --ts_filter_level 99.0
-                    -mode SNP
-                    -o %(outfile)s ''' % locals()
+    -R %(genome)s
+    -input %(vcf)s
+    -recalFile %(recal)s
+    -tranchesFile %(tranches)s
+    --ts_filter_level 99.0
+    -mode SNP
+    -o %(outfile)s ''' % locals()
     P.run()
 
 #########################################################################
@@ -285,9 +278,6 @@ def vcfToTable(infile, outfile, genome, columns):
     P.run()
 
 
-#########################################################################
-
-
 def selectVariants(infile, outfile, genome, select):
     '''Filter de novo variants based on provided jexl expression'''
     statement = '''GenomeAnalysisTK -T SelectVariants
@@ -298,7 +288,6 @@ def selectVariants(infile, outfile, genome, select):
                     -o %(outfile)s''' % locals()
     P.run()
 
-#########################################################################
 
 def buildSelectStatementfromPed(filter_type, pedfile, template):
     '''Build a select statement from a template and a pedigree file'''
@@ -326,12 +315,12 @@ def buildSelectStatementfromPed(filter_type, pedfile, template):
             elif filter_type == "recessive":
                 if row['sample'] not in parents:
                     unaffecteds += [row['sample']]
-    
+
     # Build select statement from template
     if filter_type == "denovo":
         select = template.replace("father", father)
-        select = select.replace("mother",mother)
-        select = select.replace("proband",proband)
+        select = select.replace("mother", mother)
+        select = select.replace("proband", proband)
     elif filter_type == "dominant":
         affecteds_exp = '").getPL().1==0&&vc.getGenotype("'.join(affecteds)
         if len(unaffecteds) == 0:
@@ -341,7 +330,7 @@ def buildSelectStatementfromPed(filter_type, pedfile, template):
                 ('").isHomRef()&&vc.getGenotype("'.join(unaffecteds)) + \
                 '").isHomRef()'
         select = template.replace("affecteds_exp", affecteds_exp)
-        select = select.replace("unaffecteds_exp",unaffecteds_exp)
+        select = select.replace("unaffecteds_exp", unaffecteds_exp)
     elif filter_type == "recessive":
         affecteds_exp = '").getPL().2==0&&vc.getGenotype("'.join(affecteds)
         unaffecteds_exp = '").getPL().2!=0&&vc.getGenotype("'.join(unaffecteds)
@@ -352,23 +341,24 @@ def buildSelectStatementfromPed(filter_type, pedfile, template):
                 ('").getPL().1==0&&vc.getGenotype("'.join(parents)) + \
                 '").getPL().1==0'
         select = template.replace("affecteds_exp", affecteds_exp)
-        select = select.replace("unaffecteds_exp",unaffecteds_exp)
-        select = select.replace("parents_exp",parents_exp)
-    
+        select = select.replace("unaffecteds_exp", unaffecteds_exp)
+        select = select.replace("parents_exp", parents_exp)
+
     return select
 
 ###########################################################################
 
 
 def guessSex(infile, outfile):
-    '''Guess the sex of a sample based on ratio of reads 
+    '''Guess the sex of a sample based on ratio of reads
     per megabase of sequence on X and Y'''
-    statement = '''calc `samtools idxstats %(infile)s | grep 'X' 
-                    | awk '{print $3/($2/1000000)}'`
-                    /`samtools idxstats %(infile)s | grep 'Y' 
-                    | awk '{print $3/($2/1000000)}'` 
-                    | tr -d " " | tr "=" "\\t" | tr "/" "\\t"
-                    > %(outfile)s'''
+    statement = '''calc `samtools idxstats %(infile)s
+    | grep 'X'
+    | awk '{print $3/($2/1000000)}'`
+    /`samtools idxstats %(infile)s | grep 'Y'
+    | awk '{print $3/($2/1000000)}'`
+    | tr -d " " | tr "=" "\\t" | tr "/" "\\t"
+    > %(outfile)s'''
     P.run()
 
 ###########################################################################
