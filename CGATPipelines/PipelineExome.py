@@ -32,7 +32,9 @@ import re
 import CGAT.IOTools as IOTools
 import CGAT.Pipeline as P
 import CGAT.Experiment as E
-
+from CGAT.Pipeline import cluster_runnable
+import numpy as np
+import pandas as pd
 # Set PARAMS in calling module
 PARAMS = {}
 
@@ -45,7 +47,7 @@ def getGATKOptions():
 
 def GATKreadGroups(infile, outfile, genome,
                    library="unknown", platform="Illumina",
-                   platform_unit="1", threads=4):
+                   platform_unit="1"):
     '''Reorders BAM according to reference fasta and adds read groups'''
 
     track = P.snip(os.path.basename(infile), ".bam")
@@ -78,7 +80,7 @@ def GATKreadGroups(infile, outfile, genome,
     P.run()
 
 
-def GATKrealign(infile, outfile, genome):
+def GATKrealign(infile, outfile, genome, threads=4):
     '''Realigns BAMs around indels using GATK'''
 
     track = P.snip(os.path.basename(infile), ".bam")
@@ -90,14 +92,13 @@ def GATKrealign(infile, outfile, genome):
                     -o %(tmpdir_gatk)s/%(track)s.indelrealignment.intervals
                     --num_threads %(threads)s
                     -R %(genome)s
-                    -I %(infile)s ;
-                    checkpoint ;''' % locals()
+                    -I %(infile)s; ''' % locals()
 
     statement += '''GenomeAnalysisTK
                     -T IndelRealigner
                     -o %(outfile)s
                     -R %(genome)s
-                    -I %(tmpdir_gatk)s/%(track)s.readgroups.bam
+                    -I %(infile)s
                     -targetIntervals
                     %(tmpdir_gatk)s/%(track)s.indelrealignment.intervals ;
                     checkpoint ;''' % locals()
@@ -124,7 +125,7 @@ def GATKrescore(infile, outfile, genome, dbsnp, solid_options=""):
                     -T PrintReads -o %(outfile)s
                     -BQSR %(tmpdir_gatk)s/%(track)s.recal.grp
                     -R %(genome)s
-                    -I %(tmpdir_gatk)s/%(track)s.indelrealigned.bam ;
+                    -I %(infile)s ;
                     checkpoint ;''' % locals()
 
     statement += '''rm -rf %(tmpdir_gatk)s ;''' % locals()
@@ -190,11 +191,27 @@ def mutectSNPCaller(infile, outfile, mutect_log, genome, cosmic,
 
     P.run()
 
+#########################################################################
+
+
+def strelkaINDELCaller(infile_control, infile_tumour, outfile, genome, config,
+                       outdir, cluster_options):
+    '''Call INDELs using Strelka'''
+
+    job_options = cluster_options
+    statement = '''
+    rm -rf %(outdir)s;
+    /ifs/apps/bio/strelka-1.0.14/bin/configureStrelkaWorkflow.pl
+    --normal=%(infile)s  --tumor=%(infile_tumor)s
+    --ref=%(genome)s  --config=%(config)s  --output-dir=%(outdir)s;
+    checkpoint ; make -j 12 -C %(outdir)s''' % locals()
+
+    P.run()
 
 #########################################################################
 
 
-def variantAnnotator(vcffile, bamlist, outfile, genome, 
+def variantAnnotator(vcffile, bamlist, outfile, genome,
                      dbsnp, annotations, snpeff_file=""):
     '''Annotate variant file using GATK VariantAnnotator'''
     job_options = getGATKOptions()
@@ -340,7 +357,7 @@ def buildSelectStatementfromPed(filter_type, pedfile, template):
     
     return select
 
-#########################################################################
+###########################################################################
 
 
 def guessSex(infile, outfile):
@@ -353,3 +370,134 @@ def guessSex(infile, outfile):
                     | tr -d " " | tr "=" "\\t" | tr "/" "\\t"
                     > %(outfile)s'''
     P.run()
+
+###########################################################################
+
+
+# the following two functions should be generalised
+# currently they operate only on mutect output
+@cluster_runnable
+def compileMutationalSignature(infiles, outfiles, min_t_alt, min_n_depth,
+                               max_n_alt_freq, min_t_alt_freq, tumour):
+    '''takes a list of mutect output files and compiles per sample mutation
+    signatures'''
+
+    delim = ":"
+    def lookup(b1, b2):
+        '''return lookup key for a pair of bases'''
+        return(b1 + delim + b2)
+
+    def breakKey(key):
+        '''take a lookup key and return the elements'''
+        return key.split(delim)
+
+    def comp(base):
+        '''return complementary base'''
+        comp_dict = {"C": "G", "G": "C", "A": "T", "T": "A"}
+        return comp_dict[base]
+
+    outfile1 = open(outfiles[0], "w")
+    mutations = ["C:T", "C:A", "C:G", "A:C", "A:T", "A:G"]
+
+    outfile1.write("%s\t%s\t%s\t%s\t%s\n" % ("patient_id", "base_change",
+                                             "ref", "alt", "frequency"))
+    patient_freq = {}
+
+    for infile in infiles:
+        patient_id = P.snip(os.path.basename(infile), ".mutect.snp.vcf")
+        mut_dict = {}
+        for comb in mutations:
+            mut_dict[comb] = 0
+
+        with open(infile, "r") as f:
+            for line in f.readlines():
+                # need to find location of control and tumor columns
+                if line.startswith('#CHROM'):
+                    columns = line.split("\t")
+                    for x in range(0, len(columns)):
+                        if "Control" in columns[x]:
+                            control_col = x
+                        elif tumour in columns[x]:
+                            tumor_col = x
+                if not line.startswith('#'):
+                    values = line.split("\t")
+                    if values[6] == "PASS":
+                        t_values = values[tumor_col].split(":")
+                        t_ref, t_alt = map(float, (t_values[1].split(",")))
+                        t_depth = t_alt + t_ref
+                        n_values = values[control_col].split(":")
+                        n_ref, n_alt = map(float, (n_values[1].split(",")))
+                        n_depth = n_alt + n_ref
+                        np.seterr(divide='ignore')
+                        if (t_alt > min_t_alt and n_depth >= min_n_depth and
+                            np.divide(n_alt, n_depth) <= max_n_alt_freq and
+                            (((np.divide(t_alt, t_depth) /
+                               np.divide(n_alt, n_depth)) >= min_t_alt_freq)
+                             or ((np.divide(t_alt, t_depth) /
+                                  np.divide(n_alt, n_depth)) == 0))):
+                                key = lookup(values[3], values[4])
+                                if key in mut_dict:
+                                    mut_dict[key] += 1
+                                else:
+                                    comp_key = lookup(
+                                        comp(values[3]), comp(values[4]))
+                                    mut_dict[comp_key] += 1
+                        np.seterr(divide='warn')
+        patient_freq[patient_id] = mut_dict
+
+    for mutation in mutations:
+        base1, base2 = breakKey(mutation)
+        for infile in infiles:
+            patient_id = P.snip(os.path.basename(infile), ".mutect.snp.vcf")
+            outfile1.write("%s\t%s\t%s\t%s\t%s\n" % (patient_id, mutation,
+                                                     base1, base2,
+                                                     patient_freq[patient_id]
+                                                     [mutation]))
+    outfile1.close()
+
+    outfile2 = open(outfiles[1], "w")
+    outfile2.write("%s\t%s\n" % ("patient_id",
+                                 "\t".join(mutations)))
+    for infile in infiles:
+        patient_id = P.snip(os.path.basename(infile), ".mutect.snp.vcf")
+        frequencies = "\t".join(map(str, [patient_freq[patient_id][x]
+                                          for x in mutations]))
+        outfile2.write("%s\t%s\n" % (patient_id, frequencies))
+    outfile2.close()
+
+###########################################################################
+
+
+@cluster_runnable
+def parseMutectCallStats(infile, outfile):
+    '''take the call stats outfile from mutect and summarise the
+    reasons for variant rejection'''
+    single_dict = {}
+    combinations_dict = {}
+
+    def updateDict(dictionary, key):
+        if key in dictionary:
+            dictionary[key] += 1
+        else:
+            dictionary[key] = 1
+
+    with open(infile, "rb") as infile:
+        lines = infile.readlines()
+        for i, line in enumerate(lines):
+            if i < 2:
+                continue
+                values = line.strip().split("\t")
+                judgement, justification = (values[-1], values[-2])
+                if judgement == "REJECT":
+                    reasons = justification.split(",")
+                    if len(reasons) == 1:
+                        updateDict(single_dict, reasons[0])
+                    else:
+                        for reason in reasons:
+                            updateDict(combinations_dict, reasons[0])
+
+    df = pd.DataFrame([single_dict, combinations_dict])
+    df = df.transpose()
+    df.columns = ["single", "combination"]
+    df = df.sort("single", ascending=False)
+    df.to_csv(df, outfile, header=True, index=False)
