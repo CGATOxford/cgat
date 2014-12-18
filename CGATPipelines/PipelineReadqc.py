@@ -127,8 +127,8 @@ def buildFastQCSummaryBasicStatistics(infiles, outfile, datadir):
 def buildExperimentReadQuality(infiles, outfile, datadir):
     """
     """
-    data = collectFastQCSections(infiles, 
-                                 "Per sequence quality scores", 
+    data = collectFastQCSections(infiles,
+                                 "Per sequence quality scores",
                                  datadir)
     first = True
     for track, status, header, rows in data:
@@ -139,16 +139,16 @@ def buildExperimentReadQuality(infiles, outfile, datadir):
             first = False
             df_out = pd.DataFrame(rows)
             df_out.columns = header
-            df_out.rename(columns={"Count": track}, inplace = True)
+            df_out.rename(columns={"Count": track}, inplace=True)
 
         else:
             df = pd.DataFrame(rows)
             df.columns = header
-            df.rename(columns={"Count": track}, inplace = True)
-            df_out = df_out.merge(df, how = "outer", on="Quality", sort = True)
+            df.rename(columns={"Count": track}, inplace=True)
+            df_out = df_out.merge(df, how="outer", on="Quality", sort=True)
 
-    df_out.set_index("Quality", inplace = True)
+    df_out.set_index("Quality", inplace=True)
     df_out = pd.DataFrame(df_out.sum(axis=1))
-    df_out.columns = ["_".join(T.split("-")[:-1]),]
+    df_out.columns = ["_".join(T.split("-")[:-1]), ]
 
-    df_out.to_csv(IOTools.openFile(outfile, "w"), sep = "\t")
+    df_out.to_csv(IOTools.openFile(outfile, "w"), sep="\t")
