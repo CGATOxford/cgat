@@ -142,6 +142,7 @@ import itertools as iter
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import CGATPipelines.PipelineMapping as PipelineMapping
+import CGATPipelines.PipelineTracks as PipelineTracks
 import CGAT.Pipeline as P
 import CGAT.CSV2DB as CSV2DB
 import CGATPipelines.PipelineReadqc as rqc
@@ -150,7 +151,6 @@ import CGATPipelines.PipelineReadqc as rqc
 #########################################################################
 #########################################################################
 # load options from the config file
-
 
 P.getParameters(
     ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
@@ -166,6 +166,35 @@ PARAMS = P.PARAMS
 
 INPUT_FORMATS = ("*.fastq.1.gz", "*.fastq.gz", "*.sra", "*.csfasta.gz")
 REGEX_FORMATS = regex(r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz)")
+
+
+#########################################################################
+#########################################################################
+#########################################################################
+# Get TRACKS grouped on either Sample3 or Sample4 track ids
+
+Sample = PipelineTracks.AutoSample
+TRACKS = PipelineTracks.Tracks(Sample).loadFromDirectory(
+    files = glob.glob("./*fastq.1.gz") 
+    + glob.glob("./*fastq.gz") 
+    + glob.glob("./*sra") 
+    + glob.glob("./*csfasta.gz"), 
+    pattern = "(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz)")
+if len(TRACKS.getTracks()[0].asList()) == 4:
+    EXPERIMENTS = PipelineTracks.Aggregate(TRACKS, labels=("attribute0", 
+                                                           "attribute1", 
+                                                           "attribute2"))
+    TISSUES = PipelineTracks.Aggregate(TRACKS, labels=("attribute1",))
+    CONDITIONS = PipelineTracks.Aggregate(TRACKS, labels=( "attribute2",))
+
+elif len(TRACKS.getTracks()[0].asList()) == 3:
+    EXPERIMENTS = PipelineTracks.Aggregate(TRACKS, labels=("attribute0", 
+                                                           "attribute1"))
+    TISSUES = PipelineTracks.Aggregate(TRACKS, labels=("attribute0",))
+    CONDITIONS = PipelineTracks.Aggregate(TRACKS, labels=( "attribute1",))
+else:
+    raise ValueError("Unrecognised PipelineTracks.AutoSample instance")
+
 
 #########################################################################
 #########################################################################
@@ -217,6 +246,44 @@ def buildFastQCSummaryBasicStatistics(infiles, outfile):
     '''load fastqc summaries into a single table.'''
     exportdir = os.path.join(PARAMS["exportdir"], "fastqc")
     rqc.buildFastQCSummaryBasicStatistics(infiles, outfile, exportdir)
+
+#########################################################################
+
+
+regex_exp = "|".join([x.__str__()[:-len("-agg")] for x in EXPERIMENTS])
+@follows(mkdir("experiment.dir"))
+@collate(runFastqc, 
+         regex("(" + regex_exp + ").+"),
+         r"experiment.dir/\1_per_sequence_quality.tsv")
+def buildExperimentLevelReadQuality(infiles, outfile):
+    """
+    Collate per sequence read qualities for all samples in EXPERIMENT
+    """
+    exportdir = os.path.join(PARAMS["exportdir"], "fastqc")
+    rqc.buildExperimentReadQuality(infiles, outfile, exportdir)
+
+
+@collate(buildExperimentLevelReadQuality,
+         regex("(.+)/(.+)_per_sequence_quality.tsv"),
+         r"\1/experiment_per_sequence_quality.tsv")
+def combineExperimentLevelReadQualities(infiles, outfile):
+    """
+    Combine summaries of read quality for different experiments
+    """
+    infiles = " ".join(infiles)
+    statement = ("python %(scriptsdir)s/combine_tables.py"
+                 "  --log=%(outfile)s.log"
+                 "  --regex-filename='.+/(.+)_per_sequence_quality.tsv'"
+                 " %(infiles)s"
+                 " > %(outfile)s")
+    P.run()
+
+
+@transform(combineExperimentLevelReadQualities,
+           regex(".+/(.+).tsv"),
+           r"\1.load")
+def loadExperimentLevelReadQualities(infile, outfile):
+    P.load(infile, outfile)
 
 #########################################################################
 
