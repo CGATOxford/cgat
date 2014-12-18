@@ -171,21 +171,25 @@ TRACKS = PipelineTracks.Tracks(Sample).loadFromDirectory(
     + glob.glob("./*sra")
     + glob.glob("./*csfasta.gz"),
     pattern="(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz)")
-if len(TRACKS.getTracks()[0].asList()) == 4:
-    EXPERIMENTS = PipelineTracks.Aggregate(TRACKS, labels=("attribute0",
-                                                           "attribute1",
-                                                           "attribute2"))
-    TISSUES = PipelineTracks.Aggregate(TRACKS, labels=("attribute1",))
-    CONDITIONS = PipelineTracks.Aggregate(TRACKS, labels=("attribute2",))
-
-elif len(TRACKS.getTracks()[0].asList()) == 3:
-    EXPERIMENTS = PipelineTracks.Aggregate(TRACKS, labels=("attribute0",
-                                                           "attribute1"))
-    TISSUES = PipelineTracks.Aggregate(TRACKS, labels=("attribute0",))
-    CONDITIONS = PipelineTracks.Aggregate(TRACKS, labels=("attribute1",))
+if TRACKS:
+    if len(TRACKS.getTracks()[0].asList()) == 4:
+        EXPERIMENTS = PipelineTracks.Aggregate(TRACKS, labels=("attribute0",
+                                                               "attribute1",
+                                                               "attribute2"))
+        TISSUES = PipelineTracks.Aggregate(TRACKS, labels=("attribute1",))
+        CONDITIONS = PipelineTracks.Aggregate(TRACKS, labels=("attribute2",))
+        
+    elif len(TRACKS.getTracks()[0].asList()) == 3:
+        EXPERIMENTS = PipelineTracks.Aggregate(TRACKS, labels=("attribute0",
+                                                               "attribute1"))
+        TISSUES = PipelineTracks.Aggregate(TRACKS, labels=("attribute0",))
+        CONDITIONS = PipelineTracks.Aggregate(TRACKS, labels=("attribute1",))
+    else:
+        raise ValueError("Unrecognised PipelineTracks.AutoSample instance")
 else:
-    raise ValueError("Unrecognised PipelineTracks.AutoSample instance")
-
+    TISSUES = []
+    CONDITIONS = []
+    EXPERIMENTS = []
 
 #########################################################################
 #########################################################################
