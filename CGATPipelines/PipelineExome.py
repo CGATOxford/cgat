@@ -34,6 +34,7 @@ import CGAT.Experiment as E
 from CGAT.Pipeline import cluster_runnable
 import numpy as np
 import pandas as pd
+import CGAT.CSV as csv
 # Set PARAMS in calling module
 PARAMS = {}
 
@@ -236,9 +237,9 @@ def variantRecalibrator(infile, outfile, genome,
     -resource:hapmap,known=false,training=true,truth=true,prior=15.0 %(hapmap)s
     -resource:omni,known=false,training=true,truth=false,prior=12.0 %(omni)s
     -resource:dbsnp,known=true,training=false,truth=false,prior=6.0 %(dbsnp)s
-    -an QD -an HaplotypeScore -an MQRankSum 
+    -an QD -an HaplotypeScore -an MQRankSum
     -an ReadPosRankSum -an FS -an MQ
-    --maxGaussians 4 
+    --maxGaussians 4
     --numBadVariants 3000
     -mode SNP
     -recalFile %(outfile)s
@@ -268,10 +269,10 @@ def applyVariantRecalibration(vcf, recal, tranches, outfile, genome):
 def vcfToTable(infile, outfile, genome, columns):
     '''Converts vcf to tab-delimited file'''
     job_options = getGATKOptions()
-    statement = '''GenomeAnalysisTK -T VariantsToTable 
+    statement = '''GenomeAnalysisTK -T VariantsToTable
                    -R %(genome)s
-                   -V %(infile)s 
-                   --showFiltered 
+                   -V %(infile)s
+                   --showFiltered
                    --allowMissingData
                    %(columns)s
                    -o %(outfile)s''' % locals()
@@ -373,6 +374,7 @@ def compileMutationalSignature(infiles, outfiles, min_t_alt, min_n_depth,
     signatures'''
 
     delim = ":"
+
     def lookup(b1, b2):
         '''return lookup key for a pair of bases'''
         return(b1 + delim + b2)
