@@ -165,8 +165,7 @@ PREPROCESSTOOLS = [tool for tool in
                    P.asList(PARAMS["general_preprocessors"])]
 preprocess_prefix = ("-".join(PREPROCESSTOOLS[::-1]) + "-")
 
-E.info("Preprocessing tools: %s")
-E.info(PREPROCESSTOOLS)
+E.info("Preprocessing tools: %s" % " ".join(REPROCESSTOOLS))
 
 
 #########################################################################
