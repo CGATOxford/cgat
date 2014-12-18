@@ -136,7 +136,7 @@ import CGAT.Experiment as E
 import CGATPipelines.PipelineMapping as PipelineMapping
 import CGATPipelines.PipelineTracks as PipelineTracks
 import CGAT.Pipeline as P
-import CGATPipelines.PipelineReadqc as rqc
+import CGATPipelines.PipelineReadqc as PipelineReadqc
 import CGATPipelines.PipelinePreprocess as PipelinePreprocess
 
 #########################################################################
@@ -165,11 +165,7 @@ PREPROCESSTOOLS = [tool for tool in
                    P.asList(PARAMS["general_preprocessors"])]
 preprocess_prefix = ("-".join(PREPROCESSTOOLS[::-1]) + "-")
 
-E.info("Preprocessing tools: %s" % " ".join(PREPROCESSTOOLS))
 
-
-#########################################################################
-#########################################################################
 #########################################################################
 # Get TRACKS grouped on either Sample3 or Sample4 track ids
 
@@ -226,7 +222,7 @@ def loadFastqc(infile, outfile):
     track = P.snip(infile, ".fastqc")
     filename = os.path.join(
         PARAMS["exportdir"], "fastqc", track + "*_fastqc", "fastqc_data.txt")
-    rqc.loadFastqc(filename)
+    PipelineReadqc.loadFastqc(filename)
     P.touch(outfile)
 
 #########################################################################
@@ -257,7 +253,6 @@ if PREPROCESSTOOLS:
 
         m = PipelinePreprocess.MasterProcessor(save=save)
         statement = m.build((infile,), outfile, PREPROCESSTOOLS)
-        print statement
         P.run()
 
     @follows(runFastqc)
@@ -269,7 +264,6 @@ if PREPROCESSTOOLS:
         m = PipelineMapping.FastQc(nogroup=PARAMS["readqc_no_group"],
                                    outdir=PARAMS["exportdir"]+"/fastqc")
         statement = m.build((infiles,), outfile)
-        print "infiles", infiles, outfile
         P.run()
 
 else:
@@ -288,7 +282,7 @@ else:
 def buildFastQCSummaryStatus(infiles, outfile):
     '''load fastqc status summaries into a single table.'''
     exportdir = os.path.join(PARAMS["exportdir"], "fastqc")
-    rqc.buildFastQCSummaryStatus(infiles, outfile, exportdir)
+    PipelineReadqc.buildFastQCSummaryStatus(infiles, outfile, exportdir)
 
 #########################################################################
 
@@ -297,7 +291,8 @@ def buildFastQCSummaryStatus(infiles, outfile):
 def buildFastQCSummaryBasicStatistics(infiles, outfile):
     '''load fastqc summaries into a single table.'''
     exportdir = os.path.join(PARAMS["exportdir"], "fastqc")
-    rqc.buildFastQCSummaryBasicStatistics(infiles, outfile, exportdir)
+    PipelineReadqc.buildFastQCSummaryBasicStatistics(infiles, outfile,
+                                                     exportdir)
 
 #########################################################################
 
@@ -314,7 +309,7 @@ def buildExperimentLevelReadQuality(infiles, outfile):
     Collate per sequence read qualities for all samples in EXPERIMENT
     """
     exportdir = os.path.join(PARAMS["exportdir"], "fastqc")
-    rqc.buildExperimentReadQuality(infiles, outfile, exportdir)
+    PipelineReadqc.buildExperimentReadQuality(infiles, outfile, exportdir)
 
 
 @collate(buildExperimentLevelReadQuality,
@@ -339,16 +334,11 @@ def combineExperimentLevelReadQualities(infiles, outfile):
 def loadExperimentLevelReadQualities(infile, outfile):
     P.load(infile, outfile)
 
-#########################################################################
-
 
 @transform((buildFastQCSummaryStatus, buildFastQCSummaryBasicStatistics),
            suffix(".tsv.gz"), ".load")
 def loadFastqcSummary(infile, outfile):
     P.load(infile, outfile, options="--add-index=track")
-
-
-#########################################################################
 
 
 @follows(loadFastqc, loadFastqcSummary, runFastqcFinal)
@@ -359,8 +349,6 @@ def full():
 @follows(buildFastQCSummaryBasicStatistics)
 def test():
     pass
-
-#########################################################################
 
 
 @follows()

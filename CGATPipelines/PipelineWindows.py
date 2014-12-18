@@ -375,36 +375,44 @@ def outputRegionsOfInterest(infiles, outfile,
 
     # build a filtering statement
     groupA, groupB = groups
-    upper_levelA = "max( (%s) ) < %f" % (
-        ",".join(
-            ["int(r['%s'])" % x for x, y in design.items()
-             if y.group == groupA]),
-        max_per_sample)
 
-    sum_levelA = "sum( (%s) ) > %f" % (
-        ",".join(
-            ["int(r['%s'])" % x for x, y in design.items()
-             if y.group == groupB]),
-        sum_per_group)
+    def _buildMax(g, threshold):
 
-    upper_levelB = "max( (%s) ) < %f" % (
-        ",".join(
-            ["int(r['%s'])" % x for x, y in design.items()
-             if y.group == groupB]),
-        max_per_sample)
+        selected = [x for x, y in design.items() if y.group == g]
+        if len(selected) > 1:
+            return "max((%s)) < %f" % (
+                ",".join(
+                    ["int(r['%s'])" % x for x in selected]),
+                threshold)
+        elif len(selected) == 1:
+            return "int(r['%s']) < %f" % (selected[0], threshold)
+        else:
+            raise ValueError("no groups found for 'g'" % g)
 
-    sum_levelB = "sum( (%s) ) > %f" % (
-        ",".join(
-            ["int(r['%s'])" % x for x, y in design.items()
-             if y.group == groupA]),
-        sum_per_group)
+    def _buildSum(g, threshold):
+
+        selected = [x for x, y in design.items() if y.group == g]
+        if len(selected) > 1:
+            return "sum((%s)) > %f" % (
+                ",".join(
+                    ["int(r['%s'])" % x for x in selected]),
+                threshold)
+        elif len(selected) == 1:
+            return "int(r['%s']) > %f" % (selected[0], threshold)
+        else:
+            raise ValueError("no groups found for 'g'" % g)
+
+    upper_levelA = _buildMax(groupA, max_per_sample)
+    upper_levelB = _buildMax(groupB, max_per_sample)
+    sum_levelA = _buildSum(groupA, sum_per_group)
+    sum_levelB = _buildSum(groupB, sum_per_group)
 
     statement = '''
     zcat %(counts_file)s
     | python %(scriptsdir)s/csv_select.py
             --log=%(outfile)s.log
-            "(%(upper_levelA)s and %(sum_levelA)s) or
-                            (%(upper_levelB)s and %(sum_levelB)s)"
+            "(%(upper_levelA)s and %(sum_levelB)s) or
+             (%(upper_levelB)s and %(sum_levelA)s)"
     | python %(scriptsdir)s/runExpression.py
             --log=%(outfile)s.log
             --design-tsv-file=%(design_file)s

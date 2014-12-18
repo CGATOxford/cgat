@@ -188,8 +188,6 @@ class MasterProcessor(Mapping.Mapper):
                 end = False
             if idx > 0:
                 first = 0
-            print "save_intermediates; %s" % save_intermediates
-            print "tool: %s" % tool
             if tool == "fastx_trimmer":
                 fastx_trimmer_object = fastx_trimmer(
                     compress=file_compress, save=save_intermediates,

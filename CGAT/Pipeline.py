@@ -1476,9 +1476,9 @@ class MultiLineFormatter(logging.Formatter):
 
 def submit(module, function, params=None,
            infiles=None, outfiles=None,
-           toCluster=True,
+           to_cluster=True,
            logfile=None,
-           jobOptions=""):
+           job_options=""):
     '''submit a python *function* as a job to the cluster.
 
     The function should reside in *module*. If *module* is
@@ -1509,8 +1509,6 @@ def submit(module, function, params=None,
     else:
         params = ""
 
-    job_options = jobOptions
-    to_cluster = toCluster
     statement = '''python %(scriptsdir)s/run_function.py
                           --module=%(module)s
                           --function=%(function)s
@@ -1740,7 +1738,7 @@ def cluster_runnable(func):
     arguments to submit are also accepted.
 
     Note that this allows the unusal combination of *submit* false,
-    and *toCluster* true. This will submit the function as an external
+    and *to_cluster* true. This will submit the function as an external
     job, but run it on the local machine.
 
     Note: all arguments in the decorated function must be passed as
@@ -2130,7 +2128,6 @@ def main(args=sys.argv):
                 L.info(E.GetHeader())
                 L.info("code location: %s" % PARAMS["scriptsdir"])
                 L.info("code version: %s" % version)
-
                 pipeline_run(
                     options.pipeline_targets,
                     multiprocess=options.multiprocess,
@@ -2250,9 +2247,10 @@ def _pickle_args(args, kwargs):
         is the key word arguements to submit, the second is a file name
         with the picked call arguements '''
 
-        use_args = ["toCluster",
+        use_args = ["to_cluster",
                     "logfile",
-                    "jobOptions"]
+                    "job_options",
+                    "job_queue"]
 
         submit_args = {}
 

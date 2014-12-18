@@ -1910,6 +1910,7 @@ def annotate_intervals():
          loadMast,
          loadMotifInformation,
          loadMotifSequenceComposition,
+         loadOverlap,
          gat)
 def full():
     '''run the full pipeline.'''

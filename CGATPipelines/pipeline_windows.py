@@ -1416,8 +1416,11 @@ def buildDMRStats(infile, outfile):
            ".plots")
 def plotDETagStats(infiles, outfile):
     '''plot differential expression stats'''
-    PipelineWindows.plotDETagStats(infiles, outfile,
-                                   submit=True)
+
+    PipelineWindows.plotDETagStats(
+        infiles, outfile,
+        submit=True,
+        job_options="-l mem_free=16")
 
 
 @transform(mergeDMRWindows, suffix(".merged.tsv.gz"), ".fdr")

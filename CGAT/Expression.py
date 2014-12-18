@@ -872,9 +872,9 @@ def runEdgeR(outfile,
 
     # build design matrix
     if has_pairs:
-        R('''design = model.matrix( ~pairs + countsTable$samples$group )''')
+        R('''design = model.matrix(~pairs + countsTable$samples$group)''')
     else:
-        R('''design = model.matrix( ~countsTable$samples$group )''')
+        R('''design = model.matrix(~countsTable$samples$group)''')
 
     # R('''rownames(design) = rownames( countsTable$samples )''')
     # R('''colnames(design)[length(colnames(design))] = "CD4" ''' )
@@ -882,9 +882,9 @@ def runEdgeR(outfile,
     # fitting model to each tag
     if has_replicates:
         # estimate common dispersion
-        R('''countsTable = estimateGLMCommonDisp( countsTable, design )''')
+        R('''countsTable = estimateGLMCommonDisp(countsTable, design)''')
         # estimate tagwise dispersion
-        R('''countsTable = estimateGLMTagwiseDisp( countsTable, design )''')
+        R('''countsTable = estimateGLMTagwiseDisp(countsTable, design)''')
         # fitting model to each tag
         R('''fit = glmFit(countsTable, design)''')
     else:
@@ -1297,6 +1297,11 @@ def runDESeq(outfile,
               outfile_prefix)
         R.plotDispEsts(cds)
         R['dev.off']()
+    elif not has_replicates:
+        # without replicates the following error appears
+        # in the rpy2.py2ri conversion:
+        #   'dims' cannot be of length 0
+        pass
     else:
         dispersions = R('''ls(cds@fitInfo)''')
         for dispersion in dispersions:
@@ -1441,21 +1446,29 @@ def runDESeq(outfile,
         R['dev.off']()
 
         # Plot diagnostic plots for FDR
-        R.png('''%(outfile_groups_prefix)sfdr.png''' % locals())
-        R('''orderInPlot = order(pvalues)''')
-        R('''showInPlot = (pvalues[orderInPlot] < 0.08)''')
-        # Jethro - previously plotting x = pvalues[orderInPlot][showInPlot]
-        # pvalues[orderInPlot][showInPlot] contains all NA values from pvalues
-        # which(showInPlot) doesn't... removing NA values
-        R('''true.pvalues <- pvalues[orderInPlot][showInPlot]''')
-        R('''true.pvalues <- true.pvalues[is.finite(true.pvalues)]''')
-        R('''plot( seq( along=which(showInPlot)),
-                   true.pvalues,
-                   pch='.',
-                   xlab=expression( rank(p[i]) ),
-                   ylab=expression( p[i] ) )''')
-        R('''abline( a=0,b=%(fdr)f/length(pvalues), col="red") ''' % locals())
-        R['dev.off']()
+        if has_replicates:
+            R.png('''%(outfile_groups_prefix)sfdr.png''' % locals())
+            R('''orderInPlot = order(pvalues)''')
+            R('''showInPlot = (pvalues[orderInPlot] < 0.08)''')
+            # Jethro - previously plotting x =
+            # pvalues[orderInPlot][showInPlot]
+            # pvalues[orderInPlot][showInPlot] contains all NA values
+            # from pvalues which(showInPlot) doesn't... removing NA
+            # values
+            R('''true.pvalues <- pvalues[orderInPlot][showInPlot]''')
+            R('''true.pvalues <- true.pvalues[is.finite(true.pvalues)]''')
+
+            # failure when no replicates:
+            # rpy2.rinterface.RRuntimeError:
+            # Error in plot.window(...) : need finite 'xlim' values
+            R('''plot( seq( along=which(showInPlot)),
+                       true.pvalues,
+                       pch='.',
+                       xlab=expression(rank(p[i])),
+                       ylab=expression(p[i]))''')
+            R('''abline(a=0, b=%(fdr)f / length(pvalues), col="red")''' %
+              locals())
+            R['dev.off']()
 
         # Add log2 fold with variance stabilized l2fold value
         R('''res$transformed_log2FoldChange = vsd_l2f''')
@@ -1574,18 +1587,20 @@ def plotDETagStats(infile, outfile_prefix,
     # remove index. If it is numbered starting from 1, there is a bug
     # in ggplot, see https://github.com/yhat/ggplot/pull/384
     table.reset_index(inplace=True)
-    table = table.head(10000)
 
     # add log-transformed count data
     table['log10_treatment_mean'] = numpy.log10(table['treatment_mean'] + 1)
     table['log10_control_mean'] = numpy.log10(table['control_mean'] + 1)
+    table['dmr'] = numpy.array(["insignicant"] * len(table))
+    table.loc[table["l2fold"] > 0 & table["significant"], "dmr"] = "up"
+    table.loc[table["l2fold"] < 0 & table["significant"], "dmr"] = "down"
 
     def _dplot(table, outfile, column):
 
         plot = ggplot.ggplot(
             ggplot.aes(column,
-                       colour='significant',
-                       fill='significant'),
+                       colour='dmr',
+                       fill='dmr'),
             data=table) + \
             ggplot.geom_density(alpha=0.5)
 
@@ -1594,7 +1609,7 @@ def plotDETagStats(infile, outfile_prefix,
     def _bplot(table, outfile, column):
 
         plot = ggplot.ggplot(
-            ggplot.aes(x=column, y='significant'),
+            ggplot.aes(x=column, y='dmr'),
             data=table) + \
             ggplot.geom_boxplot()
 
