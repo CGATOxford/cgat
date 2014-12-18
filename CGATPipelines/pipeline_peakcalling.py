@@ -1369,7 +1369,7 @@ def buildBroadPeakBedgraphFiles(infiles, outfile):
              params,
              infiles,
              outfile,
-             toCluster=True,
+             to_cluster=True,
              logfile=logfile,
              jobOptions="-l mem_free=20G")
 
