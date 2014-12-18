@@ -165,7 +165,6 @@ PREPROCESSTOOLS = [tool for tool in
                    P.asList(PARAMS["general_preprocessors"])]
 preprocess_prefix = ("-".join(PREPROCESSTOOLS[::-1]) + "-")
 
-
 #########################################################################
 # Get TRACKS grouped on either Sample3 or Sample4 track ids
 
