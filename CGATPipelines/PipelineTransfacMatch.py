@@ -281,9 +281,11 @@ def calculateSequenceComposition(interval_names,
     temp.close()
 
     inf = temp.name
-    statement = '''cat %(inf)s | python %(scriptsdir)s/fasta2table.py
-                   -s cpg -s length
-                   --log=%(outfile)s.log > %(outfile)s'''
+    statement = ("cat %(inf)s |"
+                 " python %(scriptsdir)s/fasta2table.py"
+                 "  --section=cpg,na,length"
+                 "  --log=%(outfile)s.log"
+                 " > %(outfile)s")
     P.run()
 
 ####################################################

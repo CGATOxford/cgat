@@ -129,28 +129,20 @@ from ruffus import *
 # import useful standard python modules
 import sys
 import os
-import re
 import glob
-import cStringIO
-import numpy
-import pandas
-from pandas import DataFrame
-from scipy.stats import linregress
-import itertools as iter
 
 # import modules from the CGAT code collection
 import CGAT.Experiment as E
-import CGAT.IOTools as IOTools
 import CGATPipelines.PipelineMapping as PipelineMapping
+import CGATPipelines.PipelineTracks as PipelineTracks
 import CGAT.Pipeline as P
-import CGAT.CSV2DB as CSV2DB
-import CGATPipelines.PipelineReadqc as rqc
+import CGATPipelines.PipelineReadqc as PipelineReadqc
+import CGATPipelines.PipelinePreprocess as PipelinePreprocess
 
 #########################################################################
 #########################################################################
 #########################################################################
 # load options from the config file
-
 
 P.getParameters(
     ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
@@ -161,11 +153,43 @@ PARAMS = P.PARAMS
 #########################################################################
 #########################################################################
 #########################################################################
-# define input files
+# define input files and preprocessing steps
 
 
 INPUT_FORMATS = ("*.fastq.1.gz", "*.fastq.gz", "*.sra", "*.csfasta.gz")
 REGEX_FORMATS = regex(r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz)")
+SEQUENCEFILES_REGEX = regex(
+    r"(\S+).(?P<suffix>fastq.1.gz|fastq.gz|sra|csfasta.gz)")
+
+PREPROCESSTOOLS = [tool for tool in
+                   P.asList(PARAMS["general_preprocessors"])]
+preprocess_prefix = ("-".join(PREPROCESSTOOLS[::-1]) + "-")
+
+#########################################################################
+# Get TRACKS grouped on either Sample3 or Sample4 track ids
+
+Sample = PipelineTracks.AutoSample
+TRACKS = PipelineTracks.Tracks(Sample).loadFromDirectory(
+    files=glob.glob("./*fastq.1.gz")
+    + glob.glob("./*fastq.gz")
+    + glob.glob("./*sra")
+    + glob.glob("./*csfasta.gz"),
+    pattern="(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz)")
+if len(TRACKS.getTracks()[0].asList()) == 4:
+    EXPERIMENTS = PipelineTracks.Aggregate(TRACKS, labels=("attribute0",
+                                                           "attribute1",
+                                                           "attribute2"))
+    TISSUES = PipelineTracks.Aggregate(TRACKS, labels=("attribute1",))
+    CONDITIONS = PipelineTracks.Aggregate(TRACKS, labels=("attribute2",))
+
+elif len(TRACKS.getTracks()[0].asList()) == 3:
+    EXPERIMENTS = PipelineTracks.Aggregate(TRACKS, labels=("attribute0",
+                                                           "attribute1"))
+    TISSUES = PipelineTracks.Aggregate(TRACKS, labels=("attribute0",))
+    CONDITIONS = PipelineTracks.Aggregate(TRACKS, labels=("attribute1",))
+else:
+    raise ValueError("Unrecognised PipelineTracks.AutoSample instance")
+
 
 #########################################################################
 #########################################################################
@@ -197,28 +221,117 @@ def loadFastqc(infile, outfile):
     track = P.snip(infile, ".fastqc")
     filename = os.path.join(
         PARAMS["exportdir"], "fastqc", track + "*_fastqc", "fastqc_data.txt")
-    rqc.loadFastqc(filename)
+    PipelineReadqc.loadFastqc(filename)
     P.touch(outfile)
 
 #########################################################################
+# if preprocess tools are specified, process reads and run fastqc on output
+
+if PREPROCESSTOOLS:
+    @follows(mkdir("processed.dir"),
+             mkdir("log.dir"),
+             mkdir("summary.dir"))
+    @transform(INPUT_FORMATS,
+               SEQUENCEFILES_REGEX,
+               r"processed.dir/%s\1.\g<suffix>" % preprocess_prefix)
+    def processReads(infile, outfile):
+        '''process reads from .fastq files
+        .sra/csfasta not currently implemented
+        Tasks specified in PREPROCESSTOOLS are run in order
+        '''
+        trimmomatic_options = PARAMS["trimmomatic_options"]
+        if PARAMS["trimmomatic_adapter"]:
+            adapter_options = "ILLUMINACLIP:%s:%s:%s:%s " % (
+                PARAMS["trimmomatic_adapter"], PARAMS["trimmomatic_mismatches"],
+                PARAMS["trimmomatic_p_thresh"], PARAMS["trimmomatic_c_thresh"])
+            trimmomatic_options = adapter_options + trimmomatic_options
+
+        job_threads = PARAMS["general_threads"]
+        job_options = "-l mem_free=%s" % PARAMS["general_memory"]
+        save = PARAMS["general_save"]
+
+        m = PipelinePreprocess.MasterProcessor(save=save)
+        statement = m.build((infile,), outfile, PREPROCESSTOOLS)
+        P.run()
+
+    @follows(runFastqc)
+    @transform(processReads,
+               REGEX_FORMATS,
+               r"\1.fastqc")
+    def runFastqcFinal(infiles, outfile):
+        '''Perform quality control checks on final processed reads'''
+        m = PipelineMapping.FastQc(nogroup=PARAMS["readqc_no_group"],
+                                   outdir=PARAMS["exportdir"]+"/fastqc")
+        statement = m.build((infiles,), outfile)
+        P.run()
+
+else:
+    def processReads():
+        pass
+
+    def runFastqcFinal():
+        pass
 
 
-@merge(runFastqc, "status_summary.tsv.gz")
+#########################################################################
+
+
+#@merge(runFastqc, "status_summary.tsv.gz")
+@merge((runFastqcFinal, runFastqc), "status_summary.tsv.gz")
 def buildFastQCSummaryStatus(infiles, outfile):
     '''load fastqc status summaries into a single table.'''
     exportdir = os.path.join(PARAMS["exportdir"], "fastqc")
-    rqc.buildFastQCSummaryStatus(infiles, outfile, exportdir)
+    PipelineReadqc.buildFastQCSummaryStatus(infiles, outfile, exportdir)
 
 #########################################################################
 
 
-@merge(runFastqc, "basic_statistics_summary.tsv.gz")
+@merge((runFastqcFinal, runFastqc), "basic_statistics_summary.tsv.gz")
 def buildFastQCSummaryBasicStatistics(infiles, outfile):
     '''load fastqc summaries into a single table.'''
     exportdir = os.path.join(PARAMS["exportdir"], "fastqc")
-    rqc.buildFastQCSummaryBasicStatistics(infiles, outfile, exportdir)
+    PipelineReadqc.buildFastQCSummaryBasicStatistics(infiles, outfile,
+                                                     exportdir)
 
 #########################################################################
+
+
+regex_exp = "|".join([x.__str__()[:-len("-agg")] for x in EXPERIMENTS])
+
+
+@follows(mkdir("experiment.dir"))
+@collate(runFastqc,
+         regex("(" + regex_exp + ").+"),
+         r"experiment.dir/\1_per_sequence_quality.tsv")
+def buildExperimentLevelReadQuality(infiles, outfile):
+    """
+    Collate per sequence read qualities for all samples in EXPERIMENT
+    """
+    exportdir = os.path.join(PARAMS["exportdir"], "fastqc")
+    PipelineReadqc.buildExperimentReadQuality(infiles, outfile, exportdir)
+
+
+@collate(buildExperimentLevelReadQuality,
+         regex("(.+)/(.+)_per_sequence_quality.tsv"),
+         r"\1/experiment_per_sequence_quality.tsv")
+def combineExperimentLevelReadQualities(infiles, outfile):
+    """
+    Combine summaries of read quality for different experiments
+    """
+    infiles = " ".join(infiles)
+    statement = ("python %(scriptsdir)s/combine_tables.py"
+                 "  --log=%(outfile)s.log"
+                 "  --regex-filename='.+/(.+)_per_sequence_quality.tsv'"
+                 " %(infiles)s"
+                 " > %(outfile)s")
+    P.run()
+
+
+@transform(combineExperimentLevelReadQualities,
+           regex(".+/(.+).tsv"),
+           r"\1.load")
+def loadExperimentLevelReadQualities(infile, outfile):
+    P.load(infile, outfile)
 
 
 @transform((buildFastQCSummaryStatus, buildFastQCSummaryBasicStatistics),
@@ -227,15 +340,14 @@ def loadFastqcSummary(infile, outfile):
     P.load(infile, outfile, options="--add-index=track")
 
 
-#########################################################################
-
-
-@follows(loadFastqc, loadFastqcSummary)
+@follows(loadFastqc, loadFastqcSummary, runFastqcFinal)
 def full():
     pass
 
 
-#########################################################################
+@follows(buildFastQCSummaryBasicStatistics)
+def test():
+    pass
 
 
 @follows()

@@ -2,6 +2,7 @@ import os
 import re
 import glob
 import cStringIO
+import pandas as pd
 import CGAT.Pipeline as P
 import CGAT.IOTools as IOTools
 import CGAT.CSV2DB as CSV2DB
@@ -32,7 +33,7 @@ def collectFastQCSections(infiles, section, datadir):
     '''iterate over all fastqc files and extract a particular section.'''
     results = []
     for infile in infiles:
-        track = P.snip(infile, ".fastqc")
+        track = P.snip(os.path.basename(infile), ".fastqc")
         filename = os.path.join(datadir, track + "*_fastqc", "fastqc_data.txt")
         for fn in glob.glob(filename):
             for name, status, header, data in FastqcSectionIterator(
@@ -82,7 +83,7 @@ def buildFastQCSummaryStatus(infiles, outfile, datadir):
     outf = IOTools.openFile(outfile, "w")
     first = True
     for infile in infiles:
-        track = P.snip(infile, ".fastqc")
+        track = P.snip(os.path.basename(infile), ".fastqc")
         filename = os.path.join(datadir,
                                 track + "*_fastqc",
                                 "fastqc_data.txt")
@@ -121,3 +122,33 @@ def buildFastQCSummaryBasicStatistics(infiles, outfile, datadir):
             first = False
         outf.write("%s\t%s\n" % (track, "\t".join([row[1] for row in rows])))
     outf.close()
+
+
+def buildExperimentReadQuality(infiles, outfile, datadir):
+    """
+    """
+    data = collectFastQCSections(infiles,
+                                 "Per sequence quality scores",
+                                 datadir)
+    first = True
+    for track, status, header, rows in data:
+        T = track
+        rows = [map(float, x.split("\t")) for x in rows]
+        header = header.split("\t")
+        if first:
+            first = False
+            df_out = pd.DataFrame(rows)
+            df_out.columns = header
+            df_out.rename(columns={"Count": track}, inplace=True)
+
+        else:
+            df = pd.DataFrame(rows)
+            df.columns = header
+            df.rename(columns={"Count": track}, inplace=True)
+            df_out = df_out.merge(df, how="outer", on="Quality", sort=True)
+
+    df_out.set_index("Quality", inplace=True)
+    df_out = pd.DataFrame(df_out.sum(axis=1))
+    df_out.columns = ["_".join(T.split("-")[:-1]), ]
+
+    df_out.to_csv(IOTools.openFile(outfile, "w"), sep="\t")

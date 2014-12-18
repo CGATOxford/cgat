@@ -195,6 +195,12 @@ def main(argv=None):
                       choices=("maximum", "fit-only", "gene-est-only"),
                       help="deseq sharing mode [default=%default].")
 
+    parser.add_option(
+        "--edger-dispersion",
+        dest="edger_dispersion", type="float",
+        help="dispersion value for edgeR if there are no replicates "
+        "[default=%default].")
+
     parser.add_option("-f", "--fdr", dest="fdr", type="float",
                       help="fdr to apply [default=%default].")
 
@@ -239,6 +245,7 @@ def main(argv=None):
         deseq_dispersion_method="pooled",
         deseq_fit_type="parametric",
         deseq_sharing_mode="maximum",
+        edger_dispersion=0.4,
         ref_group=None,
         save_r_environment=None,
         filter_min_counts_per_row=1,
@@ -308,7 +315,8 @@ def main(argv=None):
                 outfile=options.output_filename,
                 outfile_prefix=options.output_filename_pattern,
                 fdr=options.fdr,
-                ref_group=options.ref_group)
+                ref_group=options.ref_group,
+                dispersion=options.edger_dispersion)
 
         elif options.method == "mock":
             Expression.runMockAnalysis(

@@ -677,13 +677,16 @@ def annotateBinding(infile, outfile):
 
     statement = """
     zcat < %(geneset)s
-    | awk '$2 == "protein_coding"'
+    | python %(scriptsdir)s/gtf2gtf.py
+    --method=filter
+    --filter-method=proteincoding
+    --log=%(outfile)s.log
     | python %(scriptsdir)s/gtf2table.py
-       --counter=position
-       --counter=binding-pattern
-       --log=%(outfile)s.log
-       --gff-file=%(infile)s
-       --genome-file=%(genome_dir)s/%(genome)s
+    --counter=position
+    --counter=binding-pattern
+    --log=%(outfile)s.log
+    --gff-file=%(infile)s
+    --genome-file=%(genome_dir)s/%(genome)s
     | gzip
     > %(outfile)s"""
 
@@ -1458,6 +1461,9 @@ def runGATOnGeneStructure(infiles, outfile):
                    PARAMS["annotations_interface_genomic_function_bed"]),
                os.path.join(
                    PARAMS["annotations_dir"],
+                   PARAMS["annotations_interface_genomic_function_tsv"]),
+               os.path.join(
+                   PARAMS["annotations_dir"],
                    PARAMS["annotations_interface_territories_gff"]),
                os.path.join(
                    PARAMS["annotations_dir"],
@@ -1904,6 +1910,7 @@ def annotate_intervals():
          loadMast,
          loadMotifInformation,
          loadMotifSequenceComposition,
+         loadOverlap,
          gat)
 def full():
     '''run the full pipeline.'''

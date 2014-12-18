@@ -1209,20 +1209,19 @@ def loadWindowComposition(infile, outfile):
     P.load(infile, outfile, limit=10000)
 
 
-@transform(DIFFTARGETS, suffix(".tsv.gz"),
+@transform(DIFFTARGETS,
+           suffix(".tsv.gz"),
            ".merged.tsv.gz")
-def mergeDMRWindows(infile, outfiles):
+def mergeDMRWindows(infile, outfile):
     '''merge overlapping windows.
 
     Sample/control labels are by default inverted to reflect
     that unmethylated windows are of principal interest.
     '''
-
     # the other outfiles will be created automatically by
     # the script medip_merge_intervals
-    outfile = outfiles[0]
 
-    prefix = P.snip(outfiles[0], ".tsv.gz")
+    prefix = P.snip(outfile, ".tsv.gz")
 
     job_options = "-l mem_free=3G"
 
@@ -1417,8 +1416,11 @@ def buildDMRStats(infile, outfile):
            ".plots")
 def plotDETagStats(infiles, outfile):
     '''plot differential expression stats'''
-    PipelineWindows.plotDETagStats(infiles, outfile,
-                                   submit=True)
+
+    PipelineWindows.plotDETagStats(
+        infiles, outfile,
+        submit=True,
+        job_options="-l mem_free=16")
 
 
 @transform(mergeDMRWindows, suffix(".merged.tsv.gz"), ".fdr")

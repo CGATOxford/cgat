@@ -38,9 +38,10 @@ which can be useful when importing the gene models into a database.
 Note that coordinates are converted to 0-based open/closed notation (all on
 the forward strand).
 
-By default, the gene_id and transcript_id are extracted from the attributes
-field into separated columns.  If ``-f/--attributes-as-columns`` is set, all fields in the
-attributes will be split into separate columns.
+By default, the gene_id and transcript_id are extracted from the
+attributes field into separated columns.  If
+``-f/--attributes-as-columns`` is set, all fields in the attributes
+will be split into separate columns.
 
 The script also implements the reverse operation, converting a tab-separated
 table into a :term:`gtf` formatted file.
@@ -112,21 +113,25 @@ def main(argv=None):
         help="output only attributes as separate columns "
         "[default=%default].")
 
-    parser.add_option("-f", "--attributes-as-columns", dest="output_full", action="store_true",
-                      help="output attributes as separate columns "
-                      "[default=%default].")
+    parser.add_option(
+        "-f", "--attributes-as-columns", dest="output_full",
+        action="store_true",
+        help="output attributes as separate columns "
+        "[default=%default].")
 
-    parser.add_option("-i", "--invert", dest="invert", action="store_true",
-                      help="convert tab-separated table back to gtf "
-                      "[default=%default].")
+    parser.add_option(
+        "-i", "--invert", dest="invert", action="store_true",
+        help="convert tab-separated table back to gtf "
+        "[default=%default].")
 
-    parser.add_option("-m", "--output-map", dest="output_map", type="choice",
-                      choices=(
-                          "transcript2gene",
-                          "peptide2gene",
-                          "peptide2transcript"),
-                      help="output a map mapping transcripts to genes "
-                      "[default=%default].")
+    parser.add_option(
+        "-m", "--output-map", dest="output_map", type="choice",
+        choices=(
+            "transcript2gene",
+            "peptide2gene",
+            "peptide2transcript"),
+        help="output a map mapping transcripts to genes "
+        "[default=%default].")
 
     parser.set_defaults(
         only_attributes=False,
