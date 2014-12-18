@@ -161,10 +161,6 @@ REGEX_FORMATS = regex(r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz)")
 SEQUENCEFILES_REGEX = regex(
     r"(\S+).(?P<suffix>fastq.1.gz|fastq.gz|sra|csfasta.gz)")
 
-PREPROCESSTOOLS = [tool for tool in
-                   P.asList(PARAMS["general_preprocessors"])]
-preprocess_prefix = ("-".join(PREPROCESSTOOLS[::-1]) + "-")
-
 #########################################################################
 # Get TRACKS grouped on either Sample3 or Sample4 track ids
 
@@ -227,7 +223,12 @@ def loadFastqc(infile, outfile):
 #########################################################################
 # if preprocess tools are specified, process reads and run fastqc on output
 
-if PREPROCESSTOOLS:
+
+if PARAMS["preprocessors"]:
+    PREPROCESSTOOLS = [tool for tool
+                       in P.asList(PARAMS["preprocessors"])]
+    preprocess_prefix = ("-".join(PREPROCESSTOOLS[::-1]) + "-")
+
     @follows(mkdir("processed.dir"),
              mkdir("log.dir"),
              mkdir("summary.dir"))
