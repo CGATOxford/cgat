@@ -132,31 +132,40 @@ def means2idxarrays(g1, g2, i_bins, c_bins, difference):
     return(change_idx, initial_idx)
 
 
-def findClusters(df, distance, size):
+def findClusters(df, distance, size, tracks_map, groups):
     '''define clusters of genomic loci depending on thresholds for
     size and minimum members per cluster'''
 
-    positions = df['position']
-    contigs = df['contig']
+    positions = df['position'].tolist()
+    contigs = df['contig'].tolist()
     current_pos = 0
     cluster_ix = []
     current_contig = ""
     cluster_dfs = {}
     n = 0
-    for ix in df.index:
+    for ix in range(0, len(positions)):
         next_pos = positions[ix]
         next_contig = contigs[ix]
+        # if next_contig != current_contig:
+        #    E.info("contig change %s --> %s" % (current_contig, next_contig))
         if (((next_pos < current_pos + distance) &
              (next_contig == current_contig))):
             cluster_ix.append(ix)
         else:
             if len(cluster_ix) >= size:
                 start, end = (cluster_ix[0], cluster_ix[-1])
+                # print "found one..."
+                # print df.loc[start:end]
+                # tmp = df.loc[start:end]
+                # print groups
+                # print tmp.ix[:, tracks_map[groups[0]]]
                 cluster_dfs[n] = df.loc[start:end]
                 n += 1
             cluster_ix = []
             current_pos = next_pos
             current_contig = next_contig
+
+    E.info("found %i clusters" % n)
     return (cluster_dfs)
 
 
@@ -173,13 +182,12 @@ def shuffleCluster(i_bins, c_bins, tracks_map, groups,
                for key1 in np.digitize(i_bins, i_bins)
                for key2 in np.digitize(c_bins, c_bins)
                for key3 in np.digitize(s_bins, s_bins)}
-
     # perhaps remove min_occupancy, it's being used to avoid over-iteration
     # if the user asks for more iterations than required to fill all bins
     # how likely is it to be helpful?
     min_occup = min(counts.flatten())
     for iteration in range(0,  i):
-        E.info("performing iteration number %i.." % (iteration + 1))
+        E.info("performing shuffling iteration number %i.." % (iteration + 1))
         for size in s_bins:
             group1_mean = []
             group2_mean = []
@@ -195,12 +203,14 @@ def shuffleCluster(i_bins, c_bins, tracks_map, groups,
                         :, tracks_map[groups[0]]]
                     cluster2 = clusters_dict[g2_rand[perm]].ix[
                         :, tracks_map[groups[1]]]
+
                     c1_rand_s = random.randint(
                         min(cluster1.index), max(cluster1.index)-size)
                     c1_e = int(c1_rand_s + size - 1)
                     c2_rand_s = random.randint(
                         min(cluster2.index), max(cluster2.index)-size)
                     c2_e = int(c2_rand_s + size - 1)
+
                     c1_mean = np.mean(np.mean(cluster1.ix[
                         c1_rand_s: c1_e]))
                     c2_mean = np.mean(np.mean(cluster2.ix[
@@ -212,10 +222,8 @@ def shuffleCluster(i_bins, c_bins, tracks_map, groups,
 
             change_idx, initial_idx = means2idxarrays(
                 group1_mean, group2_mean, i_bins, c_bins, difference)
-
             for idx, coord in enumerate(zip(initial_idx, change_idx,
                                             itertools.repeat(size))):
-                    if coord in indices.keys():
                         if counts[coord] < s_max:
                             counts[coord] += 1
                             cluster1_ix = clusters_dict[
@@ -227,15 +235,14 @@ def shuffleCluster(i_bins, c_bins, tracks_map, groups,
                             cluster2_start = cluster2_ix[0]
                             cluster2_end = cluster2_ix[-1]
                             c1_rand_s = g1_rand_s[idx]
-                            c1_rand_e = int(c1_rand_s + size - 1)
+                            c1_rand_e = int(c1_rand_s + size)
                             c2_rand_s = g2_rand_s[idx]
-                            c2_rand_e = int(c2_rand_s + size - 1)
+                            c2_rand_e = int(c2_rand_s + size)
                             indices[coord].append((
                                 cluster1_start, cluster1_end, cluster2_start,
                                 cluster2_end, c1_rand_s, c1_rand_e, c2_rand_s,
                                 c2_rand_e))
             min_occup = min(counts.flatten())
-
     return indices, counts
 
 
@@ -250,6 +257,7 @@ def shuffleRows(df, i_bins, c_bins, tracks_map,  groups,
     min_occup = min(counts.flatten())
 
     for iteration in range(0,  i):
+        E.info("performing shuffling iteration number %i.." % (iteration + 1))
         if min_occup < s_max:
             group1_rand = np.random.permutation(df.index)
             group2_rand = np.random.permutation(df.index)
@@ -423,7 +431,7 @@ def main(argv=None):
                       help="minimum number of loci required per cluster\
                       [default=%default].")
 
-    parser.add_option("-f", "--spike_in_type",
+    parser.add_option("-f", "--spike-type",
                       dest="spike_type", type="choice",
                       choices=("row", "cluster"),
                       help="spike in type [default=%default].")
@@ -438,7 +446,7 @@ def main(argv=None):
                       help="maximum size of subcluster\
                       [default=%default].")
 
-    parser.add_option("-k", "--subcluster-bin_width",
+    parser.add_option("-k", "--subcluster-bin-width",
                       dest="width_sbin", type="int",
                       help="bin width for subcluster size\
                       [default=%default].")
@@ -480,6 +488,8 @@ def main(argv=None):
 
     df = pd.read_table(sys.stdin, sep="\t")
     df_sort = df.sort(columns=["contig", "position"])
+    df_sort.set_index(df.index, inplace=True)
+    #print df_sort.head()
 
     if not options.design_file:
         raise ValueError("a design table is required.")
@@ -517,7 +527,8 @@ def main(argv=None):
     if options.spike_type == "cluster":
         E.info("looking for clusters...")
         clusters_dict = findClusters(df_sort, options.cluster_max_distance,
-                                     options.cluster_min_size)
+                                     options.cluster_min_size,
+                                     g_to_spike_tracks, groups)
         if len(clusters_dict) == 0:
             raise Exception("no clusters were found, check parameters")
 

@@ -629,9 +629,15 @@ def buildCodingExons(infile, outfile):
 
     statement = '''
     zcat %(infile)s
-    | awk '$2 == "protein_coding" && $3 == "CDS"'
+    | awk '$3 == "CDS"'
+    | python %(scriptsdir)s/gtf2gtf.py
+    --method=filter
+    --filter-method=proteincoding
+    --log=%(outfile)s.log
     | perl -p -e "s/CDS/exon/"
-    | python %(scriptsdir)s/gtf2gtf.py --method=merge-exons --log=%(outfile)s.log
+    | python %(scriptsdir)s/gtf2gtf.py
+    --method=merge-exons
+    --log=%(outfile)s.log
     | gzip
     > %(outfile)s
     '''

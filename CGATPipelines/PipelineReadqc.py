@@ -33,7 +33,7 @@ def collectFastQCSections(infiles, section, datadir):
     '''iterate over all fastqc files and extract a particular section.'''
     results = []
     for infile in infiles:
-        track = P.snip(infile, ".fastqc")
+        track = P.snip(os.path.basename(infile), ".fastqc")
         filename = os.path.join(datadir, track + "*_fastqc", "fastqc_data.txt")
         for fn in glob.glob(filename):
             for name, status, header, data in FastqcSectionIterator(
@@ -83,7 +83,7 @@ def buildFastQCSummaryStatus(infiles, outfile, datadir):
     outf = IOTools.openFile(outfile, "w")
     first = True
     for infile in infiles:
-        track = P.snip(infile, ".fastqc")
+        track = P.snip(os.path.basename(infile), ".fastqc")
         filename = os.path.join(datadir,
                                 track + "*_fastqc",
                                 "fastqc_data.txt")

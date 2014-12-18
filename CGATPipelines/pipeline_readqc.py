@@ -129,23 +129,14 @@ from ruffus import *
 # import useful standard python modules
 import sys
 import os
-import re
-import glob
-import cStringIO
-import numpy
-import pandas
-from pandas import DataFrame
-from scipy.stats import linregress
-import itertools as iter
 
 # import modules from the CGAT code collection
 import CGAT.Experiment as E
-import CGAT.IOTools as IOTools
 import CGATPipelines.PipelineMapping as PipelineMapping
 import CGATPipelines.PipelineTracks as PipelineTracks
 import CGAT.Pipeline as P
-import CGAT.CSV2DB as CSV2DB
 import CGATPipelines.PipelineReadqc as rqc
+import CGATPipelines.PipelinePreprocess as PipelinePreprocess
 
 #########################################################################
 #########################################################################
@@ -161,11 +152,20 @@ PARAMS = P.PARAMS
 #########################################################################
 #########################################################################
 #########################################################################
-# define input files
+# define input files and preprocessing steps
 
 
 INPUT_FORMATS = ("*.fastq.1.gz", "*.fastq.gz", "*.sra", "*.csfasta.gz")
 REGEX_FORMATS = regex(r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz)")
+SEQUENCEFILES_REGEX = regex(
+    r"(\S+).(?P<suffix>fastq.1.gz|fastq.gz|sra|csfasta.gz)")
+
+PREPROCESSTOOLS = [tool for tool in
+                   P.asList(PARAMS["general_preprocessors"])]
+preprocess_prefix = ("-".join(PREPROCESSTOOLS[::-1]) + "-")
+
+E.info("Preprocessing tools: %s")
+E.info(PREPROCESSTOOLS)
 
 
 #########################################################################
@@ -230,9 +230,61 @@ def loadFastqc(infile, outfile):
     P.touch(outfile)
 
 #########################################################################
+# if preprocess tools are specified, process reads and run fastqc on output
+
+if PREPROCESSTOOLS:
+    @follows(mkdir("processed.dir"),
+             mkdir("log.dir"),
+             mkdir("summary.dir"))
+    @transform(INPUT_FORMATS,
+               SEQUENCEFILES_REGEX,
+               r"processed.dir/%s\1.\g<suffix>" % preprocess_prefix)
+    def processReads(infile, outfile):
+        '''process reads from .fastq files
+        .sra/csfasta not currently implemented
+        Tasks specified in PREPROCESSTOOLS are run in order
+        '''
+        trimmomatic_options = PARAMS["trimmomatic_options"]
+        if PARAMS["trimmomatic_adapter"]:
+            adapter_options = "ILLUMINACLIP:%s:%s:%s:%s " % (
+                PARAMS["trimmomatic_adapter"], PARAMS["trimmomatic_mismatches"],
+                PARAMS["trimmomatic_p_thresh"], PARAMS["trimmomatic_c_thresh"])
+            trimmomatic_options = adapter_options + trimmomatic_options
+
+        job_threads = PARAMS["general_threads"]
+        job_options = "-l mem_free=%s" % PARAMS["general_memory"]
+        save = PARAMS["general_save"]
+
+        m = PipelinePreprocess.MasterProcessor(save=save)
+        statement = m.build((infile,), outfile, PREPROCESSTOOLS)
+        print statement
+        P.run()
+
+    @follows(runFastqc)
+    @transform(processReads,
+               REGEX_FORMATS,
+               r"\1.fastqc")
+    def runFastqcFinal(infiles, outfile):
+        '''Perform quality control checks on final processed reads'''
+        m = PipelineMapping.FastQc(nogroup=PARAMS["readqc_no_group"],
+                                   outdir=PARAMS["exportdir"]+"/fastqc")
+        statement = m.build((infiles,), outfile)
+        print "infiles", infiles, outfile
+        P.run()
+
+else:
+    def processReads():
+        pass
+
+    def runFastqcFinal():
+        pass
 
 
-@merge(runFastqc, "status_summary.tsv.gz")
+#########################################################################
+
+
+#@merge(runFastqc, "status_summary.tsv.gz")
+@merge((runFastqcFinal, runFastqc), "status_summary.tsv.gz")
 def buildFastQCSummaryStatus(infiles, outfile):
     '''load fastqc status summaries into a single table.'''
     exportdir = os.path.join(PARAMS["exportdir"], "fastqc")
@@ -241,7 +293,7 @@ def buildFastQCSummaryStatus(infiles, outfile):
 #########################################################################
 
 
-@merge(runFastqc, "basic_statistics_summary.tsv.gz")
+@merge((runFastqcFinal, runFastqc), "basic_statistics_summary.tsv.gz")
 def buildFastQCSummaryBasicStatistics(infiles, outfile):
     '''load fastqc summaries into a single table.'''
     exportdir = os.path.join(PARAMS["exportdir"], "fastqc")
@@ -297,10 +349,14 @@ def loadFastqcSummary(infile, outfile):
 #########################################################################
 
 
-@follows(loadFastqc, loadFastqcSummary)
+@follows(loadFastqc, loadFastqcSummary, runFastqcFinal)
 def full():
     pass
 
+
+@follows(buildFastQCSummaryBasicStatistics)
+def test():
+    pass
 
 #########################################################################
 

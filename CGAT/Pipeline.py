@@ -1921,6 +1921,9 @@ dump
 touch
    touch files only, do not run
 
+regenerate
+   regenerate the ruffus checkpoint file
+
 check
    check if requirements (external tool dependencies) are satisfied.
 
@@ -1947,7 +1950,7 @@ def main(args=sys.argv):
                       type="choice",
                       choices=(
                           "make", "show", "plot", "dump", "config", "clone",
-                          "check"),
+                          "check", "regenerate"),
                       help="action to take [default=%default].")
 
     parser.add_option("--pipeline-format", dest="pipeline_format",
@@ -2091,7 +2094,8 @@ def main(args=sys.argv):
         method = getattr(caller, method_name)
         method(*options.pipeline_targets[1:])
 
-    elif options.pipeline_action in ("make", "show", "svg", "plot", "touch"):
+    elif options.pipeline_action in ("make", "show", "svg", "plot",
+                                     "touch", "regenerate"):
 
         # set up extra file logger
         handler = logging.FileHandler(filename=options.logfile,
@@ -2155,6 +2159,12 @@ def main(args=sys.argv):
                     touch_files_only=True,
                     verbose=options.loglevel,
                     checksum_level=options.checksums)
+
+            elif options.pipeline_action == "regenerate":
+                pipeline_run(
+                    options.pipeline_targets,
+                    touch_files_only=options.checksums,
+                    verbose=options.loglevel)
 
             elif options.pipeline_action == "svg":
                 pipeline_printout_graph(
