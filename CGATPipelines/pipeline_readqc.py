@@ -129,6 +129,7 @@ from ruffus import *
 # import useful standard python modules
 import sys
 import os
+import glob
 
 # import modules from the CGAT code collection
 import CGAT.Experiment as E
@@ -175,23 +176,23 @@ E.info(PREPROCESSTOOLS)
 
 Sample = PipelineTracks.AutoSample
 TRACKS = PipelineTracks.Tracks(Sample).loadFromDirectory(
-    files = glob.glob("./*fastq.1.gz") 
-    + glob.glob("./*fastq.gz") 
-    + glob.glob("./*sra") 
-    + glob.glob("./*csfasta.gz"), 
-    pattern = "(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz)")
+    files=glob.glob("./*fastq.1.gz")
+    + glob.glob("./*fastq.gz")
+    + glob.glob("./*sra")
+    + glob.glob("./*csfasta.gz"),
+    pattern="(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz)")
 if len(TRACKS.getTracks()[0].asList()) == 4:
-    EXPERIMENTS = PipelineTracks.Aggregate(TRACKS, labels=("attribute0", 
-                                                           "attribute1", 
+    EXPERIMENTS = PipelineTracks.Aggregate(TRACKS, labels=("attribute0",
+                                                           "attribute1",
                                                            "attribute2"))
     TISSUES = PipelineTracks.Aggregate(TRACKS, labels=("attribute1",))
-    CONDITIONS = PipelineTracks.Aggregate(TRACKS, labels=( "attribute2",))
+    CONDITIONS = PipelineTracks.Aggregate(TRACKS, labels=("attribute2",))
 
 elif len(TRACKS.getTracks()[0].asList()) == 3:
-    EXPERIMENTS = PipelineTracks.Aggregate(TRACKS, labels=("attribute0", 
+    EXPERIMENTS = PipelineTracks.Aggregate(TRACKS, labels=("attribute0",
                                                            "attribute1"))
     TISSUES = PipelineTracks.Aggregate(TRACKS, labels=("attribute0",))
-    CONDITIONS = PipelineTracks.Aggregate(TRACKS, labels=( "attribute1",))
+    CONDITIONS = PipelineTracks.Aggregate(TRACKS, labels=("attribute1",))
 else:
     raise ValueError("Unrecognised PipelineTracks.AutoSample instance")
 
@@ -303,8 +304,10 @@ def buildFastQCSummaryBasicStatistics(infiles, outfile):
 
 
 regex_exp = "|".join([x.__str__()[:-len("-agg")] for x in EXPERIMENTS])
+
+
 @follows(mkdir("experiment.dir"))
-@collate(runFastqc, 
+@collate(runFastqc,
          regex("(" + regex_exp + ").+"),
          r"experiment.dir/\1_per_sequence_quality.tsv")
 def buildExperimentLevelReadQuality(infiles, outfile):
