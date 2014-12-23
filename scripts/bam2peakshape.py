@@ -271,8 +271,10 @@ def buildOptionParser(argv):
 def outputResults(result, bins, options):
     '''ouput results from density profiles.'''
 
+    print bins
     # center bins
     out_bins = bins[:-1] + options.bin_size
+    print out_bins
 
     def writeMatrix(result, sort):
 
