@@ -290,24 +290,9 @@ def buildOptionParser(argv):
     return parser
 
 
-def outputResults(result, bins, options):
-    '''ouput results from density profiles.'''
-
-    print bins
-    # center bins
-    out_bins = bins[:-1] + options.bin_size
-    print out_bins
-
-    def writeMatrix(result, sort):
-
-        outfile_matrix = E.openOutputFile(
-            "matrix_%s.gz" % re.sub("-", "_", sort))
-        outfile_matrix.write("name\t%s\n" % "\t".join(map(str, out_bins)))
-
-        if result[0][2] is not None:
-            outfile_control = E.openOutputFile(
-                "control_%s.gz" % re.sub("-", "_", sort))
-            outfile_control.write("name\t%s\n" % "\t".join(map(str, out_bins)))
+IntervalData = collections.namedtuple(
+    "IntervalData",
+    "foreground interval controls shifted")
 
 
 def outputFeatureTable(outfile, features_per_interval, bins):
@@ -679,3 +664,4 @@ def main(argv=None):
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv))
+
