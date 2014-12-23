@@ -204,13 +204,13 @@ def annotateGenome(infile, outfile,
     method = "genome"
 
     if only_proteincoding:
-        filter_cmd = ''' awk '$2 == "protein_coding"' '''
+        filter_cmd = """python %(scriptsdir)s/gtf2gtf.py
+        --method=filter --filter-method=proteincoding""" % PARAMS
     else:
         filter_cmd = "cat"
 
     statement = """
-    gunzip
-    < %(infile)s
+    zcat %(infile)s
     | %(filter_cmd)s
     | grep "transcript_id"
     | python %(scriptsdir)s/gtf2gtf.py
@@ -229,7 +229,7 @@ def annotateGenome(infile, outfile,
     --method=%(method)s
     | gzip
     > %(outfile)s
-        """
+    """
     P.run()
 
 
@@ -256,9 +256,10 @@ def annotateGeneStructure(infile, outfile,
     '''
 
     if only_proteincoding:
-        filter_cmd = ''' awk '$2 == "protein_coding" && $3 == "exon"' '''
+        filter_cmd = """python %(scriptsdir)s/gtf2gtf.py
+        --method=filter --filter-method=proteincoding""" % PARAMS
     else:
-        filter_cmd = ''' awk '$3 == "exon" '''
+        filter_cmd = "cat"
 
     method = "genes"
 
@@ -266,6 +267,7 @@ def annotateGeneStructure(infile, outfile,
     gunzip
     < %(infile)s
     | %(filter_cmd)s
+    | awk '$3 == "exon"'
     | grep "transcript_id"
     | python %(scriptsdir)s/gtf2gtf.py
     --method=sort --sort-order=gene+transcript
@@ -330,14 +332,15 @@ def buildFlatGeneSet(infile, outfile):
 
 
 def buildProteinCodingGenes(infile, outfile):
-    '''build a collection of exons from the protein-coding
+    '''build a collection of exons from the proteincoding
     section of the ENSEMBL gene set.
 
     The exons include both CDS and UTR.
 
     *infile* is an ENSEMBL gtf file.
 
-    The set is filtered in the same way as in :meth:`buildGeneRegions`.
+    The set is filtered in the same way as in
+    :meth:`buildGeneRegions`.
 
     '''
 
@@ -346,9 +349,8 @@ def buildProteinCodingGenes(infile, outfile):
     # and hence merging will fail.
     # --permit-duplicates is set so that these cases will be
     # assigned new merged gene ids.
-    statement = """gunzip
-    < %(infile)s
-    | awk '$2 == "protein_coding"'
+    statement = """zcat %(infile)s
+    | python %(scriptsdir)s/gtf2gtf.py --method=filter --filter-method=proteincoding
     | grep "transcript_id"
     | python %(scriptsdir)s/gtf2gtf.py
     --method=sort --sort-order=contig+gene
@@ -386,12 +388,13 @@ def loadGeneInformation(infile, outfile, only_proteincoding=False):
     table = P.toTable(outfile)
 
     if only_proteincoding:
-        filter_cmd = ''' awk '$2 == "protein_coding"' '''
+        filter_cmd = """python %(scriptsdir)s/gtf2gtf.py
+        --method=filter --filter-method=proteincoding""" % PARAMS
     else:
         filter_cmd = "cat"
 
     statement = '''
-    gunzip < %(infile)s
+    zcat %(infile)s
     | %(filter_cmd)s
     | grep "transcript_id"
     | python %(scriptsdir)s/gtf2gtf.py
@@ -421,13 +424,12 @@ def loadTranscriptInformation(infile, outfile,
     table = P.toTable(outfile)
 
     if only_proteincoding:
-        filter_cmd = ''' awk '$2 == "protein_coding"' '''
+        filter_cmd = """python %(scriptsdir)s/gtf2gtf.py
+        --method=filter --filter-method=proteincoding""" % PARAMS
     else:
         filter_cmd = "cat"
 
-    statement = '''gunzip
-    < %(infile)s
-    | %(filter_cmd)s
+    statement = '''zcat < %(infile)s
     | awk '$3 == "CDS"'
     | grep "transcript_id"
     | python %(scriptsdir)s/gtf2gtf.py
@@ -489,10 +491,6 @@ def buildPeptideFasta(infile, outfile):
 
     P.run()
 
-############################################################
-############################################################
-############################################################
-
 
 def loadPeptideSequences(infile, outfile):
     '''load ENSEMBL peptide file into database
@@ -514,9 +512,6 @@ def loadPeptideSequences(infile, outfile):
     P.run()
 
 
-############################################################
-############################################################
-############################################################
 def buildCDSFasta(infile, outfile):
     '''load ENSEMBL cdna FASTA file
 
@@ -610,7 +605,7 @@ def buildExons(infile, outfile):
 
 
 def buildCodingExons(infile, outfile):
-    '''build a collection of transcripts from the protein-coding portion
+    '''build a collection of transcripts from the proteincoding portion
     of the ENSEMBL gene set.
 
     All exons are kept
@@ -618,8 +613,10 @@ def buildCodingExons(infile, outfile):
     '''
 
     statement = '''
-    gunzip < %(infile)s
-    | awk '$2 == "protein_coding"'
+    zcat %(infile)s
+    | python %(scriptsdir)s/gtf2gtf.py
+    --method=filter --filter-method=proteincoding
+    --log=%(outfile)s.log
     | awk '$3 == "exon"'
     | python %(scriptsdir)s/gtf2gtf.py
     --method=remove-duplicates --duplicate-feature=gene
@@ -639,9 +636,10 @@ def buildNonCodingExons(infile, outfile):
 
     statement = '''
     gunzip < %(infile)s
-    | awk '$2 != "protein_coding"'
+    | python %(scriptsdir)s/gtf2gtf.py
+    --method=filter --filter-method=proteincoding --invert-filter
+    --log=%(outfile)s.log
     | awk '$3 == "exon"'
-    | grep -v "protein_coding"
     | python %(scriptsdir)s/gtf2gtf.py
     --method=remove-duplicates --duplicate-feature=gene
     --log=%(outfile)s.log
@@ -654,21 +652,22 @@ def buildLincRNAExons(infile, outfile):
     '''build a collection of transcripts from the LincRNA portion of the
     ENSEMBL gene set. All exons are kept
     '''
-
     statement = '''
     gunzip < %(infile)s
-    | awk '$2 == "lincRNA"'
-    | awk '$3 == "exon"'
-    | grep -v "protein_coding"
     | python %(scriptsdir)s/gtf2gtf.py
-    --method=remove-duplicates --duplicate-feature=gene --log=%(outfile)s.log
+    --method=filter --filter-method=lincrna --invert-filter
+    --log=%(outfile)s.log
+    | awk '$3 == "exon"'
+    | python %(scriptsdir)s/gtf2gtf.py
+    --method=remove-duplicates --duplicate-feature=gene
+    --log=%(outfile)s.log
     | gzip > %(outfile)s
     '''
     P.run()
 
 
 def buildCDS(infile, outfile):
-    '''build a collection of transcripts from the protein-coding
+    '''build a collection of transcripts from the proteincoding
     section of the ENSEMBL gene set.
 
     Only CDS exons are parts of exons are output - UTR's are removed.
@@ -677,7 +676,9 @@ def buildCDS(infile, outfile):
     '''
     statement = '''
     gunzip < %(infile)s
-    | awk '$2 == "protein_coding"'
+    | python %(scriptsdir)s/gtf2gtf.py
+    --method=filter --filter-method=proteincoding --invert-filter
+    --log=%(outfile)s.log
     | awk '$3 == "CDS"'
     | python %(scriptsdir)s/gtf2gtf.py
     --method=remove-duplicates --duplicate-feature=gene

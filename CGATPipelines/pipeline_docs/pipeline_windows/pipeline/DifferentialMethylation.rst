@@ -51,7 +51,10 @@ significantly different number of reads.
    .. toctree::
       EdgeR.rst
 
+.. ifconfig:: "medips" in PARAMS['methods']:
 
+   .. toctree::
+      Medips.rst
 
 
 

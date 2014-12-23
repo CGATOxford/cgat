@@ -117,14 +117,11 @@ The pipeline requires the information from the following pipelines:
    set the configuration variable :py:data:`annotations_database`
    and :py:data:`annotations_dir`.
 
-On top of the default CGAT setup, the pipeline requires the following
-software to be in the path:
+Requirements:
 
-+--------------------+-------------------+------------------------------------------------+
-|*Program*           |*Version*          |*Purpose*                                       |
-+--------------------+-------------------+------------------------------------------------+
-|                    |                   |                                                |
-+--------------------+-------------------+------------------------------------------------+
+* bedtools >= 2.21.0
+* samtools >= 1.1
+
 
 Pipline Output
 ==============
@@ -174,18 +171,19 @@ import re
 import glob
 import os
 import itertools
-
-import CGAT.Experiment as E
-import logging as L
-from ruffus import *
 import sqlite3
-import CGAT.IOTools as IOTools
-import CGAT.Bed as Bed
-import CGAT.MatrixTools as MatrixTools
 import pysam
 import numpy
 import xml.etree.ElementTree
-import PipelineChipseq as PipelineChipseq
+
+from ruffus import *
+
+import CGAT.Experiment as E
+import CGAT.Pipeline as P
+import CGAT.IOTools as IOTools
+import CGAT.Bed as Bed
+import CGAT.MatrixTools as MatrixTools
+import PipelinePeakcalling as PipelinePeakcalling
 import PipelineMotifs as PipelineMotifs
 import PipelineWindows as PipelineWindows
 import CGATPipelines.PipelineTracks as PipelineTracks
@@ -195,18 +193,25 @@ import CGATPipelines.PipelineTracks as PipelineTracks
 ###################################################
 # Pipeline configuration
 ###################################################
-import CGAT.Pipeline as P
 P.getParameters(
     ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
      "../pipeline.ini",
      "pipeline.ini"],
     defaults={
-        'annotations_dir': ""})
+        'paired_end': False},
+    only_import=__name__ != "__main__")
 
 PARAMS = P.PARAMS
 
-PARAMS_ANNOTATIONS = P.peekParameters(PARAMS["annotations_dir"],
-                                      "pipeline_annotations.py", on_error_raise=__name__ == "__main__")
+PARAMS.update(P.peekParameters(
+    PARAMS["annotations_dir"],
+    "pipeline_annotations.py",
+    on_error_raise=__name__ == "__main__",
+    prefix="annotations_",
+    update_interface=True))
+
+PipelinePeakcalling.PARAMS = PARAMS
+PipelineMotifs.PARAMS = PARAMS
 
 ###################################################################
 ###################################################################
@@ -219,7 +224,6 @@ DATADIR = PARAMS.get('input', '.')
 if not os.path.exists(DATADIR):
     raise OSError('data directory %s does not exists')
 
-
 Sample = PipelineTracks.Sample
 
 TRACKS = PipelineTracks.Tracks(Sample).loadFromDirectory(
@@ -229,6 +233,13 @@ TRACKS = PipelineTracks.Tracks(Sample).loadFromDirectory(
 BEDFILES = [os.path.join(
     DATADIR, "%s.bed.gz") % x for x in TRACKS]
 
+
+# create an indicator target
+@transform(BEDFILES, suffix(".gz"), ".gz")
+def BedFiles(infile, outfile):
+    pass
+
+
 BAMFILES = glob.glob(os.path.join(DATADIR, "*.bam"))
 
 
@@ -237,7 +248,7 @@ BAMFILES = glob.glob(os.path.join(DATADIR, "*.bam"))
 ###################################################################
 # if conf.py exists: execute to change the above assignmentsn
 if os.path.exists("pipeline_conf.py"):
-    L.info("reading additional configuration from pipeline_conf.py")
+    E.info("reading additional configuration from pipeline_conf.py")
     execfile("pipeline_conf.py")
 
 ###################################################################
@@ -314,10 +325,6 @@ def getAssociatedBAMFiles(track):
 
     return bamfiles, offsets
 
-###################################################################
-###################################################################
-###################################################################
-
 
 def connect():
     '''connect to database.
@@ -335,11 +342,6 @@ def connect():
     return dbh
 
 
-###################################################################
-###################################################################
-###################################################################
-# General preparation tasks
-###################################################################
 @transform('preprocess.dir/*.bed.gz',
            regex(".*/(.*).bed.gz"),
            r"%s/\1.bed.gz" % DATADIR)
@@ -348,7 +350,7 @@ def prepareIntervals(infile, outfile):
 
     1. Sort intervals by position.
     2. Merge overlapping intervals.
-    3. Rename intervals: sequential number.
+    3. Rename intervals with a sequential number.
     '''
 
     statement = '''
@@ -395,9 +397,6 @@ def indexIntervals(infile, outfile):
     P.run()
 
 
-############################################################
-############################################################
-############################################################
 @transform(BEDFILES,
            suffix(".bed.gz"),
            "_intervals.load")
@@ -469,11 +468,12 @@ def loadIntervals(infile, outfile):
 
         if samfiles:
             npeaks, peakcenter, length, avgval, peakval, nprobes = \
-                PipelineChipseq.countPeaks(bed.contig,
-                                           bed.start,
-                                           bed.end,
-                                           samfiles,
-                                           offsets)
+                PipelinePeakcalling.countPeaks(
+                    bed.contig,
+                    bed.start,
+                    bed.end,
+                    samfiles,
+                    offsets)
             if nprobes == 0:
                 c.skipped_reads += 1
 
@@ -514,12 +514,7 @@ def loadIntervals(infile, outfile):
     P.run()
     os.unlink(tmpfile.name)
 
-    L.info("%s\n" % str(c))
-
-
-############################################################
-############################################################
-############################################################
+    E.info("%s\n" % str(c))
 
 
 @follows(mkdir(os.path.join(PARAMS["exportdir"], "peaks")))
@@ -541,15 +536,52 @@ def exportPeakLocations(infile, outfile):
     outf.close()
 
 
-############################################################
-############################################################
-############################################################
+@follows(mkdir("transcriptprofiles.dir"))
+@split(BEDFILES,
+       regex("(.*/)*(.*).bed.gz"),
+       [r"transcriptprofiles.dir/\2.withoverlap.gtf.gz",
+        r"transcriptprofiles.dir/\2.woutoverlap.gtf.gz",
+        r"transcriptprofiles.dir/\2.tss.withoverlap.gtf.gz",
+        r"transcriptprofiles.dir/\2.tss.woutoverlap.gtf.gz"])
+def prepareGTFsByOverlapWithIntervals(infile, outfiles):
+    '''Prepare GTF file of overlapping and non-overlapping genes for
+    profile plots.
+
+    
+    '''
+    out1, out2, out3, out4 = outfiles
+
+    track = P.snip(infile, ".bed.gz")
+    geneset = PARAMS["annotations_interface_geneset_all_gtf"]
+    tss = PARAMS["annotations_interface_geneset_coding_gene_tss_bed"]
+
+    # do not checkpoint, as some files might be empty
+    statement = '''
+    intersectBed -u -a %(geneset)s -b %(track)s.bed.gz
+    | python %(scriptsdir)s/gff2bed.py --is-gtf -v 0
+    | cut -f4
+    | sort
+    | uniq > %(track)s_overlapping_genes;
+    zgrep -f %(track)s_overlapping_genes %(geneset)s
+    | gzip > %(out1)s;
+    zgrep -v -f %(track)s_overlapping_genes %(geneset)s
+    | gzip > %(out2)s;
+    zgrep -f %(track)s_overlapping_genes %(tss)s
+    | gzip > %(out3)s;
+    zgrep -v -f %(track)s_overlapping_genes %(tss)s
+    | gzip > %(out4)s;
+    '''
+
+    P.run()
+
+
+@follows(mkdir("contextstats.dir"))
 @transform(BEDFILES,
-           suffix(".bed.gz"),
+           regex("(.*/)*(.*).bed.gz"),
            add_inputs(os.path.join(
                PARAMS["annotations_dir"],
-               PARAMS_ANNOTATIONS["interface_genomic_context_bed"])),
-           ".contextstats")
+               PARAMS["annotations_interface_genomic_context_bed"])),
+           r"contextstats.dir/\2.contextstats.tsv.gz")
 def buildContextStats(infiles, outfile):
     '''build mapping context stats.
 
@@ -566,25 +598,22 @@ def buildContextStats(infiles, outfile):
     job_options = "-l mem_free=4G"
 
     statement = '''
-       python %(scriptsdir)s/bam_vs_bed.py
-              --min-overlap=%(min_overlap)f
-              --log=%(outfile)s.log
-              %(infile)s %(reffile)s
-       > %(outfile)s
-       '''
+    python %(scriptsdir)s/bam_vs_bed.py
+    --min-overlap=%(min_overlap)f
+    --log=%(outfile)s.log
+    %(infile)s %(reffile)s
+    | gzip
+    > %(outfile)s
+    '''
 
     P.run()
-
-############################################################
-############################################################
-############################################################
 
 
 @merge(buildContextStats, "context_stats.load")
 def loadContextStats(infiles, outfile):
     """load context mapping statistics."""
 
-    header = ",".join([P.snip(os.path.basename(x), ".contextstats")
+    header = ",".join([P.snip(os.path.basename(x), ".contextstats.tsv.gz")
                       for x in infiles])
     filenames = " ".join(infiles)
     tablename = P.toTable(outfile)
@@ -603,22 +632,19 @@ def loadContextStats(infiles, outfile):
                 """
     P.run()
 
-############################################################
-############################################################
-############################################################
 
-
-@transform(BEDFILES,
-           suffix(".bed.gz"),
-           ".annotations")
-def annotateIntervalsFull(infile, outfile):
+@follows(mkdir("annotations.dir"))
+@transform(BedFiles,
+           regex("(.*/)*(.*).bed.gz"),
+           r"annotations.dir/\2.annotations.tsv.gz")
+def annotateIntervals(infile, outfile):
     '''classify chipseq intervals according to their location
     with respect to the gene set.
     '''
 
     annotation_file = os.path.join(
         PARAMS["annotations_dir"],
-        PARAMS_ANNOTATIONS["interface_annotation_gff"])
+        PARAMS["annotations_interface_annotation_gff"])
 
     statement = """
     zcat < %(infile)s
@@ -629,48 +655,17 @@ def annotateIntervalsFull(infile, outfile):
     --log=%(outfile)s.log
     --gff-file=%(annotation_file)s
     --genome-file=%(genome_dir)s/%(genome)s
+    | gzip
     > %(outfile)s"""
 
     P.run()
 
-############################################################
-############################################################
-############################################################
 
-
-@transform(exportPeakLocations,
-           suffix(".bed.gz"),
-           ".annotations")
-def annotateIntervalsPeak(infile, outfile):
-    '''classify chipseq intervals according to their location
-    with respect to the gene set.
-    '''
-    annotation_file = os.path.join(
-        PARAMS["annotations_dir"],
-        PARAMS_ANNOTATIONS["interface_annotation_gff"])
-
-    statement = """
-    zcat < %(infile)s
-    | python %(scriptsdir)s/bed2table.py
-       --output-bed-headers=contig,start,end
-       --counter=classifier-chipseq
-       --counter=length
-       --log=%(outfile)s.log
-       --gff-file=%(annotation_file)s
-       --genome-file=%(genome_dir)s/%(genome)s
-    > %(outfile)s"""
-
-    P.run()
-
-############################################################
-############################################################
-############################################################
-
-
-@transform(BEDFILES,
-           suffix(".bed.gz"),
-           ".binding.tsv.gz")
-def annotateBindingFull(infile, outfile):
+@follows(mkdir("annotations.dir"))
+@transform((BedFiles, exportPeakLocations),
+           regex("(.*/)*(.*).bed.gz"),
+           r"annotations.dir/\2.binding.tsv.gz")
+def annotateBinding(infile, outfile):
     '''classify chipseq intervals according to their location 
     with respect to the gene set.
 
@@ -678,333 +673,174 @@ def annotateBindingFull(infile, outfile):
     '''
     geneset = os.path.join(
         PARAMS["annotations_dir"],
-        PARAMS_ANNOTATIONS[PARAMS["geneset_binding"]])
+        PARAMS[PARAMS["geneset_binding"]])
 
     statement = """
     zcat < %(geneset)s
-    | awk '$2 == "protein_coding"'
+    | python %(scriptsdir)s/gtf2gtf.py
+    --method=filter
+    --filter-method=proteincoding
+    --log=%(outfile)s.log
     | python %(scriptsdir)s/gtf2table.py
-       --counter=position
-       --counter=binding-pattern
-       --log=%(outfile)s.log
-       --gff-file=%(infile)s
-       --genome-file=%(genome_dir)s/%(genome)s
+    --counter=position
+    --counter=binding-pattern
+    --log=%(outfile)s.log
+    --gff-file=%(infile)s
+    --genome-file=%(genome_dir)s/%(genome)s
     | gzip
     > %(outfile)s"""
 
     P.run()
 
-############################################################
-############################################################
-############################################################
 
-
-@transform(exportPeakLocations,
-           suffix(".bed.gz"),
-           ".binding.tsv.gz")
-def annotateBindingPeak(infile, outfile):
-    '''classify chipseq intervals according to their location 
-    with respect to the gene set.
-
-    Binding is counted for peaks.
-    '''
-    to_cluster = True
-
-    geneset = os.path.join(PARAMS["annotations_dir"],
-                           PARAMS_ANNOTATIONS[PARAMS["geneset_binding"]])
-
-    statement = """
-    zcat < %(geneset)s
-    | awk '$2 == "protein_coding"'
-    | python %(scriptsdir)s/gtf2table.py 
-		--counter=position 
-		--counter=binding-pattern
-		--log=%(outfile)s.log 
-		--gff-file=%(infile)s
-		--genome-file=%(genome_dir)s/%(genome)s
-    | gzip
-    > %(outfile)s"""
-
-    P.run()
-
-############################################################
-############################################################
-############################################################
-
-
-@transform(BEDFILES,
-           suffix(".bed.gz"),
-           ".tss")
+@transform(BedFiles,
+           regex("(.*/)*(.*).bed.gz"),
+           r"annotations.dir/\2.tss.tsv.gz")
 def annotateTSS(infile, outfile):
     '''compute distance to TSS'''
 
-    to_cluster = True
-
-    annotation_file = os.path.join(PARAMS["annotations_dir"],
-                                   PARAMS_ANNOTATIONS["interface_tss_bed"])
+    annotation_file = os.path.join(
+        PARAMS["annotations_dir"],
+        PARAMS["annotations_interface_geneset_coding_gene_tss_bed"])
 
     statement = """
-    zcat < %(infile)s 
-        | python %(scriptsdir)s/bed2gff.py --as-gtf 
-	| python %(scriptsdir)s/gtf2table.py 
-		--counter=distance-tss 
-		--log=%(outfile)s.log 
-		--gff-file=%(annotation_file)s 
-                --filename-format="bed" 
-		--genome-file=%(genome_dir)s/%(genome)s
-	> %(outfile)s"""
+    zcat < %(infile)s
+    | python %(scriptsdir)s/bed2gff.py --as-gtf
+    | python %(scriptsdir)s/gtf2table.py
+    --counter=distance-tss
+    --log=%(outfile)s.log
+    --gff-file=%(annotation_file)s
+    --filename-format="bed"
+    --genome-file=%(genome_dir)s/%(genome)s
+    | gzip
+    > %(outfile)s"""
 
     P.run()
 
-############################################################
-############################################################
-############################################################
 
-
-@transform(exportPeakLocations,
-           suffix(".bed.gz"),
-           ".tss")
-def annotateTSSPeaks(infile, outfile):
-    '''compute distance to TSS'''
-
-    to_cluster = True
-
-    annotation_file = os.path.join(PARAMS["annotations_dir"],
-                                   PARAMS_ANNOTATIONS["interface_tss_bed"])
-
-    statement = """
-    zcat < %(infile)s 
-        | python %(scriptsdir)s/bed2gff.py --as-gtf 
-	| python %(scriptsdir)s/gtf2table.py 
-		--counter=distance-tss 
-		--log=%(outfile)s.log 
-		--gff-file=%(annotation_file)s 
-                --filename-format="bed" 
-		--genome-file=%(genome_dir)s/%(genome)s
-	> %(outfile)s"""
-
-    P.run()
-
-############################################################
-############################################################
-############################################################
-
-
+@follows(mkdir("annotations.dir"))
 @transform(BEDFILES,
-           suffix(".bed.gz"),
-           ".repeats")
+           regex("(.*/)*(.*).bed.gz"),
+           r"annotations.dir/\2.repeats.tsv.gz")
 def annotateRepeats(infile, outfile):
     '''count the overlap between intervals and repeats.'''
 
-    annotation_file = os.path.join(PARAMS["annotations_dir"],
-                                   PARAMS_ANNOTATIONS["interface_repeats_gff"])
+    annotation_file = os.path.join(
+        PARAMS["annotations_dir"],
+        PARAMS["annotations_interface_repeats_gff"])
 
     statement = """
-    zcat < %(infile)s |\
-        python %(scriptsdir)s/bed2gff.py --as-gtf |\
-	python %(scriptsdir)s/gtf2table.py \
-		--counter=overlap \
-		--log=%(outfile)s.log \
-		--gff-file=%(annotation_file)s \
-		--genome-file=%(genome_dir)s/%(genome)s
-	> %(outfile)s"""
+    zcat < %(infile)s
+    | python %(scriptsdir)s/bed2gff.py --as-gtf
+    | python %(scriptsdir)s/gtf2table.py
+    --counter=overlap
+    --log=%(outfile)s.log
+    --gff-file=%(annotation_file)s
+    --genome-file=%(genome_dir)s/%(genome)s
+    | gzip
+    > %(outfile)s"""
 
     P.run()
 
-############################################################
-############################################################
-############################################################
 
-
+@follows(mkdir("annotations.dir"))
 @transform(BEDFILES,
-           suffix(".bed.gz"),
-           ".nuc")
-def annotateNucleotides(infile, outfile):
+           regex("(.*/)*(.*).bed.gz"),
+           r"annotations.dir/\2.composition.tsv.gz")
+def annotateComposition(infile, outfile):
     '''get the nucleotide composition of the intervals'''
-
-    to_cluster = True
 
     # The bed file is cut to ensure each entry is assigned a unique name from
     # bed2gff - possibly it would be better to validate interval files at the
     # start of the pipeline and assign unique identifiers.
-    statement = '''zcat %(infile)s 
-                   | cut -f 1,2,3
-                   | python %(scriptsdir)s/bed2gff.py --as-gtf
-                   | python %(scriptsdir)s/gtf2table.py
-                         --counter=composition-cpg
-                         --genome-file=%(genome_dir)s/%(genome)s > %(outfile)s
-                   '''
+    statement = '''zcat %(infile)s
+    | cut -f 1,2,3
+    | python %(scriptsdir)s/bed2gff.py --as-gtf
+    | python %(scriptsdir)s/gtf2table.py
+    --counter=composition-cpg
+    --genome-file=%(genome_dir)s/%(genome)s
+    | gzip
+    > %(outfile)s
+    '''
     P.run()
 
 
-############################################################
-@transform((annotateIntervalsFull, annotateIntervalsPeak),
-           suffix(".annotations"),
-           "_annotations.load")
+@follows(mkdir("annotations.dir"))
+@transform(prepareGTFsByOverlapWithIntervals,
+           regex(".*/(.*tss.*).gtf.gz"),
+           r"annotations.dir/\1.composition.tsv.gz")
+def annotateTSSComposition(infile, outfile):
+    '''get the nucleotide composition of the intervals'''
+
+    statement = '''zcat %(infile)s
+    | slopBed -b 50 -g %(annotations_interface_contigs_tsv)s
+    | python %(scriptsdir)s/bed2gff.py --as-gtf
+    | python %(scriptsdir)s/gtf2table.py
+    --counter=position
+    --counter=composition-cpg
+    --genome-file=%(genome_dir)s/%(genome)s
+    | gzip
+    > %(outfile)s
+    '''
+    P.run()
+
+
+@transform((annotateIntervals, annotateBinding,
+            annotateTSS,
+            annotateRepeats, annotateComposition,
+            annotateTSSComposition),
+           suffix(".tsv.gz"),
+           ".load")
 def loadAnnotations(infile, outfile):
     '''load interval annotations: genome architecture
     '''
-    P.load(infile, outfile, "--add-index=gene_id --allow-empty-file")
-
-############################################################
-
-
-@transform((annotateBindingFull, annotateBindingPeak),
-           suffix(".binding.tsv.gz"),
-           "_binding.load")
-def loadBinding(infile, outfile):
-    '''load interval binding: genome architecture
-    '''
-    P.load(infile, outfile, "--add-index=gene_id --allow-empty-file --map=pattern:str")
-
-############################################################
+    P.load(
+        infile, outfile,
+        "--add-index=gene_id --add-index=closest_id "
+        "--add-index=upstream_id --add-index=downstream_id "
+        "--allow-empty-file --map=pattern:str")
 
 
-@transform((annotateTSS, annotateTSSPeaks), suffix(".tss"), "_tss.load")
-def loadTSS(infile, outfile):
-    '''load interval annotations: distance to transcription start sites
-    '''
-    P.load(infile, outfile,
-           "--add-index=gene_id --add-index=closest_id "
-           "--add-index=upstream_id --add-index=downstream_id "
-           "--allow-empty-file")
-
-############################################################
-
-
-@transform(annotateRepeats, suffix(".repeats"), "_repeats.load")
-def loadRepeats(infile, outfile):
-    '''load interval annotations: repeats
-    '''
-    P.load(infile, outfile, "--add-index=gene_id --allow-empty-file")
-
-############################################################
-
-
-@transform(annotateNucleotides, suffix(".nuc"), "_nuc.load")
-def loadNucleotides(infile, outfile):
-    '''load interval annotations: nucleotide composition
-    '''
-
-    P.load(infile, outfile, "--add-index=gene_id --allow-empty-file")
-
-
-###################################################################
-###################################################################
-###################################################################
-@follows(mkdir("transcriptprofiles"))
+@follows(mkdir("transcriptprofiles.dir"))
 @transform(indexIntervals,
            regex(r".*/([^/].*)\.bed.gz"),
            add_inputs(os.path.join(
                PARAMS["annotations_dir"],
-               PARAMS_ANNOTATIONS["interface_geneset_all_gtf"])),
-           r"transcriptprofiles/\1.transcriptprofile.tsv.gz")
+               PARAMS["annotations_interface_geneset_all_gtf"])),
+           r"transcriptprofiles.dir/\1.transcriptprofile.tsv.gz")
 def buildIntervalProfileOfTranscripts(infiles, outfile):
     '''build a table with the overlap profile of transcripts.'''
 
     bedfile, gtffile = infiles
 
     statement = '''python %(scriptsdir)s/bam2geneprofile.py
-                      --output-filename-pattern="%(outfile)s.%%s"
-                      --force-output
-                      --reporter=transcript
-                      --method=geneprofile
-                      --method=tssprofile
-                      --normalize-profile=none
-                      --normalize-profile=area
-                      --normalize-profile=counts
-                      %(bedfile)s %(gtffile)s
-                   > %(outfile)s
-                '''
-    P.run()
-
-
-###################################################################
-###################################################################
-###################################################################
-@follows(mkdir("transcriptprofiles"))
-@split(BEDFILES,
-       regex(".*/(.*).bed.gz"),
-       [r"transcriptprofiles/\1.withoverlap.gtf.gz",
-        r"transcriptprofiles/\1.woutoverlap.gtf.gz",
-        r"\1.tss.withoverlap.gtf.gz",
-        r"\1.tss.woutoverlap.gtf.gz"])
-def prepareGTFsByOverlapWithIntervals(infile, outfiles):
-    '''Prepare GTF file of overlapping and non-overlapping genes for
-    profile plots'''
-
-    track = TRACKS.factory(filename=infile[:-len(".bed.gz")])
-    track = Sample(filename=P.snip(infile, ".bed.gz"))
-
-    out1, out2, out3, out4 = outfiles
-    geneset = PARAMS_ANNOTATIONS["interface_geneset_all_gtf"]
-
-    # do not checkpoint, as some files might be empty
-    statement = '''
-    intersectBed -u -a %(annotations_dir)s/%(geneset)s -b %(track)s.bed.gz
-    | python %(scriptsdir)s/gff2bed.py --is-gtf -v 0
-    | cut -f4
-    | sort
-    | uniq > %(track)s_overlapping_genes;
-    zgrep -f %(track)s_overlapping_genes %(annotations_dir)s/%(geneset)s
-    | gzip > %(out1)s;
-    zgrep -v -f %(track)s_overlapping_genes %(annotations_dir)s/%(geneset)s
-    | gzip > %(out2)s;
-    zgrep -f %(track)s_overlapping_genes %(annotations_dir)s/tss.gene.gtf
-    | gzip > %(out3)s;
-    zgrep -v -f %(track)s_overlapping_genes %(annotations_dir)s/tss.gene.gtf
-    | gzip > %(out4)s;
+    --output-filename-pattern="%(outfile)s.%%s"
+    --force-output
+    --reporter=transcript
+    --method=geneprofile
+    --method=tssprofile
+    --normalize-profile=none
+    --normalize-profile=area
+    --normalize-profile=counts
+    %(bedfile)s %(gtffile)s
+    > %(outfile)s
     '''
-
     P.run()
-
-############################################################
-############################################################
-############################################################
-
-
-@transform(prepareGTFsByOverlapWithIntervals,
-           regex("(.*tss.*).gtf.gz"),
-           r"\1.nuc.gz")
-def annotateTSSNucleotides(infile, outfile):
-    '''get the nucleotide composition of the intervals'''
-
-    statement = '''zcat %(infile)s
-                   | slopBed -b 50 -g %(genome_dir)s/%(genome)s.fasta.fai
-                   | python %(scriptsdir)s/gtf2table.py
-                               --counter=position
-                               --counter=composition-cpg
-                               --genome-file=%(genome_dir)s/%(genome)s
-                   | gzip
-                   > %(outfile)s
-                   '''
-    P.run()
-
-############################################################
-
-
-@transform(annotateTSSNucleotides, suffix(".nuc.gz"), "_nuc.load")
-def loadTSSNucleotides(infile, outfile):
-    '''load interval annotations: nucleotide composition
-    '''
-    P.load(infile, outfile, "--add-index=gene_id --allow-empty-file")
-
-###################################################################
-###################################################################
-###################################################################
 
 
 @transform(prepareGTFsByOverlapWithIntervals,
            regex("(transcriptprofiles.*).gtf.gz"),
            r"\1.tsv.gz")
-def buildGenesByIntervalsProfiles(infile, outfile):
-    '''Make gene profile plots.'''
+def buildTranscriptsByIntervalsProfiles(infile, outfile):
+    '''Make meta-gene profile plots for transcripts.
+
+    Only those overlapping intervals are taken.
+    '''
 
     track = TRACKS.factory(
         filename=infile[len("transcriptprofiles/"):-len(".withoverlap.tsv.gz")])
 
     bamfiles, offsets = getAssociatedBAMFiles(track)
-    geneset = PARAMS_ANNOTATIONS["interface_geneset_all_gtf"]
 
     if bamfiles:
         E.info("%s: associated bamfiles = %s" % (track, bamfiles))
@@ -1017,29 +853,28 @@ def buildGenesByIntervalsProfiles(infile, outfile):
     if len(bamfiles) > 1:
         raise NotImplementedError(
             "peakshape with multiple bamfiles not implement")
+
     bamfile = bamfiles[0]
     job_options = "-l mem_free=2G"
     outpat = outfile[:-len(".tsv.gz")]
 
     statement = '''
     python %(scriptsdir)s/bam2geneprofile.py
-                      --output-filename-pattern="%(outpat)s.%%s"
-                      --force-output
-                      --reporter=transcript
-                      --method=geneprofile
-                      --method=tssprofile
-                      --normalize-profile=none
-                      --normalize-profile=area
-                      --normalize-profile=counts
-                      %(bamfile)s <(zcat %(infile)s)
-                   > %(outfile)s ;
-                '''
+    --output-filename-pattern="%(outpat)s.%%s"
+    --force-output
+    --reporter=transcript
+    --method=geneprofile
+    --method=tssprofile
+    --normalize-profile=none
+    --normalize-profile=area
+    --normalize-profile=counts
+    %(bamfile)s <(zcat %(infile)s)
+    > %(outfile)s ;
+    '''
     P.run()
 
-############################################################
 
-
-@transform(buildGenesByIntervalsProfiles,
+@transform(buildTranscriptsByIntervalsProfiles,
            suffix(".tsv.gz"),
            r"\1.geneprofile.counts.load")
 def loadByIntervalProfiles(infile, outfile):
@@ -1051,31 +886,18 @@ def loadByIntervalProfiles(infile, outfile):
     else:
         P.touch(outfile)
 
-############################################################
-############################################################
-############################################################
-# master target for this section
-############################################################
-
 
 @follows(loadIntervals)
 def buildIntervals():
     pass
 
-###################################################################
-###################################################################
-###################################################################
 
-
-@follows(mkdir("peakshapes"))
+@follows(mkdir("peakshapes.dir"))
 @transform(BEDFILES,
            regex(".*/(.*).bed.gz"),
-           r"peakshapes/\1.peakshape.tsv.gz")
+           r"peakshapes.dir/\1.peakshape.tsv.gz")
 def buildPeakShapeTable(infile, outfile):
     '''build a table with peak shape parameters.'''
-
-    to_cluster = True
-
     track = TRACKS.factory(filename=infile[:-len(".bed.gz")])
 
     track = Sample(filename=P.snip(infile, ".bed.gz"))
@@ -1473,11 +1295,14 @@ def exportMotifLocations(infiles, outfile):
 
         os.unlink(tmpf.name)
 
-############################################################
-############################################################
-############################################################
-# compute overlap with genomic features
-############################################################
+
+def getGATWorkspace():
+    workspace = PARAMS.get(
+        "gat_workspace",
+        os.path.join(
+            PARAMS["annotations_dir"],
+            PARAMS["annotations_interface_contigs_ungapped_bed"]))
+    return workspace
 
 
 @follows(mkdir("gat_context.dir"))
@@ -1486,30 +1311,26 @@ def exportMotifLocations(infiles, outfile):
            add_inputs(
                os.path.join(
                    PARAMS["annotations_dir"],
-                   PARAMS_ANNOTATIONS["interface_genomic_context_bed"]),
+                   PARAMS["annotations_interface_genomic_context_bed"]),
                os.path.join(
                    PARAMS["annotations_dir"],
-                   PARAMS_ANNOTATIONS["interface_mapability_filtered_bed"] %
-                   PARAMS["gat_mapability"]),
-               os.path.join(
-                   PARAMS["annotations_dir"],
-                   PARAMS_ANNOTATIONS["interface_gc_profile_bed"]),
+                   PARAMS["annotations_interface_gc_profile_bed"]),
            ),
            r"gat_context.dir/\1.gat.tsv.gz")
 def runGATOnGenomicContext(infiles, outfile):
     '''run gat agains genomic context.
 
-    The workspace is composed of all mapable regions.
+    The workspace is composed of all ungapped regions.
     Enrichment is controlled by isochores.
 
     To be rigorous, FDR should be re-computed after merging all
     analyses.
     '''
 
-    bedfile, annofile, workspacefile, isochorefile = infiles
+    workspacefile = getGATWorkspace()
+    job_options = "-l mem_free=4G"
 
-    to_cluster = True
-    outdir = "context_gat.dir"
+    bedfile, annofile, isochorefile = infiles
 
     statement = '''gat-run.py
          --segments=%(bedfile)s
@@ -1528,12 +1349,6 @@ def runGATOnGenomicContext(infiles, outfile):
 
     P.run()
 
-############################################################
-############################################################
-############################################################
-# compute overlap with genomic annotations
-############################################################
-
 
 @follows(mkdir("gat_annotations.dir"))
 @transform(BEDFILES,
@@ -1541,53 +1356,43 @@ def runGATOnGenomicContext(infiles, outfile):
            add_inputs(
                os.path.join(
                    PARAMS["annotations_dir"],
-                   PARAMS_ANNOTATIONS["interface_annotation_gff"]),
+                   PARAMS["annotations_interface_annotation_gff"]),
                os.path.join(
                    PARAMS["annotations_dir"],
-                   PARAMS_ANNOTATIONS["interface_mapability_filtered_bed"] %
-                   PARAMS["gat_mapability"]),
-               os.path.join(
-                   PARAMS["annotations_dir"],
-                   PARAMS_ANNOTATIONS["interface_gc_profile_bed"]),
+                   PARAMS["annotations_interface_gc_profile_bed"]),
            ),
            r"gat_annotations.dir/\1.gat.tsv.gz")
 def runGATOnGenomicAnnotations(infiles, outfile):
     '''run gat agains genomic context.
 
-    The workspace is composed of all mapable regions.
+    The workspace is composed of all ungapped regions.
     Enrichment is controlled by isochores.
 
     To be rigorous, FDR should be re-computed after merging all
     analyses.
     '''
 
-    bedfile, annofile, workspacefile, isochorefile = infiles
+    bedfile, annofile, isochorefile = infiles
 
-    to_cluster = True
-    outdir = "annotations_gat.dir"
+    workspacefile = getGATWorkspace()
+    job_options = "-l mem_free=4G"
 
     statement = '''gat-run.py
-         --segments=%(bedfile)s
-         --annotations=<(zcat %(annofile)s | awk '{printf("%%s\\t%%i\\t%%i\\t%%s\\n",$1,$4,$5,$3);}')
-         --workspace-bed-file=%(workspacefile)s
-         --isochores=%(isochorefile)s
-         --num-samples=%(gat_num_samples)i
-         --force-output
-         --ignore-segment-tracks
-         --output-filename-pattern=%(outfile)s.%%s
-         --output-counts-pattern=%(outfile)s.%%s.counts.gz
-         -v 5
-         --log=%(outfile)s.log
-         | gzip
-         > %(outfile)s'''
+    --segments=%(bedfile)s
+    --annotations=<(zcat %(annofile)s | awk '{printf("%%s\\t%%i\\t%%i\\t%%s\\n",$1,$4,$5,$3);}')
+    --workspace-bed-file=%(workspacefile)s
+    --isochores=%(isochorefile)s
+    --num-samples=%(gat_num_samples)i
+    --force-output
+    --ignore-segment-tracks
+    --output-filename-pattern=%(outfile)s.%%s
+    --output-counts-pattern=%(outfile)s.%%s.counts.gz
+    -v 5
+    --log=%(outfile)s.log
+    | gzip
+    > %(outfile)s'''
 
     P.run()
-
-############################################################
-############################################################
-############################################################
-# compute overlap with gene structure
-############################################################
 
 
 @follows(mkdir("gat_genestructure.dir"))
@@ -1596,14 +1401,10 @@ def runGATOnGenomicAnnotations(infiles, outfile):
            add_inputs(
                os.path.join(
                    PARAMS["annotations_dir"],
-                   PARAMS_ANNOTATIONS["interface_genestructure_gff"]),
+                   PARAMS["annotations_interface_genestructure_gff"]),
                os.path.join(
                    PARAMS["annotations_dir"],
-                   PARAMS_ANNOTATIONS["interface_mapability_filtered_bed"] %
-                   PARAMS["gat_mapability"]),
-               os.path.join(
-                   PARAMS["annotations_dir"],
-                   PARAMS_ANNOTATIONS["interface_gc_profile_bed"]),
+                   PARAMS["annotations_interface_gc_profile_bed"]),
            ),
            r"gat_genestructure.dir/\1.gat.tsv.gz")
 def runGATOnGeneStructure(infiles, outfile):
@@ -1612,7 +1413,7 @@ def runGATOnGeneStructure(infiles, outfile):
     The purpose of this gat run is to test for differential location
     of intervals in parts of certain gene structures.
 
-    The workspace is composed of all mapable regions. The workspace is
+    The workspace is composed of all ungapped regions. The workspace is
     restricted to annotations in order to reduce the effect of
     intergenic depletion. Furthermore, the workspace is restricted to
     those parts that contain segments and annotations in order to
@@ -1626,36 +1427,29 @@ def runGATOnGeneStructure(infiles, outfile):
 
     '''
 
-    bedfile, annofile, workspacefile, isochorefile = infiles
+    bedfile, annofile, isochorefile = infiles
 
-    to_cluster = True
-    outdir = "gat_genestructure.dir"
+    workspacefile = getGATWorkspace()
+    job_options = "-l mem_free=4G"
 
     statement = '''gat-run.py
-         --segments=%(bedfile)s
-         --annotations=<(zcat %(annofile)s | awk '{printf("%%s\\t%%i\\t%%i\\t%%s\\n",$1,$4,$5,$3);}')
-         --workspace-bed-file=%(workspacefile)s
-         --isochores=%(isochorefile)s
-         --num-samples=%(gat_num_samples)i
-         --counter=segment-midoverlap
-         --truncate-workspace-to-annotations
-         --restrict-workspace
-         --force-output
-         --ignore-segment-tracks
-         --output-filename-pattern=%(outfile)s.%%s
-         --output-counts-pattern=%(outfile)s.%%s.counts.gz
-         -v 5
-         --log=%(outfile)s.log
-         | gzip
-         > %(outfile)s'''
-
+    --segments=%(bedfile)s
+    --annotations=<(zcat %(annofile)s | awk '{printf("%%s\\t%%i\\t%%i\\t%%s\\n",$1,$4,$5,$3);}')
+    --workspace-bed-file=%(workspacefile)s
+    --isochores=%(isochorefile)s
+    --num-samples=%(gat_num_samples)i
+    --counter=segment-midoverlap
+    --truncate-workspace-to-annotations
+    --restrict-workspace
+    --force-output
+    --ignore-segment-tracks
+    --output-filename-pattern=%(outfile)s.%%s
+    --output-counts-pattern=%(outfile)s.%%s.counts.gz
+    -v 5
+    --log=%(outfile)s.log
+    | gzip
+    > %(outfile)s'''
     P.run()
-
-############################################################
-############################################################
-############################################################
-# compute overlap with gene annotations
-############################################################
 
 
 @follows(mkdir("gat_functions.dir"))
@@ -1664,43 +1458,40 @@ def runGATOnGeneStructure(infiles, outfile):
            add_inputs(
                os.path.join(
                    PARAMS["annotations_dir"],
-                   PARAMS_ANNOTATIONS["interface_genomic_function_bed"]),
+                   PARAMS["annotations_interface_genomic_function_bed"]),
                os.path.join(
                    PARAMS["annotations_dir"],
-                   PARAMS_ANNOTATIONS["interface_genomic_function_tsv"]),
+                   PARAMS["annotations_interface_genomic_function_tsv"]),
                os.path.join(
                    PARAMS["annotations_dir"],
-                   PARAMS_ANNOTATIONS["interface_territories_gff"]),
+                   PARAMS["annotations_interface_territories_gff"]),
                os.path.join(
                    PARAMS["annotations_dir"],
-                   PARAMS_ANNOTATIONS["interface_mapability_filtered_bed"] %
-                   PARAMS["gat_mapability"]),
-               os.path.join(
-                   PARAMS["annotations_dir"],
-                   PARAMS_ANNOTATIONS["interface_gc_profile_bed"]),
+                   PARAMS["annotations_interface_gc_profile_bed"]),
            ),
            r"gat_functions.dir/\1.gat.tsv.gz")
 def runGATOnGeneAnnotations(infiles, outfile):
     '''run gat against genes and their annotations.
 
-    The workspace is composed of all mapable regions within gene territories.
+    The workspace is composed of all ungapped regions within gene territories.
     Enrichment is controlled by isochores.
 
     To be rigorous, FDR should be re-computed after merging all
     analyses.
+
     '''
 
     # requires a large amount of memory
     job_options = "-l mem_free=20G"
 
-    (bedfile, annofile, descriptionfile,
-     workspacefile, mapabilityfile, isochorefile) = infiles
+    (bedfile, annofile, descriptionfile, territoriesfile, isochorefile) = infiles
 
+    workspacefile = getGATWorkspace()
     statement = '''gat-run.py
          --segments=%(bedfile)s
          --annotations=%(annofile)s
-         --workspace-bed-file=<(zcat %(workspacefile)s | awk '{printf("%%s\\t%%i\\t%%i\\n",$1,$4,$5);}')
-         --workspace-bed-file=%(mapabilityfile)s
+         --workspace-bed-file=<(zcat %(territoriesfile)s | awk '{printf("%%s\\t%%i\\t%%i\\n",$1,$4,$5);}')
+         --workspace-bed-file=%(workspacefile)s
          --isochores=%(isochorefile)s
          --num-samples=%(gat_num_samples)i
          --descriptions=%(descriptionfile)s
@@ -1715,21 +1506,13 @@ def runGATOnGeneAnnotations(infiles, outfile):
 
     P.run()
 
-###################################################################
-###################################################################
-###################################################################
-
 
 @follows(mkdir("gat_sets.dir"))
 @merge(BEDFILES,
        "gat_sets.dir/gat_sets.tsv.gz",
        os.path.join(PARAMS["annotations_dir"],
-                    PARAMS_ANNOTATIONS[
-                        "interface_mapability_filtered_bed"] %
-                    PARAMS["gat_mapability"]),
-       os.path.join(PARAMS["annotations_dir"],
-                    PARAMS_ANNOTATIONS["interface_gc_profile_bed"]))
-def runGATOnSets(infiles, outfile, workspacefile, isochorefile):
+                    PARAMS["annotations_interface_gc_profile_bed"]))
+def runGATOnSets(infiles, outfile, isochorefile):
     '''run gat on intervals against each other.'''
 
     job_threads = 4
@@ -1737,6 +1520,7 @@ def runGATOnSets(infiles, outfile, workspacefile, isochorefile):
 
     segments = os.path.join("gat_sets.dir", "segments.bed")
     annotations = os.path.join("gat_sets.dir", "annotations.bed")
+    workspacefile = getGATWorkspace()
 
     infiles = " ".join(infiles)
     statement = '''
@@ -1777,8 +1561,7 @@ def runGATOnSets(infiles, outfile, workspacefile, isochorefile):
            r"gat_\1.dir/gat_\1_\2.load")
 def loadGat(infile, outfile):
     '''load individual gat results.'''
-
-    P.load(infile, outfile)
+    P.load(infile, outfile, "--allow-empty-file")
 
 
 @collate((runGATOnGenomicContext,
@@ -2015,9 +1798,8 @@ def annotate_withreads():
     pass
 
 
-@follows(loadAnnotations, loadTSS, loadRepeats,
-         loadContextStats, loadBinding,
-         loadNucleotides, loadTSSNucleotides)
+@follows(loadAnnotations,
+         loadContextStats)
 def annotate_intervals():
     pass
 
@@ -2128,6 +1910,7 @@ def annotate_intervals():
          loadMast,
          loadMotifInformation,
          loadMotifSequenceComposition,
+         loadOverlap,
          gat)
 def full():
     '''run the full pipeline.'''
@@ -2166,11 +1949,11 @@ def reset(infile, outfile):
     pipeline!!!
     '''
     statement = '''
-    rm -rf export motifs peakshapes transcriptprofiles report;
+    rm -rf export motifs report;
     rm -rf _cache _static _templates;
-    rm -f csvdb *.tss* *.meme* *.repeats* *.nuc* *.load;
-    rm -f *.annotations* *.contextstats* .motifs.fasta *overlapping_genes;
-    rm -f *.tsv.gz
+    rm -f csvdb *.load;
+    rm -f *.meme* *.tomtom* *.fasta*;
+    rm -rf *.dir;
     '''
     P.run()
 

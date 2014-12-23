@@ -33,8 +33,6 @@ Code
 ----
 
 '''
-import sys
-import re
 import string
 import collections
 import numpy
@@ -130,7 +128,9 @@ def getMapTokens(options):
     return map_token2row, map_token2col
 
 
-def getMatrixFromEdges(lines, options, in_map_token2row={}, in_map_token2col={}):
+def getMatrixFromEdges(lines, options,
+                       in_map_token2row={},
+                       in_map_token2col={}):
     """read matrix from lines
     """
 
@@ -259,10 +259,9 @@ def buildMatrixFromLists(lists, dtype=numpy.float, default=None):
             matrix[all_rows[row], col] = value
     return matrix, all_rows.keys()
 
-########################################################################
 
-
-def buildMatrixFromTables(infiles, column, column_header=0, dtype=numpy.float, default=None):
+def buildMatrixFromTables(infiles, column, column_header=0, dtype=numpy.float,
+                          default=None):
     '''build a matrix from a column called *column* in a series of input files.
 
     If column_value is None, the first column is taken as the name of the row.
@@ -278,3 +277,120 @@ def buildMatrixFromTables(infiles, column, column_header=0, dtype=numpy.float, d
         lists.append(zip(list(data[column_header]), list(data[column])))
 
     return buildMatrixFromLists(lists, dtype=dtype, default=default)
+
+
+def buildMatrixFromEdges(edges,
+                         in_map_token2row={},
+                         in_map_token2col={},
+                         is_symmetric=False,
+                         missing_value=0,
+                         diagonal_value=0,
+                         dtype=numpy.int):
+    """build a matrix from an edge-list representation.
+    
+    For example, the following list of tuples::
+
+       [('A', 'B', 1),
+        ('A', 'C', 2),
+        ('B', 'C', 3)]
+
+    will be converted to the following matrix::
+
+         A B C
+       A   1 2
+       B     3
+       C 
+
+    If *is_symmetric* is set to True, the matrix is assumed to be
+    symmetric and missing values will automatically be filled::
+
+         A B C
+       A   1 2
+       B 1   3
+       C 2 3
+
+    If edge list may contain four elements, in which case the
+    fourth element is expected to be the value of the lower
+    diagonal in a symmetric matrix::
+
+       [('A', 'B', 1, 4),
+        ('A', 'C', 2, 5),
+        ('B', 'C', 3, 6)]
+
+    will yield::
+
+         A B C
+       A   1 2
+       B 4   3
+       C 5 6
+
+
+    returns a numpy matrix and lists of row and column names.
+    """
+
+    if in_map_token2row:
+        map_token2row = in_map_token2row
+    else:
+        map_token2row = {}
+
+    if in_map_token2col:
+        map_token2col = in_map_token2col
+    else:
+        map_token2col = {}
+
+    has_row_names = len(map_token2row) > 0
+    has_col_names = len(map_token2col) > 0
+
+    # if either row/column names are not given:
+    if not map_token2row or not map_token2col:
+
+        row_tokens = sorted(list(set([x[0] for x in edges])))
+        col_tokens = sorted(list(set([x[1] for x in edges])))
+
+        if not has_row_names:
+            for row_token in row_tokens:
+                if row_token not in map_token2row:
+                    map_token2row[row_token] = len(map_token2row)
+        if not has_col_names:
+            for col_token in col_tokens:
+                if col_token not in map_token2col:
+                    map_token2col[col_token] = len(map_token2col)
+
+        if is_symmetric:
+            for col_token in map_token2col.keys():
+                if col_token not in map_token2row:
+                    map_token2row[col_token] = len(map_token2row)
+            map_token2col = map_token2row
+
+        matrix = numpy.matrix([missing_value] *
+                              len(map_token2row) * len(map_token2col),
+                              dtype=numpy.dtype)
+        matrix.shape = (len(map_token2row), len(map_token2col))
+
+        if len(map_token2col) == len(map_token2row):
+            for j in range(len(map_token2col)):
+                matrix[j][j] = diagonal_value
+
+        if len(edges[0] == 3):
+            if is_symmetric:
+                for row, col, value in edges:
+                    matrix[map_token2row[row], map_token2col[col]] = \
+                        matrix[map_token2row[col], map_token2col[row]] = value
+            else:
+                for row, col, value in edges:
+                    matrix[map_token2row[row], map_token2col[col]] = value
+        elif len(edges[0] == 4):
+            for row, col, value1, value2 in edges:
+                matrix[map_token2row[row], map_token2col[col]] = value1
+                matrix[map_token2row[col], map_token2col[row]] = value2
+        else:
+            raise ValueError(
+                "unexpected number of elements in list, expected 3 or 4, "
+                "got %i" % (len(edges[0])))
+
+    col_tokens = map_token2col.items()
+    col_tokens.sort(lambda x, y: cmp(x[1], y[1]))
+    row_tokens = map_token2row.items()
+    row_tokens.sort(lambda x, y: cmp(x[1], y[1]))
+
+    return matrix, row_tokens, col_tokens

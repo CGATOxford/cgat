@@ -7,38 +7,38 @@ PipelinePreprocess.py - Utility functions for processing short reads
 :Date: |today|
 :Tags: Python
 
-UPDATE: Mapping reads is a common task in pipelines. Different pipelines
-combine different sources of input (:term:`fastq` files, :term:`sra` files)
-of different data (single end, paired end) with different mapping
-algorithms (bowtie, tophat, stampy). This module provides utility
-functions to abstract some of these variations.
+UPDATE: Processing reads is a common task before mapping. Different sequencing
+technologies and applications require different read processing.
+This module provides utility functions to abstract some of these variations
 
-The pipeline does not know what kind of data it gets (a :term:`sra` archive
+The pipeline does not know what kind of data it gets (a directory
 might contain single end or paired end data or both).
 
-A pipeline might get several input data (:term:`fastq` and :term:`sra`
-formatted files at the same time).
+The module currently provides modules to perform:
+    * hard-trimming (fastx_trimmer, trimmomatic)
+    * adapter trimming (trimgalore, trimmomatic)
+    * read end quality trimming (trimgalore, trimmomatic)
+    * sliding window quality trimming (sickle, trimmomatic)
+    * RRBS-specific trimming (trimgalore)
 
-The module currently is able to deal with:
-
-   * tophat mapping against genome
-   * bowtie mapping against transcriptome, genome and junctions
-   * bwa against genome
-   * stampy against genome
-
-It implements:
-   * .sra: paired-end and single-end
+It has been tested with:
    * .fastq: paired-end and single-end
-   * .csfasta: colour-space, single-end
+
+
+To do
+=====
+Check this will work with .sra files
+How to deal with flash?
+e.g this is the only tool that doesn't do one-to-one processing
+
 
 Code
 ----
 
 '''
 
+import re
 import os
-import shutil
-import glob
 import collections
 import CGAT.Pipeline as P
 import CGAT.Experiment as E
@@ -53,6 +53,10 @@ SequenceInformation = collections.namedtuple("SequenceInformation",
                                                  readlength_first
                                                  readlength_second
                                                  is_colour""")
+
+
+def makeSecond(file1):
+    return(re.sub(".fastq.1.gz", ".fastq.2.gz", file1))
 
 
 def getReadLengthFromFastq(filename):
@@ -115,10 +119,28 @@ class MasterProcessor(Mapping.Mapper):
     # convert to sanger quality scores
     convert = False
 
-    def __init__(self, executable=None,
+    def __init__(self, save=True, summarise=False,
+                 threads=1, scriptsdir=None,
+                 trimgalore_options=None,
+                 trimmomatic_options=None,
+                 sickle_options=None,
+                 flash_options=None,
+                 fastx_trimmer_options=None,
                  *args, **kwargs):
-        if executable:
-            self.executable = executable
+        self.save = save
+        self.summarise = summarise
+        self.threads = threads
+        self.scriptsdir = scriptsdir
+        self.trimgalore_opt = trimgalore_options
+        self.trimmomatic_opt = trimmomatic_options
+        self.sickle_opt = sickle_options
+        self.flash_opt = flash_options
+        self.fastx_trimmer_opt = fastx_trimmer_options
+
+        if self.save:
+            self.outdir = "processed.dir"
+        else:
+            self.outdir = P.getTempDir("/ifs/scratch")
 
     def getfastqAttr(self, infiles):
         num_files = len(infiles)
@@ -128,8 +150,6 @@ class MasterProcessor(Mapping.Mapper):
         else:
             infile1 = infiles[0]
 
-        print "this is the infile:"
-        print infile1
         format = Fastq.guessFormat(IOTools.openFile(infile1), raises=False)
         E.info("%s: format guess: %s" % (infile1, format))
         offset = Fastq.getOffset(format, raises=False)
@@ -151,163 +171,147 @@ class MasterProcessor(Mapping.Mapper):
 
     def process(self, infile, list_of_preprocessers, outfile,
                 compress=False, save=True):
-        '''build prcessing statement on infiles.
-        list of processing tools is used to build a command line statement
-        in list order
-        '''
-        total_cmd = ""
+        '''build processing statement on infiles.  list of processing
+        tools is used to build a command line statement in list order'''
+
+        total_tool_cmd = ""
+        total_post_cmd = ""
         processed_files = []
-        print list_of_preprocessers
         file_compress = compress
         save_intermediates = save
         first = 1
         f_format = ""
         num_files = ""
+        # initiate a dummy processer object with no prefix to summarise
+        # the initial input files
+        initial_processer_object = process_tool(
+            compress=file_compress, save=save_intermediates,
+            final=0, f_format=f_format, num_files=num_files,
+            first=first, outdir=self.outdir, infiles=infile,
+            prefix="")
+        tool_cmd, post_cmd, null_infile, null_f_format, null_num_files = (
+            initial_processer_object.build(infile))
+        total_post_cmd += post_cmd
+
         for idx, tool in enumerate(list_of_preprocessers):
-            print tool
-            print idx
             if idx == len(list_of_preprocessers)-1:
                 end = True
+                save_intermediates = True  # if final file must save!
             else:
                 end = False
             if idx > 0:
                 first = 0
-            if tool == "cutadapt":
-                tool_cmd = ""
+            if tool == "fastx_trimmer":
+                fastx_trimmer_object = fastx_trimmer(
+                    compress=file_compress, save=save_intermediates,
+                    final=end, f_format=f_format, num_files=num_files,
+                    first=first, outdir=self.outdir, infiles=infile,
+                    prefix="fastx_trimmer-", summarise=self.summarise,
+                    options=self.fastx_trimmer_opt, threads=self.threads,
+                    scriptsdir=self.scriptsdir)
+                tool_cmd, post_cmd, infile, f_format, num_files = (
+                    fastx_trimmer_object.build(infile))
+            elif tool == "trimmomatic":
+                trimmomatic_object = trimmomatic(
+                    compress=file_compress, save=save_intermediates,
+                    final=end, f_format=f_format, num_files=num_files,
+                    first=first, outdir=self.outdir, infiles=infile,
+                    prefix="trimmomatic-", summarise=self.summarise,
+                    options=self.trimmomatic_opt, threads=self.threads,
+                    scriptsdir=self.scriptsdir)
+                tool_cmd, post_cmd, infile, f_format, num_files = (
+                    trimmomatic_object.build(infile))
             elif tool == "sickle":
                 sickle_object = sickle(
-                    compress=file_compress,
-                    save=save_intermediates,
-                    final=end,
-                    f_format=f_format,
-                    num_files=num_files,
-                    first=first)
-                tool_cmd, infile, f_format, num_files = (
+                    compress=file_compress, save=save_intermediates,
+                    final=end, f_format=f_format, num_files=num_files,
+                    first=first, outdir=self.outdir, infiles=infile,
+                    prefix="sickle-", summarise=self.summarise,
+                    options=self.sickle_opt, threads=self.threads,
+                    scriptsdir=self.scriptsdir)
+                tool_cmd, post_cmd, infile,  f_format, num_files = (
                     sickle_object.build(infile))
             elif tool == "trimgalore":
                 trimgalore_object = trimgalore(
-                    compress=file_compress,
-                    save=save_intermediates,
-                    final=end,
-                    f_format=f_format,
-                    num_files=num_files,
-                    first=first)
-                tool_cmd, infile, f_format, num_files = (
+                    compress=file_compress, save=save_intermediates,
+                    final=end, f_format=f_format, num_files=num_files,
+                    first=first, outdir=self.outdir, infiles=infile,
+                    prefix="trimgalore-", summarise=self.summarise,
+                    options=self.trimgalore_opt, threads=self.threads,
+                    scriptsdir=self.scriptsdir)
+                tool_cmd, post_cmd, infile, f_format, num_files = (
                     trimgalore_object.build(infile))
-                print "just finished first tool"
-                print "num_files"
-                print num_files
+            elif tool == "flash":
+                flash_object = flash(
+                    compress=file_compress, save=save_intermediates,
+                    final=end, f_format=f_format, num_files=num_files,
+                    first=first, outdir=self.outdir, infiles=infile,
+                    prefix="flash-", summarise=self.summarise,
+                    options=self.flash_opt, threads=self.threads,
+                    scriptsdir=self.scriptsdir)
+                tool_cmd, post_cmd, infile, f_format, num_files = (
+                    flash_object.build(infile))
             else:
-                tool_cmd = "testing_testing"
-                # insert error statement here.
-                pass
+                E.info("%s is not a supported tool" % tool)
 
-            total_cmd += tool_cmd
+            total_tool_cmd += tool_cmd
+            total_post_cmd += post_cmd
             processed_files.append(infile,)
-        return total_cmd, processed_files
-
-    def postprocess(self, initial_file, processer_list):
-        '''collect final output data and postprocess.
-        summarise initial fastq and then all processed fastqs'''
-
-        if len(initial_file) == 1:
-            initial_file = os.path.basename(initial_file[0])
-            postprocess_cmd = '''zcat %(initial_file)s |
-                          python %%(scriptsdir)s/fastq2summary.py
-                          --guess-format=illumina-1.8 -v0
-                          > processed.dir/%(initial_file)s.summary;
-                          ''' % locals()
-
-            processed_file = initial_file
-            for tool in processer_list:
-                print "tool"
-                print tool
-                print "processed_file"
-                print processed_file
-                processed_file = tool + "-" + processed_file
-                postprocess_cmd += '''zcat processed.dir/%(processed_file)s |
-                              python %%(scriptsdir)s/fastq2summary.py
-                              --guess-format=illumina-1.8 -v0
-                              > processed.dir/%(processed_file)s.summary;
-                              ''' % locals()
-
-        # edit from here to allow processing of paired end sequences
-
-        elif len(initial_file) == 2:
-            initial_file1, initial_file2 = [os.path.basename(x)
-                                            for x in initial_file]
-            postprocess_cmd = '''zcat %(initial_file1)s |
-                          python %%(scriptsdir)s/fastq2summary.py
-                          --guess-format=illumina-1.8 -v0
-                          > processed.dir/%(initial_file1)s.summary;
-                          zcat %(initial_file2)s |
-                          python %%(scriptsdir)s/fastq2summary.py
-                          --guess-format=illumina-1.8 -v0
-                          > processed.dir/%(initial_file2)s.summary;
-                          ''' % locals()
-
-            processed_file1 = initial_file1
-            processed_file2 = initial_file2
-            for tool in processer_list:
-                processed_file1 = tool + "-" + processed_file1
-                processed_file2 = tool + "-" + processed_file2
-                postprocess_cmd += '''zcat processed.dir/%(processed_file1)s |
-                              python %%(scriptsdir)s/fastq2summary.py
-                              --guess-format=illumina-1.8 -v0
-                              > processed.dir/%(processed_file1)s.summary;
-                              zcat processed.dir/%(processed_file2)s |
-                              python %%(scriptsdir)s/fastq2summary.py
-                              --guess-format=illumina-1.8 -v0
-                              > processed.dir/%(processed_file2)s.summary;
-                              ''' % locals()
-
-        return postprocess_cmd
+        return total_tool_cmd, total_post_cmd, processed_files
 
     def cleanup(self, outfile):
         '''clean up.'''
-        statement = '''rm -rf %s;''' % (self.tmpdir_fastq)
+        if self.save:
+            statement = 'checkpoint;'
+        else:
+            statement = 'rm -rf %s;' % self.outdir
         return statement
 
     def build(self, infile, outfile, processer_list):
         '''run mapper.'''
         cmd_preprocess, raw_file = self.preprocess(infile, outfile)
         raw_file = raw_file[0]
-        cmd_process, processed_files = self.process(raw_file,
-                                                    processer_list, outfile)
-        cmd_postprocess = self.postprocess(raw_file, processer_list)
+        cmd_process, cmd_post, processed_files = self.process(
+            raw_file, processer_list, outfile, save=self.save)
         cmd_clean = self.cleanup(outfile)
 
         assert cmd_preprocess.strip().endswith(";")
         assert cmd_process.strip().endswith(";")
-        if cmd_postprocess:
-            assert cmd_postprocess.strip().endswith(";")
-        if cmd_clean:
-            assert cmd_clean.strip().endswith(";")
+        assert cmd_post.strip().endswith(";")
+        assert cmd_clean.strip().endswith(";")
 
         statement = " checkpoint; ".join((cmd_preprocess,
                                           cmd_process,
-                                          cmd_postprocess,
+                                          cmd_post,
                                           cmd_clean))
         return statement
 
 
-class processer(object):
-    '''define class attributes for processers'''
+class process_tool(object):
+    '''defines class attributes for a sequennce utility tool'''
+
     def __init__(self, first=True, final=True, compress=False,
-                 save=True, f_format="", num_files="", *args, **kwargs):
+                 save=True, f_format="", num_files="", prefix="",
+                 outdir="", infiles=(), summarise=False, options=None,
+                 threads=1, scriptsdir=None, *args, **kwargs):
         self.final = final
         self.compress = compress
         self.first = first
         self.f_format = f_format
         self.num_files = num_files
+        self.prefix = prefix
+        self.summarise = summarise
+        self.processing_options = options
+        self.threads = threads
+        self.scriptsdir = scriptsdir
         if self.final:
             self.save = True
+            self.outdir = "processed.dir"
         else:
             self.save = save
-        print "num files at initiate"
-        print self.num_files
+            self.outdir = outdir
 
-    def getfastqAttr(self, infiles):
+    def setfastqAttr(self, infiles):
 
         if self.first:
             self.num_files = len(infiles)
@@ -316,88 +320,96 @@ class processer(object):
             infile1 = infiles[0]
         elif self.num_files == 2:
             infile1, infile2 = infiles
-        print "num files at get attr"
-        print self.num_files
-        print self.first
 
         if self.first:
             self.f_format = Fastq.guessFormat(IOTools.openFile(infile1),
                                               raises=False)
             E.info("%s: format guess: %s" % (infile1, self.f_format))
-            print("%s: format guess: %s" % (infile1, self.f_format))
         else:
-            E.info("%s: format set as previous: %s" % (infile1, self.f_format))
-            print("%s: format set as previous: %s" % (infile1, self.f_format))
+            E.info("%s: format set as previous: %s" % (
+                infile1, self.f_format))
+        self.offset = Fastq.getOffset(self.f_format, raises=False)
 
     def process(self, infiles):
-        pass
+        return ("", infiles)
 
-    def postprocess(self, logfile):
-        return ""
+    def postprocess(self, infiles):
+
+        outdir = self.outdir
+        prefix = self.prefix
+        scriptsdir = self.scriptsdir
+        if self.summarise:
+            if self.num_files == 1:
+                infile = infiles[0]
+                infile_base = os.path.basename(infile)
+                postprocess_cmd = '''zcat %(infile)s |
+                python %(scriptsdir)s/fastq2summary.py
+                --guess-format=illumina-1.8 -v0
+                > summary.dir/%(infile_base)s.summary;
+                ''' % locals()
+
+            elif self.num_files == 2:
+                infile1, infile2 = infiles
+                infile_base1, infile_base2, = [
+                    os.path.basename(x) for x in infiles]
+                postprocess_cmd = '''zcat %(infile1)s |
+                python %(scriptsdir)s/fastq2summary.py
+                --guess-format=illumina-1.8 -v0
+                > summary.dir/%(infile_base1)s.summary;
+                zcat %(infile2)s |
+                python %(scriptsdir)s/fastq2summary.py
+                --guess-format=illumina-1.8 -v0
+                > summary.dir/%(infile_base2)s.summary
+                ;''' % locals()
+        else:
+            postprocess_cmd = "checkpoint ;"
+        return postprocess_cmd
 
     def build(self, infiles):
-        print "num files at get build"
-        print self.num_files
+        self.setfastqAttr(infiles)
 
-        self.getfastqAttr(infiles)
         process_cmd, fastq_outfiles = self.process(infiles)
         post_cmd = self.postprocess(fastq_outfiles)
-        statement = " checkpoint; ".join([process_cmd,
-                                          post_cmd])
 
-        return statement, fastq_outfiles, self.f_format, self.num_files
+        return (process_cmd, post_cmd, fastq_outfiles,
+                self.f_format, self.num_files)
 
 
-class trimgalore(processer):
+class trimgalore(process_tool):
 
     def process(self, infiles):
-
-        if self.first:
-            if self.num_files == 2:
-                infile1, infile2 = infiles
-            elif self.num_files == 1:
-                infile1 = infiles[0]
-        else:
-            if self.num_files == 2:
-                infile1, infile2 = infiles
-            elif self.num_files == 1:
-                infile1 = infiles
-
-        offset = Fastq.getOffset(self.f_format, raises=False)
-        if self.save:
-            outdir = "processed.dir"
-        else:
-            outdir = P.getTempDir("/ifs/scratch")
-
+        prefix = self.prefix
+        offset = self.offset
+        outdir = self.outdir
+        processing_options = self.processing_options
+        # the assigment of infiles is repeated in each process_tool
+        # refactor!
         if self.num_files == 1:
             infile = infiles[0]
             track = os.path.basename(infile)
-            outfile = "%(outdir)s/trimgalore-%(track)s" % locals()
-            logfile = outdir + "/" + track + ".trim_galore.log"
+            outfile = "%(outdir)s/%(prefix)s%(track)s" % locals()
+            logfile = "log.dir/" + track + ".trim_galore.log"
             trim_out = "%s/%s_trimmed.fq.gz" % (outdir,
                                                 P.snip(track, ".fastq.gz"))
-            cmd = '''trim_galore %%(trimgalore_options)s
-                     -a %%(trimgalore_adapter)s
+            cmd = '''trim_galore %(processing_options)s
                      --phred%(offset)s
                      --output_dir %(outdir)s
                      %(infile)s
                      2>>%(logfile)s;
                      mv %(trim_out)s %(outfile)s;
                      ''' % locals()
-            outfiles = outfile
-            logfile = "%(track)s_trimming_report.txt"
+            outfiles = (outfile,)
 
         elif self.num_files == 2:
             infile1, infile2 = infiles
             track1 = os.path.basename(infile1)
             track2 = P.snip(track1, ".fastq.1.gz") + ".fastq.2.gz"
-            outfile1 = "%(outdir)s/trimgalore-%(track1)s" % locals()
-            outfile2 = "%(outdir)s/trimgalore-%(track2)s" % locals()
+            outfile1 = "%(outdir)s/%(prefix)s%(track1)s" % locals()
+            outfile2 = "%(outdir)s/%(prefix)s%(track2)s" % locals()
+            logfile = "log.dir/" + track1 + ".trim_galore.log"
 
-            logfile = outdir + "/" + track1 + ".trim_galore.log"
-
-            cmd = '''trim_galore %%(trimgalore_options)s
-                     --paired -a %%(trimgalore_adapter)s
+            cmd = '''trim_galore %(processing_options)s
+                     --paired
                      --phred%(offset)s --output_dir %(outdir)s
                      %(infile1)s %(infile2)s
                      2>>%(logfile)s;
@@ -406,74 +418,192 @@ class trimgalore(processer):
                      ''' % locals()
             outfiles = (outfile1, outfile2)
 
-        else:
-            cmd = "this shouldn't happen! - throw an error!"
-
         return cmd, outfiles
 
-    def postprocess(self, logfile):
-        return ""
 
-
-class sickle(processer):
+class sickle(process_tool):
 
     def process(self, infiles):
-
+        prefix = self.prefix
+        offset = self.offset
+        outdir = self.outdir
+        processing_options = self.processing_options
         rRANGES = {33: 'sanger', 64: 'illumina-1.8', 59: 'solexa'}
-        offset = Fastq.getOffset(self.f_format, raises=False)
         quality = rRANGES[offset]
 
-        if self.first:
-            if self.num_files == 2:
-                infile1, infile2 = infiles
-            elif self.num_files == 1:
-                infile1 = infiles[0]
-        else:
-            if self.num_files == 2:
-                infile1, infile2 = infiles
-            elif self.num_files == 1:
-                infile1 = infiles
-
-        if self.save:
-            outdir = "processed.dir"
-        else:
-            outdir = P.getTempDir("/ifs/scratch")
-
         if self.num_files == 1:
-            track = os.path.basename(infile1)
-            outfile = "%(outdir)s/sickle-%(track)s" % locals()
-            logfile = outdir + "/" + track + ".sickle.log"
+            infile = infiles[0]
+            track = os.path.basename(infile)
+            outfile = "%(outdir)s/%(prefix)s%(track)s" % locals()
+            logfile = "log.dir/" + track + ".sickle.log"
 
-            cmd = '''sickle se -g %%(sickle_options)s
+            cmd = '''sickle se -g %(processing_options)s
                      --qual-type %(quality)s
                      --output-file %(outfile)s
-                     --fastq-file %(infile1)s
+                     --fastq-file %(infile)s
                      2>>%(logfile)s
                      ;''' % locals()
-            outfiles = outfile
+            outfiles = (outfile,)
 
         elif self.num_files == 2:
+            infile1, infile2 = infiles
             track1 = os.path.basename(infile1)
             track2 = P.snip(track1, ".fastq.1.gz") + ".fastq.2.gz"
-            outfile1 = "%(outdir)s/sickle-%(track1)s" % locals()
-            outfile2 = "%(outdir)s/sickle-%(track2)s" % locals()
+            outfile1 = "%(outdir)s/%(prefix)s%(track1)s" % locals()
+            outfile2 = "%(outdir)s/%(prefix)s%(track2)s" % locals()
+            logfile = "log.dir/" + track1 + ".sickle.log"
 
-            logfile = outdir + "/" + track1 + ".trim_galore.log"
-
-            cmd = '''sickle pe -g -s %%(sickle_options)s
+            cmd = '''sickle pe -g -s %(processing_options)s
                      --qual-type %(quality)s
-                     -f %(infile1)s
-                     -r %(infile2)s
-                     -o %(outfile1)s
-                     -p %(outfile2)s
+                     -f %(infile1)s -r %(infile2)s
+                     -o %(outfile1)s -p %(outfile2)s
                      2>>%(logfile)s
                      ;''' % locals()
             outfiles = (outfile1, outfile2)
 
-        else:
-            cmd = "this shouldn't happen! - throw an error!"
+        return cmd, outfiles
+
+
+class trimmomatic(process_tool):
+
+    def process(self, infiles):
+        prefix = self.prefix
+        offset = self.offset
+        outdir = self.outdir
+        threads = self.threads
+        processing_options = self.processing_options
+        if self.num_files == 1:
+            infile = infiles[0]
+            track = os.path.basename(infile)
+            logfile = "log.dir/" + track + ".trimmomatic.log"
+            outfile = "%(outdir)s/%(prefix)s%(track)s" % locals()
+            trim_out = "%s/%s_trimmed.fq.gz" % (
+                outdir, P.snip(track, ".fastq.gz"))
+            cmd = '''trimmomatic SE -threads %(threads)s -phred%(offset)s
+                     %(infile)s %(outfile)s
+                     %(processing_options)s 2>> %(logfile)s
+                     ;''' % locals()
+            outfiles = (outfile,)
+
+        elif self.num_files == 2:
+            infile1, infile2 = infiles
+            track1 = os.path.basename(infile1)
+            track2 = re.sub(".fastq.1.gz", ".fastq.2.gz", track1)
+            logfile = "log.dir/" + track1 + ".trimmomatic.log"
+            outfile1 = "%(outdir)s/%(prefix)s%(track1)s" % locals()
+            outfile2 = "%(outdir)s/%(prefix)s%(track2)s" % locals()
+
+            cmd = '''trimmomatic PE -threads %(threads)s -phred%(offset)s
+                     %(infile1)s %(infile2)s
+                     %(outfile1)s %(outfile1)s.unpaired
+                     %(outfile2)s %(outfile2)s.unpaired
+                     %(processing_options)s 2>> %(logfile)s
+                     ;''' % locals()
+            outfiles = (outfile1, outfile2)
 
         return cmd, outfiles
 
-    def postprocess(self, logfile):
-        return ""
+
+class fastx_trimmer(process_tool):
+
+    def process(self, infiles):
+        prefix = self.prefix
+        offset = self.offset
+        outdir = self.outdir
+        processing_options = self.processing_options
+
+        if self.num_files == 1:
+            infile = infiles[0]
+            track = os.path.basename(infile)
+            logfile = "log.dir/" + track + ".trimmomatic.log"
+            outfile = "%(outdir)s/%(prefix)s%(track)s" % locals()
+            trim_out = "%s/%s_trimmed.fq.gz" % (outdir,
+                                                P.snip(track, ".fastq.gz"))
+            cmd = '''zcat %(infile)s | fastx_trimmer -Q%(offset)s
+            %(processing_options)s 2> %(logfile)s | gzip > %(outfile)s
+            ;''' % locals()
+
+            outfiles = (outfile,)
+
+        else:
+            E.info("fastx_trimmer does not support paired end reads")
+
+        return cmd, outfiles
+
+
+class flash(process_tool):
+
+    def process(self, infiles):
+        prefix = self.prefix
+        offset = self.offset
+        outdir = self.outdir
+        processing_options = self.processing_options
+
+        if self.num_files == 2:
+            infile1, infile2 = infiles
+            track1 = os.path.basename(infile1)
+            track2 = makeSecond(track1)
+            base_track = P.snip(track1, ".fastq.1.gz")
+            track1_single = re.sub(".fastq.1.gz", ".fastq.gz", track1)
+            outfile_single = ("%(outdir)s/%(prefix)s%(track1_single)s"
+                              % locals())
+            outfile1 = "%(outdir)s/%(prefix)s%(track1)s" % locals()
+            outfile2 = "%(outdir)s/%(prefix)s%(track2)s" % locals()
+
+            logfile = "log.dir/" + track1 + ".sickle.log"
+
+            cmd = '''flash %(infile1)s %(infile2)s
+            -p%(offset)s %(processing_options)s
+            -o %(base_track)s -d %(outdir)s
+            2>>%(logfile)s; checkpoint;
+            cat %(outdir)s/%(base_track)s.extendedFrags.fastq | gzip >
+            %(outfile_single)s;
+            cat %(outdir)s/%(base_track)s.notCombined_1.fastq | gzip >
+            %(outfile1)s;
+            cat %(outdir)s/%(base_track)s.notCombined_1.fastq | gzip >
+            %(outfile2)s;
+            rm -rf %(outdir)s/%(base_track)s.extendedFrags.fastq
+            %(outdir)s/%(base_track)s.hist
+            %(outdir)s/%(base_track)s.histogram
+            %(outdir)s/%(base_track)s.notCombined_1.fastq
+            %(outdir)s/%(base_track)s.notCombined_2.fastq
+            ;''' % locals()
+
+            outfiles = (outfile_single,)
+
+        else:
+            E.info("flash requires paired end reads")
+
+        self.num_files = 1
+        # need to set num_file to 1 as only one outfile produced
+
+        return cmd, outfiles
+
+    def postprocess(self, infiles):
+        # postprocess used to summarise single end fastq twice so that
+        # it gets concatenated at the end of the summary tables for
+        # both initial paired end files. if a further single end step
+        # is included after flash, currently, it will break at the
+        # summarise function in pipeline_preprocess
+        scriptsdir = self.scriptsdir
+
+        if self.summarise:
+            outdir = self.outdir
+            prefix = self.prefix
+            infile1 = infiles[0]
+            infile_base1 = os.path.basename(infile1)
+            infile_base2 = re.sub(".1.fastq.gz", ".2.fastq.gz", infile_base1)
+            infile = re.sub(".fastq.1.gz", ".fastq.gz", infile1)
+            postprocess_cmd = '''zcat %(infile)s |
+            python %(scriptsdir)s/fastq2summary.py
+            --guess-format=illumina-1.8 -v0
+            > summary.dir/%(infile_base1)s.summary;
+            zcat %(infile)s |
+            python %(scriptsdir)s/fastq2summary.py
+            --guess-format=illumina-1.8 -v0
+            > summary.dir/%(infile_base2)s.summary
+            ;''' % locals()
+        else:
+            postprocess_cmd = "checkpoint ;"
+
+        return postprocess_cmd

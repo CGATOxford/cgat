@@ -57,6 +57,9 @@ Overview
 Significance
 ============
 
+The plots below show enrichments or depletions for particular
+genomic annotations. Those which are signifant are shown in red.
+
 .. report:: Gat.GatLogFoldAnnotations
    :render: interleaved-bar-plot
    :groupby: track
@@ -64,7 +67,7 @@ Significance
    :layout: column-3
    :width: 300
 
-   Fold change. Those that are significant (qvalue < 0.05) are shown
+   Log fold change. Those that are significant (qvalue < 0.05) are shown
    in red.
 
 .. report:: Gat.GatResultsAnnotations

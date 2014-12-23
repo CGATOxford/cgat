@@ -138,6 +138,19 @@ filter_longest_transcript_invert:
     references: [hg19.small.filter_longest_transcript_invert.gtf.gz]
     options: --method=filter --filter-method=longest-transcript --invert-filter
 
+filter_proteincoding:
+    stdin: hg19.small.gtf.gz
+    outputs: [stdout]
+    references: [hg19.small.filter_proteincoding.gtf.gz]
+    options: --method=filter --filter-method=proteincoding
+
+filter_proteincoding_invert:
+    stdin: hg19.small.gtf.gz
+    outputs: [stdout]
+    references: [hg19.small.filter_not_proteincoding.gtf.gz]
+    options: --method=filter --filter-method=proteincoding --invert-filter
+
+
 remove_overlapping:
     stdin: sorted_gene.gtf.gz
     outputs: [stdout]

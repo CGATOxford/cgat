@@ -356,7 +356,13 @@ def buildCodingGeneSet(infile, outfile):
     '''
 
     statement = '''
-    zcat %(infile)s | awk '$2 == "protein_coding"' | gzip > %(outfile)s
+    zcat %(infile)s
+    | python %(scriptsdir)s/gtf2gtf.py
+    --method=filter
+    --filter-method=proteincoding
+    --log=%(outfile)s.log
+    | gzip
+    > %(outfile)s
     '''
     P.run()
 
@@ -388,27 +394,30 @@ def buildIntronGeneModels(infile, outfile):
         PARAMS["annotations_dir"],
         PARAMS["annotations_interface_geneset_exons_gtf"])
 
-    statement = '''gunzip
-        < %(infile)s
-        | awk '$2 == "protein_coding"'
-        | python %(scriptsdir)s/gtf2gtf.py
-               --method=sort
-               --sort-order=gene
-        | python %(scriptsdir)s/gtf2gtf.py
-               --method=exons2introns
-               --intron-min-length=100
-               --intron-border=10
-               --log=%(outfile)s.log
-        | python %(scriptsdir)s/gff2gff.py
-               --method=crop
-               --crop-gff-file=%(filename_exons)s
-               --log=%(outfile)s.log
-        | python %(scriptsdir)s/gtf2gtf.py
-              --method=set-transcript-to-gene
-              --log=%(outfile)s.log
-        | perl -p -e 's/intron/exon/'
-        | gzip
-        > %(outfile)s
+    statement = '''
+    zcat %(infile)s
+    | python %(scriptsdir)s/gtf2gtf.py
+    --method=filter
+    --filter-method=proteincoding
+    --log=%(outfile)s.log
+    | python %(scriptsdir)s/gtf2gtf.py
+    --method=sort
+    --sort-order=gene
+    | python %(scriptsdir)s/gtf2gtf.py
+    --method=exons2introns
+    --intron-min-length=100
+    --intron-border=10
+    --log=%(outfile)s.log
+    | python %(scriptsdir)s/gff2gff.py
+    --method=crop
+    --crop-gff-file=%(filename_exons)s
+    --log=%(outfile)s.log
+    | python %(scriptsdir)s/gtf2gtf.py
+    --method=set-transcript-to-gene
+    --log=%(outfile)s.log
+    | perl -p -e 's/intron/exon/'
+    | gzip
+    > %(outfile)s
     '''
     P.run()
 
@@ -442,9 +451,15 @@ def buildCodingExons(infile, outfile):
 
     statement = '''
     zcat %(infile)s
-    | awk '$2 == "protein_coding" && $3 == "CDS"'
+    | awk '$3 == "CDS"'
+    | python %(scriptsdir)s/gtf2gtf.py
+    --method=filter
+    --filter-method=proteincoding
+    --log=%(outfile)s.log
     | perl -p -e "s/CDS/exon/"
-    | python %(scriptsdir)s/gtf2gtf.py --method=merge-exons --log=%(outfile)s.log
+    | python %(scriptsdir)s/gtf2gtf.py
+    --method=merge-exons
+    --log=%(outfile)s.log
     | gzip
     > %(outfile)s
     '''

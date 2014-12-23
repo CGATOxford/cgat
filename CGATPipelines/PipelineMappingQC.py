@@ -33,9 +33,6 @@ import re
 import CGAT.IOTools as IOTools
 import CGAT.Pipeline as P
 
-# Set PARAMS in calling module
-PARAMS = {}
-
 
 def getPicardOptions():
     return "-pe dedicated 3 -R y -l mem_free=1.4G -l picard=1"
@@ -72,7 +69,8 @@ def getNumReadsFromBAMFile(infile):
 
     except IndexError, msg:
         raise IndexError(
-            "can't get number of reads from bamfile, msg=%s, data=%s" % (msg, read_info))
+            "can't get number of reads from bamfile, msg=%s, data=%s" %
+            (msg, read_info))
     return data
 
 
@@ -184,6 +182,24 @@ def buildPicardDuplicateStats(infile, outfile):
     P.run()
 
 
+def buildPicardCoverageStats(infile, outfile, baits, regions):
+    '''Generate coverage statistics for regions of interest from a bed
+    file using Picard'''
+    job_options = getPicardOptions()
+
+    if getNumReadsFromBAMFile(infile) == 0:
+        E.warn("no reads in %s - no metrics" % infile)
+        P.touch(outfile)
+        return
+
+    statement = '''CalculateHsMetrics BAIT_INTERVALS=%(baits)s
+    TARGET_INTERVALS=%(regions)s
+    INPUT=%(infile)s
+    OUTPUT=%(outfile)s
+    VALIDATION_STRINGENCY=LENIENT''' % locals()
+    P.run()
+
+
 def buildPicardGCStats(infile, outfile, genome_file):
     '''Gather BAM file GC bias stats using Picard '''
 
@@ -267,7 +283,7 @@ def loadPicardMetrics(infiles, outfile, suffix,
     statement = '''cat %(tmpfilename)s
                 | python %(scriptsdir)s/csv2db.py
                       --add-index=track
-                      --table=%(tablename)s 
+                      --table=%(tablename)s
                       --allow-empty-file
                 > %(outfile)s
                '''
@@ -360,7 +376,11 @@ def loadPicardDuplicationStats(infiles, outfiles):
                     break
 
     if len(infiles_with_histograms) > 0:
-        loadPicardHistogram(infiles_with_histograms, outfile_histogram, suffix, "coverage_multiple", "",
+        loadPicardHistogram(infiles_with_histograms,
+                            outfile_histogram,
+                            suffix,
+                            "coverage_multiple",
+                            "",
                             tablename="picard_complexity_histogram")
     else:
         with open(outfile_histogram, "w") as ofh:
@@ -376,25 +396,46 @@ def loadPicardDuplicateStats(infiles, outfile, pipeline_suffix=".bam"):
                         "duplicates", pipeline_suffix=pipeline_suffix)
 
 
-def buildBAMStats(infile, outfile):
-    '''Count number of reads mapped, duplicates, etc. '''
-    to_cluster = True
+def loadPicardCoverageStats(infiles, outfile):
+    '''Import coverage statistics into SQLite'''
 
-    statement = '''python %(scriptsdir)s/bam2stats.py 
-                          --force-output 
-                          --output-filename-pattern=%(outfile)s.%%s 
-                          < %(infile)s 
-                          > %(outfile)s'''
+    tablename = P.toTable(outfile)
+    outf = open('coverage.txt', 'w')
+    first = True
+    for f in infiles:
+        track = P.snip(os.path.basename(f), ".cov")
+        lines = [x for x in open(f, "r").readlines()
+                 if not x.startswith("#") and x.strip()]
+        if first:
+            outf.write("%s\t%s" % ("track", lines[0]))
+        first = False
+        outf.write("%s\t%s" % (track, lines[1]))
+    outf.close()
+    tmpfilename = outf.name
+    statement = '''cat %(tmpfilename)s
+                   | python %(scriptsdir)s/csv2db.py
+                      --add-index=track
+                      --table=%(tablename)s
+                      --ignore-empty
+                      --retry
+                   > %(outfile)s '''
     P.run()
 
 
-###########################################################
-###########################################################
-###########################################################
+def buildBAMStats(infile, outfile):
+    '''Count number of reads mapped, duplicates, etc. '''
+
+    statement = '''python %(scriptsdir)s/bam2stats.py
+    --force-output
+    --output-filename-pattern=%(outfile)s.%%s
+    < %(infile)s
+    > %(outfile)s'''
+    P.run()
+
+
 def loadBAMStats(infiles, outfile):
     '''load bam2stats.py output into sqlite database.'''
 
-    # scriptsdir = PARAMS["general_scriptsdir"]
     header = ",".join([P.snip(os.path.basename(x), ".readstats")
                       for x in infiles])
     filenames = " ".join(["<( cut -f 1,2 < %s)" % x for x in infiles])
@@ -410,7 +451,7 @@ def loadBAMStats(infiles, outfile):
                 | python %(scriptsdir)s/csv2db.py
                       --allow-empty-file
                       --add-index=track
-                      --table=%(tablename)s 
+                      --table=%(tablename)s
                 > %(outfile)s"""
     P.run()
 
@@ -427,7 +468,7 @@ def loadBAMStats(infiles, outfile):
                    %(filenames)s
                 | perl -p -e "s/bin/%(suffix)s/"
                 | python %(scriptsdir)s/csv2db.py
-                      --table=%(tname)s 
+                      --table=%(tname)s
                       --allow-empty-file
                 >> %(outfile)s """
         P.run()
@@ -449,7 +490,7 @@ def loadBAMStats(infiles, outfile):
                    %(filenames)s
                 | perl -p -e "s/bin/%(suffix)s/"
                 | python %(scriptsdir)s/csv2db.py
-                      --table=%(tname)s 
+                      --table=%(tname)s
                       --allow-empty-file
                 >> %(outfile)s """
         P.run()

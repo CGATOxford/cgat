@@ -161,10 +161,11 @@ def check_script(test_name, script, stdin,
                 for a, b in zip(_read(output), _read(reference)):
                     if a != b:
                         fail = True
-                        msg = "files %s and %s are not the same: %s\nchecksums= %s %s" %\
-                              (output, reference, statement,
-                               compute_checksum(output),
-                               compute_checksum(reference))
+                        msg = ("files %s and %s are not the same\n"
+                               "%s\nmd5: output=%s reference=%s") %\
+                            (output, reference, statement,
+                             compute_checksum(output),
+                             compute_checksum(reference))
                         break
 
     t2 = time.time()

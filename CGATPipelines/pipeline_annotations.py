@@ -394,10 +394,10 @@ geneset
    coding, noncoding, lincrna
 
 subset
-   transcripts
+   transcript
       regions on a per-transcript level, multiple entries
       per gene, one for each transcript
-   genes
+   gene
       regions on a per-gene level, one entry for each gene
 
 regions
@@ -546,8 +546,6 @@ For :term:`gtf` files there is also a file with summary statistics
 called <file>_gtf_stats.
 
 
-
-
 Example
 =======
 
@@ -570,6 +568,7 @@ import itertools
 import csv
 import re
 import os
+import glob
 import collections
 from ruffus import *
 from bx.bbi.bigwig_file import BigWigFile
@@ -599,6 +598,15 @@ PARAMS = P.getParameters(
      "../pipeline.ini",
      "pipeline.ini"])
 
+# add automatically created files to the interface.  This is required
+# when the pipeline is peek'ed.  The statement below will
+# add the fellowing to the dictionary:
+# "geneset.dir/lincrna_gene_tss.bed.gz" maps to
+# "interface_geneset_lincrna_gene_tss_bed"
+PARAMS.update(dict([
+    ("interface_geneset_%s" %
+     re.sub("[.]", "_", os.path.basename(P.snip(x, ".gz"))), x)
+    for x in glob.glob('geneset.dir/*.bed.gz')]))
 
 # Set parameter dictionary in auxilliary modules
 PipelineGeneset.PARAMS = PARAMS
@@ -1855,8 +1863,11 @@ def buildGeneTerritories(infile, outfile):
     '''build gene territories from protein coding genes.'''
 
     statement = '''
-    gunzip < %(infile)s
-    | awk '$2 == "protein_coding"'
+    zcat %(infile)s
+    | python %(scriptsdir)s/gtf2gtf.py
+    --method=filter
+    --filter-method=proteincoding
+    --log=%(outfile)s.log
     | python %(scriptsdir)s/gtf2gtf.py
     --method=sort --sort-order=gene
     | python %(scriptsdir)s/gtf2gtf.py
@@ -1883,9 +1894,14 @@ def buildTSSTerritories(infile, outfile):
 
     statement = '''
     gunzip < %(infile)s
-    | awk '$2 == "protein_coding"'
     | python %(scriptsdir)s/gtf2gtf.py
-    --method=filter --filter-method=representative-transcript --log=%(outfile)s.log
+    --method=filter
+    --filter-method=proteincoding
+    --log=%(outfile)s.log
+    | python %(scriptsdir)s/gtf2gtf.py
+    --method=filter
+    --filter-method=representative-transcript
+    --log=%(outfile)s.log
     | python %(scriptsdir)s/gtf2gtf.py --method=sort --sort-order=position
     | python %(scriptsdir)s/gtf2gff.py
           --genome-file=%(genome_dir)s/%(genome)s
@@ -1908,8 +1924,11 @@ def buildGREATRegulatoryDomains(infile, outfile):
     '''build gene territories from protein coding genes.'''
 
     statement = '''
-    gunzip < %(infile)s
-    | awk '$2 == "protein_coding"'
+    zcat %(infile)s
+    | python %(scriptsdir)s/gtf2gtf.py
+    --method=filter
+    --filter-method=proteincoding
+    --log=%(outfile)s.log
     | python %(scriptsdir)s/gtf2gtf.py
     --method=filter --filter-method=representative-transcript
     --log=%(outfile)s.log

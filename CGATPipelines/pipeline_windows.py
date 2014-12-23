@@ -144,19 +144,24 @@ from rpy2.robjects import r as R
 #########################################################################
 #########################################################################
 # load options from the config file
-P.getParameters(["%s/pipeline.ini" % os.path.splitext(__file__)[0],
-                 "../pipeline.ini",
-                 "pipeline.ini"])
+P.getParameters(
+    ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
+     "../pipeline.ini",
+     "pipeline.ini"],
+    defaults={
+        'paired_end': False},
+    only_import=__name__ != "__main__")
 
 PARAMS = P.PARAMS
 
-PARAMS_ANNOTATIONS = P.peekParameters(
+PARAMS.update(P.peekParameters(
     PARAMS["annotations_dir"],
     "pipeline_annotations.py",
-    on_error_raise=__name__ == "__main__")
+    on_error_raise=__name__ == "__main__",
+    prefix="annotations_",
+    update_interface=True))
 
-###################################################################
-###################################################################
+
 ###################################################################
 # Helper functions mapping tracks to conditions, etc
 ###################################################################
@@ -164,18 +169,6 @@ PARAMS_ANNOTATIONS = P.peekParameters(
 Sample = PipelineTracks.AutoSample
 
 METHODS = P.asList(PARAMS["methods"])
-
-###################################################################
-###################################################################
-###################################################################
-# if conf.py exists: execute to change the above assignmentsn
-if os.path.exists("pipeline_conf.py"):
-    L.info("reading additional configuration from pipeline_conf.py")
-    execfile("pipeline_conf.py")
-
-###################################################################
-###################################################################
-###################################################################
 
 
 def connect():
@@ -273,7 +266,7 @@ def mergeBackgroundWindows(infiles, outfile):
 
     infiles = " ".join(infiles)
     genomefile = os.path.join(PARAMS["annotations_dir"],
-                              PARAMS_ANNOTATIONS['interface_contigs'])
+                              PARAMS["annotations_interface_contigs"])
     statement = '''
     zcat %(infiles)s
     | bedtools slop -i stdin
@@ -289,11 +282,11 @@ def mergeBackgroundWindows(infiles, outfile):
 
 
 @transform(os.path.join(PARAMS["annotations_dir"],
-                        PARAMS_ANNOTATIONS["interface_cpg_bed"]),
+                        PARAMS["annotations_interface_cpg_bed"]),
            regex(".*/([^/]*).bed.gz"),
            add_inputs(os.path.join(
                PARAMS["annotations_dir"],
-               PARAMS_ANNOTATIONS['interface_genomic_context_bed'])),
+               PARAMS["annotations_interface_genomic_context_bed"])),
            "cpg_context.tsv.gz")
 def buildCpGAnnotation(infiles, outfile):
     '''annotate the location of CpGs within the genome.'''
@@ -367,9 +360,9 @@ def buildReferenceCpGComposition(infiles, outfile):
 
     infile = infiles[0]
     contig_sizes = os.path.join(PARAMS["annotations_dir"],
-                                PARAMS_ANNOTATIONS["interface_contigs"])
+                                PARAMS["annotations_interface_contigs"])
     gaps_bed = os.path.join(PARAMS["annotations_dir"],
-                            PARAMS_ANNOTATIONS["interface_gaps_bed"])
+                            PARAMS["annotations_interface_gaps_bed"])
 
     # remove windows which are more than 50% N - column 17
     statement = '''bedtools shuffle
@@ -423,7 +416,7 @@ def loadCpGComposition(infile, outfile):
 @transform(prepareTags,
            suffix(".bed.gz"),
            add_inputs(os.path.join(PARAMS["annotations_dir"],
-                                   PARAMS_ANNOTATIONS["interface_cpg_bed"])),
+                                   PARAMS["annotations_interface_cpg_bed"])),
            ".cpg_coverage.gz")
 def buildCpGCoverage(infiles, outfile):
     '''count number times certain CpG are covered by reads.
@@ -534,18 +527,12 @@ def buildWindows(infiles, outfile):
 
     P.run()
 
-#########################################################################
-#########################################################################
-#########################################################################
-
 
 @transform(buildWindows,
            suffix(".bed.gz"),
            ".stats")
 def buildWindowStats(infile, outfile):
     '''compute tiling window size statistics from bed file.'''
-
-    use_cluster = True
 
     statement = '''
     zcat %(infile)s
@@ -560,10 +547,6 @@ def buildWindowStats(infile, outfile):
     '''
     P.run()
 
-#########################################################################
-#########################################################################
-#########################################################################
-
 
 @transform(buildWindowStats,
            suffix(".stats"),
@@ -573,9 +556,25 @@ def loadWindowStats(infile, outfile):
     P.load(infile + ".hist.tsv", P.snip(infile, ".stats") + "_hist" + ".load")
     P.load(infile + ".stats.tsv", outfile)
 
-#########################################################################
-#########################################################################
-#########################################################################
+
+@transform(buildWindows,
+           suffix(".bed.gz"),
+           ".composition.tsv.gz")
+def buildWindowComposition(infile, outfile):
+    '''compute tiling window size statistics from bed file.'''
+
+    statement = '''
+    zcat %(infile)s
+    | python %(scriptsdir)s/bed2table.py
+    --log=%(outfile)s.log
+    --counter=length
+    --counter=composition-cpg
+    --counter=composition-na
+    --genome-file=%(genome_dir)s/%(genome)s
+    | gzip
+    > %(outfile)s
+    '''
+    P.run()
 
 
 @transform(buildWindows,
@@ -588,7 +587,7 @@ def buildBigBed(infile, outfile):
     tmpfile = P.getTempFilename()
 
     contig_sizes = os.path.join(
-        PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_contigs"])
+        PARAMS["annotations_dir"], PARAMS["annotations_interface_contigs"])
 
     statement = '''
     zcat %(infile)s > %(tmpfile)s;
@@ -632,12 +631,6 @@ def aggregateWindowsReadCounts(infiles, outfile):
 def loadWindowsReadCounts(infile, outfile):
     '''load a sample of window composition data for QC purposes.'''
     P.load(infile, outfile, limit=10000, shuffle=True)
-
-###################################################################
-###################################################################
-###################################################################
-#
-###################################################################
 
 
 def getInput(track):
@@ -708,10 +701,6 @@ def mapTrack2Input(tracks):
             map_track2input[track] = Sample(filename=input_files[0]).asTable()
 
     return map_track2input
-
-#########################################################################
-#########################################################################
-#########################################################################
 
 
 @transform(loadWindowsReadCounts, suffix(".load"),
@@ -832,11 +821,11 @@ def summarizeAllWindowsReadCounts(infile, outfile):
     prefix = P.snip(outfile, ".tsv")
     job_options = "-l mem_free=32G"
     statement = '''python %(scriptsdir)s/runExpression.py
-              --method=summary
-              --tags-tsv-file=%(infile)s
-              --output-filename-pattern=%(prefix)s_
-              --log=%(outfile)s.log
-              > %(outfile)s'''
+    --method=summary
+    --tags-tsv-file=%(infile)s
+    --output-filename-pattern=%(prefix)s_
+    --log=%(outfile)s.log
+    > %(outfile)s'''
     P.run()
 
 
@@ -851,12 +840,12 @@ def summarizeWindowsReadCounts(infiles, outfile):
     design_file, counts_file = infiles
     prefix = P.snip(outfile, ".tsv")
     statement = '''python %(scriptsdir)s/runExpression.py
-              --method=summary
-              --design-tsv-file=%(design_file)s
-              --tags-tsv-file=%(counts_file)s
-              --output-filename-pattern=%(prefix)s_
-              --log=%(outfile)s.log
-              > %(outfile)s'''
+    --method=summary
+    --design-tsv-file=%(design_file)s
+    --tags-tsv-file=%(counts_file)s
+    --output-filename-pattern=%(prefix)s_
+    --log=%(outfile)s.log
+    > %(outfile)s'''
     P.run()
 
 
@@ -882,10 +871,6 @@ def dumpWindowsReadCounts(infiles, outfile):
 
     P.run()
 
-#########################################################################
-#########################################################################
-#########################################################################
-
 
 @transform((summarizeWindowsReadCounts, summarizeAllWindowsReadCounts),
            suffix("_stats.tsv"), "_stats.load")
@@ -895,10 +880,6 @@ def loadTagCountSummary(infile, outfile):
     P.load(P.snip(infile, ".tsv") + "_correlation.tsv",
            P.snip(outfile, "_stats.load") + "_correlation.load",
            options="--first-column=track")
-
-#########################################################################
-#########################################################################
-#########################################################################
 
 
 @follows(buildWindows, countReadsWithinWindows)
@@ -926,9 +907,6 @@ def normalizeBed(infile, outfile):
                    gzip > %(outfile)s; rm -f %(tmpfile)s'''
 
     P.run()
-#########################################################################
-#########################################################################
-#########################################################################
 
 
 @follows(normalizeBed)
@@ -1206,8 +1184,8 @@ def diff_windows():
 
 @transform(DIFFTARGETS, suffix(".gz"), ".cpg.tsv.gz")
 def computeWindowComposition(infile, outfile):
-    '''for the windows returned from differential analysis, compute CpG content
-    for QC purposes.
+    '''for the windows returned from differential analysis, compute CpG
+    content for QC purposes.
     '''
 
     statement = '''
@@ -1215,9 +1193,9 @@ def computeWindowComposition(infile, outfile):
     | grep -v "^spike"
     | perl -p -e "s/:/\\t/; s/-/\\t/; s/test_id/contig\\tstart\\tend/"
     | python %(scriptsdir)s/bed2table.py
-          --counter=composition-cpg
-          --genome-file=%(genome_dir)s/%(genome)s
-          --has-header
+    --counter=composition-cpg
+    --genome-file=%(genome_dir)s/%(genome)s
+    --has-header
     | gzip
     > %(outfile)s
     '''
@@ -1231,77 +1209,34 @@ def loadWindowComposition(infile, outfile):
     P.load(infile, outfile, limit=10000)
 
 
-@transform(DIFFTARGETS, suffix(".gz"), ".merged.gz")
+@transform(DIFFTARGETS,
+           suffix(".tsv.gz"),
+           ".merged.tsv.gz")
 def mergeDMRWindows(infile, outfile):
     '''merge overlapping windows.
 
     Sample/control labels are by default inverted to reflect
     that unmethylated windows are of principal interest.
     '''
+    # the other outfiles will be created automatically by
+    # the script medip_merge_intervals
+
+    prefix = P.snip(outfile, ".tsv.gz")
+
+    job_options = "-l mem_free=3G"
+
     statement = '''
     zcat %(infile)s
     | grep -v "^spike"
     | python %(scriptsdir)s/medip_merge_intervals.py
           --log=%(outfile)s.log
           --invert
-          --output-filename-pattern=%(outfile)s.%%s.bed.gz
+          --output-filename-pattern=%(prefix)s.%%s.bed.gz
     | gzip
     > %(outfile)s
     '''
 
     P.run()
-
-
-def outputSpikeCounts(outfile, infile_name,
-                      expression_nbins=None,
-                      fold_nbins=None,
-                      expression_bins=None,
-                      fold_bins=None):
-    
-    df = pandas.read_csv(infile_name,
-                         sep="\t",
-                         index_col=0)
-
-    E.debug("read %i rows and %i columns of data" % df.shape)
-
-    if "edger" in outfile.lower():
-        # edger: treatment_mean and control_mean do not exist
-        # use supplied values directly.
-        l10average = numpy.log(df['treatment_mean'])
-        l2fold = numpy.log2(df['fold'])
-    else:
-        # use pseudocounts to compute fold changes
-        treatment_mean = df['treatment_mean'] + 1
-        control_mean = df['control_mean'] + 1
-        # build log2 average values
-        l10average = numpy.log((treatment_mean + control_mean) / 2)
-        l2fold = numpy.log2(treatment_mean / control_mean)
-
-    if expression_nbins is not None:
-        mm = math.ceil(max(l10average))
-        expression_bins = numpy.arange(0, mm, mm / expression_nbins)
-
-    if fold_nbins is not None:
-        mm = math.ceil(max(abs(min(l2fold)), abs(max(l2fold))))
-        # ensure that range is centered on exact 0
-        n = math.ceil(fold_nbins / 2.0)
-        fold_bins = numpy.concatenate(
-            (-numpy.arange(0, mm, mm / n)[:0:-1],
-             numpy.arange(0, mm, mm / n)))
-
-    # compute expression bins
-    d2hist_counts, xedges, yedges = numpy.histogram2d(
-        l10average, l2fold,
-        bins=(expression_bins,
-              fold_bins))
-
-    dd = pandas.DataFrame(d2hist_counts)
-    dd.index = list(xedges[:-1])
-    dd.columns = list(yedges[:-1])
-    dd.to_csv(IOTools.openFile(outfile, "w"),
-              sep="\t")
-
-    return df, d2hist_counts, xedges, yedges, l10average, l2fold
 
 
 @transform(DIFFTARGETS, suffix(".gz"), ".power.gz")
@@ -1330,8 +1265,8 @@ def buildSpikeResults(infile, outfile):
 
     '''
 
-    expression_bins = 10
-    fold_bins = 10
+    expression_nbins = 10
+    fold_nbins = 10
 
     spikefile = P.snip(infile, '.tsv.gz') + '.spike.gz'
 
@@ -1353,10 +1288,11 @@ def buildSpikeResults(infile, outfile):
     E.debug("outputting spiked counts")
     (spiked, spiked_d2hist_counts, xedges, yedges,
      spiked_l10average, spiked_l2fold) = \
-        outputSpikeCounts(P.snip(outfile, ".power.gz") + ".spiked.gz",
-                          tmpfile_name,
-                          expression_bins,
-                          fold_bins)
+        PipelineWindows.outputSpikeCounts(
+            outfile=P.snip(outfile, ".power.gz") + ".spiked.gz",
+            infile_name=tmpfile_name,
+            expression_nbins=expression_nbins,
+            fold_nbins=fold_nbins)
 
     ########################################
     # output and load unspiked results
@@ -1369,10 +1305,11 @@ def buildSpikeResults(infile, outfile):
 
     (unspiked, unspiked_d2hist_counts, unspiked_xedges,
      unspiked_yedges, unspiked_l10average, unspiked_l2fold) = \
-        outputSpikeCounts(P.snip(outfile, ".power.gz") + ".unspiked.gz",
-                          tmpfile_name,
-                          expression_bins=xedges,
-                          fold_bins=yedges)
+        PipelineWindows.outputSpikeCounts(
+            outfile=P.snip(outfile, ".power.gz") + ".unspiked.gz",
+            infile_name=tmpfile_name,
+            expression_bins=xedges,
+            fold_bins=yedges)
 
     E.debug("computing power")
 
@@ -1465,7 +1402,7 @@ def loadSpikeResults(infile, outfile):
            tablename=tablename)
 
 
-@transform(mergeDMRWindows, suffix(".merged.gz"), ".stats")
+@transform(mergeDMRWindows, suffix(".merged.tsv.gz"), ".stats")
 def buildDMRStats(infile, outfile):
     '''compute differential methylation stats.'''
     method = os.path.dirname(infile)
@@ -1473,7 +1410,20 @@ def buildDMRStats(infile, outfile):
     PipelineWindows.buildDMRStats([infile], outfile, method=method)
 
 
-@transform(mergeDMRWindows, suffix(".merged.gz"), ".fdr")
+@transform(mergeDMRWindows,
+           suffix(".tsv.gz"),
+           add_inputs(buildWindowComposition),
+           ".plots")
+def plotDETagStats(infiles, outfile):
+    '''plot differential expression stats'''
+
+    PipelineWindows.plotDETagStats(
+        infiles, outfile,
+        submit=True,
+        job_options="-l mem_free=16")
+
+
+@transform(mergeDMRWindows, suffix(".merged.tsv.gz"), ".fdr")
 def buildFDRStats(infile, outfile):
     '''compute differential methylation stats.'''
     method = os.path.dirname(infile)
@@ -1481,7 +1431,9 @@ def buildFDRStats(infile, outfile):
     PipelineWindows.buildFDRStats(infile, outfile, method=method)
 
 
-@transform(mergeDMRWindows, suffix(".merged.gz"), ".merged.gz.all.bed.gz")
+@transform(mergeDMRWindows,
+           suffix(".merged.tsv.gz"),
+           ".mergedwindows.all.bed.gz")
 def outputAllWindows(infile, outfile):
     '''output all bed windows.'''
     PipelineWindows.outputAllWindows(infile, outfile)
@@ -1522,7 +1474,7 @@ def outputTopWindows(infile, outfiles):
 
 
 @transform(mergeDMRWindows,
-           suffix(".merged.gz"),
+           suffix(".merged.tsv.gz"),
            ".stats")
 def buildDMRWindowStats(infile, outfile):
     '''compute window size statistics of DMR from bed file.'''
@@ -1558,7 +1510,7 @@ def loadDMRStats(infiles, outfile):
     '''load DMR stats into table.'''
     P.concatenateAndLoad(infiles, outfile,
                          missing_value=0,
-                         regex_filename=".*\/(.*).tsv.stats")
+                         regex_filename=".*\/(.*).stats")
 
 # @merge( buildDMRBed, "dmr_overlap.tsv.gz" )
 # def computeDMROverlap( infiles, outfile ):
@@ -1615,11 +1567,11 @@ def buildMRBed(infile, outfile):
     E.info("%s" % str(c))
 
 
-@follows(mkdir("overlaps.dir"))
+@follows(mkdir("overlaps.dir"), mergeDMRWindows)
 @collate(("edger.dir/*merged*.bed.gz",
           "deseq.dir/*merged*.bed.gz",
           "medips.dir/*merged*.bed.gz"),
-         regex("(.*).dir/(.*).tsv.merged.gz.(.*)(?<!all).bed.gz"),
+         regex("(.*).dir/(.*).merged.(.*).bed.gz"),
          r"overlaps.dir/method_\2_\3.overlap")
 def buildOverlapByMethod(infiles, outfile):
     '''compute overlap between intervals.
@@ -1645,11 +1597,11 @@ def buildOverlapByMethod(infiles, outfile):
     P.run()
 
 
-@follows(mkdir("overlaps.dir"))
+@follows(mkdir("overlaps.dir"), mergeDMRWindows)
 @collate(("edger.dir/*merged*.bed.gz",
           "deseq.dir/*merged*.bed.gz",
           "medips.dir/*merged*.bed.gz"),
-         regex("(.*).dir/(.*).tsv.merged.gz.(.*).bed.gz"),
+         regex("(.*).dir/(.*).merged.(.*).bed.gz"),
          r"overlaps.dir/\1_\3.overlap")
 def buildOverlapWithinMethod(infiles, outfile):
     '''compute overlap between intervals.
@@ -1701,12 +1653,35 @@ def dmr():
     pass
 
 
+@follows(mergeDMRWindows)
+@merge(("edger.dir/*.merged.*.bed.gz",
+        "deseq.dir/*.merged.*.bed.gz",
+        "medips.dir/*.merged.*.bed.gz"),
+       "dmr.bed.gz")
+def combineWindows(infiles, outfile):
+    '''build a file that contains all intervals
+    detected as DMR windows. The name field will
+    be set to the filename.
+    '''
+
+    statement = []
+    if os.path.exists(outfile):
+        os.unlink(outfile)
+    for x in infiles:
+        statement.append("""zcat %(x)s
+        | awk '{printf("%%s\\t%%i\\t%%i\\t%(x)s")}'
+        | gzip
+        >> %(outfile)s""" % locals())
+    statement = ";".join(statement)
+    P.run(statement)
+
+
 @follows(mkdir('contextstats.dir'))
 @transform('*.bam',
            regex("(.*).bam"),
            add_inputs(os.path.join(
                PARAMS["annotations_dir"],
-               PARAMS_ANNOTATIONS['interface_genomic_context_bed'])),
+               PARAMS["annotations_interface_genomic_context_bed"])),
            r"contextstats.dir/\1.contextstats.tsv.gz")
 def buildContextStats(infiles, outfile):
     '''build mapping context stats.
@@ -1750,7 +1725,7 @@ def runMedipsQC(infile, outfile):
            regex(r".*/([^/].*)\.bed.gz"),
            add_inputs(os.path.join(
                PARAMS["annotations_dir"],
-               PARAMS_ANNOTATIONS["interface_geneset_coding_exons_gtf"])),
+               PARAMS["annotations_interface_geneset_coding_exons_gtf"])),
            r"transcriptprofiles.dir/\1.transcriptprofile.tsv.gz")
 def buildTranscriptProfiles(infiles, outfile):
     '''build a table with the overlap profile
