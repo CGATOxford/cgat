@@ -143,47 +143,31 @@ if [ ! -z "$UNINSTALL_DIR" ] ; then
 fi
 
 # check installation type
-if [ "$INSTALL_SCRIPTS" == "1" ] ; then
-
-   if [ "$INSTALL_LITE" == "1" ] ; then
-
-      CONDA_INSTALL_TYPE="cgat-scripts-lite"
-
+if [ "$OS" == "travis" ] ; then
+   if [ "$INSTALL_SCRIPTS" == "1" ] ; then
+      if [ "$INSTALL_LITE" == "1" ] ; then
+         CONDA_INSTALL_TYPE="cgat-scripts-lite"
+      elif [ "$INSTALL_DEVEL" == "1" ] ; then
+         CONDA_INSTALL_TYPE="cgat-scripts"
+      else
+         CONDA_INSTALL_TYPE="cgat-scripts"
+      fi
    elif [ "$INSTALL_DEVEL" == "1" ] ; then
-
-      CONDA_INSTALL_TYPE="cgat-scripts"
-
+      if [ "$INSTALL_LITE" == "1" ] ; then
+         CONDA_INSTALL_TYPE="cgat-devel-lite"
+      elif [ "$INSTALL_DEVEL" == "1" ] ; then
+         CONDA_INSTALL_TYPE="cgat-devel"
+      else
+         CONDA_INSTALL_TYPE="cgat-devel"
+      fi
    else
-
-      CONDA_INSTALL_TYPE="cgat-scripts"
-
-   fi
-
-elif [ "$INSTALL_DEVEL" == "1" ] ; then
-
-   if [ "$INSTALL_LITE" == "1" ] ; then
-
-      CONDA_INSTALL_TYPE="cgat-devel-lite"
-
-   elif [ "$INSTALL_DEVEL" == "1" ] ; then
-
-      CONDA_INSTALL_TYPE="cgat-devel"
-
-   else
-
-      CONDA_INSTALL_TYPE="cgat-devel"
-
-   fi
-
-else
-
-   echo
-   echo " Wrong installation type! "
-   echo " Installation aborted. "
-   echo
-   exit 1
-
-fi
+      echo
+      echo " Wrong installation type! "
+      echo " Installation aborted. "
+      echo
+      exit 1
+   fi # if install type
+fi # if travis install
 
 # check installation target
 if [ "$OS" == "travis" ] ; then
