@@ -143,7 +143,7 @@ if [ ! -z "$UNINSTALL_DIR" ] ; then
 fi
 
 # check installation type
-if [ "$OS" == "travis" ] ; then
+if [ "$OS" != "travis" ] ; then
    if [ "$INSTALL_SCRIPTS" == "1" ] ; then
       if [ "$INSTALL_LITE" == "1" ] ; then
          CONDA_INSTALL_TYPE="cgat-scripts-lite"
