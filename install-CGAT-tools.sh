@@ -256,18 +256,6 @@ fi
 # test code with conda install
 conda_test() {
 
-detect_cgat_installation
-
-if [ -z "$UNINSTALL_DIR" ] ; then
-
-   echo
-   echo " The location of the CGAT code was not found. "
-   echo " Please install before testing."
-   echo
-   exit 1
-
-fi
-
 # setup environment and run tests
 if [ "$OS" == "travis" ] ; then
 
@@ -306,6 +294,18 @@ if [ "$OS" == "travis" ] ; then
    fi
 
 else
+
+   detect_cgat_installation
+
+   if [ -z "$UNINSTALL_DIR" ] ; then
+
+      echo
+      echo " The location of the CGAT code was not found. "
+      echo " Please install before testing."
+      echo
+      exit 1
+
+   fi
    
    if [ -z "$CGAT_HOME" ] ; then
       # default location for cgat installation
