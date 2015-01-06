@@ -841,6 +841,7 @@ def getOptionParser():
     parser.add_option("--output-filename-pattern", dest="output_pattern", type="string",
                       help="Pattern for secondary output filenames. Should contain a '%s' "
                       "[default=%default].")
+
     parser.set_defaults(
         split_at_lines=None,
         split_at_column=None,
