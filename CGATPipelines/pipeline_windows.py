@@ -614,7 +614,8 @@ def countReadsWithinWindows(infiles, outfile):
         bedfile,
         windowfile,
         outfile,
-        counting_method=PARAMS['tiling_counting_method'])
+        counting_method=PARAMS['tiling_counting_method'],
+        memory_allocation=PARAMS['tiling_counting_memory'])
 
 
 @merge(countReadsWithinWindows,
