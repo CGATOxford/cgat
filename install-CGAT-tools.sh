@@ -36,7 +36,7 @@ elif [ -f /etc/system-release ]; then
 
    OP1=$(cat /etc/system-release | awk ' {print $4;}' | awk '{sub("\\."," "); print $1;}')
    OP2=$(cat /etc/system-release | awk ' {print $3;}' | awk '{sub("\\."," "); print $1;}')
-   if [ "$OP1" != "6" -o "$OP2" != "6" ] ; then
+   if [ "$OP1" != "6" ] || [ "$OP2" != "6" ] ; then
       echo
       echo " Sorry, this version of Scientific Linux / CentOS has not been tested. Only 6.x versions are supported so far. "
       echo
