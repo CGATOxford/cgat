@@ -161,10 +161,6 @@ REGEX_FORMATS = regex(r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz)")
 SEQUENCEFILES_REGEX = regex(
     r"(\S+).(?P<suffix>fastq.1.gz|fastq.gz|sra|csfasta.gz)")
 
-PREPROCESSTOOLS = [tool for tool in
-                   P.asList(PARAMS["general_preprocessors"])]
-preprocess_prefix = ("-".join(PREPROCESSTOOLS[::-1]) + "-")
-
 #########################################################################
 # Get TRACKS grouped on either Sample3 or Sample4 track ids
 
@@ -175,21 +171,25 @@ TRACKS = PipelineTracks.Tracks(Sample).loadFromDirectory(
     + glob.glob("./*sra")
     + glob.glob("./*csfasta.gz"),
     pattern="(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz)")
-if len(TRACKS.getTracks()[0].asList()) == 4:
-    EXPERIMENTS = PipelineTracks.Aggregate(TRACKS, labels=("attribute0",
-                                                           "attribute1",
-                                                           "attribute2"))
-    TISSUES = PipelineTracks.Aggregate(TRACKS, labels=("attribute1",))
-    CONDITIONS = PipelineTracks.Aggregate(TRACKS, labels=("attribute2",))
-
-elif len(TRACKS.getTracks()[0].asList()) == 3:
-    EXPERIMENTS = PipelineTracks.Aggregate(TRACKS, labels=("attribute0",
-                                                           "attribute1"))
-    TISSUES = PipelineTracks.Aggregate(TRACKS, labels=("attribute0",))
-    CONDITIONS = PipelineTracks.Aggregate(TRACKS, labels=("attribute1",))
+if TRACKS:
+    if len(TRACKS.getTracks()[0].asList()) == 4:
+        EXPERIMENTS = PipelineTracks.Aggregate(TRACKS, labels=("attribute0",
+                                                               "attribute1",
+                                                               "attribute2"))
+        TISSUES = PipelineTracks.Aggregate(TRACKS, labels=("attribute1",))
+        CONDITIONS = PipelineTracks.Aggregate(TRACKS, labels=("attribute2",))
+        
+    elif len(TRACKS.getTracks()[0].asList()) == 3:
+        EXPERIMENTS = PipelineTracks.Aggregate(TRACKS, labels=("attribute0",
+                                                               "attribute1"))
+        TISSUES = PipelineTracks.Aggregate(TRACKS, labels=("attribute0",))
+        CONDITIONS = PipelineTracks.Aggregate(TRACKS, labels=("attribute1",))
+    else:
+        raise ValueError("Unrecognised PipelineTracks.AutoSample instance")
 else:
-    raise ValueError("Unrecognised PipelineTracks.AutoSample instance")
-
+    TISSUES = []
+    CONDITIONS = []
+    EXPERIMENTS = []
 
 #########################################################################
 #########################################################################
@@ -227,7 +227,12 @@ def loadFastqc(infile, outfile):
 #########################################################################
 # if preprocess tools are specified, process reads and run fastqc on output
 
-if PREPROCESSTOOLS:
+
+if PARAMS["preprocessors"]:
+    PREPROCESSTOOLS = [tool for tool
+                       in P.asList(PARAMS["preprocessors"])]
+    preprocess_prefix = ("-".join(PREPROCESSTOOLS[::-1]) + "-")
+
     @follows(mkdir("processed.dir"),
              mkdir("log.dir"),
              mkdir("summary.dir"))
@@ -241,16 +246,23 @@ if PREPROCESSTOOLS:
         '''
         trimmomatic_options = PARAMS["trimmomatic_options"]
         if PARAMS["trimmomatic_adapter"]:
-            adapter_options = "ILLUMINACLIP:%s:%s:%s:%s " % (
+            adapter_options = " ILLUMINACLIP:%s:%s:%s:%s " % (
                 PARAMS["trimmomatic_adapter"], PARAMS["trimmomatic_mismatches"],
                 PARAMS["trimmomatic_p_thresh"], PARAMS["trimmomatic_c_thresh"])
             trimmomatic_options = adapter_options + trimmomatic_options
 
-        job_threads = PARAMS["general_threads"]
+        job_threads = PARAMS["threads"]
         job_options = "-l mem_free=%s" % PARAMS["general_memory"]
-        save = PARAMS["general_save"]
 
-        m = PipelinePreprocess.MasterProcessor(save=save)
+        m = PipelinePreprocess.MasterProcessor(
+            save=PARAMS["save"], summarise=PARAMS["summarise"],
+            threads=PARAMS["threads"], scriptsdir=PARAMS["scriptsdir"],
+            trimgalore_options=PARAMS["trimgalore_options"],
+            trimmomatic_options=PARAMS["trimmomatic_options"],
+            sickle_options=PARAMS["sickle_options"],
+            flash_options=PARAMS["flash_options"],
+            fastx_trimmer_options=PARAMS["fastx_trimmer_options"])
+
         statement = m.build((infile,), outfile, PREPROCESSTOOLS)
         P.run()
 

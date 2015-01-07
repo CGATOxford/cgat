@@ -14,10 +14,10 @@ wiggle2Hilbert <- function(wiggleRle, image.dir, datName) {
     hilb <- hilbertImage(wiggleRle[[contig]])
     
     # save and plot in a png
-    fileSave <- paste0(image.dir,"/", contig,"-",datName, "-hilbertImage.png")
+    fileSave <- paste0(image.dir,"/", contig,"-",datName , "-hilbertImage.png")
     hilbImage <- showHilbertImage(hilb,
-    	      	 palettePos=colorRampPalette(c("yellow", "red"))(300),
-		 paletteNeg=colorRampPalette(c("yellow", "white"))(300),
+    	      	 palettePos=colorRampPalette(c("white", "red"))(300),
+		 paletteNeg=colorRampPalette(c("white", "blue"))(300),
 		 maxPaletteValue=max(abs(hilb)))
     png(file=fileSave)
     print(hilbImage)

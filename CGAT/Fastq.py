@@ -155,6 +155,10 @@ def iterate_guess(infile, max_tries=10000, guess=None):
         E.warn("multiple input formats possible: %s. Continuing with %s" %
                (", ".join(quals), guess))
         ref_format = guess
+    elif quals.issubset(set(["solexa", "phred64"])):
+        # guessFormat will call phred64 reads as phred64 AND solexa
+        # if both still remain after max_tries, assume phred64
+        ref_format = "phred64"
     else:
         raise ValueError(
             "could not guess format - could be one of %s." % str(quals))
@@ -191,6 +195,10 @@ def iterate_convert(infile, format, max_tries=10000, guess=None):
 
     if len(quals) == 1:
         ref_format = list(quals)[0]
+    elif quals.issubset(set(["solexa", "phred64"])):
+        # guessFormat will call phred64 reads as phred64 AND solexa
+        # if both still remain after max_tries, assume phred64
+        ref_format = "phred64"
     elif guess in quals:
         E.warn("multiple input formats possible: %s. Continuing with %s" %
                (", ".join(quals), guess))
@@ -232,7 +240,12 @@ def guessFormat(infile, max_lines=10000, raises=True):
     if len(quals) == 1:
         return list(quals)[0]
     elif raises is False:
-        return quals
+        if quals.issubset(set(["solexa", "phred64"])):
+            # guessFormat will call phred64 reads as phred64 AND solexa
+            # if both still remain after max_lines, return phred64
+            return "phred64"
+        else:
+            return quals
     else:
         raise ValueError(
             "could not guess format - could be one of %s." % str(quals))

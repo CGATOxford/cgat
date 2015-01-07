@@ -2017,8 +2017,7 @@ def main(args=sys.argv):
         exceptions_terminate_immediately=False,
         debug=False,
         variables_to_set=[],
-        checksums=0
-    )
+        checksums=0)
 
     (options, args) = E.Start(parser,
                               add_cluster_options=True)
@@ -2153,7 +2152,7 @@ def main(args=sys.argv):
                     options.stdout,
                     options.pipeline_targets,
                     verbose=options.loglevel,
-                    checksum_level=options.checksums,)
+                    checksum_level=options.checksums)
 
             elif options.pipeline_action == "touch":
                 pipeline_run(
