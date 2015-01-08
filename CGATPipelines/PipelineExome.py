@@ -30,7 +30,6 @@ Code
 import os
 import CGAT.IOTools as IOTools
 import CGAT.Pipeline as P
-import CGAT.Experiment as E
 from CGAT.Pipeline import cluster_runnable
 import numpy as np
 import pandas as pd
@@ -373,6 +372,7 @@ def compileMutationalSignature(infiles, outfiles, min_t_alt, min_n_depth,
     signatures'''
 
     delim = ":"
+
     def lookup(b1, b2):
         '''return lookup key for a pair of bases'''
         return(b1 + delim + b2)
