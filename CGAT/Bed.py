@@ -72,7 +72,8 @@ class Bed(object):
         self.track = None
 
     def __str__(self):
-        return "\t".join((self.contig, str(self.start), str(self.end)) + tuple(map(str, self.fields)))
+        return "\t".join((self.contig, str(self.start),
+                          str(self.end)) + tuple(map(str, self.fields)))
 
     def fromGTF(self, gff, is_gtf=False, name=None):
         """fill from gtf formatted entry."""
@@ -126,8 +127,8 @@ class Bed(object):
 
             blockCount = len(intervals)
 
-            self["blockStarts"] = ",".join(map(str,blockStarts))
-            self["blockSizes"] = ",".join(map(str,blockSizes))
+            self["blockStarts"] = ",".join(map(str, blockStarts))
+            self["blockSizes"] = ",".join(map(str, blockSizes))
             self["blockCount"] = str(blockCount)
 
         else:
@@ -187,7 +188,7 @@ def iterator(infile):
 
     The iterator is :term:`track` aware.
 
-    This iterator yields :class:`Bed` objects. 
+    This iterator yields :class:`Bed` objects.
     """
 
     track = None
@@ -322,7 +323,7 @@ def binIntervals(iterator, num_bins=5, method="equal-bases", bin_edges=None):
     equal-intervals
        merge intervals such that each bin contains the equal number intervals
 
-    This options requires the fifth field (score) of the bed input 
+    This options requires the fifth field (score) of the bed input
     file to be present.
 
     bins should be non-overlapping.
@@ -441,7 +442,7 @@ def merge(iterator):
 
 
 def getNumColumns(filename):
-    '''return number of fields in bed-file by looking at the first 
+    '''return number of fields in bed-file by looking at the first
     entry.
 
     Returns 0 if file is empty.
