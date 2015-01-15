@@ -148,7 +148,7 @@ import CGAT.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Bed as Bed
 import CGAT.Intervals as Intervals
-
+from collections import defaultdict as defaultdict
 import pysam
 
 
@@ -157,7 +157,8 @@ def merge(iterator,
           by_name=False,
           min_intervals=1,
           remove_inconsistent=False,
-          resolve_blocks=False):
+          resolve_blocks=False,
+          stranded=False):
     """iterator for merging adjacent bed entries.
 
     *max_distance* > 0 permits merging of intervals that are
@@ -176,30 +177,58 @@ def merge(iterator,
             "using both remove_inconsistent and by_name makes no sense")
 
     def iterate_chunks(iterator):
+        max_end = defaultdict(int)
+        to_join = defaultdict(list)
+        last_name = defaultdict(str)
+
         last = iterator.next()
-        max_end = last.end
-        to_join = [last]
+
+        if not stranded:
+            strand = "."
+        else:
+            strand = last.strand
+
+        max_end[strand] = last.end
+        to_join[strand] = [last]
 
         for bed in iterator:
-            d = bed.start - max_end
+
+            if not stranded:
+                strand = "."
+            else:
+                strand = bed.strand
+
+            d = bed.start - max_end[strand]
+
             if bed.contig == last.contig:
                 assert bed.start >= last.start, \
                     "input file should be sorted by contig and position: d=%i:\n%s\n%s\n" \
                     % (d, last, bed)
 
-            if bed.contig != last.contig or \
-                    d > max_distance or \
-                    (by_name and last.name != bed.name):
-                yield to_join
-                to_join = []
-                max_end = 0
+            if bed.contig != last.contig:
+
+                for s in to_join:
+                    if to_join[s]:
+                        yield to_join[s]
+                    to_join[s] = []
+                    max_end[s] = 0
+
+            elif (d > max_distance or
+                  (by_name and last_name[strand] != bed.name)):
+
+                if to_join[strand]:
+                    yield to_join[strand]
+
+                to_join[strand] = []
 
             last = bed
-            max_end = max(last.end, max_end)
-            to_join.append(bed)
+            last_name[strand] = last.name
+            max_end[strand] = max(bed.end, max_end[strand])
+            to_join[strand].append(bed)
 
-        if to_join:
-            yield to_join
+        for strand in to_join:
+            if to_join[strand]:
+                yield to_join[strand]
         raise StopIteration
 
     c = E.Counter()
@@ -473,6 +502,11 @@ def main(argv=sys.argv):
         help="When merging bed12 entrys, should blocks be resolved?")
 
     parser.add_option(
+        "--merge-stranded", dest="stranded",
+        action="store_true",
+        help="Only merge intervals on the same strand")
+
+    parser.add_option(
         "--remove-inconsistent-names", dest="remove_inconsistent_names",
         action="store_true",
         help="when merging, do not output intervals where the names of "
@@ -534,7 +568,8 @@ def main(argv=sys.argv):
                 by_name=options.merge_by_name,
                 min_intervals=options.merge_min_intervals,
                 remove_inconsistent=options.remove_inconsistent_names,
-                resolve_blocks=options.resolve_blocks)
+                resolve_blocks=options.resolve_blocks,
+                stranded=options.stranded)
         elif method == "bins":
             if options.bin_edges:
                 bin_edges = map(float, options.bin_edges.split(","))
