@@ -158,7 +158,13 @@ def configToDictionary(config):
     p = {}
     for section in config.sections():
         for key, value in config.items(section):
-            v = IOTools.convertValue(value)
+            try:
+                v = IOTools.convertValue(value)
+            except TypeError:
+                E.error("Error converting key %s, value %s" % (key,value))
+                E.error("Possilbe multiple concorent attempts to read configureation")
+                raise
+
             p["%s_%s" % (section, key)] = v
             if section in ("general", "DEFAULT"):
                 p["%s" % (key)] = v
