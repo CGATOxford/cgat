@@ -346,22 +346,27 @@ class ResultBuilder:
     field_index :
     """
 
-    def __init__(self, mapper=None, field_index=None, field_name=None):
+    def __init__(self,
+                 mapper=None,
+                 field_index=None,
+                 field_name=None,
+                 header_regex=None):
         self.mMapper = mapper
         self.mFieldIndex = field_index
         self.mFieldName = field_name
         self.header = None
         self.nfields = None
+        self.header_regex = header_regex
 
-    def parseHeader(self, infile, outfile, options, header_regex=None):
+    def parseHeader(self, infile, outfile, options):
         """parse header in infile."""
         # skip comments until header
         while 1:
             l = infile.readline()
             if not l:
                 break
-            if header_regex:
-                if header_regex.search(l):
+            if self.header_regex:
+                if self.header_regex.search(l):
                     break
             elif l[0] != "#":
                 break
@@ -401,10 +406,7 @@ class ResultBuilder:
             infile = IOTools.openFile(fn, "r")
 
             if options.output_header:
-                regex = None
-                if options.output_regex_header:
-                    regex = re.compile(options.output_regex_header)
-                self.parseHeader(infile, outfile, options, header_regex=regex)
+                self.parseHeader(infile, outfile, options)
 
             for l in infile:
                 nfields = l.count("\t")
@@ -432,7 +434,7 @@ class ResultBuilder:
             infile.close()
 
 
-class ResultBuilderPSL (ResultBuilder):
+class ResultBuilderPSL(ResultBuilder):
 
     """Result builder for psl tables. Here, column 9,
     the query id, is substituted."""
@@ -470,7 +472,7 @@ class ResultBuilderFasta(ResultBuilder):
 
     def __call__(self, filenames, outfile, options):
         for fi, fn in filenames:
-            infile = IOtools.openFile(fn, "r")
+            infile = IOTools.openFile(fn, "r")
             for l in infile:
                 if l[0] == "#":
                     options.stdlog.write(l)
@@ -812,7 +814,7 @@ def getOptionParser():
 
     parser.add_option(
         "--output-regex-header", dest="output_regex_header", type="string",
-        help="Regular expression for header in output files. Any lines "
+        help="Regular expression for header (in stdout stream). Any lines "
         "before the first line matching this regular expression are ignored"
         "[%default].")
 
@@ -1082,9 +1084,13 @@ def main(argv=None):
         if options.binary:
             ResultBuilderBinary()(started_requests, options.stdout, options)
         else:
+            regex = None
+            if options.output_regex_header:
+                regex = re.compile(options.output_regex_header)
             ResultBuilder(mapper=mapper,
                           field_index=index,
                           field_name=name,
+                          header_regex=regex
                           )(started_requests, options.stdout, options)
 
         # deal with logfiles : combine them into a single file
