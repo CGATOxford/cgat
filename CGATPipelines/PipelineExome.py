@@ -84,7 +84,7 @@ def GATKReadGroups(infile, outfile, genome,
 def GATKIndelRealign(infile, outfile, genome, threads=4):
     '''Realigns BAMs around indels using GATK'''
 
-    intervalfile = outfile.replace(".bam",".intervals")
+    intervalfile = outfile.replace(".bam", ".intervals")
     job_options = getGATKOptions()
 
     statement = '''GenomeAnalysisTK
