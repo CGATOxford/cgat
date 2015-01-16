@@ -264,7 +264,7 @@ Download and build your own, isolated Python installation::
         tar xzvf Python-2.7.6.tgz
         rm Python-2.7.6.tgz
         cd Python-2.7.6
-        ./configure --column-prefix=$HOME/CGAT/Python-2.7.6
+        ./configure --prefix=$HOME/CGAT/Python-2.7.6
         make
         make install
         cd

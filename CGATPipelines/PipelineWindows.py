@@ -710,10 +710,6 @@ def outputSpikeCounts(outfile, infile_name,
 def plotDETagStats(infiles, outfile):
     '''plot differential expression stats'''
 
-    # with IOTools.openFile(outfile) as outf:
-    #     outf.write(",".join(infiles, outfile))
-    # return
-
     infile, composition_file = infiles
     Expression.plotDETagStats(
         infile, outfile,

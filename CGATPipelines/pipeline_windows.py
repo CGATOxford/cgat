@@ -901,7 +901,7 @@ def normalizeBed(infile, outfile):
              function='normalizeBed',
              infiles=infile,
              outfiles=tmpfile,
-             toCluster=True,
+             to_cluster=True,
              jobOptions="-l mem_free=32G")
 
     statement = '''cat %(tmpfile)s |
@@ -925,7 +925,7 @@ def enrichVsInput(infile, outfile):
              function='enrichmentVsInput',
              infiles=infile,
              outfiles=tmpfile,
-             toCluster=True)
+             to_cluster=True)
 
     statement = '''cat %(tmpfile)s |  gzip > %(outfile)s; rm -f %(tmpfile)s'''
 

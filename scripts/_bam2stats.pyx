@@ -268,7 +268,8 @@ def count( Samfile samfile,
     cdef int total_pair_is_proper_mmap = 0
     cdef int total_pair_is_proper_duplicate = 0
     cdef int total_pair_not_proper_uniq = 0
-    cdef int total_pair_is_incomplete = 0
+    cdef int total_pair_is_incomplete_uniq = 0
+    cdef int total_pair_is_incomplete_mmap = 0
     cdef int total_pair_is_other = 0
     # read based counting for unpaired reads
     cdef int total_reads = 0
@@ -313,17 +314,27 @@ def count( Samfile samfile,
                     if fastq_count.is_duplicate == 2:
                         total_pair_is_proper_duplicate +=1
                 elif fastq_count.is_proper_pair > 2:
-                    # proper pairs that map to mulitple locations
+                    # proper pairs that map to multiple locations
                     total_pair_is_proper_mmap +=1
                 elif fastq_count.mapped_is_read1 == 1 \
                         and fastq_count.mapped_is_read2 == 1 \
                         and fastq_count.is_proper_pair == 0:
-                    # pair which map each read once, but not uniquely
+                    # pair which map each read once, but not is not proper
                     total_pair_not_proper_uniq += 1
-                elif (fastq_count.mapped_is_read1 == 1 and fastq_count.mapped_is_read2 == 0) \
-                        or (fastq_count.mapped_is_read1 == 0 and fastq_count.mapped_is_read2 == 1):
-                    # an incomplete pair - one read of a pair matches uniquel, but not the other
-                    total_pair_is_incomplete += 1
+                elif (fastq_count.mapped_is_read1 == 1 and
+                      fastq_count.mapped_is_read2 == 0) \
+                    or (fastq_count.mapped_is_read1 == 0 and
+                        fastq_count.mapped_is_read2 == 1):
+                    # an incomplete pair - one read of a pair matches uniquely 
+                    # but not the other
+                    total_pair_is_incomplete_uniq += 1
+                elif (fastq_count.mapped_is_read1 == 1 and
+                      fastq_count.mapped_is_read2 > 1) \
+                    or (fastq_count.mapped_is_read1 > 1 and
+                        fastq_count.mapped_is_read2 == 1):
+                    # an incomplete pair - one read of a pair matches uniquely
+                    # but the other matches multiple times
+                    total_pair_is_incomplete_mmap += 1
                 else:
                     total_pair_is_other += 1
 
@@ -369,7 +380,8 @@ def count( Samfile samfile,
         counter.total_pair_is_mapped = total_pair_is_mapped
         counter.total_pair_is_unmapped = total_pair_is_unmapped
         counter.total_pair_is_proper_uniq = total_pair_is_proper_uniq
-        counter.total_pair_is_incomplete = total_pair_is_incomplete
+        counter.total_pair_is_incomplete_uniq = total_pair_is_incomplete_uniq
+        counter.total_pair_is_incomplete_mmap = total_pair_is_incomplete_mmap
         counter.total_pair_is_proper_duplicate = total_pair_is_proper_duplicate
         counter.total_pair_is_proper_mmap = total_pair_is_proper_mmap
         counter.total_pair_not_proper_uniq = total_pair_not_proper_uniq
