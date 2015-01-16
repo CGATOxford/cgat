@@ -184,17 +184,13 @@ P.getParameters(
 PARAMS = P.PARAMS
 
 
-def getPicardOptions():
-    return "-pe dedicated 3 -R y -l mem_free=1.4G -l picard=1"
-
-
 def getGATKOptions():
     # removed picard=1, surely not neccessary?
-    return "-pe dedicated 6 -R y -l mem_free=4G"
+    return "-l mem_free=4G"
 
 
 def getMuTectOptions():
-    return "-pe dedicated 2 -R y -l mem_free=6G"
+    return "-l mem_free=6G"
 
 
 #########################################################################
@@ -267,9 +263,9 @@ def mapReads(infile, outfile):
     generate alignment statistics and deduplicate using Picard'''
 
     job_threads = PARAMS["bwa_threads"]
-    job_options = "-pe dedicated 2 -l mem_free=8G"
+    job_options = "-l mem_free=8G"
+    job_threads = 2
 
-    to_cluster = True
     if PARAMS["bwa_algorithm"] == "aln":
         m = PipelineMapping.BWA(
             remove_non_unique=PARAMS["bwa_remove_non_unique"],
@@ -384,6 +380,7 @@ def GATKpreprocessing(infile, outfile):
     track = P.snip(os.path.basename(infile), ".bam")
     tmpdir_gatk = P.getTempDir('/ifs/scratch')
     job_options = getGATKOptions()
+    job_threads = 6
     library = PARAMS["readgroup_library"]
     platform = PARAMS["readgroup_platform"]
     platform_unit = PARAMS["readgroup_platform_unit"]
@@ -462,6 +459,7 @@ def realignMatchedSample(infile, outfile):
 
     to_cluster = USECLUSTER
     job_options = getGATKOptions()
+    job_threads = 6
     # tmpdir_gatk = P.getTempDir('tmpbam')
     tmpdir_gatk = P.getTempDir('/ifs/scratch')
     # threads = PARAMS["gatk_threads"]
@@ -542,6 +540,7 @@ def realignMatchedSample(infile, outfile):
 def runPicardOnRealigned(infile, outfile):
     to_cluster = USECLUSTER
     job_options = getGATKOptions()
+    job_threads = 6
     tmpdir_gatk = P.getTempDir('/ifs/scratch')
     # threads = PARAMS["gatk_threads"]
 
@@ -595,6 +594,7 @@ def loadPicardRealigenedAlignStats(infiles, outfile):
 def callControlVariants(infile, outfile):
     '''run mutect to call snps in tumor sample'''
     job_options = getMuTectOptions()
+    job_threads = 2
     basename = P.snip(outfile, "_normal_mutect.vcf")
     call_stats_out = basename + "_call_stats.out"
     mutect_log = basename + ".log"
@@ -669,6 +669,7 @@ def runMutect(infiles, outfile):
     # furthermore, multithreading doesn't speed up even nearly linearly
     # threads = PARAMS["gatk_threads"]
     job_options = getMuTectOptions()
+    job_threads = 2
     # outfile, extended_out = outfiles
     basename = P.snip(outfile, ".mutect.snp.vcf")
     call_stats_out = basename + "_call_stats.out"
@@ -718,8 +719,8 @@ def indelCaller(infile, outfile):
     infile_tumor = infile.replace(
         "Control", PARAMS["mutect_tumour"])
     outdir = "/".join(outfile.split("/")[0:2])
-    job_options = "-pe dedicated 12 -R y -l mem_free=1.9G"
-    to_cluster = USECLUSTER
+    job_options = "-l mem_free=1.9G"
+    job_threads = 12
 
     statement = '''rm -rf %(outdir)s;
                    /ifs/apps/bio/strelka-1.0.14/bin/configureStrelkaWorkflow.pl
@@ -754,6 +755,7 @@ def runMutectReverse(infiles, outfile):
     # threads = PARAMS["gatk_threads"]
 
     job_options = getMuTectOptions()
+    job_threads = 2
     basename = P.snip(outfile, ".mutect.reverse.snp.vcf")
     call_stats_out = basename + "_call_stats.reverse.out"
     coverage_wig_out = basename + "_coverage.reverse.wig"
@@ -847,6 +849,7 @@ def runMutectOnDownsampled(infiles, outfile):
     # furthermore, multithreading doesn't speed up even nearly linearly
     # threads = PARAMS["gatk_threads"]
     job_options = getMuTectOptions()
+    job_threads = 2
     # outfile, extended_out = outfiles
     basename = P.snip(outfile, ".mutect.snp.vcf")
     call_stats_out = basename + "_call_stats.out"
@@ -899,8 +902,8 @@ def runMutectOnDownsampled(infiles, outfile):
            r"variants/\1.mutect.snp.snpeff.vcf")
 def annotateVariantsSNPeff(infile, outfile):
     '''Annotate variants using SNPeff'''
-    to_cluster = USECLUSTER
-    job_options = "-pe dedicated 2 -R y -l mem_free=4G"
+    job_options = "-l mem_free=4G"
+    job_threads = 2
 
     snpeff_genome = PARAMS["annotation_snpeff_genome"]
     config = PARAMS["annotation_snpeff_config"]
@@ -915,8 +918,8 @@ def annotateVariantsSNPeff(infile, outfile):
            r"variants/\1.indels.snpeff.vcf")
 def annotateVariantsINDELsSNPeff(infile, outfile):
     '''Annotate indel variants using SNPeff'''
-    to_cluster = USECLUSTER
-    job_options = "-pe dedicated 2 -R y -l mem_free=4G"
+    job_options = "-l mem_free=4G"
+    job_threads = 2
 
     snpeff_genome = PARAMS["annotation_snpeff_genome"]
     config = PARAMS["annotation_snpeff_config"]
@@ -1017,6 +1020,7 @@ def variantRecalibrator(infile, outfile):
     '''Create variant recalibration file for indels'''
     to_cluster = USECLUSTER
     job_options = getGATKOptions()
+    job_threads = 6
     track = P.snip(os.path.basename(outfile), ".annotated.recalibrated.vcf")
     mills = PARAMS["gatk_mills"]
 
