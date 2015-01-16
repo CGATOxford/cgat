@@ -511,7 +511,8 @@ def main(argv=None):
                           "sort",
                           "transcript2genes",
                           "unset-genes"),
-                      help="Method to apply [%default]. Please only select one.")
+                      help="Method to apply [%default]."
+                      "Please only select one.")
 
     parser.set_defaults(
         sort_order="gene",
