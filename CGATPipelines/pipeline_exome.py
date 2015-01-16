@@ -191,15 +191,10 @@ P.getParameters(
 PARAMS = P.PARAMS
 INPUT_FORMATS = ("*.fastq.1.gz", "*.fastq.gz", "*.sra", "*.csfasta.gz")
 REGEX_FORMATS = regex(r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz)")
-USECLUSTER = True
-
-
-def getPicardOptions():
-    return "-pe dedicated 3 -R y -l mem_free=1.4G -l picard=1"
 
 
 def getGATKOptions():
-    return "-pe dedicated 3 -R y -l mem_free=1.4G -l picard=1"
+    return "-l mem_free=1.4G -l picard=1"
 
 #########################################################################
 #########################################################################
@@ -269,7 +264,8 @@ def mapReads(infiles, outfile):
     sort and index BAM file, generate alignment statistics and
     deduplicate using Picard
     '''
-    job_options = "-pe dedicated 2 -l mem_free=8G"
+    job_options = "-l mem_free=8G"
+    job_threads = 2
     track = P.snip(os.path.basename(outfile), ".bam")
     m = PipelineMapping.BWA(
         remove_unique=PARAMS["bwa_remove_non_unique"], align_stats=True,
@@ -359,6 +355,8 @@ def GATKpreprocessing(infile, outfile):
     track = P.snip(os.path.basename(infile), ".bam")
     tmpdir_gatk = P.getTempDir('.')
     job_options = getGATKOptions()
+    job_threads = 3
+
     library = PARAMS["readgroup_library"]
     platform = PARAMS["readgroup_platform"]
     platform_unit = PARAMS["readgroup_platform_unit"]
@@ -448,6 +446,7 @@ def haplotypeCaller(infile, outfile):
     '''Call SNVs and indels using GATK HaplotypeCaller in all members of a
     family together'''
     job_options = getGATKOptions()
+    job_threads = 3
     dbsnp = PARAMS["gatk_dbsnp"]
     intervals = PARAMS["roi_intervals"]
     padding = PARAMS["roi_padding"]
@@ -473,7 +472,8 @@ def haplotypeCaller(infile, outfile):
            r"variants/\1.haplotypeCaller.snpeff.vcf")
 def annotateVariantsSNPeff(infile, outfile):
     '''Annotate variants using SNPeff'''
-    job_options = "-pe dedicated 4 -R y -l mem_free=6G"
+    job_options = "-l mem_free=6G"
+    job_threads = 4
     snpeff_genome = PARAMS["annotation_snpeff_genome"]
     config = PARAMS["annotation_snpeff_config"]
     statement = '''snpEff.sh eff
@@ -516,6 +516,7 @@ def variantAnnotator(infiles, outfile):
 def variantRecalibrator(infile, outfile):
     '''Create variant recalibration file'''
     job_options = getGATKOptions()
+    job_threads = 3
     track = P.snip(outfile, ".recal")
     hapmap = PARAMS["gatk_hapmap"]
     omni = PARAMS["gatk_omni"]
@@ -546,6 +547,7 @@ def variantRecalibrator(infile, outfile):
 def applyVariantRecalibration(infiles, outfile):
     '''Perform variant quality score recalibration using GATK '''
     job_options = getGATKOptions()
+    job_threads = 3
     infile, recal, tranches = infiles
     statement = '''GenomeAnalysisTK -T ApplyRecalibration
     -R %%(bwa_index_dir)s/%%(genome)s.fa -input %(infile)s
@@ -564,7 +566,8 @@ def applyVariantRecalibration(infiles, outfile):
            r"variants/\1.haplotypeCaller.snpsift.vcf")
 def annotateVariantsSNPsift(infile, outfile):
     '''Add annotations using SNPsift'''
-    job_options = "-pe dedicated 4 -R y -l mem_free=6G"
+    job_options = "-l mem_free=6G"
+    job_threads = 4
     track = P.snip(os.path.basename(infile), ".vqsr.vcf")
     dbNSFP = PARAMS["annotation_snpsift_dbnsfp"]
     thousand_genomes = PARAMS["annotation_thousand_genomes"]

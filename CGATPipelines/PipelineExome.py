@@ -39,7 +39,7 @@ PARAMS = {}
 
 
 def getGATKOptions():
-    return "-pe dedicated 3 -R y -l mem_free=1.4G -l picard=1"
+    return "-l mem_free=1.4G -l picard=1"
 
 #########################################################################
 
@@ -52,6 +52,7 @@ def GATKreadGroups(infile, outfile, genome,
     track = P.snip(os.path.basename(infile), ".bam")
     tmpdir_gatk = P.getTempDir('.')
     job_options = getGATKOptions()
+    job_threads = 3
 
     statement = '''ReorderSam
                     INPUT=%(infile)s
@@ -85,6 +86,7 @@ def GATKrealign(infile, outfile, genome, threads=4):
     track = P.snip(os.path.basename(infile), ".bam")
     tmpdir_gatk = P.getTempDir('.')
     job_options = getGATKOptions()
+    job_threads = 3
 
     statement = '''GenomeAnalysisTK
                     -T RealignerTargetCreator
@@ -111,6 +113,7 @@ def GATKrescore(infile, outfile, genome, dbsnp, solid_options=""):
     track = P.snip(os.path.basename(infile), ".bam")
     tmpdir_gatk = P.getTempDir('.')
     job_options = getGATKOptions()
+    job_threads = 3
 
     statement = '''GenomeAnalysisTK
                     -T BaseRecalibrator
@@ -136,6 +139,8 @@ def haplotypeCaller(infile, outfile, genome,
     '''Call SNVs and indels using GATK HaplotypeCaller in all members of a
     family together'''
     job_options = getGATKOptions()
+    job_threads = 3
+
     statement = '''GenomeAnalysisTK
     -T HaplotypeCaller
     -o %(outfile)s
@@ -210,6 +215,8 @@ def variantAnnotator(vcffile, bamlist, outfile, genome,
                      dbsnp, annotations, snpeff_file=""):
     '''Annotate variant file using GATK VariantAnnotator'''
     job_options = getGATKOptions()
+    job_threads = 3
+
     anno = annotations.split(",")
     anno = " -A " + " -A ".join(anno)
     statement = '''GenomeAnalysisTK -T VariantAnnotator
@@ -229,6 +236,8 @@ def variantRecalibrator(infile, outfile, genome,
                         dbsnp, hapmap, omni):
     '''Create variant recalibration file'''
     job_options = getGATKOptions()
+    job_threads = 3
+
     track = P.snip(outfile, ".recal")
     statement = '''GenomeAnalysisTK -T VariantRecalibrator
     -R %(genome)s
@@ -252,6 +261,8 @@ def variantRecalibrator(infile, outfile, genome,
 def applyVariantRecalibration(vcf, recal, tranches, outfile, genome):
     '''Perform variant quality score recalibration using GATK '''
     job_options = getGATKOptions()
+    job_threads = 3
+
     statement = '''GenomeAnalysisTK -T ApplyRecalibration
     -R %(genome)s
     -input %(vcf)s
@@ -268,6 +279,8 @@ def applyVariantRecalibration(vcf, recal, tranches, outfile, genome):
 def vcfToTable(infile, outfile, genome, columns):
     '''Converts vcf to tab-delimited file'''
     job_options = getGATKOptions()
+    job_threads = 3
+
     statement = '''GenomeAnalysisTK -T VariantsToTable
                    -R %(genome)s
                    -V %(infile)s
