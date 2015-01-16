@@ -1731,6 +1731,7 @@ def peekParameters(workingdir,
 
 def cluster_runnable(func):
     '''A dectorator that allows a function to be run on the cluster.
+
     The decorated function now takes extra arguments. The most important
     is *submit*. If set to true, it will submit the function to the cluster
     via the Pipeline.submit framework. Arguments to the function are
@@ -1762,6 +1763,10 @@ def cluster_runnable(func):
                    params=[snip(module_file), function_name, args_file],
                    **submit_args)
         else:
+            # remove job contral options before running function
+            for x in ("submit", "job_options", "job_queue"):
+                if x in kwargs:
+                    del kwargs[x]
             return func(*args, **kwargs)
 
     return submit_function
@@ -2012,8 +2017,7 @@ def main(args=sys.argv):
         exceptions_terminate_immediately=False,
         debug=False,
         variables_to_set=[],
-        checksums=0
-    )
+        checksums=0)
 
     (options, args) = E.Start(parser,
                               add_cluster_options=True)
@@ -2148,7 +2152,7 @@ def main(args=sys.argv):
                     options.stdout,
                     options.pipeline_targets,
                     verbose=options.loglevel,
-                    checksum_level=options.checksums,)
+                    checksum_level=options.checksums)
 
             elif options.pipeline_action == "touch":
                 pipeline_run(

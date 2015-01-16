@@ -30,7 +30,6 @@ Code
 import os
 import CGAT.IOTools as IOTools
 import CGAT.Pipeline as P
-import CGAT.Experiment as E
 from CGAT.Pipeline import cluster_runnable
 import numpy as np
 import pandas as pd

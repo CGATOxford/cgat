@@ -1592,8 +1592,10 @@ def plotDETagStats(infile, outfile_prefix,
     table['log10_treatment_mean'] = numpy.log10(table['treatment_mean'] + 1)
     table['log10_control_mean'] = numpy.log10(table['control_mean'] + 1)
     table['dmr'] = numpy.array(["insignicant"] * len(table))
-    table.loc[table["l2fold"] > 0 & table["significant"], "dmr"] = "up"
-    table.loc[table["l2fold"] < 0 & table["significant"], "dmr"] = "down"
+    table.loc[
+        (table["l2fold"] > 0) & (table["significant"] == 1), "dmr"] = "up"
+    table.loc[
+        (table["l2fold"] < 0) & (table["significant"] == 1), "dmr"] = "down"
 
     def _dplot(table, outfile, column):
 

@@ -115,18 +115,12 @@ Installation instructions for the following operating systems are available:
 
 * :ref:`CGATInstallationOSX`
 
-* :ref:`CGATInstallationSL6`
-
-* :ref:`CGATInstallationCentOS6`
-
-* :ref:`CGATInstallationUbuntu`
+* :ref:`CGATInstallationLinux`
 
 Furthermore, we also provide different means of getting the CGAT Code Collection
 pre-installed:
 
 * :ref:`CGATInstallationVirtualBoxUbuntu`
-
-* :ref:`CGATLiveISO`
 
 * :ref:`CGATInstallationVagrant`
 

@@ -76,12 +76,14 @@ def main(argv=None):
                       "[%default].")
 
     parser.add_option("--output-mode", dest="output_mode", type="choice",
-                      choices=("intervals", "leftright"),
+                      choices=("intervals", "leftright", "segments"),
                       help="what to output. "
                       "'intervals' generates a single sequence for "
                       "each bed interval. 'leftright' generates two "
                       "sequences, one in each direction, for each bed "
-                      "interval. [%default]")
+                      "interval. 'segments' can be used to output "
+                      "sequence from bed12 files so that sequence only covers "
+                      "the segements [%default]")
 
     parser.add_option("--min-sequence-length", dest="min_length", type="int",
                       help="require a minimum sequence length [%default]")
@@ -138,7 +140,16 @@ def main(argv=None):
         else:
             strand = bed.strand
 
-        if options.output_mode == "intervals":
+        if options.output_mode == "segments" and bed.columns == 12:
+            ids.append("%s %s:%i..%i (%s) %s %s" %
+                       (bed.name, bed.contig, bed.start, bed.end, strand,
+                        bed["blockSizes"], bed["blockStarts"]))
+            seg_seqs = [fasta.getSequence(bed.contig, strand, start, end)
+                        for start, end in bed.toIntervals()]
+            seqs.append("".join(seg_seqs))
+
+        elif (options.output_mode == "intervals" or
+              options.output_mode == "segments"):
             ids.append("%s %s:%i..%i (%s)" %
                        (bed.name, bed.contig, bed.start, bed.end, strand))
             seqs.append(

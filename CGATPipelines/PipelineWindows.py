@@ -134,7 +134,8 @@ def countTags(infile, outfile):
 def countReadsWithinWindows(bedfile,
                             windowfile,
                             outfile,
-                            counting_method="midpoint"):
+                            counting_method="midpoint",
+                            memory_allocation="4G"):
     '''count reads given in *tagfile* within intervals in
     *windowfile*.
 
@@ -144,7 +145,7 @@ def countReadsWithinWindows(bedfile,
     can be 'midpoint' or 'nucleotide'.
     '''
 
-    job_options = "-l mem_free=4G"
+    job_options = "-l mem_free=%s" % memory_allocation
 
     if counting_method == "midpoint":
         f = '''| awk '{a = $2+($3-$2)/2;
@@ -708,10 +709,6 @@ def outputSpikeCounts(outfile, infile_name,
 @P.cluster_runnable
 def plotDETagStats(infiles, outfile):
     '''plot differential expression stats'''
-
-    # with IOTools.openFile(outfile) as outf:
-    #     outf.write(",".join(infiles, outfile))
-    # return
 
     infile, composition_file = infiles
     Expression.plotDETagStats(

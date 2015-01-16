@@ -1147,7 +1147,7 @@ else:
 @transform(MAPPINGTARGETS,
            suffix(".bam"),
            add_inputs(os.path.join(PARAMS["bowtie_index_dir"],
-                                   PARAMS["genome"] + ".fa")),
+                                   PARAMS["genome"] + ".fasta")),
            ".picard_stats")
 def buildPicardStats(infiles, outfile):
     '''build alignment stats using picard.
