@@ -343,41 +343,51 @@ class ResultBuilder:
 
     """the default result builder for table formatted output.
 
-    field_index : 
+    field_index :
     """
 
     def __init__(self, mapper=None, field_index=None, field_name=None):
         self.mMapper = mapper
         self.mFieldIndex = field_index
         self.mFieldName = field_name
-        self.mHeader = None
+        self.header = None
+        self.nfields = None
 
-    def parseHeader(self, infile, outfile, options):
+    def parseHeader(self, infile, outfile, options, header_regex=None):
         """parse header in infile."""
         # skip comments until header
         while 1:
             l = infile.readline()
-            if not l or l[0] != "#":
+            if not l:
+                break
+            if header_regex:
+                if header_regex.search(l):
+                    break
+            elif l[0] != "#":
                 break
             options.stdlog.write(l)
 
-        # Print only the first header and check if
+        # print only the first header and check if
         # all the headers are the same.
-        if self.mHeader:
-            if self.mHeader != l:
+        if self.header:
+            if self.header != l:
                 raise ValueError(
-                    "inconsistent header in file %s\ngot=%s\nexpected=%s" % (infile, l, self.mHeader))
+                    "inconsistent header in file %s\n"
+                    "got=%s\nexpected=%s" % (infile, l, self.header))
         else:
             outfile.write(l)
-            self.mHeader = l
+            self.header = l
+            self.nfields = l.count("\t")
+            if self.nfields == 0:
+                E.warn("only single column in header: %s" % l[:-1])
 
             if self.mFieldIndex is None and self.mFieldName:
                 try:
-                    self.mFieldIndex = self.mHeader.split(
+                    self.mFieldIndex = self.header.split(
                         "\t").index(self.mFieldName)
                 except ValueError:
                     E.warn("no mapping, can not find field %s in %s" %
-                           (self.mFieldName, self.mHeader))
+                           (self.mFieldName, self.header))
                     self.mFieldName = None
 
                 E.debug(
@@ -391,11 +401,21 @@ class ResultBuilder:
             infile = IOTools.openFile(fn, "r")
 
             if options.output_header:
-                self.parseHeader(infile, outfile, options)
+                regex = None
+                if options.output_regex_header:
+                    regex = re.compile(options.output_regex_header)
+                self.parseHeader(infile, outfile, options, header_regex=regex)
 
             for l in infile:
+                nfields = l.count("\t")
                 if l[0] == "#":
                     options.stdlog.write(l)
+                elif nfields != self.nfields:
+                    # validate number of fields in row, raise warning
+                    # for those not matching and skip.
+                    E.warn(
+                        "# line %s has unexpected number of fields: %i != %i" %
+                        (l[:-1], nfields, self.nfields))
                 else:
                     if self.mFieldIndex is not None:
                         data = l[:-1].split("\t")
@@ -506,8 +526,6 @@ class ResultBuilderLog(ResultBuilder):
                 outfile.write(l)
             infile.close()
 
-# --------------------------------------------------------------------
-
 
 def runCommand(data):
 
@@ -588,8 +606,6 @@ def runCommand(data):
 
     return (retcode, filename, cmd, logfile, iteration)
 
-# --------------------------------------------------------------------
-
 
 def hasFinished(retcode, filename, output_tag, logfile):
     """check if a run has finished."""
@@ -598,7 +614,8 @@ def hasFinished(retcode, filename, output_tag, logfile):
            (filename, retcode))
     if retcode != 0:
         try:
-            if not output_tag or not re.search(output_tag, IOTools.getLastLine(logfile)):
+            if not output_tag or not re.search(output_tag,
+                                               IOTools.getLastLine(logfile)):
                 return False
         except IOError:
             E.warn("could not read output_tag from files %s" % (logfile))
@@ -606,18 +623,17 @@ def hasFinished(retcode, filename, output_tag, logfile):
     return True
 
 
-# --------------------------------------------------------------------
 def runDRMAA(data, environment):
     '''run jobs in data using drmaa to connect to the cluster.'''
     # prefix to detect errors within pipes
-    prefix = '''detect_pipe_error_helper() 
+    prefix = '''detect_pipe_error_helper()
     {
     while [ "$#" != 0 ] ; do
         # there was an error in at least one program of the pipe
         if [ "$1" != 0 ] ; then return 1 ; fi
         shift 1
     done
-    return 0 
+    return 0
     }
     detect_pipe_error() {
     detect_pipe_error_helper "${PIPESTATUS[@]}"
@@ -743,104 +759,149 @@ def runDRMAA(data, environment):
     session.deleteJobTemplate(jt)
     session.exit()
 
-# --------------------------------------------------------------------
-
 
 def getOptionParser():
     """create parser and add options."""
 
-    parser = E.OptionParser(version="%prog version: $Id: farm.py 2782 2009-09-10 11:40:29Z andreas $",
+    parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
-    parser.add_option("--split-at-lines", dest="split_at_lines", type="int",
-                      help="split jobs according to line number [default=%default].")
+    parser.add_option(
+        "--split-at-lines", dest="split_at_lines", type="int",
+        help="split jobs according to line number [%default].")
 
-    parser.add_option("--split-at-column", dest="split_at_column", type="int",
-                      help="split jobs according to column. Columns start at number 1 and the input should be sorted by this column [default=%default].")
+    parser.add_option(
+        "--split-at-column", dest="split_at_column", type="int",
+        help="split jobs according to column. Columns start at number 1 "
+        "and the input should be sorted by this column [%default].")
 
-    parser.add_option("--group-by-regex", dest="group_by_regex", type="string",
-                      help="group jobs according to a regular expression [default=%default].")
+    parser.add_option(
+        "--group-by-regex", dest="group_by_regex", type="string",
+        help="group jobs according to a regular expression [%default].")
 
-    parser.add_option("--split-at-regex", dest="split_at_regex", type="string",
-                      help="split jobs according to a regular expression [default=%default].")
+    parser.add_option(
+        "--split-at-regex", dest="split_at_regex", type="string",
+        help="split jobs according to a regular expression [%default].")
 
-    parser.add_option("--split-at-tag", dest="split_at_tag", type="int",
-                      help="split a file at a tag [default=%default].")
+    parser.add_option(
+        "--split-at-tag", dest="split_at_tag", type="int",
+        help="split a file at a tag [%default].")
 
-    parser.add_option("--chunk-size", dest="chunksize", type="int",
-                      help="when splitting at regex or tag, aggregate x entries [default=%default].")
+    parser.add_option(
+        "--chunk-size", dest="chunksize", type="int",
+        help="when splitting at regex or tag, aggregate x entries [%default].")
 
-    parser.add_option("--debug", dest="debug", action="store_true",
-                      help="debug mode. Do not delete temporary file [default=%default].")
+    parser.add_option(
+        "--debug", dest="debug", action="store_true",
+        help="debug mode. Do not delete temporary file [%default].")
 
-    parser.add_option("--dry-run", dest="dry_run", action="store_true",
-                      help="dry run. Do not split input and simply forward stdin to stdout - "
-                      "useful for debugging the command [default=%default].")
+    parser.add_option(
+        "--dry-run", dest="dry_run", action="store_true",
+        help="dry run. Do not split input and simply forward stdin to stdout. "
+        "Useful for debugging the command [%default].")
 
-    parser.add_option("--input-header", dest="input_header", action="store_true",
-                      help="The input stream contains a table header. "
-                      "This header is replicated for each job [default=%default].")
+    parser.add_option(
+        "--input-header", dest="input_header", action="store_true",
+        help="The input stream contains a table header. "
+        "This header is replicated for each job [%default].")
 
-    parser.add_option("--output-header", dest="output_header", action="store_true",
-                      help="The output jobs contain a table header. "
-                      "The header is removed for each job except for the first [default=%default].")
+    parser.add_option(
+        "--output-header", dest="output_header", action="store_true",
+        help="The output jobs contain a table header. "
+        "The header is removed for each job except for the first [%default].")
 
-    parser.add_option("--output-tag", dest="output_tag", type="string",
-                      help="The output jobs contain a tag in the last line denoting job completion. If the unix return value denotes an error, the presence of this tag is checked [default=%default].")
+    parser.add_option(
+        "--output-regex-header", dest="output_regex_header", type="string",
+        help="Regular expression for header in input files. Any lines "
+        "before the first line matching this regular expression are ignored"
+        "[%default].")
 
-    parser.add_option("--subdirs", dest="subdirs", action="store_true",
-                      help="Run within separate subdirs for jobs. This permits multiple output streams. Use a placeholder %DIR% if you supply the ouput pattern as a command line option [default=%default].")
+    parser.add_option(
+        "--output-tag", dest="output_tag", type="string",
+        help="The output jobs contain a tag in the last line denoting "
+        "job completion. If the unix return value denotes an error, the "
+        "presence of this tag is checked [%default].")
 
-    parser.add_option("-T", "--temp-dir", dest="tmpdir", type="string",
-                      help="Temporary directory to be used. Default is the current directory [default=%default].")
+    parser.add_option(
+        "--subdirs", dest="subdirs", action="store_true",
+        help="Run within separate subdirs for jobs. This permits "
+        "multiple output streams. Use a placeholder %DIR% if you supply "
+        "the ouput pattern as a command line option [%default].")
+
+    parser.add_option(
+        "-T", "--temp-dir", dest="tmpdir", type="string",
+        help="Temporary directory to be used. Default is the current "
+        "directory [%default].")
 
     parser.add_option("--max-files", dest="max_files", type="int",
-                      help="create at most x files [default=%default].")
+                      help="create at most x files [%default].")
 
-    parser.add_option("--max-lines", dest="max_lines", type="int",
-                      help="in addition to splitting into chunksize, also split if more than max-lines is reached [default=%default].")
+    parser.add_option(
+        "--max-lines", dest="max_lines", type="int",
+        help="in addition to splitting into chunksize, also split if "
+        "more than max-lines is reached [%default].")
 
-    parser.add_option("--renumber", dest="renumber", type="string",
-                      help="renumber ids consecutively, supply a pattern [default=%default].")
+    parser.add_option(
+        "--renumber", dest="renumber", type="string",
+        help="renumber ids consecutively, supply a pattern [%default].")
 
-    parser.add_option("--renumber-column", dest="renumber_column", type="string", action="append",
-                      help="specify column to renumber. The format is regex:column, "
-                      "for example csv:1 or csv:id [default=%default].")
+    parser.add_option(
+        "--renumber-column", dest="renumber_column", type="string",
+        action="append",
+        help="specify column to renumber. The format is regex:column, "
+        "for example csv:1 or csv:id [%default].")
 
-    parser.add_option("-r", "--reduce", dest="reduce", type="string", action="append",
-                      help="Add reduce functions for specific files. The format is file:reducer. The default reducer is 'table' for all files [default=%default].")
+    parser.add_option(
+        "-r", "--reduce", dest="reduce", type="string", action="append",
+        help="Add reduce functions for specific files. The format is "
+        "file:reducer. The default reducer is 'table' for all files "
+        "[%default].")
 
-    parser.add_option("-m", "--map", dest="map", type="string", action="append",
-                      help="Map specific columns in tables. The format is file:column:pattern, for example .table:1:%06i [default=%default].")
+    parser.add_option(
+        "-m", "--map", dest="map", type="string", action="append",
+        help="Map specific columns in tables. The format is "
+        "file:column:pattern, for example .table:1:%06i [%default].")
 
-    parser.add_option("--resume", dest="resume", type="string",
-                      help="resume aborted run from files in dir [%default]")
+    parser.add_option(
+        "--resume", dest="resume", type="string",
+        help="resume aborted run from files in dir [%default]")
 
-    parser.add_option("--collect", dest="collect", type="string",
-                      help="collect files in dir and process as normally [%default]")
+    parser.add_option(
+        "--collect", dest="collect", type="string",
+        help="collect files in dir and process as normally "
+        "[%default]")
 
-    parser.add_option("--is-binary", dest="binary", action="store_true",
-                      help="the output is binary - files are concatenated without parsing [%default]")
+    parser.add_option(
+        "--is-binary", dest="binary", action="store_true",
+        help="the output is binary - files are concatenated "
+        "without parsing [%default]")
 
-    parser.add_option("--resubmit", dest="resubmit", type="int",
-                      help="if a job fails, automatically resubmit # times. Set to 0 in order to disable resubmission [%default]")
+    parser.add_option(
+        "--resubmit", dest="resubmit", type="int",
+        help="if a job fails, automatically resubmit # times. Set to 0 "
+        "in order to disable resubmission [%default]")
 
-    parser.add_option("--fail", dest="resubmit", action="store_false",
-                      help="if a job fails, do not resubmit [%default]")
+    parser.add_option(
+        "--fail", dest="resubmit", action="store_false",
+        help="if a job fails, do not resubmit [%default]")
 
-    parser.add_option("--bashrc", dest="bashrc", type="string",
-                      help="bashrc file to use [%default]")
+    parser.add_option(
+        "--bashrc", dest="bashrc", type="string",
+        help="bashrc file to use [%default]")
 
-    parser.add_option("--method", dest="method", type="choice",
-                      choices=("multiprocessing", "threads", "drmaa"),
-                      help = "method to submit jobs [%default]")
+    parser.add_option(
+        "--method", dest="method", type="choice",
+        choices=("multiprocessing", "threads", "drmaa"),
+        help = "method to submit jobs [%default]")
 
-    parser.add_option("-e", "--env", dest="environment", type="string", action="append",
-                      help="environment variables to be passed to the jobs [%default]")
+    parser.add_option(
+        "-e", "--env", dest="environment", type="string", action="append",
+        help="environment variables to be passed to the jobs [%default]")
 
-    parser.add_option("--output-filename-pattern", dest="output_pattern", type="string",
-                      help="Pattern for secondary output filenames. Should contain a '%s' "
-                      "[default=%default].")
+    parser.add_option(
+        "--output-filename-pattern", dest="output_pattern", type="string",
+        help="Pattern for secondary output filenames. Should contain a '%s' "
+        "[%default].")
 
     parser.set_defaults(
         split_at_lines=None,
@@ -853,6 +914,7 @@ def getOptionParser():
         bashrc="~/.bashrc",
         input_header=False,
         output_header=False,
+        output_regex_header=None,
         debug=False,
         dry_run=False,
         tmpdir="./",
