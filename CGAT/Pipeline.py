@@ -161,7 +161,7 @@ def configToDictionary(config):
             try:
                 v = IOTools.convertValue(value)
             except TypeError:
-                E.error("Error converting key %s, value %s" % (key,value))
+                E.error("Error converting key %s, value %s" % (key, value))
                 E.error("Possilbe multiple concorent attempts to read configureation")
                 raise
 
