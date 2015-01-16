@@ -812,7 +812,7 @@ def getOptionParser():
 
     parser.add_option(
         "--output-regex-header", dest="output_regex_header", type="string",
-        help="Regular expression for header in input files. Any lines "
+        help="Regular expression for header in output files. Any lines "
         "before the first line matching this regular expression are ignored"
         "[%default].")
 
