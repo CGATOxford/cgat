@@ -173,9 +173,9 @@ import CGATPipelines.PipelineMapping as PipelineMapping
 import CGATPipelines.PipelineMappingQC as PipelineMappingQC
 import CGATPipelines.PipelineExome as PipelineExome
 
-################################################################################
-################################################################################
-################################################################################
+##########################################################################
+##########################################################################
+##########################################################################
 # load options from the config file
 
 
@@ -188,21 +188,22 @@ INPUT_FORMATS = ("*.fastq.1.gz", "*.fastq.gz", "*.sra", "*.csfasta.gz")
 REGEX_FORMATS = regex(r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz)")
 USECLUSTER = True
 
-################################################################################
-################################################################################
-################################################################################
+##########################################################################
+##########################################################################
+##########################################################################
 # Cluster options for Java programs
 
 
 def getPicardOptions():
     return "-pe dedicated 3 -R y -l mem_free=1.4G -l picard=1"
 
+
 def getGATKOptions():
     return "-pe dedicated 3 -R y -l mem_free=1.4G -l picard=1"
 
-################################################################################
-################################################################################
-################################################################################
+##########################################################################
+##########################################################################
+##########################################################################
 # Load target and sample data into database
 # The following functions are designed to upload meta-data to the csvdb
 # These haven't been fully implemented yet
@@ -224,7 +225,7 @@ def loadROI(infile, outfile):
             > %(outfile)s  '''
     P.run()
 
-################################################################################
+##########################################################################
 
 
 @jobs_limit(1, "db")
@@ -241,7 +242,7 @@ def loadROI2Gene(infile, outfile):
             > %(outfile)s  '''
     P.run()
 
-################################################################################
+##########################################################################
 
 
 @jobs_limit(1, "db")
@@ -258,9 +259,9 @@ def loadSamples(infile, outfile):
             > %(outfile)s  '''
     P.run()
 
-################################################################################
-################################################################################
-################################################################################
+##########################################################################
+##########################################################################
+##########################################################################
 # Alignment to a reference genome
 
 
@@ -277,9 +278,9 @@ def mapReads(infiles, outfile):
     statement = m.build((infiles,), outfile)
     P.run()
 
-################################################################################
-################################################################################
-################################################################################
+##########################################################################
+##########################################################################
+##########################################################################
 # Post-alignment QC
 
 
@@ -289,7 +290,7 @@ def PicardAlignStats(infile, outfile):
     genome = PARAMS["bwa_index_dir"] + "/" + PARAMS["genome"] + ".fa"
     PipelineMappingQC.buildPicardAlignmentStats(infile, outfile, genome)
 
-################################################################################
+##########################################################################
 
 
 @jobs_limit(1, "db")
@@ -298,10 +299,11 @@ def loadPicardAlignStats(infiles, outfile):
     '''Merge Picard alignment stats into single table and load into SQLite.'''
     PipelineMappingQC.loadPicardAlignmentStats(infiles, outfile)
 
-################################################################################
-################################################################################
-################################################################################
+##########################################################################
+##########################################################################
+##########################################################################
 # Remove duplicates
+
 
 @follows(PicardAlignStats)
 @transform(mapReads, regex(r"bam/(\S+).bam"), r"bam/\1.dedup.bam")
@@ -310,7 +312,7 @@ def RemoveDuplicates(infile, outfile):
     PipelineMappingQC.buildPicardDuplicateStats(infile, outfile)
     IOTools.zapFile(infile)
 
-################################################################################
+##########################################################################
 
 
 @jobs_limit(1, "db")
@@ -319,10 +321,11 @@ def loadPicardDuplicateStats(infiles, outfile):
     '''Merge Picard duplicate stats into single table and load into SQLite.'''
     PipelineMappingQC.loadPicardDuplicateStats(infiles, outfile)
 
-################################################################################
-################################################################################
-################################################################################
+##########################################################################
+##########################################################################
+##########################################################################
 # Coverage of targetted area
+
 
 @transform(mapReads, regex(r"bam/(\S+).bam"), r"bam/\1.cov")
 def buildCoverageStats(infile, outfile):
@@ -330,10 +333,10 @@ def buildCoverageStats(infile, outfile):
     file using Picard'''
     baits = PARAMS["roi_baits"]
     regions = PARAMS["roi_regions"]
-    PipelineMappingQC.buildPicardCoverageStats(infile, outfile, 
+    PipelineMappingQC.buildPicardCoverageStats(infile, outfile,
                                                baits, regions)
 
-################################################################################
+##########################################################################
 
 
 @jobs_limit(1, "db")
@@ -342,9 +345,9 @@ def loadCoverageStats(infiles, outfile):
     '''Import coverage statistics into SQLite'''
     PipelineMappingQC.loadPicardCoverageStats(infiles, outfile)
 
-################################################################################
-################################################################################
-################################################################################
+##########################################################################
+##########################################################################
+##########################################################################
 # GATK
 
 
@@ -357,23 +360,23 @@ def GATKReadGroups(infile, outfile):
     platform = PARAMS["readgroup_platform"]
     platform_unit = PARAMS["readgroup_platform_unit"]
     genome = PARAMS["bwa_index_dir"] + "/" + PARAMS["genome"] + ".fa"
-    PipelineExome.GATKreadGroups(infile, outfile, genome, 
-                                    library, platform, 
-                                    platform_unit)
+    PipelineExome.GATKreadGroups(infile, outfile, genome,
+                                 library, platform,
+                                 platform_unit)
 
-################################################################################
+##########################################################################
 
 
 @transform(GATKReadGroups,
-            regex(r"gatk/(\S+).readgroups.bam"),
-            r"gatk/\1.realigned.bam")
+           regex(r"gatk/(\S+).readgroups.bam"),
+           r"gatk/\1.realigned.bam")
 def GATKIndelRealign(infile, outfile):
     '''realigns around indels using GATK'''
     threads = PARAMS["gatk_threads"]
     genome = PARAMS["bwa_index_dir"] + "/" + PARAMS["genome"] + ".fa"
     PipelineExome.GATKIndelRealign(infile, outfile, genome, threads)
 
-################################################################################
+##########################################################################
 
 
 @transform(GATKIndelRealign,
@@ -384,36 +387,36 @@ def GATKBaseRecal(infile, outfile):
     dbsnp = PARAMS["gatk_dbsnp"]
     solid_options = PARAMS["gatk_solid_options"]
     genome = PARAMS["bwa_index_dir"] + "/" + PARAMS["genome"] + ".fa"
-    PipelineExome.GATKBaseRecal(infile, outfile, genome, 
-                                    dbsnp, solid_options)
+    PipelineExome.GATKBaseRecal(infile, outfile, genome,
+                                dbsnp, solid_options)
 
-################################################################################
+##########################################################################
 
 
 @collate(GATKpreprocessing, regex(r"gatk/(\S+?)-(\S+).bqsr.bam"),
          r"gatk/\1.list")
 def listOfBAMs(infiles, outfile):
-    '''generates a file containing a list of BAMs for each family, 
+    '''generates a file containing a list of BAMs for each family,
     for use in variant calling'''
     with IOTools.openFile(outfile, "w") as outf:
         for infile in infiles:
             outf.write(infile + '\n')
 
-################################################################################
-################################################################################
-################################################################################
+##########################################################################
+##########################################################################
+##########################################################################
 # Guess sex
 
 
 @follows(mkdir("sex"))
 @transform(GATKpreprocessing, regex(r"gatk/(\S+).bqsr.bam"),
            r"sex/\1.sex")
-def calcXYratio(infile,outfile):
-    '''Guess the sex of a sample based on ratio of reads 
+def calcXYratio(infile, outfile):
+    '''Guess the sex of a sample based on ratio of reads
     per megabase of sequence on X and Y'''
-    PipelineExome.guessSex(infile,outfile)
+    PipelineExome.guessSex(infile, outfile)
 
-################################################################################
+##########################################################################
 
 
 @merge(calcXYratio, "xy_ratio.tsv")
@@ -424,21 +427,21 @@ def mergeXYRatio(infiles, outfile):
                    --add-file-prefix --regex-filename="sex/(\S+).sex"
                    --no-titles --missing-value=0 --ignore-empty
                    -L %(outfile)s.log -v 6
-                   --cat=Track %(inlist)s 
+                   --cat=Track %(inlist)s
                    > %(outfile)s'''
     P.run()
 
-################################################################################
+##########################################################################
 
-    
+
 @transform(mergeXYRatio, regex(r"xy_ratio.tsv"), r"xy_ratio.load")
 def loadXYRatio(infile, outfile):
     '''load into database'''
     P.load(infile, outfile, "--header-names=Track,X,Y,XY_ratio")
-    
-################################################################################
-################################################################################
-################################################################################
+
+##########################################################################
+##########################################################################
+##########################################################################
 # Variant Calling
 
 
@@ -456,9 +459,9 @@ def haplotypeCaller(infile, outfile):
     PipelineExome.haplotypeCaller(infile, outfile, genome, dbsnp,
                                   intervals, padding, options)
 
-################################################################################
-################################################################################
-################################################################################
+##########################################################################
+##########################################################################
+##########################################################################
 # HapMap Genotypes
 
 
@@ -468,12 +471,13 @@ def SelectExonicHapmapVariants(infile, outfile):
     '''Select variants from HapMap project that are located within
     exome target regions. Assumes bgzipped and tabix indexed Hapmap VCF file.'''
     bed = PARAMS["roi_regions"]
-    statement = '''tabix -B %(infile)s %(bed)s | 
-                   awk '{OFS="\\t"; if (!/^#/){print $1,$2-1,$2}}' 
+    statement = '''tabix -B %(infile)s %(bed)s |
+                   awk '{OFS="\\t"; if (!/^#/){print $1,$2-1,$2}}'
                    > %(outfile)s''' % locals()
     P.run()
 
-################################################################################
+##########################################################################
+
 
 @follows(SelectExonicHapmapVariants)
 @transform(GATKBaseRecal, regex(r"gatk/(\S+).bqsr.bam"),
@@ -489,7 +493,7 @@ def HapMapGenotype(infiles, outfile):
     PipelineExome.haplotypeCaller(infile, outfile, genome, dbsnp,
                                   intervals, padding, options)
 
-################################################################################
+##########################################################################
 
 
 @follows(SelectExonicHapmapVariants)
@@ -506,7 +510,7 @@ def HapMapGenotype(infiles, outfile):
     PipelineExome.haplotypeCaller(infile, outfile, genome, dbsnp,
                                   intervals, padding, options)
 
-################################################################################
+##########################################################################
 
 
 @transform(HapMapGenotype, regex(r"hapmap/(\S+).hapmap.vcf"),
@@ -517,38 +521,38 @@ def indexVCFs(infile, outfile):
                    tabix -p vcf %(outfile)s; '''
     P.run()
 
-################################################################################
+##########################################################################
 
 
 @follows(mkdir("hapmap/vcfcompare"))
-@permutations("hapmap/*.hapmap.vcf.gz", 
-              formatter("hapmap/(\S+).hapmap.vcf.gz$"), 
+@permutations("hapmap/*.hapmap.vcf.gz",
+              formatter("hapmap/(\S+).hapmap.vcf.gz$"),
               2,
               r"hapmap/vcfcompare/{basename[0][0]}_vs_{basename[1][0]}.vcfcompare")
 def vcfCompare(infiles, outfile):
     '''Compare HapMap genotypes from each pair of calls '''
     sample1, sample2 = infiles
-    name1 = P.snip(os.path.basename(sample1),".hapmap.vcf.gz")
-    name2 = P.snip(os.path.basename(sample2),".hapmap.vcf.gz")
-    statement = '''vcf-compare -g -m %(name1)s:%(name2)s 
+    name1 = P.snip(os.path.basename(sample1), ".hapmap.vcf.gz")
+    name2 = P.snip(os.path.basename(sample2), ".hapmap.vcf.gz")
+    statement = '''vcf-compare -g -m %(name1)s:%(name2)s
                    %(sample1)s %(sample2)s > %(outfile)s'''
     P.run()
 
-################################################################################
+##########################################################################
 
 
 @transform(vcfCompare,
-           regex(r"hapmap/vcfcompare/(\S+).vcfcompare"), 
+           regex(r"hapmap/vcfcompare/(\S+).vcfcompare"),
            r"hapmap/vcfcompare/\1.ndr")
 def parseVcfCompare(infile, outfile):
     '''Extract non-reference discordance rate for each comparison'''
-    statement = '''cat %(infile)s 
-                   | grep "Non-reference Discordance Rate (NDR):" 
-                   | cut -f 3 
+    statement = '''cat %(infile)s
+                   | grep "Non-reference Discordance Rate (NDR):"
+                   | cut -f 3
                    > %(outfile)s'''
     P.run()
-    
-################################################################################
+
+##########################################################################
 
 
 @merge(parseVcfCompare, "hapmap/vcfcompare/ndr.tsv")
@@ -557,27 +561,27 @@ def mergeNDR(infiles, outfile):
     outf = open(outfile, "w")
     outf.write("sample1\tsample2\tNDR\n")
     for infile in infiles:
-        inbase = P.snip(os.path.basename(infile),".ndr")
+        inbase = P.snip(os.path.basename(infile), ".ndr")
         sample1, sample2 = inbase.split("_vs_")
         inf = open(infile, "r")
         ndr = inf.readline().strip()
-        result = "\t".join([sample1,sample2,ndr])
-        outf.write(result+"\n")
+        result = "\t".join([sample1, sample2, ndr])
+        outf.write(result + "\n")
         inf.close()
     outf.close()
 
-################################################################################
+##########################################################################
 
 
-@transform(mergeNDR, regex(r"hapmap/vcfcompare/ndr.tsv"), 
+@transform(mergeNDR, regex(r"hapmap/vcfcompare/ndr.tsv"),
            r"hapmap/vcfcompare/ndr.load")
 def loadNDR(infile, outfile):
     '''Load NDR into database'''
     P.load(infile, outfile)
-    
-################################################################################
-################################################################################
-################################################################################
+
+##########################################################################
+##########################################################################
+##########################################################################
 # Variant Annotation
 
 
@@ -595,7 +599,7 @@ def annotateVariantsSNPeff(infile, outfile):
                     -o gatk %(infile)s > %(outfile)s''' % locals()
     P.run()
 
-################################################################################
+##########################################################################
 
 
 @follows(annotateVariantsSNPeff)
@@ -610,11 +614,11 @@ def variantAnnotator(infiles, outfile):
     genome = PARAMS["bwa_index_dir"] + "/" + PARAMS["genome"] + ".fa"
     dbsnp = PARAMS["gatk_dbsnp"]
     annotations = PARAMS["gatk_variant_annotations"]
-    PipelineExome.variantAnnotator(vcffile, bamlist, outfile, genome, 
+    PipelineExome.variantAnnotator(vcffile, bamlist, outfile, genome,
                                    dbsnp, annotations, snpeff_file)
 
 
-################################################################################
+##########################################################################
 # Variant Recalibration
 
 @transform(variantAnnotator,
@@ -626,10 +630,10 @@ def variantRecalibrator(infile, outfile):
     dbsnp = PARAMS["gatk_dbsnp"]
     hapmap = PARAMS["gatk_hapmap"]
     omni = PARAMS["gatk_omni"]
-    PipelineExome.variantRecalibrator(infile, outfile, genome, 
+    PipelineExome.variantRecalibrator(infile, outfile, genome,
                                       dbsnp, hapmap, omni)
 
-################################################################################
+##########################################################################
 
 
 @follows(variantRecalibrator)
@@ -642,10 +646,10 @@ def applyVariantRecalibration(infiles, outfile):
     '''Perform variant quality score recalibration using GATK '''
     vcf, recal, tranches = infiles
     genome = PARAMS["bwa_index_dir"] + "/" + PARAMS["genome"] + ".fa"
-    PipelineExome.applyVariantRecalibration(vcf, recal, tranches, 
+    PipelineExome.applyVariantRecalibration(vcf, recal, tranches,
                                             outfile, genome)
 
-################################################################################
+##########################################################################
 # SnpSift
 
 
@@ -659,7 +663,7 @@ def annotateVariantsSNPsift(infile, outfile):
     dbNSFP = PARAMS["annotation_snpsift_dbnsfp"]
     thousand_genomes = PARAMS["annotation_thousand_genomes"]
     # The following statement is not fully implemented yet
-    #statement = '''SnpSift.sh geneSets -v /ifs/projects/proj016/data/1000Genomes/msigdb.v4.0.symbols.gmt %(infile)s > variants/%(track)s_temp1.vcf; checkpoint;''' % locals()
+    # statement = '''SnpSift.sh geneSets -v /ifs/projects/proj016/data/1000Genomes/msigdb.v4.0.symbols.gmt %(infile)s > variants/%(track)s_temp1.vcf; checkpoint;''' % locals()
 
     statement = '''SnpSift.sh dbnsfp -v %(dbNSFP)s %(infile)s
                     > variants/%(track)s_temp1.vcf; checkpoint;
@@ -668,9 +672,9 @@ def annotateVariantsSNPsift(infile, outfile):
                     rm -f variants/%(track)s_temp1.vcf;''' % locals()
     P.run()
 
-################################################################################
-################################################################################
-################################################################################
+##########################################################################
+##########################################################################
+##########################################################################
 # Genes of interest
 
 
@@ -691,13 +695,15 @@ def findGenes(infile, outfile):
                     --filterName "GENE_OF_INTEREST" -o %(outfile)s''' % locals()
     P.run()
 
-################################################################################
-################################################################################
-################################################################################
+##########################################################################
+##########################################################################
+##########################################################################
 # Tabulation
 
 
 CALIBRATION = {0: annotateVariantsSNPsift, 1: findGenes}
+
+
 @transform(CALIBRATION[PARAMS["annotation_add_genes_of_interest"]],
            regex(r"variants/((\S+).haplotypeCaller.snpsift|(\S+).genes).vcf"),
            r"variants/\1.table")
@@ -715,9 +721,9 @@ def loadVariantAnnotation(infile, outfile):
     '''Load VCF annotations into database'''
     P.load(infile, outfile, options="--retry --ignore-empty")
 
-################################################################################
-################################################################################
-################################################################################
+##########################################################################
+##########################################################################
+##########################################################################
 # De novos
 
 
@@ -736,7 +742,8 @@ def deNovoVariants(infiles, outfile):
             father = row['father']
             mother = row['mother']
             child = row['sample']
-    select = '''vc.getGenotype("%(father)s").getDP()>=10&&vc.getGenotype("%(mother)s").getDP()>=10&&vc.getGenotype("%(child)s").getPL().0>20&&vc.getGenotype("%(child)s").getPL().1==0&&vc.getGenotype("%(child)s").getPL().2>0&&vc.getGenotype("%(father)s").getPL().0==0&&vc.getGenotype("%(father)s").getPL().1>20&&vc.getGenotype("%(father)s").getPL().2>20&&vc.getGenotype("%(mother)s").getPL().0==0&&vc.getGenotype("%(mother)s").getPL().1>20&&vc.getGenotype("%(mother)s").getPL().2>20&&vc.getGenotype("%(child)s").getAD().1>=3&&((vc.getGenotype("%(child)s").getAD().1)/(vc.getGenotype("%(child)s").getDP().floatValue()))>=0.25&&(vc.getGenotype("%(father)s").getAD().1==0||(vc.getGenotype("%(father)s").getAD().1>0&&((vc.getGenotype("%(father)s").getAD().1)/(vc.getGenotype("%(father)s").getDP().floatValue()))<0.05))&&(vc.getGenotype("%(mother)s").getAD().1==0||(vc.getGenotype("%(mother)s").getAD().1>0&&((vc.getGenotype("%(mother)s").getAD().1)/(vc.getGenotype("%(mother)s").getDP().floatValue()))<0.05))&&(SNPEFF_IMPACT=="HIGH"||SNPEFF_IMPACT=="MODERATE")''' % locals()
+    select = '''vc.getGenotype("%(father)s").getDP()>=10&&vc.getGenotype("%(mother)s").getDP()>=10&&vc.getGenotype("%(child)s").getPL().0>20&&vc.getGenotype("%(child)s").getPL().1==0&&vc.getGenotype("%(child)s").getPL().2>0&&vc.getGenotype("%(father)s").getPL().0==0&&vc.getGenotype("%(father)s").getPL().1>20&&vc.getGenotype("%(father)s").getPL().2>20&&vc.getGenotype("%(mother)s").getPL().0==0&&vc.getGenotype("%(mother)s").getPL().1>20&&vc.getGenotype("%(mother)s").getPL().2>20&&vc.getGenotype("%(child)s").getAD().1>=3&&((vc.getGenotype("%(child)s").getAD().1)/(vc.getGenotype("%(child)s").getDP().floatValue()))>=0.25&&(vc.getGenotype("%(father)s").getAD().1==0||(vc.getGenotype("%(father)s").getAD().1>0&&((vc.getGenotype("%(father)s").getAD().1)/(vc.getGenotype("%(father)s").getDP().floatValue()))<0.05))&&(vc.getGenotype("%(mother)s").getAD().1==0||(vc.getGenotype("%(mother)s").getAD().1>0&&((vc.getGenotype("%(mother)s").getAD().1)/(vc.getGenotype("%(mother)s").getDP().floatValue()))<0.05))&&(SNPEFF_IMPACT=="HIGH"||SNPEFF_IMPACT=="MODERATE")''' % locals(
+    )
     PipelineExome.selectVariants(infile, outfile, genome, select)
 
 
@@ -756,10 +763,10 @@ def tabulateDeNovos(infile, outfile):
            r"variants/\1.filtered.table.load")
 def loadDeNovos(infile, outfile):
     '''Load de novos into database'''
-    P.load(infile, outfile, 
+    P.load(infile, outfile,
            options="--retry --ignore-empty --allow-empty-file")
 
-################################################################################
+##########################################################################
 
 
 @transform(annotateVariantsSNPsift,
@@ -778,10 +785,11 @@ def lowerStringencyDeNovos(infiles, outfile):
             father = row['father']
             mother = row['mother']
             child = row['sample']
-    select = '''vc.getGenotype("%(child)s").getPL().1==0&&vc.getGenotype("%(father)s").getPL().0==0&&vc.getGenotype("%(mother)s").getPL().0==0&&(SNPEFF_IMPACT=="HIGH"||SNPEFF_IMPACT=="MODERATE")''' % locals()
+    select = '''vc.getGenotype("%(child)s").getPL().1==0&&vc.getGenotype("%(father)s").getPL().0==0&&vc.getGenotype("%(mother)s").getPL().0==0&&(SNPEFF_IMPACT=="HIGH"||SNPEFF_IMPACT=="MODERATE")''' % locals(
+    )
     PipelineExome.selectVariants(infile, outfile, genome, select)
 
-                        
+
 @transform(lowerStringencyDeNovos,
            regex(r"variants/(\S+).denovos.vcf"),
            r"variants/\1.denovos.table")
@@ -798,18 +806,18 @@ def tabulateLowerStringencyDeNovos(infile, outfile):
            r"variants/\1.denovos.table.load")
 def loadLowerStringencyDeNovos(infile, outfile):
     '''Load lower stringency de novos into database'''
-    P.load(infile, outfile, 
+    P.load(infile, outfile,
            options="--retry --ignore-empty --allow-empty-file")
 
-################################################################################
-################################################################################
-################################################################################
+##########################################################################
+##########################################################################
+##########################################################################
 # Dominant
 
 
-@transform(annotateVariantsSNPsift, 
+@transform(annotateVariantsSNPsift,
            regex(r"variants/(\S*Multiplex\S+).haplotypeCaller.snpsift.vcf"),
-           add_inputs(r"\1.ped"), 
+           add_inputs(r"\1.ped"),
            r"variants/\1.dominant.vcf")
 def dominantVariants(infiles, outfile):
     '''Filter variants according to autosomal dominant disease model'''
@@ -834,14 +842,15 @@ def dominantVariants(infiles, outfile):
     # for some weird reason the 1000G filter doesn't work on these particular
     # files - will add later when I've figured out what's wrong
     # currently 1000G filter is performed at the report stage (not in csvdb)
-    select = '''vc.getGenotype("%(affecteds_exp)s").getPL().1==0%(unaffecteds_exp)s&&(SNPEFF_IMPACT=="HIGH"||SNPEFF_IMPACT=="MODERATE")&&(dbNSFP_1000Gp1_AF<0.05)''' % locals()
+    select = '''vc.getGenotype("%(affecteds_exp)s").getPL().1==0%(unaffecteds_exp)s&&(SNPEFF_IMPACT=="HIGH"||SNPEFF_IMPACT=="MODERATE")&&(dbNSFP_1000Gp1_AF<0.05)''' % locals(
+    )
     PipelineExome.selectVariants(infile, outfile, genome, select)
 
-################################################################################
+##########################################################################
 
 
-@transform(dominantVariants, 
-           regex(r"variants/(\S+).dominant.vcf"), 
+@transform(dominantVariants,
+           regex(r"variants/(\S+).dominant.vcf"),
            r"variants/\1.dominant.table")
 def tabulateDoms(infile, outfile):
     '''Tabulate dominant disease candidate variants'''
@@ -849,7 +858,7 @@ def tabulateDoms(infile, outfile):
     columns = PARAMS["gatk_vcf_to_table"]
     PipelineExome.vcfToTable(infile, outfile, genome, columns)
 
-################################################################################
+##########################################################################
 
 
 @jobs_limit(1, "db")
@@ -857,19 +866,20 @@ def tabulateDoms(infile, outfile):
            r"variants/\1.dominant.table.load")
 def loadDoms(infile, outfile):
     '''Load dominant disease candidates into database'''
-    P.load(infile, outfile, 
+    P.load(infile, outfile,
            options="--retry --ignore-empty --allow-empty-file")
 
-################################################################################
-################################################################################
-################################################################################
+##########################################################################
+##########################################################################
+##########################################################################
 # Recessive
 
 
 @transform(annotateVariantsSNPsift,
-    regex(r"variants/(\S*Trio\S+|\S*Multiplex\S+).haplotypeCaller.snpsift.vcf"),
-    add_inputs(r"\1.ped"), 
-    r"variants/\1.recessive.vcf")
+           regex(
+               r"variants/(\S*Trio\S+|\S*Multiplex\S+).haplotypeCaller.snpsift.vcf"),
+           add_inputs(r"\1.ped"),
+           r"variants/\1.recessive.vcf")
 def recessiveVariants(infiles, outfile):
     '''Filter variants according to autosomal recessive disease model'''
     genome = PARAMS["bwa_index_dir"] + "/" + PARAMS["genome"] + ".fa"
@@ -895,14 +905,15 @@ def recessiveVariants(infiles, outfile):
             '").getPL().1==0'
     # need a way of specifying that other unaffecteds eg. sibs can't be
     # homozygous for alt allele
-    select = '''vc.getGenotype("%(affecteds_exp)s").getPL().2==0&&vc.getGenotype("%(unaffecteds_exp)s").getPL().2!=0%(parents_exp)s&&(SNPEFF_IMPACT=="HIGH"||SNPEFF_IMPACT=="MODERATE")''' % locals()
+    select = '''vc.getGenotype("%(affecteds_exp)s").getPL().2==0&&vc.getGenotype("%(unaffecteds_exp)s").getPL().2!=0%(parents_exp)s&&(SNPEFF_IMPACT=="HIGH"||SNPEFF_IMPACT=="MODERATE")''' % locals(
+    )
     PipelineExome.selectVariants(infile, outfile, genome, select)
 
-################################################################################
+##########################################################################
 
 
-@transform(recessiveVariants, 
-           regex(r"variants/(\S+).recessive.vcf"), 
+@transform(recessiveVariants,
+           regex(r"variants/(\S+).recessive.vcf"),
            r"variants/\1.recessive.table")
 def tabulateRecs(infile, outfile):
     '''Tabulate potential homozygous recessive disease variants'''
@@ -910,7 +921,7 @@ def tabulateRecs(infile, outfile):
     columns = PARAMS["gatk_vcf_to_table"]
     PipelineExome.vcfToTable(infile, outfile, genome, columns)
 
-################################################################################
+##########################################################################
 
 
 @jobs_limit(1, "db")
@@ -918,63 +929,64 @@ def tabulateRecs(infile, outfile):
            r"variants/\1.recessive.table.load")
 def loadRecs(infile, outfile):
     '''Load homozygous recessive disease candidates into database'''
-    P.load(infile, outfile, 
+    P.load(infile, outfile,
            options="--retry --ignore-empty --allow-empty-file")
 
-################################################################################
-################################################################################
-################################################################################
+##########################################################################
+##########################################################################
+##########################################################################
 # Compound hets
 
 
 # why does this not work from snpsift VCF file? DS
-#@transform(annotateVariantsSNPsift,
+# @transform(annotateVariantsSNPsift,
 #    regex(r"variants/(\S*Trio\S+|\S*Multiplex\S+).haplotypeCaller.snpsift.vcf"),
-@transform(annotateVariantsSNPeff, 
-           regex(r"variants/(\S*Multiplex\S+|\S*Trio\S+).haplotypeCaller.snpeff.vcf"),
-           add_inputs(r"\1.ped", r"gatk/\1.list"), 
+@transform(annotateVariantsSNPeff,
+           regex(
+               r"variants/(\S*Multiplex\S+|\S*Trio\S+).haplotypeCaller.snpeff.vcf"),
+           add_inputs(r"\1.ped", r"gatk/\1.list"),
            r"variants/\1.phased_rbp.vcf")
 def phasing(infiles, outfile):
     '''phase variants with GATK'''
     infile, pedfile, bamlist = infiles
-    statement = '''GenomeAnalysisTK -T PhaseByTransmission 
-                   -R %%(bwa_index_dir)s/%%(genome)s.fa 
-                   -V %(infile)s 
-                   -ped %(pedfile)s 
-                   -mvf %(infile)s.mvf 
+    statement = '''GenomeAnalysisTK -T PhaseByTransmission
+                   -R %%(bwa_index_dir)s/%%(genome)s.fa
+                   -V %(infile)s
+                   -ped %(pedfile)s
+                   -mvf %(infile)s.mvf
                    -o %(infile)s.phased.vcf ;
-                   GenomeAnalysisTK -T ReadBackedPhasing 
-                   -R %%(bwa_index_dir)s/%%(genome)s.fa 
-                   -I %(bamlist)s 
-                   -V %(infile)s.phased.vcf 
+                   GenomeAnalysisTK -T ReadBackedPhasing
+                   -R %%(bwa_index_dir)s/%%(genome)s.fa
+                   -I %(bamlist)s
+                   -V %(infile)s.phased.vcf
                    -o %(outfile)s
                    --respectPhaseInInput; '''
     P.run()
 
-################################################################################
+##########################################################################
 
 
-@transform(phasing, 
+@transform(phasing,
            regex(r"variants/(\S*Multiplex\S+|\S*Trio\S+).phased_rbp.vcf"),
-           add_inputs(r"\1.ped"), 
+           add_inputs(r"\1.ped"),
            r"variants/\1.compound_hets.table")
 def compoundHets(infiles, outfile):
-    '''Identify potentially pathogenic compound heterozygous variants 
+    '''Identify potentially pathogenic compound heterozygous variants
     (phasing with GATK followed by compound het calling using Gemini'''
     infile, pedfile = infiles
-    statement = '''gemini load -v %(infile)s 
+    statement = '''gemini load -v %(infile)s
                    -p %(pedfile)s -t snpEff %(infile)s.db ;
-                   gemini comp_hets 
-                   --only-affected 
-                   --method=filter 
-                   --filter-method 
-                   "(impact_severity = 'HIGH' OR impact_severity = 'MED') 
-                   AND (in_esp = 0 OR aaf_esp_all < 0.01) 
-                   AND (in_1kg = 0 OR aaf_1kg_all < 0.01)" 
+                   gemini comp_hets
+                   --only-affected
+                   --method=filter
+                   --filter-method
+                   "(impact_severity = 'HIGH' OR impact_severity = 'MED')
+                   AND (in_esp = 0 OR aaf_esp_all < 0.01)
+                   AND (in_1kg = 0 OR aaf_1kg_all < 0.01)"
                    %(infile)s.db > %(outfile)s'''
     P.run()
 
-################################################################################
+##########################################################################
 
 
 @jobs_limit(1, "db")
@@ -982,56 +994,56 @@ def compoundHets(infiles, outfile):
            r"variants/\1.compound_hets.table.load")
 def loadCompoundHets(infile, outfile):
     '''Load compound heterozygous variants into database'''
-    P.load(infile, outfile, 
+    P.load(infile, outfile,
            options="--retry --ignore-empty --allow-empty-file")
 
 
-################################################################################
-################################################################################
-################################################################################
+##########################################################################
+##########################################################################
+##########################################################################
 # Confirm parentage (do novo trios only)
 
 @transform(annotateVariantsSNPsift,
-    regex(r"variants/(\S*Trio\S+).haplotypeCaller.snpsift.vcf"),
-    add_inputs(r"\1.ped"), 
-    r"variants/\1.parentage")
+           regex(r"variants/(\S*Trio\S+).haplotypeCaller.snpsift.vcf"),
+           add_inputs(r"\1.ped"),
+           r"variants/\1.parentage")
 def confirmParentage(infiles, outfile):
     '''Filter variants according to autosomal recessive disease model'''
     infile, pedfile = infiles
     pedigree = csv.DictReader(open(pedfile), delimiter='\t', fieldnames=[
-                       'family', 'sample', 'father', 'mother', 'sex', 'status'])
+        'family', 'sample', 'father', 'mother', 'sex', 'status'])
     trio = P.snip(os.path.basename(pedfile), ".ped")
-    trio = trio.replace(".","_").replace("-","_")
+    trio = trio.replace(".", "_").replace("-", "_")
     database = PARAMS["database"]
     proband = None
     mother = None
     father = None
     for row in pedigree:
         if row['status'] == '2':
-            proband = row['sample'].replace(".","_").replace("-","_")
-            mother = row['mother'].replace(".","_").replace("-","_")
-            father = row['father'].replace(".","_").replace("-","_")
-    E.info("proband:"+proband)
-    E.info("mother:"+mother)
-    E.info("father:"+father)
+            proband = row['sample'].replace(".", "_").replace("-", "_")
+            mother = row['mother'].replace(".", "_").replace("-", "_")
+            father = row['father'].replace(".", "_").replace("-", "_")
+    E.info("proband:" + proband)
+    E.info("mother:" + mother)
+    E.info("father:" + father)
 
-    query = '''SELECT '%(trio)s' as family, 
+    query = '''SELECT '%(trio)s' as family,
                 hom_nonref_trio/(hom_nonref_parents+0.0) as hom_nonref_conc,
                 child_mat_het_nonref/(maternal_hom_nonref+0.0) as maternal_conc,
                 child_pat_het_nonref/(paternal_hom_nonref+0.0) as paternal_conc,
                  *
                 FROM
                 (SELECT count(*) as hom_nonref_trio
-                FROM %(trio)s_genes_table 
+                FROM %(trio)s_genes_table
                 where  CHROM NOT IN ('X', 'Y')
                 AND %(mother)s_PL LIKE '%%%%,0'
                 AND cast(%(mother)s_DP as INTEGER) > 10
                 AND  %(father)s_PL LIKE '%%%%,0'
                 AND cast(%(father)s_DP as INTEGER) > 10
                 AND %(proband)s_PL LIKE '%%%%,0'
-                AND cast(%(proband)s_DP as INTEGER) > 10), 
+                AND cast(%(proband)s_DP as INTEGER) > 10),
                 (SELECT count(*) as hom_nonref_parents
-                FROM %(trio)s_genes_table 
+                FROM %(trio)s_genes_table
                 where  CHROM NOT IN ('X', 'Y')
                 AND %(mother)s_PL LIKE '%%%%,0'
                 AND cast(%(mother)s_DP as INTEGER) > 10
@@ -1039,7 +1051,7 @@ def confirmParentage(infiles, outfile):
                 AND cast(%(father)s_DP as INTEGER) > 10
                 AND cast(%(proband)s_DP as INTEGER) > 10),
                 (SELECT count(*) as maternal_hom_nonref
-                FROM %(trio)s_genes_table 
+                FROM %(trio)s_genes_table
                 where  CHROM NOT IN ('X', 'Y')
                 AND %(mother)s_PL LIKE '%%%%,0'
                 AND cast(%(mother)s_DP as INTEGER) > 10
@@ -1047,7 +1059,7 @@ def confirmParentage(infiles, outfile):
                 AND cast(%(father)s_DP as INTEGER) > 10
                 AND cast(%(proband)s_DP as INTEGER) > 10),
                 (SELECT count(*) as child_mat_het_nonref
-                FROM %(trio)s_genes_table 
+                FROM %(trio)s_genes_table
                 where  CHROM NOT IN ('X', 'Y')
                 AND %(mother)s_PL LIKE '%%%%,0'
                 AND cast(%(mother)s_DP as INTEGER) > 10
@@ -1056,7 +1068,7 @@ def confirmParentage(infiles, outfile):
                 AND %(proband)s_PL LIKE '%%%%,0,%%%%'
                 AND cast(%(proband)s_DP as INTEGER) > 10),
                 (SELECT count(*) as paternal_hom_nonref
-                FROM %(trio)s_genes_table 
+                FROM %(trio)s_genes_table
                 where  CHROM NOT IN ('X', 'Y')
                 AND  %(father)s_PL LIKE '%%%%,0'
                 AND cast(%(father)s_DP as INTEGER) > 10
@@ -1064,7 +1076,7 @@ def confirmParentage(infiles, outfile):
                 AND cast(%(mother)s_DP as INTEGER) > 10
                 AND cast(%(proband)s_DP as INTEGER) > 10),
                 (SELECT count(*) as child_pat_het_nonref
-                FROM %(trio)s_genes_table 
+                FROM %(trio)s_genes_table
                 where  CHROM NOT IN ('X', 'Y')
                 AND  %(father)s_PL LIKE '%%%%,0'
                 AND cast(%(father)s_DP as INTEGER) > 10
@@ -1072,13 +1084,13 @@ def confirmParentage(infiles, outfile):
                 AND cast(%(mother)s_DP as INTEGER) > 10
                 AND %(proband)s_PL LIKE '%%%%,0,%%%%'
                 AND cast(%(proband)s_DP as INTEGER) > 10)''' % locals()
-    statement = '''sqlite3 %(database)s "%(query)s" > %(outfile)s 
+    statement = '''sqlite3 %(database)s "%(query)s" > %(outfile)s
                    2> %(outfile)s.log''' % locals()
     P.run()
 
-################################################################################
-################################################################################
-################################################################################
+##########################################################################
+##########################################################################
+##########################################################################
 # vcf statistics
 
 
@@ -1086,10 +1098,11 @@ def confirmParentage(infiles, outfile):
     r"variants/(\S+).vcf"), r"variants/\1.vcfstats")
 def buildVCFstats(infile, outfile):
     '''Calculate statistics on VCF file'''
-    statement = '''vcf-stats %(infile)s > %(outfile)s 2>>%(outfile)s.log;''' % locals()
+    statement = '''vcf-stats %(infile)s > %(outfile)s 2>>%(outfile)s.log;''' % locals(
+    )
     P.run()
 
-################################################################################
+##########################################################################
 
 
 @jobs_limit(1, "db")
@@ -1107,10 +1120,11 @@ def loadVCFstats(infiles, outfile):
     statement += '''cat snpstats.txt | python %(scriptsdir)s/csv2db.py %(csv2db_options)s --allow-empty-file --add-index=track --table=snp_stats >> %(outfile)s; '''
     P.run()
 
-################################################################################
-################################################################################
-################################################################################
+##########################################################################
+##########################################################################
+##########################################################################
 # Targets
+
 
 @follows(loadROI,
          loadROI2Gene,
@@ -1165,33 +1179,34 @@ def tabulation():
          loadDeNovos)
 def denovo():
     pass
-    
-    
+
+
 @follows(lowerStringencyDeNovos,
          tabulateLowerStringencyDeNovos,
          loadLowerStringencyDeNovos)
 def denovo2():
     pass
-    
-     
+
+
 @follows(dominantVariants,
          tabulateDoms,
          loadDoms)
 def dominant():
     pass
-    
-    
+
+
 @follows(recessiveVariants,
          tabulateRecs,
          loadRecs)
 def recessive():
     pass
-    
-    
+
+
 @follows(compoundHets,
          loadCompoundHets)
 def compoundHet():
     pass
+
 
 @follows(denovo,
          denovo2,
@@ -1200,6 +1215,7 @@ def compoundHet():
          compoundHet)
 def filtering():
     pass
+
 
 @follows(buildVCFstats,
          loadVCFstats)
@@ -1216,10 +1232,11 @@ def vcfstats():
 def full():
     pass
 
-################################################################################
-################################################################################
-################################################################################
+##########################################################################
+##########################################################################
+##########################################################################
 # Reports
+
 
 @follows()
 def publish():
