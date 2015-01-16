@@ -2153,7 +2153,10 @@ def outputTagSummary(filename_tags,
     outfilename = output_filename_pattern + "mds.svg"
     E.info("outputting mds plot to %s" % outfilename)
     R.svg(outfilename)
-    R('''plotMDS( countsTable )''')
+    try:
+        R('''plotMDS(countsTable)''')
+    except rpy2.rinterface.RRuntimeError, msg:
+        E.warn("can not plot mds: %s" % msg)
     R['dev.off']()
 
 
