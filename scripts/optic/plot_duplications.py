@@ -782,17 +782,17 @@ def main(argv=None):
     parser = E.OptionParser(
         version="%prog version: $Id: optic/plot_duplications.py 2782 2009-09-10 11:40:29Z andreas $", usage=globals()["__doc__"])
 
-    parser.add_option("-e", "--headers", dest="headers", action="store_true",
+    parser.add_option("-e", "--header-names", dest="headers", action="store_true",
                       help="first row is a header [ignored].")
     parser.add_option("-t", "--title", dest="title", type="string",
                       help="page title.")
     parser.add_option("-f", "--footer", dest="footer", type="string",
                       help="page footer.")
-    parser.add_option("-c", "--contig-sizes", dest="filename_contig_sizes", type="string",
+    parser.add_option("-c", "--contigs-tsv-file", dest="filename_contig_sizes", type="string",
                       help="filname with contig sizes.")
-    parser.add_option("-r", "--radius", dest="radius", type="int",
+    parser.add_option("-r", "--territory-extension", dest="radius", type="int",
                       help="radius.")
-    parser.add_option("-i", "--increment", dest="radius_increment", type="int",
+    parser.add_option("-i", "--flank-increment-size", dest="radius_increment", type="int",
                       help="radius increment.")
     parser.add_option("-u", "--url", dest="url", type="string",
                       help="string to build url for annotation.")

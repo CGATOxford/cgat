@@ -9,52 +9,52 @@ strip_sequence:
     stdin: paired.bam
     outputs: [stdout]
     references: [strip_sequence.bam]
-    options: -v 0 --strip=sequence
+    options: -v 0 --strip-method=all --method=strip-sequence
 
 strip_quality:
     stdin: paired.bam
     outputs: [stdout]
     references: [strip_quality.bam]
-    options: -v 0 --strip=quality
+    options: -v 0 --strip-method=all --method=strip-quality
 
 strip_match:
     stdin: paired.bam
     outputs: [stdout]
     references: [strip_match.bam]
-    options: -v 0 --strip=match
+    options: -v 0 --strip-method=match --method=strip-sequence
   
 unstrip:
     stdin: strip_quality.bam
     outputs: [stdout]
     references: [paired.bam]
-    options: -v 0 --unstrip --fastq1=<DIR>/paired.fastq.1.gz --fastq2=<DIR>/paired.fastq.2.gz
+    options: -v 0 --method=unstrip --first-fastq-file=<DIR>/paired.fastq.1.gz --second-fastq-file=<DIR>/paired.fastq.2.gz
 
 set_flag:
     stdin: unstrip.bam
     outputs: [stdout]
     references: [nh_flag.bam]
-    options: -v 0 --set-nh
+    options: -v 0 --method=set-nh
 
 filter_unique_mapped_sam:
     stdin: nh_flag.bam
     outputs: [stdout]
     references: [filtered.sam]
-    options: -v 0 --filter=unique --filter=mapped --sam
+    options: -v 0 --method=filter --filter-method=unique --method=filter --filter-method=mapped --output-sam
 
 set_sequence:
     stdin: strip_sequence.bam
     outputs: [stdout]
     references: [set_sequence.bam]
-    options: -v 0 --set-sequence    
+    options: -v 0 --method=set-sequence    
 
 reference_bam:
     stdin: sample_gsnap.bam
     outputs: [stdout]
     references: [bam_filtered.bam]
-    options: -v 0 --filter=NM --reference-bam=<DIR>/sample_star.bam
+    options: -v 0 --method=filter --filter-method=NM --reference-bam-file=<DIR>/sample_star.bam
 
 unset_mapq:
     stdin: mapq_set.bam
     outputs: [stdout]
     references: [mapq_unset.bam]
-    options: -v 0 --unset-unmapped-mapq
+    options: -v 0 --method=unset-unmapped-mapq

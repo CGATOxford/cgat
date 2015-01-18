@@ -6,7 +6,7 @@ The best way to build a pipeline is to start from an example. There are several
 pipelines available, see :ref:`cgatpipelines`. To start a new project, use 
 :file:`pipeline_quickstart.py`::
 
-   python <srcdir>pipeline_quickstart.py --name=test
+   python <srcdir>pipeline_quickstart.py --set-name=test
 
 This will create a new directory called ``test`` in the current directory.
 
@@ -237,7 +237,7 @@ can be given via the optional *options* argument::
 
    @transform( 'data_*.tsv.gz', suffix('.tsv.gz'), '.load' )
    def loadTables( infile, outfile ):
-      P.load( infile, outfile, "--index=gene_id" )
+      P.load( infile, outfile, "--add-index=gene_id" )
 
 Connecting to a database
 ------------------------
@@ -449,8 +449,8 @@ their own separate :term:`working directory`.
 Publishing data
 ===============
 
-To publish data and a report, use the :meth:`Pipeline.publish_report` method, such as in the 
-following task::
+To publish data and a report, use the :meth:`Pipeline.publish_report`
+method, such as in the following task::
 
    @follows( update_report )
    def publish_report():
@@ -459,24 +459,44 @@ following task::
        E.info( "publishing report" )
        P.publish_report()
 
-On publishing a report, the report (in the directory :file:`report`, specified by ``report_dir``) 
-will get copied to the directory specified in the configuration value ``web_dir``. Also, all files
-in the :file:`export` directory will get copied over and links pointing to such files will be 
-automatically corrected.
+On publishing a report, the report (in the directory :file:`report`,
+specified by ``report_dir``) will get copied to the directory
+specified in the configuration value ``web_dir``. Also, all files in
+the :file:`export` directory will get copied over and links pointing
+to such files will be automatically corrected.
 
-The report will then be available at ``http://www.cgat.org/downloads/%(project_id)s/report`` where
-``project_id`` is the unique identifier given to each project. It is looked up automatically, but the
-automatic look-up requires that the pipeline is executed within the :file:`/ifs/proj` directory.
+The report will then be available at
+``http://www.cgat.org/downloads/%(project_id)s/report`` where
+``project_id`` is the unique identifier given to each project. It is
+looked up automatically, but the automatic look-up requires that the
+pipeline is executed within the :file:`/ifs/proj` directory.
 
-If the option *prefix* is given to publish_report, all output directories will be output
-prefixed by *prefix*. This is very useful if there is more than one report per project.
+If the option *prefix* is given to publish_report, all output
+directories will be output prefixed by *prefix*. This is very useful
+if there is more than one report per project.
 
 See :meth:`Pipeline.publish_report` for more options.
 
 Checking requisites
 ===================
 
-TODO
+Add a ``Requisites`` section to the docstring of the pipeline and any
+auxilliary script or module that is called by the pipeline. An example
+is below::
+
+    Requirements:
+
+    * tophat >= 2.0.13
+    * bowtie2 >= 2.2.3
+    * bwa >= 0.7.8
+    * gsnap >= 2014-01-21
+    * star >= 2.3.0e
+
+These sections allow us to keep track of dependencies for a specific
+pipeline and the software collection as a whole.
+
+See :doc:`modules/Requirements` for more information about the
+mechanism.
 
 .. _ruffus: http://www.ruffus.org.uk/
 .. _sqlite: http://www.sqlite.org/

@@ -143,7 +143,7 @@ def main(argv=None):
 
     parser.add_option("-f", "--file", dest="filenames", type="string",
                       help="files[s] to take data from,stdin = -.")
-    parser.add_option("-l", "--legend", dest="legend", type="string",
+    parser.add_option("-l", "--plot-legend", dest="legend", type="string",
                       help="legend for plot. If not given, the legend is build from the column titles [default=%Default].")
     parser.add_option("--no-legend", dest="no_legend", action="store_true",
                       help="do not output a legend [default=%Default]")

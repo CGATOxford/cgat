@@ -1,8 +1,11 @@
 from MedipReport import *
 
 
-class CpGCoverage(ProjectTracker, SingleTableTrackerHistogram):
-    table = "cpg_coverage"
+class CpGCoverageByReads(ProjectTracker, SingleTableTrackerHistogram):
+    '''CpG coverage in regions in the genome that are covered
+    by tags.'''
+
+    table = "cpg_coverage_by_reads"
     column = "bin"
 
 
@@ -11,11 +14,8 @@ class CpGContext(ProjectTracker, SingleTableTrackerRows):
     fields = ('category',)
 
 
-class CpGDistribution(ProjectTracker):
-
+class CpGDistributionInTags(ProjectTracker, SingleTableTrackerHistogram):
     '''distribution of percent CpG in regions covered by reads.'''
+    table = "pcpg_in_coveredregions"
+    column = "bin"
 
-    pattern = "(.*)_covered_composition"
-
-    def __call__(self, track):
-        return self.getValues("SELECT pCpG FROM %(track)s_covered_composition")

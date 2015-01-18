@@ -54,8 +54,8 @@ iterating over the file. The metrics output are:
 |                        |a .gff file                               |
 +------------------------+------------------------------------------+
 |alignments_no_rna       |alignments not mapping to regions in a    |
-|                        |.gff file (if --remove-rna has been set,  |
-|                        |otherwise equal to mapped)                |
+|                        |.gff file (if --ignore-masked-reads has   |
+|                        |been set, otherwise equal to mapped)      |
 +------------------------+------------------------------------------+
 |alignments_duplicates   |number of alignments mapping to the same  |
 |                        |location                                  |
@@ -64,7 +64,7 @@ iterating over the file. The metrics output are:
 |                        |locations                                 |
 +------------------------+------------------------------------------+
 |reads_total             |number of reads in file. Either given via |
-|                        |--input-reads or deduc ed as the sum of   |
+|                        |--num-reads or deduc ed as the sum of     |
 |                        |mappend and unmapped reads                |
 +------------------------+------------------------------------------+
 |reads_mapped            |number of reads mapping in file. Derived  |
@@ -102,36 +102,40 @@ scores.
 Supplying a fastq file
 ++++++++++++++++++++++
 
-If a fastq file is supplied (``--filename-fastq``), the script will
+If a fastq file is supplied (``--fastq-file``), the script will
 compute some additional summary statistics. However, as it builds a dictionary
 of all sequences, it will also require a good  amount of memory. The additional
 metrics output are:
 
-+-------------------------+----------------------------------------+
-|*Category*               |*Content*                               |
-+-------------------------+----------------------------------------+
-|pairs_total              |total number of pairs in input data     |
-+-------------------------+----------------------------------------+
-|pairs_mapped             |pairs in which both reads map           |
-+-------------------------+----------------------------------------+
-|pairs_unmapped           |pairs in which neither read maps        |
-+-------------------------+----------------------------------------+
-|pairs_proper_unique      |pairs which are proper and map uniquely.|
-+-------------------------+----------------------------------------+
-|pairs_incomplete         |pairs in which one of the reads maps    |
-|                         |uniquely, but the other does not map.   |
-+-------------------------+----------------------------------------+
-|pairs_proper_duplicate   |pairs which are proper and unique, but  |
-|                         |marked as duplicates.                   |
-+-------------------------+----------------------------------------+
-|pairs_proper_multimapping|pairs which are proper, but map to      |
-|                         |multiple locations.                     |
-+-------------------------+----------------------------------------+
-|pairs_not_proper_unique  |pairs mapping uniquely, but not flagged |
-|                         |as proper                               |
-+-------------------------+----------------------------------------+
-|pairs_other              |pairs not in any of the above categories|
-+-------------------------+----------------------------------------+
++-----------------------------+----------------------------------------+
+|*Category*                   |*Content*                               |
++-----------------------------+----------------------------------------+
+|pairs_total                  |total number of pairs in input data     |
++-----------------------------+----------------------------------------+
+|pairs_mapped                 |pairs in which both reads map           |
++-----------------------------+----------------------------------------+
+|pairs_unmapped               |pairs in which neither read maps        |
++-----------------------------+----------------------------------------+
+|pairs_proper_unique          |pairs which are proper and map uniquely.|
++-----------------------------+----------------------------------------+
+|pairs_incomplete_unique      |pairs in which one of the reads maps    |
+|                             |uniquely, but the other does not map.   |
++-----------------------------+----------------------------------------+
+|pairs_incomplete_multimapping|pairs in which one of the reads maps    |
+|                             |uniquely, but the other maps to multiple|
+|                             |locations.                              |
++-----------------------------+----------------------------------------+
+|pairs_proper_duplicate       |pairs which are proper and unique, but  |
+|                             |marked as duplicates.                   |
++-----------------------------+----------------------------------------+
+|pairs_proper_multimapping    |pairs which are proper, but map to      |
+|                             |multiple locations.                     |
++-----------------------------+----------------------------------------+
+|pairs_not_proper_unique      |pairs mapping uniquely, but not flagged |
+|                             |as proper                               |
++-----------------------------+----------------------------------------+
+|pairs_other                  |pairs not in any of the above categories|
++-----------------------------+----------------------------------------+
 
 Note that for paired-end data, any ``\1`` or ``/2`` suffixes will be
 removed from the read name in the assumption that these have been removed
@@ -146,11 +150,110 @@ Example::
 
 This command will generate various statistics based on the supplied
 BAM file, such as percentage reads mapped and percentage reads mapped
-in pairs.
+in pairs. The output looks like this::
+
++-----------------------------+------+-------+-----------------+
+|category                     |counts|percent|of               |
++-----------------------------+------+-------+-----------------+
+|alignments_total             |32018 |100.00 |alignments_total |
++-----------------------------+------+-------+-----------------+
+|alignments_mapped            |32018 |100.00 |alignments_total |
++-----------------------------+------+-------+-----------------+
+|alignments_unmapped          |0     | 0.00  |alignments_total |
++-----------------------------+------+-------+-----------------+
+|alignments_qc_fail           |0     | 0.00  |alignments_mapped|
++-----------------------------+------+-------+-----------------+
+|alignments_mate_unmapped     |241   | 0.75  |alignments_mapped|
++-----------------------------+------+-------+-----------------+
+|alignments_reverse           |16016 |50.02  |alignments_mapped|
++-----------------------------+------+-------+-----------------+
+|alignments_mate_reverse      |15893 |49.64  |alignments_mapped|
++-----------------------------+------+-------+-----------------+
+|alignments_proper_pair       |30865 |96.40  |alignments_mapped|
++-----------------------------+------+-------+-----------------+
+|alignments_read1             |16057 |50.15  |alignments_mapped|
++-----------------------------+------+-------+-----------------+
+|alignments_paired            |32018 |100.00 |alignments_mapped|
++-----------------------------+------+-------+-----------------+
+|alignments_duplicate         |0     | 0.00  |alignments_mapped|
++-----------------------------+------+-------+-----------------+
+|alignments_read2             |15961 |49.85  |alignments_mapped|
++-----------------------------+------+-------+-----------------+
+|alignments_secondary         |0     | 0.00  |alignments_mapped|
++-----------------------------+------+-------+-----------------+
+|alignments_rna               |68    | 0.21  |alignments_mapped|
++-----------------------------+------+-------+-----------------+
+|alignments_no_rna            |31950 |99.79  |alignments_mapped|
++-----------------------------+------+-------+-----------------+
+|alignments_filtered          |31950 |99.79  |alignments_mapped|
++-----------------------------+------+-------+-----------------+
+|reads_total                  |34250 |100.00 |reads_total      |
++-----------------------------+------+-------+-----------------+
+|reads_unmapped               |0     | 0.00  |reads_total      |
++-----------------------------+------+-------+-----------------+
+|reads_mapped                 |32018 |93.48  |reads_total      |
++-----------------------------+------+-------+-----------------+
+|reads_missing                |2232  | 6.52  |reads_total      |
++-----------------------------+------+-------+-----------------+
+|reads_mapped_unique          |32018 |100.00 |reads_mapped     |
++-----------------------------+------+-------+-----------------+
+|reads_multimapping           |0     | 0.00  |reads_mapped     |
++-----------------------------+------+-------+-----------------+
+|pairs_total                  |17125 |100.00 |pairs_total      |
++-----------------------------+------+-------+-----------------+
+|pairs_mapped                 |17125 |100.00 |pairs_total      |
++-----------------------------+------+-------+-----------------+
+|pairs_unmapped               |0     | 0.00  |pairs_total      |
++-----------------------------+------+-------+-----------------+
+|pairs_proper_unique          |14880 |86.89  |pairs_total      |
++-----------------------------+------+-------+-----------------+
+|pairs_incomplete_unique      |2232  |13.03  |pairs_total      |
++-----------------------------+------+-------+-----------------+
+|pairs_incomplete_multimapping|0     | 0.00  |pairs_total      |
++-----------------------------+------+-------+-----------------+
+|pairs_proper_duplicate       |0     | 0.00  |pairs_total      |
++-----------------------------+------+-------+-----------------+
+|pairs_proper_multimapping    |0     | 0.00  |pairs_total      |
++-----------------------------+------+-------+-----------------+
+|pairs_not_proper_unique      |13    | 0.08  |pairs_total      |
++-----------------------------+------+-------+-----------------+
+|pairs_other                  |0     | 0.00  |pairs_total      |
++-----------------------------+------+-------+-----------------+
+|read1_total                  |17125 |100.00 |read1_total      |
++-----------------------------+------+-------+-----------------+
+|read1_unmapped               |0     | 0.00  |read1_total      |
++-----------------------------+------+-------+-----------------+
+|read1_mapped                 |16057 |93.76  |read1_total      |
++-----------------------------+------+-------+-----------------+
+|read1_mapped_unique          |16057 |100.00 |read1_mapped     |
++-----------------------------+------+-------+-----------------+
+|reads_multimapping           |0     | 0.00  |read1_mapped     |
++-----------------------------+------+-------+-----------------+
+|read1_missing                |1068  | 6.65  |read1_total      |
++-----------------------------+------+-------+-----------------+
+|read2_total                  |17125 |100.00 |read2_total      |
++-----------------------------+------+-------+-----------------+
+|read2_unmapped               |0     | 0.00  |read2_total      |
++-----------------------------+------+-------+-----------------+
+|read2_mapped                 |15961 |93.20  |read2_total      |
++-----------------------------+------+-------+-----------------+
+|read2_mapped_unique          |15961 |100.00 |read2_mapped     |
++-----------------------------+------+-------+-----------------+
+|reads_multimapping           |0     | 0.00  |read2_mapped     |
++-----------------------------+------+-------+-----------------+
+|read2_missing                |1164  | 7.29  |read2_total      |
++-----------------------------+------+-------+-----------------+
+
+The first column contains the caterogy, the second the number of
+counts and the third a percentage. The fourth column denotes the
+denomiminator that was used to compute the percentage. In the table
+above, wee see that 16,057 first reads in a pair map and 15,961
+second reads in pair map, resulting in 14,880 proper uniquely mapped
+pairs.
 
 Type::
 
-   python cgat_script_template.py --help
+   cgat bam2stats --help
 
 for command line help.
 
@@ -261,24 +364,38 @@ def main(argv=None):
         argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+    parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
-    parser.add_option("-r", "--filename-rna", dest="filename_rna", type="string", metavar='GFF',
-                      help="gff formatted file with rna locations. Note that the computation currently "
-                      "does not take into account indels, so it is an approximate count only [%default]")
-    parser.add_option("-f", "--remove-rna", dest="remove_rna", action="store_true",
-                      help="as well as counting, also remove rna reads for duplicate and other counts [%default]")
-    parser.add_option("-i", "--input-reads", dest="input_reads", type="int",
-                      help="the number of reads - if given, used to provide percentages [%default]")
-    parser.add_option("--force-output", dest="force_output", action="store_true",
-                      help="output nh/nm stats even if there is only a single count [%default]")
-    parser.add_option("-d", "--output-details", dest="output_details", action="store_true",
-                      help="output per-read details [%default]")
-    parser.add_option("-q", "--filename-fastq", dest="filename_fastq",
-                      help="filename with sequences and quality scores. This file is only "
-                      "used to collect sequence identifiers. Thus, for paired end data a "
-                      "single file is sufficient [%default]")
+    parser.add_option(
+        "-r", "--mask-bed-file", dest="filename_rna", type="string",
+        metavar='GFF',
+        help="gff formatted file with masking locations. The number of "
+        "reads overlapping the intervals in the given file will be "
+        "computed. Note that the computation currently does not take "
+        "into account indels, so it is an approximate count only. "
+        "[%default]")
+
+    parser.add_option(
+        "-f", "--ignore-masked-reads", dest="remove_rna", action="store_true",
+        help="as well as counting reads in the file given by --mask-bed-file, "
+        "also remove these reads for duplicate and match statistics. "
+        "[%default]")
+
+    parser.add_option(
+        "-i", "--num-reads", dest="input_reads", type="int",
+        help="the number of reads - if given, used to provide percentages "
+        "[%default]")
+
+    parser.add_option(
+        "-d", "--output-details", dest="output_details", action="store_true",
+        help="output per-read details [%default]")
+
+    parser.add_option(
+        "-q", "--fastq-file", dest="filename_fastq",
+        help="filename with sequences and quality scores. This file is only "
+        "used to collect sequence identifiers. Thus, for paired end data a "
+        "single file is sufficient [%default]")
 
     parser.set_defaults(
         filename_rna=None,
@@ -514,6 +631,17 @@ def main(argv=None):
     if flags_counts["read2"] > 0:
         if options.filename_fastq:
             pairs_mapped = counter.total_pair_is_mapped
+
+            # sanity check
+            assert counter.total_pair_is_mapped == \
+                (counter.total_pair_is_proper_uniq +
+                 counter.total_pair_is_incomplete_uniq +
+                 counter.total_pair_is_incomplete_mmap +
+                 counter.total_pair_is_proper_duplicate +
+                 counter.total_pair_is_proper_mmap +
+                 counter.total_pair_not_proper_uniq +
+                 counter.total_pair_is_other)
+
             outs.write("pairs_total\t%i\t%5.2f\tpairs_total\n" %
                        (counter.total_pairs,
                         100.0 * counter.total_pairs / counter.total_pairs))
@@ -527,27 +655,38 @@ def main(argv=None):
             outs.write(
                 "pairs_proper_unique\t%i\t%5.2f\tpairs_total\n" %
                 (counter.total_pair_is_proper_uniq,
-                 100.0 * counter.total_pair_is_proper_uniq / counter.total_pairs))
+                 100.0 * counter.total_pair_is_proper_uniq /
+                 counter.total_pairs))
             outs.write(
-                "pairs_incomplete\t%i\t%5.2f\tpairs_total\n" %
-                (counter.total_pair_is_incomplete,
-                 100.0 * counter.total_pair_is_incomplete / counter.total_pairs))
+                "pairs_incomplete_unique\t%i\t%5.2f\tpairs_total\n" %
+                (counter.total_pair_is_incomplete_uniq,
+                 100.0 * counter.total_pair_is_incomplete_uniq /
+                 counter.total_pairs))
+            outs.write(
+                "pairs_incomplete_multimapping\t%i\t%5.2f\tpairs_total\n" %
+                (counter.total_pair_is_incomplete_mmap,
+                 100.0 * counter.total_pair_is_incomplete_mmap /
+                 counter.total_pairs))
             outs.write(
                 "pairs_proper_duplicate\t%i\t%5.2f\tpairs_total\n" %
                 (counter.total_pair_is_proper_duplicate,
-                 100.0 * counter.total_pair_is_proper_duplicate / counter.total_pairs))
+                 100.0 * counter.total_pair_is_proper_duplicate /
+                 counter.total_pairs))
             outs.write(
                 "pairs_proper_multimapping\t%i\t%5.2f\tpairs_total\n" %
                 (counter.total_pair_is_proper_mmap,
-                 100.0 * counter.total_pair_is_proper_mmap / counter.total_pairs))
+                 100.0 * counter.total_pair_is_proper_mmap /
+                 counter.total_pairs))
             outs.write(
                 "pairs_not_proper_unique\t%i\t%5.2f\tpairs_total\n" %
                 (counter.total_pair_not_proper_uniq,
-                 100.0 * counter.total_pair_not_proper_uniq / counter.total_pairs))
+                 100.0 * counter.total_pair_not_proper_uniq /
+                 counter.total_pairs))
             outs.write(
                 "pairs_other\t%i\t%5.2f\tpairs_total\n" %
                 (counter.total_pair_is_other,
-                 100.0 * counter.total_pair_is_other / counter.total_pairs))
+                 100.0 * counter.total_pair_is_other /
+                 counter.total_pairs))
 
             nread1_total = counter.total_read1
             _write(outs,

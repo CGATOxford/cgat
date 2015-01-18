@@ -178,7 +178,7 @@ def dummyTask( infile, outfile ):
 @transform( dummyTask, suffix(".counts"), "_counts.load" )
 def loadDummyTask( infile, outfile ):
     '''load results of word counting into database.'''
-    P.load( infile, outfile, "--index=word" )
+    P.load( infile, outfile, "--add-index=word" )
 
 ###################################################################
 ###################################################################

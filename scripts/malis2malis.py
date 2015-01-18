@@ -71,7 +71,7 @@ def main(argv=None):
                       help="filename pattern for output multiple "
                       "alignment files.")
 
-    parser.add_option("-f", "--filename-filter",
+    parser.add_option("-f", "--filter-tsv-file",
                       dest="filename_filter",
                       type="string",
                       help="filename with strings to filter by.")

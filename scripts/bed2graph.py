@@ -73,7 +73,7 @@ def main(argv=None):
     parser = E.OptionParser(
         version="%prog version: $Id: bed2graph.py 2861 2010-02-23 17:36:32Z andreas $", usage=globals()["__doc__"])
 
-    parser.add_option("-o", "--output", dest="output", type="choice",
+    parser.add_option("-o", "--output-section", dest="output", type="choice",
                       choices=("full", "name"),
                       help="output either ``full`` overlapping entries, only the ``name``s. [default=%default].")
 

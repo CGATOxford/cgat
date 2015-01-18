@@ -89,19 +89,35 @@ Referring to other reports
 
 
 The intersphinx_ extension permits referring to other
-sphinxreport documents. To use this extension you will need to modify
-your :file:`conf.py` configuration file. For example::
+sphinxreport documents. To use this extension you will need to include
+the intersphinx_ extension in your :file:`conf.py` configuration file::
 
     # add sphinx.ext.ifconfig to the list of extensions
     extensions.append( 'sphinx.ext.intersphinx' )
 
-    # add mapping information
-    intersphinx_mapping = {
-       'readqc': ('/ifs/projects/proj013/readqc/report/html', None) ,
-       'mapping1': ('/ifs/projects/proj013/mapping1/report/html', None),
-       'mapping2': ('/ifs/projects/proj013/mapping2/report/html', None),
-	}
-	
+Next, you can add a section called ``intersphinx`` to
+:file:`pipeline.ini`::
+
+   [intersphinx]
+   readqc=/ifs/projects/proj013/readqc/report/html
+   mapping1=/ifs/projects/proj013/mapping1/report/html
+   mapping2=/ifs/projects/proj013/mapping2/report/html
+
+.. note::
+
+   It is also possible to add an intersphinx mapping to :file:`conf.py`::
+
+     # add mapping information
+     intersphinx_mapping = {
+	'readqc': ('/ifs/projects/proj013/readqc/report/html', None) ,
+	'mapping1': ('/ifs/projects/proj013/mapping1/report/html', None),
+	'mapping2': ('/ifs/projects/proj013/mapping2/report/html', None),
+	 }
+
+   The benefit of using :file:`pipeline.ini` is that when a report is
+   published :doc:`modules.Pipeline` is aware of the links and will
+   update the file URLs to web URLs.
+   	
 This will link to three other reports. The three reports are
 abbreviated as ``readqc``, ``mapping1`` and ``mapping2``. The paths
 need to be the absolute location of the html build of the sphinx

@@ -83,9 +83,9 @@ Options:
 -n, --min-margin=               minimum margin to add in any case.
 -d, --default-margin=           margin to use as a default.
 -g, --genome-file=              pattern for filenames with the genomic DNA (FASTA).
--p, --peptides=                 file with protein sequences (FASTA).
+-p, --peptides-fasta-file=                 file with protein sequences (FASTA).
 -s, --suffix=                   suffix for output filenames
--p, --prefix=                   prefix for output filenames
+-p, --column-prefix=                   prefix for output filenames
 -i, --input-format=             input format, valid options are:
                                 predictions [default]
                                 minimal (query, sbjct_token/strand, range)
@@ -99,9 +99,9 @@ Options:
 -u, --clusters=                 filename with clustering information
 -k, --offset-key                use offset key as identifier
 -t, --conserve-strand           do not switch strand
--o, --forward-coordinates       coordinates are forward coordinates
+-o, --is-forward-coordinates       coordinates are forward coordinates
 -r, --max-region                maximum predictions per region
--a, --output-pattern=           filename pattern for output. Should contain one %%i
+-a, --output-filename-pattern=           filename pattern for output. Should contain one %%i
 --combine-exons                 combine exons
 --filename-previous               filename with previous output (that are to be skipped).
 """ % sys.argv[0]
@@ -229,7 +229,7 @@ def main(argv=None):
     parser = E.OptionParser(
         version="%prog version: $Id: gpipe/assignments2pairs.py 2011 2008-07-04 10:40:51Z andreas $", usage=globals()["__doc__"])
 
-    parser.add_option("--peptides", dest="filename_peptides", type="string",
+    parser.add_option("--peptides-fasta-file", dest="filename_peptides", type="string",
                       help="")
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
@@ -238,10 +238,10 @@ def main(argv=None):
     parser.add_option("-s", "--suffix", dest="suffix", type="string",
                       help="")
 
-    parser.add_option("-p", "--prefix", dest="prefix", type="string",
+    parser.add_option("-p", "--column-prefix", dest="prefix", type="string",
                       help="")
 
-    parser.add_option("-a", "--output-pattern", dest="filename_output_pattern", type="string",
+    parser.add_option("-a", "--output-filename-pattern", dest="filename_output_pattern", type="string",
                       help="")
 
     parser.add_option("-f", "--format", dest="format", type="string",
@@ -277,7 +277,7 @@ def main(argv=None):
     parser.add_option("-t", "--conserve-strand", dest="conserve_strand", action="store_true",
                       help="")
 
-    parser.add_option("-o", "--forward-coordinates", dest="forward_coordinates", action="store_true",
+    parser.add_option("-o", "--is-forward-coordinates", dest="forward_coordinates", action="store_true",
                       help="")
 
     parser.add_option("--no-sequence", dest="no_sequence", action="store_true",

@@ -64,7 +64,7 @@ def main(argv=None):
     parser = optparse.OptionParser(version="%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $",
                                    usage=globals()["__doc__"])
 
-    parser.add_option("-b", "--bamfile", dest="bamfile", type="string",
+    parser.add_option("-b", "--bam-file", dest="bamfile", type="string",
                       help="supply bam file")
 
     # add common options (-h/--help, ...) and parse command line

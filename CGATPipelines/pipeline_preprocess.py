@@ -30,20 +30,33 @@ Pre-process pipeline
 :Date: |today|
 :Tags: Python
 
-(See the readqc pipeline for details of the readqc functions (target
-``readqc``).)
-
 The purpose of this pipeline is to pre-process reads (target
 ``full``).
 
-Implemented tasks are:
+Implemented tools and their functionalities are listed below:
 
-   * :meth:`removeContaminants` - remove contaminants from read sets
-   * :meth:`trim` - trim reads by a certain amount
-   * :meth:`filter` - filter reads by quality score
-   * :meth:`sample` - sample a certain proportion of reads
++-------------+-------------------+-------------------------------------------+
+|tool         |single/paired end  |functionality                              |
++-------------+-------------------+-------------------------------------------+
+|fastx_trimmer|single             |hard-trimming                              |
++-------------+-------------------+-------------------------------------------+
+|sickle       |both               |sliding-window quality trimming            |
++-------------+-------------------+-------------------------------------------+
+|trimgalore   |both               |adapter-trimming                           |
+|             |                   |end of read quality trimming               |
+|             |                   |RRBS-specfic trimming                      |
++-------------+-------------------+-------------------------------------------+
+|trimmomatic  |both               |highly optimisable adapter trimming        |
+|             |                   |sliding window quality trimming            |
+|             |                   |end/start of read quality trimming         |
+|             |                   |hard-trimming                              |
+|             |                   |user-specified order of processing         |
++-------------+-------------------+-------------------------------------------+
+|flash        |paired             |overlapping paired end merging             |
++-------------+-------------------+-------------------------------------------+
 
-Individual tasks are enabled in the configuration file.
+Tools are enabled in the configuration file as a string of comma seperated
+tool names
 
 Usage
 =====
@@ -55,25 +68,6 @@ Configuration
 -------------
 
 No general configuration required.
-
-Removing contaminants
----------------------
-
-Use the task :meth:`removeContaminants` to remove contaminants from read
-sets.
-
-Contaminant sequences are listed in the file
-:file:`contaminants.fasta`.  If not given, a file with standard
-Illumina adapators will be created to remove adaptor contamination.
-
-The task will create output files called :file:`nocontaminants-<infile>`.
-
-The pipeline can then be re-run in order to add stats on the
-contaminant-removed files.
-
-.. note::
-
-   Colour space filtering has not been implemented yet.
 
 Input
 -----
@@ -109,44 +103,42 @@ fastq.1.gz, fastq2.2.gz
 Requirements
 ------------
 
-On top of the default CGAT setup, the pipeline requires the following
-software to be in the path:
-
-+------------+-----------+------------------------------------------------+
-|*Program*   |*Version*  |*Purpose*                                       |
-+------------+-----------+------------------------------------------------+
-|fastqc      |>=0.9.0    |read quality control                            |
-+------------+-----------+------------------------------------------------+
-|sra-tools   |           |extracting reads from .sra files                |
-+------------+-----------+------------------------------------------------+
-|picard      |>=1.38     |bam/sam files. The .jar files need to be in your|
-|            |           | CLASSPATH environment variable.                |
-+------------+-----------+------------------------------------------------+
+* sra-tools
+* trimmomatic >= 0.32(optional)
+* fastx >= 0.0.13 (optional)
+* trim_galore >= 0.3.3 (optional)
+* flash >= 1.2.6(optional)
+* sickle >= 1.33 (optional)
 
 Pipeline output
 ===============
 
-The major output is a set of HTML pages and plots reporting on the
-quality of the sequence archive
+By default the pipeline will output only the final processed files.
+To save all intermediate files, use save=1 in pipeline.ini
+
+The pipeline also outputs a summary table for each infile
 
 Example
 =======
 
+Note: not currently available
 Example data is available at
-http://www.cgat.org/~andreas/sample_data/pipeline_readqc.tgz.  To run
-the example, simply unpack and untar::
+http://www.cgat.org/~andreas/sample_data/pipeline_preprocessing.tgz
+To run the example, simply unpack and untar::
 
-   wget http://www.cgat.org/~andreas/sample_data/pipeline_readqc.tgz
-   tar -xvzf pipeline_readqc.tgz
-   cd pipeline_readqc
-   python <srcdir>/pipeline_readqc.py make full
+   wget http://www.cgat.org/~andreas/sample_data/pipeline_preprocessing.tgz
+   tar -xvzf pipeline_preprocessing.tgz
+   cd pipeline_preprocessing
+   python <srcdir>/pipeline_preprocessing.py make full
 
+To do
+=====
 
-TODO
-====
+Example data
+Add threading
+Better way to specify adapters?
+Remove old code
 
-Code needs to be modularised, adapter sequences need to be moved to
-/ifs/annotation.
 
 Code
 ====
@@ -168,16 +160,15 @@ import os
 import re
 import itertools
 import glob
-import cStringIO
+import sqlite3
 import string
-
+import pandas as pd
 import CGAT.IOTools as IOTools
 import CGAT.FastaIterator as FastaIterator
 import CGATPipelines.PipelineMapping as PipelineMapping
 import CGATPipelines.PipelinePreprocess as PipelinePreprocess
 import CGAT.Pipeline as P
-import CGAT.Fastq as Fastq
-import CGAT.CSV2DB as CSV2DB
+
 
 ###################################################
 ###################################################
@@ -192,17 +183,7 @@ P.getParameters(
      "pipeline.ini"])
 PARAMS = P.PARAMS
 
-#########################################################################
-#########################################################################
-#########################################################################
-# define input files
-INPUT_FORMATS = ("*.fastq.1.gz", "*.fastq.gz", "*.sra", "*.csfasta.gz")
-REGEX_FORMATS = regex(r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz)")
 
-#########################################################################
-#########################################################################
-#########################################################################
-###################################################################
 ###################################################################
 # Helper functions mapping tracks to conditions, etc
 ###################################################################
@@ -220,8 +201,179 @@ else:
         DATADIR = PARAMS["input"]  # not recommended practise
 
 
+def connect():
+    '''connect to database.
+    Use this method to connect to additional databases.
+    Returns a database connection.
+    '''
+    dbh = sqlite3.connect(PARAMS["database"])
+
+    return dbh
+
 #########################################################################
 #########################################################################
+# Read processing
+#########################################################################
+INPUT_FORMATS = ("*.fastq.1.gz", "*.fastq.gz", "*.sra", "*.csfasta.gz")
+REGEX_FORMATS = regex(r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz)")
+
+SEQUENCESUFFIXES = ("*.fastq.1.gz",
+                    "*.fastq.gz",
+                    "*.fa.gz",
+                    "*.sra",
+                    "*.export.txt.gz",
+                    "*.csfasta.gz",
+                    "*.csfasta.F3.gz",
+                    )
+
+SEQUENCEFILES = tuple([os.path.join(DATADIR, suffix_name)
+                      for suffix_name in SEQUENCESUFFIXES])
+
+SEQUENCEFILES_REGEX = regex(r".*/(\S+).(?P<suffix>fastq.1.gz|fastq.gz|fa.gz|\
+sra|csfasta.gz|csfasta.F3.gz|export.txt.gz)")
+
+PREPROCESSTOOLS = [tool for tool in
+                   P.asList(PARAMS["general_preprocessors"])]
+preprocess_prefix = ("-".join(PREPROCESSTOOLS[::-1]) + "-")
+
+print "preprocessing tools: %s",
+print PREPROCESSTOOLS
+print "\n\n\n\n\n"
+
+
+@follows(mkdir("processed.dir"),
+         mkdir("log.dir"),
+         mkdir("summary.dir"))
+@transform(SEQUENCEFILES,
+           SEQUENCEFILES_REGEX,
+           r"processed.dir/%s\1.\g<suffix>" % preprocess_prefix)
+def processReads(infile, outfile):
+    '''process reads from .fastq or .sra files.
+
+    Tasks specified in PREPROCESSTOOLS are run in order
+
+    '''
+    trimmomatic_options = PARAMS["trimmomatic_options"]
+    if PARAMS["trimmomatic_adapter"]:
+        adapter_options = "ILLUMINACLIP:%s:%s:%s:%s " % (
+            PARAMS["trimmomatic_adapter"], PARAMS["trimmomatic_mismatches"],
+            PARAMS["trimmomatic_p_thresh"], PARAMS["trimmomatic_c_thresh"])
+        trimmomatic_options = adapter_options + trimmomatic_options
+
+    job_threads = PARAMS["general_threads"]
+    job_options = "-l mem_free=%s" % PARAMS["general_memory"]
+    save = PARAMS["general_save"]
+
+    m = PipelinePreprocess.MasterProcessor(save=save)
+    statement = m.build((infile,), outfile, PREPROCESSTOOLS)
+    print statement
+    P.run()
+
+
+@transform(processReads,
+           SEQUENCEFILES_REGEX,
+           r"summary.dir/%s\1.\g<suffix>.processing.tsv" % preprocess_prefix)
+def mergeSummaries(infile, outfile):
+    '''summarise fastq statistics'''
+    initial_file = re.sub(preprocess_prefix, "", os.path.basename(infile))
+    initial_file = "summary.dir/" + initial_file + ".summary"
+    files = [initial_file]
+    print files
+
+    def catSummaries(init, pre_tools_list, files, out):
+        init_base = os.path.basename(init)
+        stage = ["preprocessing"]
+        tool_list = []
+        df = pd.read_csv(init, sep="\t", )
+        print df
+        for tool in pre_tools_list:
+            tool_list.append(tool)
+            intermediate_file = ("summary.dir/%s-%s" % (
+                "-".join(tool_list[::-1]), init_base))
+            print "intermediate_file: %s" % intermediate_file
+            files.append(intermediate_file)
+            temp_df = pd.read_csv(intermediate_file, sep="\t")
+            df = pd.concat([df, temp_df], axis=0)
+        stage.extend(tool_list)
+        df["stage"] = stage
+        df["files"] = files
+        df.to_csv(out, sep="\t", index=False)
+
+    catSummaries(initial_file, PREPROCESSTOOLS, files, outfile)
+
+    if re.match(".*fastq.1.gz", infile):
+
+        outfile2 = PipelinePreprocess.makeSecond(outfile)
+        initial_file2 = PipelinePreprocess.makeSecond(initial_file)
+        files2 = [initial_file2]
+
+        catSummaries(initial_file2, PREPROCESSTOOLS, files2, outfile2)
+
+
+@transform(mergeSummaries,
+           suffix(".tsv"),
+           ".load")
+def loadSummaries(infile, outfile):
+    dbh = connect()
+    preprocess_prefix2 = ("_".join(PREPROCESSTOOLS[::-1]) + "_")
+    tablename = re.sub(preprocess_prefix2, "", P.toTable(outfile))
+    scriptsdir = PARAMS["general_scriptsdir"]
+
+    statement = '''cat %(infile)s |
+                python %(scriptsdir)s/csv2db.py
+                --table %(tablename)s --retry --ignore-empty
+                 > %(outfile)s'''
+
+    if re.match(".*fastq.1.gz.processing.tsv", infile):
+        infile2 = PipelinePreprocess.makeSecond(infile)
+        tablename2 = PipelinePreprocess.makeSecond(tablename)
+        outfile2 = PipelinePreprocess.makeSecond(outfile)
+        statement += ''';cat %(infile2)s |
+                        python %(scriptsdir)s/csv2db.py
+                        --table %(tablename2)s --retry --ignore-empty
+                        > %(outfile2)s'''
+    P.run()
+
+if PARAMS["general_fastqc"]:
+    @follows(mkdir(PARAMS["exportdir"]),
+             mkdir(os.path.join(PARAMS["exportdir"], "fastqc")))
+    @transform(INPUT_FORMATS,
+               REGEX_FORMATS,
+               r"\1.fastqc")
+    def runFastqcInitial(infiles, outfile):
+        '''convert sra files to fastq and check mapping qualities are in solexa format.
+        Perform quality control checks on reads from .fastq files.'''
+        m = PipelineMapping.FastQc(nogroup=PARAMS["readqc_no_group"],
+                                   outdir=PARAMS["exportdir"]+"/fastqc")
+        statement = m.build((infiles,), outfile)
+        print "infiles", infiles, outfile
+        P.run()
+
+    @transform(processReads,
+               REGEX_FORMATS,
+               r"\1.fastqc")
+    def runFastqcFinal(infiles, outfile):
+        '''convert sra files to fastq and check mapping qualities are in solexa format.
+        Perform quality control checks on reads from .fastq files.'''
+        m = PipelineMapping.FastQc(nogroup=PARAMS["readqc_no_group"],
+                                   outdir=PARAMS["exportdir"]+"/fastqc")
+        statement = m.build((infiles,), outfile)
+        print "infiles", infiles, outfile
+        P.run()
+else:
+    def runFastqcInitial():
+        pass
+
+    def runFastqcFinal():
+        pass
+
+
+########################################################################
+# all functions from here need to be removed
+# code is being kept temporarily whilst the pipeline is being refactored
+########################################################################
+
+
 #########################################################################
 # adaptor trimming
 #########################################################################
@@ -304,7 +456,8 @@ ILLUMINA_ADAPTORS = {
     "NETseq-RT-primer_5prime": "ATCTCGTATGCCGTCTTCTGCTTG",
     "NETseq-RT-primer_3prime": "TCCGACGATCATTGATGGTGCCTACAG",
     "NETseq-PCR-primer-oLSC008-bc1":
-    "AATGATACGGCGACCACCGAGATCTACACGATCGGAAGAGCACACGTCTGAACTCCAGTCACATGCCATCCGACGATCATTGATGG"
+    "AATGATACGGCGACCACCGAGATCTACACGATCGGAAGAGCA\
+CACGTCTGAACTCCAGTCACATGCCATCCGACGATCATTGATGG"
 }
 
 
@@ -337,106 +490,6 @@ def listAdaptors(infile):
     adaptors = " ".join(adaptors)
 
     return adaptors
-
-#########################################################################
-#########################################################################
-# Read processing
-#########################################################################
-
-SEQUENCESUFFIXES = ("*.fastq.1.gz",
-                    "*.fastq.gz",
-                    "*.fa.gz",
-                    "*.sra",
-                    "*.export.txt.gz",
-                    "*.csfasta.gz",
-                    "*.csfasta.F3.gz",
-                    )
-
-SEQUENCEFILES = tuple([os.path.join(DATADIR, suffix_name)
-                      for suffix_name in SEQUENCESUFFIXES])
-
-SEQUENCEFILES_REGEX = regex(
-    r".*/(\S+).(?P<suffix>fastq.1.gz|fastq.gz|fa.gz|sra|csfasta.gz|csfasta.F3.gz|export.txt.gz)")
-
-###################################################################
-###################################################################
-###################################################################
-# load number of reads
-###################################################################
-
-
-@follows(mkdir("nreads.dir"))
-@transform(SEQUENCEFILES,
-           SEQUENCEFILES_REGEX,
-           r"nreads.dir/\1.nreads")
-def countReads(infile, outfile):
-    '''count number of reads in input files.'''
-    m = PipelineMapping.Counter()
-    statement = m.build((infile,), outfile)
-    P.run()
-
-####################################################################
-
-PREPROCESSTOOLS = []
-
-for tool in P.asList(PARAMS["process_preprocessors"]):
-    PREPROCESSTOOLS.append(tool)
-
-print "The preprocess tools used in this run are %s" % PREPROCESSTOOLS
-preprocess_prefix = "-".join(PREPROCESSTOOLS)
-
-
-# update outfile regex to incorporate suffix of infile
-@follows(mkdir("processed.dir"))
-@transform(SEQUENCEFILES,
-           SEQUENCEFILES_REGEX,
-           r"processed.dir/%s-\1.\g<suffix>" % preprocess_prefix)
-def processReads(infile, outfile):
-    '''process reads from .fastq or .sra files.
-
-    Tasks specified in PREPROCESSTOOLS are run in order
-
-    '''
-
-    job_threads = PARAMS["general_threads"]
-    job_options = "-l mem_free=%s" % PARAMS["general_memory"]
-
-    m = PipelinePreprocess.Preprocessor()
-    statement = m.build((infile,), outfile, PREPROCESSTOOLS)
-    print statement
-    P.run()
-
-
-@follows(processReads)
-@transform(SEQUENCEFILES,
-           SEQUENCEFILES_REGEX,
-           r"processed.dir/\1.\g<suffix>.processing.summary")
-def summarise(infile, outfile):
-    '''summarise fastq statistics from '''
-    track = os.path.basename(infile)
-    initial_file = "processed.dir/%s.summary" % track
-    summary_files = [initial_file]
-    print "summary files:",
-    print summary_files
-    for tool in PREPROCESSTOOLS:
-        summary_files.append("processed.dir/%s-%s.summary" % (tool, track))
-        print "summary files:",
-        print summary_files
-
-    print "outfile" + outfile
-
-    statement = '''echo -en 'sample\\t' > %(outfile)s;
-                grep 'reads' %(initial_file)s >> %(outfile)s;''' % locals()
-
-    summary_files = " ".join(summary_files)
-
-    statement += '''files=(%(summary_files)s);
-                 for file in ${files[@]};
-                 do base=$(echo $file | cut -d "/" -f 2);
-                 echo -en $base'\\t' >> %(outfile)s;
-                 grep -v -e '#' -e 'reads' $file >> %(outfile)s; done
-                 ''' % locals()
-    P.run()
 
 
 @transform([x for x in
@@ -558,7 +611,8 @@ def summarizeProcessing(infile, outfile):
         if step == "reconcile":
             for line in inf:
                 x = re.search(
-                    "first pair: (\d+) reads, second pair: (\d+) reads, shared: (\d+) reads", line)
+                    "first pair: (\d+) reads, second pair: (\d+) \
+reads,shared: (\d+) reads", line)
                 if x:
                     i1, i2, o = map(int, x.groups())
                     inputs = [i1, i2]
@@ -580,7 +634,8 @@ def summarizeProcessing(infile, outfile):
                         int(re.match("Input: (\d+) reads.", line).groups()[0]))
                 elif line.startswith("Output:"):
                     outputs.append(
-                        int(re.match("Output: (\d+) reads.", line).groups()[0]))
+                        int(re.match("Output: (\d+) reads.",
+                                     line).groups()[0]))
 
         return zip(inputs, outputs)
 
@@ -643,19 +698,24 @@ def summarizeAllProcessing(infiles, outfile):
         ninput = int(vals[0][3])
         outputs = [int(x[4]) for x in vals]
         if first:
-            outf.write("track\tpair\tninput\t%s\t%s\t%s\t%s\n" % ("\t".join([x[1] for x in vals]),
-                                                                  "noutput",
-                                                                  "\t".join(
-                                                                      ["percent_%s" % x[1] for x in vals]),
-                                                                  "percent_output"))
+            outf.write("track\tpair\tninput\t%s\t%s\t%s\t%s\n" % (
+                "\t".join([x[1] for x in vals]),
+                "noutput",
+                "\t".join(
+                    ["percent_%s" % x[1] for x in vals]),
+                "percent_output"))
             first = False
         outf.write("%s\t%s\t%i\t%s\t%i\t%s\t%s\n" % (track, pair, ninput,
                                                      "\t".join(
                                                          map(str, outputs)),
                                                      outputs[-1],
                                                      "\t".join(
-                                                         ["%5.2f" % (100.0 * x / ninput) for x in outputs]),
-                                                     "%5.2f" % (100.0 * outputs[-1] / ninput)))
+                                                         ["%5.2f" % (100.0 * x
+                                                                     / ninput)
+                                                          for x in outputs]),
+                                                     "%5.2f" % (100.0 *
+                                                                outputs[-1] /
+                                                                ninput)))
     outf.close()
 
 #########################################################################
@@ -714,7 +774,11 @@ def loadFilteringSummary(infile, outfile):
 #########################################################################
 
 
-@transform([x for x in glob.glob("*.fastq.gz") + glob.glob("*.fastq.1.gz") + glob.glob("*.fastq.2.gz")], regex(r"(\S+).(fastq.1.gz|fastq.gz|fastq.2.gz|csfasta.gz)"), r"trim.\1.\2")
+@transform([x for x in glob.glob("*.fastq.gz") +
+            glob.glob("*.fastq.1.gz") +
+            glob.glob("*.fastq.2.gz")],
+           regex(r"(\S+).(fastq.1.gz|fastq.gz|fastq.2.gz|csfasta.gz)"),
+           r"trim.\1.\2")
 def trimReads(infile, outfile):
     '''trim reads to desired length using fastx
 
@@ -723,7 +787,8 @@ def trimReads(infile, outfile):
     E.warn("deprecated - use processReads instead")
 
     to_cluster = True
-    statement = '''zcat %(infile)s | fastx_trimmer %(trim_options)s 2> %(outfile)s.log | gzip > %(outfile)s'''
+    statement = '''zcat %(infile)s | fastx_trimmer %(trim_options)s 2>
+    %(outfile)s.log | gzip > %(outfile)s'''
     P.run()
 
 #########################################################################
@@ -731,12 +796,17 @@ def trimReads(infile, outfile):
 #########################################################################
 
 
-@transform([x for x in glob.glob("*.fastq.gz") + glob.glob("*.fastq.1.gz") + glob.glob("*.fastq.2.gz")], regex(r"(\S+).(fastq.1.gz|fastq.gz|fastq.2.gz|csfasta.gz)"), r"replaced.\1.\2")
+@transform([x for x in glob.glob("*.fastq.gz") +
+            glob.glob("*.fastq.1.gz") +
+            glob.glob("*.fastq.2.gz")],
+           regex(r"(\S+).(fastq.1.gz|fastq.gz|fastq.2.gz|csfasta.gz)"),
+           r"replaced.\1.\2")
 def replaceBaseWithN(infile, outfile):
     '''replaces the specified base with N'''
 
     to_cluster = True
-    statement = '''python %(scriptsdir)s/fastq2N.py -i %(infile)s %(replace_options)s'''
+    statement = '''python %(scriptsdir)s/fastq2N.py
+    -i %(infile)s %(replace_options)s'''
     P.run()
 
 #########################################################################
@@ -745,16 +815,21 @@ def replaceBaseWithN(infile, outfile):
 #########################################################################
 
 
-@follows(summarise)
-def test():
+@follows(processReads)
+def trim():
     pass
 
 
-@follows(loadProcessingSummary, loadAllProcessingSummary)
+@follows(mergeSummaries)
+def summarise():
+    pass
+
+
+@follows(runFastqcInitial,
+         runFastqcFinal,
+         loadSummaries)
 def full():
-    '''process (filter,trim) reads.'''
     pass
-
 
 #########################################################################
 

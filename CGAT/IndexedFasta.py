@@ -147,8 +147,6 @@ def gzip_demangler(s):
     m = gzipfile.readline()
     return m
 
-# ------------------------------------------------------------
-
 
 class Translator:
 
@@ -246,8 +244,6 @@ class TranslatorBytes(Translator):
 
     def translate(self, sequence):
         return array.array("I", (ord(x) for x in sequence))
-
-# ------------------------------------------------------------
 
 
 class MultipleFastaIterator:
@@ -646,8 +642,8 @@ class CGATIndexedFasta:
         filename_index = self.mNameIndex + ".dbm"
 
         if compress:
-            #if os.path.exists(filename_index):
-            #    raise OSError("file %s already exists" % filename_index)
+            # if os.path.exists(filename_index):
+            #     raise OSError("file %s already exists" % filename_index)
             self.mIndex = anydbm.open(filename_index, "n")
         elif os.path.exists(filename_index):
             self.mIndex = anydbm.open(filename_index, "r")
@@ -844,7 +840,9 @@ class CGATIndexedFasta:
 
         if end > lsequence:
             raise ValueError(
-                "3' coordinate on %s out of bounds: %i > %i" % (contig, end, lsequence))
+                "3' coordinate on %s out of bounds: %i > %i" %
+                (contig, end, lsequence))
+
         if start < 0:
             raise ValueError(
                 "5' coordinate on %s out of bounds: %i < 0" % (contig, start))
@@ -1020,8 +1018,9 @@ class PysamIndexedFasta(CGATIndexedFasta):
         sequence = self.mDatabaseFile.fetch(contig, first_pos, last_pos)
 
         if str(strand) in ("-", "0", "-1"):
-            sequence = string.translate(sequence[::-1],
-                                        string.maketrans("ACGTacgtNn", "TGCAtgcaNn"))
+            sequence = string.translate(
+                sequence[::-1],
+                string.maketrans("ACGTacgtNn", "TGCAtgcaNn"))
 
         return sequence
 

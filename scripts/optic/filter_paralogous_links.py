@@ -72,7 +72,7 @@ Remove from a list of alignments those between paralogous sequences.
 Options:
 -h, --help                      print this message.
 -v, --verbose=                  loglevel.
---cds                           files with coding sequences (exon boundaries)
+--cds-gtf-file                           files with coding sequences (exon boundaries)
 --write-exons=                  write exons (unaligned/aligned)
 --write-introns=                write introns (unaligned/aligned)
 --extend-introns=               extend intronic sequences with x residues from adjacent exons
@@ -311,7 +311,7 @@ def main(argv=None):
         elif o in ("-h", "--help"):
             print USAGE
             sys.exit(0)
-        elif o == "--cds":
+        elif o == "--cds-gtf-file":
             param_filename_cds = a
         elif o == "--peptides1":
             param_filename_peptides1 = a

@@ -73,7 +73,7 @@ Read a graph of regions and dump out a bipartite graph.
 Options:
 -h, --help                      print this message.
 -v, --verbose=                  loglevel.
--p, --peptides=                 file with peptide sequences (FASTA).
+-p, --peptides-fasta-file=                 file with peptide sequences (FASTA).
 -b, --benchmark=                benchmarking output. File in #
 -y, --benchmark-synonyms=       list of synonymous benchmarking ids.
 -o, --max-percent-overlap=      maximal percentage overlap for conflict resolution.
@@ -621,7 +621,7 @@ def main(argv=None):
     parser.add_option("-y", "--benchmark-synonyms", dest="benchmark_synonyms", type="string",
                       help="")
 
-    parser.add_option("-p", "--peptides", dest="filename_peptides", type="string",
+    parser.add_option("-p", "--peptides-fasta-file", dest="filename_peptides", type="string",
                       help="")
 
     parser.add_option("-c", "--min-coverage-query", dest="min_coverage_query", type="float",
@@ -660,7 +660,7 @@ def main(argv=None):
     parser.add_option("--join-regions-max-coverage", dest="join_regions_max_coverage", type="float",
                       help="")
 
-    parser.add_option("--min-length", dest="min_length", type="int",
+    parser.add_option("--min-interval-length", dest="min_length", type="int",
                       help="")
 
     parser.add_option("--test", dest="test", type="int",

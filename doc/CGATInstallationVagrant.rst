@@ -32,10 +32,10 @@ Finally, you can log into the CGAT box by typing::
   vagrant ssh
 
 The CGAT box is an Ubuntu 12.04 virtual machine with 
-the CGAT Code Collection installed via ``pip``. Therefore, 
-the ``cgat`` command is available to use the scripts::
+the CGAT Code Collection pre-installed. Use the 
+``cgat`` command for help::
 
-  cgat --help all
+  cgat --help
 
 We have used Vagrant 1.5 to build the CGAT box.
 

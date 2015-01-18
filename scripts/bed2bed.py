@@ -9,7 +9,7 @@ This script provides various methods for merging (by position, by name
 or by score), filtering and moving bed formatted intervals and
 outputting the results as a bed file
 
-Options
+Methods
 -------
 
 This script provides several methods, each with a set of options
@@ -26,7 +26,7 @@ functionality is similar to bedtools merge, but with some additions:
   the 4th column of the bed will be merged
 
 * Removing overlapping intervals with inconsistent names: set the
-   ``--remove-inconsistent`` option.
+   ``--remove-inconsistent-names`` option.
 
 .. caution::
    Intervals of the same name will only be merged if they
@@ -147,6 +147,8 @@ import sys
 import CGAT.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Bed as Bed
+import CGAT.Intervals as Intervals
+
 import pysam
 
 
@@ -154,7 +156,8 @@ def merge(iterator,
           max_distance=0,
           by_name=False,
           min_intervals=1,
-          remove_inconsistent=False):
+          remove_inconsistent=False,
+          resolve_blocks=False):
     """iterator for merging adjacent bed entries.
 
     *max_distance* > 0 permits merging of intervals that are
@@ -204,9 +207,6 @@ def merge(iterator,
     for to_join in iterate_chunks(iterator):
 
         c.input += 1
-        if len(to_join) < min_intervals:
-            c.skipped_min_intervals += 1
-            continue
 
         if remove_inconsistent:
             names = set([x.name for x in to_join])
@@ -214,11 +214,64 @@ def merge(iterator,
                 c.skipped_inconcistent_intervals += 1
                 continue
 
-        a = to_join[0]
-        a.end = to_join[-1].end
-        a.score = len(to_join)
-        yield a
-        c.output += 1
+        if resolve_blocks:
+            
+            # keep track of number of intervals in each entry
+            for bed in to_join:
+                bed["score"] = 1
+  
+            merged = True
+            while merged:
+                
+                joined = []
+                not_joined = []
+                merged = False
+                
+                while len(to_join) > 0:
+                    bed1, to_join = to_join[0], to_join[1:]
+                    intervals1 = bed1.toIntervals()
+                    for bed2 in to_join:
+                        intervals2 = bed2.toIntervals()
+                        if Intervals.calculateOverlap(intervals1, intervals2) > 0:
+                            intervals = Intervals.combine(intervals1 +
+                                                          intervals2)
+                            bed1.fromIntervals(intervals)
+                            bed1["score"] += bed2["score"]
+                            merged = True
+                        else:
+                            not_joined.append(bed2)
+
+                    joined.append(bed1)
+                    to_join = not_joined
+                    not_joined = []
+
+                to_join = joined
+                joined = []
+                
+            to_join = sorted(to_join, key=lambda x: int(x.start))
+            
+            # keep only those with the created from the merge of the minimum
+            # number of intervals
+            
+            for bed in to_join:
+
+                if bed["score"] < min_intervals:
+                    c.skipped_min_intervals += 1
+                    continue
+
+                yield bed
+                c.output += 1
+        else:
+                        
+            if len(to_join) < min_intervals:
+                c.skipped_min_intervals += 1
+                continue
+
+            a = to_join[0]
+            a.end = max([entry.end for entry in to_join])
+            a.score = len(to_join)
+            yield a
+            c.output += 1
 
     E.info(str(c))
 
@@ -379,37 +432,55 @@ def main(argv=sys.argv):
                             usage=globals()["__doc__"])
 
     # IMS: new method: extend intervals by set amount
-    parser.add_option("-m", "--method", dest="methods", type="choice", action="append",
+    parser.add_option("-m", "--method", dest="methods", type="choice",
+                      action="append",
                       choices=("merge", "filter-genome", "bins",
                                "block", "sanitize-genome", "shift", "extend"),
                       help="method to apply [default=%default]")
 
     parser.add_option("--num-bins", dest="num_bins", type="int",
-                      help="number of bins into which to merge (used for method `bins) [default=%default]")
+                      help="number of bins into which to merge (used for "
+                      "method `bins) [default=%default]")
 
     parser.add_option("--bin-edges", dest="bin_edges", type="string",
                       help="bin_edges for binning method [default=%default]")
 
-    parser.add_option("--binning-method", dest="binning_method", type="choice",
-                      choices=(
-                          "equal-bases", "equal-intervals", "equal-range"),
-                      help="method used for binning (used for method `bins` if no bin_edges is given) [default=%default]")
+    parser.add_option(
+        "--binning-method", dest="binning_method", type="choice",
+        choices=(
+            "equal-bases", "equal-intervals", "equal-range"),
+        help="method used for binning (used for method `bins` if no "
+        "bin_edges is given) [default=%default]")
 
-    parser.add_option("--merge-distance", dest="merge_distance", type="int",
-                      help="distance in bases over which to merge that are not directly adjacent [default=%default]")
+    parser.add_option(
+        "--merge-distance", dest="merge_distance", type="int",
+        help="distance in bases over which to merge that are not "
+        "directly adjacent [default=%default]")
 
-    parser.add_option("--merge-min-intervals", dest="merge_min_intervals", type="int",
-                      help="only output merged intervals that are build from at least x intervals [default=%default]")
+    parser.add_option(
+        "--merge-min-intervals", dest="merge_min_intervals", type="int",
+        help="only output merged intervals that are build from at least "
+        "x intervals [default=%default]")
 
-    parser.add_option("--merge-by-name", dest="merge_by_name", action="store_true",
-                      help="only merge intervals with the same name [default=%default]")
+    parser.add_option(
+        "--merge-by-name", dest="merge_by_name",
+        action="store_true",
+        help="only merge intervals with the same name [default=%default]")
 
-    parser.add_option("--remove-inconsistent", dest="remove_inconsistent", action="store_true",
-                      help="when merging, do not output intervals where the names of overlapping intervals "
-                      "do not match [default=%default]")
+    parser.add_option(
+        "--merge-and-resolve-blocks", dest="resolve_blocks",
+        action="store_true",
+        help="When merging bed12 entrys, should blocks be resolved?")
 
-    parser.add_option("--offset", dest="offset",  type="int",
-                      help="offset for shifting intervals [default=%default]")
+    parser.add_option(
+        "--remove-inconsistent-names", dest="remove_inconsistent_names",
+        action="store_true",
+        help="when merging, do not output intervals where the names of "
+        "overlapping intervals do not match [default=%default]")
+
+    parser.add_option(
+        "--offset", dest="offset",  type="int",
+        help="offset for shifting intervals [default=%default]")
 
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genome.")
@@ -429,7 +500,8 @@ def main(argv=sys.argv):
                         offset=10000,
                         test=None,
                         extend_distance=1000,
-                        remove_inconsistent=False)
+                        remove_inconsistent_names=False,
+                        resolve_blocks=False)
 
     (options, args) = E.Start(parser, add_pipe_options=True)
 
@@ -456,24 +528,28 @@ def main(argv=sys.argv):
                 raise ValueError("please supply contig sizes")
             processor = sanitizeGenome(processor, contigs)
         elif method == "merge":
-            processor = merge(processor,
-                              options.merge_distance,
-                              by_name=options.merge_by_name,
-                              min_intervals=options.merge_min_intervals,
-                              remove_inconsistent=options.remove_inconsistent)
+            processor = merge(
+                processor,
+                options.merge_distance,
+                by_name=options.merge_by_name,
+                min_intervals=options.merge_min_intervals,
+                remove_inconsistent=options.remove_inconsistent_names,
+                resolve_blocks=options.resolve_blocks)
         elif method == "bins":
             if options.bin_edges:
                 bin_edges = map(float, options.bin_edges.split(","))
                 # IMS: check bin edges are valid
                 if not(len(bin_edges) == options.num_bins + 1):
                     raise ValueError(
-                        "Number of bin edge must be one more than number of bins")
+                        "Number of bin edge must be one more than "
+                        "number of bins")
             else:
                 bin_edges = None
-            processor, bin_edges = Bed.binIntervals(processor,
-                                                    num_bins=options.num_bins,
-                                                    method=options.binning_method,
-                                                    bin_edges=bin_edges)
+            processor, bin_edges = Bed.binIntervals(
+                processor,
+                num_bins=options.num_bins,
+                method=options.binning_method,
+                bin_edges=bin_edges)
             E.info("# split bed: bin_edges=%s" % (str(bin_edges)))
 
         elif method == "block":

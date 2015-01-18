@@ -389,6 +389,7 @@ def writeMatrix(outfile, matrix, row_headers, col_headers, row_header=""):
 
     outfile.write("%s\t%s\n" % (row_header, "\t".join(col_headers)))
     for x, row in enumerate(matrix):
+        assert len(row) == len(col_headers)
         outfile.write("%s\t%s\n" % (row_headers[x], "\t".join(map(str, row))))
 
 ########################################################################
@@ -885,7 +886,8 @@ def iterate(infile):
             continue
         n += 1
         if n == 1:
-            header = line[:-1].split()
+            # replace non-alphanumeric characters with _
+            header = re.sub("[^a-zA-Z0-9_\s]", "_", line[:-1]).split()
             DATA = collections.namedtuple("DATA", header)
             continue
 

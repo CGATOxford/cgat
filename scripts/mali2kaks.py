@@ -934,7 +934,7 @@ def main(argv=None):
                                "input_variable", "trained_variable", "all"),
                       help="output sections to write [%default].")
 
-    parser.add_option("-o", "--output-pattern", dest="output_pattern", type="string",
+    parser.add_option("-o", "--output-filename-pattern", dest="output_pattern", type="string",
                       help="output pattern for output files [%default].")
 
     parser.add_option("--xrate-insert-frequencies", dest="xrate_insert_frequencies", action="store_true",

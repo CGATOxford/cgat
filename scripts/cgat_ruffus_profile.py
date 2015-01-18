@@ -14,9 +14,6 @@ Purpose
 This script examines the ruffus logfile and collates
 summary information.
 
-**-t/--time** choice
-   Report times either as ``milliseconds`` or ``seconds``.
-
 .. note::
 
    All times are wall clock times.
@@ -25,15 +22,8 @@ summary information.
 
 import sys
 import os
-import imp
-import cStringIO
 import re
-import types
-import glob
-import optparse
-import shutil
 import datetime
-import logging
 import collections
 
 import CGAT.Experiment as E
@@ -107,12 +97,14 @@ def main(argv=sys.argv):
                       choices=("seconds", "milliseconds"),
                       help="time to show [default=%default]")
 
-    parser.add_option("-f", "--filter", dest="filter", type="choice",
-                      choices=("unfinished", "running", "completed", "all"),
-                      help="apply filter to output [default=%default]")
+    parser.add_option(
+        "-f", "--filter-method", dest="filter", type="choice",
+        choices=("unfinished", "running", "completed", "all"),
+        help="apply filter to output [default=%default]")
 
-    parser.add_option("-i", "--ignore-errors", dest="ignore_errors", action="store_true",
-                      help="ignore errors [default=%default]")
+    parser.add_option(
+        "-i", "--ignore-errors", dest="ignore_errors", action="store_true",
+        help="ignore errors [default=%default]")
 
     parser.set_defaults(sections=[],
                         logfile="pipeline.log",
@@ -158,7 +150,8 @@ def main(argv=sys.argv):
 
         msg = "".join(data[4:])
 
-        started_task, completed_task, started_job, completed_job = None, None, None, None
+        started_task, completed_task, started_job, completed_job = \
+            (None, None, None, None)
 
         if re.search("task.log_at_level.\d+Task=(\S+)", msg):
             checked_task = re.search(
@@ -198,7 +191,8 @@ def main(argv=sys.argv):
 
     for section in profile_sections:
         options.stdout.write("\t".join(
-            ("section", "object", "ncalls", "duration", "percall", "running")) + "\n")
+            ("section", "object", "ncalls",
+             "duration", "percall", "running")) + "\n")
 
         running = []
         for objct, c in counts[section].iteritems():

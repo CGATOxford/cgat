@@ -1,21 +1,28 @@
+'''
+
+Requirements:
+
+* bedtools >= 2.21.0
+* picardtools >= 1.106
+* samtools >= 1.1
+* MEDIPS >= 1.15.0
+
+'''
+
 import os
 import re
 import collections
 import pandas
-from math import log
-import numpy as np
-import random
-
+import math
+import numpy
+import numpy.ma as ma
+import itertools
 import CGAT.Experiment as E
 import CGAT.Pipeline as P
 import CGAT.BamTools as BamTools
 import CGAT.IOTools as IOTools
 import CGAT.Expression as Expression
 import CGAT.Bed as Bed
-
-#########################################################################
-#########################################################################
-#########################################################################
 
 
 def convertReadsToIntervals(bamfile,
@@ -113,10 +120,22 @@ def convertReadsToIntervals(bamfile,
     os.unlink(tmpdir)
 
 
+def countTags(infile, outfile):
+    '''count number of pairs in bed-file.'''
+
+    statement = '''zcat %(infile)s
+    | python %(scriptsdir)s/bed2stats.py
+    --per-contig
+    --log=%(outfile)s.log
+    >& %(outfile)s'''
+    P.run()
+
+
 def countReadsWithinWindows(bedfile,
                             windowfile,
                             outfile,
-                            counting_method="midpoint"):
+                            counting_method="midpoint",
+                            memory_allocation="4G"):
     '''count reads given in *tagfile* within intervals in
     *windowfile*.
 
@@ -125,7 +144,8 @@ def countReadsWithinWindows(bedfile,
     Counting is done using bedtools. The counting method
     can be 'midpoint' or 'nucleotide'.
     '''
-    job_options = "-l mem_free=4G"
+
+    job_options = "-l mem_free=%s" % memory_allocation
 
     if counting_method == "midpoint":
         f = '''| awk '{a = $2+($3-$2)/2;
@@ -209,75 +229,94 @@ def aggregateWindowsReadCounts(infiles,
     os.unlink(tmpfile)
 
 
-#########################################################################
-#########################################################################
-#########################################################################
-def buildDMRStats(infile, outfile, method):
+def buildDMRStats(infiles, outfile, method, fdr_threshold=None):
     '''build dmr summary statistics.
+
+    This method works from output files created by Expression.py
+    (method="deseq" or method="edger") or runMEDIPS (method="medips")
     '''
     results = collections.defaultdict(lambda: collections.defaultdict(int))
-
     status = collections.defaultdict(lambda: collections.defaultdict(int))
-    x = 0
-    for line in IOTools.iterate(IOTools.openFile(infile)):
-        key = (line.treatment_name, line.control_name)
-        r, s = results[key], status[key]
-        r["tested"] += 1
-        s[line.status] += 1
 
-        is_significant = line.significant == "1"
-        up = float(line.l2fold) > 0
-        down = float(line.l2fold) < 0
-        fold2up = float(line.l2fold) > 1
-        fold2down = float(line.l2fold) < -1
-        fold2 = fold2up or fold2down
-
-        if up:
-            r["up"] += 1
-        if down:
-            r["down"] += 1
-        if fold2up:
-            r["l2fold_up"] += 1
-        if fold2down:
-            r["l2fold_down"] += 1
-
-        if is_significant:
-            r["significant"] += 1
-            if up:
-                r["significant_up"] += 1
-            if down:
-                r["significant_down"] += 1
-            if fold2:
-                r["fold2"] += 1
-            if fold2up:
-                r["significant_l2fold_up"] += 1
-            if fold2down:
-                r["significant_l2fold_down"] += 1
-
-    header1, header2 = set(), set()
-    for r in results.values():
-        header1.update(r.keys())
-    for s in status.values():
-        header2.update(s.keys())
-
-    header = ["method", "treatment", "control"]
-    header1 = list(sorted(header1))
-    header2 = list(sorted(header2))
+    # deseq/edger
+    f_significant = lambda x: x.significant == "1"
+    f_up = lambda x: float(x.l2fold) > 0
+    f_down = lambda x: float(x.l2fold) < 0
+    f_fold2up = lambda x: float(x.l2fold) > 1
+    f_fold2down = lambda x: float(x.l2fold) < -1
+    f_key = lambda x: (x.treatment_name, x.control_name)
+    f_status = lambda x: x.status
 
     outf = IOTools.openFile(outfile, "w")
-    outf.write("\t".join(header + header1 + header2) + "\n")
 
-    for treatment, control in results.keys():
-        key = (treatment, control)
-        r = results[key]
-        s = status[key]
-        outf.write("%s\t%s\t%s\t" % (method, treatment, control))
-        outf.write("\t".join([str(r[x]) for x in header1]) + "\t")
-        outf.write("\t".join([str(s[x]) for x in header2]) + "\n")
+    is_first = True
+    for infile in infiles:
 
-#########################################################################
-#########################################################################
-#########################################################################
+        xx = 0
+        for line in IOTools.iterate(IOTools.openFile(infile)):
+            key = f_key(line)
+
+            r, s = results[key], status[key]
+            r["tested"] += 1
+            ss = f_status(line)
+            s[ss] += 1
+
+            if ss != "OK":
+                continue
+
+            is_significant = f_significant(line)
+            up = f_up(line)
+            down = f_down(line)
+            fold2up = f_fold2up(line)
+            fold2down = f_fold2down(line)
+            fold2 = fold2up or fold2down
+
+            if up:
+                r["up"] += 1
+            if down:
+                r["down"] += 1
+            if fold2up:
+                r["l2fold_up"] += 1
+            if fold2down:
+                r["l2fold_down"] += 1
+
+            if is_significant:
+                r["significant"] += 1
+                if up:
+                    r["significant_up"] += 1
+                if down:
+                    r["significant_down"] += 1
+                if fold2:
+                    r["fold2"] += 1
+                if fold2up:
+                    r["significant_l2fold_up"] += 1
+                if fold2down:
+                    r["significant_l2fold_down"] += 1
+
+            if xx > 10000:
+                break
+
+        if is_first:
+            is_first = False
+            header1, header2 = set(), set()
+            for r in results.values():
+                header1.update(r.keys())
+            for s in status.values():
+                header2.update(s.keys())
+
+            header = ["method", "treatment", "control"]
+            header1 = list(sorted(header1))
+            header2 = list(sorted(header2))
+
+            outf.write("\t".join(header + header1 + header2) + "\n")
+
+        for treatment, control in results.keys():
+            key = (treatment, control)
+            r = results[key]
+            s = status[key]
+            outf.write("%s\t%s\t%s\t" % (method, treatment, control))
+            outf.write("\t".join([str(r[x]) for x in header1]) + "\t")
+            outf.write("\t".join([str(s[x]) for x in header2]) + "\n")
 
 
 def buildFDRStats(infile, outfile, method):
@@ -337,40 +376,48 @@ def outputRegionsOfInterest(infiles, outfile,
 
     # build a filtering statement
     groupA, groupB = groups
-    upper_levelA = "max( (%s) ) < %f" % (
-        ",".join(
-            ["int(r['%s'])" % x for x, y in design.items()
-             if y.group == groupA]),
-        max_per_sample)
 
-    sum_levelA = "sum( (%s) ) > %f" % (
-        ",".join(
-            ["int(r['%s'])" % x for x, y in design.items()
-             if y.group == groupB]),
-        sum_per_group)
+    def _buildMax(g, threshold):
 
-    upper_levelB = "max( (%s) ) < %f" % (
-        ",".join(
-            ["int(r['%s'])" % x for x, y in design.items()
-             if y.group == groupB]),
-        max_per_sample)
+        selected = [x for x, y in design.items() if y.group == g]
+        if len(selected) > 1:
+            return "max((%s)) < %f" % (
+                ",".join(
+                    ["int(r['%s'])" % x for x in selected]),
+                threshold)
+        elif len(selected) == 1:
+            return "int(r['%s']) < %f" % (selected[0], threshold)
+        else:
+            raise ValueError("no groups found for 'g'" % g)
 
-    sum_levelB = "sum( (%s) ) > %f" % (
-        ",".join(
-            ["int(r['%s'])" % x for x, y in design.items()
-             if y.group == groupA]),
-        sum_per_group)
+    def _buildSum(g, threshold):
+
+        selected = [x for x, y in design.items() if y.group == g]
+        if len(selected) > 1:
+            return "sum((%s)) > %f" % (
+                ",".join(
+                    ["int(r['%s'])" % x for x in selected]),
+                threshold)
+        elif len(selected) == 1:
+            return "int(r['%s']) > %f" % (selected[0], threshold)
+        else:
+            raise ValueError("no groups found for 'g'" % g)
+
+    upper_levelA = _buildMax(groupA, max_per_sample)
+    upper_levelB = _buildMax(groupB, max_per_sample)
+    sum_levelA = _buildSum(groupA, sum_per_group)
+    sum_levelB = _buildSum(groupB, sum_per_group)
 
     statement = '''
     zcat %(counts_file)s
     | python %(scriptsdir)s/csv_select.py
             --log=%(outfile)s.log
-            "(%(upper_levelA)s and %(sum_levelA)s) or
-                            (%(upper_levelB)s and %(sum_levelB)s)"
+            "(%(upper_levelA)s and %(sum_levelB)s) or
+             (%(upper_levelB)s and %(sum_levelA)s)"
     | python %(scriptsdir)s/runExpression.py
             --log=%(outfile)s.log
-            --filename-design=%(design_file)s
-            --filename-tags=-
+            --design-tsv-file=%(design_file)s
+            --tags-tsv-file=-
             --method=mock
             --filter-min-counts-per-sample=0
     | gzip
@@ -378,10 +425,6 @@ def outputRegionsOfInterest(infiles, outfile,
     '''
 
     P.run()
-
-#########################################################################
-#########################################################################
-#########################################################################
 
 
 def runDE(infiles, outfile, outdir,
@@ -395,8 +438,6 @@ def runDE(infiles, outfile, outdir,
 
     At the end, a new q-value is computed from all results.
     '''
-
-    to_cluster = True
 
     design_file, counts_file = infiles
 
@@ -427,12 +468,12 @@ def runDE(infiles, outfile, outdir,
                   --split-at-lines=200000
                   --cluster-options="-l mem_free=8G"
                   --log=%(outfile)s.log
-                  --output-pattern=%(outdir)s/%%s
+                  --output-filename-pattern=%(outdir)s/%%s
                   --subdirs
               "python %(scriptsdir)s/runExpression.py
               --method=%(method)s
-              --filename-tags=-
-              --filename-design=%(design_file)s
+              --tags-tsv-file=-
+              --design-tsv-file=%(design_file)s
               --output-filename-pattern=%%DIR%%/%(prefix)s_
               --deseq-fit-type=%(deseq_fit_type)s
               --deseq-dispersion-method=%(deseq_dispersion_method)s
@@ -467,18 +508,44 @@ def normalizeBed(infile, outfile):
     bed_frame = pandas.read_table(infile,
                                   sep="\t",
                                   compression="gzip",
-                                  header=None,
+                                  header=0,
                                   index_col=0)
 
     # normalize count column by total library size
+    # have to explicitly convert data_frame to numpy
+    # array with int64/float64 data type.  Otherwise
+    # numpy.log will through an Attribute error (wrong
+    # error to report) as it cannot handle python longs
+    bed_frame = bed_frame.fillna(0.0)
+    val_array = numpy.array(bed_frame.values, dtype=numpy.int64)
+    geom_mean = geoMean(val_array)
+    ratio_frame = bed_frame.apply(lambda x: x/geom_mean,
+                                  axis=0)
+    size_factors = ratio_frame.apply(numpy.median,
+                                     axis=0)
+    normalize_frame = bed_frame/size_factors
+    # replace infs and -infs with Nas, then 0s
+    normalize_frame.replace([numpy.inf, -numpy.inf], numpy.nan, inplace=True)
+    normalize_frame = normalize_frame.fillna(0.0)
+    normalize_frame.to_csv(outfile, sep="\t", index_label="interval")
 
-    med = np.median(bed_frame[4])
-    normalize = lambda x: (x)/(float(med) + 1.0) + random.randint(0, 1)
-    bed_frame[7] = bed_frame[4].apply(normalize)
 
-    bed_frame.to_csv(outfile, sep="\t",
-                     header=None,
-                     columns=[1, 2, 7])
+def geoMean(array):
+    '''
+    Generate the geometric mean of a list or array,
+    removing all zero-values but retaining total length
+    '''
+    if isinstance(array, pandas.core.frame.DataFrame):
+        array = array.as_matrix()
+    else:
+        pass
+    non_zero = ma.masked_values(array,
+                                0)
+
+    log_a = ma.log(non_zero)
+    geom_mean = ma.exp(log_a.mean())
+
+    return geom_mean
 
 
 def enrichmentVsInput(infile, outfile):
@@ -504,7 +571,7 @@ def enrichmentVsInput(infile, outfile):
                                left_on=[0, 1, 2],
                                right_on=[0, 1, 2])
 
-    foldchange = lambda x: log((x['3_y'] + 1.0)/(x['3_x'] + 1.0), 2)
+    foldchange = lambda x: math.log((x['3_y'] + 1.0)/(x['3_x'] + 1.0), 2)
     merge_frame[4] = merge_frame.apply(foldchange, axis=1)
 
     out_frame = merge_frame[[0, 1, 2, 4]]
@@ -512,3 +579,143 @@ def enrichmentVsInput(infile, outfile):
                      sep="\t",
                      header=None,
                      index=None)
+
+
+def runMEDIPSQC(infile, outfile):
+    '''run MEDIPS QC targets.'''
+
+    # note that the wrapper adds the filename
+    # to the output filenames.
+    job_options = "-l mem_free=10G"
+
+    statement = """python %(scriptsdir)s/runMEDIPS.py
+            --ucsc-genome=%(medips_genome)s
+            --treatment=%(infile)s
+            --toolset=saturation
+            --toolset=coverage
+            --toolset=enrichment
+            --shift=%(medips_shift)s
+            --extend=%(medips_extension)s
+            --output-filename-pattern="medips.dir/%%s"
+            --log=%(outfile)s.log
+            | gzip
+            > %(outfile)s
+            """
+    P.run()
+
+
+def runMEDIPSDMR(design_file, outfile):
+    '''run differential MEDIPS analysis according to
+    designfile.
+    '''
+    job_options = "-l mem_free=30G"
+
+    design = Expression.readDesignFile(design_file)
+
+    # remove data tracks not needed
+    design = [(x, y) for x, y in design.items() if y.include]
+
+    # build groups
+    groups = set([y.group for x, y in design])
+
+    statements = []
+    for pair1, pair2 in itertools.combinations(groups, 2):
+        treatment = ["%s.bam" % x for x, y in design if y.group == pair1]
+        control = ["%s.bam" % x for x, y in design if y.group == pair2]
+
+        treatment = ",".join(treatment)
+        control = ",".join(control)
+        # outfile contains directory prefix
+        statements.append(
+            """python %(scriptsdir)s/runMEDIPS.py
+            --ucsc-genome=%(medips_genome)s
+            --treatment=%(treatment)s
+            --control=%(control)s
+            --toolset=dmr
+            --shift=%(medips_shift)s
+            --extend=%(medips_extension)s
+            --output-filename-pattern="%(outfile)s_%(pair1)s_vs_%(pair2)s_%%s"
+            --fdr-threshold=%(medips_fdr)f
+            --log=%(outfile)s.log
+            > %(outfile)s.log2;
+            checkpoint;
+            zcat %(outfile)s_%(pair1)s_vs_%(pair2)s_data.tsv.gz
+            | python %(scriptsdir)s/runMEDIPS.py
+            --treatment=%(pair1)s
+            --control=%(pair2)s
+            --toolset=convert
+            --fdr-threshold=%(medips_fdr)f
+            --log=%(outfile)s.log
+            | gzip
+            > %(outfile)s
+            """)
+
+    P.run()
+
+
+@P.cluster_runnable
+def outputSpikeCounts(outfile, infile_name,
+                      expression_nbins=None,
+                      fold_nbins=None,
+                      expression_bins=None,
+                      fold_bins=None):
+
+    df = pandas.read_csv(infile_name,
+                         sep="\t",
+                         index_col=0)
+
+    E.debug("read %i rows and %i columns of data" % df.shape)
+
+    if "edger" in outfile.lower():
+        # edger: treatment_mean and control_mean do not exist
+        # use supplied values directly.
+        l10average = numpy.log(df['treatment_mean'])
+        l2fold = numpy.log2(df['fold'])
+    else:
+        # use pseudocounts to compute fold changes
+        treatment_mean = df['treatment_mean'] + 1
+        control_mean = df['control_mean'] + 1
+        # build log2 average values
+        l10average = numpy.log((treatment_mean + control_mean) / 2)
+        l2fold = numpy.log2(treatment_mean / control_mean)
+
+    if expression_nbins is not None:
+        mm = math.ceil(max(l10average))
+        expression_bins = numpy.arange(0, mm, mm / expression_nbins)
+
+    if fold_nbins is not None:
+        mm = math.ceil(max(abs(min(l2fold)), abs(max(l2fold))))
+        # ensure that range is centered on exact 0
+        n = math.ceil(fold_nbins / 2.0)
+        fold_bins = numpy.concatenate(
+            (-numpy.arange(0, mm, mm / n)[:0:-1],
+             numpy.arange(0, mm, mm / n)))
+
+    # compute expression bins
+    d2hist_counts, xedges, yedges = numpy.histogram2d(
+        l10average, l2fold,
+        bins=(expression_bins,
+              fold_bins))
+
+    dd = pandas.DataFrame(d2hist_counts)
+    dd.index = list(xedges[:-1])
+    dd.columns = list(yedges[:-1])
+    dd.to_csv(IOTools.openFile(outfile, "w"),
+              sep="\t")
+
+    return df, d2hist_counts, xedges, yedges, l10average, l2fold
+
+
+@P.cluster_runnable
+def plotDETagStats(infiles, outfile):
+    '''plot differential expression stats'''
+
+    infile, composition_file = infiles
+    Expression.plotDETagStats(
+        infile, outfile,
+        additional_file=composition_file,
+        join_columns=("contig", "start", "end"),
+        additional_columns=("CpG_density",
+                            "length"))
+
+    P.touch(outfile)

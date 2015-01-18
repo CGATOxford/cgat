@@ -52,10 +52,10 @@ webservice:
 * getPercentAltered and
 * getTotalAltered
 
-These emulate the function of the website where the percent of cases that show any
-alteration for the gene and profiles given are returned (getPercentAltered, or the
-percent of cases that show an alteration in any of the genes (getTotalAltered) is
-returned. 
+These emulate the function of the website where the percent of cases
+that show any alteration for the gene and profiles given are returned
+(getPercentAltered, or the percent of cases that show an alteration in
+any of the genes (getTotalAltered) is returned.
 
 examples::
 
@@ -76,8 +76,8 @@ or more tersely::
 
 Any warnings returned by the query are stored in CBioPortal.last_warnings.
 
-Query's that would give too long an URL are split into smaller querys and the results
-combined transparently.
+Query's that would give too long an URL are split into smaller querys
+and the results combined transparently.
 
 A commandline interface is provided for convenience, syntax::
 
@@ -101,7 +101,8 @@ class CBioPortal():
 
     url = "http://www.cbioportal.org/public-portal/webservice.do"
 
-    def __init__(self, url=None, study=None, study_name=None, case_list_id=None):
+    def __init__(self, url=None, study=None, study_name=None,
+                 case_list_id=None):
         ''' connect to the cBioPortal Database. If no url is specified the default url
         is used. A list of of valid study ids is retrieved from the database. This
         both confirms that the datavase is reachable, and provides cached checking for the
@@ -640,7 +641,7 @@ class CBioPortal():
             else:
                 genetic_profile_id = [x['genetic_profile_id']
                                       for x in self.getGeneticProfiles(study_id)
-                                      if c['show_profile_in_analysis_tab'] == "true"]
+                                      if x['show_profile_in_analysis_tab'] == "true"]
 
             return genetic_profile_id
 
@@ -723,8 +724,8 @@ class CBioPortal():
 
             geneProfile = [x[gene] for x in data]
 
-            for case in case_list:
-
+            for case in (set(geneProfile[0]) - set(["gene_id", "common"])):
+                
                 if len([geneProfile[x][case] for x in range(len(geneProfile))
                         if self._guessAlteration(geneProfile[x][case], genetic_profile_id[x], profiles)]) > 0:
 
@@ -769,13 +770,17 @@ class CBioPortal():
             if len(genetic_profile_id) == 1 and len(data[0]) == 1:
                 data[0][0]['GENETIC_PROFILE_ID'] = genetic_profile_id[0]
 
-        for case_id in case_list:
+        for case_id in set(data[0][0]) - set(
+                ["GENETIC_PROFILE_ID", "ALTERATION_TYPE",
+                 "GENE_ID", "COMMON"]):
 
             case_altered = False
             for gene in data:
 
                 altered = len([x for x in gene
-                              if self._guessAlteration(x[case_id], x['GENETIC_PROFILE_ID'], profiles, threshold)])
+                              if self._guessAlteration(x[case_id],
+                                                       x['GENETIC_PROFILE_ID'],
+                                                       profiles, threshold)])
                 if (altered > 0):
                     case_altered = True
 
@@ -891,7 +896,7 @@ def main(argv=None):
                           help="[Required for some] comma seperated list of one or more protein array IDs")
     squeryopts.add_option("--array_info", dest="protein_array_info", type="int",  default=0,
                           help="[Optional] If 1, antibody infomation will also be exported in a getProteinArrayData query [default=%default]")
-    squeryopts.add_option("--report", dest="report", type="string", default="full",
+    squeryopts.add_option("--output-report", dest="report", type="string", default="full",
                           help="[Optional] Report type to display for getLink. Either full or oncoprint_html [default=%default] ")
     squeryopts.add_option("--threshold", dest="threshold", type="int", default=2,
                           help="[Optional] Threshold for deciding if an alteration is significant for continuous metrics [default=%default]")

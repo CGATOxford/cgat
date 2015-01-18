@@ -283,43 +283,34 @@ def buildIntervalsFasta(infile, outfile):
                                   "If no extension is to be used specify 0" %
                                   type(downstream))
 
-    # if input is gtf then convert to bed
-    # with intervals defined by .ini file
-    temp = P.getTempFile("/ifs/scratch")
     if infile.endswith(".gtf.gz"):
-        # the resulting temporary file will not be zipped
-        concatenate = "cat"
-        for gene in GTF.merged_gene_iterator(
-                GTF.iterator(IOTools.openFile(infile))):
-            if gene.strand == "+":
-                temp.write("%s\t%s\t%s\t%s\t%s\t%s\n" %
-                           (gene.contig,
-                            str(gene.start - upstream),
-                            str(gene.start + downstream),
-                            gene.gene_id,
-                            ".",
-                            gene.strand))
-            elif gene.strand == "-":
-                temp.write("%s\t%s\t%s\t%s\t%s\t%s\n" %
-                           (gene.contig,
-                            str(gene.end - downstream),
-                            str(gene.end + upstream),
-                            gene.gene_id,
-                            ".",
-                            gene.strand))
-        temp.close()
-        inf = temp.name
+        statement = (
+            "zcat %(infile)s |"
+            " python %(scriptsdir)s/gtf2gtf.py"
+            "  --method=sort"
+            "  --sort-order=gene+transcript"
+            "  --log=%(outfile)s.log |"
+            " python %(scriptsdir)s/gtf2gtf.py"
+            "  --method=merge-transcripts"  # doesn't explicitly account for UTR
+            "  --log=%(outfile)s.log |"
+            " python %(scriptsdir)s/gtf2gff.py"
+            "  --method=regulons"
+            "  --genome-file=%(genome_dir)s/%(genome)s"
+            "  --upstream-extension=%(upstream)s"
+            "  --downstream-extension=%(downstream)s"
+            "  --log=%(outfile)s.log |"
+            " python %(scriptsdir)s/gff2bed.py"
+            "  --is-gtf"
+            "  --set-name=gene_id"
+            "  --log=%(outfile)s.log |"
+            " python %(scriptsdir)s/bed2fasta.py"
+            "  --genome=%(genomedir)s/%(genome)s")
+    elif infile.endswith(".bed.gz"):
+        statement = ("zcat %(infile)s |"
+                     " python %(scriptsdir)s/bed2fasta.py"
+                     "  --genome=%(genomedir)s/%(genome)s")
     else:
-        inf = infile
-        concatenate = "zcat"
-
-    to_cluster = True
-
-    # define statement
-    # option to specify strand in config file.
-    statement = ("%(concatenate)s %(inf)s |"
-                 " python %(scriptsdir)s/bed2fasta.py"
-                 "  --genome=%(genomedir)s/%(genome)s")
+        raise Exception("Interval file must either be *.bed.gz or *.gtf.gz")
 
     if PARAMS["intervals_stranded"]:
         statement += ("  --use-strand --log=%(outfile)s.log > %(outfile)s")
@@ -328,8 +319,6 @@ def buildIntervalsFasta(infile, outfile):
 
     P.run()
 
-    if infile.endswith(".gtf.gz"):
-        os.remove(inf)
 
 ###########
 # target
@@ -375,7 +364,7 @@ def loadGCContent(infile, outfile):
     tablename = filenameToTablename(P.snip(os.path.basename(infile), ".tsv"))
     statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s
                    --log=%(outfile)s.log
-                   --index=id
+                   --add-index=id
                    %(csv2db_options)s
                    < %(infile)s > %(outfile)s'''
     P.run()
@@ -416,7 +405,8 @@ if PARAMS["background_match"]:
                                                outfile,
                                                PARAMS["database"],
                                                PARAMS["genesets_header"],
-                                               PARAMS["background_match_stat"])
+                                               PARAMS["background_match_stat"],
+                                               PARAMS["sig_testing_method"])
 
     ###############################################
     ###############################################
@@ -485,7 +475,9 @@ def runMatch(infiles, outfile):
     seq = infiles[0]
     mxlib = PARAMS["transfac_matrix"]
     mxprf = PARAMS["transfac_profile"]
-    match_executable = "/ifs/data/biobase/transfac/match/bin/match_linux64"
+    # JJ this really needs to be removed to pipeline.ini as it varies between
+    # releases
+    match_executable = "/ifs/data/biobase/transfac/2013_3/match/bin/match"
     out = outfile
 
     statement = '''%(match_executable)s %(mxlib)s %(seq)s %(out)s %(mxprf)s'''
@@ -522,7 +514,7 @@ def loadMatchResults(infile, outfile):
     statement = ("python %(scriptsdir)s/csv2db.py"
                  "  -t %(tablename)s"
                  "  --log=%(outfile)s.log"
-                 "  --index=seq_id"
+                 "  --add-index=seq_id"
                  "  %(csv2db_options)s"
                  " < %(inf)s > %(outfile)s")
     P.run()
@@ -566,7 +558,7 @@ def loadMatchMetrics(infile, outfile):
 
     statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s
                    --log=%(outfile)s.log
-                   --index=seq_id
+                   --add-index=seq_id
                    %(csv2db_options)s
                    < %(infile)s > %(outfile)s'''
     P.run()
@@ -593,7 +585,7 @@ if PARAMS['sig_testing_method'] == "fisher":
         @follows(loadMatchResults,
                  loadMatchedGCComposition,
                  mkdir("match_test.dir"))
-        @jobs_limit(1, "FisherTest")
+        #@jobs_limit(1, "FisherTest")
         @collate([matchBackgroundForSequenceComposition, calculateGCContent],
                  regex(".+/(.+)\.(?:foreground.gc|matched.background)\.tsv"),
                  r"match_test.dir/\1.matched.significance")
@@ -623,16 +615,23 @@ if PARAMS['sig_testing_method'] == "fisher":
             # MM: added in directionality into FET - might only be looking for
             # enrichment OR depletion so don't want to hammer those p-value
             # too hard
+            # MM: 23/12/14 - refactor to run on cluster
 
-            pval_direct = PARAMS['fisher_direction']
+            job_options = "-l mem_free=1G"
 
-            PipelineTFM.testSignificanceOfMatrices(background,
-                                                   foreground,
-                                                   PARAMS["database"],
-                                                   match_table,
-                                                   outfile,
-                                                   PARAMS["genesets_header"],
-                                                   pval_direct)
+            statement = '''
+            python %(scriptsdir)s/tfbs2enrichment.py
+            --foreground=%(foreground)s
+            --background=%(background)s
+            --database=%(database)s
+            --log=%(outfile)s.log
+            --match-table=%(match_table)s
+            --outfile=%(outfile)s
+            --geneset-header=%(genesets_header)s
+            --direction=%(sig_testing_direction)s
+            '''
+
+            P.run()
 
             E.info("Completed Fisher's exact test for "
                    "TF enrichment between %s" %
@@ -676,7 +675,6 @@ if PARAMS['sig_testing_method'] == "fisher":
 
 elif PARAMS['sig_testing_method'] == "permutation":
     @follows(loadMatchMetrics,
-             loadMatchedGCComposition,
              mkdir("match_test.dir"))
     @collate([matchBackgroundForSequenceComposition, calculateGCContent],
              regex(".+/(.+)\.(?:foreground.gc|background.gc)\.tsv"),
@@ -692,8 +690,10 @@ elif PARAMS['sig_testing_method'] == "permutation":
         dbh = sqlite3.connect(PARAMS['database'])
         # table from sql db
         match_table = "match_result"
-        tfbs_state = '''SELECT seq_id, matrix_id FROM %s;''' % match_table
-        tfbs_table = pdsql.read_sql(tfbs_state, dbh, index_col='matrix_id')
+        tfbs_state = '''SELECT matrix_id, seq_id FROM %s;''' % match_table
+        tfbs_table = pdsql.read_sql(sql=tfbs_state,
+                                    con=dbh,
+                                    index_col='matrix_id')
 
         # get foreground and background gene files
         # setup gc content dataframes
@@ -720,14 +720,40 @@ elif PARAMS['sig_testing_method'] == "permutation":
         fore_gc.index = fg_gene_id
 
         # run permutation significance testing
+        # check if there are sufficient genes in the background
+        # to do a permutation test.  If not, do Fishers' exact.
+        # if yes, but less than specific number of permutations,
+        # limit to this number.
 
         perms = int(PARAMS['sig_testing_nperms'])
-        out_dict = PipelineTFM.permuteTFBSEnrich(tfbs_table=tfbs_table,
-                                                 fg_gc=fore_gc,
-                                                 bg_gc=back_gc,
-                                                 nPerms=perms)
+        poss_perms = PipelineTFM.nCr(n=len(back_gc.index),
+                                     r=len(fore_gc.index))
+        if poss_perms < 1000:
+            E.warn("Insufficient background genes to perform"
+                   "permutations.  Please use Fisher's Exact test")
+            raise ValueError("Insufficient background size. "
+                             "Cannot use permutation test")
+        elif poss_perms > 1000 and poss_perms < perms:
+            E.info("Maximum possible permutations with this background"
+                   " set is %i.  Running %i permutations only" % (poss_perms,
+                                                                  poss_perms))
+            out_dict = PipelineTFM.permuteTFBSEnrich(tfbs_table=tfbs_table,
+                                                     fg_gc=fore_gc,
+                                                     bg_gc=back_gc,
+                                                     nPerms=poss_perms,
+                                                     bg_stat=PARAMS[""])
+        else:
+            bg_stat = PARAMS["background_match_stat"]
+            out_dict = PipelineTFM.permuteTFBSEnrich(tfbs_table=tfbs_table,
+                                                     fg_gc=fore_gc,
+                                                     bg_gc=back_gc,
+                                                     nPerms=perms,
+                                                     bg_stat=bg_stat)
 
         out_frame = pandas.DataFrame(out_dict).T
+        pyadjust = R['p.adjust']
+        pvs = robjects.FloatVector([p for p in out_frame['pvalue']])
+        out_frame['qvalue'] = pyadjust(pvs)
 
         out_frame.to_csv(outfile, sep="\t", index_label='matrix_id')
 ###############################################################################
@@ -745,7 +771,7 @@ def loadEnrichmentOfTFBS(infile, outfile):
     tablename = filenameToTablename(os.path.basename(infile))
     statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s
                   --log=%(outfile)s.log
-                  --index=matrix_id
+                  --add-index=matrix_id
                   %(csv2db_options)s
                   < %(infile)s > %(outfile)s'''
     P.run()
@@ -782,7 +808,11 @@ def collateEnrichmentOfTFBS(infiles, outfile):
             first = False
             df = _fetch(table_name)
             # removing qvalue as it will be recalculated
-            df.drop("qvalue", axis=1, inplace=True)
+            try:
+                df.drop("qvalue", axis=1, inplace=True)
+            except ValueError:
+                # qvalue not contained in df
+                pass
             # adding column for geneset_id
             geneset_id = [geneset_id, ]*len(df.index)
             df["geneset_id"] = geneset_id
@@ -813,7 +843,7 @@ def loadCollatedEnrichmentOfTFBS(infile, outfile):
     statement = ("python %(scriptsdir)s/csv2db.py"
                  "  -t %(tablename)s"
                  "  --log=%(outfile)s.log"
-                 "  --index=matrix_id"
+                 "  --add-index=matrix_id"
                  "  %(csv2db_options)s"
                  " < %(infile)s > %(outfile)s")
     P.run()

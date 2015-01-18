@@ -226,14 +226,15 @@ class CounterReadCoverage(Counter):
 
     def __init__(self, bamfiles, *args, minimum_mapping_quality = 0, **kwargs ):
         Counter.__init__(self, *args, **kwargs )
-        if not bamfiles: raise ValueError("supply --bam-file options for readcoverage")
+        if not bamfiles:
+            raise ValueError("supply --bam-file options for readcoverage")
         self.mBamFiles = bamfiles
 
     def count(self):
         
         segments = self.getSegments()
 
-        cdef AlignedRead read
+        cdef AlignedSegment read
 
         # remove segments with excessive length
         segments = [ x for x in segments if (x[1] - x[0]) < self.max_length ]
@@ -734,7 +735,7 @@ class CounterReadCountsFull(CounterBAM):
             exon_starts[ix] = exons[ix][0]
             exon_ends[ix] = exons[ix][1]
             
-        cdef AlignedRead read
+        cdef AlignedSegment read
 
         # define counters, add 1 for quality filtered reads
 
@@ -1234,7 +1235,7 @@ class CounterReadPairCountsFull(CounterBAM):
             exon_starts[ix] = exons[ix][0]
             exon_ends[ix] = exons[ix][1]
             
-        cdef AlignedRead read1
+        cdef AlignedSegment read1
 
         # define counters, add 1 for quality filtered reads
         counters = numpy.zeros(ncounters, dtype=numpy.float)

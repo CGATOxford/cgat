@@ -3,7 +3,7 @@
 Exome Cancer pipeline
 ====================
 
-:Author: David Sims
+:Author: Tom Smith
 :Release: $Id$
 :Date: |today|
 :Tags: Python
@@ -13,9 +13,7 @@ To do:
 
 Document fully
 make phone home/key option work - GATK public key?
-Merge control variants to produce panel of normal (PON) vcf
-Incorporate SNV calling (CoNVEX)
-Report!
+Summarise Indel calling (size of indels called)
 Example
 
 ######
@@ -35,16 +33,14 @@ using GATK.  Next variants (SNVs and indels) are called and filtered
       a "panel of normal" variants
    5a. Variant calling (SNPs) with tumour samples using muTect including
       filtering
-   5b. Variant calling (indels) using Haplotype Caller
+   5b. Variant calling (indels) using Strelka
    6. Variant annotation using SNPeff, GATK VariantAnnotator, and SnpSift
-
-   6. Variant quality score recalibration (GATK)
-   7. Flags variants within genes of interest (such as known disease genes)
-      (GATK) (optional)
-   13. Generates summary statistics for unfiltered vcf file
-   14. Generates report
+   7. Generates report
 
 .. note::
+
+   An optional downsampling analysis can also be performed to assess how
+   coverage a control sample affects the called variants
 
    1. Currently the pipeline is not able to deal with replicates, i.e
       replicates will be treated seperately.
@@ -160,6 +156,7 @@ import CGAT.Pipeline as P
 import glob
 import pandas as pd
 import itertools
+import re
 
 USECLUSTER = True
 
@@ -187,16 +184,13 @@ P.getParameters(
 PARAMS = P.PARAMS
 
 
-def getPicardOptions():
-    return "-pe dedicated 3 -R y -l mem_free=1.4G -l picard=1"
-
-
 def getGATKOptions():
-    return "-pe dedicated 6 -R y -l mem_free=4G -l picard=1"
+    # removed picard=1, surely not neccessary?
+    return "-l mem_free=4G"
 
 
 def getMuTectOptions():
-    return "-pe dedicated 1 -R y -l mem_free=4G -l picard=1"
+    return "-l mem_free=6G"
 
 
 #########################################################################
@@ -217,7 +211,7 @@ def loadROI(infile, outfile):
             | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --ignore-empty
               --retry
-              --header=%(header)s
+              --header-names=%(header)s
               --table=%(tablename)s
             > %(outfile)s  '''
     P.run()
@@ -269,9 +263,9 @@ def mapReads(infile, outfile):
     generate alignment statistics and deduplicate using Picard'''
 
     job_threads = PARAMS["bwa_threads"]
-    job_options = "-pe dedicated 2 -l mem_free=8G"
+    job_options = "-l mem_free=8G"
+    job_threads = 2
 
-    to_cluster = True
     if PARAMS["bwa_algorithm"] == "aln":
         m = PipelineMapping.BWA(
             remove_non_unique=PARAMS["bwa_remove_non_unique"],
@@ -340,8 +334,6 @@ def buildCoverageStats(infile, outfile):
                 %(infile)s_temp_baits_final.bed''' % locals()
     P.run()
 
-#########################################################################
-
 
 @follows(buildCoverageStats)
 @merge(buildCoverageStats, "coverage_stats.load")
@@ -353,8 +345,8 @@ def loadCoverageStats(infiles, outfile):
     first = True
     for f in infiles:
         track = P.snip(os.path.basename(f), ".cov")
-        lines = [
-            x for x in open(f, "r").readlines() if not x.startswith("#") and x.strip()]
+        lines = [x for x in open(f, "r").readlines()
+                 if not x.startswith("#") and x.strip()]
         if first:
             outf.write("%s\t%s" % ("track", lines[0]))
         first = False
@@ -363,7 +355,7 @@ def loadCoverageStats(infiles, outfile):
     tmpfilename = outf.name
     statement = '''cat %(tmpfilename)s
                    | python %(scriptsdir)s/csv2db.py
-                      --index=track
+                      --add-index=track
                       --table=%(tablename)s
                       --ignore-empty
                       --retry
@@ -373,7 +365,8 @@ def loadCoverageStats(infiles, outfile):
 #########################################################################
 #########################################################################
 #########################################################################
-# GATK
+# GATK relaign bams
+#########################################################################
 
 
 @transform(mapReads,
@@ -387,6 +380,7 @@ def GATKpreprocessing(infile, outfile):
     track = P.snip(os.path.basename(infile), ".bam")
     tmpdir_gatk = P.getTempDir('/ifs/scratch')
     job_options = getGATKOptions()
+    job_threads = 6
     library = PARAMS["readgroup_library"]
     platform = PARAMS["readgroup_platform"]
     platform_unit = PARAMS["readgroup_platform_unit"]
@@ -432,7 +426,8 @@ def GATKpreprocessing(infile, outfile):
                     -o %(tmpdir_gatk)s/%(track)s.indelrealigned.bam
                     -R %%(bwa_index_dir)s/%%(genome)s.fa
                     -I %(tmpdir_gatk)s/%(track)s.readgroups.bam
-                    -targetIntervals %(tmpdir_gatk)s/%(track)s.indelrealignment.intervals ;
+                    -targetIntervals
+                    %(tmpdir_gatk)s/%(track)s.indelrealignment.intervals ;
                     checkpoint ;''' % locals()
     statement += '''java -Xmx4g -jar
                     /ifs/apps/bio/GATK-2.7-2/GenomeAnalysisTK.jar
@@ -464,6 +459,7 @@ def realignMatchedSample(infile, outfile):
 
     to_cluster = USECLUSTER
     job_options = getGATKOptions()
+    job_threads = 6
     # tmpdir_gatk = P.getTempDir('tmpbam')
     tmpdir_gatk = P.getTempDir('/ifs/scratch')
     # threads = PARAMS["gatk_threads"]
@@ -544,6 +540,7 @@ def realignMatchedSample(infile, outfile):
 def runPicardOnRealigned(infile, outfile):
     to_cluster = USECLUSTER
     job_options = getGATKOptions()
+    job_threads = 6
     tmpdir_gatk = P.getTempDir('/ifs/scratch')
     # threads = PARAMS["gatk_threads"]
 
@@ -555,7 +552,7 @@ def runPicardOnRealigned(infile, outfile):
 
     statement = '''
     cat %(infile)s
-    | python %%(scriptsdir)s/bam2bam.py -v 0 --set-sequence --bam
+    | python %%(scriptsdir)s/bam2bam.py -v 0 --method=set-sequence
     | CollectMultipleMetrics
     INPUT=/dev/stdin
     REFERENCE_SEQUENCE=%%(bwa_index_dir)s/%%(genome)s.fa
@@ -564,7 +561,8 @@ def runPicardOnRealigned(infile, outfile):
     VALIDATION_STRINGENCY=SILENT
     >& %(outfile)s;
     cat %(infile_tumor)s
-    | python %%(scriptsdir)s/bam2bam.py -v 0 --set-sequence --sam
+    | python %%(scriptsdir)s/bam2bam.py -v 0
+    --method=set-sequence --output-sam
     | CollectMultipleMetrics
     INPUT=/dev/stdin
     REFERENCE_SEQUENCE=%%(bwa_index_dir)s/%%(genome)s.fa
@@ -596,6 +594,7 @@ def loadPicardRealigenedAlignStats(infiles, outfile):
 def callControlVariants(infile, outfile):
     '''run mutect to call snps in tumor sample'''
     job_options = getMuTectOptions()
+    job_threads = 2
     basename = P.snip(outfile, "_normal_mutect.vcf")
     call_stats_out = basename + "_call_stats.out"
     mutect_log = basename + ".log"
@@ -640,6 +639,7 @@ def indexControlVariants(infile, outfile):
     P.run()
 
 
+# paramaterise vcf intersection (number of req. observations - currently 1)
 @merge(indexControlVariants,
        "normal_panel_variants/combined.vcf")
 def mergeControlVariants(infiles, outfile):
@@ -652,6 +652,8 @@ def mergeControlVariants(infiles, outfile):
     P.run()
 
 
+# modularise mutect command - it's used three times now, four if you include
+# PON analysis
 @follows(mkdir("variants"), callControlVariants)
 @transform(realignMatchedSample,
            regex(r"bam/(\S+)-Control-(\S).realigned.bqsr.bam"),
@@ -667,6 +669,7 @@ def runMutect(infiles, outfile):
     # furthermore, multithreading doesn't speed up even nearly linearly
     # threads = PARAMS["gatk_threads"]
     job_options = getMuTectOptions()
+    job_threads = 2
     # outfile, extended_out = outfiles
     basename = P.snip(outfile, ".mutect.snp.vcf")
     call_stats_out = basename + "_call_stats.out"
@@ -708,6 +711,36 @@ def runMutect(infiles, outfile):
     P.run()
 
 
+@transform(realignMatchedSample,
+           regex(r"bam/(\S+)-Control-(\S+).bqsr.bam"),
+           r"variants/\1/results/all.somatic.indels.vcf")
+def indelCaller(infile, outfile):
+    '''Call somatic indels using Strelka'''
+    infile_tumor = infile.replace(
+        "Control", PARAMS["mutect_tumour"])
+    outdir = "/".join(outfile.split("/")[0:2])
+    job_options = "-l mem_free=1.9G"
+    job_threads = 12
+
+    statement = '''rm -rf %(outdir)s;
+                   /ifs/apps/bio/strelka-1.0.14/bin/configureStrelkaWorkflow.pl
+                   --normal=%(infile)s
+                   --tumor=%(infile_tumor)s
+                   --ref=%%(bwa_index_dir)s/%%(genome)s.fa
+                   --config=config.ini
+                   --output-dir=%(outdir)s;
+                   make -j 12 -C %(outdir)s''' % locals()
+    P.run()
+
+##########################################################################
+##########################################################################
+##########################################################################
+# repeat mutect on subsampled control bam
+##########################################################################
+# this analysis should be part of an optional check of mutect parameters
+# mutect paramters should be identical to the runMutect function above
+
+
 @follows(mergeControlVariants)
 @transform(realignMatchedSample,
            regex(r"bam/(\S+)-Control-(\S+).realigned.bqsr.bam"),
@@ -722,6 +755,7 @@ def runMutectReverse(infiles, outfile):
     # threads = PARAMS["gatk_threads"]
 
     job_options = getMuTectOptions()
+    job_threads = 2
     basename = P.snip(outfile, ".mutect.reverse.snp.vcf")
     call_stats_out = basename + "_call_stats.reverse.out"
     coverage_wig_out = basename + "_coverage.reverse.wig"
@@ -761,41 +795,17 @@ def runMutectReverse(infiles, outfile):
     P.run()
 
 
-@transform(realignMatchedSample,
-           regex(r"bam/(\S+)-Control-(\S+).bqsr.bam"),
-           r"variants/\1/results/all.somatic.indels.vcf")
-def indelCaller(infile, outfile):
-    '''Call somatic indels using Strelka'''
-    infile_tumor = infile.replace(
-        "Control", PARAMS["mutect_tumour"])
-    outdir = "/".join(outfile.split("/")[0:2])
-    job_options = "-pe dedicated 12 -R y -l mem_free=1.9G"
-    to_cluster = USECLUSTER
-
-    statement = '''rm -rf %(outdir)s;
-                   /ifs/apps/bio/strelka-1.0.14/bin/configureStrelkaWorkflow.pl
-                   --normal=%(infile)s
-                   --tumor=%(infile_tumor)s
-                   --ref=%%(bwa_index_dir)s/%%(genome)s.fa
-                   --config=config.ini
-                   --output-dir=%(outdir)s;
-                   make -j 12 -C %(outdir)s''' % locals()
-    P.run()
-
-##########################################################################
-##########################################################################
-##########################################################################
-# repeat mutect on subsampled control bam
-##########################################################################
-# generalise this section
+# generalise the functions below
 # 1. identify sample with highest coverage in control
 # - should this check coverage in tumour also?
 # 2. subset control bam
 # 3. run mutect calling function with subset against unsubsetted tumour
 # 4. summary table
 
+adeno_bam = "bam/NU16C-Control-1.realigned.bqsr.bam"
 
-@subdivide("downsample_coverage/NU16C-Control-1.realigned.bqsr.bam",
+
+@subdivide(adeno_bam,
            regex("(\S+).bqsr.bam"),
            [r"\1.0.1.bqsr.bam",
             r"\1.0.2.bqsr.bam",
@@ -810,16 +820,12 @@ def indelCaller(infile, outfile):
 def subsetControlBam(infile, outfiles):
     statements = []
     n = 0
-    for fraction in numpy.arange(0.1, 0.9, 0.1):
+    for fraction in numpy.arange(0.1, 1.1, 0.1):
         outfile = outfiles[n]
         n += 1
         statement = ('''samtools view -s %(fraction)s -b %(infile)s
                      > %(outfile)s''' % locals())
         P.run()
-
-    outfile = outfiles[n]
-    statement = '''ln -s %(infile)s %(outfile)s''' % locals()
-    P.run()
 
 
 @transform(subsetControlBam,
@@ -832,17 +838,18 @@ def indexSubsets(infile, outfile):
 
 @follows(indexSubsets)
 @transform(subsetControlBam,
-           regex(r"(\S+)-Control-1.realigned.(\S+).bqsr.bam"),
+           regex(r"bam/(\S+)-Control-1.realigned.(\S+).bqsr.bam"),
            add_inputs(mergeControlVariants),
-           r"\1-downsampled-\2.mutect.snp.vcf")
+           r"variants/\1-downsampled-\2.mutect.snp.vcf")
 def runMutectOnDownsampled(infiles, outfile):
     '''calls somatic SNPs using MuTect'''
     infile, normal_panel = infiles
-    infile_tumour = "downsample_coverage/NU16C-Adeno-1.realigned.bqsr.bam"
+    infile_tumour = adeno_bam
     # mutect repeatedly hangs-up with multithreading
     # furthermore, multithreading doesn't speed up even nearly linearly
     # threads = PARAMS["gatk_threads"]
     job_options = getMuTectOptions()
+    job_threads = 2
     # outfile, extended_out = outfiles
     basename = P.snip(outfile, ".mutect.snp.vcf")
     call_stats_out = basename + "_call_stats.out"
@@ -872,6 +879,9 @@ def runMutectOnDownsampled(infiles, outfile):
     --coverage_file %(coverage_wig_out)s
     --vcf %(outfile)s
     --min_qscore 20
+    --max_alt_alleles_in_normal_qscore_sum 100
+    --max_alt_alleles_in_normal_count 6
+    --max_alt_allele_in_normal_fraction 0.05
     --gap_events_threshold 2
     --tumor_lod %(tumor_LOD)s
     --enable_extended_output
@@ -884,8 +894,7 @@ def runMutectOnDownsampled(infiles, outfile):
 ##############################################################################
 ##############################################################################
 # Variant Annotation and Recalibration
-
-# add function to find somatic COSMIC mutations from control and tumour sample
+##############################################################################
 
 
 @transform(runMutect,
@@ -893,8 +902,8 @@ def runMutectOnDownsampled(infiles, outfile):
            r"variants/\1.mutect.snp.snpeff.vcf")
 def annotateVariantsSNPeff(infile, outfile):
     '''Annotate variants using SNPeff'''
-    to_cluster = USECLUSTER
-    job_options = "-pe dedicated 2 -R y -l mem_free=4G"
+    job_options = "-l mem_free=4G"
+    job_threads = 2
 
     snpeff_genome = PARAMS["annotation_snpeff_genome"]
     config = PARAMS["annotation_snpeff_config"]
@@ -909,8 +918,8 @@ def annotateVariantsSNPeff(infile, outfile):
            r"variants/\1.indels.snpeff.vcf")
 def annotateVariantsINDELsSNPeff(infile, outfile):
     '''Annotate indel variants using SNPeff'''
-    to_cluster = USECLUSTER
-    job_options = "-pe dedicated 2 -R y -l mem_free=4G"
+    job_options = "-l mem_free=4G"
+    job_threads = 2
 
     snpeff_genome = PARAMS["annotation_snpeff_genome"]
     config = PARAMS["annotation_snpeff_config"]
@@ -933,8 +942,15 @@ def listOfBAMs(infiles, outfile):
         for infile in infiles:
             outf.write(infile + '\n')
 
+
+#########################################################################
+# Annotate SNP and INDEL variants
 #########################################################################
 
+# note: these annotations are currently not used.
+# Need to check whether variant annotatot is using both bams
+# from a single patient?
+# should just be the tumour bam or else scores will be wrong!
 
 @follows(annotateVariantsSNPeff, listOfBAMs)
 @transform(runMutect,
@@ -1004,6 +1020,7 @@ def variantRecalibrator(infile, outfile):
     '''Create variant recalibration file for indels'''
     to_cluster = USECLUSTER
     job_options = getGATKOptions()
+    job_threads = 6
     track = P.snip(os.path.basename(outfile), ".annotated.recalibrated.vcf")
     mills = PARAMS["gatk_mills"]
 
@@ -1039,6 +1056,7 @@ def filterIndels(infile, outfile):
     P.run()
 
 
+# what is this doing, if anything?!
 @transform(variantAnnotatorIndels,
            suffix(".vcf"),
            ".null")
@@ -1121,14 +1139,14 @@ def loadVariantAnnotation(infile, outfile):
     P.run()
 
 
-# EXT_OUT = glob.glob("variants/*call_stats.out")
-
 @follows(runMutect)
 @transform("variants/*call_stats.out",
            regex(r"variants/(\S+)_call_stats.out"),
            r"variants/\1_call_stats.out.load")
 def loadMutectExtendedOutput(infile, outfile):
     '''Load mutect extended output into database'''
+
+    index = "CHROM, POS"
 
     dbh = connect()
     scriptsdir = PARAMS["general_scriptsdir"]
@@ -1142,7 +1160,7 @@ def loadMutectExtendedOutput(infile, outfile):
 
 #########################################################################
 # Genes of interest
-
+# check this will run in the correct position if option selected
 
 @active_if(PARAMS["annotation_add_genes_of_interest"] == 1)
 @transform((annotateVariantsSNPsift),
@@ -1166,6 +1184,7 @@ def findGenes(infile, outfile):
 #########################################################################
 #########################################################################
 # vcf statistics -   this only summarises the nucleotide changes
+# this currently does not provide useful output!
 
 
 @transform((variantAnnotator,
@@ -1179,8 +1198,6 @@ def buildVCFstats(infile, outfile):
                    > %(outfile)s 2>>%(outfile)s.log;''' % locals()
     P.run()
 
-#########################################################################
-
 
 @merge(buildVCFstats, "vcf_stats.load")
 def loadVCFstats(infiles, outfile):
@@ -1188,20 +1205,23 @@ def loadVCFstats(infiles, outfile):
     scriptsdir = PARAMS["general_scriptsdir"]
     filenames = " ".join(infiles)
     tablename = P.toTable(outfile)
+    csv2db_options = PARAMS["csv2db_options"]
     E.info("Loading vcf stats...")
     statement = '''python %(scriptsdir)s/vcfstats2db.py
                    %(filenames)s >> %(outfile)s; ''' % locals()
     statement += '''cat vcfstats.txt |
                     python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-                    --allow-empty --index=track --table=vcf_stats
+                    --allow-empty-file --add-index=track --table=vcf_stats
                     >> %(outfile)s; ''' % locals()
     P.run()
+
+#########################################################################
 
 
 @transform(runMutect,
            suffix(".mutect.snp.vcf"),
            "_mutect_filtering_summary.tsv")
-# write python script to parse call_stats.out files
+# write python script to parse call_stats.out files and place code in module
 # this is a temporary solution using bash
 def summariseFiltering(infile, outfile):
     basename = P.snip(infile, ".mutect.snp.vcf")
@@ -1298,6 +1318,7 @@ def loadNCG(outfile):
 
     # infile = PARAMS["cancergenes_table"]
     infile = "../backup/NCG/cancergenes.tsv"
+    index = "symbol"
     dbh = connect()
     scriptsdir = PARAMS["general_scriptsdir"]
     tablename = P.toTable(outfile)
@@ -1311,56 +1332,31 @@ def loadNCG(outfile):
 #########################################################################
 #########################################################################
 #########################################################################
-# analyse mutational siganture
-
+# analyse mutational siganture of filtered variants
 
 @merge(runMutect,
-       "variants/mutational_signature.tsv")
-def mutationalSignature(infiles, outfile):
+       ["variants/mutational_signature.tsv",
+        "variants/mutational_signature_table.tsv"])
+def mutationalSignature(infiles, outfiles):
 
-    def lookup(b1, b2):
-        '''return lookup key for a pair of bases'''
-        return(b1 + ":" + b2)
+    min_t_alt = PARAMS["filter_minimum_tumor_allele"]
+    min_t_alt_freq = PARAMS["filter_minimum_tumor_allele_frequency"]
+    min_n_depth = PARAMS["filter_minimum_normal_depth"]
+    max_n_alt_freq = PARAMS["filter_maximim_normal_allele_frequency"]
 
-    outfile = open(outfile, "w")
-    bases = ["C", "G", "T", "A"]
-
-    outfile.write("%s\t%s\t%s\n" % ("patient_id", "base_change", "frequency"))
-
-    patient_freq = {}
-
-    for infile in infiles:
-        patient_id = P.snip(os.path.basename(infile), ".mutect.snp.vcf")
-        mutation_dict = {}
-        for comb in itertools.permutations(bases, 2):
-            mutation_dict[lookup(comb[0], comb[1])] = 0
-
-        with open(infile, "r") as f:
-            for line in f.readlines():
-                if not line.startswith('#'):
-                    values = line.split("\t")
-                    if values[6] == "PASS":
-                        tumor_depth = values[9].split(":")[1].split(",")
-                        if tumor_depth > 4:
-                            mutation_dict[lookup(values[3], values[4])] += 1
-
-        patient_freq[patient_id] = mutation_dict
-
-    for comb in itertools.permutations(bases, 2):
-        key = lookup(comb[0], comb[1])
-        for infile in infiles:
-            patient_id = P.snip(os.path.basename(infile), ".mutect.snp.vcf")
-            outfile.write("%s\t%s\t%s\n" % (patient_id, key,
-                                            patient_freq[patient_id][key]))
-
-    outfile.close()
+    ExomeCancer.compileMutationalSignature(infiles, outfiles,
+                                           min_t_alt, min_n_depth,
+                                           max_n_alt_freq, min_t_alt_freq,
+                                           submit=True)
 
 
 @transform(mutationalSignature,
            suffix(".tsv"),
            ".load")
-def loadMutationalSignature(infile, outfile):
-    P.load(infile, outfile)
+def loadMutationalSignature(infiles, outfile):
+    outfile2 = re.sub(".load", "_table.load", outfile)
+    P.load(infiles[0], outfile)
+    P.load(infiles[1], outfile2)
 
 
 #########################################################################
@@ -1374,13 +1370,17 @@ def loadMutationalSignature(infile, outfile):
          loadPicardRealigenedAlignStats,
          loadPicardAlignStats,
          loadNCG,
-         loadMutationalSignature)
+         loadMutationalSignature,
+         findGenes)
 def full():
     pass
 
 
-@follows(runMutectOnDownsampled)
-def downsample():
+@follows(runMutectOnDownsampled,
+         runMutectReverse)
+def TestMutect():
+    '''This target runs function which can be used to assess the chosen
+    mutect parameters'''
     pass
 
 
@@ -1411,7 +1411,6 @@ def gatk():
 
 
 @follows(runMutect,
-         runMutectReverse,
          indelCaller)
 def callVariants():
     pass

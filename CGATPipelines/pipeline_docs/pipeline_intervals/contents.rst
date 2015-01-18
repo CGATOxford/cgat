@@ -14,6 +14,7 @@ Contents:
 
    pipeline/Methods.rst
    pipeline/Intervals.rst
+   pipeline/Overlap.rst
    pipeline/GenomicContext.rst 
    pipeline/Binding.rst
    pipeline/Profiles.rst

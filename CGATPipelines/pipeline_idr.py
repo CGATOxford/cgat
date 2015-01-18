@@ -278,7 +278,7 @@ def filterBamfiles(infile, sentinel):
 
     # remove unmapped reads
     statement.append("python %(scriptsdir)s/bam2bam.py"
-                     " --filter=mapped"
+                     " --method=filter --filter-method=mapped"
                      " --log=%(outfile)s.log"
                      " < @IN@.bam"
                      " > @OUT@")
@@ -286,7 +286,7 @@ def filterBamfiles(infile, sentinel):
     # remove non-uniquely mapping reads, if requested
     if PARAMS["filter_remove_non_unique"]:
         statement.append("python %(scriptsdir)s/bam2bam.py"
-                         " --filter=unique"
+                         " --method=filter --filter-method=unique"
                          " --log=%(outfile)s.log"
                          " < @IN@"
                          " > @OUT@")
@@ -707,7 +707,7 @@ def combineIDROnIndividualReplicates(infiles, outfile):
     statement = ("python %(scriptsdir)s/combine_tables.py"
                  " --columns=1"
                  " --skip-titles"
-                 " --headers=%(headers)s"
+                 " --header-names=%(headers)s"
                  " --log=%(outfile)s.log"
                  " --stdout=%(outfile)s"
                  " %(tables)s")
@@ -734,7 +734,7 @@ def combineIDROnPseudoreplicates(infiles, outfile):
     statement = ("python %(scriptsdir)s/combine_tables.py"
                  " --columns=1"
                  " --skip-titles"
-                 " --headers=%(headers)s"
+                 " --header-names=%(headers)s"
                  " --log=%(outfile)s.log"
                  " --stdout=%(outfile)s"
                  " %(tables)s")
@@ -761,7 +761,7 @@ def combineIDROnPooledPseudoreplicates(infiles, outfile):
     statement = ("python %(scriptsdir)s/combine_tables.py"
                  " --columns=1"
                  " --skip-titles"
-                 " --headers=%(headers)s"
+                 " --header-names=%(headers)s"
                  " --log=%(outfile)s.log"
                  " --stdout=%(outfile)s"
                  " %(tables)s")

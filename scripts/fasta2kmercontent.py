@@ -10,10 +10,11 @@ fasta2kmercontent.py
 Purpose
 -------
 
-This script takes as input a :term:`fasta` file from stdin and computes a k-nucleotide
-content for each contig in the file. The output is a tab-delimited file of kmer counts:
+This script takes an input :term:`fasta` file from stdin and computes a
+k-nucleotide content for each contig in the file. The output is a
+tab-delimited file of kmer counts:
 
-     contig1  contig2  contig3  contig4  
+     contig1  contig2  contig3  contig4
 n1
 n2
 n3
@@ -21,28 +22,63 @@ n3
 
 where n is the kmer and contig is the fasta entry.
 
-The user specifies the kmer that is to be searched. Note that the longer the kmer, the
-longer the script will take to run.
+The user specifies the kmer length that is to be searched. Note that the longer
+the kmer, the longer the script will take to run.
 
+Note the order of output will not necessarily be the same order as the input.
 
 Usage
 -----
-
 Example::
+   zcat in.fasta.gz | head::
+     
+    >NODE_1_length_120_cov_4.233333
+    TCACGAGCACCGCTATTATCAGCAACTTTTAAGCGACTTTCTTGTTGAATCATTTCAATT
+    GTCTCCTTTTAGTTTTATTAGATAATAACAGCTTCTTCCACAACTTCTACAAGACGGAAG
+    CGTTTTGTAGCTGAAAGTGGGCGAGTTTCCATGATACGAACGATATCGCC
 
-   zcat in.fasta.gz | python fasta2kmercontent.py --kmer 4 > tetranucleotide_counts.tsv
+    >NODE_3_length_51_cov_33.000000
+    CGAGTTTCCATGATACGAACGATATCGCCTTCTTTAGCAACGTTGTTTTCGTCATGTGCT
+    TTATATTTTTTAGAATAGTTGATACGTTTACCATAGACTGG
 
-In this example, for each contig in in.fasta.gz we count the occurrence of each four base
-combination.
+   zcat in.fasta.gz | python fasta2kmercontent.py
+                      --kmer-size 4
+                      > tetranucleotide_counts.tsv
 
+   head tetranucleotide_counts.tsv::
+
+     kmer NODE_228_length_74_cov_506.432434 NODE_167_length_57_cov_138.438599
+     GTAC 0                                 0
+     TGCT 0                                 0
+     GTAA 2                                 0
+     CGAA 1                                 1
+     AAAT 1                                 0
+     CGAC 0                                 0
+
+In this example, for each contig in in.fasta.gz the occurrence of each four
+nucleotide combination is counted.
 
 Alternative example::
 
-   zcat in.fasta.gz | python fasta2kmercontent.py --kmer 4 --proportion > tetranucleotide_proportions.tsv
+   zcat in.fasta.gz | python fasta2kmercontent.py
+                      --kmer-size 4
+                      --output-proportion
+                      > tetranucleotide_proportions.tsv
 
-In this example, for each contig in in.fasta.gz we return the proportion of each four base
-combination out of the total tetranucleotide occurences. --proportion overides the count
-output. 
+In this example, for each contig in in.fasta.gz we return the proportion of
+each four base combination out of the total tetranucleotide occurences.
+``--output-proportion`` overides the count output.
+
+Options
+-------
+Two options control the behaviour of fasta2kmercontent.py; ``--kmer-size`` and
+``--output-proportion``.
+
+``--kmer-size``::
+  The kmer length to count over in the input fasta file
+
+``--output-proportion``::
+  The output values are proportions rather than absolute counts
 
 
 Type::
@@ -77,14 +113,15 @@ def main(argv=None):
         argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser(version="%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+    parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
-    parser.add_option("-k", "--kmer", dest="kmer", type="int",
+    parser.add_option("-k", "--kmer-size", dest="kmer", type="int",
                       help="supply kmer length")
 
-    parser.add_option("-p", "--proportion", dest="proportion", action="store_true",
-                      help="output proportions - overides the default output")
+    parser.add_option(
+        "-p", "--output-proportion", dest="proportion", action="store_true",
+        help="output proportions - overides the default output")
 
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv)

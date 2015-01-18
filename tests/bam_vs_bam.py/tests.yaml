@@ -9,4 +9,4 @@ same:
     stdin: null
     outputs: [stdout]
     references: [same.tsv]
-    options: --regex-id=".*/(.*.bam)" <DIR>/small.bam <DIR>/small.bam 
+    options: --regex-identifier=".*/(.*.bam)" <DIR>/small.bam <DIR>/small.bam 

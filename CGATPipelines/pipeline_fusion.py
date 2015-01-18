@@ -368,7 +368,7 @@ def loadEdgeRResults(infile, outfile):
     tableName = P.toTable(outfile)
     statement = ''' python %(scriptsdir)s/csv2db.py
                             --table=%(tableName)s
-                            --index=id < infile
+                            --add-index=id < infile
                     >outfile '''
     P.run()
 

@@ -31,10 +31,7 @@ Command line options
 
 '''
 import sys
-import string
 import re
-import optparse
-import collections
 import bisect
 import os
 
@@ -583,7 +580,7 @@ def main(argv=None):
     parser = E.OptionParser(
         version="%prog version: $Id: annotator2tsv.py 2861 2010-02-23 17:36:32Z andreas $", usage=globals()["__doc__"])
 
-    parser.add_option("-g", "--filename-gtf", dest="filename_gtf", type="string",
+    parser.add_option("-g", "--gtf-file", dest="filename_gtf", type="string",
                       help="filename with gtf information. Used to map a segment to a gene name [default=%default].")
 
     parser.add_option("-q", "--query", dest="queries", type="string", action="append",
@@ -601,16 +598,16 @@ def main(argv=None):
                       choices=("annotator", "estimate", "annotator-estimate"),
                       help="use fdr method. Use annotator, estimate or use annotator and estimate if not enough samples [default=%default].")
 
-    parser.add_option("--fdr-qvalue", dest="fdr_qvalue", type="float",
+    parser.add_option("--fdr-threshold", dest="fdr_qvalue", type="float",
                       help="filter output by FDR qvalue (requires annotator output). [default=%default]")
 
-    parser.add_option("-w", "--workspace", dest="filename_workspace", type="string",
+    parser.add_option("-w", "--workspace-bed-file", dest="filename_workspace", type="string",
                       help="filename with workspace information [default=%default].")
 
     parser.add_option("-a", "--annotations", dest="filename_annotations", type="string",
                       help="filename with annotation information [default=%default].")
 
-    parser.add_option("--annotations-gtf", dest="filename_annotations_gtf", type="string",
+    parser.add_option("--annotations-gtf-file", dest="filename_annotations_gtf", type="string",
                       help="filename with annotation information [default=%default].")
 
     parser.add_option("-s", "--segments", dest="filename_segments", type="string",
@@ -619,7 +616,7 @@ def main(argv=None):
     parser.add_option("--segments-gtf", dest="filename_segments_gtf", type="string",
                       help="filename with segment information [default=%default].")
 
-    parser.add_option("--regex-id", dest="regex_id", type="string",
+    parser.add_option("--regex-identifier", dest="regex_id", type="string",
                       help="regular expression to extract id from filename [default=%default].")
 
     parser.set_defaults(

@@ -85,7 +85,7 @@ def main(argv=None):
                       help="input filename for distribution 1.")
     parser.add_option("-2", "--infile2", dest="filename_input2", type="string",
                       help="input filename for distribution 2.")
-    parser.add_option("--legend", dest="legend", type="string",
+    parser.add_option("--plot-legend", dest="legend", type="string",
                       help="legend for histograms.""")
     parser.add_option("-f", "--infile-map", dest="filename_input_map", type="string",
                       help="input filename for mapping categories to values.")
@@ -102,7 +102,7 @@ def main(argv=None):
                       help="""maximum_value for plot.""")
     parser.add_option("--skip-plot", dest="plot", action="store_false",
                       help="""skipping plotting.""")
-    parser.add_option("--header", dest="header", type="string",
+    parser.add_option("--header-names", dest="header", type="string",
                       help="""header of value column [default=%default].""")
     parser.add_option("--title", dest="title", type="string",
                       help="""plot title [default=%default].""")

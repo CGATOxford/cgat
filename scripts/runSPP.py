@@ -44,6 +44,12 @@ Usage
 Documentation
 -------------
 
+Requirements:
+
+* spp >= ?
+* snow >= 0.3.13
+* bedtools >= 2.21.0
+
 Code
 ----
 
@@ -156,7 +162,7 @@ def main(argv=None):
                       dest="fdr_threshold", type="float",
                       help="fdr threshold [default=%default].")
 
-    parser.add_option("-z", "--z-threshold", dest="z_threshold", type="float",
+    parser.add_option("-z", "--spp-z-threshold", dest="z_threshold", type="float",
                       help="z threshold [default=%default].")
 
     parser.add_option("--bin", dest="bin", type="int",
@@ -165,14 +171,14 @@ def main(argv=None):
                       " increasing bin size decreases the accuracy "
                       "of the determined parameters [default=%default]")
 
-    parser.add_option("--srange-min", dest="srange_min", type="float",
+    parser.add_option("--spp-srange-min", dest="srange_min", type="float",
                       help="srange gives the possible range for the "
                       " size of the protected region;"
                       " srange should be higher than tag length; "
                       " making the upper boundary too high"
                       " will increase calculation time [%default]")
 
-    parser.add_option("--srange-max", dest="srange_max", type="float",
+    parser.add_option("--spp-srange-max", dest="srange_max", type="float",
                       help="srange gives the possible range for the "
                       " size of the protected region;"
                       " srange should be higher than tag length; "

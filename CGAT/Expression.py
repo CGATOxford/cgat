@@ -51,6 +51,20 @@ Usage
 Documentation
 -------------
 
+Requirements:
+
+* DESeq >= 1.17
+* DESeq2 >= 1.5.62
+* edgeR >= 3.7.16
+* gplots >= 2.14.2
+* ggplot2 >= 1.0.0
+* reshape >= 0.8.5
+* RColorBrewer >= 1.0.5
+* grid >= 3.1.1
+* limma >= 3.21.18
+* samr >= 2.0 (optional)
+* siggenes >= 1.39.0 (optional)
+
 Code
 ----
 
@@ -64,9 +78,9 @@ import collections
 import itertools
 import re
 import pandas
+import ggplot
 
 from rpy2.robjects import r as R
-import rpy2.rinterface as rinterface
 import rpy2.robjects as ro
 import rpy2.robjects.numpy2ri
 
@@ -681,24 +695,48 @@ def plotPairs():
                log="xy")''')
 
 
-def plotPCA():
-    '''plot a PCA plot from countsTable.'''
+def plotPCA(groups=True):
+    '''plot a PCA plot from countsTable using ggplot.
 
+    If groups is *True*, the variable ``groups`` is
+    used for colouring. If *False*, the groups are 
+    determined by sample labels.
+    '''
     R('''suppressMessages(library(ggplot2))''')
     R('''pca = prcomp(t(countsTable))''')
+    # Build factor groups by splitting labels at "."
+    R('''colour=groups''')
+    R('''shape=0''')
+    R('''size=1''')
+    if groups is False:
+        R('''mm = matrix(
+        unlist(sapply(colnames(countsTable),strsplit,'[.]')),
+        nrow=length(colnames(countsTable)),
+        byrow=T)''')
+        nrows, nlevels = R('''dim(mm)''')
+        if nlevels > 1:
+            R('''colour=mm[,1]''')
+        if nlevels > 2:
+            R('''shape=mm[,2]''')
+
     R('''p1 = ggplot(
     as.data.frame(pca$x),
-    aes(x=PC1, y=PC2, colour=groups, label=rownames(pca$x))) \
+    aes(x=PC1, y=PC2,
+    colour=colour,
+    shape=shape,
+    label=rownames(pca$x))) \
     + geom_text(size=4, vjust=1) \
     + geom_point()''')
     R('''p2 = qplot(x=PC1, y=PC3,
     data = as.data.frame(pca$x),
     label=rownames(pca$x),
-    colour=groups)''')
+    shape=shape,
+    colour=colour)''')
     R('''p3 = qplot(x=PC2, y=PC3,
     data = as.data.frame(pca$x),
     label=rownames(pca$x),
-    colour=groups)''')
+    shape=shape,
+    colour=colour)''')
     # TODO: plot all in a multi-plot with proper scale
     # the following squishes the plots
     # R('''source('%s')''' %
@@ -834,9 +872,9 @@ def runEdgeR(outfile,
 
     # build design matrix
     if has_pairs:
-        R('''design = model.matrix( ~pairs + countsTable$samples$group )''')
+        R('''design = model.matrix(~pairs + countsTable$samples$group)''')
     else:
-        R('''design = model.matrix( ~countsTable$samples$group )''')
+        R('''design = model.matrix(~countsTable$samples$group)''')
 
     # R('''rownames(design) = rownames( countsTable$samples )''')
     # R('''colnames(design)[length(colnames(design))] = "CD4" ''' )
@@ -844,9 +882,9 @@ def runEdgeR(outfile,
     # fitting model to each tag
     if has_replicates:
         # estimate common dispersion
-        R('''countsTable = estimateGLMCommonDisp( countsTable, design )''')
+        R('''countsTable = estimateGLMCommonDisp(countsTable, design)''')
         # estimate tagwise dispersion
-        R('''countsTable = estimateGLMTagwiseDisp( countsTable, design )''')
+        R('''countsTable = estimateGLMTagwiseDisp(countsTable, design)''')
         # fitting model to each tag
         R('''fit = glmFit(countsTable, design)''')
     else:
@@ -1013,8 +1051,14 @@ def deseqPlotGeneHeatmap(outfile,
     if len(data) == 0:
         return
 
+    # do not print if not enough values in one
+    # direction (single row or column)
+    if min(data.shape) < 2:
+        return
+
     R.png(outfile, width=500, height=2000)
     hmcol = R.colorRampPalette(R['brewer.pal'](9, "GnBu"))(100)
+
     R['heatmap.2'](
         data,
         col=hmcol,
@@ -1237,8 +1281,8 @@ def runDESeq(outfile,
         E.info("no replicates - estimating variance with method='blind'")
         dispersion_method = "blind"
 
-    E.info("Dispersion method = %s, fit type =%s" %
-           (dispersion_method, fit_type))
+    E.info("dispersion_method=%s, fit_type=%s, sharing_mode=%s" %
+           (dispersion_method, fit_type, sharing_mode))
     R('''cds <- estimateDispersions( cds,
     method='%(dispersion_method)s',
     fitType='%(fit_type)s',
@@ -1253,6 +1297,11 @@ def runDESeq(outfile,
               outfile_prefix)
         R.plotDispEsts(cds)
         R['dev.off']()
+    elif not has_replicates:
+        # without replicates the following error appears
+        # in the rpy2.py2ri conversion:
+        #   'dims' cannot be of length 0
+        pass
     else:
         dispersions = R('''ls(cds@fitInfo)''')
         for dispersion in dispersions:
@@ -1397,21 +1446,29 @@ def runDESeq(outfile,
         R['dev.off']()
 
         # Plot diagnostic plots for FDR
-        R.png('''%(outfile_groups_prefix)sfdr.png''' % locals())
-        R('''orderInPlot = order(pvalues)''')
-        R('''showInPlot = (pvalues[orderInPlot] < 0.08)''')
-        # Jethro - previously plotting x = pvalues[orderInPlot][showInPlot]
-        # pvalues[orderInPlot][showInPlot] contains all NA values from pvalues
-        # which(showInPlot) doesn't... removing NA values
-        R('''true.pvalues <- pvalues[orderInPlot][showInPlot]''')
-        R('''true.pvalues <- true.pvalues[is.finite(true.pvalues)]''')
-        R('''plot( seq( along=which(showInPlot)),
-                   true.pvalues,
-                   pch='.',
-                   xlab=expression( rank(p[i]) ),
-                   ylab=expression( p[i] ) )''')
-        R('''abline( a=0,b=%(fdr)f/length(pvalues), col="red") ''' % locals())
-        R['dev.off']()
+        if has_replicates:
+            R.png('''%(outfile_groups_prefix)sfdr.png''' % locals())
+            R('''orderInPlot = order(pvalues)''')
+            R('''showInPlot = (pvalues[orderInPlot] < 0.08)''')
+            # Jethro - previously plotting x =
+            # pvalues[orderInPlot][showInPlot]
+            # pvalues[orderInPlot][showInPlot] contains all NA values
+            # from pvalues which(showInPlot) doesn't... removing NA
+            # values
+            R('''true.pvalues <- pvalues[orderInPlot][showInPlot]''')
+            R('''true.pvalues <- true.pvalues[is.finite(true.pvalues)]''')
+
+            # failure when no replicates:
+            # rpy2.rinterface.RRuntimeError:
+            # Error in plot.window(...) : need finite 'xlim' values
+            R('''plot( seq( along=which(showInPlot)),
+                       true.pvalues,
+                       pch='.',
+                       xlab=expression(rank(p[i])),
+                       ylab=expression(p[i]))''')
+            R('''abline(a=0, b=%(fdr)f / length(pvalues), col="red")''' %
+              locals())
+            R['dev.off']()
 
         # Add log2 fold with variance stabilized l2fold value
         R('''res$transformed_log2FoldChange = vsd_l2f''')
@@ -1492,15 +1549,21 @@ def plotTagStats(infile, design_file, outfile_prefix):
     R('''plot(pp)''')
     R['dev.off']()
 
-#########################################################################
-#########################################################################
-#########################################################################
 
-
-def plotDETagStats(infile, outfile_prefix):
+def plotDETagStats(infile, outfile_prefix,
+                   additional_file=None,
+                   join_columns=None,
+                   additional_columns=None):
     '''provide summary plots for tag data.
 
-    Stratify boxplots and densities according to differential expression calls.
+    Stratify boxplots and densities according to differential
+    expression calls.
+
+    The input file is the output of any of the DE
+    tools, see GeneExpressionResults for column names.
+
+    Additional file will be joined with infile and any additional
+    columns will be output as well.
     '''
 
     # import rpy2.robjects.lib.ggplot2 as ggplot2
@@ -1508,58 +1571,73 @@ def plotDETagStats(infile, outfile_prefix):
     R('''suppressMessages(library('ggplot2'))''')
     R('''suppressMessages(library('grid'))''')
 
-    # can't have rownames because if multi comparisons then will have
-    # replicated row names
-    R('''data = read.table( '%s', header = TRUE )''' % infile)
+    table = pandas.read_csv(IOTools.openFile(infile),
+                            sep="\t")
 
-    R(''' gp = ggplot(data)''')
-    R('''a = gp + \
-    geom_density(aes(x=log10(treatment_mean+1),group=factor(significant),
-    color='factor(significant)',fill='factor(significant)'),alpha=I(1/3))''')
+    if additional_file is not None:
+        additional_table = pandas.read_csv(
+            IOTools.openFile(additional_file),
+            sep="\t")
+        table = pandas.merge(table,
+                             additional_table,
+                             on=join_columns,
+                             how="left",
+                             sort=False)
 
-    R('''b = gp + \
-    geom_density(aes(x=log10(control_mean+1),group=factor(significant),
-    color=factor(significant),fill=factor(significant)),alpha=I(1/3))''')
+    # remove index. If it is numbered starting from 1, there is a bug
+    # in ggplot, see https://github.com/yhat/ggplot/pull/384
+    table.reset_index(inplace=True)
 
-    fn = outfile_prefix + ".densities.png"
-    R.png(fn)
-    try:
-        R('''grid.newpage()''')
-        R.pushViewport(R.viewport(layout=R('''grid.layout''')(2, 1)))
-        R('''print( a, vp = viewport( layout.pos.row = 1, layout.pos.col = 1 ) )''')
-        R('''print( b, vp = viewport( layout.pos.row = 2, layout.pos.col = 1 ) )''')
-    except rpy2.rinterface.RRuntimeError:
-        E.warn("could not create %s" % fn)
-    R['dev.off']()
+    # add log-transformed count data
+    table['log10_treatment_mean'] = numpy.log10(table['treatment_mean'] + 1)
+    table['log10_control_mean'] = numpy.log10(table['control_mean'] + 1)
+    table['dmr'] = numpy.array(["insignicant"] * len(table))
+    table.loc[
+        (table["l2fold"] > 0) & (table["significant"] == 1), "dmr"] = "up"
+    table.loc[
+        (table["l2fold"] < 0) & (table["significant"] == 1), "dmr"] = "down"
 
-    R('''grid.newpage()''')
-    R.pushViewport(R.viewport(layout=R('''grid.layout''')(2, 1)))
+    def _dplot(table, outfile, column):
 
-    R('''gp = ggplot(data)''')
-    R('''a = gp + \
-    geom_boxplot(aes(x=factor(significant),
-    y=log10(treatment_mean+1),
-    color=factor(significant),fill=factor(significant)),
-    size=0.3,
-    alpha=I(1/3))''')
+        plot = ggplot.ggplot(
+            ggplot.aes(column,
+                       colour='dmr',
+                       fill='dmr'),
+            data=table) + \
+            ggplot.geom_density(alpha=0.5)
 
-    R('''b = gp + \
-      geom_boxplot(aes(x=factor(significant),
-    y=log10(control_mean+1),
-    color=factor(significant),
-    fill=factor(significant)),
-    size=0.3,
-    alpha=I(1/3)) +\
-    theme(axis.text.x=element_text(angle=90, hjust=1, size=8))''')
+        ggplot.ggsave(filename=outfile, plot=plot)
 
-    fn = outfile_prefix + ".boxplots.png"
-    R.png(fn)
-    try:
-        R('''print(a, vp=viewport(layout.pos.row=1, layout.pos.col=1))''')
-        R('''print(b, vp=viewport(layout.pos.row=2, layout.pos.col=1))''')
-    except rpy2.rinterface.RRuntimeError:
-        E.warn("could not create %s" % fn)
-    R['dev.off']()
+    def _bplot(table, outfile, column):
+
+        plot = ggplot.ggplot(
+            ggplot.aes(x=column, y='dmr'),
+            data=table) + \
+            ggplot.geom_boxplot()
+
+        ggplot.ggsave(filename=outfile, plot=plot)
+
+    _dplot(table,
+           outfile_prefix + ".densities_tags_control.png",
+           "log10_control_mean")
+    _dplot(table,
+           outfile_prefix + ".densities_tags_treatment.png",
+           "log10_treatment_mean")
+    _bplot(table,
+           outfile_prefix + ".boxplot_tags_control.png",
+           "log10_control_mean")
+    _bplot(table,
+           outfile_prefix + ".boxplot_tags_treatment.png",
+           "log10_treatment_mean")
+
+    for column in additional_columns:
+        _dplot(table,
+               outfile_prefix + ".densities_%s.png" % column,
+               column)
+        _bplot(table,
+               outfile_prefix + ".boxplot_%s.png" % column,
+               column)
+    return
 
 
 def parseCuffdiff(infile):
@@ -1662,10 +1740,10 @@ def loadCuffdiff(infile, outfile):
 
         statement = '''cat %(tmpname)s
         | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --allow-empty
-              --index=treatment_name
-              --index=control_name
-              --index=test_id
+              --allow-empty-file
+              --add-index=treatment_name
+              --add-index=control_name
+              --add-index=test_id
               --table=%(tablename)s
          >> %(outfile)s.log
          '''
@@ -1681,8 +1759,8 @@ def loadCuffdiff(infile, outfile):
 
         statement = '''zcat %(indir)s/%(fn)s
         | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --allow-empty
-              --index=tracking_id
+              --allow-empty-file
+              --add-index=tracking_id
               --table=%(tablename)s
          >> %(outfile)s.log
          '''
@@ -1782,8 +1860,8 @@ def loadCuffdiff(infile, outfile):
         statement = ("cat %(tmpf)s |"
                      " python %(scriptsdir)s/csv2db.py "
                      "  %(csv2db_options)s"
-                     "  --allow-empty"
-                     "  --index=gene_id"
+                     "  --allow-empty-file"
+                     "  --add-index=gene_id"
                      "  --table=%(tablename)s"
                      " >> %(outfile)s.log")
         P.run()
@@ -1834,7 +1912,7 @@ def runCuffdiff(bamfiles,
     except OSError:
         pass
 
-    job_options = "-pe dedicated %i -R y" % threads
+    job_threads = threads
 
     # replicates are separated by ","
     reps = collections.defaultdict(list)
@@ -2067,7 +2145,7 @@ def outputTagSummary(filename_tags,
     outfilename = output_filename_pattern + "pca.svg"
     E.info("outputting PCA plot to %s" % outfilename)
     R.svg(outfilename)
-    plotPCA()
+    plotPCA(groups=False)
     R['dev.off']()
 
     # output an MDS plot
@@ -2098,10 +2176,6 @@ def dumpTagData(filename_tags, filename_design, outfile):
                       file='%(outfilename)s',
                       sep='\t',
                       quote=FALSE)''' % locals())
-
-#########################################################################
-#########################################################################
-#########################################################################
 
 
 def loadTagDataPandas(tags_filename, design_filename):
@@ -2356,7 +2430,6 @@ def outputSpikeIns(filename_tags,
                 continue
 
             output_counts[coord] += 1
-
             outf_info.write("spike%i\t%f\t%f\n" % (interval_id,
                                                    l10average[idx],
                                                    l2fold[idx]))

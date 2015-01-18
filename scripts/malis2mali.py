@@ -86,13 +86,13 @@ def main(argv=None):
 
     Malis.addOptions(parser)
 
-    parser.add_option("--filename-coordinates",
+    parser.add_option("--coordinates-tsv-file",
                       dest="filename_coordinates",
                       type="string",
                       help="filename of coordinates that constitute "
                       "the multiple alignment.")
 
-    parser.add_option("--filename-identifiers",
+    parser.add_option("--identifiers-tsv-file",
                       dest="filename_identifiers",
                       type="string",
                       help="filename with list of identifiers to use.")

@@ -1299,7 +1299,7 @@ if __name__ == "__main__":
                       help="page title.")
     parser.add_option("-f", "--footer", dest="footer", type="string",
                       help="page footer.")
-    parser.add_option("-s", "--filename-tree", dest="filename_tree", type="string",
+    parser.add_option("-s", "--tree-nh-file", dest="filename_tree", type="string",
                       help="filename with tree.")
     parser.add_option("-t", "--tree", dest="tree", type="string",
                       help="tree.")

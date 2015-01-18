@@ -61,20 +61,27 @@ def main(argv=None):
         argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser(version="%prog version: $Id: index2gff.py 2880 2010-04-07 08:44:13Z andreas $",
+    parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
-    parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
-                      help="filename with genome [default=%default].")
+    parser.add_option(
+        "-g", "--genome-file", dest="genome_file", type="string",
+        help="filename with genome [default=%default].")
 
-    parser.add_option("--remove-regex", dest="remove_regex", type="string",
-                      help="regular expression of contigs to remove [default=None].")
+    parser.add_option(
+        "--remove-regex", dest="remove_regex",
+        type="string",
+        help="regular expression of contigs to remove [default=None].")
 
-    parser.add_option("-e", "--gff-file", dest="gff_file", type="string",
-                      help="gff file to use for getting contig sizes.")
+    parser.add_option(
+        "-e", "--gff-file", dest="gff_file", type="string",
+        help="gff file to use for getting contig sizes.")
 
-    parser.add_option("-f", "--fixed-width-windows=", dest="fixed_width_windows", type="string",
-                      help="fixed width windows. Supply the window size as a parameter. Optionally supply an offset.")
+    parser.add_option(
+        "-f", "--fixed-width-windows",
+        dest="fixed_width_windows", type="string",
+        help="fixed width windows. Supply the window size as a "
+        "parameter. Optionally supply an offset.")
 
     parser.set_defaults(
         genome_file=None,

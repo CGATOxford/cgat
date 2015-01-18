@@ -1,10 +1,10 @@
 ##########################################################################
 #
-#   MRC FGU Computational Genomics Group
+#   MRC FGU Computational Genomics Analysis & Training Programme
 #
 #   $Id$
 #
-#   Copyright (C) 2009 Tildon Grant Belgard
+#   Copyright (C) 2014 David Sims
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License
@@ -40,17 +40,7 @@ fastq and performs basic quality control steps:
 
 For further details see http://www.bioinformatics.bbsrc.ac.uk/projects/fastqc/
 
-Additionaly, optional bias analysis can be included through the configuration
-file. This analysis is designed to help identify sequence contexts which bias
-gene expression and asssess the consistency in the biases between samples.
 
-Bias analysis utilises Sailfish to estimate transcript abundance. This
-requires a multi-fasta transcripts file.
-
-For further details see http://www.cs.cmu.edu/~ckingsf/software/sailfish/
-
-
-Individual tasks are enabled in the configuration file.
 
 Usage
 =====
@@ -94,26 +84,8 @@ fastq.1.gz, fastq2.2.gz
    Quality scores need to be of the same scale for all input files.
    Thus it might be difficult to mix different formats.
 
-Requirements
-------------
-
-On top of the default CGAT setup, the pipeline requires the following software
-to be in the path:
-
-+--------------------+-------------------+----------------------------------+
-|*Program*           |*Version*          |*Purpose*                         |
-+--------------------+-------------------+----------------------------------+
-|fastqc              |>=0.9.0            |read quality control              |
-+--------------------+-------------------+----------------------------------+
-|sra-tools           |                   |extracting reads from .sra files  |
-+--------------------+-------------------+----------------------------------+
-|picard              |>=1.38             |bam/sam files. The .jar files need|
-|                    |                   |to be in your                     |
-|                    |                   | CLASSPATH environment variable.  |
-+--------------------+-------------------+----------------------------------+
-
 Pipeline output
-===============
+----------------
 
 The major output is a set of HTML pages and plots reporting on the quality of
 the sequence archive
@@ -130,17 +102,26 @@ To run the example, simply unpack and untar::
    cd pipeline_readqc
    python <srcdir>/pipeline_readqc.py make full
 
+Requirements
+==============
++--------------------+---------------+---------------------------------+
+|*Program*           |*Version*      |*Purpose*                        |
++--------------------+---------------+---------------------------------+
+|fastqc              |?              |read qc                          |
++--------------------+---------------+---------------------------------+
+|sickle              |1.33           |Read trimming by quality score   |
++--------------------+---------------+---------------------------------+
 
 Code
 ====
 
 """
 
-###################################################
-###################################################
-###################################################
+#########################################################################
+#########################################################################
+#########################################################################
 # load modules
-###################################################
+
 
 # import ruffus
 from ruffus import *
@@ -148,45 +129,72 @@ from ruffus import *
 # import useful standard python modules
 import sys
 import os
-import re
 import glob
-import cStringIO
-import numpy
-import pandas
-from pandas import DataFrame
-from scipy.stats import linregress
 
+# import modules from the CGAT code collection
 import CGAT.Experiment as E
-import CGAT.IOTools as IOTools
 import CGATPipelines.PipelineMapping as PipelineMapping
+import CGATPipelines.PipelineTracks as PipelineTracks
 import CGAT.Pipeline as P
-import CGAT.CSV2DB as CSV2DB
+import CGATPipelines.PipelineReadqc as PipelineReadqc
+import CGATPipelines.PipelinePreprocess as PipelinePreprocess
 
-###################################################
-###################################################
-###################################################
-# Pipeline configuration
-###################################################
-
+#########################################################################
+#########################################################################
+#########################################################################
 # load options from the config file
+
 P.getParameters(
     ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
      "../pipeline.ini",
      "pipeline.ini"])
 PARAMS = P.PARAMS
 
-# Include optional bias analysis for RNA-Seq
-BIAS_ANALYSIS = P.isTrue("bias_analysis")
 #########################################################################
 #########################################################################
 #########################################################################
-# define input files
+# define input files and preprocessing steps
+
+
 INPUT_FORMATS = ("*.fastq.1.gz", "*.fastq.gz", "*.sra", "*.csfasta.gz")
 REGEX_FORMATS = regex(r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz)")
+SEQUENCEFILES_REGEX = regex(
+    r"(\S+).(?P<suffix>fastq.1.gz|fastq.gz|sra|csfasta.gz)")
+
+#########################################################################
+# Get TRACKS grouped on either Sample3 or Sample4 track ids
+
+Sample = PipelineTracks.AutoSample
+TRACKS = PipelineTracks.Tracks(Sample).loadFromDirectory(
+    files=glob.glob("./*fastq.1.gz")
+    + glob.glob("./*fastq.gz")
+    + glob.glob("./*sra")
+    + glob.glob("./*csfasta.gz"),
+    pattern="(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz)")
+if TRACKS:
+    if len(TRACKS.getTracks()[0].asList()) == 4:
+        EXPERIMENTS = PipelineTracks.Aggregate(TRACKS, labels=("attribute0",
+                                                               "attribute1",
+                                                               "attribute2"))
+        TISSUES = PipelineTracks.Aggregate(TRACKS, labels=("attribute1",))
+        CONDITIONS = PipelineTracks.Aggregate(TRACKS, labels=("attribute2",))
+        
+    elif len(TRACKS.getTracks()[0].asList()) == 3:
+        EXPERIMENTS = PipelineTracks.Aggregate(TRACKS, labels=("attribute0",
+                                                               "attribute1"))
+        TISSUES = PipelineTracks.Aggregate(TRACKS, labels=("attribute0",))
+        CONDITIONS = PipelineTracks.Aggregate(TRACKS, labels=("attribute1",))
+    else:
+        raise ValueError("Unrecognised PipelineTracks.AutoSample instance")
+else:
+    TISSUES = []
+    CONDITIONS = []
+    EXPERIMENTS = []
 
 #########################################################################
 #########################################################################
 #########################################################################
+# Run Fastqc on each input file
 
 
 @follows(mkdir(PARAMS["exportdir"]), mkdir(os.path.join(PARAMS["exportdir"],
@@ -197,335 +205,161 @@ REGEX_FORMATS = regex(r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz)")
 def runFastqc(infiles, outfile):
     '''convert sra files to fastq and check mapping qualities are in solexa format.
     Perform quality control checks on reads from .fastq files.'''
-    to_cluster = True
     m = PipelineMapping.FastQc(nogroup=PARAMS["readqc_no_group"],
-                               outdir=PARAMS["exportdir"]+"/fastqc")
+                               outdir=PARAMS["exportdir"] + "/fastqc")
     statement = m.build((infiles,), outfile)
     P.run()
 
 #########################################################################
-#########################################################################
-#########################################################################
-##
-#########################################################################
-
-
-def FastqcSectionIterator(infile):
-    data = []
-    for line in infile:
-        if line.startswith(">>END_MODULE"):
-            yield name, status, header, data
-        elif line.startswith(">>"):
-            name, status = line[2:-1].split("\t")
-            data = []
-        elif line.startswith("#"):
-            header = "\t".join([x for x in line[1:-1].split("\t") if x != ""])
-        else:
-            data.append(
-                "\t".join([x for x in line[:-1].split("\t") if x != ""]))
+# parse results files and load into database
 
 
 @jobs_limit(1, "db")
 @transform(runFastqc, suffix(".fastqc"), "_fastqc.load")
 def loadFastqc(infile, outfile):
     '''load FASTQC stats.'''
-
     track = P.snip(infile, ".fastqc")
-
     filename = os.path.join(
         PARAMS["exportdir"], "fastqc", track + "*_fastqc", "fastqc_data.txt")
-
-    for fn in glob.glob(filename):
-        prefix = os.path.basename(os.path.dirname(fn))
-        results = []
-
-        for name, status, header, data in FastqcSectionIterator(
-                IOTools.openFile(fn)):
-            # do not collect basic stats, see loadFastQCSummary
-            if name == "Basic Statistics":
-                continue
-
-            parser = CSV2DB.buildParser()
-            (options, args) = parser.parse_args([])
-            options.tablename = prefix + "_" + re.sub(" ", "_", name)
-            options.allow_empty = True
-
-            inf = cStringIO.StringIO("\n".join([header] + data) + "\n")
-            CSV2DB.run(inf, options)
-            results.append((name, status))
-
-        # load status table
-        parser = CSV2DB.buildParser()
-        (options, args) = parser.parse_args([])
-        options.tablename = prefix + "_status"
-        options.allow_empty = True
-
-        inf = cStringIO.StringIO(
-            "\n".join(["name\tstatus"] +
-                      ["\t".join(x) for x in results]) + "\n")
-        CSV2DB.run(inf, options)
-
+    PipelineReadqc.loadFastqc(filename)
     P.touch(outfile)
 
-
-def collectFastQCSections(infiles, section):
-    '''iterate over all fastqc files and extract a particular section.'''
-    results = []
-
-    for infile in infiles:
-
-        track = P.snip(infile, ".fastqc")
-
-        filename = os.path.join(
-            PARAMS["exportdir"], "fastqc", track + "*_fastqc",
-            "fastqc_data.txt")
-
-        for fn in glob.glob(filename):
-            prefix = os.path.basename(os.path.dirname(fn))
-            for name, status, header, data in FastqcSectionIterator(
-                    IOTools.openFile(fn)):
-                if name == section:
-                    results.append((track, status, header, data))
-
-    return results
+#########################################################################
+# if preprocess tools are specified, process reads and run fastqc on output
 
 
-@merge(runFastqc, "status_summary.tsv.gz")
+if PARAMS["preprocessors"]:
+    PREPROCESSTOOLS = [tool for tool
+                       in P.asList(PARAMS["preprocessors"])]
+    preprocess_prefix = ("-".join(PREPROCESSTOOLS[::-1]) + "-")
+
+    @follows(mkdir("processed.dir"),
+             mkdir("log.dir"),
+             mkdir("summary.dir"))
+    @transform(INPUT_FORMATS,
+               SEQUENCEFILES_REGEX,
+               r"processed.dir/%s\1.\g<suffix>" % preprocess_prefix)
+    def processReads(infile, outfile):
+        '''process reads from .fastq files
+        .sra/csfasta not currently implemented
+        Tasks specified in PREPROCESSTOOLS are run in order
+        '''
+        trimmomatic_options = PARAMS["trimmomatic_options"]
+        if PARAMS["trimmomatic_adapter"]:
+            adapter_options = " ILLUMINACLIP:%s:%s:%s:%s " % (
+                PARAMS["trimmomatic_adapter"], PARAMS["trimmomatic_mismatches"],
+                PARAMS["trimmomatic_p_thresh"], PARAMS["trimmomatic_c_thresh"])
+            trimmomatic_options = adapter_options + trimmomatic_options
+
+        job_threads = PARAMS["threads"]
+        job_options = "-l mem_free=%s" % PARAMS["general_memory"]
+
+        m = PipelinePreprocess.MasterProcessor(
+            save=PARAMS["save"], summarise=PARAMS["summarise"],
+            threads=PARAMS["threads"], scriptsdir=PARAMS["scriptsdir"],
+            trimgalore_options=PARAMS["trimgalore_options"],
+            trimmomatic_options=PARAMS["trimmomatic_options"],
+            sickle_options=PARAMS["sickle_options"],
+            flash_options=PARAMS["flash_options"],
+            fastx_trimmer_options=PARAMS["fastx_trimmer_options"])
+
+        statement = m.build((infile,), outfile, PREPROCESSTOOLS)
+        P.run()
+
+    @follows(runFastqc)
+    @transform(processReads,
+               REGEX_FORMATS,
+               r"\1.fastqc")
+    def runFastqcFinal(infiles, outfile):
+        '''Perform quality control checks on final processed reads'''
+        m = PipelineMapping.FastQc(nogroup=PARAMS["readqc_no_group"],
+                                   outdir=PARAMS["exportdir"]+"/fastqc")
+        statement = m.build((infiles,), outfile)
+        P.run()
+
+else:
+    def processReads():
+        pass
+
+    def runFastqcFinal():
+        pass
+
+
+#########################################################################
+
+
+#@merge(runFastqc, "status_summary.tsv.gz")
+@merge((runFastqcFinal, runFastqc), "status_summary.tsv.gz")
 def buildFastQCSummaryStatus(infiles, outfile):
     '''load fastqc status summaries into a single table.'''
+    exportdir = os.path.join(PARAMS["exportdir"], "fastqc")
+    PipelineReadqc.buildFastQCSummaryStatus(infiles, outfile, exportdir)
 
-    outf = IOTools.openFile(outfile, "w")
-    first = True
-    for infile in infiles:
-        track = P.snip(infile, ".fastqc")
-        filename = os.path.join(
-            PARAMS["exportdir"], "fastqc", track + "*_fastqc",
-            "fastqc_data.txt")
-
-        for fn in glob.glob(filename):
-            prefix = os.path.basename(os.path.dirname(fn))
-            results = []
-
-            names, stats = [], []
-            for name, status, header, data in FastqcSectionIterator(
-                    IOTools.openFile(fn)):
-                stats.append(status)
-                names.append(name)
-
-            if first:
-                outf.write("track\tfilename\t%s\n" % "\t".join(names))
-                first = False
-
-            outf.write("%s\t%s\t%s\n" %
-                       (track, os.path.dirname(fn), "\t".join(stats)))
-    outf.close()
+#########################################################################
 
 
-@merge(runFastqc, "basic_statistics_summary.tsv.gz")
+@merge((runFastqcFinal, runFastqc), "basic_statistics_summary.tsv.gz")
 def buildFastQCSummaryBasicStatistics(infiles, outfile):
     '''load fastqc summaries into a single table.'''
+    exportdir = os.path.join(PARAMS["exportdir"], "fastqc")
+    PipelineReadqc.buildFastQCSummaryBasicStatistics(infiles, outfile,
+                                                     exportdir)
 
-    data = collectFastQCSections(infiles, "Basic Statistics")
+#########################################################################
 
-    outf = IOTools.openFile(outfile, "w")
-    first = True
-    for track, status, header, rows in data:
-        rows = [x.split("\t") for x in rows]
-        if first:
-            headers = [row[0] for row in rows]
-            outf.write("track\t%s\n" % "\t".join(headers))
-            first = False
-        outf.write("%s\t%s\n" % (track, "\t".join([row[1] for row in rows])))
-    outf.close()
+
+regex_exp = "|".join([x.__str__()[:-len("-agg")] for x in EXPERIMENTS])
+
+
+@follows(mkdir("experiment.dir"))
+@collate(runFastqc,
+         regex("(" + regex_exp + ").+"),
+         r"experiment.dir/\1_per_sequence_quality.tsv")
+def buildExperimentLevelReadQuality(infiles, outfile):
+    """
+    Collate per sequence read qualities for all samples in EXPERIMENT
+    """
+    exportdir = os.path.join(PARAMS["exportdir"], "fastqc")
+    PipelineReadqc.buildExperimentReadQuality(infiles, outfile, exportdir)
+
+
+@collate(buildExperimentLevelReadQuality,
+         regex("(.+)/(.+)_per_sequence_quality.tsv"),
+         r"\1/experiment_per_sequence_quality.tsv")
+def combineExperimentLevelReadQualities(infiles, outfile):
+    """
+    Combine summaries of read quality for different experiments
+    """
+    infiles = " ".join(infiles)
+    statement = ("python %(scriptsdir)s/combine_tables.py"
+                 "  --log=%(outfile)s.log"
+                 "  --regex-filename='.+/(.+)_per_sequence_quality.tsv'"
+                 " %(infiles)s"
+                 " > %(outfile)s")
+    P.run()
+
+
+@transform(combineExperimentLevelReadQualities,
+           regex(".+/(.+).tsv"),
+           r"\1.load")
+def loadExperimentLevelReadQualities(infile, outfile):
+    P.load(infile, outfile)
 
 
 @transform((buildFastQCSummaryStatus, buildFastQCSummaryBasicStatistics),
            suffix(".tsv.gz"), ".load")
 def loadFastqcSummary(infile, outfile):
-    P.load(infile, outfile, options="--index=track")
-
-####################################################
-# bias analysis
-####################################################
-if BIAS_ANALYSIS:
-
-    if PARAMS["sailfish_transcripts"].endswith(".gz"):
-        zipped = True
-
-    @transform(PARAMS["sailfish_transcripts"],
-               regex("(\S+)"),
-               "index/transcriptome.sfi")
-    def indexForSailfish(infile, outfile):
-        '''create a sailfish index'''
-
-        outdir = P.snip(outfile, "/transcriptome.sfi")
-        kmer = int(PARAMS["sailfish_kmer_size"])
-        tmp = P.getTempFilename()
-
-        if zipped:
-            statement = '''gunzip -c %(infile)s > %(tmp)s;
-                           checkpoint; sailfish index -t %(tmp)s'''
-        else:
-            statement = '''sailfish index -t %(infile)s'''
-
-        statement += ''' -k %(kmer)i -o %(outdir)s;
-                        checkpoint; rm -f %(tmp)s'''
-
-        P.run()
-
-    @follows(indexForSailfish, mkdir("quantification"))
-    @transform(INPUT_FORMATS,
-               REGEX_FORMATS,
-               add_inputs(indexForSailfish),
-               r"quantification/\1/\1_quant.sf")
-    def runSailfish(infiles, outfile):
-        '''quantify abundance'''
-
-        job_options = "-pe dedicated %i -R y" % PARAMS["sailfish_threads"]
-
-        infile, index = infiles
-        index = P.snip(index, "/transcriptome.sfi")
-
-        sample = P.snip(os.path.basename(outfile), "_quant.sf")
-        outdir = "quantification/%(sample)s" % locals()
-
-        m = PipelineMapping.Sailfish(strand=PARAMS["sailfish_strandedness"],
-                                     orient=PARAMS["sailfish_orientation"],
-                                     threads=PARAMS["sailfish_threads"])
-
-        statement = m.build((infile,), outfile)
-
-        P.run()
-
-    @follows(runSailfish)
-    @merge(runSailfish,
-           "quantification/summary.tsv.gz")
-    def mergeSailfishResults(infiles, outfile):
-
-        statement = '''python %(scriptsdir)s/combine_tables.py
-                  --glob quantification/*/*quant.sf --columns 1 --take 7
-                  --use-file-prefix -v 0| gzip > %(outfile)s'''
-        P.run()
-
-    @active_if(BIAS_ANALYSIS)
-    @transform(PARAMS["sailfish_transcripts"],
-               regex("(\S+)"),
-               "transcripts_attributes.tsv.gz")
-    # take multifasta transcripts file and output file of attributes
-    def characteriseTranscripts(infile, outfile):
-
-        if zipped:
-            statement = '''zcat %(infile)s'''
-        else:
-            statement = '''cat %(infile)s'''
-        statement += '''
-        | python %(scriptsdir)s/fasta2table.py
-        --split-fasta-identifier --section=dn -v 0
-        | gzip > %(outfile)s'''
-
-        P.run()
-
-    # where should this code be moved to?
-    @follows(characteriseTranscripts)
-    @transform(characteriseTranscripts,
-               regex("transcripts_attributes.tsv.gz"),
-               add_inputs(mergeSailfishResults),
-               ["quantification/binned_means_correlation.tsv",
-                "quantification/binned_means_gradients.tsv"])
-    def summariseBias(infiles, outfiles):
-
-        transcripts, expression = infiles
-        out_correlation, out_gradient = outfiles
-
-        atr = pandas.read_csv(transcripts, sep='\t', compression="gzip")
-        exp = pandas.read_csv(expression, sep='\t', compression="gzip")
-        atr["length"] = numpy.log2(atr["length"])
-
-        log_exp = numpy.log2(exp.ix[:, 1:]+0.1)
-        log_exp["id"] = exp[["Transcript"]]
-
-        bias_factors = list(atr.columns[1:])
-        samples = list(exp.columns[1:])
-
-        merged = atr.merge(log_exp, left_index="id", right_index="id")
-
-        def lin_reg_grad(x, y):
-            slope, intercept, r, p, stderr = linregress(x, y)
-            return slope
-
-        def aggregate_by_factor(df, attribute, sample_names, bins, function):
-
-            temp_dict = dict.fromkeys(sample_names, function)
-            temp_dict[attribute] = function
-
-            means_df = merged.groupby(pandas.qcut(df.ix[:, attribute], bins))
-            means_df = means_df.agg(temp_dict).sort(axis=1)
-
-            corr_matrix = means_df.corr(method='pearson')
-            corr_matrix = corr_matrix[corr_matrix.index != attribute]
-
-            factor_gradients = []
-            for sample in samples:
-                factor_gradients.append(lin_reg_grad(y=means_df[sample],
-                                                     x=means_df[factor]))
-
-            return means_df, corr_matrix, factor_gradients
-
-        corr_matrices = {}
-        gradient_lists = {}
-
-        for factor in bias_factors:
-            means_binned, corr_matrix, gradients = aggregate_by_factor(
-                merged, factor, samples, PARAMS["bias_bin"], numpy.mean)
-            outfile_means = "%s%s%s" % ("quantification/means_binned_",
-                                        factor, ".tsv")
-            means_binned.to_csv(outfile_means, sep="\t",
-                                index=False, float_format='%.4f')
-
-            corr_matrices[factor] = list(corr_matrix[factor])
-            gradient_lists[factor] = gradients
-
-        corr_matrix_df = DataFrame.from_dict(corr_matrices,
-                                             orient='columns', dtype=None)
-        corr_matrix_df["sample"] = sorted(samples)
-
-        gradient_df = DataFrame.from_dict(gradient_lists,
-                                          orient='columns', dtype=None)
-        gradient_df["sample"] = sorted(samples)
-
-        corr_matrix_df.to_csv(out_correlation, sep="\t",
-                              index=False, float_format='%.6f')
-
-        gradient_df.to_csv(out_gradient, sep="\t",
-                           index=False, float_format='%.6f')
-
-    @follows(summariseBias)
-    @transform(summariseBias,
-               regex("quantification/(\S+).tsv"),
-               r"quantification/\1.load")
-    def loadBiasSummary(infiles, outfiles):
-        for file in glob.glob("quantification/*.tsv"):
-            P.load(file, P.snip(file, ".tsv")+".load")
-
-else:
-    @follows(loadFastqc)
-    def loadBiasSummary():
-        pass
-
-#########################################################################
+    P.load(infile, outfile, options="--add-index=track")
 
 
-@follows(loadFastqc, loadFastqcSummary, loadBiasSummary)
+@follows(loadFastqc, loadFastqcSummary, runFastqcFinal)
 def full():
     pass
 
 
-@follows(loadBiasSummary)
-def bias():
+@follows(buildFastQCSummaryBasicStatistics)
+def test():
     pass
-
-
-#########################################################################
 
 
 @follows()

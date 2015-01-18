@@ -124,7 +124,7 @@ def main(argv=None):
     parser.add_option("-p", "--output-filename-pattern", dest="output_filename_pattern", type="string",
                       help="pattern for output filenames. Should contain a %(id)i. If not given, the output is to stdout with --separator [default=%default].")
 
-    parser.add_option("-n", "--samples", dest="samples", type="int",
+    parser.add_option("-n", "--sample-size", dest="samples", type="int",
                       help="number of samples.")
 
     parser.add_option("-r", "--no-replacement", dest="no_replacement", type="int",

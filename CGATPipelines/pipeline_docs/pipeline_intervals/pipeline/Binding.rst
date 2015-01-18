@@ -5,9 +5,9 @@ Binding patterns
 ================
 
 This section provides an overview of where intervals are located with
-respect to binding sites. The plots below count the number of genes
-with at least one binding event in any of the various regions (cds,
-utr, etc) that constitute a gene. Note that regions have very
+respect to protein coding genes. The plots below count the number of
+genes with at least one binding event in any of the various regions
+(cds, utr, etc) that constitute a gene. Note that regions have very
 different sizes which distorts these plots somewhat.
 
 .. report:: Binding.BindingSummary
@@ -80,7 +80,6 @@ or presence of an interval within a certain region:
 
 .. report:: Binding.BindingPatterns
    :render: matrix-plot
-   :transform: tolabels
    :transform-matrix: normalized-row-total
    :force:
    :tf-labels: pattern
@@ -93,7 +92,6 @@ or presence of an interval within a certain region:
 
 .. report:: Binding.BindingPatterns
    :render: matrix
-   :transform: tolabels
    :force:
    :tf-labels: pattern
    :max-rows: 0

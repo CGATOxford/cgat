@@ -718,7 +718,7 @@ def main(argv=sys.argv):
     parser = E.OptionParser(
         version="%prog version: $Id: annotator_distance.py 2861 2010-02-23 17:36:32Z andreas $", usage=globals()["__doc__"])
 
-    parser.add_option("-a", "--filename-annotations", dest="filename_annotations", type="string",
+    parser.add_option("-a", "--annotations-tsv-file", dest="filename_annotations", type="string",
                       help="filename mapping gene ids to annotations (a tab-separated table with two-columns) [default=%default].")
 
     parser.add_option("-r", "--resolution", dest="resolution", type="int",
@@ -730,7 +730,7 @@ def main(argv=sys.argv):
     parser.add_option("-i", "--num-samples", dest="num_samples", type="int",
                       help="sample size to compute [default=%default].")
 
-    parser.add_option("-w", "--workspace", dest="filename_workspace", type="string",
+    parser.add_option("-w", "--workspace-bed-file", dest="filename_workspace", type="string",
                       help="filename with workspace information [default=%default].")
 
     parser.add_option("--workspace-builder", dest="workspace_builder", type="choice",
@@ -838,7 +838,7 @@ def main(argv=sys.argv):
 
     if options.workspace_labels == "annotation" and not options.filename_annotations:
         raise ValueError(
-            "please specify --filename-annotations is --workspace-labels=annotations.")
+            "please specify --annotations-tsv-file is --workspace-labels=annotations.")
 
     ###########################################
     # read data

@@ -17,11 +17,11 @@ for the ReadQC Pipeline is below:
    pipeline/Summary.rst
    pipeline/FastQC.rst
    pipeline/BaseQuality.rst
+   pipeline/ExperimentQuality.rst
    pipeline/PerBaseNContent.rst
    pipeline/SequenceDuplicationLevels.rst
    pipeline/Filtering.rst
    pipeline/SequenceLength.rst
-   pipeline/BiasAnalysis.rst
    python/Trackers.rst
 
 .. automodule:: pipeline_readqc

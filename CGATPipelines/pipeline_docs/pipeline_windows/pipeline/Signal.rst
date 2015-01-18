@@ -4,7 +4,7 @@ Signal/Noise ratio
 
 This section examines the signal/noise ratio in the data set.
 
-.. _SNRatioMedian:
+.. _snratiomedian:
 
 S/N Ratio based on median
 =========================
@@ -12,10 +12,10 @@ S/N Ratio based on median
 The following plots take a subset of genomic windows for estimating
 the signal/noise ratio.
 
-To create the plots, the read count in each window is divided by the median read
-count across all windows. The idea is to observe a subset of windows
-that have read-counts that are much higher than the median. It is
-helpful to compare these data with input tracks.
+To create the plots, the read count in each window is divided by the
+median read count across all windows. The idea is to observe a subset
+of windows that have read-counts that are much higher than the
+median. It is helpful to compare these data with input tracks.
 
 The assumption in these plots is that less than half the windows are
 enriched for signal and thus the median reflects the number of reads
@@ -48,7 +48,7 @@ The same as violin plots:
    Violin-plot of read counts in windows
    normalized by median read count within a sample
 
-.. _SNRatioInput:
+.. _snratioinput:
 
 S/N Ratio based on input
 =========================

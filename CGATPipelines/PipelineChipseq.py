@@ -1,65 +1,31 @@
 '''
 PipelineChipseq.py - ChIP-Seq tasks associated with intervals.
 ==============================================================
+
+.. note::
+
+   This module is obsolete, see PipelinePeakcalling.py instead
+
 '''
 
-import sys
-import tempfile
-import optparse
 import shutil
-import itertools
-import csv
-import math
 import random
 import re
 import glob
 import os
-import shutil
 import collections
 import sqlite3
-import cStringIO
-
+import pysam
+import numpy
 import CGAT.Experiment as E
 import CGAT.Pipeline as P
-
-import csv
-import CGAT.IndexedFasta as IndexedFasta
 import CGAT.IndexedGenome as IndexedGenome
-import CGAT.FastaIterator as FastaIterator
-import CGAT.Genomics as Genomics
 import CGAT.IOTools as IOTools
-import CGAT.GTF as GTF
 import CGAT.Bed as Bed
 import CGAT.WrapperMACS as WrapperMACS
 import CGAT.WrapperZinba as WrapperZinba
 
 import CGATPipelines.PipelineMapping as PipelineMapping
-import pysam
-import numpy
-import gzip
-import fileinput
-
-###################################################
-###################################################
-###################################################
-# Pipeline configuration
-###################################################
-P.getParameters(
-    ["%s.ini" % __file__[:-len(".py")],
-     "../pipeline.ini",
-     "pipeline.ini"])
-
-PARAMS = P.PARAMS
-
-if os.path.exists("pipeline_conf.py"):
-    E.info("reading additional configuration from pipeline_conf.py")
-    execfile("pipeline_conf.py")
-
-############################################################
-############################################################
-############################################################
-##
-############################################################
 
 
 def getPeakShiftFromMacs(infile):
@@ -83,12 +49,6 @@ def getPeakShiftFromMacs(infile):
                 break
 
     return shift
-
-############################################################
-############################################################
-############################################################
-##
-############################################################
 
 
 def getPeakShiftFromZinba(infile):
@@ -1064,9 +1024,9 @@ def loadMACS(infile, outfile, bamfile, tablename=None):
     if tablename is None:
         tablename = "%s_macs_intervals" % track
     statement = '''python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
-                       --allow-empty
-                       --index=interval_id 
-                       --index=contig,start
+                       --allow-empty-file
+                       --add-index=interval_id 
+                       --add-index=contig,start
                        --table=%(tablename)s 
                    < %(tmpfilename)s > %(outfile)s '''
     P.run()
@@ -1108,7 +1068,7 @@ def runMACS(infile, outfile, controlfile=None):
     -t %(infile)s 
     %(control)s 
     --diag 
-    --name=%(outfile)s 
+    --set-name=%(outfile)s 
     --format=BAM
     %(macs_options)s 
     >& %(outfile)s
@@ -1133,95 +1093,6 @@ def runMACS(infile, outfile, controlfile=None):
                        rm -f %(outfile)s_%(suffix)s
                     '''
         P.run()
-
-############################################################
-############################################################
-############################################################
-
-
-def getCounts(contig, start, end, samfiles, offsets=[]):
-    '''count reads per position.
-
-    If offsets are given, shift tags by offset / 2 and extend
-    by offset / 2.
-    '''
-    assert len(offsets) == 0 or len(samfiles) == len(offsets)
-
-    length = end - start
-    counts = numpy.zeros(length)
-
-    nreads = 0
-
-    if offsets:
-        # if offsets are given, shift tags.
-        for samfile, offset in zip(samfiles, offsets):
-
-            shift = offset / 2
-            # for peak counting I follow the MACS protocoll,
-            # see the function def __tags_call_peak in PeakDetect.py
-            # In words
-            # Only take the start of reads (taking into account the strand)
-            # add d/2=offset to each side of peak and start accumulate counts.
-            # for counting, extend reads by offset
-            # on + strand shift tags upstream
-            # i.e. look at the downstream window
-            xstart, xend = max(0, start - shift), max(0, end + shift)
-
-            for read in samfile.fetch(contig, xstart, xend):
-                # some unmapped reads might have a position
-                if read.is_unmapped:
-                    continue
-                if read.is_reverse:
-                    # offset = 2 * shift
-                    rstart = read.pos + read.alen - offset
-                else:
-                    rstart = read.pos + shift
-
-                rend = rstart + shift
-                rstart = max(0, rstart - start)
-                rend = min(length, rend - start)
-                counts[rstart:rend] += 1
-
-    else:
-        for samfile in samfiles:
-            for read in samfile.fetch(contig, start, end):
-                nreads += 1
-                rstart = max(0, read.pos - start)
-                rend = min(length, read.pos - start + read.rlen)
-                counts[rstart:rend] += 1
-    return nreads, counts
-
-############################################################
-############################################################
-############################################################
-
-
-def countPeaks(contig, start, end, samfiles, offsets=None):
-    '''update peak values within interval contig:start-end.
-
-    If offsets is given, tags are moved by the offset
-    before summarizing.
-    '''
-
-    nreads, counts = getCounts(contig, start, end, samfiles, offsets)
-
-    length = end - start
-    nprobes = nreads
-    avgval = numpy.mean(counts)
-    peakval = max(counts)
-
-    # set other peak parameters
-    peaks = numpy.array(range(0, length))[counts >= peakval]
-    npeaks = len(peaks)
-    # peakcenter is median coordinate between peaks
-    # such that it is a valid peak in the middle
-    peakcenter = start + peaks[npeaks // 2]
-
-    return npeaks, peakcenter, length, avgval, peakval, nreads
-
-############################################################
-############################################################
-############################################################
 
 
 def runZinba(infile, outfile, controlfile, action="full"):
@@ -1264,8 +1135,8 @@ def runZinba(infile, outfile, controlfile, action="full"):
            --fragment-size=%(zinba_fragment_size)s
            --threads=%(zinba_threads)i
            --bit-file=%(bit_file)s
-           --mappability-dir=%(mappability_dir)s
-           --improvement=%(zinba_improvement)f
+           --zinba-mappability-dir=%(mappability_dir)s
+           --zinba-improvement=%(zinba_improvement)f
            --action=%(action)s
            %(zinba_options)s
            %(options)s
@@ -1420,9 +1291,9 @@ def loadZinba(infile, outfile, bamfile,
 
     statement = '''
     python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
-              --allow-empty
-              --index=interval_id 
-              --index=contig,start
+              --allow-empty-file
+              --add-index=interval_id 
+              --add-index=contig,start
               --table=%(tablename)s 
     < %(tmpfilename)s 
     > %(outfile)s
@@ -1636,8 +1507,8 @@ def loadIntervalsFromBed(bedfile, track, outfile,
 
     statement = '''
     python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --allow-empty
-              --index=interval_id 
+              --allow-empty-file
+              --add-index=interval_id 
               --table=%(tablename)s
     < %(tmpfilename)s 
     > %(outfile)s

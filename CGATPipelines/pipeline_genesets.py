@@ -258,7 +258,7 @@ def loadGeneListMatrix(infile, outfile):
            r"pathways_\1.load")
 def loadPathways(infile, outfile):
     '''load pathway information into database.'''
-    P.load(infile, outfile, "--index=gene_id --index=go_id")
+    P.load(infile, outfile, "--add-index=gene_id --add-index=go_id")
 
 
 @follows(mkdir('hypergeometric.dir'))
@@ -343,7 +343,7 @@ def loadHypergeometricAnalysis(infile, outfile):
         P.load(fn,
                outfile,
                tablename='hypergeometric_%s_%s_l2fold' % (track, ontology),
-               options='--allow-empty')
+               options='--allow-empty-file')
 
         fn = os.path.join(
             infile + ".dir", "all_alldesc.%s.l10pvalue" % ontology)
@@ -351,7 +351,7 @@ def loadHypergeometricAnalysis(infile, outfile):
         P.load(fn,
                outfile,
                tablename='hypergeometric_%s_%s_l10pvalue' % (track, ontology),
-               options='--allow-empty')
+               options='--allow-empty-file')
 
         fn = os.path.join(
             infile + ".dir", "all_alldesc.%s.l10qvalue" % ontology)
@@ -359,7 +359,7 @@ def loadHypergeometricAnalysis(infile, outfile):
         P.load(fn,
                outfile,
                tablename='hypergeometric_%s_%s_l10qvalue' % (track, ontology),
-               options='--allow-empty')
+               options='--allow-empty-file')
 
 
 @merge(runHypergeometricAnalysis,
@@ -383,12 +383,12 @@ def plotGOResults(infiles, outfile):
     statement = '''
     cat %(infiles)s
     | python %(scriptsdir)s/revigo.py
-      --filename-go=%(annotations_filename_go)s
+      --go-tsv-file=%(annotations_filename_go)s
       --output-filename-pattern=%(track)s.%%s
       --ontology=all
       --max-similarity=0.5
       --reverse-palette
-      --force
+      --force-output
       -v 2
     > %(outfile)s
     '''

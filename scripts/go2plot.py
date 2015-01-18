@@ -318,7 +318,7 @@ def main(argv=None):
     parser = E.OptionParser(
         version="%prog version: $Id: go2plot.py 2782 2009-09-10 11:40:29Z andreas $")
 
-    parser.add_option("-e", "--headers", dest="headers", action="store_true",
+    parser.add_option("-e", "--header-names", dest="headers", action="store_true",
                       help="first row is a header [ignored].")
     parser.add_option("-t", "--title", dest="title", type="string",
                       help="page title.")

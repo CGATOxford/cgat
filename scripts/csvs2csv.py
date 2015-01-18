@@ -37,13 +37,9 @@ import sys
 import re
 import string
 import os
-import time
 import glob
-import optparse
 
 import CGAT.Experiment as E
-
-# ------------------------------------------------------------------------
 
 
 def main(argv=None):
@@ -56,44 +52,60 @@ def main(argv=None):
         argv = sys.argv
 
     parser = E.OptionParser(
-        version="%prog version: $Id: combine_tables.py 2782 2009-09-10 11:40:29Z andreas $", usage=globals()["__doc__"])
+        version="%prog version: $Id$",
+        usage=globals()["__doc__"])
 
-    parser.add_option("-t", "--no-titles", dest="titles", action="store_false",
-                      help="no titles in input.")
+    parser.add_option(
+        "-t", "--no-titles", dest="titles", action="store_false",
+        help="no titles in input.")
 
-    parser.add_option("-i", "--skip-titles", dest="skip_titles", action="store_true",
-                      help="skip output of titles.")
+    parser.add_option(
+        "-i", "--skip-titles", dest="skip_titles", action="store_true",
+        help="skip output of titles.")
 
-    parser.add_option("-m", "--missing", dest="missing_value", type="string",
-                      help="entry to use for missing values.")
+    parser.add_option(
+        "-m", "--missing-value", dest="missing_value", type="string",
+        help="entry to use for missing values.")
 
-    parser.add_option("--headers", dest="headers", type="string",
+    parser.add_option("--header-names", dest="headers", type="string",
                       help="add headers for files.")
 
-    parser.add_option("-c", "--columns", dest="columns", type="string",
-                      help="columns to use for joining. Multiple columns can be specified as a comma-separated list [default=%default].")
+    parser.add_option(
+        "-c", "--columns", dest="columns", type="string",
+        help="columns to use for joining. Multiple columns can be specified "
+        "as a comma-separated list [default=%default].")
 
-    parser.add_option("-g", "--glob", dest="glob", type="string",
-                      help="wildcard expression for table names.")
+    parser.add_option(
+        "-g", "--glob", dest="glob", type="string",
+        help="wildcard expression for table names.")
 
-    parser.add_option("-s", "--sort", dest="sort", type="string",
-                      help="sort by column titles alphabetical|numeric|list of columns.")
+    parser.add_option(
+        "-s", "--sort-order", dest="sort", type="string",
+        help="sort by column titles alphabetical|numeric|list of columns.")
 
-    parser.add_option("-e", "--merge", dest="merge", action="store_true",
-                      help="simply merge tables without matching up rows. [default=%default].")
+    parser.add_option(
+        "-e", "--merge-overlapping", dest="merge", action="store_true",
+        help="simply merge tables without matching up rows. "
+        "[default=%default].")
 
-    parser.add_option("--sort-keys", dest="sort_keys", type="choice",
-                      choices=("numeric", "alphabetic"),
-                      help="sort key columns by value.")
+    parser.add_option(
+        "--sort-keys", dest="sort_keys", type="choice",
+        choices=("numeric", "alphabetic"),
+        help="sort key columns by value.")
 
-    parser.add_option("--keep-empty", dest="ignore_empty", action="store_false",
-                      help="keep empty tables. The default is to ignore them.")
+    parser.add_option(
+        "--keep-empty", dest="ignore_empty", action="store_false",
+        help="keep empty tables. The default is to ignore them.")
 
-    parser.add_option("--add-file-prefix", dest="add_file_prefix", action="store_true",
-                      help="add file prefix to columns headers in multi-column tables [default=%default]")
+    parser.add_option(
+        "--add-file-prefix", dest="add_file_prefix", action="store_true",
+        help="add file prefix to columns headers in multi-column tables "
+        "[default=%default]")
 
-    parser.add_option("--regex-filename", dest="regex_filename", type="string",
-                      help="pattern to apply to filename to build prefix [default=%default]")
+    parser.add_option(
+        "--regex-filename", dest="regex_filename", type="string",
+        help="pattern to apply to filename to build prefix "
+        "[default=%default]")
 
     parser.set_defaults(
         titles=True,

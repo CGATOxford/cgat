@@ -43,6 +43,8 @@ import imp
 
 import CGAT.Experiment as E
 
+BASE_URL = "https://www.cgat.org/downloads/public/cgat/documentation/"
+
 # handle to original E.Start function
 ORIGINAL_START = None
 
@@ -208,8 +210,7 @@ def processScript(script_name, outfile, options):
         BREAK_FORMATS[output_format] += 1
         output_format = nodename
 
-    url = "http://www.cgat.org/~andreas/documentation/cgat/" \
-          "scripts/%s.html" % basename
+    url = BASE_URL + "scripts/%s.html" % basename
 
     # Note that URL needs to be uppercase!
     if input_format in PRINCIPAL_FORMATS and \
@@ -231,7 +232,7 @@ def processScript(script_name, outfile, options):
 
     # @prefix clp: <http://www.humgen.nl/climate/ontologies/clp#> .
     # @prefix co: <http://www.isi.edu/ikcap/Wingse/componentOntology.owl#> .
-    #@prefix dcterms: <http://purl.org/dc/terms/> .
+    # @prefix dcterms: <http://purl.org/dc/terms/> .
 
     defaults = PARSER.get_default_values()
 
@@ -342,7 +343,7 @@ def main(argv=None):
                       help="regular expression to extract script name "
                       "[%default]. ")
 
-    parser.add_option("-p", "--output-pattern", dest="output_pattern",
+    parser.add_option("-p", "--output-filename-pattern", dest="output_pattern",
                       type="string",
                       help="pattern to build output filename. Should contain "
                       "an '%s' [%default]. ")
@@ -369,7 +370,7 @@ def main(argv=None):
 
     if options.output_pattern and not options.input_regex:
         raise ValueError(
-            "please specify --input-regex when using --output-pattern")
+            "please specify --input-regex when using --output-filename-pattern")
 
     outfile = options.stdout
     outfile.write("""digraph CGAT {

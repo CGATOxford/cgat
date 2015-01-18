@@ -1,5 +1,4 @@
-'''
-index_fasta.py - Index fasta formatted files 
+'''index_fasta.py - Index fasta formatted files 
 ============================================
 
 :Author: Andreas Heger
@@ -10,36 +9,54 @@ index_fasta.py - Index fasta formatted files
 Purpose
 -------
 
-This script indexes one or more :term:`fasta` formatted files into a 
+This script indexes one or more :term:`fasta` formatted files into a
 database that can be used by other scripts in the CGAT code collection
-and :mod:`IndexedFasta` for quick acces to sequence fragments.
+and :mod:`IndexedFasta` for quick access to a particular part of a sequence.
+This is very useful for large genomic sequences.
 
-By default, the database is itself a :term:`fasta` formatted file in which
-all line breaks and other white space characters have been removed.
-Compression methods are available to conserve disk space, though they do 
-come at a performance penalty.
+By default, the database is itself a :term:`fasta` formatted file in
+which all line breaks and other white space characters have been
+removed.  Compression methods are available to conserve disk space,
+though they do come at a performance penalty.
 
-See also http://pypi.python.org/pypi/pyfasta for another implementation. 
-Samtools provides similar functionality with the ``samtools faidx`` command.
+The script implements several indexing and compression methods.  The
+default method uses no compression and builds a simple random access
+index based on a table of absolute file positions.  The sequence is
+stored in a plain fasta file with one line per sequence allowing to
+extract a sequence segment by direct file positioning.
+
+Alternatively, the sequence can be block-compressed using different
+compression methods (gzip, lzo, bzip). These are mostly for research
+purposes.
+
+See also http://pypi.python.org/pypi/pyfasta for another
+implementation.  Samtools provides similar functionality with the
+``samtools faidx`` command and block compression has been implemented
+in the `bgzip http://samtools.sourceforge.net/tabix.shtml>`_ tool.
+
+The script permits supplying synonyms to the database index. For
+example, setting ``--synonyms=chrM=chrMT`` will ensure that the
+mitochondrial genome sequence is returned both for the keys ``chrM``
+and ``chrMT``.
 
 Examples
 --------
 
-Index a collection of fasta files::
+Index a collection of fasta files in a compressed archive::
 
-  python index_fasta.py oa_ornAna1_softmasked ornAna1.fa.gz > oa_ornAna1_softmasked.log
+   python index_fasta.py oa_ornAna1_softmasked ornAna1.fa.gz > oa_ornAna1_softmasked.log
 
 To retrieve a segment::
 
-  python index_fasta.py --extract=chr5:1000:2000 oa_ornAna1_softmasked 
+   python index_fasta.py --extract=chr5:1000:2000 oa_ornAna1_softmasked
 
-Indexing from a tar file:
+Indexing from a tar file is possible::
 
-  python index_fasta.py oa_ornAna1_softmasked ornAna1.tar.gz > oa_ornAna1_softmasked.log
+   python index_fasta.py oa_ornAna1_softmasked ornAna1.tar.gz > oa_ornAna1_softmasked.log
 
-Indexing from stdin:
+Indexing from stdin requires to use the ``-`` place-holder::
 
-  zcat ornAna1.fa.gz | python index_fasta.py oa_ornAna1_softmasked - > oa_ornAna1_softmasked.log
+   zcat ornAna1.fa.gz | python index_fasta.py oa_ornAna1_softmasked - > oa_ornAna1_softmasked.log
 
 Usage
 -----
@@ -47,19 +64,18 @@ Usage
 Type::
 
    cgat index_genome DATABASE [SOURCE...|-] [OPTIONS]
-   cgat index_genome DATABASE [SOURCE...|-] --compression=COMPRESSION --random-access-points=RAP
+   cgat index_genome DATABASE [SOURCE...|-] --compression=COMPRESSION --random-access-points=100000
 
 To create indexed DATABASE from SOURCE. Supply - as SOURCE to read from stdin.
 If the output is to be compressed, a spacing for the random access points must
-be supplied through RAP.
+be supplied.
 
 Type::
 
-   cgat index_genome DATABASE --extract=CONTIG:STRAND]:START:END
+   cgat index_genome DATABASE --extract=CONTIG:[STRAND]:START:END
 
-To extract the bases on the STRAND strand, between START to END from entry CONTIG,
-from DATABASE.
-
+To extract the bases on the STRAND strand, between START to END from
+entry CONTIG, from DATABASE.
 
 Command line options
 --------------------
@@ -78,61 +94,59 @@ def main(argv=None):
     parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
-    parser.add_option("-e", "--extract", dest="extract", type="string",
-                      help="extract region for testing purposes. Format is "
-                      "contig:strand:from:to. "
-                      "The default coordinates are 0-based "
-                      "open/closed coordinates on both strands. "
-                      "For example, chr1:+:10:12 will return "
-                      "bases 11 to 12 on chr1.")
-
-    compression_choices = ("lzo", "zlib", "gzip", "dictzip", "bzip2", "debug")
-    parser.add_option("-c", "--compression", dest="compression", type="choice",
-                      choices=compression_choices,
-                      help="compress database, using specied compression. "
-                      "Valid choices are %s. "
-                      "[default=%%default]." % ", ".join(compression_choices))
-
-    parser.add_option("--random-access-points", dest="random_access_points",
-                      type="int",
-                      help="save random access points every # number "
-                      "of nucleotides [default=%default].")
+    parser.add_option(
+        "-e", "--extract", dest="extract", type="string",
+        help="extract region for testing purposes. Format is "
+        "contig:strand:from:to. "
+        "The default coordinates are 0-based "
+        "open/closed coordinates on both strands, but can be changed "
+        "by --input-format. "
+        "For example, 'chr1:+:10:12' will return "
+        "bases 11 and 12 on chr1. Elements from the end of the "
+        "string can be omitted. For example, 'chr1' will return "
+        "all of chromosome 'chr1'.")
 
     input_format_choices = ("one-forward-open", "zero-both-open")
     parser.add_option("-i", "--input-format", dest="input_format",
                       type="choice",
                       choices=input_format_choices,
                       help="coordinate format of input. Valid choices are "
-                      "%s [default=%%default]." %
+                      "%s. See --extract. [default=%%default]." %
                       ", ".join(input_format_choices))
 
-    parser.add_option("-s", "--synonyms", dest="synonyms", type="string",
-                      help="list of synonyms, comma separated with =, "
-                      "for example, chr1=chr1b [default=%default]")
+    parser.add_option(
+        "-s", "--synonyms", dest="synonyms", type="string",
+        help="list of synonyms. This is a comma separated with list "
+        "of equivalence relations. For example, chrM=chrMT "
+        "means that chrMT will refer to chrM and either "
+        "can be used to retrieve a sequence "
+        "[default=%default]")
 
-    parser.add_option("-b", "--benchmark", dest="benchmark",
-                      action="store_true",
-                      help="benchmark time for read access "
-                      "[default=%default].")
+    group = E.OptionGroup(parser, "Bencharking options")
+    group.add_option("-b", "--benchmark", dest="benchmark",
+                     action="store_true",
+                     help="benchmark time for read access "
+                     "[default=%default].")
+    group.add_option("--benchmark-num-iterations",
+                     dest="benchmark_num_iterations",
+                     type="int",
+                     help="number of iterations for benchmark "
+                     "[default=%default].")
+    group.add_option("--benchmark-fragment-size",
+                     dest="benchmark_fragment_size",
+                     type="int",
+                     help="benchmark: fragment size [default=%default].")
+    parser.add_option_group(group)
 
-    parser.add_option("--benchmark-num-iterations",
-                      dest="benchmark_num_iterations",
-                      type="int",
-                      help="number of iterations for benchmark "
-                      "[default=%default].")
+    group = E.OptionGroup(parser, "Validation options")
+    group.add_option("--verify", dest="verify", type="string",
+                     help="verify against other database [default=%default].")
 
-    parser.add_option("--benchmark-fragment-size",
-                      dest="benchmark_fragment_size",
-                      type="int",
-                      help="benchmark: fragment size [default=%default].")
-
-    parser.add_option("--verify", dest="verify", type="string",
-                      help="verify against other database [default=%default].")
-
-    parser.add_option("--verify-iterations", dest="verify_num_iterations",
-                      type="int",
-                      help="number of iterations for verification "
-                      "[default=%default].")
+    group.add_option("--verify-iterations", dest="verify_num_iterations",
+                     type="int",
+                     help="number of iterations for verification "
+                     "[default=%default].")
+    parser.add_option_group(group)
 
     file_format_choices = ("fasta", "auto", "fasta.gz", "tar", "tar.gz")
     parser.add_option("--file-format", dest="file_format", type="choice",
@@ -159,11 +173,7 @@ def main(argv=None):
                       "identifier from fasta description line "
                       "[default=%default].")
 
-    parser.add_option("--compress-index", dest="compress_index",
-                      action="store_true",
-                      help="compress index [default=%default].")
-
-    parser.add_option("--force", dest="force", action="store_true",
+    parser.add_option("--force-output", dest="force", action="store_true",
                       help="force overwriting of existing files "
                       "[default=%default].")
 
@@ -173,6 +183,30 @@ def main(argv=None):
                       help="translate numerical quality scores. "
                       "Valid choices are %s [default=%%default]." %
                       ", ".join(translator_choices))
+
+    group = E.OptionGroup(parser, 'Compression options')
+    compression_choices = ("lzo", "zlib", "gzip", "dictzip", "bzip2", "debug")
+    group.add_option("-c", "--compression", dest="compression", type="choice",
+                     choices=compression_choices,
+                     help="compress database, using specified compression "
+                     "method. "
+                     "Valid choices are %s, but depend on availability on the "
+                     "system "
+                     "[default=%%default]." % ", ".join(compression_choices))
+
+    group.add_option("--random-access-points", dest="random_access_points",
+                     type="int",
+                     help="set random access points every # number "
+                     "of nucleotides for block compression schemes "
+                     "[default=%default].")
+
+    group.add_option(
+        "--compress-index", dest="compress_index",
+        action="store_true",
+        help="compress index. The default is to use a plain-text, "
+        "human-readable index [default=%default].")
+
+    parser.add_option_group(group)
 
     parser.set_defaults(
         extract=None,
@@ -236,14 +270,16 @@ def main(argv=None):
     elif options.benchmark:
         import timeit
         timer = timeit.Timer(
-            stmt="IndexedFasta.benchmarkRandomFragment( fasta = fasta, size = %i)" % (
-                options.benchmark_fragment_size),
-            setup="""from __main__ import IndexedFasta\nfasta=IndexedFasta.IndexedFasta( "%s" )""" % (args[0] ) )
+            stmt="IndexedFasta.benchmarkRandomFragment(fasta=fasta, size=%i)" %
+            (options.benchmark_fragment_size),
+            setup="from __main__ import IndexedFasta\n"
+            "fasta=IndexedFasta.IndexedFasta('%s')" % (args[0]))
 
         t = timer.timeit(number=options.benchmark_num_iterations)
         options.stdout.write("iter\tsize\ttime\n")
         options.stdout.write("%i\t%i\t%i\n" % (
-            options.benchmark_num_iterations, options.benchmark_fragment_size, t))
+            options.benchmark_num_iterations,
+            options.benchmark_fragment_size, t))
 
     elif options.verify:
         fasta1 = IndexedFasta.IndexedFasta(args[0])

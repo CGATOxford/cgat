@@ -16,13 +16,13 @@ itself or makes use of faster solutions if possible. The script
 requires the executables :file:`wigToBigWig` and :file:`bedToBigBed`
 to be in the user's PATH.
 
-If no --shift or --extend option are given, the coverage is computed
+If no --shift-size or --extend option are given, the coverage is computed
 directly on reads.  Counting can be performed at a certain resolution.
 
 The counting currently is not aware of spliced reads, i.e., an
 inserted intron will be included in the coverage.
 
-If --shift or --extend are given, the coverage is computed by shifting
+If --shift-size or --extend are given, the coverage is computed by shifting
 read alignment positions upstream for positive strand reads or
 downstream for negative strand reads and extend them by a fixed
 amount.
@@ -35,7 +35,9 @@ Usage
 
 Type::
 
-   python bam2wiggle.py --output-format=bigwig --output-filename=out.bigwig in.bam
+   cgat bam2wiggle \
+          --output-format=bigwig \
+          --output-filename-pattern=out.bigwig in.bam
 
 to convert the :term:`bam` file file:`in.bam` to :term:`bigwig` format
 and save the result in :file:`out.bigwig`.
@@ -171,11 +173,7 @@ def main(argv=None):
                           "bigwig", "bed"),
                       help="output format [default=%default]")
 
-    parser.add_option("-b", "--output-filename",
-                      dest="output_filename", type="string",
-                      help="filename for output [default=%default]")
-
-    parser.add_option("-s", "--shift", dest="shift", type="int",
+    parser.add_option("-s", "--shift-size", dest="shift", type="int",
                       help="shift reads by a certain amount (ChIP-Seq) "
                       "[%default]")
 
@@ -183,14 +181,28 @@ def main(argv=None):
                       help="extend reads by a certain amount "
                       "(ChIP-Seq) [%default]")
 
-    parser.add_option("-p", "--span", dest="span", type="int",
+    parser.add_option("-p", "--wiggle-span", dest="span", type="int",
                       help="span of a window in wiggle tracks "
                       "[%default]")
 
     parser.add_option("-m", "--merge-pairs", dest="merge_pairs",
                       action="store_true",
                       help="merge paired-ended reads into a single "
-                      "bed interval [default=%default]. ")
+                      "bed interval [default=%default].")
+
+    parser.add_option("--scale-base", dest="scale_base", type="float",
+                      help="number of reads/pairs to scale bigwig file to. "
+                      "The default is to scale to 1M reads "
+                      "[default=%default]")
+
+    parser.add_option("--scale-method", dest="scale_method", type="choice",
+                      choices=("none", "reads",),
+                      help="scale bigwig output. 'reads' will normalize by "
+                      "the total number reads in the bam file that are used "
+                      "to construct the bigwig file. If --merge-pairs is used "
+                      "the number of pairs output will be used for "
+                      "normalization. 'none' will not scale the bigwig file"
+                      "[default=%default]")
 
     parser.add_option("--max-insert-size", dest="max_insert_size",
                       type="int",
@@ -207,21 +219,23 @@ def main(argv=None):
     parser.set_defaults(
         samfile=None,
         output_format="wiggle",
-        output_filename=None,
         shift=0,
         extend=0,
         span=1,
         merge_pairs=None,
         min_insert_size=0,
         max_insert_size=0,
+        scale_method='none',
+        scale_base=1000000,
     )
 
     # add common options (-h/--help, ...) and parse command line
-    (options, args) = E.Start(parser, argv=argv)
+    (options, args) = E.Start(parser, argv=argv, add_output_options=True)
+
     if len(args) >= 1:
         options.samfile = args[0]
     if len(args) == 2:
-        options.output_filename = args[1]
+        options.output_filename_pattern = args[1]
     if not options.samfile:
         raise ValueError("please provide a bam file")
 
@@ -237,7 +251,7 @@ def main(argv=None):
     # Create dictionary of contig sizes
     contig_sizes = dict(zip(samfile.references, samfile.lengths))
     # write contig sizes
-    outfile_size = open(tmpfile_sizes, "w")
+    outfile_size = IOTools.openFile(tmpfile_sizes, "w")
     for contig, size in contig_sizes.items():
         outfile_size.write("%s\t%s\n" % (contig, size))
     outfile_size.close()
@@ -250,7 +264,7 @@ def main(argv=None):
 
     # Output filename required for bigwig / bigbed computation
     if options.output_format == "bigwig":
-        if not options.output_filename:
+        if not options.output_filename_pattern:
             raise ValueError(
                 "please specify an output file for bigwig computation.")
 
@@ -293,11 +307,11 @@ def main(argv=None):
     ninput, nskipped, ncontigs = 0, 0, 0
 
     # set output file name
-    output_filename = options.output_filename
-    if output_filename:
-        output_filename = os.path.abspath(output_filename)
+    output_filename_pattern = options.output_filename_pattern
+    if output_filename_pattern:
+        output_filename = os.path.abspath(output_filename_pattern)
 
-    # shift and extend or merge pairs. Output temp bed file
+    # shift and extend or merge pairs. Output temporay bed file
     if options.shift > 0 or options.extend > 0 or options.merge_pairs:
         # Workflow 1: convert to bed intervals and use bedtools
         # genomecov to build a coverage file.
@@ -316,6 +330,7 @@ def main(argv=None):
             # create bed file with shifted/extended tags
             shift, extend = options.shift, options.extend
             shift_extend = shift + extend
+            counter = E.Counter()
 
             for contig in samfile.references:
                 E.debug("output for %s" % contig)
@@ -334,14 +349,26 @@ def main(argv=None):
 
                     end = min(lcontig, start + extend)
                     outfile.write("%s\t%i\t%i\n" % (contig, start, end))
+                    counter.output += 1
 
         outfile.close()
+
+        if options.scale_method == "reads":
+            scale_factor = float(options.scale_base) / counter.output
+
+            E.info("scaling: method=%s scale_quantity=%i scale_factor=%f" %
+                   (options.scale_method,
+                    counter.output,
+                    scale_factor))
+            scale = "-scale %f" % scale_factor
+        else:
+            scale = ""
 
         # Convert bed file to coverage file (bedgraph)
         tmpfile_bed = os.path.join(tmpdir, "bed")
         E.info("computing coverage")
         # calculate coverage - format is bedgraph
-        statement = """bedtools genomecov -bg -i %(tmpfile_wig)s
+        statement = """bedtools genomecov -bg -i %(tmpfile_wig)s %(scale)s
         -g %(tmpfile_sizes)s > %(tmpfile_bed)s""" % locals()
         E.run(statement)
 
@@ -350,10 +377,11 @@ def main(argv=None):
         tmpfile_sorted = os.path.join(tmpdir, "sorted")
         statement = ("sort -k 1,1 -k2,2n %(tmpfile_bed)s > %(tmpfile_sorted)s;"
                      "bedGraphToBigWig %(tmpfile_sorted)s %(tmpfile_sizes)s "
-                     "%(output_filename)s" % locals())
+                     "%(output_filename_pattern)s" % locals())
         E.run(statement)
 
     else:
+
         # Workflow 2: use pysam column iterator to build a
         # wig file. Then convert to bigwig of bedgraph file
         # with UCSC tools.
@@ -370,6 +398,10 @@ def main(argv=None):
                     n = t.n
                 end = t.pos
             yield start, end, n
+
+        if options.scale_method != "none":
+            raise NotImplementedError(
+                "scaling not implemented for pileup method")
 
         # Bedgraph track definition
         if options.output_format == "bedgraph":
@@ -416,17 +448,18 @@ def main(argv=None):
 
             E.info("starting %s conversion" % executable)
             try:
-                retcode = subprocess.call(" ".join((executable,
-                                                    tmpfile_wig,
-                                                    tmpfile_sizes,
-                                                    output_filename)),
-                                          shell=True)
+                retcode = subprocess.call(
+                    " ".join((executable,
+                              tmpfile_wig,
+                              tmpfile_sizes,
+                              output_filename_pattern)),
+                    shell=True)
                 if retcode != 0:
                     E.warn("%s terminated with signal: %i" %
                            (executable, -retcode))
                     return -retcode
             except OSError, msg:
-                E.warn("Error while executing bigwig: %s" % e)
+                E.warn("Error while executing bigwig: %s" % msg)
                 return 1
             E.info("finished bigwig conversion")
 

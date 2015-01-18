@@ -432,7 +432,7 @@ def main(argv=None):
     parser.add_option("-m", "--genome-master", dest="genome_master", type="string",
                       help="genome to use as master.")
 
-    parser.add_option("-s", "--filename-synonyms", dest="filename_synonyms", type="string",
+    parser.add_option("-s", "--synonyms-tsv-file", dest="filename_synonyms", type="string",
                       help="output filename for synonyms.")
 
     parser.add_option("-u", "--filename-summary", dest="filename_summary", type="string",

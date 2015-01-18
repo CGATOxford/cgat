@@ -10,21 +10,54 @@ Purpose
 -------
 
 This script manipulates multiple fastq files and outputs
-new fastq files. The script implements various method
-according to the ``--method`` option.
+new fastq files. Currently only the method ``reconcile``
+is implemented.
 
 reconcile
 +++++++++
 
-Reconcile reads from a pair of fastq files
+Reconcile reads from a pair of fastq files.
 
-This method takes two fastq files and outputs two fastq files. The aim
-of the script is to reconcile reads from a pair of fastq files. For example,
-if reads from each file are independently filtered based on quality scores,
-the read representation will vary across files. This script will output reads
-that are common to both files.
+This method takes two fastq files and outputs two fastq files such that
+all reads in the output are present in both output files.
+
+The typical use case is that two fastq files containing the first and
+second part of a read pair have been independently filtered, for example
+by quality scores, truncation, etc. As a consequence some reads might be
+missing from one file but not the other. The reconcile method will output
+two files containing only reads that are common to both files.
 
 The two files must be sorted by read identifier.
+
+Example input, read2 and read3 are only present in either of the files:
+
+   # File1        # File 2
+
+   @read1         @read1
+   AAA            AAA
+   +              +
+   !!!            !!!
+   @read2         @read3
+   CCC            TTT
+   +              +
+   !!!            !!!
+   @read4         @read4
+   GGG            GGG
+   +              +
+   !!!            !!!
+
+Example output, only the reads common to both files are output::
+
+   # File1        # File 2
+
+   @read1         @read1
+   AAA            AAA
+   +              +
+   !!!            !!!
+   @read4         @read4
+   GGG            GGG
+   +              +
+   !!!            !!!
 
 Usage
 -----
@@ -33,12 +66,13 @@ Example::
 
    python fastqs2fastqs.py \
             --method=reconcile \
-            --output-pattern=myReads_reconciled.%s.fastq \
+            --output-filename-pattern=myReads_reconciled.%s.fastq \
             myReads.1.fastq.gz myReads.2.fastq.gz
 
 In this example we take a pair of fastq files, reconcile by read
 identifier and output 2 new fastq files named
-``myReads_reconciled.1.fastq.gz`` and ``myReads_reconciled.2.fastq.gz``.
+``myReads_reconciled.1.fastq.gz`` and
+``myReads_reconciled.2.fastq.gz``.
 
 Type::
 
@@ -84,15 +118,17 @@ def main(argv=None):
                             usage=globals()["__doc__"])
 
     parser.add_option("-m", "--method", dest="method", type="choice",
-                      choices=('reconcile', 'merge'),
+                      choices=('reconcile',),
                       help="method to apply [default=%default].")
 
-    parser.add_option("-c", "--chop", dest="chop", action="store_true",
-                      help="whether or not to trim last character of "
-                      "sequence name. For example sometimes ids in the first "
-                      "file in the pair will end with \1 and the second "
-                      "with \2. If --chop is not specified "
-                      "then the results will be wrong [default=%default].")
+    parser.add_option(
+        "-c", "--chop-identifier", dest="chop", action="store_true",
+        help="whether or not to trim last character of the  "
+        "sequence name. For example sometimes ids in the first "
+        "file in the pair will end with \1 and the second "
+        "with \2. If --chop-identifier is not specified "
+        "then the results will be wrong [default=%default].")
+
     parser.add_option("-u", "--unpaired", dest="unpaired", action="store_true",
                       help="whether or not to write out unpaired reads "
                       "to a seperate file")
@@ -101,11 +137,12 @@ def main(argv=None):
                       help="If specified will use the first group from the"
                            "pattern to determine the ID for the first read",
                       default=None)
+
     parser.add_option("--id-pattern-2", dest="id_pattern_2",
                       help="As above but for read 2",
                       default=None)
 
-    parser.add_option("-o", "--output-pattern",
+    parser.add_option("-o", "--output-filename-pattern",
                       dest="output_pattern", type="string",
                       help="pattern for output files [default=%default].")
 
@@ -179,14 +216,13 @@ def main(argv=None):
         E.info("reading first in pair")
         inf1 = IOTools.openFile(fn1)
         ids1 = set(getIds(inf1, id1_getter))
-      
+
         E.info("reading second in pair")
         inf2 = IOTools.openFile(fn2)
         # IMS: No longer keep as a set, but lazily evaluate into intersection
         # leads to large memory saving for large inf2, particularly if
         # inf1 is small.
         ids2 = getIds(inf2, id2_getter)
-       
         take = ids1.intersection(ids2)
 
         E.info("first pair: %i reads, second pair: %i reads, "

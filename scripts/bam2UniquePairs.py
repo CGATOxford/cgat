@@ -63,7 +63,7 @@ def main(argv=None):
     parser.add_option("-a", "--aligner", dest="aligner", type="string",
                       help="bamfile", default="bwa")
 
-    parser.add_option("-r", "--report", type="string", dest="report",
+    parser.add_option("-r", "--output-report", type="string", dest="report",
                       help="bamfile", default="")
 
     parser.add_option("-o", "--outfile", dest="outfile", type="string",

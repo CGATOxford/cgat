@@ -9,19 +9,29 @@
 Purpose
 -------
 
-decompose a collection of bed-files into a collection unions/intersections.
+This script will decompose a collection of input bedfiles into a
+collection of unions or intersections.
 
-merged-combinations
-   merge intervals across :term:`bed` files and only report those
-   that appear in every file.
+Options
+-------
 
-unmerged-combinations
-   for each :term:`bed` file, report intervals that overlap with intervals
-   in every other :term:`bed` file.
+Files are collected by a regular expression pattern given to the option
+``--pattern-identifier``.
 
-If the ``--exclusive`` option is set, report exclusive overlap. Only intervals
-will be reported that overlap in a pairwise comparison but do not overlap with
-intervals in any of the other sets.
+The script behaviour is determined by the ``--method`` option with either of
+the following choices:
+
+``merged-combinations``
+    merge intervals across :term:`bed` files and only report those
+    that appear in every file.
+
+``unmerged-combinations``
+    for each :term:`bed` file, report intervals that overlap with intervals
+    in every other :term:`bed` file.
+
+If the ``--exclusive-overlap`` option is set, report exclusive
+overlap. Only intervals will be reported that overlap in a pairwise
+comparison but do not overlap with intervals in any of the other sets.
 
 This script requires bed files indexed by tabix_.
 
@@ -32,20 +42,39 @@ For example, you have ChIP-Seq data for PolII and two transcription
 factors tf1 and tf2. The following statement will output four
 :term:`bed` files::
 
-   python beds2beds.py polii.bed.gz tf1.bed.gz tf2.bed.gz
+  zcat polii.bed.gz | head
 
-The four files are containing intervals, that
+  chr17    1    100    8    1
+  chr19   -50    50    6    1
+  chr19    0    100    1    1
+  chr19    50   150    1    1
+  chr19   150   200    2    1
+  chr19   201   300    3    1
+
+  python beds2beds.py polii.bed.gz tf1.bed.gz tf2.bed.gz
+
+  zcat tf1.bed.gz | head
+
+  chr1    35736     40736    ENST000004173240    -
+  chr1    60881     65881    ENST000005349900    +
+  chr1    64090     69090    ENST000003351370    +
+  chr1    362658    367658   ENST000004264060    +
+  chr1    622034    627034   ENST000003328310    -
+  chr1    716405    721405   ENST000003585330    +
+
+
+The four files contain intervals, that
 
 1. have PolII and tf1 present,
 2. have PolII and tf2 present,
 3. have tf1 and tf2 present, or
 4. have PolII and tf1 and tf2 present.
 
-If the --exclusive option is set, three sets will be output with intervals that
+If the --exclusive-overlap option is set, three sets will be output with intervals that
 
 1. have PolII and tf1 present but no tf2,
 2. have PolII and tf2 present but no tf1,
-3. have tf1 and tf2 present bu no PolII.
+3. have tf1 and tf2 present but no PolII.
 
 Type::
 
@@ -105,7 +134,7 @@ def combineMergedIntervals(bedfiles):
     Algorithm:
 
     1. collect all intervals in all tracks into a single track
-    2. merge overlapping intervals 
+    2. merge overlapping intervals
     3. report all intervals that overlap with an interval in each track.
 
     '''
@@ -162,17 +191,17 @@ def main(argv=None):
         version="%prog version: $Id$",
         usage=globals()["__doc__"])
 
-    parser.add_option("-e", "--exclusive", dest="exclusive",
-                      action="store_true",
-                      help="Intervals reported will be merged across the "
-                      "positive set"
-                      " and do not overlap any interval in any of the "
-                      " other sets"
-                      " [default=%default].")
+    parser.add_option(
+        "-e", "--exclusive-overlap", dest="exclusive",
+        action="store_true",
+        help="Intervals reported will be merged across the "
+        "positive set and do not overlap any interval in any of the "
+        "other sets [default=%default].")
 
-    parser.add_option("-p", "--pattern-id", dest="pattern_id", type="string",
-                      help="pattern to convert a filename "
-                      "to an id [default=%default].")
+    parser.add_option(
+        "-p", "--pattern-identifier", dest="pattern_id", type="string",
+        help="pattern to convert a filename "
+        "to an id [default=%default].")
 
     parser.add_option("-m", "--method", dest="method", type="choice",
                       choices=("merged-combinations",

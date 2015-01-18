@@ -95,7 +95,7 @@ def main(argv=None):
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genomic data (indexed).")
 
-    parser.add_option("--forward-coordinates", dest="forward_coordinates", action="store_true",
+    parser.add_option("--is-forward-coordinates", dest="forward_coordinates", action="store_true",
                       help="work in forward coordinates.")
 
     parser.set_defaults(

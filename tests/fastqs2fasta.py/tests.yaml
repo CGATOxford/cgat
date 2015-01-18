@@ -9,5 +9,5 @@ basic_test:
     stdin: null
     outputs: [ stdout ]
     references: [basic_test_reference.fasta.gz ]
-    options: --fastq1 <DIR>/test.fastq.1.gz --fastq2 <DIR>/test.fastq.2.gz 
+    options: --first-fastq-file <DIR>/test.fastq.1.gz --second-fastq-file <DIR>/test.fastq.2.gz 
     description: basic test for interleaving two fastq files (read1 and read2) into fasta format

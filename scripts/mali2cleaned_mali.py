@@ -378,13 +378,13 @@ def main(argv=None):
     parser.add_option("-s", "--filename-removed", dest="filename_removed", type="string",
                       help="output filename for deleted entries.")
 
-    parser.add_option("-e", "--filename-exons", dest="filename_exons", type="string",
+    parser.add_option("-e", "--exons-file", dest="filename_exons", type="string",
                       help="filename on where to exon information.")
 
     parser.add_option("-u", "--filename-summary", dest="filename_summary", type="string",
                       help="output filename of component summary.")
 
-    parser.add_option("-c", "--filename-components", dest="filename_components", type="string",
+    parser.add_option("-c", "--components-tsv-file", dest="filename_components", type="string",
                       help="output filename for components.")
 
     parser.add_option("--min-percent-overlap", dest="min_percent_overlap", type="float",

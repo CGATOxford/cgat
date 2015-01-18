@@ -74,7 +74,7 @@ def main(argv=None):
                       choices=("chi-squared", "pearson-chi-squared"),
                       help="statistical methods to apply.")
 
-    parser.add_option("-t", "--headers", dest="headers", action="store_true",
+    parser.add_option("-t", "--header-names", dest="headers", action="store_true",
                       help="matrix has row/column headers.")
 
     parser.add_option("--no-headers", dest="headers", action="store_false",

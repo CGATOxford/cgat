@@ -306,7 +306,7 @@ def main(argv=None):
                       of the sequence in the file."""  )
     parser.add_option("-i", "--invert-map", dest="invert_map", action="store_true",
                       help="""invert map.""")
-    parser.add_option("-f", "--filter", dest="filter", type="choice",
+    parser.add_option("-f", "--method=filter --filter-method", dest="filter", type="choice",
                       choices=("max-branch-length",),
                       help="filter trees")
     parser.add_option("--output-format", dest="output_format", type="choice",

@@ -4,16 +4,97 @@ version:
     references: []
     options: --version
 
-cpg_test:
-    stdin: test.fasta
+length_test:
+    stdin: na_test.fasta
     outputs: [stdout]
-    references: [test_reference_cpg.tsv]
-    options: --section=cpg 
+    references: [length.tsv]
+    options: --section=length --split-fasta-identifier
 
+seq_test:
+    stdin: na_test.fasta
+    outputs: [stdout]
+    references: [seq.tsv]
+    options: --section=sequence --split-fasta-identifier
+
+hid_test:
+    stdin: na_test.fasta
+    outputs: [stdout]
+    references: [hid.tsv]
+    options: --section=hid --split-fasta-identifier
+
+na_test:
+    stdin: na_test.fasta
+    outputs: [stdout]
+    references: [na.tsv]
+    options: --section=na --split-fasta-identifier
+
+dn_test:
+    stdin: na_test.fasta
+    outputs: [stdout]
+    references: [dn.tsv]
+    options: --section=dn --split-fasta-identifier
+    
+cpg_test:
+    stdin: na_test.fasta
+    outputs: [stdout]
+    references: [cpg.tsv]
+    options: --section=cpg --split-fasta-identifier
+    
+degeneracy_test:
+    stdin: na_test.fasta
+    outputs: [stdout]
+    references: [degeneracy.tsv]
+    options: --section=degeneracy --split-fasta-identifier
+    
+aa_test:
+    stdin: na_test.fasta
+    outputs: [stdout]
+    references: [aa.tsv]
+    options: --section=aa --split-fasta-identifier
+    
 gaps_test:
     stdin: hg19.chr19.fasta
     outputs: [stdout]
     references: [gaps.tsv]
     options: --section=gaps
+    
+codon_test:
+    stdin: na_test.fasta
+    outputs: [stdout]
+    references: [codons.tsv]
+    options: --section=codons
+
+codon_usage_test:
+    stdin: na_test.fasta
+    outputs: [stdout]
+    references: [codon-usage.tsv]
+    options: --section=codon-usage
+
+codon_translator_test:
+    stdin: na_test.fasta
+    outputs: [stdout]
+    references: [codon-translator.tsv]
+    options: --section=codon-translator
+
+codon_bias_test:
+    stdin: na_test.fasta
+    outputs: [stdout]
+    references: [codon-bias.tsv]
+    options: --section=codon-bias
+
+aminoacid_test:
+    stdin: aa_test.fasta
+    outputs: [stdout]
+    references: [amino-acid.tsv]
+    options: --section=aa --sequence-type=aa
+    
+aa_len_hid_seq_test:
+    stdin: aa_test.fasta
+    outputs: [stdout]
+    references: [aa_len_hid_seq.tsv]
+    options: --section=length,hid,sequence --sequence-type=aa
+    
+
+
 
 

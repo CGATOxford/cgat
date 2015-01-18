@@ -43,13 +43,22 @@ class FastaRecord:
         self.sequence = sequence
 
 
-def iterate(infile):
+def iterate(infile, comment="#"):
+    '''iterate over fasta data in infile
+
+    Lines before the first fasta record are
+    ignored (starting with '>') as well as
+    lines starting with the comment character.
+
+    yields FastaRecord for each fasta file.
+    '''
 
     h = infile.readline()[:-1]
 
     if not h:
         raise StopIteration
 
+    # skip everything until first fasta entry starts
     while h[0] != ">":
         h = infile.readline()[:-1]
         if not h:
@@ -57,26 +66,21 @@ def iterate(infile):
         continue
 
     h = h[1:]
-
     seq = []
 
     for line in infile:
 
-        if line[0] == "#":
+        if line.startswith(comment):
             continue
 
-        line = line[:-1]  # remove newline
-        if not line:
-            continue
-
-        if line[0] == '>':
+        if line.startswith('>'):
             yield FastaRecord(h, ''.join(seq))
 
-            h = line[1:]
+            h = line[1:-1]
             seq = []
             continue
 
-        seq.append(line)
+        seq.append(line[:-1])
 
     yield FastaRecord(h, ''.join(seq))
 

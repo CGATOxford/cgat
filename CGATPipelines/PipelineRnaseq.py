@@ -24,6 +24,16 @@ Type::
 
 for command line help.
 
+
+Requirements:
+
+* HiddenMarkov >= 1.8.0
+* cufflinks >= 2.2.1
+* MASS >= 7.3.34
+* RColorBrewer >= 1.0.5
+* featureCounts >= 1.4.3
+* samtools >= 1.1
+
 """
 
 import CGAT.Experiment as E
@@ -40,6 +50,7 @@ import numpy
 import CGAT.GTF as GTF
 import CGAT.BamTools as BamTools
 import CGAT.IOTools as IOTools
+import CGAT.Database as Database
 from rpy2.robjects import r as R
 import rpy2.robjects as ro
 import rpy2.rinterface as ri
@@ -48,21 +59,12 @@ rpy2.robjects.numpy2ri.activate()
 
 import CGAT.Pipeline as P
 
-###################################################
-###################################################
-###################################################
-# Pipeline configuration
-###################################################
-P.getParameters(
-    ["%s.ini" % __file__[:-len(".py")],
-     "../pipeline.ini",
-     "pipeline.ini"])
+# levels of cuffdiff analysis
+# (no promotor and splice -> no lfold column)
+CUFFDIFF_LEVELS = ("gene", "cds", "isoform", "tss")
 
-PARAMS = P.PARAMS
-
-if os.path.exists("pipeline_conf.py"):
-    E.info("reading additional configuration from pipeline_conf.py")
-    execfile("pipeline_conf.py")
+# should be set in calling module
+PARAMS = {}
 
 #############################################################
 #############################################################
@@ -564,10 +566,12 @@ def filterAndMergeGTF(infile, outfile, remove_genes, merge=False):
 
     If *merge* is set, the resultant transcript models are merged by overlap.
 
-    A summary file "<outfile>.summary" contains the number of transcripts that failed 
-    various filters.
+    A summary file "<outfile>.summary" contains the number of
+    transcripts that failed various filters.
 
-    A file "<outfile>.removed.tsv.gz" contains the filters that a transcript failed.
+    A file "<outfile>.removed.tsv.gz" contains the filters that a
+    transcript failed.
+
     '''
 
     counter = E.Counter()
@@ -616,22 +620,22 @@ def filterAndMergeGTF(infile, outfile, remove_genes, merge=False):
         statement = '''
         %(scriptsdir)s/gff_sort pos < %(tmpfilename)s
         | python %(scriptsdir)s/gtf2gtf.py
-            --unset-genes="NONC%%06i"
+            --method=unset-genes --pattern-identifier="NONC%%06i"
             --log=%(outfile)s.log
         | python %(scriptsdir)s/gtf2gtf.py
-            --merge-genes
+            --method=merge-genes
             --log=%(outfile)s.log
         | python %(scriptsdir)s/gtf2gtf.py
-            --merge-exons
+            --method=merge-exons
             --merge-exons-distance=5
             --log=%(outfile)s.log
         | python %(scriptsdir)s/gtf2gtf.py
-            --renumber-genes="NONC%%06i"
+            --method=renumber-genes --pattern-identifier="NONC%%06i"
             --log=%(outfile)s.log
         | python %(scriptsdir)s/gtf2gtf.py
-            --renumber-transcripts="NONC%%06i"
+            --method=renumber-transcripts --pattern-identifier="NONC%%06i"
             --log=%(outfile)s.log
-        | %(scriptsdir)s/gff_sort genepos 
+        | %(scriptsdir)s/gff_sort genepos
         | gzip > %(outfile)s
         '''
     else:
@@ -704,7 +708,7 @@ def loadCufflinks(infile, outfile):
     track = P.snip(outfile, ".load")
     P.load(infile + ".genes_tracking.gz",
            outfile=track + "_genefpkm.load",
-           options="--index=gene_id "
+           options="--add-index=gene_id "
            "--ignore-column=tracking_id "
            "--ignore-column=class_code "
            "--ignore-column=nearest_ref_id")
@@ -712,7 +716,7 @@ def loadCufflinks(infile, outfile):
     track = P.snip(outfile, ".load")
     P.load(infile + ".fpkm_tracking.gz",
            outfile=track + "_fpkm.load",
-           options="--index=tracking_id "
+           options="--add-index=tracking_id "
            "--ignore-column=nearest_ref_id "
            "--rename-column=tracking_id:transcript_id")
 
@@ -741,7 +745,7 @@ def mergeCufflinksFPKM(infiles, outfile,
         --log=%(outfile)s.log
         --columns=1
         --skip-titles
-        --headers=%(headers)s
+        --header-names=%(headers)s
         --take=FPKM fpkm.dir/%(prefix)s_*.%(tracking)s.gz
     | perl -p -e "s/tracking_id/%(identifier)s/"
     | %(scriptsdir)s/hsort 1
@@ -755,7 +759,7 @@ def runFeatureCounts(annotations_file,
                      bamfile,
                      outfile,
                      nthreads=4,
-                     strand=2,
+                     strand=0,
                      options=""):
     '''run feature counts on *annotations_file* with
     *bam_file*.
@@ -782,10 +786,10 @@ def runFeatureCounts(annotations_file,
         bam_prefix = P.snip(bam_tmp, ".bam")
         # sort by read name
         paired_processing = \
-            """samtools 
-                sort -@ %(nthreads)i -n %(bamfile)s %(bam_prefix)s; 
+            """samtools
+            sort -@ %(nthreads)i -n %(bamfile)s %(bam_prefix)s;
             checkpoint; """ % locals()
-        bamfile = bam_tmp 
+        bamfile = bam_tmp
     else:
         paired_options = ""
         paired_processing = ""
@@ -800,7 +804,6 @@ def runFeatureCounts(annotations_file,
                    featureCounts %(options)s
                                  -T %(nthreads)i
                                  -s %(strand)s
-                                 -b
                                  -a %(annotations_tmp)s
                                  %(paired_options)s
                                  -o %(outfile)s
@@ -813,3 +816,137 @@ def runFeatureCounts(annotations_file,
     '''
 
     P.run()
+
+
+def buildExpressionStats(dbhandle, tables, method, outfile, outdir):
+    '''build expression summary statistics.
+
+    Creates also diagnostic plots in
+
+    <exportdir>/<method> directory.
+    '''
+    def _split(tablename):
+        # this would be much easier, if feature_counts/gene_counts/etc.
+        # would not contain an underscore.
+        try:
+            design, geneset, counting_method = re.match(
+                "([^_]+)_vs_([^_]+)_(.*)_%s" % method,
+                tablename).groups()
+        except AttributeError:
+            try:
+                design, geneset = re.match(
+                    "([^_]+)_([^_]+)_%s" % method,
+                    tablename).groups()
+                counting_method = "na"
+            except AttributeError:
+                raise ValueError("can't parse tablename %s" % tablename)
+
+        return design, geneset, counting_method
+
+        # return re.match("([^_]+)_", tablename ).groups()[0]
+
+    keys_status = "OK", "NOTEST", "FAIL", "NOCALL"
+
+    outf = IOTools.openFile(outfile, "w")
+    outf.write("\t".join(
+        ("design",
+         "geneset",
+         "level",
+         "counting_method",
+         "treatment_name",
+         "control_name",
+         "tested",
+         "\t".join(["status_%s" % x for x in keys_status]),
+         "significant",
+         "twofold")) + "\n")
+
+    all_tables = set(Database.getTables(dbhandle))
+
+    for level in CUFFDIFF_LEVELS:
+
+        for tablename in tables:
+
+            tablename_diff = "%s_%s_diff" % (tablename, level)
+            tablename_levels = "%s_%s_diff" % (tablename, level)
+            design, geneset, counting_method = _split(tablename_diff)
+            if tablename_diff not in all_tables:
+                continue
+
+            def toDict(vals, l=2):
+                return collections.defaultdict(
+                    int,
+                    [(tuple(x[:l]), x[l]) for x in vals])
+
+            tested = toDict(
+                Database.executewait(
+                    dbhandle,
+                    "SELECT treatment_name, control_name, "
+                    "COUNT(*) FROM %(tablename_diff)s "
+                    "GROUP BY treatment_name,control_name" % locals()
+                    ).fetchall())
+            status = toDict(Database.executewait(
+                dbhandle,
+                "SELECT treatment_name, control_name, status, "
+                "COUNT(*) FROM %(tablename_diff)s "
+                "GROUP BY treatment_name,control_name,status"
+                % locals()).fetchall(), 3)
+            signif = toDict(Database.executewait(
+                dbhandle,
+                "SELECT treatment_name, control_name, "
+                "COUNT(*) FROM %(tablename_diff)s "
+                "WHERE significant "
+                "GROUP BY treatment_name,control_name" % locals()
+                ).fetchall())
+
+            fold2 = toDict(Database.executewait(
+                dbhandle,
+                "SELECT treatment_name, control_name, "
+                "COUNT(*) FROM %(tablename_diff)s "
+                "WHERE (l2fold >= 1 or l2fold <= -1) AND significant "
+                "GROUP BY treatment_name,control_name,significant"
+                % locals()).fetchall())
+
+            for treatment_name, control_name in tested.keys():
+                outf.write("\t".join(map(str, (
+                    design,
+                    geneset,
+                    level,
+                    counting_method,
+                    treatment_name,
+                    control_name,
+                    tested[(treatment_name, control_name)],
+                    "\t".join(
+                        [str(status[(treatment_name, control_name, x)])
+                         for x in keys_status]),
+                    signif[(treatment_name, control_name)],
+                    fold2[(treatment_name, control_name)]))) + "\n")
+
+            ###########################################
+            ###########################################
+            ###########################################
+            # plot length versus P-Value
+            data = Database.executewait(
+                dbhandle,
+                "SELECT i.sum, pvalue "
+                "FROM %(tablename_diff)s, "
+                "%(geneset)s_geneinfo as i "
+                "WHERE i.gene_id = test_id AND "
+                "significant" % locals()).fetchall()
+
+            # require at least 10 datapoints - otherwise smooth scatter fails
+            if len(data) > 10:
+                data = zip(*data)
+
+                pngfile = ("%(outdir)s/%(design)s_%(geneset)s_%(level)s"
+                           "_pvalue_vs_length.png") % locals()
+                R.png(pngfile)
+                R.smoothScatter(R.log10(ro.FloatVector(data[0])),
+                                R.log10(ro.FloatVector(data[1])),
+                                xlab='log10( length )',
+                                ylab='log10( pvalue )',
+                                log="x", pch=20, cex=.1)
+
+                R['dev.off']()
+
+    outf.close()
+

@@ -41,17 +41,8 @@ _static/toolmap.svg:
 		../scripts/fastq2*.py ../scripts/fastqs2*.py \
 		--log=toolmap.log \
 	> toolmap.dot
+	-mkdir _static
 	neato -Tsvg toolmap.dot > $@
-
-toolmap.svg:
-	@echo building toolmap
-	python ../scripts/cgat2dot.py \
-		../scripts/bam2*.py ../scripts/bed2*.py \
-		../scripts/gtf2*.py ../scripts/gff2*.py \
-		../scripts/fastq2*.py ../scripts/fastqs2*.py \
-		--log=toolmap.log \
-	> toolmap.dot
-	neato -Tsvg toolmap.dot > toolmap.svg
 
 # remove the pyc file - otherwise errors when importing pipeline and other scripts
 html: _static/toolmap.svg

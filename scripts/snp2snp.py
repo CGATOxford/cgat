@@ -174,7 +174,7 @@ def main(argv=None):
                       choices=("validate", ),
                       help="methods to apply [default=%default].")
 
-    parser.add_option("-g", "--filename-genome", dest="filename_genome", type="string",
+    parser.add_option("-g", "--genome-file", dest="filename_genome", type="string",
                       help="filename of faidx indexed genome [default=%default].")
 
     parser.add_option("-r", "--filename-reference", dest="filename_references", action="append",

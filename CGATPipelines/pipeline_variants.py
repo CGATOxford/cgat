@@ -313,20 +313,20 @@ if "refseq_filename_gtf" in PARAMS:
         | awk -v FS="\\t" -v OFS="\\t" '
               { $2 = "protein_coding"; print } '
         | python %(scriptsdir)s/gtf2gtf.py
-           --remove-duplicates=ucsc
+           --method=remove-duplicates --duplicate-feature=ucsc
            --log=%(outfile_gtf)s.log
            --verbose=2
         | python %(scriptsdir)s/gtf2gtf.py
-           --add-protein-id=%(tmpfilename1)s
+           --method=add-protein-id --map-tsv-file=%(tmpfilename1)s
            --log=%(outfile_gtf)s.log
            --verbose=2
         | python %(scriptsdir)s/gtf2gtf.py
-           --rename=gene
-           --apply=%(tmpfilename2)s
+           --method=rename-genes=gene
+           --map-tsv-file=%(tmpfilename2)s
            --log=%(outfile_gtf)s.log
            --verbose=2
         | python %(scriptsdir)s/gtf2gtf.py
-           --sort=gene
+           --method=sort --sort-order=gene
         | gzip
         > %(outfile_gtf)s'''
         if not os.path.exists(outfile_gtf):
@@ -376,11 +376,11 @@ if "refseq_filename_gtf" in PARAMS:
 
             statement = '''cat < %(tmpfilename1)s
             |python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
-               --index=gene_id 
-               --index=transcript_id 
-               --index=refseq_transcript_id 
-               --index=refseq_protein_id 
-               --index=ccds_id 
+               --add-index=gene_id 
+               --add-index=transcript_id 
+               --add-index=refseq_transcript_id 
+               --add-index=refseq_protein_id 
+               --add-index=ccds_id 
                --table=%(table)s
             > refseq.load'''
 
@@ -393,9 +393,9 @@ if "refseq_filename_gtf" in PARAMS:
             | awk 'BEGIN {printf("ccds_id\\tsrc_db\\tttranscript_id\\tprotein_id\\n")} 
                    /^ccds/ {next} {print}'
             |python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
-               --index=ccds_id 
-               --index=transcript_id 
-               --index=protein_id 
+               --add-index=ccds_id 
+               --add-index=transcript_id 
+               --add-index=protein_id 
                --table=%(table)s
             > refseq.load'''
 
@@ -465,9 +465,9 @@ if "refseq_filename_gtf" in PARAMS:
         #     | awk 'BEGIN {printf("ccds_id\\tsrc_db\\tttranscript_id\\tprotein_id\\n")}
         #            /^ccds/ {next} {print}'
         #     |python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-        #        --index=ccds_id
-        #        --index=transcript_id
-        #        --index=protein_id
+        #        --add-index=ccds_id
+        #        --add-index=transcript_id
+        #        --add-index=protein_id
         #        --table=%(table)s
         #     > %(outfile_load)s'''
         # P.run()
@@ -514,7 +514,7 @@ def importPseudogenes(infile, outfile):
     | perl -p -i -e "s/Parent Protein/protein_id/; s/Chromosome/contig/; s/Start Coordinate/start/; s/Stop Coordiante/end/"
     |python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
                      --table=%(tablename)s
-                     --index=protein_id
+                     --add-index=protein_id
     > %(outfile)s
     '''
 
@@ -644,12 +644,12 @@ def importMGI(infile, outfile):
             | awk '{ for (x=2; x<=NF; x++) { if ($x != "") { print; break;} } }'
             |python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
                      --table=%(tablename)s
-                     --index=marker_id
-                     --index=allele_id
-                     --index=gene_id
+                     --add-index=marker_id
+                     --add-index=allele_id
+                     --add-index=gene_id
                      --map=allele_name:str
                      --map=symbol:str
-                     --index=phenotype_id
+                     --add-index=phenotype_id
            >> %(outfile)s
            '''
 
@@ -807,9 +807,9 @@ def loadEnsembl2Uniprot(infile, outfile):
            s/UniProt\/SwissProt Accession/swissprot_acc/;
            s/UniProt\/TrEMBL Accession/trembl_acc/"
     |python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
-        --index=gene_id \
-        --index=transcript_id \
-        --index=trembl_acc \
+        --add-index=gene_id \
+        --add-index=transcript_id \
+        --add-index=trembl_acc \
         --table=%(table)s
     > %(outfile)s
     '''
@@ -831,7 +831,7 @@ def buildBaseAnnotations(infile, outfile):
     statement = """
         gunzip < %(infile)s 
         | python %(scriptsdir)s/gtf2fasta.py 
-                --force 
+                --force-output 
                 --genome=%(genome_dir)s/%(genome)s 
                 --output-filename-pattern=annotations_bases.%%s 
                 --log=%(outfile)s.log 
@@ -853,18 +853,19 @@ def buildBaseAnnotations(infile, outfile):
 def buildExonAnnotations(infile, outfile):
     """build exon annotations"""
 
-    to_cluster = True
-
     statement = """
-        gunzip < %(infile)s 
-        | awk '$3 == "CDS"' 
-        | python %(scriptsdir)s/gff2gff.py --sanitize=genome --skip-missing 
-               --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log 
-        | python %(scriptsdir)s/gtf2gff.py 
-                --method=exons 
-                --restrict-source=protein_coding 
-                --log=%(outfile)s.log 
-        > %(outfile)s
+    gunzip < %(infile)s
+    | awk '$3 == "CDS"'
+    | python %(scriptsdir)s/gff2gff.py
+    --method=sanitize
+    --sanitize-method=genome
+    --skip-missing
+    --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log
+    | python %(scriptsdir)s/gtf2gff.py
+    --method=exons
+    --restrict-source=protein_coding
+    --log=%(outfile)s.log
+    > %(outfile)s
     """
 
     P.run()
@@ -884,14 +885,18 @@ def buildGeneAnnotations(infile, outfile):
     output includes the UTR and non-coding genes.
     """
     statement = """
-        gunzip < %(infile)s |\
-        python %(scriptsdir)s/gtf2gtf.py --merge-exons --with-utr --log=%(outfile)s.log |\
-        python %(scriptsdir)s/gtf2gtf.py --set-transcript-to-gene --log=%(outfile)s.log |\
-        python %(scriptsdir)s/gff2gff.py --skip-missing --sanitize=genome --genome-file=%(genome_dir)s/%(genome)s --log=%(outfile)s.log |\
-        %(scriptsdir)s/gff_sort gene-pos \
-        > %(outfile)s
+    gunzip < %(infile)s
+    | python %(scriptsdir)s/gtf2gtf.py --method=merge-exons
+    --with-utr --log=%(outfile)s.log
+    | python %(scriptsdir)s/gtf2gtf.py --method=set-transcript-to-gene
+    --log=%(outfile)s.log
+    | python %(scriptsdir)s/gff2gff.py --skip-missing --method=sanitize
+    --sanitize-method=genome
+    --genome-file=%(genome_dir)s/%(genome)s
+    --log=%(outfile)s.log
+    | %(scriptsdir)s/gff_sort gene-pos
+    > %(outfile)s
     """
-    queue = "server"
     P.run()
 
 ###################################################################
@@ -932,9 +937,9 @@ def buildAnnotations(infile, outfile, sample):
     python %(scriptsdir)s/snp2table.py 
         --input-format=vcf
         --vcf-sample=%(sample)s
-        --filename-vcf=%(infile)s
+        --vcf-file=%(infile)s
         --genome-file=%(genome_dir)s/%(genome)s 
-        --filename-annotations=%(bases)s 
+        --annotations-tsv-file=%(bases)s 
         --log=%(outfile)s.log 
     | gzip > %(outfile)s
     """
@@ -958,7 +963,7 @@ def loadAnnotations(infile, outfile):
     |python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
               --quick
               --map=gene_id:str 
-              --index=gene_id 
+              --add-index=gene_id 
               --table=%(tablename)s
               --map=base_qualities:text 
     > %(outfile)s
@@ -1009,7 +1014,7 @@ def loadAnnotationsSummary(infile, outfile):
     statement = '''cat
     < %(infile)s
     |python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
-              --index=code
+              --add-index=code
               --table=%(tablename)s
     > %(outfile)s
     '''
@@ -1038,9 +1043,9 @@ def buildEffects(infile, outfile, sample):
         --input-format=vcf
         --vcf-sample=%(sample)s
         --module=transcript-effects 
-        --filename-seleno=%(seleno)s 
-        --filename-vcf=%(infile)s
-        --filename-exons=%(transcripts)s 
+        --seleno-tsv-file=%(seleno)s 
+        --vcf-file=%(infile)s
+        --exons-file=%(transcripts)s 
         --output-filename-pattern=%(outfile)s.%%s.gz
         --log=%(outfile)s.log 
     | gzip 
@@ -1064,7 +1069,7 @@ def loadEffects(infile, outfile):
     statement = '''
    python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
               --from-zipped \
-              --index=transcript_id \
+              --add-index=transcript_id \
               --table=%(root)s_effects \
     < %(infile)s > %(outfile)s
     '''
@@ -1076,8 +1081,8 @@ def loadEffects(infile, outfile):
         gunzip 
         < %(infile)s.%(suffix)s.gz
         |python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
-        --allow-empty
-        --index=transcript_id 
+        --allow-empty-file
+        --add-index=transcript_id 
         --table=%(root)s_effects_%(suffix)s 
         --ignore-column=seq_na
         --ignore-column=seq_aa
@@ -1113,7 +1118,7 @@ def mergeEffects(infiles, outfile):
 
     statement = '''zcat %(tmpfilename)s 
                    | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
-                       --index=transcript_id 
+                       --add-index=transcript_id 
                        --table=%(tablename)s 
                    > %(outfile)s'''
     P.run()
@@ -1139,8 +1144,8 @@ def mergeEffects(infiles, outfile):
 
         statement = '''zcat %(tmpfilename)s 
                        | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
-                           --allow-empty
-                           --index=transcript_id 
+                           --allow-empty-file
+                           --add-index=transcript_id 
                            --table=%(tablename)s_%(suffix)s 
                            --ignore-column=seq_na
                            --ignore-column=seq_aa
@@ -1167,9 +1172,9 @@ def buildAlleles(infile, outfile, sample):
     statement = """zcat %(transcripts)s 
     | python %(scriptsdir)s/gtf2alleles.py 
         --genome-file=%(genome_dir)s/%(genome)s
-        --filename-seleno=%(seleno)s 
+        --seleno-tsv-file=%(seleno)s 
         --output-filename-pattern=%(outfile)s.%%s.gz
-        --filename-vcf=%(infile)s
+        --vcf-file=%(infile)s
         --vcf-sample=%(sample)s
     > %(outfile)s
     """
@@ -1192,8 +1197,8 @@ def loadAlleles(infile, outfile):
     < %(infile)s.table.gz
     | perl -p -e "s/False/0/g; s/True/1/g;"
     |python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
-              --index=gene_id 
-              --index=transcript_id 
+              --add-index=gene_id 
+              --add-index=transcript_id 
               --ignore-column=cds
               --ignore-column=peptide
               --table=%(tablename)s 
@@ -1467,7 +1472,7 @@ def makeSNPCountsPerGene(infiles, outfile):
     grep -v "^NT" |\
     python %(scriptsdir)s/snp2counts.py \
         --genome-file=genome \
-        --filename-exons=%(ensembl_filename_gtf)s \
+        --exons-file=%(ensembl_filename_gtf)s \
         --log=%(outfile)s.log |\
     gzip > %(outfile)s
     """
@@ -1582,15 +1587,15 @@ def buildMultipleAlignments(infile, outfile):
 
     statement = '''
 	python %(scriptsdir)s/align_transcripts.py \
-		--gtf=%(infile)s \
-		--cds=%(filename_cds)s \
+		--gtf-file=%(infile)s \
+		--cds-gtf-file=%(filename_cds)s \
 		--force-map \
 		--verbose=2 \
 		--output-filename-pattern=%(track)s_%%s.fasta \
-		--output=final_aa \
-		--output=final_na \
-		--output=aligned_aa \
-		--output=aligned_na \
+		--output-section=final_aa \
+		--output-section=final_na \
+		--output-section=aligned_aa \
+		--output-section=aligned_na \
 		--output-format="plain-fasta" \
 	< %(filename_pep)s > %(outfile)s
       '''
@@ -1610,15 +1615,15 @@ def buildMultipleAlignmentVariantColumns(infile, outfile):
 
     statement = '''
 	python %(scriptsdir)s/malis2mali.py \
-		--gtf=%(infile)s \
-		--cds=%(filename_cds)s \
+		--gtf-file=%(infile)s \
+		--cds-gtf-file=%(filename_cds)s \
 		--force-map \
 		--verbose=2 \
 		--output-filename-pattern=%(track)s_%%s.fasta \
-		--output=final_aa \
-		--output=final_na \
-		--output=aligned_aa \
-		--output=aligned_na \
+		--output-section=final_aa \
+		--output-section=final_na \
+		--output-section=aligned_aa \
+		--output-section=aligned_na \
 		--output-format="plain-fasta" \
 	< %(filename_pep)s > %(outfile)s
       '''
@@ -1690,14 +1695,14 @@ def buildMAF(infiles, outfile):
     gunzip 
     < transcripts.gtf.gz 
     | python %(scriptsdir)s/gtf2gtf.py
-           --merge-transcripts --with-utr 
-    | %(cmd-farm)s --split-at-lines=100 --log=%(outfile)s.log --binary -v 10 
+           --method=merge-transcripts --with-utr 
+    | %(cmd-farm)s --split-at-lines=100 --log=%(outfile)s.log --is-binary -v 10 
     "python %(scriptsdir)s/snp2maf.py 
           --genome=genome 
           %(tracks)s 
           --reference=mm9 
           --is-gtf 
-          --pattern='\(\\\\\\S+\)_pileup'
+          --pattern-identifier='\(\\\\\\S+\)_pileup'
           --log=%(outfile)s.log" | gzip
     > %(outfile)s
     '''
@@ -2044,11 +2049,11 @@ def loadPolyphenMap(infile, outfile):
     table = P.toTable(outfile)
     statement = '''
    python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --index=snp_id 
-              --index=track,transcript_id
-              --index=contig,pos
-              --index=protein_id
-              --index=transcript_id
+              --add-index=snp_id 
+              --add-index=track,transcript_id
+              --add-index=contig,pos
+              --add-index=protein_id
+              --add-index=transcript_id
               --table=%(table)s 
     < %(infile)s.map
     > %(outfile)s
@@ -2071,8 +2076,8 @@ def loadPolyphen(infile, outfile):
     < %(infile)s
     | perl -p -e "s/o_acc/protein_id/; s/ +//g; s/^#//;"
     |python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --index=snp_id 
-              --index=protein_id
+              --add-index=snp_id 
+              --add-index=protein_id
               --table=%(table)s 
               --map=effect:str
     > %(outfile)s
@@ -2246,7 +2251,7 @@ def loadPolyphenAnalysis(infile, outfile):
     statement = '''
     cat < %(infile)s
     |python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --index=gene_id 
+              --add-index=gene_id 
               --map=code:str
               --table=%(table)s 
     > %(outfile)s
@@ -2348,8 +2353,8 @@ def loadPolyphenAnalysis(infile, outfile):
 #     perl -p -e "s/snpId/snp_id/; s/seqId/protein_id/; s/HMM /hmm/g;"
 #     < %(infile)s
 #     |python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-#               --index=snp_id
-#               --index=protein_id
+#               --add-index=snp_id
+#               --add-index=protein_id
 #               --table=%(table)s
 #     > %(outfile)s
 #     '''
@@ -2665,7 +2670,7 @@ def runGATOnQTLs(infiles, outfile):
                   --output-stats=annotations
                   --output-stats=workspaces
                   --output-filename-pattern=enrichment.dir/%%s.tsv
-                  --force
+                  --force-output
                   --num-samples=10000
     > %(outfile)s
     '''
@@ -2702,7 +2707,7 @@ def runGATOnQTLsSmall(infiles, outfile):
                   --output-stats=annotations
                   --output-stats=workspaces
                   --output-filename-pattern=enrichment.dir/%%s.tsv
-                  --force
+                  --force-output
                   --num-samples=10000
     > %(outfile)s
     '''
@@ -2717,8 +2722,8 @@ def loadGATOnQTLs(infile, outfile):
     statement = '''
     cat < %(infile)s
     |python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --index=track
-              --index=annotation
+              --add-index=track
+              --add-index=annotation
               --table=%(table)s
     > %(outfile)s
     '''
@@ -2732,8 +2737,8 @@ def loadGATOnQTLs(infile, outfile):
         statement = '''
         cat < %(stat_file)s
         |python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --index=track
-              --index=contig
+              --add-index=track
+              --add-index=contig
               --table=%(table)s
     >> %(outfile)s
     '''
@@ -2939,16 +2944,16 @@ def runGeneListAnalysis(infiles, outfile):
     to_cluster = True
 
     try:
-        options = "--qvalue-lambda=%(genelist_analysis_qvalue_lambda)f" % PARAMS
+        options = "--fdr-lambda=%(genelist_analysis_qvalue_lambda)f" % PARAMS
     except TypeError:
         options = ""
 
     statement = '''
     python %(scriptsdir)s/genelist_analysis.py 
            --format=matrix 
-           --filename-assignments=%(assignments)s 
+           --assignments-tsv-file=%(assignments)s 
            --fdr 
-           --qvalue-method=%(genelist_analysis_qvalue_method)s
+           --fdr-method=%(genelist_analysis_qvalue_method)s
            --log=%(outfile)s.log
            %(options)s
     < %(genematrix)s
@@ -2969,9 +2974,9 @@ def loadGeneListAnalysis(infile, outfile):
     cat < %(infile)s
     |python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --table=%(table)s
-              --index=gene_list
-              --index=pvalue
-              --index=fdr
+              --add-index=gene_list
+              --add-index=pvalue
+              --add-index=fdr
     > %(outfile)s
     '''
     P.run()

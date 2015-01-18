@@ -5,11 +5,24 @@ Overlap between methods
 This section compares the results of various methods to predict differential 
 expression.
 
-All comparisons are on the gene level, which might not be the best choice
-for all methods, for example :term:`cuffdiff`.
+All comparisons are on the gene level, which might not be the best
+choice for all methods, for example :term:`cuffdiff`.
 
-Shared genes
-============
+Comparison between methods
+==========================
+
+The following table lists the number of features called differentially
+expressed per method.
+
+.. report:: DifferentialExpression.DifferentialExpressionOverlapBetweenMethods
+   :render: table
+
+   Number of consistent predictions between different methods. Only
+   comparisons within an experimtal design are shown to allow
+   comparison between methods.
+
+Full table of shared genes
+==========================
 
 The following table lists the number of features called differentially
 expressed that are common to all methods.

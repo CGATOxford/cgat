@@ -10,9 +10,6 @@ GTF.py - Classes and methods for dealing with gtf formatted files
 The default GTF version is 2.2.
 """
 
-import string
-import sys
-import re
 import copy
 import types
 import collections
@@ -69,11 +66,12 @@ def quote(v):
 class Entry:
 
     """read/write gtf formatted entry.
-
-    The coordinates are kept internally in python coordinates (0-based, open-closed),
-    but are output as inclusive 1-based coordinates according to
+    The coordinates are kept internally in python coordinates
+    (0-based, open-closed), but are output as inclusive 1-based
+    coordinates according to
 
     http://www.sanger.ac.uk/Software/formats/GFF/
+
     """
 
     def __init__(self):
@@ -92,7 +90,8 @@ class Entry:
     def read(self, line):
         """read gff entry from line.
 
-        <seqname> <source> <feature> <start> <end> <score> <strand> <frame> [attributes] [comments]
+        <seqname> <source> <feature> <start> <end> <score> \
+              <strand> <frame> [attributes] [comments]
         """
 
         data = line[:-1].split("\t")
@@ -116,7 +115,13 @@ class Entry:
         # remove comments
         attributes = attributes.split("#")[0]
         # separate into fields
-        fields = map(lambda x: x.strip(), attributes.split(";")[:-1])
+        # Fields might contain a ";", for example in ENSEMBL GTF file
+        # for mouse, v78:
+        # ...; transcript_name "TXNRD2;-001"; ....
+        # The current heuristic is to split on a semicolon followed by a
+        # space, which seems to be part of the specification, see
+        # http://mblab.wustl.edu/GTF22.html
+        fields = map(lambda x: x.strip(), attributes.split("; ")[:-1])
         self.attributes = {}
 
         for f in fields:
@@ -246,8 +251,16 @@ class Entry:
         self.score = other.score
         self.strand = other.strand
         self.frame = other.frame
-        self.gene_id = other.gene_id
-        self.transcript_id = other.transcript_id
+        # gene_id and transcript_id can be optional
+        try:
+            self.gene_id = other.gene_id
+        except AttributeError:
+            pass
+        try:
+            self.transcript_id = other.transcript_id
+        except AttributeError:
+            pass
+
         self.attributes = copy.copy(other.asDict())
         # from gff - remove gene_id and transcript_id from attributes
         try:
@@ -285,8 +298,10 @@ class Entry:
     def hasOverlap(self, other, min_overlap=0):
         """returns true, if overlap with other entry.
         """
-        return (self.contig == other.contig and self.strand == other.strand and
-                min(self.end, other.end) - max(self.start, other.start) > min_overlap)
+        return (self.contig == other.contig and
+                self.strand == other.strand and
+                min(self.end, other.end) -
+                max(self.start, other.start) > min_overlap)
 
     def isIdentical(self, other, max_slippage=0):
         """returns true, if self and other overlap completely.
@@ -309,8 +324,10 @@ def Overlap(entry1, entry2, min_overlap=0):
     """returns true, if entry1 and entry2 overlap.
     """
 
-    return (entry1.contig == entry2.contig and entry1.strand == entry2.strand and
-            min(entry1.end, entry2.end) - max(entry1.start, entry2.start) > min_overlap)
+    return (entry1.contig == entry2.contig and
+            entry1.strand == entry2.strand and
+            min(entry1.end, entry2.end) -
+            max(entry1.start, entry2.start) > min_overlap)
 
 
 def Identity(entry1, entry2, max_slippage=0):
@@ -481,20 +498,30 @@ def transcript_iterator(gff_iterator, strict=True):
 
     return a list of entries with the same transcript id.
 
-    Note: the entries for the same transcript have to be consecutive
-    in the file.
+    Any features without a transcript_id will be ignored.
+
+    The entries for the same transcript have to be consecutive
+    in the file. If *strict* is set an AssertionError will be
+    raised if that is not true.
     """
     last = None
     matches = []
     found = set()
 
     for gff in gff_iterator:
-        this = gff.transcript_id + gff.gene_id
+
+        # ignore entries without transcript or gene id
+        try:
+            this = gff.transcript_id + gff.gene_id
+        except AttributeError:
+            continue
+
         if last != this:
             if last:
                 yield matches
             matches = []
-            assert not strict or this not in found, "duplicate entry: %s" % this
+            assert not strict or this not in found, \
+                "duplicate entry: %s" % this
             found.add(this)
             last = this
         matches.append(gff)
@@ -502,7 +529,7 @@ def transcript_iterator(gff_iterator, strict=True):
         yield matches
 
 
-def joined_iterator(gffs, group_field=None):
+def joined_iterator(gff_iterator, group_field=None):
     """iterate over the contents of a gff file.
 
     return a list of entries with the same group id.
@@ -521,7 +548,7 @@ def joined_iterator(gffs, group_field=None):
     else:
         group_function = lambda x: x[group_field]
 
-    for gff in gffs:
+    for gff in gff_iterator:
 
         group_id = group_function(gff)
 
@@ -558,7 +585,8 @@ def gene_iterator(gff_iterator, strict=True):
                 yield matches
             matches = []
             last = gffs[0]
-            assert not strict or last.gene_id not in found, "duplicate entry %s" % last
+            assert not strict or last.gene_id not in found, \
+                "duplicate entry %s" % last
             found.add(last.gene_id)
 
         matches.append(gffs)
@@ -591,7 +619,8 @@ def flat_gene_iterator(gff_iterator, strict=True):
             matches = []
             last = gff
             if strict:
-                assert last.gene_id not in found, "duplicate entry %s" % last.gene_id
+                assert last.gene_id not in found, \
+                    "duplicate entry %s" % last.gene_id
                 found.add(last.gene_id)
         matches.append(gff)
 
@@ -651,6 +680,8 @@ def iterator_sorted_chunks(gff_iterator, sort_by="contig-start"):
        sort by position ignoring the strand
     contig-strand-start
        sort by position taking the strand into account
+    contig-strand-start-end
+       intervals with the same start position will be sorted by end position
 
     returns the chunks.
     """
@@ -671,7 +702,6 @@ def iterator_sorted_chunks(gff_iterator, sort_by="contig-start"):
             chunk.sort(key=lambda x: (x.contig, x.strand, x.start))
             yield chunk
     elif sort_by == "contig-strand-start-end":
-        # intervals with the same start position will be sorted by end position
         chunks = ([(x[0].contig, x[0].strand, min([y.start for y in x]), x)
                   for x in gff_iterator])
         chunks.sort()
@@ -726,12 +756,14 @@ def toIntronIntervals(chunk):
     '''
     if len(chunk) == 0:
         return []
-    contig, strand, transcript_id = chunk[
-        0].contig, chunk[0].strand, chunk[0].transcript_id
+    contig, strand, transcript_id = (chunk[0].contig,
+                                     chunk[0].strand,
+                                     chunk[0].transcript_id)
     for gff in chunk:
         assert gff.strand == strand, "features on different strands."
         assert gff.contig == contig, "features on different contigs."
-        assert gff.transcript_id == transcript_id, "more than one transcript submitted"
+        assert gff.transcript_id == transcript_id, \
+            "more than one transcript submitted"
 
     intervals = Intervals.combine([(x.start, x.end)
                                    for x in chunk if x.feature == "exon"])
@@ -914,8 +946,9 @@ def iterator_overlaps(gff_iterator, min_overlap=0):
             last = this
             continue
 
-        assert last.start <= this.start, "input file needs to be sorted by contig, start:\n%s\n%s\n" % (
-            str(last), str(this))
+        assert last.start <= this.start, \
+            "input file needs to be sorted by contig, start:\n%s\n%s\n" % \
+            (str(last), str(this))
         matches.append(this)
         last = this
         end = max(end, this.end)

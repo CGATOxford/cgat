@@ -104,7 +104,7 @@ def main(argv=None):
     parser.add_option("-m", "--method", dest="method", type="string",
                       help="method to use [genes|sequences|togenes].")
 
-    parser.add_option("-f", "--filename-filter", dest="filter", type="string",
+    parser.add_option("-f", "--filter-tsv-file", dest="filter", type="string",
                       help="filename with filter (take only those ids in filter).")
 
     parser.set_defaults(

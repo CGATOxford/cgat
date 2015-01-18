@@ -9,16 +9,16 @@ basic:
         stdin: paired.bam
         outputs: [stdout]
         references: [basic.tsv]
-        options: --force
+        options: --force-output
 
 fastq:
         stdin: paired.bam
         outputs: [stdout, details]
         references: [fastq.tsv, details]
-        options: --output-details --filename-fastq=<DIR>/paired.fastq.1.gz --force
+        options: --output-details --fastq-file=<DIR>/paired.fastq.1.gz --force-output
 
 rna:
         stdin: paired.bam
         outputs: [stdout]
         references: [rna.tsv, rna.mapq, rna.nm]
-        options: --filename-fastq=<DIR>/paired.fastq.1.gz --force --filename-rna=<DIR>/hg19_rna.gff.gz --remove-rna --output-filename-pattern=rna.%s
+        options: --fastq-file=<DIR>/paired.fastq.1.gz --force-output --mask-bed-file=<DIR>/hg19_rna.gff.gz --ignore-masked-reads --output-filename-pattern=rna.%s

@@ -147,6 +147,22 @@ In order to run the tests, type::
 
    nosetests tests/test_scripts.py
 
+We have also added a test that will scan all the command line options
+used in CGAT script against a white- and black-list of
+acceptable/unacceptable option names. The purpose of this test is to
+ensure consistency between scripts. To run this test, type::
+
+   nosetests tests/test_commandline.py
+
+This test is based on a list of acceptable/unacceptable options in
+:file:`tests/option_list.tsv` that is within the repository. The list
+has been created by the script :file:`cgat_get_option_list.py` and
+been manually annotated. Errors are flagged if a deprecated option
+is used in a script or an unregistered option is encountered. To
+update option list, type::
+
+   python scripts/cgat_get_option_list.py --in-place --options-tsv-file=tests/option_list.tsv 
+
 
 Testing for import
 ==================
@@ -183,3 +199,4 @@ There are some unit tests for specific functions in modules, but
 a testing regime has not been formalized.
 
 .. _pep8: http://legacy.python.org/dev/peps/pep-0008/
+

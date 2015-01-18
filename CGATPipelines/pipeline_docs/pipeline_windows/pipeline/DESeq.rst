@@ -23,3 +23,4 @@ The following sections list the QC data for the individual chunks.
    DESeqPvalue.rst
    DESeqFDR.rst
    DESeqSpike.rst
+   DESeqDMR.rst

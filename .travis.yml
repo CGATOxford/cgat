@@ -14,7 +14,8 @@ env:
     - CGAT_TASK_ID=270
     - CGAT_TASK_ID=315
     - TEST_STYLE=1
-    #- TEST_IMPORT=1
+    - TEST_CMDLINE=1
+    - TEST_IMPORT=1
 
 python:
   - "2.7"
@@ -27,7 +28,7 @@ notifications:
     - sebastian.luna.valero@gmail.com
     - andreas.heger@gmail.com
     - david.sims@dpag.ox.ac.uk
-    - stephen.sansom@dpag.ox.ac.uk
+    - stephen.sansom@kennedy.ox.ac.uk
     - ian.sudbery@dpag.ox.ac.uk
     - jethro.johnson@dpag.ox.ac.uk
     - antonio.berlanga@dpag.ox.ac.uk
@@ -35,4 +36,6 @@ notifications:
     - thomas.smith2@dpag.ox.ac.uk
     - michael.morgan@dpag.ox.ac.uk
     - xiaoming.hu@dpag.ox.ac.uk
-    - nicholas.ilott@NDM.OX.AC.UK
+    - nicholas.ilott@kennedy.ox.ac.uk
+    - katherine.brown@dpag.ox.ac.uk
+    - charlotte.george@dpag.ox.ac.uk

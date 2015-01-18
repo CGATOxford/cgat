@@ -66,7 +66,7 @@ def main(argv=None):
     parser = E.OptionParser(
         version="%prog version: $Id: compare_clusters.py 2782 2009-09-10 11:40:29Z andreas $")
 
-    parser.add_option("-o", "--output-pattern", dest="output_pattern", type="string",
+    parser.add_option("-o", "--output-filename-pattern", dest="output_pattern", type="string",
                       help="output pattern for filenames.")
 
     parser.set_defaults(

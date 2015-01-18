@@ -30,11 +30,15 @@ for command line help.
 Documentation
 -------------
 
+Requirements:
+
+* meme >= 4.9.1
+* bioprospector >= 2004 (optional)
+
 Code
 ----
 
 '''
-import sys
 import re
 import os
 import tempfile
@@ -45,7 +49,6 @@ import glob
 import logging as L
 import CGAT.Experiment as E
 import CGAT.Pipeline as P
-import sqlite3
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Masker as Masker
 import CGAT.Glam2Scan as Glam2Scan
@@ -54,13 +57,9 @@ import CGAT.IOTools as IOTools
 import CGAT.Bed as Bed
 import CGAT.Bioprospector as Bioprospector
 import CGAT.FastaIterator as FastaIterator
-import glob
 
-PARAMS = P.getParameters()
-
-############################################################
-############################################################
-############################################################
+# Set from importing module
+PARAMS = {}
 
 
 def filterMotifsFromMEME(infile, outfile, selected):
@@ -84,10 +83,6 @@ def filterMotifsFromMEME(infile, outfile, selected):
         if keep:
             outs.write(line)
     outs.close()
-
-############################################################
-############################################################
-############################################################
 
 
 def maskSequences(sequences, masker=None):
@@ -119,10 +114,6 @@ def maskSequences(sequences, masker=None):
     masked_seq = [re.sub("[a-z]", "N", x) for x in masked_seq]
 
     return masked_seq
-
-############################################################
-############################################################
-############################################################
 
 
 def exportSequencesFromBedFile(infile, outfile, masker=None, mode="intervals"):
@@ -162,10 +153,6 @@ def exportSequencesFromBedFile(infile, outfile, masker=None, mode="intervals"):
     outs.write("\n".join([">%s\n%s" % (x, y) for x, y in zip(ids, masked)]))
 
     outs.close()
-
-############################################################
-############################################################
-############################################################
 
 
 def writeSequencesForIntervals(track,
@@ -329,10 +316,6 @@ def writeSequencesForIntervals(track,
 
     return c.output
 
-############################################################
-############################################################
-############################################################
-
 
 def runRegexMotifSearch(infiles, outfile):
     '''run a regular expression search on sequences.
@@ -393,7 +376,6 @@ def runGLAM2SCAN(infiles, outfile):
     '''run glam2scan on all intervals and motifs.
     '''
 
-    to_cluster = True
     # only use new nodes, as /bin/csh is not installed
     # on the old ones.
     # job_options = "-l mem_free=8000M"
@@ -414,13 +396,10 @@ def runGLAM2SCAN(infiles, outfile):
         of.close()
 
         statement = '''
-        cat %(dbfile)s %(controlfile)s | %(execglam2scan)s -2 -n %(glam2scan_results)i n %(motiffile)s - >> %(outfile)s
+        cat %(dbfile)s %(controlfile)s
+        | %(execglam2scan)s -2 -n %(glam2scan_results)i n %(motiffile)s - >> %(outfile)s
         '''
         P.run()
-
-############################################################
-############################################################
-############################################################
 
 
 def loadGLAM2SCAN(infile, outfile):
@@ -505,13 +484,13 @@ def loadGLAM2SCAN(infile, outfile):
     tmpfilename = tmpfile.name
 
     statement = '''
-   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
-              -b sqlite \
-              --index=id \
-              --index=motif \
-              --index=id,motif \
-              --table=%(tablename)s \
-              --map=base_qualities:text \
+    python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+    -b sqlite
+    --add-index=id
+    --add-index=motif
+    --add-index=id,motif
+    --table=%(tablename)s
+    --map=base_qualities:text
     < %(tmpfilename)s > %(outfile)s
     '''
 
@@ -519,9 +498,6 @@ def loadGLAM2SCAN(infile, outfile):
     os.unlink(tmpfile.name)
 
 
-############################################################
-############################################################
-############################################################
 def loadMAST(infile, outfile):
     '''parse mast file and load into database.
 
@@ -635,23 +611,19 @@ def loadMAST(infile, outfile):
     tmpfilename = tmpfile.name
 
     statement = '''
-    python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
-              -b sqlite 
-              --index=id 
-              --index=motif 
-              --index=id,motif 
-              --table=%(tablename)s 
-              --allow-empty
-              --map=base_qualities:text 
+    python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+    -b sqlite
+    --add-index=id
+    --add-index=motif
+    --add-index=id,motif
+    --table=%(tablename)s
+    --allow-empty-file
+    --map=base_qualities:text
     < %(tmpfilename)s > %(outfile)s
     '''
 
     P.run()
     os.unlink(tmpfile.name)
-
-############################################################
-############################################################
-############################################################
 
 
 def runBioProspector(infiles, outfile, dbhandle):
@@ -669,29 +641,24 @@ def runBioProspector(infiles, outfile, dbhandle):
 
     tmpfasta = P.getTempFilename(".")
     track = outfile[:-len(".bioprospector")]
-    nseq = writeSequencesForIntervals(track,
-                                      tmpfasta,
-                                      dbhandle,
-                                      full=True,
-                                      masker="dust",
-                                      proportion=PARAMS["bioprospector_proportion"])
+    nseq = writeSequencesForIntervals(
+        track,
+        tmpfasta,
+        dbhandle,
+        full=True,
+        masker="dust",
+        proportion=PARAMS["bioprospector_proportion"])
 
     if nseq == 0:
         E.warn("%s: no sequences - bioprospector skipped" % track)
         P.touch(outfile)
     else:
         statement = '''
-    BioProspector -i %(tmpfasta)s %(bioprospector_options)s -o %(outfile)s > %(outfile)s.log
+        BioProspector -i %(tmpfasta)s %(bioprospector_options)s -o %(outfile)s > %(outfile)s.log
     '''
         P.run()
 
     os.unlink(tmpfasta)
-
-############################################################
-############################################################
-############################################################
-##
-############################################################
 
 
 def loadBioProspector(infile, outfile):
@@ -746,13 +713,13 @@ def loadBioProspector(infile, outfile):
     tmpfilename = tmpfile.name
 
     statement = '''
-   python %(scriptsdir)s/csv2db.py %(csv2db_options)s \
-    --allow-empty \
-    -b sqlite \
-    --index=id \
-    --index=motif \
-    --index=id,motif \
-    --table=%(tablename)s \
+    python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+    --allow-empty-file
+    -b sqlite
+    --add-index=id
+    --add-index=motif
+    --add-index=id,motif
+    --table=%(tablename)s
     < %(tmpfilename)s > %(outfile)s
     '''
 
@@ -765,12 +732,12 @@ def loadBioProspector(infile, outfile):
 def runMAST(infiles, outfile):
     '''run mast on all intervals and motifs.
 
-    Collect all results for an E-value up to 10000 so that
-    all sequences are output and MAST curves can be computed. 
+    Collect all results for an E-value up to 10000 so that all
+    sequences are output and MAST curves can be computed.
 
     10000 is a heuristic.
+
     '''
-    to_cluster = True
 
     # job_options = "-l mem_free=8000M"
 
@@ -805,7 +772,7 @@ def runMAST(infiles, outfile):
         # 2186800982?
         # To avoid this, run db and control file separately.
         statement = '''
-        cat %(dbfile)s 
+        cat %(dbfile)s
         | mast %(motiffile)s - -nohtml -oc %(tmpdir)s -ev %(mast_evalue)f %(mast_options)s >> %(outfile)s.log 2>&1;
         cat %(tmpdir)s/mast.txt >> %(tmpfile)s 2>&1
         '''
@@ -817,7 +784,7 @@ def runMAST(infiles, outfile):
         of.close()
 
         statement = '''
-        cat %(controlfile)s 
+        cat %(controlfile)s
         | mast %(motiffile)s - -nohtml -oc %(tmpdir)s -ev %(mast_evalue)f %(mast_options)s >> %(outfile)s.log 2>&1;
         cat %(tmpdir)s/mast.txt >> %(tmpfile)s 2>&1
         '''
@@ -856,15 +823,16 @@ def runGLAM2(infile, outfile, dbhandle):
     tmpdir = tempfile.mkdtemp()
     tmpfasta = os.path.join(tmpdir, "in.fa")
 
-    nseq = PipelineMotifs.writeSequencesForIntervals(track, tmpfasta,
-                                                     dbhandle,
-                                                     full=False,
-                                                     halfwidth=int(
-                                                         PARAMS["meme_halfwidth"]),
-                                                     maxsize=int(
-                                                         PARAMS["meme_max_size"]),
-                                                     proportion=PARAMS["meme_proportion"])
-
+    nseq = PipelineMotifs.writeSequencesForIntervals(
+        track, tmpfasta,
+        dbhandle,
+        full=False,
+        halfwidth=int(
+            PARAMS["meme_halfwidth"]),
+        maxsize=int(
+            PARAMS["meme_max_size"]),
+        proportion=PARAMS["meme_proportion"])
+    
     min_sequences = int(nseq / 10.0)
     statement = '''
     %(execglam2)s -2 -O %(tmpdir)s %(glam2_options)s -z %(min_sequences)i n %(tmpfasta)s > %(outfile)s.log
@@ -885,9 +853,6 @@ def runGLAM2(infile, outfile, dbhandle):
     shutil.copyfile(os.path.join(target_path, "glam2.txt"), outfile)
 
 
-############################################################
-############################################################
-############################################################
 def collectMEMEResults(tmpdir, target_path, outfile):
     '''collect output from a MEME run in tmpdir
     and copy all over to target_path
@@ -917,17 +882,13 @@ def collectMEMEResults(tmpdir, target_path, outfile):
         statement = '''convert %(epsfile)s %(pngfile)s '''
         P.run()
 
-############################################################
-############################################################
-############################################################
-
 
 def runMEME(track, outfile, dbhandle):
     '''run MEME to find motifs.
 
     In order to increase the signal/noise ratio,
-    MEME is not run on all intervals but only the 
-    top 10% of intervals (peakval) are used. 
+    MEME is not run on all intervals but only the
+    top 10% of intervals (peakval) are used.
     Also, only the segment of 200 bp around the peak
     is used and not the complete interval.
 
@@ -938,7 +899,6 @@ def runMEME(track, outfile, dbhandle):
 
     This method is deprecated - use runMEMEOnSequences instead.
     '''
-    to_cluster = True
     # job_options = "-l mem_free=8000M"
 
     target_path = os.path.join(
@@ -950,14 +910,15 @@ def runMEME(track, outfile, dbhandle):
     tmpdir = P.getTempDir(".")
     tmpfasta = os.path.join(tmpdir, "in.fa")
 
-    nseq = writeSequencesForIntervals(track, tmpfasta,
-                                      dbhandle,
-                                      full=False,
-                                      masker=P.asList(PARAMS['motifs_masker']),
-                                      halfwidth=int(PARAMS["meme_halfwidth"]),
-                                      maxsize=int(PARAMS["meme_max_size"]),
-                                      proportion=PARAMS["meme_proportion"],
-                                      min_sequences=PARAMS["meme_min_sequences"])
+    nseq = writeSequencesForIntervals(
+        track, tmpfasta,
+        dbhandle,
+        full=False,
+        masker=P.asList(PARAMS['motifs_masker']),
+        halfwidth=int(PARAMS["meme_halfwidth"]),
+        maxsize=int(PARAMS["meme_max_size"]),
+        proportion=PARAMS["meme_proportion"],
+        min_sequences=PARAMS["meme_min_sequences"])
 
     if nseq == 0:
         E.warn("%s: no sequences - meme skipped" % outfile)
@@ -969,10 +930,6 @@ def runMEME(track, outfile, dbhandle):
         P.run()
 
         collectMEMEResults(tmpdir, target_path, outfile)
-
-############################################################
-############################################################
-############################################################
 
 
 def runMEMEOnSequences(infile, outfile):
@@ -989,7 +946,6 @@ def runMEMEOnSequences(infile, outfile):
 
     * Sequence is run through dustmasker
     '''
-    to_cluster = True
     # job_options = "-l mem_free=8000M"
 
     nseqs = int(FastaIterator.count(infile))
@@ -1003,12 +959,12 @@ def runMEMEOnSequences(infile, outfile):
     tmpdir = P.getTempDir(".")
 
     statement = '''
-        meme %(infile)s -dna -revcomp 
-                        -mod %(meme_model)s 
-                        -nmotifs %(meme_nmotifs)s 
-                        -oc %(tmpdir)s 
-                        -maxsize %(motifs_max_size)s 
-                        %(meme_options)s 
+    meme %(infile)s -dna -revcomp
+    -mod %(meme_model)s
+    -nmotifs %(meme_nmotifs)s
+    -oc %(tmpdir)s
+    -maxsize %(motifs_max_size)s
+    %(meme_options)s
        > %(outfile)s.log
     '''
 
@@ -1016,17 +972,11 @@ def runMEMEOnSequences(infile, outfile):
 
     collectMEMEResults(tmpdir, target_path, outfile)
 
-############################################################
-############################################################
-############################################################
-
 
 def runTomTom(infile, outfile):
     '''compare ab-initio motifs against tomtom.'''
 
     tmpdir = P.getTempDir(".")
-
-    to_cluster = True
     databases = " ".join(P.asList(PARAMS["tomtom_databases"]))
 
     target_path = os.path.join(
@@ -1038,7 +988,7 @@ def runTomTom(infile, outfile):
         return
 
     statement = '''
-           tomtom %(tomtom_options)s -oc %(tmpdir)s %(infile)s %(databases)s > %(outfile)s.log
+    tomtom %(tomtom_options)s -oc %(tmpdir)s %(infile)s %(databases)s > %(outfile)s.log
     '''
 
     P.run()

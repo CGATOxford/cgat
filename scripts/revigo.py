@@ -1477,14 +1477,14 @@ def main(argv):
                       " retrieved at `wget http://archive.geneontology.org/latest-termdb/go_daily-termdb.obo-xml.gz`."
                       " [default=%default].")
 
-    parser.add_option("-g", "--filename-go", dest="filename_go", type="string",
+    parser.add_option("-g", "--go-tsv-file", dest="filename_go", type="string",
                       help="filename with gene to go assignments "
                       " This is a tab-separated file with the columns "
                       " <namespace> <gene_id> <goid> <description> <evidence>."
                       " The evidence column is currently ignored. "
                       " [default=%default].")
 
-    parser.add_option("-p", "--filename-pvalues", dest="filename_pvalues",
+    parser.add_option("-p", "--pvalues-tsv-file", dest="filename_pvalues",
                       type="string",
                       help="filename with pvalues for each GO term "
                       "This is a tab-separated file with the columns "

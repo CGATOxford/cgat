@@ -2544,7 +2544,7 @@ def main(argv=None):
     parser.add_option("-t", "--species-tree", dest="species_tree", type="string",
                       help="species tree.")
 
-    parser.add_option("-e", "--filename-locations", dest="filename_locations", type="string",
+    parser.add_option("-e", "--locations-tsv-file", dest="filename_locations", type="string",
                       help="filename with map of transcript information to location information.")
 
     parser.add_option("--no-create", dest="create", action="store_false",
@@ -2556,7 +2556,7 @@ def main(argv=None):
     parser.add_option("--filename-species2url", dest="filename_species2url", type="string",
                       help="filename with mapping information of species to URL.")
 
-    parser.add_option("--prefix", dest="prefix", type="string",
+    parser.add_option("--column-prefix", dest="prefix", type="string",
                       help="prefix to add as first column.")
 
     parser.add_option("--outgroup-species", dest="outgroup_species", type="string",
@@ -2605,7 +2605,7 @@ def main(argv=None):
     parser.add_option("--print-species-svg", dest="print_species_svg", action="store_true",
                       help="output species svg files.")
 
-    parser.add_option("--output-pattern", dest="output_pattern", type="string",
+    parser.add_option("--output-filename-pattern", dest="output_pattern", type="string",
                       help="""output pattern for separate output of sections [default: %default].
                        Set to None, if output to stdout. Can contain one %s to be substituted with section."""  )
 

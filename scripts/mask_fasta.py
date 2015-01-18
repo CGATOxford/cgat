@@ -76,7 +76,7 @@ def main(argv=None):
     parser.add_option("-e", "--extend", dest="extend", type="int",
                       help="extend sequences by # residues.")
 
-    parser.add_option("-o", "--output-pattern", dest="output_pattern", type="string",
+    parser.add_option("-o", "--output-filename-pattern", dest="output_pattern", type="string",
                       help="output pattern for the genomic files. Should contain a %i.")
 
     parser.add_option("-s", "--sequence", dest="filename_sequence", type="string",

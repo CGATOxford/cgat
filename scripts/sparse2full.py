@@ -30,13 +30,8 @@ Command line options
 
 '''
 
-import os
 import sys
-import optparse
 import string
-import re
-import random
-
 import CGAT.Experiment as E
 
 
@@ -53,7 +48,9 @@ def CountElements(matrix, default_value):
     return ndefault, nfound
 
 
-def Sparse2Matrix(outfile, matrix_id, lines, options, in_map_token2row={}, in_map_token2col={}):
+def Sparse2Matrix(outfile, matrix_id, lines, options,
+                  in_map_token2row={},
+                  in_map_token2col={}):
 
     # remove comments
     lines = filter(lambda x: x[0] != "#" and len(x[:-1]) > 0, lines)
@@ -297,15 +294,9 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv
 
-    parser = E.OptionParser(
-        version="%prog version: $Id: sparse2full.py 2782 2009-09-10 11:40:29Z andreas $")
-
-    parser.add_option("-m", "--method", dest="methods", type="string",
-                      help="""method to use [normalize-by-min-diagonal|normalize-by-column|
-                      log|ln|negzero2value|normalize-by-matrix|subtract-matrix|mix-matrix|
-                      normalize-by-column-max|normalize-by-row-max|correspondence-analysis|
-                      transpose|upper-bound|lower-bound
-                      """  )
+    # setup command line parser
+    parser = E.OptionParser(version="%prog version: $Id$",
+                            usage=globals()["__doc__"])
 
     parser.add_option("-f", "--format", dest="format", type="string",
                       help="format.")
@@ -319,10 +310,10 @@ def main(argv=None):
                           "row-col-weight", "row-col-weight-replicates", "row-col-weight-weight"),
                       help="input format.")
 
-    parser.add_option("-a", "--asymmetric", dest="asymmetric", action="store_true",
+    parser.add_option("-a", "--is-asymmetric", dest="asymmetric", action="store_true",
                       help="matrix is asymmetric.")
 
-    parser.add_option("-d", "--default", dest="default", type="string",
+    parser.add_option("-d", "--default-value", dest="default", type="string",
                       help="default value for missing values.")
 
     parser.add_option("-D", "--default-diagonal", dest="default_diagonal", type="string",
@@ -355,7 +346,7 @@ def main(argv=None):
     parser.add_option("--filter-numrows", dest="filter_numrows", type="int",
                       help="only output matrices with # rows.")
 
-    parser.add_option("--filename-map", dest="filename_map", type="string",
+    parser.add_option("--map-tsv-file", dest="filename_map", type="string",
                       help="filename with mapping between input and output chunks.")
 
     parser.set_defaults(

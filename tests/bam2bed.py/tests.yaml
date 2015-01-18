@@ -23,9 +23,3 @@ merge_max150_test:
     references: [example_human_g1k_merge_max150.tsv]
     options: <DIR>/example_human_g1k.bam --merge-pairs --max-insert-size 150
 
-region_test:
-    stdin: example_human_g1k.bam
-    outputs: [stdout]
-    references: [example_human_g1k_region.tsv]
-    options: <DIR>/example_human_g1k.bam --region '1:69100:69200' 
-    

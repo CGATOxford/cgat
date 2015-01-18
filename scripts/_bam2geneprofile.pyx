@@ -116,7 +116,7 @@ class RangeCounterBAM(RangeCounter):
         cdef int xstart, xend, rstart, rend, start, end
         cdef int interval_width
         cdef int current_offset
-        cdef AlignedRead read
+        cdef AlignedSegment read
         cdef int shift_extend
         cdef int work_offset
         cdef int pos
@@ -186,7 +186,7 @@ class RangeCounterBAMShift(RangeCounterBAM):
         cdef int xstart, xend, rstart, rend, start, end
         cdef int interval_width
         cdef int current_offset
-        cdef AlignedRead read
+        cdef AlignedSegment read
         cdef int shift_extend
         cdef int work_offset
         cdef int pos
@@ -269,7 +269,7 @@ class RangeCounterBAMMerge(RangeCounterBAM):
         cdef int xstart, xend, rstart, rend, start, end
         cdef int interval_width
         cdef int current_offset
-        cdef AlignedRead read
+        cdef AlignedSegment read
         cdef int work_offset
         cdef int pos
         cdef int length
@@ -338,7 +338,7 @@ class RangeCounterBAMBaseAccuracy(RangeCounterBAM):
         cdef int xstart, xend, rstart, rend, start, end
         cdef int interval_width
         cdef int current_offset
-        cdef AlignedRead read
+        cdef AlignedSegment read
         cdef int work_offset
         cdef int pos
         cdef int length
@@ -503,14 +503,14 @@ class IntervalsCounter:
             self.dtype = numpy.float
         else:
             self.dtype = numpy.int
-
-        self.aggregate_counts.append(numpy.zeros(length, dtype = self.dtype))
+        self.aggregate_counts.append(numpy.zeros(length, dtype=self.dtype))
 
     def setOutputProfiles(self, outfile_profiles):
         if outfile_profiles:
             self.outfile_profiles = outfile_profiles
-            sum_counts = sum( [len(x) for x in self.aggregate_counts] )
-            self.outfile_profiles.write("\t%s\n" % ("\t".join(map(str, range(sum_counts))) ) )
+            sum_counts = sum([len(x) for x in self.aggregate_counts])
+            self.outfile_profiles.write(
+                "\t%s\n" % ("\t".join(map(str, range(sum_counts)))))
 
     def getNumBins( self ):
         '''returns the number of bins in this counter.'''
@@ -540,8 +540,9 @@ class IntervalsCounter:
     def addLengths( self, *lengths ):
         '''add interval lengths to this counter.'''
 
-        for x, interv in enumerate(lengths):
-            self.lengths[x].append(sum( [x[1]-x[0] for x in interv]))
+        assert len(lengths) == len(self.lengths)
+        for idx, interv in enumerate(lengths):
+            self.lengths[idx].append(sum([x[1]-x[0] for x in interv]))
 
     def aggregate( self, *counts ):
 
@@ -587,7 +588,7 @@ class IntervalsCounter:
 
     def getProfile(self,
                    normalize=None,
-                   background_region=10):
+                   background_region_bins=10):
         '''return meta gene profile.
 
         apply various normalization methods.
@@ -618,8 +619,8 @@ class IntervalsCounter:
             elif normalize == "background":
                 # take counts at either end of profile
                 background_counts = numpy.concatenate( 
-                    [profile[:background_region],
-                     profile[-background_region:]])
+                    [profile[:background_region_bins],
+                     profile[-background_region_bins:]])
                 # compute mean()
                 background = numpy.mean(background_counts)
 
@@ -637,7 +638,7 @@ class IntervalsCounter:
         '''output length stats to outfile.'''
         
         outfile.write( "region\t%s\n" % "\t".join(Stats.Summary.fields ))
-        for field,l in zip(self.fields, self.lengths):
+        for field, l in zip(self.fields, self.lengths):
             outfile.write( "%s\t%s\n" % (field, str(Stats.Summary( l))))
 
     def update( self, gtf ):
@@ -661,14 +662,284 @@ class UnsegmentedCounter( IntervalsCounter ):
     
     name = None
     
-    def __init__(self, counter, 
+    def __init__(self, counter,
                  *args,
                  **kwargs ):
         IntervalsCounter.__init__(self, counter, *args, **kwargs)
-
         self.name = counter.name
         self.add( 'all', counter.getNumBins() )
+
+
+class SeparateExonCounter( IntervalsCounter ):
+    '''count reads over 1st, middle and last exons as well as upstream/
+    downstream of genes/transcripts.  Only protein-coding genes (with a
+    CDS) are counted
+    '''
+    name = "separateexonprofile"
+
+    def __init__(self, counter, 
+                 int resolution_upstream,
+                 int resolution_first_exon,
+                 int resolution_last_exon,
+                 int resolution_exons,
+                 int resolution_downstream,
+                 int extension_upstream = 0,
+                 int extension_downstream = 0,
+                 int scale_flanks = 0,
+                 *args,
+                 **kwargs):
+
+        IntervalsCounter.__init__(self, counter, *args, **kwargs)
+	      
+        self.extension_upstream = extension_upstream
+        self.extension_downstream = extension_downstream
+        self.resolution_first_exon = resolution_first_exon
+        self.resolution_last_exon = resolution_last_exon
+        self.resolution_exons = resolution_exons
+        self.resolution_upstream = resolution_upstream
+        self.resolution_downstream = resolution_downstream
+        self.scale_flanks = scale_flanks
+
+        for field, length in zip(
+                ("upstream", "first_exon", "exons", "last_exon", "downstream"),
+                (resolution_upstream,
+                 resolution_first_exon,
+                 resolution_exons,
+                 resolution_last_exon,
+                 resolution_downstream)):
+            self.add(field, length)
+
+
+    def count(self, gtf):
+        '''build ranges to be analyzed from a gene model.
+        Returns a tuple with ranges for first, middle and last exons,
+        upstream and downstream.  Does not count genes with 1 exon.
+        '''
         
+        contig = gtf[0].contig
+        exons = GTF.asRanges(gtf, "exon")
+        if len(exons) == 0:
+            E.warn("no exons in gene %s:%s" % (gtf[0].gene_id, gtf[0].transcript_id))
+            return 0
+
+        if len(exons) == 2:
+            first = [exons[0]]
+            last = [exons[-1]]
+            exons = [(0, 0)]
+
+        elif len(exons) == 1:
+            E.warn("only one exon in %s:%s" % (gtf[0].gene_id, gtf[0].transcript_id))
+            return 0
+
+        else:
+            first = [exons[0]]
+            last = [exons[-1]]
+            exons.remove(exons[0])
+            exons.remove(exons[-1])
+
+        first_start, first_end = first[0][0], first[0][1]
+        last_start, last_end = last[0][0], last[0][1]
+        exons_start, exons_end = exons[0][0], exons[-1][1]
+        if self.scale_flanks > 0:
+            self.extension_downstream = (last_end - first_start)*self.scale_flanks
+            self.extension_upstream = (last_end - first_start)*self.scale_flanks
+            E.dubg("scale flanks")
+            
+        if gtf[0].strand == "-":
+            downstream = [(max(0, first_start - self.extension_downstream),
+                           first_start),]
+            upstream = [(last_end,
+                         last_end + self.extension_upstream), ]
+        else:
+            upstream = [(max(0, first_start - self.extension_upstream),
+	                 first_start), ]
+            downstream = [(last_end,
+	                   last_end + self.extension_downstream), ]
+
+        E.debug("counting first exons")
+        self.counts_first_exon = self.counter.getCounts(contig, first,
+                                                        self.resolution_first_exon)
+
+        E.debug("counting exons")
+        self.counts_exons = self.counter.getCounts(contig,exons,
+                                                   self.resolution_exons)
+
+        E.debug("counting last exons")
+        self.counts_last_exon = self.counter.getCounts(contig, last,
+                                                       self.resolution_last_exon)
+
+        E.debug("counting upstream")
+        self.counts_upstream = self.counter.getCounts(contig, upstream,
+                                                      self.resolution_upstream)
+
+        E.debug("counting downstream")
+        self.counts_downstream = self.counter.getCounts(contig, downstream,
+                                                        self.resolution_downstream)
+        
+        E.debug("counting finished" )
+        
+        ## revert for negative strand
+        if gtf[0].strand == "-":
+            self.counts_first_exon = self.counts_first_exon[::-1]
+            self.counts_last_exon = self.counts_last_exon[::-1]
+            self.counts_exons = self.counts_exons[::-1]
+            self.counts_upstream = self.counts_upstream[::-1]
+            self.counts_downstream = self.counts_downstream[::-1]
+
+        self.addLengths( upstream, first, exons, last, downstream )
+
+        self.aggregate(self.counts_upstream,
+                       self.counts_first_exon,
+                       self.counts_exons,
+                       self.counts_last_exon,
+                       self.counts_downstream )
+
+        return 1
+
+
+class SeparateExonWithIntronCounter(IntervalsCounter):
+    '''count reads over 1st, middle and last exons as well as introns, upstream/
+    downstream of genes/transcripts.  Only protein-coding genes (with a
+    CDS) are counted, introns are not split.
+    '''
+    name = "separateexonprofilewithintrons"
+
+    def __init__(self, counter, 
+                 int resolution_upstream,
+                 int resolution_first_exon,
+                 int resolution_last_exon,
+                 int resolution_exons,
+                 int resolution_introns,
+                 int resolution_downstream,
+                 int extension_upstream = 0,
+                 int extension_downstream = 0,
+                 int scale_flanks = 0,
+                 *args,
+                 **kwargs):
+
+        IntervalsCounter.__init__(self, counter, *args, **kwargs)
+	      
+        self.extension_upstream = extension_upstream
+        self.extension_downstream = extension_downstream
+        self.resolution_first_exon = resolution_first_exon
+        self.resolution_last_exon = resolution_last_exon
+        self.resolution_exons = resolution_exons
+        self.resolution_introns = resolution_introns
+        self.resolution_upstream = resolution_upstream
+        self.resolution_downstream = resolution_downstream
+        self.scale_flanks = scale_flanks
+
+        for field, length in zip(
+                ("upstream", "first_exon", "exons",
+                 "introns", "last_exon", "downstream"),
+                (resolution_upstream,
+                 resolution_first_exon,
+                 resolution_exons,
+                 resolution_introns,
+                 resolution_last_exon,
+                 resolution_downstream)):
+            self.add(field, length)
+
+    def count(self, gtf):
+        '''build ranges to be analyzed from a gene model.
+        Returns a tuple with ranges for first, middle and last exons, introns,
+        upstream and downstream.  Does not count genes with 1 exon.
+        '''
+        
+        contig = gtf[0].contig
+        exons = GTF.asRanges(gtf, "exon")
+        introns = Intervals.complement(exons)
+
+        if len(exons) == 0:
+            E.warn("no exons in gene %s:%s" % (gtf[0].gene_id, gtf[0].transcript_id))
+            return 0
+
+        # Exclude intron-less genes
+        if len(introns) == 0:
+            E.warn("no introns in gene %s:%s" % (gtf[0].gene_id, gtf[0].transcript_id))
+            return 0
+	  
+        if len(exons) == 2:
+            first = [exons[0]]
+            last = [exons[-1]]
+            exons = [(0, 0)]
+
+        elif len(exons) == 1:
+            E.warn("only one exon in %s:%s" % (gtf[0].gene_id, gtf[0].transcript_id))
+            return 0
+
+        else:
+            first = [exons[0]]
+            last = [exons[-1]]
+            exons.remove(exons[0])
+            exons.remove(exons[-1])
+
+        first_start, first_end = first[0][0], first[0][1]
+        last_start, last_end = last[0][0], last[0][1]
+        exons_start, exons_end = exons[0][0], exons[-1][1]
+        if self.scale_flanks > 0:
+            self.extension_downstream = (last_end - first_start)*self.scale_flanks
+            self.extension_upstream = (last_end - first_start)*self.scale_flanks
+            E.dubg("scale flanks")
+            
+        if gtf[0].strand == "-":
+            downstream = [(max(0, first_start - self.extension_downstream),
+                           first_start),]
+            upstream = [(last_end,
+                         last_end + self.extension_upstream), ]
+        else:
+            upstream = [(max(0, first_start - self.extension_upstream),
+	                 first_start), ]
+            downstream = [(last_end,
+	                   last_end + self.extension_downstream), ]
+
+        E.debug("counting first exons")
+        self.counts_first_exon = self.counter.getCounts(contig, first,
+                                                        self.resolution_first_exon)
+
+        E.debug("counting exons")
+        self.counts_exons = self.counter.getCounts(contig, exons,
+                                                   self.resolution_exons)
+
+        E.debug("counting introns")
+        self.counts_introns = self.counter.getCounts(contig, introns,
+                                                     self.resolution_introns)
+
+        E.debug("counting last exons")
+        self.counts_last_exon = self.counter.getCounts(contig, last,
+                                                       self.resolution_last_exon)
+
+        E.debug("counting upstream")
+        self.counts_upstream = self.counter.getCounts(contig, upstream,
+                                                      self.resolution_upstream)
+
+        E.debug("counting downstream")
+        self.counts_downstream = self.counter.getCounts(contig, downstream,
+                                                        self.resolution_downstream)
+        
+        E.debug("counting finished" )
+        
+        ## revert for negative strand
+        if gtf[0].strand == "-":
+            self.counts_first_exon = self.counts_first_exon[::-1]
+            self.counts_last_exon = self.counts_last_exon[::-1]
+            self.counts_exons = self.counts_exons[::-1]
+            self.counts_introns = self.counts_introns[::-1]
+            self.counts_upstream = self.counts_upstream[::-1]
+            self.counts_downstream = self.counts_downstream[::-1]
+
+        self.addLengths(upstream, first, exons, introns, last, downstream)
+
+        self.aggregate(self.counts_upstream,
+                       self.counts_first_exon,
+                       self.counts_exons,
+                       self.counts_introns,
+                       self.counts_last_exon,
+                       self.counts_downstream )
+
+        return 1
+
+
 class GeneCounter( IntervalsCounter ):
     '''count reads in exons and upstream/downstream of genes/transcripts.
     
@@ -1420,8 +1691,8 @@ class TSSCounter( IntervalsCounter ):
 
         return 1
 
-def countFromGTF( counters,
-                  gtf_iterator):
+def countFromGTF(counters,
+                 gtf_iterator):
     '''compute counts using counters for
     transcripts in gtf_iterator.
     '''

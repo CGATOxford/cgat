@@ -17,9 +17,9 @@ For example::
 
    samtools view example.bam
 
-   READ1     163     1       13040   15      76M     =       13183   219     ...
-   READ1     83      1       13183   7       76M     =       13040   -219    ...
-   READ2     147     1       13207   0       76M     =       13120   -163    ...
+   READ1    163    1      13040   15     76M    =      13183   219     ...
+   READ1    83     1      13183   7      76M    =      13040   -219    ...
+   READ2    147    1      13207   0      76M    =      13120   -163    ...
 
    python bam2bed.py example.bam
 
@@ -34,23 +34,69 @@ a single interval. The strand is set according to the first read in a
 pair.
 
 Usage
------
+----
+::
+
+   cgat bam2bed BAMFILE [--merge-pairs] [options]
+   
+operates on the file BAMFILE::
+
+   cgat bam2bed [--merge-pairs] [options]
+
+operates on the stdin as does::
+
+   cgat bam2bed -I BAMFILE [--merge-pairs] [options]
+
 
 To merge paired-end reads and output fragment interval ie. leftmost
 mapped base to rightmost mapped base::
 
-   cat example.bam | python bam2bed.py --merge-pairs
+   cat example.bam | cgat bam2bed --merge-pairs
 
    1       13119   13282   READ2     0       +
    1       13039   13258   READ1     7       +
 
-   python bam2bed.py in.bam > out.bed
+To use merge pairs on only a region of the genome use samtools view::
 
-This command converts the BAM file in.bam into a BED file named out.bed.
+   samtools view -ub example.bam 1:13000:13100 | cgat bam2bed --merge-pairs
 
-To output read intervals that overlap chromosome 1, coordinates 13000-13100::
+Note that this will select fragments were the first read-in-pair is in
+the region.
 
-   samtools view -ub example.bam 1:13000:13100 | python bam2bed.py
+Options
+-------
+
+-m, --merge-pairs
+    Output one region per fragment rather than one region per read,
+    thus a single region is create stretching from the start of the
+    frist read in pair to the end of the second.
+
+    Read pairs that meet the following criteria are removed:
+
+    * Reads where one of the pair is unmapped
+    * Reads that are not paired
+    * Reads where the pairs are mapped to different chromosomes
+    * Reads where the the insert size is not between the max and
+      min (see below)
+
+.. warning::
+
+    Merged fragements are always returned on the +ve strand.
+    Fragement end point is estimated as the alignment start position
+    of the second-in-pair read + the length of the first-in-pair
+    read. This may lead to inaccuracy if you have an intron-aware
+    aligner.
+
+--max-insert-size, --min-insert-size
+    The maximum and minimum size of the insert that is allowed when
+    using the --merge-pairs option. Read pairs closer to gether or futher
+    apart than the min and max repsectively are skipped.
+
+-b, --bed-format
+    What format to output the results in. The first n columns of the bed
+    file will be output.
+
+
 
 Type::
 
@@ -88,12 +134,6 @@ def main(argv=None):
     # setup command line parser
     parser = E.OptionParser(
         version="%prog version: $Id$", usage=globals()["__doc__"])
-
-    parser.add_option("-r", "--region", dest="region", type="string",
-                      help="output read intervals that overlap samtools "
-                      "region string. This option works not from stdin."
-                      "This option is deprecated, use samtools instead. "
-                      "[default=%default]. ")
 
     parser.add_option("-m", "--merge-pairs", dest="merge_pairs",
                       action="store_true",
@@ -143,13 +183,8 @@ def main(argv=None):
         E.info("category\tcounts\n%s\n" % counter.asTable())
 
     else:
-        if options.region is not None:
-            if args[0] == "-":
-                raise ValueError("can't use region with a file from stdin")
-            it = samfile.fetch(region=options.region)
-        else:
-            # use until_eof. Files from stdin have no index
-            it = samfile.fetch(until_eof=True)
+        # use until_eof. Files from stdin have no index
+        it = samfile.fetch(until_eof=True)
 
         # more comfortable cigar parsing will
         # come with the next pysam release

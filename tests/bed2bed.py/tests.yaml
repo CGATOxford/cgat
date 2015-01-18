@@ -45,7 +45,19 @@ merge_by_name:
    references: [chip_peaks_merged_by_name.bed]
    options: --method=merge --merge-by-name -L /dev/null
 
+#test that merge is union
+merge_is_union:
+   outputs: [stdout]
+   stdin: null
+   references: [merge_is_union_out.bed]
+   options: --method=merge -L /dev/null -I %DIR%/merge_is_union_in.bed
 
+#test bed12 merging with block resolution
+bed12_merge:
+   outputs: [stdout]
+   stdin: null
+   references: [bed12_merge_out.bed]
+   options: --method=merge --merge-and-resolve-blocks -I %DIR%/bed12_merge_in.bed --merge-min-intervals=2 -L /dev/null
 #filterGenome
 #############
 
