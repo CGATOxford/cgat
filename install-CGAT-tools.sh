@@ -34,21 +34,29 @@ if [ -f /etc/os-release ]; then
 
 elif [ -f /etc/system-release ]; then
 
-   OP1=$(cat /etc/system-release | awk ' {print $4;}' | awk '{sub("\\."," "); print $1;}')
-   OP2=$(cat /etc/system-release | awk ' {print $3;}' | awk '{sub("\\."," "); print $1;}')
-   if [ "$OP1" != "6" -o "$OP2" != "6" ] ; then
-      echo
-      echo " Sorry, this version of Scientific Linux / CentOS has not been tested. Only 6.x versions are supported so far. "
-      echo
-      exit 1;
-   fi
-
-   if [ "$OP1" == "6" ] ; then
-      OS="sl"
-   fi
-
-   if [ "$OP2" == "6" ] ; then
-      OS="centos"
+   OP=$(cat /etc/system-release | awk ' {print $1;}')
+   if [ "$OP" == "Scientific" ] ; then
+      OP=$(cat /etc/system-release | awk ' {print $4;}' | awk '{sub("\\."," "); print $1;}')
+      if [ "$OP" != "6" ] ; then
+         echo
+         echo " Sorry, this version of Scientific Linux has not been tested. Only 6.x versions are supported so far. "
+         echo
+         exit 1;
+      else
+         OS="sl"
+      fi
+   elif [ "$OP" == "CentOS" ] ; then
+      OP=$(cat /etc/system-release | awk ' {print $3;}' | awk '{sub("\\."," "); print $1;}')
+      if [ "$OP" != "6" ] ; then
+         echo
+         echo " Sorry, this version of CentOS has not been tested. Only 6.x versions are supported so far. "
+         echo
+         exit 1;
+      else
+         OS="centos"
+      fi
+   else
+      sanity_check_os
    fi
 
 else
@@ -64,7 +72,7 @@ install_os_packages() {
 
 detect_os
 
-if [ "$OS" == "ubuntu" -o "$OS" == "travis" ] ; then
+if [ "$OS" == "ubuntu" ] || [ "$OS" == "travis" ] ; then
 
    echo
    echo " Installing packages for Ubuntu "
@@ -72,7 +80,7 @@ if [ "$OS" == "ubuntu" -o "$OS" == "travis" ] ; then
 
    sudo apt-get --quiet install -y gcc g++ zlib1g-dev libssl-dev libssl1.0.0 libbz2-dev libfreetype6-dev libpng12-dev libblas-dev libatlas-dev liblapack-dev gfortran libpq-dev r-base-dev libreadline-dev libmysqlclient-dev libboost-dev libsqlite3-dev;
 
-elif [ "$OS" == "sl" -o "$OS" == "centos" ] ; then
+elif [ "$OS" == "sl" ] || [ "$OS" == "centos" ] ; then
 
    echo 
    echo " Installing packages for Scientific Linux / CentOS "

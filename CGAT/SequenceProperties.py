@@ -309,8 +309,10 @@ class SequencePropertiesDN(SequenceProperties):
         """load sequence properties from a sequence."""
         SequenceProperties.loadSequence(self, sequence, seqtype)
 
-        # for na in sequence.upper():
-        for dinuc in [sequence[x - 2:x] for x in range(2, len(sequence) + 1, 1)]:
+        # IMS: generator rather than list
+        # to save memory for might be a neater way of doing this.
+        for dinuc in (sequence[x - 2:x]
+                      for x in xrange(2, len(sequence) + 1, 1)):
             try:
                 self.mCountsDinuc[dinuc] += 1
             except KeyError:
@@ -555,7 +557,8 @@ class SequencePropertiesDegeneracy (SequencePropertiesLength):
                 xx.append(yy)
             self.mCountsDegeneracy.append(xx)
 
-        for codon in [sequence[x:x + 3] for x in range(0, len(sequence), 3)]:
+        # use generator rather than list to save memory
+        for codon in (sequence[x:x + 3] for x in xrange(0, len(sequence), 3)):
 
             for x in (0, 1, 2):
                 self.mCounts[x][codon[x]] += 1
@@ -724,7 +727,7 @@ class SequencePropertiesAA(SequenceProperties):
         for x in Bio.Alphabet.IUPAC.extended_protein.letters:
             self.mCountsAA[x] = 0
 
-        for codon in [sequence[x:x + 3] for x in range(0, len(sequence), 3)]:
+        for codon in (sequence[x:x + 3] for x in xrange(0, len(sequence), 3)):
             aa = Genomics.MapCodon2AA(codon)
             self.mCountsAA[aa] += 1
 
@@ -975,7 +978,7 @@ class SequencePropertiesCodonTranslator(SequencePropertiesCodonUsage):
 
         fields = SequenceProperties.getFields(self)
 
-        for x in range(0, len(self.mSequence), 3):
+        for x in xrange(0, len(self.mSequence), 3):
             codon = self.mSequence[x:x + 3]
             if codon in self.mCodonFrequencies:
                 v = self.mCodonFrequencies[codon]

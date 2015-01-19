@@ -38,12 +38,10 @@ import os
 import sys
 import string
 import re
-import time
-import array
 import hashlib
 import base64
 import tempfile
-import math
+
 try:
     import alignlib_lite
 except ImportError:

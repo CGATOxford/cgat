@@ -47,6 +47,10 @@ pseudo-codons
 interleaved-codons
    mix amino acids and codons
 
+filter
+   remove sequence according to certain criteria. For example,
+   --method=filter --filter-method=min-length=5  --filter-method=max-length=10
+
 map-codons:
 
 remove-gaps
@@ -112,22 +116,15 @@ Command line options
 ---------------------
 
 '''
-import os
 import sys
 import string
 import re
-import optparse
-import math
-import time
-import tempfile
-import subprocess
 import random
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import CGAT.Genomics as Genomics
 import CGAT.FastaIterator as FastaIterator
 import CGAT.Masker as Masker
-import random
 import itertools
 
 
@@ -162,31 +159,33 @@ def main(argv=None):
     parser = E.OptionParser(version="%prog version",
                             usage=globals()["__doc__"])
 
-    parser.add_option("-m", "--method", dest="methods", type="choice", action="append",
-                      choices=("translate",
-                               "translate-to-stop",
-                               "truncate-at-stop",
-                               "back-translate",
-                               "mark-codons",
-                               "apply-map",
-                               "build-map",
-                               "pseudo-codons",
-                               "interleaved-codons",
-                               "map-codons",
-                               "remove-gaps",
-                               "mask-seg",
-                               "mask-bias",
-                               "mask-codons",
-                               "mask-incomplete-codons",
-                               "mask-stops",
-                               "mask-soft",
-                               "remove-stops",
-                               "upper",
-                               "lower",
-                               "reverse-complement",
-                               "sample",
-                               "shuffle"),
-                      help="method to apply to sequences.")
+    parser.add_option(
+        "-m", "--method", dest="methods", type="choice", action="append",
+        choices=("translate",
+                 "translate-to-stop",
+                 "truncate-at-stop",
+                 "back-translate",
+                 "mark-codons",
+                 "apply-map",
+                 "build-map",
+                 "pseudo-codons",
+                 "filter",
+                 "interleaved-codons",
+                 "map-codons",
+                 "remove-gaps",
+                 "mask-seg",
+                 "mask-bias",
+                 "mask-codons",
+                 "mask-incomplete-codons",
+                 "mask-stops",
+                 "mask-soft",
+                 "remove-stops",
+                 "upper",
+                 "lower",
+                 "reverse-complement",
+                 "sample",
+                 "shuffle"),
+        help="method to apply to sequences.")
 
     parser.add_option(
         "-p", "--parameters", dest="parameters", type="string",
@@ -197,17 +196,24 @@ def main(argv=None):
         "-x", "--ignore-errors", dest="ignore_errors", action="store_true",
         help="ignore errors [default = %default].")
 
-    parser.add_option(
-        "-e", "--exclude-pattern", dest="exclude_pattern", type="string",
-        help="exclude sequences with ids matching pattern [default = %default].")
-
     parser.add_option("--sample-proportion", dest="sample_proportion",
                       type="float",
                       help="sample proportion [default = %default].")
 
     parser.add_option(
-        "-n", "--include-pattern", dest="include_pattern", type="string",
-        help="include sequences with ids matching pattern "
+        "--exclude-pattern", dest="exclude_pattern", type="string",
+        help="exclude all sequences with ids matching pattern "
+        "[default = %default].")
+
+    parser.add_option(
+        "--include-pattern", dest="include_pattern", type="string",
+        help="include only sequences with ids matching pattern "
+        "[default = %default].")
+
+    parser.add_option(
+        "--filter-method", dest="filter_methods", type="string",
+        action="append",
+        help="filtering methods to apply "
         "[default = %default].")
 
     parser.add_option(
@@ -238,6 +244,7 @@ def main(argv=None):
         exclude_pattern=None,
         include_pattern=None,
         sample_proportion=None,
+        filter_methods=[],
     )
 
     (options, args) = E.Start(parser)
@@ -292,6 +299,22 @@ def main(argv=None):
     else:
         sample_proportion = None
 
+    filter_min_sequence_length = None
+    filter_max_sequence_length = None
+    for f in options.filter_methods:
+        if f.startswith("min-length"):
+            filter_min_sequence_length = int(f.split("=")[1])
+        elif f.startswith("max-length"):
+            filter_max_sequence_length = int(f.split("=")[1])
+
+    def raiseIfNotCodon(l, title):
+        '''raise ValueError if sequence length l is not divisible by
+        3'''
+
+        if l % 3 != 0:
+            raise ValueError(
+                "length of sequence %s not divisible by 3" % (title))
+
     while 1:
         try:
             cur_record = iterator.next()
@@ -331,10 +354,10 @@ def main(argv=None):
                         cur_record.title, ls)
                     nerrors += 1
                     if options.ignore_errors:
-                        options.stdlog.write("# ERROR: %s\n" % msg)
+                        E.warn(msg)
                         continue
                     else:
-                        raise ValueError, msg
+                        raise ValueError(msg)
 
                 for codon in [sequence[x:x + 3] for x in range(0, l, 3)]:
                     aa = Genomics.MapCodon2AA(codon)
@@ -359,13 +382,15 @@ def main(argv=None):
                     "[ %s]" % options.gap_chars, "", other_record.sequence)
 
                 if len(other_sequence) % 3 != 0:
-                    raise ValueError, "length of sequence %s not divisible by 3" % (
-                        other_record.title)
+                    raise ValueError(
+                        "length of sequence %s not divisible by 3" %
+                        (other_record.title))
 
                 r = re.sub("[%s]" % options.gap_chars, "", sequence)
                 if len(other_sequence) != len(r) * 3:
-                    raise ValueError, "length of sequences do not match: %i vs %i" % (
-                        len(other_sequence), len(r))
+                    raise ValueError(
+                        "length of sequences do not match: %i vs %i" %
+                        (len(other_sequence), len(r)))
 
                 x = 0
                 for aa in sequence:
@@ -379,11 +404,8 @@ def main(argv=None):
                 sequence = "".join(seq)
 
             elif method == "pseudo-codons":
-
+                raiseIfNotCodon(l, cur_record.title)
                 seq = []
-                if l % 3 != 0:
-                    raise ValueError, "length of sequence %s not divisible by 3" % (
-                        cur_record.title)
 
                 for codon in [sequence[x:x + 3] for x in range(0, l, 3)]:
 
@@ -398,7 +420,6 @@ def main(argv=None):
 
             elif method in ("mask-stops", "remove-stops"):
                 c = []
-                n = 0
                 codon = []
                 new_sequence = []
 
@@ -446,8 +467,10 @@ def main(argv=None):
 
                 # Check lengths of unmasked and soft masked sequences the same
                 if l != lhm:
-                    raise ValueError, "length of unmasked and hard masked sequences not identical for record %s" % (
-                        cur_record.title)
+                    raise ValueError(
+                        "length of unmasked and hard masked sequences not "
+                        "identical for record %s" %
+                        (cur_record.title))
 
                 # Check if hard masked seq contains repeat (N), if so replace N
                 # with lowercase sequence from unmasked version
@@ -462,13 +485,11 @@ def main(argv=None):
                 sequence = "".join(new_sequence)
 
             elif method == "map-codons":
-
+                raiseIfNotCodon(l, cur_record.title)
                 seq = []
-                if l % 3 != 0:
-                    raise ValueError, "length of sequence %s not divisible by 3" % (
-                        cur_record.title)
 
-                for codon in [sequence[x:x + 3].upper() for x in range(0, l, 3)]:
+                for codon in (sequence[x:x + 3].upper()
+                              for x in xrange(0, l, 3)):
 
                     if codon not in map_codon2code:
                         aa = "X"
@@ -479,11 +500,8 @@ def main(argv=None):
                 sequence = "".join(seq)
 
             elif method == "interleaved-codons":
-
+                raiseIfNotCodon(l, cur_record.title)
                 seq = []
-                if l % 3 != 0:
-                    raise ValueError, "length of sequence %s not divisible by 3" % (
-                        cur_record.title)
 
                 for codon in [sequence[x:x + 3] for x in range(0, l, 3)]:
 
@@ -533,10 +551,8 @@ def main(argv=None):
                 sequence = sequence.lower()
 
             elif method == "mark-codons":
+                raiseIfNotCodon(l, cur_record.title)
                 seq = []
-                if l % 3 != 0:
-                    raise ValueError, "length of sequence %s not divisible by 3" % (
-                        cur_record.title)
 
                 sequence = " ".join([sequence[x:x + 3]
                                      for x in range(0, l, 3)])
@@ -587,13 +603,16 @@ def main(argv=None):
 
                 if cur_record.title != other_record.title:
                     raise ValueError(
-                        "sequence titles don't match: %s %s" % (cur_record.title, other_record.title))
+                        "sequence titles don't match: %s %s" %
+                        (cur_record.title, other_record.title))
 
                 other_sequence = re.sub(" ", "", other_record.sequence)
 
                 if len(other_sequence) * 3 != len(sequence):
-                    raise ValueError("sequences for %s don't have matching lengths %i - %i" %
-                                     (cur_record.title, len(other_sequence) * 3, len(sequence)))
+                    raise ValueError(
+                        "sequences for %s don't have matching lengths %i - %i" %
+                        (cur_record.title, len(other_sequence) * 3,
+                         len(sequence)))
 
                 seq = list(sequence)
                 c = 0
@@ -606,6 +625,16 @@ def main(argv=None):
                     c += 3
 
                 sequence = "".join(seq)
+
+        l = len(sequence)
+        if filter_min_sequence_length is not None and \
+           l < filter_min_sequence_length:
+            nskipped += 1
+
+        if filter_max_sequence_length is not None and \
+           l > filter_max_sequence_length:
+            nskipped += 1
+            continue
 
         options.stdout.write(">%s\n%s\n" % (cur_record.title, sequence))
         noutput += 1

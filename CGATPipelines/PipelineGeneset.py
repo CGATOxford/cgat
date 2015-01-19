@@ -495,6 +495,9 @@ def buildPeptideFasta(infile, outfile):
 def loadPeptideSequences(infile, outfile):
     '''load ENSEMBL peptide file into database
 
+    Remove empty sequences (see for example
+    transcript:ENSMUST00000151316, ENSMUSP00000118372)
+
     *infile* is an ENSEMBL .pep.all.fa.gz file.
     '''
     table = P.toTable(outfile)
@@ -502,6 +505,7 @@ def loadPeptideSequences(infile, outfile):
     statement = '''gunzip
     < %(infile)s
     | perl -p -e 'if ("^>") { s/ .*//};'
+    | python %(scriptsdir)s/fasta2fasta.py --output-min-length=1
     | python %(scriptsdir)s/fasta2table.py --section=length --section=sequence
     | perl -p -e 's/id/protein_id/'
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
@@ -756,12 +760,17 @@ def loadProteinStats(infile, outfile):
     '''load protein statistics to database.
 
     The *infile* is an ENSEMBL peptide file.
+
+    Remove empty sequences (see for example
+    transcript:ENSMUST00000151316, ENSMUSP00000118372)
+
     '''
 
     table = P.toTable(outfile)
 
     statement = '''
     gunzip < %(infile)s
+    | python %(scriptsdir)s/fasta2fasta.py --output-min-length=1
     | python %(scriptsdir)s/fasta2table.py
           --log=%(outfile)s
           --sequence-type=aa
@@ -789,8 +798,8 @@ def loadProteinStats(infile, outfile):
 def buildPromotorRegions(infile, outfile):
     '''annotate promotor regions from reference gene set.'''
     statement = """
-    gunzip < %(infile)s |\
-    python %(scriptsdir)s/gff2gff.py --method=sanitize
+    gunzip < %(infile)s
+    | python %(scriptsdir)s/gff2gff.py --method=sanitize
     --sanitize-method=genome
     --skip-missing --genome-file=%(genome_dir)s/%(genome)s
     --log=%(outfile)s.log
