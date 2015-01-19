@@ -704,7 +704,7 @@ def mapTrack2Input(tracks):
 
 
 @transform(loadWindowsReadCounts, suffix(".load"),
-           "_l2foldchange_input.tsv")
+           "_l2foldchange_input.tsv.gz")
 def buildWindowsFoldChangesPerInput(infile, outfile):
     '''Compute fold changes for each sample compared to appropriate input.
 
@@ -1782,8 +1782,14 @@ def buildTranscriptProfiles(infiles, outfile):
     P.run()
 
 
-@follows(gc, loadPicardDuplicateStats, diff_windows, dmr)
+@follows(buildTranscriptProfiles, gc, loadPicardDuplicateStats,
+         diff_windows, dmr)
 def full():
+    pass
+
+
+@follows(buildBackgroundWindows)
+def test():
     pass
 
 
