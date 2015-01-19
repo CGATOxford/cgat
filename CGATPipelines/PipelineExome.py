@@ -3,7 +3,7 @@
 PipelineExome.py - common tasks for Variant Calling
 ======================================================
 
-:Author: David Sims
+:Author: David Sims & Tom Smith
 :Release: $Id$
 :Date: |today|
 :Tags: Python
@@ -39,12 +39,12 @@ PARAMS = {}
 
 
 def getGATKOptions():
-    return "-pe dedicated 3 -R y -l mem_free=1.4G -l picard=1"
+    return "-l mem_free=1.4G -l picard=1"
 
-#########################################################################
+################################################################################
 
 
-def GATKreadGroups(infile, outfile, genome,
+def GATKReadGroups(infile, outfile, genome,
                    library="unknown", platform="Illumina",
                    platform_unit="1"):
     '''Reorders BAM according to reference fasta and adds read groups'''
@@ -52,6 +52,7 @@ def GATKreadGroups(infile, outfile, genome,
     track = P.snip(os.path.basename(infile), ".bam")
     tmpdir_gatk = P.getTempDir('.')
     job_options = getGATKOptions()
+    job_threads = 3
 
     statement = '''ReorderSam
                     INPUT=%(infile)s
@@ -78,17 +79,19 @@ def GATKreadGroups(infile, outfile, genome,
 
     P.run()
 
+################################################################################
 
-def GATKrealign(infile, outfile, genome, threads=4):
+
+def GATKIndelRealign(infile, outfile, genome, threads=4):
     '''Realigns BAMs around indels using GATK'''
 
-    track = P.snip(os.path.basename(infile), ".bam")
-    tmpdir_gatk = P.getTempDir('.')
+    intervalfile = outfile.replace(".bam", ".intervals")
     job_options = getGATKOptions()
+    job_threads = 3
 
     statement = '''GenomeAnalysisTK
                     -T RealignerTargetCreator
-                    -o %(tmpdir_gatk)s/%(track)s.indelrealignment.intervals
+                    -o %(intervalfile)s
                     --num_threads %(threads)s
                     -R %(genome)s
                     -I %(infile)s; ''' % locals()
@@ -98,19 +101,19 @@ def GATKrealign(infile, outfile, genome, threads=4):
                     -o %(outfile)s
                     -R %(genome)s
                     -I %(infile)s
-                    -targetIntervals
-                    %(tmpdir_gatk)s/%(track)s.indelrealignment.intervals ;
-                    checkpoint ;''' % locals()
-    statement += '''rm -rf %(tmpdir_gatk)s ;''' % locals()
+                    -targetIntervals %(intervalfile)s;''' % locals()
     P.run()
 
+################################################################################
 
-def GATKrescore(infile, outfile, genome, dbsnp, solid_options=""):
+
+def GATKBaseRecal(infile, outfile, genome, dbsnp, solid_options=""):
     '''Recalibrates base quality scores using GATK'''
 
     track = P.snip(os.path.basename(infile), ".bam")
     tmpdir_gatk = P.getTempDir('.')
     job_options = getGATKOptions()
+    job_threads = 3
 
     statement = '''GenomeAnalysisTK
                     -T BaseRecalibrator
@@ -130,21 +133,28 @@ def GATKrescore(infile, outfile, genome, dbsnp, solid_options=""):
     statement += '''rm -rf %(tmpdir_gatk)s ;''' % locals()
     P.run()
 
+################################################################################
+
 
 def haplotypeCaller(infile, outfile, genome,
                     dbsnp, intervals, padding, options):
     '''Call SNVs and indels using GATK HaplotypeCaller in all members of a
     family together'''
     job_options = getGATKOptions()
+    job_threads = 3
+
     statement = '''GenomeAnalysisTK
-    -T HaplotypeCaller
-    -o %(outfile)s
-    -R %(genome)s
-    -I %(infile)s
-    --dbsnp %(dbsnp)s
-    -L %(intervals)s
-    -ip %(padding)s''' % locals()
+                    -T HaplotypeCaller
+                    -o %(outfile)s
+                    -R %(genome)s
+                    -I %(infile)s
+                    --dbsnp %(dbsnp)s
+                    -L %(intervals)s
+                    -ip %(padding)s
+                    %(options)s''' % locals()
     P.run()
+
+################################################################################
 
 
 def mutectSNPCaller(infile, outfile, mutect_log, genome, cosmic,
@@ -186,7 +196,7 @@ def mutectSNPCaller(infile, outfile, mutect_log, genome, cosmic,
 
     P.run()
 
-#########################################################################
+################################################################################
 
 
 def strelkaINDELCaller(infile_control, infile_tumour, outfile, genome, config,
@@ -203,13 +213,15 @@ def strelkaINDELCaller(infile_control, infile_tumour, outfile, genome, config,
 
     P.run()
 
-#########################################################################
+################################################################################
 
 
 def variantAnnotator(vcffile, bamlist, outfile, genome,
                      dbsnp, annotations, snpeff_file=""):
     '''Annotate variant file using GATK VariantAnnotator'''
     job_options = getGATKOptions()
+    job_threads = 3
+
     anno = annotations.split(",")
     anno = " -A " + " -A ".join(anno)
     statement = '''GenomeAnalysisTK -T VariantAnnotator
@@ -224,11 +236,15 @@ def variantAnnotator(vcffile, bamlist, outfile, genome,
                     %(anno)s''' % locals()
     P.run()
 
+################################################################################
+
 
 def variantRecalibrator(infile, outfile, genome,
                         dbsnp, hapmap, omni):
     '''Create variant recalibration file'''
     job_options = getGATKOptions()
+    job_threads = 3
+
     track = P.snip(outfile, ".recal")
     statement = '''GenomeAnalysisTK -T VariantRecalibrator
     -R %(genome)s
@@ -246,12 +262,14 @@ def variantRecalibrator(infile, outfile, genome,
     -rscriptFile %(track)s.plots.R ''' % locals()
     P.run()
 
-#########################################################################
+################################################################################
 
 
 def applyVariantRecalibration(vcf, recal, tranches, outfile, genome):
     '''Perform variant quality score recalibration using GATK '''
     job_options = getGATKOptions()
+    job_threads = 3
+
     statement = '''GenomeAnalysisTK -T ApplyRecalibration
     -R %(genome)s
     -input %(vcf)s
@@ -262,12 +280,14 @@ def applyVariantRecalibration(vcf, recal, tranches, outfile, genome):
     -o %(outfile)s ''' % locals()
     P.run()
 
-#########################################################################
+################################################################################
 
 
 def vcfToTable(infile, outfile, genome, columns):
     '''Converts vcf to tab-delimited file'''
     job_options = getGATKOptions()
+    job_threads = 3
+
     statement = '''GenomeAnalysisTK -T VariantsToTable
                    -R %(genome)s
                    -V %(infile)s
@@ -276,6 +296,8 @@ def vcfToTable(infile, outfile, genome, columns):
                    %(columns)s
                    -o %(outfile)s''' % locals()
     P.run()
+
+################################################################################
 
 
 def selectVariants(infile, outfile, genome, select):
@@ -287,6 +309,8 @@ def selectVariants(infile, outfile, genome, select):
                     -log %(outfile)s.log
                     -o %(outfile)s''' % locals()
     P.run()
+
+################################################################################
 
 
 def buildSelectStatementfromPed(filter_type, pedfile, template):
@@ -346,22 +370,22 @@ def buildSelectStatementfromPed(filter_type, pedfile, template):
 
     return select
 
-###########################################################################
+################################################################################
 
 
 def guessSex(infile, outfile):
     '''Guess the sex of a sample based on ratio of reads
     per megabase of sequence on X and Y'''
     statement = '''calc `samtools idxstats %(infile)s
-    | grep 'X'
-    | awk '{print $3/($2/1000000)}'`
-    /`samtools idxstats %(infile)s | grep 'Y'
-    | awk '{print $3/($2/1000000)}'`
-    | tr -d " " | tr "=" "\\t" | tr "/" "\\t"
-    > %(outfile)s'''
+                    | grep 'X'
+                    | awk '{print $3/($2/1000000)}'`
+                    /`samtools idxstats %(infile)s | grep 'Y'
+                    | awk '{print $3/($2/1000000)}'`
+                    | tr -d " " | tr "=" "\\t" | tr "/" "\\t"
+                    > %(outfile)s'''
     P.run()
 
-###########################################################################
+################################################################################
 
 
 # the following two functions should be generalised
@@ -456,7 +480,7 @@ def compileMutationalSignature(infiles, outfiles, min_t_alt, min_n_depth,
         outfile2.write("%s\t%s\n" % (patient_id, frequencies))
     outfile2.close()
 
-###########################################################################
+################################################################################
 
 
 @cluster_runnable

@@ -117,14 +117,21 @@ import CGAT.Database as Database
 
 # load options from the config file
 import CGAT.Pipeline as P
-P.getParameters( 
-    ["%s.ini" % __file__[:-len(".py")],
+
+P.getParameters(
+    ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
      "../pipeline.ini",
-     "pipeline.ini" ] )
+     "pipeline.ini"],
+    only_import=__name__ != "__main__")
 
 PARAMS = P.PARAMS
-PARAMS_ANNOTATIONS = P.peekParameters( PARAMS["annotations_dir"],
-                                       "pipeline_annotations.py" )
+
+PARAMS.update(P.peekParameters(
+    PARAMS["annotations_dir"],
+    "pipeline_annotations.py",
+    on_error_raise=__name__ == "__main__",
+    prefix="annotations_",
+    update_interface=True))
 
 ###################################################################
 ###################################################################
