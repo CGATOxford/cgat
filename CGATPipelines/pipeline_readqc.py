@@ -287,7 +287,7 @@ else:
 
 #########################################################################
 
-
+@follows(runFastqcFinal, runFastqc)
 #@merge(runFastqc, "status_summary.tsv.gz")
 @merge((runFastqcFinal, runFastqc), "status_summary.tsv.gz")
 def buildFastQCSummaryStatus(infiles, outfile):
@@ -298,6 +298,7 @@ def buildFastQCSummaryStatus(infiles, outfile):
 #########################################################################
 
 
+@follows(runFastqcFinal, runFastqc)
 @merge((runFastqcFinal, runFastqc), "basic_statistics_summary.tsv.gz")
 def buildFastQCSummaryBasicStatistics(infiles, outfile):
     '''load fastqc summaries into a single table.'''
