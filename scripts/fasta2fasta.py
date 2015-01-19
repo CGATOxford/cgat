@@ -47,6 +47,10 @@ pseudo-codons
 interleaved-codons
    mix amino acids and codons
 
+filter
+   remove sequence according to certain criteria. For example,
+   --method=filter --filter-method=min-length=5  --filter-method=max-length=10
+
 map-codons:
 
 remove-gaps
@@ -112,22 +116,15 @@ Command line options
 ---------------------
 
 '''
-import os
 import sys
 import string
 import re
-import optparse
-import math
-import time
-import tempfile
-import subprocess
 import random
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import CGAT.Genomics as Genomics
 import CGAT.FastaIterator as FastaIterator
 import CGAT.Masker as Masker
-import random
 import itertools
 
 
@@ -214,12 +211,10 @@ def main(argv=None):
         "[default = %default].")
 
     parser.add_option(
-        "--filter-min-length", dest="filter_min_sequence_length", type="int",
-        help="only output sequences with a minimum length [%default]")
-
-    parser.add_option(
-        "--filter-max-length", dest="filter_max_sequence_length", type="int",
-        help="only output sequences with a maximum length [%default]")
+        "--filter-method", dest="filter_methods", type="string",
+        action="append",
+        help="filtering methods to apply "
+        "[default = %default].")
 
     parser.add_option(
         "-t", "--sequence-type", dest="type", type="choice",
@@ -249,8 +244,7 @@ def main(argv=None):
         exclude_pattern=None,
         include_pattern=None,
         sample_proportion=None,
-        filter_min_sequence_length=None,
-        filter_max_sequence_length=None,
+        filter_methods=[],
     )
 
     (options, args) = E.Start(parser)
@@ -305,13 +299,13 @@ def main(argv=None):
     else:
         sample_proportion = None
 
-    filter_on_length = (
-        options.filter_min_sequence_length is not None or
-        options.filter_max_sequence_length is not None)
-
-    if filter_on_length:
-        filter_min_sequence_length = options.filter_min_sequence_length
-        filter_max_sequence_length = options.filter_max_sequence_length
+    filter_min_sequence_length = None
+    filter_max_sequence_length = None
+    for f in options.filter_methods:
+        if f.startswith("min-length"):
+            filter_min_sequence_length = int(f.split("=")[1])
+        elif f.startswith("max-length"):
+            filter_max_sequence_length = int(f.split("=")[1])
 
     def raiseIfNotCodon(l, title):
         '''raise ValueError if sequence length l is not divisible by
@@ -632,14 +626,15 @@ def main(argv=None):
 
                 sequence = "".join(seq)
 
-        if filter_on_length:
-            l = len(sequence)
-            if (filter_min_sequence_length is not None
-                and l < filter_min_sequence_length) or \
-                (filter_max_sequence_length is not None
-                 and l > filter_max_sequence_length):
-                nskipped += 1
-                continue
+        l = len(sequence)
+        if filter_min_sequence_length is not None and \
+           l < filter_min_sequence_length:
+            nskipped += 1
+
+        if filter_max_sequence_length is not None and \
+           l > filter_max_sequence_length:
+            nskipped += 1
+            continue
 
         options.stdout.write(">%s\n%s\n" % (cur_record.title, sequence))
         noutput += 1

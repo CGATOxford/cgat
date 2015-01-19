@@ -1912,7 +1912,7 @@ def runCuffdiff(bamfiles,
     except OSError:
         pass
 
-    job_options = "-pe dedicated %i -R y" % threads
+    job_threads = threads
 
     # replicates are separated by ","
     reps = collections.defaultdict(list)

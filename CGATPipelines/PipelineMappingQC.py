@@ -35,7 +35,7 @@ import CGAT.Pipeline as P
 
 
 def getPicardOptions():
-    return "-pe dedicated 3 -R y -l mem_free=1.4G -l picard=1"
+    return "-l mem_free=1.4G -l picard=1"
 
 
 def getNumReadsFromReadsFile(infile):
@@ -78,6 +78,7 @@ def buildPicardInsertSizeStats(infile, outfile, genome_file):
     '''gather BAM file insert size statistics using Picard '''
 
     job_options = getPicardOptions()
+    job_threads = 3
 
     if getNumReadsFromBAMFile(infile) == 0:
         E.warn("no reads in %s - no metrics" % infile)
@@ -99,6 +100,7 @@ def buildPicardAlignmentStats(infile, outfile, genome_file):
     '''gather BAM file alignment statistics using Picard '''
 
     job_options = getPicardOptions()
+    job_threads = 3
 
     if getNumReadsFromBAMFile(infile) == 0:
         E.warn("no reads in %s - no metrics" % infile)
@@ -128,6 +130,7 @@ def buildPicardDuplicationStats(infile, outfile):
     '''
 
     job_options = getPicardOptions()
+    job_threads = 3
 
     if getNumReadsFromBAMFile(infile) == 0:
         E.warn("no reads in %s - no metrics" % infile)
@@ -166,6 +169,7 @@ def buildPicardDuplicateStats(infile, outfile):
     '''Record duplicate metrics using Picard and keep the dedupped .bam file'''
 
     job_options = getPicardOptions()
+    job_threads = 3
 
     if getNumReadsFromBAMFile(infile) == 0:
         E.warn("no reads in %s - no metrics" % infile)
@@ -186,6 +190,7 @@ def buildPicardCoverageStats(infile, outfile, baits, regions):
     '''Generate coverage statistics for regions of interest from a bed
     file using Picard'''
     job_options = getPicardOptions()
+    job_threads = 3
 
     if getNumReadsFromBAMFile(infile) == 0:
         E.warn("no reads in %s - no metrics" % infile)
@@ -204,6 +209,7 @@ def buildPicardGCStats(infile, outfile, genome_file):
     '''Gather BAM file GC bias stats using Picard '''
 
     job_options = getPicardOptions()
+    job_threads = 3
 
     if getNumReadsFromBAMFile(infile) == 0:
         E.warn("no reads in %s - no metrics" % infile)
