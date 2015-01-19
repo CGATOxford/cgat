@@ -500,23 +500,6 @@ def HapMapGenotype(infiles, outfile):
 ##########################################################################
 
 
-@follows(SelectExonicHapmapVariants)
-@transform("bam/*.bqsr.bam", regex(r"bam/(\S+).bqsr.bam"),
-           add_inputs("hapmap/hapmap_exome.bed"),
-           r"hapmap/\1.hapmap.vcf")
-def HapMapGenotype(infiles, outfile):
-    '''Genotpye HapMap SNPs using HaplotypeCaller in each individual'''
-    infile, intervals = infiles
-    genome = PARAMS["bwa_index_dir"] + "/" + PARAMS["genome"] + ".fa"
-    dbsnp = PARAMS["gatk_dbsnp"]
-    padding = PARAMS["hapmap_padding"]
-    options = PARAMS["hapmap_hc_options"]
-    PipelineExome.haplotypeCaller(infile, outfile, genome, dbsnp,
-                                  intervals, padding, options)
-
-##########################################################################
-
-
 @transform(HapMapGenotype, regex(r"hapmap/(\S+).hapmap.vcf"),
            r"hapmap/\1.hapmap.vcf.gz")
 def indexVCFs(infile, outfile):
