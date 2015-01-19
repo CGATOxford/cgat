@@ -23,7 +23,7 @@
 GenomicIO.py - Subroutines for working on I/O of large genomic files
 ====================================================================
 
-:Author: 
+:Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
 :Tags: Python
@@ -36,28 +36,9 @@ import sys
 import array
 import string
 import re
-import types
 import tempfile
-USAGE = """python IndexedFasta.py [options] name files
-
-Index fasta formatted files to create a database called "name".
-"""
-
-import os
-import sys
-import array
-import string
-import re
-import types
-import optparse
-
-global_last_sbjct_token = None
-global_last_sbjct_from = None
-global_last_sbjct_to = None
 
 global_index = {}
-
-# ------------------------------------------------------------
 
 
 class MySequence(array.array):
@@ -72,12 +53,11 @@ class MySequence(array.array):
 
     def __setslice__(self, start, end, sub):
         """set slice start:end from a string sub."""
-        return array.array.__setslice__(self, start, end, array.array(self.mType, sub))
+        return array.array.__setslice__(
+            self, start, end, array.array(self.mType, sub))
 
     def __str__(self):
         return self.tostring()
-
-# ------------------------------------------------------------
 
 
 def index_file(filenames, db_name):

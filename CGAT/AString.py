@@ -35,8 +35,6 @@ Code
 '''
 import array
 
-# ------------------------------------------------------------
-
 
 class AString:
 
@@ -45,14 +43,14 @@ class AString:
     This class conserves memory as it uses only 1 byte per letter,
     while python strings use the machine word size for a letter.
 
-    It exports a mixture of the methods in the python string and 
+    It exports a mixture of the methods in the python string and
     python array classes.
 
     .. note::
 
-       Using this class will incur a heavy penalty compared to
-       using :class:array.array directly. Only use sparingly for
-       heavy computations.
+       Using this class will incur a penalty compared to using
+       :class:array.array directly.
+
     """
 
     def __init__(self, *args):

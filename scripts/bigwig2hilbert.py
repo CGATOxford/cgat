@@ -41,6 +41,7 @@ Command line options
 import sys
 import os
 import CGAT.Experiment as E
+import rpy2.robjects as ro
 from rpy2.robjects import r as R
 
 
@@ -67,7 +68,9 @@ parses command line options in sys.argv, unless *argv* is given.
     (options, args) = E.Start(parser, argv=argv)
 
     infile = argv[-1]
-    header = infile.split("/")[1].split(".")[0]
+    pref = infile.split("/")[1].split(".")[0]
+    spec = infile.split("/")[1].split(".")[1].split("-")[1]
+    header = "%s-%s" % (pref, spec)
     image_dir = options.images_dir
 
     if os.path.exists(image_dir):

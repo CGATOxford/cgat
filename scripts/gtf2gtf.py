@@ -935,18 +935,18 @@ def main(argv=None):
                 assert False, "please supply either a filename "
                 "with ids to filter with (--map-tsv-file) or a sample-size."
 
-        elif options.filter_method in ("proteincoding", "lincrna"):
-            # extract features by transcript/gene biotype.
-            # This filter uses a test on the feature field (ENSEMBL pre v78)
+        elif options.filter_method in ("proteincoding", "lincrna", "processed-pseudogene"):
+            # extract entries by transcript/gene biotype.
+            # This filter uses a test on the source field (ENSEMBL pre v78)
             # a regular expression on the attributes (ENSEMBL >= v78).
             tag = {"proteincoding": "protein_coding",
                    "processed-pseudogene": "processed_pseudogene",
                    "lincrna": "lincRNA"}[options.filter_method]
             rx = re.compile('"%s"' % tag)
             if not options.invert_filter:
-                f = lambda x: x.feature == tag or rx.search(x.attributes)
+                f = lambda x: x.source == tag or rx.search(x.attributes)
             else:
-                f = lambda x: x.feature != tag and not rx.search(x.attributes)
+                f = lambda x: x.source != tag and not rx.search(x.attributes)
 
             for gff in GTF.iterator(options.stdin):
                 ninput += 1

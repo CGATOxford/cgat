@@ -235,7 +235,7 @@ def indexForSailfish(infile, outfile):
 def runSailfish(infiles, outfile):
     '''quantify abundance'''
 
-    job_options = "-pe dedicated %i -R y" % PARAMS["sailfish_threads"]
+    job_threads = PARAMS["sailfish_threads"]
 
     infile, index = infiles
     index = P.snip(index, "/transcriptome.sfi")

@@ -33,6 +33,18 @@ Become root (or ask your system administrator to do it for you) and run::
 
         ./install-CGAT-tools.sh --install-os-packages
 
+Install the CGAT Code Collection
+--------------------------------
+
+CGAT uses Conda_ to create a new environment with all necessary software
+pre-installed::
+
+        ./install-CGAT-tools.sh --cgat-scripts
+
+You do not need to be root for this step and the location of the installation
+can be chosen with the ``--location <path>`` option::
+
+
 Install a Python virtual environment with the CGAT code collection
 ------------------------------------------------------------------- 
 
@@ -158,4 +170,4 @@ When you are done, you may deactivate the CGAT virtual environment::
 
         deactivate
 
-
+.. _Conda: http://conda.pydata.org/

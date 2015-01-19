@@ -32,7 +32,7 @@ The plots below show enrichments or depletions for particular
 genomic annotations. Those which are signifant (FDR=5%) are shown
 in red.
 
-.. report:: Medips.GatLogFoldContext
+.. report:: Gat.GatLogFoldContext
    :render: interleaved-bar-plot
    :groupby: track
    :colour: colour
@@ -42,7 +42,7 @@ in red.
    Log fold change. Those that are significant (qvalue < 0.05) are shown
    in red.
 
-.. report:: Medips.GatSignificantResultsContext
+.. report:: Gat.GatSignificantResultsContext
    :render: table
    :force:
 

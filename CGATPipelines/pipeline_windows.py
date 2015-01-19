@@ -614,7 +614,8 @@ def countReadsWithinWindows(infiles, outfile):
         bedfile,
         windowfile,
         outfile,
-        counting_method=PARAMS['tiling_counting_method'])
+        counting_method=PARAMS['tiling_counting_method'],
+        memory_allocation=PARAMS['tiling_counting_memory'])
 
 
 @merge(countReadsWithinWindows,
@@ -900,7 +901,7 @@ def normalizeBed(infile, outfile):
              function='normalizeBed',
              infiles=infile,
              outfiles=tmpfile,
-             toCluster=True,
+             to_cluster=True,
              jobOptions="-l mem_free=32G")
 
     statement = '''cat %(tmpfile)s |
@@ -924,7 +925,7 @@ def enrichVsInput(infile, outfile):
              function='enrichmentVsInput',
              infiles=infile,
              outfiles=tmpfile,
-             toCluster=True)
+             to_cluster=True)
 
     statement = '''cat %(tmpfile)s |  gzip > %(outfile)s; rm -f %(tmpfile)s'''
 

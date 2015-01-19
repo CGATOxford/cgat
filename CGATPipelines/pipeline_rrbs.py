@@ -340,14 +340,12 @@ def loadStartSummary(infile, outfile):
 def mapReadsWithBismark(infile, outfile):
     '''map reads with bismark'''
 
-    bismark_threads = PARAMS["bismark_threads"]
     # can this handle paired end?
-    # it appears bismark uses a little over twice as many CPUs as expeceted!
-    job_options = "-pe dedicated %s -R y -l mem_free=%s " % (
-        (str((bismark_threads*2)+1)), PARAMS["bismark_memory"])
+    # it appears bismark uses twice as many CPUs as expeceted!
+    job_options = "-l mem_free=%s " % PARAMS["bismark_memory"]
+    job_threads = (PARAMS["bismark_threads"] * 2) + 1
     outdir = "bismark.dir"
     bismark_options = PARAMS["bismark_options"]
-    to_cluster = True
     m = PipelineMapping.Bismark()
     statement = m.build((infile,), outfile)
     P.run()
@@ -395,7 +393,7 @@ def callMethylationStatus(infile, outfile):
            regex("methylation.dir/(\S+).bismark.cov"),
            r"plots.dir/\1.read_position.tsv")
 def plotReadBias(infile, outfile):
-    job_options = "-l mem_free=1G -pe dedicated 1"
+    job_options = "-l mem_free=1G"
 
     m_bias_infile = P.snip(infile, ".bismark.cov") + ".M-bias.txt"
 
@@ -516,7 +514,7 @@ def subsetCoverage(infile, outfile):
 @originate("methylation.dir/cpg-locations-1.cov")
 def findCpGs(outfile):
     genome_infile = PARAMS["methylation_summary_genome_fasta"]
-    job_options = "-l mem_free=2G -pe dedicated 2"
+    job_options = "-l mem_free=2G"
 
     RRBS.fasta2CpG(genome_infile, outfile,
                    submit=True, job_options=job_options)
@@ -530,7 +528,8 @@ def mergeCoverage(infiles, outfile):
     cpgs_infile = infiles[-1]
     coverage_infiles = infiles[:-1]
     # very memory intensive! - find out why and re-code
-    job_options = "-l mem_free=48G -pe dedicated 2"
+    job_options = "-l mem_free=48G"
+    job_threads = 2
 
     RRBS.mergeAndDrop(cpgs_infile, coverage_infiles, outfile,
                       submit=True, job_options=job_options)
@@ -542,7 +541,9 @@ def mergeCoverage(infiles, outfile):
            "_meth_cpgi.tsv")
 def addCpGIs(infiles, outfile):
     infile, CpGI_load, CpGI = infiles
-    job_options = "-l mem_free=20G -pe dedicated 2"
+    # memory intensive!
+    job_options = "-l mem_free=20G"
+    job_threads = 2
 
     RRBS.pandasMerge(infile, CpGI, outfile, merge_type="left",
                      left=['contig', 'position'],
@@ -558,7 +559,8 @@ def loadMergeCoverage(infile, outfile):
     dbh = connect()
     tablename = P.toTable(outfile)
     scriptsdir = PARAMS["general_scriptsdir"]
-    job_options = "-l mem_free=23G -pe dedicated 2"
+    job_options = "-l mem_free=23G"
+    job_threads = 2
 
     statement = '''cat %(infile)s |
                 python %(scriptsdir)s/csv2db.py
@@ -760,10 +762,10 @@ def makeGeneProfiles(infiles, outfile):
            r"methylation.dir/\1_covered_meth_cpgi.tsv")
 def subsetCpGsToCovered(infile, outfile):
 
-    job_options = "-l mem_free=48G -pe dedicated 1"
-    # paramaterise coverage threshold
-    RRBS.subsetToCovered(infile, outfile, cov_threshold=10,
-                         submit=True, job_options=job_options)
+    job_options = "-l mem_free=48G"
+
+    RRBS.subsetToCovered(infile, outfile,
+                         submit=True, jobOptions=job_options)
 
 
 @transform(subsetCpGsToCovered,
@@ -771,7 +773,7 @@ def subsetCpGsToCovered(infile, outfile):
            r"methylation.dir/\1_covered_with_means.tsv")
 def addTreatmentMeans(infile, outfile):
 
-    job_options = "-l mem_free=48G -pe dedicated 1"
+    job_options = "-l mem_free=48G"
 
     RRBS.addTreatmentMean(infile, outfile,
                           submit=True, job_options=job_options)
@@ -782,7 +784,7 @@ def addTreatmentMeans(infile, outfile):
            r"plots.dir/\1_summary_plots")
 def makeSummaryPlots(infile, outfile):
 
-    job_options = "-l mem_free=48G -pe dedicated 1"
+    job_options = "-l mem_free=48G"
 
     RRBS.summaryPlots(infile, outfile,
                       submit=True, job_options=job_options)
@@ -885,7 +887,7 @@ def runBiSeqSpikeClusters(infile, outfile):
            ".analysis.out")
 def clusterSpikeInsPowerAnalysis(infiles, outfile):
 
-    job_options = "-l mem_free=48G -pe dedicated 1"
+    job_options = "-l mem_free=23G"
 
     RRBS.spikeInClustersAnalysis(infiles, outfile,
                                  submit=True, job_options=job_options)
@@ -896,7 +898,7 @@ def clusterSpikeInsPowerAnalysis(infiles, outfile):
            ".M3D_plot_list.out")
 def clusterSpikeInsPowerPlotM3D(infiles, outfile):
 
-    job_options = "-l mem_free=23G -pe dedicated 1"
+    job_options = "-l mem_free=23G"
 
     RRBS.spikeInClustersPlotM3D(infiles, outfile, groups=["Saline", "Dex"],
                                 submit=True, job_options=job_options)
