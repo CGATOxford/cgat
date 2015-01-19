@@ -160,6 +160,7 @@ Code
 
 # load modules
 from ruffus import *
+from ruffus.combinatorics import *
 from rpy2.robjects import r as R
 import sys
 import os
