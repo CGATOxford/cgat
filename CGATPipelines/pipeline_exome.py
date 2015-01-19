@@ -393,7 +393,7 @@ def GATKBaseRecal(infile, outfile):
 ##########################################################################
 
 
-@collate(GATKpreprocessing, regex(r"gatk/(\S+?)-(\S+).bqsr.bam"),
+@collate(GATKBaseRecal, regex(r"gatk/(\S+?)-(\S+).bqsr.bam"),
          r"gatk/\1.list")
 def listOfBAMs(infiles, outfile):
     '''generates a file containing a list of BAMs for each family,
@@ -409,7 +409,7 @@ def listOfBAMs(infiles, outfile):
 
 
 @follows(mkdir("sex"))
-@transform(GATKpreprocessing, regex(r"gatk/(\S+).bqsr.bam"),
+@transform(GATKBaseRecal, regex(r"gatk/(\S+).bqsr.bam"),
            r"sex/\1.sex")
 def calcXYratio(infile, outfile):
     '''Guess the sex of a sample based on ratio of reads
@@ -1142,7 +1142,7 @@ def mapping():
     pass
 
 
-@follows(GATKpreprocessing,
+@follows(GATKBaseRecal,
          listOfBAMs,
          loadXYRatio)
 def gatk():
